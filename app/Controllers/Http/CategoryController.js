@@ -10,7 +10,8 @@ class CategoryController {
         let rows = await Database.select ('g.id AS groupId', 'g.name AS groupName', 'c.id AS categoryId', 'c.name as categoryName', 'amount')
             .table('groups AS g')
             .leftJoin ('categories AS c', 'c.group_id', 'g.id')
-            .orderBy('g.name', 'c.name');
+            .orderBy('g.name')
+            .orderBy('c.name');
                     
         let groups = [];
         let group;
