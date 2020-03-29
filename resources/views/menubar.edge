@@ -8,13 +8,16 @@
               <div class="collapse navbar-collapse" id="navbarSupportedContent">
               <!-- Left Side Of Navbar -->
               <ul class="navbar-nav mr-auto">
+@loggedIn
                   <a class="nav-link" href="/" style="color:white">Home</a>
                   <a class="nav-link" href="/fundingplans" style="color:white">Funding Plans</a>
+@endloggedIn
               </ul>
 
               <!-- Right Side Of Navbar -->
               <ul class="navbar-nav ml-auto">
                   <!-- Authentication Links -->
+@loggedIn
                       <li class="nav-item dropdown">
                           <a id="navbarDropdown" class="nav-link dropdown-toggle" href="#" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" v-pre>
                               Mortvola <span class="caret"></span>
@@ -31,6 +34,10 @@
                               </form>
                           </div>
                       </li>
+@else
+                  <a class="nav-link" id="loginMenuItem" style="color:white">Login</a>
+                  <a class="nav-link" id="registerMenuItem" style="color:white">Register</a>
+@endloggedIn
               </ul>
           </div>
           </div>
