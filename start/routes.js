@@ -16,4 +16,23 @@
 /** @type {typeof import('@adonisjs/framework/src/Route/Manager')} */
 const Route = use('Route')
 
-Route.on('/').render('welcome')
+Route.on('/').render('home')
+
+Route.post('login', 'UserController.login')
+  .middleware('guest')
+
+Route.get('users/:id', 'UserController.show')
+  .middleware('auth')
+  
+Route.get ('/categories', 'CategoryController.get')
+    
+Route.get ('/category/:catId/transactions', 'CategoryController.transactions');
+
+Route.get ('/connected_accounts', 'InstitutionController.all');
+
+Route.get ('/account/:acctId/transactions', 'AccountController.transactions');
+
+Route.post ('/institution', 'InstitutionController.add')
+
+Route.get ('/institution/:instId/accounts', 'InstitutionController.get')
+Route.post ('/institution/:instId/accounts', 'InstitutionController.addAccounts')

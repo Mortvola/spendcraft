@@ -1,0 +1,2101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>de•ber•tas</title>
+<meta name="viewport" content="width=device-width, initial-scale=1,shrink-to-fit=no">
+<meta name="csrf-token" content="{{ csrfToken }}">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.3/jquery.min.js"></script>
+<script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.1/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+
+<link rel="stylesheet" type="text/css" href="style.css">
+
+</head>
+<body>
+    <main class="main">
+        @include('menubar')
+
+      <div class='side-bar'>
+          <div class='categories'>
+              <div class='tools'>
+                  <button id="add-group" class="button">Add Group</button>
+                  <button id="fund-cats" class="button">Fund</button>
+              </div>
+              <div id="categories">
+              </div>
+          </div>
+          <div class="accounts">
+              <div class='account-bar'><div>Institutions</div><div class='btn btn-sm group-button add-acct'><i class='fas fa-plus'></i></div></div>
+              <div id="accounts">
+              </div>
+          </div>
+      </div>
+      <div class='register'>
+          <div class='register-title transaction'>
+              <div></div>
+              <div>Date</div>
+              <div>Name</div>
+              <div>Category</div>
+              <div class='currency'>Amount</div>
+              <div class='currency'>Balance</div>
+              <div>Institution</div>
+              <div>Account</div>
+          </div>
+          <div class='transactions'>
+          </div>
+      </div>
+      
+      <!-- Modal -->
+      <div class="modal fade" id="addGroupDialog" role="dialog">
+          <div class="modal-dialog">
+
+              <!-- Modal content-->
+              <div class="modal-content">
+                  <div class="modal-header">
+                      <h4 class="modal-title"></h4>
+                      <button type="button" class="close" data-dismiss="modal">&times;</button>
+                  </div>
+                  <div class="modal-body">
+                      <form id='addGroupForm'>
+                          <label>Group:</label>
+                          <input type="text" class='form-control' name='name'/>
+                      <br/>
+                      </form>
+                  </div>
+                  <div class="modal-footer">
+                      <button type="button" class="btn" data-dismiss="modal">Cancel</button>
+                      <button type="submit" form='addGroupForm' class="btn btn-default">Save</button>
+                  </div>
+              </div>
+
+          </div>
+      </div> <!--  Modal -->
+
+      <!-- Modal -->
+      <div class="modal fade" id="addCategoryDialog" role="dialog">
+          <div class="modal-dialog">
+
+              <!-- Modal content-->
+              <div class="modal-content">
+                  <div class="modal-header">
+                      <h4 class="modal-title">Add Category</h4>
+                      <button type="button" class="close" data-dismiss="modal">&times;</button>
+                  </div>
+                  <div class="modal-body">
+                      <form id='addCategoryForm'>
+                          <label>Category:</label>
+                          <input type="text" class='form-control' name='name'/>
+                      <br/>
+                      </form>
+                  </div>
+                  <div class="modal-footer">
+                      <button type="button" class="btn" data-dismiss="modal">Cancel</button>
+                      <button type="submit" form='addCategoryForm' class="btn btn-default">Save</button>
+                  </div>
+              </div>
+
+          </div>
+      </div> <!--  Modal -->
+
+      <!-- Modal -->
+      <div class="modal fade" id="accountStartDialog" role="dialog">
+          <div class="modal-dialog">
+
+              <!-- Modal content-->
+              <div class="modal-content">
+                  <div class="modal-header">
+                      <h4 class="modal-title">Account Start Dates</h4>
+                      <button type="button" class="close" data-dismiss="modal">&times;</button>
+                  </div>
+                  <div class="modal-body">
+                      <form id='accountStartForm'>
+                          <label>Start Date</label>
+                          <input type="date" name="startDate"/>
+                      </form>
+                  </div>
+                  <div class="modal-footer">
+                      <button type="button" class="btn" data-dismiss="modal">Cancel</button>
+                      <button type="submit" form='accountStartForm' class="btn btn-default">Save</button>
+                  </div>
+              </div>
+
+          </div>
+      </div> <!--  Modal -->
+
+      <!-- Modal -->
+      <div class="modal fade" id="editFundingDialog" role="dialog">
+          <div class="modal-dialog modal-dialog-scrollable modal-lg">
+
+              <!-- Modal content-->
+              <div class="modal-content">
+                  <div class="modal-header">
+                      <h4 class="modal-title">Fund Categories</h4>
+                      <button type="button" class="close" data-dismiss="modal">&times;</button>
+                  </div>
+                  <div class="modal-body">
+                      <form id='editFundingForm'>
+                              <div class='funding-header'>
+                                  <div>
+                                      <label>Start Date</label>
+                                      <input type="date" name="startDate"/>
+                                  </div>
+                                  <div>
+                                      <label>Available Funds</label>
+                                      <div class='available-funds dollar-amount'>0.00</div>
+                                  </div>
+                              </div>
+                              <div class='cat-fund-table'>
+                                  <div class='cat-fund-item cat-fund-title'>
+                                      <div>Group</div>
+                                      <div>Category</div>
+                                      <div class='dollar-amount'>Amount</div>
+                                  </div>
+                                  <div class='cat-fund-items'></div>
+                              </div>
+                      </form>
+                  </div>
+                  <div class="modal-footer">
+                      <button type="button" class="btn" data-dismiss="modal">Cancel</button>
+                      <button type="submit" form='editFundingForm' class="btn btn-default">Save</button>
+                  </div>
+              </div>
+
+          </div>
+      </div> <!--  Modal -->
+
+      <!-- Modal -->
+      <div class="modal fade" id="addFundingDialog" role="dialog">
+          <div class="modal-dialog modal-dialog-scrollable modal-lg">
+
+              <!-- Modal content-->
+              <div class="modal-content">
+                  <div class="modal-header">
+                      <h4 class="modal-title">Fund Categories</h4>
+                      <button type="button" class="close" data-dismiss="modal">&times;</button>
+                  </div>
+                  <div class="modal-body">
+                      <form id='addFundingForm'>
+                              <div class='funding-header'>
+                                  <div>
+                                      <label>Plan</label>
+                                      <select name="plans"></select>
+                                  </div>
+                                  <div>
+                                      <label>Start Date</label>
+                                      <input type="date" name="startDate"/>
+                                  </div>
+                                  <div>
+                                      <label>Available Funds</label>
+                                      <div class='available-funds dollar-amount'>0.00</div>
+                                  </div>
+                              </div>
+                              <div class='cat-fund-table'>
+                                  <div class='fund-list-item cat-fund-title'>
+                                      <div class='fund-list-cat-name'>Category</div>
+                                      <div class='dollar-amount'>Current</div>
+                                      <div class='dollar-amount'>Funding</div>
+                                      <div class='dollar-amount'>Balance</div>
+                                  </div>
+                                  <div class='cat-fund-items'></div>
+                              </div>
+                      </form>
+                  </div>
+                  <div class="modal-footer">
+                      <button type="button" class="btn" data-dismiss="modal">Cancel</button>
+                      <button type="submit" form='addFundingForm' class="btn btn-default">Save</button>
+                  </div>
+              </div>
+
+          </div>
+      </div> <!--  Modal -->
+
+      <!-- Modal -->
+      <div class="modal fade" id="editTransactionDialog" role="dialog">
+          <div class="modal-dialog modal-dialog-scrollable modal-lg">
+
+              <!-- Modal content-->
+              <div class="modal-content">
+                  <div class="modal-header">
+                      <h4 class="modal-title">Edit Transaction</h4>
+                      <button type="button" class="close" data-dismiss="modal">&times;</button>
+                  </div>
+                  <div class="modal-body">
+                      <form id='editTransactionForm'>
+                              <div class='cat-fund-table'>
+                                  <div class='transaction-split-item cat-fund-title'>
+                                      <div class='fund-list-cat-name'>Category</div>
+                                      <div class='dollar-amount'>Amount</div>
+                                  </div>
+                                  <div class='transaction-split-items'></div>
+                                  <div class='transaction-split-item'>
+                                      <div></div>
+                                      <div class='dollar-amount'>
+                                          <label>Unassigned</label>
+                                          <div class='available-funds dollar-amount'>0.00</div>
+                                      </div>
+                                  </div>
+                              </div>
+                      </form>
+                  </div>
+                  <div class="modal-footer">
+                      <button type="button" class="btn" data-dismiss="modal">Cancel</button>
+                      <button type="submit" form='editTransactionForm' class="btn btn-default">Save</button>
+                  </div>
+              </div>
+
+          </div>
+      </div> <!--  Modal -->
+
+      <!-- Modal -->
+      <div class="modal fade" id="accountSelectionDialog" role="dialog">
+          <div class="modal-dialog modal-dialog-scrollable modal">
+
+              <!-- Modal content-->
+              <div class="modal-content">
+                  <div class="modal-header">
+                      <h4 class="modal-title">Select Accounts</h4>
+                      <button type="button" class="close" data-dismiss="modal">&times;</button>
+                  </div>
+                  <div class="modal-body">
+                      <form id='accountSelectionForm'>
+                      </form>
+                  </div>
+                  <div class="modal-footer">
+                      <button type="button" class="btn" data-dismiss="modal">Cancel</button>
+                      <button type="submit" form='accountSelectionForm' class="btn btn-default">Save</button>
+                  </div>
+              </div>
+
+          </div>
+      </div> <!--  Modal -->
+
+  </main>
+
+  <script>
+  
+  "use strict";
+  
+  class CategorySelector {
+      
+      constructor (categories) {
+          
+          this.owner = null;
+
+          this.createCategoryTree (categories);
+
+          $(window).on('click', (event) => {
+              if (this.categoryDropDownList.is(':visible'))
+              {
+                  event.stopPropagation ();
+                  this.cancel ();
+              }
+          });
+      }
+      
+      createCategoryTree (categories)
+      {
+          this.categoryDropDownList = $('<div></div>')
+              .attr('id', 'categoryDropDownList')
+              .hide ()
+              .appendTo('body');
+      
+          for (let group of categories) {
+              
+              let catListGroup = $("<div></div>")
+                  .text(group.name)
+                  .addClass('category-list-item')
+                  .appendTo(this.categoryDropDownList);
+
+              for (let category of group.categories) {
+                  
+                  this.createCategorySelectElement (category.id, group.name, category.name).appendTo(catListGroup);
+              }
+          }
+      }
+
+      createCategorySelectElement (id, group, category) {
+          let catListItem = $('<div></div>')
+              .text(category)
+              .addClass('cat-list-cat category-list-item category-select-item');
+          
+          catListItem.on('mousedown', (evet) => {
+              event.preventDefault ();
+              this.selectionCallback ({ id: id, group: group, category: category });
+              this.hide ();
+          });
+          
+          return catListItem;
+      }
+      
+
+      setOwner (owner){
+          this.owner = owner;
+      }
+
+      show (owner, callback) {
+          
+          this.setOwner (owner);
+          
+          this.selectionCallback = callback;
+          
+          this.previousValue = $(this.owner).val ();
+          
+          $('#categoryDropDownList .category-list-item').show ();
+          $('#categoryDropDownList .cat-list-cat.selected').removeClass('selected');
+
+          // Determine how much space is below the owner. If there isn't enough space 
+          // for the drop down then display it above the owner.
+          let space = window.innerHeight - ($(owner).offset().top + $(owner).outerHeight ());
+          
+          if (space >= this.categoryDropDownList.outerHeight ()) {
+              this.categoryDropDownList.css('top', $(owner).offset().top + $(owner).outerHeight ());
+          }
+          else {
+              this.categoryDropDownList.css('top', $(owner).offset().top - this.categoryDropDownList.outerHeight ());
+          }
+
+          this.categoryDropDownList
+              .css ('left', $(owner).offset().left)
+              .css('width', $(owner).outerWidth ())
+              .show ();
+
+          $('#categoryDropDownList .category-list-item').first ().get (0).scrollIntoView (true);
+      }
+      
+      visible () {
+          return this.categoryDropDownList.is(':visible');
+      }
+      
+      hide () {
+          this.categoryDropDownList.hide ();
+          this.setOwner (null);
+      }
+      
+      cancel () {
+          $(this.owner).val(this.previousValue);
+          //$(':focus').blur();
+          this.hide ();
+      }
+      
+      getSelectText (element) {
+          return element.parent().contents ().filter(
+              function () {
+                  return this.nodeType == 3;
+              })
+              .text ()
+              + ':' +
+              element.contents ().filter(
+                  function () {
+                      return this.nodeType == 3;
+                  }).text ();
+      }
+      
+      setSelected (oldSelected, newSelected){
+          oldSelected.removeClass('selected');
+          newSelected.addClass('selected');
+          newSelected.get (0).scrollIntoView (false);
+          $(this.owner).val(this.getSelectText (newSelected));
+      }
+      
+      down () {
+          
+          let selected = $('#categoryDropDownList .cat-list-cat.selected');
+
+          if (selected.length > 0) {
+              let next = selected.next ().filter(':visible');
+              
+              if (next.length > 0) {
+                  this.setSelected (selected, next);
+              }
+              else {
+                  let next = selected.parent ().next ().children ().filter(':visible').first ();
+                  
+                  if (next.length > 0) {
+                      this.setSelected (selected, next);
+                  }
+              }
+          }
+          else {
+              let selected = $('#categoryDropDownList .cat-list-cat').filter(':visible').first ().addClass('selected');
+              $(this.owner).val(this.getSelectText (selected));
+          }
+      }
+      
+      up () {
+          let selected = $('#categoryDropDownList .cat-list-cat.selected');
+          
+          if (selected.length > 0) {
+              let prev = selected.prev ().filter(':visible');
+              
+              if (prev.length > 0) {
+                  this.setSelected (selected, prev);
+              }
+              else {
+                  let prev = selected.parent ().prev ().children ().filter(':visible').last ();
+
+                  if (prev.length > 0) {
+                      this.setSelected (selected, prev);
+                  }
+              }
+          }
+      }
+      
+      enter () {
+          let selected = $('#categoryDropDownList .cat-list-cat.selected');
+          
+          if (selected.length > 0) {
+              selected.trigger('mousedown');
+          }
+      }
+      
+      filter (f) {
+
+          // Search both group and category
+          let groups = $('#categoryDropDownList > .category-list-item');
+          
+          let parts = f.split(":");
+          
+          if (parts.length == 1) {
+              
+              parts[0] = parts[0].toLowerCase ();
+              
+              for (let g of groups) {
+                  let groupText = $(g).contents ().filter(function () { return this.nodeType == 3; }).text ().toLowerCase ();
+                  
+                  if (groupText.includes(parts[0])) {
+                      $(g).show ();
+
+                      let cats = $(g).children('.cat-list-cat');
+
+                      for (let c of cats) {
+                          $(c).show ();
+                      }
+                  }
+                  else {
+                      // Before hiding the group check to see if any of the categories matches.
+                      // If there is a match, hide the non-matching categories but not the group
+                      let cats = $(g).children('.cat-list-cat');
+                      
+                      let catFound = false;
+                      
+                      for (let c of cats) {
+                          let catText = $(c).contents ().filter(function () { return this.nodeType == 3; }).text ().toLowerCase ();
+                          
+                          if (catText.includes(parts[0])) {
+                              $(c).show ();
+                              catFound = true;
+                          }
+                          else {
+                              $(c).hide ();
+                          }
+                      }
+                      
+                      if (catFound) {
+                          $(g).show ();
+                      }
+                      else {
+                          $(g).hide ();
+                      }
+                  }
+              }
+              
+          }
+          else if (parts.length == 2) {
+
+              parts[0] = parts[0].toLowerCase ();
+              parts[1] = parts[1].toLowerCase ();
+              
+              if (parts[0]) {
+                  
+                  for (let g of groups) {
+                      let groupText = $(g).contents ().filter(function () { return this.nodeType == 3; }).text ().toLowerCase ();
+                      
+                      if (groupText.includes(parts[0])) {
+
+                          let cats = $(g).children('.cat-list-cat');
+
+                          if (parts[1]) {
+                              let catFound = false;
+                              
+                              for (let c of cats) {
+                                  let catText = $(c).contents ().filter(function () { return this.nodeType == 3; }).text ().toLowerCase ();
+                                  
+                                  if (catText.includes(parts[1])) {
+                                      $(c).show ();
+                                      catFound = true;
+                                  }
+                                  else {
+                                      $(c).hide ();
+                                  }
+                              }
+                              
+                              if (catFound) {
+                                  $(g).show ();
+                              }
+                              else {
+                                  $(g).hide ();
+                              }
+                          }
+                          else {
+                              $(g).show ();
+
+                              for (let c of cats) {
+                                  $(c).show ();
+                              }
+                          }
+                      }
+                      else {
+                          $(g).hide ();
+                      }
+                  }
+              }
+              else if (parts[1]) {
+                  // There is no group specified. Only filter the categories
+                  
+                  for (let g of groups) {
+
+                      // Before hiding the group check to see if any of the categories matches.
+                      // If there is a match, hide the non-matching categories but not the group
+                      let cats = $(g).children('.cat-list-cat');
+                      
+                      let catFound = false;
+                      
+                      for (let c of cats) {
+                          let catText = $(c).contents ().filter(function () { return this.nodeType == 3; }).text ().toLowerCase ();
+                          
+                          if (catText.includes(parts[1])) {
+                              $(c).show ();
+                              catFound = true;
+                          }
+                          else {
+                              $(c).hide ();
+                          }
+                      }
+                      
+                      if (catFound) {
+                          $(g).show ();
+                      }
+                      else {
+                          $(g).hide ();
+                      }
+                  }
+              }
+          }
+      }
+  }
+  
+  let categorySelectList;
+
+  class Register {
+      
+      constructor () {
+
+          this.transactions = [];
+          this.accountId = null;
+          this.categoryId = null;
+          
+          $(document).on('accountRefreshed', (event) =>
+          {
+              if (this.accountId !== null) {
+                  this.viewAccount(this.accountId);
+              }
+              else if (this.categoryId !== null) {
+                  this.viewCategory(this.categoryId);
+              }
+          });
+          
+          $(document).on('transactionUpdated', (event) =>
+          {
+              let transaction = event.detail.transaction;
+              
+              if (this.accountId !== null) {
+                  // If the transaction doesn't belong to the current account
+                  // then remove it from the view
+              }
+              else if (this.categoryId !== null) {
+                  // If the transaction doesn't belong to the current category
+                  // then remove it from the view
+                  
+                  let txElement = this.transactions.find(t => t.transaction.id == transaction.id).element;
+
+                  if (this.categoryId === -2) {
+                      
+                      // This is the Unassigned category. If there are categories assigned to 
+                      // this transation then remove it.
+                      
+                      if (transaction.categories && transaction.categories.length > 0) {
+                          this.removeTransaction (txElement, transaction.id);
+                      }
+                      else {
+//                          setCategoryText (categoryElement, response.splits);
+                      }
+                  }
+                  else {
+                      
+                      // If there are no categories assigned to this transaction then remove it.
+                      if (!transaction.categories || transaction.categories.length == 0) {
+                          this.removeTransaction (txElement, transaction.id);
+                      }
+                      else {
+                          
+                          // If the current view's category can not be found in the transaction's
+                          // categories then remove it.
+                          let i = transaction.categories.findIndex (c => c.categoryId == this.categoryId);
+                          if (i == -1) {
+                              
+                              this.removeTransaction(txElement, transaction.id);
+                          }
+                          else {
+                              // Category was found. Make sure the category and amount are correct.
+
+                              let categoryElement = txElement.find('.category');
+                              
+                              if (categoryElement.length > 0) {
+                                  setCategoryText (categoryElement, transaction.categories);
+                              }
+                              
+                              let splitButton = txElement.find('.split-button');
+                              
+                              // Hide or show the split button and category selector based on
+                              // the number of categories in the category list.
+                              if (transaction.categories.length > 1) {
+                                  categoryElement.hide ();
+                                  splitButton.show ();
+                              }
+                              else {
+                                  categoryElement.show ();
+                                  splitButton.hide ();
+                              }
+                              
+                              let amountElement = this.getTransactionAmountElement (txElement);
+                              
+                              if (amountElement !== undefined) {
+                                  let previousAmount = getTextElementAmount(amountElement);
+
+                                  // Update the amount and balances if there is a change. 
+                                  if (previousAmount != transaction.categories[i].amount) {
+
+                                      setTextElementAmount (amountElement, transaction.categories[i].amount);
+                                      
+                                      let delta = previousAmount - transaction.categories[i].amount;
+                                      
+                                      this.updateBalances (txElement, delta);
+                                  }
+                              }
+                          }
+                      }
+                  }
+              }
+          });
+      }
+      
+      removeTransaction (txElement, transactionId) {
+          let amountElement = this.getTransactionAmountElement (txElement);
+          
+          if (amountElement !== undefined) {
+              let amount = getTextElementAmount(amountElement);
+
+              this.updateBalances (txElement.prev (), amount);
+          }
+
+          txElement.remove ();
+          
+          let i = this.transactions.findIndex(t => t.transaction.id == transactionId);
+          if (i !== -1) {
+              this.transactions.splice(i, 1);
+          }
+      }
+      
+      updateBalances (txElement, delta) {
+          while (txElement.length > 0) {
+              
+              let balanceElement = txElement.find('.balance');
+              
+              if (balanceElement.length > 0) {
+                  let balance = getTextElementAmount(balanceElement) - delta;
+                  setTextElementAmount (balanceElement, balance);
+              }
+
+              txElement = txElement.prev ();
+          }
+      }
+      
+      getTransactionAmountElement (txElement) {
+          let amountElement = txElement.find('.amount');
+          
+          if (amountElement.length > 0) {
+              return amountElement;
+          }
+      }
+      
+      viewCategory (categoryId) {
+
+          this.accountId = null;
+          this.categoryId = categoryId;
+
+          $.getJSON({
+              url: "/category/" + categoryId + "/transactions"
+          })
+          .done ( function (response) {
+              populateTransactions (response.balance, response.transactions, categoryId);
+          });
+      }
+      
+      viewAccount (accountId) {
+          
+          this.accountId = accountId;
+          this.categoryId = null;
+          
+          $.getJSON({
+              url: "/account/" + accountId + "/transactions"
+          })
+          .done (function (response) {
+              
+              populateTransactions (response.balance, response.transactions);
+          });
+      }
+  }
+
+  let register = new Register ();
+
+  function updateCategory (id, amount) {
+      setTextElementAmount($('#categories [data-cat="' + id + '"]'), amount);
+  }
+  
+  function updateCategories (categories) {
+      
+      for (let category of categories) {
+          updateCategory (category.id, category.amount);
+      }
+  }
+  
+  
+  function formatNumber(num) {
+
+      if (num === undefined || num === null) {
+          num = 0;
+      }
+      
+      return parseFloat(num).toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,')
+  }
+  
+  
+  function setCategoryText (element, categories) {
+      if (!categories) {
+          element.val ('');
+      }
+      else {
+          if (categories.length > 1) {
+              element.val('Split');
+          }
+          else {
+              element.val (categories[0].group + ':' + categories[0].category);
+          }
+      }
+  }
+
+  function highlightTransaction (t) {
+      $('.transactions').children().removeClass('transaction-selected');
+      t.addClass('transaction-selected');
+  }
+  
+  function populateTransactions (balance, transactions, categoryId)
+  {
+      $('.transactions').empty ();
+      register.transactions = [];
+      
+      // Sort the array 
+      transactions.sort (function (a, b) {
+          if (a.date < b.date) {
+              return 1;
+          }
+          
+          if (a.date > b.date) {
+              return -1;
+          }
+          
+          if (a.sort_order < b.sort_order) {
+              return 1;
+          }
+          
+          if (a.sort_order > b.sort_order) {
+              return -1;
+          }
+          
+          return 0;
+      });
+      
+      for (let transaction of transactions) {
+          
+          let t = $('<div></div>')
+              .addClass('transaction')
+              .on('click', function () {
+                  highlightTransaction (t);
+              });
+          
+          createIconButton("edit", function () {
+                  
+                  if (transaction.type == 0) {
+                      openEditTransactionDialog (transaction);
+                  }
+                  else {
+                      $.getJSON({
+                          url: "/categories"
+                      })
+                      .done (function (categories) {
+                          openFundCatsDialog (transaction, categories);
+                      });
+                  }
+              })
+              .appendTo(t);
+
+          $('<div></div>')
+              .text (transaction.date)
+              .appendTo(t);
+
+          $('<div></div>').text (transaction.name)
+              .addClass('transaction-field')
+              .appendTo(t);
+          
+          let catDiv = $('<div></div>')
+              .addClass('trans-cat-edit')
+              .appendTo(t);
+          
+          let splitButton = $('<button>Split</button>')
+              .addClass('split-button')
+              .on ('click',
+                  function () {
+                      if (transaction.type == 0) {
+                          openEditTransactionDialog (transaction);
+                      }
+                      else {
+                          $.getJSON({
+                              url: "/categories"
+                          })
+                          .done (function (categories) {
+                              openFundCatsDialog (transaction, categories);
+                          });
+                      }
+                  })
+              .appendTo (catDiv);
+
+          let cat = createCategoryInputElement (
+              (category) => {
+              
+                  let request = { splits: [] };
+                  
+                  request.splits.push({categoryId: category.id, amount: transaction.amount });
+                  
+                  updateTransactionCategory (transaction, request, $(this));
+              })
+              .addClass('category')
+              .addClass('transaction-field')
+              .on('click', function (event) {
+                  event.stopPropagation ();
+                  
+                  highlightTransaction (t);
+              })
+              .appendTo(catDiv);
+              
+          setCategoryText (cat, transaction.categories);
+          
+          createIconButton("list-ul",
+              function () {
+                  if (transaction.type == 0) {
+                      openEditTransactionDialog (transaction);
+                  }
+                  else {
+                      $.getJSON({
+                          url: "/categories"
+                      })
+                      .done (function (categories) {
+                          openFundCatsDialog (transaction, categories);
+                      });
+                  }
+              })
+              .appendTo(catDiv);
+          
+          if (transaction.categories && transaction.categories.length > 1) {
+              splitButton.show ();
+              cat.hide ();
+          }
+          else {
+              splitButton.hide ();
+              cat.show ();
+          }
+          
+          let amount = transaction.amount;
+          
+          if (transaction.categories !== undefined && transaction.categories !== null &&
+              categoryId !== undefined && categoryId !== null) {
+              
+              let index = transaction.categories.findIndex (c => c.categoryId == categoryId);
+              if (index != -1) {
+                  amount = transaction.categories[index].amount;
+              }
+          }
+          
+          let amountElement = $('<div></div>').addClass('transaction-field amount currency').appendTo(t);
+          setTextElementAmount (amountElement, amount);
+          
+          if (balance !== undefined) {
+              let balanceElement =$('<div></div>').addClass('transaction-field balance currency').appendTo(t);
+
+              setTextElementAmount (balanceElement, balance);
+
+              balance -= amount;
+          }
+          
+          $('<div></div>').text (transaction.institute_name).addClass('transaction-field').appendTo(t);
+          $('<div></div>').text (transaction.account_name).addClass('transaction-field').appendTo(t);
+          
+          t.appendTo('.transactions');
+          
+          register.transactions.push ({transaction: transaction, element: t});
+      }
+  }
+  
+  
+  function createInstitutionElement (institution) {
+      
+      let institutionElement = $('<div></div>');
+      
+      let institutionBar = $('<div></div>')
+          .addClass('acct-list-inst')
+          .appendTo(institutionElement);
+      
+      $('<div></div>')
+          .addClass('institution-name')
+          .text(institution.name)
+          .appendTo(institutionBar);
+      
+      createIconButton ("plus",
+          function () {
+              $.getJSON ({
+                  url: '/institution/' + institution.id + '/accounts'
+              })
+              .done (function (response) {
+                  
+                  openAccountSelectionDialog (institution.id, response);
+              });
+          })
+          .appendTo(institutionBar);
+      
+      let accountsElement = $('<div></div>')
+          .appendTo(institutionElement);
+      
+      for (let acct of institution.accounts) {
+          
+          let acctItem = $('<div></div>').addClass('acct-list-item');
+          
+          let refresh = $('<button><i class="fas fa-sync-alt"></i></button>')
+              .on('click', function () {
+                  
+                  refresh.children("i").addClass('rotate');
+                  
+                  $.post ({
+                      url: "/account_refresh/" + acct.id, 
+                      contentType: "application/json"
+                  })
+                  .done (function (response) {
+                      
+                      if (response && response.categories && response.categories.length > 0) {
+                          updateCategory (response.categories[0].id, response.categories[0].amount);
+                      }
+                      
+                      document.dispatchEvent(new Event('accountRefreshed'));
+
+                      refresh.children("i").removeClass('rotate');
+                  });
+              });
+
+          refresh.appendTo(acctItem);
+          
+          let account = $('<div></div>')
+              .text(acct.name)
+              .addClass('acct-list-acct')
+              .on('click', function () {
+                  $('#categories .cat-list-cat.selected').removeClass('selected');
+                  $('#accounts .acct-list-acct.selected').removeClass('selected');
+                  account.addClass('selected');
+                  register.viewAccount (acct.id);
+              });
+          
+          account.appendTo(acctItem);
+          
+          acctItem.appendTo(accountsElement);
+      }
+      
+      return institutionElement;
+  }
+
+  
+  function populateAccountList (institutions)
+  {
+      $('#accounts').empty ();
+      
+      for (let institution of institutions) {
+          
+          createInstitutionElement (institution).appendTo("#accounts");
+      }
+  }
+  
+  function getConnectedAccounts () {
+
+      $.getJSON({
+          url: "/connected_accounts"
+      })
+      .done (function(response) {
+          populateAccountList (response);
+      });
+  }
+  
+  
+  function createCategoryTreeElement (id, groupId, name, amount)
+  {
+      let catElement = $('<div></div>')
+          .addClass('cat-list-cat')
+          .on('click',
+              function () {
+                  $('#categories .cat-list-cat.selected').removeClass('selected');
+                  $('#accounts .acct-list-acct.selected').removeClass('selected');
+                  catElement.addClass('selected');
+                  register.viewCategory (id);
+              })
+  
+      let nameBar = $('<div></div>')
+          .addClass('cat-element-bar')
+          .appendTo (catElement);
+      
+      if (groupId != -1) {
+
+          createIconButton ("edit", function () { showEditCategoryDialog (id, catNameElement); })
+              .appendTo(nameBar);
+      }
+            
+      let catNameElement = $('<div></div>')
+          .text(name)
+          .addClass('cat-list-name')
+          .appendTo(nameBar);
+      
+      let amountElement = $('<div></div>')
+          .addClass('cat-list-amt')
+          .attr('data-cat', id)
+          .appendTo(catElement);
+          
+      setTextElementAmount (amountElement, amount);
+      
+      return catElement;
+  }
+  
+
+  function showEditCategoryDialog (id, nameElement) {
+      $('#addCategoryDialog .modal-title').text('Edit Category');
+      $('#addCategoryDialog [name="name"]').val(nameElement.text ());
+
+      $("#addCategoryDialog").modal ('show');
+
+      $("#addCategoryForm").off('submit');
+      $("#addCategoryForm").submit(function (event) {
+          event.preventDefault();
+          
+          let cat = $('#addCategoryForm').serializeArray ();
+
+          $.ajax ({
+              url: "/category/" + id,
+              contentType: "application/json",
+              method: 'PATCH',
+              data: JSON.stringify({ name: cat[0].value }),
+          })
+          .done (function(response) {
+
+              $(nameElement).text(response.name);
+              $("#addCategoryDialog").modal ('hide');
+          });
+      });
+  }
+
+  
+  function showAddCategoryDialog (groupId, groupElement) {
+      $('#addCategoryDialog .modal-title').text('Add Category');
+      $('#addCategoryDialog [name="name"]').val('');
+
+      $("#addCategoryDialog").modal ('show');
+
+      $("#addCategoryForm").off('submit');
+      $("#addCategoryForm").submit(function (event) {
+          event.preventDefault();
+          
+          let cat = $('#addCategoryForm').serializeArray ();
+
+          $.post({
+              url: "/category",
+              contentType: "application/json",
+              data: JSON.stringify({ groupId: groupId, name: cat[0].value }),
+          })
+          .done (function(response) {
+              let newCategoryElement = createCategoryTreeElement (response.id, groupId, response.name, response.amount);
+              
+              let categoryElements = $(groupElement).children (".cat-list-cat");
+              
+              for (let categoryElement of categoryElements) {
+
+                  let name = $(categoryElement).find('.cat-list-name').text ();
+                  
+                  let compare = name.localeCompare(response.name);
+                  
+                  if (compare > 0) {
+                      
+                      newCategoryElement.insertBefore(categoryElement);
+                      newCategoryElement = null;
+                      break;
+                  }
+              }
+              
+              if (newCategoryElement !== null) {
+                  newCategoryElement.appendTo(groupElement);
+              }
+
+              $("#addCategoryDialog").modal ('hide');
+          });
+      });
+  }
+  
+  function createGroupElement (group) {
+      let groupElement = $('<div></div>')
+          .addClass('cat-list-group');
+
+      let groupElementBar = $('<div></div>')
+          .addClass('group-element-bar')
+          .appendTo(groupElement);
+      
+      let groupNameElement = $('<div></div>')
+          .text(group.name)
+          .addClass('group-name')
+          .appendTo (groupElementBar);
+      
+      // Add the 'Add category' and other buttons (but not to the System group).
+      if (group.id != -1) {
+       
+          createIconButton ("plus", function () { showAddCategoryDialog (group.id, groupElement); })
+              .appendTo(groupElementBar);
+    
+          createIconButton ("edit", function () { openAddGroupDialog ('Edit Group', group.id, groupNameElement); })
+              .appendTo(groupElementBar);
+      }
+      
+      return groupElement;
+  }
+  
+  function createCategoryTree (response)
+  {
+      for (let group of response) {
+          
+          let groupElement = createGroupElement (group);
+          
+          for (let category of group.categories) {
+              
+              createCategoryTreeElement (category.id, group.id, category.name, category.amount).appendTo(groupElement);
+          }
+          
+          groupElement.appendTo('#categories');
+      }
+  }
+  
+  function getCategories ()
+  {
+      $.getJSON({
+          url: "/categories"
+      })
+      .done (function (response) {
+          createCategoryTree (response);
+          categorySelectList = new CategorySelector (response);
+      });
+  }
+  
+
+  function openAddGroupDialog(title, groupId, groupNameElement) {
+      $('#addGroupDialog .modal-title').text(title);
+      
+      $('#addGroupDialog [name="name"]').val("");
+      
+      if (groupNameElement) {
+          $('#addGroupDialog [name="name"]').val(groupNameElement.text ());
+      }
+
+      $("#addGroupDialog").modal ('show');
+
+      $("#addGroupForm").off('submit');
+      $("#addGroupForm").submit(function (event) {
+          event.preventDefault();
+          
+          let group = $('#addGroupForm').serializeArray ();
+
+          if (groupId) {
+              $.ajax ({
+                  url: "/group/" + groupId,
+                  contentType: "application/json",
+                  method: 'PATCH',
+                  data: JSON.stringify({ name: group[0].value }),
+              })
+              .done (function(response)
+              {
+                  $(groupNameElement).text(response.name);
+                  $("#addGroupDialog").modal ('hide');
+              });
+          }
+          else {
+              $.post({
+                  url: "/group",
+                  contentType: "application/json",
+                  data: JSON.stringify({ name: group[0].value }),
+              })
+              .done (function(response)
+              {
+                  let newGroupElement = createGroupElement (response);
+                  
+                  let groupElements = $("#categories > div");
+                      
+                  for (let groupElement of groupElements) {
+
+                      let name = $(groupElement).find('.group-name').text ();
+                      
+                      let compare = name.localeCompare(response.name);
+                      
+                      if (compare > 0) {
+                          
+                          newGroupElement.insertBefore(groupElement);
+                          newGroupElement = null;
+                          break;
+                      }
+                  }
+                  
+                  if (newGroupElement !== null) {
+                      newGroupElement.appendTo("#categories");
+                  }
+                  
+                  $("#addGroupDialog").modal ('hide');
+              });
+          }
+      });
+  }
+
+  function createCategoryFundingList (response, splits) {
+
+      $('.cat-fund-items').empty ();
+      
+      for (let group of response) {
+          
+          for (let category of group.categories) {
+              
+              if (category.id === -1) {
+                  $('.available-funds').text(parseFloat(category.amount).toFixed(2));
+              }
+              else {
+                  let row = $('<div></div>').addClass('cat-fund-item');
+                  
+                  $('<div></div>').text(group.name).appendTo(row);
+                  $('<div></div>').text(category.name).appendTo(row);
+                  
+                  let value = '0.00';
+                  
+                  const found = splits.find(split => split.categoryId === category.id);
+                  if (found) {
+                      value = found.amount.toFixed(2);
+                  }
+                      
+                  let amount = $('<input></input>')
+                      .attr('type', 'text')
+                      .addClass('dollar-amount')
+                      .attr('value', value)
+                      .attr('data-init-value', value)
+                      .attr('data-amount', value)
+                      .attr('name', category.id)
+                      .on('change', function () {
+                          let newAmount = parseFloat(amount.val());
+                          amount.val(newAmount.toFixed(2));
+                          
+                          let previousAmount = parseFloat(amount.attr('data-amount'));
+                          
+                          if (isNaN(previousAmount)) {
+                              previousAmount = 0;
+                          }
+                              
+                          let newFundAmount = parseFloat($('.available-funds').text()) + previousAmount - newAmount;
+                          $('.available-funds').text(newFundAmount.toFixed(2));
+                          
+                          amount.attr('data-amount', newAmount.toFixed(2));
+                      });
+                      
+                  if (found) {
+                      amount.attr('data-id', found.id);
+                  }
+                  
+                  amount.appendTo(row);
+                  
+                  row.appendTo('.cat-fund-items');
+              }
+          }
+      }
+  }
+  
+  function objectifyNameValues(nameValues)
+  {
+      var returnObject = {};
+      
+      for (let i in nameValues)
+      {
+          returnObject[nameValues[i]['name']] = nameValues[i]['value'];
+      }
+      
+      return returnObject;
+  }
+
+  
+  function createAmountInput (amount, callbacks) {
+      return $('<input></input>')
+          .attr('type', 'text')
+          .addClass('dollar-amount')
+          .attr('value', amount.toFixed(2))
+          .attr('data-last-amount', amount)
+          .on('change', function () {
+
+              let newAmount = parseFloat($(this).val().replace(/,/g, ''));
+    
+              if (isNaN(newAmount)) {
+                  newAmount = 0;
+              }
+                  
+              $(this).val(newAmount.toFixed(2));
+              
+              let previousAmount = parseFloat($(this).attr('data-last-amount'));
+              
+              if (isNaN(previousAmount)) {
+                  previousAmount = 0;
+              }
+    
+              $(this).attr('data-last-amount', newAmount.toFixed(2));
+    
+              let delta = newAmount - previousAmount;
+              
+              if (callbacks) {
+                  if (Array.isArray(callbacks)) {
+                      for (let callback of callbacks) {
+                          callback(newAmount, delta);
+                      }
+                  }
+                  else {
+                      callbacks(newAmount, delta);
+                  }
+              }
+          });
+  }
+  
+  
+  function setTextElementAmount (element, amount) {
+      element.text(formatNumber(amount));
+
+      if (amount < 0) {
+          element.addClass('negative');
+      }
+      else {
+          element.removeClass('negative');
+      }
+  }
+
+  
+  function getTextElementAmount (element) {
+      return parseFloat(element.text().replace(/,/g, ''));
+  }
+
+  
+  function addTextElementAmount (element, amount) {
+      setTextElementAmount (element, getTextElementAmount (element) + parseFloat(amount));
+  }
+
+  
+  function openAddFundingDialog (plans, categories) {
+      
+      $("#addFundingDialog [name='plans']").empty ();
+      
+      $("<option></option>")
+          .text ("None")
+          .appendTo("#addFundingDialog [name='plans']");
+      
+      for (let plan of plans) {
+          $("<option></option>")
+              .text (plan.name)
+              .val(plan.id)
+              .appendTo("#addFundingDialog [name='plans']");
+      }
+          
+      $("#addFundingDialog [name='plans']").on('change', function () {
+          
+          let selection = $("#addFundingDialog [name='plans']").val ();
+          
+          if (selection === "None") {
+              $('.fund-list-item .fund-list-amt')
+                  .val(formatNumber("0.00"))
+                  .change ();
+          }
+          else {
+              $.getJSON({
+                  url: "/funding_plan/" + selection
+              })
+              .done (function (response) {
+                  
+                  for (let cat of response.categories) {
+                      
+                      let amount = 0;
+                      if (cat.amount !== undefined && cat.amount !== null) {
+                          amount = parseFloat(cat.amount);
+                      }
+
+                      $(".fund-list-item [data-cat-id='" + cat.categoryId + "'")
+                          .val(formatNumber(amount))
+                          .change ();
+                  }
+              });
+          }
+      });
+      
+      $('#addFundingForm .cat-fund-items').empty ();
+
+      for (let group of categories) {
+          
+          let groupElement = createGroupElement (group);
+          
+          for (let category of group.categories) {
+              
+              if (group.id == -1) {
+                  
+                  if (category.id == -1) {
+                      $('.available-funds').text(parseFloat(category.amount).toFixed(2));
+                  }
+              }
+              else {
+                  let catElement = $('<div></div>')
+                      .addClass('fund-list-item');
+              
+                  let catNameElement = $('<div></div>')
+                      .text(category.name)
+                      .addClass('fund-list-cat-name')
+                      .appendTo(catElement);
+                  
+                  let currentAmt = parseFloat(category.amount);
+                  
+                  if (currentAmt === undefined || currentAmt === null || isNaN(currentAmt)) {
+                      currentAmt = 0;
+                  }
+                  
+                  let currentElement = $('<div></div>')
+                      .addClass('fund-list-amt')
+                      .attr('data-cat', category.id)
+                      .appendTo(catElement);
+                      
+                  setTextElementAmount (currentElement, currentAmt);
+                  
+                  let fundingAmt = 0;
+                  
+                  let balanceAmt = currentAmt + fundingAmt;
+    
+                  let balanceElement = $('<div></div>')
+                      .addClass('fund-list-amt')
+                      .attr('data-cat', category.id)
+
+                  setTextElementAmount (balanceElement, balanceAmt);
+    
+                  createAmountInput (fundingAmt, [
+                          function (amount, delta) {
+                              
+                              addTextElementAmount ($('#addFundingForm .available-funds'), -delta);
+                          },
+                          function (amount, delta) {
+                              setTextElementAmount (balanceElement, currentAmt + amount);
+                          }
+                      ])
+                      .addClass('fund-list-amt')
+                      .attr('data-cat-id', category.id)
+                      .attr('data-init-value', fundingAmt)
+                      .appendTo(catElement);
+                  
+                  balanceElement.appendTo(catElement);
+    
+                  catElement.appendTo(groupElement);
+              }
+          }
+          
+          groupElement.appendTo('#addFundingForm .cat-fund-items');
+      }
+
+      $("#addFundingDialog").modal ('show');
+
+      $("addFundingForm").off('submit');
+      $("#addFundingForm").submit(function (event) {
+          event.preventDefault();
+          
+          // Validate that the date is in the past.
+          let start = $("#addFundingForm [name='startDate']").val ();
+
+          if (start && start !== "") {
+              let parts = start.split("-");
+              
+              if (parts.length === 3) {
+                  
+                  let startDate = new Date (parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]), 0, 0, 0);
+                  let now = new Date ();
+                  
+                  if (startDate > now) {
+                      //todo: display an error
+                      console.log (startDate.toString () + ', ' + now.toString ());
+                  }
+                  else {
+                      // Get the categories
+                      
+                      let cats = $("#addFundingForm .fund-list-amt:input");
+
+                      let transfers = { date: startDate, from: -1, to: [] };
+                      
+                      for (let cat of cats) {
+                          
+                          let id = parseInt($(cat).attr('data-cat-id'));
+                          let amount = parseFloat($(cat).val ());
+                          
+                          let transfer = { categoryId: id, amount: amount };
+                          
+                          transfers.to.push(transfer);
+                      }
+
+                      $.post({
+                          url: "/category_transfer",
+                          contentType: "application/json",
+                          data: JSON.stringify(transfers),
+                      })
+                      .done (function(response)
+                      {
+                          updateCategories (response);
+
+                          $("#editFundingDialog").modal ('hide');
+                      });
+
+                      $("#addFundingDialog").modal ('hide');
+                  }
+              }
+          }
+      });
+  }
+  
+  
+  function createIconButton (icon, callback) {
+      return $("<div class='btn btn-sm'></div>")
+          .html("<i class='fas fa-" + icon + "'></i>")
+          .addClass('group-button')
+          .on ('click', callback);
+  }
+  
+  
+  function createCategoryInputElement (callback)
+  {
+      return $('<input></input>')
+          .attr('type', 'input')
+          .attr('placeholder', 'Unassigned')
+          .addClass('category-input')
+          .on('blur',
+              function (event) {
+                  if (categorySelectList.visible ()) {
+                          categorySelectList.cancel ();
+                  }
+              })
+          .on('click',
+              function (event) {
+                  if (!categorySelectList.visible ()) {
+                      event.stopPropagation ();
+                      categorySelectList.show (this,
+                          (category) => {
+                              $(this).val(category.group + ":" + category.category);
+                              callback (category);
+                          });
+                  }
+              })
+          .on('input',
+              function (event) {
+                  categorySelectList.filter($(this).val());
+              })
+          .on('keydown',
+              function (event) {
+                  if (categorySelectList.visible ()) {
+                      if (event.key == "Escape") {
+                          event.stopPropagation ();
+                          categorySelectList.cancel ();
+                      }
+                      else if (event.key == "ArrowDown") {
+                          categorySelectList.down ();
+                      }
+                      else if (event.key == "ArrowUp") {
+                          categorySelectList.up ();
+                      }
+                      else if (event.key == "Enter") {
+                          categorySelectList.enter ();
+                      }
+                  }
+                  else {
+                      if (event.key.length == 1 || event.key == "Backspace" || event.key == "Delete" ||
+                          event.key == "ArrowDown") {
+                          categorySelectList.show (this,
+                              (category) => {
+                                  $(this).val(category.group + ":" + category.category);
+                                  callback (category);
+                              });
+                      }
+                  }
+              });
+  }
+  
+  
+  function createSplitItem (category) {
+      let splitItem = $('<div></div>').addClass('transaction-split-item');
+      
+      let categoryElement = createCategoryInputElement ((category) => {
+              amountInput.attr('data-cat-id', category.id);
+          })
+          .appendTo(splitItem);
+
+      let amountInput = createAmountInput (0, function (amount, delta) {
+              addTextElementAmount ($('#editTransactionForm .available-funds'), -delta);
+          })
+          .attr('name', 'amount')
+          .appendTo(splitItem);
+      
+      createIconButton("plus", function () {
+              createSplitItem ().insertAfter(splitItem);
+          })
+          .appendTo(splitItem);
+
+      createIconButton ("minus", function () {
+              if (!splitItem.is(":only-child")) {
+                  
+                  addTextElementAmount ($('#editTransactionForm .available-funds'), amountInput.val ());
+                  splitItem.remove ();
+              }
+          })
+          .appendTo(splitItem);
+
+      if (category !== null && category != undefined) {
+          categoryElement.val(category.group + ':' + category.category);
+
+          amountInput
+              .attr('data-cat-id', category.categoryId)
+              .val(category.amount)
+              .change ();
+      }
+
+      return splitItem;
+  }
+  
+  
+  function updateTransactionCategory (transaction, request, categoryElement) {
+      $.ajax({
+          url: "/transaction/" + transaction.id,
+          contentType: "application/json",
+          method: 'PATCH',
+          data: JSON.stringify(request),
+      })
+      .done (function (response) {
+          updateCategories (response.categories);
+          
+          transaction.categories = response.splits;
+          
+          document.dispatchEvent(new CustomEvent('transactionUpdated', {detail: {transaction: transaction}}));
+      });
+  }
+
+  
+  function openEditTransactionDialog (transaction) {
+
+      let neg = 1;
+      if (transaction.amount < 0) {
+          neg = -1;
+      }
+      
+      setTextElementAmount ($('#editTransactionForm .available-funds'), neg * transaction.amount);
+      
+      $('.transaction-split-items').empty ();
+      
+      if (transaction.categories !== null && transaction.categories !== undefined) {
+          
+          for (let category of transaction.categories) {
+              
+              category.amount  = neg * category.amount;
+              
+              createSplitItem (category).appendTo('.transaction-split-items');
+          }
+      }
+      else {
+          createSplitItem ().appendTo('.transaction-split-items');
+      }
+
+      $("#editTransactionDialog").modal ('show');
+
+      $("#editTransactionForm").off('submit');
+      $("#editTransactionForm").submit(function (event) {
+          event.preventDefault();
+          
+          let request = { splits: [] };
+          
+          let splits = $("#editTransactionForm .transaction-split-items [name='amount']");
+          
+          for (let split of splits) {
+              request.splits.push({categoryId: parseInt($(split).attr('data-cat-id')), amount: neg * parseFloat($(split).val ()) });
+          }
+          
+          updateTransactionCategory (transaction, request, $(this));
+
+          $("#editTransactionDialog").modal ('hide');
+      });
+  }
+  
+  
+  function openFundCatsDialog(transaction, categories) {
+
+      if (transaction.categories) {
+          createCategoryFundingList (categories, transaction.categories);
+      }
+
+      if (transaction) {
+          $('#editFundingForm [name="startDate"]').val(transaction.date);
+      }
+
+      $("#editFundingDialog").modal ('show');
+
+      $("#editFundingForm").off('submit');
+      $("#editFundingForm").submit(function (event) {
+          event.preventDefault();
+  
+          // Validate that the date is in the past.
+          let start = $("#editFundingForm [name='startDate']").val ();
+
+          if (start && start !== "") {
+              let parts = start.split("-");
+              
+              if (parts.length === 3) {
+                  
+                  let startDate = new Date (parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]), 0, 0, 0);
+                  let now = new Date ();
+                  
+                  if (startDate > now) {
+                      console.log (startDate.toString () + ', ' + now.toString ());
+                  }
+                  else {
+                      
+                      // Get the categories
+                      
+                      let cats = $("#editFundingForm .cat-fund-items :input");
+
+                      let transfers = { date: startDate, from: -1, to: [] };
+                      
+                      for (let cat of cats) {
+                          
+                          let initValue = parseFloat($(cat).attr('data-init-value'));
+                          let id = parseInt($(cat).attr('data-id'));
+                          let amount = parseFloat($(cat).val ());
+                          
+                          let delta = amount - initValue;
+                          
+                          if (delta !== 0) {
+                              let transfer = { categoryId: parseInt(cat.name), amount: amount, delta: delta };
+                              
+                              if (id) {
+                                  transfer.id = id;
+                              }
+                              
+                              transfers.to.push(transfer);
+                          }
+                      }
+                      
+                      if (transfers.to.length > 0) {
+                          if (transaction) {
+                              $.ajax({
+                                  url: "/category_transfer/" + transaction.id,
+                                  contentType: "application/json",
+                                  method: 'PATCH',
+                                  data: JSON.stringify(transfers),
+                              })
+                              .done (function(response)
+                              {
+                                  updateCategories (response);
+
+                                  $("#editFundingDialog").modal ('hide');
+                              });
+                          }
+                          else {
+                              $.post({
+                                  url: "/category_transfer",
+                                  contentType: "application/json",
+                                  data: JSON.stringify(transfers),
+                              })
+                              .done (function(response)
+                              {
+                                  updateCategories (response);
+
+                                  $("#editFundingDialog").modal ('hide');
+                              });
+                          }
+                      }
+                      else {
+                          $("#editFundingDialog").modal ('hide');
+                      }
+                          
+                  }
+              }
+          }
+      });
+  }
+
+  function openAccountSelectionDialog (institutionId, accounts) {
+      
+      $("#accountSelectionForm").empty ();
+      
+      for (let account of accounts) {
+          
+          let accountItem = $("<div></div>").addClass('account-select-item');
+          
+          $("<div></div>").text(account.official_name ? account.official_name : account.name)
+              .addClass('account-name')
+              .appendTo(accountItem);
+          
+          $("<div></div>")
+              .addClass('account-type')
+              .append ($("<label></label>").text("Type: "))
+              .append ($("<div></div>").text(account.subtype))
+              .appendTo(accountItem);
+
+          $("<div></div>")
+              .addClass('account-balance')
+              .append ($("<label></label>").text("Balance: "))
+              .append ($("<div></div>").text(formatNumber(account.balances.current)).addClass('currency'))
+              .appendTo(accountItem);
+
+          let selector = $("<select></select>").attr("name", "tracking")
+              .append($("<option></option>").text("None").attr("value", "None"))
+              .append($("<option></option>").text("Transactions").attr("value", "Transactions"))
+              .append($("<option></option>").text("Balance").attr("value", "Balance"))
+              .val("None");
+          
+          $("<div></div>")
+              .addClass('track-selection')
+              .append ($("<label></label").text("Account Tracking "))
+              .append (selector)
+              .appendTo(accountItem);
+          
+          account.selector = selector;
+          
+          accountItem.appendTo ("#accountSelectionForm");
+      }
+      
+      $("#accountSelectionDialog").modal ('show');
+
+      $("#accountSelectionForm").off('submit');
+      $("#accountSelectionForm").submit(function (event) {
+          event.preventDefault();
+          
+          let newAccounts = { accounts: [] };
+          
+          for (let account of accounts) {
+              
+              let selection = $(account.selector).val ();
+              
+              if (selection !== "None") {
+                  
+                  account.tracking = selection;
+                  
+                  newAccounts.accounts.push (account);
+              }
+          }
+
+          $("#accountSelectionDialog").modal ('hide');
+
+          $("#accountStartDialog").modal ('show');
+
+          $("#accountStartForm").off('submit');
+          $("#accountStartForm").submit(function (event) {
+              event.preventDefault();
+              
+              let startDate = $('#accountStartForm').serializeArray ();
+
+              if (startDate.length > 0) {
+                  newAccounts.startDate = startDate[0].value;
+              }
+              
+              $.post ({
+                  url: '/institution/' + institutionId + '/accounts',
+                  headers:
+                  {
+                      "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr('content'),
+                  },
+                  contentType: "application/json",
+                  data: JSON.stringify(newAccounts),
+                  dataType: "json"
+              })
+              .done (function(response) {
+                  populateAccountList (response.accounts);
+                  updateCategories(response.categories);
+                  $("#accountStartDialog").modal ('hide');
+              });
+          });
+      });
+  }
+  
+  
+  $().ready (function () {
+      
+      getConnectedAccounts ();
+      getCategories ();
+      
+      $('#add-group').on('click', function () { openAddGroupDialog ('Add Group'); });
+      $('#fund-cats').on('click', function () {
+          
+          $.getJSON ({
+              url: "/funding_plans"
+          })
+          .done (function (plans) {
+              $.getJSON ({
+                  url: "/categories"
+              })
+              .done (function (categories) {
+                  openAddFundingDialog (plans, categories);
+              });
+          });
+      });
+      
+      $('.modal').on('shown.bs.modal', function () {
+          $(this).find('input:first-of-type').trigger('focus')
+        })
+  });
+  
+  (function($) {
+    // Handles redirect from the oauth response page for the oauth flow.
+    if (document.referrer != null && document.referrer.includes('http://localhost:8000/oauth-response.html')) {
+      $('#container').fadeOut('fast', function() {
+        $('#item_id').text('ITEM_ID');
+        $('#access_token').text('ACCESS_TOKEN');
+        $('#intro').hide();
+        $('#app, #steps').fadeIn('slow');
+      });
+    }
+
+    var products = "{{ env('PLAID_PRODUCTS') }}".split(',');
+
+    var linkHandlerCommonOptions = {
+      apiVersion: 'v2',
+      clientName: 'de•ber•tas',
+      env: "{{ env('PLAID_ENV') }}",
+      product: products,
+      key: "{{ env('PLAID_PUBLIC_KEY') }}",
+      countryCodes: "{{ env('PLAID_COUNTRY_CODES') }}".split(','),
+    };
+    
+    var oauthRedirectUri = "{{ env('PLAID_OAUTH_REDIRECT_URI') }}";
+    if (oauthRedirectUri != '') {
+      linkHandlerCommonOptions.oauthRedirectUri = oauthRedirectUri;
+    }
+    
+    var oauthNonce = "{{ env('PLAID_OAUTH_NONCE') }}";
+    if (oauthNonce != '') {
+      linkHandlerCommonOptions.oauthNonce = oauthNonce;
+    }
+    
+    // This functionality is only relevant for the UK Payment Initiation product.
+    if (products.includes('payment_initiation')) {
+      $('.payment_initiation').show();
+      $.post('/set_payment_token', {}, function(data) {
+        var paymentToken = data.paymentToken;
+        $('#payment_token').text(paymentToken);
+
+        // In the case of payment_initiation product, we need to wait for
+        // payment token to be generated before the Link handler can be
+        // initialized.
+        handler = Plaid.create({
+          ...linkHandlerCommonOptions,
+          paymentToken: paymentToken,
+          language: 'en',
+          onSuccess: function(public_token) {
+            // This public token exchange step is not relevant for the
+            // payment_initiation product and should be skipped.
+            $.post('/get_access_token', {
+              public_token: public_token
+            }, function(data) {
+              $('#container').fadeOut('fast', function() {
+                $('#item_id').text(data.item_id);
+                $('#access_token').text(data.access_token);
+                $('#intro').hide();
+                $('#app, #steps').fadeIn('slow');
+              });
+            });
+          },
+        });
+        $('.add-acct').attr('disabled', false);
+        $('.loading-indicator').hide();
+      });
+    }
+    else {
+      var handler = Plaid.create({
+        ...linkHandlerCommonOptions,
+        // webhook: 'https://your-domain.tld/plaid-webhook',
+        onSuccess:function(public_token, metadata) {
+        
+            $.post({
+                url: '/institution',
+                headers:
+                {
+                    "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr('content'),
+                },
+                contentType: "application/json",
+                data: JSON.stringify({ publicToken: public_token, institution: metadata.institution }),
+                dataType: "json"
+            })
+            .done (function(response) {
+                
+                let newInstitutionElement = createInstitutionElement ({id: response.id, name: response.name, accounts: []})
+
+                let institutionElements = $("#accounts > div");
+                      
+                for (let institutionElement of institutionElements) {
+
+                    let name = $(institutionElement).find('.institution-name').text ();
+                      
+                    let compare = name.localeCompare(response.name);
+                      
+                    if (compare > 0) {
+                          
+                        newInstitutionElement.insertBefore(institutionElement);
+                        newInstitutionElement = null;
+                        break;
+                    }
+                }
+                  
+                if (newInstitutionElement !== null) {
+                    newInstitutionElement.appendTo("#accounts");
+                }
+
+                openAccountSelectionDialog (response.id, response.accounts);
+            });
+        },
+      });
+                    
+      $('.add-acct').attr('disabled', false);
+      $('.loading-indicator').hide();
+    }
+    
+    $('.add-acct').on('click', function(e) {
+        handler.open();
+      });
+
+  })(jQuery);
+
+  </script>
+</body>
+</html>
