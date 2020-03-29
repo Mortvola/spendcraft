@@ -281,8 +281,8 @@ class InstitutionController {
                 result.accounts = [{ id: request.params.acctId, balance: details.balance}];
             }
             else {
-                let balanceResponse = await client.getBalance (acct.rows[0].access_token, {
-                    account_ids: [acct.rows[0].ext_account_id]});
+                let balanceResponse = await client.getBalance (acct[0].access_token, {
+                    account_ids: [acct[0].plaidAccountId]});
                 
                 await trx.table("accounts").where("id", request.params.acctId).update("balance", balanceResponse.accounts[0].balances.current);
                 
@@ -294,6 +294,77 @@ class InstitutionController {
         
         return result;
     }
+    
+    async updateTx ({request}) {
+        let trx = await Database.beginTransaction ();
+
+        let result = {categories: []}
+        
+        let splits = await trx.select("category_id AS categoryId", "amount")
+            .from("category_splits")
+            .where ("transaction_id", request.params.txId);
+
+        if (splits.length > 0) {
+            
+            for (let split of splits) {
+                let cat = await this.subtractFromCategoryBalance (trx, split.categoryId, split.amount);
+
+                result.categories.push({id: cat.category.id, amount: cat.amount});
+            }
+            
+            await trx.table('category_splits').where ('transaction_id', request.params.txId).delete();
+        }
+        else {
+            // There are no category splits. Debit the "Unassigned" category
+            
+            let trans = await trx.select("amount").from("transactions").where ("id", request.params.txId);
+            
+            let cat = await this.subtractFromCategoryBalance (trx, -2, trans[0].amount);
+
+            result.categories.push({id: cat.category.id, amount: cat.amount});
+        }
+        
+        if (request.body.splits.length > 0) {
+
+            for (let split of request.body.splits) {
+
+                if (split.categoryId !== -2) {
+                    await trx.insert({transaction_id: request.params.txId, category_id: split.categoryId, amount: split.amount}).into('category_splits');
+                }
+                
+                let cat = await this.subtractFromCategoryBalance (trx, split.categoryId, -split.amount);
+
+                // Determine if the category is already in the array.
+                const index = result.categories.findIndex(c => c.id === cat.category.id);
+
+                // If the category is already in the array then simply update the amount.
+                // Otherwise, add the category and amount to the array.
+                if (index !== -1) {
+                    result.categories[index].amount = cat.amount;
+                }
+                else {
+                    result.categories.push({id: cat.category.id, amount: cat.amount});
+                }
+            }
+        }
+        
+        let transCats = await trx.select(
+                "category_id as categoryId", "splits.amount AS amount", "cats.name AS category", "groups.name AS group")
+            .from ("category_splits AS splits")
+            .join ("categories AS cats", "cats.id", "splits.category_id")
+            .join ("groups", "groups.id", "cats.group_id")
+            .where ("splits.transaction_id", request.params.txId);
+
+        result.splits = null;
+        if (transCats.length > 0) {
+            result.splits = transCats;
+        }
+
+        await trx.commit ();
+
+        return result;
+    }
+
 }
 
 module.exports = InstitutionController

@@ -41,3 +41,5 @@ Route.post ('/institution/:instId/accounts/:acctId/transactions/sync', 'Institut
 
 Route.get ('/funding_plans', 'FundingPlanController.getAll');
 Route.get ('/funding_plan/:planId', 'FundingPlanController.getPlan');
+
+Route.patch ('/transaction/:txId', "InstitutionController.updateTx");
