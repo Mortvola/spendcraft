@@ -11,7 +11,7 @@ var plaidClient = new plaid.Client(
     Env.get ('PLAID_SECRET'),
     Env.get ('PLAID_PUBLIC_KEY'),
     plaid.environments[Env.get('PLAID_ENV')],
-    {version: '2019-05-29', clientApp: 'Plaid Quickstart'}
+    {version: '2019-05-29', clientApp: Env.get('APP_NAME')}
   );
 
 
