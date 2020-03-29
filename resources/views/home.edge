@@ -998,7 +998,11 @@
                   refresh.children("i").addClass('rotate');
                   
                   $.post ({
-                      url: "/account_refresh/" + acct.id, 
+                      url: "/institution/" + institution.id + "/accounts/" + acct.id + "/transactions/sync", 
+                      headers:
+                      {
+                          "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr('content'),
+                      },
                       contentType: "application/json"
                   })
                   .done (function (response) {
@@ -1008,7 +1012,8 @@
                       }
                       
                       document.dispatchEvent(new Event('accountRefreshed'));
-
+                  })
+                  .always (function () {
                       refresh.children("i").removeClass('rotate');
                   });
               });

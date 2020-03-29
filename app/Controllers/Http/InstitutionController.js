@@ -11,7 +11,7 @@ var plaidClient = new plaid.Client(
     Env.get ('PLAID_SECRET'),
     Env.get ('PLAID_PUBLIC_KEY'),
     plaid.environments[Env.get('PLAID_ENV')],
-    {version: '2019-05-29', clientApp: Env.get('APP_NAME')}
+    {version: '2019-05-29', clientApp: escape(Env.get('APP_NAME'))}
   );
 
 
@@ -96,8 +96,6 @@ class InstitutionController {
 
         let accountsResponse = await plaidClient.getAccounts(accessToken);
         
-        console.log(JSON.stringify(accountsResponse, null, 4));
-        
         let accounts = accountsResponse.accounts;
         
         let existingAccts = await Database.select("plaid_account_id").from("accounts").where("institution_id", institutionId);
@@ -178,7 +176,7 @@ class InstitutionController {
         return {accounts: accounts, categories: [{id: -1, amount: fundingAmount}, {id: -2, amount: unassignedAmount}]};
     }
     
-    async addTransactions (trx, accessToken, accountId, extAccountId, startDate)
+    async addTransactions (trx, accessToken, accountId, plaidAccountId, startDate)
     {
         var startDate = moment(startDate).format('YYYY-MM-DD');
         var endDate = moment().format('YYYY-MM-DD');
@@ -186,28 +184,21 @@ class InstitutionController {
         let transactionsResponse = await plaidClient.getTransactions(accessToken, startDate, endDate, {
             count: 250,
             offset: 0,
-            account_ids: [extAccountId]
+            account_ids: [plaidAccountId]
         });
-
-//        console.log(JSON.stringify(transactionsResponse.accounts[0], null, 4));
 
         let sum = 0;
         let pendingSum = 0;
         
         for (let transaction of transactionsResponse.transactions) {
 
-//            console.log(JSON.stringify (transaction, null, 4));
-
             // Only consider non-pending transactions
             if (!transaction.pending) {
-//                console.log(transaction.transaction_id);
 
                 // First check to see if the transaction is present. If it is then don't insert it.
                 let exists = await trx.select(Database.raw("EXISTS (SELECT 1 FROM transactions WHERE transaction_id = '" + transaction.transaction_id + "') AS exists"));
                 
                 if (!exists[0].exists) {
-                    
-                    console.log(JSON.stringify (transaction, null, 4));
                     
                     await trx.insert({transaction_id: transaction.transaction_id, account_id: accountId,
                           name: transaction.name, date: transaction.date, amount: -transaction.amount}).into('transactions');
@@ -216,16 +207,11 @@ class InstitutionController {
                 }
             }
             else {
-                console.log(JSON.stringify (transaction, null, 4));
-
                 pendingSum += transaction.amount;
             }
         }
         
         let balance = transactionsResponse.accounts[0].balances.current;
-        
-        console.log (JSON.stringify(transactionsResponse.accounts[0].balances, null, 4));
-        console.log ("balance: " + balance + ", sum: " + sum + ", pending sum: " + pendingSum);
         
         let cat = null;
         
@@ -240,8 +226,6 @@ class InstitutionController {
             balance = -balance;
         }
 
-        console.log("Account id: " + accountId);
-        
         await trx.table("accounts").where("id", accountId).update("balance", balance);
  
         return { balance: balance,  sum: sum, cat: cat };
@@ -274,6 +258,42 @@ class InstitutionController {
         };
     }
 
+    async sync ({request}) {
+        const trx = await Database.beginTransaction ();
+
+        let acct = await trx.select ("access_token AS accessToken", "acct.id AS accountId", "plaid_account_id AS plaidAccountId", "start_date AS startDate", "tracking")
+            .from("institutions AS inst")
+            .join("accounts AS acct", "acct.institution_id", "inst.id")
+            .where ("acct.id", request.params.acctId);
+
+        let result = {};
+        
+        if (acct.length > 0) {
+            
+            if (acct[0].tracking == "Transactions") {
+               
+                let details = await this.addTransactions (trx,  acct[0].accessToken, acct[0].accountId, acct[0].plaidAccountId, acct[0].startDate);
+                
+                if (details.cat) {
+                    result.categories = [{id: -2, amount: details.cat.amount}];
+                }
+                
+                result.accounts = [{ id: request.params.acctId, balance: details.balance}];
+            }
+            else {
+                let balanceResponse = await client.getBalance (acct.rows[0].access_token, {
+                    account_ids: [acct.rows[0].ext_account_id]});
+                
+                await trx.table("accounts").where("id", request.params.acctId).update("balance", balanceResponse.accounts[0].balances.current);
+                
+                result.accounts = [{ id: request.params.acctId, balance: balanceResponse.accounts[0].balances.current}];
+            }
+        }
+
+        await trx.commit ();
+        
+        return result;
+    }
 }
 
 module.exports = InstitutionController

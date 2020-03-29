@@ -35,9 +35,9 @@ Route.get ('/connected_accounts', 'InstitutionController.all');
 Route.get ('/account/:acctId/transactions', 'AccountController.transactions');
 
 Route.post ('/institution', 'InstitutionController.add')
-
 Route.get ('/institution/:instId/accounts', 'InstitutionController.get')
 Route.post ('/institution/:instId/accounts', 'InstitutionController.addAccounts')
+Route.post ('/institution/:instId/accounts/:acctId/transactions/sync', 'InstitutionController.sync');
 
 Route.get ('/funding_plans', 'FundingPlanController.getAll');
 Route.get ('/funding_plan/:planId', 'FundingPlanController.getPlan');
