@@ -7,7 +7,7 @@ const Persona = use('Persona')
 
 class UserController {
 
-    async login ({ auth, request, response }) {
+    async login ({ auth, request }) {
         const payload = request.only(['uid', 'password'])
         
         const user = await Persona.verify(payload)
@@ -36,12 +36,14 @@ class UserController {
         const user = await Persona.register(payload)
     }
 
-    async verifyEmail ({request}) {
+    async verifyEmail ({request, response}) {
         
         let params = request.get ();
         console.log(params);
         
-        await Persona.verifyEmail(params.token)
+        await Persona.verifyEmail(params.token);
+        
+        response.redirect("/email_verified")
     }
 }
 

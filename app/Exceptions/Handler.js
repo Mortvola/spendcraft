@@ -21,14 +21,11 @@ class ExceptionHandler extends BaseExceptionHandler {
    * @return {void}
    */
     async handle (error, { request, response }) {
-        console.log(error);
-      
-        if (error.name == 'ValidationException') {
-            response.status(error.status).send({errors: error.messages});
+        if (error.name != 'ValidationException') {
+            return super.handle(...arguments)
         }
-        else {
-            response.status(error.status).send(error)
-        }
+
+        response.status(error.status).send({errors: error.messages});
     }
 
   /**

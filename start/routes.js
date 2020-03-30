@@ -23,6 +23,7 @@ Route.group (() => {
     Route.post('/register', 'UserController.register')
     Route.get('/activate', 'UserController.verifyEmail').as('emailVerification')
     Route.post('/login', 'UserController.login')
+    Route.on('/email_verified').render('emailVerified');
 }).middleware('guest')
 
 Route.group (() => {
