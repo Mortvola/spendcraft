@@ -68,8 +68,56 @@
 	</div> <!--  Modal -->
         
         
+	<!-- Modal -->
+	<div class="modal fade" id="loginDialog" role="dialog">
+	    <div class="modal-dialog">
+	
+	        <!-- Modal content-->
+	        <div class="modal-content">
+	            <div class="modal-header">
+	                <h4 class="modal-title">Login</h4>
+	                <button type="button" class="close" data-dismiss="modal">&times;</button>
+	            </div>
+	            <div class="modal-body">
+	                <form id='loginForm'>
+                       <div class="form-group row">
+                            <label for="username" class="col-md-4 col-form-label text-md-right">Username</label>
+
+                            <div class="col-md-6">
+                                <input id="username" type="text" class="form-control" name="uid" value="{{ old('username') }}" required autocomplete="username" autofocus>
+
+                                <span class="invalid-feedback" name="uid" role="alert">
+                                    <strong></strong>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="form-group row">
+                            <label for="password" class="col-md-4 col-form-label text-md-right">Password</label>
+
+                            <div class="col-md-6">
+                                <input id="password" type="password" class="form-control" name="password" required autocomplete="new-password">
+
+                                    <span class="invalid-feedback" name="password" role="alert">
+                                        <strong></strong>
+                                    </span>
+                            </div>
+                        </div>
+
+	                </form>
+	            </div>
+	            <div class="modal-footer">
+	                <button type="button" class="btn" data-dismiss="modal">Cancel</button>
+	                <button type="submit" form='loginForm' class="btn btn-primary">Login</button>
+	            </div>
+	        </div>
+	
+	    </div>
+	</div> <!--  Modal -->
+
     <script>
     	$().ready(function () {
+
 			$('#registerMenuItem').on('click', function () {
 			    $("#registerDialog").modal ('show');
 			
@@ -109,7 +157,6 @@
                     			$("#registerForm [name='" + error.field + "'] strong").text (error.message);
                     		}
                     	}
-                    	console.log(jqXHR.responseJSON);
                     })
                     .done (function (response) {
 				    	$("#registerDialog").modal ('hide');
@@ -117,6 +164,52 @@
 
 			    });
 			});
+
+			$('#loginMenuItem').on('click', function () {
+			    $("#loginDialog").modal ('show');
+			
+			    $("#loginForm [name]").removeClass("is-invalid");
+			    $("#loginForm [name] strong").text ("");
+			
+			    $("#loginForm").off('submit');
+			    $("#loginForm").submit(function (event) {
+			        event.preventDefault();
+			        
+			        let request = {
+			        	uid: $("#loginForm [name='uid']").val (),
+			        	password: $("#loginForm [name='password']").val (),
+			       	}
+
+			        $("#loginForm [name]").removeClass("is-invalid");
+			        $("#loginForm [name] strong").text ("");
+			        
+                    $.post ({
+                        url: "/login", 
+                        headers:
+                        {
+                            "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr('content'),
+                        },
+                        contentType: "application/json",
+			            data: JSON.stringify(request),
+                    })
+                    .fail(function (jqXHR) {
+                    	
+                    	if (jqXHR.responseJSON.errors) {
+                    	
+                    		for (let error of jqXHR.responseJSON.errors) {
+                    		
+                    			$("#loginForm [name='" + error.field + "']").filter(":input").addClass ("is-invalid");
+                    			$("#loginForm [name='" + error.field + "'] strong").text (error.message);
+                    		}
+                    	}
+                    })
+                    .done (function (response) {
+						window.location.assign(response)
+                    })
+
+			    });
+			});
+
     	});
     </script>
     

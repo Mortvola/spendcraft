@@ -20,11 +20,15 @@ Route.on('/').render('index')
 
 Route.group (() => {
     
-    Route.post('/register', 'RegisterController.register')
+    Route.post('/register', 'UserController.register')
+    Route.get('/activate', 'UserController.verifyEmail').as('emailVerification')
     Route.post('/login', 'UserController.login')
-})
+}).middleware('guest')
 
 Route.group (() => {
+    
+    Route.on('/home').render('index');
+    Route.get('/logout', 'UserController.logout')
     
     Route.get('/users/:id', 'UserController.show')
 
