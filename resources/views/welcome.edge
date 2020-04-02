@@ -1,17 +1,17 @@
     @include('menubar')
 
-	<!-- Modal -->
-	<div class="modal fade" id="registerDialog" role="dialog">
-	    <div class="modal-dialog">
-	
-	        <!-- Modal content-->
-	        <div class="modal-content">
-	            <div class="modal-header">
-	                <h4 class="modal-title">Register</h4>
-	                <button type="button" class="close" data-dismiss="modal">&times;</button>
-	            </div>
-	            <div class="modal-body">
-	                <form id='registerForm'>
+    <!-- Modal -->
+    <div class="modal fade" id="registerDialog" role="dialog">
+        <div class="modal-dialog">
+    
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Register</h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id='registerForm'>
                        <div class="form-group row">
                             <label for="username" class="col-md-4 col-form-label text-md-right">Username</label>
 
@@ -56,30 +56,30 @@
                             </div>
                         </div>
 
-	                </form>
-	            </div>
-	            <div class="modal-footer">
-	                <button type="button" class="btn" data-dismiss="modal">Cancel</button>
-	                <button type="submit" form='registerForm' class="btn btn-primary">Register</button>
-	            </div>
-	        </div>
-	
-	    </div>
-	</div> <!--  Modal -->
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn" data-dismiss="modal">Cancel</button>
+                    <button type="submit" form='registerForm' class="btn btn-primary">Register</button>
+                </div>
+            </div>
+    
+        </div>
+    </div> <!--  Modal -->
         
         
-	<!-- Modal -->
-	<div class="modal fade" id="loginDialog" role="dialog">
-	    <div class="modal-dialog">
-	
-	        <!-- Modal content-->
-	        <div class="modal-content">
-	            <div class="modal-header">
-	                <h4 class="modal-title">Login</h4>
-	                <button type="button" class="close" data-dismiss="modal">&times;</button>
-	            </div>
-	            <div class="modal-body">
-	                <form id='loginForm'>
+    <!-- Modal -->
+    <div class="modal fade" id="loginDialog" role="dialog">
+        <div class="modal-dialog">
+    
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Login</h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id='loginForm'>
                        <div class="form-group row">
                             <label for="username" class="col-md-4 col-form-label text-md-right">Username</label>
 
@@ -104,40 +104,40 @@
                             </div>
                         </div>
 
-	                </form>
-	            </div>
-	            <div class="modal-footer">
-	                <button type="button" class="btn" data-dismiss="modal">Cancel</button>
-	                <button type="submit" form='loginForm' class="btn btn-primary">Login</button>
-	            </div>
-	        </div>
-	
-	    </div>
-	</div> <!--  Modal -->
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn" data-dismiss="modal">Cancel</button>
+                    <button type="submit" form='loginForm' class="btn btn-primary">Login</button>
+                </div>
+            </div>
+    
+        </div>
+    </div> <!--  Modal -->
 
     <script>
-    	$().ready(function () {
+        $().ready(function () {
 
-			$('#registerMenuItem').on('click', function () {
-			    $("#registerDialog").modal ('show');
-			
-			    $("#registerForm [name]").removeClass("is-invalid");
-			    $("#registerForm [name] strong").text ("");
-			
-			    $("#registerForm").off('submit');
-			    $("#registerForm").submit(function (event) {
-			        event.preventDefault();
-			        
-			        let request = {
-			        	username: $("#registerForm [name='username']").val (),
-			        	email: $("#registerForm [name='email']").val (),
-			        	password: $("#registerForm [name='password']").val (),
-			        	password_confirmation: $("#registerForm [name='password_confirmation']").val ()
-			       	}
+            $('#registerMenuItem').on('click', function () {
+                $("#registerDialog").modal ('show');
+            
+                $("#registerForm [name]").removeClass("is-invalid");
+                $("#registerForm [name] strong").text ("");
+            
+                $("#registerForm").off('submit');
+                $("#registerForm").submit(function (event) {
+                    event.preventDefault();
+                    
+                    let request = {
+                        username: $("#registerForm [name='username']").val (),
+                        email: $("#registerForm [name='email']").val (),
+                        password: $("#registerForm [name='password']").val (),
+                        password_confirmation: $("#registerForm [name='password_confirmation']").val ()
+                       }
 
-			        $("#registerForm [name]").removeClass("is-invalid");
-			        $("#registerForm [name] strong").text ("");
-			        
+                    $("#registerForm [name]").removeClass("is-invalid");
+                    $("#registerForm [name] strong").text ("");
+                    
                     $.post ({
                         url: "/register", 
                         headers:
@@ -145,44 +145,44 @@
                             "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr('content'),
                         },
                         contentType: "application/json",
-			            data: JSON.stringify(request),
+                        data: JSON.stringify(request),
                     })
                     .fail(function (jqXHR) {
-                    	
-                    	if (jqXHR.responseJSON.errors) {
-                    	
-                    		for (let error of jqXHR.responseJSON.errors) {
-                    		
-                    			$("#registerForm [name='" + error.field + "']").filter(":input").addClass ("is-invalid");
-                    			$("#registerForm [name='" + error.field + "'] strong").text (error.message);
-                    		}
-                    	}
+                        
+                        if (jqXHR.responseJSON.errors) {
+                        
+                            for (let error of jqXHR.responseJSON.errors) {
+                            
+                                $("#registerForm [name='" + error.field + "']").filter(":input").addClass ("is-invalid");
+                                $("#registerForm [name='" + error.field + "'] strong").text (error.message);
+                            }
+                        }
                     })
                     .done (function (response) {
-				    	$("#registerDialog").modal ('hide');
+                        $("#registerDialog").modal ('hide');
                     })
 
-			    });
-			});
+                });
+            });
 
-			$('#loginMenuItem').on('click', function () {
-			    $("#loginDialog").modal ('show');
-			
-			    $("#loginForm [name]").removeClass("is-invalid");
-			    $("#loginForm [name] strong").text ("");
-			
-			    $("#loginForm").off('submit');
-			    $("#loginForm").submit(function (event) {
-			        event.preventDefault();
-			        
-			        let request = {
-			        	uid: $("#loginForm [name='uid']").val (),
-			        	password: $("#loginForm [name='password']").val (),
-			       	}
+            $('#loginMenuItem').on('click', function () {
+                $("#loginDialog").modal ('show');
+            
+                $("#loginForm [name]").removeClass("is-invalid");
+                $("#loginForm [name] strong").text ("");
+            
+                $("#loginForm").off('submit');
+                $("#loginForm").submit(function (event) {
+                    event.preventDefault();
+                    
+                    let request = {
+                        uid: $("#loginForm [name='uid']").val (),
+                        password: $("#loginForm [name='password']").val (),
+                       }
 
-			        $("#loginForm [name]").removeClass("is-invalid");
-			        $("#loginForm [name] strong").text ("");
-			        
+                    $("#loginForm [name]").removeClass("is-invalid");
+                    $("#loginForm [name] strong").text ("");
+                    
                     $.post ({
                         url: "/login", 
                         headers:
@@ -190,26 +190,26 @@
                             "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr('content'),
                         },
                         contentType: "application/json",
-			            data: JSON.stringify(request),
+                        data: JSON.stringify(request),
                     })
                     .fail(function (jqXHR) {
-                    	
-                    	if (jqXHR.responseJSON.errors) {
-                    	
-                    		for (let error of jqXHR.responseJSON.errors) {
-                    		
-                    			$("#loginForm [name='" + error.field + "']").filter(":input").addClass ("is-invalid");
-                    			$("#loginForm [name='" + error.field + "'] strong").text (error.message);
-                    		}
-                    	}
+                        
+                        if (jqXHR.responseJSON.errors) {
+                        
+                            for (let error of jqXHR.responseJSON.errors) {
+                            
+                                $("#loginForm [name='" + error.field + "']").filter(":input").addClass ("is-invalid");
+                                $("#loginForm [name='" + error.field + "'] strong").text (error.message);
+                            }
+                        }
                     })
                     .done (function (response) {
-						window.location.assign(response)
+                        window.location.assign(response)
                     })
 
-			    });
-			});
+                });
+            });
 
-    	});
+        });
     </script>
     

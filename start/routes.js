@@ -31,9 +31,15 @@ Route.group (() => {
     Route.on('/home').render('index');
     Route.get('/logout', 'UserController.logout')
     
-    Route.get('/users/:id', 'UserController.show')
-
-    Route.get ('/categories', 'CategoryController.get')
+    Route.get ('/groups', 'CategoryController.get')
+    Route.post('/groups', 'CategoryController.addGroup').validator('AddGroup')
+    Route.patch('/groups/:groupId', 'CategoryController.updateGroup').validator('UpdateGroup')
+    Route.delete('/groups/:groupId', 'CategoryController.deleteGroup').validator('DeleteGroup')
+    
+    Route.get ('/groups/:groupId/categories', 'CategoryController.get')
+    Route.post('/groups/:groupId/categories', 'CategoryController.addCategory').validator('AddCategory')
+    Route.patch('/groups/:groupId/categories/:catId', 'CategoryController.updateCategory').validator('UpdateCategory')
+    Route.delete('/groups/:groupId/categories/:catId', 'CategoryController.deleteCategory').validator('DeleteCategory')
     
     Route.get ('/category/:catId/transactions', 'CategoryController.transactions');
 

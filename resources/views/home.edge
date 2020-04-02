@@ -45,12 +45,17 @@
                       <form id='addGroupForm'>
                           <label>Group:</label>
                           <input type="text" class='form-control' name='name'/>
-                      <br/>
+                          <br/>
+                          <span class="invalid-feedback" name="error" role="alert">
+                              <strong></strong>
+                          </span>
                       </form>
                   </div>
                   <div class="modal-footer">
+                      <button type="button" name="delete" class="btn btn-danger">Delete</button>
+                      <div></div>
                       <button type="button" class="btn" data-dismiss="modal">Cancel</button>
-                      <button type="submit" form='addGroupForm' class="btn btn-default">Save</button>
+                      <button type="submit" form='addGroupForm' class="btn btn-primary">Save</button>
                   </div>
               </div>
 
@@ -71,12 +76,17 @@
                       <form id='addCategoryForm'>
                           <label>Category:</label>
                           <input type="text" class='form-control' name='name'/>
-                      <br/>
+                          <br/>
+                          <span class="invalid-feedback" name="error" role="alert">
+                              <strong></strong>
+                          </span>
                       </form>
                   </div>
                   <div class="modal-footer">
+                      <button type="button" name="delete" class="btn btn-danger">Delete</button>
+                      <div></div>
                       <button type="button" class="btn" data-dismiss="modal">Cancel</button>
-                      <button type="submit" form='addCategoryForm' class="btn btn-default">Save</button>
+                      <button type="submit" form='addCategoryForm' class="btn btn-primary">Save</button>
                   </div>
               </div>
 
@@ -1060,7 +1070,7 @@
       
       if (groupId != -1) {
 
-          createIconButton ("edit", function () { showEditCategoryDialog (id, catNameElement); })
+          createIconButton ("edit", function () { openEditCategoryDialog (groupId, id, catElement); })
               .appendTo(nameBar);
       }
             
@@ -1080,9 +1090,13 @@
   }
   
 
-  function showEditCategoryDialog (id, nameElement) {
+  function openEditCategoryDialog (groupId, id, catElement) {
+      
       $('#addCategoryDialog .modal-title').text('Edit Category');
-      $('#addCategoryDialog [name="name"]').val(nameElement.text ());
+      $('#addCategoryDialog [name="name"]').val(catElement.find('.cat-list-name').text ());
+
+      $("#addCategoryForm [name='error']").css("display", "none");
+      $("#addCategoryForm [name='error'] strong").text ("");
 
       $("#addCategoryDialog").modal ('show');
 
@@ -1090,26 +1104,78 @@
       $("#addCategoryForm").submit(function (event) {
           event.preventDefault();
           
+          $("#addCategoryForm [name='error']").css("display", "none");
+          $("#addCategoryForm [name='error'] strong").text ("");
+
           let cat = $('#addCategoryForm').serializeArray ();
 
           $.ajax ({
-              url: "/category/" + id,
+              url: "/groups/" + groupId + "/categories/" + id,
+              headers:
+              {
+                  "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr('content'),
+              },
               contentType: "application/json",
               method: 'PATCH',
               data: JSON.stringify({ name: cat[0].value }),
           })
+          .fail (function(jqXHR) {
+              if (jqXHR.responseJSON.errors) {
+                  
+                  for (let error of jqXHR.responseJSON.errors) {
+                      $("#addCategoryForm [name='error']").css("display", "block");
+                      $("#addCategoryForm [name='error'] strong").text (error.message);
+                  }
+              }
+          })
           .done (function(response) {
 
-              $(nameElement).text(response.name);
+              $(catElement.find('.cat-list-name')).text(response.name);
               $("#addCategoryDialog").modal ('hide');
           });
+      });
+      
+      $("#addCategoryDialog [name='delete']")
+          .css('visibility', 'visible')
+          .on('click', function () {
+
+              $("#addCategoryForm [name='error']").css("display", "none");
+              $("#addCategoryForm [name='error'] strong").text ("");
+
+              $.ajax ({
+                  url: "/groups/" + groupId + "/categories/" + id,
+                  headers:
+                  {
+                      "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr('content'),
+                  },
+                  contentType: "application/json",
+                  method: 'DELETE'
+              })
+              .fail (function(jqXHR) {
+                  if (jqXHR.responseJSON.errors) {
+                      
+                      for (let error of jqXHR.responseJSON.errors) {
+                          $("#addCategoryForm [name='error']").css("display", "block");
+                          $("#addCategoryForm [name='error'] strong").text (error.message);
+                      }
+                  }
+              })
+              .done (function(response) {
+    
+                  $(catElement).remove ();
+                  $("#addCategoryDialog").modal ('hide');
+              });
       });
   }
 
   
-  function showAddCategoryDialog (groupId, groupElement) {
+  function openAddCategoryDialog (groupId, groupElement) {
+      $("#addCategoryDialog [name='delete']").css('visibility', 'hidden');
       $('#addCategoryDialog .modal-title').text('Add Category');
       $('#addCategoryDialog [name="name"]').val('');
+
+      $("#addCategoryForm [name='error']").css("display", "none");
+      $("#addCategoryForm [name='error'] strong").text ("");
 
       $("#addCategoryDialog").modal ('show');
 
@@ -1117,12 +1183,28 @@
       $("#addCategoryForm").submit(function (event) {
           event.preventDefault();
           
+          $("#addCategoryForm [name='error']").css("display", "none");
+          $("#addCategoryForm [name='error'] strong").text ("");
+
           let cat = $('#addCategoryForm').serializeArray ();
 
           $.post({
-              url: "/category",
+              url: "/groups/" + groupId + "/categories",
+              headers:
+              {
+                  "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr('content'),
+              },
               contentType: "application/json",
               data: JSON.stringify({ groupId: groupId, name: cat[0].value }),
+          })
+          .fail (function(jqXHR) {
+              if (jqXHR.responseJSON.errors) {
+                  
+                  for (let error of jqXHR.responseJSON.errors) {
+                      $("#addCategoryForm [name='error']").css("display", "block");
+                      $("#addCategoryForm [name='error'] strong").text (error.message);
+                  }
+              }
           })
           .done (function(response) {
               let newCategoryElement = createCategoryTreeElement (response.id, groupId, response.name, response.amount);
@@ -1168,10 +1250,10 @@
       // Add the 'Add category' and other buttons (but not to the System group).
       if (group.id != -1) {
        
-          createIconButton ("plus", function () { showAddCategoryDialog (group.id, groupElement); })
+          createIconButton ("plus", function () { openAddCategoryDialog (group.id, groupElement); })
               .appendTo(groupElementBar);
     
-          createIconButton ("edit", function () { openAddGroupDialog ('Edit Group', group.id, groupNameElement); })
+          createIconButton ("edit", function () { openGroupDialog (group.id, groupElement); })
               .appendTo(groupElementBar);
       }
       
@@ -1196,7 +1278,7 @@
   function getCategories ()
   {
       $.getJSON({
-          url: "/categories"
+          url: "/groups"
       })
       .done (function (response) {
           createCategoryTree (response);
@@ -1205,13 +1287,51 @@
   }
   
 
-  function openAddGroupDialog(title, groupId, groupNameElement) {
-      $('#addGroupDialog .modal-title').text(title);
+  function openGroupDialog(groupId, groupElement) {
       
-      $('#addGroupDialog [name="name"]').val("");
-      
-      if (groupNameElement) {
-          $('#addGroupDialog [name="name"]').val(groupNameElement.text ());
+      $("#addGroupForm [name='error']").css("display", "none");
+      $("#addGroupForm [name='error'] strong").text ("");
+
+      if (groupElement) {
+          $('#addGroupDialog .modal-title').text('Edit Group');
+
+          $('#addGroupDialog [name="name"]').val(groupElement.find('.group-name').text ());
+          $("#addGroupDialog [name='delete']")
+              .css('visibility', 'visible')
+              .on('click', function () {
+                  
+                  $("#addGroupForm [name='error']").css("display", "none");
+                  $("#addGroupForm [name='error'] strong").text ("");
+                  
+                  $.ajax ({
+                      url: "/groups/" + groupId,
+                      headers:
+                      {
+                          "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr('content'),
+                      },
+                      contentType: "application/json",
+                      method: 'DELETE'
+                  })
+                  .fail (function(jqXHR) {
+                      if (jqXHR.responseJSON.errors) {
+                          
+                          for (let error of jqXHR.responseJSON.errors) {
+                              $("#addGroupForm [name='error']").css("display", "block");
+                              $("#addGroupForm [name='error'] strong").text (error.message);
+                          }
+                      }
+                  })
+                  .done (function(response) {
+                      $(groupElement).remove ();
+                      $("#addGroupDialog").modal ('hide');
+                  });
+              });
+      }
+      else {
+          $('#addGroupDialog .modal-title').text('Add Group');
+          
+          $('#addGroupDialog [name="name"]').val("");
+          $("#addGroupDialog [name='delete']").css('visibility', 'hidden')
       }
 
       $("#addGroupDialog").modal ('show');
@@ -1220,26 +1340,51 @@
       $("#addGroupForm").submit(function (event) {
           event.preventDefault();
           
+          $("#addGroupForm [name='error']").css("display", "none");
+          $("#addGroupForm [name='error'] strong").text ("");
+
           let group = $('#addGroupForm').serializeArray ();
 
           if (groupId) {
               $.ajax ({
-                  url: "/group/" + groupId,
+                  url: "/groups/" + groupId,
                   contentType: "application/json",
                   method: 'PATCH',
                   data: JSON.stringify({ name: group[0].value }),
               })
+              .fail (function(jqXHR) {
+                  if (jqXHR.responseJSON.errors) {
+                      
+                      for (let error of jqXHR.responseJSON.errors) {
+                          $("#addGroupForm [name='error']").css("display", "block");
+                          $("#addGroupForm [name='error'] strong").text (error.message);
+                      }
+                  }
+              })
               .done (function(response)
               {
-                  $(groupNameElement).text(response.name);
+                  $(groupElement).find('.group-name').text(response.name);
                   $("#addGroupDialog").modal ('hide');
               });
           }
           else {
               $.post({
-                  url: "/group",
+                  url: "/groups",
+                  headers:
+                  {
+                      "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr('content'),
+                  },
                   contentType: "application/json",
                   data: JSON.stringify({ name: group[0].value }),
+              })
+              .fail (function(jqXHR) {
+                  if (jqXHR.responseJSON.errors) {
+                      
+                      for (let error of jqXHR.responseJSON.errors) {
+                          $("#addGroupForm [name='error']").css("display", "block");
+                          $("#addGroupForm [name='error'] strong").text (error.message);
+                      }
+                  }
               })
               .done (function(response)
               {
@@ -1942,7 +2087,7 @@
       getConnectedAccounts ();
       getCategories ();
       
-      $('#add-group').on('click', function () { openAddGroupDialog ('Add Group'); });
+      $('#add-group').on('click', function () { openGroupDialog (); });
       $('#fund-cats').on('click', function () {
           
           $.getJSON ({

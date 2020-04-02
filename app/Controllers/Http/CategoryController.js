@@ -5,11 +5,13 @@ const Database = use('Database');
 
 class CategoryController {
     
-    async get () {
+    async get ({auth}) {
         
         let rows = await Database.select ('g.id AS groupId', 'g.name AS groupName', 'c.id AS categoryId', 'c.name as categoryName', 'amount')
             .table('groups AS g')
             .leftJoin ('categories AS c', 'c.group_id', 'g.id')
+            .where ('user_id', auth.user.id)
+            .orWhere ('user_id', -1)
             .orderBy('g.name')
             .orderBy('c.name');
                     
@@ -36,7 +38,42 @@ class CategoryController {
         
         return groups;
     }
+
+    async addGroup ({request, auth}) {
+        let id = await Database.insert({ name: request.body.name, user_id: auth.user.id }).into('groups').returning('id');
+        
+        return { id: id[0], name: request.body.name };
+    }
     
+    async updateGroup ({request, auth}) {
+        
+        await Database.table('groups').where({id: request.params.groupId, user_id: auth.user.id}).update({name: request.body.name});
+
+        return { name: request.body.name };
+    }
+    
+    async deleteGroup ({request, auth}) {
+        await Database.table('groups').where({id: request.params.groupId, user_id: auth.user.id}).delete ();
+    }
+    
+    async addCategory ({request, auth}) {
+
+        let id = await Database.insert({group_id: request.body.groupId, name: request.body.name}).into('categories').returning('id');
+        
+        return { groupId: request.body.groupId, id: id[0], name: request.body.name };
+    }
+
+    async updateCategory ({request, auth}) {
+        
+        await Database.table('categories').where({id: request.params.catId}).update({name: request.body.name});
+
+        return { name: request.body.name };
+    }
+    
+    async deleteCategory ({request, auth}) {
+        await Database.table('categories').where({id: request.params.catId}).delete ();
+    }
+
     async transactions({request}) {
 
         let categoryId = parseInt(request.params.catId);

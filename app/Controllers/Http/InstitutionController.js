@@ -17,11 +17,11 @@ var plaidClient = new plaid.Client(
 
 class InstitutionController {
     
-    async all () {
-        return await this.getConnectedAccounts ();
+    async all ({auth}) {
+        return await this.getConnectedAccounts (auth);
     }
 
-    async getConnectedAccounts () {
+    async getConnectedAccounts (auth) {
         // Check to see if we already have the institution. If not, add it.
         let result = await Database.select(
                 "inst.id AS institutionId", 
@@ -30,6 +30,7 @@ class InstitutionController {
                 "acct.name AS accountName")
             .table("institutions AS inst")
             .leftJoin ("accounts AS acct",  "acct.institution_id",  "inst.id")
+            .where ('inst.user_id', auth.user.id)
             .orderBy("inst.name")
             .orderBy("acct.name");
                 
@@ -57,12 +58,12 @@ class InstitutionController {
         return institutions;
     }
 
-    async add ({request}) {
+    async add ({request, auth}) {
 
         let {institution, publicToken} = request.only (['institution', 'publicToken']);
         
         // Check to see if we already have the institution. If not, add it.
-        let inst = await Database.table('institutions').where ('institution_id', institution.institution_id);
+        let inst = await Database.table('institutions').where ({institution_id: institution.institution_id, user_id: auth.user_id});
 
         let accessToken;
         let institutionId;
@@ -73,7 +74,7 @@ class InstitutionController {
             
             accessToken = tokenResponse.access_token;
 
-            let instId = await Database.insert({ institution_id: institution.institution_id, name: institution.name, access_token: accessToken }).into('institutions').returning('id'); 
+            let instId = await Database.insert({ institution_id: institution.institution_id, name: institution.name, access_token: accessToken, user_id: auth.user.id }).into('institutions').returning('id'); 
             
             institutionId = instId[0];
         }
@@ -112,9 +113,9 @@ class InstitutionController {
         return accounts;
     }
     
-    async get ({request}) {
+    async get ({request, auth}) {
 
-        let inst = await Database.select('access_token').from('institutions').where ('id', request.params.instId);
+        let inst = await Database.select('access_token').from('institutions').where ({id: request.params.instId, user_id: auth.user.id});
 
         let accounts = []; 
         if (inst.length > 0) {
@@ -124,10 +125,10 @@ class InstitutionController {
         return accounts;
     }
     
-    async addAccounts ({request}) {
+    async addAccounts ({request, auth}) {
         const trx = await Database.beginTransaction ();
         
-        let inst = await trx.select ("access_token").from("institutions").where ("id", request.params.instId);
+        let inst = await trx.select ("access_token").from("institutions").where ({id: request.params.instId, user_id: auth.user.id});
         
         let fundingAmount = 0;
         let unassignedAmount = 0;
@@ -171,7 +172,7 @@ class InstitutionController {
 
         await trx.commit ();
         
-        let accounts = await this.getConnectedAccounts ();
+        let accounts = await this.getConnectedAccounts (auth);
         
         return {accounts: accounts, categories: [{id: -1, amount: fundingAmount}, {id: -2, amount: unassignedAmount}]};
     }
@@ -258,13 +259,14 @@ class InstitutionController {
         };
     }
 
-    async sync ({request}) {
+    async sync ({request, auth}) {
         const trx = await Database.beginTransaction ();
 
         let acct = await trx.select ("access_token AS accessToken", "acct.id AS accountId", "plaid_account_id AS plaidAccountId", "start_date AS startDate", "tracking")
             .from("institutions AS inst")
             .join("accounts AS acct", "acct.institution_id", "inst.id")
-            .where ("acct.id", request.params.acctId);
+            .where ('acct.id', request.params.acctId)
+            .where ('user_id', auth.user.id);
 
         let result = {};
         

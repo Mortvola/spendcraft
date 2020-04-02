@@ -40,6 +40,21 @@ body {
 	grid-template-columns: 1fr 1fr;
 }
 
+#addGroupDialog .modal-footer {
+	display: grid;
+	grid-template-columns: max-content 1fr repeat(2, max-content);
+}
+
+#addGroupDialog .modal-footer {
+	display: grid;
+	grid-template-columns: max-content 1fr repeat(2, max-content);
+}
+
+#addCategoryDialog .modal-footer {
+	display: grid;
+	grid-template-columns: max-content 1fr repeat(2, max-content);
+}
+
 .categories {
 	display: flex;
 	flex-flow:column;
