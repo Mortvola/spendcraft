@@ -62,8 +62,9 @@ class InstitutionController {
 
         let {institution, publicToken} = request.only (['institution', 'publicToken']);
         
+        
         // Check to see if we already have the institution. If not, add it.
-        let inst = await Database.table('institutions').where ({institution_id: institution.institution_id, user_id: auth.user_id});
+        let inst = await Database.table('institutions').where ({institution_id: institution.institution_id, user_id: auth.user.id});
 
         let accessToken;
         let institutionId;
@@ -128,11 +129,19 @@ class InstitutionController {
     async addAccounts ({request, auth}) {
         const trx = await Database.beginTransaction ();
         
-        let inst = await trx.select ("access_token").from("institutions").where ({id: request.params.instId, user_id: auth.user.id});
-        
         let fundingAmount = 0;
         let unassignedAmount = 0;
 
+        let systemCats = await trx.select ('cats.id AS id', 'cats.name AS name')
+            .from ('categories AS cats')
+            .join('groups', 'groups.id', 'group_id')
+            .where('cats.system', true)
+            .andWhere ('groups.user_id', auth.user.id);
+        let fundingPool = systemCats.find (entry => entry.name == "Funding Pool");
+        let unassigned = systemCats.find (entry => entry.name == "Unassigned");
+        
+        let inst = await trx.select ("access_token").from("institutions").where ({id: request.params.instId, user_id: auth.user.id});
+        
         if (inst.length > 0) {
             for (let account of request.body.accounts) {
                 
@@ -146,7 +155,7 @@ class InstitutionController {
                     
                     if (account.tracking == "Transactions") {
                         
-                        let details = await this.addTransactions (trx, inst[0].access_token, acctId[0], account.account_id, request.body.startDate);
+                        let details = await this.addTransactions (trx, inst[0].access_token, acctId[0], account.account_id, request.body.startDate, auth);
 
                         if (details.cat) {
                             unassignedAmount = details.cat.amount;
@@ -160,9 +169,9 @@ class InstitutionController {
                              amount: startingBalance, sort_order: -1}).into ('transactions').returning('id');
                         
                         await trx.insert(
-                            { transaction_id: transId[0], category_id: -1, amount: startingBalance }).into('category_splits');
+                            { transaction_id: transId[0], category_id: fundingPool.id, amount: startingBalance }).into('category_splits');
                         
-                        let funding = await this.subtractFromCategoryBalance (trx, -1, -startingBalance);
+                        let funding = await this.subtractFromCategoryBalance (trx, fundingPool.id, -startingBalance);
                         
                         fundingAmount = funding.amount;
                     }
@@ -174,10 +183,10 @@ class InstitutionController {
         
         let accounts = await this.getConnectedAccounts (auth);
         
-        return {accounts: accounts, categories: [{id: -1, amount: fundingAmount}, {id: -2, amount: unassignedAmount}]};
+        return {accounts: accounts, categories: [{id: fundingPool.id, amount: fundingAmount}, {id: unassigned.id, amount: unassignedAmount}]};
     }
     
-    async addTransactions (trx, accessToken, accountId, plaidAccountId, startDate)
+    async addTransactions (trx, accessToken, accountId, plaidAccountId, startDate, auth)
     {
         var startDate = moment(startDate).format('YYYY-MM-DD');
         var endDate = moment().format('YYYY-MM-DD');
@@ -217,8 +226,15 @@ class InstitutionController {
         let cat = null;
         
         if (sum != 0) {
+            let systemCats = await trx.select ('cats.id AS id', 'cats.name AS name')
+                .from ('categories AS cats')
+                .join('groups', 'groups.id', 'group_id')
+                .where('cats.system', true)
+                .andWhere ('groups.user_id', auth.user.id);
+            let unassigned = systemCats.find (entry => entry.name == "Unassigned");
+
             // Add the sum of the transactions to the unassigned category.
-            cat = await this.subtractFromCategoryBalance (trx, -2, sum);
+            cat = await this.subtractFromCategoryBalance (trx, unassigned.id, sum);
         }
 
         if (transactionsResponse.accounts[0].type == "credit" ||
@@ -274,10 +290,17 @@ class InstitutionController {
             
             if (acct[0].tracking == "Transactions") {
                
-                let details = await this.addTransactions (trx,  acct[0].accessToken, acct[0].accountId, acct[0].plaidAccountId, acct[0].startDate);
+                let details = await this.addTransactions (trx,  acct[0].accessToken, acct[0].accountId, acct[0].plaidAccountId, acct[0].startDate, auth);
                 
                 if (details.cat) {
-                    result.categories = [{id: -2, amount: details.cat.amount}];
+                    let systemCats = await trx.select ('cats.id AS id', 'cats.name AS name')
+                        .from ('categories AS cats')
+                        .join('groups', 'groups.id', 'group_id')
+                        .where('cats.system', true)
+                        .andWhere ('groups.user_id', auth.user.id);
+                    let unassigned = systemCats.find (entry => entry.name == "Unassigned");
+                    
+                    result.categories = [{id: unassigned.id, amount: details.cat.amount}];
                 }
                 
                 result.accounts = [{ id: request.params.acctId, balance: details.balance}];
@@ -297,11 +320,18 @@ class InstitutionController {
         return result;
     }
     
-    async updateTx ({request}) {
+    async updateTx ({request, auth}) {
         let trx = await Database.beginTransaction ();
 
         let result = {categories: []}
         
+        let systemCats = await trx.select ('cats.id AS id', 'cats.name AS name')
+            .from ('categories AS cats')
+            .join('groups', 'groups.id', 'group_id')
+            .where('cats.system', true)
+            .andWhere ('groups.user_id', auth.user.id);
+        let unassigned = systemCats.find (entry => entry.name == "Unassigned");
+
         let splits = await trx.select("category_id AS categoryId", "amount")
             .from("category_splits")
             .where ("transaction_id", request.params.txId);
@@ -321,7 +351,7 @@ class InstitutionController {
             
             let trans = await trx.select("amount").from("transactions").where ("id", request.params.txId);
             
-            let cat = await this.subtractFromCategoryBalance (trx, -2, trans[0].amount);
+            let cat = await this.subtractFromCategoryBalance (trx, unassigned.id, trans[0].amount);
 
             result.categories.push({id: cat.category.id, amount: cat.amount});
         }
@@ -330,7 +360,7 @@ class InstitutionController {
 
             for (let split of request.body.splits) {
 
-                if (split.categoryId !== -2) {
+                if (split.categoryId !== unassigned.id) {
                     await trx.insert({transaction_id: request.params.txId, category_id: split.categoryId, amount: split.amount}).into('category_splits');
                 }
                 

@@ -8,10 +8,9 @@ class CategoryController {
     async get ({auth}) {
         
         let rows = await Database.select ('g.id AS groupId', 'g.name AS groupName', 'c.id AS categoryId', 'c.name as categoryName', 'amount')
-            .table('groups AS g')
+            .from('groups AS g')
             .leftJoin ('categories AS c', 'c.group_id', 'g.id')
             .where ('user_id', auth.user.id)
-            .orWhere ('user_id', -1)
             .orderBy('g.name')
             .orderBy('c.name');
                     
@@ -74,15 +73,19 @@ class CategoryController {
         await Database.table('categories').where({id: request.params.catId}).delete ();
     }
 
-    async transactions({request}) {
+    async transactions({request, auth}) {
 
         let categoryId = parseInt(request.params.catId);
 
         let result = { transactions: [] };
         
-        let balance = await Database.select('amount').table ('categories').where('id', categoryId);
+        let cat = await Database.select('amount', 'cats.name AS name', 'cats.system AS system')
+            .from ('categories AS cats')
+            .join ('groups', 'groups.id', 'group_id')
+            .where('cats.id', categoryId)
+            .andWhere('groups.user_id', auth.user.id);
 
-        result.balance = balance[0].amount;
+        result.balance = cat[0].amount;
         
         let subquery = Database.select (
                 Database.raw('COUNT(CASE WHEN category_id = ' + categoryId + ' THEN 1 ELSE NULL END) AS count'),
@@ -92,13 +95,15 @@ class CategoryController {
                     "', \"amount\": ' || splits.amount || " +
                     "', \"category\": ' || '\"' || cats.name || '\"' || " +
                     "', \"group\": ' || '\"' || groups.name || '\"' || " +
-                    "'}')::json) AS categories"), "transaction_id")
-            .table("category_splits AS splits")
+                    "'}')::json) AS categories"),
+                "transaction_id")
+            .from("category_splits AS splits")
             .join ("categories AS cats", "cats.id", "splits.category_id")
             .join ("groups", "groups.id", "cats.group_id")
+            .where('groups.user_id', auth.user.id)
             .groupBy ("transaction_id");
 
-        let transactions = await Database.select(
+        let query = Database.select(
                 "trans.id AS id",
                 Database.raw("0 AS type"),
                 Database.raw("COALESCE(trans.sort_order, 2147483647) AS sort_order"),
@@ -108,36 +113,48 @@ class CategoryController {
                 "inst.name AS institute_name",
                 "acct.name AS account_name",
                 "trans.amount AS amount")
-            .table ('transactions AS trans')
+            .from ('transactions AS trans')
             .join ('accounts AS acct', 'acct.id', 'trans.account_id')
             .join ('institutions AS inst',  'inst.id',  'acct.institution_id')
             .leftJoin(subquery.as('splits'), "splits.transaction_id", "trans.id")
-            .where(function () { this.where (-2, categoryId).whereNull('splits.categories')})
-            .orWhere('splits.count', '>', 0)
+            .where('inst.user_id', auth.user.id)
             .orderBy('date', 'desc')
             .orderBy(Database.raw('COALESCE(trans.sort_order, 2147483647)'), 'desc')
             .orderBy('trans.name');
 
-        result.transactions = result.transactions.concat(transactions);
+        if (cat[0].system && cat[0].name == 'Unassigned') {
+            query.whereNull('splits.categories');
+        }
+        else {
+            query.where('splits.count', '>', 0);
+        }
+        
+        result.transactions = await query;
 
-        transactions = await Database.select(
-                "xfer.id AS id", 
-                Database.raw("1 AS type"), 
-                Database.raw("2147483647 AS sort_order"),
-                Database.raw("date::text"),
-                Database.raw("'Transfer from ' || groups.name || ':' || cat.name AS name"),
-                Database.raw("COALESCE(xfer.amount, splits.sum) * -1 AS amount"),
-                "categories")
-            .table ("category_transfers AS xfer")
-            .join ("categories AS cat", "cat.id", "xfer.from_category_id")
-            .join ("groups AS groups",  "groups.id", "cat.group_id")
-            .leftJoin(subquery.as('splits'), Database.raw("splits.transaction_id * -1"), "xfer.id")
-            .where("xfer.from_category_id", categoryId)
-            .orWhere(function () { this.where (-2, categoryId).whereNull('splits.categories')})
-            .orWhere("splits.count", ">", 0)
-            .orderBy('date', 'desc');
+        // Get the category transfers (we don't transfer to or from unassigned)
+        if (!cat[0].system || cat[0].name != 'Unassigned') {
 
-        result.transactions = result.transactions.concat(transactions);
+            // Category transfers
+            query = Database.select(
+                    "xfer.id AS id", 
+                    Database.raw("1 AS type"), 
+                    Database.raw("2147483647 AS sort_order"),
+                    Database.raw("date::text"),
+                    Database.raw("'Transfer from ' || groups.name || ':' || cat.name AS name"),
+                    Database.raw("COALESCE(xfer.amount, splits.sum) * -1 AS amount"),
+                    "categories")
+                .from ("category_transfers AS xfer")
+                .join ("categories AS cat", "cat.id", "xfer.from_category_id")
+                .join ("groups AS groups",  "groups.id", "cat.group_id")
+                .leftJoin(subquery.as('splits'), Database.raw("splits.transaction_id * -1"), "xfer.id")
+                .where("xfer.from_category_id", categoryId)
+                .where("groups.user_id", auth.user.id)
+                .orWhere('splits.count', '>', 0)
+                .orderBy('date', 'desc');
+
+            let transactions = await query;
+            result.transactions = result.transactions.concat(transactions);
+        }
 
         return result;
     }
