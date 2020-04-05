@@ -262,7 +262,7 @@ body {
 
 .cat-element-bar {
 	display: grid;
-	grid-template-columns: max-content max-content;
+	grid-template-columns: repeat(3, max-content);
 	align-items: center;
 }
 
@@ -403,11 +403,12 @@ body {
 	justify-content: space-around;
 }
 
-.available-funds {
+.splits-total {
 	display: inline-block;
-	width: 150px;
+	width: 100%;
 	border: solid thin gray;
-	padding-right: 8px;
+	padding-right: 2px;
+	justify-self: right;
 }
 
 .funding-total {
@@ -430,7 +431,7 @@ body {
 
 .transaction-split-item {
 	display: grid;
-	grid-template-columns: 1fr 1fr 28px 28px;
+	grid-template-columns: repeat(4, minmax(0, 1fr)) repeat(2, 28px);
 	align-items: center;
 }
 
@@ -439,6 +440,12 @@ body {
 	border-radius: 4px;
 	margin: 1px;
 	padding: 1px;
+}
+
+.transaction-split-item > label {
+	text-align: right;
+	margin-bottom: 0;
+	padding-right: 2px;
 }
 
 .rotate {

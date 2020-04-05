@@ -1,7 +1,7 @@
 'use strict'
 
 const Database = use('Database');
-
+const Category = use('App/Models/Category');
 
 class CategoryController {
     
@@ -140,21 +140,57 @@ class CategoryController {
                     Database.raw("1 AS type"), 
                     Database.raw("2147483647 AS sort_order"),
                     Database.raw("date::text"),
-                    Database.raw("'Transfer from ' || groups.name || ':' || cat.name AS name"),
-                    Database.raw("COALESCE(xfer.amount, splits.sum) * -1 AS amount"),
-                    "categories")
+                    Database.raw("'Category Transfer' AS name"),
+                    Database.raw("splits.sum * -1 AS amount"),
+                    "splits.categories AS categories")
                 .from ("category_transfers AS xfer")
-                .join ("categories AS cat", "cat.id", "xfer.from_category_id")
-                .join ("groups AS groups",  "groups.id", "cat.group_id")
                 .leftJoin(subquery.as('splits'), Database.raw("splits.transaction_id * -1"), "xfer.id")
-                .where("xfer.from_category_id", categoryId)
-                .where("groups.user_id", auth.user.id)
-                .orWhere('splits.count', '>', 0)
+                .where('splits.count', '>', 0)
                 .orderBy('date', 'desc');
 
             let transactions = await query;
+
             result.transactions = result.transactions.concat(transactions);
         }
+
+        return result;
+    }
+    
+    async transfer ({request, auth}) {
+        
+        let trx = await Database.beginTransaction ();
+        
+        let result = [];
+        
+        if (Array.isArray(request.body.categories)) {
+            
+            let date = request.body.date;
+
+            let xfr = await trx.insert({date: date}).into('category_transfers').returning('id');
+
+            // In the splits table, negative transaction IDs refer to the category_transfers table entries.
+            let transactionId = -xfr[0];
+            
+            // Insert the category splits
+            for (let transfer of request.body.categories) {
+                
+                console.log(transfer);
+                
+                if (transfer.amount != 0) {
+                    await trx.insert({transaction_id: transactionId, category_id: transfer.categoryId, amount: transfer.amount}).into ('category_splits');
+                    
+                    const category = await Category.findOrFail(transfer.categoryId, trx);
+                    
+                    category.amount = parseFloat(category.amount) + transfer.amount;
+
+                    await category.save(trx);
+                    
+                    result.push({id: category.id, amount: category.amount});
+                }
+            }
+        }
+            
+        await trx.commit ();
 
         return result;
     }

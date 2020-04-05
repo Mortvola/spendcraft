@@ -137,7 +137,7 @@
                                   </div>
                                   <div>
                                       <label>Available Funds</label>
-                                      <div class='available-funds dollar-amount'>0.00</div>
+                                      <div class='available-funds splits-total dollar-amount'>0.00</div>
                                   </div>
                               </div>
                               <div class='cat-fund-table'>
@@ -182,7 +182,7 @@
                                   </div>
                                   <div>
                                       <label>Available Funds</label>
-                                      <div class='available-funds dollar-amount'>0.00</div>
+                                      <div class='available-funds splits-total dollar-amount'>0.00</div>
                                   </div>
                               </div>
                               <div class='cat-fund-table'>
@@ -220,14 +220,16 @@
                               <div class='cat-fund-table'>
                                   <div class='transaction-split-item cat-fund-title'>
                                       <div class='fund-list-cat-name'>Category</div>
+                                      <div class='dollar-amount'>Balance</div>
                                       <div class='dollar-amount'>Amount</div>
+                                      <div class='dollar-amount'>New Balance</div>
                                   </div>
                                   <div class='transaction-split-items'></div>
                                   <div class='transaction-split-item'>
                                       <div></div>
                                       <div class='dollar-amount'>
                                           <label>Unassigned</label>
-                                          <div class='available-funds dollar-amount'>0.00</div>
+                                          <div class='available-funds splits-total dollar-amount'>0.00</div>
                                       </div>
                                   </div>
                               </div>
@@ -236,6 +238,76 @@
                   <div class="modal-footer">
                       <button type="button" class="btn" data-dismiss="modal">Cancel</button>
                       <button type="submit" form='editTransactionForm' class="btn btn-default">Save</button>
+                  </div>
+              </div>
+
+          </div>
+      </div> <!--  Modal -->
+
+      <!-- Modal -->
+      <div class="modal fade" id="catTransferDialog" role="dialog">
+          <div class="modal-dialog modal-dialog-scrollable modal-lg">
+
+              <!-- Modal content-->
+              <div class="modal-content">
+                  <div class="modal-header">
+                      <h4 class="modal-title">Category Transfer</h4>
+                      <button type="button" class="close" data-dismiss="modal">&times;</button>
+                  </div>
+                  <div class="modal-body">
+                      <form id='catTransferForm'>
+                              <div>
+                                  <div>
+                                      <label>Date</label>
+                                      <input type="date" name="date"/>
+                                  </div>
+                                  <label>
+                                  From:
+                                  </label>
+                                  <div class='cat-fund-table'>
+                                  <div class='transaction-split-item cat-fund-title'>
+                                      <div class='fund-list-cat-name'>Category</div>
+                                      <div class='dollar-amount'>Balance</div>
+                                      <div class='dollar-amount'>Amount</div>
+                                      <div class='dollar-amount'>New Balance</div>
+                                  </div>
+                                  <div class='from-split-items transaction-split-items'></div>
+                                  <div class='transaction-split-item'>
+                                      <div></div>
+                                      <label>Transfer Total</label>
+                                      <div class='transfer-total splits-total dollar-amount'>0.00</div>
+                                      <div></div>
+                                      <div></div>
+                                      <div></div>
+                                  </div>
+                              </div>
+                              </div>
+                              </br>
+                              <label>
+                              To:
+                              </label>
+                              <div class='cat-fund-table'>
+                                  <div class='transaction-split-item cat-fund-title'>
+                                      <div class='fund-list-cat-name'>Category</div>
+                                      <div class='dollar-amount'>Balance</div>
+                                      <div class='dollar-amount'>Amount</div>
+                                      <div class='dollar-amount'>New Balance</div>
+                                  </div>
+                                  <div class='to-split-items transaction-split-items'></div>
+                                  <div class='transaction-split-item'>
+                                      <div></div>
+                                      <label class="dollar-amount">Unassigned</label>
+                                      <div class='available-funds splits-total dollar-amount'>0.00</div>
+                                      <div></div>
+                                      <div></div>
+                                      <div></div>
+                                  </div>
+                              </div>
+                      </form>
+                  </div>
+                  <div class="modal-footer">
+                      <button type="button" class="btn" data-dismiss="modal">Cancel</button>
+                      <button type="submit" form='catTransferForm' class="btn btn-default">Save</button>
                   </div>
               </div>
 
@@ -273,11 +345,13 @@
   
   class CategorySelector {
       
-      constructor (categories) {
+      constructor () {
           
           this.owner = null;
 
-          this.createCategoryTree (categories);
+          $(document).on('category', (event, categories) => {
+              this.createCategoryTree (categories);
+          });
 
           $(window).on('click', (event) => {
               if (this.categoryDropDownList.is(':visible'))
@@ -316,7 +390,10 @@
           
           catListItem.on('mousedown', (evet) => {
               event.preventDefault ();
-              this.selectionCallback ({ id: id, group: group, category: category });
+              $(this.owner).val(group + ":" + category);
+              //this.selectionCallback ({ id: id, group: group, category: category });
+              $(this.owner).data({ id: id, group: group, category: category })
+              $(this.owner).trigger('change'); //, { id: id, group: group, category: category });
               this.hide ();
           });
           
@@ -328,11 +405,11 @@
           this.owner = owner;
       }
 
-      show (owner, callback) {
+      show (owner) { //, callback) {
           
           this.setOwner (owner);
           
-          this.selectionCallback = callback;
+          //this.selectionCallback = callback;
           
           this.previousValue = $(this.owner).val ();
           
@@ -835,12 +912,7 @@
                       openEditTransactionDialog (transaction);
                   }
                   else {
-                      $.getJSON({
-                          url: "/categories"
-                      })
-                      .done (function (categories) {
-                          openFundCatsDialog (transaction, categories);
-                      });
+                      catTransferDialog (transaction.date, transaction.categories);
                   }
               })
               .appendTo(t);
@@ -865,24 +937,20 @@
                           openEditTransactionDialog (transaction);
                       }
                       else {
-                          $.getJSON({
-                              url: "/categories"
-                          })
-                          .done (function (categories) {
-                              openFundCatsDialog (transaction, categories);
-                          });
+                          catTransferDialog (transaction.date, transaction.categories);
                       }
                   })
               .appendTo (catDiv);
 
-          let cat = createCategoryInputElement (
-              (category) => {
-              
+          let cat = createCategoryInputElement ()
+              .on ('change', function (event) {
+                  let category = $(this).data ();
+
                   let request = { splits: [] };
                   
                   request.splits.push({categoryId: category.id, amount: transaction.amount });
                   
-                  updateTransactionCategory (transaction, request, $(this));
+                  updateTransactionCategory (transaction, request);
               })
               .addClass('category')
               .addClass('transaction-field')
@@ -901,12 +969,7 @@
                       openEditTransactionDialog (transaction);
                   }
                   else {
-                      $.getJSON({
-                          url: "/categories"
-                      })
-                      .done (function (categories) {
-                          openFundCatsDialog (transaction, categories);
-                      });
+                      catTransferDialog (transaction.date, transaction.categories);
                   }
               })
               .appendTo(catDiv);
@@ -1052,7 +1115,7 @@
   }
   
   
-  function createCategoryTreeElement (id, groupId, name, amount)
+  function createCategoryTreeElement (id, groupId, name, amount, groupNameElement)
   {
       let catElement = $('<div></div>')
           .addClass('cat-list-cat')
@@ -1073,7 +1136,10 @@
           createIconButton ("edit", function () { openEditCategoryDialog (groupId, id, catElement); })
               .appendTo(nameBar);
       }
-            
+
+      createIconButton ("random", function () { catTransferDialog (); })
+          .appendTo(nameBar);
+
       let catNameElement = $('<div></div>')
           .text(name)
           .addClass('cat-list-name')
@@ -1207,7 +1273,7 @@
               }
           })
           .done (function(response) {
-              let newCategoryElement = createCategoryTreeElement (response.id, groupId, response.name, response.amount);
+              let newCategoryElement = createCategoryTreeElement (response.id, groupId, response.name, response.amount, groupElement.find('.group-name'));
               
               let categoryElements = $(groupElement).children (".cat-list-cat");
               
@@ -1260,30 +1326,60 @@
       return groupElement;
   }
   
-  function createCategoryTree (response)
-  {
-      for (let group of response) {
-          
-          let groupElement = createGroupElement (group);
-          
-          for (let category of group.categories) {
-              
-              createCategoryTreeElement (category.id, group.id, category.name, category.amount).appendTo(groupElement);
-          }
-          
-          groupElement.appendTo('#categories');
-      }
-  }
   
-  function getCategories ()
-  {
-      $.getJSON({
-          url: "/groups"
-      })
-      .done (function (response) {
-          createCategoryTree (response);
-          categorySelectList = new CategorySelector (response);
-      });
+    class CategoryView {
+          
+        constructor () {
+              $(document).on('category', (event, response) => {
+                  this.createTree (response);
+              })
+        }
+
+        createTree (categories)
+        {
+            for (let group of categories) {
+                
+                let groupElement = createGroupElement (group);
+                
+                for (let category of group.categories) {
+                    
+                    createCategoryTreeElement (category.id, group.id, category.name, category.amount, groupElement.find('.group-name')).appendTo(groupElement);
+                }
+                
+                groupElement.appendTo('#categories');
+            }
+        }
+    }
+  
+  
+  
+  class Categories {
+      constructor () {
+          this.getCategories ();
+      }
+
+      getCategories ()
+      {
+          $.getJSON({
+              url: "/groups"
+          })
+          .done ((response) => {
+              this.categories = response;
+              $(document).trigger('category', [response]);
+          });
+      }
+      
+      getBalance (id) {
+          
+          for (let group of this.categories) {
+              
+              let category = group.categories.find ( (cat) => cat.id == id );
+              
+              if (category) {
+                  return parseFloat(category.amount);
+              }
+          }
+      }
   }
   
 
@@ -1487,15 +1583,13 @@
       return returnObject;
   }
 
-  
-  function createAmountInput (amount, callbacks) {
-      return $('<input></input>')
-          .attr('type', 'text')
-          .addClass('dollar-amount')
-          .attr('value', amount.toFixed(2))
-          .attr('data-last-amount', amount)
-          .on('change', function () {
 
+  function attachAmountInputElementMethods (element)
+  {
+      element
+          .addClass('dollar-amount')
+          .on('change', function () {
+    
               let newAmount = parseFloat($(this).val().replace(/,/g, ''));
     
               if (isNaN(newAmount)) {
@@ -1513,18 +1607,23 @@
               $(this).attr('data-last-amount', newAmount.toFixed(2));
     
               let delta = newAmount - previousAmount;
-              
-              if (callbacks) {
-                  if (Array.isArray(callbacks)) {
-                      for (let callback of callbacks) {
-                          callback(newAmount, delta);
-                      }
-                  }
-                  else {
-                      callbacks(newAmount, delta);
-                  }
-              }
+    
+              $(this).trigger ("delta-change", [newAmount, delta])
           });
+  }
+
+  
+  function createAmountInput (amount) {
+      
+      let element = $('<input></input>')
+          .addClass('amount-input')
+          .attr('type', 'text')
+          .attr('value', amount.toFixed(2))
+          .attr('data-last-amount', amount);
+      
+      attachAmountInputElementMethods (element);
+      
+      return element;
   }
   
   
@@ -1641,15 +1740,11 @@
 
                   setTextElementAmount (balanceElement, balanceAmt);
     
-                  createAmountInput (fundingAmt, [
-                          function (amount, delta) {
-                              
-                              addTextElementAmount ($('#addFundingForm .available-funds'), -delta);
-                          },
-                          function (amount, delta) {
-                              setTextElementAmount (balanceElement, currentAmt + amount);
-                          }
-                      ])
+                  createAmountInput (fundingAmt)
+                      .on("delta-change", function (event, amount, delta) {
+                          addTextElementAmount ($('#addFundingForm .available-funds'), -delta);
+                          setTextElementAmount (balanceElement, currentAmt + amount);
+                      })
                       .addClass('fund-list-amt')
                       .attr('data-cat-id', category.id)
                       .attr('data-init-value', fundingAmt)
@@ -1730,10 +1825,9 @@
   }
   
   
-  function createCategoryInputElement (callback)
-  {
-      return $('<input></input>')
-          .attr('type', 'input')
+  function attachCategoryInputElementMethods (element) {
+
+      element
           .attr('placeholder', 'Unassigned')
           .addClass('category-input')
           .on('blur',
@@ -1746,11 +1840,7 @@
               function (event) {
                   if (!categorySelectList.visible ()) {
                       event.stopPropagation ();
-                      categorySelectList.show (this,
-                          (category) => {
-                              $(this).val(category.group + ":" + category.category);
-                              callback (category);
-                          });
+                      categorySelectList.show (this);
                   }
               })
           .on('input',
@@ -1777,59 +1867,23 @@
                   else {
                       if (event.key.length == 1 || event.key == "Backspace" || event.key == "Delete" ||
                           event.key == "ArrowDown") {
-                          categorySelectList.show (this,
-                              (category) => {
-                                  $(this).val(category.group + ":" + category.category);
-                                  callback (category);
-                              });
+                          categorySelectList.show (this);
                       }
                   }
               });
   }
   
-  
-  function createSplitItem (category) {
-      let splitItem = $('<div></div>').addClass('transaction-split-item');
+  function createCategoryInputElement () {
+      let element = $('<input></input>')
+          .attr('type', 'input');
       
-      let categoryElement = createCategoryInputElement ((category) => {
-              amountInput.attr('data-cat-id', category.id);
-          })
-          .appendTo(splitItem);
+      attachCategoryInputElementMethods (element);
 
-      let amountInput = createAmountInput (0, function (amount, delta) {
-              addTextElementAmount ($('#editTransactionForm .available-funds'), -delta);
-          })
-          .attr('name', 'amount')
-          .appendTo(splitItem);
-      
-      createIconButton("plus", function () {
-              createSplitItem ().insertAfter(splitItem);
-          })
-          .appendTo(splitItem);
-
-      createIconButton ("minus", function () {
-              if (!splitItem.is(":only-child")) {
-                  
-                  addTextElementAmount ($('#editTransactionForm .available-funds'), amountInput.val ());
-                  splitItem.remove ();
-              }
-          })
-          .appendTo(splitItem);
-
-      if (category !== null && category != undefined) {
-          categoryElement.val(category.group + ':' + category.category);
-
-          amountInput
-              .attr('data-cat-id', category.categoryId)
-              .val(category.amount)
-              .change ();
-      }
-
-      return splitItem;
+      return element;
   }
   
   
-  function updateTransactionCategory (transaction, request, categoryElement) {
+  function updateTransactionCategory (transaction, request) {
       $.ajax({
           url: "/transaction/" + transaction.id,
           contentType: "application/json",
@@ -1846,6 +1900,144 @@
   }
 
   
+  class CategorySplits {
+      
+      constructor (totalElement, splitItems, total, categories, from, neg, totalChangedCallback) {
+          this.neg = neg;
+          if (this.neg !== 1 && this.neg !== -1) {
+              this.neg = 1;
+          }
+          this.from = from;
+          if (this.from == undefined) {
+              this.from = true;
+          }
+          
+          this.totalElement = totalElement;
+          this.splitItems = splitItems;
+          this.totalChangedCallback = totalChangedCallback;
+          
+          this.populateSplits(splitItems, total, categories)
+      }
+      
+      availableChanged (delta) {
+          addTextElementAmount (this.totalElement, delta);
+      }
+      
+      populateSplits (splitItems, total, categories) {
+          
+          this.totalElement.off("delta-change").on ("delta-change", function (event, amout, delta) {
+              addTextElementAmount (this, -delta);
+          })
+          
+          setTextElementAmount (this.totalElement, this.neg * total);
+          
+          splitItems.empty ();
+          
+          if (categories !== null && categories !== undefined && categories.length > 0) {
+              
+              for (let category of categories) {
+                  
+                  this.createSplitItem (category).appendTo(splitItems);
+              }
+          }
+          else {
+              this.createSplitItem ().appendTo(splitItems);
+          }
+      }
+      
+      createSplitItem (category) {
+          let splitItem = $('<div></div>').addClass('transaction-split-item');
+          
+          let categoryElement = createCategoryInputElement ()
+              .on ('change', (event) => {
+                  let category = categoryElement.data ();
+                  amountInput.attr('data-cat-id', category.id);
+                  let balance = categories.getBalance(category.id);
+                  
+                  setTextElementAmount(catBalance, balance);
+                  
+                  let amount = parseFloat(amountInput.val ());
+                  
+                  if (this.from) {
+                      setTextElementAmount (newBalance, balance - amount);
+                  }
+                  else {
+                      setTextElementAmount (newBalance, balance + amount);
+                  }
+              })
+              .appendTo(splitItem);
+
+          let catBalance = $("<div></div>").addClass('dollar-amount').appendTo(splitItem);
+          
+          let amountInput = createAmountInput (0)
+              .on ("delta-change", (event, amout, delta) => {
+                      if (!this.from) {
+                          delta = -delta;
+                      }
+                      
+                      addTextElementAmount(newBalance, -delta);
+                      
+                      this.availableChanged(delta);
+
+                      if (this.totalChangedCallback) {
+                          this.totalChangedCallback(delta);
+                      }
+                  })
+              .attr('name', 'amount')
+              .appendTo(splitItem);
+          
+          let newBalance = $("<div></div>").addClass('dollar-amount').appendTo(splitItem);
+          
+          createIconButton("plus", () => {
+                  this.createSplitItem ().insertAfter(splitItem);
+              })
+              .appendTo(splitItem);
+
+          createIconButton ("minus", () => {
+                  if (!splitItem.is(":only-child")) {
+                      let delta = amountInput.val ();
+                      
+                      if (this.from) {
+                          delta = -delta;
+                      }
+                      
+                      this.availableChanged(delta);
+
+                      if (this.totalChangedCallback) {
+                          this.totalChangedCallback(delta);
+                      }
+
+                      splitItem.remove ();
+                  }
+              })
+              .appendTo(splitItem);
+
+          if (category !== null && category != undefined) {
+              categoryElement.val(category.group + ':' + category.category);
+
+              amountInput
+                  .attr('data-cat-id', category.categoryId)
+                  .val(this.neg * category.amount)
+                  .change ();
+          }
+
+          return splitItem;
+      }
+      
+      get () {
+          let splits = [];
+          
+          let splitElements = this.splitItems.find("[name='amount']");
+          
+          for (let split of splitElements) {
+              splits.push({categoryId: parseInt($(split).attr('data-cat-id')), amount: this.neg * parseFloat($(split).val ()) });
+          }
+          
+          return splits;
+      }
+  }
+  
+  
   function openEditTransactionDialog (transaction) {
 
       let neg = 1;
@@ -1853,22 +2045,7 @@
           neg = -1;
       }
       
-      setTextElementAmount ($('#editTransactionForm .available-funds'), neg * transaction.amount);
-      
-      $('.transaction-split-items').empty ();
-      
-      if (transaction.categories !== null && transaction.categories !== undefined) {
-          
-          for (let category of transaction.categories) {
-              
-              category.amount  = neg * category.amount;
-              
-              createSplitItem (category).appendTo('.transaction-split-items');
-          }
-      }
-      else {
-          createSplitItem ().appendTo('.transaction-split-items');
-      }
+      let catSplits = new CategorySplits ($('#editTransactionForm .available-funds'), $('#editTransactionForm .transaction-split-items'), transaction.amount, transaction.categories, false, neg);
 
       $("#editTransactionDialog").modal ('show');
 
@@ -1876,17 +2053,86 @@
       $("#editTransactionForm").submit(function (event) {
           event.preventDefault();
           
-          let request = { splits: [] };
+          let request = catSplits.get ();
           
-          let splits = $("#editTransactionForm .transaction-split-items [name='amount']");
-          
-          for (let split of splits) {
-              request.splits.push({categoryId: parseInt($(split).attr('data-cat-id')), amount: neg * parseFloat($(split).val ()) });
-          }
-          
-          updateTransactionCategory (transaction, request, $(this));
+          updateTransactionCategory (transaction, request);
 
           $("#editTransactionDialog").modal ('hide');
+      });
+  }
+  
+  
+  function catTransferDialog (date, categories) {
+      
+      let amount = 0;
+      
+      if (!date) {
+          let now = new Date ();
+          
+          var day = ("0" + now.getDate()).slice(-2);
+          var month = ("0" + (now.getMonth() + 1)).slice(-2);
+
+          date = now.getFullYear() + "-" + (month) + "-" + (day) ;
+      }
+
+      let toCats = [];
+      let fromCats = [];
+      
+      if (categories) {
+          for (let cat of categories) {
+              if (cat.amount >= 0) {
+                  toCats.push(cat);
+              }
+              else {
+                  fromCats.push(cat);
+              }
+          }
+      }
+      
+      $("#catTransferForm [name='date']").val (date);
+
+      let toCatSplits = new CategorySplits ($('#catTransferForm .available-funds'), $('#catTransferForm .to-split-items'), amount, toCats, false);
+
+      let fromCatSplits = new CategorySplits ($('#catTransferForm .transfer-total'), $('#catTransferForm .from-split-items'), amount, fromCats, true, -1,
+          (delta) => {
+              toCatSplits.availableChanged(delta);
+          });
+
+      $("#catTransferForm .amount-input.transfer-amount")
+          .attr('value', amount.toFixed(2))
+          .attr('data-last-amount', amount)
+          .val(amount)
+          .change ()
+          .off('delta-change')
+          .on('delta-change', function (event, amount, delta) {
+              
+              toCatSplits.availableChanged (delta);
+          });
+
+      $("#catTransferDialog").modal ('show');
+
+      $("#catTransferForm").off('submit');
+      $("#catTransferForm").submit(function (event) {
+          event.preventDefault();
+          
+          let date = $("#catTransferForm [name='date']").val ();
+          let categories = fromCatSplits.get ().concat(toCatSplits.get ());
+          
+          $.post({
+              url: "/category_transfer",
+              headers:
+              {
+                  "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr('content'),
+              },
+              contentType: "application/json",
+              data: JSON.stringify({ date: date, categories: categories }),
+          })
+          .done (function(response)
+          {
+              updateCategories (response);
+
+              $("#catTransferDialog").modal ('hide');
+          });
       });
   }
   
@@ -2082,11 +2328,17 @@
   }
   
   
+  let categories;
+  let categoryView;
+  
   $().ready (function () {
       
       getConnectedAccounts ();
-      getCategories ();
       
+      categoryView = new CategoryView;
+      categories = new Categories;
+      categorySelectList = new CategorySelector ();
+
       $('#add-group').on('click', function () { openGroupDialog (); });
       $('#fund-cats').on('click', function () {
           
@@ -2106,6 +2358,10 @@
       $('.modal').on('shown.bs.modal', function () {
           $(this).find('input:first-of-type').trigger('focus')
         })
+        
+      attachCategoryInputElementMethods($("input.category-input"));
+      
+      attachAmountInputElementMethods ($("input.amount-input"));
   });
   
   (function($) {

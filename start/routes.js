@@ -41,6 +41,8 @@ Route.group (() => {
     Route.patch('/groups/:groupId/categories/:catId', 'CategoryController.updateCategory').validator('UpdateCategory')
     Route.delete('/groups/:groupId/categories/:catId', 'CategoryController.deleteCategory').validator('DeleteCategory')
     
+    Route.post ('/category_transfer', 'CategoryController.transfer');
+    
     Route.get ('/category/:catId/transactions', 'CategoryController.transactions');
 
     Route.get ('/connected_accounts', 'InstitutionController.all');
