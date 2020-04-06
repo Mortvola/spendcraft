@@ -284,17 +284,24 @@ body {
 
 .fund-list-item {
 	display: grid;
-	grid-template-columns: 1fr 1fr 1fr 1fr;
+	grid-template-columns: minmax(0, 1fr) repeat(3, minmax(0, 0.6fr));
 	align-items: center;
 }
 
+.cat-list-group div.fund-list-item:nth-child(odd) {
+	background-color: whitesmoke;
+} 
+
 .fund-list-amt {
 	justify-self: right;
-	margin-left: 14px;
+	padding-right: 8px;
 }
 
 .fund-list-cat-name {
 	margin-left: 28px;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
 }
 
 .group-button {
@@ -342,6 +349,7 @@ body {
 .category-list-item {
 	overflow: hidden;
 	white-space: nowrap;
+	text-overflow: ellipsis;
 }
 
 .category {
@@ -374,8 +382,14 @@ body {
 	color: white;
 	overflow-y: scroll;
 }
+
+.cat-fund-table {
+	display: flex;
+	flex-direction: column;
+}
+
 .cat-fund-items {
-	height: 350px;
+	height: 100%;
 	overflow-y: scroll;
 }
 
@@ -389,8 +403,14 @@ body {
 	overflow: hidden;
 }
 
-.fund-cats-container {
-	max-height: 250px;
+#addFundingForm {
+	height: 100%;
+	display: grid;
+	grid-template-rows: max-content minmax(0, 1fr);
+}
+
+#addFundingDialog .modal-body {
+	overflow-y: hidden;
 }
 
 .dollar-amount {
@@ -436,6 +456,13 @@ body {
 }
 
 .transaction-split-item > input {
+	border: solid 1px gray;
+	border-radius: 4px;
+	margin: 1px;
+	padding: 1px;
+}
+
+.amount-input {
 	border: solid 1px gray;
 	border-radius: 4px;
 	margin: 1px;

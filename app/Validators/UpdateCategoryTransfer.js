@@ -4,8 +4,8 @@ class UpdateCategoryTransfer {
     get rules () {
         return {
             // validation rules
-            categories: 'required|zeroSum:amount',
-            date: 'required'
+            categories: 'required|validCategory|!allZero:amount|zeroSum:amount',
+            date: 'required|date'
         }
     }
 }

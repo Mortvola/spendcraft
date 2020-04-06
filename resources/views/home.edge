@@ -188,9 +188,9 @@
                               <div class='cat-fund-table'>
                                   <div class='fund-list-item cat-fund-title'>
                                       <div class='fund-list-cat-name'>Category</div>
-                                      <div class='dollar-amount'>Current</div>
+                                      <div class='dollar-amount fund-list-amt'>Current</div>
                                       <div class='dollar-amount'>Funding</div>
-                                      <div class='dollar-amount'>Balance</div>
+                                      <div class='dollar-amount fund-list-amt'>Balance</div>
                                   </div>
                                   <div class='cat-fund-items'></div>
                               </div>
@@ -198,7 +198,7 @@
                   </div>
                   <div class="modal-footer">
                       <button type="button" class="btn" data-dismiss="modal">Cancel</button>
-                      <button type="submit" form='addFundingForm' class="btn btn-default">Save</button>
+                      <button type="submit" form='addFundingForm' class="btn btn-primary">Fund</button>
                   </div>
               </div>
 
@@ -1300,7 +1300,7 @@
       });
   }
   
-  function createGroupElement (group) {
+  function createGroupElement (group, editable) {
       let groupElement = $('<div></div>')
           .addClass('cat-list-group');
 
@@ -1314,7 +1314,7 @@
           .appendTo (groupElementBar);
       
       // Add the 'Add category' and other buttons (but not to the System group).
-      if (group.id != -1) {
+      if (editable && group.id != -1) {
        
           createIconButton ("plus", function () { openAddCategoryDialog (group.id, groupElement); })
               .appendTo(groupElementBar);
@@ -1339,7 +1339,7 @@
         {
             for (let group of categories) {
                 
-                let groupElement = createGroupElement (group);
+                let groupElement = createGroupElement (group, true);
                 
                 for (let category of group.categories) {
                     
@@ -1484,7 +1484,7 @@
               })
               .done (function(response)
               {
-                  let newGroupElement = createGroupElement (response);
+                  let newGroupElement = createGroupElement (response, true);
                   
                   let groupElements = $("#categories > div");
                       
@@ -1649,7 +1649,7 @@
   }
 
   
-  function openAddFundingDialog (plans, categories) {
+  function openFundingDialog (plans, categories) {
       
       $("#addFundingDialog [name='plans']").empty ();
       
@@ -1745,7 +1745,6 @@
                           addTextElementAmount ($('#addFundingForm .available-funds'), -delta);
                           setTextElementAmount (balanceElement, currentAmt + amount);
                       })
-                      .addClass('fund-list-amt')
                       .attr('data-cat-id', category.id)
                       .attr('data-init-value', fundingAmt)
                       .appendTo(catElement);
@@ -1783,22 +1782,33 @@
                   else {
                       // Get the categories
                       
-                      let cats = $("#addFundingForm .fund-list-amt:input");
+                      let cats = $("#addFundingForm .cat-fund-items .amount-input");
 
-                      let transfers = { date: startDate, from: -1, to: [] };
+                      let transfers = { date: $("#addFundingForm [name='startDate']").val (), categories: [] };
+                      let sum = 0;
                       
                       for (let cat of cats) {
                           
                           let id = parseInt($(cat).attr('data-cat-id'));
                           let amount = parseFloat($(cat).val ());
                           
-                          let transfer = { categoryId: id, amount: amount };
-                          
-                          transfers.to.push(transfer);
+                          if (amount != 0) {
+                              let transfer = { categoryId: id, amount: amount };
+                              
+                              transfers.categories.push(transfer);
+                              
+                              sum += amount;
+                          }
                       }
+                      
+                      transfers.categories.push({categoryId: -1, amount: -sum});
 
                       $.post({
                           url: "/category_transfer",
+                          headers:
+                          {
+                              "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr('content'),
+                          },
                           contentType: "application/json",
                           data: JSON.stringify(transfers),
                       })
@@ -1806,10 +1816,8 @@
                       {
                           updateCategories (response);
 
-                          $("#editFundingDialog").modal ('hide');
+                          $("#addFundingDialog").modal ('hide');
                       });
-
-                      $("#addFundingDialog").modal ('hide');
                   }
               }
           }
@@ -2377,10 +2385,10 @@
           })
           .done (function (plans) {
               $.getJSON ({
-                  url: "/categories"
+                  url: "/groups"
               })
               .done (function (categories) {
-                  openAddFundingDialog (plans, categories);
+                  openFundingDialog (plans, categories);
               });
           });
       });

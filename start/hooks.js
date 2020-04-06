@@ -86,6 +86,45 @@ hooks.after.providersBooted(() => {
         }
     });
 
+    Validator.extend('!allZero', async (data, field, message, args, get) => {
+        const value = get(data, field)
+        if (!value) {
+            /**
+             * skip validation if value is not defined. `required` rule
+             * should take care of it.
+            */
+            return
+        }
+
+        const [property] = args
+
+        allZeros = true;
+        for (let v of value) {
+            allZeros &= (v[property] === 0);
+        }
+        
+        if (allZeros) {
+            throw message
+        }
+    });
+
+    Validator.extend('validCategory', async (data, field, message, args, get) => {
+        const value = get(data, field)
+        if (!value) {
+            /**
+             * skip validation if value is not defined. `required` rule
+             * should take care of it.
+            */
+            return
+        }
+
+        for (let v of value) {
+            if (v.categoryId == undefined || v.categoryId == null || v.amount == undefined || v.amount == null) {
+                throw message
+            }
+        }
+    });
+
   class ErrorTag extends View.engine.BaseTag {
     //
       get tagName () {
