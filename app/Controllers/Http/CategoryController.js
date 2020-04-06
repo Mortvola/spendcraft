@@ -95,6 +95,7 @@ class CategoryController {
                     "', \"amount\": ' || splits.amount || " +
                     "', \"category\": ' || '\"' || cats.name || '\"' || " +
                     "', \"group\": ' || '\"' || groups.name || '\"' || " +
+                    "', \"id\": ' || '\"' || splits.id || '\"' ||" +
                     "'}')::json) AS categories"),
                 "transaction_id")
             .from("category_splits AS splits")
@@ -165,29 +166,74 @@ class CategoryController {
         if (Array.isArray(request.body.categories)) {
             
             let date = request.body.date;
+            let transactionId;
+            
+            if (request.params.tfrId == undefined) {
+                let xfr = await trx.insert({date: date}).into('category_transfers').returning('id');
+                
+                // In the splits table, negative transaction IDs refer to the category_transfers table entries.
+                transactionId = -xfr[0];
+            }
+            else {
+                transactionId = -request.params.tfrId;
+            }
 
-            let xfr = await trx.insert({date: date}).into('category_transfers').returning('id');
-
-            // In the splits table, negative transaction IDs refer to the category_transfers table entries.
-            let transactionId = -xfr[0];
+            let existingSplits = [];
             
             // Insert the category splits
-            for (let transfer of request.body.categories) {
+            for (let split of request.body.categories) {
                 
-                console.log(transfer);
-                
-                if (transfer.amount != 0) {
-                    await trx.insert({transaction_id: transactionId, category_id: transfer.categoryId, amount: transfer.amount}).into ('category_splits');
+                if (split.amount != 0) {
                     
-                    const category = await Category.findOrFail(transfer.categoryId, trx);
+                    let amount = split.amount;
                     
-                    category.amount = parseFloat(category.amount) + transfer.amount;
+                    if (split.id) {
+                        existingSplits.push(split.id);
+                        
+                        let oldSplit = await trx.select('amount').from('category_splits').where('id', split.id);
+                        
+                        amount = split.amount - oldSplit[0].amount;
+                        
+                        await trx.table('category_splits').where('id', split.id).update({amount: split.amount});
+                    }
+                    else {
+                        
+                        let newId = await trx.insert({transaction_id: transactionId, category_id: split.categoryId, amount: split.amount}).into ('category_splits').returning('id');
+                        
+                        existingSplits.push(newId[0]);
+                        
+                        console.log ("Inserted split " + newId[0]);
+                        
+                        amount = split.amount;
+                    }
+                    
+                    const category = await Category.findOrFail(split.categoryId, trx);
+                    
+                    category.amount = parseFloat(category.amount) + amount;
 
                     await category.save(trx);
                     
                     result.push({id: category.id, amount: category.amount});
                 }
             }
+            
+            // Delete splits that are not in the array of ids
+            let query = trx.from('category_splits').whereNotIn('id', existingSplits).andWhere('transaction_id', transactionId);
+            let toDelete = await query.select('category_id AS categoryId', 'amount');
+            
+            console.log ('delete: ' + toDelete);
+            
+            for (let td of toDelete) {
+
+                const category = await Category.findOrFail(td.categoryId, trx);
+                
+                category.amount = parseFloat(category.amount) - td.amount;
+
+                await category.save(trx);
+            }
+            
+            await query.delete ();
+            
         }
             
         await trx.commit ();

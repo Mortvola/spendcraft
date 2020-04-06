@@ -912,7 +912,7 @@
                       openEditTransactionDialog (transaction);
                   }
                   else {
-                      catTransferDialog (transaction.date, transaction.categories);
+                      catTransferDialog (transaction.id, transaction.date, transaction.categories);
                   }
               })
               .appendTo(t);
@@ -937,7 +937,7 @@
                           openEditTransactionDialog (transaction);
                       }
                       else {
-                          catTransferDialog (transaction.date, transaction.categories);
+                          catTransferDialog (transaction.id, transaction.date, transaction.categories);
                       }
                   })
               .appendTo (catDiv);
@@ -969,7 +969,7 @@
                       openEditTransactionDialog (transaction);
                   }
                   else {
-                      catTransferDialog (transaction.date, transaction.categories);
+                      catTransferDialog (transaction.id, transaction.date, transaction.categories);
                   }
               })
               .appendTo(catDiv);
@@ -1923,7 +1923,7 @@
           addTextElementAmount (this.totalElement, delta);
       }
       
-      populateSplits (splitItems, total, categories) {
+      populateSplits (splitItems, total, splits) {
           
           this.totalElement.off("delta-change").on ("delta-change", function (event, amout, delta) {
               addTextElementAmount (this, -delta);
@@ -1933,11 +1933,11 @@
           
           splitItems.empty ();
           
-          if (categories !== null && categories !== undefined && categories.length > 0) {
+          if (splits !== null && splits !== undefined && splits.length > 0) {
               
-              for (let category of categories) {
+              for (let split of splits) {
                   
-                  this.createSplitItem (category).appendTo(splitItems);
+                  this.createSplitItem (split).appendTo(splitItems);
               }
           }
           else {
@@ -1945,7 +1945,7 @@
           }
       }
       
-      createSplitItem (category) {
+      createSplitItem (split) {
           let splitItem = $('<div></div>').addClass('transaction-split-item');
           
           let categoryElement = createCategoryInputElement ()
@@ -2012,12 +2012,13 @@
               })
               .appendTo(splitItem);
 
-          if (category !== null && category != undefined) {
-              categoryElement.val(category.group + ':' + category.category);
+          if (split !== null && split != undefined) {
+              categoryElement.val(split.group + ':' + split.category);
 
               amountInput
-                  .attr('data-cat-id', category.categoryId)
-                  .val(this.neg * category.amount)
+                  amountInput.attr('data-id', split.id)
+                  .attr('data-cat-id', split.categoryId)
+                  .val(this.neg * split.amount)
                   .change ();
           }
 
@@ -2029,8 +2030,17 @@
           
           let splitElements = this.splitItems.find("[name='amount']");
           
-          for (let split of splitElements) {
-              splits.push({categoryId: parseInt($(split).attr('data-cat-id')), amount: this.neg * parseFloat($(split).val ()) });
+          for (let splitElement of splitElements) {
+              
+              let split = {categoryId: parseInt($(splitElement).attr('data-cat-id')), amount: this.neg * parseFloat($(splitElement).val ()) };
+              
+              let id = parseInt($(splitElement).attr('data-id'));
+              
+              if (!isNaN(id) && id !== null && id !== undefined) {
+                  split.id = id;
+              }
+              
+              splits.push(split);
           }
           
           return splits;
@@ -2062,7 +2072,7 @@
   }
   
   
-  function catTransferDialog (date, categories) {
+  function catTransferDialog (id, date, categories) {
       
       let amount = 0;
       
@@ -2118,21 +2128,41 @@
           let date = $("#catTransferForm [name='date']").val ();
           let categories = fromCatSplits.get ().concat(toCatSplits.get ());
           
-          $.post({
-              url: "/category_transfer",
-              headers:
+          if (id) {
+              $.ajax({
+                  method: 'PATCH',
+                  url: "/category_transfer/" + id,
+                  headers:
+                  {
+                      "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr('content'),
+                  },
+                  contentType: "application/json",
+                  data: JSON.stringify({ date: date, categories: categories }),
+              })
+              .done (function(response)
               {
-                  "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr('content'),
-              },
-              contentType: "application/json",
-              data: JSON.stringify({ date: date, categories: categories }),
-          })
-          .done (function(response)
-          {
-              updateCategories (response);
+                  updateCategories (response);
 
-              $("#catTransferDialog").modal ('hide');
-          });
+                  $("#catTransferDialog").modal ('hide');
+              });
+          }
+          else {
+              $.post({
+                  url: "/category_transfer",
+                  headers:
+                  {
+                      "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr('content'),
+                  },
+                  contentType: "application/json",
+                  data: JSON.stringify({ date: date, categories: categories }),
+              })
+              .done (function(response)
+              {
+                  updateCategories (response);
+
+                  $("#catTransferDialog").modal ('hide');
+              });
+          }
       });
   }
   
