@@ -41,8 +41,8 @@ Route.group (() => {
     Route.patch('/groups/:groupId/categories/:catId', 'CategoryController.updateCategory').validator('UpdateCategory')
     Route.delete('/groups/:groupId/categories/:catId', 'CategoryController.deleteCategory').validator('DeleteCategory')
     
-    Route.post ('/category_transfer', 'CategoryController.transfer');
-    Route.patch ('/category_transfer/:tfrId', 'CategoryController.transfer');
+    Route.post ('/category_transfer', 'CategoryController.transfer').validator('UpdateCategoryTransfer');;
+    Route.patch ('/category_transfer/:tfrId', 'CategoryController.transfer').validator('UpdateCategoryTransfer');
     
     Route.get ('/category/:catId/transactions', 'CategoryController.transactions');
 

@@ -202,8 +202,6 @@ class CategoryController {
                         
                         existingSplits.push(newId[0]);
                         
-                        console.log ("Inserted split " + newId[0]);
-                        
                         amount = split.amount;
                     }
                     
@@ -220,8 +218,6 @@ class CategoryController {
             // Delete splits that are not in the array of ids
             let query = trx.from('category_splits').whereNotIn('id', existingSplits).andWhere('transaction_id', transactionId);
             let toDelete = await query.select('category_id AS categoryId', 'amount');
-            
-            console.log ('delete: ' + toDelete);
             
             for (let td of toDelete) {
 

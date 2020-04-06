@@ -64,6 +64,28 @@ hooks.after.providersBooted(() => {
         }
     });
 
+    Validator.extend('zeroSum', async (data, field, message, args, get) => {
+        const value = get(data, field)
+        if (!value) {
+            /**
+             * skip validation if value is not defined. `required` rule
+             * should take care of it.
+            */
+            return
+        }
+
+        const [property] = args
+
+        let sum = 0;
+        for (let v of value) {
+            sum += v[property];
+        }
+        
+        if (sum !== 0) {
+            throw message
+        }
+    });
+
   class ErrorTag extends View.engine.BaseTag {
     //
       get tagName () {
