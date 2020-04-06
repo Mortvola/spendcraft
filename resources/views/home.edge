@@ -2071,7 +2071,7 @@
       $("#editTransactionForm").submit(function (event) {
           event.preventDefault();
           
-          let request = catSplits.get ();
+          let request = {splits: catSplits.get () };
           
           updateTransactionCategory (transaction, request);
 

@@ -325,6 +325,7 @@ class InstitutionController {
 
         let result = {categories: []}
         
+        // Get the "unassigned" category id
         let systemCats = await trx.select ('cats.id AS id', 'cats.name AS name')
             .from ('categories AS cats')
             .join('groups', 'groups.id', 'group_id')
@@ -338,6 +339,8 @@ class InstitutionController {
 
         if (splits.length > 0) {
             
+            // There are pre-existing category splits.
+            // Credit the category balance for each one.
             for (let split of splits) {
                 let cat = await this.subtractFromCategoryBalance (trx, split.categoryId, split.amount);
 
