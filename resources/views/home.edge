@@ -371,9 +371,17 @@
       
           for (let group of categories) {
               
+              // The mousedown and click handler prevent the list 
+              // from closing if the group item is clicked on.
               let catListGroup = $("<div></div>")
                   .text(group.name)
                   .addClass('category-list-item')
+                  .on('mousedown', (event) => {
+                      event.preventDefault ();
+                  })
+                  .on('click', (event) => {
+                      event.stopPropagation ();
+                  })
                   .appendTo(this.categoryDropDownList);
 
               for (let category of group.categories) {
@@ -388,7 +396,7 @@
               .text(category)
               .addClass('cat-list-cat category-list-item category-select-item');
           
-          catListItem.on('mousedown', (evet) => {
+          catListItem.on('mousedown', (event) => {
               event.preventDefault ();
               $(this.owner).val(group + ":" + category);
               //this.selectionCallback ({ id: id, group: group, category: category });
@@ -446,7 +454,6 @@
       
       cancel () {
           $(this.owner).val(this.previousValue);
-          //$(':focus').blur();
           this.hide ();
       }
       
