@@ -856,7 +856,9 @@
           num = 0;
       }
       
-      return parseFloat(num).toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,')
+      // note: something (edge?) is throwing out the backslashes in the regex expression
+      // so they need to be escaped.
+      return parseFloat(num).toFixed(2).replace(/(\\d)(?=(\\d{3})+(?!\\d))/g, '$1,')
   }
   
   

@@ -264,11 +264,12 @@ body {
 	display: grid;
 	grid-template-columns: repeat(3, max-content);
 	align-items: center;
+	overflow: hidden;
 }
 
 .cat-list-cat {
-	display: flex;
-	flex-flow: row;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) max-content;
 	justify-content: space-between;
 	margin-left: 28px;
 }
