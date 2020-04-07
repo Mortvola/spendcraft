@@ -354,7 +354,7 @@
           });
 
           $(window).on('click', (event) => {
-              if (this.categoryDropDownList.is(':visible'))
+              if (this.categoryDropDownList !== undefined && this.categoryDropDownList.is(':visible'))
               {
                   event.stopPropagation ();
                   this.cancel ();
@@ -698,7 +698,7 @@
                   
                   let txElement = this.transactions.find(t => t.transaction.id == transaction.id).element;
 
-                  if (this.categoryId === -2) {
+                  if (this.categoryId === categoryList.unassigned.id) {
                       
                       // This is the Unassigned category. If there are categories assigned to 
                       // this transation then remove it.
@@ -1122,10 +1122,11 @@
   }
   
   
-  function createCategoryTreeElement (id, groupId, name, amount, groupNameElement)
+  function createCategoryTreeElement (id, groupId, systemGroup, name, amount, groupNameElement)
   {
       let catElement = $('<div></div>')
           .addClass('cat-list-cat')
+          .attr('data-id', id)
           .on('click',
               function () {
                   $('#categories .cat-list-cat.selected').removeClass('selected');
@@ -1138,7 +1139,7 @@
           .addClass('cat-element-bar')
           .appendTo (catElement);
       
-      if (groupId != -1) {
+      if (!systemGroup) {
 
           createIconButton ("edit", function () { openEditCategoryDialog (groupId, id, catElement); })
               .appendTo(nameBar);
@@ -1242,7 +1243,7 @@
   }
 
   
-  function openAddCategoryDialog (groupId, groupElement) {
+  function openAddCategoryDialog (groupId, systemGroup, groupElement) {
       $("#addCategoryDialog [name='delete']").css('visibility', 'hidden');
       $('#addCategoryDialog .modal-title').text('Add Category');
       $('#addCategoryDialog [name="name"]').val('');
@@ -1280,7 +1281,7 @@
               }
           })
           .done (function(response) {
-              let newCategoryElement = createCategoryTreeElement (response.id, groupId, response.name, response.amount, groupElement.find('.group-name'));
+              let newCategoryElement = createCategoryTreeElement (response.id, groupId, systemGroup, response.name, response.amount, groupElement.find('.group-name'));
               
               let categoryElements = $(groupElement).children (".cat-list-cat");
               
@@ -1321,9 +1322,9 @@
           .appendTo (groupElementBar);
       
       // Add the 'Add category' and other buttons (but not to the System group).
-      if (editable && group.id != -1) {
+      if (editable && !group.system) {
        
-          createIconButton ("plus", function () { openAddCategoryDialog (group.id, groupElement); })
+          createIconButton ("plus", function () { openAddCategoryDialog (group.id, group.system, groupElement); })
               .appendTo(groupElementBar);
     
           createIconButton ("edit", function () { openGroupDialog (group.id, groupElement); })
@@ -1350,11 +1351,15 @@
                 
                 for (let category of group.categories) {
                     
-                    createCategoryTreeElement (category.id, group.id, category.name, category.amount, groupElement.find('.group-name')).appendTo(groupElement);
+                    createCategoryTreeElement (category.id, group.id, group.system, category.name, category.amount, groupElement.find('.group-name')).appendTo(groupElement);
                 }
                 
                 groupElement.appendTo('#categories');
             }
+            
+            // Find the unassigned category element and click it.
+            let unnassignedId = categoryList.unassigned.id;
+            $("#categories [data-id='" + unnassignedId + "'].cat-list-cat").click ();
         }
     }
   
@@ -1372,6 +1377,12 @@
           })
           .done ((response) => {
               this.categories = response;
+              
+              // Find the system group and its categories
+              this.systemGroup = this.categories.find(g => g.system);
+              this.unassigned = this.systemGroup.categories.find(c => c.system && c.name == "Unassigned");
+              this.fundingPool = this.systemGroup.categories.find(c => c.system && c.name == "Funding Pool");
+              
               $(document).trigger('category', [response]);
           });
       }
@@ -1527,7 +1538,7 @@
           
           for (let category of group.categories) {
               
-              if (category.id === -1) {
+              if (category.system) {
                   $('.available-funds').text(parseFloat(category.amount).toFixed(2));
               }
               else {
@@ -1709,9 +1720,9 @@
           
           for (let category of group.categories) {
               
-              if (group.id == -1) {
+              if (group.system) {
                   
-                  if (category.id == -1) {
+                  if (category.system) {
                       $('.available-funds').text(parseFloat(category.amount).toFixed(2));
                   }
               }
@@ -1808,7 +1819,7 @@
                           }
                       }
                       
-                      transfers.categories.push({categoryId: -1, amount: -sum});
+                      transfers.categories.push({categoryId: categoryList.fundingPool.id, amount: -sum});
 
                       $.post({
                           url: "/category_transfer",
@@ -1967,7 +1978,7 @@
               .on ('change', (event) => {
                   let category = categoryElement.data ();
                   amountInput.attr('data-cat-id', category.id);
-                  let balance = categories.getBalance(category.id);
+                  let balance = categoryList.getBalance(category.id);
                   
                   setTextElementAmount(catBalance, balance);
                   
@@ -2218,7 +2229,7 @@
                       
                       let cats = $("#editFundingForm .cat-fund-items :input");
 
-                      let transfers = { date: startDate, from: -1, to: [] };
+                      let transfers = { date: startDate, from: categoryList.fundingPool.id, to: [] };
                       
                       for (let cat of cats) {
                           
@@ -2373,7 +2384,7 @@
   }
   
   
-  let categories;
+  let categoryList;
   let categoryView;
   
   $().ready (function () {
@@ -2381,7 +2392,7 @@
       getConnectedAccounts ();
       
       categoryView = new CategoryView;
-      categories = new Categories;
+      categoryList = new Categories;
       categorySelectList = new CategorySelector ();
 
       $('#add-group').on('click', function () { openGroupDialog (); });

@@ -7,7 +7,7 @@ class CategoryController {
     
     async get ({auth}) {
         
-        let rows = await Database.select ('g.id AS groupId', 'g.name AS groupName', 'c.id AS categoryId', 'c.name as categoryName', 'amount')
+        let rows = await Database.select ('g.id AS groupId', 'g.name AS groupName', 'g.system AS systemGroup', 'c.id AS categoryId', 'c.name as categoryName', 'c.system AS systemCategory', 'amount')
             .from('groups AS g')
             .leftJoin ('categories AS c', 'c.group_id', 'g.id')
             .where ('user_id', auth.user.id)
@@ -19,15 +19,15 @@ class CategoryController {
 
         for (let cat of rows) {
             if (!group) {
-                group = { id: cat.groupId, name: cat.groupName, categories: [] };
+                group = { id: cat.groupId, name: cat.groupName, system: cat.systemGroup, categories: [] };
             } else if (group.name !== cat.groupName) {
                 groups.push(group);
-                group = { id: cat.groupId, name: cat.groupName, categories: [] };
+                group = { id: cat.groupId, name: cat.groupName, system: cat.systemGroup, categories: [] };
             }
             
             if (cat.categoryId)
             {
-                group.categories.push({ id: cat.categoryId, name: cat.categoryName, amount: cat.amount });
+                group.categories.push({ id: cat.categoryId, name: cat.categoryName, system: cat.systemCategory, amount: cat.amount });
             }
         }
         
