@@ -79,7 +79,7 @@ class CategoryController {
 
         let result = { transactions: [] };
         
-        let cat = await Database.select('amount', 'cats.name AS name', 'cats.system AS system')
+        let cat = await Database.select(Database.raw('CAST(amount AS float) as amount'), 'cats.name AS name', 'cats.system AS system')
             .from ('categories AS cats')
             .join ('groups', 'groups.id', 'group_id')
             .where('cats.id', categoryId)
@@ -95,7 +95,7 @@ class CategoryController {
                     "', \"amount\": ' || splits.amount || " +
                     "', \"category\": ' || '\"' || cats.name || '\"' || " +
                     "', \"group\": ' || '\"' || groups.name || '\"' || " +
-                    "', \"id\": ' || '\"' || splits.id || '\"' ||" +
+                    "', \"id\": ' || splits.id || " +
                     "'}')::json) AS categories"),
                 "transaction_id")
             .from("category_splits AS splits")
@@ -113,7 +113,7 @@ class CategoryController {
                 "splits.categories AS categories",
                 "inst.name AS institute_name",
                 "acct.name AS account_name",
-                "trans.amount AS amount")
+                Database.raw("CAST(trans.amount AS real) AS amount"))
             .from ('transactions AS trans')
             .join ('accounts AS acct', 'acct.id', 'trans.account_id')
             .join ('institutions AS inst',  'inst.id',  'acct.institution_id')

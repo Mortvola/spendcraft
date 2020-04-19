@@ -384,7 +384,7 @@ class InstitutionController {
         }
         
         let transCats = await trx.select(
-                "category_id as categoryId", "splits.amount AS amount", "cats.name AS category", "groups.name AS group")
+                "category_id as categoryId", Database.raw("CAST(splits.amount AS float) AS amount"), "cats.name AS category", "groups.name AS group")
             .from ("category_splits AS splits")
             .join ("categories AS cats", "cats.id", "splits.category_id")
             .join ("groups", "groups.id", "cats.group_id")

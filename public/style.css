@@ -25,6 +25,15 @@ body {
 	background-color:#228B22;
 }
 
+.drop-down {
+	position: absolute;
+	background-color: white;
+	border: black thin solid;
+	border-radius: 4px;
+	overflow-y: auto;
+	z-index:4000;
+}
+
 .side-bar {
 	display: grid;
 	grid-template-columns: 1fr;
