@@ -108,19 +108,18 @@ class CategoryInput extends React.Component {
     
     render () {
         return (
-            <div>
-                <input
-                    ref={this.inputRef}
-                    className="category-input"
-                    type="input"
-                    placeholder="Unassigned"
-                    onClick={this.handleClick}
-                    onChange={this.handleChange}
-                    onBlur={this.handleBlur}
-                    onKeyDown={this.handleKeydown}
-                    value={this.state.value}
-                />
-            </div>);
+            <input
+                ref={this.inputRef}
+                className="category-input"
+                type="text"
+                placeholder="Unassigned"
+                onClick={this.handleClick}
+                onChange={this.handleChange}
+                onBlur={this.handleBlur}
+                onKeyDown={this.handleKeydown}
+                value={this.state.value}
+            />
+        );
     }
 }
 

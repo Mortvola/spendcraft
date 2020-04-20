@@ -175,7 +175,7 @@ body {
 
 .acct-list-inst {
 	display: grid;
-	grid-template-columns: max-content max-content;
+	grid-template-columns: repeat(3, max-content);
 	margin-top: 7px;
 }
 
@@ -207,6 +207,7 @@ body {
 	height: 100%;
 	grid-area: register;
 	user-select: none;
+	overflow-y: auto;
 }
 
 .register-title {

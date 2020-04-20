@@ -197,6 +197,8 @@ class InstitutionController {
             account_ids: [plaidAccountId]
         });
 
+//        console.log(JSON.stringify(transactionsResponse, null, 4));
+        
         let sum = 0;
         let pendingSum = 0;
         
@@ -306,7 +308,7 @@ class InstitutionController {
                 result.accounts = [{ id: request.params.acctId, balance: details.balance}];
             }
             else {
-                let balanceResponse = await client.getBalance (acct[0].access_token, {
+                let balanceResponse = await plaidClient.getBalance (acct[0].access_token, {
                     account_ids: [acct[0].plaidAccountId]});
                 
                 await trx.table("accounts").where("id", request.params.acctId).update("balance", balanceResponse.accounts[0].balances.current);
@@ -400,6 +402,18 @@ class InstitutionController {
         return result;
     }
 
+    async publicToken ({request, auth}) {
+        
+        let acct = await Database.select ("access_token AS accessToken")
+            .from("institutions AS inst")
+            .where ('inst.id', request.params.instId)
+            .andWhere ('inst.user_id', auth.user.id);
+
+        console.log (acct);
+        let result = await plaidClient.createPublicToken (acct[0].accessToken);
+        
+        return {publicToken: result.public_token};
+    }
 }
 
 module.exports = InstitutionController

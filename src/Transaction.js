@@ -58,7 +58,7 @@ class Transaction extends React.Component {
             category = transaction.categories[0].group + ':' + transaction.categories[0].category;
         }
         
-        return <CategoryInput value={category} onChange={this.handleChange}/>
+        return <CategoryInput defaultValue={category} onChange={this.handleChange}/>
     }
     
     render () {

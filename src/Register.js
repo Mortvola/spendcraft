@@ -1,6 +1,6 @@
 import React from 'react';
 import {Transaction, getTransactionAmountForCategory} from './Transaction';
-import openEditTransactionDialog from './TransactionDialog';
+import {openEditTransactionDialog} from './TransactionDialog';
 import categoryList from './Categories';
 import catTransferDialog from './CategoryTransferDialog';
 

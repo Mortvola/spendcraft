@@ -3,6 +3,8 @@ import categoryList from './Categories';
 import {setTextElementAmount} from './NumberFormat'
 import catTransferDialog from './CategoryTransferDialog';
 
+var linkHandlerCommonOptions = {};
+
 
 function updateCategory (id, amount) {
     setTextElementAmount($('#categories [data-cat="' + id + '"]'), amount);
@@ -183,6 +185,24 @@ function updateCategories (categories) {
               .done (function (response) {
                   
                   openAccountSelectionDialog (institution.id, response);
+              });
+          })
+          .appendTo(institutionBar);
+      
+      createIconButton("lock", function () {
+              $.getJSON ({
+                  url: '/institution/' + institution.id + '/public_token'
+              })
+              .done (function (response) {
+                  console.log(response);
+                  
+                   let handler = Plaid.create({
+                          ...linkHandlerCommonOptions,
+                          token: response.publicToken,
+                          onSuccess: function(public_token, metadata) {},
+                          onExit: function (err, metadata) {},
+                      });
+                   handler.open ();
               });
           })
           .appendTo(institutionBar);
@@ -1170,7 +1190,7 @@ function updateCategories (categories) {
 
     var products = plaidProducts.split(',');
 
-    var linkHandlerCommonOptions = {
+    linkHandlerCommonOptions = {
       apiVersion: 'v2',
       clientName: appName,
       env: plaidEnvironment,

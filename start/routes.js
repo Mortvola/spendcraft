@@ -54,6 +54,7 @@ Route.group (() => {
     Route.get ('/institution/:instId/accounts', 'InstitutionController.get')
     Route.post ('/institution/:instId/accounts', 'InstitutionController.addAccounts')
     Route.post ('/institution/:instId/accounts/:acctId/transactions/sync', 'InstitutionController.sync');
+    Route.get ('/institution/:instId/public_token', 'InstitutionController.publicToken')
 
     Route.get ('/funding_plans', 'FundingPlanController.getAll');
     Route.get ('/funding_plan/:planId', 'FundingPlanController.getPlan');
