@@ -1,12 +1,19 @@
 import React from 'react';
+import ReactDOM from 'react-dom';
+import PropTypes from 'prop-types';
 import categoryList from './Categories'
 
 class CategoryInput extends React.Component {
     constructor (props) {
         super(props);
         
+        let categoryName = "";
+        if (this.props.categoryId) { // && categoryList) {
+            categoryName = categoryList.getCategoryName (this.props.categoryId);
+        }
+        
         this.state = {
-                value: this.props.defaultValue ? this.props.defaultValue : ""
+                value: categoryName,
             }
         
         this.previousValue = this.state.value;
@@ -19,19 +26,31 @@ class CategoryInput extends React.Component {
         this.handleKeydown = this.handleKeydown.bind(this);
         this.handleCancel = this.handleCancel.bind(this);
         this.handleSelect = this.handleSelect.bind(this);
+        
+//        $(document).on('category', (event, categories) => {
+//            if (this.props.categoryId) { // && categoryList) {
+//                categoryName = categoryList.getCategoryName (this.props.categoryId);
+//                console.log ("Category name " + categoryName)
+//            }
+//        });
     }
     
     openSelector () {
-        createSelector({
-            left: this.position.left,
-            top: this.position.bottom,
-            width: this.position.right - this.position.left,
-            height: 100,
-            visible: true,
-            owner: this,
-            onCancel: this.handleCancel,
-            onSelect: this.handleSelect,
-        });
+        
+        if (this.inputRef.current) {
+            let position = this.inputRef.current.getBoundingClientRect ();
+
+            createSelector({
+                left: position.left,
+                top: position.bottom,
+                width: position.right - position.left,
+                height: 100,
+                visible: true,
+                owner: this,
+                onCancel: this.handleCancel,
+                onSelect: this.handleSelect,
+            });
+        }
     }
     
     handleClick (event) {
@@ -50,8 +69,11 @@ class CategoryInput extends React.Component {
     handleSelect (group, category) {
         this.selection = {group: group, category: category};
         closeSelector ();
-        this.setState({value: group.name + ':' + category.name})
-        this.props.onChange(category.id);
+        this.setState({value: categoryList.getCategoryName (category.id)})
+        
+        if (this.props.onChange) {
+            this.props.onChange(category.id);
+        }
     }
     
     handleCancel () {
@@ -100,10 +122,6 @@ class CategoryInput extends React.Component {
                 this.openSelector ();
             }
         }
-    }
-    
-    componentDidMount () {
-        this.position = this.inputRef.current.getBoundingClientRect ();
     }
     
     render () {
@@ -172,6 +190,12 @@ class CategorySelctorCategory extends React.Component {
     }
 }
 
+CategorySelctorCategory.propTypes = {
+    onClick: PropTypes.func,
+    onSelected: PropTypes.func,
+    selected: PropTypes.bool,
+    category: PropTypes.object,
+}
 
 class CategorySelectorGroup extends React.Component {
     constructor (props) {
@@ -248,7 +272,7 @@ class CategorySelectorGroup extends React.Component {
                 {this.props.group.name}
                 {categories.map((c) => {
                     let selected = c.name == this.props.selected;
-                    return <CategorySelctorCategory category={c} selected={selected} onSelected={this.handleSelected} onClick={this.props.onClick}/>;
+                    return <CategorySelctorCategory key={c.id} category={c} selected={selected} onSelected={this.handleSelected} onClick={this.props.onClick}/>;
                 })}
                 </div>);
         }
@@ -285,6 +309,15 @@ class CategorySelector extends React.Component {
 
     }
     
+    componentDidUpdate(prevProps) {
+        // If we are changing from hidden to visible then 
+        // reset state back to original
+        if (!prevProps.visible && this.props.visible &&
+            (this.state.filter != "" || this.state.selected.group != null || this.state.selected.category != null)) {
+            this.setState({filter: "", selected: {group: null, category: null}});
+        }
+    }
+
     render () {
         
         let style = {display: "none"}
@@ -315,7 +348,7 @@ class CategorySelector extends React.Component {
                         if (this.state.selected.group == g.name) {
                             selected = this.state.selected.category;
                         }
-                        return <CategorySelectorGroup group={g} selected={selected} filter={this.state.filter} onSelected={this.handleSelected} onClick={this.handleClick}/>
+                        return <CategorySelectorGroup key={g.id} group={g} selected={selected} filter={this.state.filter} onSelected={this.handleSelected} onClick={this.handleClick}/>
                     })
                 }
                 </div>

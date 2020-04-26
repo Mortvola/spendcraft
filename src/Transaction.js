@@ -1,8 +1,9 @@
-import React from 'react';
+import React, {useState} from 'react';
+import PropTypes from 'prop-types';
 import IconButton from './IconButton';
 import {CategoryInput} from './CategoryInput';
 import Amount from './Amount';
-import {updateTransactionCategory} from './TransactionDialog';
+import {updateTransactionCategory, TransactionDialog} from './TransactionDialog';
 
 
 function getTransactionAmountForCategory(transaction, categoryId) {
@@ -48,17 +49,17 @@ class Transaction extends React.Component {
     
     renderCategoryButton () {
         let transaction = this.props.transaction;
-        let category = "";
+        let categoryId = "";
         
         if (transaction.categories) {
             if (transaction.categories.length > 1) {
                 return <button className='split-button' onClick={this.handleEditClick}>Split</button>
             }
             
-            category = transaction.categories[0].group + ':' + transaction.categories[0].category;
+            categoryId = transaction.categories[0].categoryId;
         }
         
-        return <CategoryInput defaultValue={category} onChange={this.handleChange}/>
+        return <CategoryInput categoryId={categoryId} onChange={this.handleChange}/>
     }
     
     render () {
@@ -76,7 +77,12 @@ class Transaction extends React.Component {
                 <div className='transaction-field'>{transaction.name}</div>
                 <div className='trans-cat-edit'>
                     {this.renderCategoryButton ()}
-                    <IconButton icon='list-ul' onClick={this.handleEditClick} />
+                    <ModalLauncher
+                        launcher={IconButton}
+                        launcherProps={{icon: 'list-ul'}}
+                        dialog={TransactionDialog}
+                        dialogProps={{transaction: this.props.transaction, categoryContext: this.props.categoryContext}}
+                    />
                 </div>
                 <Amount className='transaction-field amount currency' amount={amount} />
                 <Amount className='transaction-field balance currency' amount={balance} />
@@ -84,6 +90,40 @@ class Transaction extends React.Component {
                 <div className='transaction-field'>{transaction.account_name}</div>
             </div>);
     }
+}
+
+Transaction.propTypes = {
+    onClick: PropTypes.func,
+    onEditClick: PropTypes.func,
+    transaction: PropTypes.object,
+    amount: PropTypes.number,
+    balance: PropTypes.number,
+    selected: PropTypes.bool,
+    categoryContext: PropTypes.number,
+}
+
+function ModalLauncher ({launcherProps, dialogProps, ...props}) {
+    const [show, setShow] = useState(false);
+
+    const handleClose = () => setShow(false);
+    const handleShow = () => setShow(true);
+
+    const Launcher = props.launcher;
+    const Dialog = props.dialog;
+
+    return (
+        <>
+        <Launcher onClick={handleShow} {...launcherProps} />
+        <Dialog show={show} handleClose={handleClose} {...dialogProps} />
+        </>
+    );
+}
+
+ModalLauncher.propTypes = {
+    launcher: PropTypes.func,
+    launcherProps: PropTypes.object,
+    dialog: PropTypes.func,
+    dialogProps: PropTypes.object
 }
 
 export {Transaction, getTransactionAmountForCategory};

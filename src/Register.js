@@ -1,4 +1,6 @@
 import React from 'react';
+import ReactDOM from 'react-dom';
+import PropTypes from 'prop-types';
 import {Transaction, getTransactionAmountForCategory} from './Transaction';
 import {openEditTransactionDialog} from './TransactionDialog';
 import categoryList from './Categories';
@@ -40,6 +42,7 @@ class RegisterElement extends React.Component {
                 transaction={transaction}
                 amount={amount}
                 balance={balance}
+                categoryContext={categoryId}
                 onClick={this.handleClick}
                 selected={selected}
                 onEditClick={this.handleEditClick}
@@ -59,6 +62,13 @@ class RegisterElement extends React.Component {
                 {this.renderTransactions()}
             </div>);
     }
+}
+
+RegisterElement.propTypes = {
+    transactions: PropTypes.array.isRequired,
+    balance: PropTypes.number.isRequired,
+    categoryId: PropTypes.number,
+    onEdit: PropTypes.func.isRequired,
 }
 
 

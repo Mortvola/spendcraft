@@ -31,6 +31,17 @@ class Categories {
             }
         }
     }
+    
+    getCategoryName (id) {
+        for (let group of this.categories) {
+            
+            let category = group.categories.find ((cat) => cat.id == id);
+            
+            if (category) {
+                return group.name + ":" + category.name;
+            }
+        }
+    }
 }
   
 let categoryList = new Categories;

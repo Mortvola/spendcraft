@@ -1,3 +1,5 @@
+import React from 'react';
+
 function Amount (props) {
     
     let amount = props.amount;
