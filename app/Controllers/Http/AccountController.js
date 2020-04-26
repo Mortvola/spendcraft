@@ -12,7 +12,7 @@ class AccountController {
         let result = { transactions: []};
         
         let balance = await Database.select (
-                "balance")
+                Database.raw("CAST(balance AS real) AS balance"))
             .table("accounts")
             .where("id", accountId);
         
@@ -41,7 +41,7 @@ class AccountController {
                     "splits.categories AS categories",
                     "inst.name AS institute_name",
                     "acct.name AS account_name",
-                    "trans.amount AS amount")
+                    Database.raw("CAST(trans.amount AS real) AS amount"))
                 .table("transactions AS trans")
                 .join("accounts AS acct", "acct.id", "trans.account_id")
                 .join("institutions AS inst", "inst.id", "acct.institution_id")
