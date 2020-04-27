@@ -70,11 +70,12 @@ const TransactionForm = withFormik ({
 
     validate: (values, props) => {
         const errors = {};
-        let sum = values.splits.reduce((accum, item) => accum + item.amount, 0);
+        let sum = values.splits.reduce((accum, item) => accum + Math.floor(item.amount * 100), 0);
 
         console.log(JSON.stringify(values.splits));
+        console.log(sum);
 
-        if (sum != Math.abs(props.transaction.amount)) {
+        if (sum != Math.abs(props.transaction.amount) * 100) {
             errors.splits = "The sum of the categories does not match the transaction amount."
         }
 
@@ -82,7 +83,12 @@ const TransactionForm = withFormik ({
     },
 
     handleSubmit: (values, bag) => {
-        updateTransactionCategory (bag.props.transaction, {splits: values.splits}, bag.props.categoryContext);
+        let splits = values.splits;
+        if (bag.props.transaction.amount < 0) {
+            splits.forEach(element => element.amount *= -1)
+        }
+
+        updateTransactionCategory (bag.props.transaction, {splits: splits}, bag.props.categoryContext);
     }
 
 })((props) => {
@@ -119,7 +125,7 @@ const TransactionForm = withFormik ({
                     {({ field: { value, name }, form: { setFieldValue } }) => (
                         <CategorySplits
                             splits={value}
-                            total={props.transaction.amount}
+                            total={Math.abs(props.transaction.amount)}
                             from={props.from}
                             onChange={(splits, delta) => {
                                 setFieldValue(name, splits);
@@ -169,7 +175,6 @@ TransactionDialog.propTypes = {
     show: PropTypes.bool.isRequired,
     handleClose: PropTypes.func.isRequired,
     splits: PropTypes.object,
-    neg: PropTypes.bool,
     from: PropTypes.bool,
     transaction: PropTypes.object,
     categoryContext: PropTypes.number,

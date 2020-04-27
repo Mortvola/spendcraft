@@ -1,7 +1,6 @@
 import React, {useState} from 'react';
-import PropTypes, { elementType } from 'prop-types';
-import {CategoryInput, categorySelectList} from './CategoryInput'
-import categoryList from './Categories'
+import PropTypes from 'prop-types';
+import {CategoryInput} from './CategoryInput'
 import IconButton from './IconButton';
 import AmountInput from './AmountInput';
 
@@ -9,20 +8,6 @@ import AmountInput from './AmountInput';
 function CategorySplitItem (props)  {
 
     const handleCategoryChange = (categoryId) => {
-        // let category = categoryElement.data ();
-        // amountInput.attr('data-cat-id', category.id);
-        // let balance = categoryList.getBalance(category.id);
-        
-        // setTextElementAmount(catBalance, balance);
-        
-        // let amount = parseFloat(amountInput.val ());
-        
-        // if (from) {
-        //     setTextElementAmount (newBalance, balance - amount);
-        // }
-        // else {
-        //     setTextElementAmount (newBalance, balance + amount);
-        // }
         props.onCategoryChange(props.split.id, categoryId);
     }
     
@@ -38,18 +23,13 @@ function CategorySplitItem (props)  {
         props.onDeleteItem(props.split.id);
     }
 
-    let amount = 0;
-    let categoryId = null;
-    if (props.split) {
-        amount = props.split.amount * props.neg;
-        categoryId = props.split.categoryId;
-    }
+    let categoryId = props.split ? props.split.categoryId : null;
     
     return (
         <div className="transaction-split-item">
             <CategoryInput onChange={handleCategoryChange} categoryId={categoryId} />
             <div className="dollar-amount"/>
-            <AmountInput onDeltaChange={handleDeltaChange} name="amount" amount={amount}/>
+            <AmountInput onDeltaChange={handleDeltaChange} name="amount" amount={props.split.amount}/>
             <div className="dollar-amount"/>
             <IconButton icon="plus" onClick={handleAddItem} />
             <IconButton icon="minus" onClick={handleDeleteItem} />
@@ -63,7 +43,6 @@ CategorySplitItem.propTypes = {
     onDeleteItem: PropTypes.func.isRequired,
     onDeltaChange: PropTypes.func.isRequired,
     onCategoryChange: PropTypes.func.isRequired,
-    neg: PropTypes.number,
 }
 
 let nextId = -1;
@@ -71,7 +50,6 @@ let nextId = -1;
 function CategorySplits (props) {
     props.splits.forEach(element => {if (element.id === undefined) element.id = nextId--;})
     const [splits, setSplits] = useState(props.splits);
-    let neg = props.total < 0 ? -1 : 1;
 
     const handleDeltaChange = (id, amount, delta) => {
         let split = splits.find((s) => s.id == id);
@@ -131,7 +109,6 @@ function CategorySplits (props) {
                 <CategorySplitItem
                     key={s.id}
                     split={s}
-                    neg={neg}
                     onAddItem={handleAddItem}
                     onDeleteItem={handleDeleteItem}
                     onDeltaChange={handleDeltaChange}
