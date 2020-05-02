@@ -1,7 +1,10 @@
+import React from 'react';
+import ReactDOM from 'react-dom';
 import {register} from './Register';
 import categoryList from './Categories';
 import {setTextElementAmount} from './NumberFormat'
-import catTransferDialog from './CategoryTransferDialog';
+import {CategoryView, createCategoryTreeElement} from './CategoryView'
+import {createIconButton} from './IconButton'
 
 var linkHandlerCommonOptions = {};
 
@@ -282,127 +285,6 @@ function updateCategories (categories) {
   }
   
   
-  function createCategoryTreeElement (id, groupId, systemGroup, name, amount, groupNameElement)
-  {
-      let catElement = $('<div></div>')
-          .addClass('cat-list-cat')
-          .attr('data-id', id)
-          .on('click',
-              function () {
-                  $('#categories .cat-list-cat.selected').removeClass('selected');
-                  $('#accounts .acct-list-acct.selected').removeClass('selected');
-                  catElement.addClass('selected');
-                  register.viewCategory (id);
-              })
-  
-      let nameBar = $('<div></div>')
-          .addClass('cat-element-bar')
-          .appendTo (catElement);
-      
-      if (!systemGroup) {
-
-          createIconButton ("edit", function () { openEditCategoryDialog (groupId, id, catElement); })
-              .appendTo(nameBar);
-      }
-
-      createIconButton ("random", function () { catTransferDialog (); })
-          .appendTo(nameBar);
-
-      let catNameElement = $('<div></div>')
-          .text(name)
-          .addClass('cat-list-name')
-          .appendTo(nameBar);
-      
-      let amountElement = $('<div></div>')
-          .addClass('cat-list-amt')
-          .attr('data-cat', id)
-          .appendTo(catElement);
-          
-      setTextElementAmount (amountElement, amount);
-      
-      return catElement;
-  }
-  
-
-  function openEditCategoryDialog (groupId, id, catElement) {
-      
-      $('#addCategoryDialog .modal-title').text('Edit Category');
-      $('#addCategoryDialog [name="name"]').val(catElement.find('.cat-list-name').text ());
-
-      $("#addCategoryForm [name='error']").css("display", "none");
-      $("#addCategoryForm [name='error'] strong").text ("");
-
-      $("#addCategoryDialog").modal ('show');
-
-      $("#addCategoryForm").off('submit');
-      $("#addCategoryForm").submit(function (event) {
-          event.preventDefault();
-          
-          $("#addCategoryForm [name='error']").css("display", "none");
-          $("#addCategoryForm [name='error'] strong").text ("");
-
-          let cat = $('#addCategoryForm').serializeArray ();
-
-          $.ajax ({
-              url: "/groups/" + groupId + "/categories/" + id,
-              headers:
-              {
-                  "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr('content'),
-              },
-              contentType: "application/json",
-              method: 'PATCH',
-              data: JSON.stringify({ name: cat[0].value }),
-          })
-          .fail (function(jqXHR) {
-              if (jqXHR.responseJSON.errors) {
-                  
-                  for (let error of jqXHR.responseJSON.errors) {
-                      $("#addCategoryForm [name='error']").css("display", "block");
-                      $("#addCategoryForm [name='error'] strong").text (error.message);
-                  }
-              }
-          })
-          .done (function(response) {
-
-              $(catElement.find('.cat-list-name')).text(response.name);
-              $("#addCategoryDialog").modal ('hide');
-          });
-      });
-      
-      $("#addCategoryDialog [name='delete']")
-          .css('visibility', 'visible')
-          .on('click', function () {
-
-              $("#addCategoryForm [name='error']").css("display", "none");
-              $("#addCategoryForm [name='error'] strong").text ("");
-
-              $.ajax ({
-                  url: "/groups/" + groupId + "/categories/" + id,
-                  headers:
-                  {
-                      "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr('content'),
-                  },
-                  contentType: "application/json",
-                  method: 'DELETE'
-              })
-              .fail (function(jqXHR) {
-                  if (jqXHR.responseJSON.errors) {
-                      
-                      for (let error of jqXHR.responseJSON.errors) {
-                          $("#addCategoryForm [name='error']").css("display", "block");
-                          $("#addCategoryForm [name='error'] strong").text (error.message);
-                      }
-                  }
-              })
-              .done (function(response) {
-    
-                  $(catElement).remove ();
-                  $("#addCategoryDialog").modal ('hide');
-              });
-      });
-  }
-
-  
   function openAddCategoryDialog (groupId, systemGroup, groupElement) {
       $("#addCategoryDialog [name='delete']").css('visibility', 'hidden');
       $('#addCategoryDialog .modal-title').text('Add Category');
@@ -467,63 +349,6 @@ function updateCategories (categories) {
           });
       });
   }
-  
-  function createGroupElement (group, editable) {
-      let groupElement = $('<div></div>')
-          .addClass('cat-list-group');
-
-      let groupElementBar = $('<div></div>')
-          .addClass('group-element-bar')
-          .appendTo(groupElement);
-      
-      let groupNameElement = $('<div></div>')
-          .text(group.name)
-          .addClass('group-name')
-          .appendTo (groupElementBar);
-      
-      // Add the 'Add category' and other buttons (but not to the System group).
-      if (editable && !group.system) {
-       
-          createIconButton ("plus", function () { openAddCategoryDialog (group.id, group.system, groupElement); })
-              .appendTo(groupElementBar);
-    
-          createIconButton ("edit", function () { openGroupDialog (group.id, groupElement); })
-              .appendTo(groupElementBar);
-      }
-      
-      return groupElement;
-  }
-  
-  
-    class CategoryView {
-          
-        constructor () {
-              $(document).on('category', (event, response) => {
-                  this.createTree (response);
-              })
-        }
-
-        createTree (categories)
-        {
-            for (let group of categories) {
-                
-                let groupElement = createGroupElement (group, true);
-                
-                for (let category of group.categories) {
-                    
-                    createCategoryTreeElement (category.id, group.id, group.system, category.name, category.amount, groupElement.find('.group-name')).appendTo(groupElement);
-                }
-                
-                groupElement.appendTo('#categories');
-            }
-            
-            // Find the unassigned category element and click it.
-            let unnassignedId = categoryList.unassigned.id;
-            $("#categories [data-id='" + unnassignedId + "'].cat-list-cat").click ();
-        }
-    }
-  
-  
   
   function openGroupDialog(groupId, groupElement) {
       
@@ -945,14 +770,6 @@ function updateCategories (categories) {
   }
   
   
-  function createIconButton (icon, callback) {
-      return $("<div class='btn btn-sm'></div>")
-          .html("<i class='fas fa-" + icon + "'></i>")
-          .addClass('group-button')
-          .on ('click', callback);
-  }
-  
-  
   function openFundCatsDialog(transaction, categories) {
 
       if (transaction.categories) {
@@ -1144,13 +961,12 @@ function updateCategories (categories) {
   }
   
   
-  let categoryView;
-  
   $().ready (function () {
       
       getConnectedAccounts ();
       
-      categoryView = new CategoryView;
+      let categoryView = React.createElement(CategoryView, {}, null);
+      ReactDOM.render(categoryView, document.querySelector("#categories"));
 
       $('#add-group').on('click', function () { openGroupDialog (); });
       $('#fund-cats').on('click', function () {

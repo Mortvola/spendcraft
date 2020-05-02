@@ -7,7 +7,14 @@ class CategoryController {
     
     async get ({auth}) {
         
-        let rows = await Database.select ('g.id AS groupId', 'g.name AS groupName', 'g.system AS systemGroup', 'c.id AS categoryId', 'c.name as categoryName', 'c.system AS systemCategory', 'amount')
+        let rows = await Database.select (
+                'g.id AS groupId',
+                'g.name AS groupName',
+                'g.system AS systemGroup',
+                'c.id AS categoryId',
+                'c.name as categoryName',
+                'c.system AS systemCategory',
+                Database.raw('CAST(amount AS float) as amount'))
             .from('groups AS g')
             .leftJoin ('categories AS c', 'c.group_id', 'g.id')
             .where ('user_id', auth.user.id)
