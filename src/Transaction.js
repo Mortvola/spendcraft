@@ -1,9 +1,10 @@
-import React, {useState} from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
 import IconButton from './IconButton';
 import {CategoryInput} from './CategoryInput';
 import Amount from './Amount';
 import {updateTransactionCategory, TransactionDialog} from './TransactionDialog';
+import ModalLauncher from './Modal'
 
 
 function getTransactionAmountForCategory(transaction, categoryId) {
@@ -47,13 +48,28 @@ class Transaction extends React.Component {
         updateTransactionCategory (this.props.transaction, request);
     }
     
+    renderTransactionDialog (props) {
+        return (
+            <TransactionDialog
+                transaction={this.props.transaction}
+                categoryContext={this.props.categoryContext}
+                {...props}
+            />
+        );
+    }
+
     renderCategoryButton () {
         let transaction = this.props.transaction;
         let categoryId = "";
-        
+
         if (transaction.categories) {
             if (transaction.categories.length > 1) {
-                return <button className='split-button' onClick={this.handleEditClick}>Split</button>
+                return (
+                    <ModalLauncher
+                        launcher={props => (<button className='split-button' {...props}>Split</button>)}
+                        dialog={props => this.renderTransactionDialog(props)}
+                    />
+                )
             }
             
             categoryId = transaction.categories[0].categoryId;
@@ -78,10 +94,8 @@ class Transaction extends React.Component {
                 <div className='trans-cat-edit'>
                     {this.renderCategoryButton ()}
                     <ModalLauncher
-                        launcher={IconButton}
-                        launcherProps={{icon: 'list-ul'}}
-                        dialog={TransactionDialog}
-                        dialogProps={{transaction: this.props.transaction, categoryContext: this.props.categoryContext}}
+                        launcher={props => (<IconButton icon='list-ul' {...props}/>)}
+                        dialog={props => this.renderTransactionDialog(props)}
                     />
                 </div>
                 <Amount className='transaction-field amount currency' amount={amount} />
@@ -100,30 +114,6 @@ Transaction.propTypes = {
     balance: PropTypes.number,
     selected: PropTypes.bool,
     categoryContext: PropTypes.number,
-}
-
-function ModalLauncher ({launcherProps, dialogProps, ...props}) {
-    const [show, setShow] = useState(false);
-
-    const handleClose = () => setShow(false);
-    const handleShow = () => setShow(true);
-
-    const Launcher = props.launcher;
-    const Dialog = props.dialog;
-
-    return (
-        <>
-        <Launcher onClick={handleShow} {...launcherProps} />
-        <Dialog show={show} handleClose={handleClose} {...dialogProps} />
-        </>
-    );
-}
-
-ModalLauncher.propTypes = {
-    launcher: PropTypes.func,
-    launcherProps: PropTypes.object,
-    dialog: PropTypes.func,
-    dialogProps: PropTypes.object
 }
 
 export {Transaction, getTransactionAmountForCategory};

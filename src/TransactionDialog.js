@@ -63,8 +63,8 @@ function validateSplits (splits) {
 const TransactionForm = withFormik ({
 
     mapPropsToValues: (props) => ({
-        splits: props.splits
-            ? props.splits
+        splits: props.transaction.categories
+            ? props.transaction.categories
             : [{amount: Math.abs(props.transaction.amount)}],
     }),
 
@@ -161,7 +161,7 @@ function TransactionDialog (props) {
                 <Modal.Title>Edit Transaction</Modal.Title>
             </Modal.Header>
             <Modal.Body>
-                <TransactionForm transaction={props.transaction} splits={props.splits} from={props.from} categoryContext={props.categoryContext}/>
+                <TransactionForm transaction={props.transaction} from={props.from} categoryContext={props.categoryContext}/>
             </Modal.Body>
             <Modal.Footer>
                 <Button variant="secondary" onClick={props.handleClose}>Cancel</Button>
@@ -174,7 +174,6 @@ function TransactionDialog (props) {
 TransactionDialog.propTypes = {
     show: PropTypes.bool.isRequired,
     handleClose: PropTypes.func.isRequired,
-    splits: PropTypes.object,
     from: PropTypes.bool,
     transaction: PropTypes.object,
     categoryContext: PropTypes.number,
