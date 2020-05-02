@@ -1,24 +1,23 @@
 import CategorySplits from './CategorySplits';
 
 
-function catTransferDialog (id, date, categories) {
-    
-    let amount = 0;
-    
-    if (!date) {
-        let now = new Date ();
-          
-        var day = ("0" + now.getDate()).slice(-2);
-        var month = ("0" + (now.getMonth() + 1)).slice(-2);
+function catTransferDialog(id, date, categories) {
+    const amount = 0;
 
-        date = now.getFullYear() + "-" + (month) + "-" + (day) ;
+    if (!date) {
+        const now = new Date();
+
+        const day = (`0${now.getDate()}`).slice(-2);
+        const month = (`0${now.getMonth() + 1}`).slice(-2);
+
+        date = `${now.getFullYear()}-${month}-${day}`;
     }
 
-    let toCats = [];
-    let fromCats = [];
-      
+    const toCats = [];
+    const fromCats = [];
+
     if (categories) {
-        for (let cat of categories) {
+        for (const cat of categories) {
             if (cat.amount >= 0) {
                 toCats.push(cat);
             }
@@ -27,72 +26,69 @@ function catTransferDialog (id, date, categories) {
             }
         }
     }
-      
-    $("#catTransferForm [name='date']").val (date);
 
-    let toCatSplits = new CategorySplits ($('#catTransferForm .available-funds'), $('#catTransferForm .to-split-items'), amount, toCats, false);
+    $("#catTransferForm [name='date']").val(date);
 
-    let fromCatSplits = new CategorySplits ($('#catTransferForm .transfer-total'), $('#catTransferForm .from-split-items'), amount, fromCats, true, -1,
+    const toCatSplits = new CategorySplits($('#catTransferForm .available-funds'), $('#catTransferForm .to-split-items'), amount, toCats, false);
+
+    const fromCatSplits = new CategorySplits($('#catTransferForm .transfer-total'), $('#catTransferForm .from-split-items'), amount, fromCats, true, -1,
         (delta) => {
             toCatSplits.availableChanged(delta);
         });
 
-    $("#catTransferForm .amount-input.transfer-amount")
+    $('#catTransferForm .amount-input.transfer-amount')
         .attr('value', amount.toFixed(2))
         .attr('data-last-amount', amount)
         .val(amount)
-        .change ()
+        .change()
         .off('delta-change')
-        .on('delta-change', function (event, amount, delta) {
-              
-            toCatSplits.availableChanged (delta);
+        .on('delta-change', (event, amount, delta) => {
+            toCatSplits.availableChanged(delta);
         });
 
-    $("#catTransferDialog").modal ('show');
+    $('#catTransferDialog').modal('show');
 
-    $("#catTransferForm").off('submit');
-    $("#catTransferForm").submit(function (event) {
+    $('#catTransferForm').off('submit');
+    $('#catTransferForm').submit((event) => {
         event.preventDefault();
-          
-        let date = $("#catTransferForm [name='date']").val ();
-        let categories = fromCatSplits.get ().concat(toCatSplits.get ());
-          
+
+        const date = $("#catTransferForm [name='date']").val();
+        const categories = fromCatSplits.get().concat(toCatSplits.get());
+
         if (id) {
             $.ajax({
                 method: 'PATCH',
-                url: "/category_transfer/" + id,
+                url: `/category_transfer/${id}`,
                 headers:
                 {
-                    "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr('content'),
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
                 },
-                contentType: "application/json",
-                data: JSON.stringify({ date: date, categories: categories }),
+                contentType: 'application/json',
+                data: JSON.stringify({ date, categories }),
             })
-            .done (function(response)
-            {
-                updateCategories (response);
+                .done((response) => {
+                    updateCategories(response);
 
-                $("#catTransferDialog").modal ('hide');
-            });
+                    $('#catTransferDialog').modal('hide');
+                });
         }
         else {
             $.post({
-                url: "/category_transfer",
+                url: '/category_transfer',
                 headers:
                 {
-                    "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr('content'),
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
                 },
-                contentType: "application/json",
-                data: JSON.stringify({ date: date, categories: categories }),
+                contentType: 'application/json',
+                data: JSON.stringify({ date, categories }),
             })
-            .done (function(response)
-            {
-                updateCategories (response);
+                .done((response) => {
+                    updateCategories(response);
 
-                $("#catTransferDialog").modal ('hide');
-            });
+                    $('#catTransferDialog').modal('hide');
+                });
         }
     });
 }
-  
-export default  catTransferDialog;
+
+export default catTransferDialog;

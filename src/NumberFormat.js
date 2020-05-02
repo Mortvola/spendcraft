@@ -1,24 +1,23 @@
-function getTextElementAmount (element) {
+function getTextElementAmount(element) {
     return parseFloat(element.text().replace(/,/g, ''));
 }
 
-  
-function addTextElementAmount (element, amount) {
-    setTextElementAmount (element, getTextElementAmount (element) + parseFloat(amount));
+
+function addTextElementAmount(element, amount) {
+    setTextElementAmount(element, getTextElementAmount(element) + parseFloat(amount));
 }
 
-  
-function formatNumber(num) {
 
+function formatNumber(num) {
     if (num === undefined || num === null) {
         num = 0;
     }
-      
-    return parseFloat(num).toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,')
-}
-  
 
-function setTextElementAmount (element, amount) {
+    return parseFloat(num).toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,');
+}
+
+
+function setTextElementAmount(element, amount) {
     element.text(formatNumber(amount));
 
     if (amount < 0) {
@@ -29,5 +28,7 @@ function setTextElementAmount (element, amount) {
     }
 }
 
-  
-export {setTextElementAmount, formatNumber, getTextElementAmount, addTextElementAmount}
+
+export {
+    setTextElementAmount, formatNumber, getTextElementAmount, addTextElementAmount,
+};

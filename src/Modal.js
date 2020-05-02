@@ -1,8 +1,8 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 
 
-function ModalLauncher (props) {
+function ModalLauncher(props) {
     const [show, setShow] = useState(false);
 
     const handleClose = () => setShow(false);
@@ -10,15 +10,15 @@ function ModalLauncher (props) {
 
     return (
         <>
-        {props.launcher({onClick: handleShow})}
-		{props.dialog({show: show, handleClose: handleClose})}
-        </>
+        {props.launcher({ onClick: handleShow })}
+        {props.dialog({ show, handleClose })}
+      </>
     );
 }
 
 ModalLauncher.propTypes = {
     launcher: PropTypes.func,
     dialog: PropTypes.func,
-}
+};
 
 export default ModalLauncher;
