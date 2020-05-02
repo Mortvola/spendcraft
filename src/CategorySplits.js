@@ -1,7 +1,7 @@
 import React, {useState} from 'react';
 import PropTypes from 'prop-types';
 import {CategoryInput} from './CategoryInput'
-import {IconButton} from './IconButton';
+import IconButton from './IconButton';
 import AmountInput from './AmountInput';
 
 

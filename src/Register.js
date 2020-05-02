@@ -30,7 +30,7 @@ class RegisterElement extends React.Component {
     renderTransactions () {
         
         let list = [];
-        let {transactions, balance, categoryId} = this.props;
+        let { transactions, balance, categoryId } = this.props;
         
         for (let transaction of transactions) {
             let amount = getTransactionAmountForCategory (transaction, categoryId)
@@ -58,9 +58,9 @@ class RegisterElement extends React.Component {
     
     render () {
         return (
-            <div className="transactions">
+            <>
                 {this.renderTransactions()}
-            </div>);
+            </>);
     }
 }
 
@@ -229,7 +229,7 @@ class Register {
                 },
             },
             null);
-        ReactDOM.render(register, document.querySelector(".register"));
+        ReactDOM.render(register, document.querySelector(".transactions"));
     }
 }
 

@@ -10,18 +10,23 @@ body {
   width: 100vw;
 }
 
+.app {
+	display: grid;
+	grid-template-columns: 1fr;
+	grid-template-rows: max-content minmax(0, 1fr);
+	height: 100%;
+}
+
 .main {
 	display: grid;
 	grid-template-columns: 1fr 5fr;
-	grid-template-rows: max-content minmax(0, 1fr);
+	grid-template-rows: minmax(0, 1fr);
 	grid-template-areas:
-		"navbar navbar"
 		"sidebar register";
 	height: 100%;
 }
 
 .navbar {
-	grid-area: navbar;
 	background-color:#228B22;
 }
 

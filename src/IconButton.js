@@ -15,13 +15,4 @@ IconButton.propTypes = {
     icon: PropTypes.string.isRequired
 }
 
-function createIconButton (icon, callback) {
-    return $("<div class='btn btn-sm'></div>")
-        .html("<i class='fas fa-" + icon + "'></i>")
-        .addClass('group-button')
-        .on ('click', callback);
-}
-  
-  
-
-export {IconButton, createIconButton};
+export default IconButton;

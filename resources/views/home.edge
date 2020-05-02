@@ -1,36 +1,11 @@
-    <main class="main">
-        @include('menubar')
+    <div class="app">
+	    @include('menubar')
+	    <main class="main">
+		</main>
+    </div>
 
-      <div class='side-bar'>
-          <div class='categories'>
-              <div class='tools'>
-                  <button id="add-group" class="button">Add Group</button>
-                  <button id="fund-cats" class="button">Fund</button>
-              </div>
-              <div id="categories">
-              </div>
-          </div>
-          <div class="accounts">
-              <div class='account-bar'><div>Institutions</div><div class='btn btn-sm group-button add-acct'><i class='fas fa-plus'></i></div></div>
-              <div id="accounts">
-              </div>
-          </div>
-      </div>
-      <div class='register'>
-          <div class='register-title transaction'>
-              <div></div>
-              <div>Date</div>
-              <div>Name</div>
-              <div>Category</div>
-              <div class='currency'>Amount</div>
-              <div class='currency'>Balance</div>
-              <div>Institution</div>
-              <div>Account</div>
-          </div>
-          <div class='transactions'>
-          </div>
-      </div>
-      
+	
+	<div>      
       <!-- Modal -->
       <div class="modal fade" id="addGroupDialog" role="dialog">
           <div class="modal-dialog">
@@ -311,4 +286,4 @@
           let plaidRedirectUri = "{{ env('PLAID_OAUTH_REDIRECT_URI') }}";
           let plaidOauthNonce = "{{ env('PLAID_OAUTH_NONCE') }}";
       </script>
-  </main>
+  </div>

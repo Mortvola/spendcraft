@@ -1,10 +1,6 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
 import {register} from './Register';
 import categoryList from './Categories';
 import {setTextElementAmount} from './NumberFormat'
-import {CategoryView, createCategoryTreeElement} from './CategoryView'
-import {createIconButton} from './IconButton'
 
 var linkHandlerCommonOptions = {};
 
@@ -167,102 +163,6 @@ function updateCategories (categories) {
   }
   */
   
-  function createInstitutionElement (institution) {
-      
-      let institutionElement = $('<div></div>');
-      
-      let institutionBar = $('<div></div>')
-          .addClass('acct-list-inst')
-          .appendTo(institutionElement);
-      
-      $('<div></div>')
-          .addClass('institution-name')
-          .text(institution.name)
-          .appendTo(institutionBar);
-      
-      createIconButton ("plus",
-          function () {
-              $.getJSON ({
-                  url: '/institution/' + institution.id + '/accounts'
-              })
-              .done (function (response) {
-                  
-                  openAccountSelectionDialog (institution.id, response);
-              });
-          })
-          .appendTo(institutionBar);
-      
-      createIconButton("lock", function () {
-              $.getJSON ({
-                  url: '/institution/' + institution.id + '/public_token'
-              })
-              .done (function (response) {
-                  console.log(response);
-                  
-                   let handler = Plaid.create({
-                          ...linkHandlerCommonOptions,
-                          token: response.publicToken,
-                          onSuccess: function(public_token, metadata) {},
-                          onExit: function (err, metadata) {},
-                      });
-                   handler.open ();
-              });
-          })
-          .appendTo(institutionBar);
-      
-      let accountsElement = $('<div></div>')
-          .appendTo(institutionElement);
-      
-      for (let acct of institution.accounts) {
-          
-          let acctItem = $('<div></div>').addClass('acct-list-item');
-          
-          let refresh = $('<button><i class="fas fa-sync-alt"></i></button>')
-              .on('click', function () {
-                  
-                  refresh.children("i").addClass('rotate');
-                  
-                  $.post ({
-                      url: "/institution/" + institution.id + "/accounts/" + acct.id + "/transactions/sync", 
-                      headers:
-                      {
-                          "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr('content'),
-                      },
-                      contentType: "application/json"
-                  })
-                  .done (function (response) {
-                      
-                      if (response && response.categories && response.categories.length > 0) {
-                          updateCategory (response.categories[0].id, response.categories[0].amount);
-                      }
-                      
-                      document.dispatchEvent(new Event('accountRefreshed'));
-                  })
-                  .always (function () {
-                      refresh.children("i").removeClass('rotate');
-                  });
-              });
-
-          refresh.appendTo(acctItem);
-          
-          let account = $('<div></div>')
-              .text(acct.name)
-              .addClass('acct-list-acct')
-              .on('click', function () {
-                  $('#categories .cat-list-cat.selected').removeClass('selected');
-                  $('#accounts .acct-list-acct.selected').removeClass('selected');
-                  account.addClass('selected');
-                  register.viewAccount (acct.id);
-              });
-          
-          account.appendTo(acctItem);
-          
-          acctItem.appendTo(accountsElement);
-      }
-      
-      return institutionElement;
-  }
-
   
   function populateAccountList (institutions)
   {
@@ -965,9 +865,6 @@ function updateCategories (categories) {
       
       getConnectedAccounts ();
       
-      let categoryView = React.createElement(CategoryView, {}, null);
-      ReactDOM.render(categoryView, document.querySelector("#categories"));
-
       $('#add-group').on('click', function () { openGroupDialog (); });
       $('#fund-cats').on('click', function () {
           

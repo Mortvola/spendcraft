@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import {IconButton} from './IconButton';
+import IconButton from './IconButton';
 import {CategoryInput} from './CategoryInput';
 import Amount from './Amount';
 import {updateTransactionCategory, TransactionDialog} from './TransactionDialog';

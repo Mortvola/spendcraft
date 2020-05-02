@@ -3,8 +3,7 @@ import PropTypes from 'prop-types'
 import catTransferDialog from './CategoryTransferDialog';
 import {openEditCategoryDialog} from './CategoryDialog';
 import categoryList from './Categories'
-import {IconButton} from './IconButton'
-import {register} from './Register';
+import IconButton from './IconButton'
 import Amount from './Amount'
 
 class CategoryView extends React.Component {
@@ -14,41 +13,32 @@ class CategoryView extends React.Component {
 
 		this.state = {
 			categories: (categoryList ? (categoryList.categories ? categoryList.categories : []) : [] ),
-			categorySelected: null,
 		}
 
 		$(document).on('category', (event, response) => {
 			this.setState({categories: response});
 		})
-
-		this.handleCategorySelected = this.handleCategorySelected.bind(this);
 	}
-
-	handleCategorySelected (categoryId) {
-		this.setState({categorySelected: categoryId});
-		register.viewCategory (categoryId);
-	}
-
-	// let unnassignedId = categoryList.unassigned.id;
-	// $("#categories [data-id='" + unnassignedId + "'].cat-list-cat").click ();
 
 	render () {
 		return (
-			<>
+			<div id="categories">
 				{this.state.categories.map ((group) =>
 					<GroupElement
 						key={group.name}
 						group={group}
-						onCategorySelected={this.handleCategorySelected}
-						categorySelected={this.state.categorySelected}
+						onCategorySelected={this.props.onCategorySelected}
+						categorySelected={this.props.categorySelected}
 					/>
 				)}
-			</>
+			</div>
 		);
 	}
 }
 
 CategoryView.propTypes = {
+	onCategorySelected: PropTypes.func.isRequired,
+	categorySelected: PropTypes.number,
 }
 
 function GroupElement (props) {
@@ -132,4 +122,4 @@ CategoryElement.propTypes = {
 	selected: PropTypes.bool.isRequired,
 }
 
-export {CategoryView};
+export default CategoryView;
