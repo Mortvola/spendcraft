@@ -6,7 +6,9 @@
   "main": "index.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node ace test"
+    "test": "node ace test",
+    "build": "browserify -t [ babelify --presets [ @babel/preset-react @babel/env ] ] src/App.jsx --extension=.jsx > ./public/bundle.js",
+    "run": "node server.js"
   },
   "keywords": [
     "adonisjs",
@@ -38,6 +40,7 @@
     "pg": "^7.18.2",
     "pg-native": "^3.0.0",
     "plaid": "^4.9.0",
+    "prop-types": "^15.7.2",
     "react": "^16.13.1",
     "react-bootstrap": "^1.0.1",
     "react-dom": "^16.13.1"

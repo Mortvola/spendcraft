@@ -19,13 +19,13 @@ function AccountView(props) {
     }, [initialized]);
 
     return (
-      <div id="accounts">
-          {accounts.map((institution) => (
-              <InstitutionElement
-                  key={institution.name}
-                  institution={institution}
-                  onAccountSelected={props.onAccountSelected}
-                  accountSelected={props.accountSelected}
+        <div id="accounts">
+            {accounts.map((institution) => (
+                <InstitutionElement
+                    key={institution.name}
+                    institution={institution}
+                    onAccountSelected={props.onAccountSelected}
+                    accountSelected={props.accountSelected}
                 />
             ))}
         </div>
@@ -37,23 +37,25 @@ AccountView.propTypes = {
     accountSelected: PropTypes.number,
 };
 
+AccountView.defaultProps = {
+    accountSelected: undefined,
+}
 
-function InstitutionElement(props) {
+function InstitutionElement({ institution, ...props }) {
     const addAccount = () => {
         $.getJSON({
-            url: `/institution/${props.institution.id}/accounts`,
+            url: `/institution/${institution.id}/accounts`,
         })
             .done((response) => {
-                openAccountSelectionDialog(props.institution.id, response);
+                openAccountSelectionDialog(institution.id, response);
             });
     };
 
     const relinkAccount = () => {
         $.getJSON({
-            url: `/institution/${props.institution.id}/public_token`,
+            url: `/institution/${institution.id}/public_token`,
         })
             .done((response) => {
-                console.log(response);
 
                 const handler = Plaid.create({
                     ...linkHandlerCommonOptions,
@@ -68,22 +70,22 @@ function InstitutionElement(props) {
     return (
         <div>
             <div className="acct-list-inst">
-                <div className="institution-name">{props.institution.name}</div>
+                <div className="institution-name">{institution.name}</div>
                 <IconButton icon="plus" onClick={addAccount} />
                 <IconButton icon="lock" onClick={relinkAccount} />
-          </div>
+            </div>
             <div>
-                {props.institution.accounts.map((account) => (
-                <Account
-                      key={account.id}
-                      institutionId={props.institution.id}
-                      account={account}
-                      onAccountSelected={props.onAccountSelected}
-                      selected={props.accountSelected == account.id}
+                {institution.accounts.map((account) => (
+                    <Account
+                        key={account.id}
+                        institutionId={institution.id}
+                        account={account}
+                        onAccountSelected={props.onAccountSelected}
+                        selected={props.accountSelected === account.id}
                     />
                 ))}
-          </div>
-      </div>
+            </div>
+        </div>
     );
 }
 
@@ -93,7 +95,11 @@ InstitutionElement.propTypes = {
     accountSelected: PropTypes.number,
 };
 
-function Account(props) {
+InstitutionElement.defaultProps = {
+    accountSelected: undefined
+}
+
+function Account({ selected, account, ...props }) {
     const refresh = () => {
         refresh.children('i').addClass('rotate');
 
@@ -122,15 +128,15 @@ function Account(props) {
     };
 
     let className = 'acct-list-acct';
-    if (props.selected) {
+    if (selected) {
         className += ' selected';
     }
 
     return (
         <div className="acct-list-item">
             <IconButton icon="sync-alt" onClick={refresh} />
-            <div className={className} onClick={accountSelected}>{props.account.name}</div>
-      </div>
+            <div className={className} onClick={accountSelected}>{account.name}</div>
+        </div>
     );
 }
 

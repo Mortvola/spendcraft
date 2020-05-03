@@ -1,4 +1,3 @@
-import { register } from './Register';
 import categoryList from './Categories';
 import { setTextElementAmount } from './NumberFormat';
 

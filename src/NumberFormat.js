@@ -3,17 +3,13 @@ function getTextElementAmount(element) {
 }
 
 
-function addTextElementAmount(element, amount) {
-    setTextElementAmount(element, getTextElementAmount(element) + parseFloat(amount));
-}
-
-
 function formatNumber(num) {
-    if (num === undefined || num === null) {
-        num = 0;
+    let number = num;
+    if (number === undefined || number === null) {
+        number = 0;
     }
 
-    return parseFloat(num).toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,');
+    return parseFloat(number).toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,');
 }
 
 
@@ -26,6 +22,11 @@ function setTextElementAmount(element, amount) {
     else {
         element.removeClass('negative');
     }
+}
+
+
+function addTextElementAmount(element, amount) {
+    setTextElementAmount(element, getTextElementAmount(element) + parseFloat(amount));
 }
 
 
