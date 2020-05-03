@@ -97,25 +97,25 @@ class CategoryInput extends React.Component {
 
     handleKeydown(event) {
         if (selectorRef.current.visible()) {
-            if (event.key == 'Escape') {
+            if (event.key === 'Escape') {
                 event.stopPropagation();
                 this.handleCancel();
             }
-            else if (event.key == 'ArrowDown') {
+            else if (event.key === 'ArrowDown') {
                 selectorRef.current.down();
             }
-            else if (event.key == 'ArrowUp') {
+            else if (event.key === 'ArrowUp') {
                 selectorRef.current.up();
             }
-            else if (event.key == 'Enter') {
+            else if (event.key === 'Enter') {
                 selectorRef.current.enter();
             }
-            else if (event.key == 'Tab') {
+            else if (event.key === 'Tab') {
                 selectorRef.current.enter();
             }
         }
-        else if (event.key.length == 1 || event.key == 'Backspace' || event.key == 'Delete'
-                || event.key == 'ArrowDown') {
+        else if (event.key.length === 1 || event.key === 'Backspace' || event.key === 'Delete'
+                || event.key === 'ArrowDown') {
             this.openSelector();
         }
     }
@@ -132,7 +132,7 @@ class CategoryInput extends React.Component {
                 onBlur={this.handleBlur}
                 onKeyDown={this.handleKeydown}
                 value={this.state.value}
-          />
+            />
         );
     }
 }
@@ -149,7 +149,6 @@ class CategorySelctorCategory extends React.Component {
     }
 
     handleClick(event) {
-        console.log('category.handleClick');
         event.stopPropagation();
         this.props.onClick();
     }
@@ -180,9 +179,10 @@ class CategorySelctorCategory extends React.Component {
                 onMouseDown={this.handleMouseDown}
                 onClick={this.handleClick}
                 ref={this.ref}
-          >
+            >
                 {this.props.category.name}
-          </div>);
+            </div>
+        );
     }
 }
 
@@ -193,29 +193,20 @@ CategorySelctorCategory.propTypes = {
     category: PropTypes.object,
 };
 
-class CategorySelectorGroup extends React.Component {
-    constructor(props) {
-        super(props);
-
-        this.handleMouseDown = this.handleMouseDown.bind(this);
-        this.handleClick = this.handleClick.bind(this);
-        this.handleSelected = this.handleSelected.bind(this);
-    }
-
-    handleMouseDown(event) {
+function CategorySelectorGroup(props) {
+    const handleMouseDown = (event) => {
         event.preventDefault();
-    }
+    };
 
-    handleClick(event) {
+    const handleClick = (event) => {
         event.stopPropagation();
-        console.log('handle click');
-    }
+    };
 
-    handleSelected(category) {
-        this.props.onSelected(this.props.group, category);
-    }
+    const handleSelected = (category) => {
+        props.onSelected(props.group, category);
+    };
 
-    filterCategories(categories, filter) {
+    const filterCategories = (categories, filter) => {
         let result = [];
 
         if (filter !== '') {
@@ -231,56 +222,74 @@ class CategorySelectorGroup extends React.Component {
         }
 
         return result;
-    }
+    };
 
-    filterGroup() {
+    const filterGroup = () => {
         let categories = [];
 
-        const parts = this.props.filter.toLowerCase().split(':');
+        const parts = props.filter.toLowerCase().split(':');
 
-        if (parts.length == 1) {
+        if (parts.length === 1) {
             // No colon. Filter can be applied to both group and categories.
-            categories = this.filterCategories(this.props.group.categories, parts[0]);
+            categories = filterCategories(props.group.categories, parts[0]);
         }
-        else if (parts.length == 2) {
+        else if (parts.length === 2) {
             // If the group contains the first part of the filter then
             // consider adding the categories
-            if (parts[0] == '' || this.props.group.name.toLowerCase().includes(parts[0])) {
-                categories = this.filterCategories(this.props.group.categories, parts[1]);
+            if (parts[0] === '' || props.group.name.toLowerCase().includes(parts[0])) {
+                categories = filterCategories(props.group.categories, parts[1]);
             }
         }
 
         return categories;
-    }
+    };
 
-    render() {
-        const categories = this.filterGroup();
+    const categories = filterGroup();
 
-        if (categories.length > 0) {
-            return (
-                <div
-                    className="category-list-item"
-                    onMouseDown={this.handleMouseDown}
-                    onClick={this.handleClick}
-              >
-                {this.props.group.name}
+    if (categories.length > 0) {
+        return (
+            <div
+                className="category-list-item"
+                onMouseDown={handleMouseDown}
+                onClick={handleClick}
+            >
+                {props.group.name}
                 {categories.map((c) => {
-                        const selected = c.name == this.props.selected;
-                        return <CategorySelctorCategory key={c.id} category={c} selected={selected} onSelected={this.handleSelected} onClick={this.props.onClick} />;
-                    })}
-              </div>);
-        }
-
-        return null;
+                    return (
+                        <CategorySelctorCategory
+                            key={c.id}
+                            category={c}
+                            selected={c.name === props.selected}
+                            onSelected={handleSelected}
+                            onClick={props.onClick}
+                        />
+                    );
+                })}
+            </div>
+        );
     }
+
+    return null;
 }
 
+CategorySelectorGroup.propTypes = {
+    onSelected: PropTypes.func.isRequired,
+    group: PropTypes.shape({
+        name: PropTypes.string.isRequierd,
+        categories: PropTypes.array.isRequired,
+    }).isRequired,
+    filter: PropTypes.string.isRequired,
+    selected: PropTypes.bool,
+    onClick: PropTypes.func.isRequired,
+};
+
+CategorySelectorGroup.defaultProps = {
+    selected: null,
+};
 
 class CategorySelector extends React.Component {
     constructor(props) {
         super(props);
-
-        console.log('CategorySelector constructor called');
 
         this.state = {
             categories: categoryList.categories,
@@ -320,7 +329,6 @@ class CategorySelector extends React.Component {
             };
 
             this.clickHandler = $(window).on('click.categorySelector', (event) => {
-                console.log('Outside click');
                 if (this.props.visible) { // && event.target != this.owner.inputRef) {
                     event.stopPropagation();
                     this.props.onCancel();
@@ -342,7 +350,16 @@ class CategorySelector extends React.Component {
                             if (this.state.selected.group == g.name) {
                                 selected = this.state.selected.category;
                             }
-                            return <CategorySelectorGroup key={g.id} group={g} selected={selected} filter={this.state.filter} onSelected={this.handleSelected} onClick={this.handleClick} />;
+                            return (
+                                <CategorySelectorGroup
+                                    key={g.id}
+                                    group={g}
+                                    selected={selected}
+                                    filter={this.state.filter}
+                                    onSelected={this.handleSelected}
+                                    onClick={this.handleClick}
+                                />
+                            )
                         })
                     }
               </div>
@@ -355,7 +372,6 @@ class CategorySelector extends React.Component {
     }
 
     handleSelected(group, category) {
-        console.log('selected');
         this.selection.group = group;
         this.selection.category = category;
     }
@@ -479,16 +495,13 @@ class CategorySelector extends React.Component {
 let selectorRef = React.createRef();
 
 function createSelector(props) {
-    console.log('Calling createElement');
-    props.ref = selectorRef;
     ReactDOM.render(React.createElement(
-        CategorySelector, props, null,
+        CategorySelector, { ref: selectorRef, ...props }, null,
     ),
     document.querySelector('#hidden'));
 }
 
 function closeSelector() {
-    console.log('Hiding selector');
     ReactDOM.render(React.createElement(
         CategorySelector, {
             ref: selectorRef,

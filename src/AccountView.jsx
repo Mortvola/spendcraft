@@ -90,7 +90,11 @@ function InstitutionElement({ institution, ...props }) {
 }
 
 InstitutionElement.propTypes = {
-    institution: PropTypes.object.isRequired,
+    institution: PropTypes.shape({
+        id: PropTypes.number.isRequired,
+        name: PropTypes.string.isRequired,
+        accounts: PropTypes.array.isRequired,
+    }).isRequired,
     onAccountSelected: PropTypes.func.isRequired,
     accountSelected: PropTypes.number,
 };
@@ -104,7 +108,7 @@ function Account({ selected, account, ...props }) {
         refresh.children('i').addClass('rotate');
 
         $.post({
-            url: `/institution/${props.institutionId}/accounts/${props.account.id}/transactions/sync`,
+            url: `/institution/${props.institutionId}/accounts/${account.id}/transactions/sync`,
             headers:
             {
                 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
@@ -124,7 +128,7 @@ function Account({ selected, account, ...props }) {
     };
 
     const accountSelected = () => {
-        props.onAccountSelected(props.account.id);
+        props.onAccountSelected(account.id);
     };
 
     let className = 'acct-list-acct';
@@ -142,7 +146,10 @@ function Account({ selected, account, ...props }) {
 
 Account.propTypes = {
     institutionId: PropTypes.number.isRequired,
-    account: PropTypes.object.isRequired,
+    account: PropTypes.shape({
+        name: PropTypes.string.isRequired,
+        id: PropTypes.number.isRequired,
+    }).isRequired,
     onAccountSelected: PropTypes.func.isRequired,
     selected: PropTypes.bool.isRequired,
 };

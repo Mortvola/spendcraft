@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 
-function AmountInput(props) {
-    const [amount, setAmount] = useState(props.amount.toFixed(2));
-    const [initialValue, setInitialValue] = useState(props.amount);
+function AmountInput({ amount, ...props }) {
+    const [inputAmount, setInputAmount] = useState(amount.toFixed(2));
+    const [initialValue, setInitialValue] = useState(amount);
 
     const handleChange = (event) => {
-        setAmount(event.target.value);
+        setInputAmount(event.target.value);
     };
 
     const handleFocus = (event) => {
@@ -14,27 +14,31 @@ function AmountInput(props) {
     };
 
     const handleBlur = (event) => {
-        const amount = Math.floor(parseFloat(event.target.value) * 100.0) / 100.0;
-        const delta = amount - initialValue;
-        props.onDeltaChange(amount, delta);
-        setAmount(amount.toFixed(2));
+        const newAmount = Math.floor(parseFloat(event.target.value) * 100.0) / 100.0;
+        const delta = newAmount - initialValue;
+        props.onDeltaChange(newAmount, delta);
+        setInputAmount(newAmount.toFixed(2));
     };
 
     return (
         <input
             className="amount-input dollar-amount"
             type="text"
-            value={amount}
+            value={inputAmount}
             onChange={handleChange}
             onFocus={handleFocus}
             onBlur={handleBlur}
-      />
+        />
     );
 }
 
 AmountInput.propTypes = {
     amount: PropTypes.number,
     onDeltaChange: PropTypes.func.isRequired,
+};
+
+AmountInput.defaultProps = {
+    amount: 0,
 };
 
 export default AmountInput;
