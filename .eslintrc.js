@@ -27,7 +27,9 @@ module.exports = {
 	"brace-style": ["error", "stroustrup"],
 	"react/jsx-indent-props": ["error", 4],
 	"react/jsx-indent": ["error", 4],
+	"react/jsx-props-no-spreading": ["off"],
 	"jsx-a11y/click-events-have-key-events": ["off"],
 	"jsx-a11y/no-static-element-interactions": ["off"],
+	"no-param-reassign": ["error", { "props": false }],
   },
 };

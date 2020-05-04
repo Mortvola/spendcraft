@@ -122,7 +122,6 @@ function CategorySplits(props) {
 
 CategorySplits.propTypes = {
     onChange: PropTypes.func.isRequired,
-    from: PropTypes.bool,
     splits: PropTypes.array.isRequired,
     total: PropTypes.number.isRequired,
 };

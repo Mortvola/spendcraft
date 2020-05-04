@@ -1,10 +1,12 @@
 import React from 'react';
 import PropTypes, { array } from 'prop-types';
 import catTransferDialog from './CategoryTransferDialog';
-import { openEditCategoryDialog } from './CategoryDialog';
 import categoryList from './Categories';
 import IconButton from './IconButton';
 import Amount from './Amount';
+import { ModalLauncher } from './Modal';
+import CategoryDialog from './CategoryDialog';
+import GroupDialog from './GroupDialog';
 
 class CategoryView extends React.Component {
     constructor(props) {
@@ -51,8 +53,16 @@ function Buttons({ group }) {
     if (!group.system) {
         return (
             <>
-                <IconButton icon="plus" onClick={() => openAddCategoryDialog(group.id, group.system, null)} />
-                <IconButton icon="edit" onClick={() => openGroupDialog(group.id, null)} />
+                <ModalLauncher
+                    launcher={(props) => (<IconButton icon="plus" {...props} />)}
+                    title="Add Category"
+                    dialog={(props) => (<CategoryDialog groupId={group.id} {...props} />)}
+                />
+                <ModalLauncher
+                    launcher={(props) => (<IconButton icon="edit" {...props} />)}
+                    title="Edit Group"
+                    dialog={(props) => (<GroupDialog group={group} {...props} />)}
+                />
             </>
         );
     }
@@ -107,7 +117,13 @@ GroupElement.defaultProps = {
 function EditButton({ category, groupId, systemGroup }) {
     if (!systemGroup) {
         return (
-            <IconButton icon="edit" onClick={() => openEditCategoryDialog(groupId, category.id, null)} />
+            <ModalLauncher
+                launcher={(props) => (<IconButton icon="edit" {...props} />)}
+                title="Edit Category"
+                dialog={(props) => (
+                    <CategoryDialog category={category} groupId={groupId} {...props} />
+                )}
+            />
         );
     }
 
@@ -123,7 +139,13 @@ EditButton.propTypes = {
 };
 
 
-function CategoryElement({ category, groupId, systemGroup, selected, onCategorySelected }) {
+function CategoryElement({
+    category,
+    groupId,
+    systemGroup,
+    selected,
+    onCategorySelected,
+}) {
     const handleClick = () => {
         onCategorySelected(category.id);
     };
@@ -151,6 +173,7 @@ CategoryElement.propTypes = {
         amount: PropTypes.number.isRequired,
         name: PropTypes.string.isRequired,
     }).isRequired,
+    groupId: PropTypes.number.isRequired,
     systemGroup: PropTypes.bool.isRequired,
     onCategorySelected: PropTypes.func.isRequired,
     selected: PropTypes.bool.isRequired,

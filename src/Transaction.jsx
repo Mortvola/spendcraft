@@ -4,7 +4,7 @@ import IconButton from './IconButton';
 import { CategoryInput } from './CategoryInput';
 import Amount from './Amount';
 import { updateTransactionCategory, TransactionDialog } from './TransactionDialog';
-import ModalLauncher from './Modal';
+import { ModalLauncher } from './Modal';
 
 
 function getTransactionAmountForCategory(transaction, categoryId) {
@@ -52,7 +52,7 @@ class Transaction extends React.Component {
                 transaction={this.props.transaction}
                 categoryContext={this.props.categoryContext}
                 {...props}
-          />
+            />
         );
     }
 
@@ -64,9 +64,10 @@ class Transaction extends React.Component {
             if (transaction.categories.length > 1) {
                 return (
                     <ModalLauncher
-                        launcher={(props) => (<button className="split-button" {...props}>Split</button>)}
+                        launcher={(props) => (<button type="button" className="split-button" {...props}>Split</button>)}
+                        title="Edit Transaction"
                         dialog={(props) => this.renderTransactionDialog(props)}
-                  />
+                    />
                 );
             }
 
@@ -95,14 +96,16 @@ class Transaction extends React.Component {
                     {this.renderCategoryButton()}
                     <ModalLauncher
                         launcher={(props) => (<IconButton icon="list-ul" {...props} />)}
+                        title="Edit Transaction"
                         dialog={(props) => this.renderTransactionDialog(props)}
-                  />
-              </div>
+                    />
+                </div>
                 <Amount className="transaction-field amount currency" amount={amount} />
                 <Amount className="transaction-field balance currency" amount={balance} />
                 <div className="transaction-field">{transaction.institute_name}</div>
                 <div className="transaction-field">{transaction.account_name}</div>
-          </div>);
+            </div>
+        );
     }
 }
 

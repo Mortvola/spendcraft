@@ -4,6 +4,8 @@ import CategoryView from './CategoryView';
 import AccountView from './AccountView';
 import { register } from './Register';
 import categoryList from './Categories';
+import { ModalLauncher } from './Modal';
+import GroupDialog from './GroupDialog';
 
 function App() {
     const [accountSelected, setAccountSelected] = useState(null);
@@ -30,7 +32,11 @@ function App() {
             <div className="side-bar">
                 <div className="categories">
                     <div className="tools">
-                        <button type="button" id="add-group" className="button">Add Group</button>
+                        <ModalLauncher
+                            launcher={(props) => (<button type="button" id="add-group" className="button" {...props}>Add Group</button>)}
+                            title="Add Group"
+                            dialog={(props) => (<GroupDialog {...props} />)}
+                        />
                         <button type="button" id="fund-cats" className="button">Fund</button>
                     </div>
                     <CategoryView
