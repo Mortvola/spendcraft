@@ -104,8 +104,10 @@ InstitutionElement.defaultProps = {
 }
 
 function Account({ selected, account, ...props }) {
+    const [refreshing, setRefreshing] = useState(false);
+
     const refresh = () => {
-        refresh.children('i').addClass('rotate');
+        setRefreshing(true);
 
         $.post({
             url: `/institution/${props.institutionId}/accounts/${account.id}/transactions/sync`,
@@ -123,7 +125,7 @@ function Account({ selected, account, ...props }) {
                 document.dispatchEvent(new Event('accountRefreshed'));
             })
             .always(() => {
-                refresh.children('i').removeClass('rotate');
+                setRefreshing(false);
             });
     };
 
@@ -136,9 +138,14 @@ function Account({ selected, account, ...props }) {
         className += ' selected';
     }
 
+    let rotate = false;
+    if (refreshing) {
+        rotate = true;
+    }
+
     return (
         <div className="acct-list-item">
-            <IconButton icon="sync-alt" onClick={refresh} />
+            <IconButton icon="sync-alt" rotate={rotate} onClick={refresh} />
             <div className={className} onClick={accountSelected}>{account.name}</div>
         </div>
     );

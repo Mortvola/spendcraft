@@ -1,8 +1,12 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-function IconButton({ icon, onClick }) {
-    const className = `fas fa-${icon}`;
+function IconButton({ icon, rotate, onClick }) {
+    let className = `fas fa-${icon}`;
+
+    if (rotate) {
+        className += ' rotate';
+    }
 
     return (
         <div className="btn btn-sm group-button" onClick={onClick}>
