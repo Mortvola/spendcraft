@@ -39,7 +39,7 @@ const GroupDialog = connect()((props) => {
                     }
                 })
                 .done((response) => {
-                    dispatch(updateGroup({ id: response.id, name: response.name }));
+                    dispatch(updateGroup({ id: group.id, name: response.name }));
                     onClose();
                 });
         }
@@ -64,7 +64,7 @@ const GroupDialog = connect()((props) => {
                     }
                 })
                 .done((response) => {
-                    dispatch(addGroup({ id: response.id, name: response.name}));
+                    dispatch(addGroup({ id: response.id, name: response.name }));
                     onClose();
                 });
         }

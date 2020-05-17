@@ -1,9 +1,11 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { Field, ErrorMessage } from 'formik';
+import { connect } from 'react-redux';
+import { addCategory, updateCategory, deleteCategory } from './redux/actions';
 import { ModalDialog } from './Modal';
 
-function CategoryDialog(props) {
+const CategoryDialog = connect()((props) => {
     const {
         onClose,
         onExited,
@@ -11,6 +13,7 @@ function CategoryDialog(props) {
         show,
         category,
         groupId,
+        dispatch,
     } = props;
 
     const handleSubmit = (values, bag) => {
@@ -38,6 +41,7 @@ function CategoryDialog(props) {
                 })
                 .done((response) => {
                     // $(catElement.find('.cat-list-name')).text(response.name);
+                    dispatch(updateCategory({ id: category.id, groupId, name: response.name }));
                     onClose();
                 });
         }
@@ -84,6 +88,7 @@ function CategoryDialog(props) {
                     //     newCategoryElement.appendTo(groupElement);
                     // }
 
+                    dispatch(addCategory({ id: response.id, groupId: response.groupId, name: response.name, amount: 0 }));
                     onClose();
                 });
         }
@@ -120,6 +125,7 @@ function CategoryDialog(props) {
                 }
             })
             .done((response) => {
+                dispatch(deleteCategory({ id: category.id, groupId }));
                 onClose();
             });
     };
@@ -154,7 +160,7 @@ function CategoryDialog(props) {
             )}
         />
     );
-}
+});
 
 CategoryDialog.propTypes = {
     category: PropTypes.shape({
@@ -166,6 +172,7 @@ CategoryDialog.propTypes = {
     onExited: PropTypes.func.isRequired,
     title: PropTypes.string.isRequired,
     show: PropTypes.bool.isRequired,
+    dispatch: PropTypes.func.isRequired,
 };
 
 CategoryDialog.defaultProps = {

@@ -19,8 +19,12 @@ function Amount(props) {
 }
 
 Amount.propTypes = {
-    amount: PropTypes.number.isRequired,
+    amount: PropTypes.number,
     className: PropTypes.string.isRequired,
+};
+
+Amount.defaultProps = {
+    amount: 0,
 };
 
 export default Amount;

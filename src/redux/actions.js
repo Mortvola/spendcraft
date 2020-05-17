@@ -4,6 +4,9 @@ import {
     DELETE_GROUP,
     REQUEST_GROUPS,
     RECEIVE_GROUPS,
+    ADD_CATEGORY,
+    UPDATE_CATEGORY,
+    DELETE_CATEGORY,
 } from './actionTypes';
 
 const addGroup = (group) => ({
@@ -16,6 +19,11 @@ const updateGroup = (group) => ({
     group,
 });
 
+const deleteGroup = (group) => ({
+    type: DELETE_GROUP,
+    group,
+});
+
 const requestGroups = () => ({
     type: REQUEST_GROUPS,
 });
@@ -23,11 +31,6 @@ const requestGroups = () => ({
 const receieveGroups = (groups) => ({
     type: RECEIVE_GROUPS,
     groups,
-});
-
-const deleteGroup = (group) => ({
-    type: DELETE_GROUP,
-    group,
 });
 
 const fetchGroups = () => (
@@ -47,6 +50,22 @@ const fetchGroups = () => (
     }
 );
 
+const addCategory = (category) => ({
+    type: ADD_CATEGORY,
+    category,
+});
+
+const updateCategory = (category) => ({
+    type: UPDATE_CATEGORY,
+    category,
+});
+
+const deleteCategory = (category) => ({
+    type: DELETE_CATEGORY,
+    category,
+});
+
+
 export {
     addGroup,
     updateGroup,
@@ -54,4 +73,7 @@ export {
     requestGroups,
     receieveGroups,
     fetchGroups,
+    addCategory,
+    updateCategory,
+    deleteCategory,
 };

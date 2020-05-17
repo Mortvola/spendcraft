@@ -7,9 +7,62 @@ import {
     RECEIVE_GROUPS,
     ADD_INSTITUTION,
     UPDATE_INSTITUTION,
+    ADD_CATEGORY,
+    UPDATE_CATEGORY,
+    DELETE_CATEGORY,
 } from './actionTypes';
 
+
 function categories(
+    state = [],
+    action,
+) {
+    if (action !== undefined) {
+        switch (action.type) {
+        case ADD_CATEGORY: {
+            const index = state.findIndex((c) => action.category.name.localeCompare(c.name) < 0);
+
+            if (index === -1) {
+                return state.concat([action.category]);
+            }
+
+            const cats = state.slice();
+            cats.splice(index, 0, action.category);
+
+            return cats;
+        }
+
+        case UPDATE_CATEGORY: {
+            const index = state.findIndex((c) => c.id === action.category.id);
+            if (index !== -1) {
+                const cats = state.slice();
+                cats[index] = { ...cats[index], ...action.category };
+                return cats;
+            }
+
+            return state;
+        }
+
+        case DELETE_CATEGORY: {
+            const index = state.findIndex((c) => c.id === action.category.id);
+            if (index !== -1) {
+                const cats = state.slice();
+                cats.splice(index, 1);
+                return cats;
+            }
+
+            return state;
+        }
+
+        default:
+            return state;
+        }
+    }
+
+    return state;
+}
+
+function categoryTree(
     state = {
         systemGroupId: undefined,
         unassignedId: undefined,
@@ -25,12 +78,15 @@ function categories(
         if (index === -1) {
             return {
                 ...state,
-                ...{ groups: state.groups.concat([{ ...action.group, ...{ categories: [] } }]) },
+                ...{ groups: state.groups.concat([{
+                    ...action.group,
+                    ...{ categories: categories() },
+                }]) },
             };
         }
 
         const groups = state.groups.slice();
-        groups.splice(index, 0, { ...action.group, ...{ categories: [] } });
+        groups.splice(index, 0, { ...action.group, ...{ categories: categories() } });
 
         return {
             ...state,
@@ -75,6 +131,25 @@ function categories(
         };
     }
 
+    case ADD_CATEGORY:
+    case UPDATE_CATEGORY:
+    case DELETE_CATEGORY:
+        return {
+            ...state,
+            ...{
+                groups: state.groups.map((g) => {
+                    if (g.id === action.category.groupId) {
+                        return ({
+                            ...g,
+                            ...{ categories: categories(g.categories, action) },
+                        });
+                    }
+
+                    return g;
+                }),
+            },
+        };
+
     default:
         return state;
     }
@@ -101,7 +176,7 @@ function institutions(state = [], action) {
 }
 
 const budgetApp = combineReducers({
-    categories,
+    categoryTree,
     institutions,
 });
 

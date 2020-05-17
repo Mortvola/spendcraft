@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import PropTypes, { array } from 'prop-types';
+import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 import catTransferDialog from './CategoryTransferDialog';
 import IconButton from './IconButton';
@@ -10,7 +10,7 @@ import GroupDialog from './GroupDialog';
 
 const mapStateToProps = (state) => {
     return {
-        groups: state.categories.groups,
+        groups: state.categoryTree.groups,
     };
 }
 
@@ -90,7 +90,7 @@ function GroupElement({ group, onCategorySelected, categorySelected }) {
 
 GroupElement.propTypes = {
     group: PropTypes.shape({
-        categories: PropTypes.array,
+        categories: PropTypes.arrayOf(PropTypes.shape),
         system: PropTypes.bool,
         name: PropTypes.string.isRequired,
         id: PropTypes.number.isRequired,
@@ -163,13 +163,19 @@ function CategoryElement({
 CategoryElement.propTypes = {
     category: PropTypes.shape({
         id: PropTypes.number.isRequired,
-        amount: PropTypes.number.isRequired,
+        amount: PropTypes.number,
         name: PropTypes.string.isRequired,
-    }).isRequired,
+    }),
     groupId: PropTypes.number.isRequired,
     systemGroup: PropTypes.bool.isRequired,
     onCategorySelected: PropTypes.func.isRequired,
     selected: PropTypes.bool.isRequired,
+};
+
+CategoryElement.defaultProps = {
+    category: {
+        amount: 0,
+    },
 };
 
 export default CategoryView;
