@@ -1,15 +1,18 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { Field, ErrorMessage } from 'formik';
+import { connect } from 'react-redux';
+import { addGroup, updateGroup, deleteGroup } from './redux/actions';
 import { ModalDialog } from './Modal';
 
-function GroupDialog(props) {
+const GroupDialog = connect()((props) => {
     const {
         onClose,
         onExited,
         title,
         show,
         group,
+        dispatch,
     } = props;
 
     const handleSubmit = (values, bag) => {
@@ -36,7 +39,7 @@ function GroupDialog(props) {
                     }
                 })
                 .done((response) => {
-                    // $(catElement.find('.cat-list-name')).text(response.name);
+                    dispatch(updateGroup({ id: response.id, name: response.name }));
                     onClose();
                 });
         }
@@ -61,28 +64,7 @@ function GroupDialog(props) {
                     }
                 })
                 .done((response) => {
-                    // let newCategoryElement = createCategoryTreeElement(response.id,
-                    // groupId, systemGroup, response.name, response.amount,
-                    // groupElement.find('.group-name'));
-
-                    // const categoryElements = $(groupElement).children('.cat-list-cat');
-
-                    // for (const categoryElement of categoryElements) {
-                    //     const name = $(categoryElement).find('.cat-list-name').text();
-
-                    //     const compare = name.localeCompare(response.name);
-
-                    //     if (compare > 0) {
-                    //         newCategoryElement.insertBefore(categoryElement);
-                    //         newCategoryElement = null;
-                    //         break;
-                    //     }
-                    // }
-
-                    // if (newCategoryElement !== null) {
-                    //     newCategoryElement.appendTo(groupElement);
-                    // }
-
+                    dispatch(addGroup({ id: response.id, name: response.name}));
                     onClose();
                 });
         }
@@ -118,7 +100,8 @@ function GroupDialog(props) {
                     setErrors({ name: jqXHR.responseJSON.errors[0].message });
                 }
             })
-            .done((response) => {
+            .done(() => {
+                dispatch(deleteGroup({ id: group.id }));
                 onClose();
             });
     };
@@ -153,7 +136,7 @@ function GroupDialog(props) {
             )}
         />
     );
-}
+});
 
 GroupDialog.propTypes = {
     group: PropTypes.shape({
@@ -164,6 +147,7 @@ GroupDialog.propTypes = {
     onExited: PropTypes.func.isRequired,
     title: PropTypes.string.isRequired,
     show: PropTypes.bool.isRequired,
+    dispatch: PropTypes.func.isRequired,
 };
 
 GroupDialog.defaultProps = {

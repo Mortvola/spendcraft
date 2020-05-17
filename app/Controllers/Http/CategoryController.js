@@ -4,7 +4,6 @@ const Database = use('Database');
 const Category = use('App/Models/Category');
 
 class CategoryController {
-    
     async get ({auth}) {
         
         let rows = await Database.select (

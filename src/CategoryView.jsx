@@ -1,51 +1,40 @@
-import React from 'react';
+import React, { useState } from 'react';
 import PropTypes, { array } from 'prop-types';
+import { connect } from 'react-redux';
 import catTransferDialog from './CategoryTransferDialog';
-import categoryList from './Categories';
 import IconButton from './IconButton';
 import Amount from './Amount';
 import { ModalLauncher } from './Modal';
 import CategoryDialog from './CategoryDialog';
 import GroupDialog from './GroupDialog';
 
-class CategoryView extends React.Component {
-    constructor(props) {
-        super(props);
-
-        this.state = {
-            categories: (categoryList && categoryList.categories ? categoryList.categories : []),
-        };
-
-        $(document).on('category', (event, response) => {
-            this.setState({ categories: response });
-        });
-    }
-
-    render() {
-        const { categories } = this.state;
-        const { onCategorySelected, categorySelected } = this.props;
-
-        return (
-            <div id="categories">
-                {categories.map((group) => (
-                    <GroupElement
-                        key={group.name}
-                        group={group}
-                        onCategorySelected={onCategorySelected}
-                        categorySelected={categorySelected}
-                    />
-                ))}
-            </div>
-        );
-    }
+const mapStateToProps = (state) => {
+    return {
+        groups: state.categories.groups,
+    };
 }
 
+const CategoryView = connect(mapStateToProps)(({ onCategorySelected, categorySelected, groups }) => (
+    <div id="categories">
+        {groups.map((group) => (
+            <GroupElement
+                key={group.name}
+                group={group}
+                onCategorySelected={onCategorySelected}
+                categorySelected={categorySelected}
+            />
+        ))}
+    </div>
+));
+
 CategoryView.propTypes = {
+    groups: PropTypes.arrayOf(PropTypes.shape),
     onCategorySelected: PropTypes.func.isRequired,
     categorySelected: PropTypes.number,
 };
 
 CategoryView.defaultProps = {
+    groups: [],
     categorySelected: undefined,
 };
 
@@ -101,17 +90,21 @@ function GroupElement({ group, onCategorySelected, categorySelected }) {
 
 GroupElement.propTypes = {
     group: PropTypes.shape({
-        categories: array.isRequired,
-        system: PropTypes.bool.isRequired,
+        categories: PropTypes.array,
+        system: PropTypes.bool,
         name: PropTypes.string.isRequired,
         id: PropTypes.number.isRequired,
-    }).isRequired,
+    }),
     onCategorySelected: PropTypes.func.isRequired,
     categorySelected: PropTypes.number,
 };
 
 GroupElement.defaultProps = {
     categorySelected: undefined,
+    group: {
+        categories: [],
+        system: false,
+    },
 };
 
 function EditButton({ category, groupId, systemGroup }) {

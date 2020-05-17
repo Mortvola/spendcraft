@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import ReactDOM from 'react-dom';
+import { Provider } from 'react-redux';
 import CategoryView from './CategoryView';
 import AccountView from './AccountView';
 import { register } from './Register';
 import categoryList from './Categories';
 import { ModalLauncher } from './Modal';
 import GroupDialog from './GroupDialog';
+import store from './redux/store';
 
 function App() {
     const [accountSelected, setAccountSelected] = useState(null);
@@ -72,5 +74,9 @@ function App() {
     );
 }
 
-const app = React.createElement(App, {}, null);
-ReactDOM.render(app, document.querySelector('.main'));
+ReactDOM.render(
+    <Provider store={store}>
+        <App />
+    </Provider>,
+    document.querySelector('.main'),
+);
