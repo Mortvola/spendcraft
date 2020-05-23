@@ -56,15 +56,17 @@ function ModalDialog({
     initialValues,
     validate,
     onSubmit,
+    size,
 }) {
     const [doDelete, setDoDelete] = useState(false);
 
     const DeleteHandler = ({ performDelete }) => {
-        const bag = useFormikContext ();
+        const bag = useFormikContext();
 
         useEffect(() => {
             if (performDelete) {
                 onDelete(bag);
+                setDoDelete(false);
             }
         }, [doDelete, bag]);
 
@@ -84,7 +86,7 @@ function ModalDialog({
     };
 
     return (
-        <Modal show={show} animation onHide={onClose} onExited={onExited}>
+        <Modal show={show} animation onHide={onClose} onExited={onExited} size={size}>
             <Modal.Header closeButton>
                 <Modal.Title>{title}</Modal.Title>
             </Modal.Header>
@@ -122,10 +124,12 @@ ModalDialog.propTypes = {
     initialValues: PropTypes.shape().isRequired,
     validate: PropTypes.func.isRequired,
     onSubmit: PropTypes.func.isRequired,
+    size: PropTypes.string,
 };
 
 ModalDialog.defaultProps = {
     onDelete: undefined,
+    size: 'md',
 };
 
 export { ModalLauncher, ModalDialog };

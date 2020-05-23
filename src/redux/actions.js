@@ -7,6 +7,8 @@ import {
     ADD_CATEGORY,
     UPDATE_CATEGORY,
     DELETE_CATEGORY,
+    REQUEST_TRANSACTIONS,
+    RECEIVE_TRANSACTIONS,
 } from './actionTypes';
 
 const addGroup = (group) => ({
@@ -65,6 +67,31 @@ const deleteCategory = (category) => ({
     category,
 });
 
+const requestTransactions = () => ({
+    type: REQUEST_TRANSACTIONS,
+});
+
+const receieveTransactions = (transactions) => ({
+    type: RECEIVE_TRANSACTIONS,
+    transactions,
+});
+
+const fetchTransactions = (catId) => (
+    (dispatch) => {
+        dispatch(requestTransactions());
+
+        return (
+            fetch(`/category/${catId}/transactions`)
+                .then(
+                    (response) => response.json(),
+                    (error) => console.log('fetch error: ', error),
+                )
+                .then(
+                    (json) => dispatch(receieveTransactions(json)),
+                )
+        );
+    }
+);
 
 export {
     addGroup,
@@ -76,4 +103,7 @@ export {
     addCategory,
     updateCategory,
     deleteCategory,
+    requestTransactions,
+    receiveTransactions,
+    fetchTransactions,
 };

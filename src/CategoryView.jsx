@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
-import catTransferDialog from './CategoryTransferDialog';
+import CategoryTransferDialog from './CategoryTransferDialog';
 import IconButton from './IconButton';
 import Amount from './Amount';
 import { ModalLauncher } from './Modal';
@@ -152,7 +152,11 @@ function CategoryElement({
         <div className={className} onClick={handleClick}>
             <div className="cat-element-bar">
                 <EditButton category={category} groupId={groupId} systemGroup={systemGroup} />
-                <IconButton icon="random" onClick={catTransferDialog} />
+                <ModalLauncher
+                    launcher={(props) => (<IconButton icon="random" {...props} />)}
+                    title="Category Transfer"
+                    dialog={(props) => (<CategoryTransferDialog {...props} />)}
+                />
                 <div className="cat-list-name">{category.name}</div>
             </div>
             <Amount className="cat-list-amt" dataCat={category.id} amount={category.amount} />

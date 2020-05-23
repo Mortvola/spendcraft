@@ -7,6 +7,7 @@ import { register } from './Register';
 import categoryList from './Categories';
 import { ModalLauncher } from './Modal';
 import GroupDialog from './GroupDialog';
+import FundingDialog from './FundingDialog';
 import store from './redux/store';
 
 function App() {
@@ -39,7 +40,11 @@ function App() {
                             title="Add Group"
                             dialog={(props) => (<GroupDialog {...props} />)}
                         />
-                        <button type="button" id="fund-cats" className="button">Fund</button>
+                        <ModalLauncher
+                            launcher={(props) => (<button type="button" id="fund-cats" className="button" {...props}>Fund</button>)}
+                            title="Fund Categories"
+                            dialog={(props) => (<FundingDialog {...props} />)}
+                        />
                     </div>
                     <CategoryView
                         onCategorySelected={handleCategorySelected}

@@ -4,6 +4,7 @@ import IconButton from './IconButton';
 import { CategoryInput } from './CategoryInput';
 import Amount from './Amount';
 import { updateTransactionCategory, TransactionDialog } from './TransactionDialog';
+import CategoryTransferDialog from './CategoryTransferDialog';
 import { ModalLauncher } from './Modal';
 
 
@@ -12,8 +13,8 @@ function getTransactionAmountForCategory(transaction, categoryId) {
 
     if (transaction.categories !== undefined && transaction.categories !== null
         && categoryId !== undefined && categoryId !== null) {
-        const index = transaction.categories.findIndex((c) => c.categoryId == categoryId);
-        if (index != -1) {
+        const index = transaction.categories.findIndex((c) => c.categoryId === categoryId);
+        if (index !== -1) {
             amount = transaction.categories[index].amount;
         }
     }
@@ -31,26 +32,42 @@ class Transaction extends React.Component {
     }
 
     handleClick() {
-        this.props.onClick(this.props.transaction.id);
+        // const { transaction, onClick } = this.props;
+
+        // onClick(transaction.id);
     }
 
     handleEditClick() {
-        this.props.onEditClick(this.props.transaction.id);
+        const { transaction, onEditClick } = this.props;
+
+        onEditClick(transaction.id);
     }
 
     handleChange(categoryId) {
+        const { transaction } = this.props;
         const request = { splits: [] };
 
-        request.splits.push({ categoryId, amount: this.props.transaction.amount });
+        request.splits.push({ categoryId, amount: transaction.amount });
 
-        updateTransactionCategory(this.props.transaction, request);
+        updateTransactionCategory(transaction, request);
     }
 
     renderTransactionDialog(props) {
+        const { transaction, categoryContext } = this.props;
+
+        if (transaction.type === 1) {
+            return (
+                <CategoryTransferDialog
+                    transaction={transaction}
+                    {...props}
+                />
+            );
+        }
+
         return (
             <TransactionDialog
-                transaction={this.props.transaction}
-                categoryContext={this.props.categoryContext}
+                transaction={transaction}
+                categoryContext={categoryContext}
                 {...props}
             />
         );
@@ -89,7 +106,11 @@ class Transaction extends React.Component {
 
         return (
             <div className={className} onClick={this.handleClick}>
-                <IconButton icon="edit" onClick={this.handleEditClick} />
+                <ModalLauncher
+                    launcher={(props) => (<IconButton icon="edit" {...props} />)}
+                    title="Edit Transaction"
+                    dialog={(props) => this.renderTransactionDialog(props)}
+                />
                 <div>{transaction.date}</div>
                 <div className="transaction-field">{transaction.name}</div>
                 <div className="trans-cat-edit">

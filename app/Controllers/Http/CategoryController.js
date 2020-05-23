@@ -1,11 +1,11 @@
-'use strict'
-
 const Database = use('Database');
 const Category = use('App/Models/Category');
+const CategorySplit = use('App/Models/CategorySplit')
+const CategoryTransfer = use('App/Models/CategoryTransfer')
 
 class CategoryController {
     async get ({auth}) {
-        
+
         let rows = await Database.select (
                 'g.id AS groupId',
                 'g.name AS groupName',
@@ -19,7 +19,7 @@ class CategoryController {
             .where ('user_id', auth.user.id)
             .orderBy('g.name')
             .orderBy('c.name');
-                    
+
         let groups = [];
         let group;
 
@@ -30,51 +30,51 @@ class CategoryController {
                 groups.push(group);
                 group = { id: cat.groupId, name: cat.groupName, system: cat.systemGroup, categories: [] };
             }
-            
+
             if (cat.categoryId)
             {
                 group.categories.push({ id: cat.categoryId, name: cat.categoryName, system: cat.systemCategory, amount: cat.amount });
             }
         }
-        
+
         if (group) {
             groups.push(group);
         }
-        
+
         return groups;
     }
 
     async addGroup ({request, auth}) {
         let id = await Database.insert({ name: request.body.name, user_id: auth.user.id }).into('groups').returning('id');
-        
+
         return { id: id[0], name: request.body.name };
     }
-    
+
     async updateGroup ({request, auth}) {
-        
+
         await Database.table('groups').where({id: request.params.groupId, user_id: auth.user.id}).update({name: request.body.name});
 
         return { name: request.body.name };
     }
-    
+
     async deleteGroup ({request, auth}) {
         await Database.table('groups').where({id: request.params.groupId, user_id: auth.user.id}).delete ();
     }
-    
+
     async addCategory ({request, auth}) {
 
         let id = await Database.insert({group_id: request.body.groupId, name: request.body.name}).into('categories').returning('id');
-        
+
         return { groupId: request.body.groupId, id: id[0], name: request.body.name };
     }
 
     async updateCategory ({request, auth}) {
-        
+
         await Database.table('categories').where({id: request.params.catId}).update({name: request.body.name});
 
         return { name: request.body.name };
     }
-    
+
     async deleteCategory ({request, auth}) {
         await Database.table('categories').where({id: request.params.catId}).delete ();
     }
@@ -84,7 +84,7 @@ class CategoryController {
         let categoryId = parseInt(request.params.catId);
 
         let result = { transactions: [] };
-        
+
         let cat = await Database.select(Database.raw('CAST(amount AS float) as amount'), 'cats.name AS name', 'cats.system AS system')
             .from ('categories AS cats')
             .join ('groups', 'groups.id', 'group_id')
@@ -92,7 +92,7 @@ class CategoryController {
             .andWhere('groups.user_id', auth.user.id);
 
         result.balance = cat[0].amount;
-        
+
         let subquery = Database.select (
                 Database.raw('COUNT(CASE WHEN category_id = ' + categoryId + ' THEN 1 ELSE NULL END) AS count'),
                 Database.raw("sum(splits.amount) AS sum"),
@@ -135,7 +135,7 @@ class CategoryController {
         else {
             query.where('splits.count', '>', 0);
         }
-        
+
         result.transactions = await query;
 
         // Get the category transfers (we don't transfer to or from unassigned)
@@ -143,8 +143,8 @@ class CategoryController {
 
             // Category transfers
             query = Database.select(
-                    "xfer.id AS id", 
-                    Database.raw("1 AS type"), 
+                    "xfer.id AS id",
+                    Database.raw("1 AS type"),
                     Database.raw("2147483647 AS sort_order"),
                     Database.raw("date::text"),
                     Database.raw("'Category Transfer' AS name"),
@@ -162,85 +162,107 @@ class CategoryController {
 
         return result;
     }
-    
-    async transfer ({request, auth}) {
-        
-        let trx = await Database.beginTransaction ();
-        
-        let result = [];
-        
+
+    async transfer({ request }) {
+        const trx = await Database.beginTransaction();
+
+        const result = [];
+
         if (Array.isArray(request.body.categories)) {
-            
-            let date = request.body.date;
+            const { date } = request.body;
             let transactionId;
-            
-            if (request.params.tfrId == undefined) {
-                let xfr = await trx.insert({date: date}).into('category_transfers').returning('id');
-                
-                // In the splits table, negative transaction IDs refer to the category_transfers table entries.
+
+            if (request.params.tfrId === undefined) {
+                const xfr = await trx.insert({ date }).into('category_transfers').returning('id');
+
+                // In the splits table, negative transaction IDs refer to
+                // the category_transfers table entries.
                 transactionId = -xfr[0];
             }
             else {
                 transactionId = -request.params.tfrId;
             }
 
-            let existingSplits = [];
-            
+            const existingSplits = [];
+
             // Insert the category splits
-            for (let split of request.body.categories) {
-                
-                if (split.amount != 0) {
-                    
-                    let amount = split.amount;
-                    
+            for (const split of request.body.categories) {
+                if (split.amount !== 0) {
+                    let { amount } = split;
+
                     if (split.id) {
                         existingSplits.push(split.id);
-                        
-                        let oldSplit = await trx.select('amount').from('category_splits').where('id', split.id);
-                        
+
+                        const oldSplit = await trx.select('amount').from('category_splits').where('id', split.id);
+
                         amount = split.amount - oldSplit[0].amount;
-                        
-                        await trx.table('category_splits').where('id', split.id).update({amount: split.amount});
+
+                        await trx.table('category_splits').where('id', split.id).update({ amount: split.amount });
                     }
                     else {
-                        
-                        let newId = await trx.insert({transaction_id: transactionId, category_id: split.categoryId, amount: split.amount}).into ('category_splits').returning('id');
-                        
+                        const newId = await trx.insert({
+                            transaction_id: transactionId,
+                            category_id: split.categoryId,
+                            amount: split.amount,
+                        }).into('category_splits').returning('id');
+
                         existingSplits.push(newId[0]);
-                        
+
                         amount = split.amount;
                     }
-                    
+
                     const category = await Category.findOrFail(split.categoryId, trx);
-                    
+
                     category.amount = parseFloat(category.amount) + amount;
 
                     await category.save(trx);
-                    
-                    result.push({id: category.id, amount: category.amount});
+
+                    result.push({ id: category.id, amount: category.amount });
                 }
             }
-            
-            // Delete splits that are not in the array of ids
-            let query = trx.from('category_splits').whereNotIn('id', existingSplits).andWhere('transaction_id', transactionId);
-            let toDelete = await query.select('category_id AS categoryId', 'amount');
-            
-            for (let td of toDelete) {
 
+            // Delete splits that are not in the array of ids
+            const query = trx.from('category_splits').whereNotIn('id', existingSplits).andWhere('transaction_id', transactionId);
+            const toDelete = await query.select('category_id AS categoryId', 'amount');
+
+            for (const td of toDelete) {
                 const category = await Category.findOrFail(td.categoryId, trx);
-                
+
                 category.amount = parseFloat(category.amount) - td.amount;
 
                 await category.save(trx);
             }
-            
-            await query.delete ();
-            
+
+            await query.delete();
         }
-            
-        await trx.commit ();
+
+        await trx.commit();
 
         return result;
+    }
+
+    static async transferDelete({ request }) {
+        const trx = await Database.beginTransaction();
+
+        const { tfrId } = request.params;
+
+        const categoryTransfer = await CategoryTransfer.find(tfrId, trx);
+
+        const categorySplits = await categoryTransfer.splits(trx).fetch();
+
+        categorySplits.rows.forEach(async (cs) => {
+            const category = await Category.find(cs.category_id, trx);
+
+            category.amount -= cs.amount;
+
+            await category.save(trx);
+
+            await cs.delete();
+        });
+
+        await categoryTransfer.delete();
+
+        await trx.commit();
     }
 }
 

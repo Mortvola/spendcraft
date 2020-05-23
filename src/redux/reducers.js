@@ -175,9 +175,22 @@ function institutions(state = [], action) {
     }
 }
 
+function transactions(state = [], action) {
+    switch (action.type) {
+    case REQUEST_TRANSACTIONS:
+        break;
+    case RECEIVE_TRANSACTIONS:
+        break;
+
+    default:
+        return state;
+    }
+}
+
 const budgetApp = combineReducers({
     categoryTree,
     institutions,
+    transactions,
 });
 
 export default budgetApp;
