@@ -8,53 +8,28 @@ import CategoryTransferDialog from './CategoryTransferDialog';
 import { ModalLauncher } from './Modal';
 
 
-function getTransactionAmountForCategory(transaction, categoryId) {
-    let { amount } = transaction;
-
-    if (transaction.categories !== undefined && transaction.categories !== null
-        && categoryId !== undefined && categoryId !== null) {
-        const index = transaction.categories.findIndex((c) => c.categoryId === categoryId);
-        if (index !== -1) {
-            amount = transaction.categories[index].amount;
-        }
-    }
-
-    return amount;
-}
-
-class Transaction extends React.Component {
-    constructor(props) {
-        super(props);
-
-        this.handleClick = this.handleClick.bind(this);
-        this.handleEditClick = this.handleEditClick.bind(this);
-        this.handleChange = this.handleChange.bind(this);
-    }
-
-    handleClick() {
-        // const { transaction, onClick } = this.props;
+const Transaction = ({
+    transaction,
+    amount,
+    balance,
+    selected,
+    categoryContext,
+}) => {
+    const handleClick = () => {
+        // const { transaction, onClick } = props;
 
         // onClick(transaction.id);
-    }
+    };
 
-    handleEditClick() {
-        const { transaction, onEditClick } = this.props;
-
-        onEditClick(transaction.id);
-    }
-
-    handleChange(categoryId) {
-        const { transaction } = this.props;
+    const handleChange = (categoryId) => {
         const request = { splits: [] };
 
         request.splits.push({ categoryId, amount: transaction.amount });
 
         updateTransactionCategory(transaction, request);
-    }
+    };
 
-    renderTransactionDialog(props) {
-        const { transaction, categoryContext } = this.props;
-
+    const renderTransactionDialog = (props) => {
         if (transaction.type === 1) {
             return (
                 <CategoryTransferDialog
@@ -71,10 +46,9 @@ class Transaction extends React.Component {
                 {...props}
             />
         );
-    }
+    };
 
-    renderCategoryButton() {
-        const { transaction } = this.props;
+    const renderCategoryButton = () => {
         let categoryId = '';
 
         if (transaction.categories) {
@@ -83,7 +57,7 @@ class Transaction extends React.Component {
                     <ModalLauncher
                         launcher={(props) => (<button type="button" className="split-button" {...props}>Split</button>)}
                         title="Edit Transaction"
-                        dialog={(props) => this.renderTransactionDialog(props)}
+                        dialog={(props) => renderTransactionDialog(props)}
                     />
                 );
             }
@@ -91,53 +65,47 @@ class Transaction extends React.Component {
             categoryId = transaction.categories[0].categoryId;
         }
 
-        return <CategoryInput categoryId={categoryId} onChange={this.handleChange} />;
+        return <CategoryInput categoryId={categoryId} onChange={handleChange} />;
+    };
+
+    let className = 'transaction';
+    if (selected) {
+        className += ' transaction-selected';
     }
 
-    render() {
-        const {
-            transaction, amount, balance, selected,
-        } = this.props;
-
-        let className = 'transaction';
-        if (selected) {
-            className += ' transaction-selected';
-        }
-
-        return (
-            <div className={className} onClick={this.handleClick}>
+    return (
+        <div className={className} onClick={handleClick}>
+            <ModalLauncher
+                launcher={(props) => (<IconButton icon="edit" {...props} />)}
+                title="Edit Transaction"
+                dialog={(props) => renderTransactionDialog(props)}
+            />
+            <div>{transaction.date}</div>
+            <div className="transaction-field">{transaction.name}</div>
+            <div className="trans-cat-edit">
+                {renderCategoryButton()}
                 <ModalLauncher
-                    launcher={(props) => (<IconButton icon="edit" {...props} />)}
+                    launcher={(props) => (<IconButton icon="list-ul" {...props} />)}
                     title="Edit Transaction"
-                    dialog={(props) => this.renderTransactionDialog(props)}
+                    dialog={(props) => renderTransactionDialog(props)}
                 />
-                <div>{transaction.date}</div>
-                <div className="transaction-field">{transaction.name}</div>
-                <div className="trans-cat-edit">
-                    {this.renderCategoryButton()}
-                    <ModalLauncher
-                        launcher={(props) => (<IconButton icon="list-ul" {...props} />)}
-                        title="Edit Transaction"
-                        dialog={(props) => this.renderTransactionDialog(props)}
-                    />
-                </div>
-                <Amount className="transaction-field amount currency" amount={amount} />
-                <Amount className="transaction-field balance currency" amount={balance} />
-                <div className="transaction-field">{transaction.institute_name}</div>
-                <div className="transaction-field">{transaction.account_name}</div>
             </div>
-        );
-    }
-}
-
-Transaction.propTypes = {
-    onClick: PropTypes.func,
-    onEditClick: PropTypes.func,
-    transaction: PropTypes.object,
-    amount: PropTypes.number,
-    balance: PropTypes.number,
-    selected: PropTypes.bool,
-    categoryContext: PropTypes.number,
+            <Amount className="transaction-field amount currency" amount={amount} />
+            <Amount className="transaction-field balance currency" amount={balance} />
+            <div className="transaction-field">{transaction.institute_name}</div>
+            <div className="transaction-field">{transaction.account_name}</div>
+        </div>
+    );
 };
 
-export { Transaction, getTransactionAmountForCategory };
+Transaction.propTypes = {
+    onClick: PropTypes.func.isRequired,
+    onEditClick: PropTypes.func.isRequired,
+    transaction: PropTypes.shape().isRequired,
+    amount: PropTypes.number.isRequired,
+    balance: PropTypes.number.isRequired,
+    selected: PropTypes.bool.isRequired,
+    categoryContext: PropTypes.number.isRequired,
+};
+
+export default Transaction;

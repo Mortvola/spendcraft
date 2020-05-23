@@ -71,23 +71,47 @@ const requestTransactions = () => ({
     type: REQUEST_TRANSACTIONS,
 });
 
-const receieveTransactions = (transactions) => ({
+const receiveTransactions = (categoryId, transactions) => ({
     type: RECEIVE_TRANSACTIONS,
+    categoryId,
     transactions,
 });
 
-const fetchTransactions = (catId) => (
+const fetchTransactions = (categoryId) => (
     (dispatch) => {
         dispatch(requestTransactions());
 
         return (
-            fetch(`/category/${catId}/transactions`)
+            fetch(`/category/${categoryId}/transactions`)
                 .then(
                     (response) => response.json(),
                     (error) => console.log('fetch error: ', error),
                 )
                 .then(
-                    (json) => dispatch(receieveTransactions(json)),
+                    (json) => {
+
+                        json.transactions.sort((a, b) => {
+                            if (a.date < b.date) {
+                                return 1;
+                            }
+
+                            if (a.date > b.date) {
+                                return -1;
+                            }
+
+                            if (a.sort_order < b.sort_order) {
+                                return 1;
+                            }
+
+                            if (a.sort_order > b.sort_order) {
+                                return -1;
+                            }
+
+                            return 0;
+                        });
+
+                        return dispatch(receiveTransactions(categoryId, json))
+                    },
                 )
         );
     }

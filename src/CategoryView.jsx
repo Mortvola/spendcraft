@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 import CategoryTransferDialog from './CategoryTransferDialog';
@@ -8,13 +8,15 @@ import { ModalLauncher } from './Modal';
 import CategoryDialog from './CategoryDialog';
 import GroupDialog from './GroupDialog';
 
-const mapStateToProps = (state) => {
-    return {
-        groups: state.categoryTree.groups,
-    };
-}
+const mapStateToProps = (state) => ({
+    groups: state.categoryTree.groups,
+});
 
-const CategoryView = connect(mapStateToProps)(({ onCategorySelected, categorySelected, groups }) => (
+const CategoryView = connect(mapStateToProps)(({
+    onCategorySelected,
+    categorySelected,
+    groups,
+}) => (
     <div id="categories">
         {groups.map((group) => (
             <GroupElement

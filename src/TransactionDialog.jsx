@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { Field, ErrorMessage } from 'formik';
 import CategorySplits from './CategorySplits';
 import { setTextElementAmount } from './NumberFormat';
-import { getTransactionAmountForCategory } from './Transaction';
+import getTransactionAmountForCategory from './TransactionUtils';
 import { ModalDialog } from './Modal';
 
 function updateCategory(id, amount) {

@@ -10,6 +10,8 @@ import {
     ADD_CATEGORY,
     UPDATE_CATEGORY,
     DELETE_CATEGORY,
+    REQUEST_TRANSACTIONS,
+    RECEIVE_TRANSACTIONS,
 } from './actionTypes';
 
 
@@ -78,10 +80,12 @@ function categoryTree(
         if (index === -1) {
             return {
                 ...state,
-                ...{ groups: state.groups.concat([{
-                    ...action.group,
-                    ...{ categories: categories() },
-                }]) },
+                ...{
+                    groups: state.groups.concat([{
+                        ...action.group,
+                        ...{ categories: categories() },
+                    }]),
+                },
             };
         }
 
@@ -175,12 +179,21 @@ function institutions(state = [], action) {
     }
 }
 
-function transactions(state = [], action) {
+function transactions(
+    state = {
+        categoryId: null,
+        balance: 0,
+        transactions: [],
+    },
+    action,
+) {
     switch (action.type) {
     case REQUEST_TRANSACTIONS:
-        break;
-    case RECEIVE_TRANSACTIONS:
-        break;
+        return state;
+
+    case RECEIVE_TRANSACTIONS: {
+        return { categoryId: action.categoryId, ...action.transactions };
+    }
 
     default:
         return state;

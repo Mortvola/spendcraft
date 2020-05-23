@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import ReactDOM from 'react-dom';
-import { Provider } from 'react-redux';
+import { Provider, connect } from 'react-redux';
 import CategoryView from './CategoryView';
 import AccountView from './AccountView';
-import { register } from './Register';
+import RegisterElement from './RegisterElement';
 import categoryList from './Categories';
 import { ModalLauncher } from './Modal';
 import GroupDialog from './GroupDialog';
 import FundingDialog from './FundingDialog';
 import store from './redux/store';
+import { fetchTransactions } from './redux/actions';
 
-function App() {
+const App = connect()(({ dispatch }) => {
     const [accountSelected, setAccountSelected] = useState(null);
     const [categorySelected, setCategorySelected] = useState(
         categoryList.unassigned
@@ -21,13 +22,13 @@ function App() {
     const handleAccountSelected = (accountId) => {
         setAccountSelected(accountId);
         setCategorySelected(null);
-        register.viewAccount(accountId);
+        // register.viewAccount(accountId);
     };
 
     const handleCategorySelected = (categoryId) => {
         setCategorySelected(categoryId);
         setAccountSelected(null);
-        register.viewCategory(categoryId);
+        dispatch(fetchTransactions(categoryId));
     };
 
     return (
@@ -62,22 +63,10 @@ function App() {
                     />
                 </div>
             </div>
-            <div className="register">
-                <div className="register-title transaction">
-                    <div />
-                    <div>Date</div>
-                    <div>Name</div>
-                    <div>Category</div>
-                    <div className="currency">Amount</div>
-                    <div className="currency">Balance</div>
-                    <div>Institution</div>
-                    <div>Account</div>
-                </div>
-                <div className="transactions" />
-            </div>
+            <RegisterElement />
         </>
     );
-}
+});
 
 ReactDOM.render(
     <Provider store={store}>
