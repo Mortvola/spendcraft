@@ -44,7 +44,7 @@ Route.group(() => {
 
     Route.get('/category_balances/:date', CategoryController.balances);
 
-    Route.get('/category/:catId/transactions', 'CategoryController.transactions');
+    Route.get('/category/:catId/transactions', CategoryController.transactions);
 
     Route.get('/connected_accounts', 'InstitutionController.all');
 

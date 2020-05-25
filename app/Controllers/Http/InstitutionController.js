@@ -125,129 +125,175 @@ class InstitutionController {
 
         return accounts;
     }
-    
-    async addAccounts ({request, auth}) {
-        const trx = await Database.beginTransaction ();
-        
+
+    async addAccounts({ request, auth }) {
+        const trx = await Database.beginTransaction();
+
         let fundingAmount = 0;
         let unassignedAmount = 0;
 
-        let systemCats = await trx.select ('cats.id AS id', 'cats.name AS name')
-            .from ('categories AS cats')
+        const systemCats = await trx.select('cats.id AS id', 'cats.name AS name')
+            .from('categories AS cats')
             .join('groups', 'groups.id', 'group_id')
             .where('cats.system', true)
-            .andWhere ('groups.user_id', auth.user.id);
-        let fundingPool = systemCats.find (entry => entry.name == "Funding Pool");
-        let unassigned = systemCats.find (entry => entry.name == "Unassigned");
-        
-        let inst = await trx.select ("access_token").from("institutions").where ({id: request.params.instId, user_id: auth.user.id});
-        
+            .andWhere('groups.user_id', auth.user.id);
+        const fundingPool = systemCats.find((entry) => entry.name === 'Funding Pool');
+        const unassigned = systemCats.find((entry) => entry.name === 'Unassigned');
+
+        const inst = await trx.select('access_token').from('institutions').where({ id: request.params.instId, user_id: auth.user.id });
+
         if (inst.length > 0) {
-            for (let account of request.body.accounts) {
-                
-                let exists = await trx.select (Database.raw("EXISTS (SELECT 1 FROM accounts WHERE plaid_account_id = '" + account.account_id + "') AS exists"));
-                
+            request.body.accounts.forReach(async (account) => {
+                const exists = await trx.select(Database.raw(`EXISTS (SELECT 1 FROM accounts WHERE plaid_account_id = '${account.account_id}') AS exists`));
+
                 if (!exists[0].exists) {
-                    let acctId = await trx.insert(
-                        { plaid_account_id: account.account_id, name: account.name, official_name: account.official_name, mask: account.mask,
-                          subtype: account.subtype, type: account.type, institution_id: request.params.instId, 
-                          start_date: request.body.startDate, balance: account.balances.current, tracking: account.tracking, enabled: true}).into('accounts').returning('id');
-                    
-                    if (account.tracking == "Transactions") {
-                        
-                        let details = await this.addTransactions (trx, inst[0].access_token, acctId[0], account.account_id, request.body.startDate, auth);
+                    const acctId = await trx.insert({
+                        plaid_account_id: account.account_id,
+                        name: account.name,
+                        official_name: account.official_name,
+                        mask: account.mask,
+                        subtype: account.subtype,
+                        type: account.type,
+                        institution_id: request.params.instId,
+                        start_date: request.body.startDate,
+                        balance: account.balances.current,
+                        tracking: account.tracking,
+                        enabled: true,
+                    })
+                        .into('accounts').returning('id');
+
+                    if (account.tracking === 'Transactions') {
+                        const details = await this.addTransactions(
+                            trx, inst[0].access_token, acctId[0], account.account_id,
+                            request.body.startDate, auth,
+                        );
 
                         if (details.cat) {
                             unassignedAmount = details.cat.amount;
                         }
-                        
-                        let startingBalance = details.balance + details.sum;
-                        
+
+                        const startingBalance = details.balance + details.sum;
+
                         // Insert the "starting balance" transaction
-                        let transId = await trx.insert(
-                            {transaction_id: null, account_id: acctId[0], name: 'Starting Balance', date: request.body.startDate,
-                             amount: startingBalance, sort_order: -1}).into ('transactions').returning('id');
-                        
-                        await trx.insert(
-                            { transaction_id: transId[0], category_id: fundingPool.id, amount: startingBalance }).into('category_splits');
-                        
-                        let funding = await this.subtractFromCategoryBalance (trx, fundingPool.id, -startingBalance);
-                        
+                        const transId = trx.insert({
+                            date: request.body.startDate,
+                            sort_order: -1,
+                        })
+                            .into('transactions')
+                            .returning('id');
+
+                        await trx.insert({
+                            transaction_id: transId[0],
+                            plaid_transaction_id: null,
+                            account_id: acctId[0],
+                            name: 'Starting Balance',
+                            amount: startingBalance,
+                        })
+                            .into('transactions');
+
+                        await trx.insert({
+                            transaction_id: transId[0],
+                            category_id: fundingPool.id,
+                            amount: startingBalance,
+                        })
+                            .into('category_splits');
+
+                        const funding = await this.subtractFromCategoryBalance(
+                            trx, fundingPool.id, -startingBalance,
+                        );
+
                         fundingAmount = funding.amount;
                     }
                 }
-            }
+            });
         }
 
-        await trx.commit ();
-        
-        let accounts = await this.getConnectedAccounts (auth);
-        
-        return {accounts: accounts, categories: [{id: fundingPool.id, amount: fundingAmount}, {id: unassigned.id, amount: unassignedAmount}]};
-    }
-    
-    async addTransactions (trx, accessToken, accountId, plaidAccountId, startDate, auth)
-    {
-        var startDate = moment(startDate).format('YYYY-MM-DD');
-        var endDate = moment().format('YYYY-MM-DD');
-        
-        let transactionsResponse = await plaidClient.getTransactions(accessToken, startDate, endDate, {
-            count: 250,
-            offset: 0,
-            account_ids: [plaidAccountId]
-        });
+        await trx.commit();
 
-//        console.log(JSON.stringify(transactionsResponse, null, 4));
-        
+        const accounts = await this.getConnectedAccounts(auth);
+
+        return {
+            accounts,
+            categories: [
+                { id: fundingPool.id, amount: fundingAmount },
+                { id: unassigned.id, amount: unassignedAmount },
+            ],
+        };
+    }
+
+    async addTransactions(trx, accessToken, accountId, plaidAccountId, startDate, auth) {
+        const transactionsResponse = await plaidClient.getTransactions(
+            accessToken,
+            moment(startDate).format('YYYY-MM-DD'),
+            moment().format('YYYY-MM-DD'),
+            {
+                count: 250,
+                offset: 0,
+                account_ids: [plaidAccountId],
+            },
+        );
+
+        // console.log(JSON.stringify(transactionsResponse, null, 4));
+
         let sum = 0;
         let pendingSum = 0;
-        
-        for (let transaction of transactionsResponse.transactions) {
 
+        transactionsResponse.transactions.forEach(async (transaction) => {
             // Only consider non-pending transactions
             if (!transaction.pending) {
-
                 // First check to see if the transaction is present. If it is then don't insert it.
-                let exists = await trx.select(Database.raw("EXISTS (SELECT 1 FROM transactions WHERE transaction_id = '" + transaction.transaction_id + "') AS exists"));
-                
+                const exists = await trx.select(
+                    Database.raw(`EXISTS (SELECT 1 FROM account_transactions WHERE plaid_transaction_id = '${transaction.transaction_id}') AS exists`),
+                );
+
                 if (!exists[0].exists) {
-                    
-                    await trx.insert({transaction_id: transaction.transaction_id, account_id: accountId,
-                          name: transaction.name, date: transaction.date, amount: -transaction.amount}).into('transactions');
-                      
+                    const id = trx.insert({
+                        date: transaction.date,
+                    })
+                        .into('transactions')
+                        .returning('id');
+
+                    await trx.insert({
+                        transaction_id: id[0],
+                        plaid_transaction_id: transaction.transaction_id,
+                        account_id: accountId,
+                        name: transaction.name,
+                        amount: -transaction.amount,
+                    })
+                        .into('account_transactions');
+
                     sum += transaction.amount;
                 }
             }
             else {
                 pendingSum += transaction.amount;
             }
-        }
-        
+        });
+
         let balance = transactionsResponse.accounts[0].balances.current;
-        
+
         let cat = null;
-        
-        if (sum != 0) {
-            let systemCats = await trx.select ('cats.id AS id', 'cats.name AS name')
-                .from ('categories AS cats')
+
+        if (sum !== 0) {
+            const systemCats = await trx.select('cats.id AS id', 'cats.name AS name')
+                .from('categories AS cats')
                 .join('groups', 'groups.id', 'group_id')
                 .where('cats.system', true)
-                .andWhere ('groups.user_id', auth.user.id);
-            let unassigned = systemCats.find (entry => entry.name == "Unassigned");
+                .andWhere('groups.user_id', auth.user.id);
+            const unassigned = systemCats.find((entry) => entry.name === 'Unassigned');
 
             // Add the sum of the transactions to the unassigned category.
-            cat = await this.subtractFromCategoryBalance (trx, unassigned.id, sum);
+            cat = await this.subtractFromCategoryBalance(trx, unassigned.id, sum);
         }
 
-        if (transactionsResponse.accounts[0].type == "credit" ||
-            transactionsResponse.accounts[0].type == "loan") {
-            
+        if (transactionsResponse.accounts[0].type === 'credit'
+            || transactionsResponse.accounts[0].type === 'loan') {
             balance = -balance;
         }
 
-        await trx.table("accounts").where("id", accountId).update("balance", balance);
- 
-        return { balance: balance,  sum: sum, cat: cat };
+        await trx.table('accounts').where('id', accountId).update('balance', balance);
+
+        return { balance, sum, cat };
     }
 
     async subtractFromCategoryBalance (trx, categoryId, amount)
@@ -310,69 +356,78 @@ class InstitutionController {
             else {
                 let balanceResponse = await plaidClient.getBalance (acct[0].access_token, {
                     account_ids: [acct[0].plaidAccountId]});
-                
+
                 await trx.table("accounts").where("id", request.params.acctId).update("balance", balanceResponse.accounts[0].balances.current);
-                
-                result.accounts = [{ id: request.params.acctId, balance: balanceResponse.accounts[0].balances.current}];
+
+                result.accounts = [{
+                    id: request.params.acctId,
+                    balance: balanceResponse.accounts[0].balances.current,
+                }];
             }
         }
 
-        await trx.commit ();
-        
+        await trx.commit();
+
         return result;
     }
-    
-    async updateTx ({request, auth}) {
-        let trx = await Database.beginTransaction ();
 
-        let result = {categories: []}
-        
+    async updateTx({ request, auth }) {
+        const trx = await Database.beginTransaction();
+
+        const result = { categories: [] };
+
         // Get the "unassigned" category id
-        let systemCats = await trx.select ('cats.id AS id', 'cats.name AS name')
-            .from ('categories AS cats')
+        const systemCats = await trx.select('cats.id AS id', 'cats.name AS name')
+            .from('categories AS cats')
             .join('groups', 'groups.id', 'group_id')
             .where('cats.system', true)
-            .andWhere ('groups.user_id', auth.user.id);
-        let unassigned = systemCats.find (entry => entry.name == "Unassigned");
+            .andWhere('groups.user_id', auth.user.id);
+        const unassigned = systemCats.find((entry) => entry.name === 'Unassigned');
 
-        let splits = await trx.select("category_id AS categoryId", "amount")
-            .from("category_splits")
-            .where ("transaction_id", request.params.txId);
+        const splits = await trx.select('category_id AS categoryId', 'amount')
+            .from('category_splits')
+            .where('transaction_id', request.params.txId);
 
         if (splits.length > 0) {
-            
             // There are pre-existing category splits.
             // Credit the category balance for each one.
-            for (let split of splits) {
-                let cat = await this.subtractFromCategoryBalance (trx, split.categoryId, split.amount);
+            splits.forEach(async (split) => {
+                const cat = await this.subtractFromCategoryBalance(
+                    trx, split.categoryId, split.amount,
+                );
 
-                result.categories.push({id: cat.category.id, amount: cat.amount});
-            }
-            
-            await trx.table('category_splits').where ('transaction_id', request.params.txId).delete();
+                result.categories.push({ id: cat.category.id, amount: cat.amount });
+            });
+
+            await trx.table('category_splits').where('transaction_id', request.params.txId).delete();
         }
         else {
-            // There are no category splits. Debit the "Unassigned" category
-            
-            let trans = await trx.select("amount").from("transactions").where ("id", request.params.txId);
-            
-            let cat = await this.subtractFromCategoryBalance (trx, unassigned.id, trans[0].amount);
+            // There are no category splits. Debit the 'Unassigned' category
 
-            result.categories.push({id: cat.category.id, amount: cat.amount});
+            const trans = await trx.select('amount').from('account_transactions').where('transaction_id', request.params.txId);
+
+            const cat = await this.subtractFromCategoryBalance(trx, unassigned.id, trans[0].amount);
+
+            result.categories.push({ id: cat.category.id, amount: cat.amount });
         }
-        
+
         if (request.body.splits.length > 0) {
-
-            for (let split of request.body.splits) {
-
+            request.body.splits.forEach(async (split) => {
                 if (split.categoryId !== unassigned.id) {
-                    await trx.insert({transaction_id: request.params.txId, category_id: split.categoryId, amount: split.amount}).into('category_splits');
+                    await trx.insert({
+                        transaction_id: request.params.txId,
+                        category_id: split.categoryId,
+                        amount: split.amount,
+                    })
+                        .into('category_splits');
                 }
-                
-                let cat = await this.subtractFromCategoryBalance (trx, split.categoryId, -split.amount);
+
+                const cat = await this.subtractFromCategoryBalance(
+                    trx, split.categoryId, -split.amount,
+                );
 
                 // Determine if the category is already in the array.
-                const index = result.categories.findIndex(c => c.id === cat.category.id);
+                const index = result.categories.findIndex((c) => c.id === cat.category.id);
 
                 // If the category is already in the array then simply update the amount.
                 // Otherwise, add the category and amount to the array.
@@ -380,39 +435,42 @@ class InstitutionController {
                     result.categories[index].amount = cat.amount;
                 }
                 else {
-                    result.categories.push({id: cat.category.id, amount: cat.amount});
+                    result.categories.push({ id: cat.category.id, amount: cat.amount });
                 }
-            }
+            });
         }
-        
-        let transCats = await trx.select(
-                "category_id as categoryId", Database.raw("CAST(splits.amount AS float) AS amount"), "cats.name AS category", "groups.name AS group")
-            .from ("category_splits AS splits")
-            .join ("categories AS cats", "cats.id", "splits.category_id")
-            .join ("groups", "groups.id", "cats.group_id")
-            .where ("splits.transaction_id", request.params.txId);
+
+        const transCats = await trx.select(
+            'category_id as categoryId',
+            Database.raw('CAST(splits.amount AS float) AS amount'),
+            'cats.name AS category',
+            'groups.name AS group',
+        )
+            .from('category_splits AS splits')
+            .join('categories AS cats', 'cats.id', 'splits.category_id')
+            .join('groups', 'groups.id', 'cats.group_id')
+            .where('splits.transaction_id', request.params.txId);
 
         result.splits = null;
         if (transCats.length > 0) {
             result.splits = transCats;
         }
 
-        await trx.commit ();
+        await trx.commit();
 
         return result;
     }
 
-    async publicToken ({request, auth}) {
-        
-        let acct = await Database.select ("access_token AS accessToken")
+    static async publicToken({ request, auth }) {
+        const acct = await Database.select("access_token AS accessToken")
             .from("institutions AS inst")
-            .where ('inst.id', request.params.instId)
-            .andWhere ('inst.user_id', auth.user.id);
+            .where('inst.id', request.params.instId)
+            .andWhere('inst.user_id', auth.user.id);
 
         console.log (acct);
-        let result = await plaidClient.createPublicToken (acct[0].accessToken);
-        
-        return {publicToken: result.public_token};
+        const result = await plaidClient.createPublicToken(acct[0].accessToken);
+
+        return { publicToken: result.public_token };
     }
 }
 

@@ -61,75 +61,75 @@ class CategoryController {
         await Database.table('groups').where({id: request.params.groupId, user_id: auth.user.id}).delete ();
     }
 
-    async addCategory ({request, auth}) {
-
-        let id = await Database.insert({group_id: request.body.groupId, name: request.body.name}).into('categories').returning('id');
+    async addCategory({ request }) {
+        const id = await Database.insert({ group_id: request.body.groupId, name: request.body.name }).into('categories').returning('id');
 
         return { groupId: request.body.groupId, id: id[0], name: request.body.name };
     }
 
-    async updateCategory ({request, auth}) {
-
-        await Database.table('categories').where({id: request.params.catId}).update({name: request.body.name});
+    static async updateCategory({ request }) {
+        await Database.table('categories').where({ id: request.params.catId }).update({ name: request.body.name });
 
         return { name: request.body.name };
     }
 
-    async deleteCategory ({request, auth}) {
-        await Database.table('categories').where({id: request.params.catId}).delete ();
+    static async deleteCategory({ request }) {
+        await Database.table('categories').where({ id: request.params.catId }).delete();
     }
 
-    async transactions({request, auth}) {
+    static async transactions({ request, auth }) {
+        const categoryId = parseInt(request.params.catId, 10);
 
-        let categoryId = parseInt(request.params.catId);
+        const result = { transactions: [] };
 
-        let result = { transactions: [] };
-
-        let cat = await Database.select(Database.raw('CAST(amount AS float) as amount'), 'cats.name AS name', 'cats.system AS system')
-            .from ('categories AS cats')
-            .join ('groups', 'groups.id', 'group_id')
+        const cat = await Database.select(Database.raw('CAST(amount AS float) as amount'), 'cats.name AS name', 'cats.system AS system')
+            .from('categories AS cats')
+            .join('groups', 'groups.id', 'group_id')
             .where('cats.id', categoryId)
             .andWhere('groups.user_id', auth.user.id);
 
         result.balance = cat[0].amount;
 
-        let subquery = Database.select (
-                Database.raw('COUNT(CASE WHEN category_id = ' + categoryId + ' THEN 1 ELSE NULL END) AS count'),
-                Database.raw("sum(splits.amount) AS sum"),
-                Database.raw("json_agg ((" +
-                    "'{\"categoryId\": ' || category_id || " +
-                    "', \"amount\": ' || splits.amount || " +
-                    "', \"category\": ' || '\"' || cats.name || '\"' || " +
-                    "', \"group\": ' || '\"' || groups.name || '\"' || " +
-                    "', \"id\": ' || splits.id || " +
-                    "'}')::json) AS categories"),
-                "transaction_id")
-            .from("category_splits AS splits")
-            .join ("categories AS cats", "cats.id", "splits.category_id")
-            .join ("groups", "groups.id", "cats.group_id")
+        const subquery = Database.select(
+            Database.raw(`COUNT(CASE WHEN category_id = ${categoryId} THEN 1 ELSE NULL END) AS count`),
+            Database.raw('sum(splits.amount) AS sum'),
+            Database.raw('json_agg (('
+                    + "'{\"categoryId\": ' || category_id || "
+                    + "', \"amount\": ' || splits.amount || "
+                    + "', \"category\": ' || '\"' || cats.name || '\"' || "
+                    + "', \"group\": ' || '\"' || groups.name || '\"' || "
+                    + "', \"id\": ' || splits.id || "
+                    + "'}')::json) AS categories"),
+            'transaction_id',
+        )
+            .from('category_splits AS splits')
+            .join('categories AS cats', 'cats.id', 'splits.category_id')
+            .join('groups', 'groups.id', 'cats.group_id')
             .where('groups.user_id', auth.user.id)
-            .groupBy ("transaction_id");
+            .groupBy('transaction_id');
 
         let query = Database.select(
-                "trans.id AS id",
-                Database.raw("0 AS type"),
-                Database.raw("COALESCE(trans.sort_order, 2147483647) AS sort_order"),
-                Database.raw("date::text"),
-                "trans.name AS name",
-                "splits.categories AS categories",
-                "inst.name AS institute_name",
-                "acct.name AS account_name",
-                Database.raw("CAST(trans.amount AS real) AS amount"))
-            .from ('transactions AS trans')
-            .join ('accounts AS acct', 'acct.id', 'trans.account_id')
-            .join ('institutions AS inst',  'inst.id',  'acct.institution_id')
-            .leftJoin(subquery.as('splits'), "splits.transaction_id", "trans.id")
+            'trans.id AS id',
+            Database.raw('0 AS type'),
+            Database.raw('COALESCE(trans.sort_order, 2147483647) AS sort_order'),
+            Database.raw('date::text'),
+            'acct_trans.name AS name',
+            'splits.categories AS categories',
+            'inst.name AS institute_name',
+            'acct.name AS account_name',
+            Database.raw('CAST(acct_trans.amount AS real) AS amount'),
+        )
+            .from('transactions AS trans')
+            .join('account_transactions as acct_trans', 'acct_trans.transaction_id', 'trans.id')
+            .join('accounts AS acct', 'acct.id', 'acct_trans.account_id')
+            .join('institutions AS inst', 'inst.id', 'acct.institution_id')
+            .leftJoin(subquery.as('splits'), 'splits.transaction_id', 'trans.id')
             .where('inst.user_id', auth.user.id)
             .orderBy('date', 'desc')
             .orderBy(Database.raw('COALESCE(trans.sort_order, 2147483647)'), 'desc')
-            .orderBy('trans.name');
+            .orderBy('acct_trans.name');
 
-        if (cat[0].system && cat[0].name == 'Unassigned') {
+        if (cat[0].system && cat[0].name === 'Unassigned') {
             query.whereNull('splits.categories');
         }
         else {
@@ -139,23 +139,23 @@ class CategoryController {
         result.transactions = await query;
 
         // Get the category transfers (we don't transfer to or from unassigned)
-        if (!cat[0].system || cat[0].name != 'Unassigned') {
-
+        if (!cat[0].system || cat[0].name !== 'Unassigned') {
             // Category transfers
             query = Database.select(
-                    "xfer.id AS id",
-                    Database.raw("1 AS type"),
-                    Database.raw("2147483647 AS sort_order"),
-                    Database.raw("date::text"),
-                    Database.raw("'Category Transfer' AS name"),
-                    Database.raw("splits.sum * -1 AS amount"),
-                    "splits.categories AS categories")
-                .from ("category_transfers AS xfer")
-                .leftJoin(subquery.as('splits'), Database.raw("splits.transaction_id * -1"), "xfer.id")
+                'xfer.id AS id',
+                Database.raw('1 AS type'),
+                Database.raw('2147483647 AS sort_order'),
+                Database.raw('date::text'),
+                Database.raw("'Category Transfer' AS name"),
+                Database.raw('splits.sum * -1 AS amount'),
+                'splits.categories AS categories',
+            )
+                .from('category_transfers AS xfer')
+                .leftJoin(subquery.as('splits'), Database.raw('splits.transaction_id * -1'), 'xfer.id')
                 .where('splits.count', '>', 0)
                 .orderBy('date', 'desc');
 
-            let transactions = await query;
+            const transactions = await query;
 
             result.transactions = result.transactions.concat(transactions);
         }
