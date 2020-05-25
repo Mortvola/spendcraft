@@ -10,7 +10,7 @@ import GroupDialog from './GroupDialog';
 import FundingDialog from './FundingDialog';
 import RebalanceDialog from './rebalance/RebalanceDialog';
 import store from './redux/store';
-import { fetchTransactions } from './redux/actions';
+import { fetchAccountTransactions, fetchCategoryTransactions } from './redux/actions';
 
 const App = connect()(({ dispatch }) => {
     const [accountSelected, setAccountSelected] = useState(null);
@@ -23,13 +23,13 @@ const App = connect()(({ dispatch }) => {
     const handleAccountSelected = (accountId) => {
         setAccountSelected(accountId);
         setCategorySelected(null);
-        // register.viewAccount(accountId);
+        dispatch(fetchAccountTransactions(accountId));
     };
 
     const handleCategorySelected = (categoryId) => {
         setCategorySelected(categoryId);
         setAccountSelected(null);
-        dispatch(fetchTransactions(categoryId));
+        dispatch(fetchCategoryTransactions(categoryId));
     };
 
     return (

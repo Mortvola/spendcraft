@@ -1,36 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import PropTypes from 'prop-types';
+import { connect } from 'react-redux';
 import IconButton from './IconButton';
 
-function AccountView(props) {
-    const [accounts, setAccounts] = useState([]);
-    const [initialized, setInitialized] = useState(false);
+const mapStateToProps = (state) => ({
+    intitutions: state.institutions,
+});
 
-    useEffect(() => {
-        if (!initialized) {
-            setInitialized(true);
-            $.getJSON({
-                url: '/connected_accounts',
-            })
-                .done((response) => {
-                    setAccounts(response);
-                });
-        }
-    }, [initialized]);
-
-    return (
-        <div id="accounts">
-            {accounts.map((institution) => (
-                <InstitutionElement
-                    key={institution.name}
-                    institution={institution}
-                    onAccountSelected={props.onAccountSelected}
-                    accountSelected={props.accountSelected}
-                />
-            ))}
-        </div>
-    );
-}
+const AccountView = connect(mapStateToProps)(({
+    intitutions,
+    onAccountSelected,
+    accountSelected,
+}) => (
+    <div id="accounts">
+        {intitutions.map((institution) => (
+            <InstitutionElement
+                key={institution.name}
+                institution={institution}
+                onAccountSelected={onAccountSelected}
+                accountSelected={accountSelected}
+            />
+        ))}
+    </div>
+));
 
 AccountView.propTypes = {
     onAccountSelected: PropTypes.func.isRequired,
@@ -39,7 +31,7 @@ AccountView.propTypes = {
 
 AccountView.defaultProps = {
     accountSelected: undefined,
-}
+};
 
 function InstitutionElement({ institution, ...props }) {
     const addAccount = () => {

@@ -14,7 +14,7 @@
 /** @type {typeof import('@adonisjs/framework/src/Route/Manager')} */
 const Route = use('Route');
 const CategoryController = use('App/Controllers/Http/CategoryController');
-
+const AccountController = use('App/Controllers/Http/AccountController')
 Route.on('/').render('index');
 
 Route.group(() => {
@@ -48,7 +48,7 @@ Route.group(() => {
 
     Route.get('/connected_accounts', 'InstitutionController.all');
 
-    Route.get('/account/:acctId/transactions', 'AccountController.transactions');
+    Route.get('/account/:acctId/transactions', AccountController.transactions);
 
     Route.post('/institution', 'InstitutionController.add');
     Route.get('/institution/:instId/accounts', 'InstitutionController.get');

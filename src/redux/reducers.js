@@ -12,6 +12,8 @@ import {
     DELETE_CATEGORY,
     REQUEST_TRANSACTIONS,
     RECEIVE_TRANSACTIONS,
+    REQUEST_INSTITUTIONS,
+    RECEIVE_INSTITUTIONS,
 } from './actionTypes';
 
 
@@ -174,6 +176,13 @@ function institutions(state = [], action) {
 
         return state;
     }
+
+    case REQUEST_INSTITUTIONS:
+        return state;
+
+    case RECEIVE_INSTITUTIONS:
+        return action.institutions;
+
     default:
         return state;
     }
@@ -192,7 +201,11 @@ function transactions(
         return state;
 
     case RECEIVE_TRANSACTIONS: {
-        return { categoryId: action.categoryId, ...action.transactions };
+        if (action.categoryId !== null) {
+            return { categoryId: action.categoryId, ...action.transactions };
+        }
+
+        return { categoryId: null, ...action.transactions };
     }
 
     default:

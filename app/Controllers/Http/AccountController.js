@@ -35,20 +35,20 @@ class AccountController {
                 Database.raw('0 AS type'),
                 Database.raw('COALESCE(trans.sort_order, 2147483647) AS sort_order'),
                 Database.raw('date::text'),
-                'acctTrans.name AS name',
+                'acct_trans.name AS name',
                 'splits.categories AS categories',
                 'inst.name AS institute_name',
                 'acct.name AS account_name',
-                Database.raw('CAST(acctTrans.amount AS real) AS amount'),
+                Database.raw('CAST(acct_trans.amount AS real) AS amount'),
             )
                 .table('transactions AS trans')
-                .jon('account_transactions AS acctTrans', 'acctTrans.transaction_id', 'trans.id')
-                .join('accounts AS acct', 'acct.id', 'acctTrans.account_id')
+                .join('account_transactions AS acct_trans', 'acct_trans.transaction_id', 'trans.id')
+                .join('accounts AS acct', 'acct.id', 'acct_trans.account_id')
                 .join('institutions AS inst', 'inst.id', 'acct.institution_id')
                 .leftJoin(subquery.as('splits'), 'splits.transaction_id', 'trans.id')
-                .where('acctTrans.account_id', accountId)
+                .where('acct_trans.account_id', accountId)
                 .orderBy('date', 'desc')
-                .orderBy('acctTrans.name');
+                .orderBy('acct_trans.name');
         }
 
         return result;

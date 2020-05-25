@@ -24,7 +24,11 @@ const RegisterElement = connect(mapStateToProps)((props) => {
 
         if (transactions) {
             transactions.forEach((transaction) => {
-                const amount = getTransactionAmountForCategory(transaction, categoryId);
+                let { amount } = transaction;
+
+                if (categoryId !== null) {
+                    amount = getTransactionAmountForCategory(transaction, categoryId);
+                }
 
                 const selected = selectedTransaction === transaction.id;
 

@@ -9,6 +9,8 @@ import {
     DELETE_CATEGORY,
     REQUEST_TRANSACTIONS,
     RECEIVE_TRANSACTIONS,
+    REQUEST_INSTITUTIONS,
+    RECEIVE_INSTITUTIONS,
 } from './actionTypes';
 
 const addGroup = (group) => ({
@@ -77,7 +79,47 @@ const receiveTransactions = (categoryId, transactions) => ({
     transactions,
 });
 
-const fetchTransactions = (categoryId) => (
+
+const fetchAccountTransactions = (accountId) => (
+    (dispatch) => {
+        dispatch(requestTransactions());
+
+        return (
+            fetch(`/account/${accountId}/transactions`)
+                .then(
+                    (response) => response.json(),
+                    (error) => console.log('fetch error: ', error),
+                )
+                .then(
+                    (json) => {
+                        json.transactions.sort((a, b) => {
+                            if (a.date < b.date) {
+                                return 1;
+                            }
+
+                            if (a.date > b.date) {
+                                return -1;
+                            }
+
+                            if (a.sort_order < b.sort_order) {
+                                return 1;
+                            }
+
+                            if (a.sort_order > b.sort_order) {
+                                return -1;
+                            }
+
+                            return 0;
+                        });
+
+                        return dispatch(receiveTransactions(null, json));
+                    },
+                )
+        );
+    }
+);
+
+const fetchCategoryTransactions = (categoryId) => (
     (dispatch) => {
         dispatch(requestTransactions());
 
@@ -116,17 +158,41 @@ const fetchTransactions = (categoryId) => (
     }
 );
 
+const requestInstitutions = () => ({
+    type: REQUEST_INSTITUTIONS,
+});
+
+const receiveInstitutions = (institutions) => ({
+    type: RECEIVE_INSTITUTIONS,
+    institutions,
+});
+
+const fetchInstitutions = () => (
+    (dispatch) => {
+        dispatch(requestInstitutions());
+
+        return (
+            fetch('/connected_accounts')
+                .then(
+                    (response) => response.json(),
+                    (error) => console.log('fetch error: ', error),
+                )
+                .then(
+                    (json) => dispatch(receiveInstitutions(json)),
+                )
+        );
+    }
+);
+
 export {
     addGroup,
     updateGroup,
     deleteGroup,
-    requestGroups,
-    receieveGroups,
     fetchGroups,
     addCategory,
     updateCategory,
     deleteCategory,
-    requestTransactions,
-    receiveTransactions,
-    fetchTransactions,
+    fetchAccountTransactions,
+    fetchCategoryTransactions,
+    fetchInstitutions,
 };
