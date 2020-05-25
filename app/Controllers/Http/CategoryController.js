@@ -108,26 +108,26 @@ class CategoryController {
             .where('groups.user_id', auth.user.id)
             .groupBy('transaction_id');
 
-        let query = Database.select(
+        const query = Database.select(
             'trans.id AS id',
             Database.raw('0 AS type'),
             Database.raw('COALESCE(trans.sort_order, 2147483647) AS sort_order'),
             Database.raw('date::text'),
-            'acct_trans.name AS name',
+            Database.raw("COALESCE(acct_trans.name, 'Category Transfer') AS name"),
             'splits.categories AS categories',
             'inst.name AS institute_name',
             'acct.name AS account_name',
             Database.raw('CAST(acct_trans.amount AS real) AS amount'),
         )
             .from('transactions AS trans')
-            .join('account_transactions as acct_trans', 'acct_trans.transaction_id', 'trans.id')
-            .join('accounts AS acct', 'acct.id', 'acct_trans.account_id')
-            .join('institutions AS inst', 'inst.id', 'acct.institution_id')
+            .leftJoin('account_transactions as acct_trans', 'acct_trans.transaction_id', 'trans.id')
+            .leftJoin('accounts AS acct', 'acct.id', 'acct_trans.account_id')
+            .leftJoin('institutions AS inst', 'inst.id', 'acct.institution_id')
             .leftJoin(subquery.as('splits'), 'splits.transaction_id', 'trans.id')
-            .where('inst.user_id', auth.user.id)
+            // .where('inst.user_id', auth.user.id)
             .orderBy('date', 'desc')
             .orderBy(Database.raw('COALESCE(trans.sort_order, 2147483647)'), 'desc')
-            .orderBy('acct_trans.name');
+            .orderBy(Database.raw("COALESCE(acct_trans.name, 'Category Transfer')"));
 
         if (cat[0].system && cat[0].name === 'Unassigned') {
             query.whereNull('splits.categories');
@@ -137,28 +137,6 @@ class CategoryController {
         }
 
         result.transactions = await query;
-
-        // Get the category transfers (we don't transfer to or from unassigned)
-        if (!cat[0].system || cat[0].name !== 'Unassigned') {
-            // Category transfers
-            query = Database.select(
-                'xfer.id AS id',
-                Database.raw('1 AS type'),
-                Database.raw('2147483647 AS sort_order'),
-                Database.raw('date::text'),
-                Database.raw("'Category Transfer' AS name"),
-                Database.raw('splits.sum * -1 AS amount'),
-                'splits.categories AS categories',
-            )
-                .from('category_transfers AS xfer')
-                .leftJoin(subquery.as('splits'), Database.raw('splits.transaction_id * -1'), 'xfer.id')
-                .where('splits.count', '>', 0)
-                .orderBy('date', 'desc');
-
-            const transactions = await query;
-
-            result.transactions = result.transactions.concat(transactions);
-        }
 
         return result;
     }
@@ -173,20 +151,18 @@ class CategoryController {
             let transactionId;
 
             if (request.params.tfrId === undefined) {
-                const xfr = await trx.insert({ date }).into('category_transfers').returning('id');
+                const xfr = await trx.insert({ date }).into('transactions').returning('id');
 
-                // In the splits table, negative transaction IDs refer to
-                // the category_transfers table entries.
-                transactionId = -xfr[0];
+                [transactionId] = xfr;
             }
             else {
-                transactionId = -request.params.tfrId;
+                transactionId = request.params.tfrId;
             }
 
             const existingSplits = [];
 
             // Insert the category splits
-            for (const split of request.body.categories) {
+            request.body.categories.forEach(async (split) => {
                 if (split.amount !== 0) {
                     let { amount } = split;
 
@@ -219,19 +195,19 @@ class CategoryController {
 
                     result.push({ id: category.id, amount: category.amount });
                 }
-            }
+            });
 
             // Delete splits that are not in the array of ids
             const query = trx.from('category_splits').whereNotIn('id', existingSplits).andWhere('transaction_id', transactionId);
             const toDelete = await query.select('category_id AS categoryId', 'amount');
 
-            for (const td of toDelete) {
+            toDelete.forEach(async (td) => {
                 const category = await Category.findOrFail(td.categoryId, trx);
 
                 category.amount = parseFloat(category.amount) - td.amount;
 
                 await category.save(trx);
-            }
+            });
 
             await query.delete();
         }
