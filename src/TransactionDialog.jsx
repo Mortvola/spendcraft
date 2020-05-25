@@ -29,17 +29,17 @@ function updateTransactionCategory(transaction, request, categoryId) {
 
             transaction.categories = response.splits;
 
-            let newAmount;
+            // let newAmount;
 
             if (transaction.categories) {
-                for (const c of transaction.categories) {
+                transaction.categories.forEach((c) => {
                     c.amount = parseFloat(c.amount);
-                }
+                });
 
-                newAmount = getTransactionAmountForCategory(transaction, categoryId);
+                // newAmount = getTransactionAmountForCategory(transaction, categoryId);
             }
 
-            document.dispatchEvent(new CustomEvent('transactionUpdated', { detail: { transaction, delta: newAmount - oldAmount } }));
+            // document.dispatchEvent(new CustomEvent('transactionUpdated', { detail: { transaction, delta: newAmount - oldAmount } }));
         });
 }
 

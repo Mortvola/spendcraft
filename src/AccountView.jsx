@@ -92,8 +92,8 @@ InstitutionElement.propTypes = {
 };
 
 InstitutionElement.defaultProps = {
-    accountSelected: undefined
-}
+    accountSelected: undefined,
+};
 
 function Account({ selected, account, ...props }) {
     const [refreshing, setRefreshing] = useState(false);

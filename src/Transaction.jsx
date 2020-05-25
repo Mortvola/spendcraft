@@ -22,9 +22,7 @@ const Transaction = ({
     };
 
     const handleChange = (categoryId) => {
-        const request = { splits: [] };
-
-        request.splits.push({ categoryId, amount: transaction.amount });
+        const request = { splits: [{ categoryId, amount: transaction.amount }] };
 
         updateTransactionCategory(transaction, request);
     };

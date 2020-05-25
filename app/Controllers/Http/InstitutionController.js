@@ -24,15 +24,15 @@ class InstitutionController {
     async getConnectedAccounts (auth) {
         // Check to see if we already have the institution. If not, add it.
         let result = await Database.select(
-                "inst.id AS institutionId", 
-                "inst.name AS institutionName", 
-                "acct.id AS accountId", 
-                "acct.name AS accountName")
-            .table("institutions AS inst")
-            .leftJoin ("accounts AS acct",  "acct.institution_id",  "inst.id")
+                'inst.id AS institutionId', 
+                'inst.name AS institutionName', 
+                'acct.id AS accountId', 
+                'acct.name AS accountName')
+            .table('institutions AS inst')
+            .leftJoin ('accounts AS acct',  'acct.institution_id',  'inst.id')
             .where ('inst.user_id', auth.user.id)
-            .orderBy("inst.name")
-            .orderBy("acct.name");
+            .orderBy('inst.name')
+            .orderBy('acct.name');
                 
         let institutions = [];
         let institution = null;
@@ -58,69 +58,66 @@ class InstitutionController {
         return institutions;
     }
 
-    async add ({request, auth}) {
+    async add({ request, auth }) {
+        const { institution, publicToken } = request.only(['institution', 'publicToken']);
 
-        let {institution, publicToken} = request.only (['institution', 'publicToken']);
-        
-        
         // Check to see if we already have the institution. If not, add it.
-        let inst = await Database.table('institutions').where ({institution_id: institution.institution_id, user_id: auth.user.id});
+        const inst = await Database.table('institutions').where({ institution_id: institution.institution_id, user_id: auth.user.id });
 
         let accessToken;
         let institutionId;
-        
+
         if (inst.length === 0) {
-            
-            let tokenResponse = await plaidClient.exchangePublicToken(publicToken);
-            
+            const tokenResponse = await plaidClient.exchangePublicToken(publicToken);
+
             accessToken = tokenResponse.access_token;
 
-            let instId = await Database.insert({ institution_id: institution.institution_id, name: institution.name, access_token: accessToken, user_id: auth.user.id }).into('institutions').returning('id'); 
-            
-            institutionId = instId[0];
+            [institutionId] = await Database.insert({
+                institution_id: institution.institution_id,
+                name: institution.name,
+                access_token: accessToken,
+                user_id: auth.user.id,
+            })
+                .into('institutions')
+                .returning('id');
         }
         else {
             accessToken = inst[0].access_token;
             institutionId = inst[0].id;
         }
 
-        let result = {
+        const result = {
             id: institutionId,
             name: institution.name
         };
 
         result.accounts = await this.getAccounts(accessToken, institutionId);
-        
+
         return result;
     }
-    
-    async getAccounts (accessToken, institutionId) {
 
-        let accountsResponse = await plaidClient.getAccounts(accessToken);
-        
-        let accounts = accountsResponse.accounts;
-        
-        let existingAccts = await Database.select("plaid_account_id").from("accounts").where("institution_id", institutionId);
-        
-        for (let existingAcct of existingAccts) {
-            
-            let index = accounts.findIndex(a => a.account_id == existingAcct.plaid_account_id);
-            
+    async getAccounts(accessToken, institutionId) {
+        const { accounts } = await plaidClient.getAccounts(accessToken);
+
+        const existingAccts = await Database.select('plaid_account_id').from('accounts').where('institution_id', institutionId);
+
+        existingAccts.forEach((existingAcct) => {
+            const index = accounts.findIndex((a) => a.account_id === existingAcct.plaid_account_id);
+
             if (index !== -1) {
                 accounts.splice(index, 1);
             }
-        }
-        
+        });
+
         return accounts;
     }
-    
-    async get ({request, auth}) {
 
-        let inst = await Database.select('access_token').from('institutions').where ({id: request.params.instId, user_id: auth.user.id});
+    async get({ request, auth }) {
+        const inst = await Database.select('access_token').from('institutions').where({ id: request.params.instId, user_id: auth.user.id });
 
-        let accounts = []; 
+        let accounts = [];
         if (inst.length > 0) {
-            accounts = await this.getAccounts (inst[0].access_token, request.params.instId);
+            accounts = await this.getAccounts(inst[0].access_token, request.params.instId);
         }
 
         return accounts;
@@ -174,7 +171,7 @@ class InstitutionController {
 
                         const startingBalance = details.balance + details.sum;
 
-                        // Insert the "starting balance" transaction
+                        // Insert the 'starting balance' transaction
                         const transId = trx.insert({
                             date: request.body.startDate,
                             sort_order: -1,
@@ -238,20 +235,27 @@ class InstitutionController {
         let sum = 0;
         let pendingSum = 0;
 
-        transactionsResponse.transactions.forEach(async (transaction) => {
+        await Promise.all(transactionsResponse.transactions.map(async (transaction) => {
+            // console.log(JSON.stringify(transaction, null, 4));
             // Only consider non-pending transactions
             if (!transaction.pending) {
+                // console.log(JSON.stringify(transaction, null, 4));
+
                 // First check to see if the transaction is present. If it is then don't insert it.
                 const exists = await trx.select(
                     Database.raw(`EXISTS (SELECT 1 FROM account_transactions WHERE plaid_transaction_id = '${transaction.transaction_id}') AS exists`),
                 );
 
                 if (!exists[0].exists) {
-                    const id = trx.insert({
+                    // console.log('Insert transaction');
+
+                    const id = await trx.insert({
                         date: transaction.date,
                     })
                         .into('transactions')
                         .returning('id');
+
+                    // console.log(JSON.stringify(id, null, 4));
 
                     await trx.insert({
                         transaction_id: id[0],
@@ -266,9 +270,10 @@ class InstitutionController {
                 }
             }
             else {
+                console.log(JSON.stringify(transaction, null, 4));
                 pendingSum += transaction.amount;
             }
-        });
+        }));
 
         let balance = transactionsResponse.accounts[0].balances.current;
 
@@ -299,18 +304,18 @@ class InstitutionController {
     async subtractFromCategoryBalance (trx, categoryId, amount)
     {
         let result = await trx.select(
-                "groups.id AS groupId",
-                "groups.name AS group",
-                "cat.id AS categoryId",
-                "cat.name AS category",
-                "cat.amount AS amount")
-            .from("categories AS cat")
-            .leftJoin("groups", "groups.id", "cat.group_id")
-            .where ("cat.id", categoryId);
+                'groups.id AS groupId',
+                'groups.name AS group',
+                'cat.id AS categoryId',
+                'cat.name AS category',
+                'cat.amount AS amount')
+            .from('categories AS cat')
+            .leftJoin('groups', 'groups.id', 'cat.group_id')
+            .where ('cat.id', categoryId);
 
         let newAmount = result[0].amount - amount;
 
-        await trx.table("categories").where("id", categoryId).update("amount", newAmount);
+        await trx.table('categories').where('id', categoryId).update('amount', newAmount);
         
         return {
             group: {
@@ -323,41 +328,53 @@ class InstitutionController {
         };
     }
 
-    async sync ({request, auth}) {
-        const trx = await Database.beginTransaction ();
+    async sync({ request, auth }) {
+        const trx = await Database.beginTransaction();
 
-        let acct = await trx.select ("access_token AS accessToken", "acct.id AS accountId", "plaid_account_id AS plaidAccountId", "start_date AS startDate", "tracking")
-            .from("institutions AS inst")
-            .join("accounts AS acct", "acct.institution_id", "inst.id")
-            .where ('acct.id', request.params.acctId)
-            .where ('user_id', auth.user.id);
+        const acct = await trx.select(
+            'access_token AS accessToken',
+            'acct.id AS accountId',
+            'plaid_account_id AS plaidAccountId',
+            'start_date AS startDate',
+            'tracking',
+        )
+            .from('institutions AS inst')
+            .join('accounts AS acct', 'acct.institution_id', 'inst.id')
+            .where('acct.id', request.params.acctId)
+            .where('user_id', auth.user.id);
 
-        let result = {};
-        
+        const result = {};
+
         if (acct.length > 0) {
-            
-            if (acct[0].tracking == "Transactions") {
-               
-                let details = await this.addTransactions (trx,  acct[0].accessToken, acct[0].accountId, acct[0].plaidAccountId, acct[0].startDate, auth);
-                
+            if (acct[0].tracking === 'Transactions') {
+                const details = await this.addTransactions(
+                    trx,
+                    acct[0].accessToken,
+                    acct[0].accountId,
+                    acct[0].plaidAccountId,
+                    acct[0].startDate,
+                    auth,
+                );
+
                 if (details.cat) {
-                    let systemCats = await trx.select ('cats.id AS id', 'cats.name AS name')
-                        .from ('categories AS cats')
+                    const systemCats = await trx.select('cats.id AS id', 'cats.name AS name')
+                        .from('categories AS cats')
                         .join('groups', 'groups.id', 'group_id')
                         .where('cats.system', true)
-                        .andWhere ('groups.user_id', auth.user.id);
-                    let unassigned = systemCats.find (entry => entry.name == "Unassigned");
-                    
-                    result.categories = [{id: unassigned.id, amount: details.cat.amount}];
+                        .andWhere('groups.user_id', auth.user.id);
+                    const unassigned = systemCats.find((entry) => entry.name === 'Unassigned');
+
+                    result.categories = [{ id: unassigned.id, amount: details.cat.amount }];
                 }
-                
-                result.accounts = [{ id: request.params.acctId, balance: details.balance}];
+
+                result.accounts = [{ id: request.params.acctId, balance: details.balance }];
             }
             else {
-                let balanceResponse = await plaidClient.getBalance (acct[0].access_token, {
-                    account_ids: [acct[0].plaidAccountId]});
+                const balanceResponse = await plaidClient.getBalance(acct[0].access_token, {
+                    account_ids: [acct[0].plaidAccountId],
+                });
 
-                await trx.table("accounts").where("id", request.params.acctId).update("balance", balanceResponse.accounts[0].balances.current);
+                await trx.table('accounts').where('id', request.params.acctId).update('balance', balanceResponse.accounts[0].balances.current);
 
                 result.accounts = [{
                     id: request.params.acctId,
@@ -376,7 +393,7 @@ class InstitutionController {
 
         const result = { categories: [] };
 
-        // Get the "unassigned" category id
+        // Get the 'unassigned' category id
         const systemCats = await trx.select('cats.id AS id', 'cats.name AS name')
             .from('categories AS cats')
             .join('groups', 'groups.id', 'group_id')
@@ -391,13 +408,13 @@ class InstitutionController {
         if (splits.length > 0) {
             // There are pre-existing category splits.
             // Credit the category balance for each one.
-            splits.forEach(async (split) => {
+            await Promise.all(splits.map(async (split) => {
                 const cat = await this.subtractFromCategoryBalance(
                     trx, split.categoryId, split.amount,
                 );
 
                 result.categories.push({ id: cat.category.id, amount: cat.amount });
-            });
+            }));
 
             await trx.table('category_splits').where('transaction_id', request.params.txId).delete();
         }
@@ -412,7 +429,7 @@ class InstitutionController {
         }
 
         if (request.body.splits.length > 0) {
-            request.body.splits.forEach(async (split) => {
+            await Promise.all(request.body.splits.map(async (split) => {
                 if (split.categoryId !== unassigned.id) {
                     await trx.insert({
                         transaction_id: request.params.txId,
@@ -437,7 +454,7 @@ class InstitutionController {
                 else {
                     result.categories.push({ id: cat.category.id, amount: cat.amount });
                 }
-            });
+            }));
         }
 
         const transCats = await trx.select(
@@ -462,8 +479,8 @@ class InstitutionController {
     }
 
     static async publicToken({ request, auth }) {
-        const acct = await Database.select("access_token AS accessToken")
-            .from("institutions AS inst")
+        const acct = await Database.select('access_token AS accessToken')
+            .from('institutions AS inst')
             .where('inst.id', request.params.instId)
             .andWhere('inst.user_id', auth.user.id);
 
