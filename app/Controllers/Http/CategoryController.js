@@ -163,7 +163,7 @@ class CategoryController {
         return result;
     }
 
-    async transfer({ request }) {
+    static async transfer({ request }) {
         const trx = await Database.beginTransaction();
 
         const result = [];
@@ -263,6 +263,10 @@ class CategoryController {
         await categoryTransfer.delete();
 
         await trx.commit();
+    }
+
+    static async balances({ request, auth }) {
+        return Category.balances(auth.user.id, request.params.date);
     }
 }
 

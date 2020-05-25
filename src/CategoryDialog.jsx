@@ -1,3 +1,4 @@
+/* eslint-disable jsx-a11y/label-has-associated-control */
 import React from 'react';
 import PropTypes from 'prop-types';
 import { Field, ErrorMessage } from 'formik';
@@ -105,7 +106,7 @@ const CategoryDialog = connect()((props) => {
     };
 
     const handleDelete = (bag) => {
-        const { setTouched, setErrors }  = bag;
+        const { setTouched, setErrors } = bag;
 
         $.ajax({
             url: `/groups/${groupId}/categories/${category.id}`,
@@ -124,7 +125,7 @@ const CategoryDialog = connect()((props) => {
                     setErrors({ name: jqXHR.responseJSON.errors[0].message });
                 }
             })
-            .done((response) => {
+            .done(() => {
                 dispatch(deleteCategory({ id: category.id, groupId }));
                 onClose();
             });

@@ -57,6 +57,7 @@ function ModalDialog({
     validate,
     onSubmit,
     size,
+    scrollable,
 }) {
     const [doDelete, setDoDelete] = useState(false);
 
@@ -86,7 +87,14 @@ function ModalDialog({
     };
 
     return (
-        <Modal show={show} animation onHide={onClose} onExited={onExited} size={size}>
+        <Modal
+            show={show}
+            animation
+            onHide={onClose}
+            onExited={onExited}
+            size={size}
+            scrollable={scrollable}
+        >
             <Modal.Header closeButton>
                 <Modal.Title>{title}</Modal.Title>
             </Modal.Header>
@@ -98,7 +106,7 @@ function ModalDialog({
                 >
                     <>
                         <DeleteHandler performDelete={doDelete} />
-                        <Form id="modalForm">
+                        <Form id="modalForm" className="scrollable-form">
                             {form()}
                         </Form>
                     </>
@@ -125,11 +133,13 @@ ModalDialog.propTypes = {
     validate: PropTypes.func.isRequired,
     onSubmit: PropTypes.func.isRequired,
     size: PropTypes.string,
+    scrollable: PropTypes.bool,
 };
 
 ModalDialog.defaultProps = {
     onDelete: undefined,
     size: 'md',
+    scrollable: false,
 };
 
 export { ModalLauncher, ModalDialog };

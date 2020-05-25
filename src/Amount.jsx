@@ -2,13 +2,12 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 function Amount(props) {
-    let { amount } = props;
+    let { amount, className } = props;
     if (amount === undefined || amount === null) {
         amount = 0;
     }
 
-    let { className } = props;
-
+    className += ' dollar-amount';
     if (amount < 0) {
         className += ' negative';
     }
@@ -20,11 +19,12 @@ function Amount(props) {
 
 Amount.propTypes = {
     amount: PropTypes.number,
-    className: PropTypes.string.isRequired,
+    className: PropTypes.string,
 };
 
 Amount.defaultProps = {
     amount: 0,
+    className: '',
 };
 
 export default Amount;

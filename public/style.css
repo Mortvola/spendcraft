@@ -726,3 +726,36 @@ Errors
   color: #a94442;
   font-weight: bold;
 }
+
+.rebalance-header {
+    display: flex;
+    justify-content: space-between;
+}
+
+.rebalance-unassigned {
+    display: inline-block;
+    width: 100px;
+    margin-right: 14px;
+}
+
+.cat-rebalance-container {
+    overflow-y: auto;
+}
+
+.cat-rebalance-item {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-gap: 14px;
+}
+
+.cat-rebalance-item div:first-child {
+    margin-left: 28px;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	overflow: hidden;
+}
+
+.scrollable-form {
+    display: grid;
+    height: 100%;
+}

@@ -89,7 +89,6 @@ const fetchTransactions = (categoryId) => (
                 )
                 .then(
                     (json) => {
-
                         json.transactions.sort((a, b) => {
                             if (a.date < b.date) {
                                 return 1;
@@ -110,7 +109,7 @@ const fetchTransactions = (categoryId) => (
                             return 0;
                         });
 
-                        return dispatch(receiveTransactions(categoryId, json))
+                        return dispatch(receiveTransactions(categoryId, json));
                     },
                 )
         );

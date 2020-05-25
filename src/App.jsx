@@ -8,6 +8,7 @@ import categoryList from './Categories';
 import { ModalLauncher } from './Modal';
 import GroupDialog from './GroupDialog';
 import FundingDialog from './FundingDialog';
+import RebalanceDialog from './rebalance/RebalanceDialog';
 import store from './redux/store';
 import { fetchTransactions } from './redux/actions';
 
@@ -45,6 +46,11 @@ const App = connect()(({ dispatch }) => {
                             launcher={(props) => (<button type="button" id="fund-cats" className="button" {...props}>Fund</button>)}
                             title="Fund Categories"
                             dialog={(props) => (<FundingDialog {...props} />)}
+                        />
+                        <ModalLauncher
+                            launcher={(props) => (<button type="button" id="fund-cats" className="button" {...props}>Rebalance</button>)}
+                            title="Rebalance Categories"
+                            dialog={(props) => (<RebalanceDialog {...props} />)}
                         />
                     </div>
                     <CategoryView
