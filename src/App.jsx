@@ -7,7 +7,7 @@ import RegisterElement from './RegisterElement';
 import categoryList from './Categories';
 import { ModalLauncher } from './Modal';
 import GroupDialog from './GroupDialog';
-import FundingDialog from './FundingDialog';
+import FundingDialog from './funding/FundingDialog';
 import RebalanceDialog from './rebalance/RebalanceDialog';
 import store from './redux/store';
 import { fetchAccountTransactions, fetchCategoryTransactions } from './redux/actions';

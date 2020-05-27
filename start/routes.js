@@ -15,6 +15,8 @@
 const Route = use('Route');
 const CategoryController = use('App/Controllers/Http/CategoryController');
 const AccountController = use('App/Controllers/Http/AccountController')
+const FundingPlanController = use('App/Controllers/Http/FundingPlanController')
+
 Route.on('/').render('index');
 
 Route.group(() => {
@@ -56,8 +58,8 @@ Route.group(() => {
     Route.post('/institution/:instId/accounts/:acctId/transactions/sync', 'InstitutionController.sync');
     Route.get('/institution/:instId/public_token', 'InstitutionController.publicToken');
 
-    Route.get('/funding_plans', 'FundingPlanController.getAll');
-    Route.get('/funding_plan/:planId', 'FundingPlanController.getPlan');
+    Route.get('/funding_plans', FundingPlanController.getAll);
+    Route.get('/funding_plan/:planId', FundingPlanController.getPlan);
 
     Route.patch('/transaction/:txId', 'InstitutionController.updateTx');
     Route.on('/fundingplans').render('fundingplans');

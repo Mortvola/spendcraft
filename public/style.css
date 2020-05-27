@@ -396,7 +396,8 @@ body {
 
 .cat-fund-table {
 	display: flex;
-	flex-direction: column;
+    flex-direction: column;
+    overflow-y: auto;
 }
 
 .cat-fund-items {

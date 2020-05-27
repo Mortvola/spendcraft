@@ -162,7 +162,7 @@ class CategoryController {
             const existingSplits = [];
 
             // Insert the category splits
-            request.body.categories.forEach(async (split) => {
+            await Promise.all(request.body.categories.map(async (split) => {
                 if (split.amount !== 0) {
                     let { amount } = split;
 
@@ -195,19 +195,19 @@ class CategoryController {
 
                     result.push({ id: category.id, amount: category.amount });
                 }
-            });
+            }));
 
             // Delete splits that are not in the array of ids
             const query = trx.from('category_splits').whereNotIn('id', existingSplits).andWhere('transaction_id', transactionId);
             const toDelete = await query.select('category_id AS categoryId', 'amount');
 
-            toDelete.forEach(async (td) => {
+            await Promise.all(toDelete.map(async (td) => {
                 const category = await Category.findOrFail(td.categoryId, trx);
 
                 category.amount = parseFloat(category.amount) - td.amount;
 
                 await category.save(trx);
-            });
+            }));
 
             await query.delete();
         }
@@ -226,7 +226,7 @@ class CategoryController {
 
         const categorySplits = await categoryTransfer.splits(trx).fetch();
 
-        categorySplits.rows.forEach(async (cs) => {
+        await Promise.all(categorySplits.rows.map(async (cs) => {
             const category = await Category.find(cs.category_id, trx);
 
             category.amount -= cs.amount;
@@ -234,7 +234,7 @@ class CategoryController {
             await category.save(trx);
 
             await cs.delete();
-        });
+        }));
 
         await categoryTransfer.delete();
 
