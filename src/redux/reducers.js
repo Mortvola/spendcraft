@@ -14,6 +14,7 @@ import {
     RECEIVE_TRANSACTIONS,
     REQUEST_INSTITUTIONS,
     RECEIVE_INSTITUTIONS,
+    RECEIVE_CATEGORY_BALANCES,
 } from './actionTypes';
 
 
@@ -57,6 +58,20 @@ function categories(
 
             return state;
         }
+
+        case RECEIVE_CATEGORY_BALANCES:
+            return state.map((c) => {
+                const balance = action.balances.find((b) => b.id === c.id);
+
+                if (balance) {
+                    return ({
+                        ...c,
+                        amount: balance.amount,
+                    });
+                }
+
+                return c;
+            });
 
         default:
             return state;
@@ -152,6 +167,19 @@ function categoryTree(
                     }
 
                     return g;
+                }),
+            },
+        };
+
+    case RECEIVE_CATEGORY_BALANCES:
+        return {
+            ...state,
+            ...{
+                groups: state.groups.map((g) => {
+                    return ({
+                        ...g,
+                        ...{ categories: categories(g.categories, action) },
+                    });
                 }),
             },
         };

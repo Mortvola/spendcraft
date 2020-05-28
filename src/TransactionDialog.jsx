@@ -1,33 +1,33 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
+import { connect } from 'react-redux';
 import { Field, ErrorMessage } from 'formik';
 import CategorySplits from './CategorySplits';
-import { setTextElementAmount } from './NumberFormat';
-import getTransactionAmountForCategory from './TransactionUtils';
 import { ModalDialog } from './Modal';
+import { receiveCategoryBalances } from './redux/actions';
 
-function updateCategory(id, amount) {
-    setTextElementAmount($(`#categories [data-cat="${id}"]`), amount);
-}
+function updateTransactionCategory(transaction, request, _categoryId, dispatch) {
+    // const oldAmount = getTransactionAmountForCategory(transaction, categoryId);
 
-function updateCategories(categories) {
-    categories.forEach((category) => updateCategory(category.id, category.amount));
-}
-
-function updateTransactionCategory(transaction, request, categoryId) {
-    const oldAmount = getTransactionAmountForCategory(transaction, categoryId);
-
-    $.ajax({
-        url: `/transaction/${transaction.id}`,
-        contentType: 'application/json',
+    fetch(`/transaction/${transaction.id}`, {
         method: 'PATCH',
-        data: JSON.stringify(request),
+        headers:
+        {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(request),
     })
-        .done((response) => {
-            updateCategories(response.categories);
+        .then(
+            (response) => response.json(),
+            (error) => console.log('fetch error: ', error),
+        )
+        .then((json) => {
+            const { splits, categories } = json;
+            // updateCategories(response.categories);
 
-            transaction.categories = response.splits;
+            transaction.categories = splits;
 
             // let newAmount;
 
@@ -38,6 +38,8 @@ function updateTransactionCategory(transaction, request, categoryId) {
 
                 // newAmount = getTransactionAmountForCategory(transaction, categoryId);
             }
+
+            dispatch(receiveCategoryBalances(categories));
 
             // document.dispatchEvent(new CustomEvent('transactionUpdated', { detail: { transaction, delta: newAmount - oldAmount } }));
         });
@@ -58,7 +60,7 @@ function validateSplits(splits) {
     return error;
 }
 
-const TransactionDialog = (props) => {
+const TransactionDialog = connect()((props) => {
     const {
         show,
         onClose,
@@ -66,6 +68,7 @@ const TransactionDialog = (props) => {
         title,
         transaction,
         categoryContext,
+        dispatch,
     } = props;
 
     const [remaining, setRemaining] = useState(() => {
@@ -106,7 +109,7 @@ const TransactionDialog = (props) => {
             });
         }
 
-        updateTransactionCategory(transaction, { splits }, categoryContext);
+        updateTransactionCategory(transaction, { splits }, categoryContext, dispatch);
     };
 
     return (
@@ -158,7 +161,7 @@ const TransactionDialog = (props) => {
             )}
         />
     );
-};
+});
 
 TransactionDialog.propTypes = {
     show: PropTypes.bool.isRequired,
@@ -170,6 +173,7 @@ TransactionDialog.propTypes = {
     onClose: PropTypes.func.isRequired,
     onExited: PropTypes.func.isRequired,
     title: PropTypes.string.isRequired,
+    dispatch: PropTypes.func.isRequired,
 };
 
 TransactionDialog.defaultProps = {

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 import IconButton from './IconButton';
+import { receiveCategoryBalances } from './redux/actions';
 
 const mapStateToProps = (state) => ({
     intitutions: state.institutions,
@@ -95,28 +96,36 @@ InstitutionElement.defaultProps = {
     accountSelected: undefined,
 };
 
-function Account({ selected, account, ...props }) {
+const Account = connect()(({
+    selected,
+    account,
+    dispatch,
+    ...props
+}) => {
     const [refreshing, setRefreshing] = useState(false);
 
     const refresh = () => {
         setRefreshing(true);
 
-        $.post({
-            url: `/institution/${props.institutionId}/accounts/${account.id}/transactions/sync`,
+        fetch(`/institution/${props.institutionId}/accounts/${account.id}/transactions/sync`, {
+            method: 'POST',
             headers:
             {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'Content-Type': 'application/json',
             },
-            contentType: 'application/json',
         })
-            .done((response) => {
-                if (response && response.categories && response.categories.length > 0) {
-                    updateCategory(response.categories[0].id, response.categories[0].amount);
+            .then(
+                (response) => response.json(),
+                (error) => console.log('fetch error: ', error),
+            )
+            .then((json) => {
+                const { categories } = json;
+                if (categories && categories.length > 0) {
+                    dispatch(receiveCategoryBalances(categories));
                 }
 
                 document.dispatchEvent(new Event('accountRefreshed'));
-            })
-            .always(() => {
                 setRefreshing(false);
             });
     };
@@ -141,7 +150,7 @@ function Account({ selected, account, ...props }) {
             <div className={className} onClick={accountSelected}>{account.name}</div>
         </div>
     );
-}
+});
 
 Account.propTypes = {
     institutionId: PropTypes.number.isRequired,

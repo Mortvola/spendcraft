@@ -1,5 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import { connect } from 'react-redux';
 import IconButton from './IconButton';
 import { CategoryInput } from './CategoryInput';
 import Amount from './Amount';
@@ -8,12 +9,13 @@ import CategoryTransferDialog from './CategoryTransferDialog';
 import { ModalLauncher } from './Modal';
 
 
-const Transaction = ({
+const Transaction = connect()(({
     transaction,
     amount,
     balance,
     selected,
     categoryContext,
+    dispatch,
 }) => {
     const handleClick = () => {
         // const { transaction, onClick } = props;
@@ -24,7 +26,7 @@ const Transaction = ({
     const handleChange = (categoryId) => {
         const request = { splits: [{ categoryId, amount: transaction.amount }] };
 
-        updateTransactionCategory(transaction, request);
+        updateTransactionCategory(transaction, request, null, dispatch);
     };
 
     const renderTransactionDialog = (props) => {
@@ -94,7 +96,7 @@ const Transaction = ({
             <div className="transaction-field">{transaction.account_name}</div>
         </div>
     );
-};
+});
 
 Transaction.propTypes = {
     onClick: PropTypes.func.isRequired,

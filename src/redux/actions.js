@@ -11,6 +11,7 @@ import {
     RECEIVE_TRANSACTIONS,
     REQUEST_INSTITUTIONS,
     RECEIVE_INSTITUTIONS,
+    RECEIVE_CATEGORY_BALANCES,
 } from './actionTypes';
 
 const addGroup = (group) => ({
@@ -184,6 +185,12 @@ const fetchInstitutions = () => (
     }
 );
 
+const receiveCategoryBalances = (balances) => ({
+    type: RECEIVE_CATEGORY_BALANCES,
+    balances,
+});
+
+
 export {
     addGroup,
     updateGroup,
@@ -195,4 +202,5 @@ export {
     fetchAccountTransactions,
     fetchCategoryTransactions,
     fetchInstitutions,
+    receiveCategoryBalances,
 };
