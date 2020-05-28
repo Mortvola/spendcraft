@@ -37,7 +37,7 @@ Route.group(() => {
 
     Route.get('/groups/:groupId/categories', 'CategoryController.get');
     Route.post('/groups/:groupId/categories', 'CategoryController.addCategory').validator('AddCategory');
-    Route.patch('/groups/:groupId/categories/:catId', 'CategoryController.updateCategory').validator('UpdateCategory');
+    Route.patch('/groups/:groupId/categories/:catId', CategoryController.updateCategory).validator('UpdateCategory');
     Route.delete('/groups/:groupId/categories/:catId', 'CategoryController.deleteCategory').validator('DeleteCategory');
 
     Route.post('/category_transfer', CategoryController.transfer).validator('UpdateCategoryTransfer');

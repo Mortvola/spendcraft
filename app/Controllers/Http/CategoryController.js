@@ -68,7 +68,9 @@ class CategoryController {
     }
 
     static async updateCategory({ request }) {
-        await Database.table('categories').where({ id: request.params.catId }).update({ name: request.body.name });
+        const { params: { catId }, body: { name } } = request;
+
+        await Database.table('categories').where({ id: catId }).update({ name });
 
         return { name: request.body.name };
     }
