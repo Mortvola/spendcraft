@@ -86,6 +86,10 @@ function ModalDialog({
         return <div />;
     };
 
+    const handleClick = (event) => {
+        event.stopPropagation();
+    };
+
     return (
         <Modal
             show={show}
@@ -94,6 +98,7 @@ function ModalDialog({
             onExited={onExited}
             size={size}
             scrollable={scrollable}
+            onClick={handleClick}
         >
             <Modal.Header closeButton>
                 <Modal.Title>{title}</Modal.Title>
