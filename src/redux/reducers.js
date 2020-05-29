@@ -15,6 +15,7 @@ import {
     REQUEST_INSTITUTIONS,
     RECEIVE_INSTITUTIONS,
     RECEIVE_CATEGORY_BALANCES,
+    RECEIVE_TRANSACTION_CATEGORIES,
 } from './actionTypes';
 
 
@@ -234,6 +235,50 @@ function transactions(
         }
 
         return { categoryId: null, ...action.transactions };
+    }
+
+    case RECEIVE_CATEGORY_BALANCES:
+        if (state.categoryId !== null) {
+            const balance = action.balances.find((b) => b.id === state.categoryId);
+
+            if (balance) {
+                return {
+                    ...state,
+                    balance: balance.amount,
+                };
+            }
+        }
+
+        return state;
+
+    case RECEIVE_TRANSACTION_CATEGORIES: {
+        const index = state.transactions.findIndex((t) => t.id === action.transCategories.id);
+        if (index !== -1) {
+            if (state.categoryId !== null) {
+                // If the new transaction categories don't include
+                // the current category then remove the transactions.
+                if (!action.transCategories.splits.some((c) => (
+                    c.categoryId === state.categoryId
+                ))) {
+                    const newTransactions = state.transactions.slice();
+                    newTransactions.splice(index, 1);
+                    return {
+                        ...state,
+                        transactions: newTransactions,
+                    };
+                }
+            }
+
+            return {
+                ...state,
+                transactions: [
+                    ...state.transactions.slice(0, index),
+                    { ...state.transactions[index], categories: action.transCategories.splits },
+                    ...state.transactions.slice(index + 1)],
+            };
+        }
+
+        return state;
     }
 
     default:

@@ -8,29 +8,34 @@ function ModalLauncher({
     dialog,
     title,
 }) {
-    const [show, setShow] = useState(false);
-    const [exited, setExited] = useState(true);
+    const [show, setShow] = useState({ show: false, exited: true });
 
     const handleShow = () => {
-        setShow(true);
-        setExited(false);
+        setShow({ show: true, exited: false });
     };
     const handleClose = () => {
-        setShow(false);
+        setShow({ show: false, exited: false });
     };
     const handleExited = () => {
-        setExited(true);
+        setShow({ show: false, exited: true });
     };
 
     const Launcher = launcher;
 
-    if (show || !exited) {
+    console.log(`show: ${show.show}, exited: ${show.exited}`);
+
+    if (show.show || !show.exited) {
         const Dialog = dialog;
 
         return (
             <>
                 <Launcher onClick={handleShow} />
-                <Dialog show={show} onClose={handleClose} onExited={handleExited} title={title} />
+                <Dialog
+                    show={show.show}
+                    onClose={handleClose}
+                    onExited={handleExited}
+                    title={title}
+                />
             </>
         );
     }

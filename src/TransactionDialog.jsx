@@ -5,11 +5,10 @@ import { connect } from 'react-redux';
 import { Field, ErrorMessage } from 'formik';
 import CategorySplits from './CategorySplits';
 import { ModalDialog } from './Modal';
-import { receiveCategoryBalances } from './redux/actions';
+import { receiveCategoryBalances, receiveTransactionCategories } from './redux/actions';
+import Amount from './Amount';
 
-function updateTransactionCategory(transaction, request, _categoryId, dispatch) {
-    // const oldAmount = getTransactionAmountForCategory(transaction, categoryId);
-
+function updateTransactionCategory(transaction, request, _categoryId, dispatch, successCallback) {
     fetch(`/transaction/${transaction.id}`, {
         method: 'PATCH',
         headers:
@@ -25,35 +24,20 @@ function updateTransactionCategory(transaction, request, _categoryId, dispatch) 
         )
         .then((json) => {
             const { splits, categories } = json;
-            // updateCategories(response.categories);
-
-            transaction.categories = splits;
-
-            // let newAmount;
-
-            if (transaction.categories) {
-                transaction.categories.forEach((c) => {
-                    c.amount = parseFloat(c.amount);
-                });
-
-                // newAmount = getTransactionAmountForCategory(transaction, categoryId);
-            }
 
             dispatch(receiveCategoryBalances(categories));
+            dispatch(receiveTransactionCategories({ id: transaction.id, splits }));
 
-            // document.dispatchEvent(new CustomEvent('transactionUpdated', { detail: { transaction, delta: newAmount - oldAmount } }));
+            successCallback();
         });
 }
 
 function validateSplits(splits) {
     let error;
 
-    if (splits !== undefined && splits.length > 0) {
-        for (const split of splits) {
-            if (split.categoryId === null || split.categoryId === undefined) {
-                error = 'There are one or more items not assigned a category.';
-                break;
-            }
+    if (splits !== undefined) {
+        if (splits.some((split) => split.categoryId === null || split.categoryId === undefined)) {
+            error = 'There are one or more items not assigned a category.';
         }
     }
 
@@ -71,30 +55,22 @@ const TransactionDialog = connect()((props) => {
         dispatch,
     } = props;
 
-    const [remaining, setRemaining] = useState(() => {
+    const computeRemaining = (categories, sign = 1) => {
         let sum = 0;
-        if (transaction.categories) {
-            sum = transaction.categories.reduce((accum, item) => accum + item.amount, 0);
+        if (categories) {
+            sum = categories.reduce((accum, item) => accum + item.amount, 0);
         }
 
-        return Math.abs(transaction.amount) - sum;
-    });
-
-    const handleTotalChange = (delta) => {
-        setRemaining((prevRemaining) => {
-            let result = (parseFloat(prevRemaining) + delta).toFixed(2);
-            if (result === '-0.00') {
-                result = '0.00';
-            }
-            return result;
-        });
+        return Math.abs(transaction.amount) - sign * sum;
     };
+
+    const [remaining, setRemaining] = useState(() => computeRemaining(transaction.categories, -1));
 
     const handleValidate = (values) => {
         const errors = {};
-        const sum = values.splits.reduce((accum, item) => accum + Math.floor(item.amount * 100), 0);
+        const sum = values.splits.reduce((accum, item) => accum + Math.round(item.amount * 100), 0);
 
-        if (sum !== Math.abs(transaction.amount) * 100) {
+        if (sum !== Math.abs(Math.round(transaction.amount * 100))) {
             errors.splits = 'The sum of the categories does not match the transaction amount.';
         }
 
@@ -109,14 +85,14 @@ const TransactionDialog = connect()((props) => {
             });
         }
 
-        updateTransactionCategory(transaction, { splits }, categoryContext, dispatch);
+        updateTransactionCategory(transaction, { splits }, categoryContext, dispatch, onClose);
     };
 
     return (
         <ModalDialog
             initialValues={{
                 splits: transaction.categories
-                    ? transaction.categories
+                    ? transaction.categories.map((c) => ({ ...c, amount: c.amount * -1 }))
                     : [{ amount: Math.abs(transaction.amount) }],
             }}
             validate={handleValidate}
@@ -140,9 +116,9 @@ const TransactionDialog = connect()((props) => {
                                 <CategorySplits
                                     splits={value}
                                     total={Math.abs(transaction.amount)}
-                                    onChange={(splits, delta) => {
+                                    onChange={(splits) => {
                                         setFieldValue(name, splits);
-                                        handleTotalChange(delta);
+                                        setRemaining(computeRemaining(splits));
                                     }}
                                 />
                             )}
@@ -153,7 +129,7 @@ const TransactionDialog = connect()((props) => {
                             <div />
                             <div className="dollar-amount">
                                 <label>Unassigned</label>
-                                <div className="available-funds splits-total dollar-amount">{remaining}</div>
+                                <Amount amount={remaining} />
                             </div>
                         </div>
                     </div>
