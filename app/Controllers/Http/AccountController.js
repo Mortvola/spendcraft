@@ -32,7 +32,7 @@ class AccountController {
 
             result.transactions = await Database.select(
                 'trans.id AS id',
-                Database.raw('0 AS type'),
+                'trans.type AS type',
                 Database.raw('COALESCE(trans.sort_order, 2147483647) AS sort_order'),
                 Database.raw('date::text'),
                 'acct_trans.name AS name',

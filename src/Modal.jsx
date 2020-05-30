@@ -6,7 +6,7 @@ import { Formik, Form, useFormikContext } from 'formik';
 function ModalLauncher({
     launcher,
     dialog,
-    title,
+    ...props
 }) {
     const [show, setShow] = useState({ show: false, exited: true });
 
@@ -34,7 +34,7 @@ function ModalLauncher({
                     show={show.show}
                     onClose={handleClose}
                     onExited={handleExited}
-                    title={title}
+                    {...props}
                 />
             </>
         );
@@ -47,7 +47,6 @@ function ModalLauncher({
 
 ModalLauncher.propTypes = {
     launcher: PropTypes.func.isRequired,
-    title: PropTypes.string.isRequired,
     dialog: PropTypes.func.isRequired,
 };
 

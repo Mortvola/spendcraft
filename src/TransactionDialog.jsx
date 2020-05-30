@@ -8,7 +8,7 @@ import { ModalDialog } from './Modal';
 import { receiveCategoryBalances, receiveTransactionCategories } from './redux/actions';
 import Amount from './Amount';
 
-function updateTransactionCategory(transaction, request, _categoryId, dispatch, successCallback) {
+function updateTransactionCategory(transaction, request, dispatch, successCallback) {
     fetch(`/transaction/${transaction.id}`, {
         method: 'PATCH',
         headers:
@@ -51,7 +51,6 @@ const TransactionDialog = connect()((props) => {
         onExited,
         title,
         transaction,
-        categoryContext,
         dispatch,
     } = props;
 
@@ -85,7 +84,7 @@ const TransactionDialog = connect()((props) => {
             });
         }
 
-        updateTransactionCategory(transaction, { splits }, categoryContext, dispatch, onClose);
+        updateTransactionCategory(transaction, { splits }, dispatch, onClose);
     };
 
     return (
@@ -145,7 +144,6 @@ TransactionDialog.propTypes = {
         amount: PropTypes.number.isRequired,
         categories: PropTypes.array,
     }).isRequired,
-    categoryContext: PropTypes.number.isRequired,
     onClose: PropTypes.func.isRequired,
     onExited: PropTypes.func.isRequired,
     title: PropTypes.string.isRequired,

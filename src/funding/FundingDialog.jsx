@@ -1,5 +1,6 @@
 /* eslint-disable jsx-a11y/control-has-associated-label */
 /* eslint-disable jsx-a11y/label-has-associated-control */
+import 'regenerator-runtime/runtime';
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
@@ -28,12 +29,16 @@ const mapStateToProps = (state) => {
     };
 };
 
-const FundingDialog = connect(mapStateToProps)((props) => {
+const FundingDialog = connect(mapStateToProps)(({ transaction, ...props }) => {
     const [plansInitialized, setPlansInitialized] = useState(false);
     const [groupsInitialized, setGroupsInitialized] = useState(false);
     const [plans, setPlans] = useState([]);
     const [selectedPlan, setSelectedPlan] = useState(-1);
-    const [plan, setPlan] = useState(null);
+    const [funding, setFunding] = useState(
+        transaction
+            ? { planId: -1, categories: transaction.categories }
+            : { planId: -1, categories: [] },
+    );
     const [groups, setGroups] = useState([]);
 
     const {
@@ -50,10 +55,7 @@ const FundingDialog = connect(mapStateToProps)((props) => {
 
         fetch('/funding_plans')
             .then(
-                (response) => response.json(),
-            )
-            .then(
-                (json) => (setPlans(json)),
+                async (response) => setPlans(await response.json()),
             );
     }
 
@@ -62,12 +64,11 @@ const FundingDialog = connect(mapStateToProps)((props) => {
         setSelectedPlan(value);
         fetch(`/funding_plan/${event.target.value}`)
             .then(
-                (response) => response.json(),
-            )
-            .then(
-                (json) => {
-                    setPlan({ planId: value, plan: json });
-                    resetForm({ values: { ...values, funding: json.categories } });
+                async (response) => {
+                    const json = await response.json();
+                    const newFunding = { planId: value, categories: json.categories };
+                    setFunding(newFunding);
+                    resetForm({ values: { ...values, funding: newFunding } });
                 },
             );
     };
@@ -152,8 +153,8 @@ const FundingDialog = connect(mapStateToProps)((props) => {
     return (
         <ModalDialog
             initialValues={{
-                funding: plan ? plan.categories : [],
-                date: '',
+                date: transaction ? transaction.date : '',
+                funding,
             }}
             validate={handleValidate}
             onSubmit={handleSubmit}
@@ -172,7 +173,9 @@ const FundingDialog = connect(mapStateToProps)((props) => {
                                 {({ form: { resetForm, values } }) => (
                                     <select
                                         value={selectedPlan}
-                                        onChange={(event) => handlePlanChange(event, resetForm, values)}
+                                        onChange={(event) => (
+                                            handlePlanChange(event, resetForm, values)
+                                        )}
                                     >
                                         {populatePlans()}
                                     </select>
@@ -197,14 +200,14 @@ const FundingDialog = connect(mapStateToProps)((props) => {
                             <div className="dollar-amount fund-list-amt">Balance</div>
                         </div>
                         <Field name="funding">
-                            {({ field: { name }, form: { setFieldValue } }) => (
+                            {({ field: { name, value }, form: { setFieldValue } }) => (
                                 <Funding
-                                    key={plan ? plan.planId : -1}
+                                    key={funding.planId}
                                     groups={groups}
-                                    plan={plan}
-                                    onDeltaChange={(_amount, delta, funding) => {
+                                    plan={value}
+                                    onDeltaChange={(_amount, delta, newFunding) => {
                                         handleDeltaChange(delta);
-                                        setFieldValue(name, funding, false);
+                                        setFieldValue(name, newFunding, false);
                                     }}
                                 />
                             )}
@@ -220,10 +223,16 @@ const FundingDialog = connect(mapStateToProps)((props) => {
 FundingDialog.propTypes = {
     onClose: PropTypes.func.isRequired,
     onExited: PropTypes.func.isRequired,
-    title: PropTypes.string.isRequired,
+    title: PropTypes.string,
     show: PropTypes.bool.isRequired,
     fundingPoolId: PropTypes.number.isRequired,
     fundingAmount: PropTypes.number.isRequired,
+    transaction: PropTypes.shape(),
+};
+
+FundingDialog.defaultProps = {
+    title: 'Fund Categories',
+    transaction: null,
 };
 
 export default FundingDialog;

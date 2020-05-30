@@ -44,12 +44,10 @@ const App = connect()(({ dispatch }) => {
                         />
                         <ModalLauncher
                             launcher={(props) => (<button type="button" id="fund-cats" className="button" {...props}>Rebalance</button>)}
-                            title="Rebalance Categories"
                             dialog={(props) => (<RebalanceDialog {...props} />)}
                         />
                         <ModalLauncher
                             launcher={(props) => (<button type="button" id="fund-cats" className="button" {...props}>Fund</button>)}
-                            title="Fund Categories"
                             dialog={(props) => (<FundingDialog {...props} />)}
                         />
                     </div>

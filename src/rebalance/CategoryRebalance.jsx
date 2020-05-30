@@ -2,27 +2,31 @@ import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import CategoryRebalanceItem from './CategoryRebalanceItem';
 
-const CategoryRebalance = ({ categoryTree, onDeltaChange }) => {
-    const [categories, setCategories] = useState([]);
+const CategoryRebalance = ({
+    categoryTree,
+    categories,
+    onDeltaChange,
+}) => {
+    const [cats, setCats] = useState(categories);
 
     const handleDeltaChange = (amount, delta, categoryId) => {
-        const categoriesCopy = categories.slice();
-        const index = categories.findIndex((c) => c.categoryId === categoryId);
+        const categoriesCopy = cats.slice();
+        const index = cats.findIndex((c) => c.categoryId === categoryId);
 
         if (index === -1) {
             if (amount !== 0) {
                 categoriesCopy.splice(-1, 0, { categoryId, amount });
-                setCategories(categoriesCopy);
+                setCats(categoriesCopy);
             }
         }
         else if (amount === 0) {
             // Remove category
             categoriesCopy.splice(index, 1);
-            setCategories(categoriesCopy);
+            setCats(categoriesCopy);
         }
         else {
             categoriesCopy[index].amount = amount;
-            setCategories(categoriesCopy);
+            setCats(categoriesCopy);
         }
 
         if (onDeltaChange) {
@@ -31,14 +35,22 @@ const CategoryRebalance = ({ categoryTree, onDeltaChange }) => {
     };
 
     const populateCategories = (group) => {
-        const cats = [];
+        const catItems = [];
 
         if (group) {
             group.forEach((category) => {
-                cats.push((
+                let adjustment = 0;
+                let { balance } = category;
+                const catAmount = cats.find((c) => c.categoryId === category.id);
+                if (catAmount) {
+                    adjustment = catAmount.amount;
+                    balance -= adjustment;
+                }
+
+                catItems.push((
                     <CategoryRebalanceItem
                         key={category.id}
-                        category={category}
+                        category={{ name: category.name, balance, adjustment }}
                         onDeltaChange={(amount, delta) => (
                             handleDeltaChange(amount, delta, category.id)
                         )}
@@ -47,7 +59,7 @@ const CategoryRebalance = ({ categoryTree, onDeltaChange }) => {
             });
         }
 
-        return cats;
+        return catItems;
     };
 
     const populateTree = (tree) => {
@@ -77,11 +89,13 @@ const CategoryRebalance = ({ categoryTree, onDeltaChange }) => {
 CategoryRebalance.propTypes = {
     categoryTree: PropTypes.arrayOf(PropTypes.shape),
     onDeltaChange: PropTypes.func,
+    categories: PropTypes.arrayOf(PropTypes.shape),
 };
 
 CategoryRebalance.defaultProps = {
     categoryTree: null,
     onDeltaChange: null,
+    categories: [],
 };
 
 export default CategoryRebalance;

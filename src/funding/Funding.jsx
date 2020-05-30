@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import FundingItem from './FundingItem';
 
 const Funding = ({ groups, plan, onDeltaChange }) => {
-    const [funding, setFunding] = useState(plan ? plan.plan.categories : []);
+    const [funding, setFunding] = useState(plan ? plan.categories : []);
 
     const handleDeltaChange = (amount, delta, categoryId) => {
         const fundingCopy = funding.slice();
@@ -28,10 +28,10 @@ const Funding = ({ groups, plan, onDeltaChange }) => {
 
             if (plan) {
                 planId = plan.planId;
-                const index = plan.plan.categories.findIndex((c) => c.categoryId === category.id);
+                const index = plan.categories.findIndex((c) => c.categoryId === category.id);
 
                 if (index !== -1) {
-                    amount = plan.plan.categories[index].amount;
+                    amount = plan.categories[index].amount;
                 }
             }
 

@@ -81,7 +81,7 @@ const GroupDialog = connect()((props) => {
     };
 
     const handleDelete = (bag) => {
-        const { setTouched, setErrors }  = bag;
+        const { setTouched, setErrors } = bag;
 
         $.ajax({
             url: `/groups/${group.id}`,

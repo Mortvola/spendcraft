@@ -7,14 +7,14 @@ import Amount from './Amount';
 import { updateTransactionCategory, TransactionDialog } from './TransactionDialog';
 import CategoryTransferDialog from './CategoryTransferDialog';
 import { ModalLauncher } from './Modal';
-
+import RebalanceDialog from './rebalance/RebalanceDialog';
+import FundingDialog from './funding/FundingDialog';
 
 const Transaction = connect()(({
     transaction,
     amount,
     balance,
     selected,
-    categoryContext,
     dispatch,
 }) => {
     const handleClick = () => {
@@ -26,26 +26,44 @@ const Transaction = connect()(({
     const handleChange = (categoryId) => {
         const request = { splits: [{ categoryId, amount: transaction.amount }] };
 
-        updateTransactionCategory(transaction, request, null, dispatch);
+        updateTransactionCategory(transaction, request, dispatch);
     };
 
     const renderTransactionDialog = (props) => {
-        if (transaction.type === 1) {
+        switch (transaction.type) {
+        case 1:
             return (
                 <CategoryTransferDialog
                     transaction={transaction}
                     {...props}
                 />
             );
-        }
 
-        return (
-            <TransactionDialog
-                transaction={transaction}
-                categoryContext={categoryContext}
-                {...props}
-            />
-        );
+        case 2:
+            return (
+                <FundingDialog
+                    transaction={transaction}
+                    {...props}
+                />
+            );
+
+        case 3:
+            return (
+                <RebalanceDialog
+                    transaction={transaction}
+                    {...props}
+                />
+            );
+
+        case 0:
+        default:
+            return (
+                <TransactionDialog
+                    transaction={transaction}
+                    {...props}
+                />
+            );
+        }
     };
 
     const renderCategoryButton = () => {
@@ -56,7 +74,6 @@ const Transaction = connect()(({
                 return (
                     <ModalLauncher
                         launcher={(props) => (<button type="button" className="split-button" {...props}>Split</button>)}
-                        title="Edit Transaction"
                         dialog={(props) => renderTransactionDialog(props)}
                     />
                 );
@@ -77,7 +94,6 @@ const Transaction = connect()(({
         <div className={className} onClick={handleClick}>
             <ModalLauncher
                 launcher={(props) => (<IconButton icon="edit" {...props} />)}
-                title="Edit Transaction"
                 dialog={(props) => renderTransactionDialog(props)}
             />
             <div>{transaction.date}</div>
@@ -86,7 +102,6 @@ const Transaction = connect()(({
                 {renderCategoryButton()}
                 <ModalLauncher
                     launcher={(props) => (<IconButton icon="list-ul" {...props} />)}
-                    title="Edit Transaction"
                     dialog={(props) => renderTransactionDialog(props)}
                 />
             </div>
@@ -105,7 +120,6 @@ Transaction.propTypes = {
     amount: PropTypes.number.isRequired,
     balance: PropTypes.number.isRequired,
     selected: PropTypes.bool.isRequired,
-    categoryContext: PropTypes.number.isRequired,
 };
 
 export default Transaction;

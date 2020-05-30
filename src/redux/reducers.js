@@ -176,12 +176,10 @@ function categoryTree(
         return {
             ...state,
             ...{
-                groups: state.groups.map((g) => {
-                    return ({
-                        ...g,
-                        ...{ categories: categories(g.categories, action) },
-                    });
-                }),
+                groups: state.groups.map((g) => ({
+                    ...g,
+                    ...{ categories: categories(g.categories, action) },
+                })),
             },
         };
 

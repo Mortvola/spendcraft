@@ -110,12 +110,18 @@ class CategoryController {
             .where('groups.user_id', auth.user.id)
             .groupBy('transaction_id');
 
+        const transName = 'COALESCE(acct_trans.name, '
+            + "CASE WHEN trans.type = 2 THEN 'Category Funding' "
+            + "WHEN trans.type = 3 THEN 'Category Rebalance' "
+            + "ELSE 'Category Transfer' "
+            + 'END)';
+
         const query = Database.select(
             'trans.id AS id',
-            Database.raw('0 AS type'),
+            'trans.type AS type',
             Database.raw('COALESCE(trans.sort_order, 2147483647) AS sort_order'),
             Database.raw('date::text'),
-            Database.raw("COALESCE(acct_trans.name, 'Category Transfer') AS name"),
+            Database.raw(`${transName} AS name`),
             'splits.categories AS categories',
             'inst.name AS institute_name',
             'acct.name AS account_name',
@@ -129,7 +135,7 @@ class CategoryController {
             // .where('inst.user_id', auth.user.id)
             .orderBy('date', 'desc')
             .orderBy(Database.raw('COALESCE(trans.sort_order, 2147483647)'), 'desc')
-            .orderBy(Database.raw("COALESCE(acct_trans.name, 'Category Transfer')"));
+            .orderBy(Database.raw(transName));
 
         if (cat[0].system && cat[0].name === 'Unassigned') {
             query.whereNull('splits.categories');

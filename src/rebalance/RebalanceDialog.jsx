@@ -1,5 +1,5 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { Field, ErrorMessage } from 'formik';
 import { ModalDialog } from '../Modal';
@@ -11,25 +11,37 @@ const RebalanceDialog = ({
     onExited,
     title,
     show,
+    transaction,
 }) => {
     const [categoryTree, setCategoryTree] = useState(null);
     const [unassigned, setUnassigned] = useState(0);
+    const [date, setDate] = useState(transaction ? transaction.date : '');
+
+    const fetchCategoryBalances = (fetchDate) => {
+        if (fetchDate !== '') {
+            fetch(`/category_balances/${fetchDate}`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            })
+                .then(
+                    (response) => response.json(),
+                    (error) => console.log('fetch error: ', error),
+                )
+                .then(
+                    (json) => {
+                        setCategoryTree(json);
+                    },
+                );
+        }
+    };
+
+    useEffect(() => {
+        fetchCategoryBalances(date);
+    }, [date]);
 
     const handleDateChange = (event) => {
-        fetch(`/category_balances/${event.target.value}`, {
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        })
-            .then(
-                (response) => response.json(),
-                (error) => console.log('fetch error: ', error),
-            )
-            .then(
-                (json) => {
-                    setCategoryTree(json);
-                },
-            );
+        setDate(event.target.value);
     };
 
     const handleDeltaChange = (delta) => {
@@ -59,28 +71,28 @@ const RebalanceDialog = ({
         return errors;
     };
 
-    const handleSubmit = (values, bag) => {
-        const { setErrors } = bag;
+    const handleSubmit = (values) => {
+        // const { setErrors } = bag;
         fetch('/category_transfer', {
             method: 'POST',
             headers:
             {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify (values),
+            body: JSON.stringify(values),
         })
-            .then (
+            .then(
                 (response) => response.json(),
-                (error) => console.log('fetch error: ', error)
+                (error) => console.log('fetch error: ', error),
             );
     };
 
     return (
         <ModalDialog
             initialValues={{
-                categories: [],
-                date: '',
+                categories: transaction ? transaction.categories : [],
+                date,
             }}
             categoryTree={categoryTree}
             validate={handleValidate}
@@ -97,8 +109,9 @@ const RebalanceDialog = ({
                         <label>
                             Date
                             <Field name="date">
-                                {({ field: { name }, form: { setFieldValue } }) => (
+                                {({ field: { name, value }, form: { setFieldValue } }) => (
                                     <input
+                                        value={value}
                                         type="date"
                                         onChange={(event) => {
                                             handleDateChange(event);
@@ -115,9 +128,10 @@ const RebalanceDialog = ({
                     </div>
                     <ErrorMessage name="date" />
                     <Field name="categories">
-                        {({ field: { name }, form: { setFieldValue } }) => (
+                        {({ field: { name, value }, form: { setFieldValue } }) => (
                             <CategoryRebalance
                                 categoryTree={categoryTree}
+                                categories={value}
                                 onDeltaChange={(_amount, delta, categories) => {
                                     handleDeltaChange(delta);
                                     setFieldValue(name, categories, false);
@@ -135,8 +149,14 @@ const RebalanceDialog = ({
 RebalanceDialog.propTypes = {
     onClose: PropTypes.func.isRequired,
     onExited: PropTypes.func.isRequired,
-    title: PropTypes.string.isRequired,
+    title: PropTypes.string,
     show: PropTypes.bool.isRequired,
+    transaction: PropTypes.shape(),
+};
+
+RebalanceDialog.defaultProps = {
+    transaction: null,
+    title: 'Rebalance Categories',
 };
 
 export default RebalanceDialog;
