@@ -8,13 +8,16 @@ function Amount(props) {
     }
 
     className += ' dollar-amount';
-    if (amount < 0) {
+
+    let amountString = parseFloat(amount).toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,');
+    if (amountString === '-0.00') {
+        amountString = '0.00';
+    }
+    else if (amount < 0) {
         className += ' negative';
     }
 
-    amount = parseFloat(amount).toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,');
-
-    return (<div className={className}>{amount}</div>);
+    return (<div className={className}>{amountString}</div>);
 }
 
 Amount.propTypes = {
