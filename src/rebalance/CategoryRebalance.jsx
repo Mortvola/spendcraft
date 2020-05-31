@@ -40,17 +40,15 @@ const CategoryRebalance = ({
         if (group) {
             group.forEach((category) => {
                 let adjustment = 0;
-                let { balance } = category;
                 const catAmount = cats.find((c) => c.categoryId === category.id);
                 if (catAmount) {
                     adjustment = catAmount.amount;
-                    balance -= adjustment;
                 }
 
                 catItems.push((
                     <CategoryRebalanceItem
                         key={category.id}
-                        category={{ name: category.name, balance, adjustment }}
+                        category={{ name: category.name, balance: category.balance, adjustment }}
                         onDeltaChange={(amount, delta) => (
                             handleDeltaChange(amount, delta, category.id)
                         )}

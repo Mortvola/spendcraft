@@ -28,7 +28,9 @@ function updateTransactionCategory(transaction, request, dispatch, successCallba
             dispatch(receiveCategoryBalances(categories));
             dispatch(receiveTransactionCategories({ id: transaction.id, splits }));
 
-            successCallback();
+            if (successCallback) {
+                successCallback();
+            }
         });
 }
 
@@ -63,7 +65,9 @@ const TransactionDialog = connect()((props) => {
         return Math.abs(transaction.amount) - sign * sum;
     };
 
-    const [remaining, setRemaining] = useState(() => computeRemaining(transaction.categories, -1));
+    const [remaining, setRemaining] = useState(
+        computeRemaining(transaction.categories, Math.sign(transaction.amount)),
+    );
 
     const handleValidate = (values) => {
         const errors = {};
@@ -78,6 +82,9 @@ const TransactionDialog = connect()((props) => {
 
     const handleSubmit = (values) => {
         const { splits } = values;
+
+        // If the transaction amount is less then zero then
+        // negate all of the category amounts.
         if (transaction.amount < 0) {
             splits.forEach((element) => {
                 element.amount *= -1;
@@ -91,7 +98,10 @@ const TransactionDialog = connect()((props) => {
         <ModalDialog
             initialValues={{
                 splits: transaction.categories
-                    ? transaction.categories.map((c) => ({ ...c, amount: c.amount * -1 }))
+                    ? transaction.categories.map((c) => ({
+                        ...c,
+                        amount: c.amount * Math.sign(transaction.amount),
+                    }))
                     : [{ amount: Math.abs(transaction.amount) }],
             }}
             validate={handleValidate}
@@ -100,6 +110,7 @@ const TransactionDialog = connect()((props) => {
             onClose={onClose}
             onExited={onExited}
             title={title}
+            size="lg"
             form={() => (
                 <>
                     <div className="cat-fund-table">
@@ -146,11 +157,12 @@ TransactionDialog.propTypes = {
     }).isRequired,
     onClose: PropTypes.func.isRequired,
     onExited: PropTypes.func.isRequired,
-    title: PropTypes.string.isRequired,
+    title: PropTypes.string,
     dispatch: PropTypes.func.isRequired,
 };
 
 TransactionDialog.defaultProps = {
+    title: 'Transaction Categories',
 };
 
 export { updateTransactionCategory, TransactionDialog };

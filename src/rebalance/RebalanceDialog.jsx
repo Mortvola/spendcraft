@@ -19,7 +19,15 @@ const RebalanceDialog = ({
 
     const fetchCategoryBalances = (fetchDate) => {
         if (fetchDate !== '') {
-            fetch(`/category_balances/${fetchDate}`, {
+            const params = { date: fetchDate };
+            if (transaction) {
+                params.id = transaction.id;
+            }
+
+            const url = new URL('/category_balances', window.location.href);
+            url.search = new URLSearchParams(params);
+
+            fetch(url, {
                 headers: {
                     'Content-Type': 'application/json',
                 },
@@ -73,8 +81,13 @@ const RebalanceDialog = ({
 
     const handleSubmit = (values) => {
         // const { setErrors } = bag;
-        fetch('/category_transfer', {
-            method: 'POST',
+        let url = '/category_transfer';
+        if (transaction) {
+            url += `/${transaction.id}`;
+        }
+
+        fetch(url, {
+            method: (transaction ? 'PATCH' : 'POST'),
             headers:
             {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
@@ -83,7 +96,7 @@ const RebalanceDialog = ({
             body: JSON.stringify(values),
         })
             .then(
-                (response) => response.json(),
+                () => onClose(),
                 (error) => console.log('fetch error: ', error),
             );
     };

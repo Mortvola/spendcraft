@@ -250,7 +250,9 @@ class CategoryController {
     }
 
     static async balances({ request, auth }) {
-        return Category.balances(auth.user.id, request.params.date);
+        const { date, id } = request.get();
+
+        return Category.balances(auth.user.id, date, id);
     }
 }
 

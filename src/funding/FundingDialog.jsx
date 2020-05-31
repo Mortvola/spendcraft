@@ -100,7 +100,7 @@ const FundingDialog = connect(mapStateToProps)(({ transaction, ...props }) => {
 
     const handleSubmit = (values) => {
         const request = { date: values.date };
-        request.categories = values.funding.filter((item) => (
+        request.categories = values.funding.categories.filter((item) => (
             item.amount !== 0
         ))
             .map((item) => ({
@@ -115,7 +115,7 @@ const FundingDialog = connect(mapStateToProps)(({ transaction, ...props }) => {
         request.categories.push({ categoryId: fundingPoolId, amount: -sum });
 
         fetch('category_transfer', {
-            method: 'post',
+            method: (transaction ? 'PATCH' : 'POST'),
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                 'Content-Type': 'application/json',
@@ -137,7 +137,7 @@ const FundingDialog = connect(mapStateToProps)(({ transaction, ...props }) => {
         // Verify that there is at least one non-zero funding item.
         let count = 0;
 
-        values.funding.forEach((item) => {
+        values.funding.categories.forEach((item) => {
             if (item.amount !== 0) {
                 count += 1;
             }
@@ -202,7 +202,7 @@ const FundingDialog = connect(mapStateToProps)(({ transaction, ...props }) => {
                         <Field name="funding">
                             {({ field: { name, value }, form: { setFieldValue } }) => (
                                 <Funding
-                                    key={funding.planId}
+                                    key={value.planId}
                                     groups={groups}
                                     plan={value}
                                     onDeltaChange={(_amount, delta, newFunding) => {

@@ -41,10 +41,10 @@ Route.group(() => {
     Route.delete('/groups/:groupId/categories/:catId', 'CategoryController.deleteCategory').validator('DeleteCategory');
 
     Route.post('/category_transfer', CategoryController.transfer).validator('UpdateCategoryTransfer');
-    Route.patch('/category_transfer/:tfrId', 'CategoryController.transfer').validator('UpdateCategoryTransfer');
+    Route.patch('/category_transfer/:tfrId', CategoryController.transfer).validator('UpdateCategoryTransfer');
     Route.delete('/category_transfer/:tfrId', CategoryController.transferDelete);
 
-    Route.get('/category_balances/:date', CategoryController.balances);
+    Route.get('/category_balances', CategoryController.balances);
 
     Route.get('/category/:catId/transactions', CategoryController.transactions);
 

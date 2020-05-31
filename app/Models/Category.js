@@ -3,7 +3,7 @@ const Model = use('Model');
 const Database = use('Database');
 
 class Category extends Model {
-    static async balances(userId, date) {
+    static async balances(userId, date, transactionId) {
         const transactionsSubquery = Database.select(
             'category_id',
             'splits.amount',
@@ -11,6 +11,11 @@ class Category extends Model {
             .from('category_splits AS splits')
             .join('transactions', 'transactions.id', 'splits.transaction_id')
             .where('transactions.date', '>', date);
+
+        // Also subtract out the transaction identified by transactionId
+        if (transactionId !== undefined) {
+            transactionsSubquery.orWhere('transactions.id', transactionId);
+        }
 
         const rows = await Database.select(
             'groups.id AS groupId',
@@ -30,6 +35,7 @@ class Category extends Model {
         const groups = [];
         let group;
 
+        // Convert array to tree form
         rows.forEach((cat) => {
             if (!group) {
                 group = { id: cat.groupId, name: cat.groupName, categories: [] };
