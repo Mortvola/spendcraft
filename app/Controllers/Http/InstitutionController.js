@@ -140,7 +140,7 @@ class InstitutionController {
         const inst = await trx.select('access_token').from('institutions').where({ id: request.params.instId, user_id: auth.user.id });
 
         if (inst.length > 0) {
-            request.body.accounts.forReach(async (account) => {
+            await Promise.all(request.body.accounts.map(async (account) => {
                 const exists = await trx.select(Database.raw(`EXISTS (SELECT 1 FROM accounts WHERE plaid_account_id = '${account.account_id}') AS exists`));
 
                 if (!exists[0].exists) {
@@ -202,7 +202,7 @@ class InstitutionController {
                         fundingAmount = funding.amount;
                     }
                 }
-            });
+            }));
         }
 
         await trx.commit();
@@ -328,6 +328,20 @@ class InstitutionController {
         };
     }
 
+    static async updateAccountBalanceHistory(trx, accountId, balance) {
+        const today = moment().format('YYYY-MM-DD');
+        const exists = await trx.select(Database.raw(`EXISTS (SELECT 1 FROM balance_histories WHERE account_id = '${accountId}' AND date = '${today}') AS exists`));
+
+        if (!exists[0].exists) {
+            await trx.insert({
+                date: today,
+                account_id: accountId,
+                balance,
+            })
+                .into('balance_histories');
+        }
+    }
+
     async sync({ request, auth }) {
         const trx = await Database.beginTransaction();
 
@@ -356,6 +370,10 @@ class InstitutionController {
                     auth,
                 );
 
+                await InstitutionController.updateAccountBalanceHistory(
+                    trx, acct[0].accountId, details.balance,
+                );
+
                 if (details.cat) {
                     const systemCats = await trx.select('cats.id AS id', 'cats.name AS name')
                         .from('categories AS cats')
@@ -370,11 +388,15 @@ class InstitutionController {
                 result.accounts = [{ id: request.params.acctId, balance: details.balance }];
             }
             else {
-                const balanceResponse = await plaidClient.getBalance(acct[0].access_token, {
+                const balanceResponse = await plaidClient.getBalance(acct[0].accessToken, {
                     account_ids: [acct[0].plaidAccountId],
                 });
 
                 await trx.table('accounts').where('id', request.params.acctId).update('balance', balanceResponse.accounts[0].balances.current);
+
+                await InstitutionController.updateAccountBalanceHistory(
+                    trx, acct[0].accountId, balanceResponse.accounts[0].balances.current,
+                );
 
                 result.accounts = [{
                     id: request.params.acctId,

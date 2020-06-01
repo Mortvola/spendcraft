@@ -94,6 +94,27 @@ function ModalDialog({
         event.stopPropagation();
     };
 
+    const renderForm = () => {
+        if (form) {
+            return (
+                <Formik
+                    initialValues={initialValues}
+                    validate={validate}
+                    onSubmit={onSubmit}
+                >
+                    <>
+                        <DeleteHandler performDelete={doDelete} />
+                        <Form id="modalForm" className="scrollable-form">
+                            {form()}
+                        </Form>
+                    </>
+                </Formik>
+            );
+        }
+
+        return null;
+    };
+
     return (
         <Modal
             show={show}
@@ -108,18 +129,7 @@ function ModalDialog({
                 <Modal.Title>{title}</Modal.Title>
             </Modal.Header>
             <Modal.Body>
-                <Formik
-                    initialValues={initialValues}
-                    validate={validate}
-                    onSubmit={onSubmit}
-                >
-                    <>
-                        <DeleteHandler performDelete={doDelete} />
-                        <Form id="modalForm" className="scrollable-form">
-                            {form()}
-                        </Form>
-                    </>
-                </Formik>
+                {renderForm()}
             </Modal.Body>
             <Modal.Footer>
                 <DeleteButton />
@@ -136,7 +146,7 @@ ModalDialog.propTypes = {
     onExited: PropTypes.func.isRequired,
     onDelete: PropTypes.func,
     title: PropTypes.string.isRequired,
-    form: PropTypes.func.isRequired,
+    form: PropTypes.func,
     show: PropTypes.bool.isRequired,
     initialValues: PropTypes.shape().isRequired,
     validate: PropTypes.func.isRequired,
@@ -146,6 +156,7 @@ ModalDialog.propTypes = {
 };
 
 ModalDialog.defaultProps = {
+    form: null,
     onDelete: undefined,
     size: 'md',
     scrollable: false,

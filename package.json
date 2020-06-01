@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node server.js",
     "test": "node ace test",
-    "build": "browserify -t [ babelify --presets [ @babel/preset-react @babel/env ] ] src/App.jsx --extension=.jsx > ./public/bundle.js",
+    "build": "browserify -t [ babelify --presets [ @babel/preset-react @babel/env ] ] -t dotenvify src/App.jsx --extension=.jsx  > ./public/bundle.js",
     "run": "node server.js"
   },
   "keywords": [
@@ -44,6 +44,7 @@
     "react": "^16.13.1",
     "react-bootstrap": "^1.0.1",
     "react-dom": "^16.13.1",
+    "react-plaid-link": "^2.3.0-alpha.0",
     "react-redux": "^7.2.0",
     "redux": "^4.0.5",
     "redux-logger": "^3.0.6",
@@ -51,6 +52,7 @@
     "regenerator-runtime": "^0.13.5"
   },
   "devDependencies": {
+    "dotenvify": "^1.0.0",
     "eslint": "^6.8.0",
     "eslint-config-airbnb": "^18.1.0",
     "eslint-plugin-import": "^2.20.2",

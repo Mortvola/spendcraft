@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import ReactDOM from 'react-dom';
 import { Provider, connect } from 'react-redux';
+import { usePlaidLink } from 'react-plaid-link';
 import CategoryView from './CategoryView';
 import AccountView from './AccountView';
 import RegisterElement from './RegisterElement';
@@ -11,6 +12,8 @@ import FundingDialog from './funding/FundingDialog';
 import RebalanceDialog from './rebalance/RebalanceDialog';
 import store from './redux/store';
 import { fetchAccountTransactions, fetchCategoryTransactions } from './redux/actions';
+import IconButton from './IconButton';
+import { plaidConfig, onSuccess } from './Accounts';
 
 const App = connect()(({ dispatch }) => {
     const [accountSelected, setAccountSelected] = useState(null);
@@ -19,6 +22,7 @@ const App = connect()(({ dispatch }) => {
             ? categoryList.unassigned.id
             : null,
     );
+    const { open, ready, error } = usePlaidLink({ ...plaidConfig, onSuccess });
 
     const handleAccountSelected = (accountId) => {
         setAccountSelected(accountId);
@@ -59,7 +63,7 @@ const App = connect()(({ dispatch }) => {
                 <div className="accounts">
                     <div className="account-bar">
                         <div>Institutions</div>
-                        <div className="btn btn-sm group-button add-acct"><i className="fas fa-plus" /></div>
+                        <IconButton icon="plus" onClick={open} />
                     </div>
                     <AccountView
                         onAccountSelected={handleAccountSelected}

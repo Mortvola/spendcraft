@@ -3,6 +3,8 @@ import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 import IconButton from './IconButton';
 import { receiveCategoryBalances } from './redux/actions';
+import { AccountsDialog } from './Accounts';
+import { ModalLauncher } from './Modal';
 
 const mapStateToProps = (state) => ({
     intitutions: state.institutions,
@@ -35,21 +37,9 @@ AccountView.defaultProps = {
 };
 
 function InstitutionElement({ institution, ...props }) {
-    const addAccount = () => {
-        $.getJSON({
-            url: `/institution/${institution.id}/accounts`,
-        })
-            .done((response) => {
-                openAccountSelectionDialog(institution.id, response);
-            });
-    };
-
     const relinkAccount = () => {
-        $.getJSON({
-            url: `/institution/${institution.id}/public_token`,
-        })
-            .done((response) => {
-
+        fetch(`/institution/${institution.id}/public_token`)
+            .then((response) => {
                 const handler = Plaid.create({
                     ...linkHandlerCommonOptions,
                     token: response.publicToken,
@@ -64,7 +54,10 @@ function InstitutionElement({ institution, ...props }) {
         <div>
             <div className="acct-list-inst">
                 <div className="institution-name">{institution.name}</div>
-                <IconButton icon="plus" onClick={addAccount} />
+                <ModalLauncher
+                    launcher={(props) => (<IconButton icon="plus" {...props} />)}
+                    dialog={(props) => (<AccountsDialog {...props} institutionId={institution.id} />)}
+                />
                 <IconButton icon="lock" onClick={relinkAccount} />
             </div>
             <div>
