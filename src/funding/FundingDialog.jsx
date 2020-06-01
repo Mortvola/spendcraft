@@ -218,7 +218,10 @@ const FundingDialog = ({
                                     groups={groups}
                                     plan={value.categories}
                                     onChange={(newFunding) => {
-                                        const newPlan = { planId: value.planId, categories: newFunding };
+                                        const newPlan = {
+                                            planId: value.planId,
+                                            categories: newFunding,
+                                        };
                                         handleFundingChange(newPlan);
                                         setFieldValue(name, newPlan, false);
                                     }}

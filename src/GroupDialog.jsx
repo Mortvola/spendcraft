@@ -22,7 +22,7 @@ const GroupDialog = (props) => {
                 url: `/groups/${group.id}`,
                 headers:
                 {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                 },
                 contentType: 'application/json',
                 method: 'PATCH',
@@ -48,7 +48,7 @@ const GroupDialog = (props) => {
                 url: '/groups',
                 headers:
                 {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                 },
                 contentType: 'application/json',
                 data: JSON.stringify({ name: values.name }),
@@ -87,7 +87,7 @@ const GroupDialog = (props) => {
             url: `/groups/${group.id}`,
             headers:
             {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
             },
             contentType: 'application/json',
             method: 'DELETE',

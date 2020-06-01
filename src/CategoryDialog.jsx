@@ -24,7 +24,7 @@ const CategoryDialog = (props) => {
                 url: `/groups/${groupId}/categories/${category.id}`,
                 headers:
                 {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                 },
                 contentType: 'application/json',
                 method: 'PATCH',
@@ -51,7 +51,7 @@ const CategoryDialog = (props) => {
                 url: `/groups/${groupId}/categories`,
                 headers:
                 {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                 },
                 contentType: 'application/json',
                 data: JSON.stringify({ groupId, name: values.name }),
@@ -112,7 +112,7 @@ const CategoryDialog = (props) => {
             url: `/groups/${groupId}/categories/${category.id}`,
             headers:
             {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
             },
             contentType: 'application/json',
             method: 'DELETE',

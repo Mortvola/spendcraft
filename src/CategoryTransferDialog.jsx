@@ -98,7 +98,7 @@ const CategoryTransferDialog = (props) => {
                 url: `/category_transfer/${transaction.id}`,
                 headers:
                 {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                 },
                 contentType: 'application/json',
                 data: JSON.stringify({ date, categories: cats }),
@@ -112,7 +112,7 @@ const CategoryTransferDialog = (props) => {
                 url: '/category_transfer',
                 headers:
                 {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                 },
                 contentType: 'application/json',
                 data: JSON.stringify({ date, categories: cats }),
@@ -143,7 +143,7 @@ const CategoryTransferDialog = (props) => {
         fetch(`/category_transfer/${transaction.id}`, {
             method: 'DELETE',
             headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
             },
         })
             .then(() => {

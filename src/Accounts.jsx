@@ -5,7 +5,12 @@ import { Field, ErrorMessage } from 'formik';
 import { ModalDialog } from './Modal';
 import Amount from './Amount';
 
-const AccountItem = ({ name, value, account, onChange }) => {
+const AccountItem = ({
+    name,
+    value,
+    account,
+    onChange,
+}) => {
     const [option, setOption] = useState(value);
 
     const handleChange = (event) => {
@@ -192,7 +197,9 @@ function onSuccess(publicToken, metadata) {
 
             console.log(json);
 
-            // let newInstitutionElement = createInstitutionElement({ id: json.id, name: json.name, accounts: [] });
+            // let newInstitutionElement = createInstitutionElement({
+            //     id: json.id, name: json.name, accounts: []
+            // });
 
             // const institutionElements = $('#accounts > div');
 
@@ -215,7 +222,5 @@ function onSuccess(publicToken, metadata) {
             // openAccountSelectionDialog(json.id, json.accounts);
         });
 }
-
-
 
 export { plaidConfig, onSuccess, AccountsDialog };
