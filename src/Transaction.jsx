@@ -10,7 +10,7 @@ import { ModalLauncher } from './Modal';
 import RebalanceDialog from './rebalance/RebalanceDialog';
 import FundingDialog from './funding/FundingDialog';
 
-const Transaction = connect()(({
+const Transaction = ({
     transaction,
     amount,
     balance,
@@ -111,15 +111,15 @@ const Transaction = connect()(({
             <div className="transaction-field">{transaction.account_name}</div>
         </div>
     );
-});
+};
 
 Transaction.propTypes = {
     onClick: PropTypes.func.isRequired,
-    onEditClick: PropTypes.func.isRequired,
     transaction: PropTypes.shape().isRequired,
     amount: PropTypes.number.isRequired,
     balance: PropTypes.number.isRequired,
     selected: PropTypes.bool.isRequired,
+    dispatch: PropTypes.func.isRequired,
 };
 
-export default Transaction;
+export default connect()(Transaction);

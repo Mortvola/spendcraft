@@ -155,16 +155,11 @@ class CategoryController {
         const result = [];
 
         if (Array.isArray(request.body.categories)) {
-            const { date } = request.body;
-            let transactionId;
+            const { date, type } = request.body;
+            let transactionId = request.params.tfrId;
 
-            if (request.params.tfrId === undefined) {
-                const xfr = await trx.insert({ date }).into('transactions').returning('id');
-
-                [transactionId] = xfr;
-            }
-            else {
-                transactionId = request.params.tfrId;
+            if (transactionId === undefined) {
+                [transactionId] = await trx.insert({ date, type }).into('transactions').returning('id');
             }
 
             const existingSplits = [];

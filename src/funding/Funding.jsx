@@ -71,7 +71,7 @@ const Funding = ({ groups, plan, onChange }) => {
 
 Funding.propTypes = {
     groups: PropTypes.arrayOf(PropTypes.shape()).isRequired,
-    plan: PropTypes.shape(),
+    plan: PropTypes.arrayOf(PropTypes.shape()),
     onChange: PropTypes.func,
 };
 

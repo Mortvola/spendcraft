@@ -93,7 +93,7 @@ const RebalanceDialog = ({
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(values),
+            body: JSON.stringify({ ...values, type: 3 }),
         })
             .then(
                 () => onClose(),

@@ -12,7 +12,7 @@ const mapStateToProps = (state) => ({
     groups: state.categoryTree.groups,
 });
 
-const CategoryView = connect(mapStateToProps)(({
+const CategoryView = ({
     onCategorySelected,
     categorySelected,
     groups,
@@ -27,7 +27,7 @@ const CategoryView = connect(mapStateToProps)(({
             />
         ))}
     </div>
-));
+);
 
 CategoryView.propTypes = {
     groups: PropTypes.arrayOf(PropTypes.shape),
@@ -184,4 +184,4 @@ CategoryElement.defaultProps = {
     },
 };
 
-export default CategoryView;
+export default connect(mapStateToProps)(CategoryView);

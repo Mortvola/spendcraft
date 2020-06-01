@@ -29,7 +29,7 @@ const mapStateToProps = (state) => {
     };
 };
 
-const FundingDialog = connect(mapStateToProps)(({
+const FundingDialog = ({
     transaction,
     fundingAmount,
     ...props
@@ -111,7 +111,7 @@ const FundingDialog = connect(mapStateToProps)(({
     };
 
     const handleSubmit = (values) => {
-        const request = { date: values.date };
+        const request = { date: values.date, type: 2 };
         request.categories = values.funding.categories.filter((item) => (
             item.amount !== 0
         ))
@@ -231,7 +231,7 @@ const FundingDialog = connect(mapStateToProps)(({
             )}
         />
     );
-});
+};
 
 FundingDialog.propTypes = {
     onClose: PropTypes.func.isRequired,
@@ -248,4 +248,4 @@ FundingDialog.defaultProps = {
     transaction: null,
 };
 
-export default FundingDialog;
+export default connect(mapStateToProps)(FundingDialog);

@@ -22,8 +22,6 @@ function ModalLauncher({
 
     const Launcher = launcher;
 
-    console.log(`show: ${show.show}, exited: ${show.exited}`);
-
     if (show.show || !show.exited) {
         const Dialog = dialog;
 

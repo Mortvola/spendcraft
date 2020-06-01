@@ -5,7 +5,7 @@ import { connect } from 'react-redux';
 import { addGroup, updateGroup, deleteGroup } from './redux/actions';
 import { ModalDialog } from './Modal';
 
-const GroupDialog = connect()((props) => {
+const GroupDialog = (props) => {
     const {
         onClose,
         onExited,
@@ -136,7 +136,7 @@ const GroupDialog = connect()((props) => {
             )}
         />
     );
-});
+};
 
 GroupDialog.propTypes = {
     group: PropTypes.shape({
@@ -154,4 +154,4 @@ GroupDialog.defaultProps = {
     group: undefined,
 };
 
-export default GroupDialog;
+export default connect()(GroupDialog);

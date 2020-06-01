@@ -10,7 +10,7 @@ const mapStateToProps = (state) => ({
     categoryId: state.transactions.categoryId,
 });
 
-const RegisterElement = connect(mapStateToProps)((props) => {
+const RegisterElement = (props) => {
     const [selectedTransaction, setSelectedTransaction] = useState(null);
 
     const handleClick = (transactionId) => {
@@ -68,13 +68,16 @@ const RegisterElement = connect(mapStateToProps)((props) => {
             </div>
         </div>
     );
-});
-
-RegisterElement.propTypes = {
-    transactions: PropTypes.arrayOf().isRequired,
-    balance: PropTypes.number.isRequired,
-    categoryId: PropTypes.number,
-    onEdit: PropTypes.func.isRequired,
 };
 
-export default RegisterElement;
+RegisterElement.propTypes = {
+    transactions: PropTypes.arrayOf(PropTypes.shape()).isRequired,
+    balance: PropTypes.number.isRequired,
+    categoryId: PropTypes.number,
+};
+
+RegisterElement.defaultProps = {
+    categoryId: null,
+};
+
+export default connect(mapStateToProps)(RegisterElement);

@@ -6,7 +6,7 @@ import { connect } from 'react-redux';
 import { addCategory, updateCategory, deleteCategory } from './redux/actions';
 import { ModalDialog } from './Modal';
 
-const CategoryDialog = connect()((props) => {
+const CategoryDialog = (props) => {
     const {
         onClose,
         onExited,
@@ -161,7 +161,7 @@ const CategoryDialog = connect()((props) => {
             )}
         />
     );
-});
+};
 
 CategoryDialog.propTypes = {
     category: PropTypes.shape({
@@ -180,4 +180,4 @@ CategoryDialog.defaultProps = {
     category: undefined,
 };
 
-export default CategoryDialog;
+export default connect()(CategoryDialog);

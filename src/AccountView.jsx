@@ -7,16 +7,16 @@ import { AccountsDialog } from './Accounts';
 import { ModalLauncher } from './Modal';
 
 const mapStateToProps = (state) => ({
-    intitutions: state.institutions,
+    institutions: state.institutions,
 });
 
-const AccountView = connect(mapStateToProps)(({
-    intitutions,
+const AccountView = ({
+    institutions,
     onAccountSelected,
     accountSelected,
 }) => (
     <div id="accounts">
-        {intitutions.map((institution) => (
+        {institutions.map((institution) => (
             <InstitutionElement
                 key={institution.name}
                 institution={institution}
@@ -25,14 +25,16 @@ const AccountView = connect(mapStateToProps)(({
             />
         ))}
     </div>
-));
+);
 
 AccountView.propTypes = {
+    institutions: PropTypes.arrayOf(PropTypes.shape()),
     onAccountSelected: PropTypes.func.isRequired,
     accountSelected: PropTypes.number,
 };
 
 AccountView.defaultProps = {
+    institutions: [],
     accountSelected: undefined,
 };
 
@@ -155,4 +157,4 @@ Account.propTypes = {
     selected: PropTypes.bool.isRequired,
 };
 
-export default AccountView;
+export default connect(mapStateToProps)(AccountView);

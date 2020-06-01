@@ -22,7 +22,7 @@ const App = connect()(({ dispatch }) => {
             ? categoryList.unassigned.id
             : null,
     );
-    const { open, ready, error } = usePlaidLink({ ...plaidConfig, onSuccess });
+    const { open } = usePlaidLink({ ...plaidConfig, onSuccess });
 
     const handleAccountSelected = (accountId) => {
         setAccountSelected(accountId);
