@@ -1,7 +1,7 @@
 /* eslint-disable jsx-a11y/control-has-associated-label */
 /* eslint-disable jsx-a11y/label-has-associated-control */
 import 'regenerator-runtime/runtime';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 import { Field, ErrorMessage } from 'formik';
@@ -29,7 +29,11 @@ const mapStateToProps = (state) => {
     };
 };
 
-const FundingDialog = connect(mapStateToProps)(({ transaction, ...props }) => {
+const FundingDialog = connect(mapStateToProps)(({
+    transaction,
+    fundingAmount,
+    ...props
+}) => {
     const [plansInitialized, setPlansInitialized] = useState(false);
     const [groupsInitialized, setGroupsInitialized] = useState(false);
     const [plans, setPlans] = useState([]);
@@ -40,6 +44,14 @@ const FundingDialog = connect(mapStateToProps)(({ transaction, ...props }) => {
             : { planId: -1, categories: [] },
     );
     const [groups, setGroups] = useState([]);
+    const [avaialbleFunds, setAvailableFunds] = useState(fundingAmount);
+
+    useEffect(() => {
+        const funded = funding.categories.reduce(
+            (accumulator, item) => accumulator + item.amount, 0,
+        );
+        setAvailableFunds(fundingAmount - funded);
+    }, [funding]);
 
     const {
         onClose,
@@ -47,7 +59,6 @@ const FundingDialog = connect(mapStateToProps)(({ transaction, ...props }) => {
         title,
         show,
         fundingPoolId,
-        fundingAmount,
     } = props;
 
     if (!plansInitialized) {
@@ -62,13 +73,13 @@ const FundingDialog = connect(mapStateToProps)(({ transaction, ...props }) => {
     const handlePlanChange = (event, resetForm, values) => {
         const { value } = event.target;
         setSelectedPlan(value);
-        fetch(`/funding_plan/${event.target.value}`)
+        fetch(`/funding_plan/${value}`)
             .then(
                 async (response) => {
                     const json = await response.json();
-                    const newFunding = { planId: value, categories: json.categories };
-                    setFunding(newFunding);
-                    resetForm({ values: { ...values, funding: newFunding } });
+                    const newPlan = { planId: json.id, categories: json.categories };
+                    setFunding(newPlan);
+                    resetForm({ values: { ...values, funding: newPlan } });
                 },
             );
     };
@@ -95,7 +106,8 @@ const FundingDialog = connect(mapStateToProps)(({ transaction, ...props }) => {
         return planOptions;
     };
 
-    const handleDeltaChange = () => {
+    const handleFundingChange = (newFunding) => {
+        setFunding(newFunding);
     };
 
     const handleSubmit = (values) => {
@@ -188,7 +200,7 @@ const FundingDialog = connect(mapStateToProps)(({ transaction, ...props }) => {
                         </label>
                         <label>
                             Available Funds
-                            <Amount amount={fundingAmount} />
+                            <Amount amount={avaialbleFunds} />
                         </label>
                     </div>
                     <ErrorMessage name="date" />
@@ -204,10 +216,11 @@ const FundingDialog = connect(mapStateToProps)(({ transaction, ...props }) => {
                                 <Funding
                                     key={value.planId}
                                     groups={groups}
-                                    plan={value}
-                                    onDeltaChange={(_amount, delta, newFunding) => {
-                                        handleDeltaChange(delta);
-                                        setFieldValue(name, newFunding, false);
+                                    plan={value.categories}
+                                    onChange={(newFunding) => {
+                                        const newPlan = { planId: value.planId, categories: newFunding };
+                                        handleFundingChange(newPlan);
+                                        setFieldValue(name, newPlan, false);
                                     }}
                                 />
                             )}

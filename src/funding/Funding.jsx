@@ -2,20 +2,20 @@ import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import FundingItem from './FundingItem';
 
-const Funding = ({ groups, plan, onDeltaChange }) => {
-    const [funding, setFunding] = useState(plan ? plan.categories : []);
+const Funding = ({ groups, plan, onChange }) => {
+    const [funding, setFunding] = useState(plan);
 
-    const handleDeltaChange = (amount, delta, categoryId) => {
-        const fundingCopy = funding.slice();
-        const index = fundingCopy.findIndex((c) => c.categoryId === categoryId);
+    const handleDeltaChange = (amount, categoryId) => {
+        const index = funding.findIndex((c) => c.categoryId === categoryId);
 
         if (index !== -1) {
+            const fundingCopy = funding.slice();
             fundingCopy[index].amount = amount;
             setFunding(fundingCopy);
-        }
 
-        if (onDeltaChange) {
-            onDeltaChange(amount, delta, fundingCopy);
+            if (onChange) {
+                onChange(fundingCopy);
+            }
         }
     };
 
@@ -24,25 +24,21 @@ const Funding = ({ groups, plan, onDeltaChange }) => {
 
         categories.forEach((category) => {
             let amount = 0;
-            let planId = -1;
 
-            if (plan) {
-                planId = plan.planId;
-                const index = plan.categories.findIndex((c) => c.categoryId === category.id);
+            const index = funding.findIndex((c) => c.categoryId === category.id);
 
-                if (index !== -1) {
-                    amount = plan.categories[index].amount;
-                }
+            if (index !== -1) {
+                amount = funding[index].amount;
             }
 
             categoryItems.push((
                 <FundingItem
-                    key={`${planId}:${category.id}`}
+                    key={`${category.id}`}
                     name={category.name}
                     initialAmount={category.amount}
                     funding={amount}
-                    onDeltaChange={(newAmount, delta) => (
-                        handleDeltaChange(newAmount, delta, category.id)
+                    onDeltaChange={(newAmount) => (
+                        handleDeltaChange(newAmount, category.id)
                     )}
                 />
             ));
@@ -76,12 +72,12 @@ const Funding = ({ groups, plan, onDeltaChange }) => {
 Funding.propTypes = {
     groups: PropTypes.arrayOf(PropTypes.shape()).isRequired,
     plan: PropTypes.shape(),
-    onDeltaChange: PropTypes.func,
+    onChange: PropTypes.func,
 };
 
 Funding.defaultProps = {
-    plan: null,
-    onDeltaChange: null,
+    plan: [],
+    onChange: null,
 };
 
 export default Funding;
