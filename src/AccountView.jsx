@@ -4,7 +4,6 @@ import { connect } from 'react-redux';
 import IconButton from './IconButton';
 import {
     receiveCategoryBalances,
-    fetchAccountTransactions,
     selectAccount,
 } from './redux/actions';
 import { AccountsDialog } from './Accounts';
@@ -22,7 +21,6 @@ const AccountView = ({
 }) => {
     const handleAccountSelected = (accountId) => {
         dispatch(selectAccount(accountId));
-        dispatch(fetchAccountTransactions(accountId));
     };
 
     return (

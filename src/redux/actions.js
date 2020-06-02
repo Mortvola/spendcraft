@@ -47,49 +47,6 @@ const receiveSystemIds = (systemIds) => ({
     ...systemIds,
 });
 
-const fetchGroups = () => (
-    (dispatch) => {
-        dispatch(requestGroups());
-
-        return (
-            fetch('/groups')
-                .then(
-                    (response) => response.json(),
-                    (error) => console.log('fetch error: ', error),
-                )
-                .then(
-                    (json) => {
-                        const systemGroup = json.find((g) => g.system);
-
-                        const systemIds = {
-                            systemId: systemGroup.id,
-                            unassignedId: systemGroup.categories.find((c) => c.system && c.name === 'Unassigned').id,
-                            fundingPoolId: systemGroup.categories.find((c) => c.system && c.name === 'Funding Pool').id,
-                        };
-
-                        dispatch(receiveSystemIds(systemIds));
-                        dispatch(receieveGroups(json));
-                    },
-                )
-        );
-    }
-);
-
-const addCategory = (category) => ({
-    type: ADD_CATEGORY,
-    category,
-});
-
-const updateCategory = (category) => ({
-    type: UPDATE_CATEGORY,
-    category,
-});
-
-const deleteCategory = (category) => ({
-    type: DELETE_CATEGORY,
-    category,
-});
-
 const requestTransactions = () => ({
     type: REQUEST_TRANSACTIONS,
 });
@@ -100,9 +57,59 @@ const receiveTransactions = (categoryId, transactions) => ({
     transactions,
 });
 
+const setCategorySelection = (categoryId) => ({
+    type: SELECT_CATEGORY,
+    categoryId,
+});
 
-const fetchAccountTransactions = (accountId) => (
+const selectCategory = (categoryId) => (
     (dispatch) => {
+        dispatch(setCategorySelection(categoryId));
+        dispatch(requestTransactions());
+
+        return (
+            fetch(`/category/${categoryId}/transactions`)
+                .then(
+                    (response) => response.json(),
+                    (error) => console.log('fetch error: ', error),
+                )
+                .then(
+                    (json) => {
+                        json.transactions.sort((a, b) => {
+                            if (a.date < b.date) {
+                                return 1;
+                            }
+
+                            if (a.date > b.date) {
+                                return -1;
+                            }
+
+                            if (a.sort_order < b.sort_order) {
+                                return 1;
+                            }
+
+                            if (a.sort_order > b.sort_order) {
+                                return -1;
+                            }
+
+                            return 0;
+                        });
+
+                        return dispatch(receiveTransactions(categoryId, json));
+                    },
+                )
+        );
+    }
+);
+
+const setAccountSelection = (categoryId) => ({
+    type: SELECT_ACCOUNT,
+    categoryId,
+});
+
+const selectAccount = (accountId) => (
+    (dispatch) => {
+        dispatch(setAccountSelection(accountId));
         dispatch(requestTransactions());
 
         return (
@@ -140,44 +147,55 @@ const fetchAccountTransactions = (accountId) => (
     }
 );
 
-const fetchCategoryTransactions = (categoryId) => (
-    (dispatch) => {
-        dispatch(requestTransactions());
+const fetchGroups = () => (
+    (dispatch, getState) => {
+        dispatch(requestGroups());
 
         return (
-            fetch(`/category/${categoryId}/transactions`)
+            fetch('/groups')
                 .then(
                     (response) => response.json(),
                     (error) => console.log('fetch error: ', error),
                 )
                 .then(
                     (json) => {
-                        json.transactions.sort((a, b) => {
-                            if (a.date < b.date) {
-                                return 1;
-                            }
+                        const systemGroup = json.find((g) => g.system);
 
-                            if (a.date > b.date) {
-                                return -1;
-                            }
+                        const systemIds = {
+                            systemId: systemGroup.id,
+                            unassignedId: systemGroup.categories.find((c) => c.system && c.name === 'Unassigned').id,
+                            fundingPoolId: systemGroup.categories.find((c) => c.system && c.name === 'Funding Pool').id,
+                        };
 
-                            if (a.sort_order < b.sort_order) {
-                                return 1;
-                            }
+                        dispatch(receiveSystemIds(systemIds));
+                        dispatch(receieveGroups(json));
 
-                            if (a.sort_order > b.sort_order) {
-                                return -1;
-                            }
-
-                            return 0;
-                        });
-
-                        return dispatch(receiveTransactions(categoryId, json));
+                        // If nothing is currently selected then select the unassigned category.
+                        const state = getState();
+                        if (state.selections.selectedCategoryId === null
+                            && state.selections.selectedAccountId === null) {
+                            dispatch(selectCategory(systemIds.unassignedId));
+                        }
                     },
                 )
         );
     }
 );
+
+const addCategory = (category) => ({
+    type: ADD_CATEGORY,
+    category,
+});
+
+const updateCategory = (category) => ({
+    type: UPDATE_CATEGORY,
+    category,
+});
+
+const deleteCategory = (category) => ({
+    type: DELETE_CATEGORY,
+    category,
+});
 
 const requestInstitutions = () => ({
     type: REQUEST_INSTITUTIONS,
@@ -216,16 +234,6 @@ const receiveTransactionCategories = (transCategories) => ({
 });
 
 
-const selectCategory = (categoryId) => ({
-    type: SELECT_CATEGORY,
-    categoryId,
-});
-
-const selectAccount = (accountId) => ({
-    type: SELECT_ACCOUNT,
-    accountId,
-});
-
 export {
     addGroup,
     updateGroup,
@@ -234,8 +242,6 @@ export {
     addCategory,
     updateCategory,
     deleteCategory,
-    fetchAccountTransactions,
-    fetchCategoryTransactions,
     fetchInstitutions,
     receiveCategoryBalances,
     receiveTransactionCategories,

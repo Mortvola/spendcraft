@@ -7,10 +7,7 @@ import Amount from './Amount';
 import { ModalLauncher } from './Modal';
 import CategoryDialog from './CategoryDialog';
 import GroupDialog from './GroupDialog';
-import {
-    fetchCategoryTransactions,
-    selectCategory,
-} from './redux/actions';
+import { selectCategory } from './redux/actions';
 
 const mapStateToProps = (state) => ({
     groups: state.categoryTree.groups,
@@ -24,7 +21,6 @@ const CategoryView = ({
 }) => {
     const handleCategorySelected = (categoryId) => {
         dispatch(selectCategory(categoryId));
-        dispatch(fetchCategoryTransactions(categoryId));
     };
 
     return (

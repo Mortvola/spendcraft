@@ -311,18 +311,6 @@ function selections(
             selectedAccountId: action.accountId,
         };
 
-    case RECEIVE_SYSTEM_IDS:
-
-        if (state.selectedCategoryId === null
-            && state.selectedAccountId === null) {
-            return {
-                ...state,
-                selectedCategoryId: action.unassignedId,
-            };
-        }
-
-        return state;
-
     default:
         return state;
     }
