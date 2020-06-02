@@ -8,7 +8,7 @@ class Category extends Model {
             'category_id',
             'splits.amount',
         )
-            .from('category_splits AS splits')
+            .from('transaction_categories AS splits')
             .join('transactions', 'transactions.id', 'splits.transaction_id')
             .where('transactions.date', '>', date);
 

@@ -25,7 +25,7 @@ class AccountController {
                     + "'}')::json) AS categories"),
                 'transaction_id',
             )
-                .table('category_splits AS splits')
+                .table('transaction_categories AS splits')
                 .join('categories AS cats', 'cats.id', 'splits.category_id')
                 .join('groups', 'groups.id', 'cats.group_id')
                 .groupBy('transaction_id');

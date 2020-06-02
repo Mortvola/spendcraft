@@ -104,7 +104,7 @@ class CategoryController {
                     + "'}')::json) AS categories"),
             'transaction_id',
         )
-            .from('category_splits AS splits')
+            .from('transaction_categories AS splits')
             .join('categories AS cats', 'cats.id', 'splits.category_id')
             .join('groups', 'groups.id', 'cats.group_id')
             .where('groups.user_id', auth.user.id)
@@ -172,18 +172,18 @@ class CategoryController {
                     if (split.id) {
                         existingSplits.push(split.id);
 
-                        const oldSplit = await trx.select('amount').from('category_splits').where('id', split.id);
+                        const oldSplit = await trx.select('amount').from('transaction_categories').where('id', split.id);
 
                         amount = split.amount - oldSplit[0].amount;
 
-                        await trx.table('category_splits').where('id', split.id).update({ amount: split.amount });
+                        await trx.table('transaction_categories').where('id', split.id).update({ amount: split.amount });
                     }
                     else {
                         const newId = await trx.insert({
                             transaction_id: transactionId,
                             category_id: split.categoryId,
                             amount: split.amount,
-                        }).into('category_splits').returning('id');
+                        }).into('transaction_categories').returning('id');
 
                         existingSplits.push(newId[0]);
 
@@ -201,7 +201,7 @@ class CategoryController {
             }));
 
             // Delete splits that are not in the array of ids
-            const query = trx.from('category_splits').whereNotIn('id', existingSplits).andWhere('transaction_id', transactionId);
+            const query = trx.from('transaction_categories').whereNotIn('id', existingSplits).andWhere('transaction_id', transactionId);
             const toDelete = await query.select('category_id AS categoryId', 'amount');
 
             await Promise.all(toDelete.map(async (td) => {

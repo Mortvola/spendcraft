@@ -1,20 +1,17 @@
-'use strict'
-
 class DeleteCategory {
-  get rules () {
-      
-    return {
-        // validation rules
-        catId: 'empty:category_splits,category_id'
+    get rules() {
+        return {
+            // validation rules
+            catId: 'empty:transaction_categories,category_id',
+        };
     }
-  }
 
-  get data () {
-      const requestBody = this.ctx.request.all();
-      const catId = this.ctx.request.params.catId;
+    get data() {
+        const requestBody = this.ctx.request.all();
+        const { catId } = this.ctx.request.params;
 
-      return Object.assign({}, requestBody, { catId })
-  }
+        return { ...requestBody, catId };
+    }
 }
 
 module.exports = DeleteCategory

@@ -193,7 +193,7 @@ class InstitutionController {
                             category_id: fundingPool.id,
                             amount: startingBalance,
                         })
-                            .into('category_splits');
+                            .into('transaction_categories');
 
                         const funding = await this.subtractFromCategoryBalance(
                             trx, fundingPool.id, -startingBalance,
@@ -424,7 +424,7 @@ class InstitutionController {
         const unassigned = systemCats.find((entry) => entry.name === 'Unassigned');
 
         const splits = await trx.select('category_id AS categoryId', 'amount')
-            .from('category_splits')
+            .from('transaction_categories')
             .where('transaction_id', request.params.txId);
 
         if (splits.length > 0) {
@@ -438,7 +438,7 @@ class InstitutionController {
                 result.categories.push({ id: cat.category.id, amount: cat.amount });
             }));
 
-            await trx.table('category_splits').where('transaction_id', request.params.txId).delete();
+            await trx.table('transaction_categories').where('transaction_id', request.params.txId).delete();
         }
         else {
             // There are no category splits. Debit the 'Unassigned' category
@@ -458,7 +458,7 @@ class InstitutionController {
                         category_id: split.categoryId,
                         amount: split.amount,
                     })
-                        .into('category_splits');
+                        .into('transaction_categories');
                 }
 
                 const cat = await this.subtractFromCategoryBalance(
@@ -485,7 +485,7 @@ class InstitutionController {
             'cats.name AS category',
             'groups.name AS group',
         )
-            .from('category_splits AS splits')
+            .from('transaction_categories AS splits')
             .join('categories AS cats', 'cats.id', 'splits.category_id')
             .join('groups', 'groups.id', 'cats.group_id')
             .where('splits.transaction_id', request.params.txId);
