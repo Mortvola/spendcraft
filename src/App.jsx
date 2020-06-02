@@ -1,40 +1,20 @@
-import React, { useState } from 'react';
+import React from 'react';
 import ReactDOM from 'react-dom';
-import { Provider, connect } from 'react-redux';
+import { Provider } from 'react-redux';
 import { usePlaidLink } from 'react-plaid-link';
 import CategoryView from './CategoryView';
 import AccountView from './AccountView';
 import RegisterElement from './RegisterElement';
-import categoryList from './Categories';
 import { ModalLauncher } from './Modal';
 import GroupDialog from './GroupDialog';
 import FundingDialog from './funding/FundingDialog';
 import RebalanceDialog from './rebalance/RebalanceDialog';
 import store from './redux/store';
-import { fetchAccountTransactions, fetchCategoryTransactions } from './redux/actions';
 import IconButton from './IconButton';
 import { plaidConfig, onSuccess } from './Accounts';
 
-const App = connect()(({ dispatch }) => {
-    const [accountSelected, setAccountSelected] = useState(null);
-    const [categorySelected, setCategorySelected] = useState(
-        categoryList.unassigned
-            ? categoryList.unassigned.id
-            : null,
-    );
+const App = () => {
     const { open } = usePlaidLink({ ...plaidConfig, onSuccess });
-
-    const handleAccountSelected = (accountId) => {
-        setAccountSelected(accountId);
-        setCategorySelected(null);
-        dispatch(fetchAccountTransactions(accountId));
-    };
-
-    const handleCategorySelected = (categoryId) => {
-        setCategorySelected(categoryId);
-        setAccountSelected(null);
-        dispatch(fetchCategoryTransactions(categoryId));
-    };
 
     return (
         <>
@@ -55,26 +35,20 @@ const App = connect()(({ dispatch }) => {
                             dialog={(props) => (<FundingDialog {...props} />)}
                         />
                     </div>
-                    <CategoryView
-                        onCategorySelected={handleCategorySelected}
-                        categorySelected={categorySelected}
-                    />
+                    <CategoryView />
                 </div>
                 <div className="accounts">
                     <div className="account-bar">
                         <div>Institutions</div>
                         <IconButton icon="plus" onClick={open} />
                     </div>
-                    <AccountView
-                        onAccountSelected={handleAccountSelected}
-                        accountSelected={accountSelected}
-                    />
+                    <AccountView />
                 </div>
             </div>
             <RegisterElement />
         </>
     );
-});
+};
 
 ReactDOM.render(
     <Provider store={store}>

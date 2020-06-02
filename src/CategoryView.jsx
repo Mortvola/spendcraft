@@ -7,37 +7,49 @@ import Amount from './Amount';
 import { ModalLauncher } from './Modal';
 import CategoryDialog from './CategoryDialog';
 import GroupDialog from './GroupDialog';
+import {
+    fetchCategoryTransactions,
+    selectCategory,
+} from './redux/actions';
 
 const mapStateToProps = (state) => ({
     groups: state.categoryTree.groups,
+    selectedCategory: state.selections.selectedCategoryId,
 });
 
 const CategoryView = ({
-    onCategorySelected,
-    categorySelected,
+    selectedCategory,
     groups,
-}) => (
-    <div id="categories">
-        {groups.map((group) => (
-            <GroupElement
-                key={group.name}
-                group={group}
-                onCategorySelected={onCategorySelected}
-                categorySelected={categorySelected}
-            />
-        ))}
-    </div>
-);
+    dispatch,
+}) => {
+    const handleCategorySelected = (categoryId) => {
+        dispatch(selectCategory(categoryId));
+        dispatch(fetchCategoryTransactions(categoryId));
+    };
+
+    return (
+        <div id="categories">
+            {groups.map((group) => (
+                <GroupElement
+                    key={group.name}
+                    group={group}
+                    onCategorySelected={handleCategorySelected}
+                    categorySelected={selectedCategory}
+                />
+            ))}
+        </div>
+    );
+};
 
 CategoryView.propTypes = {
     groups: PropTypes.arrayOf(PropTypes.shape),
-    onCategorySelected: PropTypes.func.isRequired,
-    categorySelected: PropTypes.number,
+    selectedCategory: PropTypes.number,
+    dispatch: PropTypes.func.isRequired,
 };
 
 CategoryView.defaultProps = {
     groups: [],
-    categorySelected: undefined,
+    selectedCategory: undefined,
 };
 
 function Buttons({ group }) {

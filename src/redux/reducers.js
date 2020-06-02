@@ -16,6 +16,9 @@ import {
     RECEIVE_INSTITUTIONS,
     RECEIVE_CATEGORY_BALANCES,
     RECEIVE_TRANSACTION_CATEGORIES,
+    SELECT_CATEGORY,
+    SELECT_ACCOUNT,
+    RECEIVE_SYSTEM_IDS,
 } from './actionTypes';
 
 
@@ -141,17 +144,21 @@ function categoryTree(
     case REQUEST_GROUPS:
         return state;
 
-    case RECEIVE_GROUPS:
-    {
-        const systemGroup = action.groups.find((g) => g.system);
-
+    case RECEIVE_GROUPS: {
         return {
-            systemGroupId: systemGroup.id,
-            unassignedId: systemGroup.categories.find((c) => c.system && c.name === 'Unassigned').id,
-            fundingPoolId: systemGroup.categories.find((c) => c.system && c.name === 'Funding Pool').id,
+            ...state,
             groups: action.groups,
         };
     }
+
+    case RECEIVE_SYSTEM_IDS:
+
+        return {
+            ...state,
+            systemGroupId: action.systemGroupId,
+            unassignedId: action.unassignedId,
+            fundingPoolId: action.fundingPoolId,
+        };
 
     case ADD_CATEGORY:
     case UPDATE_CATEGORY:
@@ -284,10 +291,49 @@ function transactions(
     }
 }
 
+function selections(
+    state = {
+        selectedCategoryId: null,
+        selectedAccountId: null,
+    },
+    action,
+) {
+    switch (action.type) {
+    case SELECT_CATEGORY:
+        return {
+            selectedCategoryId: action.categoryId,
+            selectedAccountId: null,
+        };
+
+    case SELECT_ACCOUNT:
+        return {
+            selectedCategoryId: null,
+            selectedAccountId: action.accountId,
+        };
+
+    case RECEIVE_SYSTEM_IDS:
+
+        if (state.selectedCategoryId === null
+            && state.selectedAccountId === null) {
+            return {
+                ...state,
+                selectedCategoryId: action.unassignedId,
+            };
+        }
+
+        return state;
+
+    default:
+        return state;
+    }
+}
+
+
 const budgetApp = combineReducers({
     categoryTree,
     institutions,
     transactions,
+    selections,
 });
 
 export default budgetApp;

@@ -13,6 +13,9 @@ import {
     RECEIVE_INSTITUTIONS,
     RECEIVE_CATEGORY_BALANCES,
     RECEIVE_TRANSACTION_CATEGORIES,
+    SELECT_CATEGORY,
+    SELECT_ACCOUNT,
+    RECEIVE_SYSTEM_IDS,
 } from './actionTypes';
 
 const addGroup = (group) => ({
@@ -39,6 +42,11 @@ const receieveGroups = (groups) => ({
     groups,
 });
 
+const receiveSystemIds = (systemIds) => ({
+    type: RECEIVE_SYSTEM_IDS,
+    ...systemIds,
+});
+
 const fetchGroups = () => (
     (dispatch) => {
         dispatch(requestGroups());
@@ -50,7 +58,18 @@ const fetchGroups = () => (
                     (error) => console.log('fetch error: ', error),
                 )
                 .then(
-                    (json) => dispatch(receieveGroups(json)),
+                    (json) => {
+                        const systemGroup = json.find((g) => g.system);
+
+                        const systemIds = {
+                            systemId: systemGroup.id,
+                            unassignedId: systemGroup.categories.find((c) => c.system && c.name === 'Unassigned').id,
+                            fundingPoolId: systemGroup.categories.find((c) => c.system && c.name === 'Funding Pool').id,
+                        };
+
+                        dispatch(receiveSystemIds(systemIds));
+                        dispatch(receieveGroups(json));
+                    },
                 )
         );
     }
@@ -196,6 +215,17 @@ const receiveTransactionCategories = (transCategories) => ({
     transCategories,
 });
 
+
+const selectCategory = (categoryId) => ({
+    type: SELECT_CATEGORY,
+    categoryId,
+});
+
+const selectAccount = (accountId) => ({
+    type: SELECT_ACCOUNT,
+    accountId,
+});
+
 export {
     addGroup,
     updateGroup,
@@ -209,4 +239,7 @@ export {
     fetchInstitutions,
     receiveCategoryBalances,
     receiveTransactionCategories,
+    selectCategory,
+    selectAccount,
+    receiveSystemIds,
 };

@@ -2,40 +2,52 @@ import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 import IconButton from './IconButton';
-import { receiveCategoryBalances } from './redux/actions';
+import {
+    receiveCategoryBalances,
+    fetchAccountTransactions,
+    selectAccount,
+} from './redux/actions';
 import { AccountsDialog } from './Accounts';
 import { ModalLauncher } from './Modal';
 
 const mapStateToProps = (state) => ({
     institutions: state.institutions,
+    selectedAccount: state.selections.selectedAccountId,
 });
 
 const AccountView = ({
     institutions,
-    onAccountSelected,
-    accountSelected,
-}) => (
-    <div id="accounts">
-        {institutions.map((institution) => (
-            <InstitutionElement
-                key={institution.name}
-                institution={institution}
-                onAccountSelected={onAccountSelected}
-                accountSelected={accountSelected}
-            />
-        ))}
-    </div>
-);
+    selectedAccount,
+    dispatch,
+}) => {
+    const handleAccountSelected = (accountId) => {
+        dispatch(selectAccount(accountId));
+        dispatch(fetchAccountTransactions(accountId));
+    };
+
+    return (
+        <div id="accounts">
+            {institutions.map((institution) => (
+                <InstitutionElement
+                    key={institution.name}
+                    institution={institution}
+                    onAccountSelected={handleAccountSelected}
+                    accountSelected={selectedAccount}
+                />
+            ))}
+        </div>
+    );
+};
 
 AccountView.propTypes = {
     institutions: PropTypes.arrayOf(PropTypes.shape()),
-    onAccountSelected: PropTypes.func.isRequired,
-    accountSelected: PropTypes.number,
+    dispatch: PropTypes.func.isRequired,
+    selectedAccount: PropTypes.number,
 };
 
 AccountView.defaultProps = {
     institutions: [],
-    accountSelected: undefined,
+    selectedAccount: undefined,
 };
 
 function InstitutionElement({ institution, ...props }) {
