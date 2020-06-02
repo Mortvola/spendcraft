@@ -230,7 +230,7 @@ class InstitutionController {
             },
         );
 
-        // console.log(JSON.stringify(transactionsResponse, null, 4));
+        console.log(JSON.stringify(transactionsResponse, null, 4));
 
         let sum = 0;
         let pendingSum = 0;
@@ -270,7 +270,7 @@ class InstitutionController {
                 }
             }
             else {
-                console.log(JSON.stringify(transaction, null, 4));
+                // console.log(JSON.stringify(transaction, null, 4));
                 pendingSum += transaction.amount;
             }
         }));
@@ -296,6 +296,7 @@ class InstitutionController {
             balance = -balance;
         }
 
+        console.log(`Balance: ${balance}, Pending: ${pendingSum}`);
         await trx.table('accounts').where('id', accountId).update('balance', balance);
 
         return { balance, sum, cat };
@@ -361,12 +362,19 @@ class InstitutionController {
 
         if (acct.length > 0) {
             if (acct[0].tracking === 'Transactions') {
+                // Retrieve the past 30 days of transactions
+                // (unles the account start date is sooner)
+                const startDate = moment.max(
+                    moment().subtract(30, 'days'),
+                    moment(acct[0].startDate),
+                );
+
                 const details = await this.addTransactions(
                     trx,
                     acct[0].accessToken,
                     acct[0].accountId,
                     acct[0].plaidAccountId,
-                    acct[0].startDate,
+                    startDate,
                     auth,
                 );
 
@@ -391,6 +399,8 @@ class InstitutionController {
                 const balanceResponse = await plaidClient.getBalance(acct[0].accessToken, {
                     account_ids: [acct[0].plaidAccountId],
                 });
+
+                console.log(JSON.stringify(balanceResponse, null, 4));
 
                 await trx.table('accounts').where('id', request.params.acctId).update('balance', balanceResponse.accounts[0].balances.current);
 
