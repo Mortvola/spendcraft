@@ -219,6 +219,10 @@ class InstitutionController {
     }
 
     async addTransactions(trx, accessToken, accountId, plaidAccountId, startDate, auth) {
+        const pendingTransactions = await trx.select('transaction_id', 'plaid_transaction_id')
+            .from('account_transactions')
+            .where('pending', true);
+
         const transactionsResponse = await plaidClient.getTransactions(
             accessToken,
             moment(startDate).format('YYYY-MM-DD'),
@@ -233,47 +237,59 @@ class InstitutionController {
         console.log(JSON.stringify(transactionsResponse, null, 4));
 
         let sum = 0;
-        let pendingSum = 0;
+        // let pendingSum = 0;
 
         await Promise.all(transactionsResponse.transactions.map(async (transaction) => {
             // console.log(JSON.stringify(transaction, null, 4));
             // Only consider non-pending transactions
-            if (!transaction.pending) {
-                // console.log(JSON.stringify(transaction, null, 4));
+            // console.log(JSON.stringify(transaction, null, 4));
 
-                // First check to see if the transaction is present. If it is then don't insert it.
-                const exists = await trx.select(
-                    Database.raw(`EXISTS (SELECT 1 FROM account_transactions WHERE plaid_transaction_id = '${transaction.transaction_id}') AS exists`),
-                );
+            // First check to see if the transaction is present. If it is then don't insert it.
+            const exists = await trx.select(
+                Database.raw(`EXISTS (SELECT 1 FROM account_transactions WHERE plaid_transaction_id = '${transaction.transaction_id}') AS exists`),
+            );
 
-                if (!exists[0].exists) {
-                    // console.log('Insert transaction');
+            if (!exists[0].exists) {
+                // console.log('Insert transaction');
 
-                    const id = await trx.insert({
-                        date: transaction.date,
-                    })
-                        .into('transactions')
-                        .returning('id');
+                const id = await trx.insert({
+                    date: transaction.date,
+                })
+                    .into('transactions')
+                    .returning('id');
 
-                    // console.log(JSON.stringify(id, null, 4));
+                // console.log(JSON.stringify(id, null, 4));
 
-                    await trx.insert({
-                        transaction_id: id[0],
-                        plaid_transaction_id: transaction.transaction_id,
-                        account_id: accountId,
-                        name: transaction.name,
-                        amount: -transaction.amount,
-                    })
-                        .into('account_transactions');
+                await trx.insert({
+                    transaction_id: id[0],
+                    plaid_transaction_id: transaction.transaction_id,
+                    account_id: accountId,
+                    name: transaction.name,
+                    amount: -transaction.amount,
+                    pending: transaction.pending,
+                })
+                    .into('account_transactions');
 
+                if (!transaction.pending) {
                     sum += transaction.amount;
                 }
             }
-            else {
-                // console.log(JSON.stringify(transaction, null, 4));
-                pendingSum += transaction.amount;
+
+            const index = pendingTransactions.findIndex(
+                (p) => p.plaid_transaction_id === transaction.transaction_id,
+            );
+
+            if (index !== -1) {
+                pendingTransactions.splice(index, 1);
             }
         }));
+
+        // Delete any pending transaction in the database that remain in the array
+        const transIds = pendingTransactions.map(
+            (item) => item.transaction_id,
+        );
+        await trx.table('account_transactions').whereIn('transaction_id', transIds).delete();
+        await trx.table('transactions').whereIn('id', transIds).delete();
 
         let balance = transactionsResponse.accounts[0].balances.current;
 
@@ -296,7 +312,7 @@ class InstitutionController {
             balance = -balance;
         }
 
-        console.log(`Balance: ${balance}, Pending: ${pendingSum}`);
+//        console.log(`Balance: ${balance}, Pending: ${pendingSum}`);
         await trx.table('accounts').where('id', accountId).update('balance', balance);
 
         return { balance, sum, cat };
@@ -520,6 +536,22 @@ class InstitutionController {
         const result = await plaidClient.createPublicToken(acct[0].accessToken);
 
         return { publicToken: result.public_token };
+    }
+
+    static async info({ request, auth }) {
+        const [institution] = await Database.select('institution_id')
+            .from('institutions AS inst')
+            .where('inst.id', request.params.instId)
+            .andWhere('inst.user_id', auth.user.id);
+
+        const response = await plaidClient.getInstitutionById(institution.institution_id, {
+            include_optional_metadata: true,
+            include_status: true,
+        });
+
+        console.log(JSON.stringify(response, null, 4));
+
+        return response.institution;
     }
 }
 

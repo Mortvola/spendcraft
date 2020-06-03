@@ -8,6 +8,7 @@ import {
 } from './redux/actions';
 import { AccountsDialog } from './Accounts';
 import { ModalLauncher } from './Modal';
+import InstitutionInfoDialog from './InstitutionInfoDialog';
 
 const mapStateToProps = (state) => ({
     institutions: state.institutions,
@@ -71,6 +72,10 @@ function InstitutionElement({ institution, ...props }) {
                     dialog={(props) => (<AccountsDialog {...props} institutionId={institution.id} />)}
                 />
                 <IconButton icon="lock" onClick={relinkAccount} />
+                <ModalLauncher
+                    launcher={(props) => (<IconButton icon="info-circle" {...props} />)}
+                    dialog={(props) => (<InstitutionInfoDialog institutionId={institution.id} {...props} />)}
+                />
             </div>
             <div>
                 {institution.accounts.map((account) => (

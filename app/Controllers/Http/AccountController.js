@@ -47,6 +47,7 @@ class AccountController {
                 .join('institutions AS inst', 'inst.id', 'acct.institution_id')
                 .leftJoin(subquery.as('splits'), 'splits.transaction_id', 'trans.id')
                 .where('acct_trans.account_id', accountId)
+                .andWhere('acct_trans.pending', false)
                 .orderBy('date', 'desc')
                 .orderBy('acct_trans.name');
         }

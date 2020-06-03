@@ -16,6 +16,7 @@ const Route = use('Route');
 const CategoryController = use('App/Controllers/Http/CategoryController');
 const AccountController = use('App/Controllers/Http/AccountController')
 const FundingPlanController = use('App/Controllers/Http/FundingPlanController')
+const InstitutionController = use('App/Controllers/Http/InstitutionController')
 
 Route.on('/').render('index');
 
@@ -53,6 +54,7 @@ Route.group(() => {
     Route.get('/account/:acctId/transactions', AccountController.transactions);
 
     Route.post('/institution', 'InstitutionController.add');
+    Route.get('/institution/:instId/info', InstitutionController.info);
     Route.get('/institution/:instId/accounts', 'InstitutionController.get');
     Route.post('/institution/:instId/accounts', 'InstitutionController.addAccounts');
     Route.post('/institution/:instId/accounts/:acctId/transactions/sync', 'InstitutionController.sync');

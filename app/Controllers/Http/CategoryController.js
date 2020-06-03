@@ -138,7 +138,11 @@ class CategoryController {
             .orderBy(Database.raw(transName));
 
         if (cat[0].system && cat[0].name === 'Unassigned') {
-            query.whereNull('splits.categories');
+            query.whereNull('splits.categories')
+                .andWhere(function () {
+                    this.where('acct_trans.pending', false)
+                        .orWhereNull('acct_trans.pending');
+                });
         }
         else {
             query.where('splits.count', '>', 0);

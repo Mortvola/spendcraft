@@ -36,6 +36,7 @@
     "@babel/preset-react": "^7.9.4",
     "babelify": "^10.0.0",
     "formik": "^2.1.4",
+    "moment": "^2.26.0",
     "node-cookie": "^2.1.2",
     "pg": "^7.18.2",
     "pg-native": "^3.0.0",
