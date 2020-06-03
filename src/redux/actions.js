@@ -102,9 +102,9 @@ const selectCategory = (categoryId) => (
     }
 );
 
-const setAccountSelection = (categoryId) => ({
+const setAccountSelection = (accountId) => ({
     type: SELECT_ACCOUNT,
-    categoryId,
+    accountId,
 });
 
 const selectAccount = (accountId) => (
