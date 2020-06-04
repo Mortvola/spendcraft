@@ -4,16 +4,16 @@ class AccountController {
     static async transactions({ request }) {
         const accountId = parseInt(request.params.acctId, 10);
 
-        const result = { transactions: [] };
+        const result = { transactions: [], pending: [] };
 
-        const balance = await Database.select(
+        const [{ balance }] = await Database.select(
             Database.raw('CAST(balance AS real) AS balance'),
         )
             .table('accounts')
             .where('id', accountId);
 
-        if (balance.length > 0) {
-            result.balance = balance[0].balance;
+        if (balance !== undefined) {
+            result.balance = balance;
 
             const subquery = Database.select(
                 Database.raw('sum(splits.amount) AS sum'),
@@ -40,6 +40,7 @@ class AccountController {
                 'inst.name AS institute_name',
                 'acct.name AS account_name',
                 Database.raw('CAST(acct_trans.amount AS real) AS amount'),
+                'acct_trans.pending AS pending',
             )
                 .table('transactions AS trans')
                 .join('account_transactions AS acct_trans', 'acct_trans.transaction_id', 'trans.id')
@@ -47,9 +48,26 @@ class AccountController {
                 .join('institutions AS inst', 'inst.id', 'acct.institution_id')
                 .leftJoin(subquery.as('splits'), 'splits.transaction_id', 'trans.id')
                 .where('acct_trans.account_id', accountId)
-                .andWhere('acct_trans.pending', false)
+                .orderBy('acct_trans.pending', 'desc')
                 .orderBy('date', 'desc')
                 .orderBy('acct_trans.name');
+
+            if (result.transactions.length > 0) {
+                // Move pending transactions to the pending array
+                // Find first transaction that is not pending (all pending
+                // should be up front in the array)
+                const index = result.transactions.findIndex((t) => !t.pending);
+
+                if (index === -1) {
+                    // The array contains only pending transactions
+                    result.pending = result.transactions;
+                    result.transactions = [];
+                }
+                else if (index > 0) {
+                    // The array contains at least one pending transaction
+                    result.pending = result.transactions.splice(0, index);
+                }
+            }
         }
 
         return result;

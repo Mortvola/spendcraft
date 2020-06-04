@@ -227,6 +227,7 @@ function transactions(
         categoryId: null,
         balance: 0,
         transactions: [],
+        pending: [],
     },
     action,
 ) {
