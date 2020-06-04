@@ -17,7 +17,7 @@ var plaidClient = new plaid.Client(
 
 class InstitutionController {
     
-    async all ({auth}) {
+    async all ({ auth }) {
         return await this.getConnectedAccounts (auth);
     }
 

@@ -101,13 +101,9 @@ const RegisterElement = ({
     };
 
     if (categoryId === null) {
-        const postedTitle = pending.length > 0 ? 'Posted Transactions:' : '';
-
         return (
             <div className="register-with-pending">
-                {renderPending()}
                 <div className="register">
-                    {postedTitle}
                     <div className="register-title acct-transaction">
                         <div />
                         <div>Date</div>
@@ -120,25 +116,29 @@ const RegisterElement = ({
                         {renderTransactions(transactions)}
                     </div>
                 </div>
+                {renderPending()}
             </div>
         );
     }
 
     return (
-        <div className="register">
-            <div className="register-title transaction">
-                <div />
-                <div>Date</div>
-                <div>Name</div>
-                <div>Category</div>
-                <div className="currency">Amount</div>
-                <div className="currency">Balance</div>
-                <div>Institution</div>
-                <div>Account</div>
+        <div className="register-with-pending">
+            <div className="register">
+                <div className="register-title transaction">
+                    <div />
+                    <div>Date</div>
+                    <div>Name</div>
+                    <div>Category</div>
+                    <div className="currency">Amount</div>
+                    <div className="currency">Balance</div>
+                    <div>Institution</div>
+                    <div>Account</div>
+                </div>
+                <div className="transactions">
+                    {renderTransactions(transactions)}
+                </div>
             </div>
-            <div className="transactions">
-                {renderTransactions(transactions)}
-            </div>
+            {renderPending()}
         </div>
     );
 };

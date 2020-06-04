@@ -4,38 +4,53 @@ const CategorySplit = use('App/Models/CategorySplit')
 const CategoryTransfer = use('App/Models/CategoryTransfer')
 
 class CategoryController {
-    async get ({auth}) {
-
-        let rows = await Database.select (
-                'g.id AS groupId',
-                'g.name AS groupName',
-                'g.system AS systemGroup',
-                'c.id AS categoryId',
-                'c.name as categoryName',
-                'c.system AS systemCategory',
-                Database.raw('CAST(amount AS float) as amount'))
+    static async get({ auth }) {
+        const rows = await Database.select(
+            'g.id AS groupId',
+            'g.name AS groupName',
+            'g.system AS systemGroup',
+            'c.id AS categoryId',
+            'c.name as categoryName',
+            'c.system AS systemCategory',
+            Database.raw('CAST(amount AS float) as amount'),
+        )
             .from('groups AS g')
-            .leftJoin ('categories AS c', 'c.group_id', 'g.id')
-            .where ('user_id', auth.user.id)
+            .leftJoin('categories AS c', 'c.group_id', 'g.id')
+            .where('user_id', auth.user.id)
             .orderBy('g.name')
             .orderBy('c.name');
 
-        let groups = [];
+        const groups = [];
         let group;
 
-        for (let cat of rows) {
+        rows.forEach((cat) => {
             if (!group) {
-                group = { id: cat.groupId, name: cat.groupName, system: cat.systemGroup, categories: [] };
-            } else if (group.name !== cat.groupName) {
+                group = {
+                    id: cat.groupId,
+                    name: cat.groupName,
+                    system: cat.systemGroup,
+                    categories: [],
+                };
+            }
+            else if (group.name !== cat.groupName) {
                 groups.push(group);
-                group = { id: cat.groupId, name: cat.groupName, system: cat.systemGroup, categories: [] };
+                group = {
+                    id: cat.groupId,
+                    name: cat.groupName,
+                    system: cat.systemGroup,
+                    categories: [],
+                };
             }
 
-            if (cat.categoryId)
-            {
-                group.categories.push({ id: cat.categoryId, name: cat.categoryName, system: cat.systemCategory, amount: cat.amount });
+            if (cat.categoryId) {
+                group.categories.push({
+                    id: cat.categoryId,
+                    name: cat.categoryName,
+                    system: cat.systemCategory,
+                    amount: cat.amount,
+                });
             }
-        }
+        });
 
         if (group) {
             groups.push(group);
@@ -82,15 +97,15 @@ class CategoryController {
     static async transactions({ request, auth }) {
         const categoryId = parseInt(request.params.catId, 10);
 
-        const result = { transactions: [] };
+        const result = { transactions: [], pending: [] };
 
-        const cat = await Database.select(Database.raw('CAST(amount AS float) as amount'), 'cats.name AS name', 'cats.system AS system')
+        const [cat] = await Database.select(Database.raw('CAST(amount AS float) as amount'), 'cats.name AS name', 'cats.system AS system')
             .from('categories AS cats')
             .join('groups', 'groups.id', 'group_id')
             .where('cats.id', categoryId)
             .andWhere('groups.user_id', auth.user.id);
 
-        result.balance = cat[0].amount;
+        result.balance = cat.amount;
 
         const subquery = Database.select(
             Database.raw(`COUNT(CASE WHEN category_id = ${categoryId} THEN 1 ELSE NULL END) AS count`),
@@ -126,6 +141,7 @@ class CategoryController {
             'inst.name AS institute_name',
             'acct.name AS account_name',
             Database.raw('CAST(acct_trans.amount AS real) AS amount'),
+            Database.raw('COALESCE(acct_trans.pending, false) AS pending'),
         )
             .from('transactions AS trans')
             .leftJoin('account_transactions as acct_trans', 'acct_trans.transaction_id', 'trans.id')
@@ -133,22 +149,36 @@ class CategoryController {
             .leftJoin('institutions AS inst', 'inst.id', 'acct.institution_id')
             .leftJoin(subquery.as('splits'), 'splits.transaction_id', 'trans.id')
             // .where('inst.user_id', auth.user.id)
+            .orderBy('pending', 'desc')
             .orderBy('date', 'desc')
             .orderBy(Database.raw('COALESCE(trans.sort_order, 2147483647)'), 'desc')
             .orderBy(Database.raw(transName));
 
-        if (cat[0].system && cat[0].name === 'Unassigned') {
-            query.whereNull('splits.categories')
-                .andWhere(function () {
-                    this.where('acct_trans.pending', false)
-                        .orWhereNull('acct_trans.pending');
-                });
+        if (cat.system && cat.name === 'Unassigned') {
+            query.whereNull('splits.categories');
         }
         else {
             query.where('splits.count', '>', 0);
         }
 
         result.transactions = await query;
+
+        if (result.transactions.length > 0) {
+            // Move pending transactions to the pending array
+            // Find first transaction that is not pending (all pending
+            // should be up front in the array)
+            const index = result.transactions.findIndex((t) => !t.pending);
+
+            if (index === -1) {
+                // The array contains only pending transactions
+                result.pending = result.transactions;
+                result.transactions = [];
+            }
+            else if (index > 0) {
+                // The array contains at least one pending transaction
+                result.pending = result.transactions.splice(0, index);
+            }
+        }
 
         return result;
     }

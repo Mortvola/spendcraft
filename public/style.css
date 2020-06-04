@@ -203,14 +203,14 @@ body {
 
 .register-with-pending {
     display: grid;
-    grid-template-rows: max-content minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) max-content;
     height: 100%;
 }
 
 .register {
 	display: grid;
-	grid-template-rows: repeat(2, max-content) 1fr;
-	height: 100%;
+    grid-template-rows: max-content 1fr max-content;
+    height: 100%;
 	user-select: none;
 	overflow-y: auto;
 }
