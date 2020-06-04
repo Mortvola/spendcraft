@@ -232,6 +232,13 @@ body {
 	align-items: center;
 }
 
+.acct-transaction {
+	display: grid;
+	grid-template-columns: 32px 100px minmax(0, 1.8fr) 1fr  125px 125px minmax(0, 1fr) minmax(0, 1fr);
+	grid-template-rows: max-content;
+	align-items: center;
+}
+
 .transaction div {
 	padding-left: 4px;
 }

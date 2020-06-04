@@ -15,6 +15,7 @@ const Transaction = ({
     amount,
     balance,
     selected,
+    account,
     dispatch,
 }) => {
     const handleClick = () => {
@@ -85,6 +86,19 @@ const Transaction = ({
         return <CategoryInput categoryId={categoryId} onChange={handleChange} />;
     };
 
+    const renderBankInfo = () => {
+        if (!account) {
+            return (
+                <>
+                    <div className="transaction-field">{transaction.institute_name}</div>
+                    <div className="transaction-field">{transaction.account_name}</div>
+                </>
+            );
+        }
+
+        return null;
+    };
+
     let className = 'transaction';
     if (selected) {
         className += ' transaction-selected';
@@ -107,8 +121,7 @@ const Transaction = ({
             </div>
             <Amount className="transaction-field amount currency" amount={amount} />
             <Amount className="transaction-field balance currency" amount={balance} />
-            <div className="transaction-field">{transaction.institute_name}</div>
-            <div className="transaction-field">{transaction.account_name}</div>
+            {renderBankInfo()}
         </div>
     );
 };
@@ -120,6 +133,7 @@ Transaction.propTypes = {
     balance: PropTypes.number.isRequired,
     selected: PropTypes.bool.isRequired,
     dispatch: PropTypes.func.isRequired,
+    account: PropTypes.bool.isRequired,
 };
 
 export default connect()(Transaction);

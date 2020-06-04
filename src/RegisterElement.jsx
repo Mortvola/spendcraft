@@ -10,7 +10,13 @@ const mapStateToProps = (state) => ({
     categoryId: state.transactions.categoryId,
 });
 
-const RegisterElement = (props) => {
+const RegisterElement = ({
+    transactions,
+    categoryId,
+    ...props
+}) => {
+    let { balance } = props;
+
     const [selectedTransaction, setSelectedTransaction] = useState(null);
 
     const handleClick = (transactionId) => {
@@ -19,8 +25,6 @@ const RegisterElement = (props) => {
 
     const renderTransactions = () => {
         const list = [];
-        const { transactions, categoryId } = props;
-        let { balance } = props;
 
         if (transactions) {
             transactions.forEach((transaction) => {
@@ -37,9 +41,9 @@ const RegisterElement = (props) => {
                     transaction={transaction}
                     amount={amount}
                     balance={balance}
-                    categoryContext={categoryId}
                     onClick={handleClick}
                     selected={selected}
+                    account={categoryId === null}
                 />);
 
                 if (balance !== undefined) {
@@ -50,6 +54,24 @@ const RegisterElement = (props) => {
 
         return list;
     };
+
+    if (categoryId === null) {
+        return (
+            <div className="register">
+                <div className="register-title acct-transaction">
+                    <div />
+                    <div>Date</div>
+                    <div>Name</div>
+                    <div>Category</div>
+                    <div className="currency">Amount</div>
+                    <div className="currency">Balance</div>
+                </div>
+                <div className="transactions">
+                    {renderTransactions()}
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="register">
