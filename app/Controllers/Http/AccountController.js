@@ -72,6 +72,19 @@ class AccountController {
 
         return result;
     }
+
+    static async balances({ request }) {
+        const accountId = parseInt(request.params.acctId, 10);
+
+        const balances = await Database.select(
+            Database.raw('date::text'),
+            Database.raw('CAST(balance AS real) AS balance'),
+        )
+            .from('balance_histories')
+            .where('account_id', accountId);
+
+        return balances;
+    }
 }
 
 module.exports = AccountController

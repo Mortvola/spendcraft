@@ -19,6 +19,7 @@ import {
     SELECT_CATEGORY,
     SELECT_ACCOUNT,
     RECEIVE_SYSTEM_IDS,
+    RECEIVE_ACCOUNT_BALANCES,
 } from './actionTypes';
 
 
@@ -195,12 +196,15 @@ function categoryTree(
     }
 }
 
-function institutions(state = [], action) {
+function institutions(
+    state = [],
+    action,
+) {
     switch (action.type) {
     case ADD_INSTITUTION:
         return state.concat([action.institution]);
-    case UPDATE_INSTITUTION:
-    {
+
+    case UPDATE_INSTITUTION: {
         const index = state.findIndex((e) => e.id === action.institution.id);
         if (index) {
             const newInstutions = state.slice();
@@ -292,10 +296,25 @@ function transactions(
     }
 }
 
+function balances(
+    state = [],
+    action,
+) {
+    switch (action.type) {
+    case RECEIVE_ACCOUNT_BALANCES:
+        return action.balances;
+
+    default:
+        return state;
+    }
+}
+
+
 function selections(
     state = {
         selectedCategoryId: null,
         selectedAccountId: null,
+        accountTracking: null,
     },
     action,
 ) {
@@ -310,6 +329,7 @@ function selections(
         return {
             selectedCategoryId: null,
             selectedAccountId: action.accountId,
+            accountTracking: action.tracking,
         };
 
     default:
@@ -322,6 +342,7 @@ const budgetApp = combineReducers({
     categoryTree,
     institutions,
     transactions,
+    balances,
     selections,
 });
 

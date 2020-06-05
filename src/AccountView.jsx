@@ -20,8 +20,8 @@ const AccountView = ({
     selectedAccount,
     dispatch,
 }) => {
-    const handleAccountSelected = (accountId) => {
-        dispatch(selectAccount(accountId));
+    const handleAccountSelected = (accountId, tracking) => {
+        dispatch(selectAccount(accountId, tracking));
     };
 
     return (
@@ -141,7 +141,7 @@ const Account = connect()(({
     };
 
     const accountSelected = () => {
-        props.onAccountSelected(account.id);
+        props.onAccountSelected(account.id, account.tracking);
     };
 
     let className = 'acct-list-acct';

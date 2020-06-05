@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { Provider } from 'react-redux';
+import PropTypes from 'prop-types';
+import { Provider, connect } from 'react-redux';
 import { usePlaidLink } from 'react-plaid-link';
 import CategoryView from './CategoryView';
 import AccountView from './AccountView';
@@ -12,9 +13,24 @@ import RebalanceDialog from './rebalance/RebalanceDialog';
 import store from './redux/store';
 import IconButton from './IconButton';
 import { plaidConfig, onSuccess } from './Accounts';
+import BalanceHistory from './BalanceHistory';
 
-const App = () => {
+const mapStateToProps = (state) => ({
+    historyView: state.selections.accountTracking === 'Balances',
+});
+
+const App = connect(mapStateToProps)(({
+    historyView,
+}) => {
     const { open } = usePlaidLink({ ...plaidConfig, onSuccess });
+
+    const renderDetailView = () => {
+        if (historyView) {
+            return <BalanceHistory />;
+        }
+
+        return <RegisterElement />;
+    };
 
     return (
         <>
@@ -45,9 +61,13 @@ const App = () => {
                     <AccountView />
                 </div>
             </div>
-            <RegisterElement />
+            {renderDetailView()}
         </>
     );
+});
+
+App.propTypes = {
+    historyView: PropTypes.bool.isRequired,
 };
 
 ReactDOM.render(

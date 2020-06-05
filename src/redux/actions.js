@@ -16,6 +16,7 @@ import {
     SELECT_CATEGORY,
     SELECT_ACCOUNT,
     RECEIVE_SYSTEM_IDS,
+    RECEIVE_ACCOUNT_BALANCES,
 } from './actionTypes';
 
 const addGroup = (group) => ({
@@ -55,6 +56,11 @@ const receiveTransactions = (categoryId, transactions) => ({
     type: RECEIVE_TRANSACTIONS,
     categoryId,
     transactions,
+});
+
+const receiveAccountBalances = (balances) => ({
+    type: RECEIVE_ACCOUNT_BALANCES,
+    balances,
 });
 
 const setCategorySelection = (categoryId) => ({
@@ -102,46 +108,60 @@ const selectCategory = (categoryId) => (
     }
 );
 
-const setAccountSelection = (accountId) => ({
+const setAccountSelection = (accountId, tracking) => ({
     type: SELECT_ACCOUNT,
     accountId,
+    tracking,
 });
 
-const selectAccount = (accountId) => (
+const selectAccount = (accountId, tracking) => (
     (dispatch) => {
-        dispatch(setAccountSelection(accountId));
+        dispatch(setAccountSelection(accountId, tracking));
         dispatch(requestTransactions());
 
+        if (tracking === 'Transactions') {
+            return (
+                fetch(`/account/${accountId}/transactions`)
+                    .then(
+                        (response) => response.json(),
+                        (error) => console.log('fetch error: ', error),
+                    )
+                    .then(
+                        (json) => {
+                            json.transactions.sort((a, b) => {
+                                if (a.date < b.date) {
+                                    return 1;
+                                }
+
+                                if (a.date > b.date) {
+                                    return -1;
+                                }
+
+                                if (a.sort_order < b.sort_order) {
+                                    return 1;
+                                }
+
+                                if (a.sort_order > b.sort_order) {
+                                    return -1;
+                                }
+
+                                return 0;
+                            });
+
+                            return dispatch(receiveTransactions(null, json));
+                        },
+                    )
+            );
+        }
+
         return (
-            fetch(`/account/${accountId}/transactions`)
+            fetch(`/account/${accountId}/balances`)
                 .then(
                     (response) => response.json(),
                     (error) => console.log('fetch error: ', error),
                 )
                 .then(
-                    (json) => {
-                        json.transactions.sort((a, b) => {
-                            if (a.date < b.date) {
-                                return 1;
-                            }
-
-                            if (a.date > b.date) {
-                                return -1;
-                            }
-
-                            if (a.sort_order < b.sort_order) {
-                                return 1;
-                            }
-
-                            if (a.sort_order > b.sort_order) {
-                                return -1;
-                            }
-
-                            return 0;
-                        });
-
-                        return dispatch(receiveTransactions(null, json));
-                    },
+                    (json) => dispatch(receiveAccountBalances(json)),
                 )
         );
     }

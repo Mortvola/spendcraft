@@ -598,3 +598,7 @@ body {
 	display: grid;
 	grid-template-columns: 1.5fr repeat(5, minmax(0, 1fr));
 }
+
+.chart-wrapper {
+    overflow: hidden;
+}

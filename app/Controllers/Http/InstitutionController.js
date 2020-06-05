@@ -3,41 +3,42 @@
 const Database = use('Database');
 const Env = use('Env')
 
-var plaid = require('plaid');
-var moment = require('moment');
+const plaid = require('plaid');
+const moment = require('moment');
 
-var plaidClient = new plaid.Client(
-    Env.get ('PLAID_CLIENT_ID'),
-    Env.get ('PLAID_SECRET'),
-    Env.get ('PLAID_PUBLIC_KEY'),
+const plaidClient = new plaid.Client(
+    Env.get('PLAID_CLIENT_ID'),
+    Env.get('PLAID_SECRET'),
+    Env.get('PLAID_PUBLIC_KEY'),
     plaid.environments[Env.get('PLAID_ENV')],
-    {version: '2019-05-29', clientApp: escape(Env.get('APP_NAME'))}
-  );
+    { version: '2019-05-29', clientApp: escape(Env.get('APP_NAME')) },
+);
 
 
 class InstitutionController {
-    
-    async all ({ auth }) {
-        return await this.getConnectedAccounts (auth);
+    static async all({ auth }) {
+        return InstitutionController.getConnectedAccounts(auth);
     }
 
-    async getConnectedAccounts (auth) {
+    static async getConnectedAccounts(auth) {
         // Check to see if we already have the institution. If not, add it.
-        let result = await Database.select(
-                'inst.id AS institutionId', 
-                'inst.name AS institutionName', 
-                'acct.id AS accountId', 
-                'acct.name AS accountName')
+        const result = await Database.select(
+            'inst.id AS institutionId',
+            'inst.name AS institutionName',
+            'acct.id AS accountId',
+            'acct.name AS accountName',
+            'acct.tracking AS tracking',
+        )
             .table('institutions AS inst')
-            .leftJoin ('accounts AS acct',  'acct.institution_id',  'inst.id')
-            .where ('inst.user_id', auth.user.id)
+            .leftJoin('accounts AS acct', 'acct.institution_id', 'inst.id')
+            .where('inst.user_id', auth.user.id)
             .orderBy('inst.name')
             .orderBy('acct.name');
-                
-        let institutions = [];
+
+        const institutions = [];
         let institution = null;
-        
-        for (let acct of result) {
+
+        result.forEach((acct) => {
             if (!institution) {
                 institution = { id: acct.institutionId, name: acct.institutionName, accounts: [] };
             }
@@ -45,16 +46,20 @@ class InstitutionController {
                 institutions.push(institution);
                 institution = { id: acct.institutionId, name: acct.institutionName, accounts: [] };
             }
-            
+
             if (acct.accountId) {
-                institution.accounts.push({ id: acct.accountId, name: acct.accountName });
+                institution.accounts.push({
+                    id: acct.accountId,
+                    name: acct.accountName,
+                    tracking: acct.tracking,
+                });
             }
-        }
-        
+        });
+
         if (institution) {
             institutions.push(institution);
         }
-        
+
         return institutions;
     }
 
