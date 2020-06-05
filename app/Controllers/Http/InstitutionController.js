@@ -226,7 +226,8 @@ class InstitutionController {
     async addTransactions(trx, accessToken, accountId, plaidAccountId, startDate, auth) {
         const pendingTransactions = await trx.select('transaction_id', 'plaid_transaction_id')
             .from('account_transactions')
-            .where('pending', true);
+            .where('account_id', accountId)
+            .andWhere('pending', true);
 
         const transactionsResponse = await plaidClient.getTransactions(
             accessToken,
