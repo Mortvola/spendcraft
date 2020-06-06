@@ -17,6 +17,7 @@ import {
     SELECT_ACCOUNT,
     RECEIVE_SYSTEM_IDS,
     RECEIVE_ACCOUNT_BALANCES,
+    SET_VIEW,
 } from './actionTypes';
 
 const addGroup = (group) => ({
@@ -192,8 +193,7 @@ const fetchGroups = () => (
 
                         // If nothing is currently selected then select the unassigned category.
                         const state = getState();
-                        if (state.selections.selectedCategoryId === null
-                            && state.selections.selectedAccountId === null) {
+                        if (state.selections.selectedCategoryId === null) {
                             dispatch(selectCategory(systemIds.unassignedId));
                         }
                     },
@@ -253,6 +253,51 @@ const receiveTransactionCategories = (transCategories) => ({
     transCategories,
 });
 
+const setView = (view) => ({
+    type: SET_VIEW,
+    view,
+});
+
+const navigate = (eventKey) => (
+    (dispatch, getState) => {
+        const state = getState();
+        switch (eventKey) {
+        case 'home':
+            if (state.selections.view === 'home') {
+                dispatch(setView(eventKey));
+                if (state.categoryTree.unassignedId !== null) {
+                    dispatch(selectCategory(state.categoryTree.unassignedId));
+                }
+            }
+            else {
+                dispatch(setView(eventKey));
+                if (state.selections.selectedCategoryId !== null) {
+                    dispatch(selectCategory(state.selections.selectedCategoryId));
+                }
+                else if (state.categoryTree.unassignedId !== null) {
+                    dispatch(selectCategory(state.categoryTree.unassignedId));
+                }
+            }
+
+            break;
+
+        case 'accounts':
+            dispatch(setView(eventKey));
+            if (state.selections.selectedAccountId !== null
+                && state.selections.accountTracking !== null) {
+                dispatch(selectAccount(
+                    state.selections.selectedAccountId,
+                    state.selections.accountTracking,
+                ));
+            }
+
+            break;
+
+        default:
+            break;
+        }
+    }
+);
 
 export {
     addGroup,
@@ -268,4 +313,5 @@ export {
     selectCategory,
     selectAccount,
     receiveSystemIds,
+    navigate,
 };

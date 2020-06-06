@@ -40,9 +40,6 @@ body {
 }
 
 .side-bar {
-	display: grid;
-	grid-template-columns: 1fr;
-	grid-template-rows: minmax(0, 3fr) minmax(0, 1fr);
 	height: 100%;
 	grid-area: sidebar;
 	box-shadow: 4px 0px 4px 0px rgba(0,0,0,0.3);

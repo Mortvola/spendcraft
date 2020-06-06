@@ -6,7 +6,7 @@ import {
     receiveCategoryBalances,
     selectAccount,
 } from './redux/actions';
-import { AccountsDialog } from './Accounts';
+import { AccountsDialog } from './AccountsDialog';
 import { ModalLauncher } from './Modal';
 import InstitutionInfoDialog from './InstitutionInfoDialog';
 

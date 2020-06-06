@@ -2,77 +2,48 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import PropTypes from 'prop-types';
 import { Provider, connect } from 'react-redux';
-import { usePlaidLink } from 'react-plaid-link';
-import CategoryView from './CategoryView';
-import AccountView from './AccountView';
-import RegisterElement from './RegisterElement';
-import { ModalLauncher } from './Modal';
-import GroupDialog from './GroupDialog';
-import FundingDialog from './funding/FundingDialog';
-import RebalanceDialog from './rebalance/RebalanceDialog';
 import store from './redux/store';
-import IconButton from './IconButton';
-import { plaidConfig, onSuccess } from './Accounts';
-import BalanceHistory from './BalanceHistory';
+import Menubar from './Menubar';
+import Home from './Home';
+import Accounts from './Accounts';
 
 const mapStateToProps = (state) => ({
-    historyView: state.selections.accountTracking === 'Balances',
+    view: state.selections.view,
 });
 
 const App = connect(mapStateToProps)(({
-    historyView,
+    view,
 }) => {
-    const { open } = usePlaidLink({ ...plaidConfig, onSuccess });
+    const renderMain = () => {
+        switch (view) {
+        case 'home':
+            return <Home />;
 
-    const renderDetailView = () => {
-        if (historyView) {
-            return <BalanceHistory />;
+        case 'accounts':
+            return <Accounts />;
+
+        default:
+            return <div />;
         }
-
-        return <RegisterElement />;
     };
 
     return (
         <>
-            <div className="side-bar">
-                <div className="categories">
-                    <div className="tools">
-                        <ModalLauncher
-                            launcher={(props) => (<button type="button" id="add-group" className="button" {...props}>Add Group</button>)}
-                            title="Add Group"
-                            dialog={(props) => (<GroupDialog {...props} />)}
-                        />
-                        <ModalLauncher
-                            launcher={(props) => (<button type="button" id="fund-cats" className="button" {...props}>Rebalance</button>)}
-                            dialog={(props) => (<RebalanceDialog {...props} />)}
-                        />
-                        <ModalLauncher
-                            launcher={(props) => (<button type="button" id="fund-cats" className="button" {...props}>Fund</button>)}
-                            dialog={(props) => (<FundingDialog {...props} />)}
-                        />
-                    </div>
-                    <CategoryView />
-                </div>
-                <div className="accounts">
-                    <div className="account-bar">
-                        <div>Institutions</div>
-                        <IconButton icon="plus" onClick={open} />
-                    </div>
-                    <AccountView />
-                </div>
+            <Menubar />
+            <div className="main">
+                {renderMain()}
             </div>
-            {renderDetailView()}
         </>
     );
 });
 
 App.propTypes = {
-    historyView: PropTypes.bool.isRequired,
+    view: PropTypes.string.isRequired,
 };
 
 ReactDOM.render(
     <Provider store={store}>
         <App />
     </Provider>,
-    document.querySelector('.main'),
+    document.querySelector('.app'),
 );

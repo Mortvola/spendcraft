@@ -20,6 +20,7 @@ import {
     SELECT_ACCOUNT,
     RECEIVE_SYSTEM_IDS,
     RECEIVE_ACCOUNT_BALANCES,
+    SET_VIEW,
 } from './actionTypes';
 
 
@@ -88,9 +89,9 @@ function categories(
 
 function categoryTree(
     state = {
-        systemGroupId: undefined,
-        unassignedId: undefined,
-        fundingPoolId: undefined,
+        systemGroupId: null,
+        unassignedId: null,
+        fundingPoolId: null,
         groups: [],
     },
     action,
@@ -312,6 +313,7 @@ function balances(
 
 function selections(
     state = {
+        view: 'home',
         selectedCategoryId: null,
         selectedAccountId: null,
         accountTracking: null,
@@ -321,15 +323,21 @@ function selections(
     switch (action.type) {
     case SELECT_CATEGORY:
         return {
+            ...state,
             selectedCategoryId: action.categoryId,
-            selectedAccountId: null,
         };
 
     case SELECT_ACCOUNT:
         return {
-            selectedCategoryId: null,
+            ...state,
             selectedAccountId: action.accountId,
             accountTracking: action.tracking,
+        };
+
+    case SET_VIEW:
+        return {
+            ...state,
+            view: action.view,
         };
 
     default:
