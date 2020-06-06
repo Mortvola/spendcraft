@@ -20,6 +20,7 @@ import {
     SET_VIEW,
     REQUEST_REPORT_DATA,
     RECEIVE_REPORT_DATA,
+    RECEIVE_USER,
 } from './actionTypes';
 
 const addGroup = (group) => ({
@@ -342,7 +343,30 @@ const report = (reportType) => (
     }
 );
 
+const receiveUser = (user) => ({
+    type: RECEIVE_USER,
+    user,
+});
+
+const fetchUser = () => (
+    (dispatch) => {
+        return (
+            fetch('/user')
+                .then(
+                    (response) => response.json(),
+                    (error) => console.log('fetch error: ', error),
+                )
+                .then(
+                    (json) => {
+                        dispatch(receiveUser(json.username));
+                    },
+                )
+        );
+    }
+);
+
 export {
+    fetchUser,
     addGroup,
     updateGroup,
     deleteGroup,

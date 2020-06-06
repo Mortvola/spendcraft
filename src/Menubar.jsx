@@ -9,7 +9,11 @@ import {
 } from 'react-bootstrap';
 import { navigate } from './redux/actions';
 
-const Menubar = ({ dispatch }) => {
+const mapStateToProps = (state) => ({
+    username: state.user ? state.user.username : undefined,
+});
+
+const Menubar = ({ username, dispatch }) => {
     const handleSelect = (eventKey) => {
         dispatch(navigate(eventKey));
     };
@@ -27,7 +31,7 @@ const Menubar = ({ dispatch }) => {
                         <Nav.Link eventKey="reports">Reports</Nav.Link>
                     </Nav>
                     <Nav className="ml-auto">
-                        <NavDropdown className="dropdown menubar-item" title="Mortvola">
+                        <NavDropdown className="dropdown menubar-item" title={username}>
                             <NavDropdown.Item eventKey="account">Account</NavDropdown.Item>
                             <NavDropdown.Item eventKey="logout">Logout</NavDropdown.Item>
                         </NavDropdown>
@@ -39,7 +43,8 @@ const Menubar = ({ dispatch }) => {
 };
 
 Menubar.propTypes = {
+    username: PropTypes.string.isRequired,
     dispatch: PropTypes.func.isRequired,
 };
 
-export default connect()(Menubar);
+export default connect(mapStateToProps)(Menubar);

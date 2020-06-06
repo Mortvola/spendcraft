@@ -22,6 +22,7 @@ import {
     RECEIVE_ACCOUNT_BALANCES,
     SET_VIEW,
     RECEIVE_REPORT_DATA,
+    RECEIVE_USER,
 } from './actionTypes';
 
 
@@ -365,6 +366,19 @@ function reports(
     }
 }
 
+function user(
+    state = null,
+    action,
+) {
+    switch (action.type) {
+    case RECEIVE_USER:
+        return { username: action.user };
+
+    default:
+        return state;
+    }
+}
+
 const budgetApp = combineReducers({
     categoryTree,
     institutions,
@@ -372,6 +386,7 @@ const budgetApp = combineReducers({
     balances,
     selections,
     reports,
+    user,
 });
 
 export default budgetApp;

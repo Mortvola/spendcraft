@@ -14,10 +14,11 @@
 /** @type {typeof import('@adonisjs/framework/src/Route/Manager')} */
 const Route = use('Route');
 const CategoryController = use('App/Controllers/Http/CategoryController');
-const AccountController = use('App/Controllers/Http/AccountController')
-const FundingPlanController = use('App/Controllers/Http/FundingPlanController')
-const InstitutionController = use('App/Controllers/Http/InstitutionController')
-const ReportController = use('App/Controllers/Http/ReportController')
+const AccountController = use('App/Controllers/Http/AccountController');
+const FundingPlanController = use('App/Controllers/Http/FundingPlanController');
+const InstitutionController = use('App/Controllers/Http/InstitutionController');
+const ReportController = use('App/Controllers/Http/ReportController');
+const UserController = use('App/Controllers/Http/UserController');
 
 Route.on('/').render('index');
 
@@ -31,6 +32,8 @@ Route.group(() => {
 Route.group(() => {
     Route.on('/home').render('index');
     Route.get('/logout', 'UserController.logout');
+
+    Route.get('/user', UserController.get);
 
     Route.get('/groups', CategoryController.get);
     Route.post('/groups', 'CategoryController.addGroup').validator('AddGroup');

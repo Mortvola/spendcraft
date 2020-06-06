@@ -28,7 +28,11 @@ class UserController {
         }
         return auth.user
     }
-    
+
+    static async get ({ auth }) {
+        return { username: auth.user.username };
+    }
+
     async register ({request}) {
         
         const payload = request.only(['username', 'email', 'password', 'password_confirmation'])
