@@ -21,14 +21,15 @@ const Menubar = ({ dispatch }) => {
 
                 <div className="collapse navbar-collapse">
                     <Nav className="mr-auto">
-                        <Nav.Link eventKey="home" style={{ color: 'white' }}>Home</Nav.Link>
-                        <Nav.Link eventKey="fundingplans" style={{ color: 'white' }}>Funding Plans</Nav.Link>
-                        <Nav.Link eventKey="accounts" style={{ color: 'white' }}>Accounts</Nav.Link>
+                        <Nav.Link eventKey="home">Home</Nav.Link>
+                        <Nav.Link eventKey="plans">Plans</Nav.Link>
+                        <Nav.Link eventKey="accounts">Accounts</Nav.Link>
+                        <Nav.Link eventKey="reports">Reports</Nav.Link>
                     </Nav>
                     <Nav className="ml-auto">
-                        <NavDropdown className="dropdown" title="Mortvola">
-                            <NavDropdown.Item eventKey="Account">Account</NavDropdown.Item>
-                            <NavDropdown.Item eventKey="Logout">Logout</NavDropdown.Item>
+                        <NavDropdown className="dropdown menubar-item" title="Mortvola">
+                            <NavDropdown.Item eventKey="account">Account</NavDropdown.Item>
+                            <NavDropdown.Item eventKey="logout">Logout</NavDropdown.Item>
                         </NavDropdown>
                     </Nav>
                 </div>

@@ -21,6 +21,7 @@ import {
     RECEIVE_SYSTEM_IDS,
     RECEIVE_ACCOUNT_BALANCES,
     SET_VIEW,
+    RECEIVE_REPORT_DATA,
 } from './actionTypes';
 
 
@@ -345,6 +346,24 @@ function selections(
     }
 }
 
+function reports(
+    state = {
+        data: null,
+        reportType: null,
+    },
+    action,
+) {
+    switch (action.type) {
+    case RECEIVE_REPORT_DATA:
+        return {
+            data: action.data,
+            reportType: action.reportType,
+        };
+
+    default:
+        return state;
+    }
+}
 
 const budgetApp = combineReducers({
     categoryTree,
@@ -352,6 +371,7 @@ const budgetApp = combineReducers({
     transactions,
     balances,
     selections,
+    reports,
 });
 
 export default budgetApp;

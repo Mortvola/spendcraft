@@ -6,6 +6,8 @@ import store from './redux/store';
 import Menubar from './Menubar';
 import Home from './Home';
 import Accounts from './Accounts';
+import Reports from './Reports/Reports';
+import Plans from './Plans';
 
 const mapStateToProps = (state) => ({
     view: state.selections.view,
@@ -21,6 +23,12 @@ const App = connect(mapStateToProps)(({
 
         case 'accounts':
             return <Accounts />;
+
+        case 'reports':
+            return <Reports />;
+
+        case 'plans':
+            return <Plans />;
 
         default:
             return <div />;

@@ -18,6 +18,8 @@ import {
     RECEIVE_SYSTEM_IDS,
     RECEIVE_ACCOUNT_BALANCES,
     SET_VIEW,
+    REQUEST_REPORT_DATA,
+    RECEIVE_REPORT_DATA,
 } from './actionTypes';
 
 const addGroup = (group) => ({
@@ -293,8 +295,49 @@ const navigate = (eventKey) => (
 
             break;
 
+        case 'reports':
+        case 'plans':
+            dispatch(setView(eventKey));
+
+            break;
+
         default:
             break;
+        }
+    }
+);
+
+const requestReportData = () => ({
+    type: REQUEST_REPORT_DATA,
+});
+
+const receiveReportData = (reportType, data) => ({
+    type: RECEIVE_REPORT_DATA,
+    reportType,
+    data,
+});
+
+const report = (reportType) => (
+    (dispatch) => {
+        dispatch(requestReportData());
+
+        switch (reportType) {
+        case 'netWorth':
+            return (
+                fetch('/reports/networth')
+                    .then(
+                        (response) => response.json(),
+                        (error) => console.log('fetch error: ', error),
+                    )
+                    .then(
+                        (json) => {
+                            dispatch(receiveReportData(reportType, json));
+                        },
+                    )
+            );
+
+        default:
+            return null;
         }
     }
 );
@@ -314,4 +357,5 @@ export {
     selectAccount,
     receiveSystemIds,
     navigate,
+    report,
 };

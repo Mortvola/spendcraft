@@ -17,6 +17,7 @@ const CategoryController = use('App/Controllers/Http/CategoryController');
 const AccountController = use('App/Controllers/Http/AccountController')
 const FundingPlanController = use('App/Controllers/Http/FundingPlanController')
 const InstitutionController = use('App/Controllers/Http/InstitutionController')
+const ReportController = use('App/Controllers/Http/ReportController')
 
 Route.on('/').render('index');
 
@@ -66,4 +67,6 @@ Route.group(() => {
 
     Route.patch('/transaction/:txId', 'InstitutionController.updateTx');
     Route.on('/fundingplans').render('fundingplans');
+
+    Route.get('/reports/:report', ReportController.get);
 }).middleware('auth');
