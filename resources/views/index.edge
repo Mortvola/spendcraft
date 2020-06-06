@@ -17,11 +17,12 @@
     <div id="hidden">
     </div>
 @loggedIn
-	@include('home')
+    <div class="app">
+    </div>
+
+    {{ script('bundle.js') }}
 @else
 	@include('welcome')
 @endloggedIn
 
-    {{ script('bundle.js') }}
-    
 </body>
