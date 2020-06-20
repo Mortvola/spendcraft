@@ -23,6 +23,10 @@ import {
     SET_VIEW,
     RECEIVE_REPORT_DATA,
     RECEIVE_USER,
+    RECEIVE_PLANS,
+    RECEIVE_PLAN,
+    SHOW_PLAID_LINK,
+    HIDE_PLAID_LINK,
 } from './actionTypes';
 
 
@@ -379,6 +383,64 @@ function user(
     }
 }
 
+function plans(
+    state = {
+        list: [],
+        plan: null,
+    },
+    action,
+) {
+    switch (action.type) {
+    case RECEIVE_PLANS:
+        return {
+            ...state,
+            list: action.plans,
+        };
+
+    case RECEIVE_PLAN:
+        return {
+            ...state,
+            plan: action.plan,
+        };
+
+    default:
+        return state;
+    }
+}
+
+function dialogs(
+    state = {
+        plaid: {
+            show: false,
+            publicToken: null,
+            onSuccess: () => null,
+        },
+    },
+    action,
+) {
+    switch (action.type) {
+    case SHOW_PLAID_LINK:
+        return {
+            ...state,
+            plaid: {
+                show: true,
+                publicToken: action.publicToken,
+                onSuccess: action.onSuccess,
+            },
+        };
+
+    case HIDE_PLAID_LINK: {
+        return {
+            ...state,
+            plaid: { ...state.plaid, show: false },
+        };
+    }
+
+    default:
+        return state;
+    }
+}
+
 const budgetApp = combineReducers({
     categoryTree,
     institutions,
@@ -387,6 +449,8 @@ const budgetApp = combineReducers({
     selections,
     reports,
     user,
+    plans,
+    dialogs,
 });
 
 export default budgetApp;

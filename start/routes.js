@@ -36,12 +36,12 @@ Route.group(() => {
     Route.get('/user', UserController.get);
 
     Route.get('/groups', CategoryController.get);
-    Route.post('/groups', 'CategoryController.addGroup').validator('AddGroup');
-    Route.patch('/groups/:groupId', 'CategoryController.updateGroup').validator('UpdateGroup');
-    Route.delete('/groups/:groupId', 'CategoryController.deleteGroup').validator('DeleteGroup');
+    Route.post('/groups', CategoryController.addGroup).validator('AddGroup');
+    Route.patch('/groups/:groupId', CategoryController.updateGroup).validator('UpdateGroup');
+    Route.delete('/groups/:groupId', CategoryController.deleteGroup).validator('DeleteGroup');
 
     Route.get('/groups/:groupId/categories', 'CategoryController.get');
-    Route.post('/groups/:groupId/categories', 'CategoryController.addCategory').validator('AddCategory');
+    Route.post('/groups/:groupId/categories', CategoryController.addCategory).validator('AddCategory');
     Route.patch('/groups/:groupId/categories/:catId', CategoryController.updateCategory).validator('UpdateCategory');
     Route.delete('/groups/:groupId/categories/:catId', 'CategoryController.deleteCategory').validator('DeleteCategory');
 
@@ -52,6 +52,7 @@ Route.group(() => {
     Route.get('/category_balances', CategoryController.balances);
 
     Route.get('/category/:catId/transactions', CategoryController.transactions);
+    Route.get('/category/history', CategoryController.history);
 
     Route.get('/connected_accounts', InstitutionController.all);
 
@@ -63,10 +64,11 @@ Route.group(() => {
     Route.get('/institution/:instId/accounts', 'InstitutionController.get');
     Route.post('/institution/:instId/accounts', 'InstitutionController.addAccounts');
     Route.post('/institution/:instId/accounts/:acctId/transactions/sync', 'InstitutionController.sync');
-    Route.get('/institution/:instId/public_token', 'InstitutionController.publicToken');
+    Route.get('/institution/:instId/public_token', InstitutionController.publicToken);
 
     Route.get('/funding_plans', FundingPlanController.getAll);
     Route.get('/funding_plan/:planId', FundingPlanController.getPlan);
+    Route.patch('/funding_plan/:planId/item/:itemId', FundingPlanController.updateCategory);
 
     Route.patch('/transaction/:txId', 'InstitutionController.updateTx');
     Route.on('/fundingplans').render('fundingplans');

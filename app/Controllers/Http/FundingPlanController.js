@@ -1,4 +1,5 @@
 const Database = use('Database');
+const CategoryController = use('App/Controllers/Http/CategoryController')
 
 class FundingPlanController {
     static async getAll() {
@@ -6,7 +7,7 @@ class FundingPlanController {
     }
 
     static async getPlan({ request }) {
-        const plan = await Database.select('id', 'name').from('funding_plans').where('id', request.params.planId);
+        const [{ id, name }] = await Database.select('id', 'name').from('funding_plans').where('id', request.params.planId);
 
         const cats = await Database.select(
             'fpc.id AS id',
@@ -22,7 +23,39 @@ class FundingPlanController {
             .orderBy('groups.name')
             .orderBy('cats.name');
 
-        return { id: plan[0].id, name: plan[0].name, categories: cats };
+        const groups = [];
+        let currentGroupName = null;
+        let total = 0;
+
+        cats.forEach((c) => {
+            if (c.groupName !== currentGroupName) {
+                groups.push({ id: c.groupId, name: c.groupName, categories: [] });
+                currentGroupName = c.groupName;
+            }
+
+            groups[groups.length - 1].categories.push({
+                id: c.id,
+                categoryId: c.categoryId,
+                name: c.categoryName,
+                amount: c.amount,
+            });
+
+            total += c.amount;
+        });
+
+        return {
+            id,
+            name,
+            total,
+            groups,
+            history: await CategoryController.history(),
+        };
+    }
+
+    static async updateCategory({ request }) {
+        await Database.table('funding_plan_categories')
+            .where('id', request.params.itemId)
+            .update('amount', request.body.amount);
     }
 }
 

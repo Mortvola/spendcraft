@@ -21,6 +21,11 @@ import {
     REQUEST_REPORT_DATA,
     RECEIVE_REPORT_DATA,
     RECEIVE_USER,
+    RECEIVE_PLANS,
+    RECEIVE_PLAN,
+    UPDATE_PLAN_CATEGORY,
+    SHOW_PLAID_LINK,
+    HIDE_PLAID_LINK,
 } from './actionTypes';
 
 const addGroup = (group) => ({
@@ -171,6 +176,26 @@ const selectAccount = (accountId, tracking) => (
     }
 );
 
+const showPlaidLink = (onSuccess, publicToken) => ({
+    type: SHOW_PLAID_LINK,
+    onSuccess,
+    publicToken,
+});
+
+const hidePlaidLink = () => ({
+    type: HIDE_PLAID_LINK,
+});
+
+const relinkInstitution = (onSuccess, institutionId) => (
+    (dispatch) => (
+        fetch(`/institution/${institutionId}/public_token`)
+            .then(async (response) => {
+                const json = await response.json();
+                dispatch(showPlaidLink(onSuccess, json.publicToken));
+            })
+    )
+);
+
 const fetchGroups = () => (
     (dispatch, getState) => {
         dispatch(requestGroups());
@@ -256,6 +281,43 @@ const receiveTransactionCategories = (transCategories) => ({
     transCategories,
 });
 
+const receivePlans = (plans) => ({
+    type: RECEIVE_PLANS,
+    plans,
+});
+
+const fetchPlans = () => (
+    (dispatch) => (
+        fetch('/funding_plans')
+            .then(
+                (response) => response.json(),
+                (error) => console.log('fetch error: ', error),
+            )
+            .then(
+                (json) => dispatch(receivePlans(json)),
+            )
+    )
+);
+
+const receivePlan = (plan) => ({
+    type: RECEIVE_PLAN,
+    plan,
+});
+
+
+const fetchPlan = (planId) => (
+    (dispatch) => (
+        fetch(`/funding_plan/${planId}`)
+            .then(
+                (response) => response.json(),
+                (error) => console.log('fetch error: ', error),
+            )
+            .then(
+                (json) => dispatch(receivePlan(json)),
+            )
+    )
+);
+
 const setView = (view) => ({
     type: SET_VIEW,
     view,
@@ -297,7 +359,12 @@ const navigate = (eventKey) => (
             break;
 
         case 'reports':
+            dispatch(setView(eventKey));
+
+            break;
+
         case 'plans':
+            dispatch(fetchPlans());
             dispatch(setView(eventKey));
 
             break;
@@ -349,20 +416,16 @@ const receiveUser = (user) => ({
 });
 
 const fetchUser = () => (
-    (dispatch) => {
-        return (
-            fetch('/user')
-                .then(
-                    (response) => response.json(),
-                    (error) => console.log('fetch error: ', error),
-                )
-                .then(
-                    (json) => {
-                        dispatch(receiveUser(json.username));
-                    },
-                )
-        );
-    }
+    (dispatch) => (
+        fetch('/user')
+            .then(
+                (response) => response.json(),
+                (error) => console.log('fetch error: ', error),
+            )
+            .then(
+                (json) => dispatch(receiveUser(json.username)),
+            )
+    )
 );
 
 export {
@@ -382,4 +445,9 @@ export {
     receiveSystemIds,
     navigate,
     report,
+    fetchPlans,
+    fetchPlan,
+    relinkInstitution,
+    showPlaidLink,
+    hidePlaidLink,
 };

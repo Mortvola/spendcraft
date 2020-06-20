@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 import IconButton from './IconButton';
 import {
     receiveCategoryBalances,
     selectAccount,
+    relinkInstitution,
 } from './redux/actions';
-import { AccountsDialog } from './AccountsDialog';
+import AccountsDialog from './AccountsDialog';
 import { ModalLauncher } from './Modal';
 import InstitutionInfoDialog from './InstitutionInfoDialog';
 
@@ -20,8 +21,14 @@ const AccountView = ({
     selectedAccount,
     dispatch,
 }) => {
+    const onSuccess = useCallback(() => {
+    }, []);
     const handleAccountSelected = (accountId, tracking) => {
         dispatch(selectAccount(accountId, tracking));
+    };
+
+    const handleRelink = (institutionId) => {
+        dispatch(relinkInstitution(onSuccess, institutionId));
     };
 
     return (
@@ -32,6 +39,7 @@ const AccountView = ({
                     institution={institution}
                     onAccountSelected={handleAccountSelected}
                     accountSelected={selectedAccount}
+                    onRelink={handleRelink}
                 />
             ))}
         </div>
@@ -49,18 +57,14 @@ AccountView.defaultProps = {
     selectedAccount: undefined,
 };
 
-function InstitutionElement({ institution, ...props }) {
-    const relinkAccount = () => {
-        fetch(`/institution/${institution.id}/public_token`)
-            .then((response) => {
-                const handler = Plaid.create({
-                    ...linkHandlerCommonOptions,
-                    token: response.publicToken,
-                    onSuccess(public_token, metadata) {},
-                    onExit(err, metadata) {},
-                });
-                handler.open();
-            });
+function InstitutionElement({
+    institution,
+    onAccountSelected,
+    accountSelected,
+    onRelink,
+}) {
+    const handleRelinkClick = () => {
+        onRelink(institution.id);
     };
 
     return (
@@ -69,12 +73,16 @@ function InstitutionElement({ institution, ...props }) {
                 <div className="institution-name">{institution.name}</div>
                 <ModalLauncher
                     launcher={(props) => (<IconButton icon="plus" {...props} />)}
-                    dialog={(props) => (<AccountsDialog {...props} institutionId={institution.id} />)}
+                    dialog={(props) => (
+                        <AccountsDialog {...props} institutionId={institution.id} />
+                    )}
                 />
-                <IconButton icon="lock" onClick={relinkAccount} />
+                <IconButton icon="lock" onClick={handleRelinkClick} />
                 <ModalLauncher
                     launcher={(props) => (<IconButton icon="info-circle" {...props} />)}
-                    dialog={(props) => (<InstitutionInfoDialog institutionId={institution.id} {...props} />)}
+                    dialog={(props) => (
+                        <InstitutionInfoDialog institutionId={institution.id} {...props} />
+                    )}
                 />
             </div>
             <div>
@@ -83,8 +91,8 @@ function InstitutionElement({ institution, ...props }) {
                         key={account.id}
                         institutionId={institution.id}
                         account={account}
-                        onAccountSelected={props.onAccountSelected}
-                        selected={props.accountSelected === account.id}
+                        onAccountSelected={onAccountSelected}
+                        selected={accountSelected === account.id}
                     />
                 ))}
             </div>
@@ -100,6 +108,7 @@ InstitutionElement.propTypes = {
     }).isRequired,
     onAccountSelected: PropTypes.func.isRequired,
     accountSelected: PropTypes.number,
+    onRelink: PropTypes.func.isRequired,
 };
 
 InstitutionElement.defaultProps = {

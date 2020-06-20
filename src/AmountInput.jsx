@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 
-function AmountInput({ amount, onDeltaChange, onChange }) {
+function AmountInput({
+    amount,
+    onDeltaChange,
+    onChange,
+    className,
+}) {
     const [inputAmount, setInputAmount] = useState(amount.toFixed(2));
     const [initialValue, setInitialValue] = useState(amount);
 
@@ -34,7 +39,7 @@ function AmountInput({ amount, onDeltaChange, onChange }) {
 
     return (
         <input
-            className="amount-input dollar-amount"
+            className={`amount-input dollar-amount ${className}`}
             type="text"
             value={inputAmount}
             onChange={handleChange}
@@ -48,12 +53,14 @@ AmountInput.propTypes = {
     amount: PropTypes.number,
     onDeltaChange: PropTypes.func,
     onChange: PropTypes.func,
+    className: PropTypes.string,
 };
 
 AmountInput.defaultProps = {
     amount: 0,
     onDeltaChange: null,
     onChange: null,
+    className: '',
 };
 
 export default AmountInput;

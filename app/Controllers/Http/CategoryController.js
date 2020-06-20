@@ -59,24 +59,24 @@ class CategoryController {
         return groups;
     }
 
-    async addGroup ({request, auth}) {
+    static async addGroup ({request, auth}) {
         let id = await Database.insert({ name: request.body.name, user_id: auth.user.id }).into('groups').returning('id');
 
         return { id: id[0], name: request.body.name };
     }
 
-    async updateGroup ({request, auth}) {
+    static async updateGroup ({request, auth}) {
 
         await Database.table('groups').where({id: request.params.groupId, user_id: auth.user.id}).update({name: request.body.name});
 
         return { name: request.body.name };
     }
 
-    async deleteGroup ({request, auth}) {
+    static async deleteGroup ({request, auth}) {
         await Database.table('groups').where({id: request.params.groupId, user_id: auth.user.id}).delete ();
     }
 
-    async addCategory({ request }) {
+    static async addCategory({ request }) {
         const id = await Database.insert({ group_id: request.body.groupId, name: request.body.name }).into('categories').returning('id');
 
         return { groupId: request.body.groupId, id: id[0], name: request.body.name };
@@ -282,6 +282,54 @@ class CategoryController {
         const { date, id } = request.get();
 
         return Category.balances(auth.user.id, date, id);
+    }
+
+    static async history() {
+        const data = await Database.select(
+            Database.raw('EXTRACT(MONTH FROM date) AS month'),
+            Database.raw('EXTRACT(YEAR FROM date) AS year'),
+            'groups.id AS groupId',
+            'groups.name AS groupName',
+            'cats.id AS categoryId',
+            'cats.name as categoryName',
+            Database.raw('CAST(sum(transcats.amount) AS float) AS amount'),
+        )
+            .table('transaction_categories AS transcats')
+            .join('transactions AS trans', 'trans.id', 'transcats.transaction_id')
+            .join('categories AS cats', 'cats.id', 'transcats.category_id')
+            .join('groups', 'groups.id', 'cats.group_id')
+            .where('groups.id', '!=', -1)
+            .whereNotIn('trans.type', [2, 3])
+            .groupBy('month', 'year', 'groups.id', 'groups.name', 'cats.id', 'cats.name')
+            .orderBy('groups.name')
+            .orderBy('cats.name')
+            .orderBy('year')
+            .orderBy('month');
+
+        const history = [];
+        let currentGroup = null;
+        let currentCategory = null;
+
+        data.forEach((item) => {
+            if (currentGroup === null || item.groupId !== currentGroup.id) {
+                history.push({ id: item.groupId, categories: [] });
+                currentGroup = history[history.length - 1];
+                currentCategory = null;
+            }
+
+            if (currentCategory === null || item.categoryId !== currentCategory.id) {
+                currentGroup.categories.push({ id: item.categoryId, months: [] });
+                currentCategory = currentGroup.categories[currentGroup.categories.length - 1];
+            }
+
+            currentCategory.months.push({
+                year: item.year,
+                month: item.month,
+                amount: item.amount,
+            });
+        });
+
+        return history;
     }
 }
 
