@@ -57,7 +57,7 @@ class FundingPlanController {
             name,
             total,
             groups,
-            history: await CategoryController.history(),
+            history: await CategoryController.history({ auth }),
         };
     }
 
