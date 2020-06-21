@@ -148,7 +148,10 @@ class CategoryController {
             .leftJoin('accounts AS acct', 'acct.id', 'acct_trans.account_id')
             .leftJoin('institutions AS inst', 'inst.id', 'acct.institution_id')
             .leftJoin(subquery.as('splits'), 'splits.transaction_id', 'trans.id')
-            .where('inst.user_id', auth.user.id)
+            .where('trans.user_id', auth.user.id)
+            .where(function () {
+                this.where('inst.user_id', auth.user.id).orWhereNull('inst.user_id');
+            })
             .orderBy('pending', 'desc')
             .orderBy('date', 'desc')
             .orderBy(Database.raw('COALESCE(trans.sort_order, 2147483647)'), 'desc')
@@ -183,7 +186,7 @@ class CategoryController {
         return result;
     }
 
-    static async transfer({ request }) {
+    static async transfer({ request, auth }) {
         const trx = await Database.beginTransaction();
 
         const result = [];
@@ -193,7 +196,7 @@ class CategoryController {
             let transactionId = request.params.tfrId;
 
             if (transactionId === undefined) {
-                [transactionId] = await trx.insert({ date, type }).into('transactions').returning('id');
+                [transactionId] = await trx.insert({ date, type, user_id: auth.user.id }).into('transactions').returning('id');
             }
 
             const existingSplits = [];
@@ -284,7 +287,7 @@ class CategoryController {
         return Category.balances(auth.user.id, date, id);
     }
 
-    static async history() {
+    static async history({ auth }) {
         const data = await Database.select(
             Database.raw('EXTRACT(MONTH FROM date) AS month'),
             Database.raw('EXTRACT(YEAR FROM date) AS year'),
@@ -298,6 +301,7 @@ class CategoryController {
             .join('transactions AS trans', 'trans.id', 'transcats.transaction_id')
             .join('categories AS cats', 'cats.id', 'transcats.category_id')
             .join('groups', 'groups.id', 'cats.group_id')
+            .where('trans.user_id', auth.user.id)
             .where('groups.id', '!=', -1)
             .whereNotIn('trans.type', [2, 3])
             .groupBy('month', 'year', 'groups.id', 'groups.name', 'cats.id', 'cats.name')

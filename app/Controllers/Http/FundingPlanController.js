@@ -8,8 +8,11 @@ class FundingPlanController {
             .where('user_id', auth.user.id);
     }
 
-    static async getPlan({ request }) {
-        const [{ id, name }] = await Database.select('id', 'name').from('funding_plans').where('id', request.params.planId);
+    static async getPlan({ request, auth }) {
+        const [{ id, name }] = await Database.select('id', 'name')
+            .from('funding_plans')
+            .where('id', request.params.planId)
+            .andWhere('user_id', auth.user.id);
 
         const cats = await Database.select(
             'fpc.id AS id',
@@ -21,7 +24,11 @@ class FundingPlanController {
         )
             .from('categories AS cats')
             .join('groups', 'groups.id', 'cats.group_id')
-            .leftJoin('funding_plan_categories AS fpc', 'fpc.category_id', Database.raw(`cats.id AND fpc.plan_id = ${request.params.planId}`))
+            .leftJoin('funding_plan_categories AS fpc',
+                'fpc.category_id',
+                Database.raw(`cats.id AND fpc.plan_id = ${request.params.planId}`))
+            .where('groups.user_id', auth.user.id)
+            .andWhere('fpc.plan_id', id)
             .orderBy('groups.name')
             .orderBy('cats.name');
 

@@ -1,7 +1,7 @@
 const Database = use('Database');
 
 class AccountController {
-    static async transactions({ request }) {
+    static async transactions({ request, auth }) {
         const accountId = parseInt(request.params.acctId, 10);
 
         const result = { transactions: [], pending: [] };
@@ -48,6 +48,7 @@ class AccountController {
                 .join('institutions AS inst', 'inst.id', 'acct.institution_id')
                 .leftJoin(subquery.as('splits'), 'splits.transaction_id', 'trans.id')
                 .where('acct_trans.account_id', accountId)
+                .andWhere('inst.user_id', auth.user.id)
                 .orderBy('acct_trans.pending', 'desc')
                 .orderBy('date', 'desc')
                 .orderBy('acct_trans.name');

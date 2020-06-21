@@ -10,7 +10,8 @@ class Category extends Model {
         )
             .from('transaction_categories AS splits')
             .join('transactions', 'transactions.id', 'splits.transaction_id')
-            .where('transactions.date', '>', date);
+            .where('transactions.date', '>', date)
+            .where('transactions.user_id', userId);
 
         // Also subtract out the transaction identified by transactionId
         if (transactionId !== undefined) {

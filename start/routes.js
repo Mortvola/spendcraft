@@ -59,9 +59,9 @@ Route.group(() => {
     Route.get('/account/:acctId/transactions', AccountController.transactions);
     Route.get('/account/:acctId/balances', AccountController.balances);
 
-    Route.post('/institution', 'InstitutionController.add');
+    Route.post('/institution', InstitutionController.add);
     Route.get('/institution/:instId/info', InstitutionController.info);
-    Route.get('/institution/:instId/accounts', 'InstitutionController.get');
+    Route.get('/institution/:instId/accounts', InstitutionController.get);
     Route.post('/institution/:instId/accounts', 'InstitutionController.addAccounts');
     Route.post('/institution/:instId/accounts/:acctId/transactions/sync', 'InstitutionController.sync');
     Route.get('/institution/:instId/public_token', InstitutionController.publicToken);
