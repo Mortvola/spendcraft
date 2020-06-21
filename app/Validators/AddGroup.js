@@ -1,12 +1,13 @@
-'use strict'
 
 class AddGroup {
-  get rules () {
-    return {
-      // validation rules
-      name: 'required|unique:groups,name'
+    get rules() {
+        const { id } = this.ctx.auth.user;
+
+        return {
+            // validation rules
+            name: `required|uniqueWithin:groups,name,user_id,${id}`,
+        };
     }
-  }
 }
 
 module.exports = AddGroup

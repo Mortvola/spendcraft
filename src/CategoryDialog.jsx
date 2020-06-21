@@ -1,4 +1,5 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
+import 'regenerator-runtime/runtime';
 import React from 'react';
 import PropTypes from 'prop-types';
 import { Field, ErrorMessage } from 'formik';
@@ -20,77 +21,62 @@ const CategoryDialog = (props) => {
     const handleSubmit = (values, bag) => {
         const { setErrors } = bag;
         if (category) {
-            $.ajax({
-                url: `/groups/${groupId}/categories/${category.id}`,
+            fetch(`/groups/${groupId}/categories/${category.id}`, {
+                method: 'PATCH',
                 headers:
                 {
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Content-Type': 'application/json',
                 },
-                contentType: 'application/json',
-                method: 'PATCH',
-                data: JSON.stringify({ name: values.name }),
+                body: JSON.stringify({ name: values.name }),
             })
-                .fail((jqXHR) => {
-                    if (jqXHR.responseJSON.errors && jqXHR.responseJSON.errors.length > 0) {
+                .then(async (response) => {
+                    const json = await response.json();
+
+                    if (response.ok) {
+                        dispatch(updateCategory({ id: category.id, groupId, name: json.name }));
+                        onClose();
+                    }
+                    else if (json.errors && json.errors.length > 0) {
                         // Display the first error
                         // TODO: Display all the errors?
-                        setErrors({ name: jqXHR.responseJSON.errors[0].message });
+                        setErrors({ name: json.errors[0].message });
                     }
                     else {
                         setErrors({ name: 'Unknown error' });
                     }
-                })
-                .done((response) => {
-                    // $(catElement.find('.cat-list-name')).text(response.name);
-                    dispatch(updateCategory({ id: category.id, groupId, name: response.name }));
-                    onClose();
                 });
         }
         else {
-            $.post({
-                url: `/groups/${groupId}/categories`,
+            fetch(`/groups/${groupId}/categories`, {
+                method: 'POST',
                 headers:
                 {
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Content-Type': 'application/json',
                 },
-                contentType: 'application/json',
-                data: JSON.stringify({ groupId, name: values.name }),
+                body: JSON.stringify({ groupId, name: values.name }),
             })
-                .fail((jqXHR) => {
-                    if (jqXHR.responseJSON.errors && jqXHR.responseJSON.errors.length > 0) {
+                .then(async (response) => {
+                    const json = await response.json();
+
+                    if (response.ok) {
+                        dispatch(addCategory({
+                            id: json.id,
+                            groupId: json.groupId,
+                            name: json.name,
+                            amount: 0,
+                        }));
+                        onClose();
+                    }
+                    else if (json.errors && json.errors.length > 0) {
                         // Display the first error
                         // TODO: Display all the errors?
-                        setErrors({ name: jqXHR.responseJSON.errors[0].message });
+                        setErrors({ name: json.errors[0].message });
                     }
                     else {
                         setErrors({ name: 'Unknown error' });
                     }
-                })
-                .done((response) => {
-                    // let newCategoryElement = createCategoryTreeElement(response.id,
-                    // groupId, systemGroup, response.name, response.amount,
-                    // groupElement.find('.group-name'));
-
-                    // const categoryElements = $(groupElement).children('.cat-list-cat');
-
-                    // for (const categoryElement of categoryElements) {
-                    //     const name = $(categoryElement).find('.cat-list-name').text();
-
-                    //     const compare = name.localeCompare(response.name);
-
-                    //     if (compare > 0) {
-                    //         newCategoryElement.insertBefore(categoryElement);
-                    //         newCategoryElement = null;
-                    //         break;
-                    //     }
-                    // }
-
-                    // if (newCategoryElement !== null) {
-                    //     newCategoryElement.appendTo(groupElement);
-                    // }
-
-                    dispatch(addCategory({ id: response.id, groupId: response.groupId, name: response.name, amount: 0 }));
-                    onClose();
                 });
         }
     };
@@ -108,26 +94,32 @@ const CategoryDialog = (props) => {
     const handleDelete = (bag) => {
         const { setTouched, setErrors } = bag;
 
-        $.ajax({
-            url: `/groups/${groupId}/categories/${category.id}`,
+        fetch(`/groups/${groupId}/categories/${category.id}`, {
+            method: 'DELETE',
             headers:
             {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'Content-Type': 'application/json',
             },
-            contentType: 'application/json',
-            method: 'DELETE',
         })
-            .fail((jqXHR) => {
-                if (jqXHR.responseJSON.errors) {
-                    // Display the first error
-                    // TODO: Display all the errors?
-                    setTouched({ name: true }, false);
-                    setErrors({ name: jqXHR.responseJSON.errors[0].message });
+            .then(async (response) => {
+                if (response.ok) {
+                    dispatch(deleteCategory({ id: category.id, groupId }));
+                    onClose();
                 }
-            })
-            .done(() => {
-                dispatch(deleteCategory({ id: category.id, groupId }));
-                onClose();
+                else {
+                    const json = await response.json();
+                    setTouched({ name: true }, false);
+
+                    if (json.errors && json.errors.length > 0) {
+                        // Display the first error
+                        // TODO: Display all the errors?
+                        setErrors({ name: json.errors[0].message });
+                    }
+                    else {
+                        setErrors({ name: 'Unknown error' });
+                    }
+                }
             });
     };
 
