@@ -11,6 +11,12 @@ import Reports from './Reports/Reports';
 import Plans from './Plans/Plans';
 import { hidePlaidLink } from './redux/actions';
 
+const Logout = () => {
+    window.location.assign('/logout');
+
+    return null;
+};
+
 const mapStateToProps = (state) => ({
     view: state.selections.view,
     showPlaidLink: state.dialogs.plaid.show,
@@ -63,6 +69,9 @@ const App = connect(mapStateToProps)(({
 
         case 'plans':
             return <Plans />;
+
+        case 'logout':
+            return <Logout />;
 
         default:
             return <div />;

@@ -369,6 +369,11 @@ const navigate = (eventKey) => (
 
             break;
 
+        case 'logout':
+            dispatch(setView(eventKey));
+
+            break;
+
         default:
             break;
         }

@@ -2,8 +2,10 @@ const Database = use('Database');
 const CategoryController = use('App/Controllers/Http/CategoryController')
 
 class FundingPlanController {
-    static async getAll() {
-        return Database.select('id', 'name').from('funding_plans');
+    static async getAll({ auth }) {
+        return Database.select('id', 'name')
+            .from('funding_plans')
+            .where('user_id', auth.user.id);
     }
 
     static async getPlan({ request }) {

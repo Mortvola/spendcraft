@@ -148,7 +148,7 @@ class CategoryController {
             .leftJoin('accounts AS acct', 'acct.id', 'acct_trans.account_id')
             .leftJoin('institutions AS inst', 'inst.id', 'acct.institution_id')
             .leftJoin(subquery.as('splits'), 'splits.transaction_id', 'trans.id')
-            // .where('inst.user_id', auth.user.id)
+            .where('inst.user_id', auth.user.id)
             .orderBy('pending', 'desc')
             .orderBy('date', 'desc')
             .orderBy(Database.raw('COALESCE(trans.sort_order, 2147483647)'), 'desc')
