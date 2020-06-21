@@ -24,7 +24,7 @@ const mapStateToProps = (state) => ({
     publicToken: state.dialogs.plaid.publicToken,
 });
 
-const App = connect(mapStateToProps)(({
+const App = ({
     view,
     showPlaidLink,
     plaidSuccess,
@@ -86,11 +86,12 @@ const App = connect(mapStateToProps)(({
             </div>
         </>
     );
-});
+};
 
 App.propTypes = {
     view: PropTypes.string.isRequired,
     showPlaidLink: PropTypes.bool.isRequired,
+    plaidSuccess: PropTypes.func.isRequired,
     publicToken: PropTypes.string,
     dispatch: PropTypes.func.isRequired,
 };
@@ -99,9 +100,11 @@ App.defaultProps = {
     publicToken: null,
 };
 
+const ConnectedApp = connect(mapStateToProps)(App);
+
 ReactDOM.render(
     <Provider store={store}>
-        <App />
+        <ConnectedApp />
     </Provider>,
     document.querySelector('.app'),
 );
