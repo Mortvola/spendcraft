@@ -59,18 +59,20 @@ Route.group(() => {
     Route.get('/account/:acctId/transactions', AccountController.transactions);
     Route.get('/account/:acctId/balances', AccountController.balances);
 
+    Route.post('/institutions/sync', InstitutionController.syncAll);
+
     Route.post('/institution', InstitutionController.add);
     Route.get('/institution/:instId/info', InstitutionController.info);
     Route.get('/institution/:instId/accounts', InstitutionController.get);
     Route.post('/institution/:instId/accounts', 'InstitutionController.addAccounts');
-    Route.post('/institution/:instId/accounts/:acctId/transactions/sync', 'InstitutionController.sync');
+    Route.post('/institution/:instId/accounts/:acctId/transactions/sync', InstitutionController.sync);
     Route.get('/institution/:instId/public_token', InstitutionController.publicToken);
 
     Route.get('/funding_plans', FundingPlanController.getAll);
     Route.get('/funding_plan/:planId', FundingPlanController.getPlan);
     Route.patch('/funding_plan/:planId/item/:itemId', FundingPlanController.updateCategory);
 
-    Route.patch('/transaction/:txId', 'InstitutionController.updateTx');
+    Route.patch('/transaction/:txId', InstitutionController.updateTx);
     Route.on('/fundingplans').render('fundingplans');
 
     Route.get('/reports/:report', ReportController.get);
