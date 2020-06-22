@@ -175,9 +175,15 @@ body {
 	color: white;
 }
 
+.institution-name {
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
 .acct-list-inst {
 	display: grid;
-	grid-template-columns: repeat(4, max-content);
+    grid-template-columns: 1fr repeat(3,auto max-content);
+    white-space: nowrap;
 	margin-top: 7px;
 }
 
