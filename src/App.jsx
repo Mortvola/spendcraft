@@ -9,7 +9,7 @@ import Home from './Home';
 import Accounts from './Accounts';
 import Reports from './Reports/Reports';
 import Plans from './Plans/Plans';
-import { hidePlaidLink } from './redux/actions';
+import { hidePlaidLink, addInstitution } from './redux/actions';
 
 const Logout = () => {
     window.location.assign('/logout');
@@ -20,14 +20,12 @@ const Logout = () => {
 const mapStateToProps = (state) => ({
     view: state.selections.view,
     showPlaidLink: state.dialogs.plaid.show,
-    plaidSuccess: state.dialogs.plaid.onSuccess,
     publicToken: state.dialogs.plaid.publicToken,
 });
 
 const App = ({
     view,
     showPlaidLink,
-    plaidSuccess,
     publicToken,
     dispatch,
 }) => {
@@ -38,6 +36,31 @@ const App = ({
         }
         dispatch(hidePlaidLink());
     }, []);
+
+    const onSuccess = useCallback((publicToken2, metadata) => {
+        if (publicToken2) {
+            fetch('/institution', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    publicToken: publicToken2,
+                    institution: metadata.institution,
+                }),
+            })
+                .then(async (response) => {
+                    const json = await response.json();
+
+                    dispatch(addInstitution({ id: json.id, name: json.name, accounts: [] }));
+
+                    // openAccountSelectionDialog(json.id, json.accounts);
+                });
+        }
+        dispatch(hidePlaidLink());
+    }, []);
+
     const { open, ready } = usePlaidLink({
         apiVersion: 'v2',
         clientName: process.env.APP_NAME,
@@ -46,7 +69,7 @@ const App = ({
         publicKey: process.env.PLAID_PUBLIC_KEY,
         countryCodes: process.env.PLAID_COUNTRY_CODES.split(','),
         token: publicToken,
-        onSuccess: plaidSuccess,
+        onSuccess,
         onExit,
     });
 
@@ -54,7 +77,7 @@ const App = ({
         if (open && ready && showPlaidLink) {
             open();
         }
-    }, [open, showPlaidLink]);
+    }, [open, ready, showPlaidLink]);
 
     const renderMain = () => {
         switch (view) {

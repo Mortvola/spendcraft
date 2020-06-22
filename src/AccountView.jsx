@@ -21,14 +21,12 @@ const AccountView = ({
     selectedAccount,
     dispatch,
 }) => {
-    const onSuccess = useCallback(() => {
-    }, []);
     const handleAccountSelected = (accountId, tracking) => {
         dispatch(selectAccount(accountId, tracking));
     };
 
     const handleRelink = (institutionId) => {
-        dispatch(relinkInstitution(onSuccess, institutionId));
+        dispatch(relinkInstitution(institutionId));
     };
 
     return (

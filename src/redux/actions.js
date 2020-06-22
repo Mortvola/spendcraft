@@ -26,7 +26,13 @@ import {
     UPDATE_PLAN_CATEGORY,
     SHOW_PLAID_LINK,
     HIDE_PLAID_LINK,
+    ADD_INSTITUTION,
 } from './actionTypes';
+
+const addInstitution = (institution) => ({
+    type: ADD_INSTITUTION,
+    institution,
+});
 
 const addGroup = (group) => ({
     type: ADD_GROUP,
@@ -176,9 +182,8 @@ const selectAccount = (accountId, tracking) => (
     }
 );
 
-const showPlaidLink = (onSuccess, publicToken) => ({
+const showPlaidLink = (publicToken) => ({
     type: SHOW_PLAID_LINK,
-    onSuccess,
     publicToken,
 });
 
@@ -186,12 +191,12 @@ const hidePlaidLink = () => ({
     type: HIDE_PLAID_LINK,
 });
 
-const relinkInstitution = (onSuccess, institutionId) => (
+const relinkInstitution = (institutionId) => (
     (dispatch) => (
         fetch(`/institution/${institutionId}/public_token`)
             .then(async (response) => {
                 const json = await response.json();
-                dispatch(showPlaidLink(onSuccess, json.publicToken));
+                dispatch(showPlaidLink(json.publicToken));
             })
     )
 );
@@ -435,6 +440,7 @@ const fetchUser = () => (
 
 export {
     fetchUser,
+    addInstitution,
     addGroup,
     updateGroup,
     deleteGroup,

@@ -208,8 +208,20 @@ function institutions(
     action,
 ) {
     switch (action.type) {
-    case ADD_INSTITUTION:
-        return state.concat([action.institution]);
+    case ADD_INSTITUTION: {
+        const index = state.findIndex(
+            (inst) => action.institution.name.localeCompare(inst.name) < 0,
+        );
+
+        if (index === -1) {
+            return state.concat([action.institution]);
+        }
+
+        const insts = state.slice();
+        insts.splice(index, 0, action.institution);
+
+        return insts;
+    }
 
     case UPDATE_INSTITUTION: {
         const index = state.findIndex((e) => e.id === action.institution.id);
@@ -413,7 +425,6 @@ function dialogs(
         plaid: {
             show: false,
             publicToken: null,
-            onSuccess: () => null,
         },
     },
     action,
@@ -425,7 +436,6 @@ function dialogs(
             plaid: {
                 show: true,
                 publicToken: action.publicToken,
-                onSuccess: action.onSuccess,
             },
         };
 
