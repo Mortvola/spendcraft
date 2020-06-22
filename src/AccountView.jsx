@@ -75,7 +75,7 @@ function InstitutionElement({
                         <AccountsDialog {...props} institutionId={institution.id} />
                     )}
                 />
-                <IconButton icon="lock" onClick={handleRelinkClick} />
+                <IconButton icon="link" onClick={handleRelinkClick} />
                 <ModalLauncher
                     launcher={(props) => (<IconButton icon="info-circle" {...props} />)}
                     dialog={(props) => (

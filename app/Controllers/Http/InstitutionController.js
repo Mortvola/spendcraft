@@ -432,6 +432,8 @@ class InstitutionController {
                 balance: balanceResponse.accounts[0].balances.current,
             }];
         }
+
+        return result;
     }
 
     static async syncAll({ auth }) {
