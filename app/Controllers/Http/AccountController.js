@@ -82,7 +82,8 @@ class AccountController {
             Database.raw('CAST(balance AS real) AS balance'),
         )
             .from('balance_histories')
-            .where('account_id', accountId);
+            .where('account_id', accountId)
+            .orderBy('date', 'asc');
 
         return balances;
     }
