@@ -373,6 +373,7 @@ function reports(
     switch (action.type) {
     case RECEIVE_REPORT_DATA:
         return {
+            ...state,
             data: action.data,
             reportType: action.reportType,
         };

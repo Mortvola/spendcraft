@@ -5,11 +5,27 @@ import PropTypes from 'prop-types';
 import { report } from '../redux/actions';
 import NetWorth from './NetWorth';
 
+const mapStateToProps = (state) => ({
+    reportType: state.reports.reportType,
+    data: state.reports.data,
+});
+
 const Reports = ({
+    reportType,
+    data,
     dispatch,
 }) => {
     const handleSelect = (eventKey) => {
         dispatch(report(eventKey));
+    };
+
+    const renderReport = () => {
+        switch (reportType) {
+        case 'netWorth':
+            return <NetWorth balances={data} />;
+        default:
+            return null;
+        }
     };
 
     return (
@@ -19,13 +35,15 @@ const Reports = ({
                     <Nav.Link eventKey="netWorth">Net Worth</Nav.Link>
                 </Nav>
             </div>
-            <NetWorth />
+            {renderReport()}
         </>
     );
 };
 
 Reports.propTypes = {
+    reportType: PropTypes.string.isRequired,
+    data: PropTypes.shape().isRequired,
     dispatch: PropTypes.func.isRequired,
 };
 
-export default connect()(Reports);
+export default connect(mapStateToProps)(Reports);
