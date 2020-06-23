@@ -114,7 +114,6 @@ const App = ({
 App.propTypes = {
     view: PropTypes.string.isRequired,
     showPlaidLink: PropTypes.bool.isRequired,
-    plaidSuccess: PropTypes.func.isRequired,
     publicToken: PropTypes.string,
     dispatch: PropTypes.func.isRequired,
 };

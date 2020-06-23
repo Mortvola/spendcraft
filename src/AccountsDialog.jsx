@@ -39,7 +39,7 @@ const AccountItem = ({
                 <select name={name} value={option} onChange={handleChange}>
                     <option value="None">None</option>
                     <option value="Transactions">Transactions</option>
-                    <option value="Balance">Balance</option>
+                    <option value="Balances">Balance</option>
                 </select>
             </div>
         </div>

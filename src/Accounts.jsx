@@ -35,7 +35,7 @@ const Accounts = ({
                 (response) => response.json(),
                 (error) => console.log('fetch error: ', error),
             )
-            .then((json) => {
+            .then(() => {
                 // const { categories } = json;
                 // if (categories && categories.length > 0) {
                 //     dispatch(receiveCategoryBalances(categories));
