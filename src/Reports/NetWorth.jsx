@@ -5,12 +5,13 @@ import Chart from 'react-google-charts';
 const Networth = ({
     balances,
 }) => {
+    const netIndex = balances[0].length - 1;
     const data = balances.map((item, index) => {
         if (index === 0) {
-            return item.concat([{ role: 'annotation' }, { role: 'annotationText' }]);
+            return item.concat(['Net Worth']);
         }
 
-        return item.concat(['T', item.reduce((accum, balance, index2) => {
+        return item.concat([item.reduce((accum, balance, index2) => {
             if (index2 === 0 || balance === null || Number.isNaN(balance)) {
                 return accum;
             }
@@ -22,7 +23,7 @@ const Networth = ({
     return (
         <div className="chart-wrapper">
             <Chart
-                chartType="ColumnChart"
+                chartType="ComboChart"
                 data={data}
                 options={{
                     width: '100%',
@@ -32,14 +33,9 @@ const Networth = ({
                     hAxis: {
                         slantedText: true,
                     },
-                    annotations: {
-                        style: 'point',
-                        textStyle: {
-                            opacity: 0,
-                        },
-                        stem: {
-                            length: 0,
-                        },
+                    seriesType: 'bars',
+                    series: {
+                        [netIndex]: { type: 'line' },
                     },
                     focusTarget: 'datum',
                 }}
