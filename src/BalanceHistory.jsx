@@ -22,6 +22,9 @@ const BalanceHistory = ({
                     width: '100%',
                     height: '100%',
                     legend: { position: 'none' },
+                    hAxis: {
+                        slantedText: true,
+                    },
                 }}
             />
         </div>
