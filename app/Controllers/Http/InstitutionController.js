@@ -1,19 +1,9 @@
 'use strict'
 
-const Database = use('Database');
-const Env = use('Env')
-
-const plaid = require('plaid');
 const moment = require('moment');
 
-const plaidClient = new plaid.Client(
-    Env.get('PLAID_CLIENT_ID'),
-    Env.get('PLAID_SECRET'),
-    Env.get('PLAID_PUBLIC_KEY'),
-    plaid.environments[Env.get('PLAID_ENV')],
-    { version: '2019-05-29', clientApp: escape(Env.get('APP_NAME')) },
-);
-
+const Database = use('Database');
+const plaidClient = use('Plaid');
 
 class InstitutionController {
     static async all({ auth }) {
