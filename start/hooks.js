@@ -4,6 +4,9 @@ const { hooks } = require('@adonisjs/ignitor');
 hooks.after.providersBooted(() => {
     const Env = use('Env');
     const View = use('View');
+    const Institution = use('App/Models/Institution')
+
+    Institution.updateWebhooks();
 
     View.global('env', (name) => {
         let value = Env.get(name);

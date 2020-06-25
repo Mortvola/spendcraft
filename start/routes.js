@@ -19,8 +19,11 @@ const FundingPlanController = use('App/Controllers/Http/FundingPlanController');
 const InstitutionController = use('App/Controllers/Http/InstitutionController');
 const ReportController = use('App/Controllers/Http/ReportController');
 const UserController = use('App/Controllers/Http/UserController');
+const WebhookController = use('App/Controllers/Http/WebhookController');
 
 Route.on('/').render('index');
+
+Route.post('/wh', WebhookController.post);
 
 Route.group(() => {
     Route.post('/register', 'UserController.register');
