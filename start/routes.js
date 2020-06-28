@@ -79,4 +79,4 @@ Route.group(() => {
     Route.on('/fundingplans').render('fundingplans');
 
     Route.get('/reports/:report', ReportController.get);
-}).middleware('auth');
+}).middleware(['redirectUnauthed', 'auth']);
