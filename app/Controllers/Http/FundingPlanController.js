@@ -28,7 +28,11 @@ class FundingPlanController {
                 'fpc.category_id',
                 Database.raw(`cats.id AND fpc.plan_id = ${request.params.planId}`))
             .where('groups.user_id', auth.user.id)
-            .andWhere('fpc.plan_id', id)
+            .andWhere(function() {
+                this
+                    .where('fpc.plan_id', id)
+                    .orWhereNull('fpc.plan_id');
+            })
             .orderBy('groups.name')
             .orderBy('cats.name');
 
