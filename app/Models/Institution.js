@@ -40,11 +40,17 @@ class Institution extends Model {
             .table('institutions AS inst')
             .whereNull('plaid_item_id');
 
-        await Promise.all(result.map(async (item) => {
-            const { item: { item_id: itemId } } = await getItem(item.accessToken);
-
-            await Database.table('institutions').where('id', item.id).update('plaid_item_id', itemId);
-        }));
+        if (result.length > 0) {
+            await Promise.all(result.map(async (item) => {
+                try {
+                    const { item: { item_id: itemId } } = await getItem(item.accessToken);
+                    await Database.table('institutions').where('id', item.id).update('plaid_item_id', itemId);
+                }
+                catch (error) {
+                    console.log(JSON.stringify(error));
+                }
+            }));
+        }
     }
 }
 
