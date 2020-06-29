@@ -211,7 +211,7 @@ body {
 
 .register-with-pending {
     display: grid;
-    grid-template-rows: minmax(0, 1fr) max-content;
+    grid-auto-rows: 1fr fit-content(50%);
     height: 100%;
 }
 
