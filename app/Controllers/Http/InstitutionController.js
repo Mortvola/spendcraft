@@ -83,7 +83,7 @@ class InstitutionController {
 
         const result = {
             id: institutionId,
-            name: institution.name
+            name: institution.name,
         };
 
         result.accounts = await InstitutionController.getAccounts(accessToken, institutionId);
@@ -112,7 +112,8 @@ class InstitutionController {
 
         let accounts = [];
         if (inst.length > 0) {
-            accounts = await InstitutionController.getAccounts(inst[0].access_token, request.params.instId);
+            accounts = await InstitutionController
+                .getAccounts(inst[0].access_token, request.params.instId);
         }
 
         return accounts;
@@ -318,7 +319,7 @@ class InstitutionController {
             balance = -balance;
         }
 
-//        console.log(`Balance: ${balance}, Pending: ${pendingSum}`);
+        // console.log(`Balance: ${balance}, Pending: ${pendingSum}`);
         await trx.table('accounts').where('id', accountId).update('balance', balance);
 
         return { balance, sum, cat };
@@ -510,7 +511,8 @@ class InstitutionController {
 
             const trans = await trx.select('amount').from('account_transactions').where('transaction_id', request.params.txId);
 
-            const cat = await InstitutionController.subtractFromCategoryBalance(trx, unassigned.id, trans[0].amount);
+            const cat = await InstitutionController
+                .subtractFromCategoryBalance(trx, unassigned.id, trans[0].amount);
 
             result.categories.push({ id: cat.category.id, amount: cat.amount });
         }
@@ -571,7 +573,7 @@ class InstitutionController {
             .where('inst.id', request.params.instId)
             .andWhere('inst.user_id', auth.user.id);
 
-        console.log (acct);
+        console.log(acct);
         const result = await plaidClient.createPublicToken(acct[0].accessToken);
 
         return { publicToken: result.public_token };
