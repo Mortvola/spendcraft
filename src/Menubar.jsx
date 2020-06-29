@@ -10,7 +10,7 @@ import {
 import { navigate } from './redux/actions';
 
 const mapStateToProps = (state) => ({
-    username: state.user ? state.user.username : undefined,
+    username: state.user ? state.user.username : '',
 });
 
 const Menubar = ({ username, dispatch }) => {

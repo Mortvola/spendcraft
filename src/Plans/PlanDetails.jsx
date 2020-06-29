@@ -83,11 +83,11 @@ const PlanDetails = ({
             if (h < history.length
                 && year === history[h].year
                 && month === history[h].month - 1) {
-                list.push(<Amount amount={history[h].amount} />);
+                list.push(<Amount key={`${year}:${month}`} amount={history[h].amount} />);
                 h += 1;
             }
             else {
-                list.push((<Amount noValue="-" />));
+                list.push(<Amount key={`${year}:${month}`} noValue="-" />);
             }
 
             month -= 1;
@@ -100,7 +100,6 @@ const PlanDetails = ({
         return list;
     };
 
-
     const renderCategoryHistory = (cats, groupHistory) => {
         const list = [];
 
@@ -108,7 +107,7 @@ const PlanDetails = ({
             const history = groupHistory.find((h) => c.categoryId === h.id);
 
             list.push((
-                <div className="plan-history">
+                <div key={c.categoryId} className="plan-history">
                     {renderHistory(history ? history.months : [])}
                 </div>
             ));
@@ -142,7 +141,7 @@ const PlanDetails = ({
         for (let i = 0; i < 13; i += 1) {
             const yearString = year.toString();
             months.push((
-                <div>{`${monthNames[month]}-${yearString.substring(yearString.length - 2)}`}</div>
+                <div key={i}>{`${monthNames[month]}-${yearString.substring(yearString.length - 2)}`}</div>
             ));
 
             month -= 1;
@@ -159,14 +158,13 @@ const PlanDetails = ({
         const list = [];
 
         for (let i = 0; i < 13; i += 1) {
-            list.push((<div />));
+            list.push(<div key={i} />);
         }
 
         return list;
     };
 
     const handleScroll = (event) => {
-        console.log(`scroll: ${event.target.scrollLeft}`);
         setScroll(event.target.scrollLeft);
     };
 

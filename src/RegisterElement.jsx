@@ -64,7 +64,7 @@ const RegisterElement = ({
         if (trans) {
             trans.forEach((transaction) => {
                 list.push((
-                    <div className="pending-transaction striped">
+                    <div key={transaction.id} className="pending-transaction striped">
                         <div />
                         <div>{transaction.date}</div>
                         <div>{transaction.name}</div>

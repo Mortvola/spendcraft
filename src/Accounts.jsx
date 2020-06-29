@@ -69,8 +69,12 @@ const Accounts = ({
 };
 
 Accounts.propTypes = {
-    detailView: PropTypes.bool.isRequired,
+    detailView: PropTypes.string,
     dispatch: PropTypes.func.isRequired,
+};
+
+Accounts.defaultProps = {
+    detailView: null,
 };
 
 export default connect(mapStateToProps)(Accounts);

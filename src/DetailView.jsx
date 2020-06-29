@@ -19,7 +19,11 @@ const DetailView = ({
 };
 
 DetailView.propTypes = {
-    detailView: PropTypes.bool.isRequired,
+    detailView: PropTypes.string,
+};
+
+DetailView.defaultProps = {
+    detailView: null,
 };
 
 export default DetailView;
