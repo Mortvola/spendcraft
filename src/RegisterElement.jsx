@@ -104,6 +104,7 @@ const RegisterElement = ({
         return (
             <div className="register-with-pending">
                 <div className="register">
+                    <div />
                     <div className="register-title acct-transaction">
                         <div />
                         <div>Date</div>
@@ -124,6 +125,7 @@ const RegisterElement = ({
     return (
         <div className="register-with-pending">
             <div className="register">
+                <div />
                 <div className="register-title transaction">
                     <div />
                     <div>Date</div>
