@@ -69,6 +69,7 @@ class InstitutionController {
 
             [institutionId] = await Database.insert({
                 institution_id: institution.institution_id,
+                plaid_item_id: tokenResponse.item_id,
                 name: institution.name,
                 access_token: accessToken,
                 user_id: auth.user.id,
