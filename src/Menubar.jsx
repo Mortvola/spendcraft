@@ -21,7 +21,7 @@ const Menubar = ({ username, dispatch }) => {
     return (
         <Navbar onSelect={handleSelect}>
             <Container>
-                <Navbar.Brand eventKey="home" href="/">debertas</Navbar.Brand>
+                <Navbar.Brand href="/">debertas</Navbar.Brand>
 
                 <div className="collapse navbar-collapse">
                     <Nav className="mr-auto">
@@ -32,8 +32,8 @@ const Menubar = ({ username, dispatch }) => {
                     </Nav>
                     <Nav className="ml-auto">
                         <NavDropdown className="dropdown menubar-item" title={username}>
-                            <NavDropdown.Item eventKey="account">Account</NavDropdown.Item>
-                            <NavDropdown.Item eventKey="logout">Logout</NavDropdown.Item>
+                            <Nav.Link eventKey="account">Account</Nav.Link>
+                            <Nav.Link eventKey="logout">Logout</Nav.Link>
                         </NavDropdown>
                     </Nav>
                 </div>
