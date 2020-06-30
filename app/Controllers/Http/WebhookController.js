@@ -3,6 +3,8 @@ const njwk = require('node-jwk');
 
 const plaidClient = use('Plaid');
 const Helpers = use('Helpers');
+const Database = use('Database');
+const Institution = use('App/Models/Institution')
 
 const getVerificationKey = Helpers
     .promisify(plaidClient.getWebhookVerificationKey)
@@ -19,33 +21,93 @@ class WebhookController {
 
         if (verified) {
             response.noContent();
+
+            switch (request.body.webhook_type) {
+            case 'TRANSACTIONS':
+                WebhookController.processTransactionEvent(request.body);
+                break;
+
+            case 'ITEM':
+                WebhookController.processItemEvent(request.body);
+                break;
+
+            default:
+                console.log(`Unhandled webhook type: ${request.body.webhook_type}`);
+            }
         }
         else {
             response.badRequest();
         }
     }
 
+    static async processsItemEvent(event) {
+        switch (event.webook_code) {
+        case 'WEBHOOK_UPDATE_ACKNOWLEDGED':
+            break;
+        case 'PENDING_EXPIRATION':
+            break;
+        case 'ERROR':
+            break;
+        default:
+            break;
+        }
+    }
+
+    static async processTransactionEvent(event) {
+        switch (event.webook_code) {
+        case 'INITIAL_UPDATE':
+            break;
+        case 'HISTORICAL_UPDATE':
+            break;
+        case 'DEFAULT_UPDATE': {
+            const institution = await Institution
+                .query()
+                .where('plaid_item_id', event.item_id)
+                .with('accounts')
+                .fetch();
+
+            if (institution.size() > 0) {
+                const trx = await Database.beginTransaction();
+
+                const accounts = institution.first().getRelated('accounts');
+
+                await Promise.all(accounts.rows.map(async (acct) => (
+                    acct.sync(trx, institution.first().access_token, institution.fist().user_id)
+                )));
+
+                trx.commit();
+            }
+
+            break;
+        }
+        case 'TRANSACTIONS_REMOVED':
+            break;
+        default:
+            break;
+        }
+    }
+
     static verify(request) {
         return new Promise((resolve) => {
-            jwt.verify(request.header('Plaid-Verification'), (header, callback) => {
-                const currentKey = keyCache[header.kid];
+            jwt.verify(request.header('Plaid-Verification'), ({ kid }, callback) => {
+                const currentKey = keyCache[kid];
 
                 if (currentKey === undefined) {
-                    const waiting = waitingRequests[header.kid];
+                    const waiting = waitingRequests[kid];
                     if (waiting !== undefined) {
                         waiting.push(callback);
                     }
                     else {
-                        waitingRequests[header.kid] = [callback];
+                        waitingRequests[kid] = [callback];
 
-                        getVerificationKey(header.kid)
-                            .then((res) => {
-                                if (res.key) {
-                                    keyCache[header.kid] = res.key;
-                                    waitingRequests[header.kid].forEach((cb) => {
+                        getVerificationKey(kid)
+                            .then(({ key }) => {
+                                if (key) {
+                                    keyCache[kid] = key;
+                                    waitingRequests[kid].forEach((cb) => {
                                         cb(
                                             null,
-                                            njwk.JWK.fromObject(res.key).key.toPublicKeyPEM(),
+                                            njwk.JWK.fromObject(key).key.toPublicKeyPEM(),
                                         );
                                     });
                                 }
@@ -55,7 +117,7 @@ class WebhookController {
                                     console.log('key is null');
                                 }
 
-                                delete waitingRequests[header.kid];
+                                delete waitingRequests[kid];
                             })
                             .catch((error) => {
                                 // eslint-disable-next-line no-console

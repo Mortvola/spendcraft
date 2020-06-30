@@ -4,6 +4,8 @@ const moment = require('moment');
 
 const Database = use('Database');
 const plaidClient = use('Plaid');
+const Institution = use('App/Models/Institution');
+const Account = use('App/Models/Account');
 
 class InstitutionController {
     static async all({ auth }) {
@@ -148,7 +150,9 @@ class InstitutionController {
                 const [{ exists }] = await trx.select(Database.raw(`EXISTS (SELECT 1 FROM accounts WHERE plaid_account_id = '${account.account_id}') AS exists`));
 
                 if (!exists) {
-                    const [acctId] = await trx.insert({
+                    const acct = new Account();
+
+                    acct.fill({
                         plaid_account_id: account.account_id,
                         name: account.name,
                         official_name: account.official_name,
@@ -160,14 +164,13 @@ class InstitutionController {
                         balance: account.balances.current,
                         tracking: account.tracking,
                         enabled: true,
-                    })
-                        .into('accounts')
-                        .returning('id');
+                    });
 
-                    if (account.tracking === 'Transactions') {
-                        const details = await InstitutionController.addTransactions(
-                            trx, accessToken, acctId, account.account_id,
-                            startDate, auth,
+                    acct.save(trx);
+
+                    if (acct.tracking === 'Transactions') {
+                        const details = await acct.addTransactions(
+                            trx, accessToken, startDate, auth.user.id,
                         );
 
                         if (details.cat) {
@@ -188,7 +191,7 @@ class InstitutionController {
                         await trx.insert({
                             transaction_id: transId,
                             plaid_transaction_id: null,
-                            account_id: acctId,
+                            account_id: acct.id,
                             name: 'Starting Balance',
                             amount: startingBalance,
                         })
@@ -224,108 +227,6 @@ class InstitutionController {
         };
     }
 
-    static async addTransactions(trx, accessToken, accountId, plaidAccountId, startDate, auth) {
-        const pendingTransactions = await trx.select('transaction_id', 'plaid_transaction_id')
-            .from('account_transactions')
-            .where('account_id', accountId)
-            .andWhere('pending', true);
-
-        const transactionsResponse = await plaidClient.getTransactions(
-            accessToken,
-            moment(startDate).format('YYYY-MM-DD'),
-            moment().format('YYYY-MM-DD'),
-            {
-                count: 250,
-                offset: 0,
-                account_ids: [plaidAccountId],
-            },
-        );
-
-        console.log(JSON.stringify(transactionsResponse, null, 4));
-
-        let sum = 0;
-        // let pendingSum = 0;
-
-        await Promise.all(transactionsResponse.transactions.map(async (transaction) => {
-            // console.log(JSON.stringify(transaction, null, 4));
-            // Only consider non-pending transactions
-            // console.log(JSON.stringify(transaction, null, 4));
-
-            // First check to see if the transaction is present. If it is then don't insert it.
-            const [{ exists }] = await trx.select(
-                Database.raw(`EXISTS (SELECT 1 FROM account_transactions WHERE plaid_transaction_id = '${transaction.transaction_id}') AS exists`),
-            );
-
-            if (!exists) {
-                // console.log('Insert transaction');
-
-                const id = await trx.insert({
-                    date: transaction.date,
-                    user_id: auth.user.id,
-                })
-                    .into('transactions')
-                    .returning('id');
-
-                // console.log(JSON.stringify(id, null, 4));
-
-                await trx.insert({
-                    transaction_id: id[0],
-                    plaid_transaction_id: transaction.transaction_id,
-                    account_id: accountId,
-                    name: transaction.name,
-                    amount: -transaction.amount,
-                    pending: transaction.pending,
-                })
-                    .into('account_transactions');
-
-                if (!transaction.pending) {
-                    sum += transaction.amount;
-                }
-            }
-
-            const index = pendingTransactions.findIndex(
-                (p) => p.plaid_transaction_id === transaction.transaction_id,
-            );
-
-            if (index !== -1) {
-                pendingTransactions.splice(index, 1);
-            }
-        }));
-
-        // Delete any pending transaction in the database that remain in the array
-        const transIds = pendingTransactions.map(
-            (item) => item.transaction_id,
-        );
-        await trx.table('account_transactions').whereIn('transaction_id', transIds).delete();
-        await trx.table('transactions').whereIn('id', transIds).where('user_id', auth.user.id).delete();
-
-        let balance = transactionsResponse.accounts[0].balances.current;
-
-        let cat = null;
-
-        if (sum !== 0) {
-            const systemCats = await trx.select('cats.id AS id', 'cats.name AS name')
-                .from('categories AS cats')
-                .join('groups', 'groups.id', 'group_id')
-                .where('cats.system', true)
-                .andWhere('groups.user_id', auth.user.id);
-            const unassigned = systemCats.find((entry) => entry.name === 'Unassigned');
-
-            // Add the sum of the transactions to the unassigned category.
-            cat = await InstitutionController.subtractFromCategoryBalance(trx, unassigned.id, sum);
-        }
-
-        if (transactionsResponse.accounts[0].type === 'credit'
-            || transactionsResponse.accounts[0].type === 'loan') {
-            balance = -balance;
-        }
-
-        // console.log(`Balance: ${balance}, Pending: ${pendingSum}`);
-        await trx.table('accounts').where('id', accountId).update('balance', balance);
-
-        return { balance, sum, cat };
-    }
-
     static async subtractFromCategoryBalance(trx, categoryId, amount) {
         const result = await trx.select(
             'groups.id AS groupId',
@@ -355,121 +256,49 @@ class InstitutionController {
         };
     }
 
-    static async updateAccountBalanceHistory(trx, accountId, balance) {
-        const today = moment().format('YYYY-MM-DD');
-        const [{ exists }] = await trx.select(Database.raw(`EXISTS (SELECT 1 FROM balance_histories WHERE account_id = '${accountId}' AND date = '${today}') AS exists`));
-
-        if (!exists) {
-            await trx.insert({
-                date: today,
-                account_id: accountId,
-                balance,
-            })
-                .into('balance_histories');
-        }
-    }
-
-    static async syncAccount(trx, acct, auth) {
-        const result = {};
-
-        if (acct.tracking === 'Transactions') {
-            // Retrieve the past 30 days of transactions
-            // (unles the account start date is sooner)
-            const startDate = moment.max(
-                moment().subtract(30, 'days'),
-                moment(acct.startDate),
-            );
-
-            const details = await InstitutionController.addTransactions(
-                trx,
-                acct.accessToken,
-                acct.accountId,
-                acct.plaidAccountId,
-                startDate,
-                auth,
-            );
-
-            await InstitutionController.updateAccountBalanceHistory(
-                trx, acct.accountId, details.balance,
-            );
-
-            if (details.cat) {
-                const systemCats = await trx.select('cats.id AS id', 'cats.name AS name')
-                    .from('categories AS cats')
-                    .join('groups', 'groups.id', 'group_id')
-                    .where('cats.system', true)
-                    .andWhere('groups.user_id', auth.user.id);
-                const unassigned = systemCats.find((entry) => entry.name === 'Unassigned');
-
-                result.categories = [{ id: unassigned.id, amount: details.cat.amount }];
-            }
-
-            result.accounts = [{ id: acct.accountId, balance: details.balance }];
-        }
-        else {
-            const balanceResponse = await plaidClient.getBalance(acct.accessToken, {
-                account_ids: [acct.plaidAccountId],
-            });
-
-            console.log(JSON.stringify(balanceResponse, null, 4));
-
-            await trx.table('accounts').where('id', acct.accountId).update('balance', balanceResponse.accounts[0].balances.current);
-
-            await InstitutionController.updateAccountBalanceHistory(
-                trx, acct.accountId, balanceResponse.accounts[0].balances.current,
-            );
-
-            result.accounts = [{
-                id: acct.accountId,
-                balance: balanceResponse.accounts[0].balances.current,
-            }];
-        }
-
-        return result;
-    }
-
     static async syncAll({ auth }) {
         const trx = await Database.beginTransaction();
 
-        const accts = await trx.select(
-            'access_token AS accessToken',
-            'acct.id AS accountId',
-            'plaid_account_id AS plaidAccountId',
-            'start_date AS startDate',
-            'tracking',
-        )
-            .from('institutions AS inst')
-            .join('accounts AS acct', 'acct.institution_id', 'inst.id')
-            .where('user_id', auth.user.id);
+        const institutions = await Institution
+            .query()
+            .where('user_id', auth.user.id)
+            .with('accounts')
+            .fetch();
 
-        const result = await Promise.all(accts.map(async (acct) => (
-            InstitutionController.syncAccount(trx, acct, auth)
-        )));
+        const result = [];
+
+        await Promise.all(institutions.rows.map(async (institution) => {
+            const accounts = institution.getRelated('accounts');
+
+            result.push(await Promise.all(accounts.rows.map(async (acct) => (
+                acct.sync(trx, institution.access_token, auth.user.id)
+            ))));
+        }));
 
         await trx.commit();
 
         return result;
     }
 
-    static async sync({ request, auth }) {
+    static async sync({ request: { params: { instId, acctId } }, auth }) {
         const trx = await Database.beginTransaction();
 
-        const acct = await trx.select(
-            'access_token AS accessToken',
-            'acct.id AS accountId',
-            'plaid_account_id AS plaidAccountId',
-            'start_date AS startDate',
-            'tracking',
-        )
-            .from('institutions AS inst')
-            .join('accounts AS acct', 'acct.institution_id', 'inst.id')
-            .where('acct.id', request.params.acctId)
-            .where('user_id', auth.user.id);
+        const institutions = await Institution
+            .query()
+            .where('id', instId)
+            .where('user_id', auth.user.id)
+            .with('accounts', (builder) => {
+                builder.where('id', acctId);
+            })
+            .fetch();
 
         let result = {};
 
-        if (acct.length > 0) {
-            result = await InstitutionController.syncAccount(trx, acct[0], auth);
+        const accounts = institutions.first().getRelated('accounts');
+        if (institutions.size() > 0 && accounts.size() > 0) {
+            result = await accounts.first().sync(
+                trx, institutions.first().access_token, auth.user.id,
+            );
         }
 
         await trx.commit();
@@ -597,4 +426,4 @@ class InstitutionController {
     }
 }
 
-module.exports = InstitutionController
+module.exports = InstitutionController;

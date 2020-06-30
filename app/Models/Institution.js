@@ -52,6 +52,10 @@ class Institution extends Model {
             }));
         }
     }
+
+    accounts() {
+        return this.hasMany('App/Models/Account');
+    }
 }
 
 module.exports = Institution;
