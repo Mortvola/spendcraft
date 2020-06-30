@@ -16,7 +16,7 @@ class Account extends Model {
             // (unles the account start date is sooner)
             const startDate = moment.max(
                 moment().subtract(30, 'days'),
-                moment(this.startDate),
+                moment(this.start_date),
             );
 
             const details = await this.addTransactions(
