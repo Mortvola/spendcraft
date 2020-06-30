@@ -6,8 +6,13 @@ const moment = require('moment');
 const Model = use('Model');
 const Database = use('Database');
 const plaidClient = use('Plaid');
+const BalanceHistory = use('App/Models/BalanceHistory');
 
 class Account extends Model {
+    balanceHistory() {
+        return this.hasMany('App/Models/BalanceHistory');
+    }
+
     async sync(trx, accessToken, userId) {
         const result = {};
 
@@ -202,15 +207,11 @@ class Account extends Model {
 
     async updateAccountBalanceHistory(trx, balance) {
         const today = moment().format('YYYY-MM-DD');
-        const [{ exists }] = await trx.select(Database.raw(`EXISTS (SELECT 1 FROM balance_histories WHERE account_id = '${this.id}' AND date = '${today}') AS exists`));
 
-        if (!exists) {
-            await trx.insert({
-                date: today,
-                account_id: this.id,
-                balance,
-            })
-                .into('balance_histories');
+        const acctBalance = await this.balanceHistory().where('date', today).fetch();
+
+        if (acctBalance.size() === 0) {
+            await this.balanceHistory().create({ date: today, balance }, trx);
         }
     }
 }

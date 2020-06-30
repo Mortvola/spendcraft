@@ -1,4 +1,5 @@
 const Database = use('Database');
+const BalanceHistory = use('App/Models/BalanceHistory');
 
 class AccountController {
     static async transactions({ request, auth }) {
@@ -77,16 +78,12 @@ class AccountController {
     static async balances({ request }) {
         const accountId = parseInt(request.params.acctId, 10);
 
-        const balances = await Database.select(
-            Database.raw('date::text'),
-            Database.raw('CAST(balance AS real) AS balance'),
-        )
-            .from('balance_histories')
+        return BalanceHistory.query()
+            .setVisible(['date', 'balance'])
             .where('account_id', accountId)
-            .orderBy('date', 'asc');
-
-        return balances;
+            .orderBy('date', 'asc')
+            .fetch();
     }
 }
 
-module.exports = AccountController
+module.exports = AccountController;
