@@ -8,6 +8,14 @@ const Env = use('Env');
 const Helpers = use('Helpers');
 
 class Institution extends Model {
+    accounts() {
+        return this.hasMany('App/Models/Account');
+    }
+
+    user() {
+        return this.belongsTo('App/Models/User');
+    }
+
     static async updateWebhooks() {
         const hook = Env.get('PLAID_WEBHOOK');
 
@@ -51,10 +59,6 @@ class Institution extends Model {
                 }
             }));
         }
-    }
-
-    accounts() {
-        return this.hasMany('App/Models/Account');
     }
 }
 

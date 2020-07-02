@@ -138,7 +138,7 @@ class CategoryInput extends React.Component {
 }
 
 
-class CategorySelctorCategory extends React.Component {
+class CategorySelectorCategory extends React.Component {
     constructor(props) {
         super(props);
 
@@ -186,7 +186,7 @@ class CategorySelctorCategory extends React.Component {
     }
 }
 
-CategorySelctorCategory.propTypes = {
+CategorySelectorCategory.propTypes = {
     onClick: PropTypes.func,
     onSelected: PropTypes.func,
     selected: PropTypes.bool,
@@ -256,7 +256,7 @@ function CategorySelectorGroup(props) {
                 {props.group.name}
                 {categories.map((c) => {
                     return (
-                        <CategorySelctorCategory
+                        <CategorySelectorCategory
                             key={c.id}
                             category={c}
                             selected={c.name === props.selected}

@@ -104,11 +104,11 @@ const selectCategory = (categoryId) => (
                                 return -1;
                             }
 
-                            if (a.sort_order < b.sort_order) {
+                            if (a.sortOrder < b.sortOrder) {
                                 return 1;
                             }
 
-                            if (a.sort_order > b.sort_order) {
+                            if (a.sortOrder > b.sortOrder) {
                                 return -1;
                             }
 
@@ -151,11 +151,11 @@ const selectAccount = (accountId, tracking) => (
                                     return -1;
                                 }
 
-                                if (a.sort_order < b.sort_order) {
+                                if (a.sortOrder < b.sortOrder) {
                                     return 1;
                                 }
 
-                                if (a.sort_order > b.sort_order) {
+                                if (a.sortOrder > b.sortOrder) {
                                     return -1;
                                 }
 

@@ -3,6 +3,10 @@ const Model = use('Model');
 const Database = use('Database');
 
 class Category extends Model {
+    group() {
+        return this.belongsTo('App/Models/Group');
+    }
+
     static async balances(userId, date, transactionId) {
         const transactionsSubquery = Database.select(
             'category_id',

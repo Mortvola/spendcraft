@@ -70,7 +70,7 @@ const Transaction = ({
     const renderCategoryButton = () => {
         let categoryId = '';
 
-        if (transaction.categories) {
+        if (transaction.categories && transaction.categories.length > 0) {
             if (transaction.categories.length > 1) {
                 return (
                     <ModalLauncher

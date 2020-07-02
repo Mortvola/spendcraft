@@ -1,73 +1,51 @@
 const Database = use('Database');
 const BalanceHistory = use('App/Models/BalanceHistory');
+const AccountTransaction = use('App/Models/AccountTransaction');
+const Account = use('App/Models/Account');
 
 class AccountController {
-    static async transactions({ request, auth }) {
+    static async transactions({ request, auth: { user } }) {
         const accountId = parseInt(request.params.acctId, 10);
 
         const result = { transactions: [], pending: [] };
 
-        const [{ balance }] = await Database.select(
-            Database.raw('CAST(balance AS real) AS balance'),
-        )
-            .table('accounts')
-            .where('id', accountId);
+        // Determine if the account belongs to the authenticated user
+        // and get the balance
+        const account = await Account.find(accountId);
 
-        if (balance !== undefined) {
-            result.balance = balance;
+        if (account !== undefined) {
+            const institution = await account.institution().fetch();
+            const owner = await institution.user().fetch();
 
-            const subquery = Database.select(
-                Database.raw('sum(splits.amount) AS sum'),
-                Database.raw('json_agg (('
-                    + "'{\"categoryId\": ' || category_id || "
-                    + "', \"amount\": ' || splits.amount || "
-                    + "', \"category\": ' || '\"' || cats.name || '\"' || "
-                    + "', \"group\": ' || '\"' || groups.name || '\"' || "
-                    + "'}')::json) AS categories"),
-                'transaction_id',
-            )
-                .table('transaction_categories AS splits')
-                .join('categories AS cats', 'cats.id', 'splits.category_id')
-                .join('groups', 'groups.id', 'cats.group_id')
-                .groupBy('transaction_id');
+            if (user.id === owner.id) {
+                result.balance = account.balance;
 
-            result.transactions = await Database.select(
-                'trans.id AS id',
-                'trans.type AS type',
-                Database.raw('COALESCE(trans.sort_order, 2147483647) AS sort_order'),
-                Database.raw('date::text'),
-                'acct_trans.name AS name',
-                'splits.categories AS categories',
-                'inst.name AS institute_name',
-                'acct.name AS account_name',
-                Database.raw('CAST(acct_trans.amount AS real) AS amount'),
-                'acct_trans.pending AS pending',
-            )
-                .table('transactions AS trans')
-                .join('account_transactions AS acct_trans', 'acct_trans.transaction_id', 'trans.id')
-                .join('accounts AS acct', 'acct.id', 'acct_trans.account_id')
-                .join('institutions AS inst', 'inst.id', 'acct.institution_id')
-                .leftJoin(subquery.as('splits'), 'splits.transaction_id', 'trans.id')
-                .where('acct_trans.account_id', accountId)
-                .andWhere('inst.user_id', auth.user.id)
-                .orderBy('acct_trans.pending', 'desc')
-                .orderBy('date', 'desc')
-                .orderBy('acct_trans.name');
+                result.transactions = await account.accountTransactions()
+                    .setVisible(['name', 'amount', 'pending', 'date', 'transaction_id', 'type', 'sort_order'])
+                    .join('transactions', 'transactions.id', 'account_transactions.transaction_id')
+                    .with('categories', (builder) => {
+                        builder.setVisible(['category_id']);
+                    })
+                    .orderBy('account_transactions.pending', 'desc')
+                    .orderBy('transactions.date', 'desc')
+                    .orderBy('account_transactions.name')
+                    .fetch();
 
-            if (result.transactions.length > 0) {
-                // Move pending transactions to the pending array
-                // Find first transaction that is not pending (all pending
-                // should be up front in the array)
-                const index = result.transactions.findIndex((t) => !t.pending);
+                if (result.transactions.rows.length > 0) {
+                    // Move pending transactions to the pending array
+                    // Find first transaction that is not pending (all pending
+                    // should be up front in the array)
+                    const index = result.transactions.rows.findIndex((t) => !t.pending);
 
-                if (index === -1) {
-                    // The array contains only pending transactions
-                    result.pending = result.transactions;
-                    result.transactions = [];
-                }
-                else if (index > 0) {
-                    // The array contains at least one pending transaction
-                    result.pending = result.transactions.splice(0, index);
+                    if (index === -1) {
+                        // The array contains only pending transactions
+                        result.pending = result.transactions;
+                        result.transactions = [];
+                    }
+                    else if (index > 0) {
+                        // The array contains at least one pending transaction
+                        result.pending = result.transactions.rows.splice(0, index);
+                    }
                 }
             }
         }

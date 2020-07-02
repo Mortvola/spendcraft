@@ -6,11 +6,18 @@ const moment = require('moment');
 const Model = use('Model');
 const Database = use('Database');
 const plaidClient = use('Plaid');
-const BalanceHistory = use('App/Models/BalanceHistory');
 
 class Account extends Model {
+    accountTransactions() {
+        return this.hasMany('App/Models/AccountTransaction');
+    }
+
     balanceHistory() {
         return this.hasMany('App/Models/BalanceHistory');
+    }
+
+    institution() {
+        return this.belongsTo('App/Models/Institution');
     }
 
     async sync(trx, accessToken, userId) {

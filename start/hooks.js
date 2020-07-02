@@ -1,5 +1,10 @@
 /* eslint-disable max-classes-per-file */
 const { hooks } = require('@adonisjs/ignitor');
+const { ioc } = require('@adonisjs/fold')
+
+ioc.bind('App/Serializer', () => {
+    return require('../app/serializers/Serializer.js');
+})
 
 hooks.after.httpServer(() => {
     const Institution = use('App/Models/Institution')
