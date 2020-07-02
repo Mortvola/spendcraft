@@ -1,6 +1,4 @@
-const Database = use('Database');
 const BalanceHistory = use('App/Models/BalanceHistory');
-const AccountTransaction = use('App/Models/AccountTransaction');
 const Account = use('App/Models/Account');
 
 class AccountController {
