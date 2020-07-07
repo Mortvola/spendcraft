@@ -215,7 +215,7 @@ const fetchGroups = () => (
                         const systemGroup = json.find((g) => g.system);
 
                         const systemIds = {
-                            systemId: systemGroup.id,
+                            systemGroupId: systemGroup.id,
                             unassignedId: systemGroup.categories.find((c) => c.system && c.name === 'Unassigned').id,
                             fundingPoolId: systemGroup.categories.find((c) => c.system && c.name === 'Funding Pool').id,
                         };
