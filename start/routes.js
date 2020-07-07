@@ -73,6 +73,7 @@ Route.group(() => {
 
     Route.get('/funding_plans', FundingPlanController.getAll);
     Route.get('/funding_plan/:planId', FundingPlanController.getPlan);
+    Route.get('/funding_plan/:planId/full', FundingPlanController.getFullPlan);
     Route.patch('/funding_plan/:planId/item/:itemId', FundingPlanController.updateCategory);
 
     Route.patch('/transaction/:txId', InstitutionController.updateTx);

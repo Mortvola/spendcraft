@@ -1,5 +1,6 @@
 const Database = use('Database');
 const CategoryController = use('App/Controllers/Http/CategoryController')
+const FundingPlanCategory = use('App/Models/FundingPlanCategory');
 
 class FundingPlanController {
     static async getAll({ auth }) {
@@ -8,7 +9,21 @@ class FundingPlanController {
             .where('user_id', auth.user.id);
     }
 
-    static async getPlan({ request, auth }) {
+    static async getPlan({ request }) {
+        const planId = parseInt(request.params.planId, 10);
+
+        const categories = await FundingPlanCategory
+            .query()
+            .setVisible(['category_id', 'amount'])
+            .where('plan_id', planId).fetch();
+
+        return {
+            id: planId,
+            categories,
+        };
+    }
+
+    static async getFullPlan({ request, auth }) {
         const [{ id, name }] = await Database.select('id', 'name')
             .from('funding_plans')
             .where('id', request.params.planId)
@@ -28,7 +43,7 @@ class FundingPlanController {
                 'fpc.category_id',
                 Database.raw(`cats.id AND fpc.plan_id = ${request.params.planId}`))
             .where('groups.user_id', auth.user.id)
-            .andWhere(function() {
+            .andWhere(function () {
                 this
                     .where('fpc.plan_id', id)
                     .orWhereNull('fpc.plan_id');

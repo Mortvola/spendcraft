@@ -311,7 +311,7 @@ const receivePlan = (plan) => ({
 
 const fetchPlan = (planId) => (
     (dispatch) => (
-        fetch(`/funding_plan/${planId}`)
+        fetch(`/funding_plan/${planId}/full`)
             .then(
                 (response) => response.json(),
                 (error) => console.log('fetch error: ', error),
