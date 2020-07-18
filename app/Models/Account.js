@@ -20,6 +20,11 @@ class Account extends Model {
         return this.belongsTo('App/Models/Institution');
     }
 
+    // eslint-disable-next-line class-methods-use-this
+    getBalance(balance) {
+        return parseFloat(balance);
+    }
+
     async sync(trx, accessToken, userId) {
         const result = {};
 

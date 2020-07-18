@@ -2,7 +2,6 @@ function getTextElementAmount(element) {
     return parseFloat(element.text().replace(/,/g, ''));
 }
 
-
 function formatNumber(num) {
     let number = num;
     if (number === undefined || number === null) {
@@ -11,7 +10,6 @@ function formatNumber(num) {
 
     return parseFloat(number).toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,');
 }
-
 
 function setTextElementAmount(element, amount) {
     element.text(formatNumber(amount));
@@ -24,11 +22,9 @@ function setTextElementAmount(element, amount) {
     }
 }
 
-
 function addTextElementAmount(element, amount) {
     setTextElementAmount(element, getTextElementAmount(element) + parseFloat(amount));
 }
-
 
 export {
     setTextElementAmount, formatNumber, getTextElementAmount, addTextElementAmount,

@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import PropTypes from 'prop-types';
-import categoryList from './Categories';
+import categoryList from '../Categories';
 
 class CategoryInput extends React.Component {
     constructor(props) {

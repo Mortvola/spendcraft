@@ -16,10 +16,10 @@ class AccountController {
             const owner = await institution.user().fetch();
 
             if (user.id === owner.id) {
-                result.balance = account.balance;
+                result.balance = parseFloat(account.balance);
 
                 result.transactions = await account.accountTransactions()
-                    .setVisible(['name', 'amount', 'pending', 'date', 'transaction_id', 'type', 'sort_order'])
+                    .setVisible(['name', 'amount', 'pending', 'date', 'id', 'type', 'sort_order'])
                     .join('transactions', 'transactions.id', 'account_transactions.transaction_id')
                     .with('categories', (builder) => {
                         builder.setVisible(['category_id']);

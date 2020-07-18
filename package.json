@@ -7,8 +7,7 @@
   "scripts": {
     "start": "node server.js",
     "test": "node ace test",
-    "build": "browserify -t [ babelify --presets [ @babel/preset-react @babel/env ] ] -t dotenvify src/App.jsx --extension=.jsx  > ./public/bundle.js",
-    "run": "node server.js"
+    "build": "browserify -t [ babelify --presets [ @babel/preset-react @babel/env ] ] -t dotenvify src/App.jsx --extension=.jsx  > ./public/bundle.js"
   },
   "keywords": [
     "adonisjs",
