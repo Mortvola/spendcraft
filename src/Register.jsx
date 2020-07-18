@@ -84,7 +84,7 @@ const Register = ({
     };
 
     const renderPending = () => {
-        if (pending.length > 0) {
+        if (!fetching && pending.length > 0) {
             return (
                 <div className="register">
                     Pending Transactions:
