@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 import IconButton from './IconButton';
-import { CategoryInput } from './CategoryInput/CategoryInput';
+import CategoryInput from './CategoryInput/CategoryInput';
 import Amount from './Amount';
 import { updateTransactionCategory, TransactionDialog } from './TransactionDialog';
 import CategoryTransferDialog from './CategoryTransferDialog';
