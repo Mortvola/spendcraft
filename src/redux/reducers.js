@@ -247,6 +247,7 @@ function institutions(
 
 function transactions(
     state = {
+        fetching: false,
         categoryId: null,
         balance: 0,
         transactions: [],
@@ -256,14 +257,14 @@ function transactions(
 ) {
     switch (action.type) {
     case REQUEST_TRANSACTIONS:
-        return state;
+        return { ...state, fetching: true };
 
     case RECEIVE_TRANSACTIONS: {
         if (action.categoryId !== null) {
-            return { categoryId: action.categoryId, ...action.transactions };
+            return { categoryId: action.categoryId, ...action.transactions, fetching: false };
         }
 
-        return { categoryId: null, ...action.transactions };
+        return { categoryId: null, ...action.transactions, fetching: false };
     }
 
     case RECEIVE_CATEGORY_BALANCES:

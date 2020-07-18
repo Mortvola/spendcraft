@@ -6,13 +6,15 @@ import getTransactionAmountForCategory from './TransactionUtils';
 import Amount from './Amount';
 
 const mapStateToProps = (state) => ({
+    fetching: state.transactions.fetching,
     transactions: state.transactions.transactions,
     pending: state.transactions.pending,
     balance: state.transactions.balance,
     categoryId: state.transactions.categoryId,
 });
 
-const RegisterElement = ({
+const Register = ({
+    fetching,
     transactions,
     pending,
     categoryId,
@@ -29,7 +31,7 @@ const RegisterElement = ({
     const renderTransactions = (trans) => {
         const list = [];
 
-        if (trans) {
+        if (!fetching && trans) {
             trans.forEach((transaction) => {
                 let { amount } = transaction;
 
@@ -55,7 +57,11 @@ const RegisterElement = ({
             });
         }
 
-        return list;
+        return (
+            <div className="transactions">
+                {list}
+            </div>
+        );
     };
 
     const renderPendingTransactions = (trans) => {
@@ -100,61 +106,57 @@ const RegisterElement = ({
         return null;
     };
 
-    if (categoryId === null) {
-        return (
-            <div className="register-with-pending">
-                <div className="register">
-                    <div />
-                    <div className="register-title acct-transaction">
-                        <div />
-                        <div>Date</div>
-                        <div>Name</div>
-                        <div>Category</div>
-                        <div className="currency">Amount</div>
-                        <div className="currency">Balance</div>
-                    </div>
-                    <div className="transactions">
-                        {renderTransactions(transactions)}
-                    </div>
-                </div>
-                {renderPending()}
-            </div>
-        );
-    }
-
-    return (
-        <div className="register-with-pending">
-            <div className="register">
-                <div />
-                <div className="register-title transaction">
+    const renderColumnTitles = () => {
+        if (categoryId === null) {
+            return (
+                <div className="register-title acct-transaction">
                     <div />
                     <div>Date</div>
                     <div>Name</div>
                     <div>Category</div>
                     <div className="currency">Amount</div>
                     <div className="currency">Balance</div>
-                    <div>Institution</div>
-                    <div>Account</div>
                 </div>
-                <div className="transactions">
-                    {renderTransactions(transactions)}
-                </div>
+            );
+        }
+
+        return (
+            <div className="register-title transaction">
+                <div />
+                <div>Date</div>
+                <div>Name</div>
+                <div>Category</div>
+                <div className="currency">Amount</div>
+                <div className="currency">Balance</div>
+                <div>Institution</div>
+                <div>Account</div>
+            </div>
+        );
+    };
+
+    return (
+        <div className="register-with-pending">
+            <div className="register">
+                <div />
+                {renderColumnTitles()}
+                {renderTransactions(transactions)}
             </div>
             {renderPending()}
         </div>
     );
 };
 
-RegisterElement.propTypes = {
+Register.propTypes = {
+    fetching: PropTypes.bool.isRequired,
     transactions: PropTypes.arrayOf(PropTypes.shape()).isRequired,
     pending: PropTypes.arrayOf(PropTypes.shape()),
     balance: PropTypes.number.isRequired,
     categoryId: PropTypes.number,
 };
 
-RegisterElement.defaultProps = {
+Register.defaultProps = {
     pending: [],
     categoryId: null,
 };
 
-export default connect(mapStateToProps)(RegisterElement);
+export default connect(mapStateToProps)(Register);

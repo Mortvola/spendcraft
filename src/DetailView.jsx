@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import RegisterElement from './RegisterElement';
+import Register from './Register';
 import BalanceHistory from './BalanceHistory';
 
 const DetailView = ({
@@ -11,7 +11,7 @@ const DetailView = ({
         return <BalanceHistory />;
 
     case 'Transactions':
-        return <RegisterElement />;
+        return <Register />;
 
     default:
         return <div />;
