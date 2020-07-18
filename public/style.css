@@ -689,3 +689,11 @@ body {
 .title div:not(:first-child) {
 	border-left: solid thin black
 }
+
+.please-wait {
+    display: grid;
+    justify-content: center;
+    align-content: center;
+    width: 100%;
+    height: 100%;
+}

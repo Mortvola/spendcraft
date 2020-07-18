@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
+import { Spinner } from 'react-bootstrap';
 import Transaction from './Transaction';
 import getTransactionAmountForCategory from './TransactionUtils';
 import Amount from './Amount';
@@ -31,7 +32,15 @@ const Register = ({
     const renderTransactions = (trans) => {
         const list = [];
 
-        if (!fetching && trans) {
+        if (fetching) {
+            return (
+                <div className="please-wait">
+                    <Spinner animation="border" />
+                </div>
+            );
+        }
+
+        if (trans) {
             trans.forEach((transaction) => {
                 let { amount } = transaction;
 
