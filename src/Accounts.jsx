@@ -28,20 +28,17 @@ const Accounts = ({
             headers:
             {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                'Content-Type': 'application/json',
             },
         })
-            .then(
-                (response) => response.json(),
-                (error) => console.log('fetch error: ', error),
-            )
-            .then(() => {
-                // const { categories } = json;
-                // if (categories && categories.length > 0) {
-                //     dispatch(receiveCategoryBalances(categories));
-                // }
-
-                // document.dispatchEvent(new Event('accountRefreshed'));
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error(`Request failed: ${response.status}`);
+                }
+                setRefreshing(false);
+                return response.json();
+            })
+            .catch((error) => {
+                console.log(error);
                 setRefreshing(false);
             });
     };

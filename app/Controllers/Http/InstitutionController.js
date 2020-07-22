@@ -256,54 +256,70 @@ class InstitutionController {
         };
     }
 
-    static async syncAll({ auth }) {
+    static async syncAll({ response, auth }) {
         const trx = await Database.beginTransaction();
 
-        const institutions = await Institution
-            .query()
-            .where('user_id', auth.user.id)
-            .with('accounts')
-            .fetch();
+        try {
+            const institutions = await Institution
+                .query()
+                .where('user_id', auth.user.id)
+                .with('accounts')
+                .fetch();
 
-        const result = [];
+            const result = [];
 
-        await Promise.all(institutions.rows.map(async (institution) => {
-            const accounts = institution.getRelated('accounts');
+            await Promise.all(institutions.rows.map(async (institution) => {
+                const accounts = institution.getRelated('accounts');
 
-            result.push(await Promise.all(accounts.rows.map(async (acct) => (
-                acct.sync(trx, institution.access_token, auth.user.id)
-            ))));
-        }));
+                result.push(await Promise.all(accounts.rows.map(async (acct) => (
+                    acct.sync(trx, institution.access_token, auth.user.id)
+                ))));
+            }));
 
-        await trx.commit();
+            await trx.commit();
 
-        return result;
+            return result;
+        }
+        catch (error) {
+            console.log(error);
+            await trx.rollback();
+            response.internalServerError(error);
+            return null;
+        }
     }
 
-    static async sync({ request: { params: { instId, acctId } }, auth }) {
+    static async sync({ request: { params: { instId, acctId } }, response, auth }) {
         const trx = await Database.beginTransaction();
 
-        const institutions = await Institution
-            .query()
-            .where('id', instId)
-            .where('user_id', auth.user.id)
-            .with('accounts', (builder) => {
-                builder.where('id', acctId);
-            })
-            .fetch();
+        try {
+            const institutions = await Institution
+                .query()
+                .where('id', instId)
+                .where('user_id', auth.user.id)
+                .with('accounts', (builder) => {
+                    builder.where('id', acctId);
+                })
+                .fetch();
 
-        let result = {};
+            let result = {};
 
-        const accounts = institutions.first().getRelated('accounts');
-        if (institutions.size() > 0 && accounts.size() > 0) {
-            result = await accounts.first().sync(
-                trx, institutions.first().access_token, auth.user.id,
-            );
+            const accounts = institutions.first().getRelated('accounts');
+            if (institutions.size() > 0 && accounts.size() > 0) {
+                result = await accounts.first().sync(
+                    trx, institutions.first().access_token, auth.user.id,
+                );
+            }
+
+            await trx.commit();
+
+            return result;
         }
-
-        await trx.commit();
-
-        return result;
+        catch (error) {
+            console.log(error);
+            await trx.rollback();
+            response.internalServerError(error);
+            return null;
+        }
     }
 
     static async updateTx({ request, auth }) {

@@ -129,13 +129,15 @@ const Account = connect()(({
             headers:
             {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                'Content-Type': 'application/json',
             },
         })
-            .then(
-                (response) => response.json(),
-                (error) => console.log('fetch error: ', error),
-            )
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error(`Request failed: ${response.status}`);
+                }
+                setRefreshing(false);
+                return response.json();
+            })
             .then((json) => {
                 const { categories } = json;
                 if (categories && categories.length > 0) {
@@ -143,6 +145,9 @@ const Account = connect()(({
                 }
 
                 document.dispatchEvent(new Event('accountRefreshed'));
+            })
+            .catch((error) => {
+                console.log(error);
                 setRefreshing(false);
             });
     };
