@@ -28,56 +28,59 @@ class Account extends Model {
     async sync(trx, accessToken, userId) {
         const result = {};
 
-        if (this.tracking === 'Transactions') {
-            // Retrieve the past 30 days of transactions
-            // (unles the account start date is sooner)
-            const startDate = moment.max(
-                moment().subtract(30, 'days'),
-                moment(this.start_date),
-            );
+        try {
+            if (this.tracking === 'Transactions') {
+                // Retrieve the past 30 days of transactions
+                // (unles the account start date is sooner)
+                const startDate = moment.max(
+                    moment().subtract(30, 'days'),
+                    moment(this.start_date),
+                );
 
-            const details = await this.addTransactions(
-                trx,
-                accessToken,
-                startDate,
-                userId,
-            );
+                const details = await this.addTransactions(
+                    trx,
+                    accessToken,
+                    startDate,
+                    userId,
+                );
 
-            await this.updateAccountBalanceHistory(
-                trx, details.balance,
-            );
+                await this.updateAccountBalanceHistory(
+                    trx, details.balance,
+                );
 
-            if (details.cat) {
-                const systemCats = await trx.select('cats.id AS id', 'cats.name AS name')
-                    .from('categories AS cats')
-                    .join('groups', 'groups.id', 'group_id')
-                    .where('cats.system', true)
-                    .andWhere('groups.user_id', userId);
-                const unassigned = systemCats.find((entry) => entry.name === 'Unassigned');
+                if (details.cat) {
+                    const systemCats = await trx.select('cats.id AS id', 'cats.name AS name')
+                        .from('categories AS cats')
+                        .join('groups', 'groups.id', 'group_id')
+                        .where('cats.system', true)
+                        .andWhere('groups.user_id', userId);
+                    const unassigned = systemCats.find((entry) => entry.name === 'Unassigned');
 
-                result.categories = [{ id: unassigned.id, amount: details.cat.amount }];
+                    result.categories = [{ id: unassigned.id, amount: details.cat.amount }];
+                }
+
+                result.accounts = [{ id: this.id, balance: details.balance }];
             }
+            else {
+                const balanceResponse = await plaidClient.getBalance(accessToken, {
+                    account_ids: [this.plaid_account_id],
+                });
 
-            result.accounts = [{ id: this.id, balance: details.balance }];
+                this.balance = balanceResponse.accounts[0].balances.current;
+                this.save(trx);
+
+                await this.updateAccountBalanceHistory(
+                    trx, balanceResponse.accounts[0].balances.current,
+                );
+
+                result.accounts = [{
+                    id: this.id,
+                    balance: balanceResponse.accounts[0].balances.current,
+                }];
+            }
         }
-        else {
-            const balanceResponse = await plaidClient.getBalance(accessToken, {
-                account_ids: [this.plaid_account_id],
-            });
-
-            console.log(JSON.stringify(balanceResponse, null, 4));
-
-            this.balance = balanceResponse.accounts[0].balances.current;
-            this.save(trx);
-
-            await this.updateAccountBalanceHistory(
-                trx, balanceResponse.accounts[0].balances.current,
-            );
-
-            result.accounts = [{
-                id: this.id,
-                balance: balanceResponse.accounts[0].balances.current,
-            }];
+        catch (error) {
+            console.log(error);
         }
 
         return result;

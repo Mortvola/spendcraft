@@ -188,71 +188,76 @@ class CategoryController {
 
     static async transfer({ request, auth }) {
         const trx = await Database.beginTransaction();
-
         const result = [];
 
-        if (Array.isArray(request.body.categories)) {
-            const { date, type } = request.body;
-            let transactionId = request.params.tfrId;
+        try {
+            if (Array.isArray(request.body.categories)) {
+                const { date, type } = request.body;
+                let transactionId = request.params.tfrId;
 
-            if (transactionId === undefined) {
-                [transactionId] = await trx.insert({ date, type, user_id: auth.user.id }).into('transactions').returning('id');
-            }
+                if (transactionId === undefined) {
+                    [transactionId] = await trx.insert({ date, type, user_id: auth.user.id }).into('transactions').returning('id');
+                }
 
-            const existingSplits = [];
+                const existingSplits = [];
 
-            // Insert the category splits
-            await Promise.all(request.body.categories.map(async (split) => {
-                if (split.amount !== 0) {
-                    let { amount } = split;
+                // Insert the category splits
+                await Promise.all(request.body.categories.map(async (split) => {
+                    if (split.amount !== 0) {
+                        let { amount } = split;
 
-                    if (split.id) {
-                        existingSplits.push(split.id);
+                        if (split.id) {
+                            existingSplits.push(split.id);
 
-                        const oldSplit = await trx.select('amount').from('transaction_categories').where('id', split.id);
+                            const oldSplit = await trx.select('amount').from('transaction_categories').where('id', split.id);
 
-                        amount = split.amount - oldSplit[0].amount;
+                            amount = split.amount - oldSplit[0].amount;
 
-                        await trx.table('transaction_categories').where('id', split.id).update({ amount: split.amount });
+                            await trx.table('transaction_categories').where('id', split.id).update({ amount: split.amount });
+                        }
+                        else {
+                            const newId = await trx.insert({
+                                transaction_id: transactionId,
+                                category_id: split.categoryId,
+                                amount: split.amount,
+                            }).into('transaction_categories').returning('id');
+
+                            existingSplits.push(newId[0]);
+
+                            amount = split.amount;
+                        }
+
+                        const category = await Category.findOrFail(split.categoryId, trx);
+
+                        category.amount = parseFloat(category.amount) + amount;
+
+                        await category.save(trx);
+
+                        result.push({ id: category.id, amount: category.amount });
                     }
-                    else {
-                        const newId = await trx.insert({
-                            transaction_id: transactionId,
-                            category_id: split.categoryId,
-                            amount: split.amount,
-                        }).into('transaction_categories').returning('id');
+                }));
 
-                        existingSplits.push(newId[0]);
+                // Delete splits that are not in the array of ids
+                const query = trx.from('transaction_categories').whereNotIn('id', existingSplits).andWhere('transaction_id', transactionId);
+                const toDelete = await query.select('category_id AS categoryId', 'amount');
 
-                        amount = split.amount;
-                    }
+                await Promise.all(toDelete.map(async (td) => {
+                    const category = await Category.findOrFail(td.categoryId, trx);
 
-                    const category = await Category.findOrFail(split.categoryId, trx);
-
-                    category.amount = parseFloat(category.amount) + amount;
+                    category.amount = parseFloat(category.amount) - td.amount;
 
                     await category.save(trx);
+                }));
 
-                    result.push({ id: category.id, amount: category.amount });
-                }
-            }));
+                await query.delete();
+            }
 
-            // Delete splits that are not in the array of ids
-            const query = trx.from('transaction_categories').whereNotIn('id', existingSplits).andWhere('transaction_id', transactionId);
-            const toDelete = await query.select('category_id AS categoryId', 'amount');
-
-            await Promise.all(toDelete.map(async (td) => {
-                const category = await Category.findOrFail(td.categoryId, trx);
-
-                category.amount = parseFloat(category.amount) - td.amount;
-
-                await category.save(trx);
-            }));
-
-            await query.delete();
+            await trx.commit();
         }
-
-        await trx.commit();
+        catch (error) {
+            console.log(error);
+            await trx.rollback();
+        }
 
         return result;
     }
@@ -260,25 +265,31 @@ class CategoryController {
     static async transferDelete({ request }) {
         const trx = await Database.beginTransaction();
 
-        const { tfrId } = request.params;
+        try {
+            const { tfrId } = request.params;
 
-        const categoryTransfer = await CategoryTransfer.find(tfrId, trx);
+            const categoryTransfer = await CategoryTransfer.find(tfrId, trx);
 
-        const categorySplits = await categoryTransfer.splits(trx).fetch();
+            const categorySplits = await categoryTransfer.splits(trx).fetch();
 
-        await Promise.all(categorySplits.rows.map(async (cs) => {
-            const category = await Category.find(cs.category_id, trx);
+            await Promise.all(categorySplits.rows.map(async (cs) => {
+                const category = await Category.find(cs.category_id, trx);
 
-            category.amount -= cs.amount;
+                category.amount -= cs.amount;
 
-            await category.save(trx);
+                await category.save(trx);
 
-            await cs.delete();
-        }));
+                await cs.delete();
+            }));
 
-        await categoryTransfer.delete();
+            await categoryTransfer.delete();
 
-        await trx.commit();
+            await trx.commit();
+        }
+        catch (error) {
+            console.log(error);
+            await trx.rollback();
+        }
     }
 
     static async balances({ request, auth }) {

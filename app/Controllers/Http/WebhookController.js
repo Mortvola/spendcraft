@@ -24,11 +24,11 @@ class WebhookController {
 
             switch (request.body.webhook_type) {
             case 'TRANSACTIONS':
-                WebhookController.processTransactionEvent(request.body);
+                await WebhookController.processTransactionEvent(request.body);
                 break;
 
             case 'ITEM':
-                WebhookController.processItemEvent(request.body);
+                await WebhookController.processItemEvent(request.body);
                 break;
 
             default:
@@ -40,7 +40,7 @@ class WebhookController {
         }
     }
 
-    static async processsItemEvent(event) {
+    static async processItemEvent(event) {
         switch (event.webook_code) {
         case 'WEBHOOK_UPDATE_ACKNOWLEDGED':
             break;
@@ -69,13 +69,19 @@ class WebhookController {
             if (institution.size() > 0) {
                 const trx = await Database.beginTransaction();
 
-                const accounts = institution.first().getRelated('accounts');
+                try {
+                    const accounts = institution.first().getRelated('accounts');
 
-                await Promise.all(accounts.rows.map(async (acct) => (
-                    acct.sync(trx, institution.first().access_token, institution.fist().user_id)
-                )));
+                    await Promise.all(accounts.rows.map(async (acct) => (
+                        acct.sync(trx, institution.first().access_token, institution.fist().user_id)
+                    )));
 
-                trx.commit();
+                    trx.commit();
+                }
+                catch (error) {
+                    console.log(error);
+                    await trx.rollback();
+                }
             }
 
             break;
