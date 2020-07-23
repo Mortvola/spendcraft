@@ -60,6 +60,10 @@ class Institution extends Model {
             }));
         }
     }
+
+    async removeTransactions(trx, removedTransactions) {
+        console.log(`Removing transactions from ${this.id}: ${removedTransactions}`);
+    }
 }
 
 module.exports = Institution;

@@ -24,11 +24,11 @@ class WebhookController {
 
             switch (request.body.webhook_type) {
             case 'TRANSACTIONS':
-                await WebhookController.processTransactionEvent(request.body);
+                WebhookController.processTransactionEvent(request.body);
                 break;
 
             case 'ITEM':
-                await WebhookController.processItemEvent(request.body);
+                WebhookController.processItemEvent(request.body);
                 break;
 
             default:
@@ -41,7 +41,7 @@ class WebhookController {
     }
 
     static async processItemEvent(event) {
-        switch (event.webook_code) {
+        switch (event.webhook_code) {
         case 'WEBHOOK_UPDATE_ACKNOWLEDGED':
             break;
         case 'PENDING_EXPIRATION':
@@ -54,7 +54,7 @@ class WebhookController {
     }
 
     static async processTransactionEvent(event) {
-        switch (event.webook_code) {
+        switch (event.webhook_code) {
         case 'INITIAL_UPDATE':
             break;
         case 'HISTORICAL_UPDATE':
@@ -73,10 +73,14 @@ class WebhookController {
                     const accounts = institution.first().getRelated('accounts');
 
                     await Promise.all(accounts.rows.map(async (acct) => (
-                        acct.sync(trx, institution.first().access_token, institution.fist().user_id)
+                        acct.sync(
+                            trx,
+                            institution.first().access_token,
+                            institution.first().user_id,
+                        )
                     )));
 
-                    trx.commit();
+                    await trx.commit();
                 }
                 catch (error) {
                     console.log(error);
@@ -86,8 +90,26 @@ class WebhookController {
 
             break;
         }
-        case 'TRANSACTIONS_REMOVED':
+        case 'TRANSACTIONS_REMOVED': {
+            const institution = await Institution.findBy('plaid_item_id', event.item_id);
+
+            if (institution) {
+                const trx = await Database.beginTransaction();
+
+                try {
+                    await institution.removeTransactions(trx, event.removed_transactions);
+
+                    await trx.commit();
+                }
+                catch (error) {
+                    console.log(error);
+                    await trx.rollback();
+                }
+            }
+
             break;
+        }
+
         default:
             break;
         }
