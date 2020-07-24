@@ -200,6 +200,11 @@ body {
 	overflow: hidden;
 }
 
+.acct-balance {
+    margin-left: 4px;
+    font-size: small;  
+}
+
 .acct-list-acct:not(.selected):hover {
 	cursor: pointer;
 	background-color: whitesmoke;

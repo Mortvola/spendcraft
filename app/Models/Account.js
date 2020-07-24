@@ -29,6 +29,8 @@ class Account extends Model {
         const result = {};
 
         try {
+            this.sync_date = moment().format('YYYY-MM-DD hh:mm:ss');
+
             if (this.tracking === 'Transactions') {
                 // Retrieve the past 30 days of transactions
                 // (unles the account start date is sooner)
@@ -59,7 +61,11 @@ class Account extends Model {
                     result.categories = [{ id: unassigned.id, amount: details.cat.amount }];
                 }
 
-                result.accounts = [{ id: this.id, balance: details.balance }];
+                result.accounts = [{
+                    id: this.id,
+                    balance: details.balance,
+                    syncDate: this.sync_date,
+                }];
             }
             else {
                 const balanceResponse = await plaidClient.getBalance(accessToken, {
@@ -67,7 +73,6 @@ class Account extends Model {
                 });
 
                 this.balance = balanceResponse.accounts[0].balances.current;
-                this.save(trx);
 
                 await this.updateAccountBalanceHistory(
                     trx, balanceResponse.accounts[0].balances.current,
@@ -76,8 +81,11 @@ class Account extends Model {
                 result.accounts = [{
                     id: this.id,
                     balance: balanceResponse.accounts[0].balances.current,
+                    syncDate: this.sync_date,
                 }];
             }
+
+            await this.save(trx);
         }
         catch (error) {
             console.log(error);
@@ -186,7 +194,7 @@ class Account extends Model {
 
         // console.log(`Balance: ${balance}, Pending: ${pendingSum}`);
         this.balance = balance;
-        this.save(trx);
+        await this.save(trx);
 
         return { balance, sum, cat };
     }
@@ -223,7 +231,7 @@ class Account extends Model {
     async updateAccountBalanceHistory(trx, balance) {
         const today = moment().format('YYYY-MM-DD');
 
-        const acctBalance = await this.balanceHistory().where('date', today).fetch();
+        const acctBalance = await this.balanceHistory().transacting(trx).where('date', today).fetch();
 
         if (acctBalance.size() === 0) {
             await this.balanceHistory().create({ date: today, balance }, trx);

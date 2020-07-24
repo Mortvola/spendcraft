@@ -20,6 +20,8 @@ class InstitutionController {
             'acct.id AS accountId',
             'acct.name AS accountName',
             'acct.tracking AS tracking',
+            'acct.balance',
+            Database.raw("to_char(acct.sync_date, 'YYYY-MM-DD HH24:MI:SS') AS syncdate"),
         )
             .table('institutions AS inst')
             .leftJoin('accounts AS acct', 'acct.institution_id', 'inst.id')
@@ -44,6 +46,8 @@ class InstitutionController {
                     id: acct.accountId,
                     name: acct.accountName,
                     tracking: acct.tracking,
+                    balance: acct.balance,
+                    syncDate: acct.syncdate,
                 });
             }
         });
@@ -166,7 +170,7 @@ class InstitutionController {
                         enabled: true,
                     });
 
-                    acct.save(trx);
+                    await acct.save(trx);
 
                     if (acct.tracking === 'Transactions') {
                         const details = await acct.addTransactions(

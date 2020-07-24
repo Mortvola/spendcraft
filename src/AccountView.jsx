@@ -6,10 +6,12 @@ import {
     receiveCategoryBalances,
     selectAccount,
     relinkInstitution,
+    accountSynced,
 } from './redux/actions';
 import AccountsDialog from './AccountsDialog';
 import { ModalLauncher } from './Modal';
 import InstitutionInfoDialog from './InstitutionInfoDialog';
+import { formatNumber } from './NumberFormat'; 
 
 const mapStateToProps = (state) => ({
     institutions: state.institutions,
@@ -115,6 +117,7 @@ InstitutionElement.defaultProps = {
 
 const Account = connect()(({
     selected,
+    institutionId,
     account,
     dispatch,
     ...props
@@ -124,7 +127,7 @@ const Account = connect()(({
     const refresh = () => {
         setRefreshing(true);
 
-        fetch(`/institution/${props.institutionId}/accounts/${account.id}/transactions/sync`, {
+        fetch(`/institution/${institutionId}/accounts/${account.id}/transactions/sync`, {
             method: 'POST',
             headers:
             {
@@ -139,12 +142,16 @@ const Account = connect()(({
                 return response.json();
             })
             .then((json) => {
-                const { categories } = json;
+                const { categories, accounts } = json;
                 if (categories && categories.length > 0) {
                     dispatch(receiveCategoryBalances(categories));
                 }
 
-                document.dispatchEvent(new Event('accountRefreshed'));
+                if (accounts) {
+                    dispatch(accountSynced(
+                        institutionId, account.id, accounts[0].balance, accounts[0].syncDate,
+                    ));
+                }
             })
             .catch((error) => {
                 console.log(error);
@@ -166,10 +173,17 @@ const Account = connect()(({
         rotate = true;
     }
 
+    let balance = formatNumber(account.balance);
+    if (account.syncDate) {
+        balance += ` as of ${account.syncDate}`;
+    }
     return (
         <div className="acct-list-item">
             <IconButton icon="sync-alt" rotate={rotate} onClick={refresh} />
-            <div className={className} onClick={accountSelected}>{account.name}</div>
+            <div>
+                <div className={className} onClick={accountSelected}>{account.name}</div>
+                <div className="acct-balance">{balance}</div>
+            </div>
         </div>
     );
 });

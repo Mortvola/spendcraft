@@ -27,6 +27,7 @@ import {
     RECEIVE_PLAN,
     SHOW_PLAID_LINK,
     HIDE_PLAID_LINK,
+    ACCOUNT_SYNCED,
 } from './actionTypes';
 
 
@@ -203,6 +204,31 @@ function categoryTree(
     }
 }
 
+function accounts(
+    state = [],
+    action,
+) {
+    switch (action.type) {
+    case ACCOUNT_SYNCED: {
+        const index = state.findIndex((a) => a.id === action.accountId);
+        if (index !== -1) {
+            const newAccounts = state.slice();
+            newAccounts[index] = {
+                ...newAccounts[index],
+                balance: action.balance,
+                syncDate: action.syncDate,
+            };
+            return newAccounts;
+        }
+
+        return state;
+    }
+
+    default:
+        return state;
+    }
+}
+
 function institutions(
     state = [],
     action,
@@ -239,6 +265,20 @@ function institutions(
 
     case RECEIVE_INSTITUTIONS:
         return action.institutions;
+
+    case ACCOUNT_SYNCED: {
+        const index = state.findIndex((e) => e.id === action.institutionId);
+        if (index !== -1) {
+            const newInstutions = state.slice();
+            newInstutions[index] = {
+                ...newInstutions[index],
+                accounts: accounts(newInstutions[index].accounts, action),
+            };
+            return newInstutions;
+        }
+
+        return state;
+    }
 
     default:
         return state;

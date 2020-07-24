@@ -26,6 +26,7 @@ import {
     SHOW_PLAID_LINK,
     HIDE_PLAID_LINK,
     ADD_INSTITUTION,
+    ACCOUNT_SYNCED,
 } from './actionTypes';
 
 const addInstitution = (institution) => ({
@@ -437,6 +438,14 @@ const fetchUser = () => (
     )
 );
 
+const accountSynced = (institutionId, accountId, balance, syncDate) => ({
+    type: ACCOUNT_SYNCED,
+    institutionId,
+    accountId,
+    balance,
+    syncDate,
+});
+
 export {
     fetchUser,
     addInstitution,
@@ -460,4 +469,5 @@ export {
     relinkInstitution,
     showPlaidLink,
     hidePlaidLink,
+    accountSynced,
 };
