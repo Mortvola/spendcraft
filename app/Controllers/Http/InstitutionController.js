@@ -21,7 +21,7 @@ class InstitutionController {
             'acct.name AS accountName',
             'acct.tracking AS tracking',
             'acct.balance',
-            Database.raw("to_char(acct.sync_date, 'YYYY-MM-DD HH24:MI:SS') AS syncdate"),
+            Database.raw("to_char(acct.sync_date  AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI:SS') AS syncdate"),
         )
             .table('institutions AS inst')
             .leftJoin('accounts AS acct', 'acct.institution_id', 'inst.id')

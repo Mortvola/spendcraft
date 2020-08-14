@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
+import moment from 'moment';
 import IconButton from './IconButton';
 import {
     receiveCategoryBalances,
@@ -11,7 +12,7 @@ import {
 import AccountsDialog from './AccountsDialog';
 import { ModalLauncher } from './Modal';
 import InstitutionInfoDialog from './InstitutionInfoDialog';
-import { formatNumber } from './NumberFormat'; 
+import { formatNumber } from './NumberFormat';
 
 const mapStateToProps = (state) => ({
     institutions: state.institutions,
@@ -175,8 +176,9 @@ const Account = connect()(({
 
     let balance = formatNumber(account.balance);
     if (account.syncDate) {
-        balance += ` as of ${account.syncDate}`;
+        balance += ` as of ${moment.utc(account.syncDate).local().format('M-D-YY HH:mm:ss')}`;
     }
+
     return (
         <div className="acct-list-item">
             <IconButton icon="sync-alt" rotate={rotate} onClick={refresh} />
