@@ -289,7 +289,6 @@ body {
 .trans-cat-edit {
 	display: grid;
     grid-template-columns: minmax(0, 1fr) max-content;
-    position: relative;
 }
 
 .transaction-field {

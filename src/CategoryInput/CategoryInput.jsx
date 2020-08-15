@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { connect } from 'react-redux';
+import ReactDOM from 'react-dom';
 import PropTypes from 'prop-types';
 import CategorySelector from './CategorySelector';
 import useExclusiveBool from '../ExclusiveBool';
@@ -37,7 +38,6 @@ const CategoryInput = ({
     const [filter, setFilter] = useState(null);
     const inputRef = useRef(null);
     const selectorRef = useRef(null);
-    const [containerRect, setContainerRect] = useState(null);
 
     const categoryFiltered = (group, category, filterParts) => {
         if (filterParts.length > 0) {
@@ -88,24 +88,7 @@ const CategoryInput = ({
         return undefined;
     });
 
-    const getContainerRect = () => {
-        let currentElement = inputRef.current;
-
-        while (currentElement) {
-            const clientRect = currentElement.getBoundingClientRect();
-
-            if (currentElement.scrollHeight > clientRect.height) {
-                return clientRect;
-            }
-
-            currentElement = currentElement.parentElement;
-        }
-
-        return document.documentElement.getBoundingClientRect();
-    };
-
     const openDropDown = () => {
-        setContainerRect(getContainerRect());
         setOriginalValue(getCategoryName(groups, categoryId));
         setOpen(true);
     };
@@ -271,15 +254,16 @@ const CategoryInput = ({
     const renderSelector = () => {
         if (open && inputRef.current) {
             const position = inputRef.current.getBoundingClientRect();
+            const containerRect = document.documentElement.getBoundingClientRect();
 
             let height = Math.min(containerRect.bottom - position.bottom, 250);
-            let top = position.height;
+            let top = position.bottom;
 
             const topHeight = Math.min(position.top - containerRect.top, 250);
 
             if (topHeight > height) {
                 height = topHeight;
-                top = -height;
+                top = position.top - height;
             }
 
             const selectedGroup = selected.groupIndex !== null ? groups[selected.groupIndex] : null;
@@ -288,10 +272,10 @@ const CategoryInput = ({
                 selectedCategory = selectedGroup.categories[selected.categoryIndex];
             }
 
-            return (
+            return ReactDOM.createPortal(
                 <CategorySelector
                     ref={selectorRef}
-                    left={5}
+                    left={position.left}
                     top={top}
                     width={position.width}
                     height={height}
@@ -300,7 +284,8 @@ const CategoryInput = ({
                     onCancel={handleCancel}
                     onSelect={handleSelect}
                     filter={filter}
-                />
+                />,
+                document.querySelector('#hidden'),
             );
         }
 
