@@ -36,8 +36,8 @@ function CategorySplitItem({
     return (
         <div className="transaction-split-item">
             <CategoryInput onChange={handleCategoryChange} categoryId={categoryId} />
-            <Amount amount={balance} />
             <AmountInput onDeltaChange={handleDeltaChange} name="amount" amount={split.amount} />
+            <Amount amount={balance} />
             <Amount amount={newBalance} />
             <IconButton icon="plus" onClick={handleAddItem} />
             <IconButton icon="minus" onClick={handleDeleteItem} />

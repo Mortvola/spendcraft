@@ -125,8 +125,8 @@ const TransactionDialog = ({
                     <div className="cat-fund-table">
                         <div className="transaction-split-item cat-fund-title">
                             <div className="fund-list-cat-name">Category</div>
-                            <div className="dollar-amount">Current Balance</div>
                             <div className="dollar-amount">Amount</div>
+                            <div className="dollar-amount">Current Balance</div>
                             <div className="dollar-amount">New Balance</div>
                         </div>
 
