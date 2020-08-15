@@ -15,7 +15,8 @@ const Transaction = ({
     amount,
     balance,
     selected,
-    account,
+    categoryId,
+    unassignedId,
     dispatch,
 }) => {
     const handleClick = () => {
@@ -24,8 +25,8 @@ const Transaction = ({
         // onClick(transaction.id);
     };
 
-    const handleChange = (categoryId) => {
-        const request = { splits: [{ categoryId, amount: transaction.amount }] };
+    const handleChange = (catId) => {
+        const request = { splits: [{ categoryId: catId, amount: transaction.amount }] };
 
         updateTransactionCategory(transaction, request, dispatch);
     };
@@ -61,6 +62,8 @@ const Transaction = ({
             return (
                 <TransactionDialog
                     transaction={transaction}
+                    categoryId={categoryId}
+                    unassignedId={unassignedId}
                     {...props}
                 />
             );
@@ -68,7 +71,7 @@ const Transaction = ({
     };
 
     const renderCategoryButton = () => {
-        let categoryId = null;
+        let catId = null;
 
         if (transaction.categories && transaction.categories.length > 0) {
             if (transaction.categories.length > 1) {
@@ -80,14 +83,14 @@ const Transaction = ({
                 );
             }
 
-            categoryId = transaction.categories[0].categoryId;
+            catId = transaction.categories[0].categoryId;
         }
 
-        return <CategoryInput categoryId={categoryId} onChange={handleChange} />;
+        return <CategoryInput categoryId={catId} onChange={handleChange} />;
     };
 
     const renderBankInfo = () => {
-        if (!account) {
+        if (categoryId !== null) {
             return (
                 <>
                     <div className="transaction-field">{transaction.institute_name}</div>
@@ -133,7 +136,8 @@ Transaction.propTypes = {
     balance: PropTypes.number.isRequired,
     selected: PropTypes.bool.isRequired,
     dispatch: PropTypes.func.isRequired,
-    account: PropTypes.bool.isRequired,
+    categoryId: PropTypes.number.isRequired,
+    unassignedId: PropTypes.number.isRequired,
 };
 
 export default connect()(Transaction);

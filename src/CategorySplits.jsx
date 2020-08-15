@@ -13,6 +13,7 @@ function CategorySplitItem({
     onDeltaChange,
     onAddItem,
     onDeleteItem,
+    showBalances,
 }) {
     const handleCategoryChange = (categoryId) => {
         onCategoryChange(split.id, categoryId);
@@ -33,12 +34,29 @@ function CategorySplitItem({
     const categoryId = split ? split.categoryId : null;
     const newBalance = balance === null ? null : balance - split.amount;
 
+    const renderBalances = () => {
+        if (showBalances) {
+            return (
+                <>
+                    <Amount amount={balance} />
+                    <Amount amount={newBalance} />
+                </>
+            );
+        }
+
+        return null;
+    };
+
+    let className = 'transaction-split-item';
+    if (!showBalances) {
+        className += ' no-balances';
+    }
+
     return (
-        <div className="transaction-split-item">
+        <div className={className}>
             <CategoryInput onChange={handleCategoryChange} categoryId={categoryId} />
             <AmountInput onDeltaChange={handleDeltaChange} name="amount" amount={split.amount} />
-            <Amount amount={balance} />
-            <Amount amount={newBalance} />
+            {renderBalances()}
             <IconButton icon="plus" onClick={handleAddItem} />
             <IconButton icon="minus" onClick={handleDeleteItem} />
         </div>
@@ -52,6 +70,7 @@ CategorySplitItem.propTypes = {
     onDeleteItem: PropTypes.func.isRequired,
     onDeltaChange: PropTypes.func.isRequired,
     onCategoryChange: PropTypes.func.isRequired,
+    showBalances: PropTypes.bool.isRequired,
 };
 
 CategorySplitItem.defaultProps = {
@@ -70,6 +89,7 @@ const CategorySplits = ({
     onChange,
     total,
     groups,
+    showBalances,
 }) => {
     const [editedSplits, setEditedSplits] = useState(splits.map((s) => {
         if (s.id === undefined) {
@@ -176,6 +196,7 @@ const CategorySplits = ({
                         onDeleteItem={handleDeleteItem}
                         onDeltaChange={handleDeltaChange}
                         onCategoryChange={handleCategoryChange}
+                        showBalances={showBalances}
                     />
                 );
             })}
@@ -188,6 +209,11 @@ CategorySplits.propTypes = {
     splits: PropTypes.arrayOf(PropTypes.shape()).isRequired,
     total: PropTypes.number.isRequired,
     groups: PropTypes.arrayOf(PropTypes.shape()).isRequired,
+    showBalances: PropTypes.bool,
+};
+
+CategorySplits.defaultProps = {
+    showBalances: false,
 };
 
 export default connect(mapStateToProps)(CategorySplits);

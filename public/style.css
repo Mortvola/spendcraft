@@ -503,6 +503,10 @@ body {
 	align-items: center;
 }
 
+.transaction-split-item.no-balances {
+	grid-template-columns: repeat(2, minmax(0, 1fr)) repeat(2, 28px);
+}
+
 .transaction-split-item > input {
 	border: solid 1px gray;
 	border-radius: 4px;

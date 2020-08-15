@@ -12,6 +12,7 @@ const mapStateToProps = (state) => ({
     pending: state.transactions.pending,
     balance: state.transactions.balance,
     categoryId: state.transactions.categoryId,
+    unassignedId: state.categoryTree.unassignedId,
 });
 
 const Register = ({
@@ -19,10 +20,9 @@ const Register = ({
     transactions,
     pending,
     categoryId,
-    ...props
+    unassignedId,
+    balance,
 }) => {
-    let { balance } = props;
-
     const [selectedTransaction, setSelectedTransaction] = useState(null);
 
     const handleClick = (transactionId) => {
@@ -41,6 +41,7 @@ const Register = ({
         }
 
         if (trans) {
+            let runningBalance = balance;
             trans.forEach((transaction) => {
                 let { amount } = transaction;
 
@@ -54,14 +55,15 @@ const Register = ({
                     key={transaction.id}
                     transaction={transaction}
                     amount={amount}
-                    balance={balance}
+                    balance={runningBalance}
                     onClick={handleClick}
                     selected={selected}
-                    account={categoryId === null}
+                    categoryId={categoryId}
+                    unassignedId={unassignedId}
                 />);
 
-                if (balance !== undefined) {
-                    balance -= amount;
+                if (runningBalance !== undefined) {
+                    runningBalance -= amount;
                 }
             });
         }

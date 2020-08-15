@@ -46,19 +46,18 @@ function validateSplits(splits) {
     return error;
 }
 
-const mapStateToProps = (state) => ({
-    unassignedId: state.categoryTree.unassignedId,
-});
-
 const TransactionDialog = ({
     show,
     onClose,
     onExited,
     title,
     transaction,
+    categoryId,
     unassignedId,
     dispatch,
 }) => {
+    const showBalances = categoryId === unassignedId;
+
     const computeRemaining = (categories, sign = 1) => {
         let sum = 0;
         if (categories) {
@@ -103,6 +102,19 @@ const TransactionDialog = ({
         updateTransactionCategory(transaction, { splits }, dispatch, onClose);
     };
 
+    const renderBalanceHeaders = () => {
+        if (showBalances) {
+            return (
+                <>
+                    <div className="dollar-amount">Current Balance</div>
+                    <div className="dollar-amount">New Balance</div>
+                </>
+            );
+        }
+
+        return null;
+    };
+
     return (
         <ModalDialog
             initialValues={{
@@ -119,39 +131,46 @@ const TransactionDialog = ({
             onClose={onClose}
             onExited={onExited}
             title={title}
-            size="lg"
-            form={() => (
-                <>
-                    <div className="cat-fund-table">
-                        <div className="transaction-split-item cat-fund-title">
-                            <div className="fund-list-cat-name">Category</div>
-                            <div className="dollar-amount">Amount</div>
-                            <div className="dollar-amount">Current Balance</div>
-                            <div className="dollar-amount">New Balance</div>
-                        </div>
+            size={showBalances ? 'lg' : 'md'}
+            form={() => {
+                let splitItemClass = 'transaction-split-item';
+                if (!showBalances) {
+                    splitItemClass += ' no-balances';
+                }
 
-                        <Field name="splits" validate={validateSplits}>
-                            {({ field: { value, name }, form: { setFieldValue } }) => (
-                                <CategorySplits
-                                    splits={value}
-                                    total={Math.abs(transaction.amount)}
-                                    onChange={(splits) => {
-                                        setFieldValue(name, splits);
-                                        setRemaining(computeRemaining(splits));
-                                    }}
-                                />
-                            )}
-                        </Field>
-                        <ErrorMessage name="splits" />
+                return (
+                    <>
+                        <div className="cat-fund-table">
+                            <div className={`${splitItemClass} cat-fund-title`}>
+                                <div className="fund-list-cat-name">Category</div>
+                                <div className="dollar-amount">Amount</div>
+                                {renderBalanceHeaders()}
+                            </div>
 
-                        <div className="transaction-split-item">
-                            <div />
-                            <div className="unassigned-label">Unassigned:</div>
-                            <Amount amount={remaining} />
+                            <Field name="splits" validate={validateSplits}>
+                                {({ field: { value, name }, form: { setFieldValue } }) => (
+                                    <CategorySplits
+                                        splits={value}
+                                        total={Math.abs(transaction.amount)}
+                                        showBalances={showBalances}
+                                        onChange={(splits) => {
+                                            setFieldValue(name, splits);
+                                            setRemaining(computeRemaining(splits));
+                                        }}
+                                    />
+                                )}
+                            </Field>
+                            <ErrorMessage name="splits" />
+
+                            <div className={splitItemClass}>
+                                {showBalances ? <div /> : null}
+                                <div className="unassigned-label">Unassigned:</div>
+                                <Amount amount={remaining} />
+                            </div>
                         </div>
-                    </div>
-                </>
-            )}
+                    </>
+                );
+            }}
         />
     );
 };
@@ -166,12 +185,14 @@ TransactionDialog.propTypes = {
     onExited: PropTypes.func.isRequired,
     title: PropTypes.string,
     dispatch: PropTypes.func.isRequired,
+    categoryId: PropTypes.number,
     unassignedId: PropTypes.number.isRequired,
 };
 
 TransactionDialog.defaultProps = {
     title: 'Transaction Categories',
+    categoryId: null,
 };
 
-export default connect(mapStateToProps)(TransactionDialog);
+export default connect()(TransactionDialog);
 export { updateTransactionCategory };
