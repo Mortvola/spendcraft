@@ -34,7 +34,7 @@ const CategoryInput = ({
     const [selected, setSelected] = useState({ groupIndex: null, categoryIndex: null });
     const [open, setOpen] = useExclusiveBool(false);
     const [value, setValue] = useState(getCategoryName(groups, categoryId));
-    const [originalValue] = useState(getCategoryName(groups, categoryId));
+    const [originalValue, setOriginalValue] = useState(getCategoryName(groups, categoryId));
     const [filter, setFilter] = useState(null);
     const inputRef = useRef(null);
     const selectorRef = useRef(null);
@@ -77,16 +77,21 @@ const CategoryInput = ({
     };
 
     useEffect(() => {
-        document.addEventListener('mousedown', handleMouseDown, false);
+        if (open) {
+            document.addEventListener('mousedown', handleMouseDown, false);
 
-        return () => {
-            document.removeEventListener('mousedown', handleMouseDown);
-        };
+            return () => {
+                document.removeEventListener('mousedown', handleMouseDown);
+            };
+        }
+
+        return undefined;
     });
 
     const handleClick = (event) => {
         event.stopPropagation();
         if (!open) {
+            setOriginalValue(getCategoryName(groups, categoryId));
             setOpen(true);
         }
         // if (selectorRef.current) {
@@ -107,6 +112,7 @@ const CategoryInput = ({
         setSelected({ groupIndex, categoryIndex });
         setOpen(false);
         setValue(getCategoryName(groups, category.id));
+        setOriginalValue(getCategoryName(groups, categoryId));
 
         if (onChange) {
             onChange(category.id);
@@ -227,6 +233,7 @@ const CategoryInput = ({
             switch (event.key) {
             case 'Escape': {
                 event.stopPropagation();
+                event.preventDefault();
                 handleCancel();
                 break;
             }
@@ -245,6 +252,7 @@ const CategoryInput = ({
         }
         else if (event.key.length === 1 || event.key === 'Backspace' || event.key === 'Delete'
                 || event.key === 'ArrowDown') {
+            setOriginalValue(getCategoryName(groups, categoryId));
             setOpen(true);
         }
     };
