@@ -1,64 +1,42 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import PropTypes from 'prop-types';
 
-class CategorySelectorCategory extends React.Component {
-    constructor(props) {
-        super(props);
+const CategorySelectorCategory = ({
+    category,
+    selected,
+    onSelected,
+}) => {
+    const ref = useRef(null);
 
-        this.handleMouseDown = this.handleMouseDown.bind(this);
-        this.handleClick = this.handleClick.bind(this);
-
-        this.ref = React.createRef();
-    }
-
-    componentDidUpdate() {
-        const { selected } = this.props;
-
-        if (selected && this.ref.current) {
-            this.ref.current.scrollIntoView(false);
+    useEffect(() => {
+        if (selected && ref.current) {
+            ref.current.scrollIntoView(false);
         }
-    }
+    }, [selected, ref]);
 
-    handleClick(event) {
-        const { onClick } = this.props;
-
-        event.stopPropagation();
-        onClick();
-    }
-
-    handleMouseDown(event) {
-        const { onSelected, category } = this.props;
-
-        event.preventDefault();
+    const handleClick = (event) => {
         event.stopPropagation();
         onSelected(category);
+    };
+
+    let className = 'cat-list-cat category-list-item category-select-item';
+
+    if (selected) {
+        className += ' selected';
     }
 
-    render() {
-        const { selected, onSelected, category } = this.props;
-
-        let className = 'cat-list-cat category-list-item category-select-item';
-
-        if (selected) {
-            className += ' selected';
-            onSelected(category);
-        }
-
-        return (
-            <div
-                className={className}
-                onMouseDown={this.handleMouseDown}
-                onClick={this.handleClick}
-                ref={this.ref}
-            >
-                {category.name}
-            </div>
-        );
-    }
-}
+    return (
+        <div
+            className={className}
+            onClick={handleClick}
+            ref={ref}
+        >
+            {category.name}
+        </div>
+    );
+};
 
 CategorySelectorCategory.propTypes = {
-    onClick: PropTypes.func.isRequired,
     onSelected: PropTypes.func.isRequired,
     selected: PropTypes.bool.isRequired,
     category: PropTypes.shape().isRequired,

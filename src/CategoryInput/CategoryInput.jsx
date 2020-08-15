@@ -1,155 +1,312 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { connect } from 'react-redux';
+import ReactDOM from 'react-dom';
 import PropTypes from 'prop-types';
-import categoryList from '../Categories';
-import { createSelector, closeSelector, selectorRef } from './CategorySelector';
+import CategorySelector from './CategorySelector';
+import useExclusiveBool from '../ExclusiveBool';
 
-class CategoryInput extends React.Component {
-    constructor(props) {
-        super(props);
+const mapStateToProps = (state) => ({
+    groups: state.categoryTree.groups,
+});
 
-        const { categoryId } = this.props;
+const getCategoryName = (groups, categoryId) => {
+    let categoryName = null;
 
-        let categoryName = '';
-        if (categoryId) { // && categoryList) {
-            categoryName = categoryList.getCategoryName(categoryId);
+    groups.find((group) => {
+        const category = group.categories.find((cat) => cat.id === categoryId);
+
+        if (category) {
+            categoryName = `${group.name}:${category.name}`;
+            return true;
         }
 
-        this.state = {
-            value: categoryName,
+        return false;
+    });
+
+    return categoryName;
+};
+
+const CategoryInput = ({
+    categoryId,
+    groups,
+    onChange,
+}) => {
+    const [selected, setSelected] = useState({ groupIndex: null, categoryIndex: null });
+    const [open, setOpen] = useExclusiveBool(false);
+    const [value, setValue] = useState(getCategoryName(groups, categoryId));
+    const [originalValue] = useState(getCategoryName(groups, categoryId));
+    const [filter, setFilter] = useState(null);
+    const inputRef = useRef(null);
+    const selectorRef = useRef(null);
+
+    const categoryFiltered = (group, category, filterParts) => {
+        if (filterParts.length > 0) {
+            if (filterParts.length === 1) {
+                // No colon. Filter can be applied to both group and categories.
+                if (category.name.toLowerCase().includes(filterParts[0])) {
+                    return false;
+                }
+
+                return !group.name.toLowerCase().includes(filterParts[0]);
+            }
+
+            // If the group contains the first part of the filter then
+            // consider adding the categories
+            if (filterParts[1] === '' || category.name.toLowerCase().includes(filterParts[1])) {
+                return false;
+            }
+
+            return !(filterParts[0] === '' || group.name.toLowerCase().includes(filterParts[0]));
+        }
+
+        return false;
+    };
+
+    const handleCancel = () => {
+        setOpen(false);
+        setValue(originalValue);
+        setFilter(null);
+    };
+
+    const handleMouseDown = (event) => {
+        if (!inputRef.current.contains(event.target)
+            && (selectorRef.current === null || !selectorRef.current.contains(event.target))) {
+            event.stopPropagation();
+            handleCancel();
+        }
+    };
+
+    useEffect(() => {
+        document.addEventListener('mousedown', handleMouseDown, false);
+
+        return () => {
+            document.removeEventListener('mousedown', handleMouseDown);
         };
+    });
 
-        this.previousValue = categoryName;
-
-        this.inputRef = React.createRef();
-
-        this.handleClick = this.handleClick.bind(this);
-        this.handleChange = this.handleChange.bind(this);
-        this.handleBlur = this.handleBlur.bind(this);
-        this.handleKeydown = this.handleKeydown.bind(this);
-        this.handleCancel = this.handleCancel.bind(this);
-        this.handleSelect = this.handleSelect.bind(this);
-
-        //        $(document).on('category', (event, categories) => {
-        //            if (this.props.categoryId) { // && categoryList) {
-        //                categoryName = categoryList.getCategoryName (this.props.categoryId);
-        //                console.log ("Category name " + categoryName)
-        //            }
-        //        });
-    }
-
-    openSelector() {
-        if (this.inputRef.current) {
-            const position = this.inputRef.current.getBoundingClientRect();
-
-            createSelector({
-                left: position.left,
-                top: position.bottom,
-                width: position.right - position.left,
-                height: 100,
-                visible: true,
-                owner: this,
-                onCancel: this.handleCancel,
-                onSelect: this.handleSelect,
-            });
+    const handleClick = (event) => {
+        event.stopPropagation();
+        if (!open) {
+            setOpen(true);
         }
-    }
+        // if (selectorRef.current) {
+        //     if (selectorRef.current.getOwner() !== this) {
+        //         event.stopPropagation();
+        //         setOpen(true);
+        //     }
+        //     else if (selectorRef.current.visible()) {
+        //         event.stopPropagation();
+        //     }
+        // }
+    };
 
-    handleClick(event) {
-        if (selectorRef.current) {
-            if (selectorRef.current.getOwner() !== this) {
-                event.stopPropagation();
-                this.openSelector();
-            }
-            else if (selectorRef.current.visible()) {
-                event.stopPropagation();
-            }
-        }
-    }
+    const handleSelect = (group, category) => {
+        const groupIndex = groups.findIndex((g) => g.id === group.id);
+        const categoryIndex = groups[groupIndex].categories.findIndex((c) => c.id === category.id);
 
-    handleSelect(group, category) {
-        const { onChange } = this.props;
-
-        this.selection = { group, category };
-        closeSelector();
-        this.setState({ value: categoryList.getCategoryName(category.id) });
+        setSelected({ groupIndex, categoryIndex });
+        setOpen(false);
+        setValue(getCategoryName(groups, category.id));
 
         if (onChange) {
             onChange(category.id);
         }
-    }
+    };
 
-    handleCancel() {
-        closeSelector();
-        this.setState({ value: this.previousValue });
-    }
+    const handleChange = (event) => {
+        setValue(event.target.value);
+        setFilter(event.target.value);
+    };
 
-    handleChange(event) {
-        this.setState({ value: event.target.value });
+    const handleBlur = () => {
+        setOpen(false);
+    };
 
-        if (selectorRef.current) {
-            selectorRef.current.setState({ filter: event.target.value });
+    const handleDown = () => {
+        const newSelection = {
+            groupIndex: selected.groupIndex,
+            categoryIndex: selected.categoryIndex,
+        };
+
+        if (newSelection.groupIndex === null || newSelection.categoryIndex === null) {
+            newSelection.groupIndex = 0;
+            newSelection.categoryIndex = 0;
         }
-    }
+        else {
+            newSelection.categoryIndex += 1;
 
-    handleBlur(event) {
-        /*
-        if (selectorRef.current.visible ()) {
-            selectorRef.current.cancel ();
+            if (newSelection.categoryIndex
+                >= groups[newSelection.groupIndex].categories.length) {
+                newSelection.groupIndex += 1;
+                newSelection.categoryIndex = 0;
+            }
         }
-        */
-    }
 
-    handleKeydown(event) {
-        if (selectorRef.current.visible()) {
-            if (event.key === 'Escape') {
+        const filterParts = filter ? filter.toLowerCase().split(':') : [];
+
+        while (
+            newSelection.groupIndex < groups.length
+            && categoryFiltered(
+                groups[newSelection.groupIndex],
+                groups[newSelection.groupIndex].categories[newSelection.categoryIndex],
+                filterParts,
+            )
+        ) {
+            newSelection.categoryIndex += 1;
+
+            if (newSelection.categoryIndex
+                >= groups[newSelection.groupIndex].categories.length) {
+                newSelection.groupIndex += 1;
+                newSelection.categoryIndex = 0;
+            }
+        }
+
+        if (newSelection.groupIndex < groups.length
+            && newSelection.categoryIndex < groups[newSelection.groupIndex].categories.length) {
+            setSelected(newSelection);
+        }
+    };
+
+    const handleUp = () => {
+        if (selected.groupIndex !== null && selected.categoryIndex !== null) {
+            const newSelection = {
+                groupIndex: selected.groupIndex,
+                categoryIndex: selected.categoryIndex,
+            };
+
+            const filterParts = filter ? filter.toLowerCase().split(':') : [];
+
+            do {
+                newSelection.categoryIndex -= 1;
+
+                if (newSelection.categoryIndex < 0) {
+                    newSelection.groupIndex -= 1;
+                    if (newSelection.groupIndex >= 0) {
+                        newSelection.categoryIndex = groups[newSelection.groupIndex]
+                            .categories.length - 1;
+                    }
+                }
+            } while (
+                newSelection.groupIndex >= 0
+                && categoryFiltered(
+                    groups[newSelection.groupIndex],
+                    groups[newSelection.groupIndex].categories[newSelection.categoryIndex],
+                    filterParts,
+                )
+            );
+
+            if (newSelection.groupIndex >= 0
+                && newSelection.categoryIndex >= 0) {
+                setSelected(newSelection);
+            }
+        }
+        else {
+            setSelected({ groupIndex: 0, categoryIndex: 0 });
+        }
+    };
+
+    const handleEnter = () => {
+        if (selected.categoryIndex !== null) {
+            const selectedGroup = groups[selected.groupIndex];
+            let selectedCategory = null;
+            if (selectedGroup) {
+                selectedCategory = selectedGroup.categories[selected.categoryIndex];
+            }
+
+            setOpen(false);
+            setValue(getCategoryName(groups, selectedCategory.id));
+
+            if (onChange) {
+                onChange(selectedCategory.id);
+            }
+        }
+    };
+
+    const handleKeydown = (event) => {
+        if (open && selectorRef.current) {
+            switch (event.key) {
+            case 'Escape': {
                 event.stopPropagation();
-                this.handleCancel();
+                handleCancel();
+                break;
             }
-            else if (event.key === 'ArrowDown') {
-                selectorRef.current.down();
-            }
-            else if (event.key === 'ArrowUp') {
-                selectorRef.current.up();
-            }
-            else if (event.key === 'Enter') {
-                selectorRef.current.enter();
-            }
-            else if (event.key === 'Tab') {
-                selectorRef.current.enter();
+            case 'ArrowDown':
+                handleDown();
+                break;
+            case 'ArrowUp':
+                handleUp();
+                break;
+            case 'Enter':
+            case 'Tab':
+                handleEnter();
+                break;
+            default:
             }
         }
         else if (event.key.length === 1 || event.key === 'Backspace' || event.key === 'Delete'
                 || event.key === 'ArrowDown') {
-            this.openSelector();
+            setOpen(true);
         }
-    }
+    };
 
-    render() {
-        const { value } = this.state;
+    const renderSelector = () => {
+        if (open && inputRef.current) {
+            const position = inputRef.current.getBoundingClientRect();
 
-        return (
+            const selectedGroup = selected.groupIndex !== null ? groups[selected.groupIndex] : null;
+            let selectedCategory = null;
+            if (selectedGroup) {
+                selectedCategory = selectedGroup.categories[selected.categoryIndex];
+            }
+
+            return ReactDOM.createPortal(
+                <CategorySelector
+                    ref={selectorRef}
+                    left={position.left}
+                    selectedGroup={selectedGroup}
+                    selectedCategory={selectedCategory}
+                    top={position.bottom}
+                    width={position.right - position.left}
+                    height={100}
+                    visible
+                    onCancel={handleCancel}
+                    onSelect={handleSelect}
+                    filter={filter}
+                />,
+                document.querySelector('#hidden'),
+            );
+        }
+
+        return null;
+    };
+
+    return (
+        <>
             <input
-                ref={this.inputRef}
+                ref={inputRef}
                 className="category-input"
                 type="text"
                 placeholder="Unassigned"
-                onClick={this.handleClick}
-                onChange={this.handleChange}
-                onBlur={this.handleBlur}
-                onKeyDown={this.handleKeydown}
-                value={value}
+                onClick={handleClick}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                onKeyDown={handleKeydown}
+                value={value || ''}
             />
-        );
-    }
-}
+            {renderSelector()}
+        </>
+    );
+};
 
 CategoryInput.propTypes = {
     categoryId: PropTypes.number,
+    groups: PropTypes.arrayOf(PropTypes.shape()),
     onChange: PropTypes.func.isRequired,
 };
 
 CategoryInput.defaultProps = {
     categoryId: null,
+    groups: null,
 };
 
-export default CategoryInput;
+export default connect(mapStateToProps)(CategoryInput);
