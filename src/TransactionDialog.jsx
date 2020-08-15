@@ -46,20 +46,29 @@ function validateSplits(splits) {
     return error;
 }
 
-const TransactionDialog = connect()((props) => {
-    const {
-        show,
-        onClose,
-        onExited,
-        title,
-        transaction,
-        dispatch,
-    } = props;
+const mapStateToProps = (state) => ({
+    unassignedId: state.categoryTree.unassignedId,
+});
 
+const TransactionDialog = ({
+    show,
+    onClose,
+    onExited,
+    title,
+    transaction,
+    unassignedId,
+    dispatch,
+}) => {
     const computeRemaining = (categories, sign = 1) => {
         let sum = 0;
         if (categories) {
-            sum = categories.reduce((accum, item) => accum + item.amount, 0);
+            sum = categories.reduce((accum, item) => {
+                if (item.categoryId !== undefined && item.categoryId !== unassignedId) {
+                    return accum + item.amount;
+                }
+
+                return accum;
+            }, 0);
         }
 
         return Math.abs(transaction.amount) - sign * sum;
@@ -116,7 +125,7 @@ const TransactionDialog = connect()((props) => {
                     <div className="cat-fund-table">
                         <div className="transaction-split-item cat-fund-title">
                             <div className="fund-list-cat-name">Category</div>
-                            <div className="dollar-amount">Balance</div>
+                            <div className="dollar-amount">Current Balance</div>
                             <div className="dollar-amount">Amount</div>
                             <div className="dollar-amount">New Balance</div>
                         </div>
@@ -137,17 +146,15 @@ const TransactionDialog = connect()((props) => {
 
                         <div className="transaction-split-item">
                             <div />
-                            <div className="dollar-amount">
-                                <label>Unassigned</label>
-                                <Amount amount={remaining} />
-                            </div>
+                            <div className="unassigned-label">Unassigned:</div>
+                            <Amount amount={remaining} />
                         </div>
                     </div>
                 </>
             )}
         />
     );
-});
+};
 
 TransactionDialog.propTypes = {
     show: PropTypes.bool.isRequired,
@@ -159,10 +166,12 @@ TransactionDialog.propTypes = {
     onExited: PropTypes.func.isRequired,
     title: PropTypes.string,
     dispatch: PropTypes.func.isRequired,
+    unassignedId: PropTypes.number.isRequired,
 };
 
 TransactionDialog.defaultProps = {
     title: 'Transaction Categories',
 };
 
-export { updateTransactionCategory, TransactionDialog };
+export default connect(mapStateToProps)(TransactionDialog);
+export { updateTransactionCategory };

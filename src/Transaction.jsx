@@ -4,7 +4,7 @@ import { connect } from 'react-redux';
 import IconButton from './IconButton';
 import CategoryInput from './CategoryInput/CategoryInput';
 import Amount from './Amount';
-import { updateTransactionCategory, TransactionDialog } from './TransactionDialog';
+import TransactionDialog, { updateTransactionCategory } from './TransactionDialog';
 import CategoryTransferDialog from './CategoryTransferDialog';
 import { ModalLauncher } from './Modal';
 import RebalanceDialog from './rebalance/RebalanceDialog';

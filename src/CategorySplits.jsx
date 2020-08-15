@@ -1,129 +1,193 @@
 import React, { useState } from 'react';
+import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 import CategoryInput from './CategoryInput/CategoryInput';
 import IconButton from './IconButton';
 import AmountInput from './AmountInput';
+import Amount from './Amount';
 
-
-function CategorySplitItem(props) {
+function CategorySplitItem({
+    split,
+    balance,
+    onCategoryChange,
+    onDeltaChange,
+    onAddItem,
+    onDeleteItem,
+}) {
     const handleCategoryChange = (categoryId) => {
-        props.onCategoryChange(props.split.id, categoryId);
+        onCategoryChange(split.id, categoryId);
     };
 
     const handleDeltaChange = (amount, delta) => {
-        props.onDeltaChange(props.split.id, amount, delta);
+        onDeltaChange(split.id, amount, delta);
     };
 
     const handleAddItem = () => {
-        props.onAddItem(props.split.id);
+        onAddItem(split.id);
     };
 
     const handleDeleteItem = () => {
-        props.onDeleteItem(props.split.id);
+        onDeleteItem(split.id);
     };
 
-    const categoryId = props.split ? props.split.categoryId : null;
+    const categoryId = split ? split.categoryId : null;
+    const newBalance = balance === null ? null : balance - split.amount;
 
     return (
         <div className="transaction-split-item">
             <CategoryInput onChange={handleCategoryChange} categoryId={categoryId} />
-            <div className="dollar-amount" />
-            <AmountInput onDeltaChange={handleDeltaChange} name="amount" amount={props.split.amount} />
-            <div className="dollar-amount" />
+            <Amount amount={balance} />
+            <AmountInput onDeltaChange={handleDeltaChange} name="amount" amount={split.amount} />
+            <Amount amount={newBalance} />
             <IconButton icon="plus" onClick={handleAddItem} />
             <IconButton icon="minus" onClick={handleDeleteItem} />
-      </div>
+        </div>
     );
 }
 
 CategorySplitItem.propTypes = {
-    split: PropTypes.object,
+    split: PropTypes.shape(),
+    balance: PropTypes.number,
     onAddItem: PropTypes.func.isRequired,
     onDeleteItem: PropTypes.func.isRequired,
     onDeltaChange: PropTypes.func.isRequired,
     onCategoryChange: PropTypes.func.isRequired,
 };
 
+CategorySplitItem.defaultProps = {
+    split: null,
+    balance: null,
+};
+
+const mapStateToProps = (state) => ({
+    groups: state.categoryTree.groups,
+});
+
 let nextId = -1;
 
-function CategorySplits(props) {
-    props.splits.forEach((element) => {
-        if (element.id === undefined) element.id = nextId--;
-    });
-    const [splits, setSplits] = useState(props.splits);
+const CategorySplits = ({
+    splits,
+    onChange,
+    total,
+    groups,
+}) => {
+    const [editedSplits, setEditedSplits] = useState(splits.map((s) => {
+        if (s.id === undefined) {
+            const id = nextId;
+            nextId -= 1;
 
-    const handleDeltaChange = (id, amount, delta) => {
-        const split = splits.find((s) => s.id == id);
-
-        if (split) {
-            split.amount = amount;
-
-            setSplits(splits.slice());
+            return {
+                ...s,
+                id,
+            };
         }
 
-        props.onChange(splits, -delta);
+        return s;
+    }));
+
+    const handleDeltaChange = (id, amount, delta) => {
+        const splitIndex = editedSplits.findIndex((s) => s.id === id);
+
+        if (splitIndex !== -1) {
+            const newSplits = [
+                ...editedSplits.slice(0, splitIndex),
+                { ...editedSplits[splitIndex], amount },
+                ...editedSplits.slice(splitIndex + 1),
+            ];
+
+            setEditedSplits(newSplits);
+            onChange(newSplits, -delta);
+        }
     };
 
     const handleCategoryChange = (id, categoryId) => {
-        const split = splits.find((s) => s.id == id);
+        const splitIndex = editedSplits.findIndex((s) => s.id === id);
 
-        if (split) {
-            split.categoryId = categoryId;
+        if (splitIndex !== -1) {
+            const newSplits = [
+                ...editedSplits.slice(0, splitIndex),
+                { ...editedSplits[splitIndex], categoryId },
+                ...editedSplits.slice(splitIndex + 1),
+            ];
 
-            setSplits(splits.slice());
+            setEditedSplits(newSplits);
+            onChange(newSplits, 0);
         }
     };
 
     const handleAddItem = (afterId) => {
-        const index = splits.findIndex((s) => s.id == afterId);
+        const index = editedSplits.findIndex((s) => s.id === afterId);
 
-        if (index != -1) {
-            const sum = splits.reduce((accum, item) => accum + item.amount, 0);
-            const amount = props.total - sum;
+        if (index !== -1) {
+            const sum = editedSplits.reduce((accum, item) => accum + item.amount, 0);
+            const amount = total - sum;
 
-            const newSplits = splits.slice();
-            newSplits.splice(index + 1, 0, { id: nextId--, amount });
+            const newSplits = editedSplits.slice();
+            newSplits.splice(index + 1, 0, { id: nextId, amount });
+            nextId -= 1;
 
-            setSplits(newSplits);
-            props.onChange(splits, -amount);
+            setEditedSplits(newSplits);
+            onChange(newSplits, -amount);
         }
     };
 
     const handleDeleteItem = (id) => {
-        if (splits.length > 1) {
-            const index = splits.findIndex((s) => s.id == id);
+        if (editedSplits.length > 1) {
+            const index = editedSplits.findIndex((s) => s.id === id);
 
-            if (index != -1) {
-                const newSplits = splits.slice();
+            if (index !== -1) {
+                const newSplits = editedSplits.slice();
                 const { amount } = newSplits[index];
                 newSplits.splice(index, 1);
 
-                setSplits(newSplits);
-                props.onChange(splits, amount);
+                setEditedSplits(newSplits);
+                onChange(newSplits, amount);
             }
         }
     };
 
+    const getCategoryBalance = (categoryId) => {
+        let balance = null;
+
+        groups.find((group) => {
+            const category = group.categories.find((cat) => cat.id === categoryId);
+
+            if (category) {
+                balance = category.amount;
+                return true;
+            }
+
+            return false;
+        });
+
+        return balance;
+    };
+
     return (
         <div className="transaction-split-items">
-            {splits.map((s) => (
-            <CategorySplitItem
-                  key={s.id}
-                  split={s}
-                  onAddItem={handleAddItem}
-                  onDeleteItem={handleDeleteItem}
-                  onDeltaChange={handleDeltaChange}
-                  onCategoryChange={handleCategoryChange}
-                />
-            ))}
-      </div>
+            {editedSplits.map((s) => {
+                const currentBalance = getCategoryBalance(s.categoryId);
+                return (
+                    <CategorySplitItem
+                        key={s.id}
+                        split={s}
+                        balance={currentBalance}
+                        onAddItem={handleAddItem}
+                        onDeleteItem={handleDeleteItem}
+                        onDeltaChange={handleDeltaChange}
+                        onCategoryChange={handleCategoryChange}
+                    />
+                );
+            })}
+        </div>
     );
-}
+};
 
 CategorySplits.propTypes = {
     onChange: PropTypes.func.isRequired,
-    splits: PropTypes.array.isRequired,
+    splits: PropTypes.arrayOf(PropTypes.shape()).isRequired,
     total: PropTypes.number.isRequired,
+    groups: PropTypes.arrayOf(PropTypes.shape()).isRequired,
 };
 
-export default CategorySplits;
+export default connect(mapStateToProps)(CategorySplits);

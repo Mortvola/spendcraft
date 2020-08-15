@@ -94,15 +94,6 @@ const CategoryInput = ({
             setOriginalValue(getCategoryName(groups, categoryId));
             setOpen(true);
         }
-        // if (selectorRef.current) {
-        //     if (selectorRef.current.getOwner() !== this) {
-        //         event.stopPropagation();
-        //         setOpen(true);
-        //     }
-        //     else if (selectorRef.current.visible()) {
-        //         event.stopPropagation();
-        //     }
-        // }
     };
 
     const handleSelect = (group, category) => {

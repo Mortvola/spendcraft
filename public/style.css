@@ -702,3 +702,7 @@ body {
     width: 100%;
     height: 100%;
 }
+
+.unassigned-label {
+    justify-self: right;
+}
