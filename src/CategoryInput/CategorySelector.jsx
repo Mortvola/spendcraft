@@ -69,7 +69,6 @@ const CategorySelector = React.forwardRef(({
     filteredGroups,
     selectedGroup,
     selectedCategory,
-    visible,
     left,
     top,
     width,
@@ -78,11 +77,9 @@ const CategorySelector = React.forwardRef(({
 }, forwardRef) => {
     let style = { display: 'none' };
 
-    if (visible) {
-        style = {
-            left, top, width, height,
-        };
-    }
+    style = {
+        left, top, width, height,
+    };
 
     return (
         <div ref={forwardRef} className="drop-down" style={style}>
@@ -109,7 +106,6 @@ const CategorySelector = React.forwardRef(({
 });
 
 CategorySelector.propTypes = {
-    visible: PropTypes.bool.isRequired,
     left: PropTypes.number,
     top: PropTypes.number,
     width: PropTypes.number,
