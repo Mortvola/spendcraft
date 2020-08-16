@@ -6,8 +6,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node ace test",
-    "build": "browserify -t [ babelify --presets [ @babel/preset-react @babel/env ] ] -t dotenvify src/App.jsx --extension=.jsx  > ./public/bundle.js"
+    "build": "NODE_ENV=production browserify -t [ babelify ] src/App.jsx --extension=.jsx -t envify | terser --compress --mangle > public/bundle.js",
+    "dev-build": "browserify -t [ babelify --presets [ @babel/preset-react @babel/env ] ] src/App.jsx --extension=.jsx > public/bundle.js"
   },
   "keywords": [
     "adonisjs",
@@ -60,6 +60,7 @@
   },
   "devDependencies": {
     "dotenvify": "^1.0.0",
+    "envify": "^4.1.0",
     "eslint": "^6.8.0",
     "eslint-config-airbnb": "^18.2.0",
     "eslint-plugin-import": "^2.22.0",
