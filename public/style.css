@@ -234,6 +234,10 @@ body {
     flex: 0 0 auto;
 }
 
+.pending-register-title {
+  padding-left: 0.75rem;
+}
+
 .register-title {
 	color: white;
 	background-color: gray;
@@ -316,9 +320,15 @@ body {
 
 .cat-element-bar {
 	display: grid;
-	grid-template-columns: repeat(3, max-content);
+	grid-template-columns: repeat(2, max-content) minmax(0, 1fr);
 	align-items: center;
 	overflow: hidden;
+}
+
+.cat-list-name {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
 }
 
 .cat-list-cat {

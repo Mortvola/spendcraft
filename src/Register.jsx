@@ -98,7 +98,9 @@ const Register = ({
     if (!fetching && pending.length > 0) {
       return (
         <div className="register">
-          Pending Transactions:
+          <div className="pending-register-title">
+            Pending Transactions:
+          </div>
           <div className="register-title pending-transaction">
             <div />
             <div>Date</div>
