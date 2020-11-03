@@ -84,7 +84,7 @@ const Register = ({
           <div key={transaction.id} className="pending-transaction striped">
             <div />
             <div>{transaction.date}</div>
-            <div>{transaction.name}</div>
+            <div className="transaction-field">{transaction.name}</div>
             <Amount amount={transaction.amount} />
           </div>
         ));

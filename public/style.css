@@ -215,8 +215,8 @@ body {
 }
 
 .register-with-pending {
-    display: grid;
-    grid-auto-rows: 1fr fit-content(50%);
+    display: flex;
+    flex-flow: column;
     height: 100%;
 }
 
@@ -225,11 +225,13 @@ body {
     grid-template-rows: repeat(2, max-content) 1fr;
     height: 100%;
 	user-select: none;
-	overflow-y: auto;
+  overflow-y: auto;
+  height: max-content;
 }
 
 .register-with-pending .register:not(:first-child) {
     border-top: thin solid rgba(0, 0, 0, 0.15);
+    flex: 0 0 auto;
 }
 
 .register-title {
