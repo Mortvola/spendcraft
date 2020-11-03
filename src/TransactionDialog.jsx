@@ -152,6 +152,7 @@ const TransactionDialog = ({
                   <CategorySplits
                     splits={value}
                     total={Math.abs(transaction.amount)}
+                    credit={transaction.amount >= 0}
                     showBalances={showBalances}
                     onChange={(splits) => {
                       setFieldValue(name, splits);

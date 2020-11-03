@@ -1,2 +1,7 @@
-node_modules
-
+node_modules/
+/start/
+/server.js
+/providers/
+/database/
+/config/
+/app/

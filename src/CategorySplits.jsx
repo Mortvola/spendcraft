@@ -1,82 +1,7 @@
 import React, { useState } from 'react';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
-import CategoryInput from './CategoryInput/CategoryInput';
-import IconButton from './IconButton';
-import AmountInput from './AmountInput';
-import Amount from './Amount';
-
-function CategorySplitItem({
-  split,
-  balance,
-  onCategoryChange,
-  onDeltaChange,
-  onAddItem,
-  onDeleteItem,
-  showBalances,
-}) {
-  const handleCategoryChange = (categoryId) => {
-    onCategoryChange(split.id, categoryId);
-  };
-
-  const handleDeltaChange = (amount, delta) => {
-    onDeltaChange(split.id, amount, delta);
-  };
-
-  const handleAddItem = () => {
-    onAddItem(split.id);
-  };
-
-  const handleDeleteItem = () => {
-    onDeleteItem(split.id);
-  };
-
-  const categoryId = split ? split.categoryId : null;
-  const newBalance = balance === null ? null : balance - split.amount;
-
-  const renderBalances = () => {
-    if (showBalances) {
-      return (
-        <>
-          <Amount amount={balance} />
-          <Amount amount={newBalance} />
-        </>
-      );
-    }
-
-    return null;
-  };
-
-  let className = 'transaction-split-item';
-  if (!showBalances) {
-    className += ' no-balances';
-  }
-
-  return (
-    <div className={className}>
-      <CategoryInput onChange={handleCategoryChange} categoryId={categoryId} />
-      <AmountInput onDeltaChange={handleDeltaChange} name="amount" amount={split.amount} />
-      {renderBalances()}
-      <IconButton icon="plus" onClick={handleAddItem} />
-      <IconButton icon="minus" onClick={handleDeleteItem} />
-    </div>
-  );
-}
-
-CategorySplitItem.propTypes = {
-  split: PropTypes.shape(),
-  balance: PropTypes.number,
-  onAddItem: PropTypes.func.isRequired,
-  onDeleteItem: PropTypes.func.isRequired,
-  onDeltaChange: PropTypes.func.isRequired,
-  onCategoryChange: PropTypes.func.isRequired,
-  showBalances: PropTypes.bool.isRequired,
-};
-
-CategorySplitItem.defaultProps = {
-  split: null,
-  balance: null,
-};
+import CategorySplitItem from './CategorySplitItem';
 
 const mapStateToProps = (state) => ({
   groups: state.categoryTree.groups,
@@ -88,6 +13,7 @@ const CategorySplits = ({
   splits,
   onChange,
   total,
+  credit,
   groups,
   showBalances,
 }) => {
@@ -197,6 +123,7 @@ const CategorySplits = ({
             onDeltaChange={handleDeltaChange}
             onCategoryChange={handleCategoryChange}
             showBalances={showBalances}
+            credit={credit}
           />
         );
       })}
@@ -208,12 +135,14 @@ CategorySplits.propTypes = {
   onChange: PropTypes.func.isRequired,
   splits: PropTypes.arrayOf(PropTypes.shape()).isRequired,
   total: PropTypes.number.isRequired,
+  credit: PropTypes.bool,
   groups: PropTypes.arrayOf(PropTypes.shape()).isRequired,
   showBalances: PropTypes.bool,
 };
 
 CategorySplits.defaultProps = {
   showBalances: false,
+  credit: false,
 };
 
 export default connect(mapStateToProps)(CategorySplits);

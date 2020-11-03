@@ -46,7 +46,7 @@ CategorySelectorGroup.propTypes = {
   onSelected: PropTypes.func.isRequired,
   group: PropTypes.shape({
     name: PropTypes.string.isRequierd,
-    categories: PropTypes.array.isRequired,
+    categories: PropTypes.arrayOf(PropTypes.shape()).isRequired,
   }).isRequired,
   selected: PropTypes.string,
 };
