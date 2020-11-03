@@ -11,133 +11,133 @@ import RebalanceDialog from './rebalance/RebalanceDialog';
 import FundingDialog from './funding/FundingDialog';
 
 const Transaction = ({
-    transaction,
-    amount,
-    balance,
-    selected,
-    categoryId,
-    unassignedId,
-    dispatch,
+  transaction,
+  amount,
+  balance,
+  selected,
+  categoryId,
+  unassignedId,
+  dispatch,
 }) => {
-    const handleClick = () => {
-        // const { transaction, onClick } = props;
+  const handleClick = () => {
+    // const { transaction, onClick } = props;
 
-        // onClick(transaction.id);
-    };
+    // onClick(transaction.id);
+  };
 
-    const handleChange = (catId) => {
-        const request = { splits: [{ categoryId: catId, amount: transaction.amount }] };
+  const handleChange = (catId) => {
+    const request = { splits: [{ categoryId: catId, amount: transaction.amount }] };
 
-        updateTransactionCategory(transaction, request, dispatch);
-    };
+    updateTransactionCategory(transaction, request, dispatch);
+  };
 
-    const renderTransactionDialog = (props) => {
-        switch (transaction.type) {
-        case 1:
-            return (
-                <CategoryTransferDialog
-                    transaction={transaction}
-                    {...props}
-                />
-            );
+  const renderTransactionDialog = (props) => {
+    switch (transaction.type) {
+      case 1:
+        return (
+          <CategoryTransferDialog
+            transaction={transaction}
+            {...props}
+          />
+        );
 
-        case 2:
-            return (
-                <FundingDialog
-                    transaction={transaction}
-                    {...props}
-                />
-            );
+      case 2:
+        return (
+          <FundingDialog
+            transaction={transaction}
+            {...props}
+          />
+        );
 
-        case 3:
-            return (
-                <RebalanceDialog
-                    transaction={transaction}
-                    {...props}
-                />
-            );
+      case 3:
+        return (
+          <RebalanceDialog
+            transaction={transaction}
+            {...props}
+          />
+        );
 
-        case 0:
-        default:
-            return (
-                <TransactionDialog
-                    transaction={transaction}
-                    categoryId={categoryId}
-                    unassignedId={unassignedId}
-                    {...props}
-                />
-            );
-        }
-    };
+      case 0:
+      default:
+        return (
+          <TransactionDialog
+            transaction={transaction}
+            categoryId={categoryId}
+            unassignedId={unassignedId}
+            {...props}
+          />
+        );
+    }
+  };
 
-    const renderCategoryButton = () => {
-        let catId = null;
+  const renderCategoryButton = () => {
+    let catId = null;
 
-        if (transaction.categories && transaction.categories.length > 0) {
-            if (transaction.categories.length > 1) {
-                return (
-                    <ModalLauncher
-                        launcher={(props) => (<button type="button" className="split-button" {...props}>Split</button>)}
-                        dialog={(props) => renderTransactionDialog(props)}
-                    />
-                );
-            }
+    if (transaction.categories && transaction.categories.length > 0) {
+      if (transaction.categories.length > 1) {
+        return (
+          <ModalLauncher
+            launcher={(props) => (<button type="button" className="split-button" {...props}>Split</button>)}
+            dialog={(props) => renderTransactionDialog(props)}
+          />
+        );
+      }
 
-            catId = transaction.categories[0].categoryId;
-        }
-
-        return <CategoryInput categoryId={catId} onChange={handleChange} />;
-    };
-
-    const renderBankInfo = () => {
-        if (categoryId !== null) {
-            return (
-                <>
-                    <div className="transaction-field">{transaction.institute_name}</div>
-                    <div className="transaction-field">{transaction.account_name}</div>
-                </>
-            );
-        }
-
-        return null;
-    };
-
-    let className = 'transaction';
-    if (selected) {
-        className += ' transaction-selected';
+      catId = transaction.categories[0].categoryId;
     }
 
-    return (
-        <div className={className} onClick={handleClick}>
-            <ModalLauncher
-                launcher={(props) => (<IconButton icon="edit" {...props} />)}
-                dialog={(props) => renderTransactionDialog(props)}
-            />
-            <div>{transaction.date}</div>
-            <div className="transaction-field">{transaction.name}</div>
-            <div className="trans-cat-edit">
-                {renderCategoryButton()}
-                <ModalLauncher
-                    launcher={(props) => (<IconButton icon="list-ul" {...props} />)}
-                    dialog={(props) => renderTransactionDialog(props)}
-                />
-            </div>
-            <Amount className="transaction-field amount currency" amount={amount} />
-            <Amount className="transaction-field balance currency" amount={balance} />
-            {renderBankInfo()}
-        </div>
-    );
+    return <CategoryInput categoryId={catId} onChange={handleChange} />;
+  };
+
+  const renderBankInfo = () => {
+    if (categoryId !== null) {
+      return (
+        <>
+          <div className="transaction-field">{transaction.institute_name}</div>
+          <div className="transaction-field">{transaction.account_name}</div>
+        </>
+      );
+    }
+
+    return null;
+  };
+
+  let className = 'transaction';
+  if (selected) {
+    className += ' transaction-selected';
+  }
+
+  return (
+    <div className={className} onClick={handleClick}>
+      <ModalLauncher
+        launcher={(props) => (<IconButton icon="edit" {...props} />)}
+        dialog={(props) => renderTransactionDialog(props)}
+      />
+      <div>{transaction.date}</div>
+      <div className="transaction-field">{transaction.name}</div>
+      <div className="trans-cat-edit">
+        {renderCategoryButton()}
+        <ModalLauncher
+          launcher={(props) => (<IconButton icon="list-ul" {...props} />)}
+          dialog={(props) => renderTransactionDialog(props)}
+        />
+      </div>
+      <Amount className="transaction-field amount currency" amount={amount} />
+      <Amount className="transaction-field balance currency" amount={balance} />
+      {renderBankInfo()}
+    </div>
+  );
 };
 
 Transaction.propTypes = {
-    onClick: PropTypes.func.isRequired,
-    transaction: PropTypes.shape().isRequired,
-    amount: PropTypes.number.isRequired,
-    balance: PropTypes.number.isRequired,
-    selected: PropTypes.bool.isRequired,
-    dispatch: PropTypes.func.isRequired,
-    categoryId: PropTypes.number.isRequired,
-    unassignedId: PropTypes.number.isRequired,
+  onClick: PropTypes.func.isRequired,
+  transaction: PropTypes.shape().isRequired,
+  amount: PropTypes.number.isRequired,
+  balance: PropTypes.number.isRequired,
+  selected: PropTypes.bool.isRequired,
+  dispatch: PropTypes.func.isRequired,
+  categoryId: PropTypes.number.isRequired,
+  unassignedId: PropTypes.number.isRequired,
 };
 
 export default connect()(Transaction);

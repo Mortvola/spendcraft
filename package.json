@@ -7,7 +7,8 @@
   "scripts": {
     "start": "node server.js",
     "build": "NODE_ENV=production browserify -t [ babelify --presets [ @babel/preset-react @babel/env ] ] -t dotenvify src/App.jsx --extension=.jsx  | terser --compress --mangle > public/bundle.js",
-    "dev-build": "browserify -t [ babelify --presets [ @babel/preset-react @babel/env ] ] -t dotenvify src/App.jsx --extension=.jsx > public/bundle.js"
+    "dev-build": "browserify -t [ babelify --presets [ @babel/preset-react @babel/env ] ] -t dotenvify src/App.jsx --extension=.jsx > public/bundle.js",
+    "lint": "eslint ."
   },
   "keywords": [
     "adonisjs",

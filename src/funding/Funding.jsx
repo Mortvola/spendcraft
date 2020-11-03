@@ -3,81 +3,81 @@ import PropTypes from 'prop-types';
 import FundingItem from './FundingItem';
 
 const Funding = ({ groups, plan, onChange }) => {
-    const [funding, setFunding] = useState(plan);
+  const [funding, setFunding] = useState(plan);
 
-    const handleDeltaChange = (amount, categoryId) => {
-        const index = funding.findIndex((c) => c.categoryId === categoryId);
+  const handleDeltaChange = (amount, categoryId) => {
+    const index = funding.findIndex((c) => c.categoryId === categoryId);
 
-        if (index !== -1) {
-            const fundingCopy = funding.slice();
-            fundingCopy[index].amount = amount;
-            setFunding(fundingCopy);
+    if (index !== -1) {
+      const fundingCopy = funding.slice();
+      fundingCopy[index].amount = amount;
+      setFunding(fundingCopy);
 
-            if (onChange) {
-                onChange(fundingCopy);
-            }
-        }
-    };
+      if (onChange) {
+        onChange(fundingCopy);
+      }
+    }
+  };
 
-    const populateCategories = (categories) => {
-        const categoryItems = [];
+  const populateCategories = (categories) => {
+    const categoryItems = [];
 
-        categories.forEach((category) => {
-            let amount = 0;
+    categories.forEach((category) => {
+      let amount = 0;
 
-            const index = funding.findIndex((c) => c.categoryId === category.id);
+      const index = funding.findIndex((c) => c.categoryId === category.id);
 
-            if (index !== -1) {
-                amount = funding[index].amount;
-            }
+      if (index !== -1) {
+        amount = funding[index].amount;
+      }
 
-            categoryItems.push((
-                <FundingItem
-                    key={`${category.id}`}
-                    name={category.name}
-                    initialAmount={category.amount}
-                    funding={amount}
-                    onDeltaChange={(newAmount) => (
-                        handleDeltaChange(newAmount, category.id)
-                    )}
-                />
-            ));
-        });
+      categoryItems.push((
+        <FundingItem
+          key={`${category.id}`}
+          name={category.name}
+          initialAmount={category.amount}
+          funding={amount}
+          onDeltaChange={(newAmount) => (
+            handleDeltaChange(newAmount, category.id)
+          )}
+        />
+      ));
+    });
 
-        return categoryItems;
-    };
+    return categoryItems;
+  };
 
-    const populateGroups = () => {
-        const groupItems = [];
+  const populateGroups = () => {
+    const groupItems = [];
 
-        groups.forEach((group) => {
-            groupItems.push((
-                <div key={group.id}>
-                    {group.name}
-                    {populateCategories(group.categories)}
-                </div>
-            ));
-        });
-
-        return groupItems;
-    };
-
-    return (
-        <div className="cat-fund-items">
-            {populateGroups()}
+    groups.forEach((group) => {
+      groupItems.push((
+        <div key={group.id}>
+          {group.name}
+          {populateCategories(group.categories)}
         </div>
-    );
+      ));
+    });
+
+    return groupItems;
+  };
+
+  return (
+    <div className="cat-fund-items">
+      {populateGroups()}
+    </div>
+  );
 };
 
 Funding.propTypes = {
-    groups: PropTypes.arrayOf(PropTypes.shape()).isRequired,
-    plan: PropTypes.arrayOf(PropTypes.shape()),
-    onChange: PropTypes.func,
+  groups: PropTypes.arrayOf(PropTypes.shape()).isRequired,
+  plan: PropTypes.arrayOf(PropTypes.shape()),
+  onChange: PropTypes.func,
 };
 
 Funding.defaultProps = {
-    plan: [],
-    onChange: null,
+  plan: [],
+  onChange: null,
 };
 
 export default Funding;

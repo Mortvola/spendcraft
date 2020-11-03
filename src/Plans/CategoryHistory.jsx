@@ -3,37 +3,37 @@ import PropTypes from 'prop-types';
 import Amount from '../Amount';
 
 const CategoryHistory = ({
-    history,
+  history,
 }) => {
-    const renderHistory = () => {
-        const list = [];
+  const renderHistory = () => {
+    const list = [];
 
-        history.forEach((h) => {
-            list.push((
-                <Amount amount={h.amount} />
-            ));
-        });
+    history.forEach((h) => {
+      list.push((
+        <Amount amount={h.amount} />
+      ));
+    });
 
-        for (let i = list.length; i < 12; i += 1) {
-            list.push((<div />));
-        }
+    for (let i = list.length; i < 12; i += 1) {
+      list.push((<div />));
+    }
 
-        return list;
-    };
+    return list;
+  };
 
-    return (
-        <div className="plan-history">
-            {renderHistory()}
-        </div>
-    );
+  return (
+    <div className="plan-history">
+      {renderHistory()}
+    </div>
+  );
 };
 
 CategoryHistory.propTypes = {
-    history: PropTypes.arrayOf(PropTypes.shape({
-        year: PropTypes.number.isRequired,
-        month: PropTypes.number.isRequired,
-        amount: PropTypes.number.isRequired,
-    })).isRequired,
+  history: PropTypes.arrayOf(PropTypes.shape({
+    year: PropTypes.number.isRequired,
+    month: PropTypes.number.isRequired,
+    amount: PropTypes.number.isRequired,
+  })).isRequired,
 };
 
 CategoryHistory.defaultProps = {

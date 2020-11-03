@@ -1,508 +1,506 @@
 import { combineReducers } from 'redux';
 import {
-    ADD_GROUP,
-    UPDATE_GROUP,
-    DELETE_GROUP,
-    REQUEST_GROUPS,
-    RECEIVE_GROUPS,
-    ADD_INSTITUTION,
-    UPDATE_INSTITUTION,
-    ADD_CATEGORY,
-    UPDATE_CATEGORY,
-    DELETE_CATEGORY,
-    REQUEST_TRANSACTIONS,
-    RECEIVE_TRANSACTIONS,
-    REQUEST_INSTITUTIONS,
-    RECEIVE_INSTITUTIONS,
-    RECEIVE_CATEGORY_BALANCES,
-    RECEIVE_TRANSACTION_CATEGORIES,
-    SELECT_CATEGORY,
-    SELECT_ACCOUNT,
-    RECEIVE_SYSTEM_IDS,
-    RECEIVE_ACCOUNT_BALANCES,
-    SET_VIEW,
-    RECEIVE_REPORT_DATA,
-    RECEIVE_USER,
-    RECEIVE_PLANS,
-    RECEIVE_PLAN,
-    SHOW_PLAID_LINK,
-    HIDE_PLAID_LINK,
-    ACCOUNT_SYNCED,
+  ADD_GROUP,
+  UPDATE_GROUP,
+  DELETE_GROUP,
+  REQUEST_GROUPS,
+  RECEIVE_GROUPS,
+  ADD_INSTITUTION,
+  UPDATE_INSTITUTION,
+  ADD_CATEGORY,
+  UPDATE_CATEGORY,
+  DELETE_CATEGORY,
+  REQUEST_TRANSACTIONS,
+  RECEIVE_TRANSACTIONS,
+  REQUEST_INSTITUTIONS,
+  RECEIVE_INSTITUTIONS,
+  RECEIVE_CATEGORY_BALANCES,
+  RECEIVE_TRANSACTION_CATEGORIES,
+  SELECT_CATEGORY,
+  SELECT_ACCOUNT,
+  RECEIVE_SYSTEM_IDS,
+  RECEIVE_ACCOUNT_BALANCES,
+  SET_VIEW,
+  RECEIVE_REPORT_DATA,
+  RECEIVE_USER,
+  RECEIVE_PLANS,
+  RECEIVE_PLAN,
+  SHOW_PLAID_LINK,
+  HIDE_PLAID_LINK,
+  ACCOUNT_SYNCED,
 } from './actionTypes';
 
-
 function categories(
-    state = [],
-    action,
+  state = [],
+  action,
 ) {
-    if (action !== undefined) {
-        switch (action.type) {
-        case ADD_CATEGORY: {
-            const index = state.findIndex((c) => action.category.name.localeCompare(c.name) < 0);
+  if (action !== undefined) {
+    switch (action.type) {
+      case ADD_CATEGORY: {
+        const index = state.findIndex((c) => action.category.name.localeCompare(c.name) < 0);
 
-            if (index === -1) {
-                return state.concat([action.category]);
-            }
-
-            const cats = state.slice();
-            cats.splice(index, 0, action.category);
-
-            return cats;
+        if (index === -1) {
+          return state.concat([action.category]);
         }
 
-        case UPDATE_CATEGORY: {
-            const index = state.findIndex((c) => c.id === action.category.id);
-            if (index !== -1) {
-                const cats = state.slice();
-                cats[index] = { ...cats[index], ...action.category };
-                return cats;
-            }
+        const cats = state.slice();
+        cats.splice(index, 0, action.category);
 
-            return state;
+        return cats;
+      }
+
+      case UPDATE_CATEGORY: {
+        const index = state.findIndex((c) => c.id === action.category.id);
+        if (index !== -1) {
+          const cats = state.slice();
+          cats[index] = { ...cats[index], ...action.category };
+          return cats;
         }
 
-        case DELETE_CATEGORY: {
-            const index = state.findIndex((c) => c.id === action.category.id);
-            if (index !== -1) {
-                const cats = state.slice();
-                cats.splice(index, 1);
-                return cats;
-            }
+        return state;
+      }
 
-            return state;
+      case DELETE_CATEGORY: {
+        const index = state.findIndex((c) => c.id === action.category.id);
+        if (index !== -1) {
+          const cats = state.slice();
+          cats.splice(index, 1);
+          return cats;
         }
 
-        case RECEIVE_CATEGORY_BALANCES:
-            return state.map((c) => {
-                const balance = action.balances.find((b) => b.id === c.id);
+        return state;
+      }
 
-                if (balance) {
-                    return ({
-                        ...c,
-                        amount: balance.amount,
-                    });
-                }
+      case RECEIVE_CATEGORY_BALANCES:
+        return state.map((c) => {
+          const balance = action.balances.find((b) => b.id === c.id);
 
-                return c;
+          if (balance) {
+            return ({
+              ...c,
+              amount: balance.amount,
             });
+          }
 
-        default:
-            return state;
-        }
+          return c;
+        });
+
+      default:
+        return state;
     }
+  }
 
-    return state;
+  return state;
 }
 
 function categoryTree(
-    state = {
-        systemGroupId: null,
-        unassignedId: null,
-        fundingPoolId: null,
-        groups: [],
-    },
-    action,
+  state = {
+    systemGroupId: null,
+    unassignedId: null,
+    fundingPoolId: null,
+    groups: [],
+  },
+  action,
 ) {
-    switch (action.type) {
+  switch (action.type) {
     case ADD_GROUP: {
-        const index = state.groups.findIndex((g) => action.group.name.localeCompare(g.name) < 0);
+      const index = state.groups.findIndex((g) => action.group.name.localeCompare(g.name) < 0);
 
-        if (index === -1) {
-            return {
-                ...state,
-                ...{
-                    groups: state.groups.concat([{
-                        ...action.group,
-                        ...{ categories: categories() },
-                    }]),
-                },
-            };
-        }
-
-        const groups = state.groups.slice();
-        groups.splice(index, 0, { ...action.group, ...{ categories: categories() } });
-
+      if (index === -1) {
         return {
-            ...state,
-            ...{ groups },
+          ...state,
+          ...{
+            groups: state.groups.concat([{
+              ...action.group,
+              ...{ categories: categories() },
+            }]),
+          },
         };
+      }
+
+      const groups = state.groups.slice();
+      groups.splice(index, 0, { ...action.group, ...{ categories: categories() } });
+
+      return {
+        ...state,
+        ...{ groups },
+      };
     }
 
     case UPDATE_GROUP: {
-        const index = state.groups.findIndex((e) => e.id === action.group.id);
-        if (index !== -1) {
-            const newGroups = state.groups.slice();
-            newGroups[index] = { ...newGroups[index], ...action.group };
-            return { ...state, ...{ groups: newGroups } };
-        }
+      const index = state.groups.findIndex((e) => e.id === action.group.id);
+      if (index !== -1) {
+        const newGroups = state.groups.slice();
+        newGroups[index] = { ...newGroups[index], ...action.group };
+        return { ...state, ...{ groups: newGroups } };
+      }
 
-        return state;
+      return state;
     }
 
     case DELETE_GROUP: {
-        const index = state.groups.findIndex((g) => g.id === action.group.id);
-        if (index !== -1) {
-            const newGroups = state.groups.slice();
-            newGroups.splice(index, 1);
-            return { ...state, ...{ groups: newGroups } };
-        }
+      const index = state.groups.findIndex((g) => g.id === action.group.id);
+      if (index !== -1) {
+        const newGroups = state.groups.slice();
+        newGroups.splice(index, 1);
+        return { ...state, ...{ groups: newGroups } };
+      }
 
-        return state;
+      return state;
     }
 
     case REQUEST_GROUPS:
-        return state;
+      return state;
 
     case RECEIVE_GROUPS: {
-        return {
-            ...state,
-            groups: action.groups,
-        };
+      return {
+        ...state,
+        groups: action.groups,
+      };
     }
 
     case RECEIVE_SYSTEM_IDS:
 
-        return {
-            ...state,
-            systemGroupId: action.systemGroupId,
-            unassignedId: action.unassignedId,
-            fundingPoolId: action.fundingPoolId,
-        };
+      return {
+        ...state,
+        systemGroupId: action.systemGroupId,
+        unassignedId: action.unassignedId,
+        fundingPoolId: action.fundingPoolId,
+      };
 
     case ADD_CATEGORY:
     case UPDATE_CATEGORY:
     case DELETE_CATEGORY:
-        return {
-            ...state,
-            ...{
-                groups: state.groups.map((g) => {
-                    if (g.id === action.category.groupId) {
-                        return ({
-                            ...g,
-                            ...{ categories: categories(g.categories, action) },
-                        });
-                    }
+      return {
+        ...state,
+        ...{
+          groups: state.groups.map((g) => {
+            if (g.id === action.category.groupId) {
+              return ({
+                ...g,
+                ...{ categories: categories(g.categories, action) },
+              });
+            }
 
-                    return g;
-                }),
-            },
-        };
+            return g;
+          }),
+        },
+      };
 
     case RECEIVE_CATEGORY_BALANCES:
-        return {
-            ...state,
-            ...{
-                groups: state.groups.map((g) => ({
-                    ...g,
-                    ...{ categories: categories(g.categories, action) },
-                })),
-            },
-        };
+      return {
+        ...state,
+        ...{
+          groups: state.groups.map((g) => ({
+            ...g,
+            ...{ categories: categories(g.categories, action) },
+          })),
+        },
+      };
 
     default:
-        return state;
-    }
+      return state;
+  }
 }
 
 function accounts(
-    state = [],
-    action,
+  state = [],
+  action,
 ) {
-    switch (action.type) {
+  switch (action.type) {
     case ACCOUNT_SYNCED: {
-        const index = state.findIndex((a) => a.id === action.accountId);
-        if (index !== -1) {
-            const newAccounts = state.slice();
-            newAccounts[index] = {
-                ...newAccounts[index],
-                balance: action.balance,
-                syncDate: action.syncDate,
-            };
-            return newAccounts;
-        }
+      const index = state.findIndex((a) => a.id === action.accountId);
+      if (index !== -1) {
+        const newAccounts = state.slice();
+        newAccounts[index] = {
+          ...newAccounts[index],
+          balance: action.balance,
+          syncDate: action.syncDate,
+        };
+        return newAccounts;
+      }
 
-        return state;
+      return state;
     }
 
     default:
-        return state;
-    }
+      return state;
+  }
 }
 
 function institutions(
-    state = [],
-    action,
+  state = [],
+  action,
 ) {
-    switch (action.type) {
+  switch (action.type) {
     case ADD_INSTITUTION: {
-        const index = state.findIndex(
-            (inst) => action.institution.name.localeCompare(inst.name) < 0,
-        );
+      const index = state.findIndex(
+        (inst) => action.institution.name.localeCompare(inst.name) < 0,
+      );
 
-        if (index === -1) {
-            return state.concat([action.institution]);
-        }
+      if (index === -1) {
+        return state.concat([action.institution]);
+      }
 
-        const insts = state.slice();
-        insts.splice(index, 0, action.institution);
+      const insts = state.slice();
+      insts.splice(index, 0, action.institution);
 
-        return insts;
+      return insts;
     }
 
     case UPDATE_INSTITUTION: {
-        const index = state.findIndex((e) => e.id === action.institution.id);
-        if (index) {
-            const newInstutions = state.slice();
-            newInstutions[index] = { ...newInstutions[index], ...action.institution };
-            return newInstutions;
-        }
+      const index = state.findIndex((e) => e.id === action.institution.id);
+      if (index) {
+        const newInstutions = state.slice();
+        newInstutions[index] = { ...newInstutions[index], ...action.institution };
+        return newInstutions;
+      }
 
-        return state;
+      return state;
     }
 
     case REQUEST_INSTITUTIONS:
-        return state;
+      return state;
 
     case RECEIVE_INSTITUTIONS:
-        return action.institutions;
+      return action.institutions;
 
     case ACCOUNT_SYNCED: {
-        const index = state.findIndex((e) => e.id === action.institutionId);
-        if (index !== -1) {
-            const newInstutions = state.slice();
-            newInstutions[index] = {
-                ...newInstutions[index],
-                accounts: accounts(newInstutions[index].accounts, action),
-            };
-            return newInstutions;
-        }
+      const index = state.findIndex((e) => e.id === action.institutionId);
+      if (index !== -1) {
+        const newInstutions = state.slice();
+        newInstutions[index] = {
+          ...newInstutions[index],
+          accounts: accounts(newInstutions[index].accounts, action),
+        };
+        return newInstutions;
+      }
 
-        return state;
+      return state;
     }
 
     default:
-        return state;
-    }
+      return state;
+  }
 }
 
 function transactions(
-    state = {
-        fetching: false,
-        categoryId: null,
-        balance: 0,
-        transactions: [],
-        pending: [],
-    },
-    action,
+  state = {
+    fetching: false,
+    categoryId: null,
+    balance: 0,
+    transactions: [],
+    pending: [],
+  },
+  action,
 ) {
-    switch (action.type) {
+  switch (action.type) {
     case REQUEST_TRANSACTIONS:
-        return { ...state, fetching: true };
+      return { ...state, fetching: true };
 
     case RECEIVE_TRANSACTIONS: {
-        if (action.categoryId !== null) {
-            return { categoryId: action.categoryId, ...action.transactions, fetching: false };
-        }
+      if (action.categoryId !== null) {
+        return { categoryId: action.categoryId, ...action.transactions, fetching: false };
+      }
 
-        return { categoryId: null, ...action.transactions, fetching: false };
+      return { categoryId: null, ...action.transactions, fetching: false };
     }
 
     case RECEIVE_CATEGORY_BALANCES:
-        if (state.categoryId !== null) {
-            const balance = action.balances.find((b) => b.id === state.categoryId);
+      if (state.categoryId !== null) {
+        const balance = action.balances.find((b) => b.id === state.categoryId);
 
-            if (balance) {
-                return {
-                    ...state,
-                    balance: balance.amount,
-                };
-            }
+        if (balance) {
+          return {
+            ...state,
+            balance: balance.amount,
+          };
         }
+      }
 
-        return state;
+      return state;
 
     case RECEIVE_TRANSACTION_CATEGORIES: {
-        const index = state.transactions.findIndex((t) => t.id === action.transCategories.id);
-        if (index !== -1) {
-            if (state.categoryId !== null) {
-                // If the new transaction categories don't include
-                // the current category then remove the transactions.
-                if (!action.transCategories.splits.some((c) => (
-                    c.categoryId === state.categoryId
-                ))) {
-                    const newTransactions = state.transactions.slice();
-                    newTransactions.splice(index, 1);
-                    return {
-                        ...state,
-                        transactions: newTransactions,
-                    };
-                }
-            }
-
+      const index = state.transactions.findIndex((t) => t.id === action.transCategories.id);
+      if (index !== -1) {
+        if (state.categoryId !== null) {
+          // If the new transaction categories don't include
+          // the current category then remove the transactions.
+          if (!action.transCategories.splits.some((c) => (
+            c.categoryId === state.categoryId
+          ))) {
+            const newTransactions = state.transactions.slice();
+            newTransactions.splice(index, 1);
             return {
-                ...state,
-                transactions: [
-                    ...state.transactions.slice(0, index),
-                    { ...state.transactions[index], categories: action.transCategories.splits },
-                    ...state.transactions.slice(index + 1)],
+              ...state,
+              transactions: newTransactions,
             };
+          }
         }
 
-        return state;
+        return {
+          ...state,
+          transactions: [
+            ...state.transactions.slice(0, index),
+            { ...state.transactions[index], categories: action.transCategories.splits },
+            ...state.transactions.slice(index + 1)],
+        };
+      }
+
+      return state;
     }
 
     default:
-        return state;
-    }
+      return state;
+  }
 }
 
 function balances(
-    state = [],
-    action,
+  state = [],
+  action,
 ) {
-    switch (action.type) {
+  switch (action.type) {
     case RECEIVE_ACCOUNT_BALANCES:
-        return action.balances;
+      return action.balances;
 
     default:
-        return state;
-    }
+      return state;
+  }
 }
 
-
 function selections(
-    state = {
-        view: 'home',
-        selectedCategoryId: null,
-        selectedAccountId: null,
-        accountTracking: null,
-    },
-    action,
+  state = {
+    view: 'home',
+    selectedCategoryId: null,
+    selectedAccountId: null,
+    accountTracking: null,
+  },
+  action,
 ) {
-    switch (action.type) {
+  switch (action.type) {
     case SELECT_CATEGORY:
-        return {
-            ...state,
-            selectedCategoryId: action.categoryId,
-        };
+      return {
+        ...state,
+        selectedCategoryId: action.categoryId,
+      };
 
     case SELECT_ACCOUNT:
-        return {
-            ...state,
-            selectedAccountId: action.accountId,
-            accountTracking: action.tracking,
-        };
+      return {
+        ...state,
+        selectedAccountId: action.accountId,
+        accountTracking: action.tracking,
+      };
 
     case SET_VIEW:
-        return {
-            ...state,
-            view: action.view,
-        };
+      return {
+        ...state,
+        view: action.view,
+      };
 
     default:
-        return state;
-    }
+      return state;
+  }
 }
 
 function reports(
-    state = {
-        data: null,
-        reportType: null,
-    },
-    action,
+  state = {
+    data: null,
+    reportType: null,
+  },
+  action,
 ) {
-    switch (action.type) {
+  switch (action.type) {
     case RECEIVE_REPORT_DATA:
-        return {
-            ...state,
-            data: action.data,
-            reportType: action.reportType,
-        };
+      return {
+        ...state,
+        data: action.data,
+        reportType: action.reportType,
+      };
 
     default:
-        return state;
-    }
+      return state;
+  }
 }
 
 function user(
-    state = null,
-    action,
+  state = null,
+  action,
 ) {
-    switch (action.type) {
+  switch (action.type) {
     case RECEIVE_USER:
-        return { username: action.user };
+      return { username: action.user };
 
     default:
-        return state;
-    }
+      return state;
+  }
 }
 
 function plans(
-    state = {
-        list: [],
-        plan: null,
-    },
-    action,
+  state = {
+    list: [],
+    plan: null,
+  },
+  action,
 ) {
-    switch (action.type) {
+  switch (action.type) {
     case RECEIVE_PLANS:
-        return {
-            ...state,
-            list: action.plans,
-        };
+      return {
+        ...state,
+        list: action.plans,
+      };
 
     case RECEIVE_PLAN:
-        return {
-            ...state,
-            plan: action.plan,
-        };
+      return {
+        ...state,
+        plan: action.plan,
+      };
 
     default:
-        return state;
-    }
+      return state;
+  }
 }
 
 function dialogs(
-    state = {
-        plaid: {
-            show: false,
-            publicToken: null,
-        },
+  state = {
+    plaid: {
+      show: false,
+      publicToken: null,
     },
-    action,
+  },
+  action,
 ) {
-    switch (action.type) {
+  switch (action.type) {
     case SHOW_PLAID_LINK:
-        return {
-            ...state,
-            plaid: {
-                show: true,
-                publicToken: action.publicToken,
-            },
-        };
+      return {
+        ...state,
+        plaid: {
+          show: true,
+          publicToken: action.publicToken,
+        },
+      };
 
     case HIDE_PLAID_LINK: {
-        return {
-            ...state,
-            plaid: { ...state.plaid, show: false },
-        };
+      return {
+        ...state,
+        plaid: { ...state.plaid, show: false },
+      };
     }
 
     default:
-        return state;
-    }
+      return state;
+  }
 }
 
 const budgetApp = combineReducers({
-    categoryTree,
-    institutions,
-    transactions,
-    balances,
-    selections,
-    reports,
-    user,
-    plans,
-    dialogs,
+  categoryTree,
+  institutions,
+  transactions,
+  balances,
+  selections,
+  reports,
+  user,
+  plans,
+  dialogs,
 });
 
 export default budgetApp;

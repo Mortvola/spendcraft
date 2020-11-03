@@ -7,71 +7,71 @@ import DetailView from './DetailView';
 import { showPlaidLink } from './redux/actions';
 
 const mapStateToProps = (state) => ({
-    detailView: state.selections.accountTracking,
+  detailView: state.selections.accountTracking,
 });
 
 const Accounts = ({
-    detailView,
-    dispatch,
+  detailView,
+  dispatch,
 }) => {
-    const [refreshing, setRefreshing] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-    const handleClick = () => {
-        dispatch(showPlaidLink());
-    };
+  const handleClick = () => {
+    dispatch(showPlaidLink());
+  };
 
-    const handleRefresh = () => {
-        setRefreshing(true);
+  const handleRefresh = () => {
+    setRefreshing(true);
 
-        fetch('/institutions/sync', {
-            method: 'POST',
-            headers:
-            {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-            },
-        })
-            .then((response) => {
-                if (!response.ok) {
-                    throw new Error(`Request failed: ${response.status}`);
-                }
-                setRefreshing(false);
-                return response.json();
-            })
-            .catch((error) => {
-                console.log(error);
-                setRefreshing(false);
-            });
-    };
+    fetch('/institutions/sync', {
+      method: 'POST',
+      headers:
+      {
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+      },
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Request failed: ${response.status}`);
+        }
+        setRefreshing(false);
+        return response.json();
+      })
+      .catch((error) => {
+        console.log(error);
+        setRefreshing(false);
+      });
+  };
 
-    let rotate = false;
-    if (refreshing) {
-        rotate = true;
-    }
+  let rotate = false;
+  if (refreshing) {
+    rotate = true;
+  }
 
-    return (
-        <>
-            <div className="side-bar">
-                <div className="accounts">
-                    <div className="account-bar">
-                        <div>Institutions</div>
-                        <IconButton icon="plus" onClick={handleClick} />
-                        <IconButton icon="sync-alt" rotate={rotate} onClick={handleRefresh} />
-                    </div>
-                    <AccountView />
-                </div>
-            </div>
-            <DetailView detailView={detailView} />
-        </>
-    );
+  return (
+    <>
+      <div className="side-bar">
+        <div className="accounts">
+          <div className="account-bar">
+            <div>Institutions</div>
+            <IconButton icon="plus" onClick={handleClick} />
+            <IconButton icon="sync-alt" rotate={rotate} onClick={handleRefresh} />
+          </div>
+          <AccountView />
+        </div>
+      </div>
+      <DetailView detailView={detailView} />
+    </>
+  );
 };
 
 Accounts.propTypes = {
-    detailView: PropTypes.string,
-    dispatch: PropTypes.func.isRequired,
+  detailView: PropTypes.string,
+  dispatch: PropTypes.func.isRequired,
 };
 
 Accounts.defaultProps = {
-    detailView: null,
+  detailView: null,
 };
 
 export default connect(mapStateToProps)(Accounts);

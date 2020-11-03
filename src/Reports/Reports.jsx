@@ -6,44 +6,44 @@ import { report } from '../redux/actions';
 import NetWorth from './NetWorth';
 
 const mapStateToProps = (state) => ({
-    reportType: state.reports.reportType,
-    data: state.reports.data,
+  reportType: state.reports.reportType,
+  data: state.reports.data,
 });
 
 const Reports = ({
-    reportType,
-    data,
-    dispatch,
+  reportType,
+  data,
+  dispatch,
 }) => {
-    const handleSelect = (eventKey) => {
-        dispatch(report(eventKey));
-    };
+  const handleSelect = (eventKey) => {
+    dispatch(report(eventKey));
+  };
 
-    const renderReport = () => {
-        switch (reportType) {
-        case 'netWorth':
-            return <NetWorth balances={data} />;
-        default:
-            return null;
-        }
-    };
+  const renderReport = () => {
+    switch (reportType) {
+      case 'netWorth':
+        return <NetWorth balances={data} />;
+      default:
+        return null;
+    }
+  };
 
-    return (
-        <>
-            <div className="side-bar">
-                <Nav className="flex-column" onSelect={handleSelect}>
-                    <Nav.Link eventKey="netWorth">Net Worth</Nav.Link>
-                </Nav>
-            </div>
-            {renderReport()}
-        </>
-    );
+  return (
+    <>
+      <div className="side-bar">
+        <Nav className="flex-column" onSelect={handleSelect}>
+          <Nav.Link eventKey="netWorth">Net Worth</Nav.Link>
+        </Nav>
+      </div>
+      {renderReport()}
+    </>
+  );
 };
 
 Reports.propTypes = {
-    reportType: PropTypes.string.isRequired,
-    data: PropTypes.shape().isRequired,
-    dispatch: PropTypes.func.isRequired,
+  reportType: PropTypes.string.isRequired,
+  data: PropTypes.shape().isRequired,
+  dispatch: PropTypes.func.isRequired,
 };
 
 export default connect(mapStateToProps)(Reports);

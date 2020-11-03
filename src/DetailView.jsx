@@ -4,26 +4,26 @@ import Register from './Register';
 import BalanceHistory from './BalanceHistory';
 
 const DetailView = ({
-    detailView,
+  detailView,
 }) => {
-    switch (detailView) {
+  switch (detailView) {
     case 'Balances':
-        return <BalanceHistory />;
+      return <BalanceHistory />;
 
     case 'Transactions':
-        return <Register />;
+      return <Register />;
 
     default:
-        return <div />;
-    }
+      return <div />;
+  }
 };
 
 DetailView.propTypes = {
-    detailView: PropTypes.string,
+  detailView: PropTypes.string,
 };
 
 DetailView.defaultProps = {
-    detailView: null,
+  detailView: null,
 };
 
 export default DetailView;

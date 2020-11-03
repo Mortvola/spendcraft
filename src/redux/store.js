@@ -8,13 +8,13 @@ import { fetchUser, fetchGroups, fetchInstitutions } from './actions';
 // const loggerMiddleware = createLogger();
 
 const store = createStore(
-    budgetApp,
-    composeWithDevTools(
-        applyMiddleware(
-            thunkMiddleware, // lets us dispatch() functions
-            // loggerMiddleware, // neat middleware that logs actions
-        ),
+  budgetApp,
+  composeWithDevTools(
+    applyMiddleware(
+      thunkMiddleware, // lets us dispatch() functions
+      // loggerMiddleware, // neat middleware that logs actions
     ),
+  ),
 );
 
 store.dispatch(fetchUser());
