@@ -24,6 +24,7 @@ const mapStateToProps = (state) => {
   }
 
   return {
+    systemGroupId,
     fundingPoolId,
     fundingAmount,
   };
@@ -31,8 +32,13 @@ const mapStateToProps = (state) => {
 
 const FundingDialog = ({
   transaction,
+  systemGroupId,
   fundingAmount,
-  ...props
+  onClose,
+  onExited,
+  title,
+  show,
+  fundingPoolId,
 }) => {
   const [plansInitialized, setPlansInitialized] = useState(false);
   const [groupsInitialized, setGroupsInitialized] = useState(false);
@@ -52,14 +58,6 @@ const FundingDialog = ({
     );
     setAvailableFunds(fundingAmount - funded);
   }, [funding]);
-
-  const {
-    onClose,
-    onExited,
-    title,
-    show,
-    fundingPoolId,
-  } = props;
 
   if (!plansInitialized) {
     setPlansInitialized(true);
@@ -225,6 +223,7 @@ const FundingDialog = ({
                   key={value.planId}
                   groups={groups}
                   plan={value.categories}
+                  systemGroupId={systemGroupId}
                   onChange={(newFunding) => {
                     const newPlan = {
                       planId: value.planId,
@@ -249,6 +248,7 @@ FundingDialog.propTypes = {
   onExited: PropTypes.func.isRequired,
   title: PropTypes.string,
   show: PropTypes.bool.isRequired,
+  systemGroupId: PropTypes.number.isRequired,
   fundingPoolId: PropTypes.number.isRequired,
   fundingAmount: PropTypes.number.isRequired,
   transaction: PropTypes.shape(),
