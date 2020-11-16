@@ -7,15 +7,39 @@ const Funding = ({ groups, plan, onChange }) => {
 
   const handleDeltaChange = (amount, categoryId) => {
     const index = funding.findIndex((c) => c.categoryId === categoryId);
+    let newFunding = [];
 
     if (index !== -1) {
-      const fundingCopy = funding.slice();
-      fundingCopy[index].amount = amount;
-      setFunding(fundingCopy);
+      newFunding = [
+        ...funding.slice(0, index),
+        { ...funding[index], categoryId, amount },
+        ...funding.slice(index + 1),
+      ];
+    }
+    else {
+      // Find the category in the group/category tree
+      let category;
+      const group = groups.find((g) => {
+        category = g.categories.find((c) => c.id === categoryId);
 
-      if (onChange) {
-        onChange(fundingCopy);
-      }
+        return category !== undefined;
+      });
+
+      newFunding = [
+        ...funding.slice(),
+        {
+          categoryId,
+          amount,
+          category: category.name,
+          group: group.name,
+        },
+      ];
+    }
+
+    setFunding(newFunding);
+
+    if (onChange) {
+      onChange(newFunding);
     }
   };
 

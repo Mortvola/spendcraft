@@ -116,6 +116,7 @@ const FundingDialog = ({
       item.amount !== 0
     ))
       .map((item) => ({
+        id: item.id,
         categoryId: item.categoryId,
         amount: item.amount,
       }));
@@ -126,8 +127,15 @@ const FundingDialog = ({
 
     request.categories.push({ categoryId: fundingPoolId, amount: -sum });
 
-    fetch('category_transfer', {
-      method: (transaction ? 'PATCH' : 'POST'),
+    let url = 'category_transfer';
+    let method = 'POST';
+    if (transaction) {
+      url += `/${transaction.id}`;
+      method = 'PATCH';
+    }
+
+    fetch(url, {
+      method,
       headers: {
         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
         'Content-Type': 'application/json',
