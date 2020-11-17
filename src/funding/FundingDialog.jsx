@@ -121,7 +121,7 @@ const FundingDialog = ({
   const handleSubmit = (values) => {
     const request = { date: values.date, type: 2 };
     request.categories = values.funding.categories.filter((item) => (
-      item.amount !== 0 && item.categoryId !== fundingPoolId
+      item.amount !== 0
     ))
       .map((item) => ({
         id: item.id,
@@ -131,7 +131,13 @@ const FundingDialog = ({
 
     const sum = getTotal(request.categories);
 
-    request.categories.push({ categoryId: fundingPoolId, amount: -sum });
+    const index = request.categories.findIndex((c) => c.categoryId === fundingPoolId);
+    if (index === -1) {
+      request.categories.push({ categoryId: fundingPoolId, amount: -sum });
+    }
+    else {
+      request.categories[index].amount = -sum;
+    }
 
     let url = 'category_transfer';
     let method = 'POST';
