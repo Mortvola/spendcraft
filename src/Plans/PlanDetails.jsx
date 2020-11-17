@@ -4,6 +4,7 @@ import PropTypes from 'prop-types';
 import moment from 'moment';
 import PlanCategory from './PlanCategory';
 import Amount from '../Amount';
+import { updatePlanItem } from '../redux/actions';
 
 const PlanDetails = ({
   plan,
@@ -15,19 +16,36 @@ const PlanDetails = ({
 
   const handleOnDeltaChange = (category, amount, delta) => {
     if (delta !== 0) {
-      fetch(`/funding_plan/${plan.id}/item/${category.id}`, {
-        method: 'PATCH',
-        headers:
-        {
+      let url = `/funding_plan/${plan.id}/category/${category.categoryId}`;
+      let method = 'POST';
+
+      if (category.id) {
+        url = `/funding_plan/${plan.id}/item/${category.id}`;
+        method = 'PATCH';
+      }
+
+      fetch(url, {
+        method,
+        headers: {
           'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ amount }),
       })
-        .then(
-          () => setTotal(total + delta),
-          (error) => console.log('fetch error: ', error),
-        );
+        .then((response) => {
+          if (response.ok) {
+            return response.json();
+          }
+
+          throw new Error('Invalid response');
+        })
+        .then((response) => {
+          setTotal(total + delta);
+          dispatch(updatePlanItem(response));
+        })
+        .catch((error) => {
+          console.log(error);
+        });
     }
   };
 
