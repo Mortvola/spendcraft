@@ -40,6 +40,12 @@ const FundingDialog = ({
   show,
   fundingPoolId,
 }) => {
+  const getTotal = (categories) => (
+    categories.reduce((accumulator, item) => (
+      item.categoryId === fundingPoolId ? accumulator : accumulator + item.amount
+    ), 0)
+  );
+
   const [plansInitialized, setPlansInitialized] = useState(false);
   const [groupsInitialized, setGroupsInitialized] = useState(false);
   const [plans, setPlans] = useState([]);
@@ -49,14 +55,14 @@ const FundingDialog = ({
       ? { planId: -1, categories: transaction.categories }
       : { planId: -1, categories: [] },
   );
+  const [total, setTotal] = useState(getTotal(transaction.categories));
   const [groups, setGroups] = useState([]);
-  const [avaialbleFunds, setAvailableFunds] = useState(fundingAmount);
+  const [availableFunds, setAvailableFunds] = useState(fundingAmount);
 
   useEffect(() => {
-    const funded = funding.categories.reduce(
-      (accumulator, item) => accumulator + item.amount, 0,
-    );
+    const funded = getTotal(funding.categories);
     setAvailableFunds(fundingAmount - funded);
+    setTotal(funded);
   }, [funding]);
 
   if (!plansInitialized) {
@@ -106,12 +112,16 @@ const FundingDialog = ({
 
   const handleFundingChange = (newFunding) => {
     setFunding(newFunding);
+
+    const sum = getTotal(newFunding.categories);
+
+    setTotal(sum);
   };
 
   const handleSubmit = (values) => {
     const request = { date: values.date, type: 2 };
     request.categories = values.funding.categories.filter((item) => (
-      item.amount !== 0
+      item.amount !== 0 && item.categoryId !== fundingPoolId
     ))
       .map((item) => ({
         id: item.id,
@@ -119,9 +129,7 @@ const FundingDialog = ({
         amount: item.amount,
       }));
 
-    const sum = request.categories.reduce((accumulator, item) => (
-      accumulator + item.amount
-    ), 0);
+    const sum = getTotal(request.categories);
 
     request.categories.push({ categoryId: fundingPoolId, amount: -sum });
 
@@ -206,7 +214,7 @@ const FundingDialog = ({
             </label>
             <label>
               Available Funds
-              <Amount amount={avaialbleFunds} />
+              <Amount amount={availableFunds} />
             </label>
           </div>
           <ErrorMessage name="date" />
@@ -236,6 +244,12 @@ const FundingDialog = ({
               )}
             </Field>
             <ErrorMessage name="funding" />
+          </div>
+          <div className="fund-list-item cat-fund-title">
+            <div className="fund-list-cat-name" />
+            <div className="dollar-amount fund-list-amt">Total</div>
+            <div className="dollar-amount"><Amount amount={total} /></div>
+            <div className="dollar-amount fund-list-amt" />
           </div>
         </>
       )}
