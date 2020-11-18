@@ -34,7 +34,7 @@ function AmountInput({
       }
       else {
         const val = parseEquation(event.target.value);
-        setInputAmount(val);
+        setInputAmount(val.toFixed(2));
       }
     }
     catch (error) {
