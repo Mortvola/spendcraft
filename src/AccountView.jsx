@@ -35,7 +35,7 @@ const AccountView = ({
   return (
     <div id="accounts">
       {institutions.map((institution) => (
-        <InstitutionElement
+        <Institution
           key={institution.name}
           institution={institution}
           onAccountSelected={handleAccountSelected}
@@ -58,7 +58,7 @@ AccountView.defaultProps = {
   selectedAccount: undefined,
 };
 
-function InstitutionElement({
+function Institution({
   institution,
   onAccountSelected,
   accountSelected,
@@ -101,7 +101,7 @@ function InstitutionElement({
   );
 }
 
-InstitutionElement.propTypes = {
+Institution.propTypes = {
   institution: PropTypes.shape({
     id: PropTypes.number.isRequired,
     name: PropTypes.string.isRequired,
@@ -112,7 +112,7 @@ InstitutionElement.propTypes = {
   onRelink: PropTypes.func.isRequired,
 };
 
-InstitutionElement.defaultProps = {
+Institution.defaultProps = {
   accountSelected: undefined,
 };
 

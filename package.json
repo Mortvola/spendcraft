@@ -45,7 +45,7 @@
     "node-jwk": "^0.1.0",
     "pg": "^8.5.1",
     "pg-native": "^3.0.0",
-    "plaid": "^4.11.0",
+    "plaid": "^8.0.0",
     "prop-types": "^15.7.2",
     "react": "^17.0.1",
     "react-bootstrap": "^1.4.0",

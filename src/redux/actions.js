@@ -183,10 +183,27 @@ const selectAccount = (accountId, tracking) => (
   }
 );
 
-const showPlaidLink = (publicToken) => ({
-  type: SHOW_PLAID_LINK,
-  publicToken,
-});
+const showPlaidLink = () => (
+  (dispatch) => {
+    fetch('/user/link_token')
+      .then((response) => {
+        if (response.ok) {
+          return response.json();
+        }
+
+        throw new Error('invalid response');
+      })
+      .then((response) => {
+        dispatch({
+          type: SHOW_PLAID_LINK,
+          linkToken: response.linkToken,
+          updateMode: false,
+        });
+      })
+      .catch(() => {
+      });
+  }
+);
 
 const hidePlaidLink = () => ({
   type: HIDE_PLAID_LINK,
@@ -194,10 +211,20 @@ const hidePlaidLink = () => ({
 
 const relinkInstitution = (institutionId) => (
   (dispatch) => (
-    fetch(`/institution/${institutionId}/public_token`)
-      .then(async (response) => {
-        const json = await response.json();
-        dispatch(showPlaidLink(json.publicToken));
+    fetch(`/institution/${institutionId}/link_token`)
+      .then((response) => {
+        if (response.ok) {
+          return response.json();
+        }
+
+        throw new Error('invalid response');
+      })
+      .then((response) => {
+        dispatch({
+          type: SHOW_PLAID_LINK,
+          linkToken: response.linkToken,
+          updateMode: true,
+        });
       })
   )
 );

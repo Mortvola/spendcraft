@@ -511,7 +511,8 @@ function dialogs(
         ...state,
         plaid: {
           show: true,
-          publicToken: action.publicToken,
+          linkToken: action.linkToken,
+          updateMode: action.updateMode,
         },
       };
 

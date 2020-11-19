@@ -19,7 +19,7 @@ body {
 
 .main {
 	display: grid;
-	grid-template-columns: 1fr 5fr;
+	grid-template-columns: minmax(0,1fr) minmax(0,5fr);
 	grid-template-rows: minmax(0, 1fr);
 	grid-template-areas:
 		"sidebar register";
