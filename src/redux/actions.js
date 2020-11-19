@@ -28,6 +28,7 @@ import {
   ADD_INSTITUTION,
   ACCOUNT_SYNCED,
   UPDATE_PLAN_ITEM,
+  ACCOUNT_REFRESHING,
 } from './actionTypes';
 
 const addInstitution = (institution) => ({
@@ -478,6 +479,49 @@ const updatePlanItem = (category) => ({
   category,
 });
 
+const accountRefreshing = (institutionId, accountId, refreshing) => ({
+  type: ACCOUNT_REFRESHING,
+  institutionId,
+  accountId,
+  refreshing,
+});
+
+const refreshAccount = (institutionId, accountId) => (
+  (dispatch) => {
+    dispatch(accountRefreshing(institutionId, accountId, true));
+
+    fetch(`/institution/${institutionId}/accounts/${accountId}/transactions/sync`, {
+      method: 'POST',
+      headers: {
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+      },
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Request failed: ${response.status}`);
+        }
+        dispatch(accountRefreshing(institutionId, accountId, false));
+        return response.json();
+      })
+      .then((json) => {
+        const { categories, accounts } = json;
+        if (categories && categories.length > 0) {
+          dispatch(receiveCategoryBalances(categories));
+        }
+
+        if (accounts) {
+          dispatch(accountSynced(
+            institutionId, accountId, accounts[0].balance, accounts[0].syncDate,
+          ));
+        }
+      })
+      .catch((error) => {
+        console.log(error);
+        dispatch(accountRefreshing(institutionId, accountId, false));
+      });
+  }
+);
+
 export {
   fetchUser,
   addInstitution,
@@ -503,4 +547,5 @@ export {
   hidePlaidLink,
   accountSynced,
   updatePlanItem,
+  refreshAccount,
 };

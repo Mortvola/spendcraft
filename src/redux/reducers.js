@@ -29,6 +29,7 @@ import {
   HIDE_PLAID_LINK,
   ACCOUNT_SYNCED,
   UPDATE_PLAN_ITEM,
+  ACCOUNT_REFRESHING,
 } from './actionTypes';
 
 function categories(
@@ -224,6 +225,22 @@ function accounts(
       return state;
     }
 
+    case ACCOUNT_REFRESHING: {
+      const index = state.findIndex((a) => a.id === action.accountId);
+      if (index !== -1) {
+        return [
+          ...state.slice(0, index),
+          {
+            ...state[index],
+            refreshing: action.refreshing,
+          },
+          ...state.slice(index + 1),
+        ];
+      }
+
+      return state;
+    }
+
     default:
       return state;
   }
@@ -266,22 +283,23 @@ function institutions(
     case RECEIVE_INSTITUTIONS:
       return action.institutions;
 
-    case ACCOUNT_SYNCED: {
-      const index = state.findIndex((e) => e.id === action.institutionId);
-      if (index !== -1) {
-        const newInstutions = state.slice();
-        newInstutions[index] = {
-          ...newInstutions[index],
-          accounts: accounts(newInstutions[index].accounts, action),
-        };
-        return newInstutions;
+    default: {
+      if (action.institutionId !== undefined) {
+        const index = state.findIndex((e) => e.id === action.institutionId);
+        if (index !== -1) {
+          return [
+            ...state.slice(0, index),
+            {
+              ...state[index],
+              accounts: accounts(state[index].accounts, action),
+            },
+            ...state.slice(index + 1),
+          ];
+        }
       }
 
       return state;
     }
-
-    default:
-      return state;
   }
 }
 
