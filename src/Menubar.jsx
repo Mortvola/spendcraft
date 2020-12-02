@@ -19,25 +19,23 @@ const Menubar = ({ username, dispatch }) => {
   };
 
   return (
-    <Navbar onSelect={handleSelect}>
-      <Container>
-        <Navbar.Brand href="/">debertas</Navbar.Brand>
-
-        <div className="collapse navbar-collapse">
-          <Nav className="mr-auto">
-            <Nav.Link eventKey="home">Home</Nav.Link>
-            <Nav.Link eventKey="plans">Plans</Nav.Link>
-            <Nav.Link eventKey="accounts">Accounts</Nav.Link>
-            <Nav.Link eventKey="reports">Reports</Nav.Link>
-          </Nav>
-          <Nav className="ml-auto">
-            <NavDropdown className="dropdown menubar-item" title={username}>
-              <Nav.Link eventKey="account">Account</Nav.Link>
-              <Nav.Link eventKey="logout">Logout</Nav.Link>
-            </NavDropdown>
-          </Nav>
-        </div>
-      </Container>
+    <Navbar collapseOnSelect onSelect={handleSelect} expand="md">
+      <Navbar.Brand href="/">debertas</Navbar.Brand>
+      <Navbar.Toggle />
+      <Navbar.Collapse>
+        <Nav className="mr-auto">
+          <Nav.Link eventKey="home">Home</Nav.Link>
+          <Nav.Link eventKey="plans">Plans</Nav.Link>
+          <Nav.Link eventKey="accounts">Accounts</Nav.Link>
+          <Nav.Link eventKey="reports">Reports</Nav.Link>
+        </Nav>
+        <Nav className="ml-auto">
+          <NavDropdown className="dropdown menubar-item" title={username}>
+            <Nav.Link eventKey="account">Account</Nav.Link>
+            <Nav.Link eventKey="logout">Logout</Nav.Link>
+          </NavDropdown>
+        </Nav>
+      </Navbar.Collapse>
     </Navbar>
   );
 };

@@ -4,7 +4,7 @@ import { connect } from 'react-redux';
 import IconButton from './IconButton';
 import CategoryInput from './CategoryInput/CategoryInput';
 import Amount from './Amount';
-import TransactionDialog, { updateTransactionCategory } from './TransactionDialog';
+import TransactionDialog, { updateTransactionCategory, useTransactionDialog } from './TransactionDialog';
 import CategoryTransferDialog from './CategoryTransferDialog';
 import { ModalLauncher } from './Modal';
 import RebalanceDialog from './rebalance/RebalanceDialog';
@@ -20,6 +20,8 @@ const Transaction = ({
   isMobile,
   dispatch,
 }) => {
+  const [TransactionDialog2, showTransactionDialog] = useTransactionDialog();
+
   const handleClick = () => {
     // const { transaction, onClick } = props;
 
@@ -112,7 +114,7 @@ const Transaction = ({
     className += ' mobile';
 
     return (
-      <div className={className}>
+      <div className={className} onClick={showTransactionDialog}>
         <div>
           {transaction.date}
         </div>
@@ -122,6 +124,7 @@ const Transaction = ({
         <div>
           {amount}
         </div>
+        <TransactionDialog2 transaction={transaction} />
       </div>
     );
   }

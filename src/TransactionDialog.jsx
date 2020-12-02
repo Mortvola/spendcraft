@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 import { Field, ErrorMessage } from 'formik';
 import CategorySplits from './CategorySplits';
-import { ModalDialog } from './Modal';
+import useModal, { ModalDialog } from './Modal';
 import { receiveCategoryBalances, receiveTransactionCategories } from './redux/actions';
 import Amount from './Amount';
 
@@ -195,5 +195,8 @@ TransactionDialog.defaultProps = {
   categoryId: null,
 };
 
-export default connect()(TransactionDialog);
-export { updateTransactionCategory };
+const ConnectedTransactionDialog = connect()(TransactionDialog);
+const useTransactionDialog = () => useModal(ConnectedTransactionDialog);
+
+export default ConnectedTransactionDialog;
+export { updateTransactionCategory, useTransactionDialog };
