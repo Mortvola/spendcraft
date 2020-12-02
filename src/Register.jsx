@@ -22,6 +22,7 @@ const Register = ({
   categoryId,
   unassignedId,
   balance,
+  isMobile,
 }) => {
   const [selectedTransaction, setSelectedTransaction] = useState(null);
 
@@ -29,7 +30,7 @@ const Register = ({
     setSelectedTransaction(transactionId);
   };
 
-  const renderTransactions = (trans) => {
+  const renderTransactions = () => {
     const list = [];
 
     if (fetching) {
@@ -40,9 +41,9 @@ const Register = ({
       );
     }
 
-    if (trans) {
+    if (transactions) {
       let runningBalance = balance;
-      trans.forEach((transaction) => {
+      transactions.forEach((transaction) => {
         let { amount } = transaction;
 
         if (categoryId !== null) {
@@ -60,6 +61,7 @@ const Register = ({
           selected={selected}
           categoryId={categoryId}
           unassignedId={unassignedId}
+          isMobile={isMobile}
         />);
 
         if (runningBalance !== undefined) {
@@ -75,11 +77,11 @@ const Register = ({
     );
   };
 
-  const renderPendingTransactions = (trans) => {
+  const renderPendingTransactions = () => {
     const list = [];
 
-    if (trans) {
-      trans.forEach((transaction) => {
+    if (pending) {
+      pending.forEach((transaction) => {
         list.push((
           <div key={transaction.id} className="pending-transaction striped">
             <div />
@@ -147,12 +149,16 @@ const Register = ({
     );
   };
 
+  if (isMobile) {
+    return renderTransactions();
+  }
+
   return (
     <div className="register-with-pending">
       <div className="register">
         <div />
         {renderColumnTitles()}
-        {renderTransactions(transactions)}
+        {renderTransactions()}
       </div>
       {renderPending()}
     </div>
@@ -166,12 +172,14 @@ Register.propTypes = {
   balance: PropTypes.number.isRequired,
   categoryId: PropTypes.number,
   unassignedId: PropTypes.number,
+  isMobile: PropTypes.bool,
 };
 
 Register.defaultProps = {
   pending: [],
   categoryId: null,
   unassignedId: null,
+  isMobile: false,
 };
 
 export default connect(mapStateToProps)(Register);

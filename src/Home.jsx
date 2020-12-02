@@ -1,7 +1,7 @@
 import React from 'react';
-import CategoryView from './CategoryView';
+import CategoryView from './CategoryView/CategoryView';
 import { ModalLauncher } from './Modal';
-import GroupDialog from './GroupDialog';
+import GroupDialog from './CategoryView/GroupDialog';
 import FundingDialog from './funding/FundingDialog';
 import RebalanceDialog from './rebalance/RebalanceDialog';
 import DetailView from './DetailView';

@@ -5,10 +5,11 @@ import { Provider, connect } from 'react-redux';
 import store from './redux/store';
 import Menubar from './Menubar';
 import Home from './Home';
-import Accounts from './Accounts';
+import Accounts from './AccountView/Accounts';
 import Reports from './Reports/Reports';
 import Plans from './Plans/Plans';
 import PlaidLink from './PlaidLink';
+import DetailView from './DetailView';
 
 const Logout = () => {
   window.location.assign('/logout');
@@ -30,6 +31,8 @@ const App = ({
   linkToken,
   dispatch,
 }) => {
+  const isMobile = window.innerWidth <= 500;
+
   const renderMain = () => {
     switch (view) {
       case 'home':
@@ -52,17 +55,29 @@ const App = ({
     }
   };
 
+  const renderDesktop = () => (
+    <div className="main">
+      {renderMain()}
+      {
+        showPlaidLink
+          ? <PlaidLink linkToken={linkToken} dispatch={dispatch} updateMode={updateMode} />
+          : null
+      }
+    </div>
+  );
+
+  const renderMobile = () => (
+    <DetailView detailView="Transactions" isMobile />
+  );
+
   return (
     <>
       <Menubar />
-      <div className="main">
-        {renderMain()}
-        {
-          showPlaidLink
-            ? <PlaidLink linkToken={linkToken} dispatch={dispatch} updateMode={updateMode} />
-            : null
-        }
-      </div>
+      {
+        isMobile
+          ? renderMobile()
+          : renderDesktop()
+      }
     </>
   );
 };

@@ -260,6 +260,10 @@ body {
 	align-items: center;
 }
 
+.transaction.mobile {
+	grid-template-columns: max-content minmax(0, 1fr) minmax(0, 1fr);
+}
+
 .acct-transaction {
 	display: grid;
 	grid-template-columns: 32px 100px minmax(0, 1.8fr) 1fr  125px 125px minmax(0, 2fr);

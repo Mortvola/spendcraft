@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
+import IconButton from '../IconButton';
+import DetailView from '../DetailView';
+import { showPlaidLink } from '../redux/actions';
 import AccountView from './AccountView';
-import IconButton from './IconButton';
-import DetailView from './DetailView';
-import { showPlaidLink } from './redux/actions';
 
 const mapStateToProps = (state) => ({
   detailView: state.selections.accountTracking,

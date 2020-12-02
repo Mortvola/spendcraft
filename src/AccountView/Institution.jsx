@@ -1,9 +1,9 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { ModalLauncher } from './Modal';
+import { ModalLauncher } from '../Modal';
+import IconButton from '../IconButton';
 import AccountsDialog from './AccountsDialog';
 import InstitutionInfoDialog from './InstitutionInfoDialog';
-import IconButton from './IconButton';
 import Account from './Account';
 
 function Institution({

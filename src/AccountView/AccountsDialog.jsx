@@ -2,8 +2,8 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import { Field, ErrorMessage } from 'formik';
-import { ModalDialog } from './Modal';
-import Amount from './Amount';
+import { ModalDialog } from '../Modal';
+import Amount from '../Amount';
 
 const AccountItem = ({
   name,

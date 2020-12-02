@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 import moment from 'moment';
 import {
   refreshAccount,
-} from './redux/actions';
-import IconButton from './IconButton';
-import { formatNumber } from './NumberFormat';
+} from '../redux/actions';
+import IconButton from '../IconButton';
+import { formatNumber } from '../NumberFormat';
 
 const Account = ({
   selected,

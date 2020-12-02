@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import moment from 'moment';
-import { ModalDialog } from './Modal';
+import { ModalDialog } from '../Modal';
 
 const InstitutionInfoDialog = ({
   onClose,

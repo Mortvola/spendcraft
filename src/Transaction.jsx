@@ -17,6 +17,7 @@ const Transaction = ({
   selected,
   categoryId,
   unassignedId,
+  isMobile,
   dispatch,
 }) => {
   const handleClick = () => {
@@ -107,6 +108,24 @@ const Transaction = ({
     className += ' transaction-selected';
   }
 
+  if (isMobile) {
+    className += ' mobile';
+
+    return (
+      <div className={className}>
+        <div>
+          {transaction.date}
+        </div>
+        <div className="transaction-field">
+          {transaction.name}
+        </div>
+        <div>
+          {amount}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={className} onClick={handleClick}>
       <ModalLauncher
@@ -138,6 +157,11 @@ Transaction.propTypes = {
   dispatch: PropTypes.func.isRequired,
   categoryId: PropTypes.number.isRequired,
   unassignedId: PropTypes.number.isRequired,
+  isMobile: PropTypes.bool,
+};
+
+Transaction.defaultProps = {
+  isMobile: false,
 };
 
 export default connect()(Transaction);

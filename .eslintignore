@@ -5,3 +5,4 @@ node_modules/
 /database/
 /config/
 /app/
+/public/bundle.js

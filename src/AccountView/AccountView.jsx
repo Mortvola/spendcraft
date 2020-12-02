@@ -4,7 +4,7 @@ import { connect } from 'react-redux';
 import {
   selectAccount,
   relinkInstitution,
-} from './redux/actions';
+} from '../redux/actions';
 import Institution from './Institution';
 
 const mapStateToProps = (state) => ({

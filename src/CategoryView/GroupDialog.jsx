@@ -3,8 +3,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { Field, ErrorMessage } from 'formik';
 import { connect } from 'react-redux';
-import { addGroup, updateGroup, deleteGroup } from './redux/actions';
-import { ModalDialog } from './Modal';
+import { addGroup, updateGroup, deleteGroup } from '../redux/actions';
+import { ModalDialog } from '../Modal';
 
 const GroupDialog = (props) => {
   const {

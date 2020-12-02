@@ -4,8 +4,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { Field, ErrorMessage } from 'formik';
 import { connect } from 'react-redux';
-import { addCategory, updateCategory, deleteCategory } from './redux/actions';
-import { ModalDialog } from './Modal';
+import { addCategory, updateCategory, deleteCategory } from '../redux/actions';
+import { ModalDialog } from '../Modal';
 
 const CategoryDialog = (props) => {
   const {
