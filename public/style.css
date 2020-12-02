@@ -261,7 +261,7 @@ body {
 }
 
 .transaction.mobile {
-	grid-template-columns: max-content minmax(0, 1fr) minmax(0, 1fr);
+	grid-template-columns: max-content minmax(0, 3fr) minmax(0, 1fr);
 }
 
 .acct-transaction {

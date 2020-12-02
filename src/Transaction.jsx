@@ -121,9 +121,7 @@ const Transaction = ({
         <div className="transaction-field">
           {transaction.name}
         </div>
-        <div>
-          {amount}
-        </div>
+        <Amount amount={amount} />
         <TransactionDialog2 transaction={transaction} />
       </div>
     );
