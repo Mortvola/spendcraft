@@ -55,7 +55,11 @@ const FundingDialog = ({
       ? { planId: -1, categories: transaction.categories }
       : { planId: -1, categories: [] },
   );
-  const [total, setTotal] = useState(getTotal(transaction.categories));
+  const [total, setTotal] = useState(
+    transaction
+      ? getTotal(transaction.categories)
+      : 0,
+  );
   const [groups, setGroups] = useState([]);
   const [availableFunds, setAvailableFunds] = useState(fundingAmount);
 
