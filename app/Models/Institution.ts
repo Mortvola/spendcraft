@@ -7,7 +7,6 @@ import Database, { TransactionClientContract } from '@ioc:Adonis/Lucid/Database'
 import util from 'util';
 import plaidClient, { PlaidInstitution } from '@ioc:Plaid';
 import Account from 'App/Models/Account';
-import User from 'App/Models/User';
 
 class Institution extends BaseModel {
   @column()
@@ -28,10 +27,10 @@ class Institution extends BaseModel {
   @hasMany(() => Account)
   public accounts: HasMany<typeof Account>;
 
-  @belongsTo(() => User)
-  public user: BelongsTo<typeof User>;
+  @column()
+  public userId: number;
 
-  public static async updateWebhooks() {
+  public static async updateWebhooks(): Promise<void> {
     const hook = Env.get('PLAID_WEBHOOK');
 
     if (hook) {
@@ -52,7 +51,7 @@ class Institution extends BaseModel {
     }
   }
 
-  public static async updateItemIds() {
+  public static async updateItemIds(): Promise<void> {
     const getItem = util.promisify(plaidClient.getItem).bind(plaidClient);
 
     const result = await Database.query().select(

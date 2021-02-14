@@ -20,19 +20,6 @@ type CategoryBalance = {
 
 class InstitutionController {
   // eslint-disable-next-line class-methods-use-this
-  public async all({
-    auth: {
-      user,
-    },
-  }: HttpContextContract): Promise<Array<Record<string, unknown>>> {
-    if (!user) {
-      throw new Error('user is not defined');
-    }
-
-    return user.getConnectedAccounts();
-  }
-
-  // eslint-disable-next-line class-methods-use-this
   public async add({
     request,
     auth: {

@@ -134,7 +134,7 @@ export default class User extends BaseModel {
         'acct.id AS accountId',
         'acct.name AS accountName',
         'acct.tracking AS tracking',
-        'acct.balance',
+        Database.raw('CAST(acct.balance AS DOUBLE PRECISION) AS balance'),
         Database.raw("to_char(acct.sync_date  AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI:SS') AS syncdate"),
       )
       .from('institutions AS inst')

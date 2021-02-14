@@ -4,11 +4,20 @@ class TransactionCategory extends BaseModel {
   @column()
   public id: number;
 
-  @column()
+  @column({
+    serializeAs: 'transactionId',
+  })
   public transactionId: number;
 
-  @column()
+  @column({
+    serializeAs: 'categoryId',
+  })
   public categoryId: number;
+
+  @column({
+    serialize: (value?: string) => (value ? parseFloat(value) : null),
+  })
+  public amount: number;
 }
 
 export default TransactionCategory;

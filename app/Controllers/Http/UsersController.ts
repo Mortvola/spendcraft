@@ -1,5 +1,6 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import plaidClient from '@ioc:Plaid';
+import User from 'App/Models/User';
 
 export default class UsersController {
   // eslint-disable-next-line class-methods-use-this
@@ -9,6 +10,19 @@ export default class UsersController {
     }
 
     return { username: auth.user.username };
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  public async getConnectedAccounts({
+    auth: {
+      user,
+    },
+  }: HttpContextContract): Promise<Array<Record<string, unknown>>> {
+    if (!user) {
+      throw new Error('user is not defined');
+    }
+
+    return user.getConnectedAccounts();
   }
 
   // eslint-disable-next-line class-methods-use-this

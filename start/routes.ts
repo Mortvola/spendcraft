@@ -59,7 +59,7 @@ Route.group(() => {
     Route.get('/category/:catId/transactions', 'CategoryController.transactions');
     Route.get('/category/history', 'CategoryController.history');
 
-    Route.get('/connected_accounts', 'InstitutionController.all');
+    Route.get('/connected_accounts', 'UsersController.getConnectedAccounts');
 
     Route.get('/account/:acctId/transactions', 'AccountsController.transactions');
     Route.get('/account/:acctId/balances', 'AccountsController.balances');

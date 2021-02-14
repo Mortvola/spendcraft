@@ -1,8 +1,10 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
+import Database from '@ioc:Adonis/Lucid/Database';
 import Account from 'App/Models/Account';
 import AccountTransaction from 'App/Models/AccountTransaction';
 import BalanceHistory from 'App/Models/BalanceHistory';
 import Institution from 'App/Models/Institution';
+import TransactionCategory from 'App/Models/TransactionCategory';
 
 type Transactions = {
   transactions: Array<AccountTransaction>,
@@ -37,26 +39,22 @@ export default class AccountsController {
     if (account) {
       const institution = await Institution.findOrFail(account.institutionId);
 
-      if (institution.user.id === user.id) {
+      if (institution.userId === user.id) {
         result.balance = account.balance;
 
-        await account.preload('accountTransactions', (query) => {
-          query.preload('transaction', (q) => {
-            q.preload('categories');
-          })
-            .orderBy('account_transactions.pending', 'desc')
-            .orderBy('transactions.date', 'desc')
-            .orderBy('account_transactions.name');
-        });
+        const transactions = await account.related('accountTransactions')
+          .query()
+          .select(
+            'account_transactions.*',
+            Database.raw("to_char(date  AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI:SS') AS date"),
+            'transaction_id',
+          )
+          .join('transactions', 'transactions.id', 'transaction_id')
+          .orderBy('account_transactions.pending', 'desc')
+          .orderBy('transactions.date', 'desc')
+          .orderBy('account_transactions.name');
 
-        // .setVisible(['name', 'amount', 'pending', 'date', 'id', 'type', 'sort_order'])
-        // .join('transactions', 'transactions.id', 'account_transactions.transaction_id')
-        // .with('categories', (builder) => {
-        //   builder.setVisible(['category_id']);
-        // })
-        // .fetch();
-
-        result.transactions = account.accountTransactions;
+        result.transactions = transactions;
 
         if (result.transactions.length > 0) {
           // Move pending transactions to the pending array
@@ -73,6 +71,16 @@ export default class AccountsController {
             // The array contains at least one pending transaction
             result.pending = result.transactions.splice(0, index);
           }
+
+          const transctionIds = result.transactions.map((t) => t.transactionId);
+
+          const categories = await TransactionCategory.query().whereIn('transaction_id', transctionIds);
+
+          result.transactions.forEach((transaction) => {
+            transaction.$extras.categories = categories.filter(
+              (c) => c.transactionId === transaction.transactionId,
+            );
+          });
         }
       }
     }
