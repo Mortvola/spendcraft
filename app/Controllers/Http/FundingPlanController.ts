@@ -4,7 +4,8 @@ import FundingPlan, { Plan, PlanCategory } from 'App/Models/FundingPlan';
 import FundingPlanCategory from 'App/Models/FundingPlanCategory';
 
 class FundingPlanController {
-  static async getAll({
+  // eslint-disable-next-line class-methods-use-this
+  public async getAll({
     auth: {
       user,
     },
@@ -19,7 +20,8 @@ class FundingPlanController {
       .where('user_id', user.id);
   }
 
-  static async getPlan({ request }: HttpContextContract): Promise<Record<string, unknown>> {
+  // eslint-disable-next-line class-methods-use-this
+  public async getPlan({ request }: HttpContextContract): Promise<Record<string, unknown>> {
     const planId = parseInt(request.params().planId, 10);
 
     const categories = await FundingPlanCategory
@@ -33,7 +35,8 @@ class FundingPlanController {
     };
   }
 
-  static async getFullPlan({ request, auth: { user } }: HttpContextContract): Promise<Plan> {
+  // eslint-disable-next-line class-methods-use-this
+  public async getFullPlan({ request, auth: { user } }: HttpContextContract): Promise<Plan> {
     if (!user) {
       throw new Error('user is undefined');
     }
@@ -47,7 +50,8 @@ class FundingPlanController {
     return plan.getFullPlan(user);
   }
 
-  static async updateCategory({ request }: HttpContextContract): Promise<PlanCategory> {
+  // eslint-disable-next-line class-methods-use-this
+  public async updateCategory({ request }: HttpContextContract): Promise<PlanCategory> {
     const category = await FundingPlanCategory.findOrFail(request.params().itemId);
 
     category.amount = request.input('amount');
@@ -61,7 +65,8 @@ class FundingPlanController {
     };
   }
 
-  static async insertCategory({ request }: HttpContextContract): Promise<PlanCategory> {
+  // eslint-disable-next-line class-methods-use-this
+  public async insertCategory({ request }: HttpContextContract): Promise<PlanCategory> {
     const category = await FundingPlanCategory.create({
       planId: request.params().planId,
       categoryId: request.params().categoryId,

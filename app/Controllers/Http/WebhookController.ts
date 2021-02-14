@@ -13,7 +13,8 @@ const keyCache = {};
 const waitingRequests = {};
 
 class WebhookController {
-  static async post({ request, response }) {
+  // eslint-disable-next-line class-methods-use-this
+  public async post({ request, response }) {
     console.log(JSON.stringify(request.body));
 
     const verified = await WebhookController.verify(request);

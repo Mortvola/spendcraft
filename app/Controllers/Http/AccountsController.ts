@@ -11,7 +11,8 @@ type Transactions = {
 };
 
 export default class AccountsController {
-  public static async transactions({
+  // eslint-disable-next-line class-methods-use-this
+  public async transactions({
     request,
     auth: {
       user,
@@ -79,7 +80,8 @@ export default class AccountsController {
     return result;
   }
 
-  public static async balances({ request }: HttpContextContract): Promise<Array<BalanceHistory>> {
+  // eslint-disable-next-line class-methods-use-this
+  public async balances({ request }: HttpContextContract): Promise<Array<BalanceHistory>> {
     const accountId = parseInt(request.params().acctId, 10);
     const account = await Account.find(accountId);
 

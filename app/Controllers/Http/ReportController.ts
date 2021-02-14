@@ -5,7 +5,8 @@ type Category = {
 };
 
 class ReportController {
-  static async get({ auth: { user } }) {
+  // eslint-disable-next-line class-methods-use-this
+  public async get({ auth: { user } }) {
     if (!user) {
       throw new Error('user not defined');
     }

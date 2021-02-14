@@ -252,8 +252,6 @@ class CategoryController {
       query.where('splits.count', '>', 0);
     }
 
-    console.log(query.toString());
-
     result.transactions = await query;
 
     if (result.transactions.length > 0) {
@@ -276,7 +274,8 @@ class CategoryController {
     return result;
   }
 
-  static async transfer({ request, auth: { user } }: HttpContextContract): Promise<Array<any>> {
+  // eslint-disable-next-line class-methods-use-this
+  public async transfer({ request, auth: { user } }: HttpContextContract): Promise<Array<any>> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -364,7 +363,8 @@ class CategoryController {
     return result;
   }
 
-  static async transferDelete({ request }: HttpContextContract): Promise<void> {
+  // eslint-disable-next-line class-methods-use-this
+  public async transferDelete({ request }: HttpContextContract): Promise<void> {
     const trx = await Database.transaction();
 
     try {
@@ -396,7 +396,8 @@ class CategoryController {
     }
   }
 
-  static async balances({
+  // eslint-disable-next-line class-methods-use-this
+  public async balances({
     request,
     auth: {
       user,
@@ -411,7 +412,8 @@ class CategoryController {
     return Category.balances(user.id, date, id);
   }
 
-  static async history({ auth: { user } }: HttpContextContract): Promise<Array<GroupHistoryItem>> {
+  // eslint-disable-next-line class-methods-use-this
+  public async history({ auth: { user } }: HttpContextContract): Promise<Array<GroupHistoryItem>> {
     if (!user) {
       throw new Error('user is not defined');
     }

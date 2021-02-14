@@ -32,15 +32,8 @@ class InstitutionController {
     return user.getConnectedAccounts();
   }
 
-  static async getConnectedAccounts(user: User): Promise<Array<Record<string, unknown>>> {
-    if (!user) {
-      throw new Error('user is not defined');
-    }
-
-    return user.getConnectedAccounts();
-  }
-
-  static async add({
+  // eslint-disable-next-line class-methods-use-this
+  public async add({
     request,
     auth: {
       user,
@@ -125,7 +118,8 @@ class InstitutionController {
     return accounts;
   }
 
-  static async addAccounts({
+  // eslint-disable-next-line class-methods-use-this
+  public async addAccounts({
     request,
     auth: {
       user,
@@ -247,7 +241,7 @@ class InstitutionController {
 
     await trx.commit();
 
-    const accounts = await InstitutionController.getConnectedAccounts(user);
+    const accounts = await user.getConnectedAccounts();
 
     return {
       accounts,
@@ -292,7 +286,13 @@ class InstitutionController {
     };
   }
 
-  static async syncAll({ response, auth: { user } }: HttpContextContract) {
+  // eslint-disable-next-line class-methods-use-this
+  public async syncAll({
+    response,
+    auth: {
+      user,
+    },
+  }: HttpContextContract): Promise<Array<AccountSyncResult> | null> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -302,7 +302,7 @@ class InstitutionController {
     try {
       const institutions = await Institution.all();
 
-      const result: Array<AccountSyncResult | null> = [];
+      const result: Array<AccountSyncResult> | null = [];
 
       await Promise.all(institutions.map(async (institution) => {
         await institution.preload('accounts');
@@ -325,7 +325,8 @@ class InstitutionController {
     }
   }
 
-  static async sync({
+  // eslint-disable-next-line class-methods-use-this
+  public async sync({
     request,
     response,
     auth: {
@@ -363,7 +364,8 @@ class InstitutionController {
     }
   }
 
-  static async updateTx({
+  // eslint-disable-next-line class-methods-use-this
+  public async updateTx({
     request,
     auth: {
       user,
@@ -480,7 +482,8 @@ class InstitutionController {
     return result;
   }
 
-  static async linkToken({
+  // eslint-disable-next-line class-methods-use-this
+  public async linkToken({
     request,
     response,
     auth: {
@@ -509,7 +512,8 @@ class InstitutionController {
     response.json({ linkToken: linkTokenResponse.link_token });
   }
 
-  static async info({ request, auth: { user } }: HttpContextContract): Promise<PlaidInstitution> {
+  // eslint-disable-next-line class-methods-use-this
+  public async info({ request, auth: { user } }: HttpContextContract): Promise<PlaidInstitution> {
     if (!user) {
       throw new Error('user is not defined');
     }
