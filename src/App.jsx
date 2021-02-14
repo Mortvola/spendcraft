@@ -12,7 +12,17 @@ import PlaidLink from './PlaidLink';
 import DetailView from './DetailView';
 
 const Logout = () => {
-  window.location.assign('/logout');
+  fetch('/logout', {
+    method: 'POST',
+    headers: {
+      'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+    },
+  })
+    .then((response) => {
+      if (response.ok) {
+        window.location.replace('/');
+      }
+    });
 
   return null;
 };

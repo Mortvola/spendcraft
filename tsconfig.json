@@ -1,0 +1,55 @@
+{
+  "extends": "./node_modules/adonis-preset-ts/tsconfig",
+  "include": [
+    "**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "build"
+  ],
+  "compilerOptions": {
+    "moduleResolution": "node",
+    "outDir": "build",
+    // "rootDir": "/",
+    "rootDirs": [
+      "."
+    ],
+    "sourceMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "App/*": [
+        "./app/*"
+      ],
+      "Config/*": [
+        "./config/*"
+      ],
+      "Contracts/*": [
+        "./contracts/*"
+      ],
+      "Database/*": [
+        "./database/*"
+      ]
+    },
+    "typeRoots": [
+      "./node_modules/@types",
+      "./node_modules/@adonisjs/core/build/adonis-typings",
+      "./node_modules/@adonisjs/session/build/adonis-typings",
+      "./node_modules/@adonisjs/view/build/adonis-typings",
+      "./node_modules/@adonisjs/shield/build/adonis-typings",
+      "./node_modules/@adonisjs/auth/build/adonis-typings",
+      "./node_modules/@adonisjs/lucid/build/adonis-typings",
+      "./node_modules/@adonisjs/mail/build/adonis-typings",
+      "./node_modules/@adonisjs/http-server/build/adonis-typings",
+      "./blog/contracts/"
+    ],
+    "types": [
+      "@adonisjs/auth",
+      "@adonisjs/lucid",
+      "@adonisjs/shield",
+      "@adonisjs/core",
+      "@adonisjs/session",
+      "@adonisjs/view",
+      "@adonisjs/mail"
+    ]
+  }
+}

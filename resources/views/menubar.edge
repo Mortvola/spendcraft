@@ -1,6 +1,6 @@
       <nav class="navbar navbar-expand-md navbar-light shadow-sm">
           <div class="container">
-              <a class="navbar-brand" href="/home">{{ env('APP_NAME') }}</a>
+              <a class="navbar-brand" href="/home">{{ APP_NAME }}</a>
               <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
                   <span class="navbar-toggler-icon"></span>
               </button>
@@ -8,16 +8,16 @@
               <div class="collapse navbar-collapse" id="navbarSupportedContent">
               <!-- Left Side Of Navbar -->
               <ul class="navbar-nav mr-auto">
-@loggedIn
+@if(auth.isLoggedIn)
                   <a class="nav-link" href="/home" style="color:white">Home</a>
                   <a class="nav-link" href="/fundingplans" style="color:white">Funding Plans</a>
-@endloggedIn
+@endif
               </ul>
 
               <!-- Right Side Of Navbar -->
               <ul class="navbar-nav ml-auto">
                   <!-- Authentication Links -->
-@loggedIn
+@if(auth.isLoggedIn)
                       <li class="nav-item dropdown">
                           <a id="navbarDropdown" class="nav-link dropdown-toggle" href="#" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" v-pre>
                               {{ auth.user.username }} <span class="caret"></span>
@@ -31,7 +31,7 @@
 @else
                   <a class="nav-link" id="loginMenuItem" style="color:white">Login</a>
                   <a class="nav-link" id="registerMenuItem" style="color:white">Register</a>
-@endloggedIn
+@endif
               </ul>
           </div>
           </div>
