@@ -95,13 +95,14 @@ const App = ({
 App.propTypes = {
   view: PropTypes.string.isRequired,
   showPlaidLink: PropTypes.bool.isRequired,
-  updateMode: PropTypes.bool.isRequired,
+  updateMode: PropTypes.bool,
   linkToken: PropTypes.string,
   dispatch: PropTypes.func.isRequired,
 };
 
 App.defaultProps = {
   linkToken: null,
+  updateMode: false,
 };
 
 const ConnectedApp = connect(mapStateToProps)(App);

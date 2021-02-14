@@ -61,8 +61,8 @@ Route.group(() => {
 
     Route.get('/connected_accounts', 'InstitutionController.all');
 
-    Route.get('/account/:acctId/transactions', 'AccountController.transactions');
-    Route.get('/account/:acctId/balances', 'AccountController.balances');
+    Route.get('/account/:acctId/transactions', 'AccountsController.transactions');
+    Route.get('/account/:acctId/balances', 'AccountsController.balances');
 
     Route.post('/institutions/sync', 'InstitutionController.syncAll');
 

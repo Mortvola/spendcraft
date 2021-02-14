@@ -384,12 +384,12 @@ class InstitutionController {
 
     type Result = {
       categories: Array<CatBalance>,
-      splits: Array<unknown> | null,
+      splits: Array<unknown>,
     };
 
     const result: Result = {
       categories: [],
-      splits: null,
+      splits: [],
     };
 
     // Get the 'unassigned' category id
@@ -472,7 +472,7 @@ class InstitutionController {
       .join('groups', 'groups.id', 'cats.group_id')
       .where('splits.transaction_id', request.params().txId);
 
-    result.splits = null;
+    result.splits = [];
     if (transCats.length > 0) {
       result.splits = transCats;
     }
