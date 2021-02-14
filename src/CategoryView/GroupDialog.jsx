@@ -32,7 +32,7 @@ const GroupDialog = (props) => {
           if (response.errors && response.errors.length > 0) {
             // Display the first error
             // TODO: Display all the errors?
-            setErrors({ name: response.errors[0].message });
+            setErrors({ name: response.errors[0].title });
           }
           else {
             dispatch(updateGroup({ id: group.id, name: response.name }));
@@ -54,7 +54,7 @@ const GroupDialog = (props) => {
           if (response.errors && response.errors.length > 0) {
             // Display the first error
             // TODO: Display all the errors?
-            setErrors({ name: response.errors[0].message });
+            setErrors({ name: response.errors[0].title });
           }
           else {
             dispatch(addGroup({ id: response.id, name: response.name }));
@@ -74,29 +74,33 @@ const GroupDialog = (props) => {
     return errors;
   };
 
-  const handleDelete = (bag) => {
+  const handleDelete = async (bag) => {
     const { setTouched, setErrors } = bag;
 
-    fetch(`/groups/${group.id}`, {
+    const response = await fetch(`/groups/${group.id}`, {
       method: 'DELETE',
       headers: {
         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-        'Content-Type': 'application/json',
       },
-    })
-      .then((response) => response.json())
-      .then((response) => {
-        if (response.errors) {
-          // Display the first error
-          // TODO: Display all the errors?
-          setTouched({ name: true }, false);
-          setErrors({ name: response.errors[0].message });
-        }
-        else {
-          dispatch(deleteGroup({ id: group.id }));
-          onClose();
-        }
-      });
+    });
+
+    let body = null;
+    if (/^application\/json/.test(response.headers.get('content-type'))) {
+      body = await response.json();
+    }
+
+    if (!response.ok) {
+      if (body && body.errors) {
+        // Display the first error
+        // TODO: Display all the errors?
+        setTouched({ name: true }, false);
+        setErrors({ name: body.errors[0].title });
+      }
+    }
+    else {
+      dispatch(deleteGroup({ id: group.id }));
+      onClose();
+    }
   };
 
   return (

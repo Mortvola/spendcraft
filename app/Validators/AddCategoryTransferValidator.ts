@@ -1,4 +1,5 @@
-import { schema, rules } from '@ioc:Adonis/Core/Validator'
+import { schema, rules } from '@ioc:Adonis/Core/Validator';
+import { validator } from '@ioc:Adonis/Core/Validator';
 
 export default class AddCategoryTransferValidator {
   public schema = schema.create({
@@ -13,5 +14,11 @@ export default class AddCategoryTransferValidator {
     ), // 'required|zeroSum:amount',
   })
 
-  public messages = {}
+  public reporter = validator.reporters.jsonapi;
+
+  public messages = {
+    'date.required': 'A date is required',
+    'categories.minLength': 'There must be at least one category',
+    'categories.zeroSum': 'The sum of the categories must equal the transaction amount',
+  }
 }

@@ -1,5 +1,6 @@
 import { schema, rules } from '@ioc:Adonis/Core/Validator'
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
+import { validator } from '@ioc:Adonis/Core/Validator';
 
 export default class UpdateGroupValidator {
   constructor(protected ctx: HttpContextContract) {
@@ -9,7 +10,6 @@ export default class UpdateGroupValidator {
   public refs = schema.refs({ userId: this.ctx.auth.user ? this.ctx.auth.user.id : null });
 
   public schema = schema.create({
-    id: schema.number(),
     name: schema.string({}, [
       rules.required(),
       rules.unique({
@@ -19,11 +19,13 @@ export default class UpdateGroupValidator {
           user_id: this.refs.userId,
         },
         whereNot: {
-          id: this.ctx.request.params().id,
+          id: this.ctx.request.params().groupId,
         },
       }),
     ]),
   })
+
+  public reporter = validator.reporters.jsonapi;
 
   public messages = {
     'name.required': 'A group name must be provided',

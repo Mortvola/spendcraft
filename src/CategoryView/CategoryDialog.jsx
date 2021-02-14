@@ -40,7 +40,7 @@ const CategoryDialog = (props) => {
           else if (json.errors && json.errors.length > 0) {
             // Display the first error
             // TODO: Display all the errors?
-            setErrors({ name: json.errors[0].message });
+            setErrors({ name: json.errors[0].title });
           }
           else {
             setErrors({ name: 'Unknown error' });
@@ -72,7 +72,7 @@ const CategoryDialog = (props) => {
           else if (json.errors && json.errors.length > 0) {
             // Display the first error
             // TODO: Display all the errors?
-            setErrors({ name: json.errors[0].message });
+            setErrors({ name: json.errors[0].title });
           }
           else {
             setErrors({ name: 'Unknown error' });
@@ -114,7 +114,7 @@ const CategoryDialog = (props) => {
           if (json.errors && json.errors.length > 0) {
             // Display the first error
             // TODO: Display all the errors?
-            setErrors({ name: json.errors[0].message });
+            setErrors({ name: json.errors[0].title });
           }
           else {
             setErrors({ name: 'Unknown error' });

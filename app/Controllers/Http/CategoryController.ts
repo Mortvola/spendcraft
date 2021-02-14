@@ -110,7 +110,7 @@ class CategoryController {
       throw new Error('user is not defined');
     }
 
-    request.validate(UpdateGroupValidator);
+    await request.validate(UpdateGroupValidator);
 
     await Database.query().from('groups')
       .where({ id: request.params().groupId, user_id: user.id })
@@ -125,7 +125,7 @@ class CategoryController {
       throw new Error('user is not defined');
     }
 
-    request.validate(DeleteGroupValidator);
+    await request.validate(DeleteGroupValidator);
 
     await Database.query().from('groups').where({ id: request.params().groupId, user_id: user.id }).delete();
   }
@@ -134,7 +134,7 @@ class CategoryController {
   public async addCategory({
     request,
   }: HttpContextContract): Promise<Record<string, unknown>> {
-    request.validate(AddCategoryValidator);
+    await request.validate(AddCategoryValidator);
 
     const id = await Database.insertQuery()
       .insert({ group_id: request.params().groupId, name: request.input('name') })
@@ -147,7 +147,7 @@ class CategoryController {
   public async updateCategory({
     request,
   }: HttpContextContract): Promise<Record<string, unknown>> {
-    request.validate(UpdateCategoryValidator);
+    await request.validate(UpdateCategoryValidator);
 
     const { catId } = request.params();
     const name = request.input('name');
@@ -159,7 +159,7 @@ class CategoryController {
 
   // eslint-disable-next-line class-methods-use-this
   public async deleteCategory({ request }: HttpContextContract): Promise<void> {
-    request.validate(DeleteCategoryValidator);
+    await request.validate(DeleteCategoryValidator);
 
     await Database.query().from('categories').where({ id: request.params().catId }).delete();
   }
@@ -280,7 +280,7 @@ class CategoryController {
       throw new Error('user is not defined');
     }
 
-    request.validate(UpdateCategoryTransferValidator);
+    await request.validate(UpdateCategoryTransferValidator);
 
     const trx = await Database.transaction();
     const result: Array<any> = [];

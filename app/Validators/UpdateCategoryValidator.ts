@@ -1,5 +1,6 @@
 import { schema, rules } from '@ioc:Adonis/Core/Validator'
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
+import { validator } from '@ioc:Adonis/Core/Validator';
 
 export default class UpdateCategoryValidator {
   constructor(protected ctx: HttpContextContract) {
@@ -7,21 +8,25 @@ export default class UpdateCategoryValidator {
   }
 
   public schema = schema.create({
-    groupId: schema.number(),
     name: schema.string({}, [
       rules.required(),
       rules.unique({
         table: 'categories',
         column: 'name',
         where: {
-          groupId: this.ctx.request.params().groupId,
+          group_id: this.ctx.request.params().groupId,
         },
         whereNot: {
-          id: this.ctx.request.params().id,
+          id: this.ctx.request.params().catId,
         },
       }),
     ]),
   })
 
-  public messages = {}
+  public reporter = validator.reporters.jsonapi;
+
+  public messages = {
+    'name.unique': 'The category name must be unique within the group',
+    'name.required': 'The category name is required',
+  }
 }
