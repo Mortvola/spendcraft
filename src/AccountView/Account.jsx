@@ -20,7 +20,7 @@ const Account = ({
   };
 
   const accountSelected = () => {
-    onAccountSelected(account.id, account.tracking);
+    onAccountSelected(account);
   };
 
   let className = 'acct-list-acct';

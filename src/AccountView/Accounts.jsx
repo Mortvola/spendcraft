@@ -1,23 +1,21 @@
-import React, { useState } from 'react';
-import { connect } from 'react-redux';
-import PropTypes from 'prop-types';
+import React, { useState, useContext, useEffect } from 'react';
+import { observer } from 'mobx-react-lite';
 import IconButton from '../IconButton';
 import DetailView from '../DetailView';
 import { showPlaidLink } from '../redux/actions';
 import AccountView from './AccountView';
+import MobxStore from '../redux/mobxStore';
 
-const mapStateToProps = (state) => ({
-  detailView: state.selections.accountTracking,
-});
-
-const Accounts = ({
-  detailView,
-  dispatch,
-}) => {
+const Accounts = () => {
+  const { accounts: { selectedAccount }, register } = useContext(MobxStore);
   const [refreshing, setRefreshing] = useState(false);
 
+  useEffect(() => {
+    register.loadAccountTransactions(selectedAccount);
+  }, [selectedAccount]);
+
   const handleClick = () => {
-    dispatch(showPlaidLink());
+    // dispatch(showPlaidLink());
   };
 
   const handleRefresh = () => {
@@ -60,18 +58,13 @@ const Accounts = ({
           <AccountView />
         </div>
       </div>
-      <DetailView detailView={detailView} />
+      {
+        selectedAccount
+          ? <DetailView detailView={selectedAccount.tracking} />
+          : null
+      }
     </>
   );
 };
 
-Accounts.propTypes = {
-  detailView: PropTypes.string,
-  dispatch: PropTypes.func.isRequired,
-};
-
-Accounts.defaultProps = {
-  detailView: null,
-};
-
-export default connect(mapStateToProps)(Accounts);
+export default observer(Accounts);

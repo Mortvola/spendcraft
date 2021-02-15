@@ -9,7 +9,7 @@ import Account from './Account';
 function Institution({
   institution,
   onAccountSelected,
-  accountSelected,
+  selectedAccount,
   onRelink,
 }) {
   const handleRelinkClick = () => {
@@ -35,15 +35,23 @@ function Institution({
         />
       </div>
       <div>
-        {institution.accounts.map((account) => (
-          <Account
-            key={account.id}
-            institutionId={institution.id}
-            account={account}
-            onAccountSelected={onAccountSelected}
-            selected={accountSelected === account.id}
-          />
-        ))}
+        {
+          institution.accounts.map((account) => {
+            const selected = selectedAccount
+              ? selectedAccount.id === account.id
+              : false;
+
+            return (
+              <Account
+                key={account.id}
+                institutionId={institution.id}
+                account={account}
+                onAccountSelected={onAccountSelected}
+                selected={selected}
+              />
+            );
+          })
+        }
       </div>
     </div>
   );
@@ -56,12 +64,12 @@ Institution.propTypes = {
     accounts: PropTypes.arrayOf(PropTypes.shape()).isRequired,
   }).isRequired,
   onAccountSelected: PropTypes.func.isRequired,
-  accountSelected: PropTypes.number,
+  selectedAccount: PropTypes.shape(),
   onRelink: PropTypes.func.isRequired,
 };
 
 Institution.defaultProps = {
-  accountSelected: null,
+  selectedAccount: null,
 };
 
 export default Institution;

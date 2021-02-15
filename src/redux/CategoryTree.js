@@ -14,6 +14,23 @@ class CategoryTree {
     this.selectedCategory = categoryId;
   }
 
+  getCategoryName(categoryId) {
+    let categoryName = null;
+
+    this.groups.find((group) => {
+      const category = group.categories.find((cat) => cat.id === categoryId);
+
+      if (category) {
+        categoryName = `${group.name}:${category.name}`;
+        return true;
+      }
+
+      return false;
+    });
+
+    return categoryName;
+  }
+
   async load() {
     const response = await fetch('/groups');
 

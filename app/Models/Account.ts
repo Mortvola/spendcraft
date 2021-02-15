@@ -82,7 +82,9 @@ class Account extends BaseModel {
   @column()
   public startDate: string;
 
-  @column()
+  @column({
+    consume: (value: string) => (value ? parseFloat(value) : 0),
+  })
   public balance: number;
 
   @column()

@@ -8,7 +8,6 @@ const CategoryView = () => {
 
   const handleCategorySelected = (categoryId) => {
     categoryTree.selectCategory(categoryId);
-    register.loadCategoryTransactions(categoryId);
   };
 
   return (

@@ -1,6 +1,4 @@
 import {
-  REQUEST_INSTITUTIONS,
-  RECEIVE_INSTITUTIONS,
   RECEIVE_CATEGORY_BALANCES,
   RECEIVE_TRANSACTION_CATEGORIES,
   SELECT_ACCOUNT,
@@ -46,40 +44,10 @@ const selectAccount = (accountId, tracking) => (
     dispatch(setAccountSelection(accountId, tracking));
     // dispatch(requestTransactions());
 
-    if (tracking === 'Transactions') {
-      return (
-        fetch(`/account/${accountId}/transactions`)
-          .then(
-            (response) => response.json(),
-            (error) => console.log('fetch error: ', error),
-          )
-          .then(
-            (json) => {
-              json.transactions.sort((a, b) => {
-                if (a.date < b.date) {
-                  return 1;
-                }
-
-                if (a.date > b.date) {
-                  return -1;
-                }
-
-                if (a.sortOrder < b.sortOrder) {
-                  return 1;
-                }
-
-                if (a.sortOrder > b.sortOrder) {
-                  return -1;
-                }
-
-                return 0;
-              });
-
-              return []; //dispatch(receiveTransactions(null, json));
-            },
-          )
-      );
-    }
+    // if (tracking === 'Transactions') {
+    //   return (
+    //   );
+    // }
 
     return (
       fetch(`/account/${accountId}/balances`)
@@ -118,52 +86,6 @@ const showPlaidLink = () => (
 const hidePlaidLink = () => ({
   type: HIDE_PLAID_LINK,
 });
-
-const relinkInstitution = (institutionId) => (
-  (dispatch) => (
-    fetch(`/institution/${institutionId}/link_token`)
-      .then((response) => {
-        if (response.ok) {
-          return response.json();
-        }
-
-        throw new Error('invalid response');
-      })
-      .then((response) => {
-        dispatch({
-          type: SHOW_PLAID_LINK,
-          linkToken: response.linkToken,
-          updateMode: true,
-        });
-      })
-  )
-);
-
-const requestInstitutions = () => ({
-  type: REQUEST_INSTITUTIONS,
-});
-
-const receiveInstitutions = (institutions) => ({
-  type: RECEIVE_INSTITUTIONS,
-  institutions,
-});
-
-const fetchInstitutions = () => (
-  (dispatch) => {
-    dispatch(requestInstitutions());
-
-    return (
-      fetch('/connected_accounts')
-        .then(
-          (response) => response.json(),
-          (error) => console.log('fetch error: ', error),
-        )
-        .then(
-          (json) => dispatch(receiveInstitutions(json)),
-        )
-    );
-  }
-);
 
 const receiveCategoryBalances = (balances) => ({
   type: RECEIVE_CATEGORY_BALANCES,
@@ -385,7 +307,6 @@ const refreshAccount = (institutionId, accountId) => (
 export {
   fetchUser,
   addInstitution,
-  fetchInstitutions,
   receiveCategoryBalances,
   receiveTransactionCategories,
   selectAccount,
@@ -394,7 +315,6 @@ export {
   report,
   fetchPlans,
   fetchPlan,
-  relinkInstitution,
   showPlaidLink,
   hidePlaidLink,
   accountSynced,

@@ -1,40 +1,22 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { connect } from 'react-redux';
+import React, {
+  useState, useRef, useEffect, useContext,
+} from 'react';
 import ReactDOM from 'react-dom';
 import PropTypes from 'prop-types';
 import CategorySelector from './CategorySelector';
 import useExclusiveBool from '../ExclusiveBool';
-
-const mapStateToProps = (state) => ({
-  groups: state.categoryTree.groups,
-});
-
-const getCategoryName = (groups, categoryId) => {
-  let categoryName = null;
-
-  groups.find((group) => {
-    const category = group.categories.find((cat) => cat.id === categoryId);
-
-    if (category) {
-      categoryName = `${group.name}:${category.name}`;
-      return true;
-    }
-
-    return false;
-  });
-
-  return categoryName;
-};
+import MobxStore from '../redux/mobxStore';
 
 const CategoryInput = ({
   categoryId,
-  groups,
   onChange,
 }) => {
+  const { categoryTree } = useContext(MobxStore);
+  const { groups } = categoryTree;
   const [selected, setSelected] = useState({ groupIndex: null, categoryIndex: null });
   const [open, setOpen] = useExclusiveBool(false);
-  const [value, setValue] = useState(getCategoryName(groups, categoryId));
-  const [originalValue, setOriginalValue] = useState(getCategoryName(groups, categoryId));
+  const [value, setValue] = useState(categoryTree.getCategoryName(categoryId));
+  const [originalValue, setOriginalValue] = useState(categoryTree.getCategoryName(categoryId));
   const [filter, setFilter] = useState(null);
   const inputRef = useRef(null);
   const selectorRef = useRef(null);
@@ -89,7 +71,7 @@ const CategoryInput = ({
   });
 
   const openDropDown = () => {
-    setOriginalValue(getCategoryName(groups, categoryId));
+    setOriginalValue(categoryTree.getCategoryName(categoryId));
     setOpen(true);
   };
 
@@ -106,8 +88,8 @@ const CategoryInput = ({
 
     setSelected({ groupIndex, categoryIndex });
     setOpen(false);
-    setValue(getCategoryName(groups, category.id));
-    setOriginalValue(getCategoryName(groups, categoryId));
+    setValue(categoryTree.getCategoryName(category.id));
+    setOriginalValue(categoryTree.getCategoryName(categoryId));
 
     if (onChange) {
       onChange(category.id);
@@ -215,7 +197,7 @@ const CategoryInput = ({
       }
 
       setOpen(false);
-      setValue(getCategoryName(groups, selectedCategory.id));
+      setValue(categoryTree.getCategoryName(selectedCategory.id));
 
       if (onChange) {
         onChange(selectedCategory.id);
@@ -312,13 +294,11 @@ const CategoryInput = ({
 
 CategoryInput.propTypes = {
   categoryId: PropTypes.number,
-  groups: PropTypes.arrayOf(PropTypes.shape()),
   onChange: PropTypes.func.isRequired,
 };
 
 CategoryInput.defaultProps = {
   categoryId: null,
-  groups: null,
 };
 
-export default connect(mapStateToProps)(CategoryInput);
+export default CategoryInput;

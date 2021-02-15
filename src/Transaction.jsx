@@ -156,12 +156,13 @@ Transaction.propTypes = {
   balance: PropTypes.number.isRequired,
   selected: PropTypes.bool.isRequired,
   dispatch: PropTypes.func.isRequired,
-  categoryId: PropTypes.number.isRequired,
+  categoryId: PropTypes.number,
   unassignedId: PropTypes.number.isRequired,
   isMobile: PropTypes.bool,
 };
 
 Transaction.defaultProps = {
+  categoryId: null,
   isMobile: false,
 };
 
