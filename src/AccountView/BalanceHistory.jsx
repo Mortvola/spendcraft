@@ -1,15 +1,10 @@
-import React from 'react';
-import { connect } from 'react-redux';
-import PropTypes from 'prop-types';
+import React, { useContext } from 'react';
+import { observer } from 'mobx-react-lite';
 import Chart from 'react-google-charts';
+import MobxStore from '../redux/mobxStore';
 
-const mapStateToProps = (state) => ({
-  balances: state.balances,
-});
-
-const BalanceHistory = ({
-  balances,
-}) => {
+const BalanceHistory = () => {
+  const { balances } = useContext(MobxStore);
   const data = balances.map((b) => [b.date, b.balance]);
   data.splice(0, 0, ['date', 'balance']);
 
@@ -31,8 +26,4 @@ const BalanceHistory = ({
   );
 };
 
-BalanceHistory.propTypes = {
-  balances: PropTypes.arrayOf(PropTypes.shape()).isRequired,
-};
-
-export default connect(mapStateToProps)(BalanceHistory);
+export default observer(BalanceHistory);

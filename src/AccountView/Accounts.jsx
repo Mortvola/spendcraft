@@ -7,11 +7,18 @@ import AccountView from './AccountView';
 import MobxStore from '../redux/mobxStore';
 
 const Accounts = () => {
-  const { accounts: { selectedAccount }, register } = useContext(MobxStore);
+  const { accounts: { selectedAccount }, register, balances } = useContext(MobxStore);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    register.loadAccountTransactions(selectedAccount);
+    if (selectedAccount) {
+      if (selectedAccount.tracking === 'Transactions') {
+        register.loadAccountTransactions(selectedAccount);
+      }
+      else {
+        balances.load(selectedAccount);
+      }
+    }
   }, [selectedAccount]);
 
   const handleClick = () => {

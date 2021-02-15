@@ -15,6 +15,10 @@ class Accounts {
   async load() {
     const response = await fetch('/connected_accounts');
 
+    if (!response.ok) {
+      throw new Error('invalid response');
+    }
+
     const body = await response.json();
 
     if (body) {

@@ -28,39 +28,11 @@ const receiveSystemIds = (systemIds) => ({
   ...systemIds,
 });
 
-const receiveAccountBalances = (balances) => ({
-  type: RECEIVE_ACCOUNT_BALANCES,
-  balances,
-});
-
 const setAccountSelection = (accountId, tracking) => ({
   type: SELECT_ACCOUNT,
   accountId,
   tracking,
 });
-
-const selectAccount = (accountId, tracking) => (
-  (dispatch) => {
-    dispatch(setAccountSelection(accountId, tracking));
-    // dispatch(requestTransactions());
-
-    // if (tracking === 'Transactions') {
-    //   return (
-    //   );
-    // }
-
-    return (
-      fetch(`/account/${accountId}/balances`)
-        .then(
-          (response) => response.json(),
-          (error) => console.log('fetch error: ', error),
-        )
-        .then(
-          (json) => dispatch(receiveAccountBalances(json)),
-        )
-    );
-  }
-);
 
 const showPlaidLink = () => (
   (dispatch) => {
@@ -165,10 +137,10 @@ const navigate = (eventKey) => (
         dispatch(setView(eventKey));
         if (state.selections.selectedAccountId !== null
           && state.selections.accountTracking !== null) {
-          dispatch(selectAccount(
-            state.selections.selectedAccountId,
-            state.selections.accountTracking,
-          ));
+          // dispatch(selectAccount(
+          //   state.selections.selectedAccountId,
+          //   state.selections.accountTracking,
+          // ));
         }
 
         break;
@@ -309,7 +281,6 @@ export {
   addInstitution,
   receiveCategoryBalances,
   receiveTransactionCategories,
-  selectAccount,
   receiveSystemIds,
   navigate,
   report,
