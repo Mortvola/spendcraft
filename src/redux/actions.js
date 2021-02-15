@@ -1,11 +1,8 @@
 import {
-  REQUEST_TRANSACTIONS,
-  RECEIVE_TRANSACTIONS,
   REQUEST_INSTITUTIONS,
   RECEIVE_INSTITUTIONS,
   RECEIVE_CATEGORY_BALANCES,
   RECEIVE_TRANSACTION_CATEGORIES,
-  SELECT_CATEGORY,
   SELECT_ACCOUNT,
   RECEIVE_SYSTEM_IDS,
   RECEIVE_ACCOUNT_BALANCES,
@@ -33,65 +30,10 @@ const receiveSystemIds = (systemIds) => ({
   ...systemIds,
 });
 
-const requestTransactions = () => ({
-  type: REQUEST_TRANSACTIONS,
-});
-
-const receiveTransactions = (categoryId, transactions) => ({
-  type: RECEIVE_TRANSACTIONS,
-  categoryId,
-  transactions,
-});
-
 const receiveAccountBalances = (balances) => ({
   type: RECEIVE_ACCOUNT_BALANCES,
   balances,
 });
-
-const setCategorySelection = (categoryId) => ({
-  type: SELECT_CATEGORY,
-  categoryId,
-});
-
-const selectCategory = (categoryId) => (
-  (dispatch) => {
-    dispatch(setCategorySelection(categoryId));
-    dispatch(requestTransactions());
-
-    return (
-      fetch(`/category/${categoryId}/transactions`)
-        .then(
-          (response) => response.json(),
-          (error) => console.log('fetch error: ', error),
-        )
-        .then(
-          (json) => {
-            json.transactions.sort((a, b) => {
-              if (a.date < b.date) {
-                return 1;
-              }
-
-              if (a.date > b.date) {
-                return -1;
-              }
-
-              if (a.sortOrder < b.sortOrder) {
-                return 1;
-              }
-
-              if (a.sortOrder > b.sortOrder) {
-                return -1;
-              }
-
-              return 0;
-            });
-
-            return dispatch(receiveTransactions(categoryId, json));
-          },
-        )
-    );
-  }
-);
 
 const setAccountSelection = (accountId, tracking) => ({
   type: SELECT_ACCOUNT,
@@ -102,7 +44,7 @@ const setAccountSelection = (accountId, tracking) => ({
 const selectAccount = (accountId, tracking) => (
   (dispatch) => {
     dispatch(setAccountSelection(accountId, tracking));
-    dispatch(requestTransactions());
+    // dispatch(requestTransactions());
 
     if (tracking === 'Transactions') {
       return (
@@ -133,7 +75,7 @@ const selectAccount = (accountId, tracking) => (
                 return 0;
               });
 
-              return dispatch(receiveTransactions(null, json));
+              return []; //dispatch(receiveTransactions(null, json));
             },
           )
       );
@@ -282,16 +224,16 @@ const navigate = (eventKey) => (
         if (state.selections.view === 'home') {
           dispatch(setView(eventKey));
           if (state.categoryTree.unassignedId !== null) {
-            dispatch(selectCategory(state.categoryTree.unassignedId));
+            // dispatch(selectCategory(state.categoryTree.unassignedId));
           }
         }
         else {
           dispatch(setView(eventKey));
           if (state.selections.selectedCategoryId !== null) {
-            dispatch(selectCategory(state.selections.selectedCategoryId));
+            // dispatch(selectCategory(state.selections.selectedCategoryId));
           }
           else if (state.categoryTree.unassignedId !== null) {
-            dispatch(selectCategory(state.categoryTree.unassignedId));
+            // dispatch(selectCategory(state.categoryTree.unassignedId));
           }
         }
 
@@ -446,7 +388,6 @@ export {
   fetchInstitutions,
   receiveCategoryBalances,
   receiveTransactionCategories,
-  selectCategory,
   selectAccount,
   receiveSystemIds,
   navigate,

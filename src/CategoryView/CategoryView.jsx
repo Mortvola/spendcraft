@@ -4,10 +4,11 @@ import Group from './Group';
 import MobxStore from '../redux/mobxStore';
 
 const CategoryView = () => {
-  const { categoryTree } = useContext(MobxStore);
+  const { categoryTree, register } = useContext(MobxStore);
 
   const handleCategorySelected = (categoryId) => {
     categoryTree.selectCategory(categoryId);
+    register.loadCategoryTransactions(categoryId);
   };
 
   return (

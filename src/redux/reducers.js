@@ -2,8 +2,6 @@ import { combineReducers } from 'redux';
 import {
   ADD_INSTITUTION,
   UPDATE_INSTITUTION,
-  REQUEST_TRANSACTIONS,
-  RECEIVE_TRANSACTIONS,
   REQUEST_INSTITUTIONS,
   RECEIVE_INSTITUTIONS,
   RECEIVE_CATEGORY_BALANCES,
@@ -196,17 +194,6 @@ function transactions(
   action,
 ) {
   switch (action.type) {
-    case REQUEST_TRANSACTIONS:
-      return { ...state, fetching: true };
-
-    case RECEIVE_TRANSACTIONS: {
-      if (action.categoryId !== null) {
-        return { categoryId: action.categoryId, ...action.transactions, fetching: false };
-      }
-
-      return { categoryId: null, ...action.transactions, fetching: false };
-    }
-
     case RECEIVE_CATEGORY_BALANCES:
       if (state.categoryId !== null) {
         const balance = action.balances.find((b) => b.id === state.categoryId);
