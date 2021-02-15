@@ -51,7 +51,7 @@ const CategoryInput = ({
   };
 
   const handleMouseDown = (event) => {
-    if (!inputRef.current.contains(event.target)
+    if (inputRef.current && !inputRef.current.contains(event.target)
       && (selectorRef.current === null || !selectorRef.current.contains(event.target))) {
       event.stopPropagation();
       handleCancel();

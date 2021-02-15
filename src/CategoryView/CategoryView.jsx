@@ -4,7 +4,7 @@ import Group from './Group';
 import MobxStore from '../redux/mobxStore';
 
 const CategoryView = () => {
-  const { categoryTree, register } = useContext(MobxStore);
+  const { categoryTree } = useContext(MobxStore);
 
   const handleCategorySelected = (categoryId) => {
     categoryTree.selectCategory(categoryId);

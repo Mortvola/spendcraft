@@ -1,8 +1,11 @@
 node_modules/
-blog/node_modules/
 /start/
 /server.js
 /providers/
 /database/
 /config/
-/public/bundle.js
+/public/app.js
+/public/welcome.js
+/public/js
+/build
+/blog
