@@ -2,14 +2,9 @@ import { combineReducers } from 'redux';
 import {
   ADD_INSTITUTION,
   UPDATE_INSTITUTION,
-  REQUEST_INSTITUTIONS,
-  RECEIVE_INSTITUTIONS,
   RECEIVE_CATEGORY_BALANCES,
   RECEIVE_TRANSACTION_CATEGORIES,
-  SELECT_CATEGORY,
-  SELECT_ACCOUNT,
   RECEIVE_SYSTEM_IDS,
-  RECEIVE_ACCOUNT_BALANCES,
   SET_VIEW,
   RECEIVE_REPORT_DATA,
   RECEIVE_USER,
@@ -157,12 +152,6 @@ function institutions(
       return state;
     }
 
-    case REQUEST_INSTITUTIONS:
-      return state;
-
-    case RECEIVE_INSTITUTIONS:
-      return action.institutions;
-
     default: {
       if (action.institutionId !== undefined) {
         const index = state.findIndex((e) => e.id === action.institutionId);
@@ -243,19 +232,6 @@ function transactions(
   }
 }
 
-function balances(
-  state = [],
-  action,
-) {
-  switch (action.type) {
-    case RECEIVE_ACCOUNT_BALANCES:
-      return action.balances;
-
-    default:
-      return state;
-  }
-}
-
 function selections(
   state = {
     view: 'home',
@@ -266,19 +242,6 @@ function selections(
   action,
 ) {
   switch (action.type) {
-    case SELECT_CATEGORY:
-      return {
-        ...state,
-        selectedCategoryId: action.categoryId,
-      };
-
-    case SELECT_ACCOUNT:
-      return {
-        ...state,
-        selectedAccountId: action.accountId,
-        accountTracking: action.tracking,
-      };
-
     case SET_VIEW:
       return {
         ...state,
@@ -419,7 +382,6 @@ const budgetApp = combineReducers({
   categoryTree,
   institutions,
   transactions,
-  balances,
   selections,
   reports,
   user,

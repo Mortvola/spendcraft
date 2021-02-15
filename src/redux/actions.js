@@ -1,9 +1,7 @@
 import {
   RECEIVE_CATEGORY_BALANCES,
   RECEIVE_TRANSACTION_CATEGORIES,
-  SELECT_ACCOUNT,
   RECEIVE_SYSTEM_IDS,
-  RECEIVE_ACCOUNT_BALANCES,
   SET_VIEW,
   REQUEST_REPORT_DATA,
   RECEIVE_REPORT_DATA,
@@ -26,12 +24,6 @@ const addInstitution = (institution) => ({
 const receiveSystemIds = (systemIds) => ({
   type: RECEIVE_SYSTEM_IDS,
   ...systemIds,
-});
-
-const setAccountSelection = (accountId, tracking) => ({
-  type: SELECT_ACCOUNT,
-  accountId,
-  tracking,
 });
 
 const showPlaidLink = () => (
