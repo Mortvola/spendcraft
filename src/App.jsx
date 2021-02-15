@@ -10,6 +10,7 @@ import Reports from './Reports/Reports';
 import Plans from './Plans/Plans';
 import PlaidLink from './PlaidLink';
 import DetailView from './DetailView';
+import MobxStore, { store as mobxStore } from './redux/mobxStore';
 
 const Logout = () => {
   fetch('/logout', {
@@ -108,8 +109,10 @@ App.defaultProps = {
 const ConnectedApp = connect(mapStateToProps)(App);
 
 ReactDOM.render(
-  <Provider store={store}>
-    <ConnectedApp />
-  </Provider>,
+  <MobxStore.Provider value={mobxStore}>
+    <Provider store={store}>
+      <ConnectedApp />
+    </Provider>
+  </MobxStore.Provider>,
   document.querySelector('.app'),
 );

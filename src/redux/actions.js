@@ -1,12 +1,4 @@
 import {
-  ADD_GROUP,
-  UPDATE_GROUP,
-  DELETE_GROUP,
-  REQUEST_GROUPS,
-  RECEIVE_GROUPS,
-  ADD_CATEGORY,
-  UPDATE_CATEGORY,
-  DELETE_CATEGORY,
   REQUEST_TRANSACTIONS,
   RECEIVE_TRANSACTIONS,
   REQUEST_INSTITUTIONS,
@@ -34,30 +26,6 @@ import {
 const addInstitution = (institution) => ({
   type: ADD_INSTITUTION,
   institution,
-});
-
-const addGroup = (group) => ({
-  type: ADD_GROUP,
-  group,
-});
-
-const updateGroup = (group) => ({
-  type: UPDATE_GROUP,
-  group,
-});
-
-const deleteGroup = (group) => ({
-  type: DELETE_GROUP,
-  group,
-});
-
-const requestGroups = () => ({
-  type: REQUEST_GROUPS,
-});
-
-const receieveGroups = (groups) => ({
-  type: RECEIVE_GROUPS,
-  groups,
 });
 
 const receiveSystemIds = (systemIds) => ({
@@ -201,8 +169,7 @@ const showPlaidLink = () => (
           updateMode: false,
         });
       })
-      .catch(() => {
-      });
+      .catch(() => null);
   }
 );
 
@@ -229,55 +196,6 @@ const relinkInstitution = (institutionId) => (
       })
   )
 );
-
-const fetchGroups = () => (
-  (dispatch, getState) => {
-    dispatch(requestGroups());
-
-    return (
-      fetch('/groups')
-        .then(
-          (response) => response.json(),
-          (error) => console.log('fetch error: ', error),
-        )
-        .then(
-          (json) => {
-            const systemGroup = json.find((g) => g.system);
-
-            const systemIds = {
-              systemGroupId: systemGroup.id,
-              unassignedId: systemGroup.categories.find((c) => c.system && c.name === 'Unassigned').id,
-              fundingPoolId: systemGroup.categories.find((c) => c.system && c.name === 'Funding Pool').id,
-            };
-
-            dispatch(receiveSystemIds(systemIds));
-            dispatch(receieveGroups(json));
-
-            // If nothing is currently selected then select the unassigned category.
-            const state = getState();
-            if (state.selections.selectedCategoryId === null) {
-              dispatch(selectCategory(systemIds.unassignedId));
-            }
-          },
-        )
-    );
-  }
-);
-
-const addCategory = (category) => ({
-  type: ADD_CATEGORY,
-  category,
-});
-
-const updateCategory = (category) => ({
-  type: UPDATE_CATEGORY,
-  category,
-});
-
-const deleteCategory = (category) => ({
-  type: DELETE_CATEGORY,
-  category,
-});
 
 const requestInstitutions = () => ({
   type: REQUEST_INSTITUTIONS,
@@ -525,13 +443,6 @@ const refreshAccount = (institutionId, accountId) => (
 export {
   fetchUser,
   addInstitution,
-  addGroup,
-  updateGroup,
-  deleteGroup,
-  fetchGroups,
-  addCategory,
-  updateCategory,
-  deleteCategory,
   fetchInstitutions,
   receiveCategoryBalances,
   receiveTransactionCategories,

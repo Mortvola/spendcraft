@@ -12,7 +12,7 @@ function Buttons({ group }) {
         <ModalLauncher
           launcher={(props) => (<IconButton icon="plus" {...props} />)}
           title="Add Category"
-          dialog={(props) => (<CategoryDialog groupId={group.id} {...props} />)}
+          dialog={(props) => (<CategoryDialog group={group} {...props} />)}
         />
         <ModalLauncher
           launcher={(props) => (<IconButton icon="edit" {...props} />)}

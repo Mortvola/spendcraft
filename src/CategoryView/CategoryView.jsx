@@ -1,46 +1,27 @@
-import React from 'react';
-import PropTypes from 'prop-types';
-import { connect } from 'react-redux';
-import { selectCategory } from '../redux/actions';
+import React, { useContext } from 'react';
+import { observer } from 'mobx-react-lite';
 import Group from './Group';
+import MobxStore from '../redux/mobxStore';
 
-const mapStateToProps = (state) => ({
-  groups: state.categoryTree.groups,
-  selectedCategory: state.selections.selectedCategoryId,
-});
+const CategoryView = () => {
+  const { categoryTree } = useContext(MobxStore);
 
-const CategoryView = ({
-  selectedCategory,
-  groups,
-  dispatch,
-}) => {
   const handleCategorySelected = (categoryId) => {
-    dispatch(selectCategory(categoryId));
+    categoryTree.selectCategory(categoryId);
   };
 
   return (
     <div id="categories">
-      {groups.map((group) => (
+      {categoryTree.groups.map((group) => (
         <Group
           key={group.name}
           group={group}
           onCategorySelected={handleCategorySelected}
-          categorySelected={selectedCategory}
+          categorySelected={categoryTree.selectedCategory}
         />
       ))}
     </div>
   );
 };
 
-CategoryView.propTypes = {
-  groups: PropTypes.arrayOf(PropTypes.shape),
-  selectedCategory: PropTypes.number,
-  dispatch: PropTypes.func.isRequired,
-};
-
-CategoryView.defaultProps = {
-  groups: [],
-  selectedCategory: undefined,
-};
-
-export default connect(mapStateToProps)(CategoryView);
+export default observer(CategoryView);

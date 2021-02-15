@@ -3,7 +3,7 @@ import { createLogger } from 'redux-logger';
 import { createStore, applyMiddleware } from 'redux';
 import { composeWithDevTools } from 'redux-devtools-extension';
 import budgetApp from './reducers';
-import { fetchUser, fetchGroups, fetchInstitutions } from './actions';
+import { fetchUser, fetchInstitutions } from './actions';
 
 const middlewares = [thunkMiddleware];
 
@@ -19,7 +19,6 @@ const store = createStore(
 );
 
 store.dispatch(fetchUser());
-store.dispatch(fetchGroups());
 store.dispatch(fetchInstitutions());
 
 export default store;

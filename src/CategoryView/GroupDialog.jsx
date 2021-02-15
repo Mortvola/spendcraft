@@ -1,66 +1,37 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
-import React from 'react';
+import React, { useContext } from 'react';
 import PropTypes from 'prop-types';
 import { Field, ErrorMessage } from 'formik';
-import { connect } from 'react-redux';
-import { addGroup, updateGroup, deleteGroup } from '../redux/actions';
 import { ModalDialog } from '../Modal';
+import MobxStore from '../redux/mobxStore';
 
-const GroupDialog = (props) => {
-  const {
-    onClose,
-    onExited,
-    title,
-    show,
-    group,
-    dispatch,
-  } = props;
+const GroupDialog = ({
+  onClose,
+  onExited,
+  title,
+  show,
+  group,
+}) => {
+  const { categoryTree } = useContext(MobxStore);
 
-  const handleSubmit = (values, bag) => {
+  const handleSubmit = async (values, bag) => {
     const { setErrors } = bag;
+    let errors = null;
+
     if (group) {
-      fetch(`/groups/${group.id}`, {
-        method: 'PATCH',
-        headers: {
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ name: values.name }),
-      })
-        .then((response) => response.json())
-        .then((response) => {
-          if (response.errors && response.errors.length > 0) {
-            // Display the first error
-            // TODO: Display all the errors?
-            setErrors({ name: response.errors[0].title });
-          }
-          else {
-            dispatch(updateGroup({ id: group.id, name: response.name }));
-            onClose();
-          }
-        });
+      errors = await group.update(values.name);
     }
     else {
-      fetch('/groups', {
-        method: 'POST',
-        headers: {
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ name: values.name }),
-      })
-        .then((response) => response.json())
-        .then((response) => {
-          if (response.errors && response.errors.length > 0) {
-            // Display the first error
-            // TODO: Display all the errors?
-            setErrors({ name: response.errors[0].title });
-          }
-          else {
-            dispatch(addGroup({ id: response.id, name: response.name }));
-            onClose();
-          }
-        });
+      errors = await categoryTree.addGroup(values.name);
+    }
+
+    if (errors && errors.length > 0) {
+      // Display the first error
+      // TODO: Display all the errors?
+      setErrors({ name: errors[0].title });
+    }
+    else {
+      onClose();
     }
   };
 
@@ -77,28 +48,15 @@ const GroupDialog = (props) => {
   const handleDelete = async (bag) => {
     const { setTouched, setErrors } = bag;
 
-    const response = await fetch(`/groups/${group.id}`, {
-      method: 'DELETE',
-      headers: {
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-      },
-    });
+    const errors = await categoryTree.deleteGroup(group.id);
 
-    let body = null;
-    if (/^application\/json/.test(response.headers.get('content-type'))) {
-      body = await response.json();
-    }
-
-    if (!response.ok) {
-      if (body && body.errors) {
-        // Display the first error
-        // TODO: Display all the errors?
-        setTouched({ name: true }, false);
-        setErrors({ name: body.errors[0].title });
-      }
+    if (errors && errors.length > 0) {
+      // Display the first error
+      // TODO: Display all the errors?
+      setTouched({ name: true }, false);
+      setErrors({ name: errors[0].title });
     }
     else {
-      dispatch(deleteGroup({ id: group.id }));
       onClose();
     }
   };
@@ -139,16 +97,16 @@ GroupDialog.propTypes = {
   group: PropTypes.shape({
     id: PropTypes.number.isRequired,
     name: PropTypes.string.isRequired,
+    update: PropTypes.func.isRequired,
   }),
   onClose: PropTypes.func.isRequired,
   onExited: PropTypes.func.isRequired,
   title: PropTypes.string.isRequired,
   show: PropTypes.bool.isRequired,
-  dispatch: PropTypes.func.isRequired,
 };
 
 GroupDialog.defaultProps = {
   group: undefined,
 };
 
-export default connect()(GroupDialog);
+export default GroupDialog;

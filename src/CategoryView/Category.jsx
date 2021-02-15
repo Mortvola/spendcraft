@@ -1,18 +1,18 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import { observer } from 'mobx-react-lite';
 import { ModalLauncher } from '../Modal';
 import CategoryTransferDialog from '../CategoryTransferDialog';
 import Amount from '../Amount';
 import IconButton from '../IconButton';
 import EditButton from './EditButton';
 
-function Category({
+const Category = ({
   category,
-  groupId,
-  systemGroup,
+  group,
   selected,
   onCategorySelected,
-}) {
+}) => {
   const handleClick = () => {
     onCategorySelected(category.id);
   };
@@ -25,7 +25,7 @@ function Category({
   return (
     <div className={className} onClick={handleClick}>
       <div className="cat-element-bar">
-        <EditButton category={category} groupId={groupId} systemGroup={systemGroup} />
+        <EditButton category={category} group={group} />
         <ModalLauncher
           launcher={(props) => (<IconButton icon="random" {...props} />)}
           title="Category Transfer"
@@ -33,19 +33,18 @@ function Category({
         />
         <div className="cat-list-name">{category.name}</div>
       </div>
-      <Amount className="cat-list-amt" dataCat={category.id} amount={category.amount} />
+      <Amount className="cat-list-amt" dataCat={category.id} amount={category.balance} />
     </div>
   );
-}
+};
 
 Category.propTypes = {
   category: PropTypes.shape({
     id: PropTypes.number.isRequired,
-    amount: PropTypes.number,
+    balance: PropTypes.number,
     name: PropTypes.string.isRequired,
   }),
-  groupId: PropTypes.number.isRequired,
-  systemGroup: PropTypes.bool.isRequired,
+  group: PropTypes.shape().isRequired,
   onCategorySelected: PropTypes.func.isRequired,
   selected: PropTypes.bool.isRequired,
 };
@@ -56,4 +55,4 @@ Category.defaultProps = {
   },
 };
 
-export default Category;
+export default observer(Category);
