@@ -12,7 +12,7 @@ const AccountView = () => {
   };
 
   const handleRelink = (institutionId) => {
-    accounts.relinkInstituion(institutionId);
+    accounts.relinkInstitution(institutionId);
   };
 
   return (

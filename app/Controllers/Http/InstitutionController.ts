@@ -3,7 +3,6 @@ import Database, { TransactionClientContract } from '@ioc:Adonis/Lucid/Database'
 import moment from 'moment';
 import plaidClient, { PlaidAccount, PlaidInstitution } from '@ioc:Plaid';
 import Institution from 'App/Models/Institution';
-import User from 'App/Models/User';
 import Account, { AccountSyncResult } from 'App/Models/Account';
 
 type CategoryBalance = {
@@ -33,12 +32,12 @@ class InstitutionController {
     const { institution, publicToken } = request.only(['institution', 'publicToken']);
 
     // Check to see if we already have the institution. If not, add it.
-    const inst = await Database.from('institutions').where({ institution_id: institution.institution_id, user_id: user.id });
+    const inst = await Institution.find(institution.institution_id);
 
     let accessToken;
     let institutionId;
 
-    if (inst.length === 0) {
+    if (!inst) {
       const tokenResponse = await plaidClient.exchangePublicToken(publicToken);
 
       accessToken = tokenResponse.access_token;
@@ -75,7 +74,9 @@ class InstitutionController {
     const { accounts } = await plaidClient.getAccounts(accessToken);
 
     const existingAccts = await Database.query()
-      .select('plaid_account_id').from('accounts').where('institution_id', institutionId);
+      .select('plaid_account_id')
+      .from('accounts')
+      .where('institution_id', institutionId);
 
     existingAccts.forEach((existingAcct) => {
       const index = accounts.findIndex((a) => a.account_id === existingAcct.plaid_account_id);
@@ -88,19 +89,18 @@ class InstitutionController {
     return accounts;
   }
 
-  static async get({ request, auth: { user } }: HttpContextContract): Promise<Array<PlaidAccount>> {
+  // eslint-disable-next-line class-methods-use-this
+  async get({ request, auth: { user } }: HttpContextContract): Promise<Array<PlaidAccount>> {
     if (!user) {
       throw new Error('user is not defined');
     }
 
-    const inst = await Database.query()
-      .select('access_token').from('institutions').where({ id: request.params().instId, user_id: user.id });
+    const inst = await Institution.findOrFail(request.params().instId);
 
     let accounts: Array<PlaidAccount> = [];
-    if (inst.length > 0) {
-      accounts = await InstitutionController
-        .getAccounts(inst[0].access_token, request.params().instId);
-    }
+
+    accounts = await InstitutionController
+      .getAccounts(inst.accessToken, inst.id);
 
     return accounts;
   }
@@ -116,6 +116,8 @@ class InstitutionController {
       throw new Error('user is not defined');
     }
 
+    const newAccounts: Array<Account> = [];
+
     const trx = await Database.transaction();
 
     let fundingAmount = 0;
@@ -129,11 +131,9 @@ class InstitutionController {
     const fundingPool = systemCats.find((entry) => entry.name === 'Funding Pool');
     const unassigned = systemCats.find((entry) => entry.name === 'Unassigned');
 
-    const [{ accessToken }] = await trx.query().select('access_token AS accessToken')
-      .from('institutions')
-      .where({ id: request.params().instId, user_id: user.id });
+    const institution = await Institution.findOrFail(request.params().instId);
 
-    if (accessToken) {
+    if (institution.accessToken) {
       type AccountInput = {
         // eslint-disable-next-line camelcase
         account_id: string,
@@ -162,25 +162,24 @@ class InstitutionController {
             startDate = moment().startOf('month').format('YYYY-MM-DD');
           }
 
-          acct.fill({
-            plaidAccountId: account.account_id,
-            name: account.name,
-            officialName: account.official_name,
-            mask: account.mask,
-            subtype: account.subtype,
-            type: account.type,
-            institutionId: request.params().instId,
-            startDate,
-            balance: account.balances.current,
-            tracking: account.tracking,
-            enabled: true,
-          });
+          acct.plaidAccountId = account.account_id;
+          acct.name = account.name;
+          acct.officialName = account.official_name;
+          acct.mask = account.mask;
+          acct.subtype = account.subtype;
+          acct.type = account.type;
+          acct.institutionId = request.params().instId;
+          acct.startDate = startDate;
+          acct.balance = account.balances.current;
+          acct.tracking = account.tracking;
+          acct.enabled = true;
 
-          await trx.commit();
+          acct.useTransaction(trx);
+          await acct.save();
 
           if (acct.tracking === 'Transactions') {
             const details = await acct.addTransactions(
-              trx, accessToken, startDate, user.id,
+              trx, institution.accessToken, startDate, user.id,
             );
 
             if (details.cat) {
@@ -222,16 +221,16 @@ class InstitutionController {
 
             fundingAmount = funding.amount;
           }
+
+          newAccounts.push(acct);
         }
       }));
     }
 
     await trx.commit();
 
-    const accounts = await user.getConnectedAccounts();
-
     return {
-      accounts,
+      accounts: newAccounts,
       categories: [
         { id: fundingPool.id, amount: fundingAmount },
         { id: unassigned.id, amount: unassignedAmount },
@@ -481,11 +480,7 @@ class InstitutionController {
       throw new Error('user is not defined');
     }
 
-    const acct = await Database.query()
-      .select('access_token AS accessToken')
-      .from('institutions AS inst')
-      .where('inst.id', request.params().instId)
-      .andWhere('inst.user_id', user.id);
+    const institution = await Institution.findOrFail(parseInt(request.params().instId, 10));
 
     const linkTokenResponse = await plaidClient.createLinkToken({
       user: {
@@ -494,8 +489,9 @@ class InstitutionController {
       client_name: 'debertas',
       country_codes: ['US'],
       language: 'en',
-      access_token: acct[0].accessToken,
+      access_token: institution.accessToken,
     });
+
     response.json({ linkToken: linkTokenResponse.link_token });
   }
 

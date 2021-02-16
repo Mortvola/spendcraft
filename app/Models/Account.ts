@@ -177,9 +177,9 @@ class Account extends BaseModel {
   }
 
   public async addTransactions(
-    this: Account, trx, accessToken, startDate, userId,
+    this: Account, trx: TransactionClientContract, accessToken: string, startDate: string, userId: number,
   ): Promise<Transaction> {
-    const pendingTransactions = await trx.select('transaction_id', 'plaid_transaction_id')
+    const pendingTransactions = await trx.query().select('transaction_id', 'plaid_transaction_id')
       .from('account_transactions')
       .where('account_id', this.id)
       .andWhere('pending', true);
@@ -207,23 +207,23 @@ class Account extends BaseModel {
 
       if (transaction.amount !== null) {
         // First check to see if the transaction is present. If it is then don't insert it.
-        const [{ exists }] = await trx.select(
+        const [{ exists }] = await trx.query().select(
           Database.raw(`EXISTS (SELECT 1 FROM account_transactions WHERE plaid_transaction_id = '${transaction.transaction_id}') AS exists`),
         );
 
         if (!exists) {
           // console.log('Insert transaction');
 
-          const id = await trx.insert({
+          const id = await trx.insertQuery().insert({
             date: transaction.date,
             user_id: userId,
           })
-            .into('transactions')
+            .table('transactions')
             .returning('id');
 
           // console.log(JSON.stringify(id, null, 4));
 
-          await trx.insert({
+          await trx.insertQuery().insert({
             transaction_id: id[0],
             plaid_transaction_id: transaction.transaction_id,
             account_id: this.id,
@@ -231,7 +231,7 @@ class Account extends BaseModel {
             amount: -transaction.amount,
             pending: transaction.pending,
           })
-            .into('account_transactions');
+            .table('account_transactions');
 
           if (!transaction.pending) {
             sum += transaction.amount;
@@ -253,8 +253,13 @@ class Account extends BaseModel {
       const transIds = pendingTransactions.map(
         (item) => item.transaction_id,
       );
-      await trx.table('account_transactions').whereIn('transaction_id', transIds).delete();
-      await trx.table('transactions').whereIn('id', transIds).where('user_id', userId).delete();
+      await trx.query().from('account_transactions')
+        .whereIn('transaction_id', transIds)
+        .delete();
+
+      await trx.query().from('transactions').whereIn('id', transIds)
+        .where('user_id', userId)
+        .delete();
     }
 
     let balance: number = transactionsResponse.accounts[0].balances.current;
@@ -262,7 +267,8 @@ class Account extends BaseModel {
     let cat: Category | null = null;
 
     if (sum !== 0) {
-      const systemCats = await trx.select('cats.id AS id', 'cats.name AS name')
+      const systemCats = await trx.query()
+        .select('cats.id AS id', 'cats.name AS name')
         .from('categories AS cats')
         .join('groups', 'groups.id', 'group_id')
         .where('cats.system', true)
@@ -280,26 +286,28 @@ class Account extends BaseModel {
 
     // console.log(`Balance: ${balance}, Pending: ${pendingSum}`);
     this.balance = balance;
-    await trx.commit();
 
     return { balance, sum, cat } as Transaction;
   }
 
-  public static async subtractFromCategoryBalance(trx, categoryId, amount): Promise<Category> {
-    const result = await trx.select(
-      'groups.id AS groupId',
-      'groups.name AS group',
-      'cat.id AS categoryId',
-      'cat.name AS category',
-      'cat.amount AS amount',
-    )
+  public static async subtractFromCategoryBalance(
+    trx: TransactionClientContract, categoryId, amount,
+  ): Promise<Category> {
+    const result = await trx.query()
+      .select(
+        'groups.id AS groupId',
+        'groups.name AS group',
+        'cat.id AS categoryId',
+        'cat.name AS category',
+        'cat.amount AS amount',
+      )
       .from('categories AS cat')
       .leftJoin('groups', 'groups.id', 'cat.group_id')
       .where('cat.id', categoryId);
 
     const newAmount = result[0].amount - amount;
 
-    await trx.table('categories').where('id', categoryId).update('amount', newAmount);
+    await trx.query().from('categories').where('id', categoryId).update('amount', newAmount);
 
     return {
       group: {
@@ -314,7 +322,9 @@ class Account extends BaseModel {
     } as Category;
   }
 
-  public async updateAccountBalanceHistory(this: Account, trx, balance) {
+  public async updateAccountBalanceHistory(
+    this: Account, trx: TransactionClientContract, balance,
+  ): Promise<void> {
     const today = DateTime.utc();
 
     await this.preload('balanceHistory', (query) => {

@@ -1,6 +1,6 @@
 import {
-  BaseModel, hasMany, HasMany, belongsTo,
-  BelongsTo, column,
+  BaseModel, hasMany, HasMany,
+  column,
 } from '@ioc:Adonis/Lucid/Orm';
 import Env from '@ioc:Adonis/Core/Env'
 import Database, { TransactionClientContract } from '@ioc:Adonis/Lucid/Database'
@@ -18,7 +18,9 @@ class Institution extends BaseModel {
   @column()
   public name: string;
 
-  @column()
+  @column({
+    serializeAs: null,
+  })
   public accessToken: string;
 
   @column()

@@ -19,7 +19,7 @@ const Accounts = () => {
         balances.load(selectedAccount);
       }
     }
-  }, [selectedAccount]);
+  }, [balances, register, selectedAccount]);
 
   const handleClick = () => {
     // dispatch(showPlaidLink());

@@ -1,79 +1,20 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { Field, ErrorMessage } from 'formik';
-import { ModalDialog } from '../Modal';
-import Amount from '../Amount';
-
-const AccountItem = ({
-  name,
-  value,
-  account,
-  onChange,
-}) => {
-  const [option, setOption] = useState(value);
-
-  const handleChange = (event) => {
-    setOption(event.target.value);
-
-    if (onChange) {
-      onChange(event);
-    }
-  };
-
-  return (
-    <div className="account-select-item">
-      <div className="account-name">
-        {account.official_name ? account.official_name : account.name}
-      </div>
-      <div className="account-type">
-        <label>Type:</label>
-        <div>{account.subtype}</div>
-      </div>
-      <div className="account-balance">
-        <label>Balance:</label>
-        <Amount amount={account.balances.current} />
-      </div>
-      <div className="track-selection">
-        <label>Account Tracking</label>
-        <select name={name} value={option} onChange={handleChange}>
-          <option value="None">None</option>
-          <option value="Transactions">Transactions</option>
-          <option value="Balances">Balance</option>
-        </select>
-      </div>
-    </div>
-  );
-};
-
-AccountItem.propTypes = {
-  name: PropTypes.string.isRequired,
-  value: PropTypes.string.isRequired,
-  account: PropTypes.shape({
-    official_name: PropTypes.string,
-    name: PropTypes.string,
-    subtype: PropTypes.string,
-    balances: PropTypes.shape({
-      current: PropTypes.number,
-    }),
-  }).isRequired,
-  onChange: PropTypes.func,
-};
-
-AccountItem.defaultProps = {
-  onChange: null,
-};
+import { observer } from 'mobx-react-lite';
+import { toJS } from 'mobx';
+import {
+  Formik, Form, Field, ErrorMessage,
+} from 'formik';
+import { Button, Modal } from 'react-bootstrap';
+import AccountItem from './AccountItem';
+import useModal from '../useModal';
 
 const AccountsDialog = ({
-  onClose,
-  title,
-  institutionId,
-  ...props
+  institution,
+  show,
+  onHide,
 }) => {
-  const [accountsInitialized, setAccountsInitialized] = useState(false);
-  const [accounts, setAccounts] = useState([]);
-  const [selections, setSelections] = useState([]);
-
   const handleValidate = (values) => {
     const errors = {};
     if (!values.selections.some((s) => s !== 'None')) {
@@ -83,85 +24,106 @@ const AccountsDialog = ({
     return errors;
   };
 
-  const handleSubmit = (values) => {
-    const selectedAccounts = accounts
-      .map((a, i) => ({ ...a, tracking: values.selections[i] }))
-      .filter((a) => a.tracking !== 'None');
+  const handleSubmit = async (values) => {
+    const selectedAccounts = institution.unlinkedAccounts
+      .map((a, i) => ({ ...a, tracking: values.selections[i].tracking }))
+      .filter((a) => (a.tracking !== 'None' && a.tracking !== undefined));
 
-    fetch(`/institution/${institutionId}/accounts`, {
-      method: 'POST',
-      headers: {
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ accounts: selectedAccounts, startDate: null }),
-    })
-      .then(
-        () => onClose(),
-      );
+    const errors = await institution.addAccounts(selectedAccounts);
 
-    onClose();
+    if (!errors) {
+      onHide();
+    }
   };
 
-  const fetchAccounts = () => {
-    setAccountsInitialized(true);
-    fetch(`/institution/${institutionId}/accounts`)
-      .then(async (response) => {
-        const json = await response.json();
-        setAccounts(json);
-        setSelections(Array(json.length).fill('None'));
-      });
-  };
-
-  if (!accountsInitialized) {
-    fetchAccounts();
-  }
-
-  const listAccounts = () => {
-    const accts = [];
-
-    accounts.forEach((acct) => {
-      const name = `selections[${accts.length}]`;
-      accts.push((
-        <Field key={accts.length} name={name} account={acct} as={AccountItem} />
-      ));
-    });
-
-    return accts;
-  };
+  useEffect(() => {
+    institution.getUnlinkedAccounts();
+  }, [institution]);
 
   const renderForm = () => (
     <>
-      {listAccounts()}
+      {
+        institution.unlinkedAccounts.map((acct, index) => (
+          <Field
+            key={acct.account_id}
+            name={`selections[${index}].tracking`}
+            account={acct}
+            as={AccountItem}
+          />
+        ))
+      }
       <ErrorMessage name="selections" />
     </>
   );
 
+  const Header = () => (
+    <Modal.Header closeButton>
+      <h4 id="modalTitle" className="modal-title">Accounts</h4>
+    </Modal.Header>
+  );
+
+  const Footer = () => (
+    <Modal.Footer>
+      <div />
+      <div />
+      <Button variant="secondary" onClick={onHide}>Cancel</Button>
+      <Button variant="primary" type="submit">Save</Button>
+    </Modal.Footer>
+  );
+
+  if (institution.unlinkedAccounts) {
+    return (
+      <Modal show={show} onHide={onHide}>
+        <Formik
+          initialValues={{
+            selections: toJS(institution.unlinkedAccounts),
+          }}
+          validate={handleValidate}
+          onSubmit={handleSubmit}
+        >
+          <Form>
+            <Header />
+            <Modal.Body>
+              {
+                renderForm()
+              }
+            </Modal.Body>
+            <Footer />
+          </Form>
+        </Formik>
+      </Modal>
+    );
+  }
+
   return (
-    <ModalDialog
-      initialValues={{
-        selections,
-      }}
-      validate={handleValidate}
-      onSubmit={handleSubmit}
-      onClose={onClose}
-      title={title}
-      form={selections.length > 0 ? renderForm : null}
-      {...props}
-    />
+    <Modal show={show} onHide={onHide}>
+      <Header />
+      <Modal.Body />
+      <Footer />
+    </Modal>
   );
 };
 
 AccountsDialog.propTypes = {
-  onClose: PropTypes.func.isRequired,
-  onExited: PropTypes.func.isRequired,
+  institution: PropTypes.shape().isRequired,
   show: PropTypes.bool.isRequired,
-  title: PropTypes.string,
-  institutionId: PropTypes.number.isRequired,
+  onHide: PropTypes.func.isRequired,
 };
 
-AccountsDialog.defaultProps = {
-  title: 'Accounts',
+const observedAccountsDialog = observer(AccountsDialog);
+
+const useAccountsDialog = () => {
+  const [DialogModal, showDialogModal] = useModal(observedAccountsDialog);
+
+  const createAccountsDialog = (props) => (
+    <DialogModal {...props} />
+  );
+
+  return [
+    createAccountsDialog,
+    showDialogModal,
+  ];
 };
 
-export default AccountsDialog;
+export default observedAccountsDialog;
+export { useAccountsDialog };

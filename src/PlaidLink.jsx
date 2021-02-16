@@ -1,55 +1,36 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useContext } from 'react';
 import { usePlaidLink } from 'react-plaid-link';
-import { hidePlaidLink, addInstitution } from './redux/actions';
+import MobxStore from './redux/mobxStore';
 
-const PlaidLink = ({
-  linkToken,
-  updateMode,
-  dispatch,
-}) => {
+const PlaidLink = () => {
+  const { accounts } = useContext(MobxStore);
+
   const onExit = useCallback((err, metaData) => {
     if (err) {
       console.log(err);
       console.log(JSON.stringify(metaData));
     }
-    dispatch(hidePlaidLink());
-  }, []);
+    accounts.plaid.hideDialog();
+  }, [accounts.plaid]);
 
   const onSuccess = useCallback((publicToken, metadata) => {
-    if (publicToken && !updateMode) {
-      fetch('/institution', {
-        method: 'POST',
-        headers: {
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          publicToken,
-          institution: metadata.institution,
-        }),
-      })
-        .then(async (response) => {
-          const json = await response.json();
-
-          dispatch(addInstitution({ id: json.id, name: json.name, accounts: [] }));
-
-          // openAccountSelectionDialog(json.id, json.accounts);
-        });
+    if (publicToken && !accounts.plaid.updateMode) {
+      accounts.addInstitution(publicToken, metadata);
+      accounts.plaid.hideDialog();
     }
-    dispatch(hidePlaidLink());
-  }, []);
+  }, [accounts]);
 
   const { open, ready } = usePlaidLink({
-    token: linkToken,
+    token: accounts.plaid.linkToken,
     onSuccess,
     onExit,
   });
 
   useEffect(() => {
-    if (open && ready) {
+    if (accounts.plaid.displayDialog && open && ready) {
       open();
     }
-  }, [open, ready]);
+  }, [accounts.plaid.displayDialog, open, ready]);
 
   return null;
 };

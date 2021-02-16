@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import ReactDOM from 'react-dom';
 import PropTypes from 'prop-types';
+import { observer } from 'mobx-react-lite';
 import { Provider, connect } from 'react-redux';
 import store from './redux/store';
 import Menubar from './Menubar';
@@ -30,18 +31,12 @@ const Logout = () => {
 
 const mapStateToProps = (state) => ({
   view: state.selections.view,
-  showPlaidLink: state.dialogs.plaid.show,
-  updateMode: state.dialogs.plaid.updateMode,
-  linkToken: state.dialogs.plaid.linkToken,
 });
 
 const App = ({
   view,
-  showPlaidLink,
-  updateMode,
-  linkToken,
-  dispatch,
 }) => {
+  const { accounts } = useContext(MobxStore);
   const isMobile = window.innerWidth <= 500;
 
   const renderMain = () => {
@@ -70,8 +65,8 @@ const App = ({
     <div className="main">
       {renderMain()}
       {
-        showPlaidLink
-          ? <PlaidLink linkToken={linkToken} dispatch={dispatch} updateMode={updateMode} />
+        accounts.plaid.displayDialog
+          ? <PlaidLink />
           : null
       }
     </div>
@@ -95,18 +90,9 @@ const App = ({
 
 App.propTypes = {
   view: PropTypes.string.isRequired,
-  showPlaidLink: PropTypes.bool.isRequired,
-  updateMode: PropTypes.bool,
-  linkToken: PropTypes.string,
-  dispatch: PropTypes.func.isRequired,
 };
 
-App.defaultProps = {
-  linkToken: null,
-  updateMode: false,
-};
-
-const ConnectedApp = connect(mapStateToProps)(App);
+const ConnectedApp = connect(mapStateToProps)(observer(App));
 
 ReactDOM.render(
   <MobxStore.Provider value={mobxStore}>
