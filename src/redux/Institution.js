@@ -5,8 +5,12 @@ class Institution {
   constructor(props) {
     this.id = props.id;
     this.name = props.name;
-    this.accounts = props.accounts || [];
     this.unlinkedAccounts = null;
+
+    this.accounts = [];
+    if (props.accounts) {
+      this.accounts = props.accounts.map((acct) => new Account(acct));
+    }
 
     makeAutoObservable(this);
   }
@@ -33,7 +37,7 @@ class Institution {
           );
 
           if (index === -1) {
-            this.accounts = this.accounts.concat([account]);
+            this.accounts.push(account);
           }
           else {
             this.accounts.splice(index, 0, account);

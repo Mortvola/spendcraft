@@ -327,16 +327,13 @@ class InstitutionController {
 
     try {
       const institution = await Institution.findOrFail(request.params().instId);
+      const account = await Account.findOrFail(request.params().acctId);
 
       let result: AccountSyncResult | null = null;
 
-      await institution.preload('accounts');
-      const { accounts } = institution;
-      if (accounts.length > 0) {
-        result = await accounts[0].sync(
-          trx, institution.accessToken, user.id,
-        );
-      }
+      result = await account.sync(
+        trx, institution.accessToken, user.id,
+      );
 
       await trx.commit();
 

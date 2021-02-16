@@ -1,10 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { connect } from 'react-redux';
 import moment from 'moment';
-import {
-  refreshAccount,
-} from '../redux/actions';
+import { observer } from 'mobx-react-lite';
 import IconButton from '../IconButton';
 import { formatNumber } from '../NumberFormat';
 
@@ -12,11 +9,10 @@ const Account = ({
   selected,
   institutionId,
   account,
-  dispatch,
   onAccountSelected,
 }) => {
   const refresh = () => {
-    dispatch(refreshAccount(institutionId, account.id));
+    account.refresh(institutionId);
   };
 
   const accountSelected = () => {
@@ -52,11 +48,11 @@ Account.propTypes = {
     syncDate: PropTypes.string,
     balance: PropTypes.number,
     tracking: PropTypes.string,
+    refresh: PropTypes.func.isRequired,
     refreshing: PropTypes.bool,
   }).isRequired,
   onAccountSelected: PropTypes.func.isRequired,
   selected: PropTypes.bool.isRequired,
-  dispatch: PropTypes.func.isRequired,
 };
 
-export default connect()(Account);
+export default observer(Account);

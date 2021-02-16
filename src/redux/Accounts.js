@@ -63,15 +63,17 @@ class Accounts {
     const institution = new Institution({ id: body.id, name: body.name, accounts: [] });
 
     runInAction(() => {
-      const index = this.institutions.findIndex(
-        (inst) => institution.name.localeCompare(inst.name) < 0,
-      );
+      if (response.ok) {
+        const index = this.institutions.findIndex(
+          (inst) => institution.name.localeCompare(inst.name) < 0,
+        );
 
-      if (index === -1) {
-        this.institutions.concat([institution]);
-      }
-      else {
-        this.institutions.splice(index, 0, institution);
+        if (index === -1) {
+          this.institutions.push(institution);
+        }
+        else {
+          this.institutions.splice(index, 0, institution);
+        }
       }
     });
 

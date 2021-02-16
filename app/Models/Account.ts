@@ -1,5 +1,5 @@
 import Database, { TransactionClientContract } from '@ioc:Adonis/Lucid/Database';
-import moment from 'moment';
+import moment, { Moment } from 'moment';
 import {
   BaseModel, hasMany, HasMany, column,
 } from '@ioc:Adonis/Lucid/Orm';
@@ -101,83 +101,78 @@ class Account extends BaseModel {
     accessToken: string,
     userId: number,
   ): Promise<AccountSyncResult | null> {
-    this.$trx = trx;
+    this.useTransaction(trx);
 
     const result: AccountSyncResult = {
       categories: [],
       accounts: [],
     };
 
-    try {
-      this.syncDate = moment().format('YYYY-MM-DD hh:mm:ss');
+    this.syncDate = moment().format('YYYY-MM-DD hh:mm:ss');
 
-      if (this.tracking === 'Transactions') {
-        // Retrieve the past 30 days of transactions
-        // (unles the account start date is sooner)
-        const startDate = moment.max(
-          moment().subtract(30, 'days'),
-          moment(this.startDate),
-        );
+    if (this.tracking === 'Transactions') {
+      // Retrieve the past 30 days of transactions
+      // (unles the account start date is sooner)
+      const startDate = moment.max(
+        moment().subtract(30, 'days'),
+        moment(this.startDate),
+      );
 
-        const details = await this.addTransactions(
-          trx,
-          accessToken,
-          startDate,
-          userId,
-        );
+      const details = await this.addTransactions(
+        trx,
+        accessToken,
+        startDate,
+        userId,
+      );
 
-        await this.updateAccountBalanceHistory(
-          trx, details.balance,
-        );
+      await this.updateAccountBalanceHistory(
+        trx, details.balance,
+      );
 
-        if (details.cat) {
-          const systemCats = await trx.query()
-            .select('cats.id AS id', 'cats.name AS name')
-            .from('categories AS cats')
-            .join('groups', 'groups.id', 'group_id')
-            .where('cats.system', true)
-            .andWhere('groups.user_id', userId);
-          const unassigned = systemCats.find((entry) => entry.name === 'Unassigned');
+      if (details.cat) {
+        const systemCats = await trx.query()
+          .select('cats.id AS id', 'cats.name AS name')
+          .from('categories AS cats')
+          .join('groups', 'groups.id', 'group_id')
+          .where('cats.system', true)
+          .andWhere('groups.user_id', userId);
+        const unassigned = systemCats.find((entry) => entry.name === 'Unassigned');
 
-          result.categories = [{ id: unassigned.id, amount: details.cat.amount }];
-        }
-
-        result.accounts = [{
-          id: this.id,
-          balance: details.balance,
-          syncDate: this.syncDate,
-        }];
-      }
-      else {
-        const balanceResponse = await plaidClient.getBalance(accessToken, {
-          account_ids: [this.plaidAccountId],
-        });
-
-        this.balance = balanceResponse.accounts[0].balances.current;
-
-        await this.updateAccountBalanceHistory(
-          trx, balanceResponse.accounts[0].balances.current,
-        );
-
-        result.accounts = [{
-          id: this.id,
-          balance: balanceResponse.accounts[0].balances.current,
-          syncDate: this.syncDate,
-        }];
+        result.categories = [{ id: unassigned.id, amount: details.cat.amount }];
       }
 
-      await trx.commit();
+      result.accounts = [{
+        id: this.id,
+        balance: details.balance,
+        syncDate: this.syncDate,
+      }];
     }
-    catch (error) {
-      trx.rollback();
-      console.log(error);
+    else {
+      const balanceResponse = await plaidClient.getBalance(accessToken, {
+        account_ids: [this.plaidAccountId],
+      });
+
+      this.balance = balanceResponse.accounts[0].balances.current;
+
+      await this.updateAccountBalanceHistory(
+        trx, balanceResponse.accounts[0].balances.current,
+      );
+
+      result.accounts = [{
+        id: this.id,
+        balance: balanceResponse.accounts[0].balances.current,
+        syncDate: this.syncDate,
+      }];
     }
+
+    await this.save();
 
     return result;
   }
 
   public async addTransactions(
-    this: Account, trx: TransactionClientContract, accessToken: string, startDate: string, userId: number,
+    this: Account, trx: TransactionClientContract,
+    accessToken: string, startDate: Moment, userId: number,
   ): Promise<Transaction> {
     const pendingTransactions = await trx.query().select('transaction_id', 'plaid_transaction_id')
       .from('account_transactions')
@@ -186,7 +181,7 @@ class Account extends BaseModel {
 
     const transactionsResponse = await plaidClient.getTransactions(
       accessToken,
-      moment(startDate).format('YYYY-MM-DD'),
+      startDate.format('YYYY-MM-DD'),
       moment().format('YYYY-MM-DD'),
       {
         count: 250,
@@ -291,7 +286,7 @@ class Account extends BaseModel {
   }
 
   public static async subtractFromCategoryBalance(
-    trx: TransactionClientContract, categoryId, amount,
+    trx: TransactionClientContract, categoryId: number, amount: number,
   ): Promise<Category> {
     const result = await trx.query()
       .select(
@@ -323,7 +318,7 @@ class Account extends BaseModel {
   }
 
   public async updateAccountBalanceHistory(
-    this: Account, trx: TransactionClientContract, balance,
+    this: Account, trx: TransactionClientContract, balance: number,
   ): Promise<void> {
     const today = DateTime.utc();
 

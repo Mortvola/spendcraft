@@ -1,7 +1,5 @@
 import { combineReducers } from 'redux';
 import {
-  ADD_INSTITUTION,
-  UPDATE_INSTITUTION,
   RECEIVE_CATEGORY_BALANCES,
   RECEIVE_TRANSACTION_CATEGORIES,
   RECEIVE_SYSTEM_IDS,
@@ -12,9 +10,7 @@ import {
   RECEIVE_PLAN,
   SHOW_PLAID_LINK,
   HIDE_PLAID_LINK,
-  ACCOUNT_SYNCED,
   UPDATE_PLAN_ITEM,
-  ACCOUNT_REFRESHING,
 } from './actionTypes';
 
 function categories(
@@ -77,98 +73,6 @@ function categoryTree(
 
     default:
       return state;
-  }
-}
-
-function accounts(
-  state = [],
-  action,
-) {
-  switch (action.type) {
-    case ACCOUNT_SYNCED: {
-      const index = state.findIndex((a) => a.id === action.accountId);
-      if (index !== -1) {
-        const newAccounts = state.slice();
-        newAccounts[index] = {
-          ...newAccounts[index],
-          balance: action.balance,
-          syncDate: action.syncDate,
-        };
-        return newAccounts;
-      }
-
-      return state;
-    }
-
-    case ACCOUNT_REFRESHING: {
-      const index = state.findIndex((a) => a.id === action.accountId);
-      if (index !== -1) {
-        return [
-          ...state.slice(0, index),
-          {
-            ...state[index],
-            refreshing: action.refreshing,
-          },
-          ...state.slice(index + 1),
-        ];
-      }
-
-      return state;
-    }
-
-    default:
-      return state;
-  }
-}
-
-function institutions(
-  state = [],
-  action,
-) {
-  switch (action.type) {
-    case ADD_INSTITUTION: {
-      const index = state.findIndex(
-        (inst) => action.institution.name.localeCompare(inst.name) < 0,
-      );
-
-      if (index === -1) {
-        return state.concat([action.institution]);
-      }
-
-      const insts = state.slice();
-      insts.splice(index, 0, action.institution);
-
-      return insts;
-    }
-
-    case UPDATE_INSTITUTION: {
-      const index = state.findIndex((e) => e.id === action.institution.id);
-      if (index) {
-        const newInstutions = state.slice();
-        newInstutions[index] = { ...newInstutions[index], ...action.institution };
-        return newInstutions;
-      }
-
-      return state;
-    }
-
-    default: {
-      if (action.institutionId !== undefined) {
-        const index = state.findIndex((e) => e.id === action.institutionId);
-        if (index !== -1) {
-          return [
-            ...state.slice(0, index),
-            {
-              ...state[index],
-              accounts: accounts(state[index].accounts, action),
-            },
-            ...state.slice(index + 1),
-          ];
-        }
-      }
-
-      return state;
-    }
   }
 }
 
@@ -380,7 +284,6 @@ function dialogs(
 
 const budgetApp = combineReducers({
   categoryTree,
-  institutions,
   transactions,
   selections,
   reports,
