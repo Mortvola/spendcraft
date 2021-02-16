@@ -1,5 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import { observer } from 'mobx-react-lite';
 import { ModalLauncher } from '../Modal';
 import IconButton from '../IconButton';
 import { useAccountsDialog } from './AccountsDialog';
@@ -69,4 +70,4 @@ Institution.defaultProps = {
   selectedAccount: null,
 };
 
-export default Institution;
+export default observer(Institution);

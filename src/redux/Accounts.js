@@ -6,7 +6,7 @@ class Accounts {
   constructor() {
     this.institutions = [];
     this.selectedAccount = null;
-    this.plaid = new Plaid();
+    this.plaid = null;
 
     makeAutoObservable(this);
   }
@@ -43,42 +43,70 @@ class Accounts {
 
     const body = await response.json();
 
-    this.plaid.showDialog(body.linkToken, true);
-  }
-
-  async addInstitution(publicToken, metadata) {
-    const response = await fetch('/institution', {
-      method: 'POST',
-      headers: {
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        publicToken,
-        institution: metadata.institution,
-      }),
-    });
-
-    const body = await response.json();
-    const institution = new Institution({ id: body.id, name: body.name, accounts: [] });
-
     runInAction(() => {
-      if (response.ok) {
-        const index = this.institutions.findIndex(
-          (inst) => institution.name.localeCompare(inst.name) < 0,
-        );
-
-        if (index === -1) {
-          this.institutions.push(institution);
-        }
-        else {
-          this.institutions.splice(index, 0, institution);
-        }
-      }
+      this.plaid = new Plaid(body.linkToken);
     });
-
-    // openAccountSelectionDialog(json.id, json.accounts);
   }
+
+  async addInstitution() {
+    const response = await fetch('/user/link_token');
+
+    if (response.ok) {
+      const body = await response.json();
+
+      runInAction(() => {
+        this.plaid = new Plaid(body.linkToken, async (publicToken, metadata) => {
+          const response2 = await fetch('/institution', {
+            method: 'POST',
+            headers: {
+              'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              publicToken,
+              institution: metadata.institution,
+            }),
+          });
+
+          const body2 = await response2.json();
+          if (response2.ok) {
+            let institution = new Institution({ id: body2.id, name: body2.name, accounts: [] });
+
+            runInAction(() => {
+              // Make sure we don't already have the institution in the list.
+              const existingIndex = this.institutions.findIndex(
+                (inst) => inst.id === institution.id,
+              );
+
+              if (existingIndex === -1) {
+                const index = this.institutions.findIndex(
+                  (inst) => institution.name.localeCompare(inst.name) < 0,
+                );
+
+                if (index === -1) {
+                  this.institutions.push(institution);
+                }
+                else {
+                  this.institutions.splice(index, 0, institution);
+                }
+              }
+              else {
+                institution = this.institutions[existingIndex];
+              }
+            });
+
+            return institution;
+          }
+
+          return null;
+        });
+      });
+    }
+  }
+
+  // async addInstitution(publicToken, metadata) {
+  //   // openAccountSelectionDialog(json.id, json.accounts);
+  // }
 }
 
 export default Accounts;

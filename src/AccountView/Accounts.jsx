@@ -2,12 +2,12 @@ import React, { useState, useContext, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import IconButton from '../IconButton';
 import DetailView from '../DetailView';
-import { showPlaidLink } from '../redux/actions';
 import AccountView from './AccountView';
 import MobxStore from '../redux/mobxStore';
 
 const Accounts = () => {
-  const { accounts: { selectedAccount }, register, balances } = useContext(MobxStore);
+  const { accounts, register, balances } = useContext(MobxStore);
+  const { selectedAccount } = accounts;
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
@@ -22,7 +22,7 @@ const Accounts = () => {
   }, [balances, register, selectedAccount]);
 
   const handleClick = () => {
-    // dispatch(showPlaidLink());
+    accounts.addInstitution();
   };
 
   const handleRefresh = () => {

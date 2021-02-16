@@ -64,11 +64,7 @@ const App = ({
   const renderDesktop = () => (
     <div className="main">
       {renderMain()}
-      {
-        accounts.plaid.displayDialog
-          ? <PlaidLink />
-          : null
-      }
+      <PlaidLink />
     </div>
   );
 

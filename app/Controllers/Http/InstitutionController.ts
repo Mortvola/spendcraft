@@ -32,7 +32,7 @@ class InstitutionController {
     const { institution, publicToken } = request.only(['institution', 'publicToken']);
 
     // Check to see if we already have the institution. If not, add it.
-    const inst = await Institution.find(institution.institution_id);
+    const inst = await Institution.findBy('institution_id', institution.institution_id);
 
     let accessToken;
     let institutionId;
@@ -54,8 +54,8 @@ class InstitutionController {
         .returning('id');
     }
     else {
-      accessToken = inst[0].access_token;
-      institutionId = inst[0].id;
+      accessToken = inst.accessToken;
+      institutionId = inst.id;
     }
 
     const result = {
@@ -159,7 +159,10 @@ class InstitutionController {
 
           let startDate = request.input('startDate');
           if (startDate === undefined || startDate === null) {
-            startDate = moment().startOf('month').format('YYYY-MM-DD');
+            startDate = moment().startOf('month');
+          }
+          else {
+            startDate = moment(startDate);
           }
 
           acct.plaidAccountId = account.account_id;
@@ -169,7 +172,7 @@ class InstitutionController {
           acct.subtype = account.subtype;
           acct.type = account.type;
           acct.institutionId = request.params().instId;
-          acct.startDate = startDate;
+          acct.startDate = startDate.format('YYYY-MM-DD');
           acct.balance = account.balances.current;
           acct.tracking = account.tracking;
           acct.enabled = true;
@@ -190,7 +193,7 @@ class InstitutionController {
 
             // Insert the 'starting balance' transaction
             const [transId] = await trx.insertQuery().insert({
-              date: startDate,
+              date: startDate.format('YYYY-MM-DD'),
               sort_order: -1,
               user_id: user.id,
             })
