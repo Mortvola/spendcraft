@@ -4,11 +4,16 @@ import Group from './Group';
 import MobxStore from '../redux/mobxStore';
 
 const CategoryView = () => {
-  const { categoryTree } = useContext(MobxStore);
+  const { categoryTree, uiState } = useContext(MobxStore);
 
   const handleCategorySelected = (categoryId) => {
-    categoryTree.selectCategory(categoryId);
+    uiState.selectCategory(categoryId);
   };
+
+  // If there isn't a category selected then select the unassigned category
+  if (uiState.selectedCategoryId === null) {
+    uiState.selectedCategoryId = categoryTree.systemIds.unassignedId;
+  }
 
   return (
     <div id="categories">
@@ -17,7 +22,7 @@ const CategoryView = () => {
           key={group.name}
           group={group}
           onCategorySelected={handleCategorySelected}
-          categorySelected={categoryTree.selectedCategory}
+          selectedCategoryId={uiState.selectedCategoryId}
         />
       ))}
     </div>

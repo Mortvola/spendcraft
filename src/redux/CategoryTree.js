@@ -4,14 +4,13 @@ import Group from './Group';
 class CategoryTree {
   constructor() {
     this.groups = [];
-    this.systemIds = {};
-    this.selectedCategory = null;
+    this.systemIds = {
+      systemGroupId: null,
+      unassignedId: null,
+      fundingPoolId: null,
+    };
 
     makeAutoObservable(this);
-  }
-
-  selectCategory(categoryId) {
-    this.selectedCategory = categoryId;
   }
 
   getCategoryName(categoryId) {
@@ -40,21 +39,14 @@ class CategoryTree {
       runInAction(() => {
         const systemGroup = body.find((g) => g.system);
 
-        this.systemIds = {
-          systemGroupId: systemGroup.id,
-          unassignedId: systemGroup.categories.find((c) => c.system && c.name === 'Unassigned').id,
-          fundingPoolId: systemGroup.categories.find((c) => c.system && c.name === 'Funding Pool').id,
-        };
+        this.systemIds.systemGroupId = systemGroup.id;
+        this.systemIds.unassignedId = systemGroup.categories.find((c) => c.system && c.name === 'Unassigned').id;
+        this.systemIds.fundingPoolId = systemGroup.categories.find((c) => c.system && c.name === 'Funding Pool').id;
 
         body.forEach((g) => {
           const group = new Group(g);
           this.groups.push(group);
         });
-
-        // If nothing is currently selected then select the unassigned category.
-        if (this.selectedCategory === null) {
-          this.selectedCategory = this.systemIds.unassignedId;
-        }
       });
     }
   }

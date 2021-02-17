@@ -9,11 +9,11 @@ import DetailView from './DetailView';
 import MobxStore from './redux/mobxStore';
 
 const Home = () => {
-  const { categoryTree, register } = useContext(MobxStore);
+  const { uiState, register } = useContext(MobxStore);
 
   useEffect(() => {
-    register.loadCategoryTransactions(categoryTree.selectedCategory);
-  }, [categoryTree.selectedCategory]);
+    register.loadCategoryTransactions(uiState.selectedCategoryId);
+  }, [uiState.selectedCategoryId, register]);
 
   return (
     <>

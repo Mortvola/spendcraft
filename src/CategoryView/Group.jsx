@@ -7,7 +7,7 @@ import Category from './Category';
 const Group = ({
   group,
   onCategorySelected,
-  categorySelected,
+  selectedCategoryId,
 }) => (
   <div className="cat-list-group">
     <div className="group-element-bar">
@@ -20,7 +20,7 @@ const Group = ({
         category={category}
         group={group}
         onCategorySelected={onCategorySelected}
-        selected={categorySelected === category.id}
+        selected={selectedCategoryId === category.id}
       />
     ))}
   </div>
@@ -34,11 +34,11 @@ Group.propTypes = {
     id: PropTypes.number.isRequired,
   }),
   onCategorySelected: PropTypes.func.isRequired,
-  categorySelected: PropTypes.number,
+  selectedCategoryId: PropTypes.number,
 };
 
 Group.defaultProps = {
-  categorySelected: undefined,
+  selectedCategoryId: null,
   group: {
     categories: [],
     system: false,
