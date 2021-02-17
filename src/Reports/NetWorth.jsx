@@ -45,7 +45,14 @@ const Networth = ({
 };
 
 Networth.propTypes = {
-  balances: PropTypes.arrayOf(PropTypes.shape()).isRequired,
+  balances: PropTypes.arrayOf(
+    PropTypes.arrayOf(
+      PropTypes.oneOfType([
+        PropTypes.string,
+        PropTypes.number,
+      ]),
+    ),
+  ).isRequired,
 };
 
 export default Networth;

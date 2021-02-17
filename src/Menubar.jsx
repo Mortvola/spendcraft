@@ -11,7 +11,7 @@ const Menubar = () => {
   const { uiState, user: { username } } = useContext(MobxStore);
 
   const handleSelect = (eventKey) => {
-    uiState.view = eventKey;
+    uiState.setView(eventKey);
   };
 
   return (

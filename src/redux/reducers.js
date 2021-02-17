@@ -1,30 +1,9 @@
 import { combineReducers } from 'redux';
 import {
-  RECEIVE_REPORT_DATA,
   RECEIVE_PLANS,
   RECEIVE_PLAN,
   UPDATE_PLAN_ITEM,
 } from './actionTypes';
-
-function reports(
-  state = {
-    data: null,
-    reportType: null,
-  },
-  action,
-) {
-  switch (action.type) {
-    case RECEIVE_REPORT_DATA:
-      return {
-        ...state,
-        data: action.data,
-        reportType: action.reportType,
-      };
-
-    default:
-      return state;
-  }
-}
 
 function plans(
   state = {
@@ -87,7 +66,6 @@ function plans(
 }
 
 const budgetApp = combineReducers({
-  reports,
   plans,
 });
 

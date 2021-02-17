@@ -10,6 +10,12 @@ class UIState {
     this.store = store;
   }
 
+  setView(view) {
+    runInAction(() => {
+      this.view = view;
+    });
+  }
+
   selectCategory(categoryId) {
     runInAction(() => {
       this.selectedCategoryId = categoryId;

@@ -3,6 +3,7 @@ import Accounts from './Accounts';
 import Balances from './Balances';
 import CategoryTree from './CategoryTree';
 import Register from './Register';
+import Reports from './Reports';
 import UIState from './UIState';
 import User from './User';
 
@@ -14,6 +15,7 @@ class Store {
     this.accounts = new Accounts(this);
     this.balances = new Balances(this);
     this.uiState = new UIState(this);
+    this.reports = new Reports(this);
   }
 }
 
