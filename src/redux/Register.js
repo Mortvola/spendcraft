@@ -1,7 +1,10 @@
 import { makeAutoObservable, runInAction } from 'mobx';
+import Transaction from './Transaction';
 
 class Register {
-  constructor() {
+  constructor(store) {
+    this.store = store;
+
     this.categoryId = null;
     this.account = null;
     this.fetching = false;
@@ -46,10 +49,13 @@ class Register {
         runInAction(() => {
           this.categoryId = categoryId;
           this.account = null;
-          this.transactions = body.transactions;
           this.balance = body.balance;
           this.pending = body.pending;
           this.fetching = false;
+
+          this.transactions = body.transactions.map((t) => (
+            new Transaction(this.store, t)
+          ));
         });
       }
       else {
@@ -100,6 +106,34 @@ class Register {
       }
       else {
         this.fetching = false;
+      }
+    }
+  }
+
+  updateTransactionCategories(transactionId, splits, balances) {
+    const index = this.transactions.findIndex((t) => t.id === transactionId);
+
+    if (index !== -1) {
+      // If the new transaction categories don't include
+      // the current category then remove the transactions.
+      if (
+        this.categoryId !== null
+        && !splits.some((c) => (
+          c.categoryId === this.categoryId
+        ))
+      ) {
+        this.transactions.splice(index, 1);
+      }
+      else {
+        this.transactions[index].categories = splits;
+      }
+    }
+
+    if (this.categoryId !== null) {
+      const balance = balances.find((b) => b.id === this.categoryId);
+
+      if (balance) {
+        this.balance = balance.amount;
       }
     }
   }

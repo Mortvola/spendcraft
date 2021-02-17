@@ -2,14 +2,15 @@ import { makeAutoObservable, runInAction } from 'mobx';
 import Account from './Account';
 
 class Institution {
-  constructor(props) {
+  constructor(store, props) {
+    this.store = store;
     this.id = props.id;
     this.name = props.name;
     this.unlinkedAccounts = null;
 
     this.accounts = [];
     if (props.accounts) {
-      this.accounts = props.accounts.map((acct) => new Account(acct));
+      this.accounts = props.accounts.map((acct) => new Account(this.store, acct));
     }
 
     makeAutoObservable(this);
@@ -30,7 +31,7 @@ class Institution {
     if (response.ok) {
       runInAction(() => {
         body.accounts.forEach((a) => {
-          const account = new Account(a);
+          const account = new Account(this.store, a);
 
           const index = this.accounts.findIndex(
             (acct) => account.name.localeCompare(acct.name) < 0,

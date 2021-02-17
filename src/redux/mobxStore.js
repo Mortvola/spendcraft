@@ -4,13 +4,16 @@ import Balances from './Balances';
 import CategoryTree from './CategoryTree';
 import Register from './Register';
 
-const store = {
-  categoryTree: new CategoryTree(),
-  register: new Register(),
-  accounts: new Accounts(),
-  balances: new Balances(),
-};
+class Store {
+  constructor() {
+    this.categoryTree = new CategoryTree(this);
+    this.register = new Register(this);
+    this.accounts = new Accounts(this);
+    this.balances = new Balances(this);
+  }
+}
 
+const store = new Store();
 const MobxStore = createContext(store);
 
 store.categoryTree.load();

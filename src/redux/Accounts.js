@@ -3,7 +3,8 @@ import Institution from './Institution';
 import Plaid from './Plaid';
 
 class Accounts {
-  constructor() {
+  constructor(store) {
+    this.store = store;
     this.institutions = [];
     this.selectedAccount = null;
     this.plaid = null;
@@ -27,7 +28,7 @@ class Accounts {
     if (body) {
       runInAction(() => {
         body.forEach((i) => {
-          const institution = new Institution(i);
+          const institution = new Institution(this.store, i);
           this.institutions.push(institution);
         });
       });
@@ -70,7 +71,9 @@ class Accounts {
 
           const body2 = await response2.json();
           if (response2.ok) {
-            let institution = new Institution({ id: body2.id, name: body2.name, accounts: [] });
+            let institution = new Institution(
+              this.store, { id: body2.id, name: body2.name, accounts: [] },
+            );
 
             runInAction(() => {
               // Make sure we don't already have the institution in the list.
@@ -103,10 +106,6 @@ class Accounts {
       });
     }
   }
-
-  // async addInstitution(publicToken, metadata) {
-  //   // openAccountSelectionDialog(json.id, json.accounts);
-  // }
 }
 
 export default Accounts;

@@ -109,6 +109,15 @@ class Group {
 
     return null;
   }
+
+  updateBalances(balances) {
+    this.categories.forEach((c) => {
+      const balance = balances.find((b) => b.id === c.id);
+      if (balance) {
+        c.balance = balance.amount;
+      }
+    });
+  }
 }
 
 export default Group;

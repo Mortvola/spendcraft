@@ -1,57 +1,12 @@
 import {
-  RECEIVE_CATEGORY_BALANCES,
-  RECEIVE_TRANSACTION_CATEGORIES,
-  RECEIVE_SYSTEM_IDS,
   SET_VIEW,
   REQUEST_REPORT_DATA,
   RECEIVE_REPORT_DATA,
   RECEIVE_USER,
   RECEIVE_PLANS,
   RECEIVE_PLAN,
-  SHOW_PLAID_LINK,
-  HIDE_PLAID_LINK,
   UPDATE_PLAN_ITEM,
 } from './actionTypes';
-
-const receiveSystemIds = (systemIds) => ({
-  type: RECEIVE_SYSTEM_IDS,
-  ...systemIds,
-});
-
-const showPlaidLink = () => (
-  (dispatch) => {
-    fetch('/user/link_token')
-      .then((response) => {
-        if (response.ok) {
-          return response.json();
-        }
-
-        throw new Error('invalid response');
-      })
-      .then((response) => {
-        dispatch({
-          type: SHOW_PLAID_LINK,
-          linkToken: response.linkToken,
-          updateMode: false,
-        });
-      })
-      .catch(() => null);
-  }
-);
-
-const hidePlaidLink = () => ({
-  type: HIDE_PLAID_LINK,
-});
-
-const receiveCategoryBalances = (balances) => ({
-  type: RECEIVE_CATEGORY_BALANCES,
-  balances,
-});
-
-const receiveTransactionCategories = (transCategories) => ({
-  type: RECEIVE_TRANSACTION_CATEGORIES,
-  transCategories,
-});
 
 const receivePlans = (plans) => ({
   type: RECEIVE_PLANS,
@@ -211,14 +166,9 @@ const updatePlanItem = (category) => ({
 
 export {
   fetchUser,
-  receiveCategoryBalances,
-  receiveTransactionCategories,
-  receiveSystemIds,
   navigate,
   report,
   fetchPlans,
   fetchPlan,
-  showPlaidLink,
-  hidePlaidLink,
   updatePlanItem,
 };

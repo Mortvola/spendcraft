@@ -1,7 +1,8 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 
 class Account {
-  constructor(props) {
+  constructor(store, props) {
+    this.store = store;
     this.id = props.id || null;
     this.name = props.name || null;
     this.tracking = props.tracking || null;
@@ -27,7 +28,7 @@ class Account {
       if (response.ok) {
         const { categories, accounts } = body;
         if (categories && categories.length > 0) {
-          // dispatch(receiveCategoryBalances(categories));
+          this.store.categoryTree.updateBalances(categories);
         }
 
         if (accounts) {

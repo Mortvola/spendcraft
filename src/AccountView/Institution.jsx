@@ -1,10 +1,9 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { observer } from 'mobx-react-lite';
-import { ModalLauncher } from '../Modal';
 import IconButton from '../IconButton';
 import { useAccountsDialog } from './AccountsDialog';
-import InstitutionInfoDialog from './InstitutionInfoDialog';
+import { useInstitutionInfoDialog } from './InstitutionInfoDialog';
 import Account from './Account';
 
 function Institution({
@@ -14,6 +13,7 @@ function Institution({
   onRelink,
 }) {
   const [AccountsDialog, showAccountsDialog] = useAccountsDialog();
+  const [InstitutionInfoDialog, showInstitutionInfoDialog] = useInstitutionInfoDialog();
   const handleRelinkClick = () => {
     onRelink(institution.id);
   };
@@ -25,12 +25,8 @@ function Institution({
         <IconButton icon="plus" onClick={showAccountsDialog} />
         <AccountsDialog institution={institution} />
         <IconButton icon="link" onClick={handleRelinkClick} />
-        <ModalLauncher
-          launcher={(props) => (<IconButton icon="info-circle" {...props} />)}
-          dialog={(props) => (
-            <InstitutionInfoDialog institution={institution} {...props} />
-          )}
-        />
+        <IconButton icon="info-circle" onClick={showInstitutionInfoDialog} />
+        <InstitutionInfoDialog institution={institution} />
       </div>
       <div>
         {

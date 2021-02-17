@@ -5,34 +5,7 @@ import { connect } from 'react-redux';
 import { Field, ErrorMessage } from 'formik';
 import CategorySplits from './CategorySplits';
 import useModal, { ModalDialog } from './Modal';
-import { receiveCategoryBalances, receiveTransactionCategories } from './redux/actions';
 import Amount from './Amount';
-
-function updateTransactionCategory(transaction, request, dispatch, successCallback) {
-  fetch(`/transaction/${transaction.id}`, {
-    method: 'PATCH',
-    headers:
-    {
-      'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(request),
-  })
-    .then(
-      (response) => response.json(),
-      (error) => console.log('fetch error: ', error),
-    )
-    .then((json) => {
-      const { splits, categories } = json;
-
-      dispatch(receiveCategoryBalances(categories));
-      dispatch(receiveTransactionCategories({ id: transaction.id, splits }));
-
-      if (successCallback) {
-        successCallback();
-      }
-    });
-}
 
 function validateSplits(splits) {
   let error;
@@ -99,7 +72,11 @@ const TransactionDialog = ({
       });
     }
 
-    updateTransactionCategory(transaction, { splits }, dispatch, onClose);
+    const errors = transaction.updateTransactionCategory({ splits });
+
+    if (!errors) {
+      onClose();
+    }
   };
 
   const renderBalanceHeaders = () => {
@@ -181,6 +158,7 @@ TransactionDialog.propTypes = {
   transaction: PropTypes.shape({
     amount: PropTypes.number.isRequired,
     categories: PropTypes.arrayOf(PropTypes.shape()),
+    updateTransactionCategory: PropTypes.func.isRequired,
   }).isRequired,
   onClose: PropTypes.func.isRequired,
   onExited: PropTypes.func.isRequired,
@@ -199,4 +177,4 @@ const ConnectedTransactionDialog = connect()(TransactionDialog);
 const useTransactionDialog = () => useModal(ConnectedTransactionDialog);
 
 export default ConnectedTransactionDialog;
-export { updateTransactionCategory, useTransactionDialog };
+export { useTransactionDialog };

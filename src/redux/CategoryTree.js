@@ -118,6 +118,14 @@ class CategoryTree {
 
     return null;
   }
+
+  updateBalances(balances) {
+    runInAction(() => {
+      this.groups.forEach((g) => {
+        g.updateBalances(balances);
+      });
+    });
+  }
 }
 
 export default CategoryTree;
