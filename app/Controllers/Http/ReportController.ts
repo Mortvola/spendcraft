@@ -11,42 +11,36 @@ class ReportController {
       throw new Error('user not defined');
     }
 
-    const query = Database.query()
-      .select(
-        Database.raw('date::text'),
-        Database.raw("accounts.id || '_' || accounts.name AS name"),
-        Database.raw('CAST(hist.balance AS float) AS balance'),
-      )
-      .from('balance_histories AS hist')
-      .join('accounts', 'accounts.id', 'hist.account_id')
-      .join('institutions', 'institutions.id', 'accounts.institution_id')
-      .where('institutions.user_id', user.id)
-      .orderBy('date');
+    const query = 'select date::text, accounts.id || \'_\' || accounts.name AS name, CAST(hist.balance AS float) AS balance '
+      + 'from balance_histories AS hist '
+      + 'join accounts ON accounts.id = hist.account_id '
+      + 'join institutions ON institutions.id = accounts.institution_id '
+      + `where institutions.user_id = ${user.id} `
+      + 'order by date';
 
-    const categoryQuery = Database.query()
-      .select(Database.raw("accounts.id || '_' || accounts.name AS name"))
-      .from('accounts')
-      .join('institutions', 'institutions.id', 'accounts.institution_id')
-      .where('institutions.user_id', user.id)
-      .orderBy('name');
+    const categoryQuery = 'select accounts.id || \'_\' || accounts.name AS name '
+      + 'from accounts '
+      + 'join institutions ON institutions.id = accounts.institution_id '
+      + `where institutions.user_id = ${user.id} `
+      + 'order by name';
 
-    const categories: Array<Category> = await categoryQuery;
+    const categories = await Database.rawQuery(categoryQuery);
 
-    const crosstab = `SELECT * FROM crosstab($$${query.toString()}$$, $$${categoryQuery.toString()}$$) `
-      + `AS (date TEXT ${ReportController.listCategories(categories)})`;
+    const crosstab = `SELECT * FROM crosstab($$${query}$$, $$${categoryQuery}$$) `
+      + `AS (date TEXT ${ReportController.listCategories(categories.rows)})`;
 
     const data = await Database.rawQuery(crosstab);
 
     // Move the data into the result object
     // Also, strip the account id off of the column names
-    const result = [['date'].concat(categories
+    const result: Array<Array<string | number>> = [['date'].concat(categories.rows
       .map((item) => item.name.replace(/\d+_/, '')))]
-      .concat(data.map((item) => Object.values(item)));
+      .concat(data.rows.map((item) => Object.values(item)));
 
     // Fill in any gaps in balances
     for (let j = 1; j < result[1].length; j += 1) {
       if (result[1][j] === null) {
-        result[1][j] = '0';
+        result[1][j] = 0;
       }
     }
 
