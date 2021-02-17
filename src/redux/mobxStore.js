@@ -6,6 +6,7 @@ import Register from './Register';
 import Reports from './Reports';
 import UIState from './UIState';
 import User from './User';
+import Plans from './Plans';
 
 class Store {
   constructor() {
@@ -16,6 +17,7 @@ class Store {
     this.balances = new Balances(this);
     this.uiState = new UIState(this);
     this.reports = new Reports(this);
+    this.plans = new Plans(this);
   }
 }
 

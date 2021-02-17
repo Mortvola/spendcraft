@@ -74,6 +74,7 @@ Route.group(() => {
     Route.get('/institution/:instId/link_token', 'InstitutionController.linkToken');
 
     Route.get('/funding_plans', 'FundingPlanController.getAll');
+    Route.post('/funding_plan', 'FundingPlanController.add');
     Route.get('/funding_plan/:planId', 'FundingPlanController.getPlan');
     Route.get('/funding_plan/:planId/full', 'FundingPlanController.getFullPlan');
     Route.post('/funding_plan/:planId/category/:categoryId', 'FundingPlanController.insertCategory');

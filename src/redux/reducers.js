@@ -1,6 +1,5 @@
 import { combineReducers } from 'redux';
 import {
-  RECEIVE_PLANS,
   RECEIVE_PLAN,
   UPDATE_PLAN_ITEM,
 } from './actionTypes';
@@ -13,12 +12,6 @@ function plans(
   action,
 ) {
   switch (action.type) {
-    case RECEIVE_PLANS:
-      return {
-        ...state,
-        list: action.plans,
-      };
-
     case RECEIVE_PLAN:
       return {
         ...state,

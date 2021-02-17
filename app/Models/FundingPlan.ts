@@ -1,6 +1,6 @@
 import Database from '@ioc:Adonis/Lucid/Database';
 import { DateTime } from 'luxon';
-import { BaseModel, column } from '@ioc:Adonis/Lucid/Orm';
+import { BaseModel, BelongsTo, belongsTo, column } from '@ioc:Adonis/Lucid/Orm';
 import User, { GroupHistoryItem } from 'App/Models/User';
 
 export type PlanCategory = {
@@ -37,6 +37,12 @@ export default class FundingPlan extends BaseModel {
 
   @column()
   public name: string;
+
+  @column()
+  public userId: number;
+
+  @belongsTo(() => User)
+  public user: BelongsTo<typeof User>;
 
   public async getFullPlan(this: FundingPlan, user: User): Promise<Plan> {
     const cats = await Database.query()

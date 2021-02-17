@@ -727,3 +727,9 @@ body {
 .unassigned-label {
     justify-self: right;
 }
+
+.selected {
+	background-color: lightblue;
+}
+
+

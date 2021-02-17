@@ -5,6 +5,26 @@ import FundingPlanCategory from 'App/Models/FundingPlanCategory';
 
 class FundingPlanController {
   // eslint-disable-next-line class-methods-use-this
+  public async add({
+    auth: {
+      user,
+    },
+    request,
+  }: HttpContextContract) {
+    if (!user) {
+      throw new Error('user is undefined');
+    }
+
+    const plan = new FundingPlan();
+
+    plan.name = request.input('name');
+
+    await plan.related('user').associate(user);
+
+    return plan;
+  }
+
+  // eslint-disable-next-line class-methods-use-this
   public async getAll({
     auth: {
       user,
