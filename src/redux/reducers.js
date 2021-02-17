@@ -1,33 +1,11 @@
 import { combineReducers } from 'redux';
 import {
-  SET_VIEW,
   RECEIVE_REPORT_DATA,
   RECEIVE_USER,
   RECEIVE_PLANS,
   RECEIVE_PLAN,
   UPDATE_PLAN_ITEM,
 } from './actionTypes';
-
-function selections(
-  state = {
-    view: 'home',
-    selectedCategoryId: null,
-    selectedAccountId: null,
-    accountTracking: null,
-  },
-  action,
-) {
-  switch (action.type) {
-    case SET_VIEW:
-      return {
-        ...state,
-        view: action.view,
-      };
-
-    default:
-      return state;
-  }
-}
 
 function reports(
   state = {
@@ -123,7 +101,6 @@ function plans(
 }
 
 const budgetApp = combineReducers({
-  selections,
   reports,
   user,
   plans,

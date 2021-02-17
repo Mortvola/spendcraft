@@ -3,8 +3,6 @@ import Transaction from './Transaction';
 
 class Register {
   constructor(store) {
-    this.store = store;
-
     this.categoryId = null;
     this.account = null;
     this.fetching = false;
@@ -13,6 +11,8 @@ class Register {
     this.balance = 0;
 
     makeAutoObservable(this);
+
+    this.store = store;
   }
 
   async loadCategoryTransactions(categoryId) {

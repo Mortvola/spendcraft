@@ -3,17 +3,18 @@ import Account from './Account';
 
 class Institution {
   constructor(store, props) {
-    this.store = store;
     this.id = props.id;
     this.name = props.name;
     this.unlinkedAccounts = null;
 
     this.accounts = [];
     if (props.accounts) {
-      this.accounts = props.accounts.map((acct) => new Account(this.store, acct));
+      this.accounts = props.accounts.map((acct) => new Account(store, acct));
     }
 
     makeAutoObservable(this);
+
+    this.store = store;
   }
 
   async addAccounts(accounts) {

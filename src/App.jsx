@@ -1,8 +1,8 @@
 import React, { useContext } from 'react';
 import ReactDOM from 'react-dom';
-import PropTypes from 'prop-types';
 import { observer } from 'mobx-react-lite';
-import { Provider, connect } from 'react-redux';
+import { Provider } from 'react-redux';
+import 'regenerator-runtime';
 import store from './redux/store';
 import Menubar from './Menubar';
 import Home from './Home';
@@ -29,18 +29,12 @@ const Logout = () => {
   return null;
 };
 
-const mapStateToProps = (state) => ({
-  view: state.selections.view,
-});
-
-const App = ({
-  view,
-}) => {
-  const { accounts } = useContext(MobxStore);
+const App = () => {
+  const { uiState } = useContext(MobxStore);
   const isMobile = window.innerWidth <= 500;
 
   const renderMain = () => {
-    switch (view) {
+    switch (uiState.view) {
       case 'home':
         return <Home />;
 
@@ -84,11 +78,7 @@ const App = ({
   );
 };
 
-App.propTypes = {
-  view: PropTypes.string.isRequired,
-};
-
-const ConnectedApp = connect(mapStateToProps)(observer(App));
+const ConnectedApp = observer(App);
 
 ReactDOM.render(
   <MobxStore.Provider value={mobxStore}>

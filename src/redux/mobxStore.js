@@ -3,6 +3,7 @@ import Accounts from './Accounts';
 import Balances from './Balances';
 import CategoryTree from './CategoryTree';
 import Register from './Register';
+import UIState from './UIState';
 
 class Store {
   constructor() {
@@ -10,6 +11,7 @@ class Store {
     this.register = new Register(this);
     this.accounts = new Accounts(this);
     this.balances = new Balances(this);
+    this.uiState = new UIState(this);
   }
 }
 

@@ -4,12 +4,13 @@ import Plaid from './Plaid';
 
 class Accounts {
   constructor(store) {
-    this.store = store;
     this.institutions = [];
     this.selectedAccount = null;
     this.plaid = null;
 
     makeAutoObservable(this);
+
+    this.store = store;
   }
 
   selectAccount(account) {

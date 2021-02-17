@@ -1,5 +1,4 @@
 import {
-  SET_VIEW,
   REQUEST_REPORT_DATA,
   RECEIVE_REPORT_DATA,
   RECEIVE_USER,
@@ -42,68 +41,6 @@ const fetchPlan = (planId) => (
         (json) => dispatch(receivePlan(json)),
       )
   )
-);
-
-const setView = (view) => ({
-  type: SET_VIEW,
-  view,
-});
-
-const navigate = (eventKey) => (
-  (dispatch, getState) => {
-    const state = getState();
-    switch (eventKey) {
-      case 'home':
-        if (state.selections.view === 'home') {
-          dispatch(setView(eventKey));
-          if (state.categoryTree.unassignedId !== null) {
-            // dispatch(selectCategory(state.categoryTree.unassignedId));
-          }
-        }
-        else {
-          dispatch(setView(eventKey));
-          if (state.selections.selectedCategoryId !== null) {
-            // dispatch(selectCategory(state.selections.selectedCategoryId));
-          }
-          else if (state.categoryTree.unassignedId !== null) {
-            // dispatch(selectCategory(state.categoryTree.unassignedId));
-          }
-        }
-
-        break;
-
-      case 'accounts':
-        dispatch(setView(eventKey));
-        if (state.selections.selectedAccountId !== null
-          && state.selections.accountTracking !== null) {
-          // dispatch(selectAccount(
-          //   state.selections.selectedAccountId,
-          //   state.selections.accountTracking,
-          // ));
-        }
-
-        break;
-
-      case 'reports':
-        dispatch(setView(eventKey));
-
-        break;
-
-      case 'plans':
-        dispatch(fetchPlans());
-        dispatch(setView(eventKey));
-
-        break;
-
-      case 'logout':
-        dispatch(setView(eventKey));
-
-        break;
-
-      default:
-        break;
-    }
-  }
 );
 
 const requestReportData = () => ({
@@ -166,7 +103,6 @@ const updatePlanItem = (category) => ({
 
 export {
   fetchUser,
-  navigate,
   report,
   fetchPlans,
   fetchPlan,

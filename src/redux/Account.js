@@ -2,7 +2,6 @@ import { makeAutoObservable, runInAction } from 'mobx';
 
 class Account {
   constructor(store, props) {
-    this.store = store;
     this.id = props.id || null;
     this.name = props.name || null;
     this.tracking = props.tracking || null;
@@ -10,6 +9,8 @@ class Account {
     this.refreshing = false;
 
     makeAutoObservable(this);
+
+    this.store = store;
   }
 
   async refresh(institutionId) {
