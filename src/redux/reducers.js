@@ -1,7 +1,6 @@
 import { combineReducers } from 'redux';
 import {
   RECEIVE_REPORT_DATA,
-  RECEIVE_USER,
   RECEIVE_PLANS,
   RECEIVE_PLAN,
   UPDATE_PLAN_ITEM,
@@ -21,19 +20,6 @@ function reports(
         data: action.data,
         reportType: action.reportType,
       };
-
-    default:
-      return state;
-  }
-}
-
-function user(
-  state = null,
-  action,
-) {
-  switch (action.type) {
-    case RECEIVE_USER:
-      return { username: action.user };
 
     default:
       return state;
@@ -102,7 +88,6 @@ function plans(
 
 const budgetApp = combineReducers({
   reports,
-  user,
   plans,
 });
 

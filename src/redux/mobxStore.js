@@ -4,9 +4,11 @@ import Balances from './Balances';
 import CategoryTree from './CategoryTree';
 import Register from './Register';
 import UIState from './UIState';
+import User from './User';
 
 class Store {
   constructor() {
+    this.user = new User(this);
     this.categoryTree = new CategoryTree(this);
     this.register = new Register(this);
     this.accounts = new Accounts(this);
@@ -18,6 +20,7 @@ class Store {
 const store = new Store();
 const MobxStore = createContext(store);
 
+store.user.load();
 store.categoryTree.load();
 store.accounts.load();
 

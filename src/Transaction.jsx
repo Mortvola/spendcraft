@@ -1,6 +1,5 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { connect } from 'react-redux';
 import IconButton from './IconButton';
 import CategoryInput from './CategoryInput/CategoryInput';
 import Amount from './Amount';
@@ -154,7 +153,6 @@ Transaction.propTypes = {
   amount: PropTypes.number.isRequired,
   balance: PropTypes.number.isRequired,
   selected: PropTypes.bool.isRequired,
-  dispatch: PropTypes.func.isRequired,
   categoryId: PropTypes.number,
   unassignedId: PropTypes.number.isRequired,
   isMobile: PropTypes.bool,
@@ -165,4 +163,4 @@ Transaction.defaultProps = {
   isMobile: false,
 };
 
-export default connect()(Transaction);
+export default Transaction;

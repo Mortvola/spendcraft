@@ -1,7 +1,6 @@
 import {
   REQUEST_REPORT_DATA,
   RECEIVE_REPORT_DATA,
-  RECEIVE_USER,
   RECEIVE_PLANS,
   RECEIVE_PLAN,
   UPDATE_PLAN_ITEM,
@@ -78,31 +77,12 @@ const report = (reportType) => (
   }
 );
 
-const receiveUser = (user) => ({
-  type: RECEIVE_USER,
-  user,
-});
-
-const fetchUser = () => (
-  (dispatch) => (
-    fetch('/user')
-      .then(
-        (response) => response.json(),
-        (error) => console.log('fetch error: ', error),
-      )
-      .then(
-        (json) => dispatch(receiveUser(json.username)),
-      )
-  )
-);
-
 const updatePlanItem = (category) => ({
   type: UPDATE_PLAN_ITEM,
   category,
 });
 
 export {
-  fetchUser,
   report,
   fetchPlans,
   fetchPlan,

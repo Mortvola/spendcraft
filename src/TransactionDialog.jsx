@@ -1,7 +1,6 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
-import { connect } from 'react-redux';
 import { Field, ErrorMessage } from 'formik';
 import CategorySplits from './CategorySplits';
 import useModal, { ModalDialog } from './Modal';
@@ -27,7 +26,6 @@ const TransactionDialog = ({
   transaction,
   categoryId,
   unassignedId,
-  dispatch,
 }) => {
   const showBalances = categoryId === unassignedId;
 
@@ -163,7 +161,6 @@ TransactionDialog.propTypes = {
   onClose: PropTypes.func.isRequired,
   onExited: PropTypes.func.isRequired,
   title: PropTypes.string,
-  dispatch: PropTypes.func.isRequired,
   categoryId: PropTypes.number,
   unassignedId: PropTypes.number.isRequired,
 };
@@ -173,8 +170,7 @@ TransactionDialog.defaultProps = {
   categoryId: null,
 };
 
-const ConnectedTransactionDialog = connect()(TransactionDialog);
-const useTransactionDialog = () => useModal(ConnectedTransactionDialog);
+const useTransactionDialog = () => useModal(TransactionDialog);
 
-export default ConnectedTransactionDialog;
+export default TransactionDialog;
 export { useTransactionDialog };

@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import Group from './Group';
 import MobxStore from '../redux/mobxStore';
@@ -10,10 +10,13 @@ const CategoryView = () => {
     uiState.selectCategory(categoryId);
   };
 
-  // If there isn't a category selected then select the unassigned category
-  if (uiState.selectedCategoryId === null) {
-    uiState.selectedCategoryId = categoryTree.systemIds.unassignedId;
-  }
+  useEffect(() => {
+    // If there isn't a category selected then select the unassigned category
+    if (uiState.selectedCategoryId === null
+      && categoryTree.systemIds.unassignedId !== null) {
+      uiState.selectCategory(categoryTree.systemIds.unassignedId);
+    }
+  }, [uiState.selectedCategoryId, categoryTree.systemIds.unassignedId, uiState]);
 
   return (
     <div id="categories">

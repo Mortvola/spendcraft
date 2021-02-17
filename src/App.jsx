@@ -78,12 +78,12 @@ const App = () => {
   );
 };
 
-const ConnectedApp = observer(App);
+const ObserverApp = observer(App);
 
 ReactDOM.render(
   <MobxStore.Provider value={mobxStore}>
     <Provider store={store}>
-      <ConnectedApp />
+      <ObserverApp />
     </Provider>
   </MobxStore.Provider>,
   document.querySelector('.app'),

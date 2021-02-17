@@ -1,11 +1,8 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 import CategorySplitItem from './CategorySplitItem';
-
-const mapStateToProps = (state) => ({
-  groups: state.categoryTree.groups,
-});
+import MobxStore from './redux/mobxStore';
 
 let nextId = -1;
 
@@ -14,9 +11,9 @@ const CategorySplits = ({
   onChange,
   total,
   credit,
-  groups,
   showBalances,
 }) => {
+  const { categoryTree: { groups } } = useContext(MobxStore);
   const [editedSplits, setEditedSplits] = useState(splits.map((s) => {
     if (s.id === undefined) {
       const id = nextId;
@@ -136,7 +133,6 @@ CategorySplits.propTypes = {
   splits: PropTypes.arrayOf(PropTypes.shape()).isRequired,
   total: PropTypes.number.isRequired,
   credit: PropTypes.bool,
-  groups: PropTypes.arrayOf(PropTypes.shape()).isRequired,
   showBalances: PropTypes.bool,
 };
 
@@ -145,4 +141,4 @@ CategorySplits.defaultProps = {
   credit: false,
 };
 
-export default connect(mapStateToProps)(CategorySplits);
+export default CategorySplits;

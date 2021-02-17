@@ -1,4 +1,4 @@
-import { makeAutoObservable } from 'mobx';
+import { makeAutoObservable, runInAction } from 'mobx';
 
 class UIState {
   constructor(store) {
@@ -11,7 +11,9 @@ class UIState {
   }
 
   selectCategory(categoryId) {
-    this.selectedCategoryId = categoryId;
+    runInAction(() => {
+      this.selectedCategoryId = categoryId;
+    });
   }
 }
 
