@@ -5,7 +5,7 @@ import ReactDOM from 'react-dom';
 import PropTypes from 'prop-types';
 import CategorySelector from './CategorySelector';
 import useExclusiveBool from '../ExclusiveBool';
-import MobxStore from '../redux/mobxStore';
+import MobxStore from '../state/mobxStore';
 
 const CategoryInput = ({
   categoryId,

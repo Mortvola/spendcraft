@@ -1,11 +1,13 @@
 import Database from '@ioc:Adonis/Lucid/Database';
 import { DateTime } from 'luxon';
-import { BaseModel, BelongsTo, belongsTo, column } from '@ioc:Adonis/Lucid/Orm';
+import {
+  BaseModel, BelongsTo, belongsTo, column,
+} from '@ioc:Adonis/Lucid/Orm';
 import User, { GroupHistoryItem } from 'App/Models/User';
 
 export type PlanCategory = {
-  id: number,
-  balance: number,
+  id?: number,
+  amount: number,
   name?: string,
   categoryId: number,
 };
@@ -54,7 +56,7 @@ export default class FundingPlan extends BaseModel {
         'cats.id AS categoryId',
         'cats.name AS categoryName',
         'cats.system AS categorySystem',
-        Database.raw('CAST(COALESCE(fpc.amount, 0) AS float) AS balance'),
+        Database.raw('CAST(COALESCE(fpc.amount, 0) AS float) AS amount'),
       )
       .from('categories AS cats')
       .join('groups', 'groups.id', 'cats.group_id')
@@ -89,7 +91,7 @@ export default class FundingPlan extends BaseModel {
         id: c.categoryId,
         name: c.categoryName,
         categoryId: c.categoryId,
-        balance: c.balance,
+        amount: c.amount,
       });
 
       total += c.amount;

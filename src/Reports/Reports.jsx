@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 import { observer } from 'mobx-react-lite';
 import { Nav } from 'react-bootstrap';
 import NetWorth from './NetWorth';
-import MobxStore from '../redux/mobxStore';
+import MobxStore from '../state/mobxStore';
 
 const Reports = () => {
   const { reports } = useContext(MobxStore);

@@ -30,6 +30,22 @@ class CategoryTree {
     return categoryName;
   }
 
+  getFundingPoolAmount() {
+    let fundingAmount = 0;
+
+    const system = this.groups.find((g) => g.id === this.systemIds.systemGroupId);
+
+    if (system) {
+      const fundingPool = system.categories.find((c) => c.id === this.systemIds.fundingPoolId);
+
+      if (fundingPool) {
+        fundingAmount = fundingPool.amount;
+      }
+    }
+
+    return fundingAmount;
+  }
+
   async load() {
     const response = await fetch('/groups');
 

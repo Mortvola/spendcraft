@@ -3,7 +3,7 @@ import React, { useContext } from 'react';
 import PropTypes from 'prop-types';
 import { Field, ErrorMessage } from 'formik';
 import { ModalDialog } from '../Modal';
-import MobxStore from '../redux/mobxStore';
+import MobxStore from '../state/mobxStore';
 
 const GroupDialog = ({
   onClose,

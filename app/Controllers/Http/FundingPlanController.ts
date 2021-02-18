@@ -46,7 +46,7 @@ class FundingPlanController {
 
     const categories = await FundingPlanCategory
       .query()
-      .select('category_id', 'amount')
+      .select('category_id', Database.raw('CAST(amount AS DOUBLE PRECISION) AS amount'))
       .where('plan_id', planId);
 
     return {
@@ -72,30 +72,18 @@ class FundingPlanController {
 
   // eslint-disable-next-line class-methods-use-this
   public async updateCategory({ request }: HttpContextContract): Promise<PlanCategory> {
-    const category = await FundingPlanCategory.findOrFail(request.params().itemId);
-
-    category.amount = request.input('amount');
-
-    category.save();
-
-    return {
-      id: category.id,
-      balance: category.amount,
-      categoryId: category.categoryId,
-    };
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  public async insertCategory({ request }: HttpContextContract): Promise<PlanCategory> {
-    const category = await FundingPlanCategory.create({
-      planId: request.params().planId,
-      categoryId: request.params().categoryId,
-      amount: request.input('amount'),
-    });
+    const category = await FundingPlanCategory.updateOrCreate(
+      {
+        planId: request.params().planId,
+        categoryId: request.params().catId,
+      },
+      {
+        amount: request.input('amount'),
+      },
+    );
 
     return {
-      id: category.id,
-      balance: category.amount,
+      amount: category.amount,
       categoryId: category.categoryId,
     };
   }

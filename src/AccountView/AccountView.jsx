@@ -1,7 +1,7 @@
 import React, { useContext } from 'react';
 import { observer } from 'mobx-react-lite';
 import Institution from './Institution';
-import MobxStore from '../redux/mobxStore';
+import MobxStore from '../state/mobxStore';
 
 const AccountView = () => {
   const { accounts } = useContext(MobxStore);

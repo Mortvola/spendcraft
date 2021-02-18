@@ -1,7 +1,7 @@
 import React, { useContext } from 'react';
 import { observer } from 'mobx-react-lite';
 import Chart from 'react-google-charts';
-import MobxStore from '../redux/mobxStore';
+import MobxStore from '../state/mobxStore';
 
 const BalanceHistory = () => {
   const { balances } = useContext(MobxStore);

@@ -1,8 +1,7 @@
 import React, { useContext, useState } from 'react';
-import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 import CategorySplitItem from './CategorySplitItem';
-import MobxStore from './redux/mobxStore';
+import MobxStore from './state/mobxStore';
 
 let nextId = -1;
 

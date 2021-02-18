@@ -1,51 +1,18 @@
-import React, { useState } from 'react';
-import { connect } from 'react-redux';
-import PropTypes from 'prop-types';
+import React, { useState, useContext } from 'react';
+import { observer } from 'mobx-react-lite';
 import moment from 'moment';
 import PlanCategory from './PlanCategory';
 import Amount from '../Amount';
-import { updatePlanItem } from '../redux/actions';
+import MobxStore from '../state/mobxStore';
 
-const PlanDetails = ({
-  plan,
-  dispatch,
-}) => {
-  const [total, setTotal] = useState(plan.total);
+const PlanDetails = () => {
+  const { plans: { details } } = useContext(MobxStore);
   const [scroll, setScroll] = useState(0);
   const [now] = useState({ year: moment().year(), month: moment().month() });
 
   const handleOnDeltaChange = (category, amount, delta) => {
     if (delta !== 0) {
-      let url = `/funding_plan/${plan.id}/category/${category.categoryId}`;
-      let method = 'POST';
-
-      if (category.id) {
-        url = `/funding_plan/${plan.id}/item/${category.id}`;
-        method = 'PATCH';
-      }
-
-      fetch(url, {
-        method,
-        headers: {
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ amount }),
-      })
-        .then((response) => {
-          if (response.ok) {
-            return response.json();
-          }
-
-          throw new Error('Invalid response');
-        })
-        .then((response) => {
-          setTotal(total + delta);
-          dispatch(updatePlanItem(response));
-        })
-        .catch((error) => {
-          console.log(error);
-        });
+      details.updateCategoryAmount(category.categoryId, amount, delta);
     }
   };
 
@@ -57,7 +24,7 @@ const PlanDetails = ({
 
       list.push((
         <PlanCategory
-          key={c.categoryId}
+          key={`${details.planId}-${c.categoryId}`}
           category={c}
           onDeltaChange={handleOnDeltaChange}
           history={history ? history.months : []}
@@ -68,28 +35,24 @@ const PlanDetails = ({
     return list;
   };
 
-  const renderGroups = (groups) => {
-    const list = [];
+  const renderGroups = (groups) => (
+    groups.map((g) => {
+      const history = details.history.find((h) => g.id === h.id);
 
-    groups.forEach((g) => {
-      const history = plan.history.find((h) => g.id === h.id);
-
-      list.push((
+      return ((
         <div key={g.id}>
           <div style={{ height: '24px' }}>{g.name}</div>
           {renderCategories(g.categories, history ? history.categories : [])}
         </div>
       ));
-    });
-
-    return list;
-  };
+    })
+  );
 
   const renderHistory = (history) => {
     const list = [];
     let { year, month } = now;
 
-    history.sort((a, b) => {
+    history.slice().sort((a, b) => {
       if (a.year === b.year) {
         return b.month - a.month;
       }
@@ -138,7 +101,7 @@ const PlanDetails = ({
     const list = [];
 
     groups.forEach((g) => {
-      const history = plan.history.find((h) => g.id === h.id);
+      const history = details.history.find((h) => g.id === h.id);
 
       list.push((
         <div key={g.id}>
@@ -186,59 +149,44 @@ const PlanDetails = ({
     setScroll(event.target.scrollLeft);
   };
 
-  return (
-    <div className="plan">
-      <div className="plan-title-wrapper">
-        <div className="plan-total title">
-          <div>Category</div>
-          <div className="currency">Monthly Amount</div>
-          <div className="currency">Annual Amount</div>
-          <div className="plan-wrapper">
-            <div className="plan-history" style={{ position: 'relative', left: -scroll }}>
-              {renderMonthlyTitles()}
+  if (details) {
+    return (
+      <div className="plan">
+        <div className="plan-title-wrapper">
+          <div className="plan-total title">
+            <div>Category</div>
+            <div className="currency">Monthly Amount</div>
+            <div className="currency">Annual Amount</div>
+            <div className="plan-wrapper">
+              <div className="plan-history" style={{ position: 'relative', left: -scroll }}>
+                {renderMonthlyTitles()}
+              </div>
             </div>
           </div>
         </div>
-      </div>
-      <div className="plan-detail-wrapper">
-        <div className="plan-details">
-          {renderGroups(plan.groups)}
+        <div className="plan-detail-wrapper">
+          <div className="plan-details">
+            {renderGroups(details.groups)}
+          </div>
+          <div className="plan-wrapper">
+            <div style={{ position: 'relative', left: -scroll }}>
+              {renderGroupHistory(details.groups)}
+            </div>
+          </div>
         </div>
-        <div className="plan-wrapper">
-          <div style={{ position: 'relative', left: -scroll }}>
-            {renderGroupHistory(plan.groups)}
+        <div className="plan-total">
+          Plan Total:
+          <Amount amount={details.total} />
+          <Amount amount={details.total * 12} />
+          <div className="plan-history" onScroll={handleScroll}>
+            {renderMonthlyTotals()}
           </div>
         </div>
       </div>
-      <div className="plan-total">
-        Plan Total:
-        <Amount amount={total} />
-        <Amount amount={total * 12} />
-        <div className="plan-history" onScroll={handleScroll}>
-          {renderMonthlyTotals()}
-        </div>
-      </div>
-    </div>
-  );
+    );
+  }
+
+  return null;
 };
 
-PlanDetails.propTypes = {
-  plan: PropTypes.shape({
-    id: PropTypes.number.isRequired,
-    total: PropTypes.number.isRequired,
-    groups: PropTypes.arrayOf(PropTypes.shape({
-      name: PropTypes.string.isRequired,
-      categories: PropTypes.arrayOf(PropTypes.shape()).isRequired,
-    })),
-    history: PropTypes.arrayOf(PropTypes.shape()).isRequired,
-  }),
-  dispatch: PropTypes.func.isRequired,
-};
-
-PlanDetails.defaultProps = {
-  plan: {
-    groups: [],
-  },
-};
-
-export default connect()(PlanDetails);
+export default observer(PlanDetails);

@@ -5,7 +5,7 @@ import {
   Nav,
   NavDropdown,
 } from 'react-bootstrap';
-import MobxStore from './redux/mobxStore';
+import MobxStore from './state/mobxStore';
 
 const Menubar = () => {
   const { uiState, user: { username } } = useContext(MobxStore);

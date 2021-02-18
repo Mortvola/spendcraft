@@ -1,9 +1,7 @@
 import React, { useContext } from 'react';
 import ReactDOM from 'react-dom';
 import { observer } from 'mobx-react-lite';
-import { Provider } from 'react-redux';
 import 'regenerator-runtime';
-import store from './redux/store';
 import Menubar from './Menubar';
 import Home from './Home';
 import Accounts from './AccountView/Accounts';
@@ -11,7 +9,7 @@ import Reports from './Reports/Reports';
 import Plans from './Plans/Plans';
 import PlaidLink from './PlaidLink';
 import DetailView from './DetailView';
-import MobxStore, { store as mobxStore } from './redux/mobxStore';
+import MobxStore, { store as mobxStore } from './state/mobxStore';
 
 const Logout = () => {
   fetch('/logout', {
@@ -82,9 +80,7 @@ const ObserverApp = observer(App);
 
 ReactDOM.render(
   <MobxStore.Provider value={mobxStore}>
-    <Provider store={store}>
-      <ObserverApp />
-    </Provider>
+    <ObserverApp />
   </MobxStore.Provider>,
   document.querySelector('.app'),
 );

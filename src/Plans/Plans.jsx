@@ -2,7 +2,7 @@ import React, { useContext, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import PlanItem from './PlanItem';
 import PlanDetails from './PlanDetails';
-import MobxStore from '../redux/mobxStore';
+import MobxStore from '../state/mobxStore';
 import { usePlanDialog } from './PlanDialog';
 
 const Plans = () => {
@@ -13,20 +13,28 @@ const Plans = () => {
     plans.load();
   }, [plans]);
 
+  useEffect(() => {
+    plans.loadDetails(uiState.selectedPlanId);
+  }, [plans, uiState.selectedPlanId]);
+
   const handleSelect = (p) => {
-    uiState.selectPlan(p);
+    uiState.selectPlanId(p.id);
   };
 
   const renderPlanList = () => (
     plans.list.map((p) => (
-      <PlanItem key={p.id} plan={p} onSelect={handleSelect} selected={p === uiState.selectedPlan} />
+      <PlanItem
+        key={p.id}
+        plan={p}
+        onSelect={handleSelect}
+        selected={p.id === uiState.selectedPlanId}
+      />
     ))
   );
 
   const renderPlanDetails = () => {
-    if (uiState.selectedPlan) {
-      return <div />;
-      //<PlanDetails plan={uiState.selectedPlan} />;
+    if (uiState.selectedPlanId !== null) {
+      return <PlanDetails />;
     }
 
     return <div />;

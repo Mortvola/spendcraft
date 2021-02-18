@@ -6,7 +6,7 @@ import GroupDialog from './CategoryView/GroupDialog';
 import FundingDialog from './funding/FundingDialog';
 import RebalanceDialog from './rebalance/RebalanceDialog';
 import DetailView from './DetailView';
-import MobxStore from './redux/mobxStore';
+import MobxStore from './state/mobxStore';
 
 const Home = () => {
   const { uiState, register } = useContext(MobxStore);

@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import PropTypes from 'prop-types';
 import CategorySelectorGroup from './CategorySelectorGroup';
-import MobxStore from '../redux/mobxStore';
+import MobxStore from '../state/mobxStore';
 
 // eslint-disable-next-line react/display-name
 const CategorySelector = ({

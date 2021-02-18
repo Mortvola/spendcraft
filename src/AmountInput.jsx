@@ -3,12 +3,12 @@ import PropTypes from 'prop-types';
 import { Overlay, Popover } from 'react-bootstrap';
 import parseEquation from './EquationParser';
 
-function AmountInput({
+const AmountInput = ({
   amount,
   onDeltaChange,
   onChange,
   className,
-}) {
+}) => {
   const [inputAmount, setInputAmount] = useState(amount.toFixed(2));
   const [initialValue, setInitialValue] = useState(amount);
   const [showPopover, setShowPopover] = useState(false);
@@ -122,7 +122,7 @@ function AmountInput({
       </Overlay>
     </div>
   );
-}
+};
 
 AmountInput.propTypes = {
   amount: PropTypes.number,

@@ -1,8 +1,11 @@
 import { makeAutoObservable, runInAction } from 'mobx';
+import FundingPlan from './FundingPlan';
+import FundingPlanDetails from './FundingPlanDetails';
 
 class Plans {
   constructor(store) {
     this.list = [];
+    this.details = null;
 
     makeAutoObservable(this);
 
@@ -16,8 +19,27 @@ class Plans {
       const body = await response.json();
 
       runInAction(() => {
-        this.list = body;
+        this.list = body.map((p) => (
+          new FundingPlan(this.store, p)
+        ));
       });
+    }
+  }
+
+  async loadDetails(fundingPlanId) {
+    if (fundingPlanId === null) {
+      this.details = null;
+    }
+    else {
+      const response = await fetch(`/funding_plan/${fundingPlanId}/details`);
+
+      if (response.ok) {
+        const body = await response.json();
+
+        runInAction(() => {
+          this.details = new FundingPlanDetails(this.store, body);
+        });
+      }
     }
   }
 

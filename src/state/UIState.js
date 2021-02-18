@@ -4,7 +4,7 @@ class UIState {
   constructor(store) {
     this.view = 'home';
     this.selectedCategoryId = null;
-    this.selectedPlan = null;
+    this.selectedPlanId = null;
 
     makeAutoObservable(this);
 
@@ -23,9 +23,9 @@ class UIState {
     });
   }
 
-  selectPlan(plan) {
+  selectPlanId(planId) {
     runInAction(() => {
-      this.selectedPlan = plan;
+      this.selectedPlanId = planId;
     });
   }
 }

@@ -643,7 +643,8 @@ body {
 }
 
 .plan {
-    display: grid;
+  display: grid;
+  grid-template-rows: repeat(3, minmax(0, max-content));
 }
 
 .plan-detail-wrapper {
@@ -651,6 +652,7 @@ body {
 	grid-template-columns: max-content max-content;
 	overflow-y: auto;
 	overflow-x: hidden;
+  height: max-content;
 }
 
 .plan-details {

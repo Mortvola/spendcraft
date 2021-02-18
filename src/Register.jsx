@@ -5,7 +5,7 @@ import { Spinner } from 'react-bootstrap';
 import Transaction from './Transaction';
 import getTransactionAmountForCategory from './TransactionUtils';
 import Amount from './Amount';
-import MobxStore from './redux/mobxStore';
+import MobxStore from './state/mobxStore';
 
 const Register = ({
   isMobile,

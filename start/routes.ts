@@ -76,9 +76,8 @@ Route.group(() => {
     Route.get('/funding_plans', 'FundingPlanController.getAll');
     Route.post('/funding_plan', 'FundingPlanController.add');
     Route.get('/funding_plan/:planId', 'FundingPlanController.getPlan');
-    Route.get('/funding_plan/:planId/full', 'FundingPlanController.getFullPlan');
-    Route.post('/funding_plan/:planId/category/:categoryId', 'FundingPlanController.insertCategory');
-    Route.patch('/funding_plan/:planId/item/:itemId', 'FundingPlanController.updateCategory');
+    Route.get('/funding_plan/:planId/details', 'FundingPlanController.getFullPlan');
+    Route.put('/funding_plan/:planId/item/:catId', 'FundingPlanController.updateCategory');
 
     Route.patch('/transaction/:txId', 'InstitutionController.updateTx');
     Route.on('/fundingplans').render('fundingplans');

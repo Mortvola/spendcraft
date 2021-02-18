@@ -3,7 +3,7 @@ import { observer } from 'mobx-react-lite';
 import IconButton from '../IconButton';
 import DetailView from '../DetailView';
 import AccountView from './AccountView';
-import MobxStore from '../redux/mobxStore';
+import MobxStore from '../state/mobxStore';
 
 const Accounts = () => {
   const { accounts, register, balances } = useContext(MobxStore);

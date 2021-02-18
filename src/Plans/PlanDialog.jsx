@@ -5,7 +5,7 @@ import { Button, Modal } from 'react-bootstrap';
 import {
   Formik, Form, Field, ErrorMessage,
 } from 'formik';
-import MobxStore from '../redux/mobxStore';
+import MobxStore from '../state/mobxStore';
 import useModal from '../useModal';
 
 const PlanDialog = ({
