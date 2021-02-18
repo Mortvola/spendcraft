@@ -98,9 +98,13 @@ class Register {
         runInAction(() => {
           this.categoryId = null;
           this.account = account;
-          this.transactions = body.transactions;
           this.balance = body.balance;
           this.pending = body.pending;
+
+          this.transactions = body.transactions.map((t) => (
+            new Transaction(this.store, t)
+          ));
+
           this.fetching = false;
         });
       }

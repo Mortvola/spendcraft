@@ -9,6 +9,7 @@ class Transaction {
     this.date = props.date;
     this.type = props.type;
     this.name = props.name;
+    this.categories = props.categories;
 
     makeAutoObservable(this);
   }

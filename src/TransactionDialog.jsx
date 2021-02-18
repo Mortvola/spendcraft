@@ -93,7 +93,7 @@ const TransactionDialog = ({
   return (
     <ModalDialog
       initialValues={{
-        splits: transaction.categories
+        splits: transaction.categories && transaction.categories.length > 0
           ? transaction.categories.map((c) => ({
             ...c,
             amount: c.amount * Math.sign(transaction.amount),
