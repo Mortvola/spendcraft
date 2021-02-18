@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import moment from 'moment';
-import { ModalDialog } from '../Modal';
+import { Button, Modal } from 'react-bootstrap';
+import useModal from '../useModal';
 
 const InstitutionInfoDialog = ({
-  onClose,
-  title,
-  institutionId,
-  ...props
+  institution,
+  show,
+  onHide,
 }) => {
   const [infoInitialized, setInfoInitialized] = useState(false);
   const [info, setInfo] = useState(null);
@@ -15,14 +15,13 @@ const InstitutionInfoDialog = ({
   if (!infoInitialized) {
     setInfoInitialized(true);
 
-    fetch(`/institution/${institutionId}/info`)
-      .then(
-        async (response) => {
-          if (response.ok) {
-            setInfo(await response.json());
-          }
-        },
-      );
+    (async () => {
+      const response = await fetch(`/institution/${institution.id}/info`);
+
+      if (response.ok) {
+        setInfo(await response.json());
+      }
+    })();
   }
 
   const product = (value) => {
@@ -45,7 +44,7 @@ const InstitutionInfoDialog = ({
       Object.entries(info.status).forEach(([key, value]) => {
         if (value !== null) {
           stats.push((
-            <div className="status-item">
+            <div className="status-item" key={key}>
               <div>{product(key)}</div>
               <div>{value.status}</div>
               <div>{percent(value.breakdown.success)}</div>
@@ -61,36 +60,57 @@ const InstitutionInfoDialog = ({
     return stats;
   };
 
-  const renderForm = () => (
-    <div>
-      <img src={`data:image/png;base64, ${info.logo}`} alt="logo" width="48" height="48" />
-      <a href={info.url} rel="noopener noreferrer" target="_blank">{info.name}</a>
-      <div className="status-table">
-        {renderStatus()}
-      </div>
-    </div>
+  const renderForm = () => {
+    if (info) {
+      return (
+        <div>
+          <img src={`data:image/png;base64, ${info.logo}`} alt="logo" width="48" height="48" />
+          <a href={info.url} rel="noopener noreferrer" target="_blank">{info.name}</a>
+          <div className="status-table">
+            {renderStatus()}
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
+  const Header = () => (
+    <Modal.Header closeButton>
+      <h4 id="modalTitle" className="modal-title">Institution Information</h4>
+    </Modal.Header>
+  );
+
+  const Footer = () => (
+    <Modal.Footer>
+      <div />
+      <div />
+      <Button variant="secondary" onClick={onHide}>Cancel</Button>
+      <Button variant="primary" type="submit">Save</Button>
+    </Modal.Footer>
   );
 
   return (
-    <ModalDialog
-      onClose={onClose}
-      title={title}
-      size="lg"
-      scrollable
-      {...props}
-      form={info ? renderForm : null}
-    />
+    <Modal show={show} onHide={onHide} size="lg">
+      <Header />
+      <Modal.Body>
+        {
+          renderForm()
+        }
+      </Modal.Body>
+      <Footer />
+    </Modal>
   );
 };
 
 InstitutionInfoDialog.propTypes = {
-  institutionId: PropTypes.number.isRequired,
-  onClose: PropTypes.func.isRequired,
-  title: PropTypes.string,
+  institution: PropTypes.shape().isRequired,
+  show: PropTypes.bool.isRequired,
+  onHide: PropTypes.func.isRequired,
 };
 
-InstitutionInfoDialog.defaultProps = {
-  title: 'Institution Information',
-};
+const useInstitutionInfoDialog = () => useModal(InstitutionInfoDialog);
 
 export default InstitutionInfoDialog;
+export { useInstitutionInfoDialog };

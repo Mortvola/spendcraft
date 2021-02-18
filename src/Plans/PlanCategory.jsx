@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
+import { observer } from 'mobx-react-lite';
 import AmountInput from '../AmountInput';
 import Amount from '../Amount';
 
 const PlanCategory = ({
   category,
   onDeltaChange,
-  history,
 }) => {
-  const [annualAmount, setAnnualAmount] = useState(12 * category.amount);
+  const [annualAmount, setAnnualAmount] = useState(12 * (category.amount || 0));
 
   const handleDeltaChange = (amount, delta) => {
     setAnnualAmount(amount * 12);
@@ -35,13 +35,10 @@ PlanCategory.propTypes = {
     amount: PropTypes.number.isRequired,
   }).isRequired,
   onDeltaChange: PropTypes.func,
-  history: PropTypes.arrayOf(PropTypes.shape({
-    amount: PropTypes.number.isRequired,
-  })).isRequired,
 };
 
 PlanCategory.defaultProps = {
   onDeltaChange: null,
 };
 
-export default PlanCategory;
+export default observer(PlanCategory);

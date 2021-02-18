@@ -1,28 +1,30 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import { observer } from 'mobx-react-lite';
 import Buttons from './Buttons';
 import Category from './Category';
 
-function Group({ group, onCategorySelected, categorySelected }) {
-  return (
-    <div className="cat-list-group">
-      <div className="group-element-bar">
-        <div className="group-name">{group.name}</div>
-        <Buttons group={group} />
-      </div>
-      {group.categories.map((category) => (
-        <Category
-          key={category.name}
-          category={category}
-          groupId={group.id}
-          systemGroup={group.system}
-          onCategorySelected={onCategorySelected}
-          selected={categorySelected === category.id}
-        />
-      ))}
+const Group = ({
+  group,
+  onCategorySelected,
+  selectedCategoryId,
+}) => (
+  <div className="cat-list-group">
+    <div className="group-element-bar">
+      <div className="group-name">{group.name}</div>
+      <Buttons group={group} />
     </div>
-  );
-}
+    {group.categories.map((category) => (
+      <Category
+        key={category.name}
+        category={category}
+        group={group}
+        onCategorySelected={onCategorySelected}
+        selected={selectedCategoryId === category.id}
+      />
+    ))}
+  </div>
+);
 
 Group.propTypes = {
   group: PropTypes.shape({
@@ -32,15 +34,15 @@ Group.propTypes = {
     id: PropTypes.number.isRequired,
   }),
   onCategorySelected: PropTypes.func.isRequired,
-  categorySelected: PropTypes.number,
+  selectedCategoryId: PropTypes.number,
 };
 
 Group.defaultProps = {
-  categorySelected: undefined,
+  selectedCategoryId: null,
   group: {
     categories: [],
     system: false,
   },
 };
 
-export default Group;
+export default observer(Group);

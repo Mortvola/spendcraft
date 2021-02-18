@@ -1,10 +1,9 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { connect } from 'react-redux';
 import IconButton from './IconButton';
 import CategoryInput from './CategoryInput/CategoryInput';
 import Amount from './Amount';
-import TransactionDialog, { updateTransactionCategory, useTransactionDialog } from './TransactionDialog';
+import TransactionDialog, { useTransactionDialog } from './TransactionDialog';
 import CategoryTransferDialog from './CategoryTransferDialog';
 import { ModalLauncher } from './Modal';
 import RebalanceDialog from './rebalance/RebalanceDialog';
@@ -18,7 +17,6 @@ const Transaction = ({
   categoryId,
   unassignedId,
   isMobile,
-  dispatch,
 }) => {
   const [TransactionDialog2, showTransactionDialog] = useTransactionDialog();
 
@@ -31,7 +29,7 @@ const Transaction = ({
   const handleChange = (catId) => {
     const request = { splits: [{ categoryId: catId, amount: transaction.amount }] };
 
-    updateTransactionCategory(transaction, request, dispatch);
+    transaction.updateTransactionCategory(request);
   };
 
   const renderTransactionDialog = (props) => {
@@ -155,14 +153,14 @@ Transaction.propTypes = {
   amount: PropTypes.number.isRequired,
   balance: PropTypes.number.isRequired,
   selected: PropTypes.bool.isRequired,
-  dispatch: PropTypes.func.isRequired,
-  categoryId: PropTypes.number.isRequired,
+  categoryId: PropTypes.number,
   unassignedId: PropTypes.number.isRequired,
   isMobile: PropTypes.bool,
 };
 
 Transaction.defaultProps = {
+  categoryId: null,
   isMobile: false,
 };
 
-export default connect()(Transaction);
+export default Transaction;

@@ -1,0 +1,142 @@
+:root {
+    --title-font-size: calc(15px + 5vw);
+}
+
+html, body {
+    background-color: #fff;
+    color: #636b6f;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 200;
+    height: 100vh;
+    margin: 0;
+}
+
+.full-height {
+    height: 100vh;
+}
+
+.flex-center {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+}
+
+.position-ref {
+    position: relative;
+}
+
+.top-right {
+    position: absolute;
+    right: 10px;
+    top: 18px;
+}
+
+.content {
+    display: grid;
+    justify-items: center;
+}
+
+.links > a {
+    color: #636b6f;
+    padding: 0 25px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: .1rem;
+    text-decoration: none;
+    text-transform: uppercase;
+}
+
+.m-b-md {
+    margin-bottom: 30px;
+}
+
+body {
+    background-color: black;
+}
+
+.background {
+    background: linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.1)), url('/Forester.jpg');
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-position: center;
+    background-size: cover;
+}
+
+.dark {
+    background-color: rgba(0,0,0,1);
+}
+
+.light {
+    background-color: rgba(0,0,0,0);
+    transition: background-color 2s ease-in;
+}
+
+@media screen and (max-width: 668px) {
+    :root {
+        --title-font-size: calc(15px + 8vw);
+    }
+}
+
+.titles{
+    display: grid;
+    justify-items: center;
+    width: max-content;
+    color: white;
+}
+
+.title {
+    font-size: var(--title-font-size);
+    line-height: 85%;
+    text-shadow: black 0px 2px 4px, black 0px -2px 4px, black -2px 0px 4px, black 2px 0px 4px;
+}
+
+.subtitle {
+    font-size: calc(15px + 1vw);
+    line-height: 85%;
+    text-shadow: black 0px 2px 2px, black 0px -2px 2px, black -2px 0px 2px, black 2px 0px 2px;
+    margin-top: 14px
+}
+
+.quote {
+    font-size: calc(15px + 0.5vw);
+    color: white;
+    line-height: 85%;
+    margin-top:64px;
+    width: max-content;
+    text-align: center;
+    text-shadow: black 0px 1px 1px, black 0px -1px 1px, black 1px 0px 1px, black -1px 0px 1px;
+}
+
+.attribution {
+    text-align:right;
+    margin-top: 14px;
+}
+
+.welcome-button {
+    display: inline;
+	color: white;
+	cursor: pointer;
+	text-transform: uppercase;
+	padding: 0 25px;
+}
+
+.text-link {
+    cursor: pointer;
+    color: mediumblue;
+    margin-top: 0.75em;
+}
+
+.wait-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.abs-centered {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+}

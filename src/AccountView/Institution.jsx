@@ -1,17 +1,19 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { ModalLauncher } from '../Modal';
+import { observer } from 'mobx-react-lite';
 import IconButton from '../IconButton';
-import AccountsDialog from './AccountsDialog';
-import InstitutionInfoDialog from './InstitutionInfoDialog';
+import { useAccountsDialog } from './AccountsDialog';
+import { useInstitutionInfoDialog } from './InstitutionInfoDialog';
 import Account from './Account';
 
 function Institution({
   institution,
   onAccountSelected,
-  accountSelected,
+  selectedAccount,
   onRelink,
 }) {
+  const [AccountsDialog, showAccountsDialog] = useAccountsDialog();
+  const [InstitutionInfoDialog, showInstitutionInfoDialog] = useInstitutionInfoDialog();
   const handleRelinkClick = () => {
     onRelink(institution.id);
   };
@@ -20,30 +22,30 @@ function Institution({
     <div>
       <div className="acct-list-inst">
         <div className="institution-name">{institution.name}</div>
-        <ModalLauncher
-          launcher={(props) => (<IconButton icon="plus" {...props} />)}
-          dialog={(props) => (
-            <AccountsDialog {...props} institutionId={institution.id} />
-          )}
-        />
+        <IconButton icon="plus" onClick={showAccountsDialog} />
+        <AccountsDialog institution={institution} />
         <IconButton icon="link" onClick={handleRelinkClick} />
-        <ModalLauncher
-          launcher={(props) => (<IconButton icon="info-circle" {...props} />)}
-          dialog={(props) => (
-            <InstitutionInfoDialog institutionId={institution.id} {...props} />
-          )}
-        />
+        <IconButton icon="info-circle" onClick={showInstitutionInfoDialog} />
+        <InstitutionInfoDialog institution={institution} />
       </div>
       <div>
-        {institution.accounts.map((account) => (
-          <Account
-            key={account.id}
-            institutionId={institution.id}
-            account={account}
-            onAccountSelected={onAccountSelected}
-            selected={accountSelected === account.id}
-          />
-        ))}
+        {
+          institution.accounts.map((account) => {
+            const selected = selectedAccount
+              ? selectedAccount.id === account.id
+              : false;
+
+            return (
+              <Account
+                key={account.id}
+                institutionId={institution.id}
+                account={account}
+                onAccountSelected={onAccountSelected}
+                selected={selected}
+              />
+            );
+          })
+        }
       </div>
     </div>
   );
@@ -56,12 +58,12 @@ Institution.propTypes = {
     accounts: PropTypes.arrayOf(PropTypes.shape()).isRequired,
   }).isRequired,
   onAccountSelected: PropTypes.func.isRequired,
-  accountSelected: PropTypes.number,
+  selectedAccount: PropTypes.shape(),
   onRelink: PropTypes.func.isRequired,
 };
 
 Institution.defaultProps = {
-  accountSelected: null,
+  selectedAccount: null,
 };
 
-export default Institution;
+export default observer(Institution);

@@ -1,30 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import PropTypes from 'prop-types';
-import { connect } from 'react-redux';
+import { observer } from 'mobx-react-lite';
 import { Spinner } from 'react-bootstrap';
 import Transaction from './Transaction';
 import getTransactionAmountForCategory from './TransactionUtils';
 import Amount from './Amount';
-
-const mapStateToProps = (state) => ({
-  fetching: state.transactions.fetching,
-  transactions: state.transactions.transactions,
-  pending: state.transactions.pending,
-  balance: state.transactions.balance,
-  categoryId: state.transactions.categoryId,
-  unassignedId: state.categoryTree.unassignedId,
-});
+import MobxStore from './state/mobxStore';
 
 const Register = ({
-  fetching,
-  transactions,
-  pending,
-  categoryId,
-  unassignedId,
-  balance,
   isMobile,
 }) => {
   const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const {
+    register: {
+      categoryId,
+      transactions,
+      fetching,
+      pending,
+      balance,
+    },
+    categoryTree: {
+      systemIds: {
+        unassignedId,
+      },
+    },
+  } = useContext(MobxStore);
 
   const handleClick = (transactionId) => {
     setSelectedTransaction(transactionId);
@@ -166,20 +166,11 @@ const Register = ({
 };
 
 Register.propTypes = {
-  fetching: PropTypes.bool.isRequired,
-  transactions: PropTypes.arrayOf(PropTypes.shape()).isRequired,
-  pending: PropTypes.arrayOf(PropTypes.shape()),
-  balance: PropTypes.number.isRequired,
-  categoryId: PropTypes.number,
-  unassignedId: PropTypes.number,
   isMobile: PropTypes.bool,
 };
 
 Register.defaultProps = {
-  pending: [],
-  categoryId: null,
-  unassignedId: null,
   isMobile: false,
 };
 
-export default connect(mapStateToProps)(Register);
+export default observer(Register);

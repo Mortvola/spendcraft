@@ -4,28 +4,30 @@ import { ModalLauncher } from '../Modal';
 import CategoryDialog from './CategoryDialog';
 import IconButton from '../IconButton';
 
-function EditButton({ category, groupId, systemGroup }) {
-  if (!systemGroup) {
+const EditButton = ({
+  category,
+  group,
+}) => {
+  if (!group.system) {
     return (
       <ModalLauncher
         launcher={(props) => (<IconButton icon="edit" {...props} />)}
         title="Edit Category"
         dialog={(props) => (
-          <CategoryDialog category={category} groupId={groupId} {...props} />
+          <CategoryDialog category={category} group={group} {...props} />
         )}
       />
     );
   }
 
   return null;
-}
+};
 
 EditButton.propTypes = {
   category: PropTypes.shape({
     id: PropTypes.number.isRequired,
   }).isRequired,
-  groupId: PropTypes.number.isRequired,
-  systemGroup: PropTypes.bool.isRequired,
+  group: PropTypes.shape().isRequired,
 };
 
 export default EditButton;

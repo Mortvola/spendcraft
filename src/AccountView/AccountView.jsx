@@ -1,28 +1,18 @@
-import React from 'react';
-import PropTypes from 'prop-types';
-import { connect } from 'react-redux';
-import {
-  selectAccount,
-  relinkInstitution,
-} from '../redux/actions';
+import React, { useContext } from 'react';
+import { observer } from 'mobx-react-lite';
 import Institution from './Institution';
+import MobxStore from '../state/mobxStore';
 
-const mapStateToProps = (state) => ({
-  institutions: state.institutions,
-  selectedAccount: state.selections.selectedAccountId,
-});
+const AccountView = () => {
+  const { accounts } = useContext(MobxStore);
+  const { institutions, selectedAccount } = accounts;
 
-const AccountView = ({
-  institutions,
-  selectedAccount,
-  dispatch,
-}) => {
-  const handleAccountSelected = (accountId, tracking) => {
-    dispatch(selectAccount(accountId, tracking));
+  const handleAccountSelected = (account) => {
+    accounts.selectAccount(account);
   };
 
   const handleRelink = (institutionId) => {
-    dispatch(relinkInstitution(institutionId));
+    accounts.relinkInstitution(institutionId);
   };
 
   return (
@@ -32,7 +22,7 @@ const AccountView = ({
           key={institution.name}
           institution={institution}
           onAccountSelected={handleAccountSelected}
-          accountSelected={selectedAccount}
+          selectedAccount={selectedAccount}
           onRelink={handleRelink}
         />
       ))}
@@ -40,15 +30,4 @@ const AccountView = ({
   );
 };
 
-AccountView.propTypes = {
-  institutions: PropTypes.arrayOf(PropTypes.shape()),
-  dispatch: PropTypes.func.isRequired,
-  selectedAccount: PropTypes.number,
-};
-
-AccountView.defaultProps = {
-  institutions: [],
-  selectedAccount: undefined,
-};
-
-export default connect(mapStateToProps)(AccountView);
+export default observer(AccountView);

@@ -1,8 +1,7 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import ReactDOM from 'react-dom';
-import PropTypes from 'prop-types';
-import { Provider, connect } from 'react-redux';
-import store from './redux/store';
+import { observer } from 'mobx-react-lite';
+import 'regenerator-runtime';
 import Menubar from './Menubar';
 import Home from './Home';
 import Accounts from './AccountView/Accounts';
@@ -10,31 +9,30 @@ import Reports from './Reports/Reports';
 import Plans from './Plans/Plans';
 import PlaidLink from './PlaidLink';
 import DetailView from './DetailView';
+import MobxStore, { store as mobxStore } from './state/mobxStore';
 
 const Logout = () => {
-  window.location.assign('/logout');
+  fetch('/logout', {
+    method: 'POST',
+    headers: {
+      'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+    },
+  })
+    .then((response) => {
+      if (response.ok) {
+        window.location.replace('/');
+      }
+    });
 
   return null;
 };
 
-const mapStateToProps = (state) => ({
-  view: state.selections.view,
-  showPlaidLink: state.dialogs.plaid.show,
-  updateMode: state.dialogs.plaid.updateMode,
-  linkToken: state.dialogs.plaid.linkToken,
-});
-
-const App = ({
-  view,
-  showPlaidLink,
-  updateMode,
-  linkToken,
-  dispatch,
-}) => {
+const App = () => {
+  const { uiState } = useContext(MobxStore);
   const isMobile = window.innerWidth <= 500;
 
   const renderMain = () => {
-    switch (view) {
+    switch (uiState.view) {
       case 'home':
         return <Home />;
 
@@ -58,11 +56,7 @@ const App = ({
   const renderDesktop = () => (
     <div className="main">
       {renderMain()}
-      {
-        showPlaidLink
-          ? <PlaidLink linkToken={linkToken} dispatch={dispatch} updateMode={updateMode} />
-          : null
-      }
+      <PlaidLink />
     </div>
   );
 
@@ -82,23 +76,11 @@ const App = ({
   );
 };
 
-App.propTypes = {
-  view: PropTypes.string.isRequired,
-  showPlaidLink: PropTypes.bool.isRequired,
-  updateMode: PropTypes.bool.isRequired,
-  linkToken: PropTypes.string,
-  dispatch: PropTypes.func.isRequired,
-};
-
-App.defaultProps = {
-  linkToken: null,
-};
-
-const ConnectedApp = connect(mapStateToProps)(App);
+const ObserverApp = observer(App);
 
 ReactDOM.render(
-  <Provider store={store}>
-    <ConnectedApp />
-  </Provider>,
+  <MobxStore.Provider value={mobxStore}>
+    <ObserverApp />
+  </MobxStore.Provider>,
   document.querySelector('.app'),
 );

@@ -4,5 +4,8 @@ node_modules/
 /providers/
 /database/
 /config/
-/app/
-/public/bundle.js
+/public/app.js
+/public/welcome.js
+/public/js
+/build
+/blog

@@ -1,22 +1,15 @@
-import React from 'react';
-import { connect } from 'react-redux';
+import React, { useContext } from 'react';
+import { observer } from 'mobx-react-lite';
 import { Nav } from 'react-bootstrap';
-import PropTypes from 'prop-types';
-import { report } from '../redux/actions';
 import NetWorth from './NetWorth';
+import MobxStore from '../state/mobxStore';
 
-const mapStateToProps = (state) => ({
-  reportType: state.reports.reportType,
-  data: state.reports.data,
-});
+const Reports = () => {
+  const { reports } = useContext(MobxStore);
+  const { reportType, data } = reports;
 
-const Reports = ({
-  reportType,
-  data,
-  dispatch,
-}) => {
   const handleSelect = (eventKey) => {
-    dispatch(report(eventKey));
+    reports.loadReport(eventKey);
   };
 
   const renderReport = () => {
@@ -40,10 +33,4 @@ const Reports = ({
   );
 };
 
-Reports.propTypes = {
-  reportType: PropTypes.string.isRequired,
-  data: PropTypes.shape().isRequired,
-  dispatch: PropTypes.func.isRequired,
-};
-
-export default connect(mapStateToProps)(Reports);
+export default observer(Reports);

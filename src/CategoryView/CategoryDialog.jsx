@@ -3,81 +3,34 @@ import 'regenerator-runtime/runtime';
 import React from 'react';
 import PropTypes from 'prop-types';
 import { Field, ErrorMessage } from 'formik';
-import { connect } from 'react-redux';
-import { addCategory, updateCategory, deleteCategory } from '../redux/actions';
 import { ModalDialog } from '../Modal';
 
-const CategoryDialog = (props) => {
-  const {
-    onClose,
-    onExited,
-    title,
-    show,
-    category,
-    groupId,
-    dispatch,
-  } = props;
-
-  const handleSubmit = (values, bag) => {
+const CategoryDialog = ({
+  onClose,
+  onExited,
+  title,
+  show,
+  category,
+  group,
+}) => {
+  const handleSubmit = async (values, bag) => {
     const { setErrors } = bag;
-    if (category) {
-      fetch(`/groups/${groupId}/categories/${category.id}`, {
-        method: 'PATCH',
-        headers:
-        {
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ name: values.name }),
-      })
-        .then(async (response) => {
-          const json = await response.json();
+    let errors = null;
 
-          if (response.ok) {
-            dispatch(updateCategory({ id: category.id, groupId, name: json.name }));
-            onClose();
-          }
-          else if (json.errors && json.errors.length > 0) {
-            // Display the first error
-            // TODO: Display all the errors?
-            setErrors({ name: json.errors[0].message });
-          }
-          else {
-            setErrors({ name: 'Unknown error' });
-          }
-        });
+    if (category) {
+      errors = await category.update(group.id, values.name);
     }
     else {
-      fetch(`/groups/${groupId}/categories`, {
-        method: 'POST',
-        headers:
-        {
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ groupId, name: values.name }),
-      })
-        .then(async (response) => {
-          const json = await response.json();
+      errors = await group.addCategory({ groupId: group.id, name: values.name });
+    }
 
-          if (response.ok) {
-            dispatch(addCategory({
-              id: json.id,
-              groupId: json.groupId,
-              name: json.name,
-              amount: 0,
-            }));
-            onClose();
-          }
-          else if (json.errors && json.errors.length > 0) {
-            // Display the first error
-            // TODO: Display all the errors?
-            setErrors({ name: json.errors[0].message });
-          }
-          else {
-            setErrors({ name: 'Unknown error' });
-          }
-        });
+    if (errors && errors.length > 0) {
+      // Display the first error
+      // TODO: Display all the errors?
+      setErrors({ name: errors[0].title });
+    }
+    else {
+      onClose();
     }
   };
 
@@ -91,36 +44,19 @@ const CategoryDialog = (props) => {
     return errors;
   };
 
-  const handleDelete = (bag) => {
-    const { setTouched, setErrors } = bag;
+  const handleDelete = async (bag) => {
+    const { setErrors } = bag;
 
-    fetch(`/groups/${groupId}/categories/${category.id}`, {
-      method: 'DELETE',
-      headers:
-      {
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-        'Content-Type': 'application/json',
-      },
-    })
-      .then(async (response) => {
-        if (response.ok) {
-          dispatch(deleteCategory({ id: category.id, groupId }));
-          onClose();
-        }
-        else {
-          const json = await response.json();
-          setTouched({ name: true }, false);
+    const errors = await group.deleteCategory(group.id, category.id);
 
-          if (json.errors && json.errors.length > 0) {
-            // Display the first error
-            // TODO: Display all the errors?
-            setErrors({ name: json.errors[0].message });
-          }
-          else {
-            setErrors({ name: 'Unknown error' });
-          }
-        }
-      });
+    if (errors && errors.length > 0) {
+      // Display the first error
+      // TODO: Display all the errors?
+      setErrors({ name: errors[0].title });
+    }
+    else {
+      onClose();
+    }
   };
 
   return (
@@ -159,17 +95,17 @@ CategoryDialog.propTypes = {
   category: PropTypes.shape({
     id: PropTypes.number.isRequired,
     name: PropTypes.string.isRequired,
+    update: PropTypes.func.isRequired,
   }),
-  groupId: PropTypes.number.isRequired,
+  group: PropTypes.shape().isRequired,
   onClose: PropTypes.func.isRequired,
   onExited: PropTypes.func.isRequired,
   title: PropTypes.string.isRequired,
   show: PropTypes.bool.isRequired,
-  dispatch: PropTypes.func.isRequired,
 };
 
 CategoryDialog.defaultProps = {
   category: undefined,
 };
 
-export default connect()(CategoryDialog);
+export default CategoryDialog;

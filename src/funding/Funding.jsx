@@ -48,34 +48,29 @@ const Funding = ({
     }
   };
 
-  const populateCategories = (categories) => {
-    const categoryItems = [];
+  const populateCategories = (categories) => (
+    categories.map((category) => {
+      let amount = 0;
 
-    categories
-      .forEach((category) => {
-        let amount = 0;
+      const index = funding.findIndex((c) => c.categoryId === category.id);
 
-        const index = funding.findIndex((c) => c.categoryId === category.id);
+      if (index !== -1) {
+        amount = funding[index].amount;
+      }
 
-        if (index !== -1) {
-          amount = funding[index].amount;
-        }
-
-        categoryItems.push((
-          <FundingItem
-            key={`${category.id}`}
-            name={category.name}
-            initialAmount={category.amount}
-            funding={amount}
-            onDeltaChange={(newAmount) => (
-              handleDeltaChange(newAmount, category.id)
-            )}
-          />
-        ));
-      });
-
-    return categoryItems;
-  };
+      return (
+        <FundingItem
+          key={`${category.id}`}
+          name={category.name}
+          initialAmount={category.balance}
+          funding={amount}
+          onDeltaChange={(newAmount) => (
+            handleDeltaChange(newAmount, category.id)
+          )}
+        />
+      );
+    })
+  );
 
   const populateGroups = () => {
     const groupItems = [];

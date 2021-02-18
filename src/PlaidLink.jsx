@@ -1,57 +1,75 @@
-import { useEffect, useCallback } from 'react';
+import React, {
+  useEffect, useCallback, useContext, useState,
+} from 'react';
 import { usePlaidLink } from 'react-plaid-link';
-import { hidePlaidLink, addInstitution } from './redux/actions';
+import { observer } from 'mobx-react-lite';
+import { runInAction } from 'mobx';
+import MobxStore from './state/mobxStore';
+import { useAccountsDialog } from './AccountView/AccountsDialog';
 
-const PlaidLink = ({
-  linkToken,
-  updateMode,
-  dispatch,
+const PlaidLinkDialog = ({
+  showAccountsDialog,
 }) => {
+  const { accounts } = useContext(MobxStore);
+
+  const onEvent = (eventName) => {
+    console.log(`${eventName}`);
+    if (eventName === 'HANDOFF') {
+      runInAction(() => {
+        accounts.plaid = null;
+      });
+    }
+  };
+
   const onExit = useCallback((err, metaData) => {
     if (err) {
       console.log(err);
       console.log(JSON.stringify(metaData));
     }
-    dispatch(hidePlaidLink());
-  }, []);
 
-  const onSuccess = useCallback((publicToken, metadata) => {
-    if (publicToken && !updateMode) {
-      fetch('/institution', {
-        method: 'POST',
-        headers: {
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          publicToken,
-          institution: metadata.institution,
-        }),
-      })
-        .then(async (response) => {
-          const json = await response.json();
+    runInAction(() => {
+      accounts.plaid = null;
+    });
+  }, [accounts]);
 
-          dispatch(addInstitution({ id: json.id, name: json.name, accounts: [] }));
-
-          // openAccountSelectionDialog(json.id, json.accounts);
-        });
+  const onSuccess = useCallback(async (publicToken, metadata) => {
+    if (publicToken && accounts.plaid.callback) {
+      const institute = await accounts.plaid.callback(publicToken, metadata);
+      showAccountsDialog(institute);
     }
-    dispatch(hidePlaidLink());
-  }, []);
+  }, [accounts, showAccountsDialog]);
 
   const { open, ready } = usePlaidLink({
-    token: linkToken,
+    token: accounts.plaid.linkToken,
     onSuccess,
     onExit,
+    onEvent,
   });
 
   useEffect(() => {
-    if (open && ready) {
+    if (accounts.plaid && open && ready) {
       open();
     }
-  }, [open, ready]);
+  }, [accounts.plaid, open, ready]);
 
   return null;
 };
 
-export default PlaidLink;
+const PlaidLink = () => {
+  const { accounts } = useContext(MobxStore);
+  const [AccountsDialog, showAccountsDialog] = useAccountsDialog();
+  const [institute, setInstitute] = useState();
+
+  const handleShowDialog = (inst) => {
+    setInstitute(inst);
+    showAccountsDialog();
+  };
+
+  if (accounts.plaid) {
+    return <PlaidLinkDialog showAccountsDialog={handleShowDialog} />;
+  }
+
+  return <AccountsDialog institution={institute} />;
+};
+
+export default observer(PlaidLink);

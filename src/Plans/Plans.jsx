@@ -1,38 +1,40 @@
-import React from 'react';
-import { connect } from 'react-redux';
-import PropTypes from 'prop-types';
-import { fetchPlan } from '../redux/actions';
+import React, { useContext, useEffect } from 'react';
+import { observer } from 'mobx-react-lite';
 import PlanItem from './PlanItem';
 import PlanDetails from './PlanDetails';
-import { ModalLauncher } from '../Modal';
+import MobxStore from '../state/mobxStore';
+import { usePlanDialog } from './PlanDialog';
 
-const mapStateToProps = (state) => ({
-  plans: state.plans.list,
-  plan: state.plans.plan,
-});
+const Plans = () => {
+  const { plans, uiState } = useContext(MobxStore);
+  const [PlanDialog, openPlanDialog] = usePlanDialog();
 
-const Plans = ({
-  plans,
-  plan,
-  dispatch,
-}) => {
+  useEffect(() => {
+    plans.load();
+  }, [plans]);
+
+  useEffect(() => {
+    plans.loadDetails(uiState.selectedPlanId);
+  }, [plans, uiState.selectedPlanId]);
+
   const handleSelect = (p) => {
-    dispatch(fetchPlan(p.id));
+    uiState.selectPlanId(p.id);
   };
 
-  const renderPlanList = () => {
-    const list = [];
-
-    plans.forEach((p) => {
-      list.push((<PlanItem key={p.id} plan={p} onSelect={handleSelect} />));
-    });
-
-    return list;
-  };
+  const renderPlanList = () => (
+    plans.list.map((p) => (
+      <PlanItem
+        key={p.id}
+        plan={p}
+        onSelect={handleSelect}
+        selected={p.id === uiState.selectedPlanId}
+      />
+    ))
+  );
 
   const renderPlanDetails = () => {
-    if (plan) {
-      return <PlanDetails plan={plan} />;
+    if (uiState.selectedPlanId !== null) {
+      return <PlanDetails />;
     }
 
     return <div />;
@@ -42,11 +44,10 @@ const Plans = ({
     <>
       <div className="side-bar">
         <div className="plan-tools">
-          <ModalLauncher
-            launcher={(props) => (<button type="button" id="add-group" className="button" {...props}>Add Plan</button>)}
-            title="Add Group"
-            dialog={(props) => (<AddPlanDialog {...props} />)}
-          />
+          <button type="button" id="add-group" className="button" onClick={openPlanDialog}>
+            Add Plan
+          </button>
+          <PlanDialog />
         </div>
         {renderPlanList()}
       </div>
@@ -55,15 +56,4 @@ const Plans = ({
   );
 };
 
-Plans.propTypes = {
-  plans: PropTypes.arrayOf(PropTypes.shape()),
-  plan: PropTypes.shape(),
-  dispatch: PropTypes.func.isRequired,
-};
-
-Plans.defaultProps = {
-  plans: [],
-  plan: null,
-};
-
-export default connect(mapStateToProps)(Plans);
+export default observer(Plans);

@@ -1,50 +1,31 @@
 /* eslint-disable jsx-a11y/control-has-associated-label */
 /* eslint-disable jsx-a11y/label-has-associated-control */
-import 'regenerator-runtime/runtime';
-import React, { useState, useEffect } from 'react';
+import React, {
+  useState, useEffect, useContext, useCallback,
+} from 'react';
 import PropTypes from 'prop-types';
-import { connect } from 'react-redux';
 import { Field, ErrorMessage } from 'formik';
 import { ModalDialog } from '../Modal';
 import Funding from './Funding';
 import Amount from '../Amount';
-
-const mapStateToProps = (state) => {
-  const { systemGroupId, fundingPoolId } = state.categoryTree;
-  let fundingAmount = 0;
-
-  const system = state.categoryTree.groups.find((g) => g.id === systemGroupId);
-
-  if (system) {
-    const fundingPool = system.categories.find((c) => c.id === fundingPoolId);
-
-    if (fundingPool) {
-      fundingAmount = fundingPool.amount;
-    }
-  }
-
-  return {
-    systemGroupId,
-    fundingPoolId,
-    fundingAmount,
-  };
-};
+import MobxStore from '../state/mobxStore';
 
 const FundingDialog = ({
   transaction,
-  systemGroupId,
-  fundingAmount,
   onClose,
   onExited,
   title,
   show,
-  fundingPoolId,
 }) => {
-  const getTotal = (categories) => (
+  const { categoryTree } = useContext(MobxStore);
+
+  const getTotal = useCallback((categories) => (
     categories.reduce((accumulator, item) => (
-      item.categoryId === fundingPoolId ? accumulator : accumulator + item.amount
+      item.categoryId === categoryTree.systemIds.fundingPoolId
+        ? accumulator
+        : accumulator + item.amount
     ), 0)
-  );
+  ), [categoryTree.systemIds.fundingPoolId]);
 
   const [plansInitialized, setPlansInitialized] = useState(false);
   const [groupsInitialized, setGroupsInitialized] = useState(false);
@@ -61,13 +42,13 @@ const FundingDialog = ({
       : 0,
   );
   const [groups, setGroups] = useState([]);
-  const [availableFunds, setAvailableFunds] = useState(fundingAmount);
+  const [availableFunds, setAvailableFunds] = useState(categoryTree.getFundingPoolAmount());
 
   useEffect(() => {
     const funded = getTotal(funding.categories);
-    setAvailableFunds(fundingAmount - funded);
+    setAvailableFunds(categoryTree.getFundingPoolAmount() - funded);
     setTotal(funded);
-  }, [funding]);
+  }, [categoryTree, funding, getTotal]);
 
   if (!plansInitialized) {
     setPlansInitialized(true);
@@ -135,9 +116,12 @@ const FundingDialog = ({
 
     const sum = getTotal(request.categories);
 
-    const index = request.categories.findIndex((c) => c.categoryId === fundingPoolId);
+    const index = request.categories.findIndex(
+      (c) => c.categoryId === categoryTree.systemIds.fundingPoolId,
+    );
+
     if (index === -1) {
-      request.categories.push({ categoryId: fundingPoolId, amount: -sum });
+      request.categories.push({ categoryId: categoryTree.systemIds.fundingPoolId, amount: -sum });
     }
     else {
       request.categories[index].amount = -sum;
@@ -241,7 +225,7 @@ const FundingDialog = ({
                   key={value.planId}
                   groups={groups}
                   plan={value.categories}
-                  systemGroupId={systemGroupId}
+                  systemGroupId={categoryTree.systemIds.systemGroupId}
                   onChange={(newFunding) => {
                     const newPlan = {
                       planId: value.planId,
@@ -272,9 +256,6 @@ FundingDialog.propTypes = {
   onExited: PropTypes.func.isRequired,
   title: PropTypes.string,
   show: PropTypes.bool.isRequired,
-  systemGroupId: PropTypes.number.isRequired,
-  fundingPoolId: PropTypes.number.isRequired,
-  fundingAmount: PropTypes.number.isRequired,
   transaction: PropTypes.shape(),
 };
 
@@ -283,4 +264,4 @@ FundingDialog.defaultProps = {
   transaction: null,
 };
 
-export default connect(mapStateToProps)(FundingDialog);
+export default FundingDialog;

@@ -13,3 +13,8 @@ database/*.sqlite
 # VSCode & Webstorm history directories
 .history
 .idea
+
+*.js.map
+blog/
+build/
+/test.log

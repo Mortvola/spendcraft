@@ -1,38 +1,10 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
-import { connect } from 'react-redux';
 import { Field, ErrorMessage } from 'formik';
 import CategorySplits from './CategorySplits';
 import useModal, { ModalDialog } from './Modal';
-import { receiveCategoryBalances, receiveTransactionCategories } from './redux/actions';
 import Amount from './Amount';
-
-function updateTransactionCategory(transaction, request, dispatch, successCallback) {
-  fetch(`/transaction/${transaction.id}`, {
-    method: 'PATCH',
-    headers:
-    {
-      'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(request),
-  })
-    .then(
-      (response) => response.json(),
-      (error) => console.log('fetch error: ', error),
-    )
-    .then((json) => {
-      const { splits, categories } = json;
-
-      dispatch(receiveCategoryBalances(categories));
-      dispatch(receiveTransactionCategories({ id: transaction.id, splits }));
-
-      if (successCallback) {
-        successCallback();
-      }
-    });
-}
 
 function validateSplits(splits) {
   let error;
@@ -54,7 +26,6 @@ const TransactionDialog = ({
   transaction,
   categoryId,
   unassignedId,
-  dispatch,
 }) => {
   const showBalances = categoryId === unassignedId;
 
@@ -99,7 +70,11 @@ const TransactionDialog = ({
       });
     }
 
-    updateTransactionCategory(transaction, { splits }, dispatch, onClose);
+    const errors = transaction.updateTransactionCategory({ splits });
+
+    if (!errors) {
+      onClose();
+    }
   };
 
   const renderBalanceHeaders = () => {
@@ -118,7 +93,7 @@ const TransactionDialog = ({
   return (
     <ModalDialog
       initialValues={{
-        splits: transaction.categories
+        splits: transaction.categories && transaction.categories.length > 0
           ? transaction.categories.map((c) => ({
             ...c,
             amount: c.amount * Math.sign(transaction.amount),
@@ -181,11 +156,11 @@ TransactionDialog.propTypes = {
   transaction: PropTypes.shape({
     amount: PropTypes.number.isRequired,
     categories: PropTypes.arrayOf(PropTypes.shape()),
+    updateTransactionCategory: PropTypes.func.isRequired,
   }).isRequired,
   onClose: PropTypes.func.isRequired,
   onExited: PropTypes.func.isRequired,
   title: PropTypes.string,
-  dispatch: PropTypes.func.isRequired,
   categoryId: PropTypes.number,
   unassignedId: PropTypes.number.isRequired,
 };
@@ -195,8 +170,7 @@ TransactionDialog.defaultProps = {
   categoryId: null,
 };
 
-const ConnectedTransactionDialog = connect()(TransactionDialog);
-const useTransactionDialog = () => useModal(ConnectedTransactionDialog);
+const useTransactionDialog = () => useModal(TransactionDialog);
 
-export default ConnectedTransactionDialog;
-export { updateTransactionCategory, useTransactionDialog };
+export default TransactionDialog;
+export { useTransactionDialog };

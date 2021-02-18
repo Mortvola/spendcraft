@@ -1,26 +1,22 @@
-import React from 'react';
-import { connect } from 'react-redux';
-import PropTypes from 'prop-types';
+import React, { useContext } from 'react';
+import { observer } from 'mobx-react-lite';
 import {
   Navbar,
-  Container,
   Nav,
   NavDropdown,
 } from 'react-bootstrap';
-import { navigate } from './redux/actions';
+import MobxStore from './state/mobxStore';
 
-const mapStateToProps = (state) => ({
-  username: state.user ? state.user.username : '',
-});
+const Menubar = () => {
+  const { uiState, user: { username } } = useContext(MobxStore);
 
-const Menubar = ({ username, dispatch }) => {
   const handleSelect = (eventKey) => {
-    dispatch(navigate(eventKey));
+    uiState.setView(eventKey);
   };
 
   return (
     <Navbar collapseOnSelect onSelect={handleSelect} expand="md">
-      <Navbar.Brand href="/">debertas</Navbar.Brand>
+      <Navbar.Brand href="/">Deber-tas</Navbar.Brand>
       <Navbar.Toggle />
       <Navbar.Collapse>
         <Nav className="mr-auto">
@@ -30,7 +26,7 @@ const Menubar = ({ username, dispatch }) => {
           <Nav.Link eventKey="reports">Reports</Nav.Link>
         </Nav>
         <Nav className="ml-auto">
-          <NavDropdown className="dropdown menubar-item" title={username}>
+          <NavDropdown className="dropdown menubar-item" title={username || ''}>
             <Nav.Link eventKey="account">Account</Nav.Link>
             <Nav.Link eventKey="logout">Logout</Nav.Link>
           </NavDropdown>
@@ -40,9 +36,4 @@ const Menubar = ({ username, dispatch }) => {
   );
 };
 
-Menubar.propTypes = {
-  username: PropTypes.string.isRequired,
-  dispatch: PropTypes.func.isRequired,
-};
-
-export default connect(mapStateToProps)(Menubar);
+export default observer(Menubar);

@@ -1,72 +1,11 @@
-import React from 'react';
-import { connect } from 'react-redux';
+import React, { useContext, useEffect, useState } from 'react';
+import { observer } from 'mobx-react-lite';
 import PropTypes from 'prop-types';
 import CategorySelectorGroup from './CategorySelectorGroup';
+import MobxStore from '../state/mobxStore';
 
-const filterCategories = (categories, filter) => {
-  let result = [];
-
-  if (filter !== '') {
-    result = categories.filter((c) => c.name.toLowerCase().includes(filter));
-  }
-  else {
-    // No filter. Allow all of the categories.
-    result = categories;
-  }
-
-  return result;
-};
-
-const filterGroup = (group, parts) => {
-  let categories = [];
-
-  if (parts.length === 1) {
-    // No colon. Filter can be applied to both group and categories.
-    if (group.name.toLowerCase().includes(parts[0])) {
-      categories = group.categories;
-    }
-    else {
-      categories = filterCategories(group.categories, parts[0]);
-    }
-  }
-  else if (parts.length === 2) {
-    // If the group contains the first part of the filter then
-    // consider adding the categories
-    if (parts[0] === '' || group.name.toLowerCase().includes(parts[0])) {
-      categories = filterCategories(group.categories, parts[1]);
-    }
-  }
-
-  return categories;
-};
-
-const mapStateToProps = (state, { filter }) => {
-  if (filter) {
-    const parts = filter.toLowerCase().split(':');
-
-    const filteredGroups = [];
-
-    state.categoryTree.groups.forEach((group) => {
-      const categories = filterGroup(group, parts);
-
-      if (categories.length > 0) {
-        filteredGroups.push({ ...group, categories });
-      }
-    });
-
-    return {
-      groups: state.categoryTree.groups,
-      filteredGroups,
-    };
-  }
-
-  return {
-    filteredGroups: state.categoryTree.groups,
-  };
-};
-
-const CategorySelector = React.forwardRef(({
-  filteredGroups,
+// eslint-disable-next-line react/display-name
+const CategorySelector = ({
   selectedGroup,
   selectedCategory,
   left,
@@ -74,9 +13,70 @@ const CategorySelector = React.forwardRef(({
   width,
   height,
   onSelect,
+  filter,
 }, forwardRef) => {
-  let style = { display: 'none' };
+  const { categoryTree } = useContext(MobxStore);
+  const [filteredGroups, setFilteredGroups] = useState(null);
 
+  useEffect(() => {
+    if (filter) {
+      const filterCategories = (categories) => {
+        let result = [];
+
+        if (filter !== '') {
+          result = categories.filter((c) => c.name.toLowerCase().includes(filter));
+        }
+        else {
+          // No filter. Allow all of the categories.
+          result = categories;
+        }
+
+        return result;
+      };
+
+      const filterGroup = (group, parts) => {
+        let categories = [];
+
+        if (parts.length === 1) {
+          // No colon. Filter can be applied to both group and categories.
+          if (group.name.toLowerCase().includes(parts[0])) {
+            categories = group.categories;
+          }
+          else {
+            categories = filterCategories(group.categories, parts[0]);
+          }
+        }
+        else if (parts.length === 2) {
+          // If the group contains the first part of the filter then
+          // consider adding the categories
+          if (parts[0] === '' || group.name.toLowerCase().includes(parts[0])) {
+            categories = filterCategories(group.categories, parts[1]);
+          }
+        }
+
+        return categories;
+      };
+
+      const parts = filter.toLowerCase().split(':');
+
+      const groups = [];
+
+      categoryTree.groups.forEach((group) => {
+        const categories = filterGroup(group, parts);
+
+        if (categories.length > 0) {
+          groups.push({ ...group, categories });
+        }
+      });
+
+      setFilteredGroups(groups);
+    }
+    else {
+      setFilteredGroups(categoryTree.groups);
+    }
+  }, [categoryTree.groups, filter]);
+
+  let style = { display: 'none' };
   style = {
     left, top, width, height,
   };
@@ -103,7 +103,7 @@ const CategorySelector = React.forwardRef(({
       }
     </div>
   );
-});
+};
 
 CategorySelector.propTypes = {
   left: PropTypes.number,
@@ -111,9 +111,9 @@ CategorySelector.propTypes = {
   width: PropTypes.number,
   height: PropTypes.number,
   onSelect: PropTypes.func,
-  filteredGroups: PropTypes.arrayOf(PropTypes.shape()),
   selectedGroup: PropTypes.shape(),
   selectedCategory: PropTypes.shape(),
+  filter: PropTypes.string,
 };
 
 CategorySelector.defaultProps = {
@@ -122,9 +122,9 @@ CategorySelector.defaultProps = {
   width: null,
   height: null,
   onSelect: null,
-  filteredGroups: null,
   selectedGroup: null,
   selectedCategory: null,
+  filter: null,
 };
 
-export default connect(mapStateToProps, null, null, { forwardRef: true })(CategorySelector);
+export default observer(CategorySelector, { forwardRef: true });
