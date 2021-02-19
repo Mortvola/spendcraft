@@ -1,8 +1,14 @@
 import { makeAutoObservable, runInAction } from 'mobx';
+import { getBody } from './Transports';
 
 class Reports {
-  constructor(store) {
-    this.reportType = null;
+  reportType: string | null = null;
+
+  data: unknown | null = null;
+
+  store: unknown;
+
+  constructor(store: unknown) {
     this.data = null;
 
     makeAutoObservable(this);
@@ -10,13 +16,13 @@ class Reports {
     this.store = store;
   }
 
-  async loadReport(reportType) {
+  async loadReport(reportType: string): Promise<void> {
     switch (reportType) {
       case 'netWorth': {
         const response = await fetch('/reports/networth');
 
         if (response.ok) {
-          const body = await response.json();
+          const body = await getBody(response);
 
           runInAction(() => {
             this.reportType = reportType;

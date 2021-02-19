@@ -7,8 +7,25 @@ import Reports from './Reports';
 import UIState from './UIState';
 import User from './User';
 import Plans from './Plans';
+import { AccountsInterface, StoreInterface } from './State';
 
-class Store {
+class Store implements StoreInterface {
+  user: User;
+
+  categoryTree: CategoryTree;
+
+  register: Register;
+
+  accounts: AccountsInterface;
+
+  balances: Balances;
+
+  uiState: UIState;
+
+  reports: Reports;
+
+  plans: Plans;
+
   constructor() {
     this.user = new User(this);
     this.categoryTree = new CategoryTree(this);

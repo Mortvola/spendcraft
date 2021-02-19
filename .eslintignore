@@ -8,4 +8,5 @@ node_modules/
 /public/welcome.js
 /public/js
 /build
+/client-build
 /blog

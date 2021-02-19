@@ -17,4 +17,5 @@ database/*.sqlite
 *.js.map
 blog/
 build/
+client-build/
 /test.log

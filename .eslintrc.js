@@ -39,11 +39,18 @@ module.exports = {
     "jsx-a11y/no-static-element-interactions": ["off"],
     "no-param-reassign": ["error", { "props": false }],
     "jsx-a11y/label-has-associated-control": ["off"],
+    'import/extensions': [
+      "error",
+      "ignorePackages",
+      {
+        "js": "never",
+        "jsx": "never",
+        "ts": "never",
+        "tsx": "never"
+      }
+    ],
   },
   settings: {
-    'import/extensions': [
-      '.js', '.jsx', '.ts', '.tsx'
-    ],
     'import/resolver': {
       typescript: {
         project: [

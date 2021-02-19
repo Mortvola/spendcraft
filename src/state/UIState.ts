@@ -1,29 +1,33 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 
 class UIState {
-  constructor(store) {
-    this.view = 'home';
-    this.selectedCategoryId = null;
-    this.selectedPlanId = null;
+  view = 'home';
 
+  selectedCategoryId: number | null = null;
+
+  selectedPlanId: number | null = null;
+
+  store: unknown;
+
+  constructor(store: unknown) {
     makeAutoObservable(this);
 
     this.store = store;
   }
 
-  setView(view) {
+  setView(view: string): void {
     runInAction(() => {
       this.view = view;
     });
   }
 
-  selectCategory(categoryId) {
+  selectCategory(categoryId: number): void {
     runInAction(() => {
       this.selectedCategoryId = categoryId;
     });
   }
 
-  selectPlanId(planId) {
+  selectPlanId(planId: number): void {
     runInAction(() => {
       this.selectedPlanId = planId;
     });

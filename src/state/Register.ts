@@ -1,31 +1,45 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import Transaction from './Transaction';
+import {
+  isAccountTransactionsResponse,
+  CategoryProps,
+  TransactionCategoryInterface,
+  isCategoryTransactionsResponse,
+} from './ResponseTypes';
+import {
+  RegisterInterface, StoreInterface,
+} from './State';
+import { getBody } from './Transports';
 
-class Register {
-  constructor(store) {
-    this.categoryId = null;
-    this.account = null;
-    this.fetching = false;
-    this.transactions = [];
-    this.pending = [];
-    this.balance = 0;
+class Register implements RegisterInterface {
+  categoryId: number | null = null;
 
+  account: Account | null = null;
+
+  fetching = false;
+
+  transactions: Array<Transaction> = [];
+
+  pending: Array<unknown> = [];
+
+  balance = 0;
+
+  store: StoreInterface;
+
+  constructor(store: StoreInterface) {
     makeAutoObservable(this);
 
     this.store = store;
   }
 
-  async loadCategoryTransactions(categoryId) {
+  async loadCategoryTransactions(categoryId: number): Promise<void> {
     if (categoryId !== this.categoryId) {
       this.fetching = true;
       const response = await fetch(`/category/${categoryId}/transactions`);
 
-      let body = null;
-      if (/^application\/json/.test(response.headers.get('Content-Type'))) {
-        body = await response.json();
-      }
+      const body = await getBody(response);
 
-      if (response.ok && body) {
+      if (response.ok && isCategoryTransactionsResponse(body)) {
         body.transactions.sort((a, b) => {
           if (a.date < b.date) {
             return 1;
@@ -49,13 +63,15 @@ class Register {
         runInAction(() => {
           this.categoryId = categoryId;
           this.account = null;
-          this.balance = body.balance;
-          this.pending = body.pending;
-          this.fetching = false;
+          if (body !== null) {
+            this.balance = body.balance;
+            this.pending = body.pending;
+            this.transactions = body.transactions.map((t) => (
+              new Transaction(this.store, t)
+            ));
+          }
 
-          this.transactions = body.transactions.map((t) => (
-            new Transaction(this.store, t)
-          ));
+          this.fetching = false;
         });
       }
       else {
@@ -64,17 +80,14 @@ class Register {
     }
   }
 
-  async loadAccountTransactions(account) {
+  async loadAccountTransactions(account: Account): Promise<void> {
     if (account !== this.account) {
       this.fetching = true;
       const response = await fetch(`/account/${account.id}/transactions`);
 
-      let body = null;
-      if (/^application\/json/.test(response.headers.get('Content-Type'))) {
-        body = await response.json();
-      }
+      const body = await getBody(response);
 
-      if (response.ok && body) {
+      if (response.ok && isAccountTransactionsResponse(body)) {
         body.transactions.sort((a, b) => {
           if (a.date < b.date) {
             return 1;
@@ -98,12 +111,15 @@ class Register {
         runInAction(() => {
           this.categoryId = null;
           this.account = account;
-          this.balance = body.balance;
-          this.pending = body.pending;
 
-          this.transactions = body.transactions.map((t) => (
-            new Transaction(this.store, t)
-          ));
+          if (body !== null) {
+            this.balance = body.balance;
+            this.pending = body.pending;
+
+            this.transactions = body.transactions.map((t) => (
+              new Transaction(this.store, t)
+            ));
+          }
 
           this.fetching = false;
         });
@@ -114,7 +130,11 @@ class Register {
     }
   }
 
-  updateTransactionCategories(transactionId, splits, balances) {
+  updateTransactionCategories(
+    transactionId: number,
+    splits: Array<TransactionCategoryInterface>,
+    categories: Array<CategoryProps>,
+  ): void {
     const index = this.transactions.findIndex((t) => t.id === transactionId);
 
     if (index !== -1) {
@@ -134,10 +154,10 @@ class Register {
     }
 
     if (this.categoryId !== null) {
-      const balance = balances.find((b) => b.id === this.categoryId);
+      const category = categories.find((c) => c.id === this.categoryId);
 
-      if (balance) {
-        this.balance = balance.amount;
+      if (category) {
+        this.balance = category.balance;
       }
     }
   }

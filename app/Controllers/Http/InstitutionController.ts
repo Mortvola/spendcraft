@@ -365,7 +365,7 @@ class InstitutionController {
 
     type CatBalance = {
       id: number,
-      amount: number,
+      balance: number,
     };
 
     type Result = {
@@ -399,7 +399,7 @@ class InstitutionController {
           trx, split.categoryId, split.amount,
         );
 
-        result.categories.push({ id: cat.category.id, amount: cat.amount });
+        result.categories.push({ id: cat.category.id, balance: cat.amount });
       }));
 
       await trx.from('transaction_categories').where('transaction_id', request.params().txId).delete();
@@ -413,7 +413,7 @@ class InstitutionController {
       const cat = await InstitutionController
         .subtractFromCategoryBalance(trx, unassigned.id, trans[0].amount);
 
-      result.categories.push({ id: cat.category.id, amount: cat.amount });
+      result.categories.push({ id: cat.category.id, balance: cat.amount });
     }
 
     if (request.input('splits').length > 0) {
@@ -438,10 +438,10 @@ class InstitutionController {
         // If the category is already in the array then simply update the amount.
         // Otherwise, add the category and amount to the array.
         if (index !== -1) {
-          result.categories[index].amount = cat.amount;
+          result.categories[index].balance = cat.amount;
         }
         else {
-          result.categories.push({ id: cat.category.id, amount: cat.amount });
+          result.categories.push({ id: cat.category.id, balance: cat.amount });
         }
       }));
     }
