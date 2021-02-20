@@ -1,9 +1,9 @@
-import { makeAutoObservable } from 'mobx';
+import { makeAutoObservable, runInAction } from 'mobx';
 import {
-  TransactionProps, TransactionCategoryInterface,
+  TransactionProps,
   isUpdateTransactionCategoryResponse,
 } from './ResponseTypes';
-import { StoreInterface } from './State';
+import { StoreInterface, TransactionCategoryInterface } from './State';
 import { getBody, patchJSON } from './Transports';
 
 class Transaction {
@@ -34,14 +34,16 @@ class Transaction {
     makeAutoObservable(this);
   }
 
-  async updateTransactionCategory(request: unknown): Promise<null> {
-    const response = await patchJSON(`/transaction/${this.id}`, request);
+  async updateTransactionCategory(categories: Array<TransactionCategoryInterface>): Promise<null> {
+    const response = await patchJSON(`/transaction/${this.id}`, { splits: categories });
 
     const body = await getBody(response);
 
     if (isUpdateTransactionCategoryResponse(body)) {
-      this.store.categoryTree.updateBalances(body.categories);
-      this.store.register.updateTransactionCategories(this.id, body.splits, body.categories);
+      runInAction(() => {
+        this.store.categoryTree.updateBalances(body.categories);
+        this.store.register.updateTransactionCategories(this.id, body.splits, body.categories);
+      });
 
       return null;
     }

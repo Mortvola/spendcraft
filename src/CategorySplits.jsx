@@ -3,7 +3,16 @@ import PropTypes from 'prop-types';
 import CategorySplitItem from './CategorySplitItem';
 import MobxStore from './state/mobxStore';
 
-let nextId = -1;
+function* creatNextIdGen() {
+  let id = -1;
+  for (;;) {
+    yield id;
+    id += -1;
+  }
+}
+
+const nextIdGen = creatNextIdGen();
+const nextId = () => nextIdGen.next().value;
 
 const CategorySplits = ({
   splits,
@@ -12,20 +21,24 @@ const CategorySplits = ({
   credit,
   showBalances,
 }) => {
-  const { categoryTree: { groups } } = useContext(MobxStore);
-  const [editedSplits, setEditedSplits] = useState(splits.map((s) => {
-    if (s.id === undefined) {
-      const id = nextId;
-      nextId -= 1;
+  const { categoryTree } = useContext(MobxStore);
+  const [editedSplits, setEditedSplits] = useState(
+    splits && splits.length > 0
+      ? splits.map((s) => {
+        if (s.id === undefined) {
+          return {
+            ...s,
+            id: nextId(),
+          };
+        }
 
-      return {
-        ...s,
-        id,
-      };
-    }
-
-    return s;
-  }));
+        return {
+          ...s,
+          amount: (credit ? s.amount : -s.amount),
+        };
+      })
+      : [{ id: nextId(), amount: total }],
+  );
 
   const handleDeltaChange = (id, amount, delta) => {
     const splitIndex = editedSplits.findIndex((s) => s.id === id);
@@ -65,8 +78,7 @@ const CategorySplits = ({
       const amount = total - sum;
 
       const newSplits = editedSplits.slice();
-      newSplits.splice(index + 1, 0, { id: nextId, amount });
-      nextId -= 1;
+      newSplits.splice(index + 1, 0, { id: nextId(), amount });
 
       setEditedSplits(newSplits);
       onChange(newSplits, -amount);
@@ -89,20 +101,13 @@ const CategorySplits = ({
   };
 
   const getCategoryBalance = (categoryId) => {
-    let balance = null;
+    const category = categoryTree.getCategory(categoryId);
 
-    groups.find((group) => {
-      const category = group.categories.find((cat) => cat.id === categoryId);
+    if (category) {
+      return category.balance;
+    }
 
-      if (category) {
-        balance = category.amount;
-        return true;
-      }
-
-      return false;
-    });
-
-    return balance;
+    return 0;
   };
 
   return (
@@ -129,13 +134,14 @@ const CategorySplits = ({
 
 CategorySplits.propTypes = {
   onChange: PropTypes.func.isRequired,
-  splits: PropTypes.arrayOf(PropTypes.shape()).isRequired,
+  splits: PropTypes.arrayOf(PropTypes.shape()),
   total: PropTypes.number.isRequired,
   credit: PropTypes.bool,
   showBalances: PropTypes.bool,
 };
 
 CategorySplits.defaultProps = {
+  splits: [],
   showBalances: false,
   credit: false,
 };

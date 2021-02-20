@@ -1,14 +1,15 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
-import 'regenerator-runtime/runtime';
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Field, ErrorMessage } from 'formik';
-import { ModalDialog } from '../Modal';
+import {
+  Formik, Form, Field, ErrorMessage,
+  useFormikContext,
+} from 'formik';
+import { Modal, Button, ModalBody } from 'react-bootstrap';
+import useModal from '../useModal';
 
 const CategoryDialog = ({
-  onClose,
-  onExited,
-  title,
+  onHide,
   show,
   category,
   group,
@@ -21,7 +22,7 @@ const CategoryDialog = ({
       errors = await category.update(group.id, values.name);
     }
     else {
-      errors = await group.addCategory({ groupId: group.id, name: values.name });
+      errors = await group.addCategory(group.id, values.name);
     }
 
     if (errors && errors.length > 0) {
@@ -30,7 +31,7 @@ const CategoryDialog = ({
       setErrors({ name: errors[0].title });
     }
     else {
-      onClose();
+      onHide();
     }
   };
 
@@ -50,44 +51,75 @@ const CategoryDialog = ({
     const errors = await group.deleteCategory(group.id, category.id);
 
     if (errors && errors.length > 0) {
-      // Display the first error
-      // TODO: Display all the errors?
       setErrors({ name: errors[0].title });
     }
     else {
-      onClose();
+      onHide();
     }
   };
 
+  const Header = () => {
+    let title = 'Add Category';
+    if (category) {
+      title = 'Edit Category';
+    }
+
+    return (
+      <Modal.Header closeButton>
+        <h4 id="modalTitle" className="modal-title">{title}</h4>
+      </Modal.Header>
+    );
+  };
+
+  const DeleteButton = () => {
+    const bag = useFormikContext();
+
+    if (category) {
+      return (<Button variant="danger" onClick={() => handleDelete(bag)}>Delete</Button>);
+    }
+
+    return <div />;
+  };
+
+  const Footer = () => (
+    <Modal.Footer>
+      <DeleteButton />
+      <div />
+      <Button variant="secondary" onClick={onHide}>Cancel</Button>
+      <Button variant="primary" type="submit">Save</Button>
+    </Modal.Footer>
+  );
+
   return (
-    <ModalDialog
-      initialValues={{
-        name: category && category.name ? category.name : '',
-      }}
-      validate={handleValidate}
-      onSubmit={handleSubmit}
+    <Modal
       show={show}
-      onDelete={category
-        ? handleDelete
-        : undefined}
-      onClose={onClose}
-      onExited={onExited}
-      title={title}
-      form={() => (
-        <>
-          <label>
-            Category:
-            <Field
-              type="text"
-              className="form-control"
-              name="name"
-            />
-          </label>
-          <br />
-          <ErrorMessage name="name" />
-        </>
-      )}
-    />
+      onHide={onHide}
+    >
+      <Formik
+        initialValues={{
+          name: category && category.name ? category.name : '',
+        }}
+        validate={handleValidate}
+        onSubmit={handleSubmit}
+      >
+        <Form id="modalForm" className="scrollable-form">
+          <Header />
+          <ModalBody>
+            <label>
+              Category:
+              <Field
+                type="text"
+                className="form-control"
+                name="name"
+              />
+            </label>
+            <br />
+            <ErrorMessage name="name" />
+          </ModalBody>
+          <Footer />
+        </Form>
+      </Formik>
+    </Modal>
   );
 };
 
@@ -98,14 +130,14 @@ CategoryDialog.propTypes = {
     update: PropTypes.func.isRequired,
   }),
   group: PropTypes.shape().isRequired,
-  onClose: PropTypes.func.isRequired,
-  onExited: PropTypes.func.isRequired,
-  title: PropTypes.string.isRequired,
+  onHide: PropTypes.func.isRequired,
   show: PropTypes.bool.isRequired,
 };
 
 CategoryDialog.defaultProps = {
   category: undefined,
 };
+
+export const useCategoryDialog = () => useModal(CategoryDialog);
 
 export default CategoryDialog;

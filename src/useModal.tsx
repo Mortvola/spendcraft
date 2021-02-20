@@ -1,9 +1,20 @@
 import React, { useState } from 'react';
 
-const useModal = (
-  Dialog,
-  onSave,
-) => {
+type ShowCallback = (() => void);
+type OnSave = (() => void);
+type OnHide = (() => void);
+type OnConfirm = (() => void);
+
+interface DialogProps {
+  show: boolean,
+  onHide: OnHide,
+  onConfirm: OnConfirm,
+}
+
+function useModal<T>(
+  Dialog: React.FC<T>,
+  onSave?: OnSave,
+): Array<React.FC<DialogProps & T> | ShowCallback> {
   const [show, setShow] = useState(false);
 
   const handleHide = () => {
@@ -18,7 +29,7 @@ const useModal = (
     handleHide();
   };
 
-  const createDialog = ({ ...props }) => {
+  const createDialog = (props: DialogProps & T) => {
     if (show) {
       return (
         <Dialog
@@ -37,6 +48,6 @@ const useModal = (
     createDialog,
     () => setShow(true),
   ];
-};
+}
 
 export default useModal;

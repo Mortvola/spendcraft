@@ -1,5 +1,4 @@
 import Reports from './Reports';
-import { TransactionCategoryInterface } from './ResponseTypes';
 import UIState from './UIState';
 import User from './User';
 
@@ -17,6 +16,12 @@ export interface AccountsInterface {
 
 export interface CategoryTreeInterface {
   updateBalances(balances: Array<CategoryProps>): void;
+}
+
+export interface TransactionCategoryInterface {
+  categoryId: number;
+
+  amount: number;
 }
 
 export interface RegisterInterface {

@@ -4,17 +4,18 @@ import React, {
   useState, useEffect, useContext, useCallback,
 } from 'react';
 import PropTypes from 'prop-types';
-import { Field, ErrorMessage } from 'formik';
-import { ModalDialog } from '../Modal';
+import { Modal, Button, ModalBody } from 'react-bootstrap';
+import {
+  Formik, Form, Field, ErrorMessage,
+} from 'formik';
 import Funding from './Funding';
 import Amount from '../Amount';
 import MobxStore from '../state/mobxStore';
+import useModal from '../useModal';
 
 const FundingDialog = ({
   transaction,
-  onClose,
-  onExited,
-  title,
+  onHide,
   show,
 }) => {
   const { categoryTree } = useContext(MobxStore);
@@ -143,7 +144,7 @@ const FundingDialog = ({
       body: JSON.stringify(request),
     })
       .then(() => {
-        onClose();
+        onHide();
       });
   };
 
@@ -170,98 +171,116 @@ const FundingDialog = ({
     return errors;
   };
 
+  const Header = () => (
+    <Modal.Header closeButton>
+      <h4 id="modalTitle" className="modal-title">Fund Categories</h4>
+    </Modal.Header>
+  );
+
+  const Footer = () => (
+    <Modal.Footer>
+      <div />
+      <div />
+      <Button variant="secondary" onClick={onHide}>Cancel</Button>
+      <Button variant="primary" type="submit">Save</Button>
+    </Modal.Footer>
+  );
+
   return (
-    <ModalDialog
-      initialValues={{
-        date: transaction ? transaction.date : '',
-        funding,
-      }}
-      validate={handleValidate}
-      onSubmit={handleSubmit}
+    <Modal
       show={show}
-      onClose={onClose}
-      onExited={onExited}
-      title={title}
+      onHide={onHide}
       size="lg"
       scrollable
-      form={() => (
-        <>
-          <div className="funding-header">
-            <label>
-              Plan
-              <Field name="plans">
-                {({ form: { resetForm, values } }) => (
-                  <select
-                    value={selectedPlan}
-                    onChange={(event) => (
-                      handlePlanChange(event, resetForm, values)
-                    )}
-                  >
-                    {populatePlans()}
-                  </select>
+    >
+      <Formik
+        initialValues={{
+          date: transaction ? transaction.date : '',
+          funding,
+        }}
+        validate={handleValidate}
+        onSubmit={handleSubmit}
+      >
+        <Form id="modalForm" className="scrollable-form">
+          <Header />
+          <ModalBody>
+            <div className="funding-header">
+              <label>
+                Plan
+                <Field name="plans">
+                  {({ form: { resetForm, values } }) => (
+                    <select
+                      value={selectedPlan}
+                      onChange={(event) => (
+                        handlePlanChange(event, resetForm, values)
+                      )}
+                    >
+                      {populatePlans()}
+                    </select>
+                  )}
+                </Field>
+              </label>
+              <label>
+                Date
+                <Field type="date" name="date" />
+              </label>
+              <label>
+                Available Funds
+                <Amount amount={availableFunds} />
+              </label>
+            </div>
+            <ErrorMessage name="date" />
+            <div className="cat-fund-table">
+              <div className="fund-list-item cat-fund-title">
+                <div className="fund-list-cat-name">Category</div>
+                <div className="dollar-amount fund-list-amt">Current</div>
+                <div className="dollar-amount">Funding</div>
+                <div className="dollar-amount fund-list-amt">Balance</div>
+              </div>
+              <Field name="funding">
+                {({ field: { name, value }, form: { setFieldValue } }) => (
+                  <Funding
+                    key={value.planId}
+                    groups={groups}
+                    plan={value.categories}
+                    systemGroupId={categoryTree.systemIds.systemGroupId}
+                    onChange={(newFunding) => {
+                      const newPlan = {
+                        planId: value.planId,
+                        categories: newFunding,
+                      };
+                      handleFundingChange(newPlan);
+                      setFieldValue(name, newPlan, false);
+                    }}
+                  />
                 )}
               </Field>
-            </label>
-            <label>
-              Date
-              <Field type="date" name="date" />
-            </label>
-            <label>
-              Available Funds
-              <Amount amount={availableFunds} />
-            </label>
-          </div>
-          <ErrorMessage name="date" />
-          <div className="cat-fund-table">
-            <div className="fund-list-item cat-fund-title">
-              <div className="fund-list-cat-name">Category</div>
-              <div className="dollar-amount fund-list-amt">Current</div>
-              <div className="dollar-amount">Funding</div>
-              <div className="dollar-amount fund-list-amt">Balance</div>
+              <ErrorMessage name="funding" />
             </div>
-            <Field name="funding">
-              {({ field: { name, value }, form: { setFieldValue } }) => (
-                <Funding
-                  key={value.planId}
-                  groups={groups}
-                  plan={value.categories}
-                  systemGroupId={categoryTree.systemIds.systemGroupId}
-                  onChange={(newFunding) => {
-                    const newPlan = {
-                      planId: value.planId,
-                      categories: newFunding,
-                    };
-                    handleFundingChange(newPlan);
-                    setFieldValue(name, newPlan, false);
-                  }}
-                />
-              )}
-            </Field>
-            <ErrorMessage name="funding" />
-          </div>
-          <div className="fund-list-item cat-fund-title">
-            <div className="fund-list-cat-name" />
-            <div className="dollar-amount fund-list-amt">Total</div>
-            <div className="dollar-amount"><Amount amount={total} /></div>
-            <div className="dollar-amount fund-list-amt" />
-          </div>
-        </>
-      )}
-    />
+            <div className="fund-list-item cat-fund-title">
+              <div className="fund-list-cat-name" />
+              <div className="dollar-amount fund-list-amt">Total</div>
+              <div className="dollar-amount"><Amount amount={total} /></div>
+              <div className="dollar-amount fund-list-amt" />
+            </div>
+          </ModalBody>
+          <Footer />
+        </Form>
+      </Formik>
+    </Modal>
   );
 };
 
 FundingDialog.propTypes = {
-  onClose: PropTypes.func.isRequired,
-  onExited: PropTypes.func.isRequired,
-  title: PropTypes.string,
+  onHide: PropTypes.func.isRequired,
   show: PropTypes.bool.isRequired,
   transaction: PropTypes.shape(),
 };
 
 FundingDialog.defaultProps = {
-  title: 'Fund Categories',
   transaction: null,
 };
+
+export const useFundingDialog = () => useModal(FundingDialog);
 
 export default FundingDialog;

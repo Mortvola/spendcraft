@@ -94,9 +94,16 @@ class CategoryController {
     }
     await request.validate(AddGroupValidator);
 
-    const id = await Database.insertQuery().table('groups').insert({ name: request.input('name'), user_id: user.id }).returning('id');
+    const id = await Database.insertQuery().table('groups')
+      .insert({ name: request.input('name'), user_id: user.id })
+      .returning('id');
 
-    return { id: id[0], name: request.input('name') };
+    return {
+      id: id[0],
+      name: request.input('name'),
+      system: false,
+      categories: [],
+    };
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -116,7 +123,7 @@ class CategoryController {
       .where({ id: request.params().groupId, user_id: user.id })
       .update({ name: request.input('name') });
 
-    return { name: request.input('name') };
+    return { id: request.params().groupId, name: request.input('name') };
   }
 
   // eslint-disable-next-line class-methods-use-this

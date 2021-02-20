@@ -3,11 +3,10 @@ import Transaction from './Transaction';
 import {
   isAccountTransactionsResponse,
   CategoryProps,
-  TransactionCategoryInterface,
   isCategoryTransactionsResponse,
 } from './ResponseTypes';
 import {
-  RegisterInterface, StoreInterface,
+  RegisterInterface, StoreInterface, TransactionCategoryInterface,
 } from './State';
 import { getBody } from './Transports';
 

@@ -39,6 +39,7 @@ module.exports = {
     "jsx-a11y/no-static-element-interactions": ["off"],
     "no-param-reassign": ["error", { "props": false }],
     "jsx-a11y/label-has-associated-control": ["off"],
+    "react/jsx-filename-extension": [1, { "extensions": [".tsx", ".jsx"] }],
     'import/extensions': [
       "error",
       "ignorePackages",

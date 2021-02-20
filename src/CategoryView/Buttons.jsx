@@ -1,24 +1,20 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { ModalLauncher } from '../Modal';
 import IconButton from '../IconButton';
-import CategoryDialog from './CategoryDialog';
-import GroupDialog from './GroupDialog';
+import { useCategoryDialog } from './CategoryDialog';
+import { useGroupDialog } from './GroupDialog';
 
 function Buttons({ group }) {
+  const [GroupDialog, showGroupDialog] = useGroupDialog();
+  const [CategoryDialog, showCategoryDialog] = useCategoryDialog();
+
   if (!group.system) {
     return (
       <>
-        <ModalLauncher
-          launcher={(props) => (<IconButton icon="plus" {...props} />)}
-          title="Add Category"
-          dialog={(props) => (<CategoryDialog group={group} {...props} />)}
-        />
-        <ModalLauncher
-          launcher={(props) => (<IconButton icon="edit" {...props} />)}
-          title="Edit Group"
-          dialog={(props) => (<GroupDialog group={group} {...props} />)}
-        />
+        <IconButton icon="plus" onClick={showCategoryDialog} />
+        <CategoryDialog group={group} />
+        <IconButton icon="edit" onClick={showGroupDialog} />
+        <GroupDialog group={group} />
       </>
     );
   }

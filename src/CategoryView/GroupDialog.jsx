@@ -1,14 +1,16 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 import React, { useContext } from 'react';
 import PropTypes from 'prop-types';
-import { Field, ErrorMessage } from 'formik';
-import { ModalDialog } from '../Modal';
+import { Modal, Button, ModalBody } from 'react-bootstrap';
+import {
+  Formik, Form, Field, ErrorMessage,
+  useFormikContext,
+} from 'formik';
 import MobxStore from '../state/mobxStore';
+import useModal from '../useModal';
 
 const GroupDialog = ({
-  onClose,
-  onExited,
-  title,
+  onHide,
   show,
   group,
 }) => {
@@ -31,7 +33,7 @@ const GroupDialog = ({
       setErrors({ name: errors[0].title });
     }
     else {
-      onClose();
+      onHide();
     }
   };
 
@@ -51,45 +53,76 @@ const GroupDialog = ({
     const errors = await categoryTree.deleteGroup(group.id);
 
     if (errors && errors.length > 0) {
-      // Display the first error
-      // TODO: Display all the errors?
       setTouched({ name: true }, false);
       setErrors({ name: errors[0].title });
     }
     else {
-      onClose();
+      onHide();
     }
   };
 
+  const Header = () => {
+    let title = 'Add Group';
+    if (group) {
+      title = 'Edit Group';
+    }
+
+    return (
+      <Modal.Header closeButton>
+        <h4 id="modalTitle" className="modal-title">{title}</h4>
+      </Modal.Header>
+    );
+  };
+
+  const DeleteButton = () => {
+    const bag = useFormikContext();
+
+    if (group) {
+      return (<Button variant="danger" onClick={() => handleDelete(bag)}>Delete</Button>);
+    }
+
+    return <div />;
+  };
+
+  const Footer = () => (
+    <Modal.Footer>
+      <DeleteButton />
+      <div />
+      <Button variant="secondary" onClick={onHide}>Cancel</Button>
+      <Button variant="primary" type="submit">Save</Button>
+    </Modal.Footer>
+  );
+
   return (
-    <ModalDialog
-      initialValues={{
-        name: group && group.name ? group.name : '',
-      }}
-      validate={handleValidate}
-      onSubmit={handleSubmit}
+    <Modal
       show={show}
-      onDelete={group
-        ? handleDelete
-        : undefined}
-      onClose={onClose}
-      onExited={onExited}
-      title={title}
-      form={() => (
-        <>
-          <label>
-            Group:
-            <Field
-              type="text"
-              className="form-control"
-              name="name"
-            />
-          </label>
-          <br />
-          <ErrorMessage name="name" />
-        </>
-      )}
-    />
+      onHide={onHide}
+    >
+      <Formik
+        initialValues={{
+          name: group && group.name ? group.name : '',
+        }}
+        validate={handleValidate}
+        onSubmit={handleSubmit}
+      >
+        <Form id="modalForm" className="scrollable-form">
+          <Header />
+          <ModalBody>
+            <label>
+              Group:
+              <Field
+                type="text"
+                className="form-control"
+                name="name"
+              />
+            </label>
+            <br />
+            <ErrorMessage name="name" />
+          </ModalBody>
+          <Footer />
+        </Form>
+      </Formik>
+    </Modal>
   );
 };
 
@@ -99,14 +132,14 @@ GroupDialog.propTypes = {
     name: PropTypes.string.isRequired,
     update: PropTypes.func.isRequired,
   }),
-  onClose: PropTypes.func.isRequired,
-  onExited: PropTypes.func.isRequired,
-  title: PropTypes.string.isRequired,
+  onHide: PropTypes.func.isRequired,
   show: PropTypes.bool.isRequired,
 };
 
 GroupDialog.defaultProps = {
   group: undefined,
 };
+
+export const useGroupDialog = () => useModal(GroupDialog);
 
 export default GroupDialog;

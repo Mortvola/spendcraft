@@ -1,23 +1,24 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { Field, ErrorMessage } from 'formik';
-import { ModalDialog } from '../Modal';
+import { Modal, Button, ModalBody } from 'react-bootstrap';
+import {
+  Formik, Form, Field, ErrorMessage,
+} from 'formik';
 import CategoryRebalance from './CategoryRebalance';
 import Amount from '../Amount';
+import useModal from '../useModal';
 
 const RebalanceDialog = ({
-  onClose,
-  onExited,
-  title,
-  show,
   transaction,
+  show,
+  onHide,
 }) => {
   const [categoryTree, setCategoryTree] = useState(null);
   const [unassigned, setUnassigned] = useState(0);
   const [date, setDate] = useState(transaction ? transaction.date : '');
 
-  const fetchCategoryBalances = (fetchDate) => {
+  const fetchCategoryBalances = useCallback((fetchDate) => {
     if (fetchDate !== '') {
       const params = { date: fetchDate };
       if (transaction) {
@@ -42,11 +43,11 @@ const RebalanceDialog = ({
           },
         );
     }
-  };
+  }, [transaction]);
 
   useEffect(() => {
     fetchCategoryBalances(date);
-  }, [date]);
+  }, [date, fetchCategoryBalances]);
 
   const handleDateChange = (event) => {
     setDate(event.target.value);
@@ -96,80 +97,97 @@ const RebalanceDialog = ({
       body: JSON.stringify({ ...values, type: 3 }),
     })
       .then(
-        () => onClose(),
+        () => onHide(),
         (error) => console.log('fetch error: ', error),
       );
   };
 
+  const Header = () => (
+    <Modal.Header closeButton>
+      <h4 id="modalTitle" className="modal-title">Rebalance Categories</h4>
+    </Modal.Header>
+  );
+
+  const Footer = () => (
+    <Modal.Footer>
+      <div />
+      <div />
+      <Button variant="secondary" onClick={onHide}>Cancel</Button>
+      <Button variant="primary" type="submit">Save</Button>
+    </Modal.Footer>
+  );
+
   return (
-    <ModalDialog
-      initialValues={{
-        categories: transaction ? transaction.categories : [],
-        date,
-      }}
-      categoryTree={categoryTree}
-      validate={handleValidate}
-      onSubmit={handleSubmit}
+    <Modal
       show={show}
-      onClose={onClose}
-      onExited={onExited}
-      title={title}
+      onHide={onHide}
       size="lg"
       scrollable
-      form={() => (
-        <>
-          <div className="rebalance-header">
-            <label>
-              Date
-              <Field name="date">
-                {({ field: { name, value }, form: { setFieldValue } }) => (
-                  <input
-                    value={value}
-                    type="date"
-                    onChange={(event) => {
-                      handleDateChange(event);
-                      setFieldValue(name, event.target.value, false);
-                    }}
-                  />
-                )}
-              </Field>
-            </label>
-            <label>
-              Unassigned
-              <Amount className="rebalance-unassigned" amount={unassigned} />
-            </label>
-          </div>
-          <ErrorMessage name="date" />
-          <Field name="categories">
-            {({ field: { name, value }, form: { setFieldValue } }) => (
-              <CategoryRebalance
-                categoryTree={categoryTree}
-                categories={value}
-                onDeltaChange={(_amount, delta, categories) => {
-                  handleDeltaChange(delta);
-                  setFieldValue(name, categories, false);
-                }}
-              />
-            )}
-          </Field>
-          <ErrorMessage name="categories" />
-        </>
-      )}
-    />
+    >
+      <Formik
+        initialValues={{
+          categories: transaction ? transaction.categories : [],
+          date,
+        }}
+        validate={handleValidate}
+        onSubmit={handleSubmit}
+      >
+        <Form id="modalForm" className="scrollable-form">
+          <Header />
+          <ModalBody>
+            <div className="rebalance-header">
+              <label>
+                Date
+                <Field name="date">
+                  {({ field: { name, value }, form: { setFieldValue } }) => (
+                    <input
+                      value={value}
+                      type="date"
+                      onChange={(event) => {
+                        handleDateChange(event);
+                        setFieldValue(name, event.target.value, false);
+                      }}
+                    />
+                  )}
+                </Field>
+              </label>
+              <label>
+                Unassigned
+                <Amount className="rebalance-unassigned" amount={unassigned} />
+              </label>
+            </div>
+            <ErrorMessage name="date" />
+            <Field name="categories">
+              {({ field: { name, value }, form: { setFieldValue } }) => (
+                <CategoryRebalance
+                  categoryTree={categoryTree}
+                  categories={value}
+                  onDeltaChange={(_amount, delta, categories) => {
+                    handleDeltaChange(delta);
+                    setFieldValue(name, categories, false);
+                  }}
+                />
+              )}
+            </Field>
+            <ErrorMessage name="categories" />
+          </ModalBody>
+          <Footer />
+        </Form>
+      </Formik>
+    </Modal>
   );
 };
 
 RebalanceDialog.propTypes = {
-  onClose: PropTypes.func.isRequired,
-  onExited: PropTypes.func.isRequired,
-  title: PropTypes.string,
+  onHide: PropTypes.func.isRequired,
   show: PropTypes.bool.isRequired,
   transaction: PropTypes.shape(),
 };
 
 RebalanceDialog.defaultProps = {
   transaction: null,
-  title: 'Rebalance Categories',
 };
+
+export const useRebalanceDialog = () => useModal(RebalanceDialog);
 
 export default RebalanceDialog;

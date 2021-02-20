@@ -3,11 +3,10 @@ import PropTypes from 'prop-types';
 import IconButton from './IconButton';
 import CategoryInput from './CategoryInput/CategoryInput';
 import Amount from './Amount';
-import TransactionDialog, { useTransactionDialog } from './TransactionDialog';
-import CategoryTransferDialog from './CategoryTransferDialog';
-import { ModalLauncher } from './Modal';
-import RebalanceDialog from './rebalance/RebalanceDialog';
-import FundingDialog from './funding/FundingDialog';
+import { useTransactionDialog } from './TransactionDialog';
+import { useCategoryTransferDialog } from './CategoryTransferDialog';
+import { useRebalanceDialog } from './rebalance/RebalanceDialog';
+import { useFundingDialog } from './funding/FundingDialog';
 
 const Transaction = ({
   transaction,
@@ -18,7 +17,12 @@ const Transaction = ({
   unassignedId,
   isMobile,
 }) => {
-  const [TransactionDialog2, showTransactionDialog] = useTransactionDialog();
+  const [TransactionDialog1, showTransactionDialog1] = useTransactionDialog();
+  const [TransactionDialog2, showTransactionDialog2] = useTransactionDialog();
+  const [TransactionDialog3, showTransactionDialog3] = useTransactionDialog();
+  const [CategoryTransferDialog, showCategoryTransferDialog] = useCategoryTransferDialog();
+  const [FundingDialog, showFundingDialog] = useFundingDialog();
+  const [RebalanceDialog, showRebalanceDialog] = useRebalanceDialog();
 
   const handleClick = () => {
     // const { transaction, onClick } = props;
@@ -32,13 +36,12 @@ const Transaction = ({
     transaction.updateTransactionCategory(request);
   };
 
-  const renderTransactionDialog = (props) => {
+  const TransactionDialog = ({ type: tranDialogType }) => {
     switch (transaction.type) {
       case 1:
         return (
           <CategoryTransferDialog
             transaction={transaction}
-            {...props}
           />
         );
 
@@ -46,7 +49,6 @@ const Transaction = ({
         return (
           <FundingDialog
             transaction={transaction}
-            {...props}
           />
         );
 
@@ -54,20 +56,79 @@ const Transaction = ({
         return (
           <RebalanceDialog
             transaction={transaction}
-            {...props}
           />
         );
 
       case 0:
       default:
-        return (
-          <TransactionDialog
-            transaction={transaction}
-            categoryId={categoryId}
-            unassignedId={unassignedId}
-            {...props}
-          />
-        );
+        switch (tranDialogType) {
+          case 1:
+            return (
+              <TransactionDialog1
+                transaction={transaction}
+                categoryId={categoryId}
+                unassignedId={unassignedId}
+              />
+            );
+
+          case 2:
+            return (
+              <TransactionDialog2
+                transaction={transaction}
+                categoryId={categoryId}
+                unassignedId={unassignedId}
+              />
+            );
+
+          case 3:
+            return (
+              <TransactionDialog3
+                transaction={transaction}
+                categoryId={categoryId}
+                unassignedId={unassignedId}
+              />
+            );
+
+          default:
+            return null;
+        }
+    }
+  };
+
+  const showTransactionDialog = (tranDialogType) => {
+    switch (transaction.type) {
+      case 1:
+        showCategoryTransferDialog();
+        break;
+
+      case 2:
+        showFundingDialog();
+        break;
+
+      case 3:
+        showRebalanceDialog();
+        break;
+
+      case 0:
+      default:
+        switch (tranDialogType) {
+          case 1:
+            showTransactionDialog1();
+            break;
+
+          case 2:
+            showTransactionDialog2();
+            break;
+
+          case 3:
+            showTransactionDialog3();
+            break;
+
+          default:
+            break;
+        }
+
+        break;
     }
   };
 
@@ -77,10 +138,10 @@ const Transaction = ({
     if (transaction.categories && transaction.categories.length > 0) {
       if (transaction.categories.length > 1) {
         return (
-          <ModalLauncher
-            launcher={(props) => (<button type="button" className="split-button" {...props}>Split</button>)}
-            dialog={(props) => renderTransactionDialog(props)}
-          />
+          <>
+            <button type="button" className="split-button" onClick={() => showTransactionDialog(1)}>Split</button>
+            <TransactionDialog type={1} />
+          </>
         );
       }
 
@@ -112,7 +173,7 @@ const Transaction = ({
     className += ' mobile';
 
     return (
-      <div className={className} onClick={showTransactionDialog}>
+      <div className={className} onClick={() => showTransactionDialog(2)}>
         <div>
           {transaction.date}
         </div>
@@ -120,25 +181,21 @@ const Transaction = ({
           {transaction.name}
         </div>
         <Amount amount={amount} />
-        <TransactionDialog2 transaction={transaction} />
+        <TransactionDialog type={2} />
       </div>
     );
   }
 
   return (
     <div className={className} onClick={handleClick}>
-      <ModalLauncher
-        launcher={(props) => (<IconButton icon="edit" {...props} />)}
-        dialog={(props) => renderTransactionDialog(props)}
-      />
+      <IconButton icon="edit" onClick={() => showTransactionDialog(2)} />
+      <TransactionDialog type={2} />
       <div>{transaction.date}</div>
       <div className="transaction-field">{transaction.name}</div>
       <div className="trans-cat-edit">
         {renderCategoryButton()}
-        <ModalLauncher
-          launcher={(props) => (<IconButton icon="list-ul" {...props} />)}
-          dialog={(props) => renderTransactionDialog(props)}
-        />
+        <IconButton icon="list-ul" onClick={() => showTransactionDialog(3)} />
+        <TransactionDialog type={3} />
       </div>
       <Amount className="transaction-field amount currency" amount={amount} />
       <Amount className="transaction-field balance currency" amount={balance} />
@@ -148,7 +205,6 @@ const Transaction = ({
 };
 
 Transaction.propTypes = {
-  onClick: PropTypes.func.isRequired,
   transaction: PropTypes.shape().isRequired,
   amount: PropTypes.number.isRequired,
   balance: PropTypes.number.isRequired,

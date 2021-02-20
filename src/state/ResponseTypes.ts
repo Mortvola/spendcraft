@@ -13,8 +13,8 @@ export const isGroupProps = (
 ): r is GroupProps => (
   (r as GroupProps).id !== undefined
   && (r as GroupProps).name !== undefined
-  && (r as GroupProps).system !== undefined
-  && (r as GroupProps).categories !== undefined
+  // && (r as GroupProps).system !== undefined
+  // && (r as GroupProps).categories !== undefined
 );
 
 export interface CategoryBalance {
@@ -44,9 +44,9 @@ export const isCategoryProps = (
   r: CategoryProps | unknown,
 ): r is CategoryProps => (
   (r as CategoryProps).id !== undefined
-  && (r as CategoryProps).balance !== undefined
+  // && (r as CategoryProps).balance !== undefined
   && (r as CategoryProps).name !== undefined
-  && (r as CategoryProps).system !== undefined
+  // && (r as CategoryProps).system !== undefined
 );
 
 export interface AccountProps {
@@ -94,8 +94,10 @@ export const isInstitutionsResponse = (
   || isInstitutionProps((r as Array<InstitutionProps>)[0])
 );
 
-export interface TransactionCategoryInterface {
+export interface TransactionCategoryProps {
   categoryId: number;
+
+  amount: number;
 }
 
 export interface TransactionProps {
@@ -111,7 +113,7 @@ export interface TransactionProps {
 
   name: string;
 
-  categories: Array<TransactionCategoryInterface>
+  categories: Array<TransactionCategoryProps>
 }
 
 export interface CategoryTransactionsResponse {
@@ -165,7 +167,7 @@ export const isErrorResponse = (r: ErrorResponse | unknown): r is ErrorResponse 
 );
 
 export interface UpdateTransactionCategoryResponse {
-  splits: Array<TransactionCategoryInterface>;
+  splits: Array<TransactionCategoryProps>;
 
   categories: Array<CategoryProps>;
 }

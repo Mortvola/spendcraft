@@ -1,4 +1,5 @@
 import { makeAutoObservable, runInAction } from 'mobx';
+import Category from './Category';
 import Group from './Group';
 import {
   CategoryProps, ErrorResponse, isErrorResponse,
@@ -23,6 +24,23 @@ class CategoryTree implements CategoryTreeInterface {
     makeAutoObservable(this);
 
     this.store = store;
+  }
+
+  getCategory(categoryId: number): Category | null {
+    let category: Category | null = null;
+
+    this.groups.find((group) => {
+      const cat = group.categories.find((c) => c.id === categoryId);
+
+      if (cat) {
+        category = cat;
+        return true;
+      }
+
+      return false;
+    });
+
+    return category;
   }
 
   getCategoryName(categoryId: number): string | null {

@@ -1,9 +1,12 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Field, ErrorMessage } from 'formik';
+import { Modal, Button } from 'react-bootstrap';
+import {
+  Formik, Form, Field, ErrorMessage,
+} from 'formik';
 import CategorySplits from './CategorySplits';
-import { ModalDialog } from './Modal';
+import useModal from './useModal';
 
 function validateSplits(splits) {
   let error;
@@ -19,14 +22,12 @@ function validateSplits(splits) {
   return error;
 }
 
-const CategoryTransferDialog = (props) => {
-  const {
-    onClose,
-    onExited,
-    title,
-    show,
-    transaction,
-  } = props;
+const CategoryTransferDialog = ({
+  onHide,
+  onExited,
+  show,
+  transaction,
+}) => {
   // const amount = 0;
 
   // if (!date) {
@@ -107,7 +108,7 @@ const CategoryTransferDialog = (props) => {
       })
         .then((response) => {
           if (response.ok) {
-            onClose();
+            onHide();
           }
         });
     }
@@ -121,7 +122,7 @@ const CategoryTransferDialog = (props) => {
       })
         .then((response) => {
           if (response.ok) {
-            onClose();
+            onHide();
           }
         });
     }
@@ -143,9 +144,7 @@ const CategoryTransferDialog = (props) => {
     return errors;
   };
 
-  const handleTotalChange = () => {
-
-  };
+  const handleTotalChange = () => null;
 
   const handleDelete = () => {
     fetch(`/category_transfer/${transaction.id}`, {
@@ -155,33 +154,50 @@ const CategoryTransferDialog = (props) => {
       },
     })
       .then(() => {
-        onClose();
+        onHide();
       });
   };
 
+  const Header = () => (
+    <Modal.Header closeButton>
+      <h4 id="modalTitle" className="modal-title">Category Transfer</h4>
+    </Modal.Header>
+  );
+
+  const Footer = () => (
+    <Modal.Footer>
+      <div />
+      <div />
+      <Button variant="secondary" onClick={onHide}>Cancel</Button>
+      <Button variant="primary" type="submit">Save</Button>
+    </Modal.Footer>
+  );
+
   return (
-    <ModalDialog
-      initialValues={{
-        fromCategories: transaction && transaction.categories
-          ? transaction.categories.filter((c) => c.amount < 0)
-          : [{ amount: 0 }],
-        toCategories: transaction && transaction.categories
-          ? transaction.categories.filter((c) => c.amount >= 0)
-          : [{ amount: 0 }],
-        date: transaction ? transaction.date : null,
-      }}
-      validate={handleValidate}
-      onSubmit={handleSubmit}
+    <Modal
       onDelete={transaction
         ? handleDelete
         : undefined}
       show={show}
-      onClose={onClose}
+      onHide={onHide}
       onExited={onExited}
-      title={title}
       size="lg"
-      form={() => (
-        <>
+    >
+      <Formik
+        initialValues={{
+          fromCategories: transaction && transaction.categories
+            ? transaction.categories.filter((c) => c.amount < 0)
+            : [{ amount: 0 }],
+          toCategories: transaction && transaction.categories
+            ? transaction.categories.filter((c) => c.amount >= 0)
+            : [{ amount: 0 }],
+          date: transaction ? transaction.date : null,
+        }}
+        validate={handleValidate}
+        onSubmit={handleSubmit}
+      >
+        <Form id="modalForm" className="scrollable-form">
+          <Header />
           <div>
             <div>
               <label>
@@ -250,16 +266,16 @@ const CategoryTransferDialog = (props) => {
             </label>
           </div>
           <ErrorMessage name="splits" />
-        </>
-      )}
-    />
+          <Footer />
+        </Form>
+      </Formik>
+    </Modal>
   );
 };
 
 CategoryTransferDialog.propTypes = {
-  onClose: PropTypes.func.isRequired,
+  onHide: PropTypes.func.isRequired,
   onExited: PropTypes.func.isRequired,
-  title: PropTypes.string.isRequired,
   show: PropTypes.bool.isRequired,
   transaction: PropTypes.shape({
     id: PropTypes.number.isRequired,
@@ -271,5 +287,7 @@ CategoryTransferDialog.propTypes = {
 CategoryTransferDialog.defaultProps = {
   transaction: null,
 };
+
+export const useCategoryTransferDialog = () => useModal(CategoryTransferDialog);
 
 export default CategoryTransferDialog;
