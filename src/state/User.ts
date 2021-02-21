@@ -1,5 +1,5 @@
 import { makeAutoObservable, runInAction } from 'mobx';
-import { isUserProps } from './ResponseTypes';
+import { isUserProps } from '../../common/ResponseTypes';
 import { getBody } from './Transports';
 
 class User {

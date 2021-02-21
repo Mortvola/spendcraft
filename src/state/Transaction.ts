@@ -2,7 +2,7 @@ import { makeAutoObservable, runInAction } from 'mobx';
 import {
   TransactionProps,
   isUpdateTransactionCategoryResponse,
-} from './ResponseTypes';
+} from '../../common/ResponseTypes';
 import { StoreInterface, TransactionCategoryInterface } from './State';
 import { getBody, patchJSON } from './Transports';
 

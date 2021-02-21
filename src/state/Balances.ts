@@ -1,6 +1,6 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import Account from './Account';
-import { isBalancesResponse } from './ResponseTypes';
+import { isBalancesResponse } from '../../common/ResponseTypes';
 import { AccountInterface, BalancesInterface, StoreInterface } from './State';
 import { getBody } from './Transports';
 

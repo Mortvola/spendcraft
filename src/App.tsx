@@ -10,19 +10,16 @@ import Plans from './Plans/Plans';
 import PlaidLink from './PlaidLink';
 import DetailView from './DetailView';
 import MobxStore, { store as mobxStore } from './state/mobxStore';
+import { httpPost } from './state/Transports';
 
 const Logout = () => {
-  fetch('/logout', {
-    method: 'POST',
-    headers: {
-      'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-    },
-  })
-    .then((response) => {
-      if (response.ok) {
-        window.location.replace('/');
-      }
-    });
+  (async () => {
+    const response = await httpPost('/logout');
+
+    if (response.ok) {
+      window.location.replace('/');
+    }
+  })();
 
   return null;
 };

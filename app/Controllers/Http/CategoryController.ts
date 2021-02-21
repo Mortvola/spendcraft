@@ -11,6 +11,7 @@ import AddCategoryValidator from 'App/Validators/AddCategoryValidator';
 import UpdateCategoryValidator from 'App/Validators/UpdateCategoryValidator';
 import DeleteCategoryValidator from 'App/Validators/DeleteCategoryValidator';
 import UpdateCategoryTransferValidator from 'App/Validators/UpdateCategoryTransferValidator';
+import { AddCategoryResponse, UpdateCategoryResponse } from '../../../common/ResponseTypes';
 
 type Transactions = {
   transactions: Array<AccountTransaction>,
@@ -140,20 +141,26 @@ class CategoryController {
   // eslint-disable-next-line class-methods-use-this
   public async addCategory({
     request,
-  }: HttpContextContract): Promise<Record<string, unknown>> {
+  }: HttpContextContract): Promise<AddCategoryResponse> {
     await request.validate(AddCategoryValidator);
 
     const id = await Database.insertQuery()
       .insert({ group_id: request.params().groupId, name: request.input('name') })
       .table('categories').returning('id');
 
-    return { groupId: request.params().groupId, id: id[0], name: request.input('name') };
+    return {
+      groupId: request.params().groupId,
+      id: id[0],
+      name: request.input('name'),
+      balance: 0,
+      system: false,
+    };
   }
 
   // eslint-disable-next-line class-methods-use-this
   public async updateCategory({
     request,
-  }: HttpContextContract): Promise<Record<string, unknown>> {
+  }: HttpContextContract): Promise<UpdateCategoryResponse> {
     await request.validate(UpdateCategoryValidator);
 
     const { catId } = request.params();

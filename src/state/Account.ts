@@ -1,5 +1,5 @@
 import { makeAutoObservable, runInAction } from 'mobx';
-import { AccountProps, isAccountSyncResponse } from './ResponseTypes';
+import { AccountProps, isAccountSyncResponse } from '../../common/ResponseTypes';
 import { AccountInterface, StoreInterface } from './State';
 import { getBody, httpPost } from './Transports';
 

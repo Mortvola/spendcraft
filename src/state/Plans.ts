@@ -3,7 +3,7 @@ import FundingPlan from './FundingPlan';
 import FundingPlanDetails from './FundingPlanDetails';
 import { PlansInterface, StoreInterface } from './State';
 import { getBody, postJSON } from './Transports';
-import { isFundingPlansResponse, isFundingPlanProps, isFundingPlanDetailsProps } from './ResponseTypes';
+import { isFundingPlansResponse, isFundingPlanProps, isFundingPlanDetailsProps } from '../../common/ResponseTypes';
 
 class Plans implements PlansInterface {
   list: Array<FundingPlan> = [];

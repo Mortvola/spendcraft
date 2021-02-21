@@ -1,9 +1,9 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import Category from './Category';
 import {
-  CategoryProps, ErrorResponse, GroupProps, isErrorResponse, isGroupProps,
-  isCategoryProps,
-} from './ResponseTypes';
+  CategoryProps, Error, GroupProps, isErrorResponse, isGroupProps,
+  isAddCategoryResponse,
+} from '../../common/ResponseTypes';
 import {
   getBody, httpDelete, patchJSON, postJSON,
 } from './Transports';
@@ -32,10 +32,10 @@ class Group {
     makeAutoObservable(this);
   }
 
-  async addCategory(groupId: number, name: string): Promise<null| Array<string>> {
+  async addCategory(groupId: number, name: string): Promise<null| Array<Error>> {
     const response = await postJSON(`/groups/${this.id}/categories`, { groupId, name });
 
-    const body: ErrorResponse | unknown | null = await getBody(response);
+    const body = await getBody(response);
 
     if (!response.ok) {
       if (isErrorResponse(body)) {
@@ -44,7 +44,7 @@ class Group {
     }
     else {
       runInAction(() => {
-        if (isCategoryProps(body)) {
+        if (isAddCategoryResponse(body)) {
           this.categories.push(new Category(body));
         }
       });
@@ -53,7 +53,7 @@ class Group {
     return null;
   }
 
-  async update(name: string): Promise<null | Array<string>> {
+  async update(name: string): Promise<null | Array<Error>> {
     const response = await patchJSON(`/groups/${this.id}`, { name });
 
     const body = await getBody(response);
@@ -74,13 +74,13 @@ class Group {
     return null;
   }
 
-  async deleteCategory(groupId: number, categoryId: number): Promise<null | Array<string>> {
+  async deleteCategory(groupId: number, categoryId: number): Promise<null | Array<Error>> {
     const index = this.categories.findIndex((c) => c.id === categoryId);
 
     if (index !== -1) {
       const response = await httpDelete(`/groups/${groupId}/categories/${categoryId}`);
 
-      const body: ErrorResponse | unknown | null = await getBody(response);
+      const body = await getBody(response);
 
       if (!response.ok) {
         if (isErrorResponse(body)) {

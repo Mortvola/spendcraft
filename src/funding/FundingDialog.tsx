@@ -2,31 +2,50 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 import React, {
   useState, useEffect, useContext, useCallback,
+  ReactElement,
 } from 'react';
-import PropTypes from 'prop-types';
 import { Modal, Button, ModalBody } from 'react-bootstrap';
 import {
-  Formik, Form, Field, ErrorMessage,
+  Formik, Form, Field, ErrorMessage, FieldProps,
+  FormikErrors, FormikState,
 } from 'formik';
 import Funding from './Funding';
 import Amount from '../Amount';
 import MobxStore from '../state/mobxStore';
-import useModal from '../useModal';
+import useModal, { ModalProps } from '../useModal';
+import Transaction from '../state/Transaction';
+import { TransactionCategoryInterface } from '../state/State';
+import { patchJSON, postJSON } from '../state/Transports';
+
+interface Props {
+  // eslint-disable-next-line react/require-default-props
+  transaction?: Transaction;
+}
 
 const FundingDialog = ({
   transaction,
   onHide,
   show,
-}) => {
+}: Props & ModalProps): ReactElement => {
   const { categoryTree } = useContext(MobxStore);
 
-  const getTotal = useCallback((categories) => (
-    categories.reduce((accumulator, item) => (
+  const getTotal = useCallback((categories: Array<TransactionCategoryInterface>) => (
+    categories.reduce((accumulator: number, item) => (
       item.categoryId === categoryTree.systemIds.fundingPoolId
         ? accumulator
         : accumulator + item.amount
     ), 0)
   ), [categoryTree.systemIds.fundingPoolId]);
+
+  type FundingType = {
+    planId: number;
+    categories: Array<TransactionCategoryInterface>
+  }
+
+  type ValueType = {
+    date: string,
+    funding: FundingType,
+  }
 
   const [plansInitialized, setPlansInitialized] = useState(false);
   const [groupsInitialized, setGroupsInitialized] = useState(false);
@@ -60,9 +79,13 @@ const FundingDialog = ({
       );
   }
 
-  const handlePlanChange = (event, resetForm, values) => {
+  const handlePlanChange = (
+    event: React.ChangeEvent<HTMLSelectElement>,
+    resetForm: (nextState?: Partial<FormikState<any>> | undefined) => void,
+    values: ValueType,
+  ) => {
     const { value } = event.target;
-    setSelectedPlan(value);
+    setSelectedPlan(parseInt(value, 10));
     fetch(`/funding_plan/${value}`)
       .then(
         async (response) => {
@@ -96,7 +119,7 @@ const FundingDialog = ({
     return planOptions;
   };
 
-  const handleFundingChange = (newFunding) => {
+  const handleFundingChange = (newFunding: FundingType) => {
     setFunding(newFunding);
 
     const sum = getTotal(newFunding.categories);
@@ -104,16 +127,19 @@ const FundingDialog = ({
     setTotal(sum);
   };
 
-  const handleSubmit = (values) => {
-    const request = { date: values.date, type: 2 };
-    request.categories = values.funding.categories.filter((item) => (
-      item.amount !== 0
-    ))
-      .map((item) => ({
-        id: item.id,
-        categoryId: item.categoryId,
-        amount: item.amount,
-      }));
+  const handleSubmit = async (values: ValueType) => {
+    const request = {
+      date: values.date,
+      type: 2,
+      categories: values.funding.categories.filter((item) => (
+        item.amount !== 0
+      ))
+        .map((item) => ({
+          id: item.id,
+          categoryId: item.categoryId,
+          amount: item.amount,
+        })),
+    };
 
     const sum = getTotal(request.categories);
 
@@ -122,34 +148,35 @@ const FundingDialog = ({
     );
 
     if (index === -1) {
-      request.categories.push({ categoryId: categoryTree.systemIds.fundingPoolId, amount: -sum });
+      if (categoryTree.systemIds.fundingPoolId === null) {
+        throw new Error('fundingPoolId is null');
+      }
+
+      request.categories.push({
+        id: null,
+        categoryId: categoryTree.systemIds.fundingPoolId,
+        amount: -sum,
+      });
     }
     else {
       request.categories[index].amount = -sum;
     }
 
-    let url = 'category_transfer';
-    let method = 'POST';
+    let response;
     if (transaction) {
-      url += `/${transaction.id}`;
-      method = 'PATCH';
+      response = await patchJSON(`category_transfer/${transaction.id}`, request);
+    }
+    else {
+      response = await postJSON('category_transfer', request);
     }
 
-    fetch(url, {
-      method,
-      headers: {
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(request),
-    })
-      .then(() => {
-        onHide();
-      });
+    if (response.ok) {
+      onHide();
+    }
   };
 
-  const handleValidate = (values) => {
-    const errors = {};
+  const handleValidate = (values: ValueType) => {
+    const errors: FormikErrors<ValueType> = {};
 
     if (values.date === '') {
       errors.date = 'A date must be specified.';
@@ -164,8 +191,8 @@ const FundingDialog = ({
       }
     });
 
-    if (count === 0) {
-      errors.funding = 'At least one non-zero funding item must be entered.';
+    if (count === 0 && errors.funding) {
+      errors.funding.categories = 'At least one non-zero funding item must be entered.';
     }
 
     return errors;
@@ -193,7 +220,7 @@ const FundingDialog = ({
       size="lg"
       scrollable
     >
-      <Formik
+      <Formik<ValueType>
         initialValues={{
           date: transaction ? transaction.date : '',
           funding,
@@ -208,7 +235,12 @@ const FundingDialog = ({
               <label>
                 Plan
                 <Field name="plans">
-                  {({ form: { resetForm, values } }) => (
+                  {({
+                    form: {
+                      resetForm,
+                      values,
+                    },
+                  }: FieldProps<ValueType>) => (
                     <select
                       value={selectedPlan}
                       onChange={(event) => (
@@ -238,12 +270,20 @@ const FundingDialog = ({
                 <div className="dollar-amount fund-list-amt">Balance</div>
               </div>
               <Field name="funding">
-                {({ field: { name, value }, form: { setFieldValue } }) => (
+                {({
+                  field: {
+                    name,
+                    value,
+                  },
+                  form: {
+                    setFieldValue,
+                  },
+                }: FieldProps<FundingType>) => (
                   <Funding
                     key={value.planId}
                     groups={groups}
                     plan={value.categories}
-                    systemGroupId={categoryTree.systemIds.systemGroupId}
+                    systemGroupId={categoryTree.systemIds.systemGroupId || 0}
                     onChange={(newFunding) => {
                       const newPlan = {
                         planId: value.planId,
@@ -271,16 +311,19 @@ const FundingDialog = ({
   );
 };
 
-FundingDialog.propTypes = {
-  onHide: PropTypes.func.isRequired,
-  show: PropTypes.bool.isRequired,
-  transaction: PropTypes.shape(),
-};
+// FundingDialog.propTypes = {
+//   onHide: PropTypes.func.isRequired,
+//   show: PropTypes.bool.isRequired,
+//   transaction: PropTypes.shape(),
+// };
 
-FundingDialog.defaultProps = {
-  transaction: null,
-};
+// FundingDialog.defaultProps = {
+//   transaction: null,
+// };
 
-export const useFundingDialog = () => useModal(FundingDialog);
+export const useFundingDialog = (): [
+  (props: Props) => (ReactElement | null),
+  () => void,
+] => useModal<Props>(FundingDialog);
 
 export default FundingDialog;

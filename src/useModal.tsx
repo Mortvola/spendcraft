@@ -1,20 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, ReactElement } from 'react';
 
 type ShowCallback = (() => void);
 type OnSave = (() => void);
 type OnHide = (() => void);
 type OnConfirm = (() => void);
 
-interface DialogProps {
+export interface ModalProps {
   show: boolean,
   onHide: OnHide,
   onConfirm: OnConfirm,
 }
 
 function useModal<T>(
-  Dialog: React.FC<T>,
+  Dialog: React.FC<T & ModalProps>,
   onSave?: OnSave,
-): Array<React.FC<DialogProps & T> | ShowCallback> {
+): [(props: T) => ReactElement | null, ShowCallback] {
   const [show, setShow] = useState(false);
 
   const handleHide = () => {
@@ -29,14 +29,18 @@ function useModal<T>(
     handleHide();
   };
 
-  const createDialog = (props: DialogProps & T) => {
+  const createDialog = (props: T): ReactElement | null => {
     if (show) {
+      const props2 = {
+        ...props,
+        show,
+        onHide: handleHide,
+        onConfirm: handleSave,
+      };
+
       return (
         <Dialog
-          {...props}
-          show={show}
-          onHide={handleHide}
-          onConfirm={handleSave}
+          {...props2}
         />
       );
     }

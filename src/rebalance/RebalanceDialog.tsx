@@ -1,34 +1,49 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
-import React, { useState, useEffect, useCallback } from 'react';
-import PropTypes from 'prop-types';
+import React, {
+  useState, useEffect, useCallback, ReactElement,
+} from 'react';
 import { Modal, Button, ModalBody } from 'react-bootstrap';
 import {
-  Formik, Form, Field, ErrorMessage,
+  Formik, Form, Field, ErrorMessage, FormikErrors,
+  FieldProps,
 } from 'formik';
 import CategoryRebalance from './CategoryRebalance';
 import Amount from '../Amount';
-import useModal from '../useModal';
+import useModal, { ModalProps } from '../useModal';
+import Transaction from '../state/Transaction';
+import { TransactionCategoryInterface } from '../state/State';
+import { patchJSON, postJSON } from '../state/Transports';
+
+interface Props {
+  // eslint-disable-next-line react/require-default-props
+  transaction?: Transaction,
+}
 
 const RebalanceDialog = ({
   transaction,
   show,
   onHide,
-}) => {
+}: Props & ModalProps): ReactElement => {
   const [categoryTree, setCategoryTree] = useState(null);
   const [unassigned, setUnassigned] = useState(0);
   const [date, setDate] = useState(transaction ? transaction.date : '');
 
-  const fetchCategoryBalances = useCallback((fetchDate) => {
+  type ValueType = {
+    categories: Array<TransactionCategoryInterface>
+    date: string,
+  }
+
+  const fetchCategoryBalances = useCallback((fetchDate: string) => {
     if (fetchDate !== '') {
-      const params = { date: fetchDate };
+      const params: Record<string, string> = { date: fetchDate };
       if (transaction) {
-        params.id = transaction.id;
+        params.id = transaction.id.toString();
       }
 
       const url = new URL('/category_balances', window.location.href);
-      url.search = new URLSearchParams(params);
+      url.search = (new URLSearchParams(params)).toString();
 
-      fetch(url, {
+      fetch(url.toString(), {
         headers: {
           'Content-Type': 'application/json',
         },
@@ -49,16 +64,16 @@ const RebalanceDialog = ({
     fetchCategoryBalances(date);
   }, [date, fetchCategoryBalances]);
 
-  const handleDateChange = (event) => {
+  const handleDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setDate(event.target.value);
   };
 
-  const handleDeltaChange = (delta) => {
+  const handleDeltaChange = (delta: number) => {
     setUnassigned(unassigned - delta);
   };
 
-  const handleValidate = (values) => {
-    const errors = {};
+  const handleValidate = (values: ValueType) => {
+    const errors: FormikErrors<ValueType> = {};
 
     if (values.date === '') {
       errors.date = 'A date must be specified.';
@@ -80,26 +95,24 @@ const RebalanceDialog = ({
     return errors;
   };
 
-  const handleSubmit = (values) => {
+  const handleSubmit = async (values: ValueType) => {
     // const { setErrors } = bag;
     let url = '/category_transfer';
     if (transaction) {
       url += `/${transaction.id}`;
     }
 
-    fetch(url, {
-      method: (transaction ? 'PATCH' : 'POST'),
-      headers:
-      {
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ ...values, type: 3 }),
-    })
-      .then(
-        () => onHide(),
-        (error) => console.log('fetch error: ', error),
-      );
+    let response;
+    if (transaction) {
+      response = await postJSON(url, { ...values, type: 3 });
+    }
+    else {
+      response = await patchJSON(url, { ...values, type: 3 });
+    }
+
+    if (response.ok) {
+      onHide();
+    }
   };
 
   const Header = () => (
@@ -124,7 +137,7 @@ const RebalanceDialog = ({
       size="lg"
       scrollable
     >
-      <Formik
+      <Formik<ValueType>
         initialValues={{
           categories: transaction ? transaction.categories : [],
           date,
@@ -139,7 +152,15 @@ const RebalanceDialog = ({
               <label>
                 Date
                 <Field name="date">
-                  {({ field: { name, value }, form: { setFieldValue } }) => (
+                  {({
+                    field: {
+                      name,
+                      value,
+                    },
+                    form: {
+                      setFieldValue,
+                    },
+                  }: FieldProps<string>) => (
                     <input
                       value={value}
                       type="date"
@@ -158,7 +179,15 @@ const RebalanceDialog = ({
             </div>
             <ErrorMessage name="date" />
             <Field name="categories">
-              {({ field: { name, value }, form: { setFieldValue } }) => (
+              {({
+                field: {
+                  name,
+                  value,
+                },
+                form: {
+                  setFieldValue,
+                },
+              }: FieldProps<Array<TransactionCategoryInterface>>) => (
                 <CategoryRebalance
                   categoryTree={categoryTree}
                   categories={value}
@@ -178,16 +207,19 @@ const RebalanceDialog = ({
   );
 };
 
-RebalanceDialog.propTypes = {
-  onHide: PropTypes.func.isRequired,
-  show: PropTypes.bool.isRequired,
-  transaction: PropTypes.shape(),
-};
+// RebalanceDialog.propTypes = {
+//   onHide: PropTypes.func.isRequired,
+//   show: PropTypes.bool.isRequired,
+//   transaction: PropTypes.shape(),
+// };
 
-RebalanceDialog.defaultProps = {
-  transaction: null,
-};
+// RebalanceDialog.defaultProps = {
+//   transaction: null,
+// };
 
-export const useRebalanceDialog = () => useModal(RebalanceDialog);
+export const useRebalanceDialog = (): [
+  (props: Props) => (ReactElement | null),
+  () => void,
+] => useModal<Props>(RebalanceDialog);
 
 export default RebalanceDialog;

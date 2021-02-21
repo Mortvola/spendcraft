@@ -19,6 +19,8 @@ export interface CategoryTreeInterface {
 }
 
 export interface TransactionCategoryInterface {
+  id: number | null;
+
   categoryId: number;
 
   amount: number;

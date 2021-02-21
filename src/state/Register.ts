@@ -4,7 +4,7 @@ import {
   isAccountTransactionsResponse,
   CategoryProps,
   isCategoryTransactionsResponse,
-} from './ResponseTypes';
+} from '../../common/ResponseTypes';
 import {
   RegisterInterface, StoreInterface, TransactionCategoryInterface,
 } from './State';
@@ -31,8 +31,8 @@ class Register implements RegisterInterface {
     this.store = store;
   }
 
-  async loadCategoryTransactions(categoryId: number): Promise<void> {
-    if (categoryId !== this.categoryId) {
+  async loadCategoryTransactions(categoryId: number | null): Promise<void> {
+    if (categoryId !== null && categoryId !== this.categoryId) {
       this.fetching = true;
       const response = await fetch(`/category/${categoryId}/transactions`);
 

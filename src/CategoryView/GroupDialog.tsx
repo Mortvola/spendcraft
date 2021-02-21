@@ -1,24 +1,36 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
-import React, { useContext } from 'react';
-import PropTypes from 'prop-types';
+import React, { ReactElement, useContext } from 'react';
 import { Modal, Button, ModalBody } from 'react-bootstrap';
 import {
   Formik, Form, Field, ErrorMessage,
-  useFormikContext,
+  useFormikContext, FormikBag, FormikHelpers,
+  FormikErrors,
+  FormikContextType,
 } from 'formik';
 import MobxStore from '../state/mobxStore';
-import useModal from '../useModal';
+import useModal, { ModalProps } from '../useModal';
+import Group from '../state/Group';
+import { Error } from '../../common/ResponseTypes';
+
+interface Props {
+  // eslint-disable-next-line react/require-default-props
+  group?: Group,
+}
 
 const GroupDialog = ({
   onHide,
   show,
   group,
-}) => {
+}: Props & ModalProps): ReactElement => {
   const { categoryTree } = useContext(MobxStore);
 
-  const handleSubmit = async (values, bag) => {
-    const { setErrors } = bag;
-    let errors = null;
+  interface ValueType {
+    name: string,
+  }
+
+  const handleSubmit = async (values: ValueType, formikHelpers: FormikHelpers<ValueType>) => {
+    const { setErrors } = formikHelpers;
+    let errors: Array<Error> | null = null;
 
     if (group) {
       errors = await group.update(values.name);
@@ -37,8 +49,8 @@ const GroupDialog = ({
     }
   };
 
-  const handleValidate = (values) => {
-    const errors = {};
+  const handleValidate = (values: ValueType) => {
+    const errors: FormikErrors<ValueType> = {};
 
     if (values.name === '') {
       errors.name = 'The group name must not be blank.';
@@ -47,17 +59,19 @@ const GroupDialog = ({
     return errors;
   };
 
-  const handleDelete = async (bag) => {
+  const handleDelete = async (bag: FormikContextType<unknown>) => {
     const { setTouched, setErrors } = bag;
 
-    const errors = await categoryTree.deleteGroup(group.id);
+    if (group) {
+      const errors = await categoryTree.deleteGroup(group.id);
 
-    if (errors && errors.length > 0) {
-      setTouched({ name: true }, false);
-      setErrors({ name: errors[0].title });
-    }
-    else {
-      onHide();
+      if (errors && errors.length > 0) {
+        setTouched({ name: true }, false);
+        setErrors({ name: errors[0].title });
+      }
+      else {
+        onHide();
+      }
     }
   };
 
@@ -98,7 +112,7 @@ const GroupDialog = ({
       show={show}
       onHide={onHide}
     >
-      <Formik
+      <Formik<ValueType>
         initialValues={{
           name: group && group.name ? group.name : '',
         }}
@@ -126,20 +140,23 @@ const GroupDialog = ({
   );
 };
 
-GroupDialog.propTypes = {
-  group: PropTypes.shape({
-    id: PropTypes.number.isRequired,
-    name: PropTypes.string.isRequired,
-    update: PropTypes.func.isRequired,
-  }),
-  onHide: PropTypes.func.isRequired,
-  show: PropTypes.bool.isRequired,
-};
+// GroupDialog.propTypes = {
+//   group: PropTypes.shape({
+//     id: PropTypes.number.isRequired,
+//     name: PropTypes.string.isRequired,
+//     update: PropTypes.func.isRequired,
+//   }),
+//   onHide: PropTypes.func.isRequired,
+//   show: PropTypes.bool.isRequired,
+// };
 
-GroupDialog.defaultProps = {
-  group: undefined,
-};
+// GroupDialog.defaultProps = {
+//   group: undefined,
+// };
 
-export const useGroupDialog = () => useModal(GroupDialog);
+export const useGroupDialog = (): [
+  (props: Props) => (ReactElement | null),
+  () => void,
+] => useModal<Props>(GroupDialog);
 
 export default GroupDialog;

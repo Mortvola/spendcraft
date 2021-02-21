@@ -7,7 +7,7 @@ import {
 } from 'formik';
 import { Button, Modal, ModalBody } from 'react-bootstrap';
 import CategorySplits from './CategorySplits';
-import useModal from './useModal';
+import useModal, { ModalProps } from './useModal';
 import Amount from './Amount';
 import Transaction from './state/Transaction';
 import { TransactionCategoryInterface } from './state/State';
@@ -28,8 +28,6 @@ interface Props {
   transaction: Transaction,
   categoryId: number,
   unassignedId: number,
-  show: boolean,
-  onHide: () => void,
 }
 
 const TransactionDialog = ({
@@ -38,7 +36,7 @@ const TransactionDialog = ({
   transaction,
   categoryId,
   unassignedId,
-}: Props): ReactElement => {
+}: Props & ModalProps): ReactElement => {
   const showBalances = categoryId === unassignedId;
 
   type ValueType = {
@@ -216,7 +214,9 @@ const TransactionDialog = ({
 //   categoryId: null,
 // };
 
-const useTransactionDialog = () => useModal<Props>(TransactionDialog);
+export const useTransactionDialog = (): [
+  (props: Props) => (ReactElement | null),
+  () => void,
+] => useModal<Props>(TransactionDialog);
 
 export default TransactionDialog;
-export { useTransactionDialog };

@@ -2,10 +2,9 @@ import { makeAutoObservable, runInAction } from 'mobx';
 import Category from './Category';
 import Group from './Group';
 import {
-  CategoryProps, ErrorResponse, isErrorResponse,
-  isGroupProps,
-  isGroupsResponse,
-} from './ResponseTypes';
+  CategoryProps, Error, isErrorResponse,
+  isGroupProps, isGroupsResponse,
+} from '../../common/ResponseTypes';
 import { CategoryTreeInterface, StoreInterface } from './State';
 import { getBody, httpDelete, postJSON } from './Transports';
 
@@ -105,7 +104,7 @@ class CategoryTree implements CategoryTreeInterface {
     }
   }
 
-  async addGroup(name: string): Promise<null | Array<string>> {
+  async addGroup(name: string): Promise<null | Array<Error>> {
     const response = await postJSON('/groups', { name });
 
     const body = await getBody(response);
@@ -126,13 +125,13 @@ class CategoryTree implements CategoryTreeInterface {
     return null;
   }
 
-  async deleteGroup(id: number): Promise<null | Array<string>> {
+  async deleteGroup(id: number): Promise<null | Array<Error>> {
     const index = this.groups.findIndex((g) => g.id === id);
 
     if (index !== -1) {
       const response = await httpDelete(`/groups/${id}`);
 
-      const body: ErrorResponse | unknown | null = await getBody(response);
+      const body = await getBody(response);
 
       if (!response.ok) {
         if (isErrorResponse(body)) {

@@ -31,6 +31,8 @@ export const isCategoryBalance = (
 );
 
 export interface CategoryProps {
+  groupId: number;
+
   id: number;
 
   balance: number;
@@ -39,6 +41,28 @@ export interface CategoryProps {
 
   system: boolean;
 }
+
+export type AddCategoryResponse = CategoryProps
+
+export const isAddCategoryResponse = (
+  r: AddCategoryResponse | unknown,
+): r is AddCategoryResponse => (
+  (r as AddCategoryResponse).groupId !== undefined
+  && (r as AddCategoryResponse).id !== undefined
+  && (r as AddCategoryResponse).balance !== undefined
+  && (r as AddCategoryResponse).name !== undefined
+  && (r as AddCategoryResponse).system !== undefined
+);
+
+export interface UpdateCategoryResponse {
+  name: string;
+}
+
+export const isUpdateCategoryResponse = (
+  r: UpdateCategoryResponse | unknown,
+): r is UpdateCategoryResponse => (
+  (r as UpdateCategoryResponse).name !== undefined
+);
 
 export const isCategoryProps = (
   r: CategoryProps | unknown,
@@ -95,6 +119,8 @@ export const isInstitutionsResponse = (
 );
 
 export interface TransactionCategoryProps {
+  id: number;
+
   categoryId: number;
 
   amount: number;
@@ -148,9 +174,17 @@ export const isAccountTransactionsResponse = (
   && (r as AccountTransactionsResponse).balance !== undefined
 );
 
-export interface ErrorResponse {
-  errors: Array<string>;
+export interface Error {
+  title: string;
 }
+
+export interface ErrorResponse {
+  errors: Array<Error>;
+}
+
+export const isErrorResponse = (r: ErrorResponse | unknown): r is ErrorResponse => (
+  (r as ErrorResponse).errors !== undefined
+);
 
 export interface CategoryUpdateResponse {
   name: string;
@@ -160,10 +194,6 @@ export const isCategoryUpdateResponse = (
   r: CategoryUpdateResponse | unknown,
 ): r is CategoryUpdateResponse => (
   (r as CategoryUpdateResponse).name !== undefined
-);
-
-export const isErrorResponse = (r: ErrorResponse | unknown): r is ErrorResponse => (
-  (r as ErrorResponse).errors !== undefined
 );
 
 export interface UpdateTransactionCategoryResponse {
@@ -226,12 +256,6 @@ export const isFundingPlanDetailsProps = (
   && (r as FundingPlanDetailsProps).history !== undefined
   && (r as FundingPlanDetailsProps).total !== undefined
   && (r as FundingPlanDetailsProps).groups !== undefined
-);
-
-export const isUpdateCategoryResponse = (
-  r: UpdateCategoryProps | unknown,
-): r is UpdateCategoryProps => (
-  (r as UpdateCategoryProps).amount !== undefined
 );
 
 export interface FundingPlanProps {

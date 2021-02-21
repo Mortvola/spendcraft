@@ -1,5 +1,5 @@
 import { makeAutoObservable } from "mobx";
-import { FundingPlanCategoryProps } from "./ResponseTypes";
+import { FundingPlanCategoryProps } from "../../common/ResponseTypes";
 import { StoreInterface } from "./State";
 
 class FundingPlanCategory {

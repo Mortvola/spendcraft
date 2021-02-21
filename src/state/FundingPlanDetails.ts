@@ -2,7 +2,7 @@ import { makeAutoObservable, runInAction } from 'mobx';
 import FundingPlanGroup from './FundingPlanGroup';
 import { StoreInterface } from './State';
 import { getBody, putJSON } from './Transports';
-import { FundingPlanDetailsProps, isUpdateCategoryResponse } from './ResponseTypes';
+import { FundingPlanDetailsProps, isUpdateCategoryResponse } from '../../common/ResponseTypes';
 
 class FundingPlanDetails {
   planId: number;

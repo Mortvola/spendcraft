@@ -1,8 +1,8 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import {
-  CategoryProps, isErrorResponse,
-  isCategoryUpdateResponse,
-} from './ResponseTypes';
+  CategoryProps, isErrorResponse, Error,
+  isUpdateCategoryResponse,
+} from '../../common/ResponseTypes';
 import { getBody, patchJSON } from './Transports';
 
 class Category {
@@ -23,7 +23,7 @@ class Category {
     makeAutoObservable(this);
   }
 
-  async update(groupId: number, name: string): Promise<null | Array<string>> {
+  async update(groupId: number, name: string): Promise<null | Array<Error>> {
     const response = await patchJSON(`/groups/${groupId}/categories/${this.id}`, { name });
 
     const body = await getBody(response);
@@ -35,7 +35,7 @@ class Category {
     }
     else {
       runInAction(() => {
-        if (isCategoryUpdateResponse(body)) {
+        if (isUpdateCategoryResponse(body)) {
           this.name = body.name;
         }
       });
