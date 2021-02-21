@@ -1,24 +1,31 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, ReactElement } from 'react';
 import PropTypes from 'prop-types';
 import { Overlay, Popover } from 'react-bootstrap';
 import parseEquation from './EquationParser';
+
+interface Props {
+  amount: number;
+  onDeltaChange: (amount: number, delta: number) => void;
+  onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  className: string;
+}
 
 const AmountInput = ({
   amount,
   onDeltaChange,
   onChange,
   className,
-}) => {
+}: Props): ReactElement => {
   const [inputAmount, setInputAmount] = useState(amount.toFixed(2));
   const [initialValue, setInitialValue] = useState(amount);
   const [showPopover, setShowPopover] = useState(false);
-  const ref = useRef(null);
-  const inputRef = useRef(null);
-  const containerRef = useRef(null);
+  const ref = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLInputElement>(null);
   const [equation, setEquation] = useState('');
-  const [previousAmount, setPreviousAmount] = useState();
+  const [previousAmount, setPreviousAmount] = useState('0');
 
-  const handleChange = (event) => {
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setInputAmount(event.target.value);
 
     if (onChange) {
@@ -26,7 +33,7 @@ const AmountInput = ({
     }
   };
 
-  const handleCalcChange = (event) => {
+  const handleCalcChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setEquation(event.target.value);
     try {
       if (event.target.value === '') {
@@ -42,11 +49,11 @@ const AmountInput = ({
     }
   };
 
-  const handleFocus = (event) => {
-    setInitialValue(event.target.value);
+  const handleFocus = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setInitialValue(parseFloat(event.target.value));
   };
 
-  const handleBlur = (event) => {
+  const handleBlur = (event: React.ChangeEvent<HTMLInputElement>) => {
     let newAmount = Math.round(parseFloat(event.target.value) * 100.0) / 100.0;
 
     if (Number.isNaN(newAmount)) {
@@ -61,7 +68,7 @@ const AmountInput = ({
     setInputAmount(newAmount.toFixed(2));
   };
 
-  const handleKeyPress = (event) => {
+  const handleKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === '=') {
       setShowPopover(!showPopover);
       event.stopPropagation();
@@ -69,7 +76,7 @@ const AmountInput = ({
     }
   };
 
-  const handleKeyDown = (event) => {
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Escape' || event.key === 'Enter') {
       setShowPopover(false);
       if (event.key === 'Escape') {
@@ -77,12 +84,18 @@ const AmountInput = ({
       }
       event.stopPropagation();
       event.preventDefault();
-      ref.current.focus();
+      const input = ref.current;
+      if (input !== null) {
+        input.focus();
+      }
     }
   };
 
   const handleEnter = () => {
-    inputRef.current.focus();
+    const input = ref.current;
+    if (input !== null) {
+      input.focus();
+    }
     setEquation(inputAmount);
     setPreviousAmount(inputAmount);
   };
@@ -107,7 +120,7 @@ const AmountInput = ({
         container={containerRef}
         onEnter={handleEnter}
       >
-        <Popover>
+        <Popover id="pop-over">
           <Popover.Title>Enter Equation</Popover.Title>
           <Popover.Content>
             <input
