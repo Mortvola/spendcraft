@@ -50,6 +50,22 @@ class Transaction {
 
     throw new Error('invalid response');
   }
+
+  getAmountForCategory(
+    categoryId: number,
+  ): number {
+    let { amount } = this;
+
+    if (this.categories !== undefined && this.categories !== null
+      && categoryId !== undefined && categoryId !== null
+      && this.categories.some((c) => c.categoryId === categoryId)) {
+      amount = this.categories.reduce((accum, item) => (
+        accum + (item.categoryId === categoryId ? item.amount : 0)
+      ), 0);
+    }
+
+    return amount;
+  }
 }
 
 export default Transaction;

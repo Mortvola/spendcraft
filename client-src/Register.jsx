@@ -3,7 +3,6 @@ import PropTypes from 'prop-types';
 import { observer } from 'mobx-react-lite';
 import { Spinner } from 'react-bootstrap';
 import Transaction from './Transaction';
-import getTransactionAmountForCategory from './TransactionUtils';
 import Amount from './Amount';
 import MobxStore from './state/mobxStore';
 
@@ -47,7 +46,7 @@ const Register = ({
         let { amount } = transaction;
 
         if (categoryId !== null) {
-          amount = getTransactionAmountForCategory(transaction, categoryId);
+          amount = transaction.getAmountForCategory(categoryId);
         }
 
         const selected = selectedTransaction === transaction.id;
