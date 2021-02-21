@@ -1,8 +1,14 @@
 import { useState, useEffect } from 'react';
 
-const states = {};
+interface BoolState {
+  bool: boolean;
+  mounted: boolean;
+  listener: (state: boolean) => void;
+}
+
+const states: Array<BoolState> = [];
 let counter = 0;
-let currentTrue = null;
+let currentTrue: number | null = null;
 
 const nextCounter = () => {
   counter += 1;
@@ -10,16 +16,13 @@ const nextCounter = () => {
   return counter;
 };
 
-const setExclusiveBool = (id, boolState) => {
+const setExclusiveBool = (id: number, boolState: boolean) => {
   if (states[id]) {
     if (boolState) {
       if (currentTrue !== null && currentTrue !== id) {
         if (states[currentTrue]
           && states[currentTrue].bool) {
-          if (states[currentTrue].listener) {
-            states[currentTrue].listener(false);
-          }
-
+          states[currentTrue].listener(false);
           states[currentTrue].bool = false;
         }
       }
@@ -44,7 +47,7 @@ const setExclusiveBool = (id, boolState) => {
   }
 };
 
-const useExclusiveBool = (initialState) => {
+const useExclusiveBool = (initialState: boolean): [boolean, (state: boolean) => void] => {
   const [id] = useState(nextCounter());
   const [bool, listener] = useState(initialState);
 
@@ -62,11 +65,14 @@ const useExclusiveBool = (initialState) => {
         currentTrue = null;
       }
     };
-  }, []);
+  }, [bool, id]);
 
-  return [bool, (newBoolState) => {
-    setExclusiveBool(id, newBoolState);
-  }];
+  return [
+    bool,
+    (newBoolState: boolean) => {
+      setExclusiveBool(id, newBoolState);
+    },
+  ];
 };
 
 export default useExclusiveBool;
