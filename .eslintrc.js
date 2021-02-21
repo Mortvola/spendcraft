@@ -31,6 +31,8 @@ module.exports = {
     // 'plugin:@typescript-eslint/recommended-requiring-type-checking',
   ],
   rules: {
+    "no-shadow": "off",
+    "@typescript-eslint/no-shadow": ["error"],
     "no-use-before-define": "off",
     "@typescript-eslint/no-use-before-define": ["error"],
     "brace-style": ["error", "stroustrup"],

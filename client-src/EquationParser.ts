@@ -1,16 +1,27 @@
-const NUMBER = 'NUMBER';
-const OPERATOR = 'OPERATOR';
-const OPENPAREN = 'OPENPAREN';
-const CLOSEPAREN = 'CLOSEPAREN';
-const END = 'END';
+enum TokenType {
+  NUMBER,
+  OPERATOR,
+  OPENPAREN,
+  CLOSEPAREN,
+  END,
+}
+
+type Token = {
+  type: TokenType;
+  value: string | number | null;
+}
 
 class Tokenizer {
-  constructor(equation) {
+  iterator: Iterator<string>;
+
+  nextChar: IteratorResult<string>;
+
+  constructor(equation: string) {
     this.iterator = equation[Symbol.iterator]();
     this.nextChar = this.iterator.next();
   }
 
-  getNextToken() {
+  getNextToken(): Token {
     // Skip any leading white space
     while (this.nextChar.value === ' ' && !this.nextChar.done) {
       this.nextChar = this.iterator.next();
@@ -55,7 +66,7 @@ class Tokenizer {
           }
 
           return {
-            type: NUMBER,
+            type: TokenType.NUMBER,
             value: parseFloat(value),
           };
         }
@@ -68,7 +79,7 @@ class Tokenizer {
           this.nextChar = this.iterator.next();
 
           return {
-            type: OPERATOR,
+            type: TokenType.OPERATOR,
             value,
           };
         }
@@ -76,14 +87,14 @@ class Tokenizer {
         case '(':
           this.nextChar = this.iterator.next();
           return {
-            type: OPENPAREN,
+            type: TokenType.OPENPAREN,
             value: '(',
           };
 
         case ')':
           this.nextChar = this.iterator.next();
           return {
-            type: CLOSEPAREN,
+            type: TokenType.CLOSEPAREN,
             value: ')',
           };
 
@@ -93,24 +104,33 @@ class Tokenizer {
     }
     else {
       return {
-        type: END,
+        type: TokenType.END,
         value: null,
       };
     }
   }
 }
 
-const parseEquation = (equation) => {
-  const stack = [];
-  const output = [];
+const parseEquation = (equation: string): number => {
+  const stack: Array<string> = [];
+  const output: Array<number> = [];
 
-  const applyOperator = (operator) => {
+  const applyOperator = (operator: string) => {
+    if (typeof operator !== 'string') {
+      throw new Error('invalid operator');
+    }
+
     if (operator === 'UM') {
       if (output.length === 0) {
         throw new Error('parsing error');
       }
 
-      output.push(output.pop() * -1);
+      const value = output.pop();
+      if (value === undefined) {
+        throw new Error('output stack is empty');
+      }
+
+      output.push(value * -1);
     }
     else {
       if (output.length < 2) {
@@ -119,6 +139,10 @@ const parseEquation = (equation) => {
 
       const value2 = output.pop();
       const value1 = output.pop();
+
+      if (value1 === undefined || value2 === undefined) {
+        throw new Error('output stack is empty');
+      }
 
       switch (operator) {
         case '*':
@@ -150,26 +174,37 @@ const parseEquation = (equation) => {
   for (;;) {
     const token = tokenizer.getNextToken();
 
-    if (token.type === END) {
+    if (token.type === TokenType.END) {
       break;
     }
 
     switch (token.type) {
-      case NUMBER:
+      case TokenType.NUMBER: {
+        if (typeof token.value !== 'number') {
+          throw new Error('non-numeric with token type of NUMBER');
+        }
+
         output.push(token.value);
 
         if (stack[stack.length - 1] === 'UM') {
-          applyOperator(stack.pop());
+          const value = stack.pop();
+
+          if (typeof value !== 'string') {
+            throw new Error('invalid token type');
+          }
+
+          applyOperator(value);
         }
 
         break;
+      }
 
-      case OPERATOR:
+      case TokenType.OPERATOR:
         if (
           token.value === '-'
           && (
             prevToken === null
-            || ![NUMBER, CLOSEPAREN].includes(prevToken.type)
+            || ![TokenType.NUMBER, TokenType.CLOSEPAREN].includes(prevToken.type)
           )
         ) {
           token.value = 'UM';
@@ -181,20 +216,38 @@ const parseEquation = (equation) => {
           && stack.length > 0
           && stack[stack.length - 1] !== '('
           && (['+', '-', '*', '/'].includes(stack[stack.length - 1]))) {
-          applyOperator(stack.pop());
+          const value = stack.pop();
+          if (value === undefined) {
+            throw new Error('stack is empty');
+          }
+
+          applyOperator(value);
+        }
+
+        if (typeof token.value !== 'string') {
+          throw new Error('token of wrong type');
         }
 
         stack.push(token.value);
 
         break;
 
-      case OPENPAREN:
+      case TokenType.OPENPAREN:
+        if (typeof token.value !== 'string') {
+          throw new Error('token of wrong type');
+        }
+
         stack.push(token.value);
         break;
 
-      case CLOSEPAREN:
+      case TokenType.CLOSEPAREN:
         while (stack.length > 0 && stack[stack.length - 1] !== '(') {
-          applyOperator(stack.pop());
+          const value = stack.pop();
+          if (value === undefined) {
+            throw new Error('stack is empty');
+          }
+
+          applyOperator(value);
         }
 
         if (stack.length === 0) {
@@ -204,7 +257,12 @@ const parseEquation = (equation) => {
         stack.pop();
 
         if (stack.length > 0 && stack[stack.length - 1] === 'UM') {
-          applyOperator(stack.pop());
+          const value = stack.pop();
+          if (value === undefined) {
+            throw new Error('stack is empty');
+          }
+
+          applyOperator(value);
         }
 
         break;
@@ -217,7 +275,12 @@ const parseEquation = (equation) => {
   }
 
   while (stack.length > 0) {
-    applyOperator(stack.pop());
+    const value = stack.pop();
+    if (value === undefined) {
+      throw new Error('stack is empty');
+    }
+
+    applyOperator(value);
   }
 
   if (output.length !== 1) {
