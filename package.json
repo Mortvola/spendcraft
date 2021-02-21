@@ -6,11 +6,11 @@
   "main": "index.js",
   "scripts": {
     "start": "node server.js",
-    "build": "NODE_ENV=production browserify -t [ babelify --presets [ @babel/preset-react @babel/env ] ] -t dotenvify src/App.jsx --extension=.jsx  | terser --compress --mangle > public/app.js",
-    "dev-build-server": "node ace build",
     "welcome-build": "NODE_ENV=production browserify -t [ babelify --presets [ @babel/preset-react @babel/env ] ] -t dotenvify client-src/Welcome.jsx --extension=.jsx | terser --compress --mangle > public/welcome.js",
-    "dev-build-old": "browserify -t [ babelify --presets [ @babel/preset-react @babel/env ] ] -t dotenvify client-build/App.js --extension=.jsx > public/app.js",
-    "dev-build": "tsc -p client-src && browserify -t [ babelify --presets [ @babel/env ] ] -t dotenvify client-build/client-src/App.js > public/app.js",
+    "client-build": "tsc -p client-src && NODE_ENV=production browserify -t [ babelify --presets [ @babel/env ] ] -t dotenvify client-build/client-src/App.js | terser --compress --mangle > public/app.js",
+    "dev-build-server": "node ace build",
+    "dev-welcome-build": "browserify -t [ babelify --presets [ @babel/preset-react @babel/env ] ] -t dotenvify client-src/Welcome.jsx --extension=.jsx > public/welcome.js",
+    "dev-client-build": "tsc -p client-src && browserify -t [ babelify --presets [ @babel/env ] ] -t dotenvify client-build/client-src/App.js > public/app.js",
     "lint": "eslint ."
   },
   "keywords": [

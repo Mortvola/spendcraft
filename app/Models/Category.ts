@@ -37,25 +37,24 @@ class Category extends BaseModel {
     date: string,
     transactionId: number,
   ): Promise<Array<GroupItem>> {
-    const transactionsSubquery = Database.query().select(
-      'category_id',
-      'splits.amount',
-    )
-      .from('transaction_categories AS splits')
-      .join('transactions', 'transactions.id', 'splits.transaction_id')
-      .where('transactions.date', '>', date)
-      .where('transactions.user_id', userId);
+    let transactionsSubquery = `
+      select category_id, splits.amount
+      from transaction_categories AS splits
+      join transactions ON transactions.id = splits.transaction_id
+      where transactions.date > '${date}'
+      and transactions.user_id = ${userId}
+    `;
 
     // Also subtract out the transaction identified by transactionId
     if (transactionId !== undefined) {
-      transactionsSubquery.orWhere('transactions.id', transactionId);
+      transactionsSubquery += `or where transactions.id = ${transactionId}`;
     }
 
     const rows = await Database.query()
       .select(
         'groups.id AS groupId',
         'groups.name AS groupName',
-        'groups.system as groupSysetm',
+        'groups.system as groupSystem',
         'categories.id as categoryId',
         'categories.name as categoryName',
         'categories.system as categorySystem',
@@ -63,7 +62,7 @@ class Category extends BaseModel {
       )
       .from('groups')
       .join('categories', 'categories.group_id', 'groups.id')
-      .joinRaw(`left join (${transactionsSubquery.toQuery}) as splits1 ON  splits1.category_id  = categories.id`)
+      .joinRaw(`left join (${transactionsSubquery}) as splits1 ON  splits1.category_id  = categories.id`)
       .where('groups.user_id', userId)
       .groupBy('groups.id', 'groups.name', 'categories.id', 'categories.name')
       .orderBy('groups.name')

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import ReactDOM from 'react-dom';
 import 'regenerator-runtime/runtime';
+import { Navbar, Nav } from 'react-bootstrap';
 import Login from './login/Login';
 import Register from './login/Register';
 
@@ -38,16 +39,40 @@ const Welcome = () => {
     className += ' dark';
   }
 
+  const handleSelect = (eventKey) => {
+    switch (eventKey) {
+      case 'login':
+        setShowLogin(true);
+        break;
+
+      case 'register':
+        setShowRegister(false);
+        break;
+
+      default:
+        break;
+    }
+    // uiState.setView(eventKey);
+  };
+
   return (
-    <div className={className}>
-      <div className="top-right links">
-        <div className="welcome-button" onClick={handleLoginClick}>Login</div>
-        <div className="welcome-button" onClick={handleRegisterClick}>Register</div>
+    <>
+      <Navbar collapseOnSelect onSelect={handleSelect} expand="md">
+        <Navbar.Brand href="/">Deber-tas</Navbar.Brand>
+        <Navbar.Toggle />
+        <Navbar.Collapse>
+          <Nav className="ml-auto">
+            <Nav.Link eventKey="login">Login</Nav.Link>
+            <Nav.Link eventKey="register">Register</Nav.Link>
+          </Nav>
+        </Navbar.Collapse>
+      </Navbar>
+      <div className={className}>
+        <Login show={showLogin} onHide={handleLoginHide} />
+        <Register show={showRegister} onHide={handleRegisterHide} />
+        <img src="/coins.png" alt="" onLoad={handleLoad} style={{ display: 'none' }} />
       </div>
-      <Login show={showLogin} onHide={handleLoginHide} />
-      <Register show={showRegister} onHide={handleRegisterHide} />
-      <img src="/coins.png" alt="" onLoad={handleLoad} style={{ display: 'none' }} />
-    </div>
+    </>
   );
 };
 

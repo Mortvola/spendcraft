@@ -11,6 +11,13 @@ html, body {
     margin: 0;
 }
 
+.app {
+	display: grid;
+	grid-template-columns: 1fr;
+	grid-template-rows: max-content minmax(0, 1fr);
+	height: 100vh;
+}
+
 .full-height {
     height: 100vh;
 }
@@ -34,6 +41,14 @@ html, body {
 .content {
     display: grid;
     justify-items: center;
+}
+
+.navbar {
+	background-color:#228B22;
+}
+
+.app .navbar-nav .nav-link {
+    color: white;
 }
 
 .links > a {
@@ -114,7 +129,7 @@ body {
 
 .welcome-button {
     display: inline;
-	color: white;
+	color: black;
 	cursor: pointer;
 	text-transform: uppercase;
 	padding: 0 25px;
