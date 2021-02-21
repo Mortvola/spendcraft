@@ -2,6 +2,7 @@ import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import Database from '@ioc:Adonis/Lucid/Database';
 import FundingPlan, { Plan, PlanCategory } from 'App/Models/FundingPlan';
 import FundingPlanCategory from 'App/Models/FundingPlanCategory';
+import { UpdateFundingCategoryResponse } from 'common/ResponseTypes';
 
 class FundingPlanController {
   // eslint-disable-next-line class-methods-use-this
@@ -71,7 +72,9 @@ class FundingPlanController {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  public async updateCategory({ request }: HttpContextContract): Promise<PlanCategory> {
+  public async updateCategory({
+    request,
+  }: HttpContextContract): Promise<UpdateFundingCategoryResponse> {
     const category = await FundingPlanCategory.updateOrCreate(
       {
         planId: request.params().planId,

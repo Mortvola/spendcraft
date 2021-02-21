@@ -9,9 +9,9 @@ function IconButton({ icon, rotate, onClick }) {
   }
 
   return (
-    <div className="btn btn-sm group-button" onClick={onClick}>
+    <button type="button" className="btn btn-sm group-button" onClick={onClick} >
       <i className={className} />
-    </div>
+    </button>
   );
 }
 

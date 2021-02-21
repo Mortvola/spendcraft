@@ -64,6 +64,18 @@ export const isUpdateCategoryResponse = (
   (r as UpdateCategoryResponse).name !== undefined
 );
 
+export interface UpdateFundingCategoryResponse {
+  amount: number;
+  categoryId: number;
+}
+
+export const isUpdateFundingCategoryResponse = (
+  r: UpdateFundingCategoryResponse | unknown,
+): r is UpdateFundingCategoryResponse => (
+  (r as UpdateFundingCategoryResponse).amount !== undefined
+  && (r as UpdateFundingCategoryResponse).categoryId !== undefined
+);
+
 export const isCategoryProps = (
   r: CategoryProps | unknown,
 ): r is CategoryProps => (

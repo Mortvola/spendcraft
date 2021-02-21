@@ -2,7 +2,7 @@ import { makeAutoObservable, runInAction } from 'mobx';
 import FundingPlanGroup from './FundingPlanGroup';
 import { StoreInterface } from './State';
 import { getBody, putJSON } from './Transports';
-import { FundingPlanDetailsProps, isUpdateCategoryResponse } from '../../common/ResponseTypes';
+import { FundingPlanDetailsProps, isUpdateCategoryResponse, isUpdateFundingCategoryResponse } from '../../common/ResponseTypes';
 
 class FundingPlanDetails {
   planId: number;
@@ -29,29 +29,30 @@ class FundingPlanDetails {
     this.store = store;
   }
 
-  async updateCategoryAmount(categoryId: number, amount: number, delta: number) {
+  async updateCategoryAmount(categoryId: number, amount: number, delta: number): Promise<void> {
     const response = await putJSON(`/funding_plan/${this.planId}/item/${categoryId}`, { amount });
 
-    if (response.ok) {
-      const body = await getBody(response);
+    const body = await getBody(response);
 
+    if (response.ok && isUpdateFundingCategoryResponse(body)) {
       runInAction(() => {
-        if (isUpdateCategoryResponse(body)) {
-          this.groups.some((g) => {
-            const cat = g.categories.find((c) => c.id === categoryId);
-  
-            if (cat) {
-              cat.amount = body.amount;
-  
-              return true;
-            }
-  
-            return false;
-          });
-  
-          this.total += delta;
-        }
+        this.groups.some((g) => {
+          const cat = g.categories.find((c) => c.id === categoryId);
+
+          if (cat) {
+            cat.amount = body.amount;
+
+            return true;
+          }
+
+          return false;
+        });
+
+        this.total += delta;
       });
+    }
+    else {
+      throw new Error('invalid response');
     }
   }
 }

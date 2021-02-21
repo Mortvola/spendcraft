@@ -10,7 +10,7 @@
     "dev-build-server": "node ace build",
     "welcome-build": "NODE_ENV=production browserify -t [ babelify --presets [ @babel/preset-react @babel/env ] ] -t dotenvify src/Welcome.jsx --extension=.jsx | terser --compress --mangle > public/welcome.js",
     "dev-build-old": "browserify -t [ babelify --presets [ @babel/preset-react @babel/env ] ] -t dotenvify client-build/App.js --extension=.jsx > public/app.js",
-    "dev-build": "tsc -p src && browserify -t [ babelify --presets [ @babel/env ] ] -t dotenvify client-build/App.js > public/app.js",
+    "dev-build": "tsc -p client-src && browserify -t [ babelify --presets [ @babel/env ] ] -t dotenvify client-build/client-src/App.js > public/app.js",
     "lint": "eslint ."
   },
   "keywords": [

@@ -329,10 +329,18 @@ body {
 	overflow: hidden;
 }
 
+.cat-element-bar.system {
+  grid-template-columns: max-content minmax(0, 1fr);
+}
+
 .cat-list-name {
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
+}
+
+.cat-list-amt {
+  min-width: 4.25rem;
 }
 
 .cat-list-cat {

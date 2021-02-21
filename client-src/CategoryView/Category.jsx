@@ -22,10 +22,19 @@ const Category = ({
     className += ' selected';
   }
 
+  let barClassName = 'cat-element-bar';
+  if (group.system) {
+    barClassName += ' system';
+  }
+
   return (
     <div className={className} onClick={handleClick}>
-      <div className="cat-element-bar">
-        <EditButton category={category} group={group} />
+      <div className={barClassName}>
+        {
+          group.system
+            ? <EditButton category={category} group={group} />
+            : null
+        }
         <IconButton icon="random" onClick={showCategoryTransferDialog} />
         <CategoryTransferDialog />
         <div className="cat-list-name">{category.name}</div>
