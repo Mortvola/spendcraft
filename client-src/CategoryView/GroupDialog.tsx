@@ -3,7 +3,7 @@ import React, { ReactElement, useContext } from 'react';
 import { Modal, Button, ModalBody } from 'react-bootstrap';
 import {
   Formik, Form, Field, ErrorMessage,
-  useFormikContext, FormikBag, FormikHelpers,
+  useFormikContext, FormikHelpers,
   FormikErrors,
   FormikContextType,
 } from 'formik';

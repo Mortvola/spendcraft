@@ -7,6 +7,7 @@ import Register from './login/Register';
 const Welcome = () => {
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   const handleLoginClick = () => {
     setShowLogin(true);
@@ -24,7 +25,18 @@ const Welcome = () => {
     setShowRegister(false);
   };
 
-  const className = 'flex-center position-ref full-height';
+  const handleLoad = () => {
+    document.querySelector('body').className = 'background';
+    setImageLoaded(true);
+  };
+
+  let className = 'flex-center position-ref full-height';
+  if (imageLoaded) {
+    className += ' light';
+  }
+  else {
+    className += ' dark';
+  }
 
   return (
     <div className={className}>
@@ -34,6 +46,7 @@ const Welcome = () => {
       </div>
       <Login show={showLogin} onHide={handleLoginHide} />
       <Register show={showRegister} onHide={handleRegisterHide} />
+      <img src="/coins.png" alt="" onLoad={handleLoad} style={{ display: 'none' }} />
     </div>
   );
 };

@@ -55,7 +55,7 @@ body {
 }
 
 .background {
-    background: linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.1)), url('/Forester.jpg');
+    background: linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.1)), url('/coins.png');
     background-repeat: no-repeat;
     background-attachment: fixed;
     background-position: center;
@@ -68,7 +68,7 @@ body {
 
 .light {
     background-color: rgba(0,0,0,0);
-    transition: background-color 2s ease-in;
+    transition: background-color 1s ease-in;
 }
 
 @media screen and (max-width: 668px) {
