@@ -5,7 +5,9 @@
   ],
   "exclude": [
     "node_modules",
-    "build"
+    "build",
+    "client-src",
+    "client-build"
   ],
   "compilerOptions": {
     "moduleResolution": "node",

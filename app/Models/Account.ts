@@ -171,8 +171,11 @@ class Account extends BaseModel {
   }
 
   public async addTransactions(
-    this: Account, trx: TransactionClientContract,
-    accessToken: string, startDate: Moment, userId: number,
+    this: Account,
+    trx: TransactionClientContract,
+    accessToken: string,
+    startDate: Moment,
+    userId: number,
   ): Promise<Transaction> {
     const pendingTransactions = await trx.query().select('transaction_id', 'plaid_transaction_id')
       .from('account_transactions')

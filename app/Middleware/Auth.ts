@@ -41,7 +41,7 @@ export default class AuthMiddleware {
          * succeeded here
          */
         auth.defaultGuard = guard;
-        return true;
+        return;
       }
     }
 

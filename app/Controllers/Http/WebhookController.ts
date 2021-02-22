@@ -73,7 +73,7 @@ class WebhookController {
               acct.sync(
                 trx,
                 institution.accessToken,
-                institution.user.id,
+                institution.userId,
               )
             )));
 
@@ -115,6 +115,10 @@ class WebhookController {
   static verify(request) {
     return new Promise((resolve) => {
       jwt.verify(request.header('Plaid-Verification'), ({ kid }, callback) => {
+        if (kid === undefined) {
+          throw new Error('kid is undefined');
+        }
+
         const currentKey = keyCache[kid];
 
         if (currentKey === undefined) {

@@ -1,6 +1,6 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import plaidClient from '@ioc:Plaid';
-import User from 'App/Models/User';
+// import User from 'App/Models/User';
 
 export default class UsersController {
   // eslint-disable-next-line class-methods-use-this
@@ -45,7 +45,7 @@ export default class UsersController {
 
   // eslint-disable-next-line class-methods-use-this
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public static async getProfile({ auth, response }: HttpContextContract): Promise<void> {
+  public static async getProfile({ auth }: HttpContextContract): Promise<void> {
     if (auth.user) {
       // response.send(auth.user.serialize({
       //   fields: [
@@ -63,7 +63,7 @@ export default class UsersController {
 
   // eslint-disable-next-line class-methods-use-this
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public static async putProfile({ auth, request }: HttpContextContract): Promise<void> {
+  public static async putProfile({ auth }: HttpContextContract): Promise<void> {
     if (auth.user) {
       // const profile = request.post();
 

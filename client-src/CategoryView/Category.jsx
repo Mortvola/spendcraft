@@ -31,7 +31,7 @@ const Category = ({
     <div className={className} onClick={handleClick}>
       <div className={barClassName}>
         {
-          group.system
+          !group.system
             ? <EditButton category={category} group={group} />
             : null
         }

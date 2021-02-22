@@ -1,6 +1,6 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import Database from '@ioc:Adonis/Lucid/Database';
-import FundingPlan, { Plan, PlanCategory } from 'App/Models/FundingPlan';
+import FundingPlan, { Plan } from 'App/Models/FundingPlan';
 import FundingPlanCategory from 'App/Models/FundingPlanCategory';
 import { UpdateFundingCategoryResponse } from 'common/ResponseTypes';
 
