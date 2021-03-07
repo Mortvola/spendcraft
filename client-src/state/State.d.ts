@@ -1,5 +1,4 @@
 import Reports from './Reports';
-import UIState from './UIState';
 import User from './User';
 
 export interface AccountsInterface {
@@ -14,7 +13,22 @@ export interface AccountsInterface {
   async load(): Promise<void>;
 }
 
+export type Views = 'HOME' | 'PLANS' | 'ACCOUNTS' | 'REPORTS' | 'ACCOUNT' | 'LOGOUT';
+
+export interface UIStateInterface {
+  view: Views;
+  selectedCategoryId: number | null;
+  setView(view: Views): void;
+}
+
+type SystemIds = {
+  systemGroupId: number | null,
+  unassignedId: number | null,
+  fundingPoolId: number | null,
+};
+
 export interface CategoryTreeInterface {
+  systemIds: SystemIds;
   updateBalances(balances: Array<CategoryProps>): void;
 }
 
@@ -75,7 +89,7 @@ export interface StoreInterface {
 
   balances: BalancesInterface;
 
-  uiState: UIState;
+  uiState: UIStateInterface;
 
   reports: Reports;
 

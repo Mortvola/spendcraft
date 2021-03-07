@@ -30,19 +30,19 @@ const App = () => {
 
   const renderMain = () => {
     switch (uiState.view) {
-      case 'home':
+      case 'HOME':
         return <Home />;
 
-      case 'accounts':
+      case 'ACCOUNTS':
         return <Accounts />;
 
-      case 'reports':
+      case 'REPORTS':
         return <Reports />;
 
-      case 'plans':
+      case 'PLANS':
         return <Plans />;
 
-      case 'logout':
+      case 'LOGOUT':
         return <Logout />;
 
       default:

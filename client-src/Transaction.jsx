@@ -33,7 +33,7 @@ const Transaction = ({
   const handleChange = (catId) => {
     const request = { splits: [{ categoryId: catId, amount: transaction.amount }] };
 
-    transaction.updateTransactionCategory(request);
+    transaction.updateTransactionCategory(request.splits);
   };
 
   const TransactionDialog = ({ type: tranDialogType }) => {

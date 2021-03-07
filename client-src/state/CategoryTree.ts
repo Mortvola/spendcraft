@@ -5,13 +5,13 @@ import {
   CategoryProps, Error, isErrorResponse,
   isGroupProps, isGroupsResponse,
 } from '../../common/ResponseTypes';
-import { CategoryTreeInterface, StoreInterface } from './State';
+import { CategoryTreeInterface, StoreInterface, SystemIds } from './State';
 import { getBody, httpDelete, postJSON } from './Transports';
 
 class CategoryTree implements CategoryTreeInterface {
   groups: Array<Group> = [];
 
-  systemIds: Record<string, number | null> = {
+  systemIds: SystemIds = {
     systemGroupId: null,
     unassignedId: null,
     fundingPoolId: null,

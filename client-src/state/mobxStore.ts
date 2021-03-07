@@ -7,7 +7,7 @@ import Reports from './Reports';
 import UIState from './UIState';
 import User from './User';
 import Plans from './Plans';
-import { AccountsInterface, StoreInterface } from './State';
+import { AccountsInterface, StoreInterface, UIStateInterface } from './State';
 
 class Store implements StoreInterface {
   user: User;
@@ -20,7 +20,7 @@ class Store implements StoreInterface {
 
   balances: Balances;
 
-  uiState: UIState;
+  uiState: UIStateInterface;
 
   reports: Reports;
 

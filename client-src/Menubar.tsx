@@ -6,12 +6,15 @@ import {
   NavDropdown,
 } from 'react-bootstrap';
 import MobxStore from './state/mobxStore';
+import { Views } from './state/State';
 
 const Menubar = () => {
   const { uiState, user: { username } } = useContext(MobxStore);
 
-  const handleSelect = (eventKey) => {
-    uiState.setView(eventKey);
+  const handleSelect = (eventKey: Views | string | null) => {
+    if (eventKey) {
+      uiState.setView(eventKey as Views);
+    }
   };
 
   return (
@@ -20,15 +23,15 @@ const Menubar = () => {
       <Navbar.Toggle />
       <Navbar.Collapse>
         <Nav className="mr-auto">
-          <Nav.Link eventKey="home">Home</Nav.Link>
-          <Nav.Link eventKey="plans">Plans</Nav.Link>
-          <Nav.Link eventKey="accounts">Accounts</Nav.Link>
-          <Nav.Link eventKey="reports">Reports</Nav.Link>
+          <Nav.Link eventKey="HOME">Home</Nav.Link>
+          <Nav.Link eventKey="PLANS">Plans</Nav.Link>
+          <Nav.Link eventKey="ACCOUNTS">Accounts</Nav.Link>
+          <Nav.Link eventKey="REPORTS">Reports</Nav.Link>
         </Nav>
         <Nav className="ml-auto">
-          <NavDropdown className="dropdown menubar-item" title={username || ''}>
-            <Nav.Link eventKey="account">Account</Nav.Link>
-            <Nav.Link eventKey="logout">Logout</Nav.Link>
+          <NavDropdown className="dropdown menubar-item" title={username || ''} id="menubar-dropdown">
+            <Nav.Link eventKey="ACCOUNT">Account</Nav.Link>
+            <Nav.Link eventKey="LOGOUT">Logout</Nav.Link>
           </NavDropdown>
         </Nav>
       </Navbar.Collapse>

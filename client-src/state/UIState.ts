@@ -1,23 +1,29 @@
 import { makeAutoObservable, runInAction } from 'mobx';
+import { StoreInterface, UIStateInterface, Views } from './State';
 
-class UIState {
-  view = 'home';
+class UIState implements UIStateInterface {
+  view: Views = 'HOME';
 
   selectedCategoryId: number | null = null;
 
   selectedPlanId: number | null = null;
 
-  store: unknown;
+  store: StoreInterface;
 
-  constructor(store: unknown) {
+  constructor(store: StoreInterface) {
     makeAutoObservable(this);
 
     this.store = store;
   }
 
-  setView(view: string): void {
+  setView(view: Views): void {
     runInAction(() => {
-      this.view = view;
+      if (view === 'HOME' && this.view === 'HOME') {
+        this.selectedCategoryId = this.store.categoryTree.systemIds.unassignedId;
+      }
+      else {
+        this.view = view;
+      }
     });
   }
 
