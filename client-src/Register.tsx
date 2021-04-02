@@ -1,15 +1,18 @@
-import React, { useState, useContext } from 'react';
-import PropTypes from 'prop-types';
+import React, { useState, useContext, ReactElement } from 'react';
 import { observer } from 'mobx-react-lite';
 import { Spinner } from 'react-bootstrap';
 import Transaction from './Transaction';
 import Amount from './Amount';
 import MobxStore from './state/mobxStore';
 
+type PropsType = {
+  isMobile?: boolean;
+}
+
 const Register = ({
   isMobile,
-}) => {
-  const [selectedTransaction, setSelectedTransaction] = useState(null);
+}: PropsType): ReactElement => {
+  const [selectedTransaction, setSelectedTransaction] = useState<number | null>(null);
   const {
     register: {
       categoryId,
@@ -25,13 +28,11 @@ const Register = ({
     },
   } = useContext(MobxStore);
 
-  const handleClick = (transactionId) => {
+  const handleClick = (transactionId: number) => {
     setSelectedTransaction(transactionId);
   };
 
   const renderTransactions = () => {
-    const list = [];
-
     if (fetching) {
       return (
         <div className="please-wait">
@@ -40,9 +41,11 @@ const Register = ({
       );
     }
 
+    let list: Array<ReactElement> | null = null;
+
     if (transactions) {
       let runningBalance = balance;
-      transactions.forEach((transaction) => {
+      list = transactions.map((transaction) => {
         let { amount } = transaction;
 
         if (categoryId !== null) {
@@ -51,21 +54,24 @@ const Register = ({
 
         const selected = selectedTransaction === transaction.id;
 
-        list.push(<Transaction
-          key={transaction.id}
-          transaction={transaction}
-          amount={amount}
-          balance={runningBalance}
-          onClick={handleClick}
-          selected={selected}
-          categoryId={categoryId}
-          unassignedId={unassignedId}
-          isMobile={isMobile}
-        />);
+        const element = (
+          <Transaction
+            key={transaction.id}
+            transaction={transaction}
+            amount={amount}
+            balance={runningBalance}
+            selected={selected}
+            categoryId={categoryId}
+            unassignedId={unassignedId}
+            isMobile={isMobile}
+          />
+        );
 
         if (runningBalance !== undefined) {
           runningBalance -= amount;
         }
+
+        return element;
       });
     }
 
@@ -77,22 +83,18 @@ const Register = ({
   };
 
   const renderPendingTransactions = () => {
-    const list = [];
-
     if (pending) {
-      pending.forEach((transaction) => {
-        list.push((
-          <div key={transaction.id} className="pending-transaction striped">
-            <div />
-            <div>{transaction.date}</div>
-            <div className="transaction-field">{transaction.name}</div>
-            <Amount amount={transaction.amount} />
-          </div>
-        ));
-      });
+      return pending.map((transaction) => (
+        <div key={transaction.id} className="pending-transaction striped">
+          <div />
+          <div>{transaction.date}</div>
+          <div className="transaction-field">{transaction.name}</div>
+          <Amount amount={transaction.amount} />
+        </div>
+      ));
     }
 
-    return list;
+    return null;
   };
 
   const renderPending = () => {
@@ -111,7 +113,7 @@ const Register = ({
             <div />
           </div>
           <div className="transactions striped">
-            {renderPendingTransactions(pending)}
+            {renderPendingTransactions()}
           </div>
         </div>
       );
@@ -162,10 +164,6 @@ const Register = ({
       {renderPending()}
     </div>
   );
-};
-
-Register.propTypes = {
-  isMobile: PropTypes.bool,
 };
 
 Register.defaultProps = {

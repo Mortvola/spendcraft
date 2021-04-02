@@ -5,17 +5,16 @@ import {
   CategoryProps, Error, isErrorResponse,
   isGroupProps, isGroupsResponse,
 } from '../../common/ResponseTypes';
-import { CategoryTreeInterface, StoreInterface, SystemIds } from './State';
+import { CategoryTreeInterface, StoreInterface } from './State';
+import SystemIds from './SystemIds';
 import { getBody, httpDelete, postJSON } from './Transports';
 
 class CategoryTree implements CategoryTreeInterface {
+  initialized = false;
+
   groups: Array<Group> = [];
 
-  systemIds: SystemIds = {
-    systemGroupId: null,
-    unassignedId: null,
-    fundingPoolId: null,
-  };
+  systemIds = new SystemIds();
 
   store: StoreInterface;
 
@@ -100,6 +99,8 @@ class CategoryTree implements CategoryTreeInterface {
           const group = new Group(g);
           this.groups.push(group);
         });
+
+        this.initialized = true;
       });
     }
   }

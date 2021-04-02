@@ -31,7 +31,7 @@ export const isCategoryBalance = (
 );
 
 export interface CategoryProps {
-  groupId: number;
+  groupId: number | null;
 
   id: number;
 
@@ -138,6 +138,13 @@ export interface TransactionCategoryProps {
   amount: number;
 }
 
+export enum TransactionType {
+  REGULAR_TRANSACTION = 0,
+  TRANSFER_TRANSACTION = 1,
+  FUNDING_TRANSACTION = 2,
+  REBALANCE_TRANSACTION = 3,
+}
+
 export interface TransactionProps {
   id: number;
 
@@ -147,9 +154,13 @@ export interface TransactionProps {
 
   amount: number;
 
-  type: string;
+  type: TransactionType;
 
   name: string;
+
+  instituteName: string;
+
+  accountName: string;
 
   categories: Array<TransactionCategoryProps>
 }

@@ -14,7 +14,7 @@ import Amount from '../Amount';
 import MobxStore from '../state/mobxStore';
 import useModal, { ModalProps } from '../useModal';
 import Transaction from '../state/Transaction';
-import { TransactionCategoryInterface } from '../state/State';
+import { NewTransactionCategoryInterface, TransactionCategoryInterface } from '../state/State';
 import { patchJSON, postJSON } from '../state/Transports';
 
 interface Props {
@@ -29,7 +29,9 @@ const FundingDialog = ({
 }: Props & ModalProps): ReactElement => {
   const { categoryTree } = useContext(MobxStore);
 
-  const getTotal = useCallback((categories: Array<TransactionCategoryInterface>) => (
+  const getTotal = useCallback((
+    categories: Array<TransactionCategoryInterface | NewTransactionCategoryInterface>,
+  ) => (
     categories.reduce((accumulator: number, item) => (
       item.categoryId === categoryTree.systemIds.fundingPoolId
         ? accumulator
@@ -128,7 +130,13 @@ const FundingDialog = ({
   };
 
   const handleSubmit = async (values: ValueType) => {
-    const request = {
+    type Request = {
+      date: string,
+      type: number,
+      categories: Array<TransactionCategoryInterface | NewTransactionCategoryInterface>,
+    }
+
+    const request: Request = {
       date: values.date,
       type: 2,
       categories: values.funding.categories.filter((item) => (
@@ -153,7 +161,6 @@ const FundingDialog = ({
       }
 
       request.categories.push({
-        id: null,
         categoryId: categoryTree.systemIds.fundingPoolId,
         amount: -sum,
       });

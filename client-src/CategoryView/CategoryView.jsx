@@ -12,8 +12,7 @@ const CategoryView = () => {
 
   useEffect(() => {
     // If there isn't a category selected then select the unassigned category
-    if (uiState.selectedCategoryId === null
-      && categoryTree.systemIds.unassignedId !== null) {
+    if (uiState.selectedCategoryId === null) {
       uiState.selectCategory(categoryTree.systemIds.unassignedId);
     }
   }, [uiState.selectedCategoryId, categoryTree.systemIds.unassignedId, uiState]);

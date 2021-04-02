@@ -1,33 +1,24 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
-import React from 'react';
-import PropTypes from 'prop-types';
+import React, { ReactElement } from 'react';
 import { Modal, Button } from 'react-bootstrap';
 import {
-  Formik, Form, Field, ErrorMessage,
+  Formik, Form, Field, ErrorMessage, FormikErrors, FieldProps,
 } from 'formik';
 import CategorySplits from './CategorySplits';
-import useModal from './useModal';
+import useModal, { ModalProps } from './useModal';
+import Transaction from './state/Transaction';
+import { patchJSON, postJSON, httpDelete } from './state/Transports';
+import { TransactionCategoryInterface } from './state/State';
 
-function validateSplits(splits) {
-  let error;
-
-  if (splits !== undefined && splits.length > 0) {
-    if (splits.some((split) => (
-      split.categoryId === null || split.categoryId === undefined
-    ))) {
-      error = 'There are one or more items not assigned a category.';
-    }
-  }
-
-  return error;
+type PropsType = {
+  transaction?: Transaction | null,
 }
 
 const CategoryTransferDialog = ({
   onHide,
-  onExited,
   show,
-  transaction,
-}) => {
+  transaction = null,
+}: PropsType & ModalProps): ReactElement => {
   // const amount = 0;
 
   // if (!date) {
@@ -85,7 +76,27 @@ const CategoryTransferDialog = ({
   // $('#catTransferForm').submit((event) => {
   //     event.preventDefault();
 
-  const handleSubmit = (values) => {
+  type ValueType = {
+    fromCategories: Array<TransactionCategoryInterface | { id: number, amount: number }>,
+    toCategories: Array<TransactionCategoryInterface | { id: number, amount: number }>,
+    date: string | null,
+  }
+
+  function validateSplits(splits: Array<TransactionCategoryInterface>) {
+    let error;
+
+    if (splits !== undefined && splits.length > 0) {
+      if (splits.some((split) => (
+        split.categoryId === null || split.categoryId === undefined
+      ))) {
+        error = 'There are one or more items not assigned a category.';
+      }
+    }
+
+    return error;
+  }
+
+  const handleSubmit = async (values: ValueType) => {
     const { date, fromCategories, toCategories } = values;
     const cats = fromCategories.concat(toCategories).map((s) => {
       if (s.id < 0) {
@@ -98,38 +109,25 @@ const CategoryTransferDialog = ({
     });
 
     if (transaction) {
-      fetch(`/category_transfer/${transaction.id}`, {
-        method: 'PATCH',
-        headers: {
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ date, categories: cats }),
-      })
-        .then((response) => {
-          if (response.ok) {
-            onHide();
-          }
-        });
+      const response = await patchJSON(`/category_transfer/${transaction.id}`,
+        { date, categories: cats });
+
+      if (response.ok) {
+        onHide();
+      }
     }
     else {
-      fetch('/category_transfer', {
-        headers: {
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ date, categories: cats }),
-      })
-        .then((response) => {
-          if (response.ok) {
-            onHide();
-          }
-        });
+      const response = await postJSON('/category_transfer',
+        { date, categories: cats });
+
+      if (response.ok) {
+        onHide();
+      }
     }
   };
 
-  const handleValidate = (values) => {
-    const errors = {};
+  const handleValidate = (values: ValueType) => {
+    const errors: FormikErrors<ValueType> = {};
     const fromSum = values.fromCategories.reduce(
       (accum, item) => accum + Math.floor(item.amount * -100), 0,
     );
@@ -138,7 +136,7 @@ const CategoryTransferDialog = ({
     );
 
     if (fromSum !== toSum) {
-      errors.splits = 'The sum of the From categories does not match the sum of the To categories.';
+      errors.fromCategories = 'The sum of the From categories does not match the sum of the To categories.';
     }
 
     return errors;
@@ -146,16 +144,14 @@ const CategoryTransferDialog = ({
 
   const handleTotalChange = () => null;
 
-  const handleDelete = () => {
-    fetch(`/category_transfer/${transaction.id}`, {
-      method: 'DELETE',
-      headers: {
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-      },
-    })
-      .then(() => {
-        onHide();
-      });
+  const handleDelete = async () => {
+    if (!transaction) {
+      throw new Error('transaction is null');
+    }
+
+    await httpDelete(`/category_transfer/${transaction.id}`);
+
+    onHide();
   };
 
   const Header = () => (
@@ -180,17 +176,16 @@ const CategoryTransferDialog = ({
         : undefined}
       show={show}
       onHide={onHide}
-      onExited={onExited}
       size="lg"
     >
-      <Formik
+      <Formik<ValueType>
         initialValues={{
           fromCategories: transaction && transaction.categories
             ? transaction.categories.filter((c) => c.amount < 0)
-            : [{ amount: 0 }],
+            : [{ id: -1, amount: 0 }],
           toCategories: transaction && transaction.categories
             ? transaction.categories.filter((c) => c.amount >= 0)
-            : [{ amount: 0 }],
+            : [{ id: -1, amount: 0 }],
           date: transaction ? transaction.date : null,
         }}
         validate={handleValidate}
@@ -216,17 +211,25 @@ const CategoryTransferDialog = ({
                 <div className="dollar-amount">New Balance</div>
               </div>
               <Field name="fromCategories" validate={validateSplits}>
-                {({ field: { value, name }, form: { setFieldValue } }) => (
+                {({
+                  field: {
+                    value,
+                    name,
+                  },
+                  form: {
+                    setFieldValue,
+                  },
+                }: FieldProps<Array<TransactionCategoryInterface>>) => (
                   <CategorySplits
                     splits={value.map((s) => (
                       { ...s, ...{ amount: s.amount * -1 } }
                     ))}
                     total={0}
-                    onChange={(splits, delta) => {
+                    onChange={(splits) => {
                       setFieldValue(name, splits.map((s) => (
                         { ...s, ...{ amount: s.amount * -1 } }
                       )));
-                      handleTotalChange(delta);
+                      handleTotalChange();
                     }}
                   />
                 )}
@@ -249,13 +252,21 @@ const CategoryTransferDialog = ({
               <div className="dollar-amount">New Balance</div>
             </div>
             <Field name="toCategories" validate={validateSplits}>
-              {({ field: { value, name }, form: { setFieldValue } }) => (
+              {({
+                field: {
+                  value,
+                  name,
+                },
+                form: {
+                  setFieldValue,
+                },
+              }: FieldProps<Array<TransactionCategoryInterface>>) => (
                 <CategorySplits
                   splits={value}
                   total={0}
-                  onChange={(splits, delta) => {
+                  onChange={(splits) => {
                     setFieldValue(name, splits);
-                    handleTotalChange(delta);
+                    handleTotalChange();
                   }}
                 />
               )}
@@ -271,21 +282,6 @@ const CategoryTransferDialog = ({
       </Formik>
     </Modal>
   );
-};
-
-CategoryTransferDialog.propTypes = {
-  onHide: PropTypes.func.isRequired,
-  onExited: PropTypes.func.isRequired,
-  show: PropTypes.bool.isRequired,
-  transaction: PropTypes.shape({
-    id: PropTypes.number.isRequired,
-    categories: PropTypes.arrayOf(PropTypes.shape).isRequired,
-    date: PropTypes.string.isRequired,
-  }),
-};
-
-CategoryTransferDialog.defaultProps = {
-  transaction: null,
 };
 
 export const useCategoryTransferDialog = () => useModal(CategoryTransferDialog);

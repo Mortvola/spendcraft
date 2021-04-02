@@ -26,7 +26,7 @@ function validateSplits(splits: Array<TransactionCategoryInterface>) {
 
 interface Props {
   transaction: Transaction,
-  categoryId: number,
+  categoryId?: number | null,
   unassignedId: number,
 }
 
@@ -193,26 +193,9 @@ const TransactionDialog = ({
   );
 };
 
-// TransactionDialog.propTypes = {
-//   show: PropTypes.bool.isRequired,
-//   transaction: PropTypes.shape({
-//     amount: PropTypes.number.isRequired,
-//     categories: PropTypes.arrayOf(PropTypes.shape({
-//       categoryId: PropTypes.number,
-//     })),
-//     updateTransactionCategory: PropTypes.func.isRequired,
-//   }).isRequired,
-//   onClose: PropTypes.func.isRequired,
-//   onExited: PropTypes.func.isRequired,
-//   title: PropTypes.string,
-//   categoryId: PropTypes.number,
-//   unassignedId: PropTypes.number.isRequired,
-// };
-
-// TransactionDialog.defaultProps = {
-//   title: 'Transaction Categories',
-//   categoryId: null,
-// };
+TransactionDialog.defaultProps = {
+  categoryId: null,
+};
 
 export const useTransactionDialog = (): [
   (props: Props) => (ReactElement | null),

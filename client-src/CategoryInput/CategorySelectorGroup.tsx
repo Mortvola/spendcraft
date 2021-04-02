@@ -1,21 +1,28 @@
-import React from 'react';
-import PropTypes from 'prop-types';
+import React, { ReactElement } from 'react';
 import CategorySelectorCategory from './CategorySelectorCategory';
+import Group from '../state/Group';
+import Category from '../state/Category';
+
+type PropsType = {
+  group: Group,
+  selected: string | null,
+  onSelected: (group: Group, category: Category) => void,
+}
 
 function CategorySelectorGroup({
   group,
   selected,
   onSelected,
-}) {
-  const handleMouseDown = (event) => {
+}: PropsType): ReactElement | null {
+  const handleMouseDown = (event: React.MouseEvent) => {
     event.preventDefault();
   };
 
-  const handleClick = (event) => {
+  const handleClick = (event: React.MouseEvent) => {
     event.stopPropagation();
   };
 
-  const handleSelected = (category) => {
+  const handleSelected = (category: Category) => {
     onSelected(group, category);
   };
 
@@ -41,18 +48,5 @@ function CategorySelectorGroup({
 
   return null;
 }
-
-CategorySelectorGroup.propTypes = {
-  onSelected: PropTypes.func.isRequired,
-  group: PropTypes.shape({
-    name: PropTypes.string.isRequierd,
-    categories: PropTypes.arrayOf(PropTypes.shape()).isRequired,
-  }).isRequired,
-  selected: PropTypes.string,
-};
-
-CategorySelectorGroup.defaultProps = {
-  selected: null,
-};
 
 export default CategorySelectorGroup;

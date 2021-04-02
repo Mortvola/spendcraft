@@ -31,6 +31,7 @@ module.exports = {
     // 'plugin:@typescript-eslint/recommended-requiring-type-checking',
   ],
   rules: {
+    "react/require-default-props": "off",
     "no-shadow": "off",
     "@typescript-eslint/no-shadow": ["error"],
     "no-use-before-define": "off",

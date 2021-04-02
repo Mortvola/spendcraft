@@ -339,11 +339,9 @@ class CategoryController {
               amount = split.amount;
             }
 
-            const category = await Category.findOrFail(split.categoryId, trx);
+            const [category] = await Category.query({ client: trx }).where('id', split.categoryId);
 
             category.amount += amount;
-
-            await trx.commit(); // category.save(trx);
 
             result.push({ id: category.id, amount: category.amount });
           }
@@ -360,8 +358,6 @@ class CategoryController {
           const category = await Category.findOrFail(td.categoryId, trx);
 
           category.amount -= td.amount;
-
-          await trx.commit(); // category.save(trx);
         }));
 
         await query.delete();

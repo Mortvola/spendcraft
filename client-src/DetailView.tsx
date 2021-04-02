@@ -1,12 +1,16 @@
-import React from 'react';
-import PropTypes from 'prop-types';
+import React, { ReactElement } from 'react';
 import Register from './Register';
 import BalanceHistory from './AccountView/BalanceHistory';
+
+type PropsType = {
+  detailView: unknown,
+  isMobile?: boolean,
+}
 
 const DetailView = ({
   detailView,
   isMobile,
-}) => {
+}: PropsType): ReactElement => {
   switch (detailView) {
     case 'Balances':
       return <BalanceHistory />;
@@ -19,13 +23,7 @@ const DetailView = ({
   }
 };
 
-DetailView.propTypes = {
-  detailView: PropTypes.string,
-  isMobile: PropTypes.bool,
-};
-
 DetailView.defaultProps = {
-  detailView: null,
   isMobile: false,
 };
 

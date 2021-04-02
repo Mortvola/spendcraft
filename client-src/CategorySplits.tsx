@@ -1,18 +1,28 @@
-import React, { useContext, useState } from 'react';
-import PropTypes from 'prop-types';
+import React, { ReactElement, useContext, useState } from 'react';
 import CategorySplitItem from './CategorySplitItem';
 import MobxStore from './state/mobxStore';
+import { TransactionCategoryInterface } from './state/State';
 
-function* creatNextIdGen() {
+function* creatNextIdGen(): Generator<number, number> {
   let id = -1;
   for (;;) {
     yield id;
-    id += -1;
+    id -= 1;
   }
 }
 
 const nextIdGen = creatNextIdGen();
-const nextId = () => nextIdGen.next().value;
+const nextId = (): number => nextIdGen.next().value;
+
+type PropsType = {
+  splits: Array<TransactionCategoryInterface>,
+  onChange: (
+    splits: Array<TransactionCategoryInterface | { id: number, categoryId: number, amount: number }>
+  ) => void,
+  total: number,
+  credit?: boolean,
+  showBalances?: boolean,
+}
 
 const CategorySplits = ({
   splits,
@@ -20,9 +30,12 @@ const CategorySplits = ({
   total,
   credit,
   showBalances,
-}) => {
+}: PropsType): ReactElement => {
   const { categoryTree } = useContext(MobxStore);
-  const [editedSplits, setEditedSplits] = useState(
+
+  const [editedSplits, setEditedSplits] = useState<Array<
+    TransactionCategoryInterface | { id: number, categoryId: number, amount: number }
+  >>(
     splits && splits.length > 0
       ? splits.map((s) => {
         if (s.id === undefined) {
@@ -37,10 +50,10 @@ const CategorySplits = ({
           amount: (credit ? s.amount : -s.amount),
         };
       })
-      : [{ id: nextId(), amount: total }],
+      : [{ id: nextId(), categoryId: categoryTree.systemIds.unassignedId, amount: total }],
   );
 
-  const handleDeltaChange = (id, amount, delta) => {
+  const handleDeltaChange = (id: number, amount: number, delta: number) => {
     const splitIndex = editedSplits.findIndex((s) => s.id === id);
 
     if (splitIndex !== -1) {
@@ -51,11 +64,11 @@ const CategorySplits = ({
       ];
 
       setEditedSplits(newSplits);
-      onChange(newSplits, -delta);
+      onChange(newSplits);
     }
   };
 
-  const handleCategoryChange = (id, categoryId) => {
+  const handleCategoryChange = (id: number, categoryId: number) => {
     const splitIndex = editedSplits.findIndex((s) => s.id === id);
 
     if (splitIndex !== -1) {
@@ -66,11 +79,11 @@ const CategorySplits = ({
       ];
 
       setEditedSplits(newSplits);
-      onChange(newSplits, 0);
+      onChange(newSplits);
     }
   };
 
-  const handleAddItem = (afterId) => {
+  const handleAddItem = (afterId: number) => {
     const index = editedSplits.findIndex((s) => s.id === afterId);
 
     if (index !== -1) {
@@ -78,14 +91,18 @@ const CategorySplits = ({
       const amount = total - sum;
 
       const newSplits = editedSplits.slice();
-      newSplits.splice(index + 1, 0, { id: nextId(), amount });
+      newSplits.splice(
+        index + 1,
+        0,
+        { id: nextId(), categoryId: categoryTree.systemIds.unassignedId, amount },
+      );
 
       setEditedSplits(newSplits);
-      onChange(newSplits, -amount);
+      onChange(newSplits);
     }
   };
 
-  const handleDeleteItem = (id) => {
+  const handleDeleteItem = (id: number) => {
     if (editedSplits.length > 1) {
       const index = editedSplits.findIndex((s) => s.id === id);
 
@@ -95,12 +112,12 @@ const CategorySplits = ({
         newSplits.splice(index, 1);
 
         setEditedSplits(newSplits);
-        onChange(newSplits, amount);
+        onChange(newSplits);
       }
     }
   };
 
-  const getCategoryBalance = (categoryId) => {
+  const getCategoryBalance = (categoryId: number) => {
     const category = categoryTree.getCategory(categoryId);
 
     if (category) {
@@ -132,16 +149,7 @@ const CategorySplits = ({
   );
 };
 
-CategorySplits.propTypes = {
-  onChange: PropTypes.func.isRequired,
-  splits: PropTypes.arrayOf(PropTypes.shape()),
-  total: PropTypes.number.isRequired,
-  credit: PropTypes.bool,
-  showBalances: PropTypes.bool,
-};
-
 CategorySplits.defaultProps = {
-  splits: [],
   showBalances: false,
   credit: false,
 };

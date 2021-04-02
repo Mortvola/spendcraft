@@ -9,6 +9,7 @@ import {
   RegisterInterface, StoreInterface, TransactionCategoryInterface,
 } from './State';
 import { getBody } from './Transports';
+import PendingTransaction from './PendingTransaction';
 
 class Register implements RegisterInterface {
   categoryId: number | null = null;
@@ -19,7 +20,7 @@ class Register implements RegisterInterface {
 
   transactions: Array<Transaction> = [];
 
-  pending: Array<unknown> = [];
+  pending: Array<PendingTransaction> = [];
 
   balance = 0;
 
@@ -64,7 +65,7 @@ class Register implements RegisterInterface {
           this.account = null;
           if (body !== null) {
             this.balance = body.balance;
-            this.pending = body.pending;
+            this.pending = body.pending.map((pt) => new PendingTransaction(pt));
             this.transactions = body.transactions.map((t) => (
               new Transaction(this.store, t)
             ));

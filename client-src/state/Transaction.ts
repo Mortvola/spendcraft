@@ -1,9 +1,10 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import {
+  TransactionType,
   TransactionProps,
   isUpdateTransactionCategoryResponse,
 } from '../../common/ResponseTypes';
-import { StoreInterface, TransactionCategoryInterface } from './State';
+import { NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface } from './State';
 import { getBody, patchJSON } from './Transports';
 
 class Transaction {
@@ -13,11 +14,15 @@ class Transaction {
 
   date: string;
 
-  type: string;
+  type: TransactionType;
 
   name: string;
 
   categories: Array<TransactionCategoryInterface>;
+
+  instituteName: string;
+
+  accountName: string;
 
   store: StoreInterface;
 
@@ -29,12 +34,17 @@ class Transaction {
     this.date = props.date;
     this.type = props.type;
     this.name = props.name;
+    this.instituteName = props.instituteName;
+    this.accountName = props.accountName;
+
     this.categories = props.categories;
 
     makeAutoObservable(this);
   }
 
-  async updateTransactionCategory(categories: Array<TransactionCategoryInterface>): Promise<null> {
+  async updateTransactionCategory(
+    categories: Array<TransactionCategoryInterface | NewTransactionCategoryInterface>,
+  ): Promise<null> {
     const response = await patchJSON(`/transaction/${this.id}`, { splits: categories });
 
     const body = await getBody(response);

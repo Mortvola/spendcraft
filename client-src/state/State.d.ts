@@ -13,6 +13,13 @@ export interface AccountsInterface {
   async load(): Promise<void>;
 }
 
+export interface PendingTransactionProps {
+  id: number;
+  date: string;
+  name: string;
+  amount: number;
+}
+
 export type Views = 'HOME' | 'PLANS' | 'ACCOUNTS' | 'REPORTS' | 'ACCOUNT' | 'LOGOUT';
 
 export interface UIStateInterface {
@@ -21,22 +28,19 @@ export interface UIStateInterface {
   setView(view: Views): void;
 }
 
-type SystemIds = {
-  systemGroupId: number | null,
-  unassignedId: number | null,
-  fundingPoolId: number | null,
-};
-
 export interface CategoryTreeInterface {
   systemIds: SystemIds;
   updateBalances(balances: Array<CategoryProps>): void;
 }
 
 export interface TransactionCategoryInterface {
-  id: number | null;
-
+  id: number;
   categoryId: number;
+  amount: number;
+}
 
+export interface NewTransactionCategoryInterface {
+  categoryId: number;
   amount: number;
 }
 

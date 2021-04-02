@@ -1,26 +1,40 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { observer } from 'mobx-react-lite';
-import PropTypes from 'prop-types';
+import React, {
+  ReactElement, useContext, useEffect, useState,
+} from 'react';
+import { observer } from 'mobx-react';
 import CategorySelectorGroup from './CategorySelectorGroup';
 import MobxStore from '../state/mobxStore';
+import Group from '../state/Group';
+import Category from '../state/Category';
+
+type PropsType = {
+  selectedGroup?: Group | null,
+  selectedCategory?: Category | null,
+  left?: number | null,
+  top?: number | null,
+  width?: number | null,
+  height?: number | null,
+  onSelect: (group: Group, category: Category) => void,
+  filter?: string | null,
+}
 
 // eslint-disable-next-line react/display-name
-const CategorySelector = ({
-  selectedGroup,
-  selectedCategory,
-  left,
-  top,
-  width,
-  height,
+const CategorySelector = React.forwardRef<HTMLDivElement, PropsType>(({
+  selectedGroup = null,
+  selectedCategory = null,
+  left = null,
+  top = null,
+  width = null,
+  height = null,
   onSelect,
-  filter,
-}, forwardRef) => {
+  filter = null,
+}: PropsType, forwardRef): ReactElement => {
   const { categoryTree } = useContext(MobxStore);
-  const [filteredGroups, setFilteredGroups] = useState(null);
+  const [filteredGroups, setFilteredGroups] = useState<Array<Group> | null>(null);
 
   useEffect(() => {
     if (filter) {
-      const filterCategories = (categories) => {
+      const filterCategories = (categories: Array<Category>) => {
         let result = [];
 
         if (filter !== '') {
@@ -34,8 +48,8 @@ const CategorySelector = ({
         return result;
       };
 
-      const filterGroup = (group, parts) => {
-        let categories = [];
+      const filterGroup = (group: Group, parts: Array<string>) => {
+        let categories: Array<Category> = [];
 
         if (parts.length === 1) {
           // No colon. Filter can be applied to both group and categories.
@@ -43,14 +57,14 @@ const CategorySelector = ({
             categories = group.categories;
           }
           else {
-            categories = filterCategories(group.categories, parts[0]);
+            categories = filterCategories(group.categories);
           }
         }
         else if (parts.length === 2) {
           // If the group contains the first part of the filter then
           // consider adding the categories
           if (parts[0] === '' || group.name.toLowerCase().includes(parts[0])) {
-            categories = filterCategories(group.categories, parts[1]);
+            categories = filterCategories(group.categories);
           }
         }
 
@@ -59,13 +73,13 @@ const CategorySelector = ({
 
       const parts = filter.toLowerCase().split(':');
 
-      const groups = [];
+      const groups: Array<Group> = [];
 
       categoryTree.groups.forEach((group) => {
         const categories = filterGroup(group, parts);
 
         if (categories.length > 0) {
-          groups.push({ ...group, categories });
+          groups.push(new Group({ ...group, categories }));
         }
       });
 
@@ -76,10 +90,22 @@ const CategorySelector = ({
     }
   }, [categoryTree.groups, filter]);
 
-  let style = { display: 'none' };
-  style = {
-    left, top, width, height,
-  };
+  const style: Record<string, unknown> = {}; // { display: 'none' };
+  if (left !== null) {
+    style.left = left;
+  }
+
+  if (top !== null) {
+    style.top = top;
+  }
+
+  if (width !== null) {
+    style.width = width;
+  }
+
+  if (height !== null) {
+    style.height = height;
+  }
 
   return (
     <div ref={forwardRef} className="drop-down" style={style}>
@@ -103,28 +129,6 @@ const CategorySelector = ({
       }
     </div>
   );
-};
+});
 
-CategorySelector.propTypes = {
-  left: PropTypes.number,
-  top: PropTypes.number,
-  width: PropTypes.number,
-  height: PropTypes.number,
-  onSelect: PropTypes.func,
-  selectedGroup: PropTypes.shape(),
-  selectedCategory: PropTypes.shape(),
-  filter: PropTypes.string,
-};
-
-CategorySelector.defaultProps = {
-  left: null,
-  top: null,
-  width: null,
-  height: null,
-  onSelect: null,
-  selectedGroup: null,
-  selectedCategory: null,
-  filter: null,
-};
-
-export default observer(CategorySelector, { forwardRef: true });
+export default observer(CategorySelector);

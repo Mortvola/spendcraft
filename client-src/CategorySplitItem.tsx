@@ -1,25 +1,39 @@
-import React from 'react';
-import PropTypes from 'prop-types';
+import React, { ReactElement, useContext } from 'react';
 import CategoryInput from './CategoryInput/CategoryInput';
 import IconButton from './IconButton';
 import AmountInput from './AmountInput';
 import Amount from './Amount';
+import { TransactionCategoryInterface } from './state/State';
+import MobxStore from './state/mobxStore';
+
+type PropsType = {
+  split: TransactionCategoryInterface,
+  balance?: number | null,
+  credit?: boolean,
+  onCategoryChange: (id: number, categoryId: number) => void,
+  onDeltaChange: (id: number, amount: number, delta: number) => void,
+  onAddItem: (afterId: number) => void,
+  onDeleteItem: (id: number) => void,
+  showBalances?: boolean,
+}
 
 function CategorySplitItem({
   split,
-  balance,
-  credit,
+  balance = null,
+  credit = false,
   onCategoryChange,
   onDeltaChange,
   onAddItem,
   onDeleteItem,
-  showBalances,
-}) {
-  const handleCategoryChange = (categoryId) => {
+  showBalances = false,
+}: PropsType): ReactElement {
+  const { categoryTree: { systemIds: { unassignedId } } } = useContext(MobxStore);
+
+  const handleCategoryChange = (categoryId: number) => {
     onCategoryChange(split.id, categoryId);
   };
 
-  const handleDeltaChange = (amount, delta) => {
+  const handleDeltaChange = (amount: number, delta: number) => {
     onDeltaChange(split.id, amount, delta);
   };
 
@@ -32,7 +46,7 @@ function CategorySplitItem({
   };
 
   const categoryId = split ? split.categoryId : null;
-  let newBalance = null;
+  let newBalance: number | null = null;
   if (balance !== null) {
     if (credit) {
       newBalance = balance + split.amount;
@@ -62,30 +76,16 @@ function CategorySplitItem({
 
   return (
     <div className={className}>
-      <CategoryInput onChange={handleCategoryChange} categoryId={categoryId} />
-      <AmountInput onDeltaChange={handleDeltaChange} name="amount" amount={split.amount} />
+      <CategoryInput
+        onChange={handleCategoryChange}
+        categoryId={categoryId === unassignedId ? null : categoryId}
+      />
+      <AmountInput onDeltaChange={handleDeltaChange} amount={split.amount} />
       {renderBalances()}
       <IconButton icon="plus" onClick={handleAddItem} />
       <IconButton icon="minus" onClick={handleDeleteItem} />
     </div>
   );
 }
-
-CategorySplitItem.propTypes = {
-  split: PropTypes.shape(),
-  balance: PropTypes.number,
-  credit: PropTypes.bool,
-  onAddItem: PropTypes.func.isRequired,
-  onDeleteItem: PropTypes.func.isRequired,
-  onDeltaChange: PropTypes.func.isRequired,
-  onCategoryChange: PropTypes.func.isRequired,
-  showBalances: PropTypes.bool.isRequired,
-};
-
-CategorySplitItem.defaultProps = {
-  split: null,
-  balance: null,
-  credit: false,
-};
 
 export default CategorySplitItem;

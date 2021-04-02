@@ -1,5 +1,4 @@
-import React from 'react';
-import PropTypes from 'prop-types';
+import React, { ReactElement } from 'react';
 import IconButton from './IconButton';
 import CategoryInput from './CategoryInput/CategoryInput';
 import Amount from './Amount';
@@ -7,6 +6,19 @@ import { useTransactionDialog } from './TransactionDialog';
 import { useCategoryTransferDialog } from './CategoryTransferDialog';
 import { useRebalanceDialog } from './rebalance/RebalanceDialog';
 import { useFundingDialog } from './funding/FundingDialog';
+import TransactionData from './state/Transaction';
+import { TransactionType } from '../common/ResponseTypes';
+import { NewTransactionCategoryInterface } from './state/State';
+
+type PropsType = {
+  transaction: TransactionData
+  amount: number;
+  balance: number;
+  selected: boolean;
+  categoryId: number | null;
+  unassignedId: number;
+  isMobile?: boolean;
+}
 
 const Transaction = ({
   transaction,
@@ -16,7 +28,7 @@ const Transaction = ({
   categoryId,
   unassignedId,
   isMobile,
-}) => {
+}: PropsType): ReactElement => {
   const [TransactionDialog1, showTransactionDialog1] = useTransactionDialog();
   const [TransactionDialog2, showTransactionDialog2] = useTransactionDialog();
   const [TransactionDialog3, showTransactionDialog3] = useTransactionDialog();
@@ -30,36 +42,34 @@ const Transaction = ({
     // onClick(transaction.id);
   };
 
-  const handleChange = (catId) => {
-    const request = { splits: [{ categoryId: catId, amount: transaction.amount }] };
-
-    transaction.updateTransactionCategory(request.splits);
+  const handleChange = (catId: number) => {
+    transaction.updateTransactionCategory([{ categoryId: catId, amount: transaction.amount }]);
   };
 
-  const TransactionDialog = ({ type: tranDialogType }) => {
+  const TransactionDialog = ({ type: tranDialogType }: { type: number }) => {
     switch (transaction.type) {
-      case 1:
+      case TransactionType.TRANSFER_TRANSACTION:
         return (
           <CategoryTransferDialog
             transaction={transaction}
           />
         );
 
-      case 2:
+      case TransactionType.FUNDING_TRANSACTION:
         return (
           <FundingDialog
             transaction={transaction}
           />
         );
 
-      case 3:
+      case TransactionType.REBALANCE_TRANSACTION:
         return (
           <RebalanceDialog
             transaction={transaction}
           />
         );
 
-      case 0:
+      case TransactionType.REGULAR_TRANSACTION:
       default:
         switch (tranDialogType) {
           case 1:
@@ -95,7 +105,7 @@ const Transaction = ({
     }
   };
 
-  const showTransactionDialog = (tranDialogType) => {
+  const showTransactionDialog = (tranDialogType: number) => {
     switch (transaction.type) {
       case 1:
         showCategoryTransferDialog();
@@ -155,8 +165,8 @@ const Transaction = ({
     if (categoryId !== null) {
       return (
         <>
-          <div className="transaction-field">{transaction.institute_name}</div>
-          <div className="transaction-field">{transaction.account_name}</div>
+          <div className="transaction-field">{transaction.instituteName}</div>
+          <div className="transaction-field">{transaction.accountName}</div>
         </>
       );
     }
@@ -204,18 +214,7 @@ const Transaction = ({
   );
 };
 
-Transaction.propTypes = {
-  transaction: PropTypes.shape().isRequired,
-  amount: PropTypes.number.isRequired,
-  balance: PropTypes.number.isRequired,
-  selected: PropTypes.bool.isRequired,
-  categoryId: PropTypes.number,
-  unassignedId: PropTypes.number.isRequired,
-  isMobile: PropTypes.bool,
-};
-
 Transaction.defaultProps = {
-  categoryId: null,
   isMobile: false,
 };
 

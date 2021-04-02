@@ -1,27 +1,41 @@
 import React, {
-  useState, useRef, useEffect, useContext,
+  useState, useRef, useEffect, useContext, ReactElement,
 } from 'react';
 import ReactDOM from 'react-dom';
-import PropTypes from 'prop-types';
 import CategorySelector from './CategorySelector';
 import useExclusiveBool from '../ExclusiveBool';
 import MobxStore from '../state/mobxStore';
+import Group from '../state/Group';
+import Category from '../state/Category';
+
+type PropsType = {
+  categoryId: number | null,
+  onChange: (id: number) => void,
+}
 
 const CategoryInput = ({
-  categoryId,
+  categoryId = null,
   onChange,
-}) => {
+}: PropsType): ReactElement => {
   const { categoryTree } = useContext(MobxStore);
   const { groups } = categoryTree;
-  const [selected, setSelected] = useState({ groupIndex: null, categoryIndex: null });
+  const [selected, setSelected] = useState<
+    { groupIndex: number | null, categoryIndex: number | null }
+  >(
+    { groupIndex: null, categoryIndex: null },
+  );
   const [open, setOpen] = useExclusiveBool(false);
-  const [value, setValue] = useState(categoryTree.getCategoryName(categoryId));
-  const [originalValue, setOriginalValue] = useState(categoryTree.getCategoryName(categoryId));
-  const [filter, setFilter] = useState(null);
-  const inputRef = useRef(null);
-  const selectorRef = useRef(null);
+  const [value, setValue] = useState<string | null>(
+    categoryId === null ? null : categoryTree.getCategoryName(categoryId),
+  );
+  const [originalValue, setOriginalValue] = useState<string | null>(
+    categoryId === null ? null : categoryTree.getCategoryName(categoryId),
+  );
+  const [filter, setFilter] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const selectorRef = useRef<HTMLDivElement | null>(null);
 
-  const categoryFiltered = (group, category, filterParts) => {
+  const categoryFiltered = (group: Group, category: Category, filterParts: Array<string>) => {
     if (filterParts.length > 0) {
       if (filterParts.length === 1) {
         // No colon. Filter can be applied to both group and categories.
@@ -50,9 +64,11 @@ const CategoryInput = ({
     setFilter(null);
   };
 
-  const handleMouseDown = (event) => {
-    if (inputRef.current && !inputRef.current.contains(event.target)
-      && (selectorRef.current === null || !selectorRef.current.contains(event.target))) {
+  const handleMouseDown = (event: MouseEvent) => {
+    const input = inputRef.current;
+    const selector = selectorRef.current;
+    if (input && !input.contains(event.target as Node)
+      && (selector === null || !selector.contains(event.target as Node))) {
       event.stopPropagation();
       handleCancel();
     }
@@ -71,32 +87,32 @@ const CategoryInput = ({
   });
 
   const openDropDown = () => {
-    setOriginalValue(categoryTree.getCategoryName(categoryId));
+    setOriginalValue(categoryId === null ? null : categoryTree.getCategoryName(categoryId));
     setOpen(true);
   };
 
-  const handleClick = (event) => {
+  const handleClick = (event: React.MouseEvent) => {
     event.stopPropagation();
     if (!open) {
       openDropDown();
     }
   };
 
-  const handleSelect = (group, category) => {
+  const handleSelect = (group: Group, category: Category) => {
     const groupIndex = groups.findIndex((g) => g.id === group.id);
     const categoryIndex = groups[groupIndex].categories.findIndex((c) => c.id === category.id);
 
     setSelected({ groupIndex, categoryIndex });
     setOpen(false);
     setValue(categoryTree.getCategoryName(category.id));
-    setOriginalValue(categoryTree.getCategoryName(categoryId));
+    setOriginalValue(categoryId === null ? null : categoryTree.getCategoryName(categoryId));
 
     if (onChange) {
       onChange(category.id);
     }
   };
 
-  const handleChange = (event) => {
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setValue(event.target.value);
     setFilter(event.target.value);
   };
@@ -190,22 +206,29 @@ const CategoryInput = ({
 
   const handleEnter = () => {
     if (selected.categoryIndex !== null) {
-      const selectedGroup = groups[selected.groupIndex];
+      let selectedGroup = null;
+      if (selected.groupIndex !== null) {
+        selectedGroup = groups[selected.groupIndex];
+      }
       let selectedCategory = null;
       if (selectedGroup) {
         selectedCategory = selectedGroup.categories[selected.categoryIndex];
       }
 
       setOpen(false);
-      setValue(categoryTree.getCategoryName(selectedCategory.id));
-
-      if (onChange) {
-        onChange(selectedCategory.id);
+      if (selectedCategory === null) {
+        setValue(null);
+      }
+      else {
+        setValue(categoryTree.getCategoryName(selectedCategory.id));
+        if (onChange) {
+          onChange(selectedCategory.id);
+        }
       }
     }
   };
 
-  const handleKeydown = (event) => {
+  const handleKeydown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (open && selectorRef.current) {
       switch (event.key) {
         case 'Escape': {
@@ -250,25 +273,30 @@ const CategoryInput = ({
 
       const selectedGroup = selected.groupIndex !== null ? groups[selected.groupIndex] : null;
       let selectedCategory = null;
-      if (selectedGroup) {
+      if (selectedGroup && selected.categoryIndex) {
         selectedCategory = selectedGroup.categories[selected.categoryIndex];
       }
 
-      return ReactDOM.createPortal(
-        <CategorySelector
-          ref={selectorRef}
-          left={position.left}
-          top={top}
-          width={position.width}
-          height={height}
-          selectedGroup={selectedGroup}
-          selectedCategory={selectedCategory}
-          onCancel={handleCancel}
-          onSelect={handleSelect}
-          filter={filter}
-        />,
-        document.querySelector('#hidden'),
-      );
+      const hiddenElement = document.querySelector('#hidden');
+
+      if (hiddenElement) {
+        return ReactDOM.createPortal(
+          <CategorySelector
+            ref={selectorRef}
+            left={position.left}
+            top={top}
+            width={position.width < 200 ? 200 : position.width}
+            height={height}
+            selectedGroup={selectedGroup}
+            selectedCategory={selectedCategory}
+            onSelect={handleSelect}
+            filter={filter}
+          />,
+          hiddenElement,
+        );
+      }
+
+      return null;
     }
 
     return null;
@@ -290,15 +318,6 @@ const CategoryInput = ({
       {renderSelector()}
     </>
   );
-};
-
-CategoryInput.propTypes = {
-  categoryId: PropTypes.number,
-  onChange: PropTypes.func.isRequired,
-};
-
-CategoryInput.defaultProps = {
-  categoryId: null,
 };
 
 export default CategoryInput;

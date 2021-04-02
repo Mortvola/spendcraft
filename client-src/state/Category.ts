@@ -14,6 +14,8 @@ class Category {
 
   balance: number;
 
+  groupId: number | null = null;
+
   constructor(props: CategoryProps) {
     this.id = props.id;
     this.name = props.name;

@@ -104,10 +104,10 @@ const RebalanceDialog = ({
 
     let response;
     if (transaction) {
-      response = await postJSON(url, { ...values, type: 3 });
+      response = await patchJSON(url, { ...values, type: 3 });
     }
     else {
-      response = await patchJSON(url, { ...values, type: 3 });
+      response = await postJSON(url, { ...values, type: 3 });
     }
 
     if (response.ok) {

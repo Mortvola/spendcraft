@@ -1,16 +1,15 @@
 import React, { ReactElement } from 'react';
-import PropTypes from 'prop-types';
 
 interface Props {
-  noValue: number,
-  amount: number,
-  className: string,
+  noValue?: number | null,
+  amount?: number | null,
+  className?: string,
 }
 
 function Amount({
-  noValue,
-  amount,
-  className,
+  noValue = null,
+  amount = null,
+  className = '',
 }: Props): ReactElement {
   let displayedAmount = amount;
   if (displayedAmount === null) {
@@ -37,17 +36,5 @@ function Amount({
 
   return (<div className={updatedClassName}>{amountString}</div>);
 }
-
-Amount.propTypes = {
-  amount: PropTypes.number,
-  className: PropTypes.string,
-  noValue: PropTypes.string,
-};
-
-Amount.defaultProps = {
-  amount: null,
-  className: '',
-  noValue: null,
-};
 
 export default Amount;
