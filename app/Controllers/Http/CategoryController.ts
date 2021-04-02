@@ -241,8 +241,8 @@ class CategoryController {
         Database.raw('date::text'),
         Database.raw(`${transName} AS name`),
         'splits.categories AS categories',
-        'inst.name AS institute_name',
-        'acct.name AS account_name',
+        'inst.name AS instituteName',
+        'acct.name AS accountName',
         Database.raw('CAST(acct_trans.amount AS real) AS amount'),
         Database.raw('COALESCE(acct_trans.pending, false) AS pending'),
       )
