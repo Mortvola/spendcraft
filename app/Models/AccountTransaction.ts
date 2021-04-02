@@ -28,7 +28,7 @@ class AccountTransaction extends BaseModel {
   public plaidTransactionId: string;
 
   @column({
-    serialize: (value?: string) => (value ? parseFloat(value) : null),
+    consume: (value: string) => parseFloat(value),
   })
   public amount: number;
 

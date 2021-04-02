@@ -15,7 +15,7 @@ class TransactionCategory extends BaseModel {
   public categoryId: number;
 
   @column({
-    serialize: (value?: string) => (value ? parseFloat(value) : null),
+    consume: (value: string) => parseFloat(value),
   })
   public amount: number;
 }

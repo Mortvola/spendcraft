@@ -12,6 +12,7 @@ import UpdateCategoryValidator from 'App/Validators/UpdateCategoryValidator';
 import DeleteCategoryValidator from 'App/Validators/DeleteCategoryValidator';
 import UpdateCategoryTransferValidator from 'App/Validators/UpdateCategoryTransferValidator';
 import { AddCategoryResponse, UpdateCategoryResponse } from '../../../common/ResponseTypes';
+import { StrictValues } from '@ioc:Adonis/Lucid/DatabaseQueryBuilder';
 
 type Transactions = {
   transactions: Array<AccountTransaction>,
@@ -289,7 +290,9 @@ class CategoryController {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  public async transfer({ request, auth: { user } }: HttpContextContract): Promise<Array<any>> {
+  public async transfer(
+    { request, auth: { user } }: HttpContextContract,
+  ): Promise<Array<{ id: number, amount: number}>> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -297,7 +300,7 @@ class CategoryController {
     await request.validate(UpdateCategoryTransferValidator);
 
     const trx = await Database.transaction();
-    const result: Array<any> = [];
+    const result: Array<{ id: number, amount: number}> = [];
 
     try {
       if (Array.isArray(request.input('categories'))) {
@@ -311,7 +314,7 @@ class CategoryController {
           }).table('transactions').returning('id');
         }
 
-        const existingSplits: Array<any> = [];
+        const existingSplits: StrictValues[] = [];
 
         // Insert the category splits
         await Promise.all(request.input('categories').map(async (split) => {
@@ -343,6 +346,8 @@ class CategoryController {
 
             category.amount += amount;
 
+            category.save();
+
             result.push({ id: category.id, amount: category.amount });
           }
         }));
@@ -355,9 +360,11 @@ class CategoryController {
         const toDelete = await query.select('category_id AS categoryId', 'amount');
 
         await Promise.all(toDelete.map(async (td) => {
-          const category = await Category.findOrFail(td.categoryId, trx);
+          const [category] = await Category.query({ client: trx }).where('id', td.categoryId);
 
           category.amount -= td.amount;
+
+          category.save();
         }));
 
         await query.delete();

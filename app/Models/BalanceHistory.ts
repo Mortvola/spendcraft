@@ -10,7 +10,9 @@ class BalanceHistory extends BaseModel {
   @column()
   public accountId: number;
 
-  @column()
+  @column({
+    consume: (value: string) => parseFloat(value),
+  })
   public balance: number;
 
   @column.date()

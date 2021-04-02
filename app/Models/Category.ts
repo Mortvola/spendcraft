@@ -26,7 +26,9 @@ class Category extends BaseModel {
   @column()
   public name: string;
 
-  @column()
+  @column({
+    consume: (value: string) => parseFloat(value),
+  })
   public amount: number;
 
   @column()
