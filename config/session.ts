@@ -9,6 +9,8 @@ import Env from '@ioc:Adonis/Core/Env'
 import { SessionConfig } from '@ioc:Adonis/Addons/Session'
 
 const sessionConfig: SessionConfig = {
+  enabled: true,
+
   /*
   |--------------------------------------------------------------------------
   | Driver

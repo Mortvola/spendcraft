@@ -12,7 +12,7 @@ import UpdateCategoryValidator from 'App/Validators/UpdateCategoryValidator';
 import DeleteCategoryValidator from 'App/Validators/DeleteCategoryValidator';
 import UpdateCategoryTransferValidator from 'App/Validators/UpdateCategoryTransferValidator';
 import Transaction from 'App/Models/Transaction';
-import { StrictValues } from '@ioc:Adonis/Lucid/DatabaseQueryBuilder';
+import { StrictValues } from '@ioc:Adonis/Lucid/Database';
 import { AddCategoryResponse, UpdateCategoryResponse } from '../../../common/ResponseTypes';
 
 type Transactions = {

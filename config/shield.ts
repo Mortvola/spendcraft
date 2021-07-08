@@ -124,23 +124,6 @@ export const csrf: ShieldConfig['csrf'] = {
 
 /*
 |--------------------------------------------------------------------------
-| No Open
-|--------------------------------------------------------------------------
-|
-| This will prevent old versions of Internet Explorer from allowing
-| malicious HTML downloads to be executed in the context of your
-| site.
-|
-| By default, the security header is disabled, since not many websites are
-| running on ie8 these days.
-|
-*/
-export const noOpen: ShieldConfig['noOpen'] = {
-  enabled: false,
-}
-
-/*
-|--------------------------------------------------------------------------
 | DNS Prefetching
 |--------------------------------------------------------------------------
 |
@@ -252,20 +235,4 @@ export const hsts: ShieldConfig['hsts'] = {
 */
 export const contentTypeSniffing: ShieldConfig['contentTypeSniffing'] = {
   enabled: true,
-}
-
-/*
-|--------------------------------------------------------------------------
-| X-XSS-Protection
-|--------------------------------------------------------------------------
-|
-| X-XSS Protection saves applications from XSS attacks. It was adopted
-| by IE and later followed by some other browsers.
-|
-| Learn more at https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-XSS-Protection
-*/
-export const xss: ShieldConfig['xss'] = {
-  enabled: true,
-  enableOnOldIE: false,
-  mode: 'block',
 }

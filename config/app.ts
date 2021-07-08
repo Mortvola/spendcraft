@@ -126,7 +126,7 @@ export const http: ServerConfig = {
   | to set the header explicitly.
   |
   */
-  forceContentNegotiationToJSON: false,
+  forceContentNegotiationTo: 'application/json'
 }
 
 /*
