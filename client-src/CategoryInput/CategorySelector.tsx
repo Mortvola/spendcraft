@@ -34,11 +34,11 @@ const CategorySelector = React.forwardRef<HTMLDivElement, PropsType>(({
 
   useEffect(() => {
     if (filter) {
-      const filterCategories = (categories: Array<Category>) => {
+      const filterCategories = (categories: Array<Category>, catFilter: string) => {
         let result = [];
 
-        if (filter !== '') {
-          result = categories.filter((c) => c.name.toLowerCase().includes(filter));
+        if (catFilter !== '') {
+          result = categories.filter((c) => c.name.toLowerCase().includes(catFilter));
         }
         else {
           // No filter. Allow all of the categories.
@@ -57,14 +57,14 @@ const CategorySelector = React.forwardRef<HTMLDivElement, PropsType>(({
             categories = group.categories;
           }
           else {
-            categories = filterCategories(group.categories);
+            categories = filterCategories(group.categories, parts[0]);
           }
         }
         else if (parts.length === 2) {
           // If the group contains the first part of the filter then
           // consider adding the categories
           if (parts[0] === '' || group.name.toLowerCase().includes(parts[0])) {
-            categories = filterCategories(group.categories);
+            categories = filterCategories(group.categories, parts[1]);
           }
         }
 
