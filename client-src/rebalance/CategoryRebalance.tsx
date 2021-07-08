@@ -1,15 +1,21 @@
-import React, { useState } from 'react';
-import PropTypes from 'prop-types';
+import React, { ReactElement, useState } from 'react';
 import CategoryRebalanceItem from './CategoryRebalanceItem';
+import { RebalanceCategoryInterface, CategoryBalanceInterface, CategoryTreeBalanceInterace } from '../state/State';
+
+interface Props {
+  categoryTree: null | CategoryTreeBalanceInterace[],
+  onDeltaChange: null | ((amunt: number, delta: number, categories: unknown) => void),
+  categories: RebalanceCategoryInterface[],
+}
 
 const CategoryRebalance = ({
   categoryTree,
   categories,
   onDeltaChange,
-}) => {
+}: Props): ReactElement => {
   const [cats, setCats] = useState(categories);
 
-  const handleDeltaChange = (amount, delta, categoryId) => {
+  const handleDeltaChange = (amount: number, delta: number, categoryId: number) => {
     const categoriesCopy = cats.slice();
     const index = cats.findIndex((c) => c.categoryId === categoryId);
 
@@ -34,11 +40,11 @@ const CategoryRebalance = ({
     }
   };
 
-  const populateCategories = (group) => {
-    const catItems = [];
+  const populateCategories = (group: CategoryBalanceInterface[]) => {
+    const catItems: unknown[] = [];
 
     if (group) {
-      group.forEach((category) => {
+      group.forEach((category: CategoryBalanceInterface) => {
         let adjustment = 0;
         const catAmount = cats.find((c) => c.categoryId === category.id);
         if (catAmount) {
@@ -49,7 +55,7 @@ const CategoryRebalance = ({
           <CategoryRebalanceItem
             key={category.id}
             category={{ name: category.name, balance: category.balance, adjustment }}
-            onDeltaChange={(amount, delta) => (
+            onDeltaChange={(amount: number, delta: number) => (
               handleDeltaChange(amount, delta, category.id)
             )}
           />
@@ -60,8 +66,8 @@ const CategoryRebalance = ({
     return catItems;
   };
 
-  const populateTree = (tree) => {
-    const groups = [];
+  const populateTree = (tree: CategoryTreeBalanceInterace[] | null) => {
+    const groups: unknown[] = [];
 
     if (tree) {
       tree.forEach((group) => {
@@ -82,18 +88,6 @@ const CategoryRebalance = ({
       {populateTree(categoryTree)}
     </div>
   );
-};
-
-CategoryRebalance.propTypes = {
-  categoryTree: PropTypes.arrayOf(PropTypes.shape),
-  onDeltaChange: PropTypes.func,
-  categories: PropTypes.arrayOf(PropTypes.shape),
-};
-
-CategoryRebalance.defaultProps = {
-  categoryTree: null,
-  onDeltaChange: null,
-  categories: [],
 };
 
 export default CategoryRebalance;

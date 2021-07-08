@@ -33,8 +33,27 @@ export interface CategoryTreeInterface {
   updateBalances(balances: Array<CategoryProps>): void;
 }
 
+export interface CategoryBalanceInterface {
+  id: number,
+  name: string,
+  balance:number,
+  system: boolean,
+}
+
+export interface CategoryTreeBalanceInterace {
+  id: number,
+  name: string,
+  categories: CategoryBalanceInterface[],
+}
+
 export interface TransactionCategoryInterface {
   id: number;
+  categoryId: number;
+  amount: number;
+}
+
+export interface RebalanceCategoryInterface {
+  id?: number;
   categoryId: number;
   amount: number;
 }

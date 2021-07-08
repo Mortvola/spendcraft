@@ -191,7 +191,7 @@ const CategoryTransferDialog = ({
         validate={handleValidate}
         onSubmit={handleSubmit}
       >
-        <Form id="modalForm" className="scrollable-form">
+        <Form id="catTransferForm" className="scrollable-form">
           <Header />
           <div>
             <div>

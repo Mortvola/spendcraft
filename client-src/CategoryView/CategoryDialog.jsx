@@ -102,7 +102,7 @@ const CategoryDialog = ({
         validate={handleValidate}
         onSubmit={handleSubmit}
       >
-        <Form id="modalForm" className="scrollable-form">
+        <Form id="catDialogForm" className="scrollable-form">
           <Header />
           <ModalBody>
             <label>

@@ -1,4 +1,6 @@
-import { BaseModel, BelongsTo, belongsTo, column } from '@ioc:Adonis/Lucid/Orm';
+import {
+  BaseModel, BelongsTo, belongsTo, column,
+} from '@ioc:Adonis/Lucid/Orm';
 import Database from '@ioc:Adonis/Lucid/Database';
 import Group from 'App/Models/Group';
 
@@ -34,6 +36,11 @@ class Category extends BaseModel {
   @column()
   public system: boolean;
 
+  @column({
+    serializeAs: 'groupId',
+  })
+  public groupId: number;
+
   public static async balances(
     userId: number,
     date: string,
@@ -49,7 +56,7 @@ class Category extends BaseModel {
 
     // Also subtract out the transaction identified by transactionId
     if (transactionId !== undefined) {
-      transactionsSubquery += `or where transactions.id = ${transactionId}`;
+      transactionsSubquery += `or transactions.id = ${transactionId}`;
     }
 
     const rows = await Database.query()

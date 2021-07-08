@@ -3,6 +3,7 @@ import {
   TransactionType,
   TransactionProps,
   isUpdateTransactionCategoryResponse,
+  isUpdateCategoryTransferResponse,
 } from '../../common/ResponseTypes';
 import { NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface } from './State';
 import { getBody, patchJSON } from './Transports';
@@ -53,6 +54,30 @@ class Transaction {
       runInAction(() => {
         this.store.categoryTree.updateBalances(body.categories);
         this.store.register.updateTransactionCategories(this.id, body.splits, body.categories);
+      });
+
+      return null;
+    }
+
+    throw new Error('invalid response');
+  }
+
+  async updateCategoryTransfer(
+    values: {
+      categories: TransactionCategoryInterface[];
+      date: string;
+    },
+  ): Promise<null> {
+    const response = await patchJSON(`/category_transfer/${this.id}`, { ...values, type: 3 });
+
+    const body = await getBody(response);
+
+    if (isUpdateCategoryTransferResponse(body)) {
+      runInAction(() => {
+        this.store.categoryTree.updateBalances(body.balances);
+        this.store.register.updateTransactionCategories(
+          this.id, body.transaction.categories, body.balances,
+        );
       });
 
       return null;

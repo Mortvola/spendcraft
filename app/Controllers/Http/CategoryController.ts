@@ -1,5 +1,5 @@
 import Database from '@ioc:Adonis/Lucid/Database';
-import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
+import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import Category, { GroupItem } from 'App/Models/Category';
 import CategoryTransfer from 'App/Models/CategoryTransfer';
 import AccountTransaction from 'App/Models/AccountTransaction';
@@ -11,8 +11,9 @@ import AddCategoryValidator from 'App/Validators/AddCategoryValidator';
 import UpdateCategoryValidator from 'App/Validators/UpdateCategoryValidator';
 import DeleteCategoryValidator from 'App/Validators/DeleteCategoryValidator';
 import UpdateCategoryTransferValidator from 'App/Validators/UpdateCategoryTransferValidator';
-import { AddCategoryResponse, UpdateCategoryResponse } from '../../../common/ResponseTypes';
+import Transaction from 'App/Models/Transaction';
 import { StrictValues } from '@ioc:Adonis/Lucid/DatabaseQueryBuilder';
+import { AddCategoryResponse, UpdateCategoryResponse } from '../../../common/ResponseTypes';
 
 type Transactions = {
   transactions: Array<AccountTransaction>,
@@ -237,7 +238,7 @@ class CategoryController {
       .select(
         'trans.id AS id',
         'trans.type AS type',
-        Database.raw('COALESCE(trans.sort_order, 2147483647) AS sort_order'),
+        Database.raw('COALESCE(trans.sort_order, 2147483647) AS "sortOrder"'),
         Database.raw('date::text'),
         Database.raw(`${transName} AS name`),
         'splits.categories AS categories',
@@ -292,7 +293,7 @@ class CategoryController {
   // eslint-disable-next-line class-methods-use-this
   public async transfer(
     { request, auth: { user } }: HttpContextContract,
-  ): Promise<Array<{ id: number, amount: number}>> {
+  ): Promise<{ balances: { id: number, balance: number}[] }> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -300,10 +301,25 @@ class CategoryController {
     await request.validate(UpdateCategoryTransferValidator);
 
     const trx = await Database.transaction();
-    const result: Array<{ id: number, amount: number}> = [];
+    const result: {
+      balances: Array<{ id: number, balance: number}>,
+      transaction: {
+        categories: unknown[],
+        id?: number,
+        date?: string,
+        name?: string,
+        pending?: boolean,
+        sortOrder?: number,
+        type?: number,
+        accountName?: string | null,
+        amount?: string | null,
+        institutionName?: string | null,
+      },
+    } = { balances: [], transaction: { categories: [] } };
 
     try {
-      if (Array.isArray(request.input('categories'))) {
+      const categories = request.input('categories');
+      if (Array.isArray(categories)) {
         const date = request.input('date');
         const type = request.input('type');
         let transactionId = request.params().tfrId;
@@ -312,12 +328,25 @@ class CategoryController {
           [transactionId] = await trx.insertQuery().insert({
             date, type, user_id: user.id,
           }).table('transactions').returning('id');
+
+          result.transaction = {
+            id: transactionId,
+            date,
+            name: 'Category Rebalance',
+            pending: false,
+            sortOrder: 2147483647,
+            type: 3,
+            accountName: null,
+            amount: null,
+            institutionName: null,
+            categories: [],
+          };
         }
 
         const existingSplits: StrictValues[] = [];
 
         // Insert the category splits
-        await Promise.all(request.input('categories').map(async (split) => {
+        await Promise.all(categories.map(async (split) => {
           if (split.amount !== 0) {
             let { amount } = split;
 
@@ -348,7 +377,7 @@ class CategoryController {
 
             category.save();
 
-            result.push({ id: category.id, amount: category.amount });
+            result.balances.push({ id: category.id, balance: category.amount });
           }
         }));
 
@@ -364,10 +393,25 @@ class CategoryController {
 
           category.amount -= td.amount;
 
+          result.balances.push({ id: category.id, balance: category.amount });
+
           category.save();
         }));
 
         await query.delete();
+
+        const transaction = await Transaction.findOrFail(transactionId, { client: trx });
+        const cats = await transaction.related('categories').query().preload('category', (catQuery) => {
+          catQuery.preload('group');
+        });
+
+        result.transaction.categories = cats.map((cat) => ({
+          amount: cat.amount,
+          category: cat.category.name,
+          categoryId: cat.categoryId,
+          group: cat.category.group.name,
+          id: cat.id,
+        }));
       }
 
       await trx.commit();

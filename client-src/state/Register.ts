@@ -1,15 +1,18 @@
 import { makeAutoObservable, runInAction } from 'mobx';
+import { DateTime } from 'luxon';
 import Transaction from './Transaction';
 import {
   isAccountTransactionsResponse,
   CategoryProps,
   isCategoryTransactionsResponse,
+  isInsertCategoryTransferResponse,
 } from '../../common/ResponseTypes';
 import {
   RegisterInterface, StoreInterface, TransactionCategoryInterface,
 } from './State';
-import { getBody } from './Transports';
+import { getBody, postJSON } from './Transports';
 import PendingTransaction from './PendingTransaction';
+import Account from './Account';
 
 class Register implements RegisterInterface {
   categoryId: number | null = null;
@@ -132,8 +135,8 @@ class Register implements RegisterInterface {
 
   updateTransactionCategories(
     transactionId: number,
-    splits: Array<TransactionCategoryInterface>,
-    categories: Array<CategoryProps>,
+    categories: TransactionCategoryInterface[],
+    balances: CategoryProps[],
   ): void {
     const index = this.transactions.findIndex((t) => t.id === transactionId);
 
@@ -142,24 +145,78 @@ class Register implements RegisterInterface {
       // the current category then remove the transactions.
       if (
         this.categoryId !== null
-        && !splits.some((c) => (
+        && !categories.some((c) => (
           c.categoryId === this.categoryId
         ))
       ) {
         this.transactions.splice(index, 1);
       }
       else {
-        this.transactions[index].categories = splits;
+        this.transactions[index].categories = categories;
       }
     }
 
     if (this.categoryId !== null) {
-      const category = categories.find((c) => c.id === this.categoryId);
+      const category = balances.find((c) => c.id === this.categoryId);
 
       if (category) {
         this.balance = category.balance;
       }
     }
+  }
+
+  async addCategoryTransaction(
+    values: {
+      categories: TransactionCategoryInterface[];
+      date: string;
+    },
+  ): Promise<null> {
+    const response = await postJSON('/category_transfer', { ...values, type: 3 });
+
+    const body = await getBody(response);
+
+    if (isInsertCategoryTransferResponse(body)) {
+      runInAction(() => {
+        // If the new transaction categories include
+        // the current category then insert the transaction.
+        if (
+          this.categoryId !== null
+          && values.categories.some((c) => (
+            c.categoryId === this.categoryId
+          ))
+        ) {
+          // Determine where to insert the transaction based on date.
+          let index = this.transactions.findIndex(
+            (t) => DateTime.fromISO(t.date) <= DateTime.fromISO(values.date),
+          );
+
+          // If the index was not found then insert at the end of the list of transactions.
+          if (index === -1) {
+            index = this.transactions.length;
+          }
+
+          this.transactions = [
+            ...this.transactions.slice(0, index),
+            new Transaction(this.store, body.transaction),
+            ...this.transactions.slice(index),
+          ];
+        }
+
+        this.store.categoryTree.updateBalances(body.balances);
+
+        if (this.categoryId !== null) {
+          const category = body.balances.find((c) => c.id === this.categoryId);
+
+          if (category) {
+            this.balance = category.balance;
+          }
+        }
+      });
+
+      return null;
+    }
+
+    throw new Error('invalid response');
   }
 }
 

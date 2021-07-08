@@ -119,7 +119,7 @@ const GroupDialog = ({
         validate={handleValidate}
         onSubmit={handleSubmit}
       >
-        <Form id="modalForm" className="scrollable-form">
+        <Form id="GroupDialogForm" className="scrollable-form">
           <Header />
           <ModalBody>
             <label>

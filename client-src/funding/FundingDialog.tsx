@@ -235,7 +235,7 @@ const FundingDialog = ({
         validate={handleValidate}
         onSubmit={handleSubmit}
       >
-        <Form id="modalForm" className="scrollable-form">
+        <Form id="fundingDialogForm" className="scrollable-form">
           <Header />
           <ModalBody>
             <div className="funding-header">

@@ -1,18 +1,20 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 import React, {
-  useState, useEffect, useCallback, ReactElement,
+  useState, useEffect, useCallback, ReactElement, useContext,
 } from 'react';
 import { Modal, Button, ModalBody } from 'react-bootstrap';
 import {
   Formik, Form, Field, ErrorMessage, FormikErrors,
   FieldProps,
 } from 'formik';
+import { toJS } from 'mobx';
 import CategoryRebalance from './CategoryRebalance';
 import Amount from '../Amount';
 import useModal, { ModalProps } from '../useModal';
 import Transaction from '../state/Transaction';
 import { TransactionCategoryInterface } from '../state/State';
-import { patchJSON, postJSON } from '../state/Transports';
+import { postJSON } from '../state/Transports';
+import MobxStore from '../state/mobxStore';
 
 interface Props {
   // eslint-disable-next-line react/require-default-props
@@ -24,12 +26,13 @@ const RebalanceDialog = ({
   show,
   onHide,
 }: Props & ModalProps): ReactElement => {
+  const { register } = useContext(MobxStore);
   const [categoryTree, setCategoryTree] = useState(null);
   const [unassigned, setUnassigned] = useState(0);
   const [date, setDate] = useState(transaction ? transaction.date : '');
 
   type ValueType = {
-    categories: Array<TransactionCategoryInterface>
+    categories: TransactionCategoryInterface[]
     date: string,
   }
 
@@ -97,21 +100,19 @@ const RebalanceDialog = ({
 
   const handleSubmit = async (values: ValueType) => {
     // const { setErrors } = bag;
-    let url = '/category_transfer';
     if (transaction) {
-      url += `/${transaction.id}`;
-    }
+      const errors = await transaction.updateCategoryTransfer(values);
 
-    let response;
-    if (transaction) {
-      response = await patchJSON(url, { ...values, type: 3 });
+      if (!errors) {
+        onHide();
+      }
     }
     else {
-      response = await postJSON(url, { ...values, type: 3 });
-    }
+      const errors = await register.addCategoryTransaction(values);
 
-    if (response.ok) {
-      onHide();
+      if (!errors) {
+        onHide();
+      }
     }
   };
 
@@ -139,13 +140,13 @@ const RebalanceDialog = ({
     >
       <Formik<ValueType>
         initialValues={{
-          categories: transaction ? transaction.categories : [],
+          categories: transaction ? toJS(transaction.categories) : [],
           date,
         }}
         validate={handleValidate}
         onSubmit={handleSubmit}
       >
-        <Form id="modalForm" className="scrollable-form">
+        <Form id="rebalanceForm" className="scrollable-form">
           <Header />
           <ModalBody>
             <div className="rebalance-header">
@@ -206,16 +207,6 @@ const RebalanceDialog = ({
     </Modal>
   );
 };
-
-// RebalanceDialog.propTypes = {
-//   onHide: PropTypes.func.isRequired,
-//   show: PropTypes.bool.isRequired,
-//   transaction: PropTypes.shape(),
-// };
-
-// RebalanceDialog.defaultProps = {
-//   transaction: null,
-// };
 
 export const useRebalanceDialog = (): [
   (props: Props) => (ReactElement | null),

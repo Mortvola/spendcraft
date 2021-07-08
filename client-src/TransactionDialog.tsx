@@ -145,7 +145,7 @@ const TransactionDialog = ({
         validate={handleValidate}
         onSubmit={handleSubmit}
       >
-        <Form id="modalForm" className="scrollable-form">
+        <Form id="transactionDialogForm" className="scrollable-form">
           <Header />
           <ModalBody>
             <div className="cat-fund-table">

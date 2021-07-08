@@ -42,6 +42,19 @@ export interface CategoryProps {
   system: boolean;
 }
 
+export const isCategoryBalance2 = (
+  r: CategoryBalanceProps | unknown,
+): r is CategoryBalanceProps => (
+  (r as CategoryBalanceProps).id !== undefined
+  && (r as CategoryBalanceProps).balance !== undefined
+);
+
+export interface CategoryBalanceProps {
+  id: number;
+
+  balance: number;
+}
+
 export type AddCategoryResponse = CategoryProps
 
 export const isAddCategoryResponse = (
@@ -232,6 +245,38 @@ export const isUpdateTransactionCategoryResponse = (
   && (r as UpdateTransactionCategoryResponse).categories !== undefined
   && ((r as UpdateTransactionCategoryResponse).categories.length === 0
   || isCategoryBalance((r as UpdateTransactionCategoryResponse).categories[0]))
+);
+
+export interface UpdateCategoryTransferReponse {
+  balances: { id: number, balance: number }[],
+
+  transaction: {
+    categories: TransactionCategoryProps[],
+  },
+}
+
+export const isUpdateCategoryTransferResponse = (
+  r: UpdateCategoryTransferReponse | unknown,
+): r is UpdateCategoryTransferReponse => (
+  (r as UpdateCategoryTransferReponse).balances !== undefined
+  && (r as UpdateCategoryTransferReponse).balances !== undefined
+  && ((r as UpdateCategoryTransferReponse).balances.length === 0
+  || isCategoryBalance2((r as UpdateCategoryTransferReponse).balances[0]))
+);
+
+export interface InsertCategoryTransferReponse {
+  balances: { id: number, balance: number }[],
+
+  transaction: TransactionProps,
+}
+
+export const isInsertCategoryTransferResponse = (
+  r: InsertCategoryTransferReponse | unknown,
+): r is InsertCategoryTransferReponse => (
+  (r as InsertCategoryTransferReponse).balances !== undefined
+  && (r as InsertCategoryTransferReponse).balances !== undefined
+  && ((r as InsertCategoryTransferReponse).balances.length === 0
+  || isCategoryBalance2((r as InsertCategoryTransferReponse).balances[0]))
 );
 
 export const isGroupsResponse = (r: Array<GroupProps> | unknown): r is Array<GroupProps> => (

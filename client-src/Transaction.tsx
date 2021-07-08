@@ -8,7 +8,6 @@ import { useRebalanceDialog } from './rebalance/RebalanceDialog';
 import { useFundingDialog } from './funding/FundingDialog';
 import TransactionData from './state/Transaction';
 import { TransactionType } from '../common/ResponseTypes';
-import { NewTransactionCategoryInterface } from './state/State';
 
 type PropsType = {
   transaction: TransactionData
@@ -29,8 +28,6 @@ const Transaction = ({
   unassignedId,
   isMobile,
 }: PropsType): ReactElement => {
-  const [TransactionDialog1, showTransactionDialog1] = useTransactionDialog();
-  const [TransactionDialog2, showTransactionDialog2] = useTransactionDialog();
   const [TransactionDialog3, showTransactionDialog3] = useTransactionDialog();
   const [CategoryTransferDialog, showCategoryTransferDialog] = useCategoryTransferDialog();
   const [FundingDialog, showFundingDialog] = useFundingDialog();
@@ -46,7 +43,7 @@ const Transaction = ({
     transaction.updateTransactionCategory([{ categoryId: catId, amount: transaction.amount }]);
   };
 
-  const TransactionDialog = ({ type: tranDialogType }: { type: number }) => {
+  const TransactionDialog = () => {
     switch (transaction.type) {
       case TransactionType.TRANSFER_TRANSACTION:
         return (
@@ -71,37 +68,13 @@ const Transaction = ({
 
       case TransactionType.REGULAR_TRANSACTION:
       default:
-        switch (tranDialogType) {
-          case 1:
-            return (
-              <TransactionDialog1
-                transaction={transaction}
-                categoryId={categoryId}
-                unassignedId={unassignedId}
-              />
-            );
-
-          case 2:
-            return (
-              <TransactionDialog2
-                transaction={transaction}
-                categoryId={categoryId}
-                unassignedId={unassignedId}
-              />
-            );
-
-          case 3:
-            return (
-              <TransactionDialog3
-                transaction={transaction}
-                categoryId={categoryId}
-                unassignedId={unassignedId}
-              />
-            );
-
-          default:
-            return null;
-        }
+        return (
+          <TransactionDialog3
+            transaction={transaction}
+            categoryId={categoryId}
+            unassignedId={unassignedId}
+          />
+        );
     }
   };
 
@@ -123,11 +96,11 @@ const Transaction = ({
       default:
         switch (tranDialogType) {
           case 1:
-            showTransactionDialog1();
+            showTransactionDialog3();
             break;
 
           case 2:
-            showTransactionDialog2();
+            showTransactionDialog3();
             break;
 
           case 3:
@@ -148,10 +121,7 @@ const Transaction = ({
     if (transaction.categories && transaction.categories.length > 0) {
       if (transaction.categories.length > 1) {
         return (
-          <>
-            <button type="button" className="split-button" onClick={() => showTransactionDialog(1)}>Split</button>
-            <TransactionDialog type={1} />
-          </>
+          <button type="button" className="split-button" onClick={() => showTransactionDialog(1)}>Split</button>
         );
       }
 
@@ -191,7 +161,7 @@ const Transaction = ({
           {transaction.name}
         </div>
         <Amount amount={amount} />
-        <TransactionDialog type={2} />
+        <TransactionDialog />
       </div>
     );
   }
@@ -199,13 +169,12 @@ const Transaction = ({
   return (
     <div className={className} onClick={handleClick}>
       <IconButton icon="edit" onClick={() => showTransactionDialog(2)} />
-      <TransactionDialog type={2} />
       <div>{transaction.date}</div>
       <div className="transaction-field">{transaction.name}</div>
       <div className="trans-cat-edit">
         {renderCategoryButton()}
         <IconButton icon="list-ul" onClick={() => showTransactionDialog(3)} />
-        <TransactionDialog type={3} />
+        <TransactionDialog />
       </div>
       <Amount className="transaction-field amount currency" amount={amount} />
       <Amount className="transaction-field balance currency" amount={balance} />
