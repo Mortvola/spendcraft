@@ -12,19 +12,19 @@ class AccountTransaction extends BaseModel {
     };
   }
 
-  @column()
+  @column({ serializeAs: null })
   public id: number;
 
-  @column()
+  @column({ serializeAs: 'accountId' })
   public accountId: number;
 
-  @column()
+  @column({ serializeAs: 'id' })
   public transactionId: number;
 
   @belongsTo(() => Transaction)
   public transaction: BelongsTo<typeof Transaction>;
 
-  @column()
+  @column({ serializeAs: null })
   public plaidTransactionId: string;
 
   @column({

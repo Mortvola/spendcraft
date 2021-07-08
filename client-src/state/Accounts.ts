@@ -34,12 +34,13 @@ class Accounts implements AccountsInterface {
     const body = await getBody(response);
 
     if (body) {
-      runInAction(() => {
-        if (isInstitutionsResponse(body))
-        body.forEach((i) => {
-          this.institutions.push(new Institution(this.store, i));
+      if (isInstitutionsResponse(body)) {
+        runInAction(() => {
+          body.forEach((i) => {
+            this.institutions.push(new Institution(this.store, i));
+          });
         });
-      });
+      }
     }
   }
 
@@ -74,24 +75,24 @@ class Accounts implements AccountsInterface {
                 publicToken,
                 institution: metadata.institution,
               });
-  
+
               const body2 = await getBody(response2);
               if (response2.ok && isInstitutionProps(body2)) {
                 let institution = new Institution(
                   this.store, { id: body2.id, name: body2.name, accounts: [] },
                 );
-  
+
                 runInAction(() => {
                 // Make sure we don't already have the institution in the list.
                   const existingIndex = this.institutions.findIndex(
                     (inst) => inst.id === institution.id,
                   );
-  
+
                   if (existingIndex === -1) {
                     const index = this.institutions.findIndex(
                       (inst) => institution.name.localeCompare(inst.name) < 0,
                     );
-  
+
                     if (index === -1) {
                       this.institutions.push(institution);
                     }
@@ -103,10 +104,10 @@ class Accounts implements AccountsInterface {
                     institution = this.institutions[existingIndex];
                   }
                 });
-  
+
                 return institution;
               }
-  
+
               return null;
             },
           );

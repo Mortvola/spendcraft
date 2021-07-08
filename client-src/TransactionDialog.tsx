@@ -76,7 +76,7 @@ const TransactionDialog = ({
     return errors;
   };
 
-  const handleSubmit = (values: ValueType) => {
+  const handleSubmit = async (values: ValueType) => {
     // If the transaction amount is less then zero then
     // negate all of the category amounts.
     if (transaction.amount < 0) {
@@ -85,7 +85,7 @@ const TransactionDialog = ({
       });
     }
 
-    const errors = transaction.updateTransactionCategory(values.splits);
+    const errors = await transaction.updateTransactionCategory(values.splits);
 
     if (!errors) {
       onHide();

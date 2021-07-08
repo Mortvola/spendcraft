@@ -1,4 +1,5 @@
 import React, { ReactElement } from 'react';
+import { observer } from 'mobx-react-lite';
 import IconButton from './IconButton';
 import CategoryInput from './CategoryInput/CategoryInput';
 import Amount from './Amount';
@@ -115,7 +116,7 @@ const Transaction = ({
     }
   };
 
-  const renderCategoryButton = () => {
+  const CategoryButton = () => {
     let catId = null;
 
     if (transaction.categories && transaction.categories.length > 0) {
@@ -172,7 +173,7 @@ const Transaction = ({
       <div>{transaction.date}</div>
       <div className="transaction-field">{transaction.name}</div>
       <div className="trans-cat-edit">
-        {renderCategoryButton()}
+        <CategoryButton />
         <IconButton icon="list-ul" onClick={() => showTransactionDialog(3)} />
         <TransactionDialog />
       </div>
@@ -187,4 +188,4 @@ Transaction.defaultProps = {
   isMobile: false,
 };
 
-export default Transaction;
+export default observer(Transaction);
