@@ -145,11 +145,12 @@ const CategoryInput = ({
 
     while (
       newSelection.groupIndex < groups.length
-      && categoryFiltered(
+      && (groups[newSelection.groupIndex].categories.length === 0
+      || categoryFiltered(
         groups[newSelection.groupIndex],
         groups[newSelection.groupIndex].categories[newSelection.categoryIndex],
         filterParts,
-      )
+      ))
     ) {
       newSelection.categoryIndex += 1;
 
@@ -187,11 +188,12 @@ const CategoryInput = ({
         }
       } while (
         newSelection.groupIndex >= 0
-        && categoryFiltered(
+        && (groups[newSelection.groupIndex].categories.length === 0
+        || categoryFiltered(
           groups[newSelection.groupIndex],
           groups[newSelection.groupIndex].categories[newSelection.categoryIndex],
           filterParts,
-        )
+        ))
       );
 
       if (newSelection.groupIndex >= 0
@@ -273,7 +275,7 @@ const CategoryInput = ({
 
       const selectedGroup = selected.groupIndex !== null ? groups[selected.groupIndex] : null;
       let selectedCategory = null;
-      if (selectedGroup && selected.categoryIndex) {
+      if (selectedGroup !== null && selected.categoryIndex !== null) {
         selectedCategory = selectedGroup.categories[selected.categoryIndex];
       }
 
