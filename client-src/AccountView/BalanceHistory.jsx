@@ -4,7 +4,7 @@ import Chart from 'react-google-charts';
 import MobxStore from '../state/mobxStore';
 
 const BalanceHistory = () => {
-  const { balances } = useContext(MobxStore);
+  const { balances: { balances } } = useContext(MobxStore);
   const data = balances.map((b) => [b.date, b.balance]);
   data.splice(0, 0, ['date', 'balance']);
 

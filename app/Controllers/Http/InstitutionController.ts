@@ -32,10 +32,12 @@ class InstitutionController {
     const { institution, publicToken } = request.only(['institution', 'publicToken']);
 
     // Check to see if we already have the institution. If not, add it.
-    const inst = await Institution.findBy('institution_id', institution.institution_id);
+    const inst = await Institution
+      .query()
+      .where({ institution_id: institution.institution_id, user_id: user.id }).first();
 
-    let accessToken;
-    let institutionId;
+    let accessToken: string;
+    let institutionId: number;
 
     if (!inst) {
       const tokenResponse = await plaidClient.exchangePublicToken(publicToken);
@@ -76,7 +78,7 @@ class InstitutionController {
     const existingAccts = await Database.query()
       .select('plaid_account_id')
       .from('accounts')
-      .where('institution_id', institutionId);
+      .where({ institution_id: institutionId });
 
     existingAccts.forEach((existingAcct) => {
       const index = accounts.findIndex((a) => a.account_id === existingAcct.plaid_account_id);
@@ -289,13 +291,12 @@ class InstitutionController {
     const trx = await Database.transaction();
 
     try {
-      const institutions = await Institution.all();
+      const institutions = await Institution.query().where('user_id', user.id);
 
       const result: Array<AccountSyncResult> | null = [];
 
       await Promise.all(institutions.map(async (institution) => {
-        await institution.preload('accounts');
-        const { accounts } = institution;
+        const accounts = await institution.related('accounts').query();
 
         return Promise.all(accounts.map(async (acct) => (
           acct.sync(trx, institution.accessToken, user.id)
@@ -505,7 +506,7 @@ class InstitutionController {
 
     const plaidInstitution = institution.getPlaidInstition();
 
-    console.log(JSON.stringify(plaidInstitution, null, 4));
+    // console.log(JSON.stringify(plaidInstitution, null, 4));
 
     return plaidInstitution;
   }

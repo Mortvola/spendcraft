@@ -193,7 +193,7 @@ class Account extends BaseModel {
       },
     );
 
-    console.log(JSON.stringify(transactionsResponse, null, 4));
+    // console.log(JSON.stringify(transactionsResponse, null, 4));
 
     let sum = 0;
     // let pendingSum = 0;
@@ -325,7 +325,7 @@ class Account extends BaseModel {
   ): Promise<void> {
     const today = DateTime.utc();
 
-    await this.preload('balanceHistory', (query) => {
+    await this.load('balanceHistory', (query) => {
       query.where('date', today.toFormat('yyyy-MM-dd')).useTransaction(trx);
     });
 

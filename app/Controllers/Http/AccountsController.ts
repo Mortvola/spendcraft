@@ -94,7 +94,7 @@ export default class AccountsController {
     const account = await Account.find(accountId);
 
     if (account) {
-      await account.preload('balanceHistory', (query) => {
+      await account.load('balanceHistory', (query) => {
         query.orderBy('date', 'asc');
       });
 
