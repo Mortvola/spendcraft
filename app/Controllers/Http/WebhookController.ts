@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import njwk from 'node-jwk';
 import plaidClient from '@ioc:Plaid';
 import util from 'util';
+import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import Database from '@ioc:Adonis/Lucid/Database';
 import Institution from 'App/Models/Institution';
 
@@ -12,27 +13,29 @@ const getVerificationKey = util
 const keyCache = {};
 const waitingRequests = {};
 
+type TransactionEvent = Record<string, unknown>;
+
 class WebhookController {
   // eslint-disable-next-line class-methods-use-this
-  public async post({ request, response }) {
-    console.log(JSON.stringify(request.body));
+  public async post({ request, response }: HttpContextContract) {
+    // console.log(JSON.stringify(request.body()));
 
     const verified = await WebhookController.verify(request);
 
     if (verified) {
       response.noContent();
 
-      switch (request.body.webhook_type) {
+      switch (request.body().webhook_type) {
         case 'TRANSACTIONS':
-          WebhookController.processTransactionEvent(request.body);
+          WebhookController.processTransactionEvent(request.body());
           break;
 
         case 'ITEM':
-          WebhookController.processItemEvent(request.body);
+          WebhookController.processItemEvent(request.body());
           break;
 
         default:
-          console.log(`Unhandled webhook type: ${request.body.webhook_type}`);
+          console.log(`Unhandled webhook type: ${request.body().webhook_type}`);
       }
     }
     else {
@@ -46,6 +49,8 @@ class WebhookController {
         break;
       case 'PENDING_EXPIRATION':
         break;
+      case 'USER_PERMISSION_REVOKED':
+        break;
       case 'ERROR':
         break;
       default:
@@ -53,7 +58,8 @@ class WebhookController {
     }
   }
 
-  static async processTransactionEvent(event) {
+  // eslint-disable-next-line camelcase
+  static async processTransactionEvent(event: TransactionEvent) {
     switch (event.webhook_code) {
       case 'INITIAL_UPDATE':
         break;
@@ -66,8 +72,7 @@ class WebhookController {
           const trx = await Database.transaction();
 
           try {
-            await institution.preload('accounts');
-            const { accounts } = institution;
+            const accounts = await institution.related('accounts').query();
 
             await Promise.all(accounts.map(async (acct) => (
               acct.sync(
