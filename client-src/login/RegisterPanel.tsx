@@ -1,12 +1,19 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import Errors from './Errors';
+import { ErrorsType } from './submit';
 
-const RegisterPanel = ({
+type PropTypes = {
+  onHide: (() => void);
+  onRegister: (() => void);
+  errors: ErrorsType;
+}
+
+const RegisterPanel = React.forwardRef<HTMLFormElement, PropTypes>(({
   onHide,
   onRegister,
   errors,
-}, forwardRef) => (
+}: PropTypes, forwardRef) => (
   <form ref={forwardRef}>
     <div className="form-group row">
       <label htmlFor="username" className="col-md-3 col-form-label text-md-right">Username</label>
@@ -65,12 +72,6 @@ const RegisterPanel = ({
       </div>
     </div>
   </form>
-);
+));
 
-RegisterPanel.propTypes = {
-  onHide: PropTypes.func.isRequired,
-  onRegister: PropTypes.func.isRequired,
-  errors: PropTypes.shape().isRequired,
-};
-
-export default React.forwardRef(RegisterPanel);
+export default RegisterPanel;

@@ -11,7 +11,7 @@
     "client-build": "tsc -p client-src && NODE_ENV=production browserify -t [ babelify --presets [ @babel/env ] ] -t dotenvify client-build/client-src/App.js | terser --compress --mangle > public/app.js",
     "dev-start": "node ace serve -w",
     "dev-server-build": "node ace build",
-    "dev-welcome-build": "browserify -t [ babelify --presets [ @babel/preset-react @babel/env ] ] -t dotenvify client-src/Welcome.jsx --extension=.jsx > public/welcome.js",
+    "dev-welcome-build": "tsc -p client-src && browserify -t [ babelify --presets [ @babel/env ] ] -t dotenvify client-build/client-src/Welcome.js > public/welcome.js",
     "dev-client-build": "tsc -p client-src && browserify -t [ babelify --presets [ @babel/env ] ] -t dotenvify client-build/client-src/App.js > public/app.js",
     "lint": "eslint ."
   },

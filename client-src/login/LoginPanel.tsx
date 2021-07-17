@@ -1,8 +1,16 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import Errors from './Errors';
+import { ErrorsType } from './submit';
 
-const LoginPanel = ({
+type PropTypes = {
+  onHide: (() => void),
+  onLogin: (() => void),
+  onForgotPasswordClick: (() => void),
+  errors: ErrorsType,
+}
+
+const LoginPanel = React.forwardRef<HTMLFormElement, PropTypes>(({
   onHide,
   onLogin,
   onForgotPasswordClick,
@@ -64,13 +72,6 @@ const LoginPanel = ({
       </div>
     </div>
   </form>
-);
+));
 
-LoginPanel.propTypes = {
-  onHide: PropTypes.func.isRequired,
-  onLogin: PropTypes.func.isRequired,
-  onForgotPasswordClick: PropTypes.func.isRequired,
-  errors: PropTypes.shape().isRequired,
-};
-
-export default React.forwardRef(LoginPanel);
+export default LoginPanel;

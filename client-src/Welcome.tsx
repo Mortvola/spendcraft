@@ -10,16 +10,8 @@ const Welcome = () => {
   const [showRegister, setShowRegister] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
 
-  const handleLoginClick = () => {
-    setShowLogin(true);
-  };
-
   const handleLoginHide = () => {
     setShowLogin(false);
-  };
-
-  const handleRegisterClick = () => {
-    setShowRegister(true);
   };
 
   const handleRegisterHide = () => {
@@ -27,7 +19,12 @@ const Welcome = () => {
   };
 
   const handleLoad = () => {
-    document.querySelector('body').className = 'background';
+    const body = document.querySelector('body');
+    if (body === null) {
+      throw new Error('body is null');
+    }
+  
+    body.className = 'background';
     setImageLoaded(true);
   };
 
@@ -39,7 +36,7 @@ const Welcome = () => {
     className += ' dark';
   }
 
-  const handleSelect = (eventKey) => {
+  const handleSelect = (eventKey: any) => {
     switch (eventKey) {
       case 'login':
         setShowLogin(true);

@@ -7,15 +7,20 @@ import ForgotPasswordPanel from './ForgotPasswordPanel';
 import ResetEmailSentPanel from './ResetEmailSentPanel';
 import Waiting from './Waiting';
 
+type PropTypes = {
+  show: boolean,
+  onHide: (() => void),
+}
+
 const Login = ({
   show,
   onHide,
-}) => {
+}: PropTypes) => {
   const [card, setCard] = useState('login');
   const [resetMessage, setResetMessage] = useState('');
   const [waiting, setWaiting] = useState(false);
   const [errors, setErrors] = useState(defaultErrors);
-  const formRef = useRef(null);
+  const formRef = useRef<HTMLFormElement | null>(null);
 
   const handleForgotPasswordClick = () => {
     setCard('forgot');
@@ -27,8 +32,13 @@ const Login = ({
 
   const handleLogin = () => {
     setWaiting(true);
+
+    if (formRef.current === null) {
+      throw new Error('form ref is null')
+    }
+
     submitForm(null, formRef.current, '/login',
-      (responseText) => {
+      (responseText: string) => {
         if (responseText) {
           setWaiting(false);
           window.location.assign(responseText);
@@ -40,8 +50,13 @@ const Login = ({
       });
   };
 
-  const requestResetLink = (event) => {
+  const requestResetLink = (event: React.MouseEvent) => {
     setWaiting(true);
+
+    if (formRef.current === null) {
+      throw new Error('form ref is null');
+    }
+
     submitForm(event, formRef.current, '/password/email',
       (responseText) => {
         setResetMessage(responseText);
@@ -87,7 +102,7 @@ const Login = ({
     case 'reset':
       title = 'Reset Link';
       panel = (
-        <ResetEmailSentPanel resetMessage={resetMessage} errors={errors} />
+        <ResetEmailSentPanel resetMessage={resetMessage} />
       );
       break;
     default:
