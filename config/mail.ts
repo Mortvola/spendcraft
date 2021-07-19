@@ -53,6 +53,30 @@ const mailConfig: MailConfig = {
 			}
     },
 
+    /*
+    |--------------------------------------------------------------------------
+    | SES
+    |--------------------------------------------------------------------------
+    |
+    | Uses Amazon SES for sending emails. You will have to install the aws-sdk
+    | when using this driver.
+    |
+    | ```
+    | npm i aws-sdk
+    | ```
+    |
+    */
+    ses: {
+      driver: 'ses',
+      apiVersion: '2010-12-01',
+      key: Env.get('SES_ACCESS_KEY'),
+      secret: Env.get('SES_ACCESS_SECRET'),
+      region: Env.get('SES_REGION'),
+      sslEnabled: true,
+      sendingRate: 10,
+      maxConnections: 5,
+    },
+
   },
 }
 

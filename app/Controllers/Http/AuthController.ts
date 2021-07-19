@@ -8,11 +8,14 @@ import User from 'App/Models/User';
 
 export default class AuthController {
   // eslint-disable-next-line class-methods-use-this
-  public async register({ request }: HttpContextContract) : Promise<string> {
+  public async register({ request, response }: HttpContextContract) : Promise<string> {
     /**
      * Validate user details
      */
     const validationSchema = schema.create({
+      username: schema.string({ trim: true }, [
+        rules.unique({ table: 'users', column: 'username'})
+      ]),
       email: schema.string({ trim: true }, [
         rules.email(),
         rules.unique({ table: 'users', column: 'email' }),
@@ -30,18 +33,60 @@ export default class AuthController {
      * Create a new user
      */
     const user = new User();
+    user.username = userDetails.username;
     user.email = userDetails.email;
     user.password = userDetails.password;
     await user.save();
 
-    return 'Your account has been created';
+    const token = AuthController.generateToken(user);
+
+    const verificationLink = `${Env.get('APP_URL') as string}/activate/${token}/${user.id}`;
+
+    Mail.send((message) => {
+      message
+        .from(Env.get('MAIL_FROM_ADDRESS') as string, Env.get('MAIL_FROM_NAME') as string)
+        .to(user.email)
+        .subject('Welcome to Debertas!')
+        .htmlView('emails/welcome', { verificationLink, expires: Env.get('TOKEN_EXPIRATION') });
+    });
+
+    response.header('Content-type', 'application/json')
+
+    return JSON.stringify('Your account has been created');
   }
 
+  // eslint-disable-next-line class-methods-use-this
+  public async verifyEmail({ params, view }: HttpContextContract) : Promise<(string | void)> {
+    const user = await User.find(params.id);
+
+    if (user) {
+      const payload = jwt.verify(
+        params.token, AuthController.generateSecret(user),
+      ) as Record<string, unknown>;
+
+      if (payload.id === parseInt(params.id, 10)) {
+        user.emailConfirmed = true;
+        user.save();
+
+        return view.render('emailVerified');
+      }
+
+      Logger.error(`Invalid payload "${payload.id}" in token for user ${user.username}`);
+    }
+
+    return undefined;
+  }
+  
   // eslint-disable-next-line class-methods-use-this
   public async login({ auth, request, response }: HttpContextContract) : Promise<void> {
     const username = request.input('username');
     const password = request.input('password');
+
     await auth.attempt(username, password);
+
+    if (auth.user && !auth.user.emailConfirmed) {
+      throw new Error('email has not been confirmed');
+    }
 
     response.header('content-type', 'application/json');
     response.send(JSON.stringify('/'));
@@ -57,7 +102,7 @@ export default class AuthController {
   }
 
   static generateToken(user: User) : unknown {
-    const expiresIn = parseInt(Env.get('PASSWORD_RESET_TOKEN_EXPIRATION') as string, 10) * 60;
+    const expiresIn = parseInt(Env.get('TOKEN_EXPIRATION') as string, 10) * 60;
     return jwt.sign({ id: user.id }, AuthController.generateSecret(user), { expiresIn });
   }
 
@@ -76,7 +121,7 @@ export default class AuthController {
           .from(Env.get('MAIL_FROM_ADDRESS') as string, Env.get('MAIL_FROM_NAME') as string)
           .to(user.email)
           .subject('Reset Password Notification')
-          .htmlView('emails/reset-password', { url, expires: Env.get('PASSWORD_RESET_TOKEN_EXPIRATION') });
+          .htmlView('emails/reset-password', { url, expires: Env.get('TOKEN_EXPIRATION') });
       });
 
       response.header('content-type', 'application/json');

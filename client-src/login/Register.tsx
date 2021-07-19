@@ -43,22 +43,23 @@ const Register = ({
     setErrors(defaultErrors);
   };
 
-  let panel = (
-    <RegisterPanel
-      ref={formRef}
-      onHide={onHide}
-      onRegister={handleRegister}
-      errors={errors}
-    />
-  );
-
   let title = 'Register';
+  
+  const panel = () => {
+    if (confirmationSent) {
+      const resetMessage = `We sent an email to your email address for email verification. Click on the link and then return here to log in.`;
+      title = 'Reset Link';
+      return <ResetEmailSentPanel resetMessage={resetMessage} />
+    }  
 
-  if (confirmationSent) {
-    title = 'Reset Link';
-    panel = (
-      <ResetEmailSentPanel resetMessage="check your email" />
-    );
+    return (
+      <RegisterPanel
+        ref={formRef}
+        onHide={onHide}
+        onRegister={handleRegister}
+        errors={errors}
+      />
+    );  
   }
 
   return (
@@ -67,7 +68,7 @@ const Register = ({
         <Modal.Title>{title}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        {panel}
+        {panel()}
         <Waiting show={waiting} />
       </Modal.Body>
     </Modal>

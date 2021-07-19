@@ -43,7 +43,7 @@ const Welcome = () => {
         break;
 
       case 'register':
-        setShowRegister(false);
+        setShowRegister(true);
         break;
 
       default:

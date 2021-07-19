@@ -26,9 +26,9 @@ Route.post('/wh', 'WebhookController.post');
 
 Route.group(() => {
   Route.post('/register', 'AuthController.register');
-  Route.get('/activate', 'AuthController.verifyEmail').as('emailVerification');
+  Route.get('/activate/:token/:id', 'AuthController.verifyEmail');
   Route.post('/login', 'AuthController.login');
-  Route.on('/email_verified').render('emailVerified');
+  Route.on('/email-verified').render('emailVerified');
   Route.post('/password/email', 'AuthController.forgotPassword');
   Route.get('/password/reset/:id/:token', 'AuthController.resetPassword');
   Route.post('/password/update', 'AuthController.updatePassword').as('updatePassword');
