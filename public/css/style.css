@@ -597,9 +597,15 @@ body {
   font-weight: bold;
 }
 
+.rebalance-container {
+  display: grid;
+  height: 100%;
+}
+
 .rebalance-header {
     display: flex;
     justify-content: space-between;
+    border-bottom: thin gray solid;
 }
 
 .rebalance-unassigned {

@@ -149,57 +149,59 @@ const RebalanceDialog = ({
         <Form id="rebalanceForm" className="scrollable-form">
           <Header />
           <ModalBody>
-            <div className="rebalance-header">
-              <label>
-                Date
-                <Field name="date">
-                  {({
-                    field: {
-                      name,
-                      value,
-                    },
-                    form: {
-                      setFieldValue,
-                    },
-                  }: FieldProps<string>) => (
-                    <input
-                      value={value}
-                      type="date"
-                      onChange={(event) => {
-                        handleDateChange(event);
-                        setFieldValue(name, event.target.value, false);
-                      }}
-                    />
-                  )}
-                </Field>
-              </label>
-              <label>
-                Unassigned
-                <Amount className="rebalance-unassigned" amount={unassigned} />
-              </label>
+            <div className="rebalance-container">
+              <div className="rebalance-header">
+                <label>
+                  Date
+                  <Field name="date">
+                    {({
+                      field: {
+                        name,
+                        value,
+                      },
+                      form: {
+                        setFieldValue,
+                      },
+                    }: FieldProps<string>) => (
+                      <input
+                        value={value}
+                        type="date"
+                        onChange={(event) => {
+                          handleDateChange(event);
+                          setFieldValue(name, event.target.value, false);
+                        }}
+                      />
+                    )}
+                  </Field>
+                </label>
+                <label>
+                  Unassigned
+                  <Amount className="rebalance-unassigned" amount={unassigned} />
+                </label>
+              </div>
+              <ErrorMessage name="date" />
+              <Field name="categories">
+                {({
+                  field: {
+                    name,
+                    value,
+                  },
+                  form: {
+                    setFieldValue,
+                  },
+                }: FieldProps<Array<TransactionCategoryInterface>>) => (
+                  <CategoryRebalance
+                    categoryTree={categoryTree}
+                    categories={value}
+                    onDeltaChange={(_amount, delta, categories) => {
+                      handleDeltaChange(delta);
+                      setFieldValue(name, categories, false);
+                    }}
+                  />
+                )}
+              </Field>
+              <ErrorMessage name="categories" />
             </div>
-            <ErrorMessage name="date" />
-            <Field name="categories">
-              {({
-                field: {
-                  name,
-                  value,
-                },
-                form: {
-                  setFieldValue,
-                },
-              }: FieldProps<Array<TransactionCategoryInterface>>) => (
-                <CategoryRebalance
-                  categoryTree={categoryTree}
-                  categories={value}
-                  onDeltaChange={(_amount, delta, categories) => {
-                    handleDeltaChange(delta);
-                    setFieldValue(name, categories, false);
-                  }}
-                />
-              )}
-            </Field>
-            <ErrorMessage name="categories" />
           </ModalBody>
           <Footer />
         </Form>
