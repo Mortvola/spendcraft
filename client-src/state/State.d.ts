@@ -69,6 +69,8 @@ export interface RegisterInterface {
     splits: Array<TransactionCategoryInterface>,
     categories: Array<CategoryProps>,
   ): void;
+
+  removeTransaction(transactionId: number): void;
 }
 
 export interface AccountInterface {

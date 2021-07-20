@@ -264,6 +264,19 @@ export const isUpdateCategoryTransferResponse = (
   || isCategoryBalance2((r as UpdateCategoryTransferReponse).balances[0]))
 );
 
+export interface DeleteTransactionResponse {
+  balances: { id: number, balance: number }[],
+}
+
+export const isDeleteTransactionResponse = (
+  r: DeleteTransactionResponse | unknown,
+): r is DeleteTransactionResponse => (
+  (r as DeleteTransactionResponse).balances !== undefined
+  && (r as DeleteTransactionResponse).balances !== undefined
+  && ((r as DeleteTransactionResponse).balances.length === 0
+  || isCategoryBalance2((r as DeleteTransactionResponse).balances[0]))
+);
+
 export interface InsertCategoryTransferReponse {
   balances: { id: number, balance: number }[],
 

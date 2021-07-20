@@ -4,9 +4,10 @@ import {
   TransactionProps,
   isUpdateTransactionCategoryResponse,
   isUpdateCategoryTransferResponse,
+  isDeleteTransactionResponse,
 } from '../../common/ResponseTypes';
 import { NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface } from './State';
-import { getBody, patchJSON } from './Transports';
+import { getBody, httpDelete, patchJSON } from './Transports';
 
 class Transaction {
   id: number;
@@ -70,17 +71,38 @@ class Transaction {
   ): Promise<null> {
     const response = await patchJSON(`/category_transfer/${this.id}`, { ...values, type: 3 });
 
-    const body = await getBody(response);
+    if (response.ok) {
+      const body = await getBody(response);
 
-    if (isUpdateCategoryTransferResponse(body)) {
-      runInAction(() => {
-        this.store.categoryTree.updateBalances(body.balances);
-        this.store.register.updateTransactionCategories(
-          this.id, body.transaction.categories, body.balances,
-        );
-      });
+      if (isUpdateCategoryTransferResponse(body)) {
+        runInAction(() => {
+          this.store.categoryTree.updateBalances(body.balances);
+          this.store.register.updateTransactionCategories(
+            this.id, body.transaction.categories, body.balances,
+          );
+        });
 
-      return null;
+        return null;
+      }
+    }
+
+    throw new Error('invalid response');
+  }
+
+  async delete(): Promise<null | Array<Error>> {
+    const response = await httpDelete(`/transaction/${this.id}`);
+
+    if (response.ok) {
+      const body = await getBody(response);
+
+      if (isDeleteTransactionResponse(body)) {
+        runInAction(() => {
+          this.store.categoryTree.updateBalances(body.balances);
+          this.store.register.removeTransaction(this.id);
+        });
+
+        return null;
+      }
     }
 
     throw new Error('invalid response');

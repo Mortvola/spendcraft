@@ -19,7 +19,7 @@ function Institution({
   };
 
   return (
-    <div>
+    <div className="inst-card">
       <div className="acct-list-inst">
         <div className="institution-name">{institution.name}</div>
         <IconButton icon="plus" onClick={showAccountsDialog} />
@@ -28,7 +28,7 @@ function Institution({
         <IconButton icon="info-circle" onClick={showInstitutionInfoDialog} />
         <InstitutionInfoDialog institution={institution} />
       </div>
-      <div>
+      <div className="acct-list-accounts">
         {
           institution.accounts.map((account) => {
             const selected = selectedAccount

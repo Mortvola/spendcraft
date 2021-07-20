@@ -13,6 +13,7 @@ import DeleteCategoryValidator from 'App/Validators/DeleteCategoryValidator';
 import UpdateCategoryTransferValidator from 'App/Validators/UpdateCategoryTransferValidator';
 import Transaction from 'App/Models/Transaction';
 import { StrictValues } from '@ioc:Adonis/Lucid/Database';
+import TransactionCategory from 'App/Models/TransactionCategory';
 import { AddCategoryResponse, UpdateCategoryResponse } from '../../../common/ResponseTypes';
 
 type Transactions = {
@@ -146,15 +147,17 @@ class CategoryController {
   }: HttpContextContract): Promise<AddCategoryResponse> {
     await request.validate(AddCategoryValidator);
 
-    const id = await Database.insertQuery()
-      .insert({ group_id: request.params().groupId, name: request.input('name') })
-      .table('categories').returning('id');
+    const category = new Category();
+
+    await category
+      .fill({ groupId: parseInt(request.params().groupId, 10), name: request.input('name'), amount: 0 })
+      .save();
 
     return {
-      groupId: request.params().groupId,
-      id: id[0],
-      name: request.input('name'),
-      balance: 0,
+      groupId: category.groupId,
+      id: category.id,
+      name: category.name,
+      balance: category.amount,
       system: false,
     };
   }
@@ -353,25 +356,26 @@ class CategoryController {
             if (split.id) {
               existingSplits.push(split.id);
 
-              const oldSplit = await trx.query().select('amount').from('transaction_categories').where('id', split.id);
+              const existingSplit = await TransactionCategory.findOrFail(split.id, { client: trx });
 
-              amount = split.amount - oldSplit[0].amount;
+              amount = split.amount - existingSplit.amount;
 
-              await trx.query().where('id', split.id).from('transaction_categories').update({ amount: split.amount });
+              existingSplit.amount = split.amount;
+              existingSplit.save();
             }
             else {
-              const newId = await trx.insertQuery().insert({
-                transaction_id: transactionId,
-                category_id: split.categoryId,
-                amount: split.amount,
-              }).table('transaction_categories').returning('id');
+              const newSplit = new TransactionCategory();
+              newSplit.useTransaction(trx);
+              await newSplit
+                .fill({ transactionId, categoryId: split.categoryId, amount: split.amount })
+                .save();
 
-              existingSplits.push(newId[0]);
+              existingSplits.push(newSplit.id);
 
               amount = split.amount;
             }
 
-            const [category] = await Category.query({ client: trx }).where('id', split.categoryId);
+            const category = await Category.findOrFail(split.categoryId, { client: trx });
 
             category.amount += amount;
 
@@ -389,7 +393,7 @@ class CategoryController {
         const toDelete = await query.select('category_id AS categoryId', 'amount');
 
         await Promise.all(toDelete.map(async (td) => {
-          const [category] = await Category.query({ client: trx }).where('id', td.categoryId);
+          const category = await Category.findOrFail(td.categoryId, { client: trx });
 
           category.amount -= td.amount;
 
@@ -431,17 +435,17 @@ class CategoryController {
     try {
       const { tfrId } = request.params();
 
-      const categoryTransfer = await CategoryTransfer.findOrFail(tfrId, trx);
+      const categoryTransfer = await CategoryTransfer.findOrFail(tfrId, { client: trx });
 
       const categorySplits = await categoryTransfer.splits(trx);
 
       await Promise.all(categorySplits.map(async (cs) => {
-        const category = await Category.find(cs.categoryId, trx);
+        const category = await Category.find(cs.categoryId, { client: trx });
 
         if (category) {
           category.amount -= cs.amount;
 
-          await trx.commit(); // category.save(trx);
+          category.save();
 
           await cs.delete();
         }
@@ -468,7 +472,7 @@ class CategoryController {
       throw new Error('user is not defined');
     }
 
-    const { date, id } = request.get();
+    const { date, id } = request.qs();
 
     return Category.balances(user.id, date, id);
   }

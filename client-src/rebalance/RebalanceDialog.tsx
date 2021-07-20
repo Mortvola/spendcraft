@@ -6,6 +6,8 @@ import { Modal, Button, ModalBody } from 'react-bootstrap';
 import {
   Formik, Form, Field, ErrorMessage, FormikErrors,
   FieldProps,
+  useFormikContext,
+  FormikContextType,
 } from 'formik';
 import { toJS } from 'mobx';
 import CategoryRebalance from './CategoryRebalance';
@@ -122,9 +124,32 @@ const RebalanceDialog = ({
     </Modal.Header>
   );
 
+  const handleDelete = async (bag: FormikContextType<unknown>) => {
+    const { setTouched, setErrors } = bag;
+
+    if (transaction) {
+      const errors = await transaction.delete();
+
+      if (errors && errors.length > 0) {
+        setTouched({ name: true }, false);
+        setErrors({ name: errors[0].message });
+      }
+    }
+  };
+
+  const DeleteButton = () => {
+    const bag = useFormikContext();
+
+    if (transaction) {
+      return (<Button variant="danger" onClick={() => handleDelete(bag)}>Delete</Button>);
+    }
+
+    return <div />;
+  };
+
   const Footer = () => (
     <Modal.Footer>
-      <div />
+      <DeleteButton />
       <div />
       <Button variant="secondary" onClick={onHide}>Cancel</Button>
       <Button variant="primary" type="submit">Save</Button>

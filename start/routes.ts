@@ -54,6 +54,8 @@ Route.group(() => {
     Route.patch('/category_transfer/:tfrId', 'CategoryController.transfer');
     Route.delete('/category_transfer/:tfrId', 'CategoryController.transferDelete');
 
+    Route.delete('/transaction/:trxId', 'TransactionsController.delete');
+    
     Route.get('/category_balances', 'CategoryController.balances');
 
     Route.get('/category/:catId/transactions', 'CategoryController.transactions');

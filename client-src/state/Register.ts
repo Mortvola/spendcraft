@@ -218,6 +218,14 @@ class Register implements RegisterInterface {
 
     throw new Error('invalid response');
   }
+
+  removeTransaction(transactionId: number): void {
+    const index = this.transactions.findIndex((t) => t.id === transactionId);
+
+    if (index !== -1) {
+      this.transactions.splice(index, 1);
+    }
+  }
 }
 
 export default Register;
