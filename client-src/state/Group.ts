@@ -45,7 +45,21 @@ class Group {
     else {
       runInAction(() => {
         if (isAddCategoryResponse(body)) {
-          this.categories.push(new Category(body));
+          // Find the position where this new category should be inserted.
+          const index = this.categories.findIndex(
+            (g) => body.name.toLowerCase().localeCompare(g.name.toLowerCase()) < 0,
+          );
+
+          if (index === -1) {
+            this.categories.push(new Category(body));
+          }
+          else {
+            this.categories = [
+              ...this.categories.slice(0, index),
+              new Category(body),
+              ...this.categories.slice(index),
+            ];
+          }
         }
       });
     }

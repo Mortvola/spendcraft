@@ -118,7 +118,21 @@ class CategoryTree implements CategoryTreeInterface {
     else {
       runInAction(() => {
         if (isGroupProps(body)) {
-          this.groups.push(new Group(body));
+          // Find the position where this new group should be inserted.
+          const index = this.groups.findIndex(
+            (g) => body.name.toLowerCase().localeCompare(g.name.toLowerCase()) < 0,
+          );
+
+          if (index === -1) {
+            this.groups.push(new Group(body));
+          }
+          else {
+            this.groups = [
+              ...this.groups.slice(0, index),
+              new Group(body),
+              ...this.groups.slice(index),
+            ];
+          }
         }
       });
     }
