@@ -5,6 +5,9 @@ import Env from '@ioc:Adonis/Core/Env';
 import Logger from '@ioc:Adonis/Core/Logger';
 import Mail from '@ioc:Adonis/Addons/Mail';
 import User from 'App/Models/User';
+import Group from 'App/Models/Group';
+import Database from '@ioc:Adonis/Lucid/Database';
+import Category from 'App/Models/Category';
 
 export default class AuthController {
   // eslint-disable-next-line class-methods-use-this
@@ -14,7 +17,7 @@ export default class AuthController {
      */
     const validationSchema = schema.create({
       username: schema.string({ trim: true }, [
-        rules.unique({ table: 'users', column: 'username'})
+        rules.unique({ table: 'users', column: 'username' }),
       ]),
       email: schema.string({ trim: true }, [
         rules.email(),
@@ -27,6 +30,15 @@ export default class AuthController {
 
     const userDetails = await request.validate({
       schema: validationSchema,
+      messages: {
+        'username.unique': 'An account with the requested username already exists',
+        'username.required': 'A username is required',
+        'email.email': 'A valid email address must be specified',
+        'email.required': 'An email address is required',
+        'email.unique': 'An account with the requested email address already exists',
+        'password.required': 'A password is required',
+        'password_confirmation.confirmed': 'The password confirmation does not match the password',
+      },
     });
 
     /**
@@ -37,6 +49,52 @@ export default class AuthController {
     user.email = userDetails.email;
     user.password = userDetails.password;
     await user.save();
+
+    const trx = await Database.transaction();
+
+    try {
+      const systemGroup = new Group();
+      systemGroup.useTransaction(trx);
+
+      systemGroup.name = 'System';
+      systemGroup.userId = user.id;
+      systemGroup.system = true;
+
+      await systemGroup.save();
+
+      const unassignedCat = new Category();
+      unassignedCat.useTransaction(trx);
+
+      unassignedCat.name = 'Unassigned';
+      unassignedCat.system = true;
+      unassignedCat.amount = 0;
+      unassignedCat.groupId = systemGroup.id;
+
+      const fundingPoolCat = new Category();
+      fundingPoolCat.useTransaction(trx);
+
+      fundingPoolCat.name = 'Funding Pool';
+      fundingPoolCat.system = true;
+      fundingPoolCat.amount = 0;
+      fundingPoolCat.groupId = systemGroup.id;
+
+      const accountTransferCat = new Category();
+      accountTransferCat.useTransaction(trx);
+
+      accountTransferCat.name = 'Account Transfer';
+      accountTransferCat.system = true;
+      accountTransferCat.amount = 0;
+      accountTransferCat.groupId = systemGroup.id;
+
+      await unassignedCat.save();
+      await fundingPoolCat.save();
+      await accountTransferCat.save();
+
+      trx.commit();
+    }
+    catch (error) {
+      trx.rollback();
+    }
 
     const token = AuthController.generateToken(user);
 
@@ -50,7 +108,7 @@ export default class AuthController {
         .htmlView('emails/welcome', { verificationLink, expires: Env.get('TOKEN_EXPIRATION') });
     });
 
-    response.header('Content-type', 'application/json')
+    response.header('Content-type', 'application/json');
 
     return JSON.stringify('Your account has been created');
   }
@@ -65,7 +123,7 @@ export default class AuthController {
       ) as Record<string, unknown>;
 
       if (payload.id === parseInt(params.id, 10)) {
-        user.emailConfirmed = true;
+        user.activated = true;
         user.save();
 
         return view.render('emailVerified');
@@ -76,20 +134,54 @@ export default class AuthController {
 
     return undefined;
   }
-  
+
   // eslint-disable-next-line class-methods-use-this
   public async login({ auth, request, response }: HttpContextContract) : Promise<void> {
-    const username = request.input('username');
-    const password = request.input('password');
+    const validationSchema = schema.create({
+      username: schema.string({ trim: true }),
+      password: schema.string({ trim: true }),
+      remember: schema.string.optional({ trim: true }),
+    });
 
-    await auth.attempt(username, password);
-
-    if (auth.user && !auth.user.emailConfirmed) {
-      throw new Error('email has not been confirmed');
-    }
+    const credentials = await request.validate({
+      schema: validationSchema,
+      messages: {
+        'username.required': 'A username is required',
+        'password.required': 'A password is required',
+      },
+    });
 
     response.header('content-type', 'application/json');
-    response.send(JSON.stringify('/'));
+
+    let responseData: unknown = JSON.stringify('/');
+
+    try {
+      await auth.attempt(credentials.username, credentials.password, credentials.remember === 'on');
+
+      if (auth.user) {
+        if (!auth.user.activated) {
+          response.status(422);
+          responseData = {
+            errors: [
+              { field: 'username', message: 'The account associated with this username has not been activated.' },
+            ],
+          };
+        }
+      }
+    }
+    catch (error) {
+      if (error.code === 'E_INVALID_AUTH_UID' || error.code === 'E_INVALID_AUTH_PASSWORD') {
+        response.status(422);
+        responseData = {
+          errors: [
+            { field: 'username', message: 'The username or password does not match our records.' },
+            { field: 'password', message: 'The username or password does not match our records.' },
+          ],
+        };
+      }
+    }
+
+    response.send(responseData);
   }
 
   // eslint-disable-next-line class-methods-use-this

@@ -13,6 +13,9 @@ class Group extends BaseModel {
   @belongsTo(() => User)
   public user: BelongsTo<typeof User>;
 
+  @column({ serializeAs: null })
+  public userId: number;
+
   @column()
   public system: boolean;
 }
