@@ -688,7 +688,7 @@ body {
 	grid-template-columns: max-content max-content;
 	overflow-y: auto;
 	overflow-x: hidden;
-  height: max-content;
+  height: 100%;
 }
 
 .plan-details {
