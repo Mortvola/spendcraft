@@ -25,7 +25,7 @@ class Accounts implements AccountsInterface {
   }
 
   async load(): Promise<void> {
-    const response = await fetch('/connected_accounts');
+    const response = await fetch('/api/connected_accounts');
 
     if (!response.ok) {
       throw new Error('invalid response');
@@ -45,7 +45,7 @@ class Accounts implements AccountsInterface {
   }
 
   async relinkInstitution(institutionId: number): Promise<void> {
-    const response = await fetch(`/institution/${institutionId}/link_token`);
+    const response = await fetch(`/api/institution/${institutionId}/link_token`);
 
     if (!response.ok) {
       throw new Error('invalid response');
@@ -61,7 +61,7 @@ class Accounts implements AccountsInterface {
   }
 
   async addInstitution(): Promise<void> {
-    const response = await fetch('/user/link_token');
+    const response = await fetch('/api/user/link_token');
 
     if (response.ok) {
       const body = await getBody(response);
@@ -71,7 +71,7 @@ class Accounts implements AccountsInterface {
           this.plaid = new Plaid(
             body.linkToken,
             async (publicToken, metadata) => {
-              const response2 = await postJSON('/institution', {
+              const response2 = await postJSON('/api/institution', {
                 publicToken,
                 institution: metadata.institution,
               });

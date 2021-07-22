@@ -30,7 +30,7 @@ class FundingPlanDetails {
   }
 
   async updateCategoryAmount(categoryId: number, amount: number, delta: number): Promise<void> {
-    const response = await putJSON(`/funding_plan/${this.planId}/item/${categoryId}`, { amount });
+    const response = await putJSON(`/api/funding_plan/${this.planId}/item/${categoryId}`, { amount });
 
     const body = await getBody(response);
 

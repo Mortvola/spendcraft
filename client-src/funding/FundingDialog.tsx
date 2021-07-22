@@ -75,7 +75,7 @@ const FundingDialog = ({
   if (!plansInitialized) {
     setPlansInitialized(true);
 
-    fetch('/funding_plans')
+    fetch('/api/funding_plans')
       .then(
         async (response) => setPlans(await response.json()),
       );
@@ -88,7 +88,7 @@ const FundingDialog = ({
   ) => {
     const { value } = event.target;
     setSelectedPlan(parseInt(value, 10));
-    fetch(`/funding_plan/${value}`)
+    fetch(`/api/funding_plan/${value}`)
       .then(
         async (response) => {
           const json = await response.json();
@@ -102,7 +102,7 @@ const FundingDialog = ({
   if (!groupsInitialized) {
     setGroupsInitialized(true);
 
-    fetch('/groups')
+    fetch('/api/groups')
       .then(
         (response) => response.json(),
       )
@@ -171,10 +171,10 @@ const FundingDialog = ({
 
     let response;
     if (transaction) {
-      response = await patchJSON(`category_transfer/${transaction.id}`, request);
+      response = await patchJSON(`/api/category_transfer/${transaction.id}`, request);
     }
     else {
-      response = await postJSON('category_transfer', request);
+      response = await postJSON('/api/category_transfer', request);
     }
 
     if (response.ok) {

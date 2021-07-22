@@ -26,7 +26,7 @@ class Category {
   }
 
   async update(groupId: number, name: string): Promise<null | Array<Error>> {
-    const response = await patchJSON(`/groups/${groupId}/categories/${this.id}`, { name });
+    const response = await patchJSON(`/api/groups/${groupId}/categories/${this.id}`, { name });
 
     const body = await getBody(response);
 

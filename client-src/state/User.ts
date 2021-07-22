@@ -14,7 +14,7 @@ class User {
   }
 
   async load(): Promise<void> {
-    const response = await fetch('/user');
+    const response = await fetch('/api/user');
 
     if (response.ok) {
       const body = await getBody(response);

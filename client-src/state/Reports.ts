@@ -19,7 +19,7 @@ class Reports {
   async loadReport(reportType: string): Promise<void> {
     switch (reportType) {
       case 'netWorth': {
-        const response = await fetch('/reports/networth');
+        const response = await fetch('/api/reports/networth');
 
         if (response.ok) {
           const body = await getBody(response);

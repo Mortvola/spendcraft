@@ -38,7 +38,7 @@ class Register implements RegisterInterface {
   async loadCategoryTransactions(categoryId: number | null): Promise<void> {
     if (categoryId !== null && categoryId !== this.categoryId) {
       this.fetching = true;
-      const response = await fetch(`/category/${categoryId}/transactions`);
+      const response = await fetch(`/api/category/${categoryId}/transactions`);
 
       const body = await getBody(response);
 
@@ -86,7 +86,7 @@ class Register implements RegisterInterface {
   async loadAccountTransactions(account: Account): Promise<void> {
     if (account !== this.account) {
       this.fetching = true;
-      const response = await fetch(`/account/${account.id}/transactions`);
+      const response = await fetch(`/api/account/${account.id}/transactions`);
 
       const body = await getBody(response);
 
@@ -171,7 +171,7 @@ class Register implements RegisterInterface {
       date: string;
     },
   ): Promise<null> {
-    const response = await postJSON('/category_transfer', { ...values, type: 3 });
+    const response = await postJSON('/api/category_transfer', { ...values, type: 3 });
 
     const body = await getBody(response);
 

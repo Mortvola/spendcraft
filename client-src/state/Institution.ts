@@ -30,7 +30,7 @@ class Institution {
   }
 
   async addAccounts(accounts: Array<Account>): Promise<null> {
-    const response = await postJSON(`/institution/${this.id}/accounts`, { accounts, startDate: null });
+    const response = await postJSON(`/api/institution/${this.id}/accounts`, { accounts, startDate: null });
 
     const body = await getBody(response);
 
@@ -59,7 +59,7 @@ class Institution {
   }
 
   async getUnlinkedAccounts(): Promise<void> {
-    const response = await fetch(`/institution/${this.id}/accounts`);
+    const response = await fetch(`/api/institution/${this.id}/accounts`);
 
     const body = await getBody(response);
 

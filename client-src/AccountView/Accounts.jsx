@@ -28,12 +28,8 @@ const Accounts = () => {
   const handleRefresh = () => {
     setRefreshing(true);
 
-    fetch('/institutions/sync', {
+    fetch('/api/institutions/sync', {
       method: 'POST',
-      headers:
-      {
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-      },
     })
       .then((response) => {
         if (!response.ok) {

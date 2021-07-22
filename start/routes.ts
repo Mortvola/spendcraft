@@ -55,7 +55,7 @@ Route.group(() => {
     Route.delete('/category_transfer/:tfrId', 'CategoryController.transferDelete');
 
     Route.delete('/transaction/:trxId', 'TransactionsController.delete');
-    
+
     Route.get('/category_balances', 'CategoryController.balances');
 
     Route.get('/category/:catId/transactions', 'CategoryController.transactions');
@@ -85,4 +85,4 @@ Route.group(() => {
     Route.on('/fundingplans').render('fundingplans');
 
     Route.get('/reports/:report', 'ReportController.get');
-}).middleware(['auth']);
+}).prefix('/api').middleware(['auth']);

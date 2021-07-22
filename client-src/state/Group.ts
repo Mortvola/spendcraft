@@ -33,7 +33,7 @@ class Group {
   }
 
   async addCategory(groupId: number, name: string): Promise<null| Array<Error>> {
-    const response = await postJSON(`/groups/${this.id}/categories`, { groupId, name });
+    const response = await postJSON(`/api/groups/${this.id}/categories`, { groupId, name });
 
     const body = await getBody(response);
 
@@ -68,7 +68,7 @@ class Group {
   }
 
   async update(name: string): Promise<null | Array<Error>> {
-    const response = await patchJSON(`/groups/${this.id}`, { name });
+    const response = await patchJSON(`/api/groups/${this.id}`, { name });
 
     const body = await getBody(response);
 
@@ -92,7 +92,7 @@ class Group {
     const index = this.categories.findIndex((c) => c.id === categoryId);
 
     if (index !== -1) {
-      const response = await httpDelete(`/groups/${groupId}/categories/${categoryId}`);
+      const response = await httpDelete(`/api/groups/${groupId}/categories/${categoryId}`);
 
       const body = await getBody(response);
 

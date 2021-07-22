@@ -16,7 +16,7 @@ const InstitutionInfoDialog = ({
     setInfoInitialized(true);
 
     (async () => {
-      const response = await fetch(`/institution/${institution.id}/info`);
+      const response = await fetch(`/api/institution/${institution.id}/info`);
 
       if (response.ok) {
         setInfo(await response.json());

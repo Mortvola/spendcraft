@@ -14,7 +14,7 @@ import { httpPost } from './state/Transports';
 
 const Logout = () => {
   (async () => {
-    const response = await httpPost('/logout');
+    const response = await httpPost('/api/logout');
 
     if (response.ok) {
       window.location.replace('/');

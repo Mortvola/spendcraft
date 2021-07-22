@@ -19,7 +19,7 @@ class Balances implements BalancesInterface {
 
   async load(account: Account): Promise<void> {
     if (account !== this.account) {
-      const response = await fetch(`/account/${account.id}/balances`);
+      const response = await fetch(`/api/account/${account.id}/balances`);
 
       if (!response.ok) {
         throw new Error('invalid response');

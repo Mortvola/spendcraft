@@ -47,7 +47,7 @@ class Transaction {
   async updateTransactionCategory(
     categories: Array<TransactionCategoryInterface | NewTransactionCategoryInterface>,
   ): Promise<null> {
-    const response = await patchJSON(`/transaction/${this.id}`, { splits: categories });
+    const response = await patchJSON(`/api/transaction/${this.id}`, { splits: categories });
 
     const body = await getBody(response);
 
@@ -69,7 +69,7 @@ class Transaction {
       date: string;
     },
   ): Promise<null> {
-    const response = await patchJSON(`/category_transfer/${this.id}`, { ...values, type: 3 });
+    const response = await patchJSON(`/api/category_transfer/${this.id}`, { ...values, type: 3 });
 
     if (response.ok) {
       const body = await getBody(response);
@@ -90,7 +90,7 @@ class Transaction {
   }
 
   async delete(): Promise<null | Array<Error>> {
-    const response = await httpDelete(`/transaction/${this.id}`);
+    const response = await httpDelete(`/api/transaction/${this.id}`);
 
     if (response.ok) {
       const body = await getBody(response);

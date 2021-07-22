@@ -33,7 +33,7 @@ class Account implements AccountInterface {
   async refresh(institutionId: number): Promise<void> {
     this.refreshing = true;
 
-    const response = await httpPost(`/institution/${institutionId}/accounts/${this.id}/transactions/sync`);
+    const response = await httpPost(`/api/institution/${institutionId}/accounts/${this.id}/transactions/sync`);
 
     const body = await getBody(response);
 

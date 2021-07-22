@@ -75,7 +75,7 @@ class CategoryTree implements CategoryTreeInterface {
   }
 
   async load(): Promise<void> {
-    const response = await fetch('/groups');
+    const response = await fetch('/api/groups');
 
     const body = await getBody(response);
 
@@ -106,7 +106,7 @@ class CategoryTree implements CategoryTreeInterface {
   }
 
   async addGroup(name: string): Promise<null | Array<Error>> {
-    const response = await postJSON('/groups', { name });
+    const response = await postJSON('/api/groups', { name });
 
     const body = await getBody(response);
 
@@ -144,7 +144,7 @@ class CategoryTree implements CategoryTreeInterface {
     const index = this.groups.findIndex((g) => g.id === id);
 
     if (index !== -1) {
-      const response = await httpDelete(`/groups/${id}`);
+      const response = await httpDelete(`/api/groups/${id}`);
 
       const body = await getBody(response);
 

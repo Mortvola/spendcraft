@@ -45,7 +45,7 @@ const RebalanceDialog = ({
         params.id = transaction.id.toString();
       }
 
-      const url = new URL('/category_balances', window.location.href);
+      const url = new URL('/api/category_balances', window.location.href);
       url.search = (new URLSearchParams(params)).toString();
 
       fetch(url.toString(), {

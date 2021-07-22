@@ -1,12 +1,5 @@
 const defaultHeaders = () => {
   const headers = new Headers();
-  const csrfMetaValue = document.querySelector('meta[name="csrf-token"]');
-  if (csrfMetaValue) {
-    const csrfToken = csrfMetaValue.getAttribute('content');
-    if (csrfToken) {
-      headers.append('X-CSRF-TOKEN', csrfToken);
-    }
-  }
 
   return headers;
 };
