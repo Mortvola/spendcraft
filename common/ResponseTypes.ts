@@ -303,7 +303,11 @@ export const isAccountsResponse = (r: Array<AccountProps> | unknown): r is Array
 export interface FundingPlanCategoryProps {
   id: number;
 
+  categoryId: number;
+
   amount: number;
+
+  name: string;
 }
 
 export interface FundingPlanGroupProps {
@@ -316,14 +320,36 @@ export interface FundingPlanGroupProps {
   system: boolean;
 }
 
+export interface HistoryMonthProps {
+  year: number;
+
+  month: number;
+
+  amount: number;
+}
+
+export interface HistoryCategoryProps {
+  id: number;
+
+  months: HistoryMonthProps[];
+}
+
+export interface HistoryGroupProps {
+  id: number;
+
+  name: string;
+
+  categories: HistoryCategoryProps[];
+}
+
 export interface FundingPlanDetailsProps {
   id: number;
 
-  history: Array<unknown>
+  history: HistoryGroupProps[];
 
   total: number;
 
-  groups: Array<FundingPlanGroupProps>;
+  groups: FundingPlanGroupProps[];
 }
 
 export interface UpdateCategoryProps {

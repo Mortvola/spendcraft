@@ -1,12 +1,12 @@
-import { makeAutoObservable } from "mobx";
-import { StoreInterface } from "./State";
+import { makeAutoObservable } from 'mobx';
+import { StoreInterface } from './State';
 import { FundingPlanGroupProps } from '../../common/ResponseTypes';
-import FundingPlanCategory from "./FundingPlanCategory";
+import FundingPlanCategory from './FundingPlanCategory';
 
 class FundingPlanGroup {
   id: number;
 
-  categories: Array<FundingPlanCategory>;
+  categories: FundingPlanCategory[];
 
   name: string;
 

@@ -1,58 +1,72 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, ReactElement } from 'react';
 import { observer } from 'mobx-react-lite';
 import moment from 'moment';
 import PlanCategory from './PlanCategory';
 import Amount from '../Amount';
 import MobxStore from '../state/mobxStore';
+import FundingPlanGroup from '../state/FundingPlanGroup';
+import FundingPlanCategory from '../state/FundingPlanCategory';
+import FundingPlanHistoryMonth from '../state/HistoryMonth';
+import HistoryGroup from '../state/HistoryGroup';
+import HistoryCategory from '../state/HistoryCategory';
 
-const PlanDetails = () => {
+const PlanDetails = (): ReactElement | null => {
   const { plans: { details } } = useContext(MobxStore);
   const [scroll, setScroll] = useState(0);
   const [now] = useState({ year: moment().year(), month: moment().month() });
 
-  const handleOnDeltaChange = (category, amount, delta) => {
+  const handleOnDeltaChange = (category: FundingPlanCategory, amount: number, delta: number) => {
     if (delta !== 0) {
+      if (details === null) {
+        throw new Error('details is null');
+      }
+
       details.updateCategoryAmount(category.categoryId, amount, delta);
     }
   };
 
-  const renderCategories = (cats, groupHistory) => {
-    const list = [];
+  const renderCategories = (
+    cats: FundingPlanCategory[],
+  ) => (
+    cats.map((c) => {
+      if (details === null) {
+        throw new Error('details i null');
+      }
 
-    cats.forEach((c) => {
-      const history = groupHistory.find((h) => c.categoryId === h.id);
-
-      list.push((
+      return (
         <PlanCategory
-          key={`${details.planId}-${c.categoryId}`}
+          key={`${details.id}-${c.categoryId}`}
           category={c}
           onDeltaChange={handleOnDeltaChange}
-          history={history ? history.months : []}
         />
-      ));
-    });
+      );
+    })
+  );
 
-    return list;
-  };
-
-  const renderGroups = (groups) => (
+  const renderGroups = (
+    groups: FundingPlanGroup[],
+  ) => (
     groups.map((g) => {
-      const history = details.history.find((h) => g.id === h.id);
+      if (details === null) {
+        throw new Error('details i null');
+      }
+
+      // const history = details.history.find((h) => g.id === h.id);
 
       return ((
         <div key={g.id}>
           <div style={{ height: '24px' }}>{g.name}</div>
-          {renderCategories(g.categories, history ? history.categories : [])}
+          {renderCategories(g.categories)}
         </div>
       ));
     })
   );
 
-  const renderHistory = (history) => {
+  const renderHistory = (history: FundingPlanHistoryMonth[]) => {
     const list = [];
     let { year, month } = now;
 
-    history.slice().sort((a, b) => {
+    const sortedHistory = history.slice().sort((a, b) => {
       if (a.year === b.year) {
         return b.month - a.month;
       }
@@ -61,10 +75,10 @@ const PlanDetails = () => {
     });
 
     for (let i = 0, h = 0; i < 13; i += 1) {
-      if (h < history.length
-        && year === history[h].year
-        && month === history[h].month - 1) {
-        list.push(<Amount key={`${year}:${month}`} amount={history[h].amount} />);
+      if (h < sortedHistory.length
+        && year === sortedHistory[h].year
+        && month === sortedHistory[h].month - 1) {
+        list.push(<Amount key={`${year}:${month}`} amount={sortedHistory[h].amount} />);
         h += 1;
       }
       else {
@@ -81,38 +95,37 @@ const PlanDetails = () => {
     return list;
   };
 
-  const renderCategoryHistory = (cats, groupHistory) => {
-    const list = [];
-
-    cats.forEach((c) => {
+  const renderCategoryHistory = (
+    cats: FundingPlanCategory[],
+    groupHistory: HistoryCategory[],
+  ) => (
+    cats.map((c) => {
       const history = groupHistory.find((h) => c.categoryId === h.id);
 
-      list.push((
+      return (
         <div key={c.categoryId} className="plan-history">
           {renderHistory(history ? history.months : [])}
         </div>
-      ));
-    });
+      );
+    })
+  );
 
-    return list;
-  };
+  const renderGroupHistory = (groups: FundingPlanGroup[]) => (
+    groups.map((g) => {
+      if (details === null) {
+        throw new Error('details i null');
+      }
 
-  const renderGroupHistory = (groups) => {
-    const list = [];
-
-    groups.forEach((g) => {
       const history = details.history.find((h) => g.id === h.id);
 
-      list.push((
+      return (
         <div key={g.id}>
           <div style={{ height: '24px' }} />
           {renderCategoryHistory(g.categories, history ? history.categories : [])}
         </div>
-      ));
-    });
-
-    return list;
-  };
+      );
+    })
+  );
 
   const renderMonthlyTitles = () => {
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -145,8 +158,8 @@ const PlanDetails = () => {
     return list;
   };
 
-  const handleScroll = (event) => {
-    setScroll(event.target.scrollLeft);
+  const handleScroll = (event: React.UIEvent<Element>) => {
+    setScroll(event.currentTarget.scrollLeft);
   };
 
   if (details) {

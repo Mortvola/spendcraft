@@ -1,10 +1,14 @@
-import React from 'react';
+import React, { ReactElement } from 'react';
 import PropTypes from 'prop-types';
 import Amount from '../Amount';
 
+type Props = {
+  history: { amount: number }[],
+}
+
 const CategoryHistory = ({
   history,
-}) => {
+}: Props): ReactElement => {
   const renderHistory = () => {
     const list = [];
 

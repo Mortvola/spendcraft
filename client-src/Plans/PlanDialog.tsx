@@ -1,21 +1,32 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
-import React, { useContext } from 'react';
-import PropTypes from 'prop-types';
-import { Button, Modal } from 'react-bootstrap';
+import React, { ReactElement, useContext } from 'react';
+// import PropTypes from 'prop-types';
+import { Button, Modal, ModalProps } from 'react-bootstrap';
 import {
   Formik, Form, Field, ErrorMessage,
+  FormikErrors, FormikHelpers, useFormikContext,
+  FormikContextType,
 } from 'formik';
 import MobxStore from '../state/mobxStore';
 import useModal from '../useModal';
+import FundingPlan from '../state/FundingPlan';
+
+interface Props {
+  plan?: FundingPlan | null,
+}
 
 const PlanDialog = ({
   plan,
   show,
   onHide,
-}) => {
+}: Props & ModalProps): ReactElement => {
   const { plans } = useContext(MobxStore);
 
-  const handleSubmit = async (values, bag) => {
+  type ValueType = {
+    name: string;
+  }
+
+  const handleSubmit = async (values: ValueType, bag: FormikHelpers<ValueType>) => {
     const { setErrors } = bag;
     let errors = null;
 
@@ -29,15 +40,15 @@ const PlanDialog = ({
     if (errors && errors.length > 0) {
       // Display the first error
       // TODO: Display all the errors?
-      setErrors({ name: errors[0].title });
+      setErrors({ name: errors[0].message });
     }
     else {
       onHide();
     }
   };
 
-  const handleValidate = (values) => {
-    const errors = {};
+  const handleValidate = (values: ValueType) => {
+    const errors: FormikErrors<ValueType> = {};
 
     if (values.name === '') {
       errors.name = 'The plan name must not be blank.';
@@ -46,8 +57,12 @@ const PlanDialog = ({
     return errors;
   };
 
-  const handleDelete = async (bag) => {
+  const handleDelete = async (bag: FormikContextType<ValueType>) => {
     const { setTouched, setErrors } = bag;
+
+    if (!plan) {
+      throw new Error('plan is null');
+    }
 
     const errors = await plans.deletePlan(plan.id);
 
@@ -55,7 +70,7 @@ const PlanDialog = ({
       // Display the first error
       // TODO: Display all the errors?
       setTouched({ name: true }, false);
-      setErrors({ name: errors[0].title });
+      setErrors({ name: errors[0].message });
     }
     else {
       onHide();
@@ -69,8 +84,10 @@ const PlanDialog = ({
   );
 
   const DeleteButton = () => {
+    const bag = useFormikContext<ValueType>();
+
     if (plan) {
-      return (<Button variant="danger" onClick={handleDelete}>Delete</Button>);
+      return (<Button variant="danger" onClick={() => handleDelete(bag)}>Delete</Button>);
     }
 
     return <div />;
@@ -87,7 +104,7 @@ const PlanDialog = ({
 
   return (
     <Modal show={show} onHide={onHide}>
-      <Formik
+      <Formik<ValueType>
         initialValues={{
           name: plan && plan.name ? plan.name : '',
         }}
@@ -115,21 +132,13 @@ const PlanDialog = ({
   );
 };
 
-PlanDialog.propTypes = {
-  plan: PropTypes.shape({
-    id: PropTypes.number.isRequired,
-    name: PropTypes.string.isRequired,
-    update: PropTypes.func.isRequired,
-  }),
-  onHide: PropTypes.func.isRequired,
-  show: PropTypes.bool.isRequired,
-};
-
 PlanDialog.defaultProps = {
-  plan: undefined,
+  plan: null,
 };
 
-const usePlanDialog = () => useModal(PlanDialog);
+export const usePlanDialog = (): [
+  (props: Props) => (ReactElement | null),
+  () => void,
+] => useModal<Props>(PlanDialog);
 
 export default PlanDialog;
-export { usePlanDialog };

@@ -1,16 +1,21 @@
-import React, { useState } from 'react';
+import React, { ReactElement, useState } from 'react';
 import PropTypes from 'prop-types';
 import { observer } from 'mobx-react-lite';
 import AmountInput from '../AmountInput';
 import Amount from '../Amount';
+import FundingPlanCategory from '../state/FundingPlanCategory';
 
+type PropsType = {
+  category: FundingPlanCategory,
+  onDeltaChange: ((category: FundingPlanCategory, amount: number, delta: number) => void),
+}
 const PlanCategory = ({
   category,
   onDeltaChange,
-}) => {
+}: PropsType): ReactElement => {
   const [annualAmount, setAnnualAmount] = useState(12 * (category.amount || 0));
 
-  const handleDeltaChange = (amount, delta) => {
+  const handleDeltaChange = (amount: number, delta: number) => {
     setAnnualAmount(amount * 12);
 
     if (onDeltaChange) {

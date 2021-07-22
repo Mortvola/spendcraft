@@ -17,6 +17,10 @@ class FundingPlan {
 
     this.store = store;
   }
+
+  async update(name: string): Promise<void> {
+    this.name = name;
+  }
 }
 
 export default FundingPlan;

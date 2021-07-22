@@ -4,6 +4,7 @@ import PlanItem from './PlanItem';
 import PlanDetails from './PlanDetails';
 import MobxStore from '../state/mobxStore';
 import { usePlanDialog } from './PlanDialog';
+import FundingPlan from '../state/FundingPlan';
 
 const Plans = () => {
   const { plans, uiState } = useContext(MobxStore);
@@ -14,10 +15,12 @@ const Plans = () => {
   }, [plans]);
 
   useEffect(() => {
-    plans.loadDetails(uiState.selectedPlanId);
+    if (uiState.selectedPlanId !== null) {
+      plans.loadDetails(uiState.selectedPlanId);
+    }
   }, [plans, uiState.selectedPlanId]);
 
-  const handleSelect = (p) => {
+  const handleSelect = (p: FundingPlan) => {
     uiState.selectPlanId(p.id);
   };
 

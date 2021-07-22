@@ -2,21 +2,25 @@ import { makeAutoObservable, runInAction } from 'mobx';
 import FundingPlanGroup from './FundingPlanGroup';
 import { StoreInterface } from './State';
 import { getBody, putJSON } from './Transports';
-import { FundingPlanDetailsProps, isUpdateCategoryResponse, isUpdateFundingCategoryResponse } from '../../common/ResponseTypes';
+import {
+  FundingPlanDetailsProps,
+  isUpdateFundingCategoryResponse,
+} from '../../common/ResponseTypes';
+import HistoryGroup from './HistoryGroup';
 
 class FundingPlanDetails {
-  planId: number;
+  id: number;
 
-  history: Array<unknown>
+  history: HistoryGroup[];
 
   total: number;
 
-  groups: Array<FundingPlanGroup>;
+  groups: FundingPlanGroup[];
 
   store: StoreInterface;
 
   constructor(store: StoreInterface, props: FundingPlanDetailsProps) {
-    this.planId = props.id;
+    this.id = props.id;
     this.history = props.history;
     this.total = props.total;
 
@@ -30,7 +34,7 @@ class FundingPlanDetails {
   }
 
   async updateCategoryAmount(categoryId: number, amount: number, delta: number): Promise<void> {
-    const response = await putJSON(`/api/funding_plan/${this.planId}/item/${categoryId}`, { amount });
+    const response = await putJSON(`/api/funding_plan/${this.id}/item/${categoryId}`, { amount });
 
     const body = await getBody(response);
 

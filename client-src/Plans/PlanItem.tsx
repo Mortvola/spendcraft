@@ -1,11 +1,18 @@
-import React from 'react';
+import React, { ReactElement } from 'react';
 import PropTypes from 'prop-types';
+import FundingPlan from '../state/FundingPlan';
+
+type PropsType = {
+  plan: FundingPlan,
+  onSelect: ((plan: FundingPlan) => void),
+  selected: boolean,
+}
 
 const PlanItem = ({
   plan,
   onSelect,
   selected,
-}) => {
+}: PropsType): ReactElement => {
   const handleClick = () => {
     onSelect(plan);
   };

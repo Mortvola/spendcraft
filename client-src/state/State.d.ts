@@ -25,7 +25,9 @@ export type Views = 'HOME' | 'PLANS' | 'ACCOUNTS' | 'REPORTS' | 'ACCOUNT' | 'LOG
 export interface UIStateInterface {
   view: Views;
   selectedCategoryId: number | null;
+  selectedPlanId: number | null;
   setView(view: Views): void;
+  selectPlanId(planId: number): void;
 }
 
 export interface CategoryTreeInterface {

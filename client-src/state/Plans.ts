@@ -53,7 +53,7 @@ class Plans implements PlansInterface {
     }
   }
 
-  async addPlan(name: string): Promise<void> {
+  async addPlan(name: string): Promise<{ message: string }[] | null> {
     const response = await postJSON('/api/funding_plan', { name });
 
     if (response.ok) {
@@ -65,6 +65,18 @@ class Plans implements PlansInterface {
         }
       });
     }
+
+    return null;
+  }
+
+  async deletePlan(id: number): Promise<{ message: string }[] | null> {
+    const index = this.list.findIndex((p) => p.id === id);
+
+    if (index !== -1) {
+      this.list.splice(index, 1);
+    }
+
+    return null;
   }
 }
 

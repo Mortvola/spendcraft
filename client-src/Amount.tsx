@@ -1,7 +1,7 @@
 import React, { ReactElement } from 'react';
 
 interface Props {
-  noValue?: number | null,
+  noValue?: number | string | null,
   amount?: number | null,
   className?: string,
 }

@@ -11,7 +11,7 @@ class FundingPlanController {
       user,
     },
     request,
-  }: HttpContextContract) {
+  }: HttpContextContract): Promise<FundingPlan> {
     if (!user) {
       throw new Error('user is undefined');
     }
