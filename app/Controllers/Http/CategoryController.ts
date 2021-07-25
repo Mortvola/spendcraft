@@ -47,10 +47,13 @@ class CategoryController {
       .orderBy('g.name')
       .orderBy('c.name');
 
-    const groups: Array<GroupItem> = [];
-    let group: GroupItem | null = null;
+    const groups: GroupItem[] = [];
+    // let group: GroupItem | null = null;
 
-    rows.forEach((cat) => {
+    // Create a tree structure with groups at the top level
+    // and categories within each group.
+    await Promise.all(rows.map(async (cat) => {
+      let group = groups.find((g) => (g.id === cat.groupId));
       if (!group) {
         group = {
           id: cat.groupId,
@@ -58,18 +61,26 @@ class CategoryController {
           system: cat.systemGroup,
           categories: [],
         };
-      }
-      else if (group.name !== cat.groupName) {
+
         groups.push(group);
-        group = {
-          id: cat.groupId,
-          name: cat.groupName,
-          system: cat.systemGroup,
-          categories: [],
-        };
       }
 
-      if (cat.categoryId) {
+      if (group.system && group.name === 'Loans') {
+        // Fetch the user's loans and place them into this group
+        const loans = await user.related('loans').query();
+
+        loans.forEach((loan) => {
+          if (!group) {
+            throw new Error('group is null');
+          }
+
+          group.categories.push({
+            id: loan.id,
+            name: loan.name,
+          });
+        });
+      }
+      else if (cat.categoryId) {
         group.categories.push({
           id: cat.categoryId,
           name: cat.categoryName,
@@ -77,11 +88,7 @@ class CategoryController {
           balance: cat.balance,
         });
       }
-    });
-
-    if (group) {
-      groups.push(group);
-    }
+    }));
 
     return groups;
   }

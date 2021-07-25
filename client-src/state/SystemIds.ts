@@ -5,6 +5,8 @@ class SystemIds {
 
   #fundingPoolId: number | null = null;
 
+  #loansGroupId: number | null = null;
+
   set systemGroupId(id: number) {
     this.#systemGroupId = id;
   }
@@ -39,6 +41,18 @@ class SystemIds {
     }
 
     return this.#fundingPoolId;
+  }
+
+  set loansGroupId(id: number) {
+    this.#loansGroupId = id;
+  }
+
+  get loansGroupId(): number {
+    if (this.#loansGroupId === null) {
+      throw new Error('loansGroupId is null');
+    }
+
+    return this.#loansGroupId;
   }
 }
 

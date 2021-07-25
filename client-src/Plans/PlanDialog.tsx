@@ -8,7 +8,7 @@ import {
   FormikContextType,
 } from 'formik';
 import MobxStore from '../state/mobxStore';
-import useModal from '../useModal';
+import useModal from '../Modal/useModal';
 import FundingPlan from '../state/FundingPlan';
 
 interface Props {

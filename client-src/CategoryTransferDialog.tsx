@@ -5,7 +5,7 @@ import {
   Formik, Form, Field, ErrorMessage, FormikErrors, FieldProps,
 } from 'formik';
 import CategorySplits from './CategorySplits';
-import useModal, { ModalProps } from './useModal';
+import useModal, { ModalProps } from './Modal/useModal';
 import Transaction from './state/Transaction';
 import { patchJSON, postJSON, httpDelete } from './state/Transports';
 import { TransactionCategoryInterface } from './state/State';

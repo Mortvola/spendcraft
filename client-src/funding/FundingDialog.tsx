@@ -12,7 +12,7 @@ import {
 import Funding from './Funding';
 import Amount from '../Amount';
 import MobxStore from '../state/mobxStore';
-import useModal, { ModalProps } from '../useModal';
+import useModal, { ModalProps } from '../Modal/useModal';
 import Transaction from '../state/Transaction';
 import { NewTransactionCategoryInterface, TransactionCategoryInterface } from '../state/State';
 import { patchJSON, postJSON } from '../state/Transports';
@@ -75,7 +75,7 @@ const FundingDialog = ({
   if (!plansInitialized) {
     setPlansInitialized(true);
 
-    fetch('/api/funding_plans')
+    fetch('/api/funding-plans')
       .then(
         async (response) => setPlans(await response.json()),
       );
@@ -88,7 +88,7 @@ const FundingDialog = ({
   ) => {
     const { value } = event.target;
     setSelectedPlan(parseInt(value, 10));
-    fetch(`/api/funding_plan/${value}`)
+    fetch(`/api/funding-plans/${value}`)
       .then(
         async (response) => {
           const json = await response.json();

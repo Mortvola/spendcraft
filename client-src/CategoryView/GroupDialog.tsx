@@ -1,16 +1,17 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 import React, { ReactElement, useContext } from 'react';
-import { Modal, Button, ModalBody } from 'react-bootstrap';
 import {
-  Formik, Form, Field, ErrorMessage,
-  useFormikContext, FormikHelpers,
+  Field, ErrorMessage,
+  FormikHelpers,
   FormikErrors,
   FormikContextType,
 } from 'formik';
 import MobxStore from '../state/mobxStore';
-import useModal, { ModalProps } from '../useModal';
+import useModal, { useModalType, ModalProps } from '../Modal/useModal';
 import Group from '../state/Group';
 import { Error } from '../../common/ResponseTypes';
+import FormModal from '../Modal/FormModal';
+import FormError from '../Modal/FormError';
 
 interface Props {
   // eslint-disable-next-line react/require-default-props
@@ -59,7 +60,7 @@ const GroupDialog = ({
     return errors;
   };
 
-  const handleDelete = async (bag: FormikContextType<unknown>) => {
+  const handleDelete = async (bag: FormikContextType<ValueType>) => {
     const { setTouched, setErrors } = bag;
 
     if (group) {
@@ -75,88 +76,40 @@ const GroupDialog = ({
     }
   };
 
-  const Header = () => {
-    let title = 'Add Group';
+  const title = () => {
     if (group) {
-      title = 'Edit Group';
+      return 'Edit Group';
     }
 
-    return (
-      <Modal.Header closeButton>
-        <h4 id="modalTitle" className="modal-title">{title}</h4>
-      </Modal.Header>
-    );
+    return 'Add Group';
   };
-
-  const DeleteButton = () => {
-    const bag = useFormikContext();
-
-    if (group) {
-      return (<Button variant="danger" onClick={() => handleDelete(bag)}>Delete</Button>);
-    }
-
-    return <div />;
-  };
-
-  const Footer = () => (
-    <Modal.Footer>
-      <DeleteButton />
-      <div />
-      <Button variant="secondary" onClick={onHide}>Cancel</Button>
-      <Button variant="primary" type="submit">Save</Button>
-    </Modal.Footer>
-  );
 
   return (
-    <Modal
+    <FormModal<ValueType>
       show={show}
       onHide={onHide}
+      initialValues={{
+        name: group && group.name ? group.name : '',
+      }}
+      title={title()}
+      formId="GroupDialogForm"
+      validate={handleValidate}
+      onSubmit={handleSubmit}
+      onDelete={group ? handleDelete : null}
     >
-      <Formik<ValueType>
-        initialValues={{
-          name: group && group.name ? group.name : '',
-        }}
-        validate={handleValidate}
-        onSubmit={handleSubmit}
-      >
-        <Form id="GroupDialogForm" className="scrollable-form">
-          <Header />
-          <ModalBody>
-            <label>
-              Group:
-              <Field
-                type="text"
-                className="form-control"
-                name="name"
-              />
-            </label>
-            <br />
-            <ErrorMessage name="name" />
-          </ModalBody>
-          <Footer />
-        </Form>
-      </Formik>
-    </Modal>
+      <label>
+        Group:
+        <Field
+          type="text"
+          className="form-control"
+          name="name"
+        />
+        <FormError name="name" />
+      </label>
+    </FormModal>
   );
 };
 
-// GroupDialog.propTypes = {
-//   group: PropTypes.shape({
-//     id: PropTypes.number.isRequired,
-//     name: PropTypes.string.isRequired,
-//     update: PropTypes.func.isRequired,
-//   }),
-//   onHide: PropTypes.func.isRequired,
-//   show: PropTypes.bool.isRequired,
-// };
-
-// GroupDialog.defaultProps = {
-//   group: undefined,
-// };
-
-export const useGroupDialog = (): [
-  (props: Props) => (ReactElement | null),
-  () => void,
-] => useModal<Props>(GroupDialog);
+export const useGroupDialog = (): useModalType<Props> => useModal<Props>(GroupDialog);
 
 export default GroupDialog;

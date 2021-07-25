@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import moment from 'moment';
 import { Button, Modal } from 'react-bootstrap';
-import useModal from '../useModal';
+import useModal from '../Modal/useModal';
 
 const InstitutionInfoDialog = ({
   institution,

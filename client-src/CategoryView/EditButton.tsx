@@ -1,12 +1,17 @@
-import React from 'react';
-import PropTypes from 'prop-types';
+import React, { ReactElement } from 'react';
 import { useCategoryDialog } from './CategoryDialog';
 import IconButton from '../IconButton';
+import Category from '../state/Category';
+import Group from '../state/Group';
 
+type PropsType = {
+  category: Category,
+  group: Group,
+}
 const EditButton = ({
   category,
   group,
-}) => {
+}: PropsType): ReactElement | null => {
   const [CategoryDialog, showCategoryDialog] = useCategoryDialog();
 
   if (!group.system) {
@@ -19,13 +24,6 @@ const EditButton = ({
   }
 
   return null;
-};
-
-EditButton.propTypes = {
-  category: PropTypes.shape({
-    id: PropTypes.number.isRequired,
-  }).isRequired,
-  group: PropTypes.shape().isRequired,
 };
 
 export default EditButton;

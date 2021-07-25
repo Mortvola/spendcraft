@@ -119,6 +119,49 @@ class Group {
       }
     });
   }
+
+  async addLoan(
+    name: string,
+    amount: number,
+    rate: number,
+    numberOfPayments: number,
+    paymentAmount: number,
+  ): Promise<null| Array<Error>> {
+    const response = await postJSON('/api/loans', {
+      name, amount, rate, numberOfPayments, paymentAmount,
+    });
+
+    const body = await getBody(response);
+
+    if (!response.ok) {
+      if (isErrorResponse(body)) {
+        return body.errors;
+      }
+    }
+    else {
+      runInAction(() => {
+        if (isAddCategoryResponse(body)) {
+          // Find the position where this new category should be inserted.
+          const index = this.categories.findIndex(
+            (g) => body.name.toLowerCase().localeCompare(g.name.toLowerCase()) < 0,
+          );
+
+          if (index === -1) {
+            this.categories.push(new Category(body));
+          }
+          else {
+            this.categories = [
+              ...this.categories.slice(0, index),
+              new Category(body),
+              ...this.categories.slice(index),
+            ];
+          }
+        }
+      });
+    }
+
+    return null;
+  }
 }
 
 export default Group;

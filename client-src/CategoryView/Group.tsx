@@ -1,14 +1,21 @@
-import React from 'react';
-import PropTypes from 'prop-types';
+import React, { ReactElement } from 'react';
+// import PropTypes from 'prop-types';
 import { observer } from 'mobx-react-lite';
 import Buttons from './Buttons';
 import Category from './Category';
+import StateGroup from '../state/Group';
+
+type Props = {
+  group: StateGroup,
+  onCategorySelected: ((categoryId: number) => void),
+  selectedCategoryId?: number | null,
+}
 
 const Group = ({
   group,
   onCategorySelected,
   selectedCategoryId,
-}) => (
+}: Props): ReactElement => (
   <div className="cat-list-group">
     <div className="group-element-bar">
       <div className="group-name">{group.name}</div>
@@ -26,23 +33,8 @@ const Group = ({
   </div>
 );
 
-Group.propTypes = {
-  group: PropTypes.shape({
-    categories: PropTypes.arrayOf(PropTypes.shape),
-    system: PropTypes.bool,
-    name: PropTypes.string.isRequired,
-    id: PropTypes.number.isRequired,
-  }),
-  onCategorySelected: PropTypes.func.isRequired,
-  selectedCategoryId: PropTypes.number,
-};
-
 Group.defaultProps = {
   selectedCategoryId: null,
-  group: {
-    categories: [],
-    system: false,
-  },
 };
 
 export default observer(Group);

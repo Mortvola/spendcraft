@@ -12,7 +12,7 @@ import {
 import { toJS } from 'mobx';
 import CategoryRebalance from './CategoryRebalance';
 import Amount from '../Amount';
-import useModal, { ModalProps } from '../useModal';
+import useModal, { ModalProps } from '../Modal/useModal';
 import Transaction from '../state/Transaction';
 import { TransactionCategoryInterface } from '../state/State';
 import { postJSON } from '../state/Transports';

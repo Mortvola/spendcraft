@@ -15,7 +15,7 @@ type GroupItem = {
   id: number,
   name: string,
   system: boolean,
-  categories: Array<CategoryItem>,
+  categories: (CategoryItem | { id: number, name: string})[],
 };
 
 class Category extends BaseModel {

@@ -81,7 +81,7 @@ class CategoryTree implements CategoryTreeInterface {
 
     if (isGroupsResponse(body)) {
       runInAction(() => {
-        const systemGroup = body.find((g) => g.system);
+        const systemGroup = body.find((g) => g.system && g.name === 'System');
 
         if (isGroupProps(systemGroup)) {
           this.systemIds.systemGroupId = systemGroup.id;
@@ -93,6 +93,12 @@ class CategoryTree implements CategoryTreeInterface {
           if (fundingPoolCategory) {
             this.systemIds.fundingPoolId = fundingPoolCategory.id;
           }
+        }
+
+        const loansGroup = body.find((g) => g.system && g.name === 'Loans');
+
+        if (loansGroup) {
+          this.systemIds.loansGroupId = loansGroup.id;
         }
 
         body.forEach((g) => {

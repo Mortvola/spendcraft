@@ -1,12 +1,12 @@
-import React, { useContext, useEffect } from 'react';
+import React, { ReactElement, useContext, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import Group from './Group';
 import MobxStore from '../state/mobxStore';
 
-const CategoryView = () => {
+const CategoryView = (): ReactElement => {
   const { categoryTree, uiState } = useContext(MobxStore);
 
-  const handleCategorySelected = (categoryId) => {
+  const handleCategorySelected = (categoryId: number) => {
     uiState.selectCategory(categoryId);
   };
 

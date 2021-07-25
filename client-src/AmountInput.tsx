@@ -8,6 +8,7 @@ interface Props {
   onDeltaChange: (amount: number, delta: number) => void;
   onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   className: string;
+  name?: string;
 }
 
 const AmountInput = ({
@@ -15,6 +16,7 @@ const AmountInput = ({
   onDeltaChange,
   onChange,
   className,
+  name,
 }: Props): ReactElement => {
   const [inputAmount, setInputAmount] = useState(amount.toFixed(2));
   const [initialValue, setInitialValue] = useState(amount);
@@ -107,6 +109,7 @@ const AmountInput = ({
         className={`amount-input dollar-amount ${className}`}
         type="text"
         value={inputAmount}
+        name={name}
         onChange={handleChange}
         onFocus={handleFocus}
         onBlur={handleBlur}
@@ -142,6 +145,7 @@ AmountInput.propTypes = {
   onDeltaChange: PropTypes.func,
   onChange: PropTypes.func,
   className: PropTypes.string,
+  name: PropTypes.string,
 };
 
 AmountInput.defaultProps = {
@@ -149,6 +153,7 @@ AmountInput.defaultProps = {
   onDeltaChange: null,
   onChange: null,
   className: '',
+  name: null,
 };
 
 export default AmountInput;

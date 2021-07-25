@@ -7,7 +7,7 @@ import {
 } from 'formik';
 import { Button, Modal, ModalBody } from 'react-bootstrap';
 import CategorySplits from './CategorySplits';
-import useModal, { ModalProps } from './useModal';
+import useModal, { ModalProps } from './Modal/useModal';
 import Amount from './Amount';
 import Transaction from './state/Transaction';
 import { TransactionCategoryInterface } from './state/State';

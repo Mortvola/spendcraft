@@ -5,7 +5,10 @@ import {
   column,
   beforeSave,
   BaseModel,
+  hasMany,
+  HasMany,
 } from '@ioc:Adonis/Lucid/Orm';
+import Loan from './Loan';
 
 type AccountResult = {
   id: number,
@@ -69,6 +72,9 @@ export default class User extends BaseModel {
       user.password = await Hash.make(user.password);
     }
   }
+
+  @hasMany(() => Loan)
+  public loans: HasMany<typeof Loan>;
 
   public async history(this: User): Promise<Array<GroupHistoryItem>> {
     const data = await Database.query()
