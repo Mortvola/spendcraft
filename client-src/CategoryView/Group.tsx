@@ -4,9 +4,10 @@ import { observer } from 'mobx-react-lite';
 import Buttons from './Buttons';
 import Category from './Category';
 import StateGroup from '../state/Group';
+import LoansGroup from '../state/LoansGroup';
 
 type Props = {
-  group: StateGroup,
+  group: StateGroup | LoansGroup,
   onCategorySelected: ((categoryId: number) => void),
   selectedCategoryId?: number | null,
 }
@@ -21,15 +22,17 @@ const Group = ({
       <div className="group-name">{group.name}</div>
       <Buttons group={group} />
     </div>
-    {group.categories.map((category) => (
-      <Category
-        key={category.name}
-        category={category}
-        group={group}
-        onCategorySelected={onCategorySelected}
-        selected={selectedCategoryId === category.id}
-      />
-    ))}
+    {
+      group.categories.map((category) => (
+        <Category
+          key={category.name}
+          category={category}
+          group={group}
+          onCategorySelected={onCategorySelected}
+          selected={selectedCategoryId === category.id}
+        />
+      ))
+    }
   </div>
 );
 

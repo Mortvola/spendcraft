@@ -1,5 +1,5 @@
 import { makeAutoObservable, runInAction } from 'mobx';
-import Category from './Category';
+import Category, { isCategory } from './Category';
 import {
   CategoryProps, Error, GroupProps, isErrorResponse, isGroupProps,
   isAddCategoryResponse,
@@ -7,17 +7,18 @@ import {
 import {
   getBody, httpDelete, patchJSON, postJSON,
 } from './Transports';
+import { GroupInterface } from './State';
 
-class Group {
+class Group implements GroupInterface {
   id: number;
 
   name: string;
 
   system = false;
 
-  categories: Array<Category> = [];
+  categories: Category[] = [];
 
-  constructor(props: GroupProps) {
+  constructor(props: GroupProps | Group) {
     this.id = props.id;
     this.name = props.name;
     this.system = props.system || false;
@@ -32,7 +33,17 @@ class Group {
     makeAutoObservable(this);
   }
 
-  async addCategory(groupId: number, name: string): Promise<null| Array<Error>> {
+  findCategory(categoryId: number): Category | null {
+    const cat = this.categories.find((c) => c.id === categoryId);
+
+    if (cat) {
+      return cat;
+    }
+
+    return null;
+  }
+
+  async addCategory(groupId: number, name: string): Promise<null| Error[]> {
     const response = await postJSON(`/api/groups/${this.id}/categories`, { groupId, name });
 
     const body = await getBody(response);
@@ -111,7 +122,7 @@ class Group {
     return null;
   }
 
-  updateBalances(balances: Array<CategoryProps>): void {
+  updateBalances(balances: CategoryProps[]): void {
     this.categories.forEach((c) => {
       const balance = balances.find((b) => b.id === c.id);
       if (balance) {
@@ -119,49 +130,18 @@ class Group {
       }
     });
   }
-
-  async addLoan(
-    name: string,
-    amount: number,
-    rate: number,
-    numberOfPayments: number,
-    paymentAmount: number,
-  ): Promise<null| Array<Error>> {
-    const response = await postJSON('/api/loans', {
-      name, amount, rate, numberOfPayments, paymentAmount,
-    });
-
-    const body = await getBody(response);
-
-    if (!response.ok) {
-      if (isErrorResponse(body)) {
-        return body.errors;
-      }
-    }
-    else {
-      runInAction(() => {
-        if (isAddCategoryResponse(body)) {
-          // Find the position where this new category should be inserted.
-          const index = this.categories.findIndex(
-            (g) => body.name.toLowerCase().localeCompare(g.name.toLowerCase()) < 0,
-          );
-
-          if (index === -1) {
-            this.categories.push(new Category(body));
-          }
-          else {
-            this.categories = [
-              ...this.categories.slice(0, index),
-              new Category(body),
-              ...this.categories.slice(index),
-            ];
-          }
-        }
-      });
-    }
-
-    return null;
-  }
 }
+
+export const isGroup = (r: unknown): r is Group => (
+  (r as Group).id !== undefined
+  && (r as Group).name !== undefined
+  && (r as Group).system !== undefined
+  && (r as Group).categories !== undefined
+);
+
+export const isCategoriesArray = (r: unknown): r is Category[] => (
+  (Array.isArray(r))
+  && isCategory(r)
+);
 
 export default Group;

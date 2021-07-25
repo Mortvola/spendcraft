@@ -5,7 +5,7 @@ export interface GroupProps {
 
   system: boolean;
 
-  categories: Array<CategoryProps>;
+  categories: CategoryProps[];
 }
 
 export const isGroupProps = (
@@ -15,6 +15,32 @@ export const isGroupProps = (
   && (r as GroupProps).name !== undefined
   // && (r as GroupProps).system !== undefined
   // && (r as GroupProps).categories !== undefined
+);
+
+export interface LoanGroupProps {
+  id: number;
+
+  name: string;
+
+  system: boolean;
+
+  categories: LoanProps[];
+}
+
+export const isLoanGroupProps = (r: unknown): r is LoanGroupProps => (
+  (r as LoanGroupProps).id !== undefined
+  && (r as LoanGroupProps).name !== undefined
+  // && (r as GroupProps).system !== undefined
+  // && (r as GroupProps).categories !== undefined
+);
+
+export const isLoanPropsArray = (r: unknown): r is LoanProps[] => (
+  (Array.isArray(r))
+  && (r[0] as LoanProps).id !== undefined
+  && (r[0] as LoanProps).name !== undefined
+  && (r[0] as LoanProps).balance !== undefined
+  && (r[0] as LoanProps).numberOfPayments !== undefined
+  && (r[0] as LoanProps).paymentAmount !== undefined
 );
 
 export interface CategoryBalance {
@@ -75,6 +101,42 @@ export const isUpdateCategoryResponse = (
   r: UpdateCategoryResponse | unknown,
 ): r is UpdateCategoryResponse => (
   (r as UpdateCategoryResponse).name !== undefined
+);
+
+export interface UpdateLoanResponse {
+  name: string;
+  balance: number;
+  rate: number;
+}
+
+export const isUpdateLoanResponse = (
+  r: unknown,
+): r is UpdateLoanResponse => (
+  (r as UpdateLoanResponse).name !== undefined
+  && (r as UpdateLoanResponse).balance !== undefined
+  && (r as UpdateLoanResponse).rate !== undefined
+);
+
+export interface LoanProps {
+  id: number;
+
+  name: string;
+
+  balance: number;
+
+  numberOfPayments: number;
+
+  paymentAmount: number;
+
+  rate: number;
+}
+
+export const isAddLoanResponse = (r: unknown): r is LoanProps => (
+  ((r as LoanProps).id !== undefined
+  && (r as LoanProps).balance !== undefined
+  && (r as LoanProps).name !== undefined
+  && (r as LoanProps).paymentAmount !== undefined
+  && (r as LoanProps).rate !== undefined)
 );
 
 export interface UpdateFundingCategoryResponse {

@@ -4,17 +4,21 @@ import React, {
 import { observer } from 'mobx-react';
 import CategorySelectorGroup from './CategorySelectorGroup';
 import MobxStore from '../state/mobxStore';
-import Group from '../state/Group';
+import Group, { isCategoriesArray, isGroup } from '../state/Group';
 import Category from '../state/Category';
+import LoansGroup, { isLoanArray, isLoansGroup } from '../state/LoansGroup';
+import Loan from '../state/Loan';
+import { GroupInterface, GroupMemberInterface } from '../state/State';
+import { isLoanPropsArray } from '../../common/ResponseTypes';
 
 type PropsType = {
-  selectedGroup?: Group | null,
-  selectedCategory?: Category | null,
+  selectedGroup?: Group | LoansGroup | null,
+  selectedCategory?: Category | Loan | null,
   left?: number | null,
   top?: number | null,
   width?: number | null,
   height?: number | null,
-  onSelect: (group: Group, category: Category) => void,
+  onSelect: (group: Group | LoansGroup, category: Category) => void,
   filter?: string | null,
 }
 
@@ -30,11 +34,11 @@ const CategorySelector = React.forwardRef<HTMLDivElement, PropsType>(({
   filter = null,
 }: PropsType, forwardRef): ReactElement => {
   const { categoryTree } = useContext(MobxStore);
-  const [filteredGroups, setFilteredGroups] = useState<Array<Group> | null>(null);
+  const [filteredGroups, setFilteredGroups] = useState<(Group | LoansGroup)[] | null>(null);
 
   useEffect(() => {
     if (filter) {
-      const filterCategories = (categories: Array<Category>, catFilter: string) => {
+      const filterCategories = (categories: GroupMemberInterface[], catFilter: string) => {
         let result = [];
 
         if (catFilter !== '') {
@@ -48,8 +52,8 @@ const CategorySelector = React.forwardRef<HTMLDivElement, PropsType>(({
         return result;
       };
 
-      const filterGroup = (group: Group, parts: Array<string>) => {
-        let categories: Array<Category> = [];
+      const filterGroup = (group: Group | LoansGroup, parts: Array<string>) => {
+        let categories: GroupMemberInterface[] = [];
 
         if (parts.length === 1) {
           // No colon. Filter can be applied to both group and categories.
@@ -73,13 +77,26 @@ const CategorySelector = React.forwardRef<HTMLDivElement, PropsType>(({
 
       const parts = filter.toLowerCase().split(':');
 
-      const groups: Array<Group> = [];
+      const groups: (Group | LoansGroup)[] = [];
 
       categoryTree.groups.forEach((group) => {
         const categories = filterGroup(group, parts);
 
         if (categories.length > 0) {
-          groups.push(new Group({ ...group, categories }));
+          if (isLoansGroup(group)) {
+            if (!isLoanArray(categories)) {
+              throw new Error('categories does not contain loans');
+            }
+
+            groups.push(new LoansGroup({ ...group, categories }));
+          }
+          else if (isGroup(group)) {
+            if (!isCategoriesArray(categories)) {
+              throw new Error('categories does not contain categories');
+            }
+
+            groups.push(new Group({ ...group, categories }));
+          }
         }
       });
 

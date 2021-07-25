@@ -1,6 +1,22 @@
 import Reports from './Reports';
 import User from './User';
 
+export interface GroupInterface {
+  id: number;
+
+  name: string;
+
+  system: boolean;
+}
+
+export interface GroupMemberInterface {
+  id: number;
+
+  name: string;
+
+  balance: number;
+}
+
 export interface AccountsInterface {
   institutions: Array<Institution>;
 

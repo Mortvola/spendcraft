@@ -3,16 +3,18 @@ import Category from './Category';
 import Group from './Group';
 import {
   CategoryProps, Error, isErrorResponse,
-  isGroupProps, isGroupsResponse,
+  isGroupProps, isGroupsResponse, isLoanGroupProps,
 } from '../../common/ResponseTypes';
 import { CategoryTreeInterface, StoreInterface } from './State';
 import SystemIds from './SystemIds';
 import { getBody, httpDelete, postJSON } from './Transports';
+import LoansGroup from './LoansGroup';
+import Loan from './Loan';
 
 class CategoryTree implements CategoryTreeInterface {
   initialized = false;
 
-  groups: Array<Group> = [];
+  groups: (Group | LoansGroup)[] = [];
 
   systemIds = new SystemIds();
 
@@ -24,11 +26,11 @@ class CategoryTree implements CategoryTreeInterface {
     this.store = store;
   }
 
-  getCategory(categoryId: number): Category | null {
-    let category: Category | null = null;
+  getCategory(categoryId: number): Category | Loan | null {
+    let category: Category | Loan | null = null;
 
     this.groups.find((group) => {
-      const cat = group.categories.find((c) => c.id === categoryId);
+      const cat = group.findCategory(categoryId);
 
       if (cat) {
         category = cat;
@@ -45,7 +47,7 @@ class CategoryTree implements CategoryTreeInterface {
     let categoryName = null;
 
     this.groups.find((group) => {
-      const category = group.categories.find((cat) => cat.id === categoryId);
+      const category = group.findCategory(categoryId);
 
       if (category) {
         categoryName = `${group.name}:${category.name}`;
@@ -61,14 +63,10 @@ class CategoryTree implements CategoryTreeInterface {
   getFundingPoolAmount(): number {
     let fundingAmount = 0;
 
-    const system = this.groups.find((g) => g.id === this.systemIds.systemGroupId);
+    const fundingPool = this.getCategory(this.systemIds.fundingPoolId);
 
-    if (system) {
-      const fundingPool = system.categories.find((c) => c.id === this.systemIds.fundingPoolId);
-
-      if (fundingPool) {
-        fundingAmount = fundingPool.balance;
-      }
+    if (fundingPool) {
+      fundingAmount = fundingPool.balance;
     }
 
     return fundingAmount;
@@ -89,21 +87,28 @@ class CategoryTree implements CategoryTreeInterface {
           if (unassignedCategory) {
             this.systemIds.unassignedId = unassignedCategory.id;
           }
+
           const fundingPoolCategory = systemGroup.categories.find((c) => c.system && c.name === 'Funding Pool');
           if (fundingPoolCategory) {
             this.systemIds.fundingPoolId = fundingPoolCategory.id;
           }
         }
 
-        const loansGroup = body.find((g) => g.system && g.name === 'Loans');
-
-        if (loansGroup) {
-          this.systemIds.loansGroupId = loansGroup.id;
-        }
-
         body.forEach((g) => {
-          const group = new Group(g);
-          this.groups.push(group);
+          if (g.system && g.name === 'Loans') {
+            this.systemIds.loansGroupId = g.id;
+
+            if (!isLoanGroupProps(g)) {
+              throw new Error('invalid loan group props');
+            }
+
+            const loans = new LoansGroup(g);
+            this.groups.push(loans);
+          }
+          else {
+            const group = new Group(g);
+            this.groups.push(group);
+          }
         });
 
         this.initialized = true;
@@ -169,7 +174,7 @@ class CategoryTree implements CategoryTreeInterface {
     return null;
   }
 
-  updateBalances(balances: Array<CategoryProps>): void {
+  updateBalances(balances: CategoryProps[]): void {
     runInAction(() => {
       this.groups.forEach((g) => {
         g.updateBalances(balances);

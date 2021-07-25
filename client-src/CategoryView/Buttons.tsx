@@ -4,10 +4,11 @@ import IconButton from '../IconButton';
 import { useCategoryDialog } from './CategoryDialog';
 import { useLoanDialog } from './LoanDialog';
 import { useGroupDialog } from './GroupDialog';
-import GroupState from '../state/Group';
+import GroupState, { isGroup } from '../state/Group';
+import LoansGroup, { isLoansGroup } from '../state/LoansGroup';
 
 type Props = {
-  group: GroupState,
+  group: GroupState | LoansGroup,
 }
 
 function Buttons({ group }: Props): ReactElement | null {
@@ -16,7 +17,7 @@ function Buttons({ group }: Props): ReactElement | null {
   const [LoanDialog, showLoanDialog] = useLoanDialog();
 
   const renderEditButton = () => {
-    if (!group.system) {
+    if (!group.system && isGroup(group)) {
       return (
         <>
           <IconButton icon="edit" onClick={showGroupDialog} />
@@ -29,7 +30,7 @@ function Buttons({ group }: Props): ReactElement | null {
   };
 
   const renderAddCategoryButton = () => {
-    if (!group.system) {
+    if (!group.system && isGroup(group)) {
       return (
         <>
           <IconButton icon="plus" onClick={showCategoryDialog} />
@@ -38,7 +39,7 @@ function Buttons({ group }: Props): ReactElement | null {
       );
     }
 
-    if (group.name === 'Loans') {
+    if (isLoansGroup(group)) {
       return (
         <>
           <IconButton icon="plus" onClick={showLoanDialog} />

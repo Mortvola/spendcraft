@@ -4,12 +4,13 @@ import { useCategoryTransferDialog } from '../CategoryTransferDialog';
 import Amount from '../Amount';
 import IconButton from '../IconButton';
 import EditButton from './EditButton';
-import StateCategory from '../state/Category';
 import Group from '../state/Group';
+import { GroupMemberInterface } from '../state/State';
+import LoansGroup from '../state/LoansGroup';
 
 type PropsType = {
-  category: StateCategory,
-  group: Group,
+  category: GroupMemberInterface,
+  group: Group | LoansGroup,
   selected: boolean,
   onCategorySelected: ((id: number) => void),
 }
@@ -49,12 +50,6 @@ const Category = ({
       <Amount className="cat-list-amt" amount={category.balance} />
     </div>
   );
-};
-
-Category.defaultProps = {
-  category: {
-    amount: 0,
-  },
 };
 
 export default observer(Category);

@@ -3,9 +3,10 @@ import {
   CategoryProps, isErrorResponse, Error,
   isUpdateCategoryResponse,
 } from '../../common/ResponseTypes';
+import { GroupMemberInterface } from './State';
 import { getBody, patchJSON } from './Transports';
 
-class Category {
+class Category implements GroupMemberInterface {
   id: number;
 
   name: string;
@@ -46,5 +47,13 @@ class Category {
     return null;
   }
 }
+
+export const isCategory = (r: unknown): r is Category => (
+  (r as Category).id !== undefined
+  && (r as Category).name !== undefined
+  && (r as Category).system !== undefined
+  && (r as Category).balance !== undefined
+  && (r as Category).groupId !== undefined
+);
 
 export default Category;

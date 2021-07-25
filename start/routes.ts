@@ -51,11 +51,11 @@ Route.group(() => {
       Route.delete('/:groupId/categories/:catId', 'CategoryController.deleteCategory');
     }).prefix('/groups');
 
-    Route.post('/category_transfer', 'CategoryController.transfer');
-    Route.patch('/category_transfer/:tfrId', 'CategoryController.transfer');
-    Route.delete('/category_transfer/:tfrId', 'CategoryController.transferDelete');
-
-    Route.delete('/transaction/:trxId', 'TransactionsController.delete');
+    Route.group(() => {
+      Route.post('', 'CategoryController.transfer');
+      Route.patch('/:tfrId', 'CategoryController.transfer');
+      Route.delete('/:tfrId', 'CategoryController.transferDelete');
+    }).prefix('/category_transfer');
 
     Route.get('/category_balances', 'CategoryController.balances');
 
@@ -86,8 +86,10 @@ Route.group(() => {
       Route.put('/:planId/item/:catId', 'FundingPlanController.updateCategory');
     }).prefix('/funding-plans');
 
-    Route.patch('/transaction/:txId', 'InstitutionController.updateTx');
-    Route.on('/fundingplans').render('fundingplans');
+    Route.group(() => {
+      Route.patch('/:txId', 'InstitutionController.updateTx');
+      Route.delete('/:trxId', 'TransactionsController.delete');
+    }).prefix('/transaction');
 
     Route.get('/reports/:report', 'ReportController.get');
 

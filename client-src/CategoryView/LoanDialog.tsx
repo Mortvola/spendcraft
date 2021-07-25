@@ -2,21 +2,21 @@
 import React, { ReactElement } from 'react';
 // import PropTypes from 'prop-types';
 import {
-  Formik, Form, Field,
+  Field,
   FormikHelpers,
   FormikContextType,
   FormikErrors,
 } from 'formik';
 import useModal, { ModalProps, useModalType } from '../Modal/useModal';
-import Group from '../state/Group';
-import Category from '../state/Category';
 import AmountInput from '../AmountInput';
 import FormError from '../Modal/FormError';
 import FormModal from '../Modal/FormModal';
+import LoansGroup from '../state/LoansGroup';
+import Loan from '../state/Loan';
 
 type Props = {
-  category?: Category | null,
-  group: Group,
+  category?: Loan | null,
+  group: LoansGroup,
 }
 
 const LoanDialog = ({
@@ -38,7 +38,7 @@ const LoanDialog = ({
     let errors = null;
 
     if (category) {
-      errors = await category.update(group.id, values.name);
+      errors = await category.update(values.name);
     }
     else {
       errors = await group.addLoan(
@@ -93,7 +93,7 @@ const LoanDialog = ({
       throw new Error('category is null or undefined');
     }
 
-    const errors = await group.deleteCategory(group.id, category.id);
+    const errors = await group.deleteLoan(category.id);
 
     if (errors && errors.length > 0) {
       setErrors({ name: errors[0].title });

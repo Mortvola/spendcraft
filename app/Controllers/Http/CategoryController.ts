@@ -67,7 +67,7 @@ class CategoryController {
 
       if (group.system && group.name === 'Loans') {
         // Fetch the user's loans and place them into this group
-        const loans = await user.related('loans').query();
+        const loans = await user.related('loans').query().orderBy('name');
 
         loans.forEach((loan) => {
           if (!group) {

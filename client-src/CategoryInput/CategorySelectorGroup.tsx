@@ -2,11 +2,12 @@ import React, { ReactElement } from 'react';
 import CategorySelectorCategory from './CategorySelectorCategory';
 import Group from '../state/Group';
 import Category from '../state/Category';
+import LoansGroup from '../state/LoansGroup';
 
 type PropsType = {
-  group: Group,
+  group: Group | LoansGroup,
   selected: string | null,
-  onSelected: (group: Group, category: Category) => void,
+  onSelected: (group: Group | LoansGroup, category: Category) => void,
 }
 
 function CategorySelectorGroup({
