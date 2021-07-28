@@ -1,9 +1,9 @@
 import { runInAction } from 'mobx';
 import {
-  LoanGroupProps, isAddLoanResponse, Error, isErrorResponse, CategoryProps, LoanProps,
+  LoanGroupProps, Error, isErrorResponse, CategoryProps, isAddCategoryResponse,
 } from '../../common/ResponseTypes';
-import Loan, { isLoan } from './Loan';
-import { GroupInterface } from './State';
+import Category from './Category';
+import { GroupInterface, StoreInterface } from './State';
 import { getBody, httpDelete, postJSON } from './Transports';
 
 class LoansGroup implements GroupInterface {
@@ -11,23 +11,26 @@ class LoansGroup implements GroupInterface {
 
   name: string;
 
-  categories: Loan[] = [];
+  categories: Category[] = [];
 
   system = true;
 
-  constructor(props: LoanGroupProps | LoansGroup) {
+  store: StoreInterface;
+
+  constructor(props: LoanGroupProps | LoansGroup, store: StoreInterface) {
     this.id = props.id;
     this.name = props.name;
+    this.store = store;
 
     if (props.categories && props.categories.length > 0) {
       props.categories.forEach((l) => {
-        const loan = new Loan(l);
+        const loan = new Category(l, this.store);
         this.categories.push(loan);
       });
     }
   }
 
-  findCategory(categoryId: number): Loan | null {
+  findCategory(categoryId: number): Category | null {
     const loan = this.categories.find((c) => c.id === categoryId);
 
     if (loan) {
@@ -57,19 +60,19 @@ class LoansGroup implements GroupInterface {
     }
     else {
       runInAction(() => {
-        if (isAddLoanResponse(body)) {
+        if (isAddCategoryResponse(body)) {
           // Find the position where this new category should be inserted.
           const index = this.categories.findIndex(
             (g) => body.name.toLowerCase().localeCompare(g.name.toLowerCase()) < 0,
           );
 
           if (index === -1) {
-            this.categories.push(new Loan(body));
+            this.categories.push(new Category(body, this.store));
           }
           else {
             this.categories = [
               ...this.categories.slice(0, index),
-              new Loan(body),
+              new Category(body, this.store),
               ...this.categories.slice(index),
             ];
           }
@@ -119,11 +122,6 @@ export const isLoansGroup = (r: unknown): r is LoansGroup => (
   && (r as LoansGroup).system !== undefined
   && (r as LoansGroup).system
   && (r as LoansGroup).categories !== undefined
-);
-
-export const isLoanArray = (r: unknown): r is Loan[] => (
-  (Array.isArray(r))
-  && isLoan(r[0])
 );
 
 export default LoansGroup;

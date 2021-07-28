@@ -15,7 +15,6 @@ import Amount from '../Amount';
 import useModal, { ModalProps } from '../Modal/useModal';
 import Transaction from '../state/Transaction';
 import { TransactionCategoryInterface } from '../state/State';
-import { postJSON } from '../state/Transports';
 import MobxStore from '../state/mobxStore';
 
 interface Props {
@@ -41,7 +40,7 @@ const RebalanceDialog = ({
   const fetchCategoryBalances = useCallback((fetchDate: string) => {
     if (fetchDate !== '') {
       const params: Record<string, string> = { date: fetchDate };
-      if (transaction) {
+      if (transaction && transaction.id !== null) {
         params.id = transaction.id.toString();
       }
 
@@ -110,7 +109,7 @@ const RebalanceDialog = ({
       }
     }
     else {
-      const errors = await register.addCategoryTransaction(values);
+      const errors = await register.addCategoryTransfer(values);
 
       if (!errors) {
         onHide();

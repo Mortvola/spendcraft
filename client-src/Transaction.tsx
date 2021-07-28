@@ -7,11 +7,12 @@ import { useTransactionDialog } from './TransactionDialog';
 import { useCategoryTransferDialog } from './CategoryTransferDialog';
 import { useRebalanceDialog } from './rebalance/RebalanceDialog';
 import { useFundingDialog } from './funding/FundingDialog';
-import TransactionData from './state/Transaction';
+import { isTransaction } from './state/Transaction';
 import { TransactionType } from '../common/ResponseTypes';
+import { TransactionInterface } from './state/State';
 
 type PropsType = {
-  transaction: TransactionData
+  transaction: TransactionInterface
   amount: number;
   balance: number;
   selected: boolean;
@@ -40,43 +41,45 @@ const Transaction = ({
     // onClick(transaction.id);
   };
 
-  const handleChange = (catId: number) => {
-    transaction.updateTransactionCategory([{ categoryId: catId, amount: transaction.amount }]);
+  const handleChange = (catId: number, type: string) => {
+    if (isTransaction(transaction)) {
+      transaction.updateTransactionCategory([{
+        type, categoryId: catId, amount: transaction.amount,
+      }]);
+    }
   };
 
   const TransactionDialog = () => {
-    switch (transaction.type) {
-      case TransactionType.TRANSFER_TRANSACTION:
-        return (
-          <CategoryTransferDialog
-            transaction={transaction}
-          />
-        );
+    if (isTransaction(transaction)) {
+      switch (transaction.type) {
+        case TransactionType.TRANSFER_TRANSACTION:
+          return (
+            <CategoryTransferDialog transaction={transaction} />
+          );
 
-      case TransactionType.FUNDING_TRANSACTION:
-        return (
-          <FundingDialog
-            transaction={transaction}
-          />
-        );
+        case TransactionType.FUNDING_TRANSACTION:
+          return (
+            <FundingDialog transaction={transaction} />
+          );
 
-      case TransactionType.REBALANCE_TRANSACTION:
-        return (
-          <RebalanceDialog
-            transaction={transaction}
-          />
-        );
+        case TransactionType.REBALANCE_TRANSACTION:
+          return (
+            <RebalanceDialog transaction={transaction} />
+          );
 
-      case TransactionType.REGULAR_TRANSACTION:
-      default:
-        return (
-          <TransactionDialog3
-            transaction={transaction}
-            categoryId={categoryId}
-            unassignedId={unassignedId}
-          />
-        );
+        case TransactionType.REGULAR_TRANSACTION:
+        default:
+          return (
+            <TransactionDialog3
+              transaction={transaction}
+              categoryId={categoryId}
+              unassignedId={unassignedId}
+            />
+          );
+      }
     }
+
+    return null;
   };
 
   const showTransactionDialog = (tranDialogType: number) => {
@@ -172,11 +175,17 @@ const Transaction = ({
       <IconButton icon="edit" onClick={() => showTransactionDialog(2)} />
       <div>{transaction.date}</div>
       <div className="transaction-field">{transaction.name}</div>
-      <div className="trans-cat-edit">
-        <CategoryButton />
-        <IconButton icon="list-ul" onClick={() => showTransactionDialog(3)} />
-        <TransactionDialog />
-      </div>
+      {
+        transaction.type !== TransactionType.STARTING_BALANCE
+          ? (
+            <div className="trans-cat-edit">
+              <CategoryButton />
+              <IconButton icon="list-ul" onClick={() => showTransactionDialog(3)} />
+              <TransactionDialog />
+            </div>
+          )
+          : <div />
+      }
       <Amount className="transaction-field amount currency" amount={amount} />
       <Amount className="transaction-field balance currency" amount={balance} />
       {renderBankInfo()}

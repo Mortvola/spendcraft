@@ -8,8 +8,6 @@ import { getBody, postJSON } from './Transports';
 class Accounts implements AccountsInterface {
   institutions: Array<Institution> = [];
 
-  selectedAccount: AccountInterface | null = null;
-
   plaid: unknown | null = null;
 
   store: StoreInterface;
@@ -21,7 +19,7 @@ class Accounts implements AccountsInterface {
   }
 
   selectAccount(account: AccountInterface): void {
-    this.selectedAccount = account;
+    this.store.uiState.selectAccount(account);
   }
 
   async load(): Promise<void> {

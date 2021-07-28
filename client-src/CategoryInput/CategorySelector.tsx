@@ -6,14 +6,11 @@ import CategorySelectorGroup from './CategorySelectorGroup';
 import MobxStore from '../state/mobxStore';
 import Group, { isCategoriesArray, isGroup } from '../state/Group';
 import Category from '../state/Category';
-import LoansGroup, { isLoanArray, isLoansGroup } from '../state/LoansGroup';
-import Loan from '../state/Loan';
-import { GroupInterface, GroupMemberInterface } from '../state/State';
-import { isLoanPropsArray } from '../../common/ResponseTypes';
+import LoansGroup, { isLoansGroup } from '../state/LoansGroup';
 
 type PropsType = {
   selectedGroup?: Group | LoansGroup | null,
-  selectedCategory?: Category | Loan | null,
+  selectedCategory?: Category | null,
   left?: number | null,
   top?: number | null,
   width?: number | null,
@@ -38,7 +35,7 @@ const CategorySelector = React.forwardRef<HTMLDivElement, PropsType>(({
 
   useEffect(() => {
     if (filter) {
-      const filterCategories = (categories: GroupMemberInterface[], catFilter: string) => {
+      const filterCategories = (categories: Category[], catFilter: string) => {
         let result = [];
 
         if (catFilter !== '') {
@@ -53,7 +50,7 @@ const CategorySelector = React.forwardRef<HTMLDivElement, PropsType>(({
       };
 
       const filterGroup = (group: Group | LoansGroup, parts: Array<string>) => {
-        let categories: GroupMemberInterface[] = [];
+        let categories: Category[] = [];
 
         if (parts.length === 1) {
           // No colon. Filter can be applied to both group and categories.
@@ -84,18 +81,18 @@ const CategorySelector = React.forwardRef<HTMLDivElement, PropsType>(({
 
         if (categories.length > 0) {
           if (isLoansGroup(group)) {
-            if (!isLoanArray(categories)) {
+            if (!isCategoriesArray(categories)) {
               throw new Error('categories does not contain loans');
             }
 
-            groups.push(new LoansGroup({ ...group, categories }));
+            groups.push(new LoansGroup({ ...group, categories }, group.store));
           }
           else if (isGroup(group)) {
             if (!isCategoriesArray(categories)) {
               throw new Error('categories does not contain categories');
             }
 
-            groups.push(new Group({ ...group, categories }));
+            groups.push(new Group({ ...group, categories }, group.store));
           }
         }
       });

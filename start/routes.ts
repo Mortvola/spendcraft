@@ -55,7 +55,7 @@ Route.group(() => {
       Route.post('', 'CategoryController.transfer');
       Route.patch('/:tfrId', 'CategoryController.transfer');
       Route.delete('/:tfrId', 'CategoryController.transferDelete');
-    }).prefix('/category_transfer');
+    }).prefix('/category-transfer');
 
     Route.get('/category_balances', 'CategoryController.balances');
 
@@ -64,8 +64,10 @@ Route.group(() => {
 
     Route.get('/connected_accounts', 'UsersController.getConnectedAccounts');
 
-    Route.get('/account/:acctId/transactions', 'AccountsController.transactions');
-    Route.get('/account/:acctId/balances', 'AccountsController.balances');
+    Route.group(() => {
+      Route.get('/:acctId/transactions', 'AccountsController.transactions');
+      Route.get('/:acctId/balances', 'AccountsController.balances');
+    }).prefix('/account');
 
     Route.post('/institutions/sync', 'InstitutionController.syncAll');
 
@@ -87,7 +89,7 @@ Route.group(() => {
     }).prefix('/funding-plans');
 
     Route.group(() => {
-      Route.patch('/:txId', 'InstitutionController.updateTx');
+      Route.patch('/:txId', 'TransactionsController.update');
       Route.delete('/:trxId', 'TransactionsController.delete');
     }).prefix('/transaction');
 
@@ -95,7 +97,7 @@ Route.group(() => {
 
     Route.group(() => {
       Route.post('', 'LoansController.add');
-      Route.get('/:loanId/transactions', 'LoansController.getTransations');
+      Route.get('/:loanId/transactions', 'LoansController.getTransactions');
     }).prefix('/loans');
 
 }).prefix('/api').middleware(['auth']);

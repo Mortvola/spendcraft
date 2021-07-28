@@ -7,7 +7,7 @@ import {
 import {
   getBody, httpDelete, patchJSON, postJSON,
 } from './Transports';
-import { GroupInterface } from './State';
+import { GroupInterface, StoreInterface } from './State';
 
 class Group implements GroupInterface {
   id: number;
@@ -18,14 +18,17 @@ class Group implements GroupInterface {
 
   categories: Category[] = [];
 
-  constructor(props: GroupProps | Group) {
+  store: StoreInterface;
+
+  constructor(props: GroupProps | Group, store: StoreInterface) {
     this.id = props.id;
     this.name = props.name;
     this.system = props.system || false;
+    this.store = store;
 
     if (props.categories && props.categories.length > 0) {
       props.categories.forEach((c) => {
-        const category = new Category(c);
+        const category = new Category(c, this.store);
         this.categories.push(category);
       });
     }
@@ -62,12 +65,12 @@ class Group implements GroupInterface {
           );
 
           if (index === -1) {
-            this.categories.push(new Category(body));
+            this.categories.push(new Category(body, this.store));
           }
           else {
             this.categories = [
               ...this.categories.slice(0, index),
-              new Category(body),
+              new Category(body, this.store),
               ...this.categories.slice(index),
             ];
           }
@@ -141,7 +144,7 @@ export const isGroup = (r: unknown): r is Group => (
 
 export const isCategoriesArray = (r: unknown): r is Category[] => (
   (Array.isArray(r))
-  && isCategory(r)
+  && (r.length === 0 || isCategory((r as Category[])[0]))
 );
 
 export default Group;

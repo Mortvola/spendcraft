@@ -1,10 +1,4 @@
 module.exports = {
-  root: true,
-  "env": {
-    "browser": true,
-    "node": true,
-    "es6": true
-  },
   parser: '@typescript-eslint/parser',
   parserOptions: {
     tsconfigRootDir: __dirname,
@@ -23,12 +17,11 @@ module.exports = {
     'airbnb',
     'plugin:react/recommended',
     'plugin:react-hooks/recommended',
+    "plugin:adonis/typescriptApp",
     'eslint:recommended',
     'plugin:@typescript-eslint/recommended',
-    'plugin:import/errors',
-    'plugin:import/warnings',
+    'plugin:import/recommended',
     'plugin:import/typescript',
-    // 'plugin:@typescript-eslint/recommended-requiring-type-checking',
   ],
   rules: {
     "react/require-default-props": "off",
@@ -43,6 +36,19 @@ module.exports = {
     "no-param-reassign": ["error", { "props": false }],
     "jsx-a11y/label-has-associated-control": ["off"],
     "react/jsx-filename-extension": [1, { "extensions": [".tsx", ".jsx"] }],
+    "semi": "off",
+    "import/no-unresolved": ["off"],
+    "@typescript-eslint/semi": [
+      0,
+      "always"
+    ],
+    "space-before-function-paren": [
+      "off"
+    ],
+    "@typescript-eslint/space-before-function-paren": [
+      "off",
+    ],
+    "@typescript-eslint/explicit-member-accessibility": "off",
     'import/extensions': [
       "error",
       "ignorePackages",
@@ -62,33 +68,6 @@ module.exports = {
           "./client-src/tsconfig.json"
         ],
       },
-   }
-  },
-  // "overrides": [{
-  //   "files": ["**/*.ts", "**/*.tsx"],
-  //   "extends": [
-  //     "airbnb",
-  //     "plugin:react/recommended",
-  //     "plugin:@typescript-eslint/eslint-recommended",
-  //     "plugin:@typescript-eslint/recommended"
-  //   ],
-  //   "parser": "@typescript-eslint/parser",
-  //   // "parserOptions": {
-  //   //   "ecmaFeatures": {
-  //   //     "jsx": true
-  //   //   },
-  //   //   "ecmaVersion": 2018,
-  //   //   "sourceType": "module",
-  //   //   "project": "./tsconfig.json"
-  //   // },
-  //   "plugins": [
-  //     "react",
-  //     "@typescript-eslint",
-  //     "import"
-  //   ],
-  //   "rules": {
-  //     "brace-style": ["error", "stroustrup"],
-  //     "no-param-reassign": ["error", { "props": false }]
-  //   }
-  // }]
+    }
+  }
 };

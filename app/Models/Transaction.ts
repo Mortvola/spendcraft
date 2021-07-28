@@ -2,8 +2,9 @@ import {
   BaseModel, hasMany, HasMany, column,
   belongsTo, BelongsTo,
 } from '@ioc:Adonis/Lucid/Orm';
-import TransactionCategory from 'App/Models/TransactionCategory';
 import { DateTime } from 'luxon';
+import TransactionCategory from 'App/Models/TransactionCategory';
+import AccountTransaction from 'App/Models/AccountTransaction';
 import User from 'App/Models/User';
 
 class Transaction extends BaseModel {
@@ -17,16 +18,25 @@ class Transaction extends BaseModel {
   public accountTransactionId: number;
 
   @hasMany(() => TransactionCategory)
-  public categories: HasMany<typeof TransactionCategory>;
+  public transactionCategories: HasMany<typeof TransactionCategory>;
 
-  @column()
+  @column({ serializeAs: 'sortOrder' })
   public sortOrder: number;
 
   @column()
   public type: number;
 
+  @belongsTo(() => AccountTransaction, {
+    foreignKey: 'id',
+    localKey: 'transactionId',
+  })
+  public accountTransaction: BelongsTo<typeof AccountTransaction>
+
   @belongsTo(() => User)
-  public institution: BelongsTo<typeof User>
+  public user: BelongsTo<typeof User>;
+
+  @column({ serializeAs: null })
+  public userId: number;
 }
 
 export default Transaction;

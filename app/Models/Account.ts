@@ -1,12 +1,14 @@
 import Database, { TransactionClientContract } from '@ioc:Adonis/Lucid/Database';
 import moment, { Moment } from 'moment';
 import {
-  BaseModel, hasMany, HasMany, column,
+  BaseModel, hasMany, HasMany, column, belongsTo, BelongsTo,
 } from '@ioc:Adonis/Lucid/Orm';
 import { DateTime } from 'luxon';
 import plaidClient from '@ioc:Plaid';
 import AccountTransaction from 'App/Models/AccountTransaction';
 import BalanceHistory from 'App/Models/BalanceHistory';
+import Category from 'App/Models/Category';
+import Institution from 'App/Models/Institution';
 
 type Transaction = {
   balance: number,
@@ -16,7 +18,7 @@ type Transaction = {
   },
 }
 
-type Category = {
+type CategoryItem = {
   group: {
     id: number,
     name: string,
@@ -53,7 +55,7 @@ class Account extends BaseModel {
   public balanceHistory: HasMany<typeof BalanceHistory>;
 
   @column()
-  public institutionId;
+  public institutionId: number;
 
   @column()
   public plaidAccountId: string;
@@ -89,6 +91,9 @@ class Account extends BaseModel {
 
   @column()
   public enabled: boolean;
+
+  @belongsTo(() => Institution)
+  public institution: BelongsTo<typeof Institution>;
 
   // eslint-disable-next-line class-methods-use-this
   public async getBalance(balance: string): Promise<number> {
@@ -262,11 +267,11 @@ class Account extends BaseModel {
 
     let balance: number = transactionsResponse.accounts[0].balances.current;
 
-    let cat: Category | null = null;
+    let cat: CategoryItem | null = null;
 
     if (sum !== 0) {
       const systemCats = await trx.query()
-        .select('cats.id AS id', 'cats.name AS name')
+        .select('groups.id AS groupId', 'groups.name AS groupName', 'cats.id AS id', 'cats.name AS name')
         .from('categories AS cats')
         .join('groups', 'groups.id', 'group_id')
         .where('cats.system', true)
@@ -274,7 +279,23 @@ class Account extends BaseModel {
       const unassigned = systemCats.find((entry) => entry.name === 'Unassigned');
 
       // Add the sum of the transactions to the unassigned category.
-      cat = await Account.subtractFromCategoryBalance(trx, unassigned.id, sum);
+      const category = await Category.findOrFail(unassigned.id, { client: trx });
+
+      category.amount -= sum;
+
+      await category.save();
+
+      cat = {
+        group: {
+          id: unassigned.groupId,
+          name: unassigned.groupName,
+        },
+        category: {
+          id: category.id,
+          name: category.name,
+        },
+        amount: category.amount,
+      } as CategoryItem;
     }
 
     if (transactionsResponse.accounts[0].type === 'credit'
@@ -286,38 +307,6 @@ class Account extends BaseModel {
     this.balance = balance;
 
     return { balance, sum, cat } as Transaction;
-  }
-
-  public static async subtractFromCategoryBalance(
-    trx: TransactionClientContract, categoryId: number, amount: number,
-  ): Promise<Category> {
-    const result = await trx.query()
-      .select(
-        'groups.id AS groupId',
-        'groups.name AS group',
-        'cat.id AS categoryId',
-        'cat.name AS category',
-        'cat.amount AS amount',
-      )
-      .from('categories AS cat')
-      .leftJoin('groups', 'groups.id', 'cat.group_id')
-      .where('cat.id', categoryId);
-
-    const newAmount = result[0].amount - amount;
-
-    await trx.query().from('categories').where('id', categoryId).update('amount', newAmount);
-
-    return {
-      group: {
-        id: result[0].groupId,
-        name: result[0].group,
-      },
-      category: {
-        id: result[0].categoryId,
-        name: result[0].category,
-      },
-      amount: newAmount,
-    } as Category;
   }
 
   public async updateAccountBalanceHistory(

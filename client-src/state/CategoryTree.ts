@@ -9,7 +9,6 @@ import { CategoryTreeInterface, StoreInterface } from './State';
 import SystemIds from './SystemIds';
 import { getBody, httpDelete, postJSON } from './Transports';
 import LoansGroup from './LoansGroup';
-import Loan from './Loan';
 
 class CategoryTree implements CategoryTreeInterface {
   initialized = false;
@@ -26,8 +25,8 @@ class CategoryTree implements CategoryTreeInterface {
     this.store = store;
   }
 
-  getCategory(categoryId: number): Category | Loan | null {
-    let category: Category | Loan | null = null;
+  getCategory(categoryId: number): Category | null {
+    let category: Category | null = null;
 
     this.groups.find((group) => {
       const cat = group.findCategory(categoryId);
@@ -83,12 +82,12 @@ class CategoryTree implements CategoryTreeInterface {
 
         if (isGroupProps(systemGroup)) {
           this.systemIds.systemGroupId = systemGroup.id;
-          const unassignedCategory = systemGroup.categories.find((c) => c.system && c.name === 'Unassigned');
+          const unassignedCategory = systemGroup.categories.find((c) => c.type === 'UNASSIGNED');
           if (unassignedCategory) {
             this.systemIds.unassignedId = unassignedCategory.id;
           }
 
-          const fundingPoolCategory = systemGroup.categories.find((c) => c.system && c.name === 'Funding Pool');
+          const fundingPoolCategory = systemGroup.categories.find((c) => c.type === 'FUNDING POOL');
           if (fundingPoolCategory) {
             this.systemIds.fundingPoolId = fundingPoolCategory.id;
           }
@@ -102,11 +101,11 @@ class CategoryTree implements CategoryTreeInterface {
               throw new Error('invalid loan group props');
             }
 
-            const loans = new LoansGroup(g);
+            const loans = new LoansGroup(g, this.store);
             this.groups.push(loans);
           }
           else {
-            const group = new Group(g);
+            const group = new Group(g, this.store);
             this.groups.push(group);
           }
         });
@@ -135,12 +134,12 @@ class CategoryTree implements CategoryTreeInterface {
           );
 
           if (index === -1) {
-            this.groups.push(new Group(body));
+            this.groups.push(new Group(body, this.store));
           }
           else {
             this.groups = [
               ...this.groups.slice(0, index),
-              new Group(body),
+              new Group(body, this.store),
               ...this.groups.slice(index),
             ];
           }

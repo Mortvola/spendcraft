@@ -4,6 +4,8 @@ import { Spinner } from 'react-bootstrap';
 import Transaction from './Transaction';
 import Amount from './Amount';
 import MobxStore from './state/mobxStore';
+import { TransactionInterface } from './state/State';
+import PendingTransaction from './state/PendingTransaction';
 
 type PropsType = {
   isMobile?: boolean;
@@ -14,19 +16,31 @@ const Register = ({
 }: PropsType): ReactElement => {
   const [selectedTransaction, setSelectedTransaction] = useState<number | null>(null);
   const {
-    register: {
-      categoryId,
-      transactions,
-      fetching,
-      pending,
-      balance,
-    },
+    uiState,
     categoryTree: {
       systemIds: {
         unassignedId,
       },
     },
   } = useContext(MobxStore);
+  let transactions: TransactionInterface[] | undefined;
+  let pending: PendingTransaction[] | undefined;
+  let balance = 0;
+  let fetching = false;
+
+  const category = uiState.selectedCategory;
+  if (category && uiState.view === 'HOME') {
+    transactions = category.transactions;
+    pending = category.pending;
+    balance = category.balance;
+    fetching = category.fetching;
+  }
+
+  const account = uiState.selectedAccount;
+  if (account && uiState.view === 'ACCOUNTS') {
+    transactions = account.transactions;
+    balance = account.balance;
+  }
 
   const handleClick = (transactionId: number) => {
     setSelectedTransaction(transactionId);
@@ -41,15 +55,19 @@ const Register = ({
       );
     }
 
-    let list: Array<ReactElement> | null = null;
+    let list: ReactElement[] | null = null;
 
     if (transactions) {
       let runningBalance = balance;
       list = transactions.map((transaction) => {
         let { amount } = transaction;
 
-        if (categoryId !== null) {
-          amount = transaction.getAmountForCategory(categoryId);
+        if (category !== null) {
+          amount = transaction.getAmountForCategory(category.id);
+
+          if (category.type === 'LOAN') {
+            amount = -amount;
+          }
         }
 
         const selected = selectedTransaction === transaction.id;
@@ -61,7 +79,7 @@ const Register = ({
             amount={amount}
             balance={runningBalance}
             selected={selected}
-            categoryId={categoryId}
+            categoryId={uiState.selectedCategory ? uiState.selectedCategory.id : null}
             unassignedId={unassignedId}
             isMobile={isMobile}
           />
@@ -98,7 +116,7 @@ const Register = ({
   };
 
   const renderPending = () => {
-    if (!fetching && pending.length > 0) {
+    if (!fetching && pending && pending.length > 0) {
       return (
         <div className="register">
           <div className="pending-register-title">
@@ -123,7 +141,7 @@ const Register = ({
   };
 
   const renderColumnTitles = () => {
-    if (categoryId === null) {
+    if (category === null) {
       return (
         <div className="register-title acct-transaction">
           <div />

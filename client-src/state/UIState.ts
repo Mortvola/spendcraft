@@ -1,12 +1,19 @@
 import { makeAutoObservable, runInAction } from 'mobx';
-import { StoreInterface, UIStateInterface, Views } from './State';
+import Category from './Category';
+import {
+  AccountInterface,
+  CategoryInterface,
+  StoreInterface, UIStateInterface, Views,
+} from './State';
 
 class UIState implements UIStateInterface {
   view: Views = 'HOME';
 
-  selectedCategoryId: number | null = null;
+  selectedCategory: CategoryInterface | null = null;
 
   selectedPlanId: number | null = null;
+
+  selectedAccount: AccountInterface | null = null;
 
   store: StoreInterface;
 
@@ -19,7 +26,9 @@ class UIState implements UIStateInterface {
   setView(view: Views): void {
     runInAction(() => {
       if (view === 'HOME' && this.view === 'HOME') {
-        this.selectedCategoryId = this.store.categoryTree.systemIds.unassignedId;
+        this.selectedCategory = this.store.categoryTree.getCategory(
+          this.store.categoryTree.systemIds.unassignedId,
+        );
       }
       else {
         this.view = view;
@@ -27,9 +36,15 @@ class UIState implements UIStateInterface {
     });
   }
 
-  selectCategory(categoryId: number): void {
+  selectCategory(category: Category | null): void {
     runInAction(() => {
-      this.selectedCategoryId = categoryId;
+      this.selectedCategory = category;
+    });
+  }
+
+  selectAccount(account: AccountInterface | null): void {
+    runInAction(() => {
+      this.selectedAccount = account;
     });
   }
 

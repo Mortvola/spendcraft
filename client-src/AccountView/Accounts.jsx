@@ -6,20 +6,21 @@ import AccountView from './AccountView';
 import MobxStore from '../state/mobxStore';
 
 const Accounts = () => {
-  const { accounts, register, balances } = useContext(MobxStore);
-  const { selectedAccount } = accounts;
+  const {
+    accounts, register, balances, uiState: { selectedAccount },
+  } = useContext(MobxStore);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     if (selectedAccount) {
       if (selectedAccount.tracking === 'Transactions') {
-        register.loadAccountTransactions(selectedAccount);
+        selectedAccount.getTransactions();
       }
       else {
         balances.load(selectedAccount);
       }
     }
-  }, [balances, register, selectedAccount]);
+  }, [balances, selectedAccount]);
 
   const handleClick = () => {
     accounts.addInstitution();

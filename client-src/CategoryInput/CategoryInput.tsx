@@ -7,12 +7,12 @@ import useExclusiveBool from '../ExclusiveBool';
 import MobxStore from '../state/mobxStore';
 import Group from '../state/Group';
 import Category from '../state/Category';
-import { GroupInterface, GroupMemberInterface } from '../state/State';
+import { GroupInterface } from '../state/State';
 import LoansGroup from '../state/LoansGroup';
 
 type PropsType = {
   categoryId: number | null,
-  onChange: (id: number) => void,
+  onChange: (id: number, type: string) => void,
 }
 
 const CategoryInput = ({
@@ -28,10 +28,14 @@ const CategoryInput = ({
   );
   const [open, setOpen] = useExclusiveBool(false);
   const [value, setValue] = useState<string | null>(
-    categoryId === null ? null : categoryTree.getCategoryName(categoryId),
+    categoryId === null || categoryId === categoryTree.systemIds.unassignedId
+      ? null
+      : categoryTree.getCategoryName(categoryId),
   );
   const [originalValue, setOriginalValue] = useState<string | null>(
-    categoryId === null ? null : categoryTree.getCategoryName(categoryId),
+    categoryId === null || categoryId === categoryTree.systemIds.unassignedId
+      ? null
+      : categoryTree.getCategoryName(categoryId),
   );
   const [filter, setFilter] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -39,7 +43,7 @@ const CategoryInput = ({
 
   const categoryFiltered = (
     group: GroupInterface,
-    category: GroupMemberInterface,
+    category: Category,
     filterParts: string[],
   ) => {
     if (filterParts.length > 0) {
@@ -114,7 +118,7 @@ const CategoryInput = ({
     setOriginalValue(categoryId === null ? null : categoryTree.getCategoryName(categoryId));
 
     if (onChange) {
-      onChange(category.id);
+      onChange(category.id, category.type);
     }
   };
 
@@ -230,7 +234,7 @@ const CategoryInput = ({
       else {
         setValue(categoryTree.getCategoryName(selectedCategory.id));
         if (onChange) {
-          onChange(selectedCategory.id);
+          onChange(selectedCategory.id, selectedCategory.type);
         }
       }
     }

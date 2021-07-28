@@ -8,7 +8,9 @@ import {
   hasMany,
   HasMany,
 } from '@ioc:Adonis/Lucid/Orm';
-import Loan from './Loan';
+import Transaction from 'App/Models/Transaction'
+import Loan from 'App/Models/Loan';
+import Institution from './Institution';
 
 type AccountResult = {
   id: number,
@@ -72,6 +74,12 @@ export default class User extends BaseModel {
       user.password = await Hash.make(user.password);
     }
   }
+
+  @hasMany(() => Institution)
+  public institutions: HasMany<typeof Institution>;
+
+  @hasMany(() => Transaction)
+  public transactions: HasMany<typeof Transaction>;
 
   @hasMany(() => Loan)
   public loans: HasMany<typeof Loan>;

@@ -1,13 +1,15 @@
 import {
-  BaseModel, BelongsTo, belongsTo, column,
+  BaseModel, BelongsTo, belongsTo, column, HasMany, hasMany,
 } from '@ioc:Adonis/Lucid/Orm';
 import Database from '@ioc:Adonis/Lucid/Database';
 import Group from 'App/Models/Group';
+import { CategoryType } from 'Common/ResponseTypes';
+import TransactionCategory from 'App/Models/TransactionCategory';
 
 type CategoryItem = {
   id: number,
   name: string,
-  system: boolean,
+  type: string,
   balance: number,
 };
 
@@ -34,18 +36,21 @@ class Category extends BaseModel {
   public amount: number;
 
   @column()
-  public system: boolean;
+  public type: CategoryType;
 
   @column({
     serializeAs: 'groupId',
   })
   public groupId: number;
 
+  @hasMany(() => TransactionCategory)
+  public transactionCategory: HasMany<typeof TransactionCategory>;
+
   public static async balances(
     userId: number,
     date: string,
     transactionId: number,
-  ): Promise<Array<GroupItem>> {
+  ): Promise<GroupItem[]> {
     let transactionsSubquery = `
       select category_id, splits.amount
       from transaction_categories AS splits
@@ -66,7 +71,7 @@ class Category extends BaseModel {
         'groups.system as groupSystem',
         'categories.id as categoryId',
         'categories.name as categoryName',
-        'categories.system as categorySystem',
+        'categories.type as categoryType',
         Database.raw('categories.amount - COALESCE(sum(splits1.amount), 0) AS balance'),
       )
       .from('groups')
@@ -105,7 +110,7 @@ class Category extends BaseModel {
           id: cat.categoryId,
           name: cat.categoryName,
           balance: parseFloat(cat.balance),
-          system: cat.categorySystem,
+          type: cat.categoryType,
         });
       }
     });

@@ -9,18 +9,58 @@ export interface GroupInterface {
   system: boolean;
 }
 
+export interface TransactionInterface {
+  id: number | null;
+
+  amount: number;
+
+  date: string;
+
+  type: TransactionType;
+
+  name: string;
+
+  categories: TransactionCategoryInterface[];
+
+  instituteName: string;
+
+  accountName: string;
+
+  transaction?: {
+    date: string;
+
+    id: number;
+
+    sortOrder: number;
+
+    type: number;
+  }
+
+  getAmountForCategory(categoryId: number): number;
+}
+
 export interface GroupMemberInterface {
   id: number;
+
+  type: CategoryType;
 
   name: string;
 
   balance: number;
+
+  transactions: TransactionInterface[];
+
+  getTransactions(): Promise<void>;
+
+  updateTransactionCategories(
+    transactionId: number,
+    categories: TransactionCategoryInterface[],
+    balances: CategoryProps[],
+  ): void;
 }
 
 export interface AccountsInterface {
   institutions: Array<Institution>;
-
-  selectedAccount: AccountInterface | null;
 
   plaid: unknown | null;
 
@@ -30,19 +70,53 @@ export interface AccountsInterface {
 }
 
 export interface PendingTransactionProps {
-  id: number;
+  id: number | null;
   date: string;
+
+  accountTransaction: {
+    name: string;
+
+    amount: number;
+  }
+}
+
+export interface CategoryInterface {
+  id: number;
+
   name: string;
-  amount: number;
+
+  type: CategoryType;
+
+  balance: number;
+
+  groupId: number | null;
+
+  transactions: Transaction[];
+
+  pending: PendingTransaction[];
+
+  fetching: boolean;
+
+  getTransactions(): Promise<void>;
+
+  updateTransactionCategories(
+    transactionId: number,
+    categories: TransactionCategoryInterface[],
+    balances: CategoryProps[],
+  ): void;
+
+  removeTransaction(transactionId: number): void;
 }
 
 export type Views = 'HOME' | 'PLANS' | 'ACCOUNTS' | 'REPORTS' | 'ACCOUNT' | 'LOGOUT';
 
 export interface UIStateInterface {
   view: Views;
-  selectCategory(categoryId: number): void;
-  selectedCategoryId: number | null;
+  selectCategory(category: CategoryInterface | null): void;
+  selectAccount(account: AccountInterface | null): void;
+  selectedCategory: CategoryInterface | null;
   selectedPlanId: number | null;
+  selectedAccount: AccountInterface | null;
   setView(view: Views): void;
   selectPlanId(planId: number): void;
 }
@@ -50,6 +124,7 @@ export interface UIStateInterface {
 export interface CategoryTreeInterface {
   systemIds: SystemIds;
   updateBalances(balances: Array<CategoryProps>): void;
+  getCategory(categoryId: number): CategoryInterface | null;
 }
 
 export interface CategoryBalanceInterface {
@@ -67,8 +142,13 @@ export interface CategoryTreeBalanceInterace {
 
 export interface TransactionCategoryInterface {
   id: number;
+  type: string;
   categoryId: number;
   amount: number;
+
+  loanTransaction?: null | {
+    principle: number;
+  }
 }
 
 export interface RebalanceCategoryInterface {
@@ -78,17 +158,12 @@ export interface RebalanceCategoryInterface {
 }
 
 export interface NewTransactionCategoryInterface {
+  type: string;
   categoryId: number;
   amount: number;
 }
 
 export interface RegisterInterface {
-  updateTransactionCategories(
-    transactionId: number,
-    splits: Array<TransactionCategoryInterface>,
-    categories: Array<CategoryProps>,
-  ): void;
-
   removeTransaction(transactionId: number): void;
 }
 
@@ -103,9 +178,15 @@ export interface AccountInterface {
 
   balance: number;
 
+  transactions: Transaction[] = [];
+
+  pending: PendingTransaction[] = [];
+
   refreshing: boolean;
 
   store: StoreInterface;
+
+  async getTransactions(): Promise<void>;
 }
 
 export interface BalancesInterface {

@@ -1,21 +1,22 @@
 import React, { ReactElement } from 'react';
-// import PropTypes from 'prop-types';
 import { observer } from 'mobx-react-lite';
 import Buttons from './Buttons';
 import Category from './Category';
 import StateGroup from '../state/Group';
 import LoansGroup from '../state/LoansGroup';
+import StateCategory from '../state/Category';
+import { CategoryInterface } from '../state/State';
 
 type Props = {
   group: StateGroup | LoansGroup,
-  onCategorySelected: ((categoryId: number) => void),
-  selectedCategoryId?: number | null,
+  onCategorySelected: ((category: StateCategory) => void),
+  selectedCategory?: CategoryInterface | null,
 }
 
 const Group = ({
   group,
   onCategorySelected,
-  selectedCategoryId,
+  selectedCategory,
 }: Props): ReactElement => (
   <div className="cat-list-group">
     <div className="group-element-bar">
@@ -29,7 +30,7 @@ const Group = ({
           category={category}
           group={group}
           onCategorySelected={onCategorySelected}
-          selected={selectedCategoryId === category.id}
+          selected={selectedCategory === category}
         />
       ))
     }
@@ -37,7 +38,7 @@ const Group = ({
 );
 
 Group.defaultProps = {
-  selectedCategoryId: null,
+  selectedCategory: null,
 };
 
 export default observer(Group);

@@ -6,11 +6,14 @@ import {
   isUpdateCategoryTransferResponse,
   isDeleteTransactionResponse,
 } from '../../common/ResponseTypes';
-import { NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface } from './State';
+import {
+  NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface,
+  TransactionInterface,
+} from './State';
 import { getBody, httpDelete, patchJSON } from './Transports';
 
-class Transaction {
-  id: number;
+class Transaction implements TransactionInterface {
+  id: number | null;
 
   amount: number;
 
@@ -20,7 +23,7 @@ class Transaction {
 
   name: string;
 
-  categories: Array<TransactionCategoryInterface>;
+  categories: TransactionCategoryInterface[];
 
   instituteName: string;
 
@@ -32,29 +35,58 @@ class Transaction {
     this.store = store;
 
     this.id = props.id;
-    this.amount = props.amount;
     this.date = props.date;
     this.type = props.type;
-    this.name = props.name;
-    this.instituteName = props.instituteName;
-    this.accountName = props.accountName;
+    if (props.accountTransaction) {
+      this.name = props.accountTransaction.name;
+      this.amount = props.accountTransaction.amount;
+      this.instituteName = props.accountTransaction.account.institution.name;
+      this.accountName = props.accountTransaction.account.name;
+    }
+    else {
+      switch (props.type) {
+        case TransactionType.REBALANCE_TRANSACTION:
+          this.name = 'Category Rebalance';
+          break;
 
-    this.categories = props.categories;
+        case TransactionType.FUNDING_TRANSACTION:
+          this.name = 'Caetgory Funding';
+          break;
+
+        default:
+          this.name = 'Unknown';
+      }
+
+      this.amount = 0;
+      this.instituteName = '';
+      this.accountName = '';
+    }
+    this.categories = props.transactionCategories;
 
     makeAutoObservable(this);
   }
 
   async updateTransactionCategory(
-    categories: Array<TransactionCategoryInterface | NewTransactionCategoryInterface>,
+    categories: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
   ): Promise<null> {
+    if (this.id === null) {
+      throw new Error('transaction has a null id');
+    }
+
     const response = await patchJSON(`/api/transaction/${this.id}`, { splits: categories });
 
     const body = await getBody(response);
 
     if (isUpdateTransactionCategoryResponse(body)) {
       runInAction(() => {
+        if (this.id === null) {
+          throw new Error('transaction has a null id');
+        }
+
         this.store.categoryTree.updateBalances(body.categories);
-        this.store.register.updateTransactionCategories(this.id, body.splits, body.categories);
+        if (this.store.uiState.selectedCategory) {
+          this.store.uiState.selectedCategory.updateTransactionCategories(this.id, body.splits, body.categories);
+        }
       });
 
       return null;
@@ -69,17 +101,27 @@ class Transaction {
       date: string;
     },
   ): Promise<null> {
-    const response = await patchJSON(`/api/category_transfer/${this.id}`, { ...values, type: 3 });
+    if (this.id === null) {
+      throw new Error('transaction has a null id');
+    }
+
+    const response = await patchJSON(`/api/category-transfer/${this.id}`, { ...values, type: 3 });
 
     if (response.ok) {
       const body = await getBody(response);
 
       if (isUpdateCategoryTransferResponse(body)) {
         runInAction(() => {
+          if (this.id === null) {
+            throw new Error('transaction has a null id');
+          }
+
           this.store.categoryTree.updateBalances(body.balances);
-          this.store.register.updateTransactionCategories(
-            this.id, body.transaction.categories, body.balances,
-          );
+          if (this.store.uiState.selectedCategory) {
+            this.store.uiState.selectedCategory.updateTransactionCategories(
+              this.id, body.transaction.categories, body.balances,
+            );
+          }
         });
 
         return null;
@@ -90,6 +132,10 @@ class Transaction {
   }
 
   async delete(): Promise<null | Array<Error>> {
+    if (this.id === null) {
+      throw new Error('transaction has a null id');
+    }
+
     const response = await httpDelete(`/api/transaction/${this.id}`);
 
     if (response.ok) {
@@ -97,6 +143,10 @@ class Transaction {
 
       if (isDeleteTransactionResponse(body)) {
         runInAction(() => {
+          if (this.id === null) {
+            throw new Error('transaction has a null id');
+          }
+
           this.store.categoryTree.updateBalances(body.balances);
           this.store.register.removeTransaction(this.id);
         });
@@ -116,13 +166,26 @@ class Transaction {
     if (this.categories !== undefined && this.categories !== null
       && categoryId !== undefined && categoryId !== null
       && this.categories.some((c) => c.categoryId === categoryId)) {
-      amount = this.categories.reduce((accum, item) => (
-        accum + (item.categoryId === categoryId ? item.amount : 0)
-      ), 0);
+      amount = this.categories.reduce((accum, item) => {
+        if (item.categoryId === categoryId) {
+          let amt = item.amount;
+          if (item.loanTransaction) {
+            amt = item.loanTransaction.principle;
+          }
+
+          return accum + amt;
+        }
+
+        return accum;
+      }, 0);
     }
 
     return amount;
   }
 }
+
+export const isTransaction = (r: unknown): r is Transaction => (
+  true
+);
 
 export default Transaction;

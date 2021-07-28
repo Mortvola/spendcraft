@@ -5,14 +5,14 @@ import Amount from '../Amount';
 import IconButton from '../IconButton';
 import EditButton from './EditButton';
 import Group from '../state/Group';
-import { GroupMemberInterface } from '../state/State';
 import LoansGroup from '../state/LoansGroup';
+import StateCategory from '../state/Category';
 
 type PropsType = {
-  category: GroupMemberInterface,
+  category: StateCategory,
   group: Group | LoansGroup,
   selected: boolean,
-  onCategorySelected: ((id: number) => void),
+  onCategorySelected: ((category: StateCategory) => void),
 }
 const Category = ({
   category,
@@ -22,7 +22,7 @@ const Category = ({
 }: PropsType): ReactElement => {
   const [CategoryTransferDialog, showCategoryTransferDialog] = useCategoryTransferDialog();
   const handleClick = () => {
-    onCategorySelected(category.id);
+    onCategorySelected(category);
   };
 
   let className = 'cat-list-cat';

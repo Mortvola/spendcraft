@@ -1,5 +1,8 @@
-import { BaseModel, column, HasOne, hasOne } from '@ioc:Adonis/Lucid/Orm';
-import Category from './Category';
+import {
+  BaseModel, column, HasOne, hasOne,
+} from '@ioc:Adonis/Lucid/Orm';
+import Category from 'App/Models/Category';
+import LoanTransaction from 'App/Models/LoanTransaction';
 
 class TransactionCategory extends BaseModel {
   @column()
@@ -25,6 +28,9 @@ class TransactionCategory extends BaseModel {
     localKey: 'categoryId',
   })
   public category: HasOne<typeof Category>
+
+  @hasOne(() => LoanTransaction)
+  public loanTransaction: HasOne<typeof LoanTransaction>;
 }
 
 export default TransactionCategory;

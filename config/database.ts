@@ -43,7 +43,7 @@ const databaseConfig: DatabaseConfig = {
         database: Env.get('PG_DB_NAME'),
       },
       healthCheck: false,
-			debug: false,
+			debug: true,
     },
 
   },

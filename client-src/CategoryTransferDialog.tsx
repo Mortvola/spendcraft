@@ -109,7 +109,7 @@ const CategoryTransferDialog = ({
     });
 
     if (transaction) {
-      const response = await patchJSON(`/api/category_transfer/${transaction.id}`,
+      const response = await patchJSON(`/api/category-transfer/${transaction.id}`,
         { date, categories: cats });
 
       if (response.ok) {
@@ -117,7 +117,7 @@ const CategoryTransferDialog = ({
       }
     }
     else {
-      const response = await postJSON('/api/category_transfer',
+      const response = await postJSON('/api/category-transfer',
         { date, categories: cats });
 
       if (response.ok) {
@@ -149,7 +149,7 @@ const CategoryTransferDialog = ({
       throw new Error('transaction is null');
     }
 
-    await httpDelete(`/api/category_transfer/${transaction.id}`);
+    await httpDelete(`/api/category-transfer/${transaction.id}`);
 
     onHide();
   };

@@ -16,6 +16,7 @@ import useModal, { ModalProps } from '../Modal/useModal';
 import Transaction from '../state/Transaction';
 import { NewTransactionCategoryInterface, TransactionCategoryInterface } from '../state/State';
 import { patchJSON, postJSON } from '../state/Transports';
+import { TransactionType } from '../../common/ResponseTypes';
 
 interface Props {
   // eslint-disable-next-line react/require-default-props
@@ -30,7 +31,7 @@ const FundingDialog = ({
   const { categoryTree } = useContext(MobxStore);
 
   const getTotal = useCallback((
-    categories: Array<TransactionCategoryInterface | NewTransactionCategoryInterface>,
+    categories: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
   ) => (
     categories.reduce((accumulator: number, item) => (
       item.categoryId === categoryTree.systemIds.fundingPoolId
@@ -133,17 +134,18 @@ const FundingDialog = ({
     type Request = {
       date: string,
       type: number,
-      categories: Array<TransactionCategoryInterface | NewTransactionCategoryInterface>,
+      categories: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
     }
 
     const request: Request = {
       date: values.date,
-      type: 2,
+      type: TransactionType.FUNDING_TRANSACTION,
       categories: values.funding.categories.filter((item) => (
         item.amount !== 0
       ))
         .map((item) => ({
           id: item.id,
+          type: item.type,
           categoryId: item.categoryId,
           amount: item.amount,
         })),
@@ -161,6 +163,7 @@ const FundingDialog = ({
       }
 
       request.categories.push({
+        type: 'REGULAR',
         categoryId: categoryTree.systemIds.fundingPoolId,
         amount: -sum,
       });
@@ -171,10 +174,10 @@ const FundingDialog = ({
 
     let response;
     if (transaction) {
-      response = await patchJSON(`/api/category_transfer/${transaction.id}`, request);
+      response = await patchJSON(`/api/category-transfer/${transaction.id}`, request);
     }
     else {
-      response = await postJSON('/api/category_transfer', request);
+      response = await postJSON('/api/category-transfer', request);
     }
 
     if (response.ok) {
