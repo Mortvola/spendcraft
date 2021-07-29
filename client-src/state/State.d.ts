@@ -1,5 +1,7 @@
 import Reports from './Reports';
 import User from './User';
+import { CategoryType } from '../../common/ResponseTypes'
+import LoanTransaction from './LoanTransaction';
 
 export interface GroupInterface {
   id: number;
@@ -94,6 +96,11 @@ export interface CategoryInterface {
   transactions: Transaction[];
 
   pending: PendingTransaction[];
+
+  loan: {
+    balance: number;
+    transactions: LoanTransaction[];
+  };
 
   fetching: boolean;
 

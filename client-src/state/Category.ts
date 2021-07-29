@@ -5,6 +5,7 @@ import {
   isCategoryTransactionsResponse,
   CategoryType,
 } from '../../common/ResponseTypes';
+import LoanTransaction from './LoanTransaction';
 import PendingTransaction from './PendingTransaction';
 import { CategoryInterface, StoreInterface, TransactionCategoryInterface } from './State';
 import Transaction from './Transaction';
@@ -24,6 +25,11 @@ class Category implements CategoryInterface {
   transactions: Transaction[] = [];
 
   pending: PendingTransaction[] = [];
+
+  loan: {
+    balance: number;
+    transactions: LoanTransaction[];
+  } = { balance: 0, transactions: [] };
 
   store: StoreInterface;
 
@@ -72,6 +78,10 @@ class Category implements CategoryInterface {
           this.pending = body.pending.map((pt) => new PendingTransaction(pt));
           this.transactions = body.transactions.map((t) => (
             new Transaction(this.store, t)
+          ));
+          this.loan.balance = body.loan.balance;
+          this.loan.transactions = body.loan.transactions.map((t) => (
+            new LoanTransaction(t)
           ));
         }
         else {

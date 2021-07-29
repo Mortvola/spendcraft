@@ -12,10 +12,10 @@ import AmountInput from '../AmountInput';
 import FormError from '../Modal/FormError';
 import FormModal from '../Modal/FormModal';
 import LoansGroup from '../state/LoansGroup';
-import Loan from '../state/Loan';
+import Category from '../state/Category';
 
 type Props = {
-  category?: Loan | null,
+  category?: Category | null,
   group: LoansGroup,
 }
 
@@ -38,7 +38,7 @@ const LoanDialog = ({
     let errors = null;
 
     if (category) {
-      errors = await category.update(values.name);
+      // errors = await category.update(values.name);
     }
     else {
       errors = await group.addLoan(

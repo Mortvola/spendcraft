@@ -1,7 +1,8 @@
 import {
   BaseModel, BelongsTo, belongsTo, column, HasMany, hasMany,
 } from '@ioc:Adonis/Lucid/Orm'
-import Category from './Category';
+import { DateTime } from 'luxon';
+import Category from 'App/Models/Category';
 import LoanTransaction from 'App/Models/LoanTransaction';
 
 export default class Loan extends BaseModel {
@@ -15,6 +16,14 @@ export default class Loan extends BaseModel {
     consume: (value: string) => parseFloat(value),
   })
   public balance: number;
+
+  @column({
+    consume: (value: string) => parseFloat(value),
+  })
+  public startingBalance: number;
+
+  @column.date()
+  public startDate: DateTime;
 
   @column()
   public rate: number;

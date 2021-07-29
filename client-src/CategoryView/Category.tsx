@@ -31,7 +31,7 @@ const Category = ({
   }
 
   let barClassName = 'cat-element-bar';
-  if (group.system) {
+  if (category.type !== 'LOAN' && category.type !== 'REGULAR') {
     barClassName += ' system';
   }
 
@@ -39,7 +39,7 @@ const Category = ({
     <div className={className} onClick={handleClick}>
       <div className={barClassName}>
         {
-          !group.system
+          category.type === 'LOAN' || category.type === 'REGULAR'
             ? <EditButton category={category} group={group} />
             : null
         }

@@ -1,9 +1,8 @@
 import React, { ReactElement } from 'react';
 import { useCategoryDialog } from './CategoryDialog';
 import IconButton from '../IconButton';
-import Group, { isGroup } from '../state/Group';
-import Category, { isCategory } from '../state/Category';
-import { isLoan } from '../state/Loan';
+import Group from '../state/Group';
+import Category from '../state/Category';
 import { useLoanDialog } from './LoanDialog';
 import LoansGroup, { isLoansGroup } from '../state/LoansGroup';
 
@@ -18,34 +17,21 @@ const EditButton = ({
   const [CategoryDialog, showCategoryDialog] = useCategoryDialog();
   const [LoanDialog, showLoanDialog] = useLoanDialog();
 
-  if (!group.system) {
+  if (isLoansGroup(group)) {
     return (
       <>
-        {
-          isCategory(category) && isGroup(group)
-            ? (
-              <>
-                <IconButton icon="edit" onClick={showCategoryDialog} />
-                <CategoryDialog category={category} group={group} />
-              </>
-            )
-            : null
-        }
-        {
-          isLoan(category) && isLoansGroup(group)
-            ? (
-              <>
-                <IconButton icon="edit" onClick={showLoanDialog} />
-                <LoanDialog category={category} group={group} />
-              </>
-            )
-            : null
-        }
+        <IconButton icon="edit" onClick={showLoanDialog} />
+        <LoanDialog category={category} group={group} />
       </>
     );
   }
 
-  return null;
+  return (
+    <>
+      <IconButton icon="edit" onClick={showCategoryDialog} />
+      <CategoryDialog category={category} group={group} />
+    </>
+  );
 };
 
 export default EditButton;

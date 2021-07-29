@@ -14,12 +14,16 @@ import Transaction from 'App/Models/Transaction';
 import TransactionCategory from 'App/Models/TransactionCategory';
 import Loan from 'App/Models/Loan';
 import {
-  AddCategoryResponse, TransactionProps, TransactionType, UpdateCategoryResponse,
+  AddCategoryResponse, LoanTransactionProps, TransactionProps, TransactionType, UpdateCategoryResponse,
 } from 'Common/ResponseTypes';
 
 type TransactionsResponse = {
   transactions: TransactionProps[],
   pending: TransactionProps[],
+  loan: {
+    balance: number,
+    transactions: LoanTransactionProps[],
+  }
   balance: number,
 }
 
@@ -192,6 +196,10 @@ class CategoryController {
     const result: TransactionsResponse = {
       transactions: [],
       pending: [],
+      loan: {
+        balance: 0,
+        transactions: [],
+      },
       balance: 0,
     };
 
@@ -239,25 +247,35 @@ class CategoryController {
       if (cat.type === 'LOAN') {
         const loan = await Loan.findByOrFail('categoryId', cat.id);
 
-        const startingBalance: TransactionProps = {
-          id: null,
-          date: '2021-06-01',
-          sortOrder: -1,
-          type: TransactionType.STARTING_BALANCE,
-          transactionCategories: [],
-          accountTransaction: {
-            name: 'Starting Balance',
-            amount: -loan.balance,
-            account: {
-              name: '',
-              institution: {
-                name: '',
+        result.loan.balance = loan.balance;
+
+        const loanTransactions = await loan.related('loanTransactions').query()
+          .preload('transactionCategory', (transactionCategory) => {
+            transactionCategory.preload('transaction', (transaction) => {
+              transaction.preload('accountTransaction');
+            });
+          });
+
+        result.loan.transactions = loanTransactions.map((t) => (
+          t.serialize() as LoanTransactionProps
+        ));
+
+        const startingBalance: LoanTransactionProps = {
+          id: -1,
+          loanId: loan.id,
+          principle: loan.startingBalance,
+          transactionCategory: {
+            amount: -loan.startingBalance,
+            transaction: {
+              date: loan.startDate.toFormat('yyyy-MM-dd'),
+              accountTransaction: {
+                name: 'Starting Balance',
               },
             },
           },
         };
 
-        result.transactions.splice(0, 0, startingBalance);
+        result.loan.transactions = result.loan.transactions.concat(startingBalance);
       }
     }
 

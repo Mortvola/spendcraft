@@ -236,22 +236,23 @@ body {
 	background-color: lightblue;
 }
 
-.register-with-pending {
-    display: flex;
-    flex-flow: column;
-    height: 100%;
-}
-
 .register {
 	display: grid;
-    grid-template-rows: repeat(2, max-content) 1fr;
-    height: 100%;
+  grid-template-rows: repeat(2, max-content) 1fr;
+  height: 100%;
+  min-height: 50%;
 	user-select: none;
   overflow-y: auto;
   height: max-content;
 }
 
-.register-with-pending .register:not(:first-child) {
+.register-dual-pane {
+  display: flex;
+  flex-flow: column;
+  height: 100%;
+}
+
+.register-dual-pane .register:not(:first-child) {
     border-top: thin solid rgba(0, 0, 0, 0.15);
     flex: 0 0 auto;
 }
@@ -264,6 +265,10 @@ body {
 	color: white;
 	background-color: gray;
 	overflow-y: scroll;
+}
+
+.register-title div {
+  height: 100%;
 }
 
 .register-title div:not(:first-child) {
@@ -300,7 +305,14 @@ body {
 	align-items: center;
 }
 
-.striped div.striped:not(.transaction-selected):nth-child(odd) {
+.loan-transaction {
+	display: grid;
+	grid-template-columns: 32px 100px minmax(0, 1fr) 125px 125px 125px 32px;
+	grid-template-rows: max-content;
+	align-items: center;
+}
+
+.striped > div:not(.transaction-selected):nth-child(odd) {
 	background-color: whitesmoke;
 } 
 

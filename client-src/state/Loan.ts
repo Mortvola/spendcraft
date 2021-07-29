@@ -53,21 +53,21 @@ class Loan implements GroupMemberInterface {
 
     if (response.ok && isLoanTransactionsResponse(body)) {
       body.sort((a, b) => {
-        if (a.transaction.date < b.transaction.date) {
+        if (a.transactionCategory.transaction.date < b.transactionCategory.transaction.date) {
           return 1;
         }
 
-        if (a.transaction.date > b.transaction.date) {
+        if (a.transactionCategory.transaction.date > b.transactionCategory.transaction.date) {
           return -1;
         }
 
-        if (a.transaction.sortOrder < b.transaction.sortOrder) {
-          return 1;
-        }
+        // if (a.transaction.sortOrder < b.transaction.sortOrder) {
+        //   return 1;
+        // }
 
-        if (a.transaction.sortOrder > b.transaction.sortOrder) {
-          return -1;
-        }
+        // if (a.transaction.sortOrder > b.transaction.sortOrder) {
+        //   return -1;
+        // }
 
         return 0;
       });

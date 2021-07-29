@@ -168,10 +168,10 @@ class Transaction implements TransactionInterface {
       && this.categories.some((c) => c.categoryId === categoryId)) {
       amount = this.categories.reduce((accum, item) => {
         if (item.categoryId === categoryId) {
-          let amt = item.amount;
-          if (item.loanTransaction) {
-            amt = item.loanTransaction.principle;
-          }
+          const amt = item.amount;
+          // if (item.loanTransaction) {
+          //   amt = item.loanTransaction.principle;
+          // }
 
           return accum + amt;
         }

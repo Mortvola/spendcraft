@@ -57,12 +57,12 @@ export default class TransactionsController {
       await Promise.all(splits.map(async (split) => {
         const category = await Category.findOrFail(split.categoryId, { client: trx });
 
-        if (category.type === 'LOAN') {
-          category.amount += split.loanTransaction.principle;
-        }
-        else {
-          category.amount -= split.amount;
-        }
+        // if (category.type === 'LOAN') {
+        //   category.amount += split.loanTransaction.principle;
+        // }
+        // else {
+        category.amount -= split.amount;
+        // }
 
         await category.save();
 
@@ -123,12 +123,9 @@ export default class TransactionsController {
           });
 
           await loanTrx.related('transactionCategory').associate(txCategory);
+        }
 
-          category.amount -= loanTrx.principle;
-        }
-        else {
-          category.amount += split.amount;
-        }
+        category.amount += split.amount;
 
         await category.save();
 
