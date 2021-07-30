@@ -4,6 +4,8 @@ import Database from '@ioc:Adonis/Lucid/Database';
 import Category from 'App/Models/Category';
 import Group from 'App/Models/Group';
 import Loan from 'App/Models/Loan';
+import LoanTransaction from 'App/Models/LoanTransaction';
+import { LoanTransactionsProps } from 'Common/ResponseTypes';
 // import LoanTransaction from 'App/Models/LoanTransaction';
 
 export default class LoansController {
@@ -11,7 +13,7 @@ export default class LoansController {
   public async add({
     request,
     auth: { user },
-  }: HttpContextContract): Promise<Loan> {
+  }: HttpContextContract): Promise<Category> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -26,7 +28,7 @@ export default class LoansController {
 
     category.fill({
       name: request.input('name'),
-      amount: -parseFloat(request.input('amount')),
+      amount: 0,
       type: 'LOAN',
     });
 
@@ -37,40 +39,29 @@ export default class LoansController {
     loan.fill({
       userId: user.id,
       rate: request.input('rate'),
-      numberOfPayments: request.input('numberOfPayments'),
-      paymentAmount: request.input('paymentAmount'),
+      startDate: request.input('startDate'),
+      startingBalance: -request.input('amount'),
+      balance: -request.input('amount'),
     });
 
     await loan.related('category').associate(category);
 
     trx.commit();
 
-    return loan;
+    return category;
   }
 
   // eslint-disable-next-line class-methods-use-this
-  // public async getTransactions({
-  //   request,
-  //   auth: { user },
-  // }: HttpContextContract): Promise<LoanTransaction[]> {
-  //   if (!user) {
-  //     throw new Error('user is not defined');
-  //   }
+  public async getTransactions({
+    request,
+    auth: { user },
+  }: HttpContextContract): Promise<LoanTransactionsProps> {
+    if (!user) {
+      throw new Error('user is not defined');
+    }
 
-  //   const loan = await Loan.findOrFail(request.params().loanId);
+    const loan = await Loan.findByOrFail('categoryId', request.params().catId);
 
-  //   await loan.load((loader) => {
-  //     loader.load('loanTransactions', (loanTransaction) => {
-  //       loanTransaction.preload('transaction', (transaction) => {
-  //         transaction
-  //           .preload('accountTransaction', (acctTransaction) => {
-  //             acctTransaction.preload('account');
-  //           })
-  //           .preload('transactionCategories');
-  //       });
-  //     });
-  //   });
-
-  //   return loan.loanTransactions;
-  // }
+    return await loan.getProps();
+  }
 }

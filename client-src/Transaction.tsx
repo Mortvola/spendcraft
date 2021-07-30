@@ -9,14 +9,14 @@ import { useRebalanceDialog } from './rebalance/RebalanceDialog';
 import { useFundingDialog } from './funding/FundingDialog';
 import { isTransaction } from './state/Transaction';
 import { TransactionType } from '../common/ResponseTypes';
-import { TransactionInterface } from './state/State';
+import { CategoryInterface, TransactionInterface } from './state/State';
 
 type PropsType = {
   transaction: TransactionInterface
   amount: number;
   balance: number;
   selected: boolean;
-  categoryId: number | null;
+  category: CategoryInterface | null;
   unassignedId: number;
   isMobile?: boolean;
 }
@@ -26,11 +26,11 @@ const Transaction = ({
   amount,
   balance,
   selected,
-  categoryId,
+  category,
   unassignedId,
   isMobile,
 }: PropsType): ReactElement => {
-  const [TransactionDialog3, showTransactionDialog3] = useTransactionDialog();
+  const [TransactionDialog, showTransactionDialog] = useTransactionDialog();
   const [CategoryTransferDialog, showCategoryTransferDialog] = useCategoryTransferDialog();
   const [FundingDialog, showFundingDialog] = useFundingDialog();
   const [RebalanceDialog, showRebalanceDialog] = useRebalanceDialog();
@@ -41,15 +41,15 @@ const Transaction = ({
     // onClick(transaction.id);
   };
 
-  const handleChange = (catId: number, type: string) => {
+  const handleChange = (cat: CategoryInterface) => {
     if (isTransaction(transaction)) {
-      transaction.updateTransactionCategory([{
-        type, categoryId: catId, amount: transaction.amount,
+      transaction.updateTransactionCategories([{
+        type: cat.type, categoryId: cat.id, amount: transaction.amount,
       }]);
     }
   };
 
-  const TransactionDialog = () => {
+  const TrxDialog = () => {
     if (isTransaction(transaction)) {
       switch (transaction.type) {
         case TransactionType.TRANSFER_TRANSACTION:
@@ -70,9 +70,9 @@ const Transaction = ({
         case TransactionType.REGULAR_TRANSACTION:
         default:
           return (
-            <TransactionDialog3
+            <TransactionDialog
               transaction={transaction}
-              categoryId={categoryId}
+              category={category}
               unassignedId={unassignedId}
             />
           );
@@ -82,7 +82,7 @@ const Transaction = ({
     return null;
   };
 
-  const showTransactionDialog = (tranDialogType: number) => {
+  const showTrxDialog = (tranDialogType: number) => {
     switch (transaction.type) {
       case 1:
         showCategoryTransferDialog();
@@ -100,15 +100,15 @@ const Transaction = ({
       default:
         switch (tranDialogType) {
           case 1:
-            showTransactionDialog3();
+            showTransactionDialog();
             break;
 
           case 2:
-            showTransactionDialog3();
+            showTransactionDialog();
             break;
 
           case 3:
-            showTransactionDialog3();
+            showTransactionDialog();
             break;
 
           default:
@@ -125,7 +125,7 @@ const Transaction = ({
     if (transaction.categories && transaction.categories.length > 0) {
       if (transaction.categories.length > 1) {
         return (
-          <button type="button" className="split-button" onClick={() => showTransactionDialog(1)}>Split</button>
+          <button type="button" className="split-button" onClick={() => showTrxDialog(1)}>Split</button>
         );
       }
 
@@ -136,7 +136,7 @@ const Transaction = ({
   };
 
   const renderBankInfo = () => {
-    if (categoryId !== null) {
+    if (category !== null) {
       return (
         <>
           <div className="transaction-field">{transaction.instituteName}</div>
@@ -157,7 +157,7 @@ const Transaction = ({
     className += ' mobile';
 
     return (
-      <div className={className} onClick={() => showTransactionDialog(2)}>
+      <div className={className} onClick={() => showTrxDialog(2)}>
         <div>
           {transaction.date}
         </div>
@@ -165,14 +165,14 @@ const Transaction = ({
           {transaction.name}
         </div>
         <Amount amount={amount} />
-        <TransactionDialog />
+        <TrxDialog />
       </div>
     );
   }
 
   return (
     <div className={className} onClick={handleClick}>
-      <IconButton icon="edit" onClick={() => showTransactionDialog(2)} />
+      <IconButton icon="edit" onClick={() => showTrxDialog(2)} />
       <div>{transaction.date}</div>
       <div className="transaction-field">{transaction.name}</div>
       {
@@ -180,8 +180,8 @@ const Transaction = ({
           ? (
             <div className="trans-cat-edit">
               <CategoryButton />
-              <IconButton icon="list-ul" onClick={() => showTransactionDialog(3)} />
-              <TransactionDialog />
+              <IconButton icon="list-ul" onClick={() => showTrxDialog(3)} />
+              <TrxDialog />
             </div>
           )
           : <div />

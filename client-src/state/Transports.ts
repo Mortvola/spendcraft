@@ -1,5 +1,7 @@
 const defaultHeaders = () => {
-  const headers = new Headers();
+  const headers = new Headers({
+    Accept: 'application/json',
+  });
 
   return headers;
 };

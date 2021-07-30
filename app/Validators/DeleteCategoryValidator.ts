@@ -1,5 +1,4 @@
 import { schema, rules } from '@ioc:Adonis/Core/Validator'
-import { validator } from '@ioc:Adonis/Core/Validator';
 
 export default class DeleteCategoryValidator {
   public schema = schema.create({
@@ -9,8 +8,6 @@ export default class DeleteCategoryValidator {
       ]),
     }),
   })
-
-  public reporter = validator.reporters.jsonapi;
 
   public messages = {
     'params.catId.required': 'A category ids must be provided',

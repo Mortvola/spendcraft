@@ -7,6 +7,7 @@ import {
   isDeleteTransactionResponse,
 } from '../../common/ResponseTypes';
 import {
+  CategoryInterface,
   NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface,
   TransactionInterface,
 } from './State';
@@ -66,30 +67,38 @@ class Transaction implements TransactionInterface {
     makeAutoObservable(this);
   }
 
-  async updateTransactionCategory(
-    categories: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
+  async updateTransactionCategories(
+    transactionCategories: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
   ): Promise<null> {
     if (this.id === null) {
       throw new Error('transaction has a null id');
     }
 
-    const response = await patchJSON(`/api/transaction/${this.id}`, { splits: categories });
+    const response = await patchJSON(`/api/transaction/${this.id}`, { splits: transactionCategories });
 
-    const body = await getBody(response);
+    if (response.ok) {
+      const body = await getBody(response);
 
-    if (isUpdateTransactionCategoryResponse(body)) {
-      runInAction(() => {
-        if (this.id === null) {
-          throw new Error('transaction has a null id');
-        }
+      if (isUpdateTransactionCategoryResponse(body)) {
+        runInAction(() => {
+          if (this.id === null) {
+            throw new Error('transaction has a null id');
+          }
 
-        this.store.categoryTree.updateBalances(body.categories);
-        if (this.store.uiState.selectedCategory) {
-          this.store.uiState.selectedCategory.updateTransactionCategories(this.id, body.splits, body.categories);
-        }
-      });
+          this.store.categoryTree.updateBalances(body.categories);
+          if (this.store.uiState.selectedCategory && !body.splits.some(
+            (c) => (this.store.uiState.selectedCategory && c.categoryId === this.store.uiState.selectedCategory.id),
+          )) {
+            if (this.store.uiState.selectedCategory.type === 'LOAN') {
+              this.store.uiState.selectedCategory.getLoanTransactions();
+            }
 
-      return null;
+            this.store.uiState.selectedCategory.removeTransaction(this.id);
+          }
+        });
+
+        return null;
+      }
     }
 
     throw new Error('invalid response');
@@ -117,10 +126,10 @@ class Transaction implements TransactionInterface {
           }
 
           this.store.categoryTree.updateBalances(body.balances);
-          if (this.store.uiState.selectedCategory) {
-            this.store.uiState.selectedCategory.updateTransactionCategories(
-              this.id, body.transaction.categories, body.balances,
-            );
+          if (this.store.uiState.selectedCategory && !body.transaction.categories.some(
+            (c) => (this.store.uiState.selectedCategory && c.categoryId === this.store.uiState.selectedCategory.id),
+          )) {
+            this.store.uiState.selectedCategory.removeTransaction(this.id);
           }
         });
 

@@ -32,16 +32,16 @@ const CategoryDialog = ({
     let errors = null;
 
     if (category) {
-      errors = await category.update(group.id, values.name);
+      errors = await category.update(values.name);
     }
     else {
-      errors = await group.addCategory(group.id, values.name);
+      errors = await group.addCategory(values.name);
     }
 
     if (errors && errors.length > 0) {
       // Display the first error
       // TODO: Display all the errors?
-      setErrors({ name: errors[0].title });
+      setErrors({ [errors[0].field]: errors[0].message });
     }
     else {
       onHide();
@@ -65,10 +65,10 @@ const CategoryDialog = ({
       throw new Error('category is null or undefined');
     }
 
-    const errors = await group.deleteCategory(group.id, category.id);
+    const errors = await group.deleteCategory(category.id);
 
     if (errors && errors.length > 0) {
-      setErrors({ name: errors[0].title });
+      setErrors({ [errors[0].field]: errors[0].message });
     }
     else {
       onHide();

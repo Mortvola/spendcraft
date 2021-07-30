@@ -4,10 +4,11 @@ import {
   isUpdateCategoryResponse,
   isCategoryTransactionsResponse,
   CategoryType,
+  isCategoryLoanResponse,
 } from '../../common/ResponseTypes';
 import LoanTransaction from './LoanTransaction';
 import PendingTransaction from './PendingTransaction';
-import { CategoryInterface, StoreInterface, TransactionCategoryInterface } from './State';
+import { CategoryInterface, StoreInterface } from './State';
 import Transaction from './Transaction';
 import { getBody, patchJSON } from './Transports';
 
@@ -72,6 +73,26 @@ class Category implements CategoryInterface {
         return 0;
       });
 
+      body.loan.transactions.sort((a, b) => {
+        if (a.transactionCategory.transaction.date < b.transactionCategory.transaction.date) {
+          return 1;
+        }
+
+        if (a.transactionCategory.transaction.date > b.transactionCategory.transaction.date) {
+          return -1;
+        }
+
+        // if (a.sortOrder < b.sortOrder) {
+        //   return 1;
+        // }
+
+        // if (a.sortOrder > b.sortOrder) {
+        //   return -1;
+        // }
+
+        return 0;
+      });
+
       runInAction(() => {
         if (body !== null) {
           this.balance = body.balance;
@@ -96,8 +117,52 @@ class Category implements CategoryInterface {
     }
   }
 
-  async update(groupId: number, name: string): Promise<null | Array<Error>> {
-    const response = await patchJSON(`/api/groups/${groupId}/categories/${this.id}`, { name });
+  async getLoanTransactions(): Promise<void> {
+    const response = await fetch(`/api/loans/${this.id}/transactions`);
+
+    if (response.ok) {
+      const body = await getBody(response);
+
+      if (isCategoryLoanResponse(body)) {
+        body.transactions.sort((a, b) => {
+          if (a.transactionCategory.transaction.date < b.transactionCategory.transaction.date) {
+            return 1;
+          }
+
+          if (a.transactionCategory.transaction.date > b.transactionCategory.transaction.date) {
+            return -1;
+          }
+
+          // if (a.sortOrder < b.sortOrder) {
+          //   return 1;
+          // }
+
+          // if (a.sortOrder > b.sortOrder) {
+          //   return -1;
+          // }
+
+          return 0;
+        });
+
+        runInAction(() => {
+          if (body !== null) {
+            this.loan.balance = body.balance;
+            this.loan.transactions = body.transactions.map((t) => (
+              new LoanTransaction(t)
+            ));
+          }
+          else {
+            this.loan.transactions = [];
+          }
+
+          this.fetching = false;
+        });
+      }
+    }
+  }
+
+  async update(name: string): Promise<null | Error[]> {
+    const response = await patchJSON(`/api/groups/${this.groupId}/categories/${this.id}`, { name });
 
     const body = await getBody(response);
 
@@ -115,33 +180,6 @@ class Category implements CategoryInterface {
     }
 
     return null;
-  }
-
-  updateTransactionCategories(
-    transactionId: number,
-    categories: TransactionCategoryInterface[],
-    balances: CategoryProps[],
-  ): void {
-    const index = this.transactions.findIndex((t) => t.id === transactionId);
-
-    if (index !== -1) {
-      // If the new transaction categories don't include
-      // the current category then remove the transactions.
-      if (!categories.some((c) => (
-        c.categoryId === this.id
-      ))) {
-        this.transactions.splice(index, 1);
-      }
-      else {
-        this.transactions[index].categories = categories;
-      }
-    }
-
-    const category = balances.find((c) => c.id === this.id);
-
-    if (category) {
-      // this.balance = category.balance;
-    }
   }
 
   removeTransaction(transactionId: number): void {

@@ -115,7 +115,7 @@ class CategoryTree implements CategoryTreeInterface {
     }
   }
 
-  async addGroup(name: string): Promise<null | Array<Error>> {
+  async addGroup(name: string): Promise<null | Error[]> {
     const response = await postJSON('/api/groups', { name });
 
     const body = await getBody(response);

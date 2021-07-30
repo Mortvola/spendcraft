@@ -141,7 +141,7 @@ class CategoryController {
   // eslint-disable-next-line class-methods-use-this
   public async addCategory({
     request,
-  }: HttpContextContract): Promise<AddCategoryResponse> {
+  }: HttpContextContract): Promise<Category> {
     await request.validate(AddCategoryValidator);
 
     const category = new Category();
@@ -150,13 +150,7 @@ class CategoryController {
       .fill({ groupId: parseInt(request.params().groupId, 10), name: request.input('name'), amount: 0 })
       .save();
 
-    return {
-      groupId: category.groupId,
-      id: category.id,
-      name: category.name,
-      balance: category.amount,
-      type: 'REGULAR',
-    };
+    return category;
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -177,7 +171,20 @@ class CategoryController {
   public async deleteCategory({ request }: HttpContextContract): Promise<void> {
     await request.validate(DeleteCategoryValidator);
 
-    await Database.query().from('categories').where({ id: request.params().catId }).delete();
+    const trx = await Database.transaction();
+    const category = await Category.findOrFail(request.params().catId, { client: trx });
+
+    if (category.type === 'LOAN') {
+      const loan = await Loan.findBy('categoryId', request.params().catId, { client: trx });
+
+      if (loan) {
+        await loan.delete();
+      }
+    }
+
+    await category.delete();
+
+    await trx.commit();
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -247,35 +254,7 @@ class CategoryController {
       if (cat.type === 'LOAN') {
         const loan = await Loan.findByOrFail('categoryId', cat.id);
 
-        result.loan.balance = loan.balance;
-
-        const loanTransactions = await loan.related('loanTransactions').query()
-          .preload('transactionCategory', (transactionCategory) => {
-            transactionCategory.preload('transaction', (transaction) => {
-              transaction.preload('accountTransaction');
-            });
-          });
-
-        result.loan.transactions = loanTransactions.map((t) => (
-          t.serialize() as LoanTransactionProps
-        ));
-
-        const startingBalance: LoanTransactionProps = {
-          id: -1,
-          loanId: loan.id,
-          principle: loan.startingBalance,
-          transactionCategory: {
-            amount: -loan.startingBalance,
-            transaction: {
-              date: loan.startDate.toFormat('yyyy-MM-dd'),
-              accountTransaction: {
-                name: 'Starting Balance',
-              },
-            },
-          },
-        };
-
-        result.loan.transactions = result.loan.transactions.concat(startingBalance);
+        result.loan = await loan.getProps();
       }
     }
 

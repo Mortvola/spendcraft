@@ -85,9 +85,7 @@ export interface CategoryBalanceProps {
 
 export type AddCategoryResponse = CategoryProps
 
-export const isAddCategoryResponse = (
-  r: AddCategoryResponse | unknown,
-): r is AddCategoryResponse => (
+export const isAddCategoryResponse = (r: unknown): r is AddCategoryResponse => (
   (r as AddCategoryResponse).groupId !== undefined
   && (r as AddCategoryResponse).id !== undefined
   && (r as AddCategoryResponse).balance !== undefined
@@ -287,9 +285,13 @@ export type LoanTransactionProps = {
   loanId: number;
 
   transactionCategory: {
+    id: number;
+
     amount: number;
 
     transaction: {
+      id: number;
+
       date: string;
 
       accountTransaction: {
@@ -298,6 +300,22 @@ export type LoanTransactionProps = {
     }
   }
 }
+
+export type LoanTransactionsProps = {
+  balance: number,
+  transactions: LoanTransactionProps[],
+};
+
+export interface CategoryLoanResponse {
+  balance: number;
+  transactions: LoanTransactionProps[];
+}
+
+export const isCategoryLoanResponse = (r: unknown): r is CategoryLoanResponse => (
+  r !== undefined && r !== null
+  && (r as CategoryLoanResponse).transactions !== undefined
+  && (r as CategoryLoanResponse).balance !== undefined
+);
 
 // export const isLoanTransactionProps = (r: unknown): r is LoanTransactionProps => (
 //   (r as LoanTransactionProps).transaction !== undefined
@@ -331,11 +349,13 @@ export const isAccountTransactionsResponse = (r: unknown): r is AccountTransacti
 );
 
 export interface Error {
-  title: string;
+  field: string;
+  message: string;
+  rule: string;
 }
 
 export interface ErrorResponse {
-  errors: Array<Error>;
+  errors: Error[];
 }
 
 export const isErrorResponse = (r: ErrorResponse | unknown): r is ErrorResponse => (

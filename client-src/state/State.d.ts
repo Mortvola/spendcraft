@@ -53,12 +53,6 @@ export interface GroupMemberInterface {
   transactions: TransactionInterface[];
 
   getTransactions(): Promise<void>;
-
-  updateTransactionCategories(
-    transactionId: number,
-    categories: TransactionCategoryInterface[],
-    balances: CategoryProps[],
-  ): void;
 }
 
 export interface AccountsInterface {
@@ -106,11 +100,7 @@ export interface CategoryInterface {
 
   getTransactions(): Promise<void>;
 
-  updateTransactionCategories(
-    transactionId: number,
-    categories: TransactionCategoryInterface[],
-    balances: CategoryProps[],
-  ): void;
+  getLoanTransactions(): Promise<void>;
 
   removeTransaction(transactionId: number): void;
 }
@@ -149,7 +139,7 @@ export interface CategoryTreeBalanceInterace {
 
 export interface TransactionCategoryInterface {
   id: number;
-  type: string;
+  type: CategoryType;
   categoryId: number;
   amount: number;
 
@@ -165,7 +155,7 @@ export interface RebalanceCategoryInterface {
 }
 
 export interface NewTransactionCategoryInterface {
-  type: string;
+  type: CategoryType;
   categoryId: number;
   amount: number;
 }

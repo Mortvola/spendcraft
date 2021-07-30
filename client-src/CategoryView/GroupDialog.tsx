@@ -44,7 +44,7 @@ const GroupDialog = ({
     if (errors && errors.length > 0) {
       // Display the first error
       // TODO: Display all the errors?
-      setErrors({ name: errors[0].title });
+      setErrors({ [errors[0].field]: errors[0].message });
     }
     else {
       onHide();
@@ -69,7 +69,7 @@ const GroupDialog = ({
 
       if (errors && errors.length > 0) {
         setTouched({ name: true }, false);
-        setErrors({ name: errors[0].title });
+        setErrors({ [errors[0].field]: errors[0].message });
       }
       else {
         onHide();

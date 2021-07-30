@@ -7,12 +7,12 @@ import useExclusiveBool from '../ExclusiveBool';
 import MobxStore from '../state/mobxStore';
 import Group from '../state/Group';
 import Category from '../state/Category';
-import { GroupInterface } from '../state/State';
+import { CategoryInterface, GroupInterface } from '../state/State';
 import LoansGroup from '../state/LoansGroup';
 
 type PropsType = {
   categoryId: number | null,
-  onChange: (id: number, type: string) => void,
+  onChange: (category: CategoryInterface) => void,
 }
 
 const CategoryInput = ({
@@ -118,7 +118,7 @@ const CategoryInput = ({
     setOriginalValue(categoryId === null ? null : categoryTree.getCategoryName(categoryId));
 
     if (onChange) {
-      onChange(category.id, category.type);
+      onChange(category);
     }
   };
 
@@ -234,7 +234,7 @@ const CategoryInput = ({
       else {
         setValue(categoryTree.getCategoryName(selectedCategory.id));
         if (onChange) {
-          onChange(selectedCategory.id, selectedCategory.type);
+          onChange(selectedCategory);
         }
       }
     }

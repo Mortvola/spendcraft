@@ -172,7 +172,7 @@ class InstitutionController {
 
           if (acct.tracking === 'Transactions') {
             const details = await acct.addTransactions(
-              trx, institution.accessToken, startDate, user.id,
+              trx, institution.accessToken, startDate, user,
             );
 
             if (details.cat) {
@@ -255,7 +255,7 @@ class InstitutionController {
         const accounts = await institution.related('accounts').query();
 
         return Promise.all(accounts.map(async (acct) => (
-          acct.sync(trx, institution.accessToken, user.id)
+          acct.sync(institution.accessToken, user)
         )));
       }));
 
@@ -286,13 +286,13 @@ class InstitutionController {
     const trx = await Database.transaction();
 
     try {
-      const institution = await Institution.findOrFail(request.params().instId);
-      const account = await Account.findOrFail(request.params().acctId);
+      const institution = await Institution.findOrFail(request.params().instId, { client: trx });
+      const account = await Account.findOrFail(request.params().acctId, { client: trx });
 
       let result: AccountSyncResult | null = null;
 
       result = await account.sync(
-        trx, institution.accessToken, user.id,
+        institution.accessToken, user,
       );
 
       await trx.commit();

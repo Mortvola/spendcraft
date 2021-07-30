@@ -4,7 +4,7 @@ import { Spinner } from 'react-bootstrap';
 import Transaction from './Transaction';
 import Amount from './Amount';
 import MobxStore from './state/mobxStore';
-import { TransactionInterface } from './state/State';
+import { AccountInterface, CategoryInterface, TransactionInterface } from './state/State';
 import PendingTransaction from './state/PendingTransaction';
 import LoanTransaction from './state/LoanTransaction';
 
@@ -30,19 +30,28 @@ const Register = ({
   let balance = 0;
   let fetching = false;
 
-  const category = uiState.selectedCategory;
-  if (category && uiState.view === 'HOME') {
-    transactions = category.transactions;
-    pending = category.pending;
-    loan = category.loan;
-    balance = category.balance;
-    fetching = category.fetching;
+  let category: CategoryInterface | null = null;
+
+  if (uiState.view === 'HOME') {
+    category = uiState.selectedCategory;
+
+    if (category) {
+      transactions = category.transactions;
+      pending = category.pending;
+      loan = category.loan;
+      balance = category.balance;
+      fetching = category.fetching;
+    }
   }
 
-  const account = uiState.selectedAccount;
-  if (account && uiState.view === 'ACCOUNTS') {
-    transactions = account.transactions;
-    balance = account.balance;
+  let account: AccountInterface | null = null;
+  if (uiState.view === 'ACCOUNTS') {
+    account = uiState.selectedAccount;
+
+    if (account) {
+      transactions = account.transactions;
+      balance = account.balance;
+    }
   }
 
   const handleClick = (transactionId: number) => {
@@ -78,7 +87,7 @@ const Register = ({
             amount={amount}
             balance={runningBalance}
             selected={selected}
-            categoryId={uiState.selectedCategory ? uiState.selectedCategory.id : null}
+            category={uiState.selectedCategory}
             unassignedId={unassignedId}
             isMobile={isMobile}
           />
@@ -131,27 +140,29 @@ const Register = ({
 
         return element;
       });
+
+      return (
+        <div className="register">
+          <div className="pending-register-title">
+            Loan Transactions:
+          </div>
+          <div className="register-title loan-transaction">
+            <div />
+            <div>Date</div>
+            <div>Name</div>
+            <div className="currency">Principle</div>
+            <div className="currency">Interest</div>
+            <div className="currency">Balance</div>
+            <div />
+          </div>
+          <div className="transactions striped">
+            {list}
+          </div>
+        </div>
+      );
     }
 
-    return (
-      <div className="register">
-        <div className="pending-register-title">
-          Loan Transactions:
-        </div>
-        <div className="register-title loan-transaction">
-          <div />
-          <div>Date</div>
-          <div>Name</div>
-          <div className="currency">Principle</div>
-          <div className="currency">Interest</div>
-          <div className="currency">Balance</div>
-          <div />
-        </div>
-        <div className="transactions striped">
-          {list}
-        </div>
-      </div>
-    );
+    return null;
   };
 
   const renderPendingTransactions = () => {

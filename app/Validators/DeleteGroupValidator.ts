@@ -1,5 +1,4 @@
 import { schema, rules } from '@ioc:Adonis/Core/Validator'
-import { validator } from '@ioc:Adonis/Core/Validator';
 
 export default class DeleteGroupValidator {
   public schema = schema.create({
@@ -9,8 +8,6 @@ export default class DeleteGroupValidator {
       ]),
     }),
   })
-
-  public reporter = validator.reporters.jsonapi;
 
   public messages = {
     'params.groupId.empty': 'Before deleting, the group must not contain any categories',

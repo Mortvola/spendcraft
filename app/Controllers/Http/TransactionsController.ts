@@ -8,8 +8,12 @@ import TransactionCategory from 'App/Models/TransactionCategory';
 import Loan from 'App/Models/Loan';
 import LoanTransaction from 'App/Models/LoanTransaction';
 import AccountTransaction from 'App/Models/AccountTransaction';
-import { CategoryType } from 'Common/ResponseTypes';
-import { DateTime } from 'luxon';
+import { CategoryType, LoanTransactionProps } from 'Common/ResponseTypes';
+
+type LoanProps = {
+  balance: number,
+  transactions: LoanTransactionProps[],
+};
 
 export default class TransactionsController {
   // eslint-disable-next-line class-methods-use-this
@@ -34,6 +38,7 @@ export default class TransactionsController {
     type Result = {
       categories: CatBalance[],
       splits: unknown[],
+      loan?: LoanProps,
     };
 
     const result: Result = {
@@ -42,10 +47,7 @@ export default class TransactionsController {
     };
 
     // Get the 'unassigned' category id
-    const unassigned = await Category.query()
-      .where('type', 'UNASSIGNED')
-      .whereHas('group', (query) => query.where('userId', user.id))
-      .firstOrFail();
+    const unassigned = await Category.getUnassignedCategory(user);
 
     const splits = await TransactionCategory.query({ client: trx })
       .preload('loanTransaction')
@@ -57,22 +59,21 @@ export default class TransactionsController {
       await Promise.all(splits.map(async (split) => {
         const category = await Category.findOrFail(split.categoryId, { client: trx });
 
-        // if (category.type === 'LOAN') {
-        //   category.amount += split.loanTransaction.principle;
-        // }
-        // else {
         category.amount -= split.amount;
-        // }
 
         await category.save();
 
         result.categories.push({ type: category.type, id: category.id, balance: category.amount });
       }));
 
+      // Delete any loan transactions that are associated with the categories being deleted.
       await Promise.all(splits.map(async (split) => {
         if (split.loanTransaction) {
           split.loanTransaction.delete();
+          const loan = await Loan.findByOrFail('categoryId', split.categoryId, { client: trx });
+          await loan.updateBalance();
         }
+
         split.delete();
       }));
     }
@@ -106,28 +107,23 @@ export default class TransactionsController {
 
         const category = await Category.findOrFail(split.categoryId, { client: trx });
 
-        if (category.type === 'LOAN') {
-          const loan = await Loan.findByOrFail('categoryId', split.categoryId, { client: trx });
-
-          const loanTrx = (new LoanTransaction()).useTransaction(trx);
-
-          const transaction = await Transaction.findOrFail(request.params().txId, { client: trx });
-
-          const numberOfDays = transaction.date.diff(DateTime.fromISO('2021-06-01'), 'days').days;
-
-          const rate = (loan.rate / 365) * numberOfDays;
-
-          loanTrx.fill({
-            loanId: loan.id,
-            principle: split.amount * (1 - rate),
-          });
-
-          await loanTrx.related('transactionCategory').associate(txCategory);
-        }
-
         category.amount += split.amount;
 
         await category.save();
+
+        if (category.type === 'LOAN') {
+          const loanTrx = (new LoanTransaction()).useTransaction(trx);
+
+          const loan = await Loan.findByOrFail('categoryId', split.categoryId, { client: trx });
+
+          loanTrx.fill({
+            loanId: loan.id,
+            principle: 0,
+          });
+
+          await loanTrx.related('transactionCategory').associate(txCategory);
+          await loan.updateBalance();
+        }
 
         // Determine if the category is already in the array.
         const index = result.categories.findIndex((c) => c.id === category.id);
@@ -138,38 +134,8 @@ export default class TransactionsController {
           result.categories[index].balance = category.amount;
         }
         else {
-          result.categories.push({ type: 'REGULAR', id: category.id, balance: category.amount });
+          result.categories.push({ type: category.type, id: category.id, balance: category.amount });
         }
-        // else if (split.type === 'LOAN') {
-        //   const txCategory = (new LoanTransaction()).useTransaction(trx);
-
-        //   txCategory.fill({
-        //     loanId: split.categoryId,
-        //     amount: -split.amount,
-        //     principle: -split.amount,
-        //     transactionId: parseInt(request.params().txId, 10),
-        //   });
-
-        //   txCategory.save();
-
-        //   const loan = await Loan.findOrFail(split.categoryId, { client: trx });
-
-        //   loan.amount += split.amount;
-
-        //   await loan.save();
-
-        //   // Determine if the category is already in the array.
-        //   const index = result.categories.findIndex((c) => c.id === loan.id);
-
-        //   // If the category is already in the array then simply update the amount.
-        //   // Otherwise, add the category and amount to the array.
-        //   if (index !== -1) {
-        //     result.categories[index].balance = loan.amount;
-        //   }
-        //   else {
-        //     result.categories.push({ type: 'LOAN', id: loan.id, balance: loan.amount });
-        //   }
-        // }
       }));
     }
 

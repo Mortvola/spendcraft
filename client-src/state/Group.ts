@@ -46,8 +46,8 @@ class Group implements GroupInterface {
     return null;
   }
 
-  async addCategory(groupId: number, name: string): Promise<null| Error[]> {
-    const response = await postJSON(`/api/groups/${this.id}/categories`, { groupId, name });
+  async addCategory(name: string): Promise<null| Error[]> {
+    const response = await postJSON(`/api/groups/${this.id}/categories`, { groupId: this.id, name });
 
     const body = await getBody(response);
 
@@ -102,15 +102,14 @@ class Group implements GroupInterface {
     return null;
   }
 
-  async deleteCategory(groupId: number, categoryId: number): Promise<null | Array<Error>> {
+  async deleteCategory(categoryId: number): Promise<null | Array<Error>> {
     const index = this.categories.findIndex((c) => c.id === categoryId);
-
     if (index !== -1) {
-      const response = await httpDelete(`/api/groups/${groupId}/categories/${categoryId}`);
-
-      const body = await getBody(response);
+      const response = await httpDelete(`/api/groups/${this.id}/categories/${categoryId}`);
 
       if (!response.ok) {
+        const body = await getBody(response);
+
         if (isErrorResponse(body)) {
           return body.errors;
         }

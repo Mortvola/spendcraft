@@ -1,12 +1,15 @@
-import React, { ReactElement } from 'react';
+import React, { CSSProperties, ReactElement } from 'react';
 import { ErrorMessage } from 'formik';
 import Errors from './Errors';
 
-const FormError = ({ name }: { name: string }): ReactElement => (
+const FormError = ({
+  name,
+  style,
+}: { name: string, style?: CSSProperties }): ReactElement => (
   <ErrorMessage name={name}>
     {
       (msg) => (
-        <span className="text-danger" role="alert">
+        <span className="text-danger" role="alert" style={style}>
           <Errors errors={[msg]} />
         </span>
       )

@@ -1,5 +1,4 @@
 import { schema, rules } from '@ioc:Adonis/Core/Validator';
-import { validator } from '@ioc:Adonis/Core/Validator';
 
 export default class AddCategoryTransferValidator {
   public schema = schema.create({
@@ -13,8 +12,6 @@ export default class AddCategoryTransferValidator {
       schema.object().members({}),
     ), // 'required|zeroSum:amount',
   })
-
-  public reporter = validator.reporters.jsonapi;
 
   public messages = {
     'date.required': 'A date is required',

@@ -9,6 +9,7 @@ import AccountTransaction from 'App/Models/AccountTransaction';
 import BalanceHistory from 'App/Models/BalanceHistory';
 import Category from 'App/Models/Category';
 import Institution from 'App/Models/Institution';
+import User from './User';
 
 type Transaction = {
   balance: number,
@@ -102,22 +103,24 @@ class Account extends BaseModel {
 
   public async sync(
     this: Account,
-    trx: TransactionClientContract,
     accessToken: string,
-    userId: number,
+    user: User,
   ): Promise<AccountSyncResult | null> {
-    this.useTransaction(trx);
-
     const result: AccountSyncResult = {
       categories: [],
       accounts: [],
     };
 
+    const trx = this.$trx;
+    if (trx === undefined) {
+      throw new Error('transaction not defined');
+    }
+
     this.syncDate = moment().format('YYYY-MM-DD hh:mm:ss');
 
     if (this.tracking === 'Transactions') {
       // Retrieve the past 30 days of transactions
-      // (unles the account start date is sooner)
+      // (unless the account start date is sooner)
       const startDate = moment.max(
         moment().subtract(30, 'days'),
         moment(this.startDate),
@@ -127,7 +130,7 @@ class Account extends BaseModel {
         trx,
         accessToken,
         startDate,
-        userId,
+        user,
       );
 
       await this.updateAccountBalanceHistory(
@@ -135,13 +138,7 @@ class Account extends BaseModel {
       );
 
       if (details.cat) {
-        const systemCats = await trx.query()
-          .select('cats.id AS id', 'cats.name AS name')
-          .from('categories AS cats')
-          .join('groups', 'groups.id', 'group_id')
-          .where('cats.system', true)
-          .andWhere('groups.user_id', userId);
-        const unassigned = systemCats.find((entry) => entry.name === 'Unassigned');
+        const unassigned = await Category.getUnassignedCategory(user);
 
         result.categories = [{ id: unassigned.id, amount: details.cat.amount }];
       }
@@ -180,7 +177,7 @@ class Account extends BaseModel {
     trx: TransactionClientContract,
     accessToken: string,
     startDate: Moment,
-    userId: number,
+    user: User,
   ): Promise<Transaction> {
     const pendingTransactions = await trx.query().select('transaction_id', 'plaid_transaction_id')
       .from('account_transactions')
@@ -219,7 +216,7 @@ class Account extends BaseModel {
 
           const id = await trx.insertQuery().insert({
             date: transaction.date,
-            user_id: userId,
+            user_id: user.id,
           })
             .table('transactions')
             .returning('id');
@@ -261,7 +258,7 @@ class Account extends BaseModel {
         .delete();
 
       await trx.query().from('transactions').whereIn('id', transIds)
-        .where('user_id', userId)
+        .where('user_id', user.id)
         .delete();
     }
 
@@ -270,13 +267,7 @@ class Account extends BaseModel {
     let cat: CategoryItem | null = null;
 
     if (sum !== 0) {
-      const systemCats = await trx.query()
-        .select('groups.id AS groupId', 'groups.name AS groupName', 'cats.id AS id', 'cats.name AS name')
-        .from('categories AS cats')
-        .join('groups', 'groups.id', 'group_id')
-        .where('cats.system', true)
-        .andWhere('groups.user_id', userId);
-      const unassigned = systemCats.find((entry) => entry.name === 'Unassigned');
+      const unassigned = await Category.getUnassignedCategory(user);
 
       // Add the sum of the transactions to the unassigned category.
       const category = await Category.findOrFail(unassigned.id, { client: trx });
@@ -288,7 +279,7 @@ class Account extends BaseModel {
       cat = {
         group: {
           id: unassigned.groupId,
-          name: unassigned.groupName,
+          name: 'System',
         },
         category: {
           id: category.id,

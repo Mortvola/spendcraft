@@ -1,5 +1,5 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
-import React, { ReactElement } from 'react';
+import React, { ReactElement, useState } from 'react';
 // import PropTypes from 'prop-types';
 import {
   Field,
@@ -25,12 +25,12 @@ const LoanDialog = ({
   category,
   group,
 }: Props & ModalProps): ReactElement => {
+  const [generalErrors, setGeneralErrors] = useState<string[]>();
   type ValueType = {
     name: string,
     amount: string,
     rate: string,
-    numberOfPayments: string,
-    paymentAmount: string,
+    startDate: string,
   }
 
   const handleSubmit = async (values: ValueType, bag: FormikHelpers<ValueType>) => {
@@ -45,15 +45,14 @@ const LoanDialog = ({
         values.name,
         parseFloat(values.amount),
         parseFloat(values.rate),
-        parseFloat(values.numberOfPayments),
-        parseFloat(values.paymentAmount),
+        values.startDate,
       );
     }
 
     if (errors && errors.length > 0) {
       // Display the first error
       // TODO: Display all the errors?
-      setErrors({ name: errors[0].title });
+      setErrors({ [errors[0].field]: errors[0].message });
     }
     else {
       onHide();
@@ -75,28 +74,30 @@ const LoanDialog = ({
       errors.rate = 'The interset rate must be greater than zero.';
     }
 
-    if (parseInt(values.numberOfPayments, 10) <= 0) {
-      errors.numberOfPayments = 'The number of payments must be greater than zero.';
-    }
-
-    if (parseFloat(values.paymentAmount) <= 0) {
-      errors.paymentAmount = 'The payment amount must be greater than zero.';
+    if (!values.startDate || values.startDate === '') {
+      errors.startDate = 'A start date must be specified.';
     }
 
     return errors;
   };
 
   const handleDelete = async (bag: FormikContextType<ValueType>) => {
-    const { setErrors } = bag;
+    const { setErrors, setTouched } = bag;
 
     if (!category) {
       throw new Error('category is null or undefined');
     }
 
-    const errors = await group.deleteLoan(category.id);
+    const errors = await group.deleteCategory(category.id);
 
     if (errors && errors.length > 0) {
-      setErrors({ name: errors[0].title });
+      if (errors[0].field.startsWith('params.')) {
+        setGeneralErrors([errors[0].message]);
+      }
+      else {
+        setTouched({ [errors[0].field]: true }, false);
+        setErrors({ [errors[0].field]: errors[0].message });
+      }
     }
     else {
       onHide();
@@ -119,14 +120,14 @@ const LoanDialog = ({
         name: category && category.name ? category.name : '',
         amount: '0',
         rate: '0',
-        numberOfPayments: '0',
-        paymentAmount: '0',
+        startDate: '',
       }}
       validate={handleValidate}
       onSubmit={handleSubmit}
       onDelete={category ? handleDelete : null}
       formId="catDialogForm"
       title={title()}
+      errors={generalErrors}
     >
       <label style={{ display: 'block ' }}>
         Name:
@@ -157,22 +158,9 @@ const LoanDialog = ({
           <FormError name="rate" />
         </label>
         <label>
-          Number of Payments:
-          <Field
-            as={AmountInput}
-            className="form-control"
-            name="numberOfPayments"
-          />
-          <FormError name="numberOfPayments" />
-        </label>
-        <label>
-          Payment Amount:
-          <Field
-            as={AmountInput}
-            className="form-control"
-            name="paymentAmount"
-          />
-          <FormError name="paymentAmount" />
+          Start Date
+          <Field type="date" name="startDate" />
+          <FormError name="startDate" />
         </label>
       </div>
     </FormModal>

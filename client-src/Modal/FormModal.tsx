@@ -16,6 +16,7 @@ type PropsType<T> = {
   onSubmit: ((values: T, bag: FormikHelpers<T>) => void),
   validate: ((values: T) => FormikErrors<T>),
   onDelete?: ((bag: FormikContextType<T>) => void) | null,
+  errors?: string[],
 }
 
 function FormModal<ValueType>({
@@ -28,6 +29,7 @@ function FormModal<ValueType>({
   onSubmit,
   validate,
   onDelete,
+  errors,
 }: PropsType<ValueType>): ReactElement {
   return (
     <Modal
@@ -44,7 +46,7 @@ function FormModal<ValueType>({
           <ModalBody>
             {children}
           </ModalBody>
-          <Footer<ValueType> onHide={onHide} handleDelete={onDelete} />
+          <Footer<ValueType> onHide={onHide} handleDelete={onDelete} errors={errors} />
         </Form>
       </Formik>
     </Modal>

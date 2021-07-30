@@ -659,10 +659,10 @@ body {
 }
 
 .cat-rebalance-item div:first-child {
-    margin-left: 28px;
-	white-space: nowrap;
-	text-overflow: ellipsis;
-	overflow: hidden;
+  margin-left: 28px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
 }
 
 .scrollable-form {

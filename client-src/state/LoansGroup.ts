@@ -1,4 +1,4 @@
-import { runInAction } from 'mobx';
+import { makeAutoObservable, runInAction } from 'mobx';
 import {
   LoanGroupProps, Error, isErrorResponse, CategoryProps, isAddCategoryResponse,
 } from '../../common/ResponseTypes';
@@ -22,6 +22,8 @@ class LoansGroup implements GroupInterface {
     this.name = props.name;
     this.store = store;
 
+    makeAutoObservable(this);
+
     if (props.categories && props.categories.length > 0) {
       props.categories.forEach((l) => {
         const loan = new Category(l, this.store);
@@ -44,11 +46,10 @@ class LoansGroup implements GroupInterface {
     name: string,
     amount: number,
     rate: number,
-    numberOfPayments: number,
-    paymentAmount: number,
+    startDate: string,
   ): Promise<null| Error[]> {
     const response = await postJSON('/api/loans', {
-      name, amount, rate, numberOfPayments, paymentAmount,
+      name, amount, rate, startDate,
     });
 
     const body = await getBody(response);
@@ -92,11 +93,11 @@ class LoansGroup implements GroupInterface {
     });
   }
 
-  async deleteLoan(loanId: number): Promise<null | Array<Error>> {
-    const index = this.categories.findIndex((c) => c.id === loanId);
+  async deleteCategory(categoryId: number): Promise<null | Array<Error>> {
+    const index = this.categories.findIndex((c) => c.id === categoryId);
 
     if (index !== -1) {
-      const response = await httpDelete(`/api/loans/${loanId}`);
+      const response = await httpDelete(`/api/groups/${this.id}/categories/${categoryId}`);
 
       const body = await getBody(response);
 

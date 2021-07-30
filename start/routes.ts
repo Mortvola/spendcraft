@@ -99,7 +99,7 @@ Route.group(() => {
 
     Route.group(() => {
       Route.post('', 'LoansController.add');
-      Route.get('/:loanId/transactions', 'LoansController.getTransactions');
+      Route.get('/:catId/transactions', 'LoansController.getTransactions');
     }).prefix('/loans');
 
 }).prefix('/api').middleware(['auth']);
