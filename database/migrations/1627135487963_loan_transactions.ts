@@ -6,10 +6,9 @@ export default class LoanTransactions extends BaseSchema {
   public async up () {
     this.schema.createTable(this.tableName, (table) => {
       table.increments('id');
-      table.integer('transaction_id').notNullable().references('id').inTable('transactions');
       table.integer('loan_id').notNullable().references('id').inTable('loans');
-      table.decimal('amount', 12, 2).notNullable();
       table.decimal('principle', 12, 2).notNullable();
+      table.integer('transaction_category_id').notNullable().references('id').inTable('transaction_categories');
 
       /**
        * Uses timestamptz for PostgreSQL and DATETIME2 for MSSQL
