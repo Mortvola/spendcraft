@@ -13,6 +13,7 @@ import FormError from '../Modal/FormError';
 import FormModal from '../Modal/FormModal';
 import LoansGroup from '../state/LoansGroup';
 import Category from '../state/Category';
+import { Error } from '../../common/ResponseTypes';
 
 type Props = {
   category?: Category | null,
@@ -81,9 +82,19 @@ const LoanDialog = ({
     return errors;
   };
 
-  const handleDelete = async (bag: FormikContextType<ValueType>) => {
-    const { setErrors, setTouched } = bag;
+  const handleErrors = (context: FormikContextType<ValueType>, errors: Error[]) => {
+    const { setErrors, setTouched } = context;
 
+    if (errors[0].field.startsWith('params.')) {
+      setGeneralErrors([errors[0].message]);
+    }
+    else {
+      setTouched({ [errors[0].field]: true }, false);
+      setErrors({ [errors[0].field]: errors[0].message });
+    }
+  }
+
+  const handleDelete = async (context: FormikContextType<ValueType>) => {
     if (!category) {
       throw new Error('category is null or undefined');
     }
@@ -91,13 +102,7 @@ const LoanDialog = ({
     const errors = await group.deleteCategory(category.id);
 
     if (errors && errors.length > 0) {
-      if (errors[0].field.startsWith('params.')) {
-        setGeneralErrors([errors[0].message]);
-      }
-      else {
-        setTouched({ [errors[0].field]: true }, false);
-        setErrors({ [errors[0].field]: errors[0].message });
-      }
+      handleErrors(context, errors);
     }
     else {
       onHide();

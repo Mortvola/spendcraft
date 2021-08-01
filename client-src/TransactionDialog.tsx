@@ -137,6 +137,7 @@ const TransactionDialog = ({
       show={show}
       onHide={onHide}
       size={showBalances ? 'lg' : undefined}
+      enforceFocus={false}
     >
       <Formik<ValueType>
         initialValues={{

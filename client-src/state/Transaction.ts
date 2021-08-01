@@ -1,5 +1,6 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import {
+  Error,
   TransactionType,
   TransactionProps,
   isUpdateTransactionCategoryResponse,
@@ -7,7 +8,6 @@ import {
   isDeleteTransactionResponse,
 } from '../../common/ResponseTypes';
 import {
-  CategoryInterface,
   NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface,
   TransactionInterface,
 } from './State';
@@ -106,7 +106,7 @@ class Transaction implements TransactionInterface {
 
   async updateCategoryTransfer(
     values: {
-      categories: TransactionCategoryInterface[];
+      categories: (TransactionCategoryInterface | NewTransactionCategoryInterface)[];
       date: string;
     },
   ): Promise<null> {
@@ -126,7 +126,9 @@ class Transaction implements TransactionInterface {
           }
 
           this.store.categoryTree.updateBalances(body.balances);
-          if (this.store.uiState.selectedCategory && !body.transaction.categories.some(
+          this.categories = body.transaction.transactionCategories;
+
+          if (this.store.uiState.selectedCategory && !body.transaction.transactionCategories.some(
             (c) => (this.store.uiState.selectedCategory && c.categoryId === this.store.uiState.selectedCategory.id),
           )) {
             this.store.uiState.selectedCategory.removeTransaction(this.id);
@@ -140,7 +142,7 @@ class Transaction implements TransactionInterface {
     throw new Error('invalid response');
   }
 
-  async delete(): Promise<null | Array<Error>> {
+  async delete(): Promise<null | Error[]> {
     if (this.id === null) {
       throw new Error('transaction has a null id');
     }

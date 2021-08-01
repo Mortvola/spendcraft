@@ -393,6 +393,11 @@ body {
 	background-color: lightblue;
 }
 
+.fund-container {
+  display: grid;
+  height: 100%;
+}
+
 .fund-list-item {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr) repeat(3, minmax(0, 0.6fr));
@@ -638,7 +643,7 @@ body {
 
 .rebalance-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: space-around;
     border-bottom: thin gray solid;
 }
 
@@ -668,6 +673,7 @@ body {
 .scrollable-form {
     display: grid;
     height: 100%;
+    grid-template-rows: max-content minmax(0,1fr) max-content
 }
 
 .status-item {
@@ -782,4 +788,7 @@ body {
 	background-color: lightblue;
 }
 
-
+.modal-content-fix {
+  display: grid;
+  grid-template-rows: minmax(0,1fr);
+}

@@ -42,7 +42,7 @@ const PlanDialog = ({
       // TODO: Display all the errors?
       setErrors({ name: errors[0].message });
     }
-    else {
+    else if (onHide) {
       onHide();
     }
   };
@@ -72,7 +72,7 @@ const PlanDialog = ({
       setTouched({ name: true }, false);
       setErrors({ name: errors[0].message });
     }
-    else {
+    else if (onHide) {
       onHide();
     }
   };

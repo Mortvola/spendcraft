@@ -12,11 +12,12 @@ type PropsType<T> = {
   initialValues: T,
   title: string,
   formId: string,
-  children: ReactNode,
+  children?: ReactNode,
   onSubmit: ((values: T, bag: FormikHelpers<T>) => void),
   validate: ((values: T) => FormikErrors<T>),
   onDelete?: ((bag: FormikContextType<T>) => void) | null,
   errors?: string[],
+  size?: 'sm' | 'lg' | 'xl',
 }
 
 function FormModal<ValueType>({
@@ -30,11 +31,16 @@ function FormModal<ValueType>({
   validate,
   onDelete,
   errors,
+  size,
 }: PropsType<ValueType>): ReactElement {
   return (
     <Modal
       show={show}
       onHide={onHide}
+      size={size}
+      scrollable
+      enforceFocus={false}
+      contentClassName="modal-content-fix"
     >
       <Formik<ValueType>
         initialValues={initialValues}

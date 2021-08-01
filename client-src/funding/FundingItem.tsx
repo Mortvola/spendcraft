@@ -1,29 +1,27 @@
-import React, { useState } from 'react';
+import React, { ReactElement, useState } from 'react';
 import PropTypes from 'prop-types';
 import AmountInput from '../AmountInput';
 import Amount from '../Amount';
 
+type PropsType = {
+  name: string,
+  initialAmount: number,
+  funding: number,
+  onDeltaChange: ((amount: number, delta: number) => void),
+}
 const FundingItem = ({
   name,
   initialAmount,
   funding,
   onDeltaChange,
-}) => {
-  const [balance, setBalance] = useState(initialAmount + funding);
-
-  const handleDeltaChange = (amount, delta) => {
-    setBalance(initialAmount + amount);
-
-    if (onDeltaChange) {
-      onDeltaChange(amount, delta);
-    }
-  };
+}: PropsType): ReactElement => {
+  const balance = initialAmount + funding;
 
   return (
     <div className="fund-list-item">
       <div className="fund-list-cat-name">{name}</div>
       <Amount className="fund-list-amt" amount={initialAmount} />
-      <AmountInput amount={funding} onDeltaChange={handleDeltaChange} />
+      <AmountInput amount={funding} onDeltaChange={onDeltaChange} />
       <Amount className="fund-list-amt" amount={balance} />
     </div>
   );

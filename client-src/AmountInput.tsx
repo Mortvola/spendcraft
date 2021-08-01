@@ -1,22 +1,29 @@
 import React, { useState, useRef, ReactElement } from 'react';
 import PropTypes from 'prop-types';
-import { Overlay, Popover } from 'react-bootstrap';
+import { Overlay } from 'react-bootstrap';
+import Popover from 'react-bootstrap/Popover';
+import PopoverHeader from 'react-bootstrap/PopoverHeader';
+import PopoverBody from 'react-bootstrap/PopoverBody';
 import parseEquation from './EquationParser';
 
 interface Props {
+  id?: string,
   amount: number;
   onDeltaChange: (amount: number, delta: number) => void;
   onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   className: string;
   name?: string;
+  readonly?: boolean,
 }
 
 const AmountInput = ({
+  id,
   amount,
   onDeltaChange,
   onChange,
   className,
   name,
+  readonly,
 }: Props): ReactElement => {
   const [inputAmount, setInputAmount] = useState(amount.toFixed(2));
   const [initialValue, setInitialValue] = useState(amount);
@@ -103,8 +110,9 @@ const AmountInput = ({
   };
 
   return (
-    <div ref={containerRef}>
+    <>
       <input
+        id={id}
         ref={ref}
         className={`amount-input dollar-amount ${className}`}
         type="text"
@@ -114,29 +122,35 @@ const AmountInput = ({
         onFocus={handleFocus}
         onBlur={handleBlur}
         onKeyDown={handleKeyPress}
+        readOnly={readonly}
       />
-      <Overlay
-        show={showPopover}
-        target={ref.current}
-        placement="bottom"
-        containerPadding={20}
-        container={containerRef}
-        onEnter={handleEnter}
-      >
-        <Popover id="pop-over">
-          <Popover.Title>Enter Equation</Popover.Title>
-          <Popover.Content>
-            <input
-              ref={inputRef}
-              type="text"
-              value={equation}
-              onChange={handleCalcChange}
-              onKeyDown={handleKeyDown}
-            />
-          </Popover.Content>
-        </Popover>
-      </Overlay>
-    </div>
+      {
+        !readonly
+          ? (
+            <Overlay
+              show={showPopover}
+              target={ref.current}
+              placement="bottom"
+              containerPadding={20}
+              onEnter={handleEnter}
+            >
+              <Popover id="pop-over">
+                <PopoverHeader>Enter Equation</PopoverHeader>
+                <PopoverBody>
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={equation}
+                    onChange={handleCalcChange}
+                    onKeyDown={handleKeyDown}
+                  />
+                </PopoverBody>
+              </Popover>
+            </Overlay>
+          )
+          : null
+      }
+    </>
   );
 };
 

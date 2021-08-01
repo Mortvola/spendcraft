@@ -117,7 +117,7 @@ class InstitutionController {
     const systemCats = await trx.query().select('cats.id AS id', 'cats.name AS name')
       .from('categories AS cats')
       .join('groups', 'groups.id', 'group_id')
-      .where('cats.system', true)
+      .where('cats.type', '!=', 'REGULAR')
       .andWhere('groups.user_id', user.id);
     const fundingPool = systemCats.find((entry) => entry.name === 'Funding Pool');
     const unassigned = systemCats.find((entry) => entry.name === 'Unassigned');

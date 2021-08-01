@@ -2,9 +2,10 @@ import { makeAutoObservable, runInAction } from 'mobx';
 import { DateTime } from 'luxon';
 import Transaction from './Transaction';
 import {
-  isInsertCategoryTransferResponse,
+  isInsertCategoryTransferResponse, TransactionType,
 } from '../../common/ResponseTypes';
 import {
+  NewTransactionCategoryInterface,
   RegisterInterface, StoreInterface, TransactionCategoryInterface,
 } from './State';
 import { getBody, postJSON } from './Transports';
@@ -20,11 +21,12 @@ class Register implements RegisterInterface {
 
   async addCategoryTransfer(
     values: {
-      categories: TransactionCategoryInterface[];
+      categories: (TransactionCategoryInterface | NewTransactionCategoryInterface)[];
       date: string;
     },
+    type: TransactionType,
   ): Promise<null> {
-    const response = await postJSON('/api/category-transfer', { ...values, type: 3 });
+    const response = await postJSON('/api/category-transfer', { ...values, type });
 
     const body = await getBody(response);
 

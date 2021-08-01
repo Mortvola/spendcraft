@@ -25,7 +25,11 @@ function Footer<T>({
         <Button variant="secondary" onClick={onHide}>Cancel</Button>
         <Button variant="primary" type="submit">Save</Button>
       </Modal.Footer>
-      <Errors style={{ padding: '0rem 1rem 1rem 1rem' }} errors={errors} />
+      {
+        errors
+          ? <Errors style={{ padding: '0rem 1rem 1rem 1rem' }} errors={errors} />
+          : null
+      }
     </>
   );
 }

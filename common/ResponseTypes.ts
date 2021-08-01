@@ -391,7 +391,7 @@ export interface UpdateCategoryTransferReponse {
   balances: { id: number, balance: number }[],
 
   transaction: {
-    categories: TransactionCategoryProps[],
+    transactionCategories: TransactionCategoryProps[],
   },
 }
 

@@ -1,3 +1,4 @@
+/* eslint-disable import/no-cycle */
 import {
   BaseModel, BelongsTo, belongsTo, column, HasMany, hasMany,
 } from '@ioc:Adonis/Lucid/Orm';
@@ -10,7 +11,7 @@ import User from 'App/Models/User';
 type CategoryItem = {
   id: number,
   name: string,
-  type: string,
+  type: CategoryType,
   balance: number,
 };
 

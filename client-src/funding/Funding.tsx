@@ -1,16 +1,31 @@
-import React, { useState } from 'react';
-import PropTypes from 'prop-types';
+import React, { ReactElement, ReactNode, useState } from 'react';
 import FundingItem from './FundingItem';
+import { CategoryProps, CategoryType, GroupProps } from '../../common/ResponseTypes';
+
+export type FundingType = {
+  id?: number,
+  type: CategoryType,
+  initialAmount: number,
+  amount: number,
+  categoryId: number,
+}
+
+type PropsType = {
+  groups: GroupProps[],
+  plan: FundingType[],
+  onChange: ((p: FundingType[]) => void),
+  systemGroupId: number,
+}
 
 const Funding = ({
   groups,
   plan,
   onChange,
   systemGroupId,
-}) => {
+}: PropsType): ReactElement => {
   const [funding, setFunding] = useState(plan);
 
-  const handleDeltaChange = (amount, categoryId) => {
+  const handleDeltaChange = (amount: number, categoryId: number) => {
     const index = funding.findIndex((c) => c.categoryId === categoryId);
     let newFunding = [];
 
@@ -23,20 +38,28 @@ const Funding = ({
     }
     else {
       // Find the category in the group/category tree
-      let category;
+      let category: CategoryProps | undefined;
       const group = groups.find((g) => {
         category = g.categories.find((c) => c.id === categoryId);
 
         return category !== undefined;
       });
 
+      if (!category) {
+        throw new Error('category is undefined');
+      }
+
+      if (!group) {
+        throw new Error('group is undefined');
+      }
+
       newFunding = [
         ...funding.slice(),
         {
           categoryId,
+          initialAmount: category.balance,
           amount,
-          category: category.name,
-          group: group.name,
+          type: category.type,
         },
       ];
     }
@@ -48,13 +71,15 @@ const Funding = ({
     }
   };
 
-  const populateCategories = (categories) => (
+  const populateCategories = (categories: CategoryProps[]) => (
     categories.map((category) => {
       let amount = 0;
 
       const index = funding.findIndex((c) => c.categoryId === category.id);
 
+      let initialAmount = category.balance;
       if (index !== -1) {
+        initialAmount = funding[index].initialAmount;
         amount = funding[index].amount;
       }
 
@@ -62,7 +87,7 @@ const Funding = ({
         <FundingItem
           key={`${category.id}`}
           name={category.name}
-          initialAmount={category.balance}
+          initialAmount={initialAmount}
           funding={amount}
           onDeltaChange={(newAmount) => (
             handleDeltaChange(newAmount, category.id)
@@ -72,40 +97,26 @@ const Funding = ({
     })
   );
 
-  const populateGroups = () => {
-    const groupItems = [];
-
-    groups.forEach((group) => {
+  const populateGroups = (): ReactNode => (
+    groups.map((group) => {
       if (group.id !== systemGroupId) {
-        groupItems.push((
+        return (
           <div key={group.id}>
             {group.name}
             {populateCategories(group.categories)}
           </div>
-        ));
+        );
       }
-    });
 
-    return groupItems;
-  };
+      return null;
+    }).filter((e) => e !== null)
+  );
 
   return (
     <div className="cat-fund-items">
       {populateGroups()}
     </div>
   );
-};
-
-Funding.propTypes = {
-  groups: PropTypes.arrayOf(PropTypes.shape()).isRequired,
-  plan: PropTypes.arrayOf(PropTypes.shape()),
-  onChange: PropTypes.func,
-  systemGroupId: PropTypes.number.isRequired,
-};
-
-Funding.defaultProps = {
-  plan: [],
-  onChange: null,
 };
 
 export default Funding;

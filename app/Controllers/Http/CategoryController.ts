@@ -303,10 +303,10 @@ class CategoryController {
           result.transaction = {
             id: transactionId,
             date,
-            name: 'Category Rebalance',
+            name: type === 2 ? 'Category Funding' : 'Category Rebalance',
             pending: false,
             sortOrder: 2147483647,
-            type: TransactionType.REBALANCE_TRANSACTION,
+            type,
             accountName: null,
             amount: null,
             institutionName: null,
