@@ -1,12 +1,12 @@
-import React from 'react';
+import React, { ReactElement } from 'react';
 import PropTypes from 'prop-types';
 
-type PropTypes = {
+type PropsType = {
   resetMessage: string;
 }
 const ResetEmailSentPanel = ({
   resetMessage,
-}: PropTypes) => (
+}: PropsType): ReactElement => (
   <div className="alert alert-success" role="alert">{resetMessage}</div>
 );
 

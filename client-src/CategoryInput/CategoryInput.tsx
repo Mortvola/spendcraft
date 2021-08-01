@@ -7,10 +7,12 @@ import useExclusiveBool from '../ExclusiveBool';
 import MobxStore from '../state/mobxStore';
 import Group from '../state/Group';
 import Category from '../state/Category';
+import { CategoryInterface, GroupInterface } from '../state/State';
+import LoansGroup from '../state/LoansGroup';
 
 type PropsType = {
   categoryId: number | null,
-  onChange: (id: number) => void,
+  onChange: (category: CategoryInterface) => void,
 }
 
 const CategoryInput = ({
@@ -26,16 +28,24 @@ const CategoryInput = ({
   );
   const [open, setOpen] = useExclusiveBool(false);
   const [value, setValue] = useState<string | null>(
-    categoryId === null ? null : categoryTree.getCategoryName(categoryId),
+    categoryId === null || categoryId === categoryTree.systemIds.unassignedId
+      ? null
+      : categoryTree.getCategoryName(categoryId),
   );
   const [originalValue, setOriginalValue] = useState<string | null>(
-    categoryId === null ? null : categoryTree.getCategoryName(categoryId),
+    categoryId === null || categoryId === categoryTree.systemIds.unassignedId
+      ? null
+      : categoryTree.getCategoryName(categoryId),
   );
   const [filter, setFilter] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const selectorRef = useRef<HTMLDivElement | null>(null);
 
-  const categoryFiltered = (group: Group, category: Category, filterParts: Array<string>) => {
+  const categoryFiltered = (
+    group: GroupInterface,
+    category: Category,
+    filterParts: string[],
+  ) => {
     if (filterParts.length > 0) {
       if (filterParts.length === 1) {
         // No colon. Filter can be applied to both group and categories.
@@ -98,7 +108,7 @@ const CategoryInput = ({
     }
   };
 
-  const handleSelect = (group: Group, category: Category) => {
+  const handleSelect = (group: Group | LoansGroup, category: Category) => {
     const groupIndex = groups.findIndex((g) => g.id === group.id);
     const categoryIndex = groups[groupIndex].categories.findIndex((c) => c.id === category.id);
 
@@ -108,7 +118,7 @@ const CategoryInput = ({
     setOriginalValue(categoryId === null ? null : categoryTree.getCategoryName(categoryId));
 
     if (onChange) {
-      onChange(category.id);
+      onChange(category);
     }
   };
 
@@ -224,7 +234,7 @@ const CategoryInput = ({
       else {
         setValue(categoryTree.getCategoryName(selectedCategory.id));
         if (onChange) {
-          onChange(selectedCategory.id);
+          onChange(selectedCategory);
         }
       }
     }

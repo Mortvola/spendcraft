@@ -1,17 +1,10 @@
 import {
-  BaseModel, column, belongsTo, BelongsTo,
+  BaseModel, BelongsTo, belongsTo, column, hasOne, HasOne,
 } from '@ioc:Adonis/Lucid/Orm';
+import Account from 'App/Models/Account';
 import Transaction from 'App/Models/Transaction';
-import { DateTime } from 'luxon';
 
 class AccountTransaction extends BaseModel {
-  public serializeExtras(): Record<string, unknown> {
-    return {
-      date: DateTime.fromSQL(this.$extras.date).toFormat('yyyy-MM-dd'),
-      categories: this.$extras.categories,
-    };
-  }
-
   @column({ serializeAs: null })
   public id: number;
 
@@ -21,8 +14,14 @@ class AccountTransaction extends BaseModel {
   @column({ serializeAs: 'id' })
   public transactionId: number;
 
-  @belongsTo(() => Transaction)
-  public transaction: BelongsTo<typeof Transaction>;
+  @hasOne(() => Transaction)
+  public transaction: HasOne<typeof Transaction>;
+
+  @belongsTo(() => Account, {
+    foreignKey: 'accountId',
+    localKey: 'id',
+  })
+  public account: BelongsTo<typeof Account>;
 
   @column({ serializeAs: null })
   public plaidTransactionId: string;

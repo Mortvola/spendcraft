@@ -8,14 +8,17 @@ import DetailView from './DetailView';
 import MobxStore from './state/mobxStore';
 
 const Home = () => {
-  const { uiState, register, categoryTree } = useContext(MobxStore);
+  const { uiState, categoryTree } = useContext(MobxStore);
   const [RebalanceDialog, showRebalanceDialog] = useRebalanceDialog();
   const [FundingDialog, showFundingDialog] = useFundingDialog();
   const [GroupDialog, showGroupDialog] = useGroupDialog();
 
   useEffect(() => {
-    register.loadCategoryTransactions(uiState.selectedCategoryId);
-  }, [uiState.selectedCategoryId, register]);
+    if (uiState.selectedCategory) {
+      uiState.selectedCategory.getTransactions();
+    }
+    // register.loadCategoryTransactions(uiState.selectedCategory);
+  }, [uiState.selectedCategory]);
 
   if (categoryTree.initialized) {
     return (

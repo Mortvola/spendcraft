@@ -8,7 +8,7 @@ import {
 } from 'formik';
 import { Button, Modal } from 'react-bootstrap';
 import AccountItem from './AccountItem';
-import useModal from '../useModal';
+import useModal from '../Modal/useModal';
 
 const AccountsDialog = ({
   institution,

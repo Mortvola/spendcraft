@@ -1,21 +1,21 @@
 import React from 'react';
-import PropTypes from 'prop-types';
-import Errors from './Errors';
+// import PropTypes from 'prop-types';
+import Errors from '../Modal/Errors';
 import { ErrorsType } from './submit';
 
-type PropTypes = {
+type PropsType = {
   onHide: (() => void),
   onLogin: (() => void),
   onForgotPasswordClick: (() => void),
   errors: ErrorsType,
 }
 
-const LoginPanel = React.forwardRef<HTMLFormElement, PropTypes>(({
+const LoginPanel = React.forwardRef<HTMLFormElement, PropsType>(({
   onHide,
   onLogin,
   onForgotPasswordClick,
   errors,
-}, forwardRef) => (
+}: PropsType, forwardRef) => (
   <form ref={forwardRef}>
     <div className="form-group row">
       <label htmlFor="username" className="col-md-3 col-form-label text-md-right">Username</label>
@@ -73,5 +73,7 @@ const LoginPanel = React.forwardRef<HTMLFormElement, PropTypes>(({
     </div>
   </form>
 ));
+
+LoginPanel.displayName = 'LoginPanel';
 
 export default LoginPanel;

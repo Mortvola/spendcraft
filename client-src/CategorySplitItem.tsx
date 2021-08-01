@@ -3,7 +3,7 @@ import CategoryInput from './CategoryInput/CategoryInput';
 import IconButton from './IconButton';
 import AmountInput from './AmountInput';
 import Amount from './Amount';
-import { TransactionCategoryInterface } from './state/State';
+import { CategoryInterface, TransactionCategoryInterface } from './state/State';
 import MobxStore from './state/mobxStore';
 
 type PropsType = {
@@ -29,8 +29,8 @@ function CategorySplitItem({
 }: PropsType): ReactElement {
   const { categoryTree: { systemIds: { unassignedId } } } = useContext(MobxStore);
 
-  const handleCategoryChange = (categoryId: number) => {
-    onCategoryChange(split.id, categoryId);
+  const handleCategoryChange = (category: CategoryInterface) => {
+    onCategoryChange(split.id, category.id);
   };
 
   const handleDeltaChange = (amount: number, delta: number) => {

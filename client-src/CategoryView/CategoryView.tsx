@@ -1,21 +1,24 @@
-import React, { useContext, useEffect } from 'react';
+import React, { ReactElement, useContext, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import Group from './Group';
 import MobxStore from '../state/mobxStore';
+import Category from '../state/Category';
 
-const CategoryView = () => {
+const CategoryView = (): ReactElement => {
   const { categoryTree, uiState } = useContext(MobxStore);
 
-  const handleCategorySelected = (categoryId) => {
-    uiState.selectCategory(categoryId);
+  const handleCategorySelected = (category: Category) => {
+    uiState.selectCategory(category);
   };
 
   useEffect(() => {
     // If there isn't a category selected then select the unassigned category
-    if (uiState.selectedCategoryId === null) {
-      uiState.selectCategory(categoryTree.systemIds.unassignedId);
+    if (uiState.selectedCategory === null) {
+      uiState.selectCategory(
+        categoryTree.getCategory(categoryTree.systemIds.unassignedId),
+      );
     }
-  }, [uiState.selectedCategoryId, categoryTree.systemIds.unassignedId, uiState]);
+  }, [uiState.selectedCategory, categoryTree.systemIds.unassignedId, uiState, categoryTree]);
 
   return (
     <div id="categories">
@@ -24,7 +27,7 @@ const CategoryView = () => {
           key={group.name}
           group={group}
           onCategorySelected={handleCategorySelected}
-          selectedCategoryId={uiState.selectedCategoryId}
+          selectedCategory={uiState.selectedCategory}
         />
       ))}
     </div>

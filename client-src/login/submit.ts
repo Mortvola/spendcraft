@@ -1,9 +1,4 @@
-type ErrorsType = {
-  username?: string[],
-  password?: string[],
-  email?: string[],
-  general?: string[],
-}
+type ErrorsType = Record<string, string[]>;
 
 const submitForm = async (
   event: React.MouseEvent | null,
@@ -11,24 +6,12 @@ const submitForm = async (
   url: string,
   success: ((data: string) => void),
   fail: ((errors: ErrorsType) => void),
-) => {
+): Promise<void> => {
   const formData = new FormData(form);
-  const csrfTokenElement = document.querySelector('meta[name="csrf-token"]');
-
-  if (csrfTokenElement === null) {
-    throw new Error('CSRF Token element not found');
-  }
-
-  const csrfToken = csrfTokenElement.getAttribute('content');
-
-  if (csrfToken === null) {
-    throw new Error('CSRF Token not set');
-  }
 
   const response = await fetch(url, {
     method: 'POST',
     headers: {
-      'X-CSRF-TOKEN': csrfToken,
       Accept: 'application/json',
     },
     body: formData,
@@ -43,7 +26,15 @@ const submitForm = async (
   else if (fail) {
     if (response.status === 422) {
       const json = await response.json();
-      fail(json.errors);
+      const errors: Record<string, string[]> = {};
+      json.errors.forEach((error: { rule: string, field: string, message: string }) => {
+        if (errors[error.field] === undefined) {
+          errors[error.field] = [];
+        }
+
+        errors[error.field] = errors[error.field].concat(error.message);
+      });
+      fail(errors);
     }
     else {
       fail({ general: ['An error occured. Please try again later.'] });

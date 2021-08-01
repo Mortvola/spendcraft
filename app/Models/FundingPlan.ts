@@ -55,7 +55,7 @@ export default class FundingPlan extends BaseModel {
         'groups.system as groupSystem',
         'cats.id AS categoryId',
         'cats.name AS categoryName',
-        'cats.system AS categorySystem',
+        'cats.type AS categoryType',
         Database.raw('CAST(COALESCE(fpc.amount, 0) AS float) AS amount'),
       )
       .from('categories AS cats')

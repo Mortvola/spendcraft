@@ -1,5 +1,7 @@
 const defaultHeaders = () => {
-  const headers = new Headers();
+  const headers = new Headers({
+    Accept: 'application/json',
+  });
 
   return headers;
 };
@@ -13,9 +15,14 @@ const jsonHeaders = () => {
 };
 
 export const getBody = async (response: Response): Promise<unknown> => {
-  const contentType = response.headers.get('Content-Type');
-  if (contentType && /^application\/json/.test(contentType)) {
-    return response.json();
+  try {
+    const contentType = response.headers.get('Content-Type');
+    if (contentType && /^application\/json/.test(contentType)) {
+      return response.json();
+    }
+  }
+  catch (error) {
+    console.log(error);
   }
 
   return null;

@@ -7,10 +7,10 @@ import {
 } from 'formik';
 import { Button, Modal, ModalBody } from 'react-bootstrap';
 import CategorySplits from './CategorySplits';
-import useModal, { ModalProps } from './useModal';
+import useModal, { ModalProps } from './Modal/useModal';
 import Amount from './Amount';
 import Transaction from './state/Transaction';
-import { TransactionCategoryInterface } from './state/State';
+import { CategoryInterface, TransactionCategoryInterface } from './state/State';
 
 function validateSplits(splits: Array<TransactionCategoryInterface>) {
   let error;
@@ -26,7 +26,7 @@ function validateSplits(splits: Array<TransactionCategoryInterface>) {
 
 interface Props {
   transaction: Transaction,
-  categoryId?: number | null,
+  category?: CategoryInterface | null,
   unassignedId: number,
 }
 
@@ -34,10 +34,10 @@ const TransactionDialog = ({
   show,
   onHide,
   transaction,
-  categoryId,
+  category,
   unassignedId,
 }: Props & ModalProps): ReactElement => {
-  const showBalances = categoryId === unassignedId;
+  const showBalances = category ? category.id === unassignedId : false;
 
   type ValueType = {
     splits: Array<TransactionCategoryInterface>,
@@ -85,7 +85,7 @@ const TransactionDialog = ({
       });
     }
 
-    const errors = await transaction.updateTransactionCategory(values.splits);
+    const errors = await transaction.updateTransactionCategories(values.splits);
 
     if (!errors) {
       onHide();
@@ -137,6 +137,7 @@ const TransactionDialog = ({
       show={show}
       onHide={onHide}
       size={showBalances ? 'lg' : undefined}
+      enforceFocus={false}
     >
       <Formik<ValueType>
         initialValues={{
@@ -194,7 +195,7 @@ const TransactionDialog = ({
 };
 
 TransactionDialog.defaultProps = {
-  categoryId: null,
+  category: null,
 };
 
 export const useTransactionDialog = (): [

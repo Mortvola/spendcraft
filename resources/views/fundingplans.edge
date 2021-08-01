@@ -107,7 +107,7 @@
             if (plan.categories.length > 0) {
                 if (plan.id) {
                     $.ajax({
-                        url: "/funding_plan/" + plan.id,
+                        url: "/funding-plans/" + plan.id,
                         contentType: "application/json",
                         method: 'PATCH',
                         data: JSON.stringify(plan),
@@ -121,7 +121,7 @@
                 }
                 else {
                     $.post({
-                        url: "/funding_plan",
+                        url: "/funding-plans",
                         contentType: "application/json",
                         data: JSON.stringify(plan),
                     })
@@ -146,7 +146,7 @@
     function loadPlans ()
     {
         $.getJSON({
-            url: "/funding_plans"
+            url: "/funding-plans"
         })
         .done (function (response) {
 
@@ -162,7 +162,7 @@
                 $("<div class='btn btn-sm group-button'><i class='fas fa-edit'></i></div>")
                     .on('click', function () {
                             $.getJSON ({
-                                url: "/funding_plan/" + plan.id
+                                url: "/funding-plans/" + plan.id
                             })
                             .done (function (response) {
                                 openAddPlanDialog (response);

@@ -1,15 +1,19 @@
-import React, { ReactElement } from 'react';
+import React, { CSSProperties, ReactElement } from 'react';
 
 interface Props {
+  id?: string,
   noValue?: number | string | null,
   amount?: number | null,
   className?: string,
+  style?: CSSProperties,
 }
 
 function Amount({
+  id,
   noValue = null,
   amount = null,
   className = '',
+  style,
 }: Props): ReactElement {
   let displayedAmount = amount;
   if (displayedAmount === null) {
@@ -34,7 +38,7 @@ function Amount({
     }
   }
 
-  return (<div className={updatedClassName}>{amountString}</div>);
+  return (<div id={id} className={updatedClassName} style={style}>{amountString}</div>);
 }
 
 export default Amount;

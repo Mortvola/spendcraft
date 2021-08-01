@@ -15,9 +15,9 @@ const nextIdGen = creatNextIdGen();
 const nextId = (): number => nextIdGen.next().value;
 
 type PropsType = {
-  splits: Array<TransactionCategoryInterface>,
+  splits: TransactionCategoryInterface[],
   onChange: (
-    splits: Array<TransactionCategoryInterface | { id: number, categoryId: number, amount: number }>
+    splits: TransactionCategoryInterface[]
   ) => void,
   total: number,
   credit?: boolean,
@@ -33,9 +33,7 @@ const CategorySplits = ({
 }: PropsType): ReactElement => {
   const { categoryTree } = useContext(MobxStore);
 
-  const [editedSplits, setEditedSplits] = useState<Array<
-    TransactionCategoryInterface | { id: number, categoryId: number, amount: number }
-  >>(
+  const [editedSplits, setEditedSplits] = useState<TransactionCategoryInterface[]>(
     splits && splits.length > 0
       ? splits.map((s) => {
         if (s.id === undefined) {
@@ -50,7 +48,9 @@ const CategorySplits = ({
           amount: (credit ? s.amount : -s.amount),
         };
       })
-      : [{ id: nextId(), categoryId: categoryTree.systemIds.unassignedId, amount: total }],
+      : [{
+        id: nextId(), type: 'REGULAR', categoryId: categoryTree.systemIds.unassignedId, amount: total,
+      }],
   );
 
   const handleDeltaChange = (id: number, amount: number, delta: number) => {
@@ -94,7 +94,9 @@ const CategorySplits = ({
       newSplits.splice(
         index + 1,
         0,
-        { id: nextId(), categoryId: categoryTree.systemIds.unassignedId, amount },
+        {
+          id: nextId(), type: 'REGULAR', categoryId: categoryTree.systemIds.unassignedId, amount,
+        },
       );
 
       setEditedSplits(newSplits);

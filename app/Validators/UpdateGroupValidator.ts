@@ -1,6 +1,5 @@
 import { schema, rules } from '@ioc:Adonis/Core/Validator'
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
-import { validator } from '@ioc:Adonis/Core/Validator';
 
 export default class UpdateGroupValidator {
   constructor(protected ctx: HttpContextContract) {
@@ -24,8 +23,6 @@ export default class UpdateGroupValidator {
       }),
     ]),
   })
-
-  public reporter = validator.reporters.jsonapi;
 
   public messages = {
     'name.required': 'A group name must be provided',

@@ -53,8 +53,7 @@ export default class AuthController {
     const trx = await Database.transaction();
 
     try {
-      const systemGroup = new Group();
-      systemGroup.useTransaction(trx);
+      const systemGroup = (new Group()).useTransaction(trx);
 
       systemGroup.name = 'System';
       systemGroup.userId = user.id;
@@ -62,27 +61,24 @@ export default class AuthController {
 
       await systemGroup.save();
 
-      const unassignedCat = new Category();
-      unassignedCat.useTransaction(trx);
+      const unassignedCat = (new Category()).useTransaction(trx);
 
       unassignedCat.name = 'Unassigned';
-      unassignedCat.system = true;
+      unassignedCat.type = 'UNASSIGNED';
       unassignedCat.amount = 0;
       unassignedCat.groupId = systemGroup.id;
 
-      const fundingPoolCat = new Category();
-      fundingPoolCat.useTransaction(trx);
+      const fundingPoolCat = (new Category()).useTransaction(trx);
 
       fundingPoolCat.name = 'Funding Pool';
-      fundingPoolCat.system = true;
+      fundingPoolCat.type = 'FUNDING POOL';
       fundingPoolCat.amount = 0;
       fundingPoolCat.groupId = systemGroup.id;
 
-      const accountTransferCat = new Category();
-      accountTransferCat.useTransaction(trx);
+      const accountTransferCat = (new Category()).useTransaction(trx);
 
       accountTransferCat.name = 'Account Transfer';
-      accountTransferCat.system = true;
+      accountTransferCat.type = 'ACCOUNT TRANSFER';
       accountTransferCat.amount = 0;
       accountTransferCat.groupId = systemGroup.id;
 

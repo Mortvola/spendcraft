@@ -1,6 +1,8 @@
 import { makeAutoObservable, runInAction } from 'mobx';
-import { AccountProps, isAccountSyncResponse } from '../../common/ResponseTypes';
+import { AccountProps, isAccountSyncResponse, isAccountTransactionsResponse } from '../../common/ResponseTypes';
+import PendingTransaction from './PendingTransaction';
 import { AccountInterface, StoreInterface } from './State';
+import Transaction from './Transaction';
 import { getBody, httpPost } from './Transports';
 
 class Account implements AccountInterface {
@@ -13,6 +15,12 @@ class Account implements AccountInterface {
   syncDate: string;
 
   balance: number;
+
+  transactions: Transaction[] = [];
+
+  pending: PendingTransaction[] = [];
+
+  fetching = false;
 
   refreshing = false;
 
@@ -52,6 +60,53 @@ class Account implements AccountInterface {
 
       this.refreshing = false;
     });
+  }
+
+  async getTransactions(): Promise<void> {
+    this.fetching = true;
+    const response = await fetch(`/api/account/${this.id}/transactions`);
+
+    const body = await getBody(response);
+
+    if (response.ok && isAccountTransactionsResponse(body)) {
+      body.transactions.sort((a, b) => {
+        if (a.date < b.date) {
+          return 1;
+        }
+
+        if (a.date > b.date) {
+          return -1;
+        }
+
+        if (a.sortOrder < b.sortOrder) {
+          return 1;
+        }
+
+        if (a.sortOrder > b.sortOrder) {
+          return -1;
+        }
+
+        return 0;
+      });
+
+      runInAction(() => {
+        if (body !== null) {
+          this.balance = body.balance;
+          this.pending = body.pending.map((pt) => new PendingTransaction(pt));
+          this.transactions = body.transactions.map((t) => (
+            new Transaction(this.store, t)
+          ));
+        }
+        else {
+          this.transactions = [];
+        }
+
+        this.fetching = false;
+      });
+    }
+    else {
+      this.fetching = false;
+    }
   }
 }
 

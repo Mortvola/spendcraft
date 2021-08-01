@@ -2,7 +2,7 @@ import { makeAutoObservable } from 'mobx';
 import { PendingTransactionProps } from './State';
 
 class PendingTransaction {
-  id: number;
+  id: number | null;
 
   date: string;
 
@@ -13,8 +13,8 @@ class PendingTransaction {
   constructor(props: PendingTransactionProps) {
     this.id = props.id;
     this.date = props.date;
-    this.name = props.name;
-    this.amount = props.amount;
+    this.name = props.accountTransaction.name;
+    this.amount = props.accountTransaction.amount;
 
     makeAutoObservable(this);
   }

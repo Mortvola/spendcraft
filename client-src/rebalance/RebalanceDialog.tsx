@@ -2,21 +2,20 @@
 import React, {
   useState, useEffect, useCallback, ReactElement, useContext,
 } from 'react';
-import { Modal, Button, ModalBody } from 'react-bootstrap';
 import {
-  Formik, Form, Field, ErrorMessage, FormikErrors,
+  Field, ErrorMessage, FormikErrors,
   FieldProps,
-  useFormikContext,
   FormikContextType,
 } from 'formik';
 import { toJS } from 'mobx';
 import CategoryRebalance from './CategoryRebalance';
 import Amount from '../Amount';
-import useModal, { ModalProps } from '../useModal';
+import useModal, { ModalProps, useModalType } from '../Modal/useModal';
 import Transaction from '../state/Transaction';
 import { TransactionCategoryInterface } from '../state/State';
-import { postJSON } from '../state/Transports';
 import MobxStore from '../state/mobxStore';
+import FormModal from '../Modal/FormModal';
+import { TransactionType } from '../../common/ResponseTypes';
 
 interface Props {
   // eslint-disable-next-line react/require-default-props
@@ -41,7 +40,7 @@ const RebalanceDialog = ({
   const fetchCategoryBalances = useCallback((fetchDate: string) => {
     if (fetchDate !== '') {
       const params: Record<string, string> = { date: fetchDate };
-      if (transaction) {
+      if (transaction && transaction.id !== null) {
         params.id = transaction.id.toString();
       }
 
@@ -110,7 +109,7 @@ const RebalanceDialog = ({
       }
     }
     else {
-      const errors = await register.addCategoryTransaction(values);
+      const errors = await register.addCategoryTransfer(values, TransactionType.REBALANCE_TRANSACTION);
 
       if (!errors) {
         onHide();
@@ -118,94 +117,40 @@ const RebalanceDialog = ({
     }
   };
 
-  const Header = () => (
-    <Modal.Header closeButton>
-      <h4 id="modalTitle" className="modal-title">Rebalance Categories</h4>
-    </Modal.Header>
-  );
-
-  const handleDelete = async (bag: FormikContextType<unknown>) => {
+  const handleDelete = async (bag: FormikContextType<ValueType>) => {
     const { setTouched, setErrors } = bag;
 
     if (transaction) {
       const errors = await transaction.delete();
 
       if (errors && errors.length > 0) {
-        setTouched({ name: true }, false);
-        setErrors({ name: errors[0].message });
+        setTouched({ [errors[0].field]: true }, false);
+        setErrors({ [errors[0].field]: errors[0].message });
       }
     }
   };
 
-  const DeleteButton = () => {
-    const bag = useFormikContext();
-
-    if (transaction) {
-      return (<Button variant="danger" onClick={() => handleDelete(bag)}>Delete</Button>);
-    }
-
-    return <div />;
-  };
-
-  const Footer = () => (
-    <Modal.Footer>
-      <DeleteButton />
-      <div />
-      <Button variant="secondary" onClick={onHide}>Cancel</Button>
-      <Button variant="primary" type="submit">Save</Button>
-    </Modal.Footer>
-  );
-
   return (
-    <Modal
-      show={show}
-      onHide={onHide}
-      size="lg"
-      scrollable
-    >
-      <Formik<ValueType>
+    <>
+      <FormModal <ValueType>
+        show={show}
+        onHide={onHide}
+        size="lg"
         initialValues={{
           categories: transaction ? toJS(transaction.categories) : [],
           date,
         }}
+        title="Rebalance Categories"
+        formId="rebalanceForm"
         validate={handleValidate}
         onSubmit={handleSubmit}
+        onDelete={transaction ? handleDelete : null}
       >
-        <Form id="rebalanceForm" className="scrollable-form">
-          <Header />
-          <ModalBody>
-            <div className="rebalance-container">
-              <div className="rebalance-header">
-                <label>
-                  Date
-                  <Field name="date">
-                    {({
-                      field: {
-                        name,
-                        value,
-                      },
-                      form: {
-                        setFieldValue,
-                      },
-                    }: FieldProps<string>) => (
-                      <input
-                        value={value}
-                        type="date"
-                        onChange={(event) => {
-                          handleDateChange(event);
-                          setFieldValue(name, event.target.value, false);
-                        }}
-                      />
-                    )}
-                  </Field>
-                </label>
-                <label>
-                  Unassigned
-                  <Amount className="rebalance-unassigned" amount={unassigned} />
-                </label>
-              </div>
-              <ErrorMessage name="date" />
-              <Field name="categories">
+        <div className="rebalance-container">
+          <div className="rebalance-header">
+            <label>
+              Date:
+              <Field name="date">
                 {({
                   field: {
                     name,
@@ -214,30 +159,52 @@ const RebalanceDialog = ({
                   form: {
                     setFieldValue,
                   },
-                }: FieldProps<Array<TransactionCategoryInterface>>) => (
-                  <CategoryRebalance
-                    categoryTree={categoryTree}
-                    categories={value}
-                    onDeltaChange={(_amount, delta, categories) => {
-                      handleDeltaChange(delta);
-                      setFieldValue(name, categories, false);
+                }: FieldProps<string>) => (
+                  <input
+                    className="form-control"
+                    value={value}
+                    type="date"
+                    onChange={(event) => {
+                      handleDateChange(event);
+                      setFieldValue(name, event.target.value, false);
                     }}
                   />
                 )}
               </Field>
-              <ErrorMessage name="categories" />
-            </div>
-          </ModalBody>
-          <Footer />
-        </Form>
-      </Formik>
-    </Modal>
+            </label>
+            <label>
+              Unassigned:
+              <Amount className="form-control" amount={unassigned} />
+            </label>
+          </div>
+          <ErrorMessage name="date" />
+          <Field name="categories">
+            {({
+              field: {
+                name,
+                value,
+              },
+              form: {
+                setFieldValue,
+              },
+            }: FieldProps<Array<TransactionCategoryInterface>>) => (
+              <CategoryRebalance
+                categoryTree={categoryTree}
+                categories={value}
+                onDeltaChange={(_amount, delta, categories) => {
+                  handleDeltaChange(delta);
+                  setFieldValue(name, categories, false);
+                }}
+              />
+            )}
+          </Field>
+          <ErrorMessage name="categories" />
+        </div>
+      </FormModal>
+    </>
   );
 };
 
-export const useRebalanceDialog = (): [
-  (props: Props) => (ReactElement | null),
-  () => void,
-] => useModal<Props>(RebalanceDialog);
+export const useRebalanceDialog = (): useModalType<Props> => useModal<Props>(RebalanceDialog);
 
 export default RebalanceDialog;

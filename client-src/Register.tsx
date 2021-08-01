@@ -4,6 +4,9 @@ import { Spinner } from 'react-bootstrap';
 import Transaction from './Transaction';
 import Amount from './Amount';
 import MobxStore from './state/mobxStore';
+import { AccountInterface, CategoryInterface, TransactionInterface } from './state/State';
+import PendingTransaction from './state/PendingTransaction';
+import LoanTransaction from './state/LoanTransaction';
 
 type PropsType = {
   isMobile?: boolean;
@@ -14,19 +17,42 @@ const Register = ({
 }: PropsType): ReactElement => {
   const [selectedTransaction, setSelectedTransaction] = useState<number | null>(null);
   const {
-    register: {
-      categoryId,
-      transactions,
-      fetching,
-      pending,
-      balance,
-    },
+    uiState,
     categoryTree: {
       systemIds: {
         unassignedId,
       },
     },
   } = useContext(MobxStore);
+  let transactions: TransactionInterface[] | undefined;
+  let pending: PendingTransaction[] | undefined;
+  let loan: { balance: number, transactions: LoanTransaction[] } | undefined;
+  let balance = 0;
+  let fetching = false;
+
+  let category: CategoryInterface | null = null;
+
+  if (uiState.view === 'HOME') {
+    category = uiState.selectedCategory;
+
+    if (category) {
+      transactions = category.transactions;
+      pending = category.pending;
+      loan = category.loan;
+      balance = category.balance;
+      fetching = category.fetching;
+    }
+  }
+
+  let account: AccountInterface | null = null;
+  if (uiState.view === 'ACCOUNTS') {
+    account = uiState.selectedAccount;
+
+    if (account) {
+      transactions = account.transactions;
+      balance = account.balance;
+    }
+  }
 
   const handleClick = (transactionId: number) => {
     setSelectedTransaction(transactionId);
@@ -41,15 +67,15 @@ const Register = ({
       );
     }
 
-    let list: Array<ReactElement> | null = null;
+    let list: ReactElement[] | null = null;
 
     if (transactions) {
       let runningBalance = balance;
       list = transactions.map((transaction) => {
         let { amount } = transaction;
 
-        if (categoryId !== null) {
-          amount = transaction.getAmountForCategory(categoryId);
+        if (category !== null) {
+          amount = transaction.getAmountForCategory(category.id);
         }
 
         const selected = selectedTransaction === transaction.id;
@@ -61,7 +87,7 @@ const Register = ({
             amount={amount}
             balance={runningBalance}
             selected={selected}
-            categoryId={categoryId}
+            category={uiState.selectedCategory}
             unassignedId={unassignedId}
             isMobile={isMobile}
           />
@@ -82,6 +108,63 @@ const Register = ({
     );
   };
 
+  const renderLoanTransactions = () => {
+    let list: ReactElement[] | null = null;
+
+    if (loan) {
+      let runningBalance = loan.balance;
+      list = loan.transactions.map((transaction) => {
+        const { principle } = transaction;
+        const { interest } = transaction;
+
+        // if (category !== null) {
+        //   amount = transaction.getAmountForCategory(category.id);
+        // }
+
+        // const selected = selectedTransaction === transaction.id;
+
+        const element = (
+          <div key={transaction.id} className="loan-transaction">
+            <div />
+            <div>{transaction.date}</div>
+            <div className="transaction-field">{transaction.name}</div>
+            <Amount amount={principle} />
+            <Amount amount={interest} />
+            <Amount amount={runningBalance} />
+          </div>
+        );
+
+        if (runningBalance !== undefined) {
+          runningBalance -= principle;
+        }
+
+        return element;
+      });
+
+      return (
+        <div className="register">
+          <div className="pending-register-title">
+            Loan Transactions:
+          </div>
+          <div className="register-title loan-transaction">
+            <div />
+            <div>Date</div>
+            <div>Name</div>
+            <div className="currency">Principle</div>
+            <div className="currency">Interest</div>
+            <div className="currency">Balance</div>
+            <div />
+          </div>
+          <div className="transactions striped">
+            {list}
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
   const renderPendingTransactions = () => {
     if (pending) {
       return pending.map((transaction) => (
@@ -98,7 +181,7 @@ const Register = ({
   };
 
   const renderPending = () => {
-    if (!fetching && pending.length > 0) {
+    if (!fetching && pending && pending.length > 0) {
       return (
         <div className="register">
           <div className="pending-register-title">
@@ -123,7 +206,7 @@ const Register = ({
   };
 
   const renderColumnTitles = () => {
-    if (categoryId === null) {
+    if (category === null) {
       return (
         <div className="register-title acct-transaction">
           <div />
@@ -155,13 +238,17 @@ const Register = ({
   }
 
   return (
-    <div className="register-with-pending">
+    <div className="register-dual-pane">
       <div className="register">
         <div />
         {renderColumnTitles()}
         {renderTransactions()}
       </div>
-      {renderPending()}
+      {
+        category && category.type === 'LOAN'
+          ? renderLoanTransactions()
+          : renderPending()
+      }
     </div>
   );
 };

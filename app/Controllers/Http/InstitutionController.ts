@@ -1,21 +1,10 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
-import Database, { TransactionClientContract } from '@ioc:Adonis/Lucid/Database';
+import Database from '@ioc:Adonis/Lucid/Database';
 import moment from 'moment';
 import plaidClient, { PlaidAccount, PlaidInstitution } from '@ioc:Plaid';
 import Institution from 'App/Models/Institution';
 import Account, { AccountSyncResult } from 'App/Models/Account';
-
-type CategoryBalance = {
-  group: {
-    id: number,
-    name: string,
-  },
-  category: {
-    id: number,
-    name: string,
-  },
-  amount: number,
-};
+import Category from 'App/Models/Category';
 
 class InstitutionController {
   // eslint-disable-next-line class-methods-use-this
@@ -128,7 +117,7 @@ class InstitutionController {
     const systemCats = await trx.query().select('cats.id AS id', 'cats.name AS name')
       .from('categories AS cats')
       .join('groups', 'groups.id', 'group_id')
-      .where('cats.system', true)
+      .where('cats.type', '!=', 'REGULAR')
       .andWhere('groups.user_id', user.id);
     const fundingPool = systemCats.find((entry) => entry.name === 'Funding Pool');
     const unassigned = systemCats.find((entry) => entry.name === 'Unassigned');
@@ -157,7 +146,7 @@ class InstitutionController {
           .select(Database.raw(`EXISTS (SELECT 1 FROM accounts WHERE plaid_account_id = '${account.account_id}') AS exists`));
 
         if (!exists) {
-          const acct = new Account();
+          const acct = (new Account()).useTransaction(trx);
 
           let startDate = request.input('startDate');
           if (startDate === undefined || startDate === null) {
@@ -179,12 +168,11 @@ class InstitutionController {
           acct.tracking = account.tracking;
           acct.enabled = true;
 
-          acct.useTransaction(trx);
           await acct.save();
 
           if (acct.tracking === 'Transactions') {
             const details = await acct.addTransactions(
-              trx, institution.accessToken, startDate, user.id,
+              trx, institution.accessToken, startDate, user,
             );
 
             if (details.cat) {
@@ -220,11 +208,13 @@ class InstitutionController {
               })
               .table('transaction_categories');
 
-            const funding = await InstitutionController.subtractFromCategoryBalance(
-              trx, fundingPool.id, -startingBalance,
-            );
+            const category = await Category.findOrFail(fundingPool.id, { client: trx });
 
-            fundingAmount = funding.amount;
+            category.amount += startingBalance;
+
+            await category.save();
+
+            fundingAmount = category.amount;
           }
 
           newAccounts.push(acct);
@@ -240,40 +230,6 @@ class InstitutionController {
         { id: fundingPool.id, amount: fundingAmount },
         { id: unassigned.id, amount: unassignedAmount },
       ],
-    };
-  }
-
-  static async subtractFromCategoryBalance(
-    trx: TransactionClientContract,
-    categoryId: number,
-    amount: number,
-  ): Promise<CategoryBalance> {
-    const result = await trx.query()
-      .select(
-        'groups.id AS groupId',
-        'groups.name AS group',
-        'cat.id AS categoryId',
-        'cat.name AS category',
-        'cat.amount AS amount',
-      )
-      .from('categories AS cat')
-      .leftJoin('groups', 'groups.id', 'cat.group_id')
-      .where('cat.id', categoryId);
-
-    const newAmount = result[0].amount - amount;
-
-    await trx.from('categories').where('id', categoryId).update('amount', newAmount);
-
-    return {
-      group: {
-        id: result[0].groupId,
-        name: result[0].group,
-      },
-      category: {
-        id: result[0].categoryId,
-        name: result[0].category,
-      },
-      amount: newAmount,
     };
   }
 
@@ -299,7 +255,7 @@ class InstitutionController {
         const accounts = await institution.related('accounts').query();
 
         return Promise.all(accounts.map(async (acct) => (
-          acct.sync(trx, institution.accessToken, user.id)
+          acct.sync(institution.accessToken, user)
         )));
       }));
 
@@ -330,13 +286,13 @@ class InstitutionController {
     const trx = await Database.transaction();
 
     try {
-      const institution = await Institution.findOrFail(request.params().instId);
-      const account = await Account.findOrFail(request.params().acctId);
+      const institution = await Institution.findOrFail(request.params().instId, { client: trx });
+      const account = await Account.findOrFail(request.params().acctId, { client: trx });
 
       let result: AccountSyncResult | null = null;
 
       result = await account.sync(
-        trx, institution.accessToken, user.id,
+        institution.accessToken, user,
       );
 
       await trx.commit();
@@ -349,124 +305,6 @@ class InstitutionController {
       response.internalServerError(error);
       return null;
     }
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  public async updateTx({
-    request,
-    auth: {
-      user,
-    },
-  }: HttpContextContract): Promise<Record<string, unknown>> {
-    if (!user) {
-      throw new Error('user is not defined');
-    }
-
-    const trx = await Database.transaction();
-
-    type CatBalance = {
-      id: number,
-      balance: number,
-    };
-
-    type Result = {
-      categories: Array<CatBalance>,
-      splits: Array<unknown>,
-    };
-
-    const result: Result = {
-      categories: [],
-      splits: [],
-    };
-
-    // Get the 'unassigned' category id
-    const systemCats = await trx.query()
-      .select('cats.id AS id', 'cats.name AS name')
-      .from('categories AS cats')
-      .join('groups', 'groups.id', 'group_id')
-      .where('cats.system', true)
-      .andWhere('groups.user_id', user.id);
-    const unassigned = systemCats.find((entry) => entry.name === 'Unassigned');
-
-    const splits = await trx.query().select('category_id AS categoryId', 'amount')
-      .from('transaction_categories')
-      .where('transaction_id', request.params().txId);
-
-    if (splits.length > 0) {
-      // There are pre-existing category splits.
-      // Credit the category balance for each one.
-      await Promise.all(splits.map(async (split) => {
-        const cat = await InstitutionController.subtractFromCategoryBalance(
-          trx, split.categoryId, split.amount,
-        );
-
-        result.categories.push({ id: cat.category.id, balance: cat.amount });
-      }));
-
-      await trx.from('transaction_categories').where('transaction_id', request.params().txId).delete();
-    }
-    else {
-      // There are no category splits. Debit the 'Unassigned' category
-
-      const trans = await trx.query()
-        .select('amount').from('account_transactions').where('transaction_id', request.params().txId);
-
-      const cat = await InstitutionController
-        .subtractFromCategoryBalance(trx, unassigned.id, trans[0].amount);
-
-      result.categories.push({ id: cat.category.id, balance: cat.amount });
-    }
-
-    if (request.input('splits').length > 0) {
-      await Promise.all(request.input('splits').map(async (split) => {
-        if (split.categoryId !== unassigned.id) {
-          await trx.insertQuery()
-            .insert({
-              transaction_id: request.params().txId,
-              category_id: split.categoryId,
-              amount: split.amount,
-            })
-            .table('transaction_categories');
-        }
-
-        const cat = await InstitutionController.subtractFromCategoryBalance(
-          trx, split.categoryId, -split.amount,
-        );
-
-        // Determine if the category is already in the array.
-        const index = result.categories.findIndex((c) => c.id === cat.category.id);
-
-        // If the category is already in the array then simply update the amount.
-        // Otherwise, add the category and amount to the array.
-        if (index !== -1) {
-          result.categories[index].balance = cat.amount;
-        }
-        else {
-          result.categories.push({ id: cat.category.id, balance: cat.amount });
-        }
-      }));
-    }
-
-    const transCats = await trx.query()
-      .select(
-        'category_id as categoryId',
-        Database.raw('CAST(splits.amount AS float) AS amount'),
-        'cats.name AS category',
-        'groups.name AS group',
-      )
-      .from('transaction_categories AS splits')
-      .join('categories AS cats', 'cats.id', 'splits.category_id')
-      .join('groups', 'groups.id', 'cats.group_id')
-      .where('splits.transaction_id', request.params().txId);
-
-    result.splits = [];
-    if (transCats.length > 0) {
-      result.splits = transCats;
-    }
-
-    await trx.commit();
-
-    return result;
   }
 
   // eslint-disable-next-line class-methods-use-this

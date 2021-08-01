@@ -8,7 +8,7 @@ import {
   FormikContextType,
 } from 'formik';
 import MobxStore from '../state/mobxStore';
-import useModal from '../useModal';
+import useModal from '../Modal/useModal';
 import FundingPlan from '../state/FundingPlan';
 
 interface Props {
@@ -42,7 +42,7 @@ const PlanDialog = ({
       // TODO: Display all the errors?
       setErrors({ name: errors[0].message });
     }
-    else {
+    else if (onHide) {
       onHide();
     }
   };
@@ -72,7 +72,7 @@ const PlanDialog = ({
       setTouched({ name: true }, false);
       setErrors({ name: errors[0].message });
     }
-    else {
+    else if (onHide) {
       onHide();
     }
   };

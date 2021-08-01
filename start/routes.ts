@@ -40,49 +40,66 @@ Route.group(() => {
     Route.get('/user', 'UsersController.get');
     Route.get('/user/link_token', 'UsersController.getLinkToken');
 
-    Route.get('/groups', 'CategoryController.get');
-    Route.post('/groups', 'CategoryController.addGroup');
-    Route.patch('/groups/:groupId', 'CategoryController.updateGroup');
-    Route.delete('/groups/:groupId', 'CategoryController.deleteGroup');
+    Route.group(() => {
+      Route.get('', 'CategoryController.get');
+      Route.post('', 'CategoryController.addGroup');
+      Route.patch('/:groupId', 'CategoryController.updateGroup');
+      Route.delete('/:groupId', 'CategoryController.deleteGroup');
+      Route.get('/:groupId/categories', 'CategoryController.get');
+      Route.post('/:groupId/categories', 'CategoryController.addCategory');
+      Route.patch('/:groupId/categories/:catId', 'CategoryController.updateCategory');
+      Route.delete('/:groupId/categories/:catId', 'CategoryController.deleteCategory');
+    }).prefix('/groups');
 
-    Route.get('/groups/:groupId/categories', 'CategoryController.get');
-    Route.post('/groups/:groupId/categories', 'CategoryController.addCategory');
-    Route.patch('/groups/:groupId/categories/:catId', 'CategoryController.updateCategory');
-    Route.delete('/groups/:groupId/categories/:catId', 'CategoryController.deleteCategory');
-
-    Route.post('/category_transfer', 'CategoryController.transfer');
-    Route.patch('/category_transfer/:tfrId', 'CategoryController.transfer');
-    Route.delete('/category_transfer/:tfrId', 'CategoryController.transferDelete');
-
-    Route.delete('/transaction/:trxId', 'TransactionsController.delete');
+    Route.group(() => {
+      Route.post('', 'CategoryController.transfer');
+      Route.patch('/:tfrId', 'CategoryController.transfer');
+      Route.delete('/:tfrId', 'CategoryController.transferDelete');
+    }).prefix('/category-transfer');
 
     Route.get('/category_balances', 'CategoryController.balances');
 
-    Route.get('/category/:catId/transactions', 'CategoryController.transactions');
-    Route.get('/category/history', 'CategoryController.history');
+    Route.group(() => {
+      Route.get('/:catId/transactions', 'CategoryController.transactions');
+      Route.get('/history', 'CategoryController.history');
+    }).prefix('/category');
 
     Route.get('/connected_accounts', 'UsersController.getConnectedAccounts');
 
-    Route.get('/account/:acctId/transactions', 'AccountsController.transactions');
-    Route.get('/account/:acctId/balances', 'AccountsController.balances');
+    Route.group(() => {
+      Route.get('/:acctId/transactions', 'AccountsController.transactions');
+      Route.get('/:acctId/balances', 'AccountsController.balances');
+    }).prefix('/account');
 
     Route.post('/institutions/sync', 'InstitutionController.syncAll');
 
-    Route.post('/institution', 'InstitutionController.add');
-    Route.get('/institution/:instId/info', 'InstitutionController.info');
-    Route.get('/institution/:instId/accounts', 'InstitutionController.get');
-    Route.post('/institution/:instId/accounts', 'InstitutionController.addAccounts');
-    Route.post('/institution/:instId/accounts/:acctId/transactions/sync', 'InstitutionController.sync');
-    Route.get('/institution/:instId/link_token', 'InstitutionController.linkToken');
+    Route.group(() => {
+      Route.post('', 'InstitutionController.add');
+      Route.get('/:instId/info', 'InstitutionController.info');
+      Route.get('/:instId/accounts', 'InstitutionController.get');
+      Route.post('/:instId/accounts', 'InstitutionController.addAccounts');
+      Route.post('/:instId/accounts/:acctId/transactions/sync', 'InstitutionController.sync');
+      Route.get('/:instId/link_token', 'InstitutionController.linkToken');
+    }).prefix('/institution');
 
-    Route.get('/funding_plans', 'FundingPlanController.getAll');
-    Route.post('/funding_plan', 'FundingPlanController.add');
-    Route.get('/funding_plan/:planId', 'FundingPlanController.getPlan');
-    Route.get('/funding_plan/:planId/details', 'FundingPlanController.getFullPlan');
-    Route.put('/funding_plan/:planId/item/:catId', 'FundingPlanController.updateCategory');
+    Route.group(() => {
+      Route.get('', 'FundingPlanController.getAll');
+      Route.post('', 'FundingPlanController.add');
+      Route.get('/:planId', 'FundingPlanController.getPlan');
+      Route.get('/:planId/details', 'FundingPlanController.getFullPlan');
+      Route.put('/:planId/item/:catId', 'FundingPlanController.updateCategory');
+    }).prefix('/funding-plans');
 
-    Route.patch('/transaction/:txId', 'InstitutionController.updateTx');
-    Route.on('/fundingplans').render('fundingplans');
+    Route.group(() => {
+      Route.patch('/:txId', 'TransactionsController.update');
+      Route.delete('/:trxId', 'TransactionsController.delete');
+    }).prefix('/transaction');
 
     Route.get('/reports/:report', 'ReportController.get');
+
+    Route.group(() => {
+      Route.post('', 'LoansController.add');
+      Route.get('/:catId/transactions', 'LoansController.getTransactions');
+    }).prefix('/loans');
+
 }).prefix('/api').middleware(['auth']);

@@ -1,8 +1,7 @@
-import Database from '@ioc:Adonis/Lucid/Database';
+import Database, { StrictValues } from '@ioc:Adonis/Lucid/Database';
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import Category, { GroupItem } from 'App/Models/Category';
 import CategoryTransfer from 'App/Models/CategoryTransfer';
-import AccountTransaction from 'App/Models/AccountTransaction';
 import { GroupHistoryItem } from 'App/Models/User';
 import AddGroupValidator from 'App/Validators/AddGroupValidator';
 import UpdateGroupValidator from 'App/Validators/UpdateGroupValidator';
@@ -12,13 +11,19 @@ import UpdateCategoryValidator from 'App/Validators/UpdateCategoryValidator';
 import DeleteCategoryValidator from 'App/Validators/DeleteCategoryValidator';
 import UpdateCategoryTransferValidator from 'App/Validators/UpdateCategoryTransferValidator';
 import Transaction from 'App/Models/Transaction';
-import { StrictValues } from '@ioc:Adonis/Lucid/Database';
 import TransactionCategory from 'App/Models/TransactionCategory';
-import { AddCategoryResponse, UpdateCategoryResponse } from '../../../common/ResponseTypes';
+import Loan from 'App/Models/Loan';
+import {
+  LoanTransactionProps, TransactionProps, TransactionType, UpdateCategoryResponse,
+} from 'Common/ResponseTypes';
 
-type Transactions = {
-  transactions: Array<AccountTransaction>,
-  pending: Array<AccountTransaction>,
+type TransactionsResponse = {
+  transactions: TransactionProps[],
+  pending: TransactionProps[],
+  loan: {
+    balance: number,
+    transactions: LoanTransactionProps[],
+  }
   balance: number,
 }
 
@@ -38,7 +43,7 @@ class CategoryController {
         'g.system AS systemGroup',
         'c.id AS categoryId',
         'c.name as categoryName',
-        'c.system AS systemCategory',
+        'c.type',
         Database.raw('CAST(amount AS float) as balance'),
       )
       .from('groups AS g')
@@ -47,10 +52,13 @@ class CategoryController {
       .orderBy('g.name')
       .orderBy('c.name');
 
-    const groups: Array<GroupItem> = [];
-    let group: GroupItem | null = null;
+    const groups: GroupItem[] = [];
+    // let group: GroupItem | null = null;
 
-    rows.forEach((cat) => {
+    // Create a tree structure with groups at the top level
+    // and categories within each group.
+    await Promise.all(rows.map(async (cat) => {
+      let group = groups.find((g) => (g.id === cat.groupId));
       if (!group) {
         group = {
           id: cat.groupId,
@@ -58,30 +66,19 @@ class CategoryController {
           system: cat.systemGroup,
           categories: [],
         };
-      }
-      else if (group.name !== cat.groupName) {
+
         groups.push(group);
-        group = {
-          id: cat.groupId,
-          name: cat.groupName,
-          system: cat.systemGroup,
-          categories: [],
-        };
       }
 
       if (cat.categoryId) {
         group.categories.push({
           id: cat.categoryId,
           name: cat.categoryName,
-          system: cat.systemCategory,
+          type: cat.type,
           balance: cat.balance,
         });
       }
-    });
-
-    if (group) {
-      groups.push(group);
-    }
+    }));
 
     return groups;
   }
@@ -144,7 +141,7 @@ class CategoryController {
   // eslint-disable-next-line class-methods-use-this
   public async addCategory({
     request,
-  }: HttpContextContract): Promise<AddCategoryResponse> {
+  }: HttpContextContract): Promise<Category> {
     await request.validate(AddCategoryValidator);
 
     const category = new Category();
@@ -153,13 +150,7 @@ class CategoryController {
       .fill({ groupId: parseInt(request.params().groupId, 10), name: request.input('name'), amount: 0 })
       .save();
 
-    return {
-      groupId: category.groupId,
-      id: category.id,
-      name: category.name,
-      balance: category.amount,
-      system: false,
-    };
+    return category;
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -180,7 +171,20 @@ class CategoryController {
   public async deleteCategory({ request }: HttpContextContract): Promise<void> {
     await request.validate(DeleteCategoryValidator);
 
-    await Database.query().from('categories').where({ id: request.params().catId }).delete();
+    const trx = await Database.transaction();
+    const category = await Category.findOrFail(request.params().catId, { client: trx });
+
+    if (category.type === 'LOAN') {
+      const loan = await Loan.findBy('categoryId', request.params().catId, { client: trx });
+
+      if (loan) {
+        await loan.delete();
+      }
+    }
+
+    await category.delete();
+
+    await trx.commit();
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -189,104 +193,68 @@ class CategoryController {
     auth: {
       user,
     },
-  }: HttpContextContract): Promise<Transactions> {
+  }: HttpContextContract): Promise<TransactionsResponse> {
     if (!user) {
       throw new Error('user is not defined');
     }
 
     const categoryId = parseInt(request.params().catId, 10);
 
-    const result: Transactions = {
+    const result: TransactionsResponse = {
       transactions: [],
       pending: [],
+      loan: {
+        balance: 0,
+        transactions: [],
+      },
       balance: 0,
     };
 
-    const [cat] = await Database.query()
-      .select(Database.raw('CAST(amount AS float) as amount'), 'cats.name AS name', 'cats.system AS system')
-      .from('categories AS cats')
-      .join('groups', 'groups.id', 'group_id')
-      .where('cats.id', categoryId)
-      .andWhere('groups.user_id', user.id);
+    const cat = await Category.findOrFail(categoryId);
 
     result.balance = cat.amount;
 
-    const subquery = Database.query()
-      .select(
-        Database.raw(`COUNT(CASE WHEN category_id = ${categoryId} THEN 1 ELSE NULL END) AS count`),
-        Database.raw('sum(splits.amount) AS sum'),
-        Database.raw('json_agg (('
-          + '\'{"categoryId": \' || category_id || '
-          + '\', "amount": \' || splits.amount || '
-          + '\', "category": \' || \'"\' || cats.name || \'"\' || '
-          + '\', "group": \' || \'"\' || groups.name || \'"\' || '
-          + '\', "id": \' || splits.id || '
-          + '\'}\')::json) AS categories'),
-        'transaction_id',
-      )
-      .from('transaction_categories AS splits')
-      .join('categories AS cats', 'cats.id', 'splits.category_id')
-      .join('groups', 'groups.id', 'cats.group_id')
-      .where('groups.user_id', user.id)
-      .groupBy('transaction_id')
-      .toQuery();
+    if (cat.type === 'UNASSIGNED') {
+      const transactions = await user
+        .related('transactions').query()
+        .doesntHave('transactionCategories')
+        .orWhereHas('transactionCategories', (query) => {
+          query.where('categoryId', cat.id);
+        })
+        .preload('accountTransaction', (accountTransaction) => {
+          accountTransaction.preload('account', (account) => {
+            account.preload('institution');
+          });
+        })
+        .preload('transactionCategories');
 
-    const transName = 'COALESCE(acct_trans.name, '
-      + 'CASE WHEN trans.type = 2 THEN \'Category Funding\' '
-      + 'WHEN trans.type = 3 THEN \'Category Rebalance\' '
-      + 'ELSE \'Category Transfer\' '
-      + 'END)';
-
-    const query = Database.query()
-      .select(
-        'trans.id AS id',
-        'trans.type AS type',
-        Database.raw('COALESCE(trans.sort_order, 2147483647) AS "sortOrder"'),
-        Database.raw('date::text'),
-        Database.raw(`${transName} AS name`),
-        'splits.categories AS categories',
-        'inst.name AS instituteName',
-        'acct.name AS accountName',
-        Database.raw('CAST(acct_trans.amount AS real) AS amount'),
-        Database.raw('COALESCE(acct_trans.pending, false) AS pending'),
-      )
-      .from('transactions AS trans')
-      .leftJoin('account_transactions as acct_trans', 'acct_trans.transaction_id', 'trans.id')
-      .leftJoin('accounts AS acct', 'acct.id', 'acct_trans.account_id')
-      .leftJoin('institutions AS inst', 'inst.id', 'acct.institution_id')
-      .joinRaw(`left join (${subquery}) AS splits ON splits.transaction_id = trans.id`)
-      .where('trans.user_id', user.id)
-      .where((q) => {
-        q.where('inst.user_id', user.id).orWhereNull('inst.user_id');
-      })
-      .orderBy('pending', 'desc')
-      .orderBy('date', 'desc')
-      .orderBy(Database.raw('COALESCE(trans.sort_order, 2147483647)'), 'desc')
-      .orderBy(Database.raw(transName));
-
-    if (cat.system && cat.name === 'Unassigned') {
-      query.whereNull('splits.categories');
+      result.transactions = transactions.map((t) => (
+        t.serialize() as TransactionProps
+      ));
     }
     else {
-      query.where('splits.count', '>', 0);
-    }
+      const transactions = await user
+        .related('transactions').query()
+        .whereHas('transactionCategories', (query) => {
+          query.where('categoryId', cat.id);
+        })
+        .preload('accountTransaction', (accountTransaction) => {
+          accountTransaction.preload('account', (account) => {
+            account.preload('institution');
+          });
+        })
+        .preload('transactionCategories', (transactionCategory) => {
+          transactionCategory.preload('loanTransaction');
+        });
 
-    result.transactions = await query;
+      result.transactions = transactions.map((t) => (
+        t.serialize() as TransactionProps
+      ));
 
-    if (result.transactions.length > 0) {
-      // Move pending transactions to the pending array
-      // Find first transaction that is not pending (all pending
-      // should be up front in the array)
-      const index = result.transactions.findIndex((t) => !t.pending);
+      if (cat.type === 'LOAN') {
+        const loan = await Loan.findByOrFail('categoryId', cat.id);
 
-      if (index === -1) {
-        // The array contains only pending transactions
-        result.pending = result.transactions;
-        result.transactions = [];
-      }
-      else if (index > 0) {
-        // The array contains at least one pending transaction
-        result.pending = result.transactions.splice(0, index);
+        result.loan = await loan.getProps();
       }
     }
 
@@ -307,18 +275,18 @@ class CategoryController {
     const result: {
       balances: Array<{ id: number, balance: number}>,
       transaction: {
-        categories: unknown[],
+        transactionCategories: unknown[],
         id?: number,
         date?: string,
         name?: string,
         pending?: boolean,
         sortOrder?: number,
-        type?: number,
+        type?: TransactionType,
         accountName?: string | null,
         amount?: string | null,
         institutionName?: string | null,
       },
-    } = { balances: [], transaction: { categories: [] } };
+    } = { balances: [], transaction: { transactionCategories: [] } };
 
     try {
       const categories = request.input('categories');
@@ -335,14 +303,14 @@ class CategoryController {
           result.transaction = {
             id: transactionId,
             date,
-            name: 'Category Rebalance',
+            name: type === TransactionType.FUNDING_TRANSACTION ? 'Category Funding' : 'Category Rebalance',
             pending: false,
             sortOrder: 2147483647,
-            type: 3,
+            type,
             accountName: null,
             amount: null,
             institutionName: null,
-            categories: [],
+            transactionCategories: [],
           };
         }
 
@@ -364,8 +332,8 @@ class CategoryController {
               existingSplit.save();
             }
             else {
-              const newSplit = new TransactionCategory();
-              newSplit.useTransaction(trx);
+              const newSplit = (new TransactionCategory()).useTransaction(trx);
+
               await newSplit
                 .fill({ transactionId, categoryId: split.categoryId, amount: split.amount })
                 .save();
@@ -405,17 +373,7 @@ class CategoryController {
         await query.delete();
 
         const transaction = await Transaction.findOrFail(transactionId, { client: trx });
-        const cats = await transaction.related('categories').query().preload('category', (catQuery) => {
-          catQuery.preload('group');
-        });
-
-        result.transaction.categories = cats.map((cat) => ({
-          amount: cat.amount,
-          category: cat.category.name,
-          categoryId: cat.categoryId,
-          group: cat.category.group.name,
-          id: cat.id,
-        }));
+        result.transaction.transactionCategories = await transaction.related('transactionCategories').query();
       }
 
       await trx.commit();

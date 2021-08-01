@@ -1,6 +1,5 @@
 import { schema, rules } from '@ioc:Adonis/Core/Validator'
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
-import { validator } from '@ioc:Adonis/Core/Validator';
 
 export default class UpdateCategoryValidator {
   constructor(protected ctx: HttpContextContract) {
@@ -22,8 +21,6 @@ export default class UpdateCategoryValidator {
       }),
     ]),
   })
-
-  public reporter = validator.reporters.jsonapi;
 
   public messages = {
     'name.unique': 'The category name must be unique within the group',
