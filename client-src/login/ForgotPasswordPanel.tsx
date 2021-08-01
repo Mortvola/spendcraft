@@ -1,20 +1,19 @@
 import React from 'react';
-import PropTypes from 'prop-types';
-import Errors from './Errors';
+import Errors from '../Modal/Errors';
 import { ErrorsType } from './submit';
 
-type PropTypes = {
+type PropsType = {
   onHide: (() => void),
   onRememberedPasswordClick: (() => void),
   requestResetLink: ((event: React.MouseEvent) => void),
   errors: ErrorsType,
 }
-const ForgotPasswordPanel = React.forwardRef<HTMLFormElement, PropTypes>(({
+const ForgotPasswordPanel = React.forwardRef<HTMLFormElement, PropsType>(({
   onHide,
   onRememberedPasswordClick,
   requestResetLink,
   errors,
-}, forwardRef) => (
+}: PropsType, forwardRef) => (
   <form ref={forwardRef}>
     <div className="form-group row">
       <label htmlFor="email" className="col-md-3 col-form-label text-md-right">E-Mail Address</label>
@@ -50,5 +49,7 @@ const ForgotPasswordPanel = React.forwardRef<HTMLFormElement, PropTypes>(({
     </div>
   </form>
 ));
+
+ForgotPasswordPanel.displayName = 'ForgotPasswordPanel';
 
 export default ForgotPasswordPanel;

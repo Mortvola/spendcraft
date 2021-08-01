@@ -1,3 +1,4 @@
+/* eslint-disable import/no-cycle */
 import Database from '@ioc:Adonis/Lucid/Database';
 import { DateTime } from 'luxon';
 import Hash from '@ioc:Adonis/Core/Hash'
@@ -10,7 +11,7 @@ import {
 } from '@ioc:Adonis/Lucid/Orm';
 import Transaction from 'App/Models/Transaction'
 import Loan from 'App/Models/Loan';
-import Institution from './Institution';
+import Institution from 'App/Models/Institution';
 
 type AccountResult = {
   id: number,
@@ -152,7 +153,7 @@ export default class User extends BaseModel {
         'acct.name AS accountName',
         'acct.tracking AS tracking',
         Database.raw('CAST(acct.balance AS DOUBLE PRECISION) AS balance'),
-        Database.raw("to_char(acct.sync_date  AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI:SS') AS syncdate"),
+        Database.raw('to_char(acct.sync_date  AT TIME ZONE \'UTC\', \'YYYY-MM-DD HH24:MI:SS\') AS syncdate'),
       )
       .from('institutions AS inst')
       .leftJoin('accounts AS acct', 'acct.institution_id', 'inst.id')

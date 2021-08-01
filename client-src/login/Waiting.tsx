@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { ReactElement } from 'react';
 import PropTypes from 'prop-types';
 import { Spinner } from 'react-bootstrap';
 
@@ -8,7 +8,7 @@ type PropTypes = {
 
 const Waiting = ({
   show,
-}: PropTypes) => (
+}: PropTypes): ReactElement | null => (
   show
     ? (
       <div className="wait-background">

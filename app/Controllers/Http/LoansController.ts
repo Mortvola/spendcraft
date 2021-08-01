@@ -4,7 +4,6 @@ import Database from '@ioc:Adonis/Lucid/Database';
 import Category from 'App/Models/Category';
 import Group from 'App/Models/Group';
 import Loan from 'App/Models/Loan';
-import LoanTransaction from 'App/Models/LoanTransaction';
 import { LoanTransactionsProps } from 'Common/ResponseTypes';
 // import LoanTransaction from 'App/Models/LoanTransaction';
 

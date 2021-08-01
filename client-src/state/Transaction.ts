@@ -51,7 +51,7 @@ class Transaction implements TransactionInterface {
           break;
 
         case TransactionType.FUNDING_TRANSACTION:
-          this.name = 'Caetgory Funding';
+          this.name = 'Category Funding';
           break;
 
         default:

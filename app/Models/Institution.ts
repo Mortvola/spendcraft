@@ -1,12 +1,16 @@
+/* eslint-disable import/no-cycle */
 import {
   BaseModel, hasMany, HasMany,
   column,
+  belongsTo,
+  BelongsTo,
 } from '@ioc:Adonis/Lucid/Orm';
 import Env from '@ioc:Adonis/Core/Env'
 import Database, { TransactionClientContract } from '@ioc:Adonis/Lucid/Database'
 import util from 'util';
 import plaidClient, { PlaidInstitution } from '@ioc:Plaid';
 import Account from 'App/Models/Account';
+import User from 'App/Models/User';
 
 class Institution extends BaseModel {
   @column()
@@ -31,6 +35,9 @@ class Institution extends BaseModel {
 
   @column()
   public userId: number;
+
+  @belongsTo(() => User)
+  public user: BelongsTo<typeof User>;
 
   public static async updateWebhooks(): Promise<void> {
     const hook = Env.get('PLAID_WEBHOOK');

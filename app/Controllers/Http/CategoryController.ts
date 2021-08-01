@@ -14,7 +14,7 @@ import Transaction from 'App/Models/Transaction';
 import TransactionCategory from 'App/Models/TransactionCategory';
 import Loan from 'App/Models/Loan';
 import {
-  AddCategoryResponse, LoanTransactionProps, TransactionProps, TransactionType, UpdateCategoryResponse,
+  LoanTransactionProps, TransactionProps, TransactionType, UpdateCategoryResponse,
 } from 'Common/ResponseTypes';
 
 type TransactionsResponse = {
@@ -281,7 +281,7 @@ class CategoryController {
         name?: string,
         pending?: boolean,
         sortOrder?: number,
-        type?: number,
+        type?: TransactionType,
         accountName?: string | null,
         amount?: string | null,
         institutionName?: string | null,
@@ -303,7 +303,7 @@ class CategoryController {
           result.transaction = {
             id: transactionId,
             date,
-            name: type === 2 ? 'Category Funding' : 'Category Rebalance',
+            name: type === TransactionType.FUNDING_TRANSACTION ? 'Category Funding' : 'Category Rebalance',
             pending: false,
             sortOrder: 2147483647,
             type,

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, ReactElement } from 'react';
 import PropTypes from 'prop-types';
 import { Modal } from 'react-bootstrap';
 import { submitForm, defaultErrors } from './submit';
@@ -15,7 +15,7 @@ type PropTypes = {
 const Login = ({
   show,
   onHide,
-}: PropTypes) => {
+}: PropTypes): ReactElement => {
   const [card, setCard] = useState('login');
   const [resetMessage, setResetMessage] = useState('');
   const [waiting, setWaiting] = useState(false);
@@ -34,7 +34,7 @@ const Login = ({
     setWaiting(true);
 
     if (formRef.current === null) {
-      throw new Error('form ref is null')
+      throw new Error('form ref is null');
     }
 
     submitForm(null, formRef.current, '/login',

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, ReactElement } from 'react';
 import PropTypes from 'prop-types';
 import { Modal } from 'react-bootstrap';
 import { submitForm, defaultErrors, ErrorsType } from './submit';
@@ -14,7 +14,7 @@ type PropTypes = {
 const Register = ({
   show,
   onHide,
-}: PropTypes) => {
+}: PropTypes): ReactElement => {
   const [confirmationSent, setConfirmationSent] = useState(false);
   const [waiting, setWaiting] = useState(false);
   const [errors, setErrors] = useState(defaultErrors);
@@ -24,7 +24,7 @@ const Register = ({
     setWaiting(true);
 
     if (formRef.current === null) {
-      throw new Error('form element is null')
+      throw new Error('form element is null');
     }
 
     submitForm(null, formRef.current, '/register',
@@ -44,13 +44,13 @@ const Register = ({
   };
 
   let title = 'Register';
-  
+
   const panel = () => {
     if (confirmationSent) {
-      const resetMessage = `We sent an email to your email address for email verification. Click on the link and then return here to log in.`;
+      const resetMessage = 'We sent an email to your email address for email verification. Click on the link and then return here to log in.';
       title = 'Reset Link';
-      return <ResetEmailSentPanel resetMessage={resetMessage} />
-    }  
+      return <ResetEmailSentPanel resetMessage={resetMessage} />;
+    }
 
     return (
       <RegisterPanel
@@ -59,8 +59,8 @@ const Register = ({
         onRegister={handleRegister}
         errors={errors}
       />
-    );  
-  }
+    );
+  };
 
   return (
     <Modal show={show} onHide={onHide} onExited={handleExited}>

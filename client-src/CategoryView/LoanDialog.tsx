@@ -164,7 +164,7 @@ const LoanDialog = ({
         </label>
         <label>
           Start Date
-          <Field type="date" name="startDate" />
+          <Field type="date" name="startDate" className="form-control" />
           <FormError name="startDate" />
         </label>
       </div>

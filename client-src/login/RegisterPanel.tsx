@@ -1,6 +1,5 @@
 import React from 'react';
-import PropTypes from 'prop-types';
-import Errors from './Errors';
+import Errors from '../Modal/Errors';
 import { ErrorsType } from './submit';
 
 type PropTypes = {
@@ -56,6 +55,10 @@ const RegisterPanel = React.forwardRef<HTMLFormElement, PropTypes>(({
 
       <div className="col-md-8">
         <input type="password" className="form-control" name="password_confirmation" required autoComplete="new-password" />
+
+        <span className="text-danger" role="alert">
+          <Errors errors={errors.password_confirmation} />
+        </span>
       </div>
     </div>
 
@@ -73,5 +76,7 @@ const RegisterPanel = React.forwardRef<HTMLFormElement, PropTypes>(({
     </div>
   </form>
 ));
+
+RegisterPanel.displayName = 'RegisterPanel';
 
 export default RegisterPanel;

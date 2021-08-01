@@ -5,6 +5,7 @@ import util from 'util';
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import Database from '@ioc:Adonis/Lucid/Database';
 import Institution from 'App/Models/Institution';
+import User from 'App/Models/User';
 
 const getVerificationKey = util
   .promisify(plaidClient.getWebhookVerificationKey)
@@ -66,19 +67,19 @@ class WebhookController {
       case 'HISTORICAL_UPDATE':
         break;
       case 'DEFAULT_UPDATE': {
-        const institution = await Institution.findByOrFail('plaidItemId', event.item_id);
+        const trx = await Database.transaction();
+
+        const institution = await Institution.findByOrFail('plaidItemId', event.item_id, { client: trx });
 
         if (institution) {
-          const trx = await Database.transaction();
-
           try {
             const accounts = await institution.related('accounts').query();
+            const user = await User.findOrFail(institution.userId);
 
             await Promise.all(accounts.map(async (acct) => (
               acct.sync(
-                trx,
                 institution.accessToken,
-                institution.userId,
+                user,
               )
             )));
 
