@@ -4,12 +4,14 @@ import IconButton from '../IconButton';
 import DetailView from '../DetailView';
 import AccountView from './AccountView';
 import MobxStore from '../state/mobxStore';
+import { useAddTransactionDialog } from './AddTransactionDialog';
 
 const Accounts = () => {
   const {
     accounts, register, balances, uiState: { selectedAccount },
   } = useContext(MobxStore);
   const [refreshing, setRefreshing] = useState(false);
+  const [AddTransactionDialog, showAddTransactionDialog] = useAddTransactionDialog();
 
   useEffect(() => {
     if (selectedAccount) {
@@ -51,6 +53,10 @@ const Accounts = () => {
       });
   };
 
+  const handleAddTransactionClick = () => {
+    showAddTransactionDialog();
+  }
+
   let rotate = false;
   if (refreshing) {
     rotate = true;
@@ -70,7 +76,15 @@ const Accounts = () => {
       </div>
       {
         selectedAccount
-          ? <DetailView detailView={selectedAccount.tracking} />
+          ? (
+            <div>
+              <div>
+                <IconButton icon="plus" onClick={handleAddTransactionClick}/>
+                <AddTransactionDialog account={selectedAccount} />
+              </div>
+              <DetailView detailView={selectedAccount.tracking} />
+            </div>
+          )
           : null
       }
     </>

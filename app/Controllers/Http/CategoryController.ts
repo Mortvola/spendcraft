@@ -14,6 +14,7 @@ import Transaction from 'App/Models/Transaction';
 import TransactionCategory from 'App/Models/TransactionCategory';
 import Loan from 'App/Models/Loan';
 import {
+  CategoryBalanceProps,
   LoanTransactionProps, TransactionProps, TransactionType, UpdateCategoryResponse,
 } from 'Common/ResponseTypes';
 
@@ -264,7 +265,7 @@ class CategoryController {
   // eslint-disable-next-line class-methods-use-this
   public async transfer(
     { request, auth: { user } }: HttpContextContract,
-  ): Promise<{ balances: { id: number, balance: number}[] }> {
+  ): Promise<{ balances: CategoryBalanceProps[] }> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -273,7 +274,7 @@ class CategoryController {
 
     const trx = await Database.transaction();
     const result: {
-      balances: Array<{ id: number, balance: number}>,
+      balances: CategoryBalanceProps[],
       transaction: {
         transactionCategories: unknown[],
         id?: number,

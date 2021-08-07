@@ -3,6 +3,7 @@ import Category, { isCategory } from './Category';
 import {
   CategoryProps, Error, GroupProps, isErrorResponse, isGroupProps,
   isAddCategoryResponse,
+  CategoryBalanceProps,
 } from '../../common/ResponseTypes';
 import {
   getBody, httpDelete, patchJSON, postJSON,
@@ -124,7 +125,7 @@ class Group implements GroupInterface {
     return null;
   }
 
-  updateBalances(balances: CategoryProps[]): void {
+  updateBalances(balances: CategoryBalanceProps[]): void {
     this.categories.forEach((c) => {
       const balance = balances.find((b) => b.id === c.id);
       if (balance) {

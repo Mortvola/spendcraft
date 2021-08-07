@@ -2,6 +2,7 @@ import { makeAutoObservable, runInAction } from 'mobx';
 import Category from './Category';
 import Group from './Group';
 import {
+  CategoryBalanceProps,
   CategoryProps, Error, isErrorResponse,
   isGroupProps, isGroupsResponse, isLoanGroupProps,
 } from '../../common/ResponseTypes';
@@ -173,7 +174,7 @@ class CategoryTree implements CategoryTreeInterface {
     return null;
   }
 
-  updateBalances(balances: CategoryProps[]): void {
+  updateBalances(balances: CategoryBalanceProps[]): void {
     runInAction(() => {
       this.groups.forEach((g) => {
         g.updateBalances(balances);

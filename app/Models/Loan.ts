@@ -79,7 +79,7 @@ export default class Loan extends BaseModel {
         balance += t.principle;
       }
       else {
-        interestOwed = interest - t.transactionCategory.amount;
+        interestOwed = interest + t.transactionCategory.amount;
         t.principle = 0;
       }
     

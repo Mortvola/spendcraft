@@ -10,6 +10,7 @@ import BalanceHistory from 'App/Models/BalanceHistory';
 import Category from 'App/Models/Category';
 import Institution from 'App/Models/Institution';
 import User from './User';
+import { CategoryBalanceProps, TrackingType } from 'Common/ResponseTypes';
 
 type Transaction = {
   balance: number,
@@ -31,13 +32,8 @@ type CategoryItem = {
   amount: number,
 };
 
-type CategoryBalance = {
-  id: number,
-  amount: number,
-};
-
 export type AccountSyncResult = {
-  categories: Array<CategoryBalance>,
+  categories: CategoryBalanceProps[],
   accounts: Array<{
     id: number,
     balance: number,
@@ -80,7 +76,7 @@ class Account extends BaseModel {
   public syncDate: string;
 
   @column()
-  public tracking: 'Balances' | 'Transactions';
+  public tracking: TrackingType;
 
   @column()
   public startDate: string;
@@ -140,7 +136,7 @@ class Account extends BaseModel {
       if (details.cat) {
         const unassigned = await Category.getUnassignedCategory(user);
 
-        result.categories = [{ id: unassigned.id, amount: details.cat.amount }];
+        result.categories = [{ id: unassigned.id, balance: details.cat.amount }];
       }
 
       result.accounts = [{

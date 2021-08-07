@@ -1,9 +1,9 @@
 import { makeAutoObservable, runInAction } from 'mobx';
-import { AccountProps, isAccountSyncResponse, isAccountTransactionsResponse } from '../../common/ResponseTypes';
+import { AccountProps, AddTransactionProps, Error, isAccountSyncResponse, isAccountTransactionsResponse, isAddTransactionResponse } from '../../common/ResponseTypes';
 import PendingTransaction from './PendingTransaction';
 import { AccountInterface, StoreInterface } from './State';
 import Transaction from './Transaction';
-import { getBody, httpPost } from './Transports';
+import { getBody, httpPost, postJSON } from './Transports';
 
 class Account implements AccountInterface {
   id: number;
@@ -115,6 +115,39 @@ class Account implements AccountInterface {
     else {
       this.fetching = false;
     }
+  }
+
+  async addTransaction(transaction: AddTransactionProps): Promise<Error[] | null> {
+    const response = await postJSON(`/api/account/${this.id}/transactions`, transaction);
+
+    if (response.ok) {
+      const body = await getBody(response);
+
+      if (isAddTransactionResponse(body)) {
+        if (body.categories.length > 0) {
+          runInAction(() => {
+            this.store.categoryTree.updateBalances(body.categories);
+
+            const transaction = new Transaction(this.store, body.transaction);
+
+            const index = this.transactions.findIndex((t) => body.transaction.date >= t.date);
+
+            if (index === -1) {
+              this.transactions.push(transaction);
+            }
+            else {
+              this.transactions.splice(index, 0, transaction)
+            }
+
+            this.balance = body.balance;
+          });
+
+          return null;
+        }
+      }
+    }
+
+    throw new Error('Error response received');
   }
 }
 

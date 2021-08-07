@@ -1,6 +1,6 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import {
-  LoanGroupProps, Error, isErrorResponse, CategoryProps, isAddCategoryResponse,
+  LoanGroupProps, Error, isErrorResponse, CategoryProps, isAddCategoryResponse, CategoryBalanceProps,
 } from '../../common/ResponseTypes';
 import Category from './Category';
 import { GroupInterface, StoreInterface } from './State';
@@ -84,7 +84,7 @@ class LoansGroup implements GroupInterface {
     return null;
   }
 
-  updateBalances(balances: CategoryProps[]): void {
+  updateBalances(balances: CategoryBalanceProps[]): void {
     this.categories.forEach((c) => {
       const balance = balances.find((b) => b.id === c.id);
       if (balance) {

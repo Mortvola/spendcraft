@@ -1,6 +1,6 @@
 import Reports from './Reports';
 import User from './User';
-import { CategoryType } from '../../common/ResponseTypes'
+import { AddTransactionProps, CategoryType, Error } from '../../common/ResponseTypes'
 import LoanTransaction from './LoanTransaction';
 
 export interface GroupInterface {
@@ -124,7 +124,7 @@ export interface UIStateInterface {
 
 export interface CategoryTreeInterface {
   systemIds: SystemIds;
-  updateBalances(balances: Array<CategoryProps>): void;
+  updateBalances(balances: CategoryBalanceProps[]): void;
   getCategory(categoryId: number): CategoryInterface | null;
 }
 
@@ -198,6 +198,8 @@ export interface AccountInterface {
   async getTransactions(): Promise<void>;
 
   async refresh(institutionId: number): Promise<void>;
+
+  async addTransaction(transaction: AddTransactionProps): Promise<Error[] | null>;
 }
 
 export interface BalancesInterface {

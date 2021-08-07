@@ -1,11 +1,12 @@
 import {
   BaseModel, hasMany, HasMany, column,
-  belongsTo, BelongsTo,
+  belongsTo, BelongsTo, HasOne, hasOne,
 } from '@ioc:Adonis/Lucid/Orm';
 import { DateTime } from 'luxon';
 import TransactionCategory from 'App/Models/TransactionCategory';
 import AccountTransaction from 'App/Models/AccountTransaction';
 import User from 'App/Models/User';
+import { TransactionType } from 'Common/ResponseTypes';
 
 class Transaction extends BaseModel {
   @column()
@@ -24,13 +25,10 @@ class Transaction extends BaseModel {
   public sortOrder: number;
 
   @column()
-  public type: number;
+  public type: TransactionType;
 
-  @belongsTo(() => AccountTransaction, {
-    foreignKey: 'id',
-    localKey: 'transactionId',
-  })
-  public accountTransaction: BelongsTo<typeof AccountTransaction>
+  @hasOne(() => AccountTransaction)
+  public accountTransaction: HasOne<typeof AccountTransaction>
 
   @belongsTo(() => User)
   public user: BelongsTo<typeof User>;

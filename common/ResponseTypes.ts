@@ -43,19 +43,6 @@ export const isLoanPropsArray = (r: unknown): r is LoanProps[] => (
   && (r[0] as LoanProps).paymentAmount !== undefined
 );
 
-export interface CategoryBalance {
-  id: number;
-
-  balance: number;
-}
-
-export const isCategoryBalance = (
-  r: CategoryProps | unknown,
-): r is CategoryProps => (
-  (r as CategoryProps).id !== undefined
-  && (r as CategoryProps).balance !== undefined
-);
-
 export type CategoryType = 'REGULAR' | 'UNASSIGNED' | 'FUNDING POOL' | 'ACCOUNT TRANSFER' | 'LOAN';
 
 export interface CategoryProps {
@@ -70,9 +57,7 @@ export interface CategoryProps {
   type: CategoryType;
 }
 
-export const isCategoryBalance2 = (
-  r: CategoryBalanceProps | unknown,
-): r is CategoryBalanceProps => (
+export const isCategoryBalance = (r: unknown): r is CategoryBalanceProps => (
   (r as CategoryBalanceProps).id !== undefined
   && (r as CategoryBalanceProps).balance !== undefined
 );
@@ -225,6 +210,7 @@ export enum TransactionType {
   FUNDING_TRANSACTION = 2,
   REBALANCE_TRANSACTION = 3,
   STARTING_BALANCE = 4,
+  MANUAL_TRANSACTION = 5,
 }
 
 export interface TransactionProps {
@@ -334,9 +320,9 @@ export const isLoanTransactionsResponse = (r: unknown): r is LoanTransactionsRes
 );
 
 export interface AccountTransactionsResponse {
-  transactions: Array<TransactionProps>;
+  transactions: TransactionProps[];
 
-  pending: Array<TransactionProps>;
+  pending: TransactionProps[];
 
   balance: number;
 }
@@ -375,7 +361,7 @@ export const isCategoryUpdateResponse = (
 export interface UpdateTransactionCategoryResponse {
   splits: TransactionCategoryProps[];
 
-  categories: CategoryProps[];
+  categories: CategoryBalanceProps[];
 }
 
 export const isUpdateTransactionCategoryResponse = (
@@ -388,7 +374,7 @@ export const isUpdateTransactionCategoryResponse = (
 );
 
 export interface UpdateCategoryTransferReponse {
-  balances: { id: number, balance: number }[],
+  balances: CategoryBalanceProps[],
 
   transaction: {
     transactionCategories: TransactionCategoryProps[],
@@ -399,37 +385,35 @@ export const isUpdateCategoryTransferResponse = (
   r: UpdateCategoryTransferReponse | unknown,
 ): r is UpdateCategoryTransferReponse => (
   (r as UpdateCategoryTransferReponse).balances !== undefined
-  && (r as UpdateCategoryTransferReponse).balances !== undefined
+  && Array.isArray((r as UpdateCategoryTransferReponse).balances)
   && ((r as UpdateCategoryTransferReponse).balances.length === 0
-  || isCategoryBalance2((r as UpdateCategoryTransferReponse).balances[0]))
+  || isCategoryBalance((r as UpdateCategoryTransferReponse).balances[0]))
 );
 
 export interface DeleteTransactionResponse {
-  balances: { id: number, balance: number }[],
+  balances: CategoryBalanceProps[],
 }
 
 export const isDeleteTransactionResponse = (
   r: DeleteTransactionResponse | unknown,
 ): r is DeleteTransactionResponse => (
   (r as DeleteTransactionResponse).balances !== undefined
-  && (r as DeleteTransactionResponse).balances !== undefined
+  && Array.isArray((r as DeleteTransactionResponse).balances)
   && ((r as DeleteTransactionResponse).balances.length === 0
-  || isCategoryBalance2((r as DeleteTransactionResponse).balances[0]))
+  || isCategoryBalance((r as DeleteTransactionResponse).balances[0]))
 );
 
 export interface InsertCategoryTransferReponse {
-  balances: { id: number, balance: number }[],
+  balances: CategoryBalanceProps[],
 
   transaction: TransactionProps,
 }
 
-export const isInsertCategoryTransferResponse = (
-  r: InsertCategoryTransferReponse | unknown,
-): r is InsertCategoryTransferReponse => (
+export const isInsertCategoryTransferResponse = (r: unknown): r is InsertCategoryTransferReponse => (
   (r as InsertCategoryTransferReponse).balances !== undefined
-  && (r as InsertCategoryTransferReponse).balances !== undefined
+  && Array.isArray((r as InsertCategoryTransferReponse).balances)
   && ((r as InsertCategoryTransferReponse).balances.length === 0
-  || isCategoryBalance2((r as InsertCategoryTransferReponse).balances[0]))
+  || isCategoryBalance((r as InsertCategoryTransferReponse).balances[0]))
 );
 
 export const isGroupsResponse = (r: Array<GroupProps> | unknown): r is Array<GroupProps> => (
@@ -578,6 +562,8 @@ export const isUserProps = (
   (r as UserProps).username !== undefined
 );
 
+export type TrackingType = 'None' | 'Balances' | 'Transactions';
+
 export type UnlinkedAccountProps = {
   // eslint-disable-next-line camelcase
   account_id: string,
@@ -590,10 +576,29 @@ export type UnlinkedAccountProps = {
   balances: {
     current: number,
   },
-  tracking: string,
+  tracking: TrackingType,
 };
 
 export const isUnlinkedAccounts = (r: unknown): r is UnlinkedAccountProps[] => (
   (Array.isArray(r)
   && (r as UnlinkedAccountProps[])[0].tracking !== undefined)
 );
+
+export type AddTransactionProps = {
+  date: string,
+
+  name: string,
+
+  amount: number,
+};
+
+export type AddTransactionResponse = {
+  categories: CategoryBalanceProps[],
+  transaction: TransactionProps,
+  balance: number,
+}
+
+export const isAddTransactionResponse = (r: unknown): r is AddTransactionResponse => (
+  (r as AddTransactionResponse).categories !== undefined
+  && Array.isArray((r as AddTransactionResponse).categories)
+)

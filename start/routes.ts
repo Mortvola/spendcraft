@@ -68,6 +68,7 @@ Route.group(() => {
 
     Route.group(() => {
       Route.get('/:acctId/transactions', 'AccountsController.transactions');
+      Route.post('/:acctId/transactions', 'AccountsController.addTransaction');
       Route.get('/:acctId/balances', 'AccountsController.balances');
     }).prefix('/account');
 

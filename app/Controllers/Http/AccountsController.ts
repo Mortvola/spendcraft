@@ -1,7 +1,11 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
+import Database from '@ioc:Adonis/Lucid/Database';
 import Account from 'App/Models/Account';
+import AccountTransaction from 'App/Models/AccountTransaction';
 import BalanceHistory from 'App/Models/BalanceHistory';
+import Category from 'App/Models/Category';
 import Transaction from 'App/Models/Transaction';
+import { CategoryBalanceProps, TransactionProps, TransactionType } from 'Common/ResponseTypes';
 
 type Transactions = {
   transactions: Transaction[],
@@ -107,5 +111,70 @@ export default class AccountsController {
     }
 
     return [];
+  }
+
+  public async addTransaction({
+    request,
+    auth: {
+      user,
+    },
+  }: HttpContextContract): Promise<Record<string, unknown>> {
+    if (!user) {
+      throw new Error('user not defined');
+    }
+
+    const trx = await Database.transaction();
+
+    const account = await Account.findOrFail(request.params().acctId, { client: trx });
+
+    const transaction  = (new Transaction()).useTransaction(trx);
+
+    transaction.fill({
+      type: TransactionType.MANUAL_TRANSACTION,
+      date: request.input('date'),
+      sortOrder: 2147483647,
+    });
+
+    await transaction.related('user').associate(user);
+
+    const acctTransaction = (new AccountTransaction()).useTransaction(trx);
+
+    acctTransaction.fill({
+      name: request.input('name'),
+      transactionId: transaction.id,
+      amount: request.input('amount'),
+    });
+
+    await acctTransaction.related('account').associate(account);
+
+    account.balance += acctTransaction.amount;
+
+    await account.save();
+
+    const unassignedCat = await Category.getUnassignedCategory(user, { client: trx });
+
+    unassignedCat.amount += acctTransaction.amount;
+
+    await unassignedCat.save();
+  
+    await transaction.load('accountTransaction', (acctTrx) => {
+      acctTrx.preload('account', (acct) => {
+        acct.preload('institution')
+      })
+    });
+  
+    trx.commit();
+
+    const result: {
+      categories: CategoryBalanceProps[],
+      transaction: Transaction,
+      balance: number,
+    } = {
+      categories: [{ id: unassignedCat.id, balance: unassignedCat.amount }],
+      transaction,
+      balance: account.balance,
+    };
+
+    return result;
   }
 }

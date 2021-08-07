@@ -8,7 +8,7 @@ import TransactionCategory from 'App/Models/TransactionCategory';
 import Loan from 'App/Models/Loan';
 import LoanTransaction from 'App/Models/LoanTransaction';
 import AccountTransaction from 'App/Models/AccountTransaction';
-import { CategoryType, LoanTransactionProps } from 'Common/ResponseTypes';
+import { CategoryBalanceProps, LoanTransactionProps } from 'Common/ResponseTypes';
 
 type LoanProps = {
   balance: number,
@@ -29,14 +29,8 @@ export default class TransactionsController {
 
     const trx = await Database.transaction();
 
-    type CatBalance = {
-      type: CategoryType,
-      id: number,
-      balance: number,
-    };
-
     type Result = {
-      categories: CatBalance[],
+      categories: CategoryBalanceProps[],
       splits: unknown[],
       loan?: LoanProps,
     };
@@ -63,7 +57,7 @@ export default class TransactionsController {
 
         await category.save();
 
-        result.categories.push({ type: category.type, id: category.id, balance: category.amount });
+        result.categories.push({ id: category.id, balance: category.amount });
       }));
 
       // Delete any loan transactions that are associated with the categories being deleted.
@@ -88,7 +82,7 @@ export default class TransactionsController {
 
       await category.save();
 
-      result.categories.push({ type: category.type, id: category.id, balance: category.amount });
+      result.categories.push({ id: category.id, balance: category.amount });
     }
 
     const requestedSplits = request.input('splits');
@@ -134,7 +128,7 @@ export default class TransactionsController {
           result.categories[index].balance = category.amount;
         }
         else {
-          result.categories.push({ type: category.type, id: category.id, balance: category.amount });
+          result.categories.push({ id: category.id, balance: category.amount });
         }
       }));
     }
@@ -164,11 +158,11 @@ export default class TransactionsController {
   // eslint-disable-next-line class-methods-use-this
   public async delete(
     { request }: HttpContextContract,
-  ): Promise<{ balances: { id: number, balance: number}[] }> {
+  ): Promise<{ balances: CategoryBalanceProps[] }> {
     const trx = await Database.transaction();
 
     const result: {
-      balances: { id: number, balance: number}[],
+      balances: CategoryBalanceProps[],
     } = { balances: [] };
 
     try {
