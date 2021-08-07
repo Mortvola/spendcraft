@@ -17,7 +17,7 @@ class Balances implements BalancesInterface {
     this.store = store;
   }
 
-  async load(account: Account): Promise<void> {
+  async load(account: AccountInterface): Promise<void> {
     if (account !== this.account) {
       const response = await fetch(`/api/account/${account.id}/balances`);
 

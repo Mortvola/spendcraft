@@ -4,13 +4,21 @@ import moment from 'moment';
 import { observer } from 'mobx-react-lite';
 import IconButton from '../IconButton';
 import { formatNumber } from '../NumberFormat';
+import { AccountInterface } from '../state/State';
+
+type PropsType = {
+  selected: boolean,
+  institutionId: number,
+  account: AccountInterface,
+  onAccountSelected: ((account: AccountInterface) => void),
+}
 
 const Account = ({
   selected,
   institutionId,
   account,
   onAccountSelected,
-}) => {
+}: PropsType) => {
   const refresh = () => {
     account.refresh(institutionId);
   };
@@ -38,21 +46,6 @@ const Account = ({
       </div>
     </div>
   );
-};
-
-Account.propTypes = {
-  institutionId: PropTypes.number.isRequired,
-  account: PropTypes.shape({
-    name: PropTypes.string.isRequired,
-    id: PropTypes.number.isRequired,
-    syncDate: PropTypes.string,
-    balance: PropTypes.number,
-    tracking: PropTypes.string,
-    refresh: PropTypes.func.isRequired,
-    refreshing: PropTypes.bool,
-  }).isRequired,
-  onAccountSelected: PropTypes.func.isRequired,
-  selected: PropTypes.bool.isRequired,
 };
 
 export default observer(Account);

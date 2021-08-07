@@ -63,6 +63,10 @@ export interface AccountsInterface {
   store: StoreInterface;
 
   async load(): Promise<void>;
+
+  async relinkInstitution(institutionId: number): Promise<void>;
+
+  async addInstitution(): Promise<void>;
 }
 
 export interface PendingTransactionProps {
@@ -169,11 +173,19 @@ export interface AccountInterface {
 
   name: string;
 
-  tracking: string;
+  official_name: string | null = null;
+
+  subtype: string | null = null;
+
+  tracking: 'Balances' | 'Transactions';
 
   syncDate: string;
 
   balance: number;
+
+  balances: {
+    current: number | null,
+  };
 
   transactions: Transaction[] = [];
 
@@ -184,6 +196,8 @@ export interface AccountInterface {
   store: StoreInterface;
 
   async getTransactions(): Promise<void>;
+
+  async refresh(institutionId: number): Promise<void>;
 }
 
 export interface BalancesInterface {

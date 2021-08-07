@@ -1,17 +1,25 @@
-import React from 'react';
-import PropTypes from 'prop-types';
+import React, { ReactElement } from 'react';
 import { observer } from 'mobx-react-lite';
 import IconButton from '../IconButton';
 import { useAccountsDialog } from './AccountsDialog';
 import { useInstitutionInfoDialog } from './InstitutionInfoDialog';
 import Account from './Account';
+import StateInstitution from '../state/Institution';
+import { AccountInterface } from '../state/State';
+
+type PropsType = {
+  institution: StateInstitution,
+  onAccountSelected: ((account: AccountInterface) => void),
+  selectedAccount: AccountInterface | null,
+  onRelink: ((id: number) => void),
+}
 
 function Institution({
   institution,
   onAccountSelected,
   selectedAccount,
   onRelink,
-}) {
+}: PropsType): ReactElement {
   const [AccountsDialog, showAccountsDialog] = useAccountsDialog();
   const [InstitutionInfoDialog, showInstitutionInfoDialog] = useInstitutionInfoDialog();
   const handleRelinkClick = () => {
@@ -50,20 +58,5 @@ function Institution({
     </div>
   );
 }
-
-Institution.propTypes = {
-  institution: PropTypes.shape({
-    id: PropTypes.number.isRequired,
-    name: PropTypes.string.isRequired,
-    accounts: PropTypes.arrayOf(PropTypes.shape()).isRequired,
-  }).isRequired,
-  onAccountSelected: PropTypes.func.isRequired,
-  selectedAccount: PropTypes.shape(),
-  onRelink: PropTypes.func.isRequired,
-};
-
-Institution.defaultProps = {
-  selectedAccount: null,
-};
 
 export default observer(Institution);

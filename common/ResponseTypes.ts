@@ -165,7 +165,7 @@ export interface AccountProps {
 
   name: string;
 
-  tracking: string;
+  tracking: 'Balances' | 'Transactions';
 
   syncDate: string;
 
@@ -576,4 +576,24 @@ export const isUserProps = (
   r: UserProps | unknown,
 ): r is UserProps => (
   (r as UserProps).username !== undefined
+);
+
+export type UnlinkedAccountProps = {
+  // eslint-disable-next-line camelcase
+  account_id: string,
+  name: string,
+  // eslint-disable-next-line camelcase
+  official_name: string,
+  mask: string,
+  type: string,
+  subtype: string,
+  balances: {
+    current: number,
+  },
+  tracking: string,
+};
+
+export const isUnlinkedAccounts = (r: unknown): r is UnlinkedAccountProps[] => (
+  (Array.isArray(r)
+  && (r as UnlinkedAccountProps[])[0].tracking !== undefined)
 );

@@ -10,11 +10,19 @@ class Account implements AccountInterface {
 
   name: string;
 
-  tracking: string;
+  official_name: string | null = null;
+
+  subtype: string | null = null;
+
+  tracking: 'Balances' | 'Transactions';
 
   syncDate: string;
 
   balance: number;
+
+  balances: {
+    current: number | null,
+  } = { current: null };
 
   transactions: Transaction[] = [];
 

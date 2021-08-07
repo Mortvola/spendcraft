@@ -80,7 +80,7 @@ class Account extends BaseModel {
   public syncDate: string;
 
   @column()
-  public tracking: string;
+  public tracking: 'Balances' | 'Transactions';
 
   @column()
   public startDate: string;

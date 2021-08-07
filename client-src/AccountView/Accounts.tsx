@@ -13,11 +13,17 @@ const Accounts = () => {
 
   useEffect(() => {
     if (selectedAccount) {
-      if (selectedAccount.tracking === 'Transactions') {
-        selectedAccount.getTransactions();
-      }
-      else {
-        balances.load(selectedAccount);
+      switch (selectedAccount.tracking) {
+        case 'Transactions':
+          selectedAccount.getTransactions();
+          break;
+
+        case 'Balances':
+          balances.load(selectedAccount);
+          break;
+        
+        default:
+          throw new Error('Invalid tracking type');
       }
     }
   }, [balances, selectedAccount]);

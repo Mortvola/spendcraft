@@ -5,6 +5,7 @@ import plaidClient, { PlaidAccount, PlaidInstitution } from '@ioc:Plaid';
 import Institution from 'App/Models/Institution';
 import Account, { AccountSyncResult } from 'App/Models/Account';
 import Category from 'App/Models/Category';
+import { UnlinkedAccountProps } from 'Common/ResponseTypes';
 
 class InstitutionController {
   // eslint-disable-next-line class-methods-use-this
@@ -107,7 +108,7 @@ class InstitutionController {
       throw new Error('user is not defined');
     }
 
-    const newAccounts: Array<Account> = [];
+    const newAccounts: Account[] = [];
 
     const trx = await Database.transaction();
 
@@ -125,22 +126,7 @@ class InstitutionController {
     const institution = await Institution.findOrFail(request.params().instId);
 
     if (institution.accessToken) {
-      type AccountInput = {
-        // eslint-disable-next-line camelcase
-        account_id: string,
-        name: string,
-        // eslint-disable-next-line camelcase
-        official_name: string,
-        mask: string,
-        type: string,
-        subtype: string,
-        balances: {
-          current: number,
-        },
-        tracking: string,
-      };
-
-      const accountsInput = request.input('accounts') as Array<AccountInput>;
+      const accountsInput = request.input('accounts') as UnlinkedAccountProps[];
       await Promise.all(accountsInput.map(async (account) => {
         const [{ exists }] = await trx.query()
           .select(Database.raw(`EXISTS (SELECT 1 FROM accounts WHERE plaid_account_id = '${account.account_id}') AS exists`));

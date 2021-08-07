@@ -1,16 +1,21 @@
-import React, { useState } from 'react';
-import PropTypes from 'prop-types';
+import React, { ReactElement, ReactNode, useState } from 'react';
 import moment from 'moment';
 import { Button, Modal } from 'react-bootstrap';
-import useModal from '../Modal/useModal';
+import useModal, { ModalProps } from '../Modal/useModal';
+import Institution from '../state/Institution';
+import { InstitutionWithInstitutionData, InstitutionWithStatus } from 'plaid';
+
+type PropsType = {
+  institution: Institution,
+}
 
 const InstitutionInfoDialog = ({
   institution,
   show,
   onHide,
-}) => {
+}: PropsType & ModalProps): ReactElement => {
   const [infoInitialized, setInfoInitialized] = useState(false);
-  const [info, setInfo] = useState(null);
+  const [info, setInfo] = useState<InstitutionWithStatus & InstitutionWithInstitutionData | null>(null);
 
   if (!infoInitialized) {
     setInfoInitialized(true);
@@ -24,7 +29,7 @@ const InstitutionInfoDialog = ({
     })();
   }
 
-  const product = (value) => {
+  const product = (value: string) => {
     switch (value) {
       case 'auth': return 'AUTH';
       case 'balance': return 'BALANCE';
@@ -35,12 +40,12 @@ const InstitutionInfoDialog = ({
     }
   };
 
-  const percent = (value) => `${(value * 100).toFixed(0)}%`;
+  const percent = (value: number) => `${(value * 100).toFixed(0)}%`;
 
   const renderStatus = () => {
-    const stats = [];
+    const stats: ReactNode[] = [];
 
-    if (info.status !== undefined) {
+    if (info && info.status !== undefined) {
       Object.entries(info.status).forEach(([key, value]) => {
         if (value !== null) {
           stats.push((
@@ -104,13 +109,6 @@ const InstitutionInfoDialog = ({
   );
 };
 
-InstitutionInfoDialog.propTypes = {
-  institution: PropTypes.shape().isRequired,
-  show: PropTypes.bool.isRequired,
-  onHide: PropTypes.func.isRequired,
-};
-
-const useInstitutionInfoDialog = () => useModal(InstitutionInfoDialog);
+export const useInstitutionInfoDialog = () => useModal(InstitutionInfoDialog);
 
 export default InstitutionInfoDialog;
-export { useInstitutionInfoDialog };

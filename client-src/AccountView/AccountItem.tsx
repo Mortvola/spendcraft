@@ -1,15 +1,22 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import Amount from '../Amount';
+import { AccountInterface } from '../state/State';
+
+type PropsType = {
+  name: string,
+  account: AccountInterface,
+  onChange: ((event: React.ChangeEvent<HTMLSelectElement>) => void),
+}
 
 const AccountItem = ({
   name,
   account,
   onChange,
-}) => {
+}: PropsType) => {
   const [option, setOption] = useState('None');
 
-  const handleChange = (event) => {
+  const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setOption(event.target.value);
 
     if (onChange) {
