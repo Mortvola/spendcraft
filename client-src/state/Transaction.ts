@@ -24,7 +24,7 @@ class Transaction implements TransactionInterface {
 
   name: string;
 
-  categories: TransactionCategoryInterface[];
+  categories: TransactionCategoryInterface[] = [];
 
   instituteName: string;
 
@@ -62,7 +62,10 @@ class Transaction implements TransactionInterface {
       this.instituteName = '';
       this.accountName = '';
     }
-    this.categories = props.transactionCategories;
+
+    if (props.transactionCategories) {
+      this.categories = props.transactionCategories;
+    }
 
     makeAutoObservable(this);
   }

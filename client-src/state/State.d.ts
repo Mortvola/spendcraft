@@ -201,7 +201,14 @@ export interface AccountInterface {
 
   async refresh(institutionId: number): Promise<void>;
 
-  async addTransaction(transaction: AddTransactionProps): Promise<Error[] | null>;
+  async addTransaction(
+    values: {
+      date?: string,
+      name?: string,
+      amount?: number,
+      splits: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
+    },
+  ): Promise<Error[] | null>;
 }
 
 export interface BalancesInterface {

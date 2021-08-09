@@ -17,7 +17,6 @@ type PropsType = {
   balance: number;
   selected: boolean;
   category: CategoryInterface | null;
-  unassignedId: number;
   isMobile?: boolean;
 }
 
@@ -27,8 +26,7 @@ const Transaction = ({
   balance,
   selected,
   category,
-  unassignedId,
-  isMobile,
+  isMobile = false,
 }: PropsType): ReactElement => {
   const [TransactionDialog, showTransactionDialog] = useTransactionDialog();
   const [CategoryTransferDialog, showCategoryTransferDialog] = useCategoryTransferDialog();
@@ -75,7 +73,6 @@ const Transaction = ({
             <TransactionDialog
               transaction={transaction}
               category={category}
-              unassignedId={unassignedId}
             />
           );
       }
@@ -193,10 +190,6 @@ const Transaction = ({
       {renderBankInfo()}
     </div>
   );
-};
-
-Transaction.defaultProps = {
-  isMobile: false,
 };
 
 export default observer(Transaction);

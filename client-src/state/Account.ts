@@ -1,7 +1,7 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import { AccountProps, AddTransactionProps, Error, isAccountSyncResponse, isAccountTransactionsResponse, isAddTransactionResponse } from '../../common/ResponseTypes';
 import PendingTransaction from './PendingTransaction';
-import { AccountInterface, StoreInterface } from './State';
+import { AccountInterface, NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface } from './State';
 import Transaction from './Transaction';
 import { getBody, httpPost, postJSON } from './Transports';
 
@@ -117,8 +117,14 @@ class Account implements AccountInterface {
     }
   }
 
-  async addTransaction(transaction: AddTransactionProps): Promise<Error[] | null> {
-    const response = await postJSON(`/api/account/${this.id}/transactions`, transaction);
+  async addTransaction(
+    values: {
+      date?: string,
+      name?: string,
+      amount?: number,
+      splits: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
+    }): Promise<Error[] | null> {
+    const response = await postJSON(`/api/account/${this.id}/transactions`, values);
 
     if (response.ok) {
       const body = await getBody(response);

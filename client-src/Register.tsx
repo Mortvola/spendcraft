@@ -16,14 +16,7 @@ const Register = ({
   isMobile,
 }: PropsType): ReactElement => {
   const [selectedTransaction, setSelectedTransaction] = useState<number | null>(null);
-  const {
-    uiState,
-    categoryTree: {
-      systemIds: {
-        unassignedId,
-      },
-    },
-  } = useContext(MobxStore);
+  const { uiState } = useContext(MobxStore);
   let transactions: TransactionInterface[] | undefined;
   let pending: PendingTransaction[] | undefined;
   let loan: { balance: number, transactions: LoanTransaction[] } | undefined;
@@ -88,7 +81,6 @@ const Register = ({
             balance={runningBalance}
             selected={selected}
             category={uiState.selectedCategory}
-            unassignedId={unassignedId}
             isMobile={isMobile}
           />
         );
