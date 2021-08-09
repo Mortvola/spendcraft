@@ -8,9 +8,10 @@ import parseEquation from './EquationParser';
 
 interface Props {
   id?: string,
-  amount: number;
+  value: number | string;
   onDeltaChange: (amount: number, delta: number) => void;
-  onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onBlur?: (event: React.ChangeEvent<HTMLInputElement>) => void;
   className: string;
   name?: string;
   readonly?: boolean,
@@ -18,15 +19,24 @@ interface Props {
 
 const AmountInput = ({
   id,
-  amount,
+  value,
   onDeltaChange,
   onChange,
+  onBlur,
   className,
   name,
   readonly,
 }: Props): ReactElement => {
-  const [inputAmount, setInputAmount] = useState(amount.toFixed(2));
-  const [initialValue, setInitialValue] = useState(amount);
+  const [inputAmount, setInputAmount] = useState(
+    typeof(value) === 'string'
+    ? parseFloat(value).toFixed(2)
+    : value.toFixed(2)
+  );
+  const [initialValue, setInitialValue] = useState(
+    typeof(value) === 'string'
+    ? parseFloat(value).toFixed(2)
+    : value.toFixed(2)
+  );
   const [showPopover, setShowPopover] = useState(false);
   const ref = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -59,7 +69,7 @@ const AmountInput = ({
   };
 
   const handleFocus = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setInitialValue(parseFloat(event.target.value));
+    setInitialValue(parseFloat(event.target.value).toFixed(2));
   };
 
   const handleBlur = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -70,11 +80,15 @@ const AmountInput = ({
     }
 
     if (onDeltaChange) {
-      const delta = newAmount - initialValue;
+      const delta = newAmount - parseFloat(initialValue);
       onDeltaChange(newAmount, delta);
     }
 
     setInputAmount(newAmount.toFixed(2));
+
+    if (onBlur) {
+      onBlur(event);
+    }
   };
 
   const handleKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -152,14 +166,6 @@ const AmountInput = ({
       }
     </>
   );
-};
-
-AmountInput.propTypes = {
-  amount: PropTypes.number,
-  onDeltaChange: PropTypes.func,
-  onChange: PropTypes.func,
-  className: PropTypes.string,
-  name: PropTypes.string,
 };
 
 AmountInput.defaultProps = {

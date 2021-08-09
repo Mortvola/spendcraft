@@ -43,9 +43,11 @@ const Transaction = ({
 
   const handleChange = (cat: CategoryInterface) => {
     if (isTransaction(transaction)) {
-      transaction.updateTransactionCategories([{
-        type: cat.type, categoryId: cat.id, amount: transaction.amount,
-      }]);
+      transaction.updateTransaction({
+        splits: [{
+          type: cat.type, categoryId: cat.id, amount: transaction.amount,
+        }],
+      });
     }
   };
 

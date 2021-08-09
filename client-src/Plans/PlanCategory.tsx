@@ -26,7 +26,7 @@ const PlanCategory = ({
   return (
     <div className="plan-detail-item">
       <div>{category.name}</div>
-      <AmountInput amount={category.amount} onDeltaChange={handleDeltaChange} />
+      <AmountInput value={category.amount} onDeltaChange={handleDeltaChange} />
       <Amount amount={annualAmount} />
     </div>
   );

@@ -358,19 +358,33 @@ export const isCategoryUpdateResponse = (
   (r as CategoryUpdateResponse).name !== undefined
 );
 
-export interface UpdateTransactionCategoryResponse {
-  splits: TransactionCategoryProps[];
+export interface UpdateTransactionResponse {
+  transaction: {
+    id: number,
+
+    date: string,
+
+    type: TransactionType,
+
+    transactionCategories: TransactionCategoryProps[],
+
+    accountTransaction: {
+      amount: number,
+
+      name: string,
+    }
+  },
 
   categories: CategoryBalanceProps[];
 }
 
-export const isUpdateTransactionCategoryResponse = (
-  r: UpdateTransactionCategoryResponse | unknown,
-): r is UpdateTransactionCategoryResponse => (
-  (r as UpdateTransactionCategoryResponse).splits !== undefined
-  && (r as UpdateTransactionCategoryResponse).categories !== undefined
-  && ((r as UpdateTransactionCategoryResponse).categories.length === 0
-  || isCategoryBalance((r as UpdateTransactionCategoryResponse).categories[0]))
+export const isUpdateTransactionResponse = (r: unknown): r is UpdateTransactionResponse => (
+  (r as UpdateTransactionResponse).transaction !== undefined
+  && (r as UpdateTransactionResponse).transaction.transactionCategories !== undefined
+  && (r as UpdateTransactionResponse).transaction.accountTransaction !== undefined
+  && (r as UpdateTransactionResponse).categories !== undefined
+  && ((r as UpdateTransactionResponse).categories.length === 0
+  || isCategoryBalance((r as UpdateTransactionResponse).categories[0]))
 );
 
 export interface UpdateCategoryTransferReponse {

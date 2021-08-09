@@ -28,8 +28,8 @@ const CategorySplits = ({
   splits,
   onChange,
   total,
-  credit,
-  showBalances,
+  credit = true,
+  showBalances = false,
 }: PropsType): ReactElement => {
   const { categoryTree } = useContext(MobxStore);
 
@@ -149,11 +149,6 @@ const CategorySplits = ({
       })}
     </div>
   );
-};
-
-CategorySplits.defaultProps = {
-  showBalances: false,
-  credit: false,
 };
 
 export default CategorySplits;

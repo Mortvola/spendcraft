@@ -182,6 +182,17 @@ class Category implements CategoryInterface {
     return null;
   }
 
+  insertTransaction(transaction: Transaction): void {
+    const index = this.transactions.findIndex((t) => transaction.date >= t.date);
+
+    if (index === -1) {
+      this.transactions.push(transaction);
+    }
+    else {
+      this.transactions.splice(index, 0, transaction)
+    }
+  }
+
   removeTransaction(transactionId: number): void {
     const index = this.transactions.findIndex((t) => t.id === transactionId);
 

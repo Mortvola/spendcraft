@@ -89,7 +89,7 @@ class Loan implements GroupMemberInterface {
     }
   }
 
-  updateTransactionCategories(
+  updateTransaction(
     transactionId: number,
     categories: TransactionCategoryInterface[],
     balances: CategoryProps[],

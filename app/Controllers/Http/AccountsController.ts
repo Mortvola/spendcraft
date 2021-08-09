@@ -5,7 +5,7 @@ import AccountTransaction from 'App/Models/AccountTransaction';
 import BalanceHistory from 'App/Models/BalanceHistory';
 import Category from 'App/Models/Category';
 import Transaction from 'App/Models/Transaction';
-import { CategoryBalanceProps, TransactionProps, TransactionType } from 'Common/ResponseTypes';
+import { CategoryBalanceProps, TransactionType } from 'Common/ResponseTypes';
 
 type Transactions = {
   transactions: Transaction[],

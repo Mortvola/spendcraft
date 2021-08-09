@@ -106,6 +106,8 @@ export interface CategoryInterface {
 
   getLoanTransactions(): Promise<void>;
 
+  insertTransaction(transaction: Transaction): void;
+
   removeTransaction(transactionId: number): void;
 }
 

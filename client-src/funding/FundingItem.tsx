@@ -21,7 +21,7 @@ const FundingItem = ({
     <div className="fund-list-item">
       <div className="fund-list-cat-name">{name}</div>
       <Amount className="fund-list-amt" amount={initialAmount} />
-      <AmountInput amount={funding} onDeltaChange={onDeltaChange} />
+      <AmountInput value={funding} onDeltaChange={onDeltaChange} />
       <Amount className="fund-list-amt" amount={balance} />
     </div>
   );

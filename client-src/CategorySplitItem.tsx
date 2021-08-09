@@ -80,7 +80,7 @@ function CategorySplitItem({
         onChange={handleCategoryChange}
         categoryId={categoryId === unassignedId ? null : categoryId}
       />
-      <AmountInput onDeltaChange={handleDeltaChange} amount={split.amount} />
+      <AmountInput onDeltaChange={handleDeltaChange} value={split.amount} />
       {renderBalances()}
       <IconButton icon="plus" onClick={handleAddItem} />
       <IconButton icon="minus" onClick={handleDeleteItem} />

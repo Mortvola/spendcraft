@@ -130,14 +130,7 @@ class Account implements AccountInterface {
 
             const transaction = new Transaction(this.store, body.transaction);
 
-            const index = this.transactions.findIndex((t) => body.transaction.date >= t.date);
-
-            if (index === -1) {
-              this.transactions.push(transaction);
-            }
-            else {
-              this.transactions.splice(index, 0, transaction)
-            }
+            this.insertTransaction(transaction);
 
             this.balance = body.balance;
           });
@@ -148,6 +141,17 @@ class Account implements AccountInterface {
     }
 
     throw new Error('Error response received');
+  }
+
+  insertTransaction(transaction: Transaction) {
+    const index = this.transactions.findIndex((t) => transaction.date >= t.date);
+
+    if (index === -1) {
+      this.transactions.push(transaction);
+    }
+    else {
+      this.transactions.splice(index, 0, transaction)
+    }
   }
 }
 

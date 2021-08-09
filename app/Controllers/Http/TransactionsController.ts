@@ -31,17 +31,16 @@ export default class TransactionsController {
 
     type Result = {
       categories: CategoryBalanceProps[],
-      splits: unknown[],
+      transaction?: Transaction,
       loan?: LoanProps,
     };
 
     const result: Result = {
       categories: [],
-      splits: [],
     };
 
     // Get the 'unassigned' category id
-    const unassigned = await Category.getUnassignedCategory(user);
+    const unassigned = await Category.getUnassignedCategory(user, { client: trx });
 
     const splits = await TransactionCategory.query({ client: trx })
       .preload('loanTransaction')
@@ -50,7 +49,7 @@ export default class TransactionsController {
     if (splits.length > 0) {
       // There are pre-existing category splits.
       // Credit the category balance for each one.
-      await Promise.all(splits.map(async (split) => {
+      for (let split of splits) {
         const category = await Category.findOrFail(split.categoryId, { client: trx });
 
         category.amount -= split.amount;
@@ -58,7 +57,7 @@ export default class TransactionsController {
         await category.save();
 
         result.categories.push({ id: category.id, balance: category.amount });
-      }));
+      };
 
       // Delete any loan transactions that are associated with the categories being deleted.
       await Promise.all(splits.map(async (split) => {
@@ -88,7 +87,7 @@ export default class TransactionsController {
     const requestedSplits = request.input('splits');
 
     if (requestedSplits.length > 0) {
-      await Promise.all(requestedSplits.map(async (split) => {
+      for (let split of requestedSplits) {
         const txCategory = (new TransactionCategory()).useTransaction(trx);
 
         txCategory.fill({
@@ -130,25 +129,36 @@ export default class TransactionsController {
         else {
           result.categories.push({ id: category.id, balance: category.amount });
         }
-      }));
+      };
     }
 
-    const transCats = await trx.query()
-      .select(
-        'category_id as categoryId',
-        Database.raw('CAST(splits.amount AS float) AS amount'),
-        'cats.name AS category',
-        'groups.name AS group',
-      )
-      .from('transaction_categories AS splits')
-      .join('categories AS cats', 'cats.id', 'splits.category_id')
-      .join('groups', 'groups.id', 'cats.group_id')
-      .where('splits.transaction_id', request.params().txId);
+    if (request.input('name') !== undefined
+      || request.input('amount') !== undefined) {
+      const acctTransaction = await AccountTransaction.findByOrFail('transactionId', request.params().txId, { client: trx });
 
-    result.splits = [];
-    if (transCats.length > 0) {
-      result.splits = transCats;
+      acctTransaction.merge({
+        name: request.input('name'),
+        amount: request.input('amount'),
+      });
+
+      await acctTransaction.save();
     }
+
+    if (request.input('date') !== undefined) {
+      const transaction = await Transaction.findOrFail(request.params().txId, { client: trx });
+
+      transaction.merge({
+        date: request.input('date'),
+      });
+
+      await transaction.save();
+    }
+
+    result.transaction = await Transaction.findOrFail(request.params().txId, { client: trx });
+
+    await result.transaction.load('transactionCategories');
+
+    await result.transaction.load('accountTransaction');
 
     await trx.commit();
 
