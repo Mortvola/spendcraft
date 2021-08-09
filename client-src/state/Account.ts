@@ -130,19 +130,17 @@ class Account implements AccountInterface {
       const body = await getBody(response);
 
       if (isAddTransactionResponse(body)) {
-        if (body.categories.length > 0) {
-          runInAction(() => {
-            this.store.categoryTree.updateBalances(body.categories);
+        runInAction(() => {
+          this.store.categoryTree.updateBalances(body.categories);
 
-            const transaction = new Transaction(this.store, body.transaction);
+          const transaction = new Transaction(this.store, body.transaction);
 
-            this.insertTransaction(transaction);
+          this.insertTransaction(transaction);
 
-            this.balance = body.balance;
-          });
+          this.balance = body.balance;
+        });
 
-          return null;
-        }
+        return null;
       }
     }
 

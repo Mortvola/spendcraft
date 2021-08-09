@@ -5,6 +5,7 @@ import AccountTransaction from 'App/Models/AccountTransaction';
 import BalanceHistory from 'App/Models/BalanceHistory';
 import Category from 'App/Models/Category';
 import Transaction from 'App/Models/Transaction';
+import TransactionCategory from 'App/Models/TransactionCategory';
 import { CategoryBalanceProps, TransactionType } from 'Common/ResponseTypes';
 
 type Transactions = {
@@ -137,31 +138,58 @@ export default class AccountsController {
 
     await transaction.related('user').associate(user);
 
-    const acctTransaction = (new AccountTransaction()).useTransaction(trx);
-
-    acctTransaction.fill({
+    const acctTransaction = await account.related('accountTransactions').create({
       name: request.input('name'),
       transactionId: transaction.id,
       amount: request.input('amount'),
     });
 
-    await acctTransaction.related('account').associate(account);
-
     account.balance += acctTransaction.amount;
 
     await account.save();
 
-    const unassignedCat = await Category.getUnassignedCategory(user, { client: trx });
-
-    unassignedCat.amount += acctTransaction.amount;
-
-    await unassignedCat.save();
+    const categoryBalances: CategoryBalanceProps[] = [];
   
+    const splits = request.input('splits');
+
+    if (!splits || splits.length === 0) {
+      const unassignedCat = await Category.getUnassignedCategory(user, { client: trx });
+
+      unassignedCat.amount += acctTransaction.amount;
+  
+      await unassignedCat.save();
+
+      categoryBalances.push({ id: unassignedCat.id, balance: unassignedCat.amount })
+    }
+    else {
+      for (let split of splits) {
+        const trxCategory = (new TransactionCategory()).useTransaction(trx);
+
+        trxCategory.fill({
+          transactionId: transaction.id,
+          categoryId: split.categoryId,
+          amount: split.amount,
+        })
+
+        await trxCategory.save();
+
+        const category = await Category.findOrFail(split.categoryId, { client: trx });
+
+        category.amount += split.amount;
+
+        await category.save();
+
+        categoryBalances.push({ id: split.categoryId, balance: category.amount })
+      }
+    }
+
     await transaction.load('accountTransaction', (acctTrx) => {
       acctTrx.preload('account', (acct) => {
         acct.preload('institution')
       })
     });
+
+    await transaction.load('transactionCategories');
   
     trx.commit();
 
@@ -170,7 +198,7 @@ export default class AccountsController {
       transaction: Transaction,
       balance: number,
     } = {
-      categories: [{ id: unassignedCat.id, balance: unassignedCat.amount }],
+      categories: categoryBalances,
       transaction,
       balance: account.balance,
     };
