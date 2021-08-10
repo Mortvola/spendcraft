@@ -10,6 +10,7 @@ import LoanTransaction from 'App/Models/LoanTransaction';
 import AccountTransaction from 'App/Models/AccountTransaction';
 import { AccountBalanceProps, CategoryBalanceProps, LoanTransactionProps } from 'Common/ResponseTypes';
 import Account from 'App/Models/Account';
+import { rules, schema } from '@ioc:Adonis/Core/Validator';
 
 type LoanProps = {
   balance: number,
@@ -28,6 +29,23 @@ export default class TransactionsController {
       throw new Error('user is not defined');
     }
 
+    const validationSchema = schema.create({
+      name: schema.string({ trim: true }),
+      amount: schema.number(),
+      date: schema.date(),
+      splits: schema.array().members(
+        schema.object().members({
+          categoryId: schema.number(),
+          amount: schema.number(),
+        })
+      ),
+    });
+
+    const { txId } = request.params();
+    const requestData = await request.validate({
+      schema: validationSchema,
+    });
+  
     const trx = await Database.transaction();
 
     type Result = {
@@ -45,7 +63,7 @@ export default class TransactionsController {
 
     const splits = await TransactionCategory.query({ client: trx })
       .preload('loanTransaction')
-      .where('transactionId', request.params().txId);
+      .where('transactionId', txId);
 
     if (splits.length > 0) {
       // There are pre-existing category splits.
@@ -74,7 +92,7 @@ export default class TransactionsController {
     else {
       // There are no category splits. Debit the 'Unassigned' category
 
-      const trans = await AccountTransaction.findByOrFail('transaction_id', request.params().txId, { client: trx });
+      const trans = await AccountTransaction.findByOrFail('transaction_id', txId, { client: trx });
 
       const category = await Category.findOrFail(unassigned.id, { client: trx });
 
@@ -85,7 +103,7 @@ export default class TransactionsController {
       result.categories.push({ id: category.id, balance: category.amount });
     }
 
-    const requestedSplits = request.input('splits');
+    const requestedSplits = requestData.splits;
 
     if (requestedSplits.length > 0) {
       for (let split of requestedSplits) {
@@ -94,7 +112,7 @@ export default class TransactionsController {
         txCategory.fill({
           categoryId: split.categoryId,
           amount: split.amount,
-          transactionId: request.params().txId,
+          transactionId: txId,
         });
 
         txCategory.save();
@@ -133,29 +151,29 @@ export default class TransactionsController {
       };
     }
 
-    if (request.input('name') !== undefined
-      || request.input('amount') !== undefined) {
-      const acctTransaction = await AccountTransaction.findByOrFail('transactionId', request.params().txId, { client: trx });
+    if (requestData.name !== undefined
+      || requestData.amount !== undefined) {
+      const acctTransaction = await AccountTransaction.findByOrFail('transactionId', txId, { client: trx });
 
       acctTransaction.merge({
-        name: request.input('name'),
-        amount: request.input('amount'),
+        name: requestData.name,
+        amount: requestData.amount,
       });
 
       await acctTransaction.save();
     }
 
-    if (request.input('date') !== undefined) {
-      const transaction = await Transaction.findOrFail(request.params().txId, { client: trx });
+    if (requestData.date !== undefined) {
+      const transaction = await Transaction.findOrFail(txId, { client: trx });
 
       transaction.merge({
-        date: request.input('date'),
+        date: requestData.date,
       });
 
       await transaction.save();
     }
 
-    result.transaction = await Transaction.findOrFail(request.params().txId, { client: trx });
+    result.transaction = await Transaction.findOrFail(txId, { client: trx });
 
     await result.transaction.load('transactionCategories');
 

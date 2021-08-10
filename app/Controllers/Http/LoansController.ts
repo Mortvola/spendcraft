@@ -1,5 +1,6 @@
 // import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
+import { schema } from '@ioc:Adonis/Core/Validator';
 import Database from '@ioc:Adonis/Lucid/Database';
 import Category from 'App/Models/Category';
 import Group from 'App/Models/Group';
@@ -17,6 +18,17 @@ export default class LoansController {
       throw new Error('user is not defined');
     }
 
+    const validationSchema = schema.create({
+      name: schema.string(),
+      rate: schema.number(),
+      startDate: schema.date(),
+      amount: schema.number(),
+    });
+
+    const requestData = await request.validate({
+      schema: validationSchema,
+    });
+  
     const trx = await Database.transaction();
 
     const loanGroup = await Group.query({ client: trx })
@@ -26,7 +38,7 @@ export default class LoansController {
     const category = (new Category()).useTransaction(trx);
 
     category.fill({
-      name: request.input('name'),
+      name: requestData.name,
       amount: 0,
       type: 'LOAN',
     });
@@ -37,10 +49,10 @@ export default class LoansController {
 
     loan.fill({
       userId: user.id,
-      rate: request.input('rate'),
-      startDate: request.input('startDate'),
-      startingBalance: -request.input('amount'),
-      balance: -request.input('amount'),
+      rate: requestData.rate,
+      startDate: requestData.startDate,
+      startingBalance: -requestData.amount,
+      balance: -requestData.amount,
     });
 
     await loan.related('category').associate(category);

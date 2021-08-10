@@ -9,8 +9,13 @@ export default class UpdateCategoryTransferValidator {
       rules.minLength(1),
       rules.zeroSum({ property: 'amount' }),
     ]).members(
-      schema.object().members({}),
+      schema.object().members({
+        id: schema.number(),
+        categoryId: schema.number(),
+        amount: schema.number(),
+      }),
     ), // 'required|validCategory|!allZero:amount|zeroSum:amount',
+    type: schema.number(),
   })
 
   public messages = {

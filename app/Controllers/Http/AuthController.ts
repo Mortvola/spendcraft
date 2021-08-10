@@ -196,8 +196,15 @@ export default class AuthController {
 
   // eslint-disable-next-line class-methods-use-this
   public async forgotPassword({ request, response }: HttpContextContract) : Promise<void> {
-    const email = request.input('email');
-    const user = await User.findBy('email', email);
+    const validationSchema = schema.create({
+      email: schema.string(),
+    });
+
+    const requestData = await request.validate({
+      schema: validationSchema,
+    });
+  
+    const user = await User.findBy('email', requestData.email);
 
     if (user) {
       const token = AuthController.generateToken(user);
@@ -242,35 +249,41 @@ export default class AuthController {
     response,
     view,
   }: HttpContextContract) : Promise<(string | void)> {
-    const email = request.input('email');
-    const password = request.input('password');
-    const passwordConfirmation = request.input('passwordConfirmation');
-    const token = request.input('token');
+    const validationSchema = schema.create({
+      email: schema.string(),
+      password: schema.string(),
+      passwordConfirmation: schema.string(),
+      token: schema.string(),
+    });
 
-    const user = await User.findBy('email', email);
+    const requestData = await request.validate({
+      schema: validationSchema,
+    });
+
+    const user = await User.findBy('email', requestData.email);
 
     if (!user) {
-      return view.render('reset-password', { user, token, errorMessage: 'The user could not be found.' });
+      return view.render('reset-password', { user, token: requestData.token, errorMessage: 'The user could not be found.' });
     }
 
-    if (password !== passwordConfirmation) {
-      return view.render('reset-password', { user, token, errorMessage: 'The passwords do not match.' });
+    if (requestData.password !== requestData.passwordConfirmation) {
+      return view.render('reset-password', { user, token: requestData.token, errorMessage: 'The passwords do not match.' });
     }
 
     let payload: Record<string, unknown> = { id: null };
 
     try {
-      payload = jwt.verify(token, AuthController.generateSecret(user)) as Record<string, unknown>;
+      payload = jwt.verify(requestData.token, AuthController.generateSecret(user)) as Record<string, unknown>;
     }
     catch (error) {
       Logger.error(error);
     }
 
     if (payload.id !== user.id) {
-      return view.render('reset-password', { user, token, errorMessage: 'The token is no longer valid.' });
+      return view.render('reset-password', { user, token: requestData.token, errorMessage: 'The token is no longer valid.' });
     }
 
-    user.password = password;
+    user.password = requestData.password;
     await user.save();
 
     response.redirect('/');
@@ -284,9 +297,16 @@ export default class AuthController {
     request,
     response,
   }: HttpContextContract) : Promise<(string | void)> {
-    const currentPassword = request.input('currentPassword');
-    const password = request.input('password');
-    const passwordConfirmation = request.input('passwordConfirmation');
+    const validationSchema = schema.create({
+      currentPassword: schema.string(),
+      password: schema.string(),
+      passwordConfirmation: schema.string(),
+    })
+
+    const requestData = await request.validate({
+      schema: validationSchema,
+    });
+
     let { user } = auth;
 
     response.header('content-type', 'application/json');
@@ -297,19 +317,19 @@ export default class AuthController {
     }
 
     try {
-      user = await auth.verifyCredentials(user.username, currentPassword);
+      user = await auth.verifyCredentials(user.username, requestData.currentPassword);
     }
     catch {
       response.notAcceptable(JSON.stringify({ errors: { currentPassword: 'Password is not valid' } }));
       return undefined;
     }
 
-    if (!password || password !== passwordConfirmation) {
+    if (!requestData.password || requestData.password !== requestData.passwordConfirmation) {
       response.notAcceptable(JSON.stringify({ errors: { passwordConfirmation: 'New password and confirmation do not match' } }));
       return undefined;
     }
 
-    user.password = password;
+    user.password = requestData.password;
     await user.save();
 
     return undefined;

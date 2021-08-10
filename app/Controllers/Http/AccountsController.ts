@@ -1,7 +1,7 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
+import { schema } from '@ioc:Adonis/Core/Validator';
 import Database from '@ioc:Adonis/Lucid/Database';
 import Account from 'App/Models/Account';
-import AccountTransaction from 'App/Models/AccountTransaction';
 import BalanceHistory from 'App/Models/BalanceHistory';
 import Category from 'App/Models/Category';
 import Transaction from 'App/Models/Transaction';
@@ -124,24 +124,41 @@ export default class AccountsController {
       throw new Error('user not defined');
     }
 
+    const validationSchema = schema.create({
+      date: schema.date(),
+      name: schema.string(),
+      amount: schema.number(),
+      splits: schema.array().members(
+        schema.object().members({
+          categoryId: schema.number(),
+          amount: schema.number(),
+        })
+      ),
+    });
+
+    const { acctId } = request.params();
+    const requestData = await request.validate({
+      schema: validationSchema,
+    });
+  
     const trx = await Database.transaction();
 
-    const account = await Account.findOrFail(request.params().acctId, { client: trx });
+    const account = await Account.findOrFail(acctId, { client: trx });
 
     const transaction  = (new Transaction()).useTransaction(trx);
 
     transaction.fill({
       type: TransactionType.MANUAL_TRANSACTION,
-      date: request.input('date'),
+      date: requestData.date,
       sortOrder: 2147483647,
     });
 
     await transaction.related('user').associate(user);
 
     const acctTransaction = await account.related('accountTransactions').create({
-      name: request.input('name'),
+      name: requestData.name,
       transactionId: transaction.id,
-      amount: request.input('amount'),
+      amount: requestData.amount,
     });
 
     account.balance += acctTransaction.amount;
@@ -150,7 +167,7 @@ export default class AccountsController {
 
     const categoryBalances: CategoryBalanceProps[] = [];
   
-    const splits = request.input('splits');
+    const splits = requestData.splits;
 
     if (!splits || splits.length === 0) {
       const unassignedCat = await Category.getUnassignedCategory(user, { client: trx });

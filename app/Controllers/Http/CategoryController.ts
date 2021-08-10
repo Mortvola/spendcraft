@@ -94,15 +94,16 @@ class CategoryController {
     if (!user) {
       throw new Error('user is not defined');
     }
-    await request.validate(AddGroupValidator);
+
+    const requestData = await request.validate(AddGroupValidator);
 
     const id = await Database.insertQuery().table('groups')
-      .insert({ name: request.input('name'), user_id: user.id })
+      .insert({ name: requestData.name, user_id: user.id })
       .returning('id');
 
     return {
       id: id[0],
-      name: request.input('name'),
+      name: requestData.name,
       system: false,
       categories: [],
     };
@@ -119,13 +120,14 @@ class CategoryController {
       throw new Error('user is not defined');
     }
 
-    await request.validate(UpdateGroupValidator);
+    const { groupId } = request.params();
+    const requestData = await request.validate(UpdateGroupValidator);
 
     await Database.query().from('groups')
-      .where({ id: request.params().groupId, user_id: user.id })
-      .update({ name: request.input('name') });
+      .where({ id: groupId, user_id: user.id })
+      .update({ name: requestData.name });
 
-    return { id: request.params().groupId, name: request.input('name') };
+    return { id: groupId, name: requestData.name };
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -134,21 +136,23 @@ class CategoryController {
       throw new Error('user is not defined');
     }
 
+    const { groupId } = request.params();
     await request.validate(DeleteGroupValidator);
 
-    await Database.query().from('groups').where({ id: request.params().groupId, user_id: user.id }).delete();
+    await Database.query().from('groups').where({ id: groupId, user_id: user.id }).delete();
   }
 
   // eslint-disable-next-line class-methods-use-this
   public async addCategory({
     request,
   }: HttpContextContract): Promise<Category> {
-    await request.validate(AddCategoryValidator);
+    const { groupId } = request.params();
+    const requestData = await request.validate(AddCategoryValidator);
 
     const category = new Category();
 
     await category
-      .fill({ groupId: parseInt(request.params().groupId, 10), name: request.input('name'), amount: 0 })
+      .fill({ groupId: parseInt(groupId, 10), name: requestData.name, amount: 0 })
       .save();
 
     return category;
@@ -158,25 +162,24 @@ class CategoryController {
   public async updateCategory({
     request,
   }: HttpContextContract): Promise<UpdateCategoryResponse> {
-    await request.validate(UpdateCategoryValidator);
-
     const { catId } = request.params();
-    const name = request.input('name');
+    const requestData = await request.validate(UpdateCategoryValidator);
 
-    await Database.query().from('categories').where({ id: catId }).update({ name });
+    await Database.query().from('categories').where({ id: catId }).update({ name: requestData.name });
 
-    return { name };
+    return { name: requestData.name };
   }
 
   // eslint-disable-next-line class-methods-use-this
   public async deleteCategory({ request }: HttpContextContract): Promise<void> {
+    const { catId } = request.params();
     await request.validate(DeleteCategoryValidator);
 
     const trx = await Database.transaction();
-    const category = await Category.findOrFail(request.params().catId, { client: trx });
+    const category = await Category.findOrFail(catId, { client: trx });
 
     if (category.type === 'LOAN') {
-      const loan = await Loan.findBy('categoryId', request.params().catId, { client: trx });
+      const loan = await Loan.findBy('categoryId', catId, { client: trx });
 
       if (loan) {
         await loan.delete();
@@ -199,7 +202,9 @@ class CategoryController {
       throw new Error('user is not defined');
     }
 
-    const categoryId = parseInt(request.params().catId, 10);
+    const { catId } = request.params();
+
+    const categoryId = parseInt(catId, 10);
 
     const result: TransactionsResponse = {
       transactions: [],
@@ -270,7 +275,8 @@ class CategoryController {
       throw new Error('user is not defined');
     }
 
-    await request.validate(UpdateCategoryTransferValidator);
+    const { tfrId } = request.params();
+    const requestData = await request.validate(UpdateCategoryTransferValidator);
 
     const trx = await Database.transaction();
     const result: {
@@ -290,11 +296,11 @@ class CategoryController {
     } = { balances: [], transaction: { transactionCategories: [] } };
 
     try {
-      const categories = request.input('categories');
+      const categories = requestData.categories;
       if (Array.isArray(categories)) {
-        const date = request.input('date');
-        const type = request.input('type');
-        let transactionId = request.params().tfrId;
+        const date = requestData.date;
+        const type = requestData.type;
+        let transactionId = tfrId;
 
         if (transactionId === undefined) {
           [transactionId] = await trx.insertQuery().insert({
