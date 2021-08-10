@@ -1,5 +1,5 @@
 import { makeAutoObservable, runInAction } from 'mobx';
-import { AccountProps, AddTransactionProps, Error, isAccountSyncResponse, isAccountTransactionsResponse, isAddTransactionResponse } from '../../common/ResponseTypes';
+import { AccountBalanceProps, AccountProps, AddTransactionProps, Error, isAccountSyncResponse, isAccountTransactionsResponse, isAddTransactionResponse } from '../../common/ResponseTypes';
 import PendingTransaction from './PendingTransaction';
 import { AccountInterface, NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface } from './State';
 import Transaction from './Transaction';
@@ -155,6 +155,14 @@ class Account implements AccountInterface {
     }
     else {
       this.transactions.splice(index, 0, transaction)
+    }
+  }
+
+  removeTransaction(transactionId: number): void {
+    const index = this.transactions.findIndex((t) => t.id === transactionId);
+
+    if (index !== -1) {
+      this.transactions.splice(index, 1);
     }
   }
 }

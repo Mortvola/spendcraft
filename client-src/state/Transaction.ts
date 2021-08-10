@@ -185,6 +185,7 @@ class Transaction implements TransactionInterface {
           }
 
           this.store.categoryTree.updateBalances(body.balances);
+          this.store.accounts.updateBalances(body.acctBalances);
           this.store.register.removeTransaction(this.id);
         });
 

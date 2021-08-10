@@ -8,7 +8,8 @@ import TransactionCategory from 'App/Models/TransactionCategory';
 import Loan from 'App/Models/Loan';
 import LoanTransaction from 'App/Models/LoanTransaction';
 import AccountTransaction from 'App/Models/AccountTransaction';
-import { CategoryBalanceProps, LoanTransactionProps } from 'Common/ResponseTypes';
+import { AccountBalanceProps, CategoryBalanceProps, LoanTransactionProps } from 'Common/ResponseTypes';
+import Account from 'App/Models/Account';
 
 type LoanProps = {
   balance: number,
@@ -166,44 +167,82 @@ export default class TransactionsController {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  public async delete(
-    { request }: HttpContextContract,
-  ): Promise<{ balances: CategoryBalanceProps[] }> {
+  public async delete({
+    request,
+    auth: {
+      user,
+    },
+  }: HttpContextContract): Promise<{ balances: CategoryBalanceProps[] }> {
+    if (!user) {
+      throw new Error('user is not defined');
+    }
+
     const trx = await Database.transaction();
 
     const result: {
       balances: CategoryBalanceProps[],
-    } = { balances: [] };
+      acctBalances: AccountBalanceProps[],
+    } = { balances: [], acctBalances: [] };
 
-    try {
-      const { trxId } = request.params();
+    const { trxId } = request.params();
 
-      const transaction = await Transaction.findOrFail(trxId, { client: trx });
+    const transaction = await Transaction.findOrFail(trxId, { client: trx });
 
-      const trxCategories = await transaction.related('transactionCategories').query();
+    const acctTransaction = await AccountTransaction.findBy('transactionId', transaction.id, { client: trx });
 
-      await Promise.all(trxCategories.map(async (trxCat) => {
+    const trxCategories = await transaction.related('transactionCategories').query();
+
+    if (trxCategories.length === 0) {
+      if (!acctTransaction) {
+        throw new Error('acctTransaction is null');
+      }
+
+      const unassignedCat = await Category.getUnassignedCategory(user, { client: trx });
+
+      unassignedCat.amount -= acctTransaction.amount;
+
+      result.balances.push({ id: unassignedCat.id, balance: unassignedCat.amount });
+
+      await unassignedCat.save();
+    }
+    else {
+      for (let trxCat of trxCategories) {
         const category = await Category.find(trxCat.categoryId, { client: trx });
-
+  
         if (category) {
           category.amount -= trxCat.amount;
-
-          result.balances.push({ id: category.id, balance: category.amount });
-
+  
+          const balance = result.balances.find((b) => b.id === category.id);
+  
+          if (balance) {
+            balance.balance = category.amount;
+          }
+          else {
+            result.balances.push({ id: category.id, balance: category.amount });
+          }
+  
           category.save();
-
+  
           await trxCat.delete();
         }
-      }));
-
-      await transaction.delete();
-
-      await trx.commit();
+      };  
     }
-    catch (error) {
-      console.log(error);
-      await trx.rollback();
+
+    if (acctTransaction) {
+      const account = await Account.findOrFail(acctTransaction.accountId, { client: trx });
+
+      account.balance -= acctTransaction.amount;
+
+      account.save();
+
+      result.acctBalances.push({ id: account.id, balance: account.balance });
+
+      await acctTransaction.delete();
     }
+
+    await transaction.delete();
+
+    await trx.commit();
 
     return result;
   }

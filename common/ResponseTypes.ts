@@ -68,6 +68,12 @@ export interface CategoryBalanceProps {
   balance: number;
 }
 
+export interface AccountBalanceProps {
+  id: number;
+
+  balance: number;
+}
+
 export type AddCategoryResponse = CategoryProps
 
 export const isAddCategoryResponse = (r: unknown): r is AddCategoryResponse => (
@@ -406,6 +412,7 @@ export const isUpdateCategoryTransferResponse = (
 
 export interface DeleteTransactionResponse {
   balances: CategoryBalanceProps[],
+  acctBalances: AccountBalanceProps[],
 }
 
 export const isDeleteTransactionResponse = (

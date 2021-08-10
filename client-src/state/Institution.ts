@@ -1,6 +1,6 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import Account from './Account';
-import { UnlinkedAccountProps, InstitutionProps, isAccountsResponse, isUnlinkedAccounts } from '../../common/ResponseTypes';
+import { UnlinkedAccountProps, InstitutionProps, isAccountsResponse, isUnlinkedAccounts, AccountBalanceProps } from '../../common/ResponseTypes';
 import { AccountInterface, StoreInterface } from './State';
 import { getBody, postJSON } from './Transports';
 
@@ -70,6 +70,15 @@ class Institution {
         });
       }
     }
+  }
+
+  updateBalances(balances: AccountBalanceProps[]): void {
+    this.accounts.forEach((a) => {
+      const balance = balances.find((b) => b.id === a.id);
+      if (balance) {
+        a.balance = balance.balance;
+      }
+    });
   }
 }
 

@@ -179,7 +179,14 @@ export default class AccountsController {
 
         await category.save();
 
-        categoryBalances.push({ id: split.categoryId, balance: category.amount })
+        const balance = categoryBalances.find((b) => b.id === category.id);
+
+        if (balance) {
+          balance.balance = category.amount;
+        }
+        else {
+          categoryBalances.push({ id: split.categoryId, balance: category.amount });
+        }
       }
     }
 
@@ -191,7 +198,7 @@ export default class AccountsController {
 
     await transaction.load('transactionCategories');
   
-    trx.commit();
+    await trx.commit();
 
     const result: {
       categories: CategoryBalanceProps[],

@@ -3,6 +3,7 @@ import React, { ReactElement, useState, useContext } from 'react';
 import {
   Field, ErrorMessage, FieldProps,
   FormikErrors,
+  FormikContextType,
 } from 'formik';
 import CategorySplits from './CategorySplits';
 import useModal, { ModalProps, useModalType } from './Modal/useModal';
@@ -129,6 +130,19 @@ const TransactionDialog = ({
     }
   };
 
+  const handleDelete = async (bag: FormikContextType<ValueType>) => {
+    const { setTouched, setErrors } = bag;
+
+    if (transaction) {
+      const errors = await transaction.delete();
+
+      if (errors && errors.length > 0) {
+        setTouched({ [errors[0].field]: true }, false);
+        setErrors({ [errors[0].field]: errors[0].message });
+      }
+    }
+  };
+
   const renderBalanceHeaders = () => {
     if (showBalances) {
       return (
@@ -167,6 +181,7 @@ const TransactionDialog = ({
       formId="transactionDialogForm"
       validate={handleValidate}
       onSubmit={handleSubmit}
+      onDelete={transaction ? handleDelete : null}
     >
       <label>
         Date:

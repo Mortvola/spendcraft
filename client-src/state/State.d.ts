@@ -67,6 +67,8 @@ export interface AccountsInterface {
   async relinkInstitution(institutionId: number): Promise<void>;
 
   async addInstitution(): Promise<void>;
+
+  updateBalances(balances: AccountBalanceProps[]): void;
 }
 
 export interface PendingTransactionProps {
@@ -209,6 +211,8 @@ export interface AccountInterface {
       splits: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
     },
   ): Promise<Error[] | null>;
+
+  removeTransaction(transactionId: number): void;
 }
 
 export interface BalancesInterface {
