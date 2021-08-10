@@ -147,7 +147,7 @@ class Account implements AccountInterface {
     throw new Error('Error response received');
   }
 
-  insertTransaction(transaction: Transaction) {
+  insertTransaction(transaction: Transaction): void {
     const index = this.transactions.findIndex((t) => transaction.date >= t.date);
 
     if (index === -1) {

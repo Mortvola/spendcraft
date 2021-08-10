@@ -212,6 +212,8 @@ export interface AccountInterface {
     },
   ): Promise<Error[] | null>;
 
+  insertTransaction(transaction: Transaction): void;
+
   removeTransaction(transactionId: number): void;
 }
 

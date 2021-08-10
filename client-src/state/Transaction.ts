@@ -116,10 +116,16 @@ class Transaction implements TransactionInterface {
 
               this.store.uiState.selectedCategory.removeTransaction(this.id);
             }
-            else {
+            else if (dateChanged) {
               this.store.uiState.selectedCategory.removeTransaction(this.id);
               this.store.uiState.selectedCategory.insertTransaction(this);
             }
+          }
+
+          if (this.store.uiState.selectedAccount && dateChanged) {
+            // todo: make sure the transaction still belongs to the selected account.
+            this.store.uiState.selectedAccount.removeTransaction(this.id);
+            this.store.uiState.selectedAccount.insertTransaction(this);
           }
         });
 

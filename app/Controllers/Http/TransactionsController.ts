@@ -104,13 +104,11 @@ export default class TransactionsController {
 
       const trans = await AccountTransaction.findByOrFail('transaction_id', txId, { client: trx });
 
-      const category = await Category.findOrFail(unassigned.id, { client: trx });
+      unassigned.amount -= trans.amount;
 
-      category.amount -= trans.amount;
+      await unassigned.save();
 
-      await category.save();
-
-      result.categories.push({ id: category.id, balance: category.amount });
+      result.categories.push({ id: unassigned.id, balance: unassigned.amount });
     }
 
     const requestedSplits = requestData.splits;
