@@ -152,7 +152,12 @@ class CategoryController {
     const category = new Category();
 
     await category
-      .fill({ groupId: parseInt(groupId, 10), name: requestData.name, amount: 0 })
+      .fill({
+        groupId: parseInt(groupId, 10),
+        name: requestData.name,
+        amount: 0,
+        type: 'REGULAR',
+      })
       .save();
 
     return category;

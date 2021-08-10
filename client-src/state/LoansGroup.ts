@@ -60,8 +60,8 @@ class LoansGroup implements GroupInterface {
       }
     }
     else {
-      runInAction(() => {
-        if (isAddCategoryResponse(body)) {
+      if (isAddCategoryResponse(body)) {
+        runInAction(() => {
           // Find the position where this new category should be inserted.
           const index = this.categories.findIndex(
             (g) => body.name.toLowerCase().localeCompare(g.name.toLowerCase()) < 0,
@@ -77,8 +77,8 @@ class LoansGroup implements GroupInterface {
               ...this.categories.slice(index),
             ];
           }
-        }
-      });
+        });
+      }
     }
 
     return null;

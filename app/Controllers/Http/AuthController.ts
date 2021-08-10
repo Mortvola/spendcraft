@@ -86,7 +86,7 @@ export default class AuthController {
       await fundingPoolCat.save();
       await accountTransferCat.save();
 
-      trx.commit();
+      await trx.commit();
     }
     catch (error) {
       trx.rollback();

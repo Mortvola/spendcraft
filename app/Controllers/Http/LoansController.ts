@@ -57,7 +57,7 @@ export default class LoansController {
 
     await loan.related('category').associate(category);
 
-    trx.commit();
+    await trx.commit();
 
     return category;
   }

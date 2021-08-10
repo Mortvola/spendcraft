@@ -88,7 +88,7 @@ class FundingPlanController {
       amount: schema.number(),
     });
 
-    const { planId, catId } = request.params();=
+    const { planId, catId } = request.params();
     const requestData = await request.validate({
       schema: validationSchema,
     });
