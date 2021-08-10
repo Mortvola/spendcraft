@@ -30,9 +30,9 @@ export default class TransactionsController {
     }
 
     const validationSchema = schema.create({
-      name: schema.string({ trim: true }),
-      amount: schema.number(),
-      date: schema.date(),
+      name: schema.string.optional({ trim: true }),
+      amount: schema.number.optional(),
+      date: schema.date.optional(),
       splits: schema.array().members(
         schema.object().members({
           categoryId: schema.number(),
@@ -57,6 +57,16 @@ export default class TransactionsController {
     const result: Result = {
       categories: [],
     };
+
+    if (requestData.date !== undefined) {
+      const transaction = await Transaction.findOrFail(txId, { client: trx });
+
+      transaction.merge({
+        date: requestData.date,
+      });
+
+      await transaction.save();
+    }
 
     // Get the 'unassigned' category id
     const unassigned = await Category.getUnassignedCategory(user, { client: trx });
@@ -163,16 +173,6 @@ export default class TransactionsController {
       await acctTransaction.save();
     }
 
-    if (requestData.date !== undefined) {
-      const transaction = await Transaction.findOrFail(txId, { client: trx });
-
-      transaction.merge({
-        date: requestData.date,
-      });
-
-      await transaction.save();
-    }
-
     result.transaction = await Transaction.findOrFail(txId, { client: trx });
 
     await result.transaction.load('transactionCategories');
@@ -225,24 +225,32 @@ export default class TransactionsController {
     }
     else {
       for (let trxCat of trxCategories) {
-        const category = await Category.find(trxCat.categoryId, { client: trx });
+        const category = await Category.findOrFail(trxCat.categoryId, { client: trx });
   
-        if (category) {
-          category.amount -= trxCat.amount;
-  
-          const balance = result.balances.find((b) => b.id === category.id);
-  
-          if (balance) {
-            balance.balance = category.amount;
-          }
-          else {
-            result.balances.push({ id: category.id, balance: category.amount });
-          }
-  
-          category.save();
-  
-          await trxCat.delete();
+        category.amount -= trxCat.amount;
+
+        const balance = result.balances.find((b) => b.id === category.id);
+
+        if (balance) {
+          balance.balance = category.amount;
         }
+        else {
+          result.balances.push({ id: category.id, balance: category.amount });
+        }
+
+        if (category.type === 'LOAN') {
+          const loanTransaction = await trxCat.related('loanTransaction').query().firstOrFail();
+
+          await loanTransaction.delete();
+
+          const loan = await loanTransaction.related('loan').query().firstOrFail();
+
+          loan.updateBalance();
+        }
+
+        category.save();
+
+        await trxCat.delete();
       };  
     }
 
