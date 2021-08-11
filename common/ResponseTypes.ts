@@ -236,6 +236,8 @@ export interface TransactionProps {
     amount: number;
 
     account: {
+      id: number;
+      
       name: string;
 
       institution: {

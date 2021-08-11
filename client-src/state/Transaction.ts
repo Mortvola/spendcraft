@@ -30,6 +30,8 @@ class Transaction implements TransactionInterface {
 
   accountName: string;
 
+  accountId: number | null = null;
+
   store: StoreInterface;
 
   constructor(store: StoreInterface, props: TransactionProps) {
@@ -43,6 +45,7 @@ class Transaction implements TransactionInterface {
       this.amount = props.accountTransaction.amount;
       this.instituteName = props.accountTransaction.account.institution.name;
       this.accountName = props.accountTransaction.account.name;
+      this.accountId = props.accountTransaction.account.id;
     }
     else {
       switch (props.type) {
@@ -122,8 +125,9 @@ class Transaction implements TransactionInterface {
             }
           }
 
-          if (this.store.uiState.selectedAccount && dateChanged) {
-            // todo: make sure the transaction still belongs to the selected account.
+          if (this.store.uiState.selectedAccount
+            && this.store.uiState.selectedAccount.id === this.accountId
+            && dateChanged) {
             this.store.uiState.selectedAccount.removeTransaction(this.id);
             this.store.uiState.selectedAccount.insertTransaction(this);
           }

@@ -175,7 +175,9 @@ export default class TransactionsController {
 
     await result.transaction.load('transactionCategories');
 
-    await result.transaction.load('accountTransaction');
+    await result.transaction.load('accountTransaction', (accountTrx) => {
+      accountTrx.preload('account');
+    });
 
     await trx.commit();
 
