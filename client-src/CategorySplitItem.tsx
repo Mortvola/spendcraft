@@ -1,4 +1,4 @@
-import React, { ReactElement, useContext } from 'react';
+import React, { ReactElement, useContext, useState } from 'react';
 import CategoryInput from './CategoryInput/CategoryInput';
 import IconButton from './IconButton';
 import AmountInput from './AmountInput';
@@ -14,6 +14,7 @@ type PropsType = {
   onDeltaChange: (id: number, amount: number, delta: number) => void,
   onAddItem: (afterId: number) => void,
   onDeleteItem: (id: number) => void,
+  onCommentChange: (id: number, comment: string) => void,
 }
 
 function CategorySplitItem({
@@ -24,6 +25,7 @@ function CategorySplitItem({
   onDeltaChange,
   onAddItem,
   onDeleteItem,
+  onCommentChange,
 }: PropsType): ReactElement {
   const { categoryTree: { systemIds: { unassignedId } } } = useContext(MobxStore);
 
@@ -34,6 +36,10 @@ function CategorySplitItem({
   const handleDeltaChange = (amount: number, delta: number) => {
     onDeltaChange(split.id, amount, delta);
   };
+
+  const handleCommentChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    onCommentChange(split.id, event.target.value);
+  }
 
   const handleAddItem = () => {
     onAddItem(split.id);
@@ -63,6 +69,7 @@ function CategorySplitItem({
         categoryId={categoryId === unassignedId ? null : categoryId}
       />
       <AmountInput onDeltaChange={handleDeltaChange} value={split.amount} />
+      <input type="text" value={split.comment ?? ''} onChange={handleCommentChange}/>
       <IconButton icon="plus" onClick={handleAddItem} />
       <IconButton icon="minus" onClick={handleDeleteItem} />
     </div>

@@ -150,6 +150,7 @@ export interface TransactionCategoryInterface {
   type: CategoryType;
   categoryId: number;
   amount: number;
+  comment?: string;
 
   loanTransaction?: null | {
     principle: number;

@@ -45,6 +45,7 @@ const TransactionDialog = ({
     date: string,
     name: string,
     amount: number,
+    comment: string,
     splits: TransactionCategoryInterface[],
   }
 
@@ -105,6 +106,7 @@ const TransactionDialog = ({
         name: values.name,
         date: values.date,
         amount,
+        comment: values.comment,
         splits: values.splits,
       });
     }
@@ -147,6 +149,7 @@ const TransactionDialog = ({
         date: transaction ? transaction.date : '',
         name: transaction ? transaction.name : '',
         amount: transaction ? transaction.amount : 0,
+        comment: transaction && transaction.comment ? transaction.comment: '',
         splits: transaction
           ? transaction.categories.map((c) => ({
             ...c,
@@ -156,6 +159,7 @@ const TransactionDialog = ({
       }}
       show={show}
       onHide={onHide}
+      size="lg"
       title="Transaction"
       formId="transactionDialogForm"
       validate={handleValidate}
@@ -166,7 +170,7 @@ const TransactionDialog = ({
         Date:
         <Field className="form-control" type="date" name="date" />
       </label>
-      <label>
+      <label style={{ display: 'block' }}>
         Name:
         <Field
           type="text"
@@ -175,29 +179,43 @@ const TransactionDialog = ({
         />
         <FormError name="name" />
       </label>
-      <label>
-        Amount:
-        <Field
-          name="amount"
-        >
-          {
-            ({ field, form: { values, touched }, meta }: FieldProps<string | number, ValueType>) => (
-              <AmountInput
-                className="form-control"
-                {...field}
-                onBlur={(v) => {
-                  setRemaining(computeRemaining(values.splits, parseFloat(v.target.value)));
-                }}
-              />
-            )
-          }
-        </Field>
-        <FormError name="amount" />
-      </label>
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "minmax(0, 8rem) minmax(0, 1fr)",
+        columnGap: "1rem",
+      }}>
+        <label>
+          Amount:
+          <Field name="amount">
+            {
+              ({ field, form: { values, touched }, meta }: FieldProps<string | number, ValueType>) => (
+                <AmountInput
+                  className="form-control"
+                  {...field}
+                  onBlur={(v) => {
+                    setRemaining(computeRemaining(values.splits, parseFloat(v.target.value)));
+                  }}
+                />
+              )
+            }
+          </Field>
+          <FormError name="amount" />
+        </label>
+        <label>
+          Memo:
+          <Field
+            type="text"
+            className="form-control"
+            name="comment"
+          />
+          <FormError name="comment" />
+        </label>
+      </div>
       <div className="cat-fund-table">
         <div className={`${splitItemClass} cat-fund-title`}>
-          <div className="fund-list-cat-name">Category</div>
-          <div className="dollar-amount">Amount</div>
+          <div className="item-title">Category</div>
+          <div className="item-title-amount">Amount</div>
+          <div className="item-title">Comment</div>
         </div>
         <Field name="splits" validate={validateSplits}>
           {({
@@ -220,12 +238,11 @@ const TransactionDialog = ({
             />
           )}
         </Field>
-        <ErrorMessage name="splits" />
-
         <div className={splitItemClass}>
-          <div className="unassigned-label">Unassigned:</div>
-          <Amount amount={remaining} />
+          <div className="unassigned-label">Remaining:</div>
+          <Amount amount={remaining} style={{ margin: '1px', padding: '1px' }}/>
         </div>
+        <FormError name="splits" />
       </div>
     </FormModal>
   );

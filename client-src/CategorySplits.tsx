@@ -81,6 +81,21 @@ const CategorySplits = ({
     }
   };
 
+  const handleCommentChange = (id: number, comment: string) => {
+    const splitIndex = editedSplits.findIndex((s) => s.id === id);
+
+    if (splitIndex !== -1) {
+      const newSplits = [
+        ...editedSplits.slice(0, splitIndex),
+        { ...editedSplits[splitIndex], comment },
+        ...editedSplits.slice(splitIndex + 1),
+      ];
+
+      setEditedSplits(newSplits);
+      onChange(newSplits);
+    }
+  }
+
   const handleAddItem = (afterId: number) => {
     const index = editedSplits.findIndex((s) => s.id === afterId);
 
@@ -140,6 +155,7 @@ const CategorySplits = ({
             onDeleteItem={handleDeleteItem}
             onDeltaChange={handleDeltaChange}
             onCategoryChange={handleCategoryChange}
+            onCommentChange={handleCommentChange}
             credit={credit}
           />
         );

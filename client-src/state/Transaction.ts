@@ -24,6 +24,8 @@ class Transaction implements TransactionInterface {
 
   name: string;
 
+  comment = '';
+
   categories: TransactionCategoryInterface[] = [];
 
   instituteName: string;
@@ -40,6 +42,7 @@ class Transaction implements TransactionInterface {
     this.id = props.id;
     this.date = props.date;
     this.type = props.type;
+    this.comment = props.comment;
     if (props.accountTransaction) {
       this.name = props.accountTransaction.name;
       this.amount = props.accountTransaction.amount;
@@ -78,6 +81,7 @@ class Transaction implements TransactionInterface {
       date?: string,
       name?: string,
       amount?: number,
+      comment?: string,
       splits: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
     }
   ): Promise<null> {
@@ -105,6 +109,7 @@ class Transaction implements TransactionInterface {
 
           this.amount = body.transaction.accountTransaction.amount;
           this.name = body.transaction.accountTransaction.name;
+          this.comment = body.transaction.comment;
 
           let resort = false;
           // Remove the transaction from the selected category, if any, if the transaction
@@ -112,7 +117,8 @@ class Transaction implements TransactionInterface {
           if (this.store.uiState.selectedCategory) {
             if (!body.transaction.transactionCategories.some(
               (c) => (this.store.uiState.selectedCategory && c.categoryId === this.store.uiState.selectedCategory.id),
-            )) {
+            ) && (body.transaction.transactionCategories.length !== 0
+            || this.store.uiState.selectedCategory.id !== this.store.categoryTree.systemIds.unassignedId)) {
               if (this.store.uiState.selectedCategory.type === 'LOAN') {
                 this.store.uiState.selectedCategory.getLoanTransactions();
               }

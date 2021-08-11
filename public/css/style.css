@@ -503,6 +503,7 @@ body {
 	display: flex;
     flex-direction: column;
     overflow-y: auto;
+	margin-top: 0.5rem;
 }
 
 .cat-fund-items {
@@ -567,7 +568,8 @@ body {
 }
 
 .transaction-split-item.no-balances {
-	grid-template-columns: repeat(2, minmax(0, 1fr)) repeat(2, 28px);
+	grid-template-columns: minmax(0, 12rem) minmax(0,8rem) minmax(0, 1fr) repeat(2, 28px);
+	column-gap: 0.25rem;
 }
 
 .transaction-split-item > input {
@@ -578,11 +580,11 @@ body {
 }
 
 .amount-input {
-	border: solid 1px gray;
-	border-radius: 4px;
-	margin: 1px;
+  /* border: solid 1px gray;
+  border-radius: 4px;
+  margin: 1px;
   padding: 1px;
-  width: 100%;
+  width: 100%; */
 }
 
 .transaction-split-item > label {
@@ -791,4 +793,13 @@ body {
 .modal-content-fix {
   display: grid;
   grid-template-rows: minmax(0,1fr);
+}
+
+.item-title {
+  padding-left: 2px;
+}
+
+.item-title-amount {
+  text-align: right;
+  padding-right: 2px;
 }

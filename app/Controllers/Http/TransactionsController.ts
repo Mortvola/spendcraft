@@ -33,10 +33,12 @@ export default class TransactionsController {
       name: schema.string.optional({ trim: true }),
       amount: schema.number.optional(),
       date: schema.date.optional(),
+      comment: schema.string.optional({ trim: true }),
       splits: schema.array().members(
         schema.object().members({
           categoryId: schema.number(),
           amount: schema.number(),
+          comment: schema.string.optional({ trim: true }),
         })
       ),
     });
@@ -58,11 +60,13 @@ export default class TransactionsController {
       categories: [],
     };
 
-    if (requestData.date !== undefined) {
+    if (requestData.date !== undefined
+      || requestData.comment !== undefined) {
       const transaction = await Transaction.findOrFail(txId, { client: trx });
 
       transaction.merge({
         date: requestData.date,
+        comment: requestData.comment,
       });
 
       await transaction.save();
@@ -120,6 +124,7 @@ export default class TransactionsController {
         txCategory.fill({
           categoryId: split.categoryId,
           amount: split.amount,
+          comment: split.comment,
           transactionId: txId,
         });
 

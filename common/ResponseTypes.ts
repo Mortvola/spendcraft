@@ -205,6 +205,8 @@ export interface TransactionCategoryProps {
 
   amount: number;
 
+  comment?: string;
+
   loanTransaction: null | {
     principle: number;
   };
@@ -228,6 +230,8 @@ export interface TransactionProps {
 
   type: TransactionType;
 
+  comment: string;
+
   transactionCategories: TransactionCategoryProps[];
 
   accountTransaction: {
@@ -237,7 +241,7 @@ export interface TransactionProps {
 
     account: {
       id: number;
-      
+
       name: string;
 
       institution: {
@@ -373,6 +377,8 @@ export interface UpdateTransactionResponse {
     date: string,
 
     type: TransactionType,
+
+    comment: string,
 
     transactionCategories: TransactionCategoryProps[],
 
