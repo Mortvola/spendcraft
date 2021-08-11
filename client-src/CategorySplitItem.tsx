@@ -14,7 +14,6 @@ type PropsType = {
   onDeltaChange: (id: number, amount: number, delta: number) => void,
   onAddItem: (afterId: number) => void,
   onDeleteItem: (id: number) => void,
-  showBalances?: boolean,
 }
 
 function CategorySplitItem({
@@ -25,7 +24,6 @@ function CategorySplitItem({
   onDeltaChange,
   onAddItem,
   onDeleteItem,
-  showBalances = false,
 }: PropsType): ReactElement {
   const { categoryTree: { systemIds: { unassignedId } } } = useContext(MobxStore);
 
@@ -56,23 +54,7 @@ function CategorySplitItem({
     }
   }
 
-  const renderBalances = () => {
-    if (showBalances) {
-      return (
-        <>
-          <Amount amount={balance} />
-          <Amount amount={newBalance} />
-        </>
-      );
-    }
-
-    return null;
-  };
-
-  let className = 'transaction-split-item';
-  if (!showBalances) {
-    className += ' no-balances';
-  }
+  let className = 'transaction-split-item no-balances';
 
   return (
     <div className={className}>
@@ -81,7 +63,6 @@ function CategorySplitItem({
         categoryId={categoryId === unassignedId ? null : categoryId}
       />
       <AmountInput onDeltaChange={handleDeltaChange} value={split.amount} />
-      {renderBalances()}
       <IconButton icon="plus" onClick={handleAddItem} />
       <IconButton icon="minus" onClick={handleDeleteItem} />
     </div>

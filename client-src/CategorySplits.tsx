@@ -21,7 +21,6 @@ type PropsType = {
   ) => void,
   total: number,
   credit?: boolean,
-  showBalances?: boolean,
 }
 
 const CategorySplits = ({
@@ -29,7 +28,6 @@ const CategorySplits = ({
   onChange,
   total,
   credit = true,
-  showBalances = false,
 }: PropsType): ReactElement => {
   const { categoryTree } = useContext(MobxStore);
 
@@ -142,7 +140,6 @@ const CategorySplits = ({
             onDeleteItem={handleDeleteItem}
             onDeltaChange={handleDeltaChange}
             onCategoryChange={handleCategoryChange}
-            showBalances={showBalances}
             credit={credit}
           />
         );

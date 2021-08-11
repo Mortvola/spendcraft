@@ -70,10 +70,7 @@ const Transaction = ({
         case TransactionType.REGULAR_TRANSACTION:
         default:
           return (
-            <TransactionDialog
-              transaction={transaction}
-              category={category}
-            />
+            <TransactionDialog transaction={transaction} />
           );
       }
     }

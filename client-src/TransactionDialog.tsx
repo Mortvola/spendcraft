@@ -31,19 +31,15 @@ function validateSplits(splits: Array<TransactionCategoryInterface>) {
 type PropsType = {
   transaction?: Transaction | null,
   account?: AccountInterface | null,
-  category?: CategoryInterface | null,
 }
 
 const TransactionDialog = ({
   show,
   onHide,
   transaction = null,
-  category = null,
   account = null,
 }: PropsType & ModalProps): ReactElement => {
   const { categoryTree: { systemIds } } = useContext(MobxStore);
-
-  const showBalances = category ? category.id === systemIds.unassignedId : false;
 
   type ValueType = {
     date: string,
@@ -143,23 +139,7 @@ const TransactionDialog = ({
     }
   };
 
-  const renderBalanceHeaders = () => {
-    if (showBalances) {
-      return (
-        <>
-          <div className="dollar-amount">Current Balance</div>
-          <div className="dollar-amount">New Balance</div>
-        </>
-      );
-    }
-
-    return null;
-  };
-
-  let splitItemClass = 'transaction-split-item';
-  if (!showBalances) {
-    splitItemClass += ' no-balances';
-  }
+  let splitItemClass = 'transaction-split-item no-balances';
 
   return (
     <FormModal<ValueType>
@@ -176,7 +156,6 @@ const TransactionDialog = ({
       }}
       show={show}
       onHide={onHide}
-      size={showBalances ? 'lg' : undefined}
       title="Transaction"
       formId="transactionDialogForm"
       validate={handleValidate}
@@ -219,7 +198,6 @@ const TransactionDialog = ({
         <div className={`${splitItemClass} cat-fund-title`}>
           <div className="fund-list-cat-name">Category</div>
           <div className="dollar-amount">Amount</div>
-          {renderBalanceHeaders()}
         </div>
         <Field name="splits" validate={validateSplits}>
           {({
@@ -235,7 +213,6 @@ const TransactionDialog = ({
             <CategorySplits
               splits={value}
               total={Math.abs(typeof(values.amount) === 'string' ? parseFloat(values.amount) : values.amount)}
-              showBalances={showBalances}
               onChange={(splits) => {
                 setFieldValue(name, splits);
                 setRemaining(computeRemaining(splits, typeof(values.amount) === 'string' ? parseFloat(values.amount) : values.amount));
@@ -246,7 +223,6 @@ const TransactionDialog = ({
         <ErrorMessage name="splits" />
 
         <div className={splitItemClass}>
-          {showBalances ? <div /> : null}
           <div className="unassigned-label">Unassigned:</div>
           <Amount amount={remaining} />
         </div>
