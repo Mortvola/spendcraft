@@ -1,4 +1,5 @@
 import React, { ReactElement, useContext } from 'react';
+import { observer } from 'mobx-react-lite';
 import Amount from '../Amount';
 import { useCategoryTransferDialog } from '../CategoryTransferDialog';
 import IconButton from '../IconButton';
@@ -40,4 +41,4 @@ const SystemCategory = ({
   return null;
 };
 
-export default SystemCategory;
+export default observer(SystemCategory);

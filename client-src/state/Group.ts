@@ -29,8 +29,24 @@ class Group implements GroupInterface {
 
     if (props.categories && props.categories.length > 0) {
       props.categories.forEach((c) => {
-        const category = new Category(c, this.store);
-        this.categories.push(category);
+        switch (c.type) {
+          case 'UNASSIGNED':
+            this.categories.push(this.store.categoryTree.unassignedCat);
+            break;
+
+          case 'ACCOUNT TRANSFER':
+            this.categories.push(this.store.categoryTree.accountTransferCat);
+            break;
+
+          case 'FUNDING POOL':
+            this.categories.push(this.store.categoryTree.fundingPoolCat);
+            break;
+
+          default:
+            const category = new Category(c, this.store);
+            this.categories.push(category);
+            break;
+        }
       });
     }
 

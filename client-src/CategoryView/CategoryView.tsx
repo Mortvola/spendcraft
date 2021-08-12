@@ -32,7 +32,7 @@ const CategoryView = (): ReactElement => {
       </div>
       <div id="categories">
         {categoryTree.groups.map((group) => {          
-          if (!group.system) {
+          if (!group.system || group.name === 'Loans') {
             return (
               <Group
                 key={group.name}

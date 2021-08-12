@@ -128,6 +128,13 @@ export interface UIStateInterface {
 
 export interface CategoryTreeInterface {
   systemIds: SystemIds;
+
+  unassignedCat: Category | null = null;
+
+  fundingPoolCat: Category | null = null;
+
+  accountTransferCat: Category | null = null;
+
   updateBalances(balances: CategoryBalanceProps[]): void;
   getCategory(categoryId: number): CategoryInterface | null;
 }
