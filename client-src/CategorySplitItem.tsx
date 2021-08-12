@@ -2,7 +2,6 @@ import React, { ReactElement, useContext, useState } from 'react';
 import CategoryInput from './CategoryInput/CategoryInput';
 import IconButton from './IconButton';
 import AmountInput from './AmountInput';
-import Amount from './Amount';
 import { CategoryInterface, TransactionCategoryInterface } from './state/State';
 import MobxStore from './state/mobxStore';
 
@@ -27,7 +26,11 @@ function CategorySplitItem({
   onDeleteItem,
   onCommentChange,
 }: PropsType): ReactElement {
-  const { categoryTree: { systemIds: { unassignedId } } } = useContext(MobxStore);
+  const { categoryTree: { unassignedCat } } = useContext(MobxStore);
+
+  if (!unassignedCat) {
+    throw new Error('unassigned category is null');
+  }
 
   const handleCategoryChange = (category: CategoryInterface) => {
     onCategoryChange(split.id, category.id);
@@ -66,7 +69,7 @@ function CategorySplitItem({
     <div className={className}>
       <CategoryInput
         onChange={handleCategoryChange}
-        categoryId={categoryId === unassignedId ? null : categoryId}
+        categoryId={categoryId === unassignedCat.id ? null : categoryId}
       />
       <AmountInput onDeltaChange={handleDeltaChange} value={split.amount} />
       <input type="text" value={split.comment ?? ''} onChange={handleCommentChange}/>

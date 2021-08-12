@@ -39,7 +39,7 @@ const TransactionDialog = ({
   transaction = null,
   account = null,
 }: PropsType & ModalProps): ReactElement => {
-  const { categoryTree: { systemIds } } = useContext(MobxStore);
+  const { categoryTree: { unassignedCat } } = useContext(MobxStore);
 
   type ValueType = {
     date: string,
@@ -51,17 +51,17 @@ const TransactionDialog = ({
 
   const computeRemaining = (categories: TransactionCategoryInterface[], total: number, sign = 1) => {
     let sum = 0;
-    if (categories) {
-      sum = categories.reduce((accum: number, item) => {
-        if (item.categoryId !== undefined && item.categoryId !== systemIds.unassignedId) {
-          return accum + item.amount;
-        }
+    if (categories && categories.length > 0) {
+      sum = categories.reduce((accum: number, item) => (
+        accum + item.amount
+      ), 0);
 
-        return accum;
-      }, 0);
+      return Math.abs(total) - sign * sum;
     }
 
-    return Math.abs(total) - sign * sum;
+    // If there are no categories, assume the transaction total is assigned to a single
+    // unassigned item.
+    return 0;
   };
 
   const [remaining, setRemaining] = useState(() => {

@@ -31,6 +31,10 @@ const CategorySplits = ({
 }: PropsType): ReactElement => {
   const { categoryTree } = useContext(MobxStore);
 
+  if (!categoryTree.unassignedCat) {
+    throw new Error('unassigned category is null');
+  }
+
   const [editedSplits, setEditedSplits] = useState<TransactionCategoryInterface[]>(
     splits && splits.length > 0
       ? splits.map((s) => {
@@ -47,7 +51,7 @@ const CategorySplits = ({
         };
       })
       : [{
-        id: nextId(), type: 'REGULAR', categoryId: categoryTree.systemIds.unassignedId, amount: total,
+        id: nextId(), type: 'REGULAR', categoryId: categoryTree.unassignedCat.id, amount: total,
       }],
   );
 
@@ -97,6 +101,10 @@ const CategorySplits = ({
   }
 
   const handleAddItem = (afterId: number) => {
+    if (!categoryTree.unassignedCat) {
+      throw new Error('unassigned category is null');
+    }
+
     const index = editedSplits.findIndex((s) => s.id === afterId);
 
     if (index !== -1) {
@@ -108,7 +116,7 @@ const CategorySplits = ({
         index + 1,
         0,
         {
-          id: nextId(), type: 'REGULAR', categoryId: categoryTree.systemIds.unassignedId, amount,
+          id: nextId(), type: 'REGULAR', categoryId: categoryTree.unassignedCat.id, amount,
         },
       );
 

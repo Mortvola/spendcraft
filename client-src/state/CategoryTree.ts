@@ -18,6 +18,12 @@ class CategoryTree implements CategoryTreeInterface {
 
   systemIds = new SystemIds();
 
+  unassignedCat: Category | null = null;
+
+  fundingPoolCat: Category | null = null;
+
+  accountTransferCat: Category | null = null;
+
   store: StoreInterface;
 
   constructor(store: StoreInterface) {
@@ -60,18 +66,6 @@ class CategoryTree implements CategoryTreeInterface {
     return categoryName;
   }
 
-  getFundingPoolAmount(): number {
-    let fundingAmount = 0;
-
-    const fundingPool = this.getCategory(this.systemIds.fundingPoolId);
-
-    if (fundingPool) {
-      fundingAmount = fundingPool.balance;
-    }
-
-    return fundingAmount;
-  }
-
   async load(): Promise<void> {
     const response = await fetch('/api/groups');
 
@@ -83,14 +77,20 @@ class CategoryTree implements CategoryTreeInterface {
 
         if (isGroupProps(systemGroup)) {
           this.systemIds.systemGroupId = systemGroup.id;
+
           const unassignedCategory = systemGroup.categories.find((c) => c.type === 'UNASSIGNED');
           if (unassignedCategory) {
-            this.systemIds.unassignedId = unassignedCategory.id;
+            this.unassignedCat = new Category(unassignedCategory, this.store);
           }
 
           const fundingPoolCategory = systemGroup.categories.find((c) => c.type === 'FUNDING POOL');
           if (fundingPoolCategory) {
-            this.systemIds.fundingPoolId = fundingPoolCategory.id;
+            this.fundingPoolCat = new Category(fundingPoolCategory, this.store);
+          }
+
+          const accountTransferCategory = systemGroup.categories.find((c) => c.type === 'ACCOUNT TRANSFER');
+          if (accountTransferCategory) {
+            this.accountTransferCat = new Category(accountTransferCategory, this.store);
           }
         }
 
