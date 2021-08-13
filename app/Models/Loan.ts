@@ -82,7 +82,7 @@ export default class Loan extends BaseModel {
         interestOwed = interest + t.transactionCategory.amount;
         t.principle = 0;
       }
-    
+
       startDate = t.transactionCategory.transaction.date;
     });
 

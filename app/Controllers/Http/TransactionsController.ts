@@ -39,7 +39,7 @@ export default class TransactionsController {
           categoryId: schema.number(),
           amount: schema.number(),
           comment: schema.string.optional({ trim: true }),
-        })
+        }),
       ),
     });
 
@@ -47,7 +47,7 @@ export default class TransactionsController {
     const requestData = await request.validate({
       schema: validationSchema,
     });
-  
+
     const trx = await Database.transaction();
 
     type Result = {
@@ -82,26 +82,32 @@ export default class TransactionsController {
     if (splits.length > 0) {
       // There are pre-existing category splits.
       // Credit the category balance for each one.
-      for (let split of splits) {
+      // eslint-disable-next-line no-restricted-syntax
+      for (const split of splits) {
+        // eslint-disable-next-line no-await-in-loop
         const category = await Category.findOrFail(split.categoryId, { client: trx });
 
         category.amount -= split.amount;
 
+        // eslint-disable-next-line no-await-in-loop
         await category.save();
 
         result.categories.push({ id: category.id, balance: category.amount });
-      };
+      }
 
       // Delete any loan transactions that are associated with the categories being deleted.
-      await Promise.all(splits.map(async (split) => {
+      // eslint-disable-next-line no-restricted-syntax
+      for (const split of splits) {
         if (split.loanTransaction) {
           split.loanTransaction.delete();
+          // eslint-disable-next-line no-await-in-loop
           const loan = await Loan.findByOrFail('categoryId', split.categoryId, { client: trx });
+          // eslint-disable-next-line no-await-in-loop
           await loan.updateBalance();
         }
 
         split.delete();
-      }));
+      }
     }
     else {
       // There are no category splits. Debit the 'Unassigned' category
@@ -118,7 +124,8 @@ export default class TransactionsController {
     const requestedSplits = requestData.splits;
 
     if (requestedSplits.length > 0) {
-      for (let split of requestedSplits) {
+      // eslint-disable-next-line no-restricted-syntax
+      for (const split of requestedSplits) {
         const txCategory = (new TransactionCategory()).useTransaction(trx);
 
         txCategory.fill({
@@ -130,15 +137,18 @@ export default class TransactionsController {
 
         txCategory.save();
 
+        // eslint-disable-next-line no-await-in-loop
         const category = await Category.findOrFail(split.categoryId, { client: trx });
 
         category.amount += split.amount;
 
+        // eslint-disable-next-line no-await-in-loop
         await category.save();
 
         if (category.type === 'LOAN') {
           const loanTrx = (new LoanTransaction()).useTransaction(trx);
 
+          // eslint-disable-next-line no-await-in-loop
           const loan = await Loan.findByOrFail('categoryId', split.categoryId, { client: trx });
 
           loanTrx.fill({
@@ -146,7 +156,9 @@ export default class TransactionsController {
             principle: 0,
           });
 
+          // eslint-disable-next-line no-await-in-loop
           await loanTrx.related('transactionCategory').associate(txCategory);
+          // eslint-disable-next-line no-await-in-loop
           await loan.updateBalance();
         }
 
@@ -161,7 +173,7 @@ export default class TransactionsController {
         else {
           result.categories.push({ id: category.id, balance: category.amount });
         }
-      };
+      }
     }
 
     if (requestData.name !== undefined
@@ -229,9 +241,11 @@ export default class TransactionsController {
       await unassignedCat.save();
     }
     else {
-      for (let trxCat of trxCategories) {
+      // eslint-disable-next-line no-restricted-syntax
+      for (const trxCat of trxCategories) {
+        // eslint-disable-next-line no-await-in-loop
         const category = await Category.findOrFail(trxCat.categoryId, { client: trx });
-  
+
         category.amount -= trxCat.amount;
 
         const balance = result.balances.find((b) => b.id === category.id);
@@ -244,10 +258,13 @@ export default class TransactionsController {
         }
 
         if (category.type === 'LOAN') {
+          // eslint-disable-next-line no-await-in-loop
           const loanTransaction = await trxCat.related('loanTransaction').query().firstOrFail();
 
+          // eslint-disable-next-line no-await-in-loop
           await loanTransaction.delete();
 
+          // eslint-disable-next-line no-await-in-loop
           const loan = await loanTransaction.related('loan').query().firstOrFail();
 
           loan.updateBalance();
@@ -255,8 +272,9 @@ export default class TransactionsController {
 
         category.save();
 
+        // eslint-disable-next-line no-await-in-loop
         await trxCat.delete();
-      };  
+      }
     }
 
     if (acctTransaction) {

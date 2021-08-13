@@ -127,7 +127,9 @@ class InstitutionController {
 
     if (institution.accessToken) {
       const accountsInput = request.input('accounts') as UnlinkedAccountProps[];
-      await Promise.all(accountsInput.map(async (account) => {
+      // eslint-disable-next-line no-restricted-syntax
+      for (const account of accountsInput) {
+        // eslint-disable-next-line no-await-in-loop
         const [{ exists }] = await trx.query()
           .select(Database.raw(`EXISTS (SELECT 1 FROM accounts WHERE plaid_account_id = '${account.account_id}') AS exists`));
 
@@ -154,9 +156,11 @@ class InstitutionController {
           acct.tracking = account.tracking;
           acct.enabled = true;
 
+          // eslint-disable-next-line no-await-in-loop
           await acct.save();
 
           if (acct.tracking === 'Transactions') {
+            // eslint-disable-next-line no-await-in-loop
             const details = await acct.addTransactions(
               trx, institution.accessToken, startDate, user,
             );
@@ -168,6 +172,7 @@ class InstitutionController {
             const startingBalance = details.balance + details.sum;
 
             // Insert the 'starting balance' transaction
+            // eslint-disable-next-line no-await-in-loop
             const [transId] = await trx.insertQuery().insert({
               date: startDate.format('YYYY-MM-DD'),
               sort_order: -1,
@@ -176,6 +181,7 @@ class InstitutionController {
               .table('transactions')
               .returning('id');
 
+            // eslint-disable-next-line no-await-in-loop
             await trx.insertQuery()
               .insert({
                 transaction_id: transId,
@@ -186,6 +192,7 @@ class InstitutionController {
               })
               .table('account_transactions');
 
+            // eslint-disable-next-line no-await-in-loop
             await trx.insertQuery()
               .insert({
                 transaction_id: transId,
@@ -194,10 +201,12 @@ class InstitutionController {
               })
               .table('transaction_categories');
 
+            // eslint-disable-next-line no-await-in-loop
             const category = await Category.findOrFail(fundingPool.id, { client: trx });
 
             category.amount += startingBalance;
 
+            // eslint-disable-next-line no-await-in-loop
             await category.save();
 
             fundingAmount = category.amount;
@@ -205,7 +214,7 @@ class InstitutionController {
 
           newAccounts.push(acct);
         }
-      }));
+      }
     }
 
     await trx.commit();

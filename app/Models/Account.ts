@@ -1,3 +1,4 @@
+/* eslint-disable import/no-cycle */
 import Database, { TransactionClientContract } from '@ioc:Adonis/Lucid/Database';
 import moment, { Moment } from 'moment';
 import {
@@ -9,8 +10,8 @@ import AccountTransaction from 'App/Models/AccountTransaction';
 import BalanceHistory from 'App/Models/BalanceHistory';
 import Category from 'App/Models/Category';
 import Institution from 'App/Models/Institution';
-import User from './User';
 import { CategoryBalanceProps, TrackingType } from 'Common/ResponseTypes';
+import User from 'App/Models/User';
 
 type Transaction = {
   balance: number,
@@ -306,7 +307,7 @@ class Account extends BaseModel {
     });
 
     if (this.balanceHistory.length === 0) {
-      await BalanceHistory.create({ date: today, balance }, { client: trx });
+      await this.related('balanceHistory').create({ date: today, balance });
     }
   }
 }

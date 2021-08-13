@@ -328,13 +328,15 @@ class CategoryController {
         const existingSplits: StrictValues[] = [];
 
         // Insert the category splits
-        await Promise.all(categories.map(async (split) => {
+        // eslint-disable-next-line no-restricted-syntax
+        for (const split of categories) {
           if (split.amount !== 0) {
             let { amount } = split;
 
             if (split.id) {
               existingSplits.push(split.id);
 
+              // eslint-disable-next-line no-await-in-loop
               const existingSplit = await TransactionCategory.findOrFail(split.id, { client: trx });
 
               amount = split.amount - existingSplit.amount;
@@ -345,6 +347,7 @@ class CategoryController {
             else {
               const newSplit = (new TransactionCategory()).useTransaction(trx);
 
+              // eslint-disable-next-line no-await-in-loop
               await newSplit
                 .fill({ transactionId, categoryId: split.categoryId, amount: split.amount })
                 .save();
@@ -354,6 +357,7 @@ class CategoryController {
               amount = split.amount;
             }
 
+            // eslint-disable-next-line no-await-in-loop
             const category = await Category.findOrFail(split.categoryId, { client: trx });
 
             category.amount += amount;
@@ -362,7 +366,7 @@ class CategoryController {
 
             result.balances.push({ id: category.id, balance: category.amount });
           }
-        }));
+        }
 
         // Delete splits that are not in the array of ids
         const query = trx
@@ -371,7 +375,9 @@ class CategoryController {
           .andWhere('transaction_id', transactionId);
         const toDelete = await query.select('category_id AS categoryId', 'amount');
 
-        await Promise.all(toDelete.map(async (td) => {
+        // eslint-disable-next-line no-restricted-syntax
+        for (const td of toDelete) {
+          // eslint-disable-next-line no-await-in-loop
           const category = await Category.findOrFail(td.categoryId, { client: trx });
 
           category.amount -= td.amount;
@@ -379,7 +385,7 @@ class CategoryController {
           result.balances.push({ id: category.id, balance: category.amount });
 
           category.save();
-        }));
+        }
 
         await query.delete();
 
@@ -408,7 +414,9 @@ class CategoryController {
 
       const categorySplits = await categoryTransfer.splits(trx);
 
-      await Promise.all(categorySplits.map(async (cs) => {
+      // eslint-disable-next-line no-restricted-syntax
+      for (const cs of categorySplits) {
+        // eslint-disable-next-line no-await-in-loop
         const category = await Category.find(cs.categoryId, { client: trx });
 
         if (category) {
@@ -416,9 +424,10 @@ class CategoryController {
 
           category.save();
 
+          // eslint-disable-next-line no-await-in-loop
           await cs.delete();
         }
-      }));
+      }
 
       await categoryTransfer.delete();
 

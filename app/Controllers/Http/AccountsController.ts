@@ -99,7 +99,7 @@ export default class AccountsController {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  public async balances({ request }: HttpContextContract): Promise<Array<BalanceHistory>> {
+  public async balances({ request }: HttpContextContract): Promise<BalanceHistory[]> {
     const accountId = parseInt(request.params().acctId, 10);
     const account = await Account.find(accountId);
 
@@ -114,6 +114,7 @@ export default class AccountsController {
     return [];
   }
 
+  // eslint-disable-next-line class-methods-use-this
   public async addTransaction({
     request,
     auth: {
@@ -132,7 +133,7 @@ export default class AccountsController {
         schema.object().members({
           categoryId: schema.number(),
           amount: schema.number(),
-        })
+        }),
       ),
     });
 
@@ -140,12 +141,12 @@ export default class AccountsController {
     const requestData = await request.validate({
       schema: validationSchema,
     });
-  
+
     const trx = await Database.transaction();
 
     const account = await Account.findOrFail(acctId, { client: trx });
 
-    const transaction  = (new Transaction()).useTransaction(trx);
+    const transaction = (new Transaction()).useTransaction(trx);
 
     transaction.fill({
       type: TransactionType.MANUAL_TRANSACTION,
@@ -166,20 +167,21 @@ export default class AccountsController {
     await account.save();
 
     const categoryBalances: CategoryBalanceProps[] = [];
-  
-    const splits = requestData.splits;
+
+    const { splits } = requestData;
 
     if (!splits || splits.length === 0) {
       const unassignedCat = await Category.getUnassignedCategory(user, { client: trx });
 
       unassignedCat.amount += acctTransaction.amount;
-  
+
       await unassignedCat.save();
 
       categoryBalances.push({ id: unassignedCat.id, balance: unassignedCat.amount })
     }
     else {
-      for (let split of splits) {
+      // eslint-disable-next-line no-restricted-syntax
+      for (const split of splits) {
         const trxCategory = (new TransactionCategory()).useTransaction(trx);
 
         trxCategory.fill({
@@ -188,12 +190,15 @@ export default class AccountsController {
           amount: split.amount,
         })
 
+        // eslint-disable-next-line no-await-in-loop
         await trxCategory.save();
 
+        // eslint-disable-next-line no-await-in-loop
         const category = await Category.findOrFail(split.categoryId, { client: trx });
 
         category.amount += split.amount;
 
+        // eslint-disable-next-line no-await-in-loop
         await category.save();
 
         const balance = categoryBalances.find((b) => b.id === category.id);
@@ -214,7 +219,7 @@ export default class AccountsController {
     });
 
     await transaction.load('transactionCategories');
-  
+
     await trx.commit();
 
     const result: {
