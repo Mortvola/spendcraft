@@ -10,7 +10,7 @@ import LoanTransaction from 'App/Models/LoanTransaction';
 import AccountTransaction from 'App/Models/AccountTransaction';
 import { AccountBalanceProps, CategoryBalanceProps, LoanTransactionProps } from 'Common/ResponseTypes';
 import Account from 'App/Models/Account';
-import { rules, schema } from '@ioc:Adonis/Core/Validator';
+import { schema } from '@ioc:Adonis/Core/Validator';
 
 type LoanProps = {
   balance: number,
