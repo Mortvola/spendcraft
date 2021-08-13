@@ -1,6 +1,8 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import Account from './Account';
-import { UnlinkedAccountProps, InstitutionProps, isAccountsResponse, isUnlinkedAccounts, AccountBalanceProps } from '../../common/ResponseTypes';
+import {
+  UnlinkedAccountProps, InstitutionProps, isAccountsResponse, isUnlinkedAccounts, AccountBalanceProps,
+} from '../../common/ResponseTypes';
 import { AccountInterface, StoreInterface } from './State';
 import { getBody, postJSON } from './Transports';
 

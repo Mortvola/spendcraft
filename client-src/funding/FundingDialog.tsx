@@ -32,7 +32,7 @@ const FundingDialog = ({
     throw new Error('funding pool is unassigned');
   }
 
-const getTotal = useCallback((
+  const getTotal = useCallback((
     categories: FundingType[],
   ) => (
     categories.reduce((accumulator: number, item) => (
@@ -40,7 +40,7 @@ const getTotal = useCallback((
         ? accumulator
         : accumulator + item.amount
     ), 0)
-  ), [fundingPoolCat.id]);
+  ), [fundingPoolCat]);
 
   type FundingPlanType = {
     planId: number;

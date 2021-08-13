@@ -28,7 +28,7 @@ export default class LoansController {
     const requestData = await request.validate({
       schema: validationSchema,
     });
-  
+
     const trx = await Database.transaction();
 
     const loanGroup = await Group.query({ client: trx })

@@ -10,13 +10,13 @@ export default class AppProvider {
   public register () {
     // Register your own bindings
     this.app.container.singleton('Plaid', () => {
-      // const Config = this.app.container.use('Adonis/Core/Config');
-      // return new plaid.Client({
-      //   clientID: Config.get('plaid.clientId'),
-      //   secret: Config.get('plaid.secret'),
-      //   env: plaid.environments[Config.get('plaid.environment')],
-      //   options: {},
-      // })
+      const Config = this.app.container.use('Adonis/Core/Config');
+      return new plaid.Client({
+        clientID: Config.get('plaid.clientId'),
+        secret: Config.get('plaid.secret'),
+        env: plaid.environments[Config.get('plaid.environment')],
+        options: {},
+      })
     });
   }
 

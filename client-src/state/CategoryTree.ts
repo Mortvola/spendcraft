@@ -3,10 +3,10 @@ import Category from './Category';
 import Group from './Group';
 import {
   CategoryBalanceProps,
-  CategoryProps, Error, isErrorResponse,
+  Error, isErrorResponse,
   isGroupProps, isGroupsResponse, isLoanGroupProps,
 } from '../../common/ResponseTypes';
-import { CategoryTreeInterface, StoreInterface } from './State';
+import { CategoryInterface, CategoryTreeInterface, StoreInterface } from './State';
 import SystemIds from './SystemIds';
 import { getBody, httpDelete, postJSON } from './Transports';
 import LoansGroup from './LoansGroup';
@@ -32,7 +32,7 @@ class CategoryTree implements CategoryTreeInterface {
     this.store = store;
   }
 
-  getCategory(categoryId: number): Category | null {
+  getCategory(categoryId: number): CategoryInterface | null {
     let category: Category | null = null;
 
     this.groups.find((group) => {

@@ -83,7 +83,7 @@ class Transaction implements TransactionInterface {
       amount?: number,
       comment?: string,
       splits: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
-    }
+    },
   ): Promise<null> {
     if (this.id === null) {
       throw new Error('transaction has a null id');
@@ -111,7 +111,6 @@ class Transaction implements TransactionInterface {
           this.name = body.transaction.accountTransaction.name;
           this.comment = body.transaction.comment;
 
-          let resort = false;
           // Remove the transaction from the selected category, if any, if the transaction
           // no longer has the selected category in its splits.
           if (this.store.uiState.selectedCategory) {

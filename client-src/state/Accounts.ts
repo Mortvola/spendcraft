@@ -1,7 +1,9 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import Institution from './Institution';
 import Plaid from './Plaid';
-import { AccountBalanceProps, isInstitutionProps, isInstitutionsResponse, isLinkTokenResponse } from '../../common/ResponseTypes';
+import {
+  AccountBalanceProps, isInstitutionProps, isInstitutionsResponse, isLinkTokenResponse,
+} from '../../common/ResponseTypes';
 import { AccountInterface, AccountsInterface, StoreInterface } from './State';
 import { getBody, postJSON } from './Transports';
 

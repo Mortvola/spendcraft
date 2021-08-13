@@ -301,10 +301,9 @@ class CategoryController {
     } = { balances: [], transaction: { transactionCategories: [] } };
 
     try {
-      const categories = requestData.categories;
+      const { categories } = requestData;
       if (Array.isArray(categories)) {
-        const date = requestData.date;
-        const type = requestData.type;
+        const { date, type } = requestData;
         let transactionId = tfrId;
 
         if (transactionId === undefined) {

@@ -1,7 +1,11 @@
 import { makeAutoObservable, runInAction } from 'mobx';
-import { AccountBalanceProps, AccountProps, AddTransactionProps, Error, isAccountSyncResponse, isAccountTransactionsResponse, isAddTransactionResponse } from '../../common/ResponseTypes';
+import {
+  AccountProps, Error, isAccountSyncResponse, isAccountTransactionsResponse, isAddTransactionResponse,
+} from '../../common/ResponseTypes';
 import PendingTransaction from './PendingTransaction';
-import { AccountInterface, NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface } from './State';
+import {
+  AccountInterface, NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface,
+} from './State';
 import Transaction from './Transaction';
 import { getBody, httpPost, postJSON } from './Transports';
 
@@ -10,6 +14,7 @@ class Account implements AccountInterface {
 
   name: string;
 
+  // eslint-disable-next-line camelcase
   official_name: string | null = null;
 
   subtype: string | null = null;
@@ -123,7 +128,8 @@ class Account implements AccountInterface {
       name?: string,
       amount?: number,
       splits: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
-    }): Promise<Error[] | null> {
+    },
+  ): Promise<Error[] | null> {
     const response = await postJSON(`/api/account/${this.id}/transactions`, values);
 
     if (response.ok) {

@@ -1,7 +1,7 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
-import React, { ReactElement, useState, useContext } from 'react';
+import React, { ReactElement, useState } from 'react';
 import {
-  Field, ErrorMessage, FieldProps,
+  Field, FieldProps,
   FormikErrors,
   FormikContextType,
 } from 'formik';
@@ -9,12 +9,10 @@ import CategorySplits from './CategorySplits';
 import useModal, { ModalProps, useModalType } from './Modal/useModal';
 import Amount from './Amount';
 import Transaction from './state/Transaction';
-import { AccountInterface, CategoryInterface, TransactionCategoryInterface } from './state/State';
+import { AccountInterface, TransactionCategoryInterface } from './state/State';
 import FormError from './Modal/FormError';
 import AmountInput from './AmountInput';
 import FormModal from './Modal/FormModal';
-import MobxStore from './state/mobxStore';
-
 
 function validateSplits(splits: Array<TransactionCategoryInterface>) {
   let error;
@@ -39,8 +37,6 @@ const TransactionDialog = ({
   transaction = null,
   account = null,
 }: PropsType & ModalProps): ReactElement => {
-  const { categoryTree: { unassignedCat } } = useContext(MobxStore);
-
   type ValueType = {
     date: string,
     name: string,
@@ -80,7 +76,7 @@ const TransactionDialog = ({
         (accum: number, item: TransactionCategoryInterface) => accum + Math.round(item.amount * 100),
         0,
       );
-  
+
       if (sum !== Math.abs(Math.round(values.amount * 100))) {
         errors.splits = 'The sum of the categories does not match the transaction amount.';
       }
@@ -141,7 +137,7 @@ const TransactionDialog = ({
     }
   };
 
-  let splitItemClass = 'transaction-split-item no-balances';
+  const splitItemClass = 'transaction-split-item no-balances';
 
   return (
     <FormModal<ValueType>
@@ -149,7 +145,7 @@ const TransactionDialog = ({
         date: transaction ? transaction.date : '',
         name: transaction ? transaction.name : '',
         amount: transaction ? transaction.amount : 0,
-        comment: transaction && transaction.comment ? transaction.comment: '',
+        comment: transaction && transaction.comment ? transaction.comment : '',
         splits: transaction
           ? transaction.categories.map((c) => ({
             ...c,
@@ -160,7 +156,7 @@ const TransactionDialog = ({
       show={show}
       onHide={onHide}
       size="lg"
-      title={transaction ? "Edit Transaction" : "Add Transaction"}
+      title={transaction ? 'Edit Transaction' : 'Add Transaction'}
       formId="transactionDialogForm"
       validate={handleValidate}
       onSubmit={handleSubmit}
@@ -180,15 +176,16 @@ const TransactionDialog = ({
         <FormError name="name" />
       </label>
       <div style={{
-        display: "grid",
-        gridTemplateColumns: "minmax(0, 8rem) minmax(0, 1fr)",
-        columnGap: "1rem",
-      }}>
+        display: 'grid',
+        gridTemplateColumns: 'minmax(0, 8rem) minmax(0, 1fr)',
+        columnGap: '1rem',
+      }}
+      >
         <label>
           Amount:
           <Field name="amount">
             {
-              ({ field, form: { values, touched }, meta }: FieldProps<string | number, ValueType>) => (
+              ({ field, form: { values } }: FieldProps<string | number, ValueType>) => (
                 <AmountInput
                   className="form-control"
                   {...field}
@@ -230,17 +227,19 @@ const TransactionDialog = ({
           }: FieldProps<TransactionCategoryInterface[]>) => (
             <CategorySplits
               splits={value}
-              total={Math.abs(typeof(values.amount) === 'string' ? parseFloat(values.amount) : values.amount)}
+              total={Math.abs(typeof (values.amount) === 'string' ? parseFloat(values.amount) : values.amount)}
               onChange={(splits) => {
                 setFieldValue(name, splits);
-                setRemaining(computeRemaining(splits, typeof(values.amount) === 'string' ? parseFloat(values.amount) : values.amount));
+                setRemaining(computeRemaining(
+                  splits, typeof (values.amount) === 'string' ? parseFloat(values.amount) : values.amount,
+                ));
               }}
             />
           )}
         </Field>
         <div className={splitItemClass}>
           <div className="unassigned-label">Remaining:</div>
-          <Amount amount={remaining} style={{ margin: '1px', padding: '1px' }}/>
+          <Amount amount={remaining} style={{ margin: '1px', padding: '1px' }} />
         </div>
         <FormError name="splits" />
       </div>

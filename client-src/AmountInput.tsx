@@ -1,5 +1,4 @@
 import React, { useState, useRef, ReactElement } from 'react';
-import PropTypes from 'prop-types';
 import { Overlay } from 'react-bootstrap';
 import Popover from 'react-bootstrap/Popover';
 import PopoverHeader from 'react-bootstrap/PopoverHeader';
@@ -8,39 +7,38 @@ import parseEquation from './EquationParser';
 
 interface Props {
   id?: string,
-  value: number | string;
-  onDeltaChange: (amount: number, delta: number) => void;
+  value?: number | string;
+  onDeltaChange?: (amount: number, delta: number) => void;
   onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onBlur?: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  className: string;
+  className?: string;
   name?: string;
   readonly?: boolean,
 }
 
 const AmountInput = ({
   id,
-  value,
+  value = 0,
   onDeltaChange,
   onChange,
   onBlur,
-  className,
+  className = '',
   name,
   readonly,
 }: Props): ReactElement => {
   const [inputAmount, setInputAmount] = useState(
-    typeof(value) === 'string'
-    ? parseFloat(value).toFixed(2)
-    : value.toFixed(2)
+    typeof value === 'string'
+      ? parseFloat(value).toFixed(2)
+      : value.toFixed(2),
   );
   const [initialValue, setInitialValue] = useState(
-    typeof(value) === 'string'
-    ? parseFloat(value).toFixed(2)
-    : value.toFixed(2)
+    typeof value === 'string'
+      ? parseFloat(value).toFixed(2)
+      : value.toFixed(2),
   );
   const [showPopover, setShowPopover] = useState(false);
   const ref = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const containerRef = useRef<HTMLInputElement>(null);
   const [equation, setEquation] = useState('');
   const [previousAmount, setPreviousAmount] = useState('0');
 
@@ -166,14 +164,6 @@ const AmountInput = ({
       }
     </>
   );
-};
-
-AmountInput.defaultProps = {
-  amount: 0,
-  onDeltaChange: null,
-  onChange: null,
-  className: '',
-  name: null,
 };
 
 export default AmountInput;

@@ -1,6 +1,6 @@
 import Reports from './Reports';
 import User from './User';
-import { AddTransactionProps, CategoryType, Error } from '../../common/ResponseTypes'
+import { CategoryType, Error } from '../../common/ResponseTypes'
 import LoanTransaction from './LoanTransaction';
 
 export interface GroupInterface {
@@ -185,6 +185,7 @@ export interface AccountInterface {
 
   name: string;
 
+  // eslint-disable-next-line camelcase
   official_name: string | null = null;
 
   subtype: string | null = null;
