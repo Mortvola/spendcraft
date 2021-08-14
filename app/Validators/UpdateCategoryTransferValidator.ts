@@ -10,7 +10,7 @@ export default class UpdateCategoryTransferValidator {
       rules.zeroSum({ property: 'amount' }),
     ]).members(
       schema.object().members({
-        id: schema.number(),
+        id: schema.number.optional(),
         categoryId: schema.number(),
         amount: schema.number(),
       }),
