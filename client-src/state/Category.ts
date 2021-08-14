@@ -47,6 +47,28 @@ class Category implements CategoryInterface {
     makeAutoObservable(this);
   }
 
+  static sort(t: Transaction[] | PendingTransaction[] | LoanTransaction[]): void {
+    t.sort((a, b) => {
+      if (a.date < b.date) {
+        return 1;
+      }
+
+      if (a.date > b.date) {
+        return -1;
+      }
+
+      // if (a.sortOrder < b.sortOrder) {
+      //   return 1;
+      // }
+
+      // if (a.sortOrder > b.sortOrder) {
+      //   return -1;
+      // }
+
+      return 0;
+    });
+  }
+
   async getTransactions(): Promise<void> {
     this.fetching = true;
     const response = await fetch(`/api/category/${this.id}/transactions`);
@@ -54,46 +76,6 @@ class Category implements CategoryInterface {
     const body = await getBody(response);
 
     if (response.ok && isCategoryTransactionsResponse(body)) {
-      body.transactions.sort((a, b) => {
-        if (a.date < b.date) {
-          return 1;
-        }
-
-        if (a.date > b.date) {
-          return -1;
-        }
-
-        if (a.sortOrder < b.sortOrder) {
-          return 1;
-        }
-
-        if (a.sortOrder > b.sortOrder) {
-          return -1;
-        }
-
-        return 0;
-      });
-
-      body.loan.transactions.sort((a, b) => {
-        if (a.transactionCategory.transaction.date < b.transactionCategory.transaction.date) {
-          return 1;
-        }
-
-        if (a.transactionCategory.transaction.date > b.transactionCategory.transaction.date) {
-          return -1;
-        }
-
-        // if (a.sortOrder < b.sortOrder) {
-        //   return 1;
-        // }
-
-        // if (a.sortOrder > b.sortOrder) {
-        //   return -1;
-        // }
-
-        return 0;
-      });
-
       runInAction(() => {
         if (body !== null) {
           this.balance = body.balance;
@@ -105,6 +87,10 @@ class Category implements CategoryInterface {
           this.loan.transactions = body.loan.transactions.map((t) => (
             new LoanTransaction(t)
           ));
+
+          Category.sort(this.transactions);
+          Category.sort(this.pending);
+          Category.sort(this.loan.transactions);
         }
         else {
           this.transactions = [];

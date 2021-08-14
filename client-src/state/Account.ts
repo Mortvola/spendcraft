@@ -75,6 +75,28 @@ class Account implements AccountInterface {
     });
   }
 
+  static sort(t: Transaction[] | PendingTransaction[]): void {
+    t.sort((a, b) => {
+      if (a.date < b.date) {
+        return 1;
+      }
+
+      if (a.date > b.date) {
+        return -1;
+      }
+
+      // if (a.sortOrder < b.sortOrder) {
+      //   return 1;
+      // }
+
+      // if (a.sortOrder > b.sortOrder) {
+      //   return -1;
+      // }
+
+      return 0;
+    });
+  }
+
   async getTransactions(): Promise<void> {
     this.fetching = true;
     const response = await fetch(`/api/account/${this.id}/transactions`);
@@ -82,26 +104,6 @@ class Account implements AccountInterface {
     const body = await getBody(response);
 
     if (response.ok && isAccountTransactionsResponse(body)) {
-      body.transactions.sort((a, b) => {
-        if (a.date < b.date) {
-          return 1;
-        }
-
-        if (a.date > b.date) {
-          return -1;
-        }
-
-        if (a.sortOrder < b.sortOrder) {
-          return 1;
-        }
-
-        if (a.sortOrder > b.sortOrder) {
-          return -1;
-        }
-
-        return 0;
-      });
-
       runInAction(() => {
         if (body !== null) {
           this.balance = body.balance;
@@ -109,6 +111,8 @@ class Account implements AccountInterface {
           this.transactions = body.transactions.map((t) => (
             new Transaction(this.store, t)
           ));
+          Account.sort(this.transactions);
+          Account.sort(this.pending);
         }
         else {
           this.transactions = [];
