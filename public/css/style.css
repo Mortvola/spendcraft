@@ -329,10 +329,6 @@ body {
 	padding-left: 4px;
 }
 
-.transactions div.transaction:not(.transaction-selected):nth-child(odd) {
-	background-color: whitesmoke;
-} 
-
 .transactions div.transaction-selected {
 	background-color: lightblue;
 }

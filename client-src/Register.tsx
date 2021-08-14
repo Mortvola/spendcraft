@@ -95,7 +95,7 @@ const Register = ({
     }
 
     return (
-      <div className="transactions">
+      <div className="transactions striped">
         {list}
       </div>
     );
@@ -161,7 +161,7 @@ const Register = ({
   const renderPendingTransactions = () => {
     if (pending) {
       return pending.map((transaction) => (
-        <div key={transaction.id} className="pending-transaction striped">
+        <div key={transaction.id} className="pending-transaction">
           <div />
           <div>{transaction.date}</div>
           <div className="transaction-field">{transaction.name}</div>
