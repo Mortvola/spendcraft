@@ -78,6 +78,10 @@ class Register implements RegisterInterface {
     if (this.store.uiState.selectedCategory) {
       this.store.uiState.selectedCategory.removeTransaction(transactionId);
     }
+    
+    if (this.store.uiState.selectedAccount) {
+      this.store.uiState.selectedAccount.removeTransaction(transactionId);
+    } 
   }
 }
 

@@ -1,20 +1,33 @@
 import { makeAutoObservable, runInAction } from 'mobx';
-import { AccountProps, isAccountSyncResponse, isAccountTransactionsResponse } from '../../common/ResponseTypes';
+import {
+  AccountProps, Error, isAccountSyncResponse, isAccountTransactionsResponse, isAddTransactionResponse,
+} from '../../common/ResponseTypes';
 import PendingTransaction from './PendingTransaction';
-import { AccountInterface, StoreInterface } from './State';
+import {
+  AccountInterface, NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface,
+} from './State';
 import Transaction from './Transaction';
-import { getBody, httpPost } from './Transports';
+import { getBody, httpPost, postJSON } from './Transports';
 
 class Account implements AccountInterface {
   id: number;
 
   name: string;
 
-  tracking: string;
+  // eslint-disable-next-line camelcase
+  official_name: string | null = null;
+
+  subtype: string | null = null;
+
+  tracking: 'Balances' | 'Transactions';
 
   syncDate: string;
 
   balance: number;
+
+  balances: {
+    current: number | null,
+  } = { current: null };
 
   transactions: Transaction[] = [];
 
@@ -106,6 +119,56 @@ class Account implements AccountInterface {
     }
     else {
       this.fetching = false;
+    }
+  }
+
+  async addTransaction(
+    values: {
+      date?: string,
+      name?: string,
+      amount?: number,
+      splits: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
+    },
+  ): Promise<Error[] | null> {
+    const response = await postJSON(`/api/account/${this.id}/transactions`, values);
+
+    if (response.ok) {
+      const body = await getBody(response);
+
+      if (isAddTransactionResponse(body)) {
+        runInAction(() => {
+          this.store.categoryTree.updateBalances(body.categories);
+
+          const transaction = new Transaction(this.store, body.transaction);
+
+          this.insertTransaction(transaction);
+
+          this.balance = body.balance;
+        });
+
+        return null;
+      }
+    }
+
+    throw new Error('Error response received');
+  }
+
+  insertTransaction(transaction: Transaction): void {
+    const index = this.transactions.findIndex((t) => transaction.date >= t.date);
+
+    if (index === -1) {
+      this.transactions.push(transaction);
+    }
+    else {
+      this.transactions.splice(index, 0, transaction)
+    }
+  }
+
+  removeTransaction(transactionId: number): void {
+    const index = this.transactions.findIndex((t) => t.id === transactionId);
+
+    if (index !== -1) {
+      this.transactions.splice(index, 1);
     }
   }
 }

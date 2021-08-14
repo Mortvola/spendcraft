@@ -1,5 +1,7 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
-import React, { ReactElement, useState } from 'react';
+import React, {
+  ReactElement, useCallback, useEffect, useState,
+} from 'react';
 // import PropTypes from 'prop-types';
 import {
   Field,
@@ -7,13 +9,15 @@ import {
   FormikContextType,
   FormikErrors,
 } from 'formik';
+import { runInAction } from 'mobx';
 import useModal, { ModalProps, useModalType } from '../Modal/useModal';
 import AmountInput from '../AmountInput';
 import FormError from '../Modal/FormError';
 import FormModal from '../Modal/FormModal';
 import LoansGroup from '../state/LoansGroup';
 import Category from '../state/Category';
-import { Error } from '../../common/ResponseTypes';
+import { Error, isLoanProps, isLoanUpdateProps } from '../../common/ResponseTypes';
+import { getBody, httpGet, patchJSON } from '../state/Transports';
 
 type Props = {
   category?: Category | null,
@@ -25,7 +29,7 @@ const LoanDialog = ({
   show,
   category,
   group,
-}: Props & ModalProps): ReactElement => {
+}: Props & ModalProps): ReactElement | null => {
   const [generalErrors, setGeneralErrors] = useState<string[]>();
   type ValueType = {
     name: string,
@@ -34,17 +38,63 @@ const LoanDialog = ({
     startDate: string,
   }
 
+  const [loan, setLoan] = useState<null | { startDate: string, startingBalance: number, rate: number }>(null);
+
+  const fetchLoan = useCallback(async (categoryId: number) => {
+    const result = await httpGet(`/api/loans/${categoryId}`);
+
+    if (result.ok) {
+      const body = await getBody(result);
+
+      if (isLoanProps(body)) {
+        setLoan({
+          startDate: body.startDate,
+          startingBalance: -body.startingBalance,
+          rate: body.rate,
+        });
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (category) {
+      fetchLoan(category.id);
+    }
+  }, [category, fetchLoan]);
+
   const handleSubmit = async (values: ValueType, bag: FormikHelpers<ValueType>) => {
     const { setErrors } = bag;
     let errors = null;
 
     if (category) {
-      // errors = await category.update(values.name);
+      if (!loan) {
+        throw new Error('loan is null');
+      }
+
+      const response = await patchJSON(`/api/loans/${category.id}`, {
+        name: values.name,
+        startDate: values.startDate,
+        startingBalance: -parseFloat(values.amount),
+        rate: parseFloat(values.rate),
+      });
+
+      if (!response.ok) {
+        throw new Error('request failed');
+      }
+
+      const body = await getBody(response);
+
+      if (isLoanUpdateProps(body)) {
+        runInAction(() => {
+          category.name = body.name;
+          category.setLoanTransactions(body.loan);
+        });
+      }
     }
     else {
       errors = await group.addLoan(
         values.name,
-        parseFloat(values.amount),
+        -parseFloat(values.amount),
         parseFloat(values.rate),
         values.startDate,
       );
@@ -117,59 +167,63 @@ const LoanDialog = ({
     return 'Add Loan';
   };
 
-  return (
-    <FormModal<ValueType>
-      show={show}
-      onHide={onHide}
-      initialValues={{
-        name: category && category.name ? category.name : '',
-        amount: '0',
-        rate: '0',
-        startDate: '',
-      }}
-      validate={handleValidate}
-      onSubmit={handleSubmit}
-      onDelete={category ? handleDelete : null}
-      formId="catDialogForm"
-      title={title()}
-      errors={generalErrors}
-    >
-      <label style={{ display: 'block ' }}>
-        Name:
-        <Field
-          type="text"
-          className="form-control"
-          name="name"
-        />
-        <FormError name="name" />
-      </label>
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', columnGap: '2rem' }}>
-        <label>
-          Loan Amount:
+  if (!category || loan) {
+    return (
+      <FormModal<ValueType>
+        show={show}
+        onHide={onHide}
+        initialValues={{
+          name: category && category.name ? category.name : '',
+          amount: loan ? loan.startingBalance.toString() : '0',
+          rate: loan ? loan.rate.toString() : '',
+          startDate: loan ? loan.startDate : '',
+        }}
+        validate={handleValidate}
+        onSubmit={handleSubmit}
+        onDelete={category ? handleDelete : null}
+        formId="catDialogForm"
+        title={title()}
+        errors={generalErrors}
+      >
+        <label style={{ display: 'block ' }}>
+          Name:
           <Field
-            as={AmountInput}
+            type="text"
             className="form-control"
-            name="amount"
+            name="name"
           />
-          <FormError name="amount" />
+          <FormError name="name" />
         </label>
-        <label>
-          Annual Interest Rate:
-          <Field
-            as={AmountInput}
-            className="form-control"
-            name="rate"
-          />
-          <FormError name="rate" />
-        </label>
-        <label>
-          Start Date
-          <Field type="date" name="startDate" className="form-control" />
-          <FormError name="startDate" />
-        </label>
-      </div>
-    </FormModal>
-  );
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', columnGap: '2rem' }}>
+          <label>
+            Loan Amount:
+            <Field
+              as={AmountInput}
+              className="form-control"
+              name="amount"
+            />
+            <FormError name="amount" />
+          </label>
+          <label>
+            Annual Interest Rate:
+            <Field
+              as={AmountInput}
+              className="form-control"
+              name="rate"
+            />
+            <FormError name="rate" />
+          </label>
+          <label>
+            Start Date
+            <Field type="date" name="startDate" className="form-control" />
+            <FormError name="startDate" />
+          </label>
+        </div>
+      </FormModal>
+    );
+  }
+
+  return null;
 };
 
 LoanDialog.defaultProps = {

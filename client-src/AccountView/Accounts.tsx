@@ -4,20 +4,28 @@ import IconButton from '../IconButton';
 import DetailView from '../DetailView';
 import AccountView from './AccountView';
 import MobxStore from '../state/mobxStore';
+import { useTransactionDialog } from '../TransactionDialog';
 
 const Accounts = () => {
   const {
     accounts, register, balances, uiState: { selectedAccount },
   } = useContext(MobxStore);
   const [refreshing, setRefreshing] = useState(false);
+  const [TransactionDialog, showTransactionDialog] = useTransactionDialog();
 
   useEffect(() => {
     if (selectedAccount) {
-      if (selectedAccount.tracking === 'Transactions') {
-        selectedAccount.getTransactions();
-      }
-      else {
-        balances.load(selectedAccount);
+      switch (selectedAccount.tracking) {
+        case 'Transactions':
+          selectedAccount.getTransactions();
+          break;
+
+        case 'Balances':
+          balances.load(selectedAccount);
+          break;
+        
+        default:
+          throw new Error('Invalid tracking type');
       }
     }
   }, [balances, selectedAccount]);
@@ -45,6 +53,10 @@ const Accounts = () => {
       });
   };
 
+  const handleAddTransactionClick = () => {
+    showTransactionDialog();
+  }
+
   let rotate = false;
   if (refreshing) {
     rotate = true;
@@ -64,7 +76,15 @@ const Accounts = () => {
       </div>
       {
         selectedAccount
-          ? <DetailView detailView={selectedAccount.tracking} />
+          ? (
+            <div>
+              <div>
+                <IconButton icon="plus" onClick={handleAddTransactionClick}/>
+                <TransactionDialog account={selectedAccount} />
+              </div>
+              <DetailView detailView={selectedAccount.tracking} />
+            </div>
+          )
           : null
       }
     </>

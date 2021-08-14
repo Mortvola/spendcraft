@@ -1,4 +1,5 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
+import { schema } from '@ioc:Adonis/Core/Validator';
 import Database from '@ioc:Adonis/Lucid/Database';
 import FundingPlan, { Plan } from 'App/Models/FundingPlan';
 import FundingPlanCategory from 'App/Models/FundingPlanCategory';
@@ -16,9 +17,17 @@ class FundingPlanController {
       throw new Error('user is undefined');
     }
 
+    const validationSchema = schema.create({
+      name: schema.string(),
+    });
+
+    const requestData = await request.validate({
+      schema: validationSchema,
+    });
+
     const plan = new FundingPlan();
 
-    plan.name = request.input('name');
+    plan.name = requestData.name;
 
     await plan.related('user').associate(user);
 
@@ -75,13 +84,22 @@ class FundingPlanController {
   public async updateCategory({
     request,
   }: HttpContextContract): Promise<UpdateFundingCategoryResponse> {
+    const validationSchema = schema.create({
+      amount: schema.number(),
+    });
+
+    const { planId, catId } = request.params();
+    const requestData = await request.validate({
+      schema: validationSchema,
+    });
+
     const category = await FundingPlanCategory.updateOrCreate(
       {
-        planId: request.params().planId,
-        categoryId: request.params().catId,
+        planId: planId,
+        categoryId: catId,
       },
       {
-        amount: request.input('amount'),
+        amount: requestData.amount,
       },
     );
 

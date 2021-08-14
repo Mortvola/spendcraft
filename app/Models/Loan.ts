@@ -1,3 +1,4 @@
+/* eslint-disable import/no-cycle */
 import {
   BaseModel, BelongsTo, belongsTo, column, HasMany, hasMany,
 } from '@ioc:Adonis/Lucid/Orm'
@@ -19,11 +20,12 @@ export default class Loan extends BaseModel {
   public balance: number;
 
   @column({
+    serializeAs: 'startingBalance',
     consume: (value: string) => parseFloat(value),
   })
   public startingBalance: number;
 
-  @column.date()
+  @column.date({ serializeAs: 'startDate' })
   public startDate: DateTime;
 
   @column()
@@ -51,7 +53,7 @@ export default class Loan extends BaseModel {
         transactionCategory.preload('transaction');
       });
 
-    // todo: sort transactions by date
+    // Sort transactions by date
     transactions.sort((a, b) => {
       if (a.transactionCategory.transaction.date < b.transactionCategory.transaction.date) {
         return -1;
@@ -65,15 +67,23 @@ export default class Loan extends BaseModel {
     });
 
     let balance = this.startingBalance;
+    let interestOwed = 0;
     let { startDate } = this;
     transactions.forEach((t) => {
       const numberOfDays = t.transactionCategory.transaction.date.diff(startDate, 'days').days;
       const rate = (this.rate / 365) * numberOfDays;
 
-      const interest = -balance * (rate / 100.0);
-      t.principle = -t.transactionCategory.amount - interest;
+      const interest = -balance * (rate / 100.0) + interestOwed;
+      interestOwed = 0;
 
-      balance += t.principle;
+      if (interest <= -t.transactionCategory.amount) {
+        t.principle = -t.transactionCategory.amount - interest;
+        balance += t.principle;
+      }
+      else {
+        interestOwed = interest + t.transactionCategory.amount;
+        t.principle = 0;
+      }
 
       startDate = t.transactionCategory.transaction.date;
     });
@@ -82,7 +92,7 @@ export default class Loan extends BaseModel {
 
     this.balance = balance;
 
-    this.save();
+    await this.save();
   }
 
   public async getProps(this: Loan): Promise<LoanTransactionsProps> {

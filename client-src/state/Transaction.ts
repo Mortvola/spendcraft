@@ -3,9 +3,9 @@ import {
   Error,
   TransactionType,
   TransactionProps,
-  isUpdateTransactionCategoryResponse,
   isUpdateCategoryTransferResponse,
   isDeleteTransactionResponse,
+  isUpdateTransactionResponse,
 } from '../../common/ResponseTypes';
 import {
   NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface,
@@ -24,11 +24,15 @@ class Transaction implements TransactionInterface {
 
   name: string;
 
-  categories: TransactionCategoryInterface[];
+  comment = '';
+
+  categories: TransactionCategoryInterface[] = [];
 
   instituteName: string;
 
   accountName: string;
+
+  accountId: number | null = null;
 
   store: StoreInterface;
 
@@ -38,11 +42,13 @@ class Transaction implements TransactionInterface {
     this.id = props.id;
     this.date = props.date;
     this.type = props.type;
+    this.comment = props.comment;
     if (props.accountTransaction) {
       this.name = props.accountTransaction.name;
       this.amount = props.accountTransaction.amount;
       this.instituteName = props.accountTransaction.account.institution.name;
       this.accountName = props.accountTransaction.account.name;
+      this.accountId = props.accountTransaction.account.id;
     }
     else {
       switch (props.type) {
@@ -62,38 +68,73 @@ class Transaction implements TransactionInterface {
       this.instituteName = '';
       this.accountName = '';
     }
-    this.categories = props.transactionCategories;
+
+    if (props.transactionCategories) {
+      this.categories = props.transactionCategories;
+    }
 
     makeAutoObservable(this);
   }
 
-  async updateTransactionCategories(
-    transactionCategories: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
+  async updateTransaction(
+    values: {
+      date?: string,
+      name?: string,
+      amount?: number,
+      comment?: string,
+      splits: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
+    },
   ): Promise<null> {
     if (this.id === null) {
       throw new Error('transaction has a null id');
     }
 
-    const response = await patchJSON(`/api/transaction/${this.id}`, { splits: transactionCategories });
+    const response = await patchJSON(`/api/transaction/${this.id}`, values);
 
     if (response.ok) {
       const body = await getBody(response);
 
-      if (isUpdateTransactionCategoryResponse(body)) {
+      if (isUpdateTransactionResponse(body)) {
         runInAction(() => {
           if (this.id === null) {
             throw new Error('transaction has a null id');
           }
 
           this.store.categoryTree.updateBalances(body.categories);
-          if (this.store.uiState.selectedCategory && !body.splits.some(
-            (c) => (this.store.uiState.selectedCategory && c.categoryId === this.store.uiState.selectedCategory.id),
-          )) {
-            if (this.store.uiState.selectedCategory.type === 'LOAN') {
-              this.store.uiState.selectedCategory.getLoanTransactions();
-            }
 
-            this.store.uiState.selectedCategory.removeTransaction(this.id);
+          this.categories = body.transaction.transactionCategories;
+
+          const dateChanged = this.date !== body.transaction.date;
+          this.date = body.transaction.date;
+
+          this.amount = body.transaction.accountTransaction.amount;
+          this.name = body.transaction.accountTransaction.name;
+          this.comment = body.transaction.comment;
+
+          // Remove the transaction from the selected category, if any, if the transaction
+          // no longer has the selected category in its splits.
+          if (this.store.uiState.selectedCategory) {
+            if (!body.transaction.transactionCategories.some(
+              (c) => (this.store.uiState.selectedCategory && c.categoryId === this.store.uiState.selectedCategory.id),
+            ) && (body.transaction.transactionCategories.length !== 0
+            || this.store.uiState.selectedCategory.id !== this.store.categoryTree.systemIds.unassignedId)) {
+              if (this.store.uiState.selectedCategory.type === 'LOAN') {
+                this.store.uiState.selectedCategory.getLoanTransactions();
+              }
+
+              this.store.uiState.selectedCategory.removeTransaction(this.id);
+            }
+            else if (dateChanged) {
+              this.store.uiState.selectedCategory.removeTransaction(this.id);
+              this.store.uiState.selectedCategory.insertTransaction(this);
+            }
+          }
+
+          if (this.store.uiState.selectedAccount
+            && this.store.uiState.selectedAccount.id === this.accountId
+            && dateChanged) {
+            this.store.uiState.selectedAccount.removeTransaction(this.id);
+            this.store.uiState.selectedAccount.insertTransaction(this);
           }
         });
 
@@ -159,6 +200,7 @@ class Transaction implements TransactionInterface {
           }
 
           this.store.categoryTree.updateBalances(body.balances);
+          this.store.accounts.updateBalances(body.acctBalances);
           this.store.register.removeTransaction(this.id);
         });
 

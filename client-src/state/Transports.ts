@@ -52,6 +52,13 @@ export const putJSON = (url: string, body: unknown): Promise<Response> => (
   })
 );
 
+export const httpGet = (url: string): Promise<Response> => (
+  fetch(url, {
+    method: 'GET',
+    headers: defaultHeaders(),
+  })
+);
+
 export const httpDelete = (url: string): Promise<Response> => (
   fetch(url, {
     method: 'DELETE',

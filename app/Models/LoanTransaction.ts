@@ -2,6 +2,7 @@ import {
   BaseModel, column, belongsTo, BelongsTo,
 } from '@ioc:Adonis/Lucid/Orm'
 import TransactionCategory from 'App/Models/TransactionCategory';
+import Loan from './Loan';
 
 export default class LoanTransaction extends BaseModel {
   @column({ isPrimary: true })
@@ -23,4 +24,7 @@ export default class LoanTransaction extends BaseModel {
     localKey: 'id',
   })
   public transactionCategory: BelongsTo<typeof TransactionCategory>;
+
+  @belongsTo(() => Loan)
+  public loan: BelongsTo<typeof Loan>;
 }

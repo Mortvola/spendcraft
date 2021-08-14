@@ -17,10 +17,7 @@ class AccountTransaction extends BaseModel {
   @hasOne(() => Transaction)
   public transaction: HasOne<typeof Transaction>;
 
-  @belongsTo(() => Account, {
-    foreignKey: 'accountId',
-    localKey: 'id',
-  })
+  @belongsTo(() => Account)
   public account: BelongsTo<typeof Account>;
 
   @column({ serializeAs: null })

@@ -1,17 +1,16 @@
 import BaseSchema from '@ioc:Adonis/Lucid/Schema'
 
-export default class Users extends BaseSchema {
-  protected tableName = 'users'
+export default class BalanceHistories extends BaseSchema {
+  protected tableName = 'balance_histories'
 
   public async up () {
     this.schema.table(this.tableName, (table) => {
-//      table.string('remember_me_token').nullable()
+      table.integer('account_id').notNullable().references('id').inTable('accounts').alter();
     })
   }
 
   public async down () {
     this.schema.table(this.tableName, (table) => {
-      table.dropColumn('remember_me_token')
     })
   }
 }

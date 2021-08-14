@@ -14,6 +14,7 @@ import Transaction from 'App/Models/Transaction';
 import TransactionCategory from 'App/Models/TransactionCategory';
 import Loan from 'App/Models/Loan';
 import {
+  CategoryBalanceProps,
   LoanTransactionProps, TransactionProps, TransactionType, UpdateCategoryResponse,
 } from 'Common/ResponseTypes';
 
@@ -93,15 +94,16 @@ class CategoryController {
     if (!user) {
       throw new Error('user is not defined');
     }
-    await request.validate(AddGroupValidator);
+
+    const requestData = await request.validate(AddGroupValidator);
 
     const id = await Database.insertQuery().table('groups')
-      .insert({ name: request.input('name'), user_id: user.id })
+      .insert({ name: requestData.name, user_id: user.id })
       .returning('id');
 
     return {
       id: id[0],
-      name: request.input('name'),
+      name: requestData.name,
       system: false,
       categories: [],
     };
@@ -118,13 +120,14 @@ class CategoryController {
       throw new Error('user is not defined');
     }
 
-    await request.validate(UpdateGroupValidator);
+    const { groupId } = request.params();
+    const requestData = await request.validate(UpdateGroupValidator);
 
     await Database.query().from('groups')
-      .where({ id: request.params().groupId, user_id: user.id })
-      .update({ name: request.input('name') });
+      .where({ id: groupId, user_id: user.id })
+      .update({ name: requestData.name });
 
-    return { id: request.params().groupId, name: request.input('name') };
+    return { id: groupId, name: requestData.name };
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -133,21 +136,28 @@ class CategoryController {
       throw new Error('user is not defined');
     }
 
+    const { groupId } = request.params();
     await request.validate(DeleteGroupValidator);
 
-    await Database.query().from('groups').where({ id: request.params().groupId, user_id: user.id }).delete();
+    await Database.query().from('groups').where({ id: groupId, user_id: user.id }).delete();
   }
 
   // eslint-disable-next-line class-methods-use-this
   public async addCategory({
     request,
   }: HttpContextContract): Promise<Category> {
-    await request.validate(AddCategoryValidator);
+    const { groupId } = request.params();
+    const requestData = await request.validate(AddCategoryValidator);
 
     const category = new Category();
 
     await category
-      .fill({ groupId: parseInt(request.params().groupId, 10), name: request.input('name'), amount: 0 })
+      .fill({
+        groupId: parseInt(groupId, 10),
+        name: requestData.name,
+        amount: 0,
+        type: 'REGULAR',
+      })
       .save();
 
     return category;
@@ -157,25 +167,24 @@ class CategoryController {
   public async updateCategory({
     request,
   }: HttpContextContract): Promise<UpdateCategoryResponse> {
-    await request.validate(UpdateCategoryValidator);
-
     const { catId } = request.params();
-    const name = request.input('name');
+    const requestData = await request.validate(UpdateCategoryValidator);
 
-    await Database.query().from('categories').where({ id: catId }).update({ name });
+    await Database.query().from('categories').where({ id: catId }).update({ name: requestData.name });
 
-    return { name };
+    return { name: requestData.name };
   }
 
   // eslint-disable-next-line class-methods-use-this
   public async deleteCategory({ request }: HttpContextContract): Promise<void> {
+    const { catId } = request.params();
     await request.validate(DeleteCategoryValidator);
 
     const trx = await Database.transaction();
-    const category = await Category.findOrFail(request.params().catId, { client: trx });
+    const category = await Category.findOrFail(catId, { client: trx });
 
     if (category.type === 'LOAN') {
-      const loan = await Loan.findBy('categoryId', request.params().catId, { client: trx });
+      const loan = await Loan.findBy('categoryId', catId, { client: trx });
 
       if (loan) {
         await loan.delete();
@@ -198,7 +207,9 @@ class CategoryController {
       throw new Error('user is not defined');
     }
 
-    const categoryId = parseInt(request.params().catId, 10);
+    const { catId } = request.params();
+
+    const categoryId = parseInt(catId, 10);
 
     const result: TransactionsResponse = {
       transactions: [],
@@ -264,16 +275,17 @@ class CategoryController {
   // eslint-disable-next-line class-methods-use-this
   public async transfer(
     { request, auth: { user } }: HttpContextContract,
-  ): Promise<{ balances: { id: number, balance: number}[] }> {
+  ): Promise<{ balances: CategoryBalanceProps[] }> {
     if (!user) {
       throw new Error('user is not defined');
     }
 
-    await request.validate(UpdateCategoryTransferValidator);
+    const { tfrId } = request.params();
+    const requestData = await request.validate(UpdateCategoryTransferValidator);
 
     const trx = await Database.transaction();
     const result: {
-      balances: Array<{ id: number, balance: number}>,
+      balances: CategoryBalanceProps[],
       transaction: {
         transactionCategories: unknown[],
         id?: number,
@@ -289,11 +301,10 @@ class CategoryController {
     } = { balances: [], transaction: { transactionCategories: [] } };
 
     try {
-      const categories = request.input('categories');
+      const { categories } = requestData;
       if (Array.isArray(categories)) {
-        const date = request.input('date');
-        const type = request.input('type');
-        let transactionId = request.params().tfrId;
+        const { date, type } = requestData;
+        let transactionId = tfrId;
 
         if (transactionId === undefined) {
           [transactionId] = await trx.insertQuery().insert({
@@ -317,13 +328,15 @@ class CategoryController {
         const existingSplits: StrictValues[] = [];
 
         // Insert the category splits
-        await Promise.all(categories.map(async (split) => {
+        // eslint-disable-next-line no-restricted-syntax
+        for (const split of categories) {
           if (split.amount !== 0) {
             let { amount } = split;
 
             if (split.id) {
               existingSplits.push(split.id);
 
+              // eslint-disable-next-line no-await-in-loop
               const existingSplit = await TransactionCategory.findOrFail(split.id, { client: trx });
 
               amount = split.amount - existingSplit.amount;
@@ -334,6 +347,7 @@ class CategoryController {
             else {
               const newSplit = (new TransactionCategory()).useTransaction(trx);
 
+              // eslint-disable-next-line no-await-in-loop
               await newSplit
                 .fill({ transactionId, categoryId: split.categoryId, amount: split.amount })
                 .save();
@@ -343,6 +357,7 @@ class CategoryController {
               amount = split.amount;
             }
 
+            // eslint-disable-next-line no-await-in-loop
             const category = await Category.findOrFail(split.categoryId, { client: trx });
 
             category.amount += amount;
@@ -351,7 +366,7 @@ class CategoryController {
 
             result.balances.push({ id: category.id, balance: category.amount });
           }
-        }));
+        }
 
         // Delete splits that are not in the array of ids
         const query = trx
@@ -360,7 +375,9 @@ class CategoryController {
           .andWhere('transaction_id', transactionId);
         const toDelete = await query.select('category_id AS categoryId', 'amount');
 
-        await Promise.all(toDelete.map(async (td) => {
+        // eslint-disable-next-line no-restricted-syntax
+        for (const td of toDelete) {
+          // eslint-disable-next-line no-await-in-loop
           const category = await Category.findOrFail(td.categoryId, { client: trx });
 
           category.amount -= td.amount;
@@ -368,7 +385,7 @@ class CategoryController {
           result.balances.push({ id: category.id, balance: category.amount });
 
           category.save();
-        }));
+        }
 
         await query.delete();
 
@@ -397,7 +414,9 @@ class CategoryController {
 
       const categorySplits = await categoryTransfer.splits(trx);
 
-      await Promise.all(categorySplits.map(async (cs) => {
+      // eslint-disable-next-line no-restricted-syntax
+      for (const cs of categorySplits) {
+        // eslint-disable-next-line no-await-in-loop
         const category = await Category.find(cs.categoryId, { client: trx });
 
         if (category) {
@@ -405,9 +424,10 @@ class CategoryController {
 
           category.save();
 
+          // eslint-disable-next-line no-await-in-loop
           await cs.delete();
         }
-      }));
+      }
 
       await categoryTransfer.delete();
 

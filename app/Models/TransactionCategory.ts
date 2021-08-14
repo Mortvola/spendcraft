@@ -35,6 +35,9 @@ class TransactionCategory extends BaseModel {
 
   @hasOne(() => LoanTransaction)
   public loanTransaction: HasOne<typeof LoanTransaction>;
+
+  @column()
+  public comment: string;
 }
 
 export default TransactionCategory;

@@ -11,7 +11,7 @@ import MobxStore from '../state/mobxStore';
 import useModal, { ModalProps, useModalType } from '../Modal/useModal';
 import Transaction from '../state/Transaction';
 import { NewTransactionCategoryInterface, TransactionCategoryInterface } from '../state/State';
-import { GroupProps, TransactionType } from '../../common/ResponseTypes';
+import { TransactionType } from '../../common/ResponseTypes';
 import FormModal from '../Modal/FormModal';
 import FormError from '../Modal/FormError';
 import Funding, { FundingType } from './Funding';
@@ -26,16 +26,21 @@ const FundingDialog = ({
   show,
 }: Props & ModalProps): ReactElement => {
   const { categoryTree, register } = useContext(MobxStore);
+  const { fundingPoolCat } = categoryTree;
+
+  if (!fundingPoolCat) {
+    throw new Error('funding pool is unassigned');
+  }
 
   const getTotal = useCallback((
     categories: FundingType[],
   ) => (
     categories.reduce((accumulator: number, item) => (
-      item.categoryId === categoryTree.systemIds.fundingPoolId
+      fundingPoolCat && item.categoryId === fundingPoolCat.id
         ? accumulator
         : accumulator + item.amount
     ), 0)
-  ), [categoryTree.systemIds.fundingPoolId]);
+  ), [fundingPoolCat]);
 
   type FundingPlanType = {
     planId: number;
@@ -79,13 +84,13 @@ const FundingDialog = ({
       ? getTotal(funding.categories)
       : 0,
   );
-  const [availableFunds, setAvailableFunds] = useState(categoryTree.getFundingPoolAmount());
+  const [availableFunds, setAvailableFunds] = useState(fundingPoolCat.balance);
 
   useEffect(() => {
     const funded = getTotal(funding.categories);
-    setAvailableFunds(categoryTree.getFundingPoolAmount() - funded);
+    setAvailableFunds(fundingPoolCat.balance - funded);
     setTotal(funded);
-  }, [categoryTree, funding, getTotal]);
+  }, [fundingPoolCat, funding, getTotal]);
 
   if (!plansInitialized) {
     setPlansInitialized(true);
@@ -157,17 +162,17 @@ const FundingDialog = ({
     // One should be found if this is a transaction we are editing. Otherwise, 
     // it should not be found.
     const index = request.categories.findIndex(
-      (c) => c.categoryId === categoryTree.systemIds.fundingPoolId,
+      (c) => fundingPoolCat && c.categoryId === fundingPoolCat.id,
     );
 
     if (index === -1) {
-      if (categoryTree.systemIds.fundingPoolId === null) {
+      if (!fundingPoolCat || fundingPoolCat.id === null) {
         throw new Error('fundingPoolId is null');
       }
 
       request.categories.push({
         type: 'REGULAR',
-        categoryId: categoryTree.systemIds.fundingPoolId,
+        categoryId: fundingPoolCat.id,
         amount: -sum,
       });
     }

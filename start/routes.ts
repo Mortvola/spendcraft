@@ -68,6 +68,7 @@ Route.group(() => {
 
     Route.group(() => {
       Route.get('/:acctId/transactions', 'AccountsController.transactions');
+      Route.post('/:acctId/transactions', 'AccountsController.addTransaction');
       Route.get('/:acctId/balances', 'AccountsController.balances');
     }).prefix('/account');
 
@@ -99,6 +100,8 @@ Route.group(() => {
 
     Route.group(() => {
       Route.post('', 'LoansController.add');
+      Route.get('/:catId', 'LoansController.get');
+      Route.patch('/:catId', 'LoansController.update');
       Route.get('/:catId/transactions', 'LoansController.getTransactions');
     }).prefix('/loans');
 

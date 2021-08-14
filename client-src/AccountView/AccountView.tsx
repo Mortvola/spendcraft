@@ -2,16 +2,18 @@ import React, { useContext } from 'react';
 import { observer } from 'mobx-react-lite';
 import Institution from './Institution';
 import MobxStore from '../state/mobxStore';
+import { AccountInterface } from '../state/State';
 
 const AccountView = () => {
-  const { accounts } = useContext(MobxStore);
-  const { institutions, selectedAccount } = accounts;
+  const { accounts, uiState } = useContext(MobxStore);
+  const { selectedAccount } = uiState;
+  const { institutions } = accounts;
 
-  const handleAccountSelected = (account) => {
-    accounts.selectAccount(account);
+  const handleAccountSelected = (account: AccountInterface) => {
+    uiState.selectAccount(account);
   };
 
-  const handleRelink = (institutionId) => {
+  const handleRelink = (institutionId: number) => {
     accounts.relinkInstitution(institutionId);
   };
 

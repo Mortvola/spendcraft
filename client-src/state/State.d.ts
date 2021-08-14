@@ -1,6 +1,6 @@
 import Reports from './Reports';
 import User from './User';
-import { CategoryType } from '../../common/ResponseTypes'
+import { CategoryType, Error } from '../../common/ResponseTypes'
 import LoanTransaction from './LoanTransaction';
 
 export interface GroupInterface {
@@ -63,6 +63,12 @@ export interface AccountsInterface {
   store: StoreInterface;
 
   async load(): Promise<void>;
+
+  async relinkInstitution(institutionId: number): Promise<void>;
+
+  async addInstitution(): Promise<void>;
+
+  updateBalances(balances: AccountBalanceProps[]): void;
 }
 
 export interface PendingTransactionProps {
@@ -102,6 +108,8 @@ export interface CategoryInterface {
 
   getLoanTransactions(): Promise<void>;
 
+  insertTransaction(transaction: Transaction): void;
+
   removeTransaction(transactionId: number): void;
 }
 
@@ -120,7 +128,14 @@ export interface UIStateInterface {
 
 export interface CategoryTreeInterface {
   systemIds: SystemIds;
-  updateBalances(balances: Array<CategoryProps>): void;
+
+  unassignedCat: Category | null = null;
+
+  fundingPoolCat: Category | null = null;
+
+  accountTransferCat: Category | null = null;
+
+  updateBalances(balances: CategoryBalanceProps[]): void;
   getCategory(categoryId: number): CategoryInterface | null;
 }
 
@@ -142,6 +157,7 @@ export interface TransactionCategoryInterface {
   type: CategoryType;
   categoryId: number;
   amount: number;
+  comment?: string;
 
   loanTransaction?: null | {
     principle: number;
@@ -169,11 +185,20 @@ export interface AccountInterface {
 
   name: string;
 
-  tracking: string;
+  // eslint-disable-next-line camelcase
+  official_name: string | null = null;
+
+  subtype: string | null = null;
+
+  tracking: 'Balances' | 'Transactions';
 
   syncDate: string;
 
   balance: number;
+
+  balances: {
+    current: number | null,
+  };
 
   transactions: Transaction[] = [];
 
@@ -184,6 +209,21 @@ export interface AccountInterface {
   store: StoreInterface;
 
   async getTransactions(): Promise<void>;
+
+  async refresh(institutionId: number): Promise<void>;
+
+  async addTransaction(
+    values: {
+      date?: string,
+      name?: string,
+      amount?: number,
+      splits: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
+    },
+  ): Promise<Error[] | null>;
+
+  insertTransaction(transaction: Transaction): void;
+
+  removeTransaction(transactionId: number): void;
 }
 
 export interface BalancesInterface {

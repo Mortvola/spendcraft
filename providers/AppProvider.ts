@@ -17,8 +17,8 @@ export default class AppProvider {
         env: plaid.environments[Config.get('plaid.environment')],
         options: {},
       })
-  });
-}
+    });
+  }
 
   public async boot () {
     // IoC container is ready

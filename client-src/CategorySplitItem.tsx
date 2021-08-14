@@ -1,8 +1,7 @@
-import React, { ReactElement, useContext } from 'react';
+import React, { ReactElement, useContext, useState } from 'react';
 import CategoryInput from './CategoryInput/CategoryInput';
 import IconButton from './IconButton';
 import AmountInput from './AmountInput';
-import Amount from './Amount';
 import { CategoryInterface, TransactionCategoryInterface } from './state/State';
 import MobxStore from './state/mobxStore';
 
@@ -14,7 +13,7 @@ type PropsType = {
   onDeltaChange: (id: number, amount: number, delta: number) => void,
   onAddItem: (afterId: number) => void,
   onDeleteItem: (id: number) => void,
-  showBalances?: boolean,
+  onCommentChange: (id: number, comment: string) => void,
 }
 
 function CategorySplitItem({
@@ -25,9 +24,13 @@ function CategorySplitItem({
   onDeltaChange,
   onAddItem,
   onDeleteItem,
-  showBalances = false,
+  onCommentChange,
 }: PropsType): ReactElement {
-  const { categoryTree: { systemIds: { unassignedId } } } = useContext(MobxStore);
+  const { categoryTree: { unassignedCat } } = useContext(MobxStore);
+
+  if (!unassignedCat) {
+    throw new Error('unassigned category is null');
+  }
 
   const handleCategoryChange = (category: CategoryInterface) => {
     onCategoryChange(split.id, category.id);
@@ -36,6 +39,10 @@ function CategorySplitItem({
   const handleDeltaChange = (amount: number, delta: number) => {
     onDeltaChange(split.id, amount, delta);
   };
+
+  const handleCommentChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    onCommentChange(split.id, event.target.value);
+  }
 
   const handleAddItem = () => {
     onAddItem(split.id);
@@ -56,32 +63,16 @@ function CategorySplitItem({
     }
   }
 
-  const renderBalances = () => {
-    if (showBalances) {
-      return (
-        <>
-          <Amount amount={balance} />
-          <Amount amount={newBalance} />
-        </>
-      );
-    }
-
-    return null;
-  };
-
-  let className = 'transaction-split-item';
-  if (!showBalances) {
-    className += ' no-balances';
-  }
+  let className = 'transaction-split-item no-balances';
 
   return (
     <div className={className}>
       <CategoryInput
         onChange={handleCategoryChange}
-        categoryId={categoryId === unassignedId ? null : categoryId}
+        categoryId={categoryId === unassignedCat.id ? null : categoryId}
       />
-      <AmountInput onDeltaChange={handleDeltaChange} amount={split.amount} />
-      {renderBalances()}
+      <AmountInput onDeltaChange={handleDeltaChange} value={split.amount} />
+      <input type="text" value={split.comment ?? ''} onChange={handleCommentChange}/>
       <IconButton icon="plus" onClick={handleAddItem} />
       <IconButton icon="minus" onClick={handleDeleteItem} />
     </div>

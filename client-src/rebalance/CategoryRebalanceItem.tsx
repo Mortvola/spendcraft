@@ -28,7 +28,7 @@ function CategoryRebalanceItem({
     <div className="cat-rebalance-item">
       <div>{category.name}</div>
       <Amount amount={category.balance} />
-      <AmountInput amount={adjustment} onDeltaChange={handleDeltaChange} />
+      <AmountInput value={adjustment} onDeltaChange={handleDeltaChange} />
       <Amount amount={newBalance} />
     </div>
   );

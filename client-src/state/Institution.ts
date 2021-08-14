@@ -1,7 +1,9 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import Account from './Account';
-import { InstitutionProps, isAccountsResponse } from '../../common/ResponseTypes';
-import { StoreInterface } from './State';
+import {
+  UnlinkedAccountProps, InstitutionProps, isAccountsResponse, isUnlinkedAccounts, AccountBalanceProps,
+} from '../../common/ResponseTypes';
+import { AccountInterface, StoreInterface } from './State';
 import { getBody, postJSON } from './Transports';
 
 class Institution {
@@ -9,9 +11,9 @@ class Institution {
 
   name: string;
 
-  unlinkedAccounts: unknown | null = null;
+  unlinkedAccounts: UnlinkedAccountProps[] | null = null;
 
-  accounts: Array<Account>;
+  accounts: AccountInterface[];
 
   store: StoreInterface;
 
@@ -29,7 +31,7 @@ class Institution {
     this.store = store;
   }
 
-  async addAccounts(accounts: Array<Account>): Promise<null> {
+  async addAccounts(accounts: UnlinkedAccountProps[]): Promise<null> {
     const response = await postJSON(`/api/institution/${this.id}/accounts`, { accounts, startDate: null });
 
     const body = await getBody(response);
@@ -61,13 +63,24 @@ class Institution {
   async getUnlinkedAccounts(): Promise<void> {
     const response = await fetch(`/api/institution/${this.id}/accounts`);
 
-    const body = await getBody(response);
-
     if (response.ok) {
-      runInAction(() => {
-        this.unlinkedAccounts = body;
-      });
+      const body = await getBody(response);
+
+      if (isUnlinkedAccounts(body)) {
+        runInAction(() => {
+          this.unlinkedAccounts = body;
+        });
+      }
     }
+  }
+
+  updateBalances(balances: AccountBalanceProps[]): void {
+    this.accounts.forEach((a) => {
+      const balance = balances.find((b) => b.id === a.id);
+      if (balance) {
+        a.balance = balance.balance;
+      }
+    });
   }
 }
 

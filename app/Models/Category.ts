@@ -1,6 +1,6 @@
 /* eslint-disable import/no-cycle */
 import {
-  BaseModel, BelongsTo, belongsTo, column, HasMany, hasMany,
+  BaseModel, BelongsTo, belongsTo, column, HasMany, hasMany, ModelAdapterOptions,
 } from '@ioc:Adonis/Lucid/Orm';
 import Database from '@ioc:Adonis/Lucid/Database';
 import Group from 'App/Models/Group';
@@ -49,8 +49,8 @@ class Category extends BaseModel {
   @hasMany(() => TransactionCategory)
   public transactionCategory: HasMany<typeof TransactionCategory>;
 
-  public static async getUnassignedCategory(user: User): Promise<Category> {
-    return await Category.query()
+  public static async getUnassignedCategory(user: User, options?: ModelAdapterOptions): Promise<Category> {
+    return await Category.query(options)
       .where('type', 'UNASSIGNED')
       .whereHas('group', (query) => query.where('userId', user.id))
       .firstOrFail();

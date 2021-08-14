@@ -3,9 +3,14 @@ import { observer } from 'mobx-react-lite';
 import Group from './Group';
 import MobxStore from '../state/mobxStore';
 import Category from '../state/Category';
+import Amount from '../Amount';
+import IconButton from '../IconButton';
+import { useCategoryTransferDialog } from '../CategoryTransferDialog';
+import SystemCategory from './SystemCategory';
 
 const CategoryView = (): ReactElement => {
   const { categoryTree, uiState } = useContext(MobxStore);
+  const [CategoryTransferDialog, showCategoryTransferDialog] = useCategoryTransferDialog();
 
   const handleCategorySelected = (category: Category) => {
     uiState.selectCategory(category);
@@ -14,23 +19,35 @@ const CategoryView = (): ReactElement => {
   useEffect(() => {
     // If there isn't a category selected then select the unassigned category
     if (uiState.selectedCategory === null) {
-      uiState.selectCategory(
-        categoryTree.getCategory(categoryTree.systemIds.unassignedId),
-      );
+      uiState.selectCategory(categoryTree.unassignedCat);
     }
-  }, [uiState.selectedCategory, categoryTree.systemIds.unassignedId, uiState, categoryTree]);
+  }, [uiState.selectedCategory, categoryTree.unassignedCat, uiState, categoryTree]);
 
   return (
-    <div id="categories">
-      {categoryTree.groups.map((group) => (
-        <Group
-          key={group.name}
-          group={group}
-          onCategorySelected={handleCategorySelected}
-          selectedCategory={uiState.selectedCategory}
-        />
-      ))}
-    </div>
+    <>
+      <div style={{ borderBottom: "thin black solid" }}>
+        <SystemCategory category={categoryTree.unassignedCat} />
+        <SystemCategory category={categoryTree.fundingPoolCat} />
+        <SystemCategory category={categoryTree.accountTransferCat} />
+      </div>
+      <div id="categories">
+        {categoryTree.groups.map((group) => {          
+          if (!group.system || group.name === 'Loans') {
+            return (
+              <Group
+                key={group.name}
+                group={group}
+                onCategorySelected={handleCategorySelected}
+                selectedCategory={uiState.selectedCategory}
+              />
+            );
+          }
+
+          return null;
+        })}
+      </div>
+      <CategoryTransferDialog />
+    </>
   );
 };
 

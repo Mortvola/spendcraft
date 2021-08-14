@@ -1,3 +1,4 @@
+/* eslint-disable import/no-cycle */
 import Database, { TransactionClientContract } from '@ioc:Adonis/Lucid/Database';
 import moment, { Moment } from 'moment';
 import {
@@ -9,7 +10,8 @@ import AccountTransaction from 'App/Models/AccountTransaction';
 import BalanceHistory from 'App/Models/BalanceHistory';
 import Category from 'App/Models/Category';
 import Institution from 'App/Models/Institution';
-import User from './User';
+import { CategoryBalanceProps, TrackingType } from 'Common/ResponseTypes';
+import User from 'App/Models/User';
 
 type Transaction = {
   balance: number,
@@ -31,13 +33,8 @@ type CategoryItem = {
   amount: number,
 };
 
-type CategoryBalance = {
-  id: number,
-  amount: number,
-};
-
 export type AccountSyncResult = {
-  categories: Array<CategoryBalance>,
+  categories: CategoryBalanceProps[],
   accounts: Array<{
     id: number,
     balance: number,
@@ -80,7 +77,7 @@ class Account extends BaseModel {
   public syncDate: string;
 
   @column()
-  public tracking: string;
+  public tracking: TrackingType;
 
   @column()
   public startDate: string;
@@ -140,7 +137,7 @@ class Account extends BaseModel {
       if (details.cat) {
         const unassigned = await Category.getUnassignedCategory(user);
 
-        result.categories = [{ id: unassigned.id, amount: details.cat.amount }];
+        result.categories = [{ id: unassigned.id, balance: details.cat.amount }];
       }
 
       result.accounts = [{
@@ -310,7 +307,7 @@ class Account extends BaseModel {
     });
 
     if (this.balanceHistory.length === 0) {
-      await BalanceHistory.create({ date: today, balance }, { client: trx });
+      await this.related('balanceHistory').create({ date: today, balance });
     }
   }
 }

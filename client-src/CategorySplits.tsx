@@ -21,17 +21,19 @@ type PropsType = {
   ) => void,
   total: number,
   credit?: boolean,
-  showBalances?: boolean,
 }
 
 const CategorySplits = ({
   splits,
   onChange,
   total,
-  credit,
-  showBalances,
+  credit = true,
 }: PropsType): ReactElement => {
   const { categoryTree } = useContext(MobxStore);
+
+  if (!categoryTree.unassignedCat) {
+    throw new Error('unassigned category is null');
+  }
 
   const [editedSplits, setEditedSplits] = useState<TransactionCategoryInterface[]>(
     splits && splits.length > 0
@@ -49,7 +51,7 @@ const CategorySplits = ({
         };
       })
       : [{
-        id: nextId(), type: 'REGULAR', categoryId: categoryTree.systemIds.unassignedId, amount: total,
+        id: nextId(), type: 'REGULAR', categoryId: categoryTree.unassignedCat.id, amount: total,
       }],
   );
 
@@ -83,7 +85,26 @@ const CategorySplits = ({
     }
   };
 
+  const handleCommentChange = (id: number, comment: string) => {
+    const splitIndex = editedSplits.findIndex((s) => s.id === id);
+
+    if (splitIndex !== -1) {
+      const newSplits = [
+        ...editedSplits.slice(0, splitIndex),
+        { ...editedSplits[splitIndex], comment },
+        ...editedSplits.slice(splitIndex + 1),
+      ];
+
+      setEditedSplits(newSplits);
+      onChange(newSplits);
+    }
+  }
+
   const handleAddItem = (afterId: number) => {
+    if (!categoryTree.unassignedCat) {
+      throw new Error('unassigned category is null');
+    }
+
     const index = editedSplits.findIndex((s) => s.id === afterId);
 
     if (index !== -1) {
@@ -95,7 +116,7 @@ const CategorySplits = ({
         index + 1,
         0,
         {
-          id: nextId(), type: 'REGULAR', categoryId: categoryTree.systemIds.unassignedId, amount,
+          id: nextId(), type: 'REGULAR', categoryId: categoryTree.unassignedCat.id, amount,
         },
       );
 
@@ -142,18 +163,13 @@ const CategorySplits = ({
             onDeleteItem={handleDeleteItem}
             onDeltaChange={handleDeltaChange}
             onCategoryChange={handleCategoryChange}
-            showBalances={showBalances}
+            onCommentChange={handleCommentChange}
             credit={credit}
           />
         );
       })}
     </div>
   );
-};
-
-CategorySplits.defaultProps = {
-  showBalances: false,
-  credit: false,
 };
 
 export default CategorySplits;
