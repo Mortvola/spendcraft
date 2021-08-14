@@ -4,7 +4,7 @@ import Group from './Group';
 import {
   CategoryBalanceProps,
   Error, isErrorResponse,
-  isGroupProps, isGroupsResponse, isLoanGroupProps,
+  isGroupProps, isGroupsResponse, isLoansGroupProps,
 } from '../../common/ResponseTypes';
 import { CategoryInterface, CategoryTreeInterface, StoreInterface } from './State';
 import SystemIds from './SystemIds';
@@ -95,12 +95,8 @@ class CategoryTree implements CategoryTreeInterface {
         }
 
         body.forEach((g) => {
-          if (g.system && g.name === 'Loans') {
+          if (isLoansGroupProps(g)) {
             this.systemIds.loansGroupId = g.id;
-
-            if (!isLoanGroupProps(g)) {
-              throw new Error('invalid loan group props');
-            }
 
             const loans = new LoansGroup(g, this.store);
             this.groups.push(loans);

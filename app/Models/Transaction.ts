@@ -1,3 +1,4 @@
+/* eslint-disable import/no-cycle */
 import {
   BaseModel, hasMany, HasMany, column,
   belongsTo, BelongsTo, HasOne, hasOne,

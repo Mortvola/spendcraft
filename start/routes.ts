@@ -100,6 +100,8 @@ Route.group(() => {
 
     Route.group(() => {
       Route.post('', 'LoansController.add');
+      Route.get('/:catId', 'LoansController.get');
+      Route.patch('/:catId', 'LoansController.update');
       Route.get('/:catId/transactions', 'LoansController.getTransactions');
     }).prefix('/loans');
 

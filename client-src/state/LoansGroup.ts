@@ -1,6 +1,6 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import {
-  LoanGroupProps, Error, isErrorResponse, CategoryProps, isAddCategoryResponse, CategoryBalanceProps,
+  LoansGroupProps, Error, isErrorResponse, isAddCategoryResponse, CategoryBalanceProps,
 } from '../../common/ResponseTypes';
 import Category from './Category';
 import { GroupInterface, StoreInterface } from './State';
@@ -17,7 +17,7 @@ class LoansGroup implements GroupInterface {
 
   store: StoreInterface;
 
-  constructor(props: LoanGroupProps | LoansGroup, store: StoreInterface) {
+  constructor(props: LoansGroupProps | LoansGroup, store: StoreInterface) {
     this.id = props.id;
     this.name = props.name;
     this.store = store;
@@ -59,26 +59,24 @@ class LoansGroup implements GroupInterface {
         return body.errors;
       }
     }
-    else {
-      if (isAddCategoryResponse(body)) {
-        runInAction(() => {
-          // Find the position where this new category should be inserted.
-          const index = this.categories.findIndex(
-            (g) => body.name.toLowerCase().localeCompare(g.name.toLowerCase()) < 0,
-          );
+    else if (isAddCategoryResponse(body)) {
+      runInAction(() => {
+        // Find the position where this new category should be inserted.
+        const index = this.categories.findIndex(
+          (g) => body.name.toLowerCase().localeCompare(g.name.toLowerCase()) < 0,
+        );
 
-          if (index === -1) {
-            this.categories.push(new Category(body, this.store));
-          }
-          else {
-            this.categories = [
-              ...this.categories.slice(0, index),
-              new Category(body, this.store),
-              ...this.categories.slice(index),
-            ];
-          }
-        });
-      }
+        if (index === -1) {
+          this.categories.push(new Category(body, this.store));
+        }
+        else {
+          this.categories = [
+            ...this.categories.slice(0, index),
+            new Category(body, this.store),
+            ...this.categories.slice(index),
+          ];
+        }
+      });
     }
 
     return null;

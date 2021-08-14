@@ -5,6 +5,7 @@ import {
   isCategoryTransactionsResponse,
   CategoryType,
   isCategoryLoanResponse,
+  CategoryLoanResponse,
 } from '../../common/ResponseTypes';
 import LoanTransaction from './LoanTransaction';
 import PendingTransaction from './PendingTransaction';
@@ -117,6 +118,42 @@ class Category implements CategoryInterface {
     }
   }
 
+  setLoanTransactions(loan: CategoryLoanResponse): void {
+    loan.transactions.sort((a, b) => {
+      if (a.transactionCategory.transaction.date < b.transactionCategory.transaction.date) {
+        return 1;
+      }
+
+      if (a.transactionCategory.transaction.date > b.transactionCategory.transaction.date) {
+        return -1;
+      }
+
+      // if (a.sortOrder < b.sortOrder) {
+      //   return 1;
+      // }
+
+      // if (a.sortOrder > b.sortOrder) {
+      //   return -1;
+      // }
+
+      return 0;
+    });
+
+    runInAction(() => {
+      if (loan !== null) {
+        this.loan.balance = loan.balance;
+        this.loan.transactions = loan.transactions.map((t) => (
+          new LoanTransaction(t)
+        ));
+      }
+      else {
+        this.loan.transactions = [];
+      }
+
+      this.fetching = false;
+    });
+  }
+
   async getLoanTransactions(): Promise<void> {
     const response = await fetch(`/api/loans/${this.id}/transactions`);
 
@@ -124,39 +161,7 @@ class Category implements CategoryInterface {
       const body = await getBody(response);
 
       if (isCategoryLoanResponse(body)) {
-        body.transactions.sort((a, b) => {
-          if (a.transactionCategory.transaction.date < b.transactionCategory.transaction.date) {
-            return 1;
-          }
-
-          if (a.transactionCategory.transaction.date > b.transactionCategory.transaction.date) {
-            return -1;
-          }
-
-          // if (a.sortOrder < b.sortOrder) {
-          //   return 1;
-          // }
-
-          // if (a.sortOrder > b.sortOrder) {
-          //   return -1;
-          // }
-
-          return 0;
-        });
-
-        runInAction(() => {
-          if (body !== null) {
-            this.loan.balance = body.balance;
-            this.loan.transactions = body.transactions.map((t) => (
-              new LoanTransaction(t)
-            ));
-          }
-          else {
-            this.loan.transactions = [];
-          }
-
-          this.fetching = false;
-        });
+        this.setLoanTransactions(body);
       }
     }
   }

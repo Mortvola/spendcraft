@@ -20,11 +20,12 @@ export default class Loan extends BaseModel {
   public balance: number;
 
   @column({
+    serializeAs: 'startingBalance',
     consume: (value: string) => parseFloat(value),
   })
   public startingBalance: number;
 
-  @column.date()
+  @column.date({ serializeAs: 'startDate' })
   public startDate: DateTime;
 
   @column()
@@ -91,7 +92,7 @@ export default class Loan extends BaseModel {
 
     this.balance = balance;
 
-    this.save();
+    await this.save();
   }
 
   public async getProps(this: Loan): Promise<LoanTransactionsProps> {
