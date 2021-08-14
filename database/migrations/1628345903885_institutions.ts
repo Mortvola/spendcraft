@@ -10,7 +10,7 @@ export default class Institutions extends BaseSchema {
   }
 
   public async down () {
-    this.schema.table(this.tableName, (table) => {
+    this.schema.table(this.tableName, (_table) => {
     })
   }
 }
