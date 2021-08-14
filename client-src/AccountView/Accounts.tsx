@@ -8,7 +8,7 @@ import { useTransactionDialog } from '../TransactionDialog';
 
 const Accounts = () => {
   const {
-    accounts, register, balances, uiState: { selectedAccount },
+    accounts, balances, uiState: { selectedAccount },
   } = useContext(MobxStore);
   const [refreshing, setRefreshing] = useState(false);
   const [TransactionDialog, showTransactionDialog] = useTransactionDialog();
@@ -23,7 +23,7 @@ const Accounts = () => {
         case 'Balances':
           balances.load(selectedAccount);
           break;
-        
+
         default:
           throw new Error('Invalid tracking type');
       }
@@ -77,9 +77,14 @@ const Accounts = () => {
       {
         selectedAccount
           ? (
-            <div>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateRows: 'max-content minmax(0,1fr)',
+              }}
+            >
               <div>
-                <IconButton icon="plus" onClick={handleAddTransactionClick}/>
+                <IconButton icon="plus" onClick={handleAddTransactionClick} />
                 <TransactionDialog account={selectedAccount} />
               </div>
               <DetailView detailView={selectedAccount.tracking} />
