@@ -6,7 +6,7 @@ import {
   BelongsTo,
 } from '@ioc:Adonis/Lucid/Orm';
 import Env from '@ioc:Adonis/Core/Env'
-import Database, { TransactionClientContract } from '@ioc:Adonis/Lucid/Database'
+import Database from '@ioc:Adonis/Lucid/Database'
 import util from 'util';
 import plaidClient, { PlaidInstitution } from '@ioc:Plaid';
 import Account from 'App/Models/Account';
@@ -84,8 +84,7 @@ class Institution extends BaseModel {
   }
 
   public async removeTransactions(
-    _trx: TransactionClientContract,
-    removedTransactions,
+    removedTransactions: string[],
   ): Promise<void> {
     console.log(`Removing transactions from ${this.id}: ${removedTransactions}`);
   }

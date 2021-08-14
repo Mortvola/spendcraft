@@ -43,7 +43,8 @@ export default class AccountsController {
     const transactions = await user
       .related('transactions').query()
       .whereHas('accountTransaction', (query) => {
-        query.where('account_id', accountId);
+        query.where('account_id', accountId)
+          .andWhere('pending', false);
       })
       .preload('accountTransaction', (accountTransaction) => {
         accountTransaction.preload('account', (account) => {
@@ -54,46 +55,23 @@ export default class AccountsController {
         transactionCategory.preload('loanTransaction');
       });
 
-    // const transactions = await account.related('accountTransactions')
-    //   .query()
-    //   .select(
-    //     'account_transactions.*',
-    //     Database.raw("to_char(date  AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI:SS') AS date"),
-    //     'transaction_id',
-    //   )
-    //   .join('transactions', 'transactions.id', 'transaction_id')
-    //   .orderBy('account_transactions.pending', 'desc')
-    //   .orderBy('transactions.date', 'desc')
-    //   .orderBy('account_transactions.name');
+    const pending = await user
+      .related('transactions').query()
+      .whereHas('accountTransaction', (query) => {
+        query.where('account_id', accountId)
+          .andWhere('pending', true);
+      })
+      .preload('accountTransaction', (accountTransaction) => {
+        accountTransaction.preload('account', (account) => {
+          account.preload('institution');
+        });
+      })
+      .preload('transactionCategories', (transactionCategory) => {
+        transactionCategory.preload('loanTransaction');
+      });
 
     result.transactions = transactions;
-
-    // if (result.transactions.length > 0) {
-    //   // Move pending transactions to the pending array
-    //   // Find first transaction that is not pending (all pending
-    //   // should be up front in the array)
-    //   const index = result.transactions.findIndex((t) => !t.pending);
-
-    //   if (index === -1) {
-    //     // The array contains only pending transactions
-    //     result.pending = result.transactions;
-    //     result.transactions = [];
-    //   }
-    //   else if (index > 0) {
-    //     // The array contains at least one pending transaction
-    //     result.pending = result.transactions.splice(0, index);
-    //   }
-
-    //   const transctionIds = result.transactions.map((t) => t.transactionId);
-
-    //   const categories = await TransactionCategory.query().whereIn('transaction_id', transctionIds);
-
-    //   result.transactions.forEach((transaction) => {
-    //     transaction.$extras.categories = categories.filter(
-    //       (c) => c.transactionId === transaction.transactionId,
-    //     );
-    //   });
-    // }
+    result.pending = pending;
 
     return result;
   }

@@ -228,9 +228,15 @@ class CategoryController {
     if (cat.type === 'UNASSIGNED') {
       const transactions = await user
         .related('transactions').query()
-        .doesntHave('transactionCategories')
-        .orWhereHas('transactionCategories', (query) => {
-          query.where('categoryId', cat.id);
+        .where((query) => {
+          query
+            .doesntHave('transactionCategories')
+            .orWhereHas('transactionCategories', (q) => {
+              q.where('categoryId', cat.id);
+            })
+        })
+        .whereHas('accountTransaction', (q2) => {
+          q2.where('pending', false)
         })
         .preload('accountTransaction', (accountTransaction) => {
           accountTransaction.preload('account', (account) => {
@@ -240,6 +246,29 @@ class CategoryController {
         .preload('transactionCategories');
 
       result.transactions = transactions.map((t) => (
+        t.serialize() as TransactionProps
+      ));
+
+      const pending = await user
+        .related('transactions').query()
+        .where((query) => {
+          query
+            .doesntHave('transactionCategories')
+            .orWhereHas('transactionCategories', (q) => {
+              q.where('categoryId', cat.id);
+            })
+        })
+        .whereHas('accountTransaction', (q2) => {
+          q2.where('pending', true)
+        })
+        .preload('accountTransaction', (accountTransaction) => {
+          accountTransaction.preload('account', (account) => {
+            account.preload('institution');
+          });
+        })
+        .preload('transactionCategories');
+
+      result.pending = pending.map((t) => (
         t.serialize() as TransactionProps
       ));
     }

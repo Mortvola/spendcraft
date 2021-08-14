@@ -43,6 +43,7 @@ const Register = ({
 
     if (account) {
       transactions = account.transactions;
+      pending = account.pending;
       balance = account.balance;
     }
   }

@@ -14,7 +14,22 @@ const getVerificationKey = util
 const keyCache = {};
 const waitingRequests = {};
 
-type TransactionEvent = Record<string, unknown>;
+type TransactionEvent = Record<string, unknown> & {
+  // eslint-disable-next-line camelcase
+  webhook_code: string,
+  // eslint-disable-next-line camelcase
+  item_id: string,
+  // eslint-disable-next-line camelcase
+  removed_transactions: string[],
+};
+
+const transactionCodes = ['INITIAL_UPDATE', 'HISTORICAL_UPDATE', 'DEFAULT_UPDATE', 'TRANSACTIONS_REMOVED'];
+
+const isTransactionEvent = (r: unknown): r is TransactionEvent => (
+  ((r as TransactionEvent).webhook_type !== undefined
+  && (r as TransactionEvent).webhook_code !== undefined
+  && transactionCodes.includes((r as TransactionEvent).webhook_code))
+);
 
 class WebhookController {
   // eslint-disable-next-line class-methods-use-this
@@ -27,9 +42,13 @@ class WebhookController {
       response.noContent();
 
       switch (request.body().webhook_type) {
-        case 'TRANSACTIONS':
-          WebhookController.processTransactionEvent(request.body());
+        case 'TRANSACTIONS': {
+          const body = request.body();
+          if (isTransactionEvent(body)) {
+            WebhookController.processTransactionEvent(body);
+          }
           break;
+        }
 
         case 'ITEM':
           WebhookController.processItemEvent(request.body());
@@ -69,45 +88,43 @@ class WebhookController {
       case 'DEFAULT_UPDATE': {
         const trx = await Database.transaction();
 
-        const institution = await Institution.findByOrFail('plaidItemId', event.item_id, { client: trx });
+        try {
+          const institution = await Institution.findByOrFail('plaidItemId', event.item_id, { client: trx });
 
-        if (institution) {
-          try {
-            const accounts = await institution.related('accounts').query();
-            const user = await User.findOrFail(institution.userId);
+          const accounts = await institution.related('accounts').query();
+          const user = await User.findOrFail(institution.userId);
 
-            await Promise.all(accounts.map(async (acct) => (
-              acct.sync(
-                institution.accessToken,
-                user,
-              )
-            )));
+          await Promise.all(accounts.map(async (acct) => (
+            acct.sync(
+              institution.accessToken,
+              user,
+            )
+          )));
 
-            await trx.commit();
-          }
-          catch (error) {
-            console.log(error);
-            await trx.rollback();
-          }
+          await trx.commit();
+        }
+        catch (error) {
+          console.log(error);
+          await trx.rollback();
+          throw error;
         }
 
         break;
       }
       case 'TRANSACTIONS_REMOVED': {
-        const institution = await Institution.findBy('plaid_item_id', event.item_id);
+        const trx = await Database.transaction();
 
-        if (institution) {
-          const trx = await Database.transaction();
+        try {
+          const institution = await Institution.findByOrFail('plaid_item_id', event.item_id, { client: trx });
 
-          try {
-            await institution.removeTransactions(trx, event.removed_transactions);
+          await institution.removeTransactions(event.removed_transactions);
 
-            await trx.commit();
-          }
-          catch (error) {
-            console.log(error);
-            await trx.rollback();
-          }
+          await trx.commit();
+        }
+        catch (error) {
+          console.log(error);
+          await trx.rollback();
+          throw error;
         }
 
         break;
