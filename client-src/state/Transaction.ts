@@ -238,7 +238,7 @@ class Transaction implements TransactionInterface {
 }
 
 export const isTransaction = (r: unknown): r is Transaction => (
-  true
+  (r !== undefined && r !== null)
 );
 
 export default Transaction;

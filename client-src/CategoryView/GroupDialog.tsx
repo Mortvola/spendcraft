@@ -22,6 +22,7 @@ interface Props {
 const GroupDialog = ({
   onHide,
   show,
+  setShow,
   group,
 }: Props & ModalProps): ReactElement => {
   const { categoryTree } = useContext(MobxStore);
@@ -47,7 +48,7 @@ const GroupDialog = ({
       setErrors({ [errors[0].field]: errors[0].message });
     }
     else {
-      onHide();
+      setShow(false);
     }
   };
 
@@ -72,7 +73,7 @@ const GroupDialog = ({
         setErrors({ [errors[0].field]: errors[0].message });
       }
       else {
-        onHide();
+        setShow(false);
       }
     }
   };
@@ -88,6 +89,7 @@ const GroupDialog = ({
   return (
     <FormModal<ValueType>
       show={show}
+      setShow={setShow}
       onHide={onHide}
       initialValues={{
         name: group && group.name ? group.name : '',

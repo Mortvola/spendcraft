@@ -12,11 +12,13 @@ import { TransactionCategoryInterface } from './state/State';
 
 type PropsType = {
   transaction?: Transaction | null,
+  onHide?: () => void,
 }
 
 const CategoryTransferDialog = ({
   onHide,
   show,
+  setShow,
   transaction = null,
 }: PropsType & ModalProps): ReactElement => {
   // const amount = 0;
@@ -113,7 +115,7 @@ const CategoryTransferDialog = ({
         { date, categories: cats });
 
       if (response.ok) {
-        onHide();
+        setShow(false);
       }
     }
     else {
@@ -121,7 +123,7 @@ const CategoryTransferDialog = ({
         { date, categories: cats });
 
       if (response.ok) {
-        onHide();
+        setShow(false);
       }
     }
   };
@@ -151,7 +153,7 @@ const CategoryTransferDialog = ({
 
     await httpDelete(`/api/category-transfer/${transaction.id}`);
 
-    onHide();
+    setShow(false);
   };
 
   const Header = () => (
@@ -164,7 +166,7 @@ const CategoryTransferDialog = ({
     <Modal.Footer>
       <div />
       <div />
-      <Button variant="secondary" onClick={onHide}>Cancel</Button>
+      <Button variant="secondary" onClick={() => setShow(false)}>Cancel</Button>
       <Button variant="primary" type="submit">Save</Button>
     </Modal.Footer>
   );

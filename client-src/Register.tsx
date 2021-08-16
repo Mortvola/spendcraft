@@ -1,4 +1,4 @@
-import React, { useState, useContext, ReactElement } from 'react';
+import React, { useState, useContext, ReactElement, useCallback } from 'react';
 import { observer } from 'mobx-react-lite';
 import { Spinner } from 'react-bootstrap';
 import Transaction from './Transaction';
@@ -7,6 +7,12 @@ import MobxStore from './state/mobxStore';
 import { AccountInterface, CategoryInterface, TransactionInterface } from './state/State';
 import PendingTransaction from './state/PendingTransaction';
 import LoanTransaction from './state/LoanTransaction';
+import { useTransactionDialog } from './TransactionDialog';
+import { useCategoryTransferDialog } from './CategoryTransferDialog';
+import { useFundingDialog } from './funding/FundingDialog';
+import { useRebalanceDialog } from './rebalance/RebalanceDialog';
+import { isTransaction } from './state/Transaction';
+import { TransactionType } from '../common/ResponseTypes';
 
 type PropsType = {
   isMobile?: boolean;
@@ -17,6 +23,12 @@ const Register = ({
 }: PropsType): ReactElement => {
   const [selectedTransaction, setSelectedTransaction] = useState<number | null>(null);
   const { uiState } = useContext(MobxStore);
+  const [TransactionDialog, showTransactionDialog] = useTransactionDialog();
+  const [CategoryTransferDialog, showCategoryTransferDialog] = useCategoryTransferDialog();
+  const [FundingDialog, showFundingDialog] = useFundingDialog();
+  const [RebalanceDialog, showRebalanceDialog] = useRebalanceDialog();
+  const [editedTransaction, setEditiedTransaction] = useState<TransactionInterface | null>(null);
+
   let transactions: TransactionInterface[] | undefined;
   let pending: PendingTransaction[] | undefined;
   let loan: { balance: number, transactions: LoanTransaction[] } | undefined;
@@ -47,6 +59,61 @@ const Register = ({
       balance = account.balance;
     }
   }
+
+  const TrxDialog = useCallback(() => {
+    if (isTransaction(editedTransaction)) {
+      const handleDialogHide = () => {
+        setEditiedTransaction(null);
+      }
+
+      switch (editedTransaction.type) {
+        case TransactionType.TRANSFER_TRANSACTION:
+          return (
+            <CategoryTransferDialog transaction={editedTransaction} onHide={handleDialogHide} />
+          );
+
+        case TransactionType.FUNDING_TRANSACTION:
+          return (
+            <FundingDialog transaction={editedTransaction} onHide={handleDialogHide}  />
+          );
+
+        case TransactionType.REBALANCE_TRANSACTION:
+          return (
+            <RebalanceDialog transaction={editedTransaction} onHide={handleDialogHide}  />
+          );
+
+        case TransactionType.REGULAR_TRANSACTION:
+        default:
+          return (
+            <TransactionDialog transaction={editedTransaction} onHide={handleDialogHide} />
+          );
+      }
+    }
+
+    return null;
+  }, [editedTransaction, TransactionDialog, RebalanceDialog, FundingDialog, CategoryTransferDialog]);
+
+  const showTrxDialog = (transaction: TransactionInterface) => {
+    setEditiedTransaction(transaction);
+    switch (transaction.type) {
+      case 0:
+      case 5:
+        showTransactionDialog();
+        break;
+
+      case 1:
+        showCategoryTransferDialog();
+        break;
+
+      case 2:
+        showFundingDialog();
+        break;
+
+      case 3:
+        showRebalanceDialog();
+        break;
+    }
+  };
 
   const handleClick = (transactionId: number) => {
     setSelectedTransaction(transactionId);
@@ -83,6 +150,7 @@ const Register = ({
             selected={selected}
             category={uiState.selectedCategory}
             isMobile={isMobile}
+            showTrxDialog={showTrxDialog}
           />
         );
 
@@ -237,6 +305,7 @@ const Register = ({
         {renderColumnTitles()}
         {renderTransactions()}
       </div>
+      <TrxDialog />
       {
         category && category.type === 'LOAN'
           ? renderLoanTransactions()

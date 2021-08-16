@@ -12,6 +12,7 @@ type PropsType = {
 const InstitutionInfoDialog = ({
   institution,
   show,
+  setShow,
   onHide,
 }: PropsType & ModalProps): ReactElement => {
   const [infoInitialized, setInfoInitialized] = useState(false);
@@ -91,7 +92,7 @@ const InstitutionInfoDialog = ({
     <Modal.Footer>
       <div />
       <div />
-      <Button variant="secondary" onClick={onHide}>Cancel</Button>
+      <Button variant="secondary" onClick={() => setShow(false)}>Cancel</Button>
       <Button variant="primary" type="submit">Save</Button>
     </Modal.Footer>
   );

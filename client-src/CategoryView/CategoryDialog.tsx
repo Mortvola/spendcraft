@@ -20,6 +20,7 @@ type Props = {
 const CategoryDialog = ({
   onHide,
   show,
+  setShow,
   category,
   group,
 }: Props & ModalProps): ReactElement => {
@@ -44,7 +45,7 @@ const CategoryDialog = ({
       setErrors({ [errors[0].field]: errors[0].message });
     }
     else {
-      onHide();
+      setShow(false);
     }
   };
 
@@ -71,7 +72,7 @@ const CategoryDialog = ({
       setErrors({ [errors[0].field]: errors[0].message });
     }
     else {
-      onHide();
+      setShow(false);
     }
   };
 
@@ -86,6 +87,7 @@ const CategoryDialog = ({
   return (
     <FormModal<ValueType>
       show={show}
+      setShow={setShow}
       onHide={onHide}
       initialValues={{
         name: category && category.name ? category.name : '',

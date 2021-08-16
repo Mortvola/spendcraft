@@ -29,10 +29,12 @@ function validateSplits(splits: Array<TransactionCategoryInterface>) {
 type PropsType = {
   transaction?: Transaction | null,
   account?: AccountInterface | null,
+  onHide?: () => void,
 }
 
 const TransactionDialog = ({
   show,
+  setShow,
   onHide,
   transaction = null,
   account = null,
@@ -120,7 +122,7 @@ const TransactionDialog = ({
     }
 
     if (!errors) {
-      onHide();
+      setShow(false);
     }
   };
 
@@ -133,6 +135,9 @@ const TransactionDialog = ({
       if (errors && errors.length > 0) {
         setTouched({ [errors[0].field]: true }, false);
         setErrors({ [errors[0].field]: errors[0].message });
+      }
+      else {
+        setShow(false);
       }
     }
   };
@@ -154,6 +159,7 @@ const TransactionDialog = ({
           : [],
       }}
       show={show}
+      setShow={setShow}
       onHide={onHide}
       size="lg"
       title={transaction ? 'Edit Transaction' : 'Add Transaction'}

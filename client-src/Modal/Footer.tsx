@@ -7,13 +7,13 @@ import Errors from './Errors';
 type PropsType<T> = {
   errors?: string[],
   handleDelete?: ((context: FormikContextType<T>) => void) | null,
-  onHide: (() => void)
+  setShow: (show: boolean) => void,
 }
 
 function Footer<T>({
   errors,
   handleDelete,
-  onHide,
+  setShow,
 }: PropsType<T>): ReactElement {
   return (
     <>
@@ -22,7 +22,7 @@ function Footer<T>({
           handleDelete ? <DeleteButton<T> handleDelete={handleDelete} /> : <div />
         }
         <div />
-        <Button variant="secondary" onClick={onHide}>Cancel</Button>
+        <Button variant="secondary" onClick={() => setShow(false)}>Cancel</Button>
         <Button variant="primary" type="submit">Save</Button>
       </Modal.Footer>
       {

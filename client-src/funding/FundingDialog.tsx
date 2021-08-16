@@ -18,12 +18,14 @@ import Funding, { FundingType } from './Funding';
 
 interface Props {
   transaction?: Transaction;
+  onHide?: () => void,
 }
 
 const FundingDialog = ({
   transaction,
   onHide,
   show,
+  setShow,
 }: Props & ModalProps): ReactElement => {
   const { categoryTree, register } = useContext(MobxStore);
   const { fundingPoolCat } = categoryTree;
@@ -189,7 +191,7 @@ const FundingDialog = ({
     }
 
     if (!errors) {
-      onHide();
+      setShow(false);
     }
   };
 
@@ -232,6 +234,7 @@ const FundingDialog = ({
   return (
     <FormModal<ValueType>
       show={show}
+      setShow={setShow}
       onHide={onHide}
       initialValues={{
         date: transaction ? transaction.date : '',

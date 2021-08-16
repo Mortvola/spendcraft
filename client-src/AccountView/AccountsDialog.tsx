@@ -20,6 +20,7 @@ type PropsType = {
 const AccountsDialog = ({
   institution,
   show,
+  setShow,
   onHide,
 }: PropsType & ModalProps): ReactElement => {
 
@@ -54,7 +55,7 @@ const AccountsDialog = ({
     const errors = await institution.addAccounts(selectedAccounts);
 
     if (!errors) {
-      onHide();
+      setShow(false);
     }
   };
 
@@ -88,6 +89,7 @@ const AccountsDialog = ({
         selections: toJS(institution.unlinkedAccounts),
       }}
       show={show}
+      setShow={setShow}
       onHide={onHide}
       validate={handleValidate}
       onSubmit={handleSubmit}

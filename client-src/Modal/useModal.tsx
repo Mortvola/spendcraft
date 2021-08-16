@@ -1,4 +1,4 @@
-import React, { useState, ReactElement } from 'react';
+import React, { useState, ReactElement, useCallback } from 'react';
 
 type ShowCallback = (() => void);
 type OnSave = (() => void);
@@ -12,33 +12,38 @@ type useModalType<T> = [
 
 export interface ModalProps {
   show: boolean,
+  setShow: (show: boolean) => void;
   onHide: OnHide,
-  onConfirm: OnConfirm,
+  onConfirm?: OnConfirm,
 }
 
 function useModal<T>(
   Dialog: React.FC<T & ModalProps>,
   onSave?: OnSave,
 ): useModalType<T> {
-  const [show, setShow] = useState(false);
+  const [showDialog, setShowDialog] = useState(false);
 
-  const handleHide = () => {
-    setShow(false);
-  };
-
-  const handleSave = () => {
-    if (onSave) {
-      onSave();
-    }
-
-    handleHide();
-  };
-
-  const createDialog = (props: T): ReactElement | null => {
-    if (show) {
+  const createDialog = useCallback((props: T & { onHide?: () => void }): ReactElement | null => {
+    const handleHide = () => {
+      if (props.onHide) {
+        props.onHide();
+      }
+      setShowDialog(false);
+    };
+  
+    const handleSave = () => {
+      if (onSave) {
+        onSave();
+      }
+  
+      setShowDialog(false);
+    };
+  
+    if (showDialog) {
       const props2 = {
         ...props,
-        show,
+        show: showDialog,
+        setShow: setShowDialog,
         onHide: handleHide,
         onConfirm: handleSave,
       };
@@ -51,11 +56,11 @@ function useModal<T>(
     }
 
     return null;
-  };
+  }, [showDialog]);
 
   return [
     createDialog,
-    () => setShow(true),
+    () => setShowDialog(true),
   ];
 }
 

@@ -5,6 +5,7 @@ import {
 import { Modal, ModalBody } from 'react-bootstrap';
 import Header from './Header';
 import Footer from './Footer';
+import { ModalProps } from './useModal';
 
 type PropsType<T> = {
   show: boolean,
@@ -22,6 +23,7 @@ type PropsType<T> = {
 
 function FormModal<ValueType>({
   show,
+  setShow,
   onHide,
   initialValues,
   title,
@@ -32,7 +34,7 @@ function FormModal<ValueType>({
   onDelete,
   errors,
   size,
-}: PropsType<ValueType>): ReactElement {
+}: PropsType<ValueType> & ModalProps): ReactElement {
   return (
     <Modal
       show={show}
@@ -52,7 +54,7 @@ function FormModal<ValueType>({
           <ModalBody>
             {children}
           </ModalBody>
-          <Footer<ValueType> onHide={onHide} handleDelete={onDelete} errors={errors} />
+          <Footer<ValueType> setShow={setShow} handleDelete={onDelete} errors={errors} />
         </Form>
       </Formik>
     </Modal>

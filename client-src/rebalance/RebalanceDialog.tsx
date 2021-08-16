@@ -18,13 +18,14 @@ import FormModal from '../Modal/FormModal';
 import { TransactionType } from '../../common/ResponseTypes';
 
 interface Props {
-  // eslint-disable-next-line react/require-default-props
   transaction?: Transaction,
+  onHide?: () => void,
 }
 
 const RebalanceDialog = ({
   transaction,
   show,
+  setShow,
   onHide,
 }: Props & ModalProps): ReactElement => {
   const { register } = useContext(MobxStore);
@@ -105,14 +106,14 @@ const RebalanceDialog = ({
       const errors = await transaction.updateCategoryTransfer(values);
 
       if (!errors) {
-        onHide();
+        setShow(false);
       }
     }
     else {
       const errors = await register.addCategoryTransfer(values, TransactionType.REBALANCE_TRANSACTION);
 
       if (!errors) {
-        onHide();
+        setShow(false);
       }
     }
   };
@@ -132,8 +133,9 @@ const RebalanceDialog = ({
 
   return (
     <>
-      <FormModal <ValueType>
+      <FormModal<ValueType>
         show={show}
+        setShow={setShow}
         onHide={onHide}
         size="lg"
         initialValues={{
