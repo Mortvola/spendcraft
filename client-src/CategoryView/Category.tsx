@@ -43,7 +43,6 @@ const Category = ({
             ? <EditButton category={category} group={group} />
             : null
         }
-        <IconButton icon="random" onClick={showCategoryTransferDialog} />
         <CategoryTransferDialog />
         <div className="cat-list-name">{category.name}</div>
       </div>
