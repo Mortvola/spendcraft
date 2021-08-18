@@ -246,22 +246,23 @@ body {
 .register {
 	display: grid;
   grid-template-rows: repeat(2, max-content) 1fr;
-  height: 100%;
-  min-height: 50%;
 	user-select: none;
   overflow-y: auto;
+	flex: 1 1 auto;
+	min-height: 25%;
 }
 
 .register-dual-pane {
-  display: grid;
-  grid-template-rows: repeat(2, minmax(0, 1fr));
-  grid-template-columns: minmax(0, 1fr);
+	display: flex;
+	flex-flow: column;
   height: 100%;
 }
 
 .register-dual-pane .register:not(:first-child) {
     border-top: thin solid rgba(0, 0, 0, 0.15);
-    flex: 0 0 auto;
+		flex-shrink: 3;
+		min-height: 25%;
+		max-height: 50%;
 }
 
 .pending-register-title {
