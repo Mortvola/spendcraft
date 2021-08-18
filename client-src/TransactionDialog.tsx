@@ -117,6 +117,7 @@ const TransactionDialog = ({
         name: values.name,
         date: values.date,
         amount,
+        comment: values.comment,
         splits: values.splits,
       });
     }

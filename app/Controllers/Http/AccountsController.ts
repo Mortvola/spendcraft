@@ -107,10 +107,12 @@ export default class AccountsController {
       date: schema.date(),
       name: schema.string(),
       amount: schema.number(),
+      comment: schema.string.optional(),
       splits: schema.array().members(
         schema.object().members({
           categoryId: schema.number(),
           amount: schema.number(),
+          comment: schema.string.optional(),
         }),
       ),
     });
@@ -130,6 +132,7 @@ export default class AccountsController {
       type: TransactionType.MANUAL_TRANSACTION,
       date: requestData.date,
       sortOrder: 2147483647,
+      comment: requestData.comment,
     });
 
     await transaction.related('user').associate(user);
@@ -166,6 +169,7 @@ export default class AccountsController {
           transactionId: transaction.id,
           categoryId: split.categoryId,
           amount: split.amount,
+          comment: split.comment,
         })
 
         // eslint-disable-next-line no-await-in-loop

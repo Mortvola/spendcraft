@@ -217,6 +217,7 @@ export interface AccountInterface {
       date?: string,
       name?: string,
       amount?: number,
+      comment?: string,
       splits: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
     },
   ): Promise<Error[] | null>;
