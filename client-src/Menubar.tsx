@@ -21,14 +21,14 @@ const Menubar = () => {
     <Navbar collapseOnSelect onSelect={handleSelect} expand="md">
       <Navbar.Brand href="/">Deber-tas</Navbar.Brand>
       <Navbar.Toggle />
-      <Navbar.Collapse>
-        <Nav className="mr-auto">
+      <Navbar.Collapse style={{ justifyContent: 'space-between' }}>
+        <Nav>
           <Nav.Link eventKey="HOME">Home</Nav.Link>
           <Nav.Link eventKey="PLANS">Plans</Nav.Link>
           <Nav.Link eventKey="ACCOUNTS">Accounts</Nav.Link>
           <Nav.Link eventKey="REPORTS">Reports</Nav.Link>
         </Nav>
-        <Nav className="ml-auto">
+        <Nav>
           <NavDropdown className="dropdown menubar-item" title={username || ''} id="menubar-dropdown">
             <Nav.Link eventKey="ACCOUNT">Account</Nav.Link>
             <Nav.Link eventKey="LOGOUT">Logout</Nav.Link>
