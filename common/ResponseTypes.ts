@@ -37,8 +37,6 @@ export const isLoansGroupProps = (r: unknown): r is LoansGroupProps => (
 export type CategoryType = 'REGULAR' | 'UNASSIGNED' | 'FUNDING POOL' | 'ACCOUNT TRANSFER' | 'LOAN';
 
 export interface CategoryProps {
-  groupId: number | null;
-
   id: number;
 
   balance: number;
@@ -68,8 +66,7 @@ export interface AccountBalanceProps {
 export type AddCategoryResponse = CategoryProps
 
 export const isAddCategoryResponse = (r: unknown): r is AddCategoryResponse => (
-  (r as AddCategoryResponse).groupId !== undefined
-  && (r as AddCategoryResponse).id !== undefined
+  (r as AddCategoryResponse).id !== undefined
   && (r as AddCategoryResponse).balance !== undefined
   && (r as AddCategoryResponse).name !== undefined
   && (r as AddCategoryResponse).type !== undefined

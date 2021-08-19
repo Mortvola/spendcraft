@@ -167,11 +167,18 @@ class CategoryController {
   public async updateCategory({
     request,
   }: HttpContextContract): Promise<UpdateCategoryResponse> {
-    const { catId } = request.params();
+    const { groupId, catId } = request.params();
     const requestData = await request.validate(UpdateCategoryValidator);
 
-    await Database.query().from('categories').where({ id: catId }).update({ name: requestData.name });
+    const category = await Category.findOrFail(catId);
 
+    category.merge({
+      name: requestData.name,
+      groupId,    
+    });
+
+    await category.save();
+    
     return { name: requestData.name };
   }
 

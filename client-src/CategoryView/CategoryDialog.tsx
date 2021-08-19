@@ -1,16 +1,18 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
-import React, { ReactElement } from 'react';
+import React, { ReactElement, useContext } from 'react';
 import {
   Field, ErrorMessage,
   FormikHelpers,
   FormikContextType,
   FormikErrors,
+  FieldProps,
 } from 'formik';
 import useModal, { ModalProps, useModalType } from '../Modal/useModal';
-import Group from '../state/Group';
+import Group, { isGroup } from '../state/Group';
 import Category from '../state/Category';
 import FormModal from '../Modal/FormModal';
 import FormError from '../Modal/FormError';
+import MobxStore from '../state/mobxStore';
 
 type Props = {
   category?: Category | null,
@@ -24,19 +26,32 @@ const CategoryDialog = ({
   category,
   group,
 }: Props & ModalProps): ReactElement => {
+  const { categoryTree } = useContext(MobxStore);
+
   type ValueType = {
     name: string,
+    groupId: string,
   }
 
   const handleSubmit = async (values: ValueType, bag: FormikHelpers<ValueType>) => {
     const { setErrors } = bag;
     let errors = null;
 
+    const selectedGroup = categoryTree.groups.find((g) => g.id === parseInt(values.groupId, 10));
+
+    if (!selectedGroup) {
+      throw new Error('group is not defined');
+    }
+
+    if (!isGroup(selectedGroup)) {
+      throw new Error('group is not a group');
+    }
+
     if (category) {
-      errors = await category.update(values.name);
+      errors = await category.update(values.name, selectedGroup);
     }
     else {
-      errors = await group.addCategory(values.name);
+      errors = await selectedGroup.addCategory(values.name);
     }
 
     if (errors && errors.length > 0) {
@@ -84,6 +99,12 @@ const CategoryDialog = ({
     return 'Add Category';
   };
 
+  const populateGroups = () => (
+    categoryTree.groups.map((g) => (
+      <option key={g.id} value={g.id}>{g.name}</option>
+    ))
+  )
+
   return (
     <FormModal<ValueType>
       show={show}
@@ -91,6 +112,7 @@ const CategoryDialog = ({
       onHide={onHide}
       initialValues={{
         name: category && category.name ? category.name : '',
+        groupId: group.id.toString(),
       }}
       validate={handleValidate}
       onSubmit={handleSubmit}
@@ -98,15 +120,45 @@ const CategoryDialog = ({
       title={title()}
       formId="catDialogForm"
     >
-      <label>
-        Category:
-        <Field
-          type="text"
-          className="form-control"
-          name="name"
-        />
-        <FormError name="name" />
-      </label>
+      <div style={{
+        display: 'flex',
+        columnGap: '1rem',
+      }}>
+        <label>
+          Category:
+          <Field
+            type="text"
+            className="form-control"
+            name="name"
+          />
+          <FormError name="name" />
+        </label>
+        <label>
+          Group:
+          <Field
+            className="form-control"
+            name="groupId"
+          >
+            {
+              (fieldProps: FieldProps<number>) => (
+                <select
+                  className="form-control"
+                  name={fieldProps.field.name}
+                  value={fieldProps.field.value}
+                  onChange={(v) => {
+                    fieldProps.form.setFieldValue(fieldProps.field.name, v.target.value);
+                  }}
+                >
+                  {
+                    populateGroups()
+                  }
+                </select>
+              )
+            }
+          </Field>
+          <FormError name="group" />
+        </label>
+      </div>
     </FormModal>
   );
 };

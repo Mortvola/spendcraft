@@ -64,6 +64,24 @@ class Group implements GroupInterface {
     return null;
   }
 
+  insertCategory(category: Category) {
+    // Find the position where this new category should be inserted.
+    const index = this.categories.findIndex(
+      (g) => category.name.toLowerCase().localeCompare(g.name.toLowerCase()) < 0,
+    );
+
+    if (index === -1) {
+      this.categories.push(category);
+    }
+    else {
+      this.categories = [
+        ...this.categories.slice(0, index),
+        category,
+        ...this.categories.slice(index),
+      ];
+    }
+  }
+
   async addCategory(name: string): Promise<null| Error[]> {
     const response = await postJSON(`/api/groups/${this.id}/categories`, { groupId: this.id, name });
 
@@ -76,21 +94,10 @@ class Group implements GroupInterface {
     }
     else if (isAddCategoryResponse(body)) {
       runInAction(() => {
-        // Find the position where this new category should be inserted.
-        const index = this.categories.findIndex(
-          (g) => body.name.toLowerCase().localeCompare(g.name.toLowerCase()) < 0,
-        );
+        const category = new Category(body, this.store);
 
-        if (index === -1) {
-          this.categories.push(new Category(body, this.store));
-        }
-        else {
-          this.categories = [
-            ...this.categories.slice(0, index),
-            new Category(body, this.store),
-            ...this.categories.slice(index),
-          ];
-        }
+        // Find the position where this new category should be inserted.
+        this.insertCategory(category);
       });
     }
 

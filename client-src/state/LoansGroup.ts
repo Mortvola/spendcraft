@@ -32,6 +32,9 @@ class LoansGroup implements GroupInterface {
     }
   }
 
+  insertCategory(category: Category): void {
+  }
+
   findCategory(categoryId: number): Category | null {
     const loan = this.categories.find((c) => c.id === categoryId);
 

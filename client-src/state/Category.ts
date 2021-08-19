@@ -9,7 +9,7 @@ import {
 } from '../../common/ResponseTypes';
 import LoanTransaction from './LoanTransaction';
 import PendingTransaction from './PendingTransaction';
-import { CategoryInterface, StoreInterface } from './State';
+import { CategoryInterface, GroupInterface, StoreInterface } from './State';
 import Transaction from './Transaction';
 import { getBody, patchJSON } from './Transports';
 
@@ -22,7 +22,7 @@ class Category implements CategoryInterface {
 
   balance: number;
 
-  groupId: number | null = null;
+  // groupId: number | null = null;
 
   transactions: Transaction[] = [];
 
@@ -152,8 +152,8 @@ class Category implements CategoryInterface {
     }
   }
 
-  async update(name: string): Promise<null | Error[]> {
-    const response = await patchJSON(`/api/groups/${this.groupId}/categories/${this.id}`, { name });
+  async update(name: string, group: GroupInterface): Promise<null | Error[]> {
+    const response = await patchJSON(`/api/groups/${group.id}/categories/${this.id}`, { name });
 
     const body = await getBody(response);
 
@@ -166,6 +166,23 @@ class Category implements CategoryInterface {
       runInAction(() => {
         if (isUpdateCategoryResponse(body)) {
           this.name = body.name;
+
+          // Find the group the category is currently in
+          // and possibly move it to the new group.
+          const currentGroup = this.store.categoryTree.groups.find((g) => (
+            g.categories.some((c) => (c.id === this.id))
+          ));
+
+          if (!currentGroup || currentGroup.id !== group.id) {
+            group.insertCategory(this);
+
+            if (currentGroup) {
+              const index = currentGroup.categories.findIndex((c) => c.id === this.id);
+              if (index !== -1) {
+                currentGroup.categories.splice(index, 1);
+              }
+            }
+          }
         }
       });
     }
@@ -198,7 +215,7 @@ export const isCategory = (r: unknown): r is Category => (
   && (r as Category).name !== undefined
   && (r as Category).type !== undefined
   && (r as Category).balance !== undefined
-  && (r as Category).groupId !== undefined
+  // && (r as Category).groupId !== undefined
 );
 
 export default Category;

@@ -9,6 +9,10 @@ export interface GroupInterface {
   name: string;
 
   system: boolean;
+
+  categories: CategoryInterface[];
+
+  insertCategory(category: Category): void;
 }
 
 export interface TransactionInterface {
@@ -91,8 +95,6 @@ export interface CategoryInterface {
 
   balance: number;
 
-  groupId: number | null;
-
   transactions: Transaction[];
 
   pending: PendingTransaction[];
@@ -134,6 +136,8 @@ export interface CategoryTreeInterface {
   fundingPoolCat: Category | null = null;
 
   accountTransferCat: Category | null = null;
+
+  groups: GroupInterface[] = [];
 
   updateBalances(balances: CategoryBalanceProps[]): void;
   getCategory(categoryId: number): CategoryInterface | null;
