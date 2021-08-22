@@ -8,6 +8,7 @@ import User from 'App/Models/User';
 import Group from 'App/Models/Group';
 import Database from '@ioc:Adonis/Lucid/Database';
 import Category from 'App/Models/Category';
+import FundingPlan from 'App/Models/FundingPlan';
 
 export default class AuthController {
   // eslint-disable-next-line class-methods-use-this
@@ -44,47 +45,62 @@ export default class AuthController {
     /**
      * Create a new user
      */
-    const user = new User();
-    user.username = userDetails.username;
-    user.email = userDetails.email;
-    user.password = userDetails.password;
+    const user = (new User())
+      .fill({
+        username: userDetails.username,
+        email: userDetails.email,
+        password: userDetails.password,
+      });
+
     await user.save();
 
     const trx = await Database.transaction();
 
     try {
-      const systemGroup = (new Group()).useTransaction(trx);
-
-      systemGroup.name = 'System';
-      systemGroup.userId = user.id;
-      systemGroup.system = true;
+      const systemGroup = (new Group()).useTransaction(trx)
+        .fill({
+          name: 'System',
+          userId: user.id,
+          system: true,       
+        });
 
       await systemGroup.save();
 
-      const unassignedCat = (new Category()).useTransaction(trx);
+      const unassignedCat = (new Category()).useTransaction(trx)
+        .fill({
+          name: 'Unassigned',
+          type: 'UNASSIGNED',
+          amount: 0,
+          groupId: systemGroup.id,
+        });
 
-      unassignedCat.name = 'Unassigned';
-      unassignedCat.type = 'UNASSIGNED';
-      unassignedCat.amount = 0;
-      unassignedCat.groupId = systemGroup.id;
+      const fundingPoolCat = (new Category()).useTransaction(trx)
+        .fill({
+          name: 'Funding Pool',
+          type: 'FUNDING POOL',
+          amount: 0,
+          groupId: systemGroup.id,
+        });
 
-      const fundingPoolCat = (new Category()).useTransaction(trx);
-
-      fundingPoolCat.name = 'Funding Pool';
-      fundingPoolCat.type = 'FUNDING POOL';
-      fundingPoolCat.amount = 0;
-      fundingPoolCat.groupId = systemGroup.id;
-
-      const accountTransferCat = (new Category()).useTransaction(trx);
-
-      accountTransferCat.name = 'Account Transfer';
-      accountTransferCat.type = 'ACCOUNT TRANSFER';
-      accountTransferCat.amount = 0;
-      accountTransferCat.groupId = systemGroup.id;
+      const accountTransferCat = (new Category()).useTransaction(trx)
+        .fill({
+          name: 'Account Transfer',
+          type: 'ACCOUNT TRANSFER',
+          amount: 0,
+          groupId: systemGroup.id,
+        });
 
       await unassignedCat.save();
       await fundingPoolCat.save();
       await accountTransferCat.save();
+
+      const fundingPlan = (new FundingPlan()).useTransaction(trx)
+        .fill({
+          name: 'Default Plan',
+          userId: user.id,
+        });
+
+      fundingPlan.save();
 
       await trx.commit();
     }
