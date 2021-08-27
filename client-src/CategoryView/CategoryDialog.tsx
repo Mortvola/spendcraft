@@ -1,7 +1,7 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 import React, { ReactElement, useContext } from 'react';
 import {
-  Field, ErrorMessage,
+  Field,
   FormikHelpers,
   FormikContextType,
   FormikErrors,
@@ -120,10 +120,12 @@ const CategoryDialog = ({
       title={title()}
       formId="catDialogForm"
     >
-      <div style={{
-        display: 'flex',
-        columnGap: '1rem',
-      }}>
+      <div
+        style={{
+          display: 'flex',
+          columnGap: '1rem',
+        }}
+      >
         <label>
           Category:
           <Field

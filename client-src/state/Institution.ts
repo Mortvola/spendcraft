@@ -1,7 +1,7 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import Account from './Account';
 import {
-  UnlinkedAccountProps, InstitutionProps, isAccountsResponse, isUnlinkedAccounts, AccountBalanceProps,
+  UnlinkedAccountProps, InstitutionProps, isAccountsResponse, isUnlinkedAccounts, AccountBalanceProps, Error,
 } from '../../common/ResponseTypes';
 import { AccountInterface, StoreInterface } from './State';
 import { getBody, postJSON } from './Transports';
@@ -10,6 +10,8 @@ class Institution {
   id: number;
 
   name: string;
+
+  offline: boolean;
 
   unlinkedAccounts: UnlinkedAccountProps[] | null = null;
 
@@ -20,6 +22,7 @@ class Institution {
   constructor(store: StoreInterface, props: InstitutionProps) {
     this.id = props.id;
     this.name = props.name;
+    this.offline = props.offline;
 
     this.accounts = [];
     if (props.accounts) {
@@ -31,6 +34,19 @@ class Institution {
     this.store = store;
   }
 
+  insertAccount(account: Account): void {
+    const index = this.accounts.findIndex(
+      (acct) => account.name.localeCompare(acct.name) < 0,
+    );
+
+    if (index === -1) {
+      this.accounts.push(account);
+    }
+    else {
+      this.accounts.splice(index, 0, account);
+    }
+  }
+
   async addAccounts(accounts: UnlinkedAccountProps[]): Promise<null> {
     const response = await postJSON(`/api/institution/${this.id}/accounts`, { accounts, startDate: null });
 
@@ -40,21 +56,38 @@ class Institution {
       runInAction(() => {
         if (isAccountsResponse(body)) {
           body.forEach((a) => {
-            const account = new Account(this.store, a);
-
-            const index = this.accounts.findIndex(
-              (acct) => account.name.localeCompare(acct.name) < 0,
-            );
-
-            if (index === -1) {
-              this.accounts.push(account);
-            }
-            else {
-              this.accounts.splice(index, 0, account);
-            }
+            this.insertAccount(new Account(this.store, a));
           });
         }
       });
+    }
+
+    return null;
+  }
+
+  async addOfflineAccount(
+    accountName: string,
+    balance: number,
+    startDate: string,
+  ): Promise<Error[] | null> {
+    const response = await postJSON(`/api/institution/${this.id}/accounts`, {
+      offlineAccounts: [{
+        name: accountName,
+        balance,
+      }],
+      startDate,
+    });
+
+    if (response.ok) {
+      const body = await getBody(response);
+
+      if (isAccountsResponse(body)) {
+        runInAction(() => {
+          body.forEach((acct) => {
+            this.insertAccount(new Account(this.store, acct));
+          })
+        });
+      }
     }
 
     return null;

@@ -73,6 +73,13 @@ export interface AccountsInterface {
   async addInstitution(): Promise<void>;
 
   updateBalances(balances: AccountBalanceProps[]): void;
+
+  async addOfflineAccount(
+    institiute: string,
+    account: string,
+    balance: number,
+    startDate: string,
+  ): Promise<Error[] | null>;
 }
 
 export interface PendingTransactionProps {
@@ -194,7 +201,7 @@ export interface AccountInterface {
 
   subtype: string | null = null;
 
-  tracking: 'Balances' | 'Transactions';
+  tracking: TrackingType;
 
   syncDate: string;
 

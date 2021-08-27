@@ -79,7 +79,7 @@ class Account extends BaseModel {
   @column()
   public tracking: TrackingType;
 
-  @column()
+  @column({ serializeAs: 'startDate' })
   public startDate: string;
 
   @column({
@@ -124,10 +124,10 @@ class Account extends BaseModel {
       );
 
       const details = await this.addTransactions(
-        trx,
         accessToken,
         startDate,
         user,
+        { client: trx },
       );
 
       await this.updateAccountBalanceHistory(
@@ -135,7 +135,7 @@ class Account extends BaseModel {
       );
 
       if (details.cat) {
-        const unassigned = await Category.getUnassignedCategory(user);
+        const unassigned = await user.getUnassignedCategory({ client: trx });
 
         result.categories = [{ id: unassigned.id, balance: details.cat.amount }];
       }
@@ -171,11 +171,22 @@ class Account extends BaseModel {
 
   public async addTransactions(
     this: Account,
-    trx: TransactionClientContract,
     accessToken: string,
     startDate: Moment,
     user: User,
+    options?: {
+      client: TransactionClientContract,
+    },
   ): Promise<Transaction> {
+    let trx: TransactionClientContract;
+
+    if (options && options.client) {
+      trx = options.client;
+    }
+    else {
+      trx = await Database.transaction();
+    }
+
     const pendingTransactions = await trx.query().select('transaction_id', 'plaid_transaction_id')
       .from('account_transactions')
       .where('account_id', this.id)
@@ -264,7 +275,7 @@ class Account extends BaseModel {
     let cat: CategoryItem | null = null;
 
     if (sum !== 0) {
-      const unassigned = await Category.getUnassignedCategory(user);
+      const unassigned = await user.getUnassignedCategory({ client: trx });
 
       // Add the sum of the transactions to the unassigned category.
       const category = await Category.findOrFail(unassigned.id, { client: trx });
@@ -293,6 +304,10 @@ class Account extends BaseModel {
 
     // console.log(`Balance: ${balance}, Pending: ${pendingSum}`);
     this.balance = balance;
+
+    if (!options || !options.client) {
+      trx.commit();
+    }
 
     return { balance, sum, cat } as Transaction;
   }

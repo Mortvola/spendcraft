@@ -6,6 +6,7 @@ import { useInstitutionInfoDialog } from './InstitutionInfoDialog';
 import Account from './Account';
 import StateInstitution from '../state/Institution';
 import { AccountInterface } from '../state/State';
+import { useOfflineAccountDialog } from './OfflineAccountDialog';
 
 type PropsType = {
   institution: StateInstitution,
@@ -22,19 +23,38 @@ function Institution({
 }: PropsType): ReactElement {
   const [AccountsDialog, showAccountsDialog] = useAccountsDialog();
   const [InstitutionInfoDialog, showInstitutionInfoDialog] = useInstitutionInfoDialog();
+  const [OfflineAccountDialog, showOfflineAccountDialog] = useOfflineAccountDialog();
   const handleRelinkClick = () => {
     onRelink(institution.id);
   };
+
+  const handleAddClick = () => {
+    if (institution.offline) {
+      showOfflineAccountDialog();
+    }
+    else {
+      showAccountsDialog();
+    }
+  }
 
   return (
     <div className="inst-card">
       <div className="acct-list-inst">
         <div className="institution-name">{institution.name}</div>
-        <IconButton icon="plus" onClick={showAccountsDialog} />
+        <IconButton icon="plus" onClick={handleAddClick} />
         <AccountsDialog institution={institution} />
-        <IconButton icon="link" onClick={handleRelinkClick} />
-        <IconButton icon="info-circle" onClick={showInstitutionInfoDialog} />
-        <InstitutionInfoDialog institution={institution} />
+        <OfflineAccountDialog institution={institution} />
+        {
+          !institution.offline
+            ? (
+              <>
+                <IconButton icon="link" onClick={handleRelinkClick} />
+                <IconButton icon="info-circle" onClick={showInstitutionInfoDialog} />
+                <InstitutionInfoDialog institution={institution} />
+              </>
+            )
+            : null
+        }
       </div>
       <div className="acct-list-accounts">
         {
@@ -46,7 +66,7 @@ function Institution({
             return (
               <Account
                 key={account.id}
-                institutionId={institution.id}
+                institution={institution}
                 account={account}
                 onAccountSelected={onAccountSelected}
                 selected={selected}

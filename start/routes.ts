@@ -38,7 +38,7 @@ Route.group(() => {
     Route.post('/logout', 'AuthController.logout');
 
     Route.get('/user', 'UsersController.get');
-    Route.get('/user/link_token', 'UsersController.getLinkToken');
+    Route.get('/user/link-token', 'UsersController.getLinkToken');
 
     Route.group(() => {
       Route.get('', 'CategoryController.get');
@@ -64,7 +64,7 @@ Route.group(() => {
       Route.get('/history', 'CategoryController.history');
     }).prefix('/category');
 
-    Route.get('/connected_accounts', 'UsersController.getConnectedAccounts');
+    Route.get('/connected-accounts', 'UsersController.getConnectedAccounts');
 
     Route.group(() => {
       Route.get('/:acctId/transactions', 'AccountsController.transactions');
@@ -80,7 +80,7 @@ Route.group(() => {
       Route.get('/:instId/accounts', 'InstitutionController.get');
       Route.post('/:instId/accounts', 'InstitutionController.addAccounts');
       Route.post('/:instId/accounts/:acctId/transactions/sync', 'InstitutionController.sync');
-      Route.get('/:instId/link_token', 'InstitutionController.linkToken');
+      Route.get('/:instId/link-token', 'InstitutionController.linkToken');
     }).prefix('/institution');
 
     Route.group(() => {

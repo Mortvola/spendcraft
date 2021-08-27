@@ -25,13 +25,13 @@ const CategoryView = (): ReactElement => {
 
   return (
     <>
-      <div style={{ borderBottom: "thin black solid" }}>
+      <div style={{ borderBottom: 'thin black solid' }}>
         <SystemCategory category={categoryTree.unassignedCat} />
         <SystemCategory category={categoryTree.fundingPoolCat} />
         <SystemCategory category={categoryTree.accountTransferCat} />
       </div>
       <div id="categories">
-        {categoryTree.groups.map((group) => {          
+        {categoryTree.groups.map((group) => {
           if (!group.system || group.name === 'Loans') {
             return (
               <Group

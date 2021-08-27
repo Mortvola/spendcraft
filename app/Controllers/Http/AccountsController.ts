@@ -152,7 +152,7 @@ export default class AccountsController {
     const { splits } = requestData;
 
     if (!splits || splits.length === 0) {
-      const unassignedCat = await Category.getUnassignedCategory(user, { client: trx });
+      const unassignedCat = await user.getUnassignedCategory({ client: trx });
 
       unassignedCat.amount += acctTransaction.amount;
 

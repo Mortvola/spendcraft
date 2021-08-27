@@ -158,7 +158,7 @@ body {
 
 .account-bar {
 	display:grid;
-	grid-template-columns: repeat(3, max-content);
+	grid-template-columns: repeat(4, max-content);
 	background-color: gray;
 	color: white;
 }
@@ -191,7 +191,7 @@ body {
   border: thin solid black;
   border-radius: 8px;
   margin: 4px;
-  overflow: hidden;
+  /* overflow: hidden; */
   box-shadow: 3px 4px 4px 0px rgb(0 0 0 / 25%);
 }
 
@@ -202,6 +202,7 @@ body {
   padding-left: 4px;
   background-color: whitesmoke;
   border-bottom: thin gray solid;
+	border-radius: 8px 8px 0px 0px;
 }
 
 .acct-list-accounts {

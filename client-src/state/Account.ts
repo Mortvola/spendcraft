@@ -1,6 +1,6 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import {
-  AccountProps, Error, isAccountSyncResponse, isAccountTransactionsResponse, isAddTransactionResponse,
+  AccountProps, Error, isAccountSyncResponse, isAccountTransactionsResponse, isAddTransactionResponse, TrackingType,
 } from '../../common/ResponseTypes';
 import PendingTransaction from './PendingTransaction';
 import {
@@ -19,7 +19,7 @@ class Account implements AccountInterface {
 
   subtype: string | null = null;
 
-  tracking: 'Balances' | 'Transactions';
+  tracking: TrackingType;
 
   syncDate: string;
 

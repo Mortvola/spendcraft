@@ -5,6 +5,8 @@ import DetailView from '../DetailView';
 import AccountView from './AccountView';
 import MobxStore from '../state/mobxStore';
 import { useTransactionDialog } from '../TransactionDialog';
+import { useOfflineAccountDialog } from './OfflineAccountDialog';
+import { httpPost } from '../state/Transports';
 
 const Accounts = () => {
   const {
@@ -12,6 +14,7 @@ const Accounts = () => {
   } = useContext(MobxStore);
   const [refreshing, setRefreshing] = useState(false);
   const [TransactionDialog, showTransactionDialog] = useTransactionDialog();
+  const [OfflineAccountDialog, showOfflineAccountDialog] = useOfflineAccountDialog();
 
   useEffect(() => {
     if (selectedAccount) {
@@ -34,23 +37,12 @@ const Accounts = () => {
     accounts.addInstitution();
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = async (): Promise<void> => {
     setRefreshing(true);
 
-    fetch('/api/institutions/sync', {
-      method: 'POST',
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`Request failed: ${response.status}`);
-        }
-        setRefreshing(false);
-        return response.json();
-      })
-      .catch((error) => {
-        console.log(error);
-        setRefreshing(false);
-      });
+    await httpPost('/api/institutions/sync');
+
+    setRefreshing(false);
   };
 
   const handleAddTransactionClick = () => {
@@ -69,8 +61,10 @@ const Accounts = () => {
           <div className="account-bar">
             <div>Institutions</div>
             <IconButton icon="plus" onClick={handleClick} />
+            <IconButton icon="minus" onClick={showOfflineAccountDialog} />
             <IconButton icon="sync-alt" rotate={rotate} onClick={handleRefresh} />
           </div>
+          <OfflineAccountDialog />
           <AccountView />
         </div>
       </div>

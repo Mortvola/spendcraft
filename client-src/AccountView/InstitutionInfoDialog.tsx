@@ -1,9 +1,9 @@
 import React, { ReactElement, ReactNode, useState } from 'react';
 import moment from 'moment';
 import { Button, Modal } from 'react-bootstrap';
+import { InstitutionWithInstitutionData, InstitutionWithStatus } from 'plaid';
 import useModal, { ModalProps } from '../Modal/useModal';
 import Institution from '../state/Institution';
-import { InstitutionWithInstitutionData, InstitutionWithStatus } from 'plaid';
 
 type PropsType = {
   institution: Institution,

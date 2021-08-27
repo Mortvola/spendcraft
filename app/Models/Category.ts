@@ -1,12 +1,11 @@
 /* eslint-disable import/no-cycle */
 import {
-  BaseModel, BelongsTo, belongsTo, column, HasMany, hasMany, ModelAdapterOptions,
+  BaseModel, BelongsTo, belongsTo, column, HasMany, hasMany,
 } from '@ioc:Adonis/Lucid/Orm';
 import Database from '@ioc:Adonis/Lucid/Database';
 import Group from 'App/Models/Group';
 import { CategoryType } from 'Common/ResponseTypes';
 import TransactionCategory from 'App/Models/TransactionCategory';
-import User from 'App/Models/User';
 
 type CategoryItem = {
   id: number,
@@ -48,13 +47,6 @@ class Category extends BaseModel {
 
   @hasMany(() => TransactionCategory)
   public transactionCategory: HasMany<typeof TransactionCategory>;
-
-  public static async getUnassignedCategory(user: User, options?: ModelAdapterOptions): Promise<Category> {
-    return await Category.query(options)
-      .where('type', 'UNASSIGNED')
-      .whereHas('group', (query) => query.where('userId', user.id))
-      .firstOrFail();
-  }
 
   public static async balances(
     userId: number,

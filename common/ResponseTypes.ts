@@ -136,20 +136,18 @@ export interface AccountProps {
 
   name: string;
 
-  tracking: 'Balances' | 'Transactions';
+  tracking: TrackingType;
 
   syncDate: string;
 
   balance: number;
 }
 
-export const isAccountProps = (
-  r: AccountProps | unknown,
-): r is AccountProps => (
+export const isAccountProps = (r: unknown): r is AccountProps => (
   (r as AccountProps).id !== undefined
   && (r as AccountProps).name !== undefined
   && (r as AccountProps).tracking !== undefined
-  && (r as AccountProps).syncDate !== undefined
+  // && (r as AccountProps).syncDate !== undefined
   && (r as AccountProps).balance !== undefined
 );
 
@@ -158,22 +156,21 @@ export interface InstitutionProps {
 
   name: string;
 
+  offline: boolean;
+
   accounts: AccountProps[];
 }
 
-export const isInstitutionProps = (
-  r: InstitutionProps | unknown,
-): r is InstitutionProps => (
+export const isInstitutionProps = (r: unknown): r is InstitutionProps => (
   (r as InstitutionProps).id !== undefined
   && (r as InstitutionProps).name !== undefined
   && (r as InstitutionProps).accounts !== undefined
 );
 
-export const isInstitutionsResponse = (
-  r: Array<InstitutionProps> | unknown,
-): r is Array<InstitutionProps> => (
-  (r as Array<InstitutionProps>).length === 0
-  || isInstitutionProps((r as Array<InstitutionProps>)[0])
+export const isInstitutionsResponse = (r: unknown): r is InstitutionProps[] => (
+  Array.isArray(r)
+  && ((r as InstitutionProps[]).length === 0
+  || isInstitutionProps((r as InstitutionProps[])[0]))
 );
 
 export interface TransactionCategoryProps {
@@ -440,8 +437,9 @@ export const isGroupsResponse = (r: Array<GroupProps> | unknown): r is Array<Gro
   (r as Array<GroupProps>).length === 0 || isGroupProps((r as Array<GroupProps>)[0])
 );
 
-export const isAccountsResponse = (r: Array<AccountProps> | unknown): r is Array<AccountProps> => (
-  (r as Array<AccountProps>).length === 0 || isAccountProps((r as Array<AccountProps>)[0])
+export const isAccountsResponse = (r: unknown): r is AccountProps[] => (
+  Array.isArray(r)
+  && ((r as AccountProps[]).length === 0 || isAccountProps((r as AccountProps[])[0]))
 );
 
 export interface FundingPlanCategoryProps {

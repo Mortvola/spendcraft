@@ -1,12 +1,10 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 import React, { ReactElement, useEffect } from 'react';
-import PropTypes from 'prop-types';
 import { observer } from 'mobx-react-lite';
 import { toJS } from 'mobx';
 import {
-  Formik, Form, Field, ErrorMessage, FormikErrors,
+  Field, ErrorMessage, FormikErrors,
 } from 'formik';
-import { Button, Modal } from 'react-bootstrap';
 import AccountItem from './AccountItem';
 import useModal, { ModalProps, useModalType } from '../Modal/useModal';
 import Institution from '../state/Institution';
@@ -23,7 +21,6 @@ const AccountsDialog = ({
   setShow,
   onHide,
 }: PropsType & ModalProps): ReactElement => {
-
   type ValuesType = {
     selections: UnlinkedAccountProps[] | null,
   };
@@ -47,7 +44,7 @@ const AccountsDialog = ({
         if (values.selections === null) {
           throw new Error('account selections is null');
         }
-    
+
         return ({ ...a, tracking: values.selections[i].tracking })
       })
       .filter((a) => (a.tracking !== 'None' && a.tracking !== undefined));
@@ -75,7 +72,7 @@ const AccountsDialog = ({
                 account={acct}
                 as={AccountItem}
               />
-            ))  
+            ))
           )
           : null
       }
