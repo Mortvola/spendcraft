@@ -163,6 +163,12 @@ export interface CategoryTreeBalanceInterace {
   categories: CategoryBalanceInterface[],
 }
 
+export const isCategoryTreeBalanceInterface = (r: unknown): r is CategoryTreeBalanceInterace => (
+  (r as CategoryTreeBalanceInterace).id !== undefined
+  && (r as CategoryTreeBalanceInterace).name !== undefined
+  && (r as CategoryTreeBalanceInterace).categories !== undefined
+)
+
 export interface TransactionCategoryInterface {
   id: number;
   type: CategoryType;

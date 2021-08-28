@@ -6,7 +6,6 @@ import {
 } from '../../common/ResponseTypes';
 import { AccountInterface, AccountsInterface, StoreInterface } from './State';
 import { getBody, httpGet, postJSON } from './Transports';
-import Account from './Account';
 
 class Accounts implements AccountsInterface {
   institutions: Institution[] = [];

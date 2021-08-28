@@ -4,7 +4,7 @@ import {
   UnlinkedAccountProps, InstitutionProps, isAccountsResponse, isUnlinkedAccounts, AccountBalanceProps, Error,
 } from '../../common/ResponseTypes';
 import { AccountInterface, InstitutionInterface, StoreInterface } from './State';
-import { getBody, httpDelete, postJSON } from './Transports';
+import { getBody, httpDelete, httpGet, postJSON } from './Transports';
 
 class Institution implements InstitutionInterface {
   id: number;
@@ -94,7 +94,7 @@ class Institution implements InstitutionInterface {
   }
 
   async getUnlinkedAccounts(): Promise<void> {
-    const response = await fetch(`/api/institution/${this.id}/accounts`);
+    const response = await httpGet(`/api/institution/${this.id}/accounts`);
 
     if (response.ok) {
       const body = await getBody(response);

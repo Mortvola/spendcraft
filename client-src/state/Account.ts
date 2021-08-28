@@ -8,7 +8,7 @@ import {
 } from './State';
 import Transaction from './Transaction';
 import {
-  getBody, httpPost, patchJSON, postJSON,
+  getBody, httpGet, httpPost, patchJSON, postJSON,
 } from './Transports';
 
 class Account implements AccountInterface {
@@ -104,7 +104,7 @@ class Account implements AccountInterface {
 
   async getTransactions(): Promise<void> {
     this.fetching = true;
-    const response = await fetch(`/api/account/${this.id}/transactions`);
+    const response = await httpGet(`/api/account/${this.id}/transactions`);
 
     const body = await getBody(response);
 

@@ -8,7 +8,7 @@ import {
 } from '../../common/ResponseTypes';
 import { CategoryInterface, CategoryTreeInterface, StoreInterface } from './State';
 import SystemIds from './SystemIds';
-import { getBody, httpDelete, postJSON } from './Transports';
+import { getBody, httpDelete, httpGet, postJSON } from './Transports';
 import LoansGroup from './LoansGroup';
 
 class CategoryTree implements CategoryTreeInterface {
@@ -67,7 +67,7 @@ class CategoryTree implements CategoryTreeInterface {
   }
 
   async load(): Promise<void> {
-    const response = await fetch('/api/groups');
+    const response = await httpGet('/api/groups');
 
     const body = await getBody(response);
 

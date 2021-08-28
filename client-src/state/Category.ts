@@ -11,7 +11,7 @@ import LoanTransaction from './LoanTransaction';
 import PendingTransaction from './PendingTransaction';
 import { CategoryInterface, GroupInterface, StoreInterface } from './State';
 import Transaction from './Transaction';
-import { getBody, patchJSON } from './Transports';
+import { getBody, httpGet, patchJSON } from './Transports';
 
 class Category implements CategoryInterface {
   id: number;
@@ -71,7 +71,7 @@ class Category implements CategoryInterface {
 
   async getTransactions(): Promise<void> {
     this.fetching = true;
-    const response = await fetch(`/api/category/${this.id}/transactions`);
+    const response = await httpGet(`/api/category/${this.id}/transactions`);
 
     const body = await getBody(response);
 
@@ -141,7 +141,7 @@ class Category implements CategoryInterface {
   }
 
   async getLoanTransactions(): Promise<void> {
-    const response = await fetch(`/api/loans/${this.id}/transactions`);
+    const response = await httpGet(`/api/loans/${this.id}/transactions`);
 
     if (response.ok) {
       const body = await getBody(response);

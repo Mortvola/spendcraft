@@ -513,17 +513,37 @@ export interface FundingPlanProps {
   name: string;
 }
 
-export const isFundingPlanProps = (r: FundingPlanProps | unknown): r is FundingPlanProps => (
+export const isFundingPlanProps = (r: unknown): r is FundingPlanProps => (
   (r as FundingPlanProps).id !== undefined
   && (r as FundingPlanProps).name !== undefined
 );
 
 export const isFundingPlansResponse = (
-  r: Array<FundingPlanProps> | unknown,
-): r is Array<FundingPlanProps> => (
-  (r as Array<FundingPlanProps>).length === 0
-  || isFundingPlanProps((r as Array<FundingPlanProps>)[0])
+  r: unknown,
+): r is FundingPlanProps[] => (
+  Array.isArray(r)
+  && ((r as FundingPlanProps[]).length === 0
+  || isFundingPlanProps((r as FundingPlanProps[])[0]))
 );
+
+export type FundingType = {
+  id?: number,
+  type: CategoryType,
+  initialAmount: number,
+  amount: number,
+  categoryId: number,
+}
+
+export interface FundingPlan {
+  id: number,
+
+  categories: FundingType[],
+}
+
+export const isFundingPlanResponse = (r: unknown): r is FundingPlan => (
+  (r as FundingPlan).id !== undefined
+  && (r as FundingPlan).categories !== undefined
+)
 
 export interface AccountSyncProps {
   syncDate: string;
@@ -619,4 +639,28 @@ export type AddTransactionResponse = {
 export const isAddTransactionResponse = (r: unknown): r is AddTransactionResponse => (
   (r as AddTransactionResponse).categories !== undefined
   && Array.isArray((r as AddTransactionResponse).categories)
+)
+
+export interface CategoryBalanceProps2 {
+  id: number,
+  name: string,
+  balance:number,
+  system: boolean,
+}
+
+export interface CategoryTreeBalanceProps {
+  id: number,
+  name: string,
+  categories: CategoryBalanceProps2[],
+}
+
+export const isCategoryTreeBalanceProps = (r: unknown): r is CategoryTreeBalanceProps => (
+  (r as CategoryTreeBalanceProps).id !== undefined
+  && (r as CategoryTreeBalanceProps).name !== undefined
+  && (r as CategoryTreeBalanceProps).categories !== undefined
+)
+
+export const isCategoryTreeBalanceResponse = (r: unknown): r is CategoryTreeBalanceProps[] => (
+  Array.isArray(r)
+  && isCategoryTreeBalanceProps(r[0])
 )

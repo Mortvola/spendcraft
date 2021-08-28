@@ -11,6 +11,7 @@ import PlaidLink from './PlaidLink';
 import DetailView from './DetailView';
 import MobxStore, { store as mobxStore } from './state/mobxStore';
 import { httpPost } from './state/Transports';
+import ServerError, { serverError } from './state/ServerError';
 
 const Logout = () => {
   (async () => {
@@ -26,6 +27,7 @@ const Logout = () => {
 
 const App = () => {
   const { uiState } = useContext(MobxStore);
+  const error = useContext(ServerError);
   const isMobile = window.innerWidth <= 500;
 
   const renderMain = () => {
@@ -61,6 +63,26 @@ const App = () => {
     <DetailView detailView="Transactions" isMobile />
   );
 
+  if (error.message) {
+    return (
+      <div style={{ width: '100%', padding: '1rem' }}>
+        <div style={{ paddingBottom: '1rem' }}>
+          {error.message}
+        </div>
+        <div>
+          Stack:
+          <div style={{ overflowX: 'auto' }}>
+            {
+              error.stack.map((s) => (
+                <div key={s} style={{ paddingLeft: '1rem', whiteSpace: 'nowrap' }}>{s}</div>
+              ))
+            }
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <>
       <Menubar />
@@ -77,7 +99,9 @@ const ObserverApp = observer(App);
 
 ReactDOM.render(
   <MobxStore.Provider value={mobxStore}>
-    <ObserverApp />
+    <ServerError.Provider value={serverError}>
+      <ObserverApp />
+    </ServerError.Provider>
   </MobxStore.Provider>,
   document.querySelector('.app'),
 );

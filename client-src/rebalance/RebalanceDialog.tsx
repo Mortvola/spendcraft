@@ -12,10 +12,11 @@ import CategoryRebalance from './CategoryRebalance';
 import Amount from '../Amount';
 import useModal, { ModalProps, useModalType } from '../Modal/useModal';
 import Transaction from '../state/Transaction';
-import { TransactionCategoryInterface } from '../state/State';
+import { CategoryTreeBalanceInterace, TransactionCategoryInterface } from '../state/State';
 import MobxStore from '../state/mobxStore';
 import FormModal from '../Modal/FormModal';
-import { TransactionType } from '../../common/ResponseTypes';
+import { isCategoryTreeBalanceResponse, TransactionType } from '../../common/ResponseTypes';
+import { getBody, httpGet } from '../state/Transports';
 
 interface Props {
   transaction?: Transaction,
@@ -29,7 +30,7 @@ const RebalanceDialog = ({
   onHide,
 }: Props & ModalProps): ReactElement => {
   const { register } = useContext(MobxStore);
-  const [categoryTree, setCategoryTree] = useState(null);
+  const [categoryTree, setCategoryTree] = useState<CategoryTreeBalanceInterace[] | null>(null);
   const [unassigned, setUnassigned] = useState(0);
   const [date, setDate] = useState(transaction ? transaction.date : '');
 
@@ -48,20 +49,17 @@ const RebalanceDialog = ({
       const url = new URL('/api/category_balances', window.location.href);
       url.search = (new URLSearchParams(params)).toString();
 
-      fetch(url.toString(), {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
-        .then(
-          (response) => response.json(),
-          (error) => console.log('fetch error: ', error),
-        )
-        .then(
-          (json) => {
-            setCategoryTree(json);
-          },
-        );
+      (async () => {
+        const response = await httpGet(url.toString());
+
+        if (response.ok) {
+          const body = getBody(response);
+
+          if (isCategoryTreeBalanceResponse(body)) {
+            setCategoryTree(body);
+          }
+        }
+      })();
     }
   }, [transaction]);
 

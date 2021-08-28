@@ -1,5 +1,5 @@
 import { makeAutoObservable, runInAction } from 'mobx';
-import { getBody } from './Transports';
+import { getBody, httpGet } from './Transports';
 
 class Reports {
   reportType: string | null = null;
@@ -19,7 +19,7 @@ class Reports {
   async loadReport(reportType: string): Promise<void> {
     switch (reportType) {
       case 'netWorth': {
-        const response = await fetch('/api/reports/networth');
+        const response = await httpGet('/api/reports/networth');
 
         if (response.ok) {
           const body = await getBody(response);

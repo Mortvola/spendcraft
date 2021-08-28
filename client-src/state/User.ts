@@ -1,6 +1,6 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import { isUserProps } from '../../common/ResponseTypes';
-import { getBody } from './Transports';
+import { getBody, httpGet } from './Transports';
 
 class User {
   username: string | null = null;
@@ -14,7 +14,7 @@ class User {
   }
 
   async load(): Promise<void> {
-    const response = await fetch('/api/user');
+    const response = await httpGet('/api/user');
 
     if (response.ok) {
       const body = await getBody(response);
