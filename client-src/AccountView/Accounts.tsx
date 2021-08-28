@@ -4,7 +4,7 @@ import IconButton from '../IconButton';
 import DetailView from '../DetailView';
 import AccountView from './AccountView';
 import MobxStore from '../state/mobxStore';
-import { useTransactionDialog } from '../TransactionDialog';
+import { useTransactionDialog } from '../Transactions/TransactionDialog';
 import { useOfflineAccountDialog } from './OfflineAccountDialog';
 import { httpPost } from '../state/Transports';
 

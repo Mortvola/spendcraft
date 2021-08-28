@@ -1,6 +1,6 @@
 import Reports from './Reports';
 import User from './User';
-import { CategoryType, Error } from '../../common/ResponseTypes'
+import { CategoryType, Error, TrackingType } from '../../common/ResponseTypes'
 import LoanTransaction from './LoanTransaction';
 
 export interface GroupInterface {
@@ -90,6 +90,14 @@ export interface PendingTransactionProps {
     name: string;
 
     amount: number;
+
+    account: {
+      name: string,
+
+      institution: {
+        name: string;
+      }
+    }
   }
 }
 

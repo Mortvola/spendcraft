@@ -1,5 +1,5 @@
 import React, { ReactElement } from 'react';
-import Register from './Register';
+import Register from './Transactions/Register';
 import BalanceHistory from './AccountView/BalanceHistory';
 
 type PropsType = {

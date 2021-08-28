@@ -5,14 +5,14 @@ import {
   FormikErrors,
   FormikContextType,
 } from 'formik';
-import CategorySplits from './CategorySplits';
-import useModal, { ModalProps, useModalType } from './Modal/useModal';
-import Amount from './Amount';
-import Transaction from './state/Transaction';
-import { AccountInterface, TransactionCategoryInterface } from './state/State';
-import FormError from './Modal/FormError';
-import AmountInput from './AmountInput';
-import FormModal from './Modal/FormModal';
+import CategorySplits from '../CategorySplits';
+import useModal, { ModalProps, useModalType } from '../Modal/useModal';
+import Amount from '../Amount';
+import Transaction from '../state/Transaction';
+import { AccountInterface, TransactionCategoryInterface } from '../state/State';
+import FormError from '../Modal/FormError';
+import AmountInput from '../AmountInput';
+import FormModal from '../Modal/FormModal';
 
 function validateSplits(splits: Array<TransactionCategoryInterface>) {
   let error;

@@ -291,7 +291,7 @@ body {
 
 .transaction {
 	display: grid;
-	grid-template-columns: 32px 100px minmax(0, 1.8fr) 1fr  125px 125px minmax(0, 1fr) minmax(0, 1fr);
+	grid-template-columns: 32px 100px minmax(0, 1.8fr) 1fr 125px 125px minmax(0, 1fr) minmax(0, 1fr);
 	grid-template-rows: max-content;
 	align-items: center;
 }
@@ -302,12 +302,19 @@ body {
 
 .acct-transaction {
 	display: grid;
-	grid-template-columns: 32px 100px minmax(0, 1.8fr) 1fr  125px 125px minmax(0, 2fr);
+	grid-template-columns: 32px 100px minmax(0, 1.8fr) 1fr 125px 125px minmax(0, 2fr);
 	grid-template-rows: max-content;
 	align-items: center;
 }
 
 .pending-transaction {
+	display: grid;
+	grid-template-columns: 32px 100px minmax(0, 1.8fr) 125px 125px minmax(0, 3fr);
+	grid-template-rows: max-content;
+	align-items: center;
+}
+
+.acct-pending-transaction {
 	display: grid;
 	grid-template-columns: 32px 100px minmax(0, 1.8fr) 125px 125px minmax(0, 3fr);
 	grid-template-rows: max-content;

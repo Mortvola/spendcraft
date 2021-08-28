@@ -1,32 +1,26 @@
 import React, { ReactElement } from 'react';
 import { observer } from 'mobx-react-lite';
-import IconButton from './IconButton';
-import CategoryInput from './CategoryInput/CategoryInput';
-import Amount from './Amount';
-import { useTransactionDialog } from './TransactionDialog';
-import { useCategoryTransferDialog } from './CategoryTransferDialog';
-import { useRebalanceDialog } from './rebalance/RebalanceDialog';
-import { useFundingDialog } from './funding/FundingDialog';
-import { isTransaction } from './state/Transaction';
-import { TransactionType } from '../common/ResponseTypes';
-import { CategoryInterface, TransactionInterface } from './state/State';
+import IconButton from '../IconButton';
+import CategoryInput from '../CategoryInput/CategoryInput';
+import Amount from '../Amount';
+import { isTransaction } from '../state/Transaction';
+import { TransactionType } from '../../common/ResponseTypes';
+import { CategoryInterface, TransactionInterface } from '../state/State';
 
 type PropsType = {
   transaction: TransactionInterface
   amount: number;
   balance: number;
   selected: boolean;
-  category: CategoryInterface | null;
   isMobile?: boolean;
   showTrxDialog: (transaction: TransactionInterface) => void,
 }
 
-const Transaction = ({
+const TransactionFields = ({
   transaction,
   amount,
   balance,
   selected,
-  category,
   isMobile = false,
   showTrxDialog,
 }: PropsType): ReactElement => {
@@ -62,19 +56,6 @@ const Transaction = ({
     return <CategoryInput categoryId={catId} onChange={handleChange} />;
   };
 
-  const renderBankInfo = () => {
-    if (category !== null) {
-      return (
-        <>
-          <div className="transaction-field">{transaction.instituteName}</div>
-          <div className="transaction-field">{transaction.accountName}</div>
-        </>
-      );
-    }
-
-    return null;
-  };
-
   let className = 'transaction';
   if (selected) {
     className += ' transaction-selected';
@@ -97,7 +78,7 @@ const Transaction = ({
   }
 
   return (
-    <div className={className} onClick={handleClick}>
+    <>
       <IconButton icon="edit" onClick={() => showTrxDialog(transaction)} />
       <div>{transaction.date}</div>
       <div className="transaction-field">{transaction.name}</div>
@@ -113,9 +94,8 @@ const Transaction = ({
       }
       <Amount className="transaction-field amount currency" amount={amount} />
       <Amount className="transaction-field balance currency" amount={balance} />
-      {renderBankInfo()}
-    </div>
+    </>
   );
 };
 
-export default observer(Transaction);
+export default observer(TransactionFields);
