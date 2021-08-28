@@ -4,7 +4,7 @@ export default class FundingPlanCategories extends BaseSchema {
   protected tableName = 'funding_plan_categories'
 
   public async up () {
-    if (!this.schema.hasTable(this.tableName)) {
+    //if (!this.schema.hasTable(this.tableName)) {
       this.schema.createTable(this.tableName, (table) => {
         table.increments('id')
         table.integer('plan_id').notNullable();
@@ -17,10 +17,12 @@ export default class FundingPlanCategories extends BaseSchema {
         table.timestamp('created_at', { useTz: true }).defaultTo(this.now()).notNullable()
         table.timestamp('updated_at', { useTz: true }).defaultTo(this.now()).notNullable()
       })
-    }
+    //}
   }
 
   public async down () {
-    this.schema.dropTable(this.tableName)
+    if (this.schema.hasTable(this.tableName)) {
+      this.schema.dropTable(this.tableName)
+    }
   }
 }
