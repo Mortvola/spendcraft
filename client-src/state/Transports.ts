@@ -49,71 +49,55 @@ const checkResponse = async (response: Response) => {
   }
 }
 
-export const patchJSON = async (url: string, body: unknown): Promise<Response> => {
-  const response = await fetch(url, {
+const httpFetch = async (url: string, options?: RequestInit): Promise<Response> => {
+  const response = await fetch(url, options);
+
+  await checkResponse(response);
+
+  return response;
+}
+
+export const patchJSON = async (url: string, body: unknown): Promise<Response> => (
+  httpFetch(url, {
     method: 'PATCH',
     headers: jsonHeaders(),
     body: JSON.stringify(body),
-  });
+  })
+)
 
-  await checkResponse(response);
-
-  return response;
-}
-
-export const postJSON = async (url: string, body: unknown): Promise<Response> => {
-  const response = await fetch(url, {
+export const postJSON = async (url: string, body: unknown): Promise<Response> => (
+  httpFetch(url, {
     method: 'POST',
     headers: jsonHeaders(),
     body: JSON.stringify(body),
-  });
+  })
+)
 
-  await checkResponse(response);
-
-  return response;
-}
-
-export const putJSON = async (url: string, body: unknown): Promise<Response> => {
-  const response = await fetch(url, {
+export const putJSON = async (url: string, body: unknown): Promise<Response> => (
+  httpFetch(url, {
     method: 'PUT',
     headers: jsonHeaders(),
     body: JSON.stringify(body),
-  });
+  })
+)
 
-  await checkResponse(response);
-
-  return response;
-}
-
-export const httpGet = async (url: string): Promise<Response> => {
-  const response = await fetch(url, {
+export const httpGet = async (url: string): Promise<Response> => (
+  httpFetch(url, {
     method: 'GET',
     headers: defaultHeaders(),
-  });
+  })
+)
 
-  await checkResponse(response);
-
-  return response;
-}
-
-export const httpDelete = async (url: string): Promise<Response> => {
-  const response = await fetch(url, {
+export const httpDelete = async (url: string): Promise<Response> => (
+  httpFetch(url, {
     method: 'DELETE',
     headers: defaultHeaders(),
-  });
+  })
+)
 
-  await checkResponse(response);
-
-  return response;
-}
-
-export const httpPost = async (url: string): Promise<Response> => {
-  const response = await fetch(url, {
+export const httpPost = async (url: string): Promise<Response> => (
+  httpFetch(url, {
     method: 'POST',
     headers: defaultHeaders(),
-  });
-
-  await checkResponse(response);
-
-  return response;
-}
+  })
+)
