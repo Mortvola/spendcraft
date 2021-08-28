@@ -6,7 +6,7 @@ import {
   CategoryBalanceProps,
 } from '../../common/ResponseTypes';
 import {
-  getBody, httpDelete, patchJSON, postJSON,
+  getBody, httpDelete, httpPatch, httpPost,
 } from './Transports';
 import { GroupInterface, StoreInterface } from './State';
 
@@ -83,7 +83,7 @@ class Group implements GroupInterface {
   }
 
   async addCategory(name: string): Promise<null| Error[]> {
-    const response = await postJSON(`/api/groups/${this.id}/categories`, { groupId: this.id, name });
+    const response = await httpPost(`/api/groups/${this.id}/categories`, { groupId: this.id, name });
 
     const body = await getBody(response);
 
@@ -105,7 +105,7 @@ class Group implements GroupInterface {
   }
 
   async update(name: string): Promise<null | Array<Error>> {
-    const response = await patchJSON(`/api/groups/${this.id}`, { name });
+    const response = await httpPatch(`/api/groups/${this.id}`, { name });
 
     const body = await getBody(response);
 

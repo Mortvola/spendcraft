@@ -11,7 +11,7 @@ import {
   NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface,
   TransactionInterface,
 } from './State';
-import { getBody, httpDelete, patchJSON } from './Transports';
+import { getBody, httpDelete, httpPatch } from './Transports';
 
 class Transaction implements TransactionInterface {
   id: number | null;
@@ -89,7 +89,7 @@ class Transaction implements TransactionInterface {
       throw new Error('transaction has a null id');
     }
 
-    const response = await patchJSON(`/api/transaction/${this.id}`, values);
+    const response = await httpPatch(`/api/transaction/${this.id}`, values);
 
     if (response.ok) {
       const body = await getBody(response);
@@ -155,7 +155,7 @@ class Transaction implements TransactionInterface {
       throw new Error('transaction has a null id');
     }
 
-    const response = await patchJSON(`/api/category-transfer/${this.id}`, { ...values, type: 3 });
+    const response = await httpPatch(`/api/category-transfer/${this.id}`, { ...values, type: 3 });
 
     if (response.ok) {
       const body = await getBody(response);

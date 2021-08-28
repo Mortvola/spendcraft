@@ -4,7 +4,9 @@ import {
   UnlinkedAccountProps, InstitutionProps, isAccountsResponse, isUnlinkedAccounts, AccountBalanceProps, Error,
 } from '../../common/ResponseTypes';
 import { AccountInterface, InstitutionInterface, StoreInterface } from './State';
-import { getBody, httpDelete, httpGet, postJSON } from './Transports';
+import {
+  getBody, httpDelete, httpGet, httpPost,
+} from './Transports';
 
 class Institution implements InstitutionInterface {
   id: number;
@@ -48,7 +50,7 @@ class Institution implements InstitutionInterface {
   }
 
   async addAccounts(accounts: UnlinkedAccountProps[]): Promise<null> {
-    const response = await postJSON(`/api/institution/${this.id}/accounts`, { accounts, startDate: null });
+    const response = await httpPost(`/api/institution/${this.id}/accounts`, { accounts, startDate: null });
 
     const body = await getBody(response);
 
@@ -70,7 +72,7 @@ class Institution implements InstitutionInterface {
     balance: number,
     startDate: string,
   ): Promise<Error[] | null> {
-    const response = await postJSON(`/api/institution/${this.id}/accounts`, {
+    const response = await httpPost(`/api/institution/${this.id}/accounts`, {
       offlineAccounts: [{
         name: accountName,
         balance,

@@ -57,7 +57,7 @@ const httpFetch = async (url: string, options?: RequestInit): Promise<Response> 
   return response;
 }
 
-export const patchJSON = async (url: string, body: unknown): Promise<Response> => (
+export const httpPatch = async (url: string, body: unknown): Promise<Response> => (
   httpFetch(url, {
     method: 'PATCH',
     headers: jsonHeaders(),
@@ -65,15 +65,7 @@ export const patchJSON = async (url: string, body: unknown): Promise<Response> =
   })
 )
 
-export const postJSON = async (url: string, body: unknown): Promise<Response> => (
-  httpFetch(url, {
-    method: 'POST',
-    headers: jsonHeaders(),
-    body: JSON.stringify(body),
-  })
-)
-
-export const putJSON = async (url: string, body: unknown): Promise<Response> => (
+export const httpPut = async (url: string, body: unknown): Promise<Response> => (
   httpFetch(url, {
     method: 'PUT',
     headers: jsonHeaders(),
@@ -95,9 +87,17 @@ export const httpDelete = async (url: string): Promise<Response> => (
   })
 )
 
-export const httpPost = async (url: string): Promise<Response> => (
-  httpFetch(url, {
+export const httpPost = async (url: string, body?: unknown): Promise<Response> => {
+  if (body === undefined) {
+    return httpFetch(url, {
+      method: 'POST',
+      headers: defaultHeaders(),
+    });
+  }
+
+  return httpFetch(url, {
     method: 'POST',
-    headers: defaultHeaders(),
-  })
-)
+    headers: jsonHeaders(),
+    body: JSON.stringify(body),
+  });
+}

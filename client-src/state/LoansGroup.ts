@@ -4,7 +4,7 @@ import {
 } from '../../common/ResponseTypes';
 import Category from './Category';
 import { GroupInterface, StoreInterface } from './State';
-import { getBody, httpDelete, postJSON } from './Transports';
+import { getBody, httpDelete, httpPost } from './Transports';
 
 class LoansGroup implements GroupInterface {
   id: number;
@@ -51,7 +51,7 @@ class LoansGroup implements GroupInterface {
     rate: number,
     startDate: string,
   ): Promise<null| Error[]> {
-    const response = await postJSON('/api/loans', {
+    const response = await httpPost('/api/loans', {
       name, amount, rate, startDate,
     });
 

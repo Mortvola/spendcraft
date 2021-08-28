@@ -8,7 +8,7 @@ import {
 } from './State';
 import Transaction from './Transaction';
 import {
-  getBody, httpGet, httpPost, patchJSON, postJSON,
+  getBody, httpGet, httpPatch, httpPost,
 } from './Transports';
 
 class Account implements AccountInterface {
@@ -139,7 +139,7 @@ class Account implements AccountInterface {
       splits: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
     },
   ): Promise<Error[] | null> {
-    const response = await postJSON(`/api/account/${this.id}/transactions`, values);
+    const response = await httpPost(`/api/account/${this.id}/transactions`, values);
 
     if (response.ok) {
       const body = await getBody(response);
@@ -186,7 +186,7 @@ class Account implements AccountInterface {
   }
 
   async updateOfflineAccount (name: string): Promise<void> {
-    const response = await patchJSON(`/api/account/${this.id}`, {
+    const response = await httpPatch(`/api/account/${this.id}`, {
       name,
     });
 

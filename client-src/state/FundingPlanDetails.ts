@@ -1,7 +1,7 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import FundingPlanGroup from './FundingPlanGroup';
 import { StoreInterface } from './State';
-import { getBody, putJSON } from './Transports';
+import { getBody, httpPut } from './Transports';
 import {
   FundingPlanDetailsProps,
   isUpdateFundingCategoryResponse,
@@ -34,7 +34,7 @@ class FundingPlanDetails {
   }
 
   async updateCategoryAmount(categoryId: number, amount: number, delta: number): Promise<void> {
-    const response = await putJSON(`/api/funding-plans/${this.id}/item/${categoryId}`, { amount });
+    const response = await httpPut(`/api/funding-plans/${this.id}/item/${categoryId}`, { amount });
 
     const body = await getBody(response);
 

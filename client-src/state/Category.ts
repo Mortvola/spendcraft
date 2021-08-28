@@ -11,7 +11,7 @@ import LoanTransaction from './LoanTransaction';
 import PendingTransaction from './PendingTransaction';
 import { CategoryInterface, GroupInterface, StoreInterface } from './State';
 import Transaction from './Transaction';
-import { getBody, httpGet, patchJSON } from './Transports';
+import { getBody, httpGet, httpPatch } from './Transports';
 
 class Category implements CategoryInterface {
   id: number;
@@ -153,7 +153,7 @@ class Category implements CategoryInterface {
   }
 
   async update(name: string, group: GroupInterface): Promise<null | Error[]> {
-    const response = await patchJSON(`/api/groups/${group.id}/categories/${this.id}`, { name });
+    const response = await httpPatch(`/api/groups/${group.id}/categories/${this.id}`, { name });
 
     const body = await getBody(response);
 

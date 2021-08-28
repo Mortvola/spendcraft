@@ -2,7 +2,7 @@ import { makeAutoObservable, runInAction } from 'mobx';
 import FundingPlan from './FundingPlan';
 import FundingPlanDetails from './FundingPlanDetails';
 import { PlansInterface, StoreInterface } from './State';
-import { getBody, httpGet, postJSON } from './Transports';
+import { getBody, httpGet, httpPost } from './Transports';
 import { isFundingPlansResponse, isFundingPlanProps, isFundingPlanDetailsProps } from '../../common/ResponseTypes';
 
 class Plans implements PlansInterface {
@@ -54,7 +54,7 @@ class Plans implements PlansInterface {
   }
 
   async addPlan(name: string): Promise<{ message: string }[] | null> {
-    const response = await postJSON('/api/funding-plans', { name });
+    const response = await httpPost('/api/funding-plans', { name });
 
     if (response.ok) {
       const body = await getBody(response);

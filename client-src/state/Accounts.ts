@@ -5,7 +5,7 @@ import {
   AccountBalanceProps, Error, isInstitutionProps, isInstitutionsResponse, isLinkTokenResponse,
 } from '../../common/ResponseTypes';
 import { AccountInterface, AccountsInterface, StoreInterface } from './State';
-import { getBody, httpGet, postJSON } from './Transports';
+import { getBody, httpGet, httpPost } from './Transports';
 
 class Accounts implements AccountsInterface {
   institutions: Institution[] = [];
@@ -90,7 +90,7 @@ class Accounts implements AccountsInterface {
                 institution_id: string,
               };
 
-              const response2 = await postJSON('/api/institution', {
+              const response2 = await httpPost('/api/institution', {
                 publicToken,
                 institution: {
                   name: i.name,
@@ -140,7 +140,7 @@ class Accounts implements AccountsInterface {
     balance: number,
     startDate: string,
   ): Promise<Error[] | null> {
-    const response = await postJSON('/api/institution', {
+    const response = await httpPost('/api/institution', {
       institution: {
         name: instituteName,
       },

@@ -1,4 +1,4 @@
-import { getBody, postJSON } from '../state/Transports';
+import { getBody, httpPost } from '../state/Transports';
 
 type ErrorsType = Record<string, string[]>;
 
@@ -11,7 +11,7 @@ const submitForm = async (
 ): Promise<void> => {
   const formData = new FormData(form);
 
-  const response = await postJSON(url, {
+  const response = await httpPost(url, {
     body: formData,
   });
 

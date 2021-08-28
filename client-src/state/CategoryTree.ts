@@ -8,7 +8,9 @@ import {
 } from '../../common/ResponseTypes';
 import { CategoryInterface, CategoryTreeInterface, StoreInterface } from './State';
 import SystemIds from './SystemIds';
-import { getBody, httpDelete, httpGet, postJSON } from './Transports';
+import {
+  getBody, httpDelete, httpGet, httpPost,
+} from './Transports';
 import LoansGroup from './LoansGroup';
 
 class CategoryTree implements CategoryTreeInterface {
@@ -113,7 +115,7 @@ class CategoryTree implements CategoryTreeInterface {
   }
 
   async addGroup(name: string): Promise<null | Error[]> {
-    const response = await postJSON('/api/groups', { name });
+    const response = await httpPost('/api/groups', { name });
 
     const body = await getBody(response);
 
