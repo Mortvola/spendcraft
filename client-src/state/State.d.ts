@@ -191,6 +191,10 @@ export interface RegisterInterface {
   removeTransaction(transactionId: number): void;
 }
 
+export interface InstitutionInterface {
+  deleteAccount(account: AccountInterface): void;
+}
+
 export interface AccountInterface {
   id: number;
 
@@ -236,6 +240,10 @@ export interface AccountInterface {
   insertTransaction(transaction: Transaction): void;
 
   removeTransaction(transactionId: number): void;
+
+  delete(): void;
+
+  updateOfflineAccount(name: string): void;
 }
 
 export interface BalancesInterface {

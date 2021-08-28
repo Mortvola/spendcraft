@@ -216,4 +216,30 @@ export default class AccountsController {
 
     return result;
   }
+
+  // eslint-disable-next-line class-methods-use-this
+  public async update({
+    request,
+    auth: {
+      user,
+    },
+  }: HttpContextContract): Promise<void> {
+    if (!user) {
+      throw new Error('user not defined');
+    }
+
+    const validationSchema = schema.create({
+      name: schema.string({ trim: true }),
+    });
+
+    const requestData = await request.validate({
+      schema: validationSchema,
+    });
+
+    const account = await Account.findOrFail(request.params().acctId);
+
+    account.name = requestData.name;
+
+    account.save();
+  }
 }

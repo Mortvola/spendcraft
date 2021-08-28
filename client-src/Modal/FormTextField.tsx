@@ -4,20 +4,23 @@ import FormError from './FormError';
 
 type PropsType = {
   name: string,
+  label?: string,
   as?: unknown,
   type?: string,
   readOnly?: boolean,
-  children: ReactNode,
+  children?: ReactNode,
 };
 
 const FormTextField = ({
   name,
+  label,
   as,
   type,
   readOnly,
   children,
 }: PropsType): ReactElement => (
   <label>
+    {label}
     {children}
     <Field
       as={as}

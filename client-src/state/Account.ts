@@ -4,10 +4,12 @@ import {
 } from '../../common/ResponseTypes';
 import PendingTransaction from './PendingTransaction';
 import {
-  AccountInterface, NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface,
+  AccountInterface, InstitutionInterface, NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface,
 } from './State';
 import Transaction from './Transaction';
-import { getBody, httpPost, postJSON } from './Transports';
+import {
+  getBody, httpPost, patchJSON, postJSON,
+} from './Transports';
 
 class Account implements AccountInterface {
   id: number;
@@ -37,14 +39,17 @@ class Account implements AccountInterface {
 
   refreshing = false;
 
+  institution: InstitutionInterface;
+
   store: StoreInterface;
 
-  constructor(store: StoreInterface, props: AccountProps) {
+  constructor(store: StoreInterface, institution: InstitutionInterface, props: AccountProps) {
     this.id = props.id;
     this.name = props.name;
     this.tracking = props.tracking;
     this.syncDate = props.syncDate;
     this.balance = props.balance;
+    this.institution = institution;
 
     makeAutoObservable(this);
 
@@ -173,6 +178,22 @@ class Account implements AccountInterface {
 
     if (index !== -1) {
       this.transactions.splice(index, 1);
+    }
+  }
+
+  delete(): void {
+    this.institution.deleteAccount(this);
+  }
+
+  async updateOfflineAccount (name: string): Promise<void> {
+    const response = await patchJSON(`/api/account/${this.id}`, {
+      name,
+    });
+
+    if (response.ok) {
+      runInAction(() => {
+        this.name = name;
+      });
     }
   }
 }

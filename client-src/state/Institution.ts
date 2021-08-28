@@ -3,10 +3,10 @@ import Account from './Account';
 import {
   UnlinkedAccountProps, InstitutionProps, isAccountsResponse, isUnlinkedAccounts, AccountBalanceProps, Error,
 } from '../../common/ResponseTypes';
-import { AccountInterface, StoreInterface } from './State';
-import { getBody, postJSON } from './Transports';
+import { AccountInterface, InstitutionInterface, StoreInterface } from './State';
+import { getBody, httpDelete, postJSON } from './Transports';
 
-class Institution {
+class Institution implements InstitutionInterface {
   id: number;
 
   name: string;
@@ -26,7 +26,7 @@ class Institution {
 
     this.accounts = [];
     if (props.accounts) {
-      this.accounts = props.accounts.map((acct) => new Account(store, acct));
+      this.accounts = props.accounts.map((acct) => new Account(store, this, acct));
     }
 
     makeAutoObservable(this);
@@ -56,7 +56,7 @@ class Institution {
       runInAction(() => {
         if (isAccountsResponse(body)) {
           body.forEach((a) => {
-            this.insertAccount(new Account(this.store, a));
+            this.insertAccount(new Account(this.store, this, a));
           });
         }
       });
@@ -84,7 +84,7 @@ class Institution {
       if (isAccountsResponse(body)) {
         runInAction(() => {
           body.forEach((acct) => {
-            this.insertAccount(new Account(this.store, acct));
+            this.insertAccount(new Account(this.store, this, acct));
           })
         });
       }
@@ -114,6 +114,20 @@ class Institution {
         a.balance = balance.balance;
       }
     });
+  }
+
+  async deleteAccount(account: AccountInterface): Promise<void> {
+    const response = await httpDelete(`/api/institution/${this.id}/accounts/${account.id}`);
+
+    if (response.ok) {
+      runInAction(() => {
+        const index = this.accounts.findIndex((a) => a.id === account.id);
+
+        if (index !== -1) {
+          this.accounts.splice(index, 1);
+        }
+      });
+    }
   }
 }
 

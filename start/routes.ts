@@ -70,6 +70,7 @@ Route.group(() => {
       Route.get('/:acctId/transactions', 'AccountsController.transactions');
       Route.post('/:acctId/transactions', 'AccountsController.addTransaction');
       Route.get('/:acctId/balances', 'AccountsController.balances');
+      Route.patch('/:acctId', 'AccountsController.update');
     }).prefix('/account');
 
     Route.post('/institutions/sync', 'InstitutionController.syncAll');
@@ -80,6 +81,7 @@ Route.group(() => {
       Route.get('/:instId/accounts', 'InstitutionController.get');
       Route.post('/:instId/accounts', 'InstitutionController.addAccounts');
       Route.post('/:instId/accounts/:acctId/transactions/sync', 'InstitutionController.sync');
+      Route.delete('/:instId/accounts/:acctId', 'InstitutionController.deleteAccount');
       Route.get('/:instId/link-token', 'InstitutionController.linkToken');
     }).prefix('/institution');
 

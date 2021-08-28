@@ -7,13 +7,17 @@ import FormTextField from '../Modal/FormTextField';
 import useModal, { ModalProps, useModalType } from '../Modal/useModal';
 import Institution from '../state/Institution';
 import MobxStore from '../state/mobxStore';
+import { AccountInterface } from '../state/State';
 
 type PropsType = {
   institution?: Institution,
+  account?: AccountInterface | null,
+  onHide?: () => void,
 }
 
 const OfflineAccountDialog = ({
   institution,
+  account = null,
   show,
   setShow,
   onHide,
@@ -34,12 +38,14 @@ const OfflineAccountDialog = ({
       errors.institute = 'Institution name is required';
     }
 
-    if (!values.account) {
-      errors.account = 'Account name is required';
-    }
+    if (!account) {
+      if (!values.account) {
+        errors.account = 'Account name is required';
+      }
 
-    if (!values.startDate) {
-      errors.startDate = 'Start date is required';
+      if (!values.startDate) {
+        errors.startDate = 'Start date is required';
+      }
     }
 
     return errors;
@@ -51,7 +57,12 @@ const OfflineAccountDialog = ({
     let errors: Error[] | null = null;
 
     if (institution) {
-      errors = await institution.addOfflineAccount(values.account, parseFloat(values.balance), values.startDate);
+      if (account) {
+        await account.updateOfflineAccount(values.account);
+      }
+      else {
+        errors = await institution.addOfflineAccount(values.account, parseFloat(values.balance), values.startDate);
+      }
     }
     else {
       errors = await accounts.addOfflineAccount(
@@ -67,12 +78,18 @@ const OfflineAccountDialog = ({
     }
   };
 
+  const handleDelete = () => {
+    if (account) {
+      account.delete();
+    }
+  }
+
   return (
     <FormModal<ValuesType>
       initialValues={{
         institute: institution ? institution.name : '',
-        account: '',
-        balance: '0',
+        account: account ? account.name : '',
+        balance: account ? account.balance.toString() : '0',
         startDate: '',
       }}
       show={show}
@@ -83,20 +100,21 @@ const OfflineAccountDialog = ({
       title="Add Offline Account"
       formId="UnlinkedAccounts"
       size="sm"
+      onDelete={account ? handleDelete : null}
     >
       <div style={{ display: 'flex', flexDirection: 'column' }}>
-        <FormTextField name="institute" readOnly={institution !== undefined}>
-          Institution Name:
-        </FormTextField>
-        <FormTextField name="account">
-          Account Name:
-        </FormTextField>
-        <FormTextField name="balance" as={AmountInput}>
-          Starting Balance:
-        </FormTextField>
-        <FormTextField name="startDate" type="date">
-          Starting Balance:
-        </FormTextField>
+        <FormTextField name="institute" label="Institution Name:" readOnly={institution !== undefined} />
+        <FormTextField name="account" label="Account Name:" />
+        {
+          !account
+            ? (
+              <>
+                <FormTextField name="balance" label="Starting Balance:" as={AmountInput} />
+                <FormTextField name="startDate" label="Start Date:" type="date" />
+              </>
+            )
+            : null
+        }
       </div>
     </FormModal>
   );

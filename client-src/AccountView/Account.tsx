@@ -11,6 +11,7 @@ type PropsType = {
   institution: Institution,
   account: AccountInterface,
   onAccountSelected: ((account: AccountInterface) => void),
+  showAccountDialog: ((account: AccountInterface) => void),
 }
 
 const Account = ({
@@ -18,6 +19,7 @@ const Account = ({
   institution,
   account,
   onAccountSelected,
+  showAccountDialog,
 }: PropsType) => {
   const refresh = () => {
     account.refresh(institution.id);
@@ -42,7 +44,7 @@ const Account = ({
       {
         !institution.offline
           ? <IconButton icon="sync-alt" rotate={account.refreshing} onClick={refresh} />
-          : null
+          : <IconButton icon="edit" onClick={() => showAccountDialog(account)} />
       }
       <div>
         <div className={className} onClick={accountSelected}>{account.name}</div>

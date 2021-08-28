@@ -549,6 +549,17 @@ class InstitutionController {
 
     return plaidInstitution;
   }
+
+  // eslint-disable-next-line class-methods-use-this
+  public async deleteAccount(
+    { request, auth: { user } }: HttpContextContract,
+  ): Promise<void> {
+    if (!user) {
+      throw new Error('user is not defined');
+    }
+
+    await (await Account.findOrFail(request.params().acctId)).delete();
+  }
 }
 
 export default InstitutionController;

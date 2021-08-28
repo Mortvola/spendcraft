@@ -1,4 +1,6 @@
-import React, { useState, useContext, ReactElement, useCallback } from 'react';
+import React, {
+  useState, useContext, ReactElement, useCallback,
+} from 'react';
 import { observer } from 'mobx-react-lite';
 import { Spinner } from 'react-bootstrap';
 import Transaction from './Transaction';
@@ -27,7 +29,7 @@ const Register = ({
   const [CategoryTransferDialog, showCategoryTransferDialog] = useCategoryTransferDialog();
   const [FundingDialog, showFundingDialog] = useFundingDialog();
   const [RebalanceDialog, showRebalanceDialog] = useRebalanceDialog();
-  const [editedTransaction, setEditiedTransaction] = useState<TransactionInterface | null>(null);
+  const [editedTransaction, setEditedTransaction] = useState<TransactionInterface | null>(null);
 
   let transactions: TransactionInterface[] | undefined;
   let pending: PendingTransaction[] | undefined;
@@ -63,7 +65,7 @@ const Register = ({
   const TrxDialog = useCallback(() => {
     if (isTransaction(editedTransaction)) {
       const handleDialogHide = () => {
-        setEditiedTransaction(null);
+        setEditedTransaction(null);
       }
 
       switch (editedTransaction.type) {
@@ -74,12 +76,12 @@ const Register = ({
 
         case TransactionType.FUNDING_TRANSACTION:
           return (
-            <FundingDialog transaction={editedTransaction} onHide={handleDialogHide}  />
+            <FundingDialog transaction={editedTransaction} onHide={handleDialogHide} />
           );
 
         case TransactionType.REBALANCE_TRANSACTION:
           return (
-            <RebalanceDialog transaction={editedTransaction} onHide={handleDialogHide}  />
+            <RebalanceDialog transaction={editedTransaction} onHide={handleDialogHide} />
           );
 
         case TransactionType.REGULAR_TRANSACTION:
@@ -94,7 +96,7 @@ const Register = ({
   }, [editedTransaction, TransactionDialog, RebalanceDialog, FundingDialog, CategoryTransferDialog]);
 
   const showTrxDialog = (transaction: TransactionInterface) => {
-    setEditiedTransaction(transaction);
+    setEditedTransaction(transaction);
     switch (transaction.type) {
       case 0:
       case 5:
@@ -112,6 +114,9 @@ const Register = ({
       case 3:
         showRebalanceDialog();
         break;
+
+      default:
+        throw new Error('invalid transaction type');
     }
   };
 
