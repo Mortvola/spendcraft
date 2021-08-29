@@ -233,6 +233,8 @@ export interface AccountInterface {
 
   pending: PendingTransaction[] = [];
 
+  fetching: boolean;
+
   refreshing: boolean;
 
   store: StoreInterface;
