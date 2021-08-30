@@ -120,7 +120,7 @@ const RegisterTransactions = ({
             <TransactionFields
               transaction={transaction}
               amount={amount}
-              balance={balance}
+              balance={runningBalance}
               selected={selected}
               isMobile={isMobile}
               showTrxDialog={showTrxDialog}
@@ -137,7 +137,7 @@ const RegisterTransactions = ({
             <TransactionFields
               transaction={transaction}
               amount={amount}
-              balance={balance}
+              balance={runningBalance}
               selected={selected}
               isMobile={isMobile}
               showTrxDialog={showTrxDialog}

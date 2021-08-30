@@ -4,8 +4,12 @@ import Plaid, { PlaidMetaData } from './Plaid';
 import {
   AccountBalanceProps, Error, isInstitutionProps, isInstitutionsResponse, isLinkTokenResponse,
 } from '../../common/ResponseTypes';
-import { AccountInterface, AccountsInterface, StoreInterface } from './State';
-import { getBody, httpGet, httpPost } from './Transports';
+import {
+  AccountInterface, AccountsInterface, InstitutionInterface, StoreInterface,
+} from './State';
+import {
+  getBody, httpDelete, httpGet, httpPost,
+} from './Transports';
 
 class Accounts implements AccountsInterface {
   institutions: Institution[] = [];
@@ -184,6 +188,18 @@ class Accounts implements AccountsInterface {
         i.updateBalances(balances);
       });
     });
+  }
+
+  async deleteInstitution(institution: InstitutionInterface): Promise<void> {
+    const response = await httpDelete(`/api/institution/${institution.id}`);
+
+    if (response.ok) {
+      const index = this.institutions.findIndex((i) => i.id === institution.id);
+
+      if (index !== -1) {
+        this.institutions.splice(index, 1);
+      }
+    }
   }
 }
 

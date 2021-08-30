@@ -82,6 +82,7 @@ Route.group(() => {
       Route.post('/:instId/accounts', 'InstitutionController.addAccounts');
       Route.post('/:instId/accounts/:acctId/transactions/sync', 'InstitutionController.sync');
       Route.delete('/:instId/accounts/:acctId', 'InstitutionController.deleteAccount');
+      Route.delete('/:instId', 'InstitutionController.delete');
       Route.get('/:instId/link-token', 'InstitutionController.linkToken');
     }).prefix('/institution');
 

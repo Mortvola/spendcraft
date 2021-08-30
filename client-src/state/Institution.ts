@@ -49,12 +49,18 @@ class Institution implements InstitutionInterface {
     }
   }
 
-  async addAccounts(accounts: UnlinkedAccountProps[]): Promise<null> {
-    const response = await httpPost(`/api/institution/${this.id}/accounts`, { accounts, startDate: null });
-
-    const body = await getBody(response);
+  async addAccounts(
+    accounts: UnlinkedAccountProps[],
+    startDate: string,
+  ): Promise<null> {
+    const response = await httpPost(`/api/institution/${this.id}/accounts`, {
+      plaidAccounts: accounts,
+      startDate,
+    });
 
     if (response.ok) {
+      const body = await getBody(response);
+
       runInAction(() => {
         if (isAccountsResponse(body)) {
           body.forEach((a) => {
@@ -130,6 +136,10 @@ class Institution implements InstitutionInterface {
         }
       });
     }
+  }
+
+  delete(): void {
+    this.store.accounts.deleteInstitution(this);
   }
 }
 

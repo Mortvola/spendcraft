@@ -603,12 +603,10 @@ export const isUserProps = (
 export type TrackingType = 'None' | 'Balances' | 'Transactions';
 
 export type UnlinkedAccountProps = {
-  // eslint-disable-next-line camelcase
-  account_id: string,
+  plaidAccountId: string,
   name: string,
-  // eslint-disable-next-line camelcase
-  official_name: string,
-  mask: string,
+  officialName: string | null,
+  mask: string | null,
   type: string,
   subtype: string,
   balances: {
@@ -619,7 +617,7 @@ export type UnlinkedAccountProps = {
 
 export const isUnlinkedAccounts = (r: unknown): r is UnlinkedAccountProps[] => (
   (Array.isArray(r)
-  && (r as UnlinkedAccountProps[])[0].tracking !== undefined)
+  && (r as UnlinkedAccountProps[])[0].plaidAccountId !== undefined)
 );
 
 export type AddTransactionProps = {

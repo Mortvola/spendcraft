@@ -8,7 +8,7 @@ import {
 } from 'formik';
 import Amount from '../Amount';
 import MobxStore from '../state/mobxStore';
-import useModal, { ModalProps, useModalType } from '../Modal/useModal';
+import useModal, { ModalProps, UseModalType } from '../Modal/useModal';
 import Transaction from '../state/Transaction';
 import { NewTransactionCategoryInterface, TransactionCategoryInterface } from '../state/State';
 import {
@@ -335,6 +335,6 @@ const FundingDialog = ({
   );
 };
 
-export const useFundingDialog = (): useModalType<Props> => useModal<Props>(FundingDialog);
+export const useFundingDialog = (): UseModalType<Props> => useModal<Props>(FundingDialog);
 
 export default FundingDialog;

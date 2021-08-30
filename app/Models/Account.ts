@@ -242,7 +242,7 @@ class Account extends BaseModel {
             .table('account_transactions');
 
           if (!transaction.pending) {
-            sum += transaction.amount;
+            sum -= transaction.amount;
           }
         }
 
@@ -272,6 +272,12 @@ class Account extends BaseModel {
 
     let balance: number = transactionsResponse.accounts[0].balances.current;
 
+    if (transactionsResponse.accounts[0].type === 'credit'
+      || transactionsResponse.accounts[0].type === 'loan') {
+      balance = -balance;
+    //   sum = -sum;
+    }
+
     let cat: CategoryItem | null = null;
 
     if (sum !== 0) {
@@ -280,7 +286,7 @@ class Account extends BaseModel {
       // Add the sum of the transactions to the unassigned category.
       const category = await Category.findOrFail(unassigned.id, { client: trx });
 
-      category.amount -= sum;
+      category.amount += sum;
 
       await category.save();
 
@@ -295,11 +301,6 @@ class Account extends BaseModel {
         },
         amount: category.amount,
       } as CategoryItem;
-    }
-
-    if (transactionsResponse.accounts[0].type === 'credit'
-      || transactionsResponse.accounts[0].type === 'loan') {
-      balance = -balance;
     }
 
     // console.log(`Balance: ${balance}, Pending: ${pendingSum}`);

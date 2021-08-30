@@ -30,12 +30,16 @@ function Institution({
   const [editedAccount, setEditedAccount] = useState<AccountInterface | null>(null);
 
   const handleAddClick = () => {
-    if (institution.offline) {
+    if (institution) {
       showOfflineAccountDialog();
     }
     else {
       showAccountsDialog();
     }
+  }
+
+  const handleDeleteClick = () => {
+    institution.delete();
   }
 
   const handleEditAccount = (account: AccountInterface) => {
@@ -55,6 +59,7 @@ function Institution({
     <div className="inst-card">
       <div className="acct-list-inst">
         <div className="institution-name">{institution.name}</div>
+        <IconButton icon="trash-alt" onClick={handleDeleteClick} />
         <IconButton icon="plus" onClick={handleAddClick} />
         <AccountsDialog institution={institution} />
         <OfflineAccountDialog institution={institution} account={editedAccount} onHide={handleDialogHide} />

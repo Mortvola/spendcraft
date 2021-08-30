@@ -1,15 +1,16 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 import React, { ReactElement, useEffect } from 'react';
-import { observer } from 'mobx-react-lite';
+import { Observer, observer } from 'mobx-react-lite';
 import { toJS } from 'mobx';
 import {
   Field, ErrorMessage, FormikErrors,
 } from 'formik';
 import AccountItem from './AccountItem';
-import useModal, { ModalProps, useModalType } from '../Modal/useModal';
+import useModal, { ModalProps, UseModalType } from '../Modal/useModal';
 import Institution from '../state/Institution';
 import FormModal from '../Modal/FormModal';
-import { UnlinkedAccountProps } from '../../common/ResponseTypes';
+import { TrackingType, UnlinkedAccountProps } from '../../common/ResponseTypes';
+import FormTextField from '../Modal/FormTextField';
 
 type PropsType = {
   institution: Institution,
@@ -23,12 +24,17 @@ const AccountsDialog = ({
 }: PropsType & ModalProps): ReactElement => {
   type ValuesType = {
     selections: UnlinkedAccountProps[] | null,
+    startDate: string,
   };
 
   const handleValidate = (values: ValuesType) => {
     const errors: FormikErrors<ValuesType> = {};
     if (values.selections && !values.selections.some((s) => s.tracking !== 'None')) {
       errors.selections = 'No tracking options selected';
+    }
+
+    if (values.startDate === '') {
+      errors.startDate = 'Start is required';
     }
 
     return errors;
@@ -45,11 +51,15 @@ const AccountsDialog = ({
           throw new Error('account selections is null');
         }
 
-        return ({ ...a, tracking: values.selections[i].tracking })
+        if (values.selections[i]) {
+          return ({ ...a, tracking: values.selections[i].tracking })
+        }
+
+        return ({ ...a, tracking: 'None' as TrackingType })
       })
       .filter((a) => (a.tracking !== 'None' && a.tracking !== undefined));
 
-    const errors = await institution.addAccounts(selectedAccounts);
+    const errors = await institution.addAccounts(selectedAccounts, values.startDate);
 
     if (!errors) {
       setShow(false);
@@ -60,14 +70,14 @@ const AccountsDialog = ({
     institution.getUnlinkedAccounts();
   }, [institution]);
 
-  const renderForm = () => (
+  const renderAccounts = () => (
     <>
       {
         institution.unlinkedAccounts
           ? (
             institution.unlinkedAccounts.map((acct, index) => (
               <Field
-                key={acct.account_id}
+                key={acct.plaidAccountId}
                 name={`selections[${index}].tracking`}
                 account={acct}
                 as={AccountItem}
@@ -84,6 +94,7 @@ const AccountsDialog = ({
     <FormModal<ValuesType>
       initialValues={{
         selections: toJS(institution.unlinkedAccounts),
+        startDate: '',
       }}
       show={show}
       setShow={setShow}
@@ -93,15 +104,16 @@ const AccountsDialog = ({
       title="Accounts"
       formId="UnlinkedAccounts"
     >
-      {
-        renderForm()
-      }
+      <FormTextField name="startDate" label="Start Date:" type="date" />
+      <Observer>
+        {renderAccounts}
+      </Observer>
     </FormModal>
   );
 };
 
 const observedAccountsDialog = observer(AccountsDialog);
 
-export const useAccountsDialog = (): useModalType<PropsType> => useModal<PropsType>(AccountsDialog);
+export const useAccountsDialog = (): UseModalType<PropsType> => useModal<PropsType>(AccountsDialog);
 
 export default observedAccountsDialog;

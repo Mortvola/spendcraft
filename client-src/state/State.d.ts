@@ -80,6 +80,8 @@ export interface AccountsInterface {
     balance: number,
     startDate: string,
   ): Promise<Error[] | null>;
+
+  deleteInstitution(instiution: InstitutionInterface): void;
 }
 
 export interface PendingTransactionProps {
@@ -206,6 +208,8 @@ export interface RegisterInterface {
 }
 
 export interface InstitutionInterface {
+  id: number;
+
   deleteAccount(account: AccountInterface): void;
 }
 

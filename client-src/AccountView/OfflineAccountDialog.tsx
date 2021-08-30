@@ -4,7 +4,7 @@ import { Error } from '../../common/ResponseTypes';
 import AmountInput from '../AmountInput';
 import FormModal from '../Modal/FormModal';
 import FormTextField from '../Modal/FormTextField';
-import useModal, { ModalProps, useModalType } from '../Modal/useModal';
+import useModal, { ModalProps, UseModalType } from '../Modal/useModal';
 import Institution from '../state/Institution';
 import MobxStore from '../state/mobxStore';
 import { AccountInterface } from '../state/State';
@@ -120,6 +120,6 @@ const OfflineAccountDialog = ({
   );
 }
 
-export const useOfflineAccountDialog = (): useModalType<PropsType> => useModal<PropsType>(OfflineAccountDialog);
+export const useOfflineAccountDialog = (): UseModalType<PropsType> => useModal<PropsType>(OfflineAccountDialog);
 
 export default OfflineAccountDialog;

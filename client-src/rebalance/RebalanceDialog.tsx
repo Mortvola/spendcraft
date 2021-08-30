@@ -10,7 +10,7 @@ import {
 import { toJS } from 'mobx';
 import CategoryRebalance from './CategoryRebalance';
 import Amount from '../Amount';
-import useModal, { ModalProps, useModalType } from '../Modal/useModal';
+import useModal, { ModalProps, UseModalType } from '../Modal/useModal';
 import Transaction from '../state/Transaction';
 import { CategoryTreeBalanceInterace, TransactionCategoryInterface } from '../state/State';
 import MobxStore from '../state/mobxStore';
@@ -205,6 +205,6 @@ const RebalanceDialog = ({
   );
 };
 
-export const useRebalanceDialog = (): useModalType<Props> => useModal<Props>(RebalanceDialog);
+export const useRebalanceDialog = (): UseModalType<Props> => useModal<Props>(RebalanceDialog);
 
 export default RebalanceDialog;

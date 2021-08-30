@@ -1,22 +1,26 @@
+/* eslint-disable no-await-in-loop */
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import Database, { TransactionClientContract } from '@ioc:Adonis/Lucid/Database';
 import moment from 'moment';
-import plaidClient, { PlaidAccount, PlaidInstitution } from '@ioc:Plaid';
+import plaidClient, { PlaidInstitution } from '@ioc:Plaid';
 import Institution from 'App/Models/Institution';
 import Account, { AccountSyncResult } from 'App/Models/Account';
 import Category from 'App/Models/Category';
 import User from 'App/Models/User'
-import { AccountProps, InstitutionProps, TrackingType } from 'Common/ResponseTypes';
+import {
+  AccountProps, InstitutionProps, TrackingType, UnlinkedAccountProps,
+} from 'Common/ResponseTypes';
 import { schema } from '@ioc:Adonis/Core/Validator';
 import Transaction from 'App/Models/Transaction';
 import AccountTransaction from 'App/Models/AccountTransaction';
 import TransactionCategory from 'App/Models/TransactionCategory';
 import { DateTime } from 'luxon';
+import BalanceHistory from 'App/Models/BalanceHistory';
 
 type OnlineAccount = {
   plaidAccountId: string,
   name: string,
-  officialName: string,
+  officialName?: string | null,
   mask: string,
   type: string,
   subtype: string,
@@ -143,7 +147,7 @@ class InstitutionController {
 
   static async getUnconnectedAccounts(
     institution: Institution,
-  ): Promise<PlaidAccount[]> {
+  ): Promise<UnlinkedAccountProps[]> {
     if (institution.accessToken) {
       const existingAccts = await Account.query().where('institutionId', institution.id);
 
@@ -157,21 +161,39 @@ class InstitutionController {
         }
       });
 
-      return accounts;
+      return accounts.map((acct) => {
+        let balance = acct.balances.current;
+        if (acct.type === 'credit' || acct.type === 'loan') {
+          balance = -balance;
+        }
+
+        return ({
+          plaidAccountId: acct.account_id,
+          name: acct.name,
+          officialName: acct.official_name,
+          mask: acct.mask,
+          type: acct.type,
+          subtype: acct.subtype,
+          balances: {
+            current: balance,
+          },
+          tracking: 'None',
+        });
+      });
     }
 
     return [];
   }
 
   // eslint-disable-next-line class-methods-use-this
-  async get({ request, auth: { user } }: HttpContextContract): Promise<PlaidAccount[]> {
+  async get({ request, auth: { user } }: HttpContextContract): Promise<UnlinkedAccountProps[]> {
     if (!user) {
       throw new Error('user is not defined');
     }
 
     const inst = await Institution.findOrFail(request.params().instId);
 
-    const accounts: PlaidAccount[] = await InstitutionController
+    const accounts: UnlinkedAccountProps[] = await InstitutionController
       .getUnconnectedAccounts(inst);
 
     return accounts;
@@ -300,7 +322,7 @@ class InstitutionController {
             unassignedAmount = details.cat.amount;
           }
 
-          const startingBalance = details.balance + details.sum;
+          const startingBalance = details.balance - details.sum;
 
           // Insert the 'starting balance' transaction
           // eslint-disable-next-line no-await-in-loop
@@ -384,7 +406,7 @@ class InstitutionController {
         schema.object().members({
           plaidAccountId: schema.string(),
           name: schema.string(),
-          officialName: schema.string(),
+          officialName: schema.string.optional(),
           mask: schema.string(),
           type: schema.string(),
           subtype: schema.string(),
@@ -559,6 +581,83 @@ class InstitutionController {
     }
 
     await (await Account.findOrFail(request.params().acctId)).delete();
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  public async delete(
+    { request, auth: { user } }: HttpContextContract,
+  ): Promise<void> {
+    if (!user) {
+      throw new Error('user is not defined');
+    }
+
+    const trx = await Database.transaction();
+
+    const accounts = await Account.query({ client: trx }).where('institutionId', request.params().instId);
+
+    // eslint-disable-next-line no-restricted-syntax
+    for (const acct of accounts) {
+      // eslint-disable-next-line no-await-in-loop
+      const acctTrans = await AccountTransaction.query({ client: trx }).where('accountId', acct.id);
+
+      // eslint-disable-next-line no-restricted-syntax
+      for (const acctTran of acctTrans) {
+        // eslint-disable-next-line no-await-in-loop
+        const transaction = await Transaction.find(acctTran.transactionId, { client: trx });
+
+        if (transaction) {
+          // eslint-disable-next-line no-await-in-loop
+          const transCats = await TransactionCategory
+            .query({ client: trx })
+            .where('transactionId', transaction.id);
+
+          if (transCats.length === 0) {
+            // eslint-disable-next-line no-await-in-loop
+            const unassignedCat = await user.getUnassignedCategory({ client: trx });
+
+            unassignedCat.amount -= acctTran.amount;
+
+            await unassignedCat.save();
+          }
+          else {
+            // eslint-disable-next-line no-restricted-syntax
+            for (const tc of transCats) {
+              // eslint-disable-next-line no-await-in-loop
+              const category = await Category.find(tc.categoryId, { client: trx });
+
+              if (category) {
+                category.amount -= tc.amount;
+
+                // eslint-disable-next-line no-await-in-loop
+                await category.save();
+              }
+
+              // eslint-disable-next-line no-await-in-loop
+              await tc.delete();
+            }
+          }
+
+          // eslint-disable-next-line no-await-in-loop
+          await acctTran.delete();
+
+          // eslint-disable-next-line no-await-in-loop
+          await transaction.delete();
+        }
+      }
+
+      // eslint-disable-next-line no-await-in-loop
+      const balanceHistories = await BalanceHistory.query({ client: trx }).where('accountId', acct.id);
+
+      // eslint-disable-next-line no-await-in-loop
+      await Promise.all(balanceHistories.map((balanceHistory) => balanceHistory.delete()));
+
+      // eslint-disable-next-line no-await-in-loop
+      await acct.delete();
+    }
+
+    await (await Institution.findOrFail(request.params().instId, { client: trx })).delete();
+
+    await trx.commit();
   }
 }
 
