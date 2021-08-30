@@ -20,8 +20,9 @@ body {
 .main {
 	display: grid;
 	grid-template-columns: minmax(0,1fr) minmax(0,5fr);
-	grid-template-rows: minmax(0, 1fr);
+	grid-template-rows: max-content minmax(0, 1fr);
 	grid-template-areas:
+    "toolbar toolbar"
 		"sidebar register";
 	height: 100%;
   width: 100%;
@@ -76,7 +77,7 @@ body {
 	height: 100%;
 	width: 100%;
 	user-select: none;
-	grid-template-rows: max-content max-content minmax(0, 1fr);
+	grid-template-rows: max-content minmax(0, 1fr);
 	grid-template-columns: minmax(0, 1fr);
 }
 
@@ -819,4 +820,12 @@ body {
 .item-title-amount {
   text-align: right;
   padding-right: 2px;
+}
+
+.toolbar {
+  grid-area: toolbar;
+  display: flex;
+  padding: 0.25rem;
+  column-gap: 0.5rem;
+  border-bottom: solid black thin;
 }

@@ -3,8 +3,6 @@ import { observer } from 'mobx-react-lite';
 import Group from './Group';
 import MobxStore from '../state/mobxStore';
 import Category from '../state/Category';
-import Amount from '../Amount';
-import IconButton from '../IconButton';
 import { useCategoryTransferDialog } from '../CategoryTransferDialog';
 import SystemCategory from './SystemCategory';
 
