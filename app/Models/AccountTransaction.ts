@@ -8,7 +8,7 @@ class AccountTransaction extends BaseModel {
   @column({ serializeAs: null })
   public id: number;
 
-  @column({ serializeAs: 'accountId' })
+  @column()
   public accountId: number;
 
   @column({ serializeAs: 'id' })

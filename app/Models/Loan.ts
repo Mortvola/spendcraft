@@ -20,12 +20,11 @@ export default class Loan extends BaseModel {
   public balance: number;
 
   @column({
-    serializeAs: 'startingBalance',
     consume: (value: string) => parseFloat(value),
   })
   public startingBalance: number;
 
-  @column.date({ serializeAs: 'startDate' })
+  @column.date()
   public startDate: DateTime;
 
   @column()

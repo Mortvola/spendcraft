@@ -25,6 +25,12 @@
       ]
     },
     {
+      "file": "./start/namingStrategy",
+      "environment": [
+        "web"
+      ]
+    },
+    {
       "file": "./start/events",
       "environment": [
         "web"

@@ -22,7 +22,7 @@ class Transaction extends BaseModel {
   @hasMany(() => TransactionCategory)
   public transactionCategories: HasMany<typeof TransactionCategory>;
 
-  @column({ serializeAs: 'sortOrder' })
+  @column()
   public sortOrder: number;
 
   @column()

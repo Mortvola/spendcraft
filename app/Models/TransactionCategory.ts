@@ -9,14 +9,10 @@ class TransactionCategory extends BaseModel {
   @column()
   public id: number;
 
-  @column({
-    serializeAs: 'transactionId',
-  })
+  @column()
   public transactionId: number;
 
-  @column({
-    serializeAs: 'categoryId',
-  })
+  @column()
   public categoryId: number;
 
   @column({

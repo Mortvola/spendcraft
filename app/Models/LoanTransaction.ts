@@ -8,7 +8,7 @@ export default class LoanTransaction extends BaseModel {
   @column({ isPrimary: true })
   public id: number
 
-  @column({ serializeAs: 'loanId' })
+  @column()
   public loanId: number;
 
   @column({

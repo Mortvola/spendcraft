@@ -9,7 +9,7 @@ class FundingPlanCategory extends BaseModel {
   })
   public amount: number;
 
-  @column({ serializeAs: 'categoryId' })
+  @column()
   public categoryId: number;
 
   @column()

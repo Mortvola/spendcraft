@@ -52,16 +52,16 @@ class Account extends BaseModel {
   @hasMany(() => BalanceHistory)
   public balanceHistory: HasMany<typeof BalanceHistory>;
 
-  @column({ serializeAs: 'institutionId' })
+  @column()
   public institutionId: number;
 
-  @column({ serializeAs: 'plaidAccountId' })
+  @column()
   public plaidAccountId: string;
 
   @column()
   public name: string;
 
-  @column({ serializeAs: 'officialName' })
+  @column()
   public officialName: string | null;
 
   @column()
@@ -79,7 +79,7 @@ class Account extends BaseModel {
   @column()
   public tracking: TrackingType;
 
-  @column({ serializeAs: 'startDate' })
+  @column()
   public startDate: string;
 
   @column({

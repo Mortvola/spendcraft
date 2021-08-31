@@ -40,9 +40,7 @@ class Category extends BaseModel {
   @column()
   public type: CategoryType;
 
-  @column({
-    serializeAs: 'groupId',
-  })
+  @column()
   public groupId: number;
 
   @hasMany(() => TransactionCategory)
