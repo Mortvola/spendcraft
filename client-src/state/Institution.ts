@@ -2,7 +2,7 @@ import { makeAutoObservable, runInAction } from 'mobx';
 import Account from './Account';
 import {
   UnlinkedAccountProps, InstitutionProps, isAccountsResponse, isUnlinkedAccounts, AccountBalanceProps, Error,
-  TrackingType,
+  TrackingType, isAddAccountsResponse,
 } from '../../common/ResponseTypes';
 import { AccountInterface, InstitutionInterface, StoreInterface } from './State';
 import {
@@ -63,8 +63,8 @@ class Institution implements InstitutionInterface {
       const body = await getBody(response);
 
       runInAction(() => {
-        if (isAccountsResponse(body)) {
-          body.forEach((a) => {
+        if (isAddAccountsResponse(body)) {
+          body.accounts.forEach((a) => {
             this.insertAccount(new Account(this.store, this, a));
           });
         }

@@ -277,7 +277,7 @@ class InstitutionController {
     options?: {
       client: TransactionClientContract,
     },
-  ) {
+  ): Promise<OnlineAccountsResponse> {
     if (!institution.accessToken) {
       throw new Error('accessToken is not defined');
     }

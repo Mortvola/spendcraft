@@ -52,16 +52,16 @@ class Account extends BaseModel {
   @hasMany(() => BalanceHistory)
   public balanceHistory: HasMany<typeof BalanceHistory>;
 
-  @column()
+  @column({ serializeAs: 'institutionId' })
   public institutionId: number;
 
-  @column()
+  @column({ serializeAs: 'plaidAccountId' })
   public plaidAccountId: string;
 
   @column()
   public name: string;
 
-  @column()
+  @column({ serializeAs: 'officialName' })
   public officialName: string | null;
 
   @column()

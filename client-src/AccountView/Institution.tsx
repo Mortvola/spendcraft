@@ -22,7 +22,7 @@ function Institution({
   selectedAccount = null,
   onRelink,
 }: PropsType): ReactElement {
-  const [AccountsDialog, showAccountsDialog] = useAccountsDialog();
+  const [OnlineAccountsDialog, showOnlineAccountsDialog] = useAccountsDialog();
   const [InstitutionInfoDialog, showInstitutionInfoDialog] = useInstitutionInfoDialog();
   const [OfflineAccountDialog, showOfflineAccountDialog] = useOfflineAccountDialog();
   const handleRelinkClick = () => {
@@ -46,11 +46,11 @@ function Institution({
   );
 
   const handleAddClick = () => {
-    if (institution) {
+    if (institution.offline) {
       showOfflineAccountDialog();
     }
     else {
-      showAccountsDialog();
+      showOnlineAccountsDialog();
     }
   }
 
@@ -60,7 +60,7 @@ function Institution({
       showOfflineAccountDialog();
     }
     else {
-      showAccountsDialog();
+      showOnlineAccountsDialog();
     }
   }
   const handleDialogHide = () => {
@@ -73,7 +73,7 @@ function Institution({
         <div className="institution-name">{institution.name}</div>
         <IconButton icon="trash-alt" onClick={handleDeleteClick} />
         <IconButton icon="plus" onClick={handleAddClick} />
-        <AccountsDialog institution={institution} />
+        <OnlineAccountsDialog institution={institution} />
         <OfflineAccountDialog institution={institution} account={editedAccount} onHide={handleDialogHide} />
         <DeleteConfirmation />
         {

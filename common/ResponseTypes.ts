@@ -442,6 +442,15 @@ export const isAccountsResponse = (r: unknown): r is AccountProps[] => (
   && ((r as AccountProps[]).length === 0 || isAccountProps((r as AccountProps[])[0]))
 );
 
+export type AddAccountsResponse = {
+  accounts: AccountProps[],
+}
+
+export const isAddAccountsResponse = (r: unknown): r is AddAccountsResponse => (
+  (r as AddAccountsResponse).accounts !== undefined
+  && ((r as AddAccountsResponse).accounts.length === 0 || isAccountProps((r as AddAccountsResponse).accounts[0]))
+);
+
 export interface FundingPlanCategoryProps {
   id: number;
 
