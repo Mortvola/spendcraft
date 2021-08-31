@@ -7,6 +7,7 @@ import Account from './Account';
 import StateInstitution from '../state/Institution';
 import { AccountInterface } from '../state/State';
 import { useOfflineAccountDialog } from './OfflineAccountDialog';
+import { useDeleteConfirmation } from '../DeleteConfirmation';
 
 type PropsType = {
   institution: StateInstitution,
@@ -28,6 +29,21 @@ function Institution({
     onRelink(institution.id);
   };
   const [editedAccount, setEditedAccount] = useState<AccountInterface | null>(null);
+  const [DeleteConfirmation, handleDeleteClick] = useDeleteConfirmation(
+    (
+      <>
+        <div>
+          Are you sure you want to delete this institution?
+        </div>
+        <div style={{ marginTop: '1rem' }}>
+          All accounts within the instution and their transactions will be deleted. This cannot be undone.
+        </div>
+      </>
+    ),
+    () => {
+      institution.delete();
+    },
+  );
 
   const handleAddClick = () => {
     if (institution) {
@@ -36,10 +52,6 @@ function Institution({
     else {
       showAccountsDialog();
     }
-  }
-
-  const handleDeleteClick = () => {
-    institution.delete();
   }
 
   const handleEditAccount = (account: AccountInterface) => {
@@ -63,6 +75,7 @@ function Institution({
         <IconButton icon="plus" onClick={handleAddClick} />
         <AccountsDialog institution={institution} />
         <OfflineAccountDialog institution={institution} account={editedAccount} onHide={handleDialogHide} />
+        <DeleteConfirmation />
         {
           !institution.offline
             ? (

@@ -17,7 +17,7 @@ function Footer<T>({
 }: PropsType<T>): ReactElement {
   return (
     <>
-      <Modal.Footer>
+      <Modal.Footer className="multi-buttons">
         {
           handleDelete ? <DeleteButton<T> handleDelete={handleDelete} /> : <div />
         }

@@ -61,7 +61,7 @@ body {
 	height: 100%;
 }
 
-.modal-footer {
+.multi-buttons.modal-footer {
 	display: grid;
 	grid-template-columns: max-content 1fr repeat(2, max-content);
 }
