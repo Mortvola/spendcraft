@@ -81,6 +81,7 @@ export interface AccountsInterface {
     startDate: string,
     type: string,
     subtype: string,
+    tracking: TrackingType,
   ): Promise<Error[] | null>;
 
   deleteInstitution(instiution: InstitutionInterface): void;

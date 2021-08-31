@@ -1,6 +1,6 @@
 import { FieldProps, FormikErrors, FormikHelpers } from 'formik';
 import React, { ReactElement, useContext } from 'react';
-import { Error } from '../../common/ResponseTypes';
+import { Error, TrackingType } from '../../common/ResponseTypes';
 import AmountInput from '../AmountInput';
 import FormModal from '../Modal/FormModal';
 import FormTextField from '../Modal/FormTextField';
@@ -31,6 +31,7 @@ const OfflineAccountDialog = ({
     startDate: string,
     type: string,
     subtype: string,
+    tracking: TrackingType,
   };
 
   const handleValidate = (values: ValuesType) => {
@@ -65,14 +66,14 @@ const OfflineAccountDialog = ({
       else {
         errors = await institution.addOfflineAccount(
           values.account, parseFloat(values.balance), values.startDate,
-          values.type, values.subtype,
+          values.type, values.subtype, values.tracking,
         );
       }
     }
     else {
       errors = await accounts.addOfflineAccount(
         values.institute, values.account, parseFloat(values.balance), values.startDate,
-        values.type, values.subtype,
+        values.type, values.subtype, values.tracking,
       );
     }
 
@@ -227,6 +228,7 @@ const OfflineAccountDialog = ({
         startDate: '',
         type: 'depository',
         subtype: 'checking',
+        tracking: 'Transactions',
       }}
       show={show}
       setShow={setShow}
@@ -252,6 +254,10 @@ const OfflineAccountDialog = ({
                 </FormTextField>
                 <FormTextField name="subtype" label="Account Subtype:">
                   {subtypeList}
+                </FormTextField>
+                <FormTextField name="tracking" label="Tracking:" as="select">
+                  <option value="Transactions">Transactions</option>
+                  <option value="Balances">Balances</option>
                 </FormTextField>
               </>
             )

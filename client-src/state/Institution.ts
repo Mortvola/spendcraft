@@ -2,6 +2,7 @@ import { makeAutoObservable, runInAction } from 'mobx';
 import Account from './Account';
 import {
   UnlinkedAccountProps, InstitutionProps, isAccountsResponse, isUnlinkedAccounts, AccountBalanceProps, Error,
+  TrackingType,
 } from '../../common/ResponseTypes';
 import { AccountInterface, InstitutionInterface, StoreInterface } from './State';
 import {
@@ -79,6 +80,7 @@ class Institution implements InstitutionInterface {
     startDate: string,
     type: string,
     subtype: string,
+    tracking: TrackingType,
   ): Promise<Error[] | null> {
     const response = await httpPost(`/api/institution/${this.id}/accounts`, {
       offlineAccounts: [{
@@ -86,6 +88,7 @@ class Institution implements InstitutionInterface {
         balance,
         type,
         subtype,
+        tracking,
       }],
       startDate,
     });

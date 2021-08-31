@@ -35,6 +35,7 @@ type OfflineAccount = {
   balance: number,
   type: string,
   subtype: string,
+  tracking: string,
 };
 
 type OnlineAccountsResponse = {
@@ -69,6 +70,7 @@ class InstitutionController {
           balance: schema.number(),
           type: schema.string(),
           subtype: schema.string(),
+          tracking: schema.string(),
         }),
       ),
       startDate: schema.string.optional(),
@@ -376,7 +378,7 @@ class InstitutionController {
         institutionId: institution.id,
         startDate: start.format('YYYY-MM-DD'),
         balance: account.balance,
-        tracking: 'Transactions',
+        tracking: account.tracking as TrackingType,
         enabled: true,
         type: account.type,
         subtype: account.subtype,
@@ -428,6 +430,7 @@ class InstitutionController {
           balance: schema.number(),
           type: schema.string(),
           subtype: schema.string(),
+          tracking: schema.string(),
         }),
       ),
       startDate: schema.string(),

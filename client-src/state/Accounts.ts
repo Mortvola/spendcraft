@@ -2,7 +2,7 @@ import { makeAutoObservable, runInAction } from 'mobx';
 import Institution from './Institution';
 import Plaid, { PlaidMetaData } from './Plaid';
 import {
-  AccountBalanceProps, Error, isInstitutionProps, isInstitutionsResponse, isLinkTokenResponse,
+  AccountBalanceProps, Error, isInstitutionProps, isInstitutionsResponse, isLinkTokenResponse, TrackingType,
 } from '../../common/ResponseTypes';
 import {
   AccountInterface, AccountsInterface, InstitutionInterface, StoreInterface,
@@ -146,6 +146,7 @@ class Accounts implements AccountsInterface {
     startDate: string,
     type: string,
     subtype: string,
+    tracking: TrackingType,
   ): Promise<Error[] | null> {
     const response = await httpPost('/api/institution', {
       institution: {
@@ -156,6 +157,7 @@ class Accounts implements AccountsInterface {
         balance,
         type,
         subtype,
+        tracking,
       }],
       startDate,
     });
