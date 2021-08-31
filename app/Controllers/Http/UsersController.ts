@@ -1,5 +1,6 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import plaidClient from '@ioc:Plaid';
+import { InstitutionProps } from 'Common/ResponseTypes';
 // import User from 'App/Models/User';
 
 export default class UsersController {
@@ -17,7 +18,7 @@ export default class UsersController {
     auth: {
       user,
     },
-  }: HttpContextContract): Promise<Array<Record<string, unknown>>> {
+  }: HttpContextContract): Promise<InstitutionProps[]> {
     if (!user) {
       throw new Error('user is not defined');
     }

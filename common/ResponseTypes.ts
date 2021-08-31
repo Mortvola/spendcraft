@@ -136,20 +136,18 @@ export interface AccountProps {
 
   name: string;
 
-  tracking: 'Balances' | 'Transactions';
+  tracking: TrackingType;
 
   syncDate: string;
 
   balance: number;
 }
 
-export const isAccountProps = (
-  r: AccountProps | unknown,
-): r is AccountProps => (
+export const isAccountProps = (r: unknown): r is AccountProps => (
   (r as AccountProps).id !== undefined
   && (r as AccountProps).name !== undefined
   && (r as AccountProps).tracking !== undefined
-  && (r as AccountProps).syncDate !== undefined
+  // && (r as AccountProps).syncDate !== undefined
   && (r as AccountProps).balance !== undefined
 );
 
@@ -158,22 +156,21 @@ export interface InstitutionProps {
 
   name: string;
 
+  offline: boolean;
+
   accounts: AccountProps[];
 }
 
-export const isInstitutionProps = (
-  r: InstitutionProps | unknown,
-): r is InstitutionProps => (
+export const isInstitutionProps = (r: unknown): r is InstitutionProps => (
   (r as InstitutionProps).id !== undefined
   && (r as InstitutionProps).name !== undefined
   && (r as InstitutionProps).accounts !== undefined
 );
 
-export const isInstitutionsResponse = (
-  r: Array<InstitutionProps> | unknown,
-): r is Array<InstitutionProps> => (
-  (r as Array<InstitutionProps>).length === 0
-  || isInstitutionProps((r as Array<InstitutionProps>)[0])
+export const isInstitutionsResponse = (r: unknown): r is InstitutionProps[] => (
+  Array.isArray(r)
+  && ((r as InstitutionProps[]).length === 0
+  || isInstitutionProps((r as InstitutionProps[])[0]))
 );
 
 export interface TransactionCategoryProps {
@@ -440,8 +437,9 @@ export const isGroupsResponse = (r: Array<GroupProps> | unknown): r is Array<Gro
   (r as Array<GroupProps>).length === 0 || isGroupProps((r as Array<GroupProps>)[0])
 );
 
-export const isAccountsResponse = (r: Array<AccountProps> | unknown): r is Array<AccountProps> => (
-  (r as Array<AccountProps>).length === 0 || isAccountProps((r as Array<AccountProps>)[0])
+export const isAccountsResponse = (r: unknown): r is AccountProps[] => (
+  Array.isArray(r)
+  && ((r as AccountProps[]).length === 0 || isAccountProps((r as AccountProps[])[0]))
 );
 
 export interface FundingPlanCategoryProps {
@@ -515,17 +513,37 @@ export interface FundingPlanProps {
   name: string;
 }
 
-export const isFundingPlanProps = (r: FundingPlanProps | unknown): r is FundingPlanProps => (
+export const isFundingPlanProps = (r: unknown): r is FundingPlanProps => (
   (r as FundingPlanProps).id !== undefined
   && (r as FundingPlanProps).name !== undefined
 );
 
 export const isFundingPlansResponse = (
-  r: Array<FundingPlanProps> | unknown,
-): r is Array<FundingPlanProps> => (
-  (r as Array<FundingPlanProps>).length === 0
-  || isFundingPlanProps((r as Array<FundingPlanProps>)[0])
+  r: unknown,
+): r is FundingPlanProps[] => (
+  Array.isArray(r)
+  && ((r as FundingPlanProps[]).length === 0
+  || isFundingPlanProps((r as FundingPlanProps[])[0]))
 );
+
+export type FundingType = {
+  id?: number,
+  type: CategoryType,
+  initialAmount: number,
+  amount: number,
+  categoryId: number,
+}
+
+export interface FundingPlan {
+  id: number,
+
+  categories: FundingType[],
+}
+
+export const isFundingPlanResponse = (r: unknown): r is FundingPlan => (
+  (r as FundingPlan).id !== undefined
+  && (r as FundingPlan).categories !== undefined
+)
 
 export interface AccountSyncProps {
   syncDate: string;
@@ -585,12 +603,10 @@ export const isUserProps = (
 export type TrackingType = 'None' | 'Balances' | 'Transactions';
 
 export type UnlinkedAccountProps = {
-  // eslint-disable-next-line camelcase
-  account_id: string,
+  plaidAccountId: string,
   name: string,
-  // eslint-disable-next-line camelcase
-  official_name: string,
-  mask: string,
+  officialName: string | null,
+  mask: string | null,
   type: string,
   subtype: string,
   balances: {
@@ -601,7 +617,7 @@ export type UnlinkedAccountProps = {
 
 export const isUnlinkedAccounts = (r: unknown): r is UnlinkedAccountProps[] => (
   (Array.isArray(r)
-  && (r as UnlinkedAccountProps[])[0].tracking !== undefined)
+  && (r as UnlinkedAccountProps[])[0].plaidAccountId !== undefined)
 );
 
 export type AddTransactionProps = {
@@ -621,4 +637,28 @@ export type AddTransactionResponse = {
 export const isAddTransactionResponse = (r: unknown): r is AddTransactionResponse => (
   (r as AddTransactionResponse).categories !== undefined
   && Array.isArray((r as AddTransactionResponse).categories)
+)
+
+export interface CategoryBalanceProps2 {
+  id: number,
+  name: string,
+  balance:number,
+  system: boolean,
+}
+
+export interface CategoryTreeBalanceProps {
+  id: number,
+  name: string,
+  categories: CategoryBalanceProps2[],
+}
+
+export const isCategoryTreeBalanceProps = (r: unknown): r is CategoryTreeBalanceProps => (
+  (r as CategoryTreeBalanceProps).id !== undefined
+  && (r as CategoryTreeBalanceProps).name !== undefined
+  && (r as CategoryTreeBalanceProps).categories !== undefined
+)
+
+export const isCategoryTreeBalanceResponse = (r: unknown): r is CategoryTreeBalanceProps[] => (
+  Array.isArray(r)
+  && isCategoryTreeBalanceProps(r[0])
 )

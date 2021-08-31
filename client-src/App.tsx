@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { ReactElement, useContext } from 'react';
 import ReactDOM from 'react-dom';
 import { observer } from 'mobx-react-lite';
 import 'regenerator-runtime';
@@ -11,6 +11,9 @@ import PlaidLink from './PlaidLink';
 import DetailView from './DetailView';
 import MobxStore, { store as mobxStore } from './state/mobxStore';
 import { httpPost } from './state/Transports';
+import ServerError, { serverError } from './state/ServerError';
+import HomeToolbar from './HomeToolbar';
+import AccountsToolbar from './AccountView/AccountsToolbar';
 
 const Logout = () => {
   (async () => {
@@ -26,33 +29,50 @@ const Logout = () => {
 
 const App = () => {
   const { uiState } = useContext(MobxStore);
+  const error = useContext(ServerError);
   const isMobile = window.innerWidth <= 500;
 
-  const renderMain = () => {
-    switch (uiState.view) {
-      case 'HOME':
-        return <Home />;
+  let main = <div />;
+  let toolbar: ReactElement | null = null
+  switch (uiState.view) {
+    case 'HOME':
+      main = <Home />;
+      toolbar = <HomeToolbar />
+      break;
 
-      case 'ACCOUNTS':
-        return <Accounts />;
+    case 'ACCOUNTS':
+      main = <Accounts />;
+      toolbar = <AccountsToolbar />
+      break;
 
-      case 'REPORTS':
-        return <Reports />;
+    case 'REPORTS':
+      main = <Reports />;
+      break;
 
-      case 'PLANS':
-        return <Plans />;
+    case 'PLANS':
+      main = <Plans />;
+      break;
 
-      case 'LOGOUT':
-        return <Logout />;
+    case 'LOGOUT':
+      main = <Logout />;
+      break;
 
-      default:
-        return <div />;
-    }
-  };
+    default:
+      main = <div />;
+  }
 
   const renderDesktop = () => (
     <div className="main">
-      {renderMain()}
+      {
+        toolbar
+          ? (
+            <div className="toolbar">
+              {toolbar}
+            </div>
+          )
+          : <div />
+      }
+      {main}
       <PlaidLink />
     </div>
   );
@@ -60,6 +80,26 @@ const App = () => {
   const renderMobile = () => (
     <DetailView detailView="Transactions" isMobile />
   );
+
+  if (error.message) {
+    return (
+      <div style={{ width: '100%', padding: '1rem' }}>
+        <div style={{ paddingBottom: '1rem' }}>
+          {error.message}
+        </div>
+        <div>
+          Stack:
+          <div style={{ overflowX: 'auto' }}>
+            {
+              error.stack.map((s) => (
+                <div key={s} style={{ paddingLeft: '1rem', whiteSpace: 'nowrap' }}>{s}</div>
+              ))
+            }
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <>
@@ -77,7 +117,9 @@ const ObserverApp = observer(App);
 
 ReactDOM.render(
   <MobxStore.Provider value={mobxStore}>
-    <ObserverApp />
+    <ServerError.Provider value={serverError}>
+      <ObserverApp />
+    </ServerError.Provider>
   </MobxStore.Provider>,
   document.querySelector('.app'),
 );

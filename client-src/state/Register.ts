@@ -8,7 +8,7 @@ import {
   NewTransactionCategoryInterface,
   RegisterInterface, StoreInterface, TransactionCategoryInterface,
 } from './State';
-import { getBody, postJSON } from './Transports';
+import { getBody, httpPost } from './Transports';
 
 class Register implements RegisterInterface {
   store: StoreInterface;
@@ -26,7 +26,7 @@ class Register implements RegisterInterface {
     },
     type: TransactionType,
   ): Promise<null> {
-    const response = await postJSON('/api/category-transfer', { ...values, type });
+    const response = await httpPost('/api/category-transfer', { ...values, type });
 
     const body = await getBody(response);
 
@@ -78,10 +78,10 @@ class Register implements RegisterInterface {
     if (this.store.uiState.selectedCategory) {
       this.store.uiState.selectedCategory.removeTransaction(transactionId);
     }
-    
+
     if (this.store.uiState.selectedAccount) {
       this.store.uiState.selectedAccount.removeTransaction(transactionId);
-    } 
+    }
   }
 }
 

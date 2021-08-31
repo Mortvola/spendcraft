@@ -1,6 +1,6 @@
 import Reports from './Reports';
 import User from './User';
-import { CategoryType, Error } from '../../common/ResponseTypes'
+import { CategoryType, Error, TrackingType } from '../../common/ResponseTypes'
 import LoanTransaction from './LoanTransaction';
 
 export interface GroupInterface {
@@ -73,6 +73,15 @@ export interface AccountsInterface {
   async addInstitution(): Promise<void>;
 
   updateBalances(balances: AccountBalanceProps[]): void;
+
+  async addOfflineAccount(
+    institiute: string,
+    account: string,
+    balance: number,
+    startDate: string,
+  ): Promise<Error[] | null>;
+
+  deleteInstitution(instiution: InstitutionInterface): void;
 }
 
 export interface PendingTransactionProps {
@@ -83,6 +92,14 @@ export interface PendingTransactionProps {
     name: string;
 
     amount: number;
+
+    account: {
+      name: string,
+
+      institution: {
+        name: string;
+      }
+    }
   }
 }
 
@@ -156,6 +173,12 @@ export interface CategoryTreeBalanceInterace {
   categories: CategoryBalanceInterface[],
 }
 
+export const isCategoryTreeBalanceInterface = (r: unknown): r is CategoryTreeBalanceInterace => (
+  (r as CategoryTreeBalanceInterace).id !== undefined
+  && (r as CategoryTreeBalanceInterace).name !== undefined
+  && (r as CategoryTreeBalanceInterace).categories !== undefined
+)
+
 export interface TransactionCategoryInterface {
   id: number;
   type: CategoryType;
@@ -184,6 +207,12 @@ export interface RegisterInterface {
   removeTransaction(transactionId: number): void;
 }
 
+export interface InstitutionInterface {
+  id: number;
+
+  deleteAccount(account: AccountInterface): void;
+}
+
 export interface AccountInterface {
   id: number;
 
@@ -194,7 +223,7 @@ export interface AccountInterface {
 
   subtype: string | null = null;
 
-  tracking: 'Balances' | 'Transactions';
+  tracking: TrackingType;
 
   syncDate: string;
 
@@ -207,6 +236,8 @@ export interface AccountInterface {
   transactions: Transaction[] = [];
 
   pending: PendingTransaction[] = [];
+
+  fetching: boolean;
 
   refreshing: boolean;
 
@@ -229,6 +260,10 @@ export interface AccountInterface {
   insertTransaction(transaction: Transaction): void;
 
   removeTransaction(transactionId: number): void;
+
+  delete(): void;
+
+  updateOfflineAccount(name: string): void;
 }
 
 export interface BalancesInterface {

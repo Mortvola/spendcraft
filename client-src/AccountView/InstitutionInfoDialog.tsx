@@ -1,9 +1,10 @@
 import React, { ReactElement, ReactNode, useState } from 'react';
 import moment from 'moment';
 import { Button, Modal } from 'react-bootstrap';
+import { InstitutionWithInstitutionData, InstitutionWithStatus } from 'plaid';
 import useModal, { ModalProps } from '../Modal/useModal';
 import Institution from '../state/Institution';
-import { InstitutionWithInstitutionData, InstitutionWithStatus } from 'plaid';
+import { httpGet } from '../state/Transports';
 
 type PropsType = {
   institution: Institution,
@@ -22,7 +23,7 @@ const InstitutionInfoDialog = ({
     setInfoInitialized(true);
 
     (async () => {
-      const response = await fetch(`/api/institution/${institution.id}/info`);
+      const response = await httpGet(`/api/institution/${institution.id}/info`);
 
       if (response.ok) {
         setInfo(await response.json());

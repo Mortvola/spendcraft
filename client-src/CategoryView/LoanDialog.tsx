@@ -7,7 +7,7 @@ import {
   FormikContextType,
   FormikErrors,
 } from 'formik';
-import useModal, { ModalProps, useModalType } from '../Modal/useModal';
+import useModal, { ModalProps, UseModalType } from '../Modal/useModal';
 import AmountInput from '../AmountInput';
 import FormError from '../Modal/FormError';
 import FormModal from '../Modal/FormModal';
@@ -178,6 +178,6 @@ LoanDialog.defaultProps = {
   category: undefined,
 };
 
-export const useLoanDialog = (): useModalType<Props> => useModal<Props>(LoanDialog);
+export const useLoanDialog = (): UseModalType<Props> => useModal<Props>(LoanDialog);
 
 export default LoanDialog;

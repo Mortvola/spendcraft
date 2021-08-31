@@ -5,7 +5,7 @@ type OnSave = (() => void);
 type OnHide = (() => void);
 type OnConfirm = (() => void);
 
-type useModalType<T> = [
+type UseModalType<T> = [
   (props: T) => (ReactElement | null),
   ShowCallback,
 ];
@@ -20,7 +20,7 @@ export interface ModalProps {
 function useModal<T>(
   Dialog: React.FC<T & ModalProps>,
   onSave?: OnSave,
-): useModalType<T> {
+): UseModalType<T> {
   const [showDialog, setShowDialog] = useState(false);
 
   const createDialog = useCallback((props: T & { onHide?: () => void }): ReactElement | null => {
@@ -30,15 +30,15 @@ function useModal<T>(
       }
       setShowDialog(false);
     };
-  
+
     const handleSave = () => {
       if (onSave) {
         onSave();
       }
-  
+
       setShowDialog(false);
     };
-  
+
     if (showDialog) {
       const props2 = {
         ...props,
@@ -56,7 +56,7 @@ function useModal<T>(
     }
 
     return null;
-  }, [showDialog]);
+  }, [Dialog, onSave, showDialog]);
 
   return [
     createDialog,
@@ -65,4 +65,4 @@ function useModal<T>(
 }
 
 export default useModal;
-export { useModalType };
+export { UseModalType };

@@ -1,14 +1,6 @@
 import React, { ReactElement, ReactNode, useState } from 'react';
 import FundingItem from './FundingItem';
-import { CategoryProps, CategoryType, GroupProps } from '../../common/ResponseTypes';
-
-export type FundingType = {
-  id?: number,
-  type: CategoryType,
-  initialAmount: number,
-  amount: number,
-  categoryId: number,
-}
+import { CategoryProps, FundingType, GroupProps } from '../../common/ResponseTypes';
 
 type PropsType = {
   groups: GroupProps[],

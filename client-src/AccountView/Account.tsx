@@ -1,26 +1,28 @@
 import React from 'react';
-import PropTypes from 'prop-types';
 import moment from 'moment';
 import { observer } from 'mobx-react-lite';
 import IconButton from '../IconButton';
 import { formatNumber } from '../NumberFormat';
 import { AccountInterface } from '../state/State';
+import Institution from '../state/Institution';
 
 type PropsType = {
   selected: boolean,
-  institutionId: number,
+  institution: Institution,
   account: AccountInterface,
   onAccountSelected: ((account: AccountInterface) => void),
+  showAccountDialog: ((account: AccountInterface) => void),
 }
 
 const Account = ({
   selected,
-  institutionId,
+  institution,
   account,
   onAccountSelected,
+  showAccountDialog,
 }: PropsType) => {
   const refresh = () => {
-    account.refresh(institutionId);
+    account.refresh(institution.id);
   };
 
   const accountSelected = () => {
@@ -39,7 +41,11 @@ const Account = ({
 
   return (
     <div className="acct-list-item">
-      <IconButton icon="sync-alt" rotate={account.refreshing} onClick={refresh} />
+      {
+        !institution.offline
+          ? <IconButton icon="sync-alt" rotate={account.refreshing} onClick={refresh} />
+          : <IconButton icon="edit" onClick={() => showAccountDialog(account)} />
+      }
       <div>
         <div className={className} onClick={accountSelected}>{account.name}</div>
         <div className="acct-balance">{balance}</div>

@@ -1,4 +1,4 @@
-import React, { ReactElement } from 'react';
+import React, { ReactElement, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import IconButton from '../IconButton';
 import { useAccountsDialog } from './AccountsDialog';
@@ -6,35 +6,87 @@ import { useInstitutionInfoDialog } from './InstitutionInfoDialog';
 import Account from './Account';
 import StateInstitution from '../state/Institution';
 import { AccountInterface } from '../state/State';
+import { useOfflineAccountDialog } from './OfflineAccountDialog';
+import { useDeleteConfirmation } from '../DeleteConfirmation';
 
 type PropsType = {
   institution: StateInstitution,
   onAccountSelected: ((account: AccountInterface) => void),
-  selectedAccount: AccountInterface | null,
+  selectedAccount?: AccountInterface | null,
   onRelink: ((id: number) => void),
 }
 
 function Institution({
   institution,
   onAccountSelected,
-  selectedAccount,
+  selectedAccount = null,
   onRelink,
 }: PropsType): ReactElement {
   const [AccountsDialog, showAccountsDialog] = useAccountsDialog();
   const [InstitutionInfoDialog, showInstitutionInfoDialog] = useInstitutionInfoDialog();
+  const [OfflineAccountDialog, showOfflineAccountDialog] = useOfflineAccountDialog();
   const handleRelinkClick = () => {
     onRelink(institution.id);
   };
+  const [editedAccount, setEditedAccount] = useState<AccountInterface | null>(null);
+  const [DeleteConfirmation, handleDeleteClick] = useDeleteConfirmation(
+    (
+      <>
+        <div>
+          Are you sure you want to delete this institution?
+        </div>
+        <div style={{ marginTop: '1rem' }}>
+          All accounts within the instution and their transactions will be deleted. This cannot be undone.
+        </div>
+      </>
+    ),
+    () => {
+      institution.delete();
+    },
+  );
+
+  const handleAddClick = () => {
+    if (institution) {
+      showOfflineAccountDialog();
+    }
+    else {
+      showAccountsDialog();
+    }
+  }
+
+  const handleEditAccount = (account: AccountInterface) => {
+    if (institution.offline) {
+      setEditedAccount(account);
+      showOfflineAccountDialog();
+    }
+    else {
+      showAccountsDialog();
+    }
+  }
+  const handleDialogHide = () => {
+    setEditedAccount(null);
+  }
 
   return (
     <div className="inst-card">
       <div className="acct-list-inst">
         <div className="institution-name">{institution.name}</div>
-        <IconButton icon="plus" onClick={showAccountsDialog} />
+        <IconButton icon="trash-alt" onClick={handleDeleteClick} />
+        <IconButton icon="plus" onClick={handleAddClick} />
         <AccountsDialog institution={institution} />
-        <IconButton icon="link" onClick={handleRelinkClick} />
-        <IconButton icon="info-circle" onClick={showInstitutionInfoDialog} />
-        <InstitutionInfoDialog institution={institution} />
+        <OfflineAccountDialog institution={institution} account={editedAccount} onHide={handleDialogHide} />
+        <DeleteConfirmation />
+        {
+          !institution.offline
+            ? (
+              <>
+                <IconButton icon="link" onClick={handleRelinkClick} />
+                <IconButton icon="info-circle" onClick={showInstitutionInfoDialog} />
+                <InstitutionInfoDialog institution={institution} />
+              </>
+            )
+            : null
+        }
       </div>
       <div className="acct-list-accounts">
         {
@@ -46,10 +98,11 @@ function Institution({
             return (
               <Account
                 key={account.id}
-                institutionId={institution.id}
+                institution={institution}
                 account={account}
                 onAccountSelected={onAccountSelected}
                 selected={selected}
+                showAccountDialog={handleEditAccount}
               />
             );
           })

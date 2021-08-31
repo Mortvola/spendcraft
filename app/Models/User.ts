@@ -8,24 +8,13 @@ import {
   BaseModel,
   hasMany,
   HasMany,
+  ModelAdapterOptions,
 } from '@ioc:Adonis/Lucid/Orm';
 import Transaction from 'App/Models/Transaction'
 import Loan from 'App/Models/Loan';
 import Institution from 'App/Models/Institution';
-
-type AccountResult = {
-  id: number,
-  name: string,
-  tracking: string,
-  balance: number,
-  syncDate: string,
-};
-
-type InstitutionResult = {
-  id: number,
-  name: string,
-  accounts: Array<AccountResult>,
-};
+import { InstitutionProps } from 'Common/ResponseTypes';
+import Category from './Category';
 
 type MonthBalance = {
   year: number,
@@ -143,51 +132,76 @@ export default class User extends BaseModel {
     return history;
   }
 
-  public async getConnectedAccounts(this: User): Promise<Array<Record<string, unknown>>> {
+  public async getConnectedAccounts(this: User): Promise<InstitutionProps[]> {
     // Check to see if we already have the institution. If not, add it.
-    const result = await Database.query()
-      .select(
-        'inst.id AS institutionId',
-        'inst.name AS institutionName',
-        'acct.id AS accountId',
-        'acct.name AS accountName',
-        'acct.tracking AS tracking',
-        Database.raw('CAST(acct.balance AS DOUBLE PRECISION) AS balance'),
-        Database.raw('to_char(acct.sync_date  AT TIME ZONE \'UTC\', \'YYYY-MM-DD HH24:MI:SS\') AS syncdate'),
-      )
-      .from('institutions AS inst')
-      .leftJoin('accounts AS acct', 'acct.institution_id', 'inst.id')
-      .where('inst.user_id', this.id)
-      .orderBy('inst.name')
-      .orderBy('acct.name');
+    // const result = await Database.query()
+    //   .select(
+    //     'inst.id AS institutionId',
+    //     'inst.name AS institutionName',
+    //     'acct.id AS accountId',
+    //     'acct.name AS accountName',
+    //     'acct.tracking AS tracking',
+    //     Database.raw('CAST(acct.balance AS DOUBLE PRECISION) AS balance'),
+    //     Database.raw('to_char(acct.sync_date  AT TIME ZONE \'UTC\', \'YYYY-MM-DD HH24:MI:SS\') AS syncdate'),
+    //   )
+    //   .from('institutions AS inst')
+    //   .leftJoin('accounts AS acct', 'acct.institution_id', 'inst.id')
+    //   .where('inst.user_id', this.id)
+    //   .orderBy('inst.name')
+    //   .orderBy('acct.name');
 
-    const institutions: Array<InstitutionResult> = [];
-    let institution: InstitutionResult | null = null;
+    const result = await this
+      .related('institutions').query()
+      .preload('accounts');
 
-    result.forEach((acct) => {
-      if (!institution) {
-        institution = { id: acct.institutionId, name: acct.institutionName, accounts: [] };
-      }
-      else if (institution.name !== acct.institutionName) {
-        institutions.push(institution);
-        institution = { id: acct.institutionId, name: acct.institutionName, accounts: [] };
-      }
+    // const institutions: Array<InstitutionResult> = [];
+    // let institution: InstitutionResult | null = null;
 
-      if (acct.accountId) {
-        institution.accounts.push({
-          id: acct.accountId,
-          name: acct.accountName,
-          tracking: acct.tracking,
-          balance: acct.balance,
-          syncDate: acct.syncdate,
-        });
-      }
-    });
+    // if (result) {
+    //   result.forEach((acct) => {
+    //     if (!institution) {
+    //       institution = { id: acct.institutionId, name: acct.institutionName, accounts: [] };
+    //     }
+    //     else if (institution.name !== acct.institutionName) {
+    //       institutions.push(institution);
+    //       institution = { id: acct.institutionId, name: acct.institutionName, accounts: [] };
+    //     }
 
-    if (institution) {
-      institutions.push(institution);
-    }
+    //     if (acct.accountId) {
+    //       institution.accounts.push({
+    //         id: acct.accountId,
+    //         name: acct.accountName,
+    //         tracking: acct.tracking,
+    //         balance: acct.balance,
+    //         syncDate: acct.syncdate,
+    //       });
+    //     }
+    //   });
+    // }
 
-    return institutions;
+    // if (institution) {
+    //   institutions.push(institution);
+    // }
+
+    return result.map((i) => ({
+      id: i.id,
+      name: i.name,
+      offline: i.plaidItemId === null,
+      accounts: i.accounts,
+    }));
+  }
+
+  public async getUnassignedCategory(options?: ModelAdapterOptions): Promise<Category> {
+    return await Category.query(options)
+      .where('type', 'UNASSIGNED')
+      .whereHas('group', (query) => query.where('userId', this.id))
+      .firstOrFail();
+  }
+
+  public async getFundingPoolCategory(options?: ModelAdapterOptions): Promise<Category> {
+    return await Category.query(options)
+      .where('type', 'FUNDING POOL')
+      .whereHas('group', (query) => query.where('userId', this.id))
+      .firstOrFail();
   }
 }

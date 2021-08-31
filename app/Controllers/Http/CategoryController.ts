@@ -174,11 +174,11 @@ class CategoryController {
 
     category.merge({
       name: requestData.name,
-      groupId,    
+      groupId,
     });
 
     await category.save();
-    
+
     return { name: requestData.name };
   }
 

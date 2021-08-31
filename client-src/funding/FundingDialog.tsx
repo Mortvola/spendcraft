@@ -8,13 +8,17 @@ import {
 } from 'formik';
 import Amount from '../Amount';
 import MobxStore from '../state/mobxStore';
-import useModal, { ModalProps, useModalType } from '../Modal/useModal';
+import useModal, { ModalProps, UseModalType } from '../Modal/useModal';
 import Transaction from '../state/Transaction';
 import { NewTransactionCategoryInterface, TransactionCategoryInterface } from '../state/State';
-import { TransactionType } from '../../common/ResponseTypes';
+import {
+  FundingPlanProps, isFundingPlanResponse, isFundingPlansResponse, TransactionType,
+  FundingType,
+} from '../../common/ResponseTypes';
 import FormModal from '../Modal/FormModal';
 import FormError from '../Modal/FormError';
-import Funding, { FundingType } from './Funding';
+import Funding from './Funding';
+import { getBody, httpGet } from '../state/Transports';
 
 interface Props {
   transaction?: Transaction;
@@ -65,7 +69,7 @@ const FundingDialog = ({
   }
 
   const [plansInitialized, setPlansInitialized] = useState(false);
-  const [plans, setPlans] = useState([]);
+  const [plans, setPlans] = useState<FundingPlanProps[]>([]);
   const [selectedPlan, setSelectedPlan] = useState(-1);
   const [funding, setFunding] = useState<FundingPlanType>(
     transaction
@@ -97,28 +101,33 @@ const FundingDialog = ({
   if (!plansInitialized) {
     setPlansInitialized(true);
 
-    fetch('/api/funding-plans')
-      .then(
-        async (response) => setPlans(await response.json()),
-      );
+    (async () => {
+      const response = await httpGet('/api/funding-plans');
+
+      const body = await getBody(response);
+
+      if (isFundingPlansResponse(body)) {
+        setPlans(body);
+      }
+    })()
   }
 
-  const handlePlanChange = (
+  const handlePlanChange = async (
     event: React.ChangeEvent<HTMLSelectElement>,
     resetForm: (nextState?: Partial<FormikState<any>> | undefined) => void,
     values: ValueType,
   ) => {
     const { value } = event.target;
     setSelectedPlan(parseInt(value, 10));
-    fetch(`/api/funding-plans/${value}`)
-      .then(
-        async (response) => {
-          const json = await response.json();
-          const newPlan = { planId: json.id, categories: json.categories };
-          setFunding(newPlan);
-          resetForm({ values: { ...values, funding: newPlan } });
-        },
-      );
+    const response = await httpGet(`/api/funding-plans/${value}`);
+
+    const body = await getBody(response);
+
+    if (isFundingPlanResponse(body)) {
+      const newPlan = { planId: body.id, categories: body.categories };
+      setFunding(newPlan);
+      resetForm({ values: { ...values, funding: newPlan } });
+    }
   };
 
   const populatePlans = () => {
@@ -326,6 +335,6 @@ const FundingDialog = ({
   );
 };
 
-export const useFundingDialog = (): useModalType<Props> => useModal<Props>(FundingDialog);
+export const useFundingDialog = (): UseModalType<Props> => useModal<Props>(FundingDialog);
 
 export default FundingDialog;

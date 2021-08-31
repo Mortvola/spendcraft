@@ -1,11 +1,47 @@
+/* eslint-disable no-await-in-loop */
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
-import Database from '@ioc:Adonis/Lucid/Database';
+import Database, { TransactionClientContract } from '@ioc:Adonis/Lucid/Database';
 import moment from 'moment';
-import plaidClient, { PlaidAccount, PlaidInstitution } from '@ioc:Plaid';
+import plaidClient, { PlaidInstitution } from '@ioc:Plaid';
 import Institution from 'App/Models/Institution';
 import Account, { AccountSyncResult } from 'App/Models/Account';
 import Category from 'App/Models/Category';
-import { UnlinkedAccountProps } from 'Common/ResponseTypes';
+import User from 'App/Models/User'
+import {
+  AccountProps, InstitutionProps, TrackingType, UnlinkedAccountProps,
+} from 'Common/ResponseTypes';
+import { schema } from '@ioc:Adonis/Core/Validator';
+import Transaction from 'App/Models/Transaction';
+import AccountTransaction from 'App/Models/AccountTransaction';
+import TransactionCategory from 'App/Models/TransactionCategory';
+import { DateTime } from 'luxon';
+import BalanceHistory from 'App/Models/BalanceHistory';
+
+type OnlineAccount = {
+  plaidAccountId: string,
+  name: string,
+  officialName?: string | null,
+  mask: string,
+  type: string,
+  subtype: string,
+  balances: {
+    current: number,
+  },
+  tracking: string,
+};
+
+type OfflineAccount = {
+  name: string,
+  balance: number,
+};
+
+type OnlineAccountsResponse = {
+  accounts: AccountProps[],
+  categories: {
+    id: number,
+    amount: number,
+  }[],
+}
 
 class InstitutionController {
   // eslint-disable-next-line class-methods-use-this
@@ -14,87 +50,344 @@ class InstitutionController {
     auth: {
       user,
     },
-  }: HttpContextContract): Promise<Record<string, unknown>> {
+  }: HttpContextContract): Promise<InstitutionProps> {
     if (!user) {
       throw new Error('user is not defined');
     }
 
-    const { institution, publicToken } = request.only(['institution', 'publicToken']);
-
-    // Check to see if we already have the institution. If not, add it.
-    const inst = await Institution
-      .query()
-      .where({ institution_id: institution.institution_id, user_id: user.id }).first();
-
-    let accessToken: string;
-    let institutionId: number;
-
-    if (!inst) {
-      const tokenResponse = await plaidClient.exchangePublicToken(publicToken);
-
-      accessToken = tokenResponse.access_token;
-
-      [institutionId] = await Database.insertQuery()
-        .insert({
-          institution_id: institution.institution_id,
-          plaid_item_id: tokenResponse.item_id,
-          name: institution.name,
-          access_token: accessToken,
-          user_id: user.id,
-        })
-        .table('institutions')
-        .returning('id');
-    }
-    else {
-      accessToken = inst.accessToken;
-      institutionId = inst.id;
-    }
-
-    const result = {
-      id: institutionId,
-      name: institution.name,
-      accounts: await InstitutionController.getAccounts(accessToken, institutionId),
-    };
-
-    return result;
-  }
-
-  static async getAccounts(
-    accessToken: string,
-    institutionId: number,
-  ): Promise<Array<PlaidAccount>> {
-    const { accounts } = await plaidClient.getAccounts(accessToken);
-
-    const existingAccts = await Database.query()
-      .select('plaid_account_id')
-      .from('accounts')
-      .where({ institution_id: institutionId });
-
-    existingAccts.forEach((existingAcct) => {
-      const index = accounts.findIndex((a) => a.account_id === existingAcct.plaid_account_id);
-
-      if (index !== -1) {
-        accounts.splice(index, 1);
-      }
+    const validationSchema = schema.create({
+      institution: schema.object().members({
+        institutionId: schema.string.optional(),
+        name: schema.string(),
+      }),
+      publicToken: schema.string.optional(),
+      accounts: schema.array.optional().members(
+        schema.object().members({
+          name: schema.string(),
+          balance: schema.number(),
+        }),
+      ),
+      startDate: schema.string.optional(),
     });
 
-    return accounts;
+    const requestData = await request.validate({
+      schema: validationSchema,
+    });
+
+    // Check to see if we already have the institution. If not, add it.
+    if (requestData.institution.institutionId) {
+      let inst = await Institution
+        .query()
+        .where({ institutionId: requestData.institution.institutionId, userId: user.id })
+        .first();
+
+      if (!inst) {
+        if (!requestData.publicToken) {
+          throw new Error('public token is undefined');
+        }
+
+        const tokenResponse = await plaidClient.exchangePublicToken(requestData.publicToken);
+
+        inst = await (new Institution())
+          .fill({
+            institutionId: requestData.institution.institutionId,
+            plaidItemId: tokenResponse.item_id,
+            name: requestData.institution.name,
+            accessToken: tokenResponse.access_token,
+            userId: user.id,
+          })
+          .save();
+      }
+
+      return {
+        id: inst.id,
+        name: inst.name,
+        offline: false,
+        accounts: [],
+      };
+    }
+
+    if (!requestData.startDate) {
+      throw new Error('start date is not defined');
+    }
+
+    const trx = await Database.transaction();
+
+    const inst = await (new Institution())
+      .fill({
+        name: requestData.institution.name,
+        userId: user.id,
+      })
+      .useTransaction(trx)
+      .save();
+
+    if (inst === null) {
+      throw new Error('inst is null');
+    }
+
+    let accounts: AccountProps[] = [];
+
+    if (requestData.accounts) {
+      const fundingPool = await user.getFundingPoolCategory({ client: trx });
+
+      accounts = await InstitutionController.addOfflineAccounts(
+        user, inst, requestData.accounts, requestData.startDate, fundingPool, { client: trx },
+      );
+    }
+
+    await trx.commit();
+
+    return {
+      id: inst.id,
+      name: inst.name,
+      offline: true,
+      accounts,
+    };
+  }
+
+  static async getUnconnectedAccounts(
+    institution: Institution,
+  ): Promise<UnlinkedAccountProps[]> {
+    if (institution.accessToken) {
+      const existingAccts = await Account.query().where('institutionId', institution.id);
+
+      const { accounts } = await plaidClient.getAccounts(institution.accessToken);
+
+      existingAccts.forEach((existingAcct) => {
+        const index = accounts.findIndex((a) => a.account_id === existingAcct.plaidAccountId);
+
+        if (index !== -1) {
+          accounts.splice(index, 1);
+        }
+      });
+
+      return accounts.map((acct) => {
+        let balance = acct.balances.current;
+        if (acct.type === 'credit' || acct.type === 'loan') {
+          balance = -balance;
+        }
+
+        return ({
+          plaidAccountId: acct.account_id,
+          name: acct.name,
+          officialName: acct.official_name,
+          mask: acct.mask,
+          type: acct.type,
+          subtype: acct.subtype,
+          balances: {
+            current: balance,
+          },
+          tracking: 'None',
+        });
+      });
+    }
+
+    return [];
   }
 
   // eslint-disable-next-line class-methods-use-this
-  async get({ request, auth: { user } }: HttpContextContract): Promise<Array<PlaidAccount>> {
+  async get({ request, auth: { user } }: HttpContextContract): Promise<UnlinkedAccountProps[]> {
     if (!user) {
       throw new Error('user is not defined');
     }
 
     const inst = await Institution.findOrFail(request.params().instId);
 
-    let accounts: Array<PlaidAccount> = [];
-
-    accounts = await InstitutionController
-      .getAccounts(inst.accessToken, inst.id);
+    const accounts: UnlinkedAccountProps[] = await InstitutionController
+      .getUnconnectedAccounts(inst);
 
     return accounts;
+  }
+
+  private static async insertStartingBalance(
+    user: User,
+    acct: Account,
+    startDate: string,
+    startingBalance: number,
+    fundingPool: Category,
+    options?: {
+      client: TransactionClientContract,
+    },
+  ): Promise<void> {
+    const transaction = (new Transaction())
+      .fill({
+        date: DateTime.fromISO(startDate),
+        sortOrder: -1,
+        userId: user.id,
+      });
+
+    if (options && options.client) {
+      transaction.useTransaction(options.client);
+    }
+
+    // eslint-disable-next-line no-await-in-loop
+    await transaction.save();
+
+    const transId = transaction.id;
+
+    const acctTransaction = (new AccountTransaction())
+      .fill({
+        transactionId: transId,
+        accountId: acct.id,
+        name: 'Starting Balance',
+        amount: startingBalance,
+      });
+
+    if (options && options.client) {
+      acctTransaction.useTransaction(options.client);
+    }
+
+    // eslint-disable-next-line no-await-in-loop
+    await acctTransaction.save();
+
+    // eslint-disable-next-line no-await-in-loop
+    const transactionCategory = (new TransactionCategory())
+      .fill({
+        transactionId: transId,
+        categoryId: fundingPool.id,
+        amount: startingBalance,
+      });
+
+    if (options && options.client) {
+      transactionCategory.useTransaction(options.client);
+    }
+
+    // eslint-disable-next-line no-await-in-loop
+    await transactionCategory.save();
+
+    fundingPool.amount += startingBalance;
+
+    // eslint-disable-next-line no-await-in-loop
+    await fundingPool.save();
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  private static async addOnlineAccounts(
+    user: User,
+    institution: Institution,
+    accounts: OnlineAccount[],
+    startDate: string,
+    fundingPool: Category,
+    options?: {
+      client: TransactionClientContract,
+    },
+  ) {
+    if (!institution.accessToken) {
+      throw new Error('accessToken is not defined');
+    }
+
+    const newAccounts: Account[] = [];
+
+    let unassignedAmount = 0;
+
+    const unassigned = await user.getUnassignedCategory(options);
+
+    // eslint-disable-next-line no-restricted-syntax
+    for (const account of accounts) {
+      // eslint-disable-next-line no-await-in-loop
+      let acct = await Account.findBy('plaidAccountId', account.plaidAccountId, options);
+
+      if (!acct) {
+        const start = (startDate ? moment(startDate) : moment().startOf('month'));
+
+        acct = (new Account())
+          .fill({
+            plaidAccountId: account.plaidAccountId,
+            name: account.name,
+            officialName: account.officialName,
+            mask: account.mask,
+            subtype: account.subtype,
+            type: account.type,
+            institutionId: institution.id,
+            startDate: start.format('YYYY-MM-DD'),
+            balance: account.balances.current,
+            tracking: account.tracking as TrackingType,
+            enabled: true,
+          });
+
+        if (options && options.client) {
+          acct.useTransaction(options.client);
+        }
+
+        // eslint-disable-next-line no-await-in-loop
+        await acct.save();
+
+        if (acct.tracking === 'Transactions') {
+          // eslint-disable-next-line no-await-in-loop
+          const details = await acct.addTransactions(
+            institution.accessToken, start, user, options,
+          );
+
+          if (details.cat) {
+            unassignedAmount = details.cat.amount;
+          }
+
+          const startingBalance = details.balance - details.sum;
+
+          // Insert the 'starting balance' transaction
+          // eslint-disable-next-line no-await-in-loop
+          await InstitutionController.insertStartingBalance(
+            user, acct, start.format('YYYY-MM-DD'), startingBalance, fundingPool, options,
+          );
+        }
+
+        newAccounts.push(acct);
+      }
+    }
+
+    return {
+      accounts: newAccounts,
+      categories: [
+        { id: fundingPool.id, amount: fundingPool.amount },
+        { id: unassigned.id, amount: unassignedAmount },
+      ],
+    }
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  private static async addOfflineAccounts(
+    user: User,
+    institution: Institution,
+    accounts: OfflineAccount[],
+    startDate: string,
+    fundingPool: Category,
+    options?: {
+      client: TransactionClientContract,
+    },
+  ): Promise<AccountProps[]> {
+    const newAccounts: Account[] = [];
+
+    const start = (startDate ? moment(startDate) : moment().startOf('month'));
+
+    // eslint-disable-next-line no-restricted-syntax
+    for (const account of accounts) {
+      const acct = new Account();
+
+      if (options && options.client) {
+        acct.useTransaction(options.client);
+      }
+
+      acct.fill({
+        name: account.name,
+        institutionId: institution.id,
+        startDate: start.format('YYYY-MM-DD'),
+        balance: account.balance,
+        tracking: 'Transactions',
+        enabled: true,
+      });
+
+      // eslint-disable-next-line no-await-in-loop
+      await acct.save();
+
+      // eslint-disable-next-line no-await-in-loop
+      await InstitutionController.insertStartingBalance(
+        user, acct, start.format('YYYY-MM-DD'), account.balance, fundingPool, options,
+      );
+
+      newAccounts.push(acct);
+    }
+
+    return newAccounts;
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -103,129 +396,64 @@ class InstitutionController {
     auth: {
       user,
     },
-  }: HttpContextContract): Promise<Record<string, unknown>> {
+  }: HttpContextContract): Promise<AccountProps[] | OnlineAccountsResponse> {
     if (!user) {
       throw new Error('user is not defined');
     }
 
-    const newAccounts: Account[] = [];
+    const validationSchema = schema.create({
+      plaidAccounts: schema.array.optional().members(
+        schema.object().members({
+          plaidAccountId: schema.string(),
+          name: schema.string(),
+          officialName: schema.string.optional(),
+          mask: schema.string(),
+          type: schema.string(),
+          subtype: schema.string(),
+          balances: schema.object().members({
+            current: schema.number(),
+          }),
+          tracking: schema.string(),
+        }),
+      ),
+      offlineAccounts: schema.array.optional().members(
+        schema.object().members({
+          name: schema.string(),
+          balance: schema.number(),
+        }),
+      ),
+      startDate: schema.string(),
+    });
+
+    const requestData = await request.validate({
+      schema: validationSchema,
+    });
 
     const trx = await Database.transaction();
 
-    let fundingAmount = 0;
-    let unassignedAmount = 0;
+    const institution = await Institution.findOrFail(request.params().instId, { client: trx });
 
-    const systemCats = await trx.query().select('cats.id AS id', 'cats.name AS name')
-      .from('categories AS cats')
-      .join('groups', 'groups.id', 'group_id')
-      .where('cats.type', '!=', 'REGULAR')
-      .andWhere('groups.user_id', user.id);
-    const fundingPool = systemCats.find((entry) => entry.name === 'Funding Pool');
-    const unassigned = systemCats.find((entry) => entry.name === 'Unassigned');
+    const fundingPool = await user.getFundingPoolCategory({ client: trx });
 
-    const institution = await Institution.findOrFail(request.params().instId);
+    let result: AccountProps[] | OnlineAccountsResponse;
 
-    if (institution.accessToken) {
-      const accountsInput = request.input('accounts') as UnlinkedAccountProps[];
-      // eslint-disable-next-line no-restricted-syntax
-      for (const account of accountsInput) {
-        // eslint-disable-next-line no-await-in-loop
-        const [{ exists }] = await trx.query()
-          .select(Database.raw(`EXISTS (SELECT 1 FROM accounts WHERE plaid_account_id = '${account.account_id}') AS exists`));
-
-        if (!exists) {
-          const acct = (new Account()).useTransaction(trx);
-
-          let startDate = request.input('startDate');
-          if (startDate === undefined || startDate === null) {
-            startDate = moment().startOf('month');
-          }
-          else {
-            startDate = moment(startDate);
-          }
-
-          acct.plaidAccountId = account.account_id;
-          acct.name = account.name;
-          acct.officialName = account.official_name;
-          acct.mask = account.mask;
-          acct.subtype = account.subtype;
-          acct.type = account.type;
-          acct.institutionId = request.params().instId;
-          acct.startDate = startDate.format('YYYY-MM-DD');
-          acct.balance = account.balances.current;
-          acct.tracking = account.tracking;
-          acct.enabled = true;
-
-          // eslint-disable-next-line no-await-in-loop
-          await acct.save();
-
-          if (acct.tracking === 'Transactions') {
-            // eslint-disable-next-line no-await-in-loop
-            const details = await acct.addTransactions(
-              trx, institution.accessToken, startDate, user,
-            );
-
-            if (details.cat) {
-              unassignedAmount = details.cat.amount;
-            }
-
-            const startingBalance = details.balance + details.sum;
-
-            // Insert the 'starting balance' transaction
-            // eslint-disable-next-line no-await-in-loop
-            const [transId] = await trx.insertQuery().insert({
-              date: startDate.format('YYYY-MM-DD'),
-              sort_order: -1,
-              user_id: user.id,
-            })
-              .table('transactions')
-              .returning('id');
-
-            // eslint-disable-next-line no-await-in-loop
-            await trx.insertQuery()
-              .insert({
-                transaction_id: transId,
-                plaid_transaction_id: null,
-                account_id: acct.id,
-                name: 'Starting Balance',
-                amount: startingBalance,
-              })
-              .table('account_transactions');
-
-            // eslint-disable-next-line no-await-in-loop
-            await trx.insertQuery()
-              .insert({
-                transaction_id: transId,
-                category_id: fundingPool.id,
-                amount: startingBalance,
-              })
-              .table('transaction_categories');
-
-            // eslint-disable-next-line no-await-in-loop
-            const category = await Category.findOrFail(fundingPool.id, { client: trx });
-
-            category.amount += startingBalance;
-
-            // eslint-disable-next-line no-await-in-loop
-            await category.save();
-
-            fundingAmount = category.amount;
-          }
-
-          newAccounts.push(acct);
-        }
-      }
+    if (requestData.plaidAccounts) {
+      result = await InstitutionController.addOnlineAccounts(
+        user, institution, requestData.plaidAccounts, requestData.startDate, fundingPool, { client: trx },
+      );
+    }
+    else if (requestData.offlineAccounts) {
+      result = await InstitutionController.addOfflineAccounts(
+        user, institution, requestData.offlineAccounts, requestData.startDate, fundingPool, { client: trx },
+      );
+    }
+    else {
+      throw new Error('plaidAccounts nor offlineAccounts are defined');
     }
 
     await trx.commit();
 
-    return {
-      accounts: newAccounts,
-      categories: [
-        { id: fundingPool.id, amount: fundingAmount },
-        { id: unassigned.id, amount: unassignedAmount },
-      ],
-    };
+    return result;
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -342,6 +570,94 @@ class InstitutionController {
     // console.log(JSON.stringify(plaidInstitution, null, 4));
 
     return plaidInstitution;
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  public async deleteAccount(
+    { request, auth: { user } }: HttpContextContract,
+  ): Promise<void> {
+    if (!user) {
+      throw new Error('user is not defined');
+    }
+
+    await (await Account.findOrFail(request.params().acctId)).delete();
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  public async delete(
+    { request, auth: { user } }: HttpContextContract,
+  ): Promise<void> {
+    if (!user) {
+      throw new Error('user is not defined');
+    }
+
+    const trx = await Database.transaction();
+
+    const accounts = await Account.query({ client: trx }).where('institutionId', request.params().instId);
+
+    // eslint-disable-next-line no-restricted-syntax
+    for (const acct of accounts) {
+      // eslint-disable-next-line no-await-in-loop
+      const acctTrans = await AccountTransaction.query({ client: trx }).where('accountId', acct.id);
+
+      // eslint-disable-next-line no-restricted-syntax
+      for (const acctTran of acctTrans) {
+        // eslint-disable-next-line no-await-in-loop
+        const transaction = await Transaction.find(acctTran.transactionId, { client: trx });
+
+        if (transaction) {
+          // eslint-disable-next-line no-await-in-loop
+          const transCats = await TransactionCategory
+            .query({ client: trx })
+            .where('transactionId', transaction.id);
+
+          if (transCats.length === 0) {
+            // eslint-disable-next-line no-await-in-loop
+            const unassignedCat = await user.getUnassignedCategory({ client: trx });
+
+            unassignedCat.amount -= acctTran.amount;
+
+            await unassignedCat.save();
+          }
+          else {
+            // eslint-disable-next-line no-restricted-syntax
+            for (const tc of transCats) {
+              // eslint-disable-next-line no-await-in-loop
+              const category = await Category.find(tc.categoryId, { client: trx });
+
+              if (category) {
+                category.amount -= tc.amount;
+
+                // eslint-disable-next-line no-await-in-loop
+                await category.save();
+              }
+
+              // eslint-disable-next-line no-await-in-loop
+              await tc.delete();
+            }
+          }
+
+          // eslint-disable-next-line no-await-in-loop
+          await acctTran.delete();
+
+          // eslint-disable-next-line no-await-in-loop
+          await transaction.delete();
+        }
+      }
+
+      // eslint-disable-next-line no-await-in-loop
+      const balanceHistories = await BalanceHistory.query({ client: trx }).where('accountId', acct.id);
+
+      // eslint-disable-next-line no-await-in-loop
+      await Promise.all(balanceHistories.map((balanceHistory) => balanceHistory.delete()));
+
+      // eslint-disable-next-line no-await-in-loop
+      await acct.delete();
+    }
+
+    await (await Institution.findOrFail(request.params().instId, { client: trx })).delete();
+
+    await trx.commit();
   }
 }
 

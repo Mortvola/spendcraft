@@ -1,11 +1,15 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import Institution from './Institution';
-import Plaid from './Plaid';
+import Plaid, { PlaidMetaData } from './Plaid';
 import {
-  AccountBalanceProps, isInstitutionProps, isInstitutionsResponse, isLinkTokenResponse,
+  AccountBalanceProps, Error, isInstitutionProps, isInstitutionsResponse, isLinkTokenResponse,
 } from '../../common/ResponseTypes';
-import { AccountInterface, AccountsInterface, StoreInterface } from './State';
-import { getBody, postJSON } from './Transports';
+import {
+  AccountInterface, AccountsInterface, InstitutionInterface, StoreInterface,
+} from './State';
+import {
+  getBody, httpDelete, httpGet, httpPost,
+} from './Transports';
 
 class Accounts implements AccountsInterface {
   institutions: Institution[] = [];
@@ -25,7 +29,7 @@ class Accounts implements AccountsInterface {
   }
 
   async load(): Promise<void> {
-    const response = await fetch('/api/connected_accounts');
+    const response = await httpGet('/api/connected-accounts');
 
     if (!response.ok) {
       throw new Error('invalid response');
@@ -45,7 +49,7 @@ class Accounts implements AccountsInterface {
   }
 
   async relinkInstitution(institutionId: number): Promise<void> {
-    const response = await fetch(`/api/institution/${institutionId}/link_token`);
+    const response = await httpGet(`/api/institution/${institutionId}/link-token`);
 
     if (!response.ok) {
       throw new Error('invalid response');
@@ -60,8 +64,21 @@ class Accounts implements AccountsInterface {
     });
   }
 
+  insertInstitution(institution: Institution): void {
+    const index = this.institutions.findIndex(
+      (inst) => institution.name.localeCompare(inst.name) < 0,
+    );
+
+    if (index === -1) {
+      this.institutions.push(institution);
+    }
+    else {
+      this.institutions.splice(index, 0, institution);
+    }
+  }
+
   async addInstitution(): Promise<void> {
-    const response = await fetch('/api/user/link_token');
+    const response = await httpGet('/api/user/link-token');
 
     if (response.ok) {
       const body = await getBody(response);
@@ -70,35 +87,40 @@ class Accounts implements AccountsInterface {
         if (isLinkTokenResponse(body)) {
           this.plaid = new Plaid(
             body.linkToken,
-            async (publicToken, metadata) => {
-              const response2 = await postJSON('/api/institution', {
+            async (publicToken, metadata: PlaidMetaData) => {
+              const i = metadata.institution as {
+                name: string,
+                // eslint-disable-next-line camelcase
+                institution_id: string,
+              };
+
+              const response2 = await httpPost('/api/institution', {
                 publicToken,
-                institution: metadata.institution,
+                institution: {
+                  name: i.name,
+                  institutionId: i.institution_id,
+                },
               });
 
               const body2 = await getBody(response2);
               if (response2.ok && isInstitutionProps(body2)) {
                 let institution = new Institution(
-                  this.store, { id: body2.id, name: body2.name, accounts: [] },
+                  this.store, {
+                    id: body2.id,
+                    name: body2.name,
+                    offline: false,
+                    accounts: [],
+                  },
                 );
 
                 runInAction(() => {
-                // Make sure we don't already have the institution in the list.
+                  // Make sure we don't already have the institution in the list.
                   const existingIndex = this.institutions.findIndex(
                     (inst) => inst.id === institution.id,
                   );
 
                   if (existingIndex === -1) {
-                    const index = this.institutions.findIndex(
-                      (inst) => institution.name.localeCompare(inst.name) < 0,
-                    );
-
-                    if (index === -1) {
-                      this.institutions.push(institution);
-                    }
-                    else {
-                      this.institutions.splice(index, 0, institution);
-                    }
+                    this.insertInstitution(institution);
                   }
                   else {
                     institution = this.institutions[existingIndex];
@@ -116,12 +138,68 @@ class Accounts implements AccountsInterface {
     }
   }
 
+  async addOfflineAccount(
+    instituteName: string,
+    accountName: string,
+    balance: number,
+    startDate: string,
+  ): Promise<Error[] | null> {
+    const response = await httpPost('/api/institution', {
+      institution: {
+        name: instituteName,
+      },
+      accounts: [{
+        name: accountName,
+        balance,
+      }],
+      startDate,
+    });
+
+    if (response.ok) {
+      const body = await getBody(response);
+
+      if (isInstitutionProps(body)) {
+        runInAction(() => {
+          const institution = new Institution(this.store, {
+            id: body.id,
+            name: body.name,
+            offline: body.offline,
+            accounts: body.accounts,
+          });
+
+          // Make sure we don't already have the institution in the list.
+          const existingIndex = this.institutions.findIndex(
+            (inst) => inst.id === institution.id,
+          );
+
+          if (existingIndex === -1) {
+            this.insertInstitution(institution);
+          }
+        });
+      }
+    }
+
+    return null;
+  }
+
   updateBalances(balances: AccountBalanceProps[]): void {
     runInAction(() => {
       this.institutions.forEach((i) => {
         i.updateBalances(balances);
       });
     });
+  }
+
+  async deleteInstitution(institution: InstitutionInterface): Promise<void> {
+    const response = await httpDelete(`/api/institution/${institution.id}`);
+
+    if (response.ok) {
+      const index = this.institutions.findIndex((i) => i.id === institution.id);
+
+      if (index !== -1) {
+        this.institutions.splice(index, 1);
+      }
+    }
   }
 }
 

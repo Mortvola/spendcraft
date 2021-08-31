@@ -12,6 +12,8 @@ export default class FundingPlanCategories extends BaseSchema {
 
   public async down () {
     this.schema.table(this.tableName, (table) => {
+      table.integer('plan_id').notNullable();
+      table.integer('category_id').notNullable();
     })
   }
 }

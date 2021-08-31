@@ -1,15 +1,19 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import Account from './Account';
 import {
-  UnlinkedAccountProps, InstitutionProps, isAccountsResponse, isUnlinkedAccounts, AccountBalanceProps,
+  UnlinkedAccountProps, InstitutionProps, isAccountsResponse, isUnlinkedAccounts, AccountBalanceProps, Error,
 } from '../../common/ResponseTypes';
-import { AccountInterface, StoreInterface } from './State';
-import { getBody, postJSON } from './Transports';
+import { AccountInterface, InstitutionInterface, StoreInterface } from './State';
+import {
+  getBody, httpDelete, httpGet, httpPost,
+} from './Transports';
 
-class Institution {
+class Institution implements InstitutionInterface {
   id: number;
 
   name: string;
+
+  offline: boolean;
 
   unlinkedAccounts: UnlinkedAccountProps[] | null = null;
 
@@ -20,10 +24,11 @@ class Institution {
   constructor(store: StoreInterface, props: InstitutionProps) {
     this.id = props.id;
     this.name = props.name;
+    this.offline = props.offline;
 
     this.accounts = [];
     if (props.accounts) {
-      this.accounts = props.accounts.map((acct) => new Account(store, acct));
+      this.accounts = props.accounts.map((acct) => new Account(store, this, acct));
     }
 
     makeAutoObservable(this);
@@ -31,27 +36,35 @@ class Institution {
     this.store = store;
   }
 
-  async addAccounts(accounts: UnlinkedAccountProps[]): Promise<null> {
-    const response = await postJSON(`/api/institution/${this.id}/accounts`, { accounts, startDate: null });
+  insertAccount(account: Account): void {
+    const index = this.accounts.findIndex(
+      (acct) => account.name.localeCompare(acct.name) < 0,
+    );
 
-    const body = await getBody(response);
+    if (index === -1) {
+      this.accounts.push(account);
+    }
+    else {
+      this.accounts.splice(index, 0, account);
+    }
+  }
+
+  async addAccounts(
+    accounts: UnlinkedAccountProps[],
+    startDate: string,
+  ): Promise<null> {
+    const response = await httpPost(`/api/institution/${this.id}/accounts`, {
+      plaidAccounts: accounts,
+      startDate,
+    });
 
     if (response.ok) {
+      const body = await getBody(response);
+
       runInAction(() => {
         if (isAccountsResponse(body)) {
           body.forEach((a) => {
-            const account = new Account(this.store, a);
-
-            const index = this.accounts.findIndex(
-              (acct) => account.name.localeCompare(acct.name) < 0,
-            );
-
-            if (index === -1) {
-              this.accounts.push(account);
-            }
-            else {
-              this.accounts.splice(index, 0, account);
-            }
+            this.insertAccount(new Account(this.store, this, a));
           });
         }
       });
@@ -60,8 +73,36 @@ class Institution {
     return null;
   }
 
+  async addOfflineAccount(
+    accountName: string,
+    balance: number,
+    startDate: string,
+  ): Promise<Error[] | null> {
+    const response = await httpPost(`/api/institution/${this.id}/accounts`, {
+      offlineAccounts: [{
+        name: accountName,
+        balance,
+      }],
+      startDate,
+    });
+
+    if (response.ok) {
+      const body = await getBody(response);
+
+      if (isAccountsResponse(body)) {
+        runInAction(() => {
+          body.forEach((acct) => {
+            this.insertAccount(new Account(this.store, this, acct));
+          })
+        });
+      }
+    }
+
+    return null;
+  }
+
   async getUnlinkedAccounts(): Promise<void> {
-    const response = await fetch(`/api/institution/${this.id}/accounts`);
+    const response = await httpGet(`/api/institution/${this.id}/accounts`);
 
     if (response.ok) {
       const body = await getBody(response);
@@ -81,6 +122,24 @@ class Institution {
         a.balance = balance.balance;
       }
     });
+  }
+
+  async deleteAccount(account: AccountInterface): Promise<void> {
+    const response = await httpDelete(`/api/institution/${this.id}/accounts/${account.id}`);
+
+    if (response.ok) {
+      runInAction(() => {
+        const index = this.accounts.findIndex((a) => a.id === account.id);
+
+        if (index !== -1) {
+          this.accounts.splice(index, 1);
+        }
+      });
+    }
+  }
+
+  delete(): void {
+    this.store.accounts.deleteInstitution(this);
   }
 }
 

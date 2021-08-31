@@ -7,7 +7,7 @@ import {
 import CategorySplits from './CategorySplits';
 import useModal, { ModalProps } from './Modal/useModal';
 import Transaction from './state/Transaction';
-import { patchJSON, postJSON, httpDelete } from './state/Transports';
+import { httpPatch, httpPost, httpDelete } from './state/Transports';
 import { TransactionCategoryInterface } from './state/State';
 
 type PropsType = {
@@ -111,7 +111,7 @@ const CategoryTransferDialog = ({
     });
 
     if (transaction) {
-      const response = await patchJSON(`/api/category-transfer/${transaction.id}`,
+      const response = await httpPatch(`/api/category-transfer/${transaction.id}`,
         { date, categories: cats });
 
       if (response.ok) {
@@ -119,7 +119,7 @@ const CategoryTransferDialog = ({
       }
     }
     else {
-      const response = await postJSON('/api/category-transfer',
+      const response = await httpPost('/api/category-transfer',
         { date, categories: cats });
 
       if (response.ok) {

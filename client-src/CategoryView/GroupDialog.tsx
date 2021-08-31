@@ -7,7 +7,7 @@ import {
   FormikContextType,
 } from 'formik';
 import MobxStore from '../state/mobxStore';
-import useModal, { useModalType, ModalProps } from '../Modal/useModal';
+import useModal, { UseModalType, ModalProps } from '../Modal/useModal';
 import Group from '../state/Group';
 import { Error } from '../../common/ResponseTypes';
 import FormModal from '../Modal/FormModal';
@@ -113,6 +113,6 @@ const GroupDialog = ({
   );
 };
 
-export const useGroupDialog = (): useModalType<Props> => useModal<Props>(GroupDialog);
+export const useGroupDialog = (): UseModalType<Props> => useModal<Props>(GroupDialog);
 
 export default GroupDialog;

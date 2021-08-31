@@ -73,7 +73,7 @@ export default class TransactionsController {
     }
 
     // Get the 'unassigned' category id
-    const unassigned = await Category.getUnassignedCategory(user, { client: trx });
+    const unassigned = await user.getUnassignedCategory({ client: trx });
 
     const splits = await TransactionCategory.query({ client: trx })
       .preload('loanTransaction')
@@ -232,7 +232,7 @@ export default class TransactionsController {
         throw new Error('acctTransaction is null');
       }
 
-      const unassignedCat = await Category.getUnassignedCategory(user, { client: trx });
+      const unassignedCat = await user.getUnassignedCategory({ client: trx });
 
       unassignedCat.amount -= acctTransaction.amount;
 

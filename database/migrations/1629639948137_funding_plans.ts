@@ -11,6 +11,7 @@ export default class FundingPlans extends BaseSchema {
 
   public async down () {
     this.schema.table(this.tableName, (table) => {
+      table.integer('user_id').notNullable();
     })
   }
 }

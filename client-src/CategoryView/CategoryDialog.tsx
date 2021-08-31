@@ -1,13 +1,13 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 import React, { ReactElement, useContext } from 'react';
 import {
-  Field, ErrorMessage,
+  Field,
   FormikHelpers,
   FormikContextType,
   FormikErrors,
   FieldProps,
 } from 'formik';
-import useModal, { ModalProps, useModalType } from '../Modal/useModal';
+import useModal, { ModalProps, UseModalType } from '../Modal/useModal';
 import Group, { isGroup } from '../state/Group';
 import Category from '../state/Category';
 import FormModal from '../Modal/FormModal';
@@ -120,10 +120,12 @@ const CategoryDialog = ({
       title={title()}
       formId="catDialogForm"
     >
-      <div style={{
-        display: 'flex',
-        columnGap: '1rem',
-      }}>
+      <div
+        style={{
+          display: 'flex',
+          columnGap: '1rem',
+        }}
+      >
         <label>
           Category:
           <Field
@@ -167,6 +169,6 @@ CategoryDialog.defaultProps = {
   category: undefined,
 };
 
-export const useCategoryDialog = (): useModalType<Props> => useModal<Props>(CategoryDialog);
+export const useCategoryDialog = (): UseModalType<Props> => useModal<Props>(CategoryDialog);
 
 export default CategoryDialog;

@@ -1,13 +1,15 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import {
-  AccountProps, Error, isAccountSyncResponse, isAccountTransactionsResponse, isAddTransactionResponse,
+  AccountProps, Error, isAccountSyncResponse, isAccountTransactionsResponse, isAddTransactionResponse, TrackingType,
 } from '../../common/ResponseTypes';
 import PendingTransaction from './PendingTransaction';
 import {
-  AccountInterface, NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface,
+  AccountInterface, InstitutionInterface, NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface,
 } from './State';
 import Transaction from './Transaction';
-import { getBody, httpPost, postJSON } from './Transports';
+import {
+  getBody, httpGet, httpPatch, httpPost,
+} from './Transports';
 
 class Account implements AccountInterface {
   id: number;
@@ -19,7 +21,7 @@ class Account implements AccountInterface {
 
   subtype: string | null = null;
 
-  tracking: 'Balances' | 'Transactions';
+  tracking: TrackingType;
 
   syncDate: string;
 
@@ -37,14 +39,17 @@ class Account implements AccountInterface {
 
   refreshing = false;
 
+  institution: InstitutionInterface;
+
   store: StoreInterface;
 
-  constructor(store: StoreInterface, props: AccountProps) {
+  constructor(store: StoreInterface, institution: InstitutionInterface, props: AccountProps) {
     this.id = props.id;
     this.name = props.name;
     this.tracking = props.tracking;
     this.syncDate = props.syncDate;
     this.balance = props.balance;
+    this.institution = institution;
 
     makeAutoObservable(this);
 
@@ -99,7 +104,7 @@ class Account implements AccountInterface {
 
   async getTransactions(): Promise<void> {
     this.fetching = true;
-    const response = await fetch(`/api/account/${this.id}/transactions`);
+    const response = await httpGet(`/api/account/${this.id}/transactions`);
 
     const body = await getBody(response);
 
@@ -134,7 +139,7 @@ class Account implements AccountInterface {
       splits: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
     },
   ): Promise<Error[] | null> {
-    const response = await postJSON(`/api/account/${this.id}/transactions`, values);
+    const response = await httpPost(`/api/account/${this.id}/transactions`, values);
 
     if (response.ok) {
       const body = await getBody(response);
@@ -173,6 +178,22 @@ class Account implements AccountInterface {
 
     if (index !== -1) {
       this.transactions.splice(index, 1);
+    }
+  }
+
+  delete(): void {
+    this.institution.deleteAccount(this);
+  }
+
+  async updateOfflineAccount (name: string): Promise<void> {
+    const response = await httpPatch(`/api/account/${this.id}`, {
+      name,
+    });
+
+    if (response.ok) {
+      runInAction(() => {
+        this.name = name;
+      });
     }
   }
 }

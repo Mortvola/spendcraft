@@ -152,7 +152,7 @@ export default class AccountsController {
     const { splits } = requestData;
 
     if (!splits || splits.length === 0) {
-      const unassignedCat = await Category.getUnassignedCategory(user, { client: trx });
+      const unassignedCat = await user.getUnassignedCategory({ client: trx });
 
       unassignedCat.amount += acctTransaction.amount;
 
@@ -215,5 +215,31 @@ export default class AccountsController {
     };
 
     return result;
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  public async update({
+    request,
+    auth: {
+      user,
+    },
+  }: HttpContextContract): Promise<void> {
+    if (!user) {
+      throw new Error('user not defined');
+    }
+
+    const validationSchema = schema.create({
+      name: schema.string({ trim: true }),
+    });
+
+    const requestData = await request.validate({
+      schema: validationSchema,
+    });
+
+    const account = await Account.findOrFail(request.params().acctId);
+
+    account.name = requestData.name;
+
+    account.save();
   }
 }
