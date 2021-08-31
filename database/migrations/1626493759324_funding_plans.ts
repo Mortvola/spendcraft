@@ -20,7 +20,7 @@ export default class FundingPlans extends BaseSchema {
   }
 
   public async down () {
-    if (this.schema.hasTable(this.tableName)) {
+    if (await this.schema.hasTable(this.tableName)) {
       this.schema.dropTable(this.tableName);
     }
   }
