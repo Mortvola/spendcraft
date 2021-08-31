@@ -57,7 +57,7 @@ Route.group(() => {
       Route.delete('/:tfrId', 'CategoryController.transferDelete');
     }).prefix('/category-transfer');
 
-    Route.get('/category_balances', 'CategoryController.balances');
+    Route.get('/category-balances', 'CategoryController.balances');
 
     Route.group(() => {
       Route.get('/:catId/transactions', 'CategoryController.transactions');

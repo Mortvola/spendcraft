@@ -46,14 +46,14 @@ const RebalanceDialog = ({
         params.id = transaction.id.toString();
       }
 
-      const url = new URL('/api/category_balances', window.location.href);
+      const url = new URL('/api/category-balances', window.location.href);
       url.search = (new URLSearchParams(params)).toString();
 
       (async () => {
         const response = await httpGet(url.toString());
 
         if (response.ok) {
-          const body = getBody(response);
+          const body = await getBody(response);
 
           if (isCategoryTreeBalanceResponse(body)) {
             setCategoryTree(body);
