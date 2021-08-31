@@ -79,6 +79,8 @@ export interface AccountsInterface {
     account: string,
     balance: number,
     startDate: string,
+    type: string,
+    subtype: string,
   ): Promise<Error[] | null>;
 
   deleteInstitution(instiution: InstitutionInterface): void;

@@ -143,6 +143,8 @@ class Accounts implements AccountsInterface {
     accountName: string,
     balance: number,
     startDate: string,
+    type: string,
+    subtype: string,
   ): Promise<Error[] | null> {
     const response = await httpPost('/api/institution', {
       institution: {
@@ -151,6 +153,8 @@ class Accounts implements AccountsInterface {
       accounts: [{
         name: accountName,
         balance,
+        type,
+        subtype,
       }],
       startDate,
     });

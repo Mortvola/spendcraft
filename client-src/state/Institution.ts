@@ -77,11 +77,15 @@ class Institution implements InstitutionInterface {
     accountName: string,
     balance: number,
     startDate: string,
+    type: string,
+    subtype: string,
   ): Promise<Error[] | null> {
     const response = await httpPost(`/api/institution/${this.id}/accounts`, {
       offlineAccounts: [{
         name: accountName,
         balance,
+        type,
+        subtype,
       }],
       startDate,
     });

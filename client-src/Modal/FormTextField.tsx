@@ -21,14 +21,15 @@ const FormTextField = ({
 }: PropsType): ReactElement => (
   <label>
     {label}
-    {children}
     <Field
       as={as}
       type={type ?? 'text'}
       className="form-control"
       readOnly={readOnly}
       name={name}
-    />
+    >
+      {children}
+    </Field>
     <FormError name={name} />
   </label>
 );

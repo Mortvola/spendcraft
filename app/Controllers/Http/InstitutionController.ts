@@ -33,6 +33,8 @@ type OnlineAccount = {
 type OfflineAccount = {
   name: string,
   balance: number,
+  type: string,
+  subtype: string,
 };
 
 type OnlineAccountsResponse = {
@@ -65,6 +67,8 @@ class InstitutionController {
         schema.object().members({
           name: schema.string(),
           balance: schema.number(),
+          type: schema.string(),
+          subtype: schema.string(),
         }),
       ),
       startDate: schema.string.optional(),
@@ -374,6 +378,8 @@ class InstitutionController {
         balance: account.balance,
         tracking: 'Transactions',
         enabled: true,
+        type: account.type,
+        subtype: account.subtype,
       });
 
       // eslint-disable-next-line no-await-in-loop
@@ -420,6 +426,8 @@ class InstitutionController {
         schema.object().members({
           name: schema.string(),
           balance: schema.number(),
+          type: schema.string(),
+          subtype: schema.string(),
         }),
       ),
       startDate: schema.string(),
