@@ -1,8 +1,28 @@
 {
   "commands": {
+    "check:balances": {
+      "settings": {
+        "loadApp": true,
+        "stayAlive": false
+      },
+      "commandPath": "./commands/CheckBalances",
+      "commandName": "check:balances",
+      "description": "Checks the category and account balances",
+      "args": [],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "fix",
+          "propertyName": "fix",
+          "type": "boolean",
+          "alias": "f",
+          "description": "Repairs the balances"
+        }
+      ]
+    },
     "dump:rcfile": {
       "settings": {},
-      "commandPath": "@adonisjs/core/commands/DumpRc",
+      "commandPath": "@adonisjs/core/build/commands/DumpRc",
       "commandName": "dump:rcfile",
       "description": "Dump contents of .adonisrc.json file along with defaults",
       "args": [],
@@ -13,7 +33,7 @@
       "settings": {
         "loadApp": true
       },
-      "commandPath": "@adonisjs/core/commands/ListRoutes",
+      "commandPath": "@adonisjs/core/build/commands/ListRoutes",
       "commandName": "list:routes",
       "description": "List application routes",
       "args": [],
@@ -29,7 +49,7 @@
     },
     "generate:key": {
       "settings": {},
-      "commandPath": "@adonisjs/core/commands/GenerateKey",
+      "commandPath": "@adonisjs/core/build/commands/GenerateKey",
       "commandName": "generate:key",
       "description": "Generate a new APP_KEY secret",
       "args": [],

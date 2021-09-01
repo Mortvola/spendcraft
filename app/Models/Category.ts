@@ -21,7 +21,7 @@ type GroupItem = {
   categories: (CategoryItem | { id: number, name: string})[],
 };
 
-class Category extends BaseModel {
+export default class Category extends BaseModel {
   @column()
   public id: number;
 
@@ -123,5 +123,4 @@ class Category extends BaseModel {
   }
 }
 
-export default Category;
 export { GroupItem, CategoryItem };
