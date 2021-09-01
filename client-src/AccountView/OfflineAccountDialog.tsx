@@ -2,6 +2,7 @@ import { FieldProps, FormikErrors, FormikHelpers } from 'formik';
 import React, { ReactElement, useContext } from 'react';
 import { Error, TrackingType } from '../../common/ResponseTypes';
 import AmountInput from '../AmountInput';
+import FormField from '../Modal/FormField';
 import FormModal from '../Modal/FormModal';
 import FormTextField from '../Modal/FormTextField';
 import useModal, { ModalProps, UseModalType } from '../Modal/useModal';
@@ -22,7 +23,7 @@ const OfflineAccountDialog = ({
   setShow,
   onHide,
 }: PropsType & ModalProps): ReactElement => {
-  const { accounts } = useContext(MobxStore);
+  const { accounts, uiState } = useContext(MobxStore);
 
   type ValuesType = {
     institute: string,
@@ -88,6 +89,10 @@ const OfflineAccountDialog = ({
   const handleDelete = () => {
     if (account) {
       account.delete();
+      if (uiState.selectedAccount === account) {
+        uiState.selectAccount(null);
+      }
+      setShow(false);
     }
   }
 
@@ -247,18 +252,19 @@ const OfflineAccountDialog = ({
           !account
             ? (
               <>
-                <FormTextField name="balance" label="Starting Balance:" as={AmountInput} />
-                <FormTextField name="startDate" label="Start Date:" type="date" />
-                <FormTextField name="type" label="Account Type:">
+                <FormField name="balance" label="Starting Balance:" as={AmountInput} />
+                <FormField name="startDate" label="Start Date:" type="date" />
+                <FormField name="type" label="Account Type:">
                   {typelist}
-                </FormTextField>
-                <FormTextField name="subtype" label="Account Subtype:">
+                </FormField>
+                <FormField name="subtype" label="Account Subtype:">
                   {subtypeList}
-                </FormTextField>
-                <FormTextField name="tracking" label="Tracking:" as="select">
-                  <option value="Transactions">Transactions</option>
+                </FormField>
+                <FormField name="tracking" label="Tracking:" as="select">
+                  <option value="Transactions">Categorized Transactions</option>
+                  <option value="Uncategorized Transactions">Uncategorized Transactions</option>
                   <option value="Balances">Balances</option>
-                </FormTextField>
+                </FormField>
               </>
             )
             : null

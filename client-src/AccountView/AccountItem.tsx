@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { ReactElement, useState } from 'react';
 import PropTypes from 'prop-types';
 import Amount from '../Amount';
 import { AccountInterface } from '../state/State';
@@ -13,7 +13,7 @@ const AccountItem = ({
   name,
   account,
   onChange,
-}: PropsType) => {
+}: PropsType): ReactElement => {
   const [option, setOption] = useState('None');
 
   const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -41,8 +41,9 @@ const AccountItem = ({
         <label>Account Tracking</label>
         <select name={name} value={option} onChange={handleChange}>
           <option value="None">None</option>
-          <option value="Transactions">Transactions</option>
-          <option value="Balances">Balance</option>
+          <option value="Transactions">Categorized Transactions</option>
+          <option value="Uncategorized Transactions">Uncategorized Transactions</option>
+          <option value="Balances">Balances</option>
         </select>
       </div>
     </div>

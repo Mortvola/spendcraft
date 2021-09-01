@@ -1,9 +1,10 @@
 import React, { ReactElement } from 'react';
 import Register from './Transactions/Register';
 import BalanceHistory from './AccountView/BalanceHistory';
+import { TrackingType } from '../common/ResponseTypes';
 
 type PropsType = {
-  detailView: unknown,
+  detailView: TrackingType,
   isMobile?: boolean,
 }
 
@@ -16,10 +17,11 @@ const DetailView = ({
       return <BalanceHistory />;
 
     case 'Transactions':
+    case 'Uncategorized Transactions':
       return <Register isMobile={isMobile} />;
 
     default:
-      return <div />;
+      throw new Error('Invalid tracking type');
   }
 };
 

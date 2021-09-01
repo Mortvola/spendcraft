@@ -280,7 +280,7 @@ class Account extends BaseModel {
 
     let cat: CategoryItem | null = null;
 
-    if (sum !== 0) {
+    if (sum !== 0 && this.tracking === 'Transactions') {
       const unassigned = await user.getUnassignedCategory({ client: trx });
 
       // Add the sum of the transactions to the unassigned category.

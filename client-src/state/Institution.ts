@@ -2,7 +2,7 @@ import { makeAutoObservable, runInAction } from 'mobx';
 import Account from './Account';
 import {
   UnlinkedAccountProps, InstitutionProps, isAccountsResponse, isUnlinkedAccounts, AccountBalanceProps, Error,
-  TrackingType, isAddAccountsResponse,
+  TrackingType, isAddAccountsResponse, isDeleteAccountResponse,
 } from '../../common/ResponseTypes';
 import { AccountInterface, InstitutionInterface, StoreInterface } from './State';
 import {
@@ -50,7 +50,7 @@ class Institution implements InstitutionInterface {
     }
   }
 
-  async addAccounts(
+  async addOnlineAccounts(
     accounts: UnlinkedAccountProps[],
     startDate: string,
   ): Promise<null> {
@@ -67,6 +67,7 @@ class Institution implements InstitutionInterface {
           body.accounts.forEach((a) => {
             this.insertAccount(new Account(this.store, this, a));
           });
+          this.store.categoryTree.updateBalances(body.categories);
         }
       });
     }
@@ -96,11 +97,12 @@ class Institution implements InstitutionInterface {
     if (response.ok) {
       const body = await getBody(response);
 
-      if (isAccountsResponse(body)) {
+      if (isAddAccountsResponse(body)) {
         runInAction(() => {
-          body.forEach((acct) => {
+          body.accounts.forEach((acct) => {
             this.insertAccount(new Account(this.store, this, acct));
           })
+          this.store.categoryTree.updateBalances(body.categories);
         });
       }
     }
@@ -135,13 +137,19 @@ class Institution implements InstitutionInterface {
     const response = await httpDelete(`/api/institution/${this.id}/accounts/${account.id}`);
 
     if (response.ok) {
-      runInAction(() => {
-        const index = this.accounts.findIndex((a) => a.id === account.id);
+      const body = await getBody(response);
 
-        if (index !== -1) {
-          this.accounts.splice(index, 1);
-        }
-      });
+      if (isDeleteAccountResponse(body)) {
+        runInAction(() => {
+          const index = this.accounts.findIndex((a) => a.id === account.id);
+
+          if (index !== -1) {
+            this.accounts.splice(index, 1);
+          }
+
+          this.store.categoryTree.updateBalances(body);
+        });
+      }
     }
   }
 

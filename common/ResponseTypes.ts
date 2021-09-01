@@ -173,6 +173,28 @@ export const isInstitutionsResponse = (r: unknown): r is InstitutionProps[] => (
   || isInstitutionProps((r as InstitutionProps[])[0]))
 );
 
+export interface AddInstitutionResponse {
+  id: number;
+
+  name: string;
+
+  offline: boolean;
+
+  accounts: AccountProps[];
+
+  categories: CategoryBalanceProps[];
+}
+
+export const isAddInstitutionResponse = (r: unknown): r is AddInstitutionResponse => (
+  (r as AddInstitutionResponse).id !== undefined
+  && (r as AddInstitutionResponse).name !== undefined
+  && (r as AddInstitutionResponse).offline !== undefined
+  && (r as AddInstitutionResponse).accounts !== undefined
+  && Array.isArray((r as AddInstitutionResponse).accounts)
+  && (r as AddInstitutionResponse).categories !== undefined
+  && Array.isArray((r as AddInstitutionResponse).categories)
+);
+
 export interface TransactionCategoryProps {
   id: number;
 
@@ -444,6 +466,7 @@ export const isAccountsResponse = (r: unknown): r is AccountProps[] => (
 
 export type AddAccountsResponse = {
   accounts: AccountProps[],
+  categories: unknown[],
 }
 
 export const isAddAccountsResponse = (r: unknown): r is AddAccountsResponse => (
@@ -464,7 +487,7 @@ export interface FundingPlanCategoryProps {
 export interface FundingPlanGroupProps {
   id: number;
 
-  categories: Array<FundingPlanCategoryProps>;
+  categories: FundingPlanCategoryProps[];
 
   name: string;
 
@@ -561,8 +584,8 @@ export interface AccountSyncProps {
 }
 
 export interface AccountSyncResponse {
-  accounts: Array<AccountSyncProps>;
-  categories: Array<CategoryProps>;
+  accounts: AccountSyncProps[];
+  categories: CategoryProps[];
 }
 
 export const isAccountSyncResponse = (
@@ -609,7 +632,7 @@ export const isUserProps = (
   (r as UserProps).username !== undefined
 );
 
-export type TrackingType = 'None' | 'Balances' | 'Transactions';
+export type TrackingType = 'None' | 'Balances' | 'Transactions' | 'Uncategorized Transactions';
 
 export type UnlinkedAccountProps = {
   plaidAccountId: string,
@@ -670,4 +693,14 @@ export const isCategoryTreeBalanceProps = (r: unknown): r is CategoryTreeBalance
 export const isCategoryTreeBalanceResponse = (r: unknown): r is CategoryTreeBalanceProps[] => (
   Array.isArray(r)
   && isCategoryTreeBalanceProps(r[0])
+)
+
+export const isDeleteInstitutionResponse = (r: unknown): r is CategoryBalanceProps[] => (
+  Array.isArray(r)
+  && (r.length === 0 || isCategoryBalance(r[0]))
+)
+
+export const isDeleteAccountResponse = (r: unknown): r is CategoryBalanceProps[] => (
+  Array.isArray(r)
+  && (r.length === 0 || isCategoryBalance(r[0]))
 )

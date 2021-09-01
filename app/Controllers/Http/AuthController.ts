@@ -61,7 +61,7 @@ export default class AuthController {
         .fill({
           name: 'System',
           userId: user.id,
-          system: true,       
+          system: true,
         });
 
       await systemGroup.save();
@@ -219,7 +219,7 @@ export default class AuthController {
     const requestData = await request.validate({
       schema: validationSchema,
     });
-  
+
     const user = await User.findBy('email', requestData.email);
 
     if (user) {
@@ -279,11 +279,15 @@ export default class AuthController {
     const user = await User.findBy('email', requestData.email);
 
     if (!user) {
-      return view.render('reset-password', { user, token: requestData.token, errorMessage: 'The user could not be found.' });
+      return view.render(
+        'reset-password', { user, token: requestData.token, errorMessage: 'The user could not be found.' },
+      );
     }
 
     if (requestData.password !== requestData.passwordConfirmation) {
-      return view.render('reset-password', { user, token: requestData.token, errorMessage: 'The passwords do not match.' });
+      return view.render(
+        'reset-password', { user, token: requestData.token, errorMessage: 'The passwords do not match.' },
+      );
     }
 
     let payload: Record<string, unknown> = { id: null };
@@ -296,7 +300,9 @@ export default class AuthController {
     }
 
     if (payload.id !== user.id) {
-      return view.render('reset-password', { user, token: requestData.token, errorMessage: 'The token is no longer valid.' });
+      return view.render(
+        'reset-password', { user, token: requestData.token, errorMessage: 'The token is no longer valid.' },
+      );
     }
 
     user.password = requestData.password;
@@ -341,7 +347,9 @@ export default class AuthController {
     }
 
     if (!requestData.password || requestData.password !== requestData.passwordConfirmation) {
-      response.notAcceptable(JSON.stringify({ errors: { passwordConfirmation: 'New password and confirmation do not match' } }));
+      response.notAcceptable(
+        JSON.stringify({ errors: { passwordConfirmation: 'New password and confirmation do not match' } }),
+      );
       return undefined;
     }
 

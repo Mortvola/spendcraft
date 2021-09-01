@@ -24,8 +24,16 @@ function useModal<T>(
   const [showDialog, setShowDialog] = useState(false);
 
   const createDialog = useCallback((props: T & { onHide?: () => void }): ReactElement | null => {
+    const localSetShow = (show: boolean) => {
+      if (!show && showDialog && props.onHide) {
+        props.onHide();
+      }
+
+      setShowDialog(show);
+    }
+
     const handleHide = () => {
-      if (props.onHide) {
+      if (props.onHide && showDialog) {
         props.onHide();
       }
       setShowDialog(false);
@@ -43,7 +51,7 @@ function useModal<T>(
       const props2 = {
         ...props,
         show: showDialog,
-        setShow: setShowDialog,
+        setShow: localSetShow,
         onHide: handleHide,
         onConfirm: handleSave,
       };

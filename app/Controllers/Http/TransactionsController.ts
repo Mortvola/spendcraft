@@ -225,20 +225,28 @@ export default class TransactionsController {
 
     const acctTransaction = await AccountTransaction.findBy('transactionId', transaction.id, { client: trx });
 
+    let account: Account | null = null;
+
+    if (acctTransaction) {
+      account = await Account.findOrFail(acctTransaction.accountId, { client: trx });
+    }
+
     const trxCategories = await transaction.related('transactionCategories').query();
 
     if (trxCategories.length === 0) {
-      if (!acctTransaction) {
-        throw new Error('acctTransaction is null');
+      if (account && account.tracking === 'Transactions') {
+        if (!acctTransaction) {
+          throw new Error('acctTransaction is null');
+        }
+
+        const unassignedCat = await user.getUnassignedCategory({ client: trx });
+
+        unassignedCat.amount -= acctTransaction.amount;
+
+        result.balances.push({ id: unassignedCat.id, balance: unassignedCat.amount });
+
+        await unassignedCat.save();
       }
-
-      const unassignedCat = await user.getUnassignedCategory({ client: trx });
-
-      unassignedCat.amount -= acctTransaction.amount;
-
-      result.balances.push({ id: unassignedCat.id, balance: unassignedCat.amount });
-
-      await unassignedCat.save();
     }
     else {
       // eslint-disable-next-line no-restricted-syntax
@@ -277,8 +285,10 @@ export default class TransactionsController {
       }
     }
 
-    if (acctTransaction) {
-      const account = await Account.findOrFail(acctTransaction.accountId, { client: trx });
+    if (account) {
+      if (!acctTransaction) {
+        throw new Error('acctTransaction is null');
+      }
 
       account.balance -= acctTransaction.amount;
 

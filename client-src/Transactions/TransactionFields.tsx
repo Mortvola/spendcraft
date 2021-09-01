@@ -5,10 +5,11 @@ import CategoryInput from '../CategoryInput/CategoryInput';
 import Amount from '../Amount';
 import { isTransaction } from '../state/Transaction';
 import { TransactionType } from '../../common/ResponseTypes';
-import { CategoryInterface, TransactionInterface } from '../state/State';
+import { AccountInterface, CategoryInterface, TransactionInterface } from '../state/State';
 
 type PropsType = {
   transaction: TransactionInterface
+  account?: AccountInterface | null,
   amount: number;
   balance: number;
   selected: boolean;
@@ -18,18 +19,13 @@ type PropsType = {
 
 const TransactionFields = ({
   transaction,
+  account = null,
   amount,
   balance,
   selected,
   isMobile = false,
   showTrxDialog,
 }: PropsType): ReactElement => {
-  const handleClick = () => {
-    // const { transaction, onClick } = props;
-
-    // onClick(transaction.id);
-  };
-
   const handleChange = (cat: CategoryInterface) => {
     if (isTransaction(transaction)) {
       transaction.updateTransaction({
@@ -84,13 +80,14 @@ const TransactionFields = ({
       <div className="transaction-field">{transaction.name}</div>
       {
         transaction.type !== TransactionType.STARTING_BALANCE
+          && (!account || account.tracking !== 'Uncategorized Transactions')
           ? (
             <div className="trans-cat-edit">
               <CategoryButton />
               <IconButton icon="list-ul" onClick={() => showTrxDialog(transaction)} />
             </div>
           )
-          : <div />
+          : null
       }
       <Amount className="transaction-field amount currency" amount={amount} />
       <Amount className="transaction-field balance currency" amount={balance} />

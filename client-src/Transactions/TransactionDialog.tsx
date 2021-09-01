@@ -215,41 +215,47 @@ const TransactionDialog = ({
           <FormError name="comment" />
         </label>
       </div>
-      <div className="cat-fund-table">
-        <div className={`${splitItemClass} cat-fund-title`}>
-          <div className="item-title">Category</div>
-          <div className="item-title-amount">Amount</div>
-          <div className="item-title">Comment</div>
-        </div>
-        <Field name="splits" validate={validateSplits}>
-          {({
-            field: {
-              value,
-              name,
-            },
-            form: {
-              setFieldValue,
-              values,
-            },
-          }: FieldProps<TransactionCategoryInterface[]>) => (
-            <CategorySplits
-              splits={value}
-              total={Math.abs(typeof (values.amount) === 'string' ? parseFloat(values.amount) : values.amount)}
-              onChange={(splits) => {
-                setFieldValue(name, splits);
-                setRemaining(computeRemaining(
-                  splits, typeof (values.amount) === 'string' ? parseFloat(values.amount) : values.amount,
-                ));
-              }}
-            />
-          )}
-        </Field>
-        <div className={splitItemClass}>
-          <div className="unassigned-label">Remaining:</div>
-          <Amount amount={remaining} style={{ margin: '1px', padding: '1px' }} />
-        </div>
-        <FormError name="splits" />
-      </div>
+      {
+        account === null || account.tracking === 'Transactions'
+          ? (
+            <div className="cat-fund-table">
+              <div className={`${splitItemClass} cat-fund-title`}>
+                <div className="item-title">Category</div>
+                <div className="item-title-amount">Amount</div>
+                <div className="item-title">Comment</div>
+              </div>
+              <Field name="splits" validate={validateSplits}>
+                {({
+                  field: {
+                    value,
+                    name,
+                  },
+                  form: {
+                    setFieldValue,
+                    values,
+                  },
+                }: FieldProps<TransactionCategoryInterface[]>) => (
+                  <CategorySplits
+                    splits={value}
+                    total={Math.abs(typeof (values.amount) === 'string' ? parseFloat(values.amount) : values.amount)}
+                    onChange={(splits) => {
+                      setFieldValue(name, splits);
+                      setRemaining(computeRemaining(
+                        splits, typeof (values.amount) === 'string' ? parseFloat(values.amount) : values.amount,
+                      ));
+                    }}
+                  />
+                )}
+              </Field>
+              <div className={splitItemClass}>
+                <div className="unassigned-label">Remaining:</div>
+                <Amount amount={remaining} style={{ margin: '1px', padding: '1px' }} />
+              </div>
+              <FormError name="splits" />
+            </div>
+          )
+          : null
+      }
     </FormModal>
   );
 };

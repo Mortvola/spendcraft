@@ -8,21 +8,21 @@ type PropsType = {
   readOnly?: boolean,
 };
 
-const FormTextField = ({
+const FormCheckbox = ({
   name,
   label,
   readOnly,
 }: PropsType): ReactElement => (
-  <label style={{ userSelect: 'none', marginTop: '0.5rem' }}>
-    {label}
+  <label style={{ padding: '0.5rem 0.5rem 0.5rem 0', userSelect: 'none' }}>
     <Field
-      type="text"
-      className="form-control"
+      type="checkbox"
+      style={{ marginRight: '0.5rem' }}
       readOnly={readOnly}
       name={name}
     />
+    {label}
     <FormError name={name} />
   </label>
 );
 
-export default FormTextField;
+export default FormCheckbox;

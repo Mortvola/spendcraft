@@ -1,6 +1,6 @@
 import React, { ReactElement, useCallback, useState } from 'react';
 import { Spinner } from 'react-bootstrap';
-import { CategoryInterface, TransactionInterface } from '../state/State';
+import { AccountInterface, CategoryInterface, TransactionInterface } from '../state/State';
 import CategoryViewTransaction from './CategoryViewTransaction';
 import Transaction from './Transaction';
 import TransactionFields from './TransactionFields';
@@ -14,6 +14,7 @@ import { TransactionType } from '../../common/ResponseTypes';
 type PropsType = {
   transactions?: TransactionInterface[],
   category?: CategoryInterface | null,
+  account?: AccountInterface | null,
   isMobile?: boolean,
   fetching: boolean,
   balance: number,
@@ -22,6 +23,7 @@ type PropsType = {
 const RegisterTransactions = ({
   transactions,
   category = null,
+  account = null,
   isMobile = false,
   fetching,
   balance,
@@ -62,13 +64,13 @@ const RegisterTransactions = ({
         case TransactionType.REGULAR_TRANSACTION:
         default:
           return (
-            <TransactionDialog transaction={editedTransaction} onHide={handleDialogHide} />
+            <TransactionDialog transaction={editedTransaction} onHide={handleDialogHide} account={account} />
           );
       }
     }
 
     return null;
-  }, [editedTransaction, TransactionDialog, RebalanceDialog, FundingDialog, CategoryTransferDialog]);
+  }, [editedTransaction, CategoryTransferDialog, FundingDialog, RebalanceDialog, TransactionDialog, account]);
 
   const showTrxDialog = (transaction: TransactionInterface) => {
     setEditedTransaction(transaction);
@@ -141,6 +143,7 @@ const RegisterTransactions = ({
               selected={selected}
               isMobile={isMobile}
               showTrxDialog={showTrxDialog}
+              account={account}
             />
           </Transaction>
         );

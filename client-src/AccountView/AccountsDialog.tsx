@@ -10,7 +10,7 @@ import useModal, { ModalProps, UseModalType } from '../Modal/useModal';
 import Institution from '../state/Institution';
 import FormModal from '../Modal/FormModal';
 import { TrackingType, UnlinkedAccountProps } from '../../common/ResponseTypes';
-import FormTextField from '../Modal/FormTextField';
+import FormField from '../Modal/FormField';
 
 type PropsType = {
   institution: Institution,
@@ -59,7 +59,7 @@ const AccountsDialog = ({
       })
       .filter((a) => (a.tracking !== 'None' && a.tracking !== undefined));
 
-    const errors = await institution.addAccounts(selectedAccounts, values.startDate);
+    const errors = await institution.addOnlineAccounts(selectedAccounts, values.startDate);
 
     if (!errors) {
       setShow(false);
@@ -104,7 +104,7 @@ const AccountsDialog = ({
       title="Accounts"
       formId="UnlinkedAccounts"
     >
-      <FormTextField name="startDate" label="Start Date:" type="date" />
+      <FormField name="startDate" label="Start Date:" type="date" />
       <Observer>
         {renderAccounts}
       </Observer>

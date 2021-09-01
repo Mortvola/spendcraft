@@ -243,7 +243,11 @@ class CategoryController {
             })
         })
         .whereHas('accountTransaction', (q2) => {
-          q2.where('pending', false)
+          q2
+            .where('pending', false)
+            .andWhereHas('account', (q3) => {
+              q3.where('tracking', 'Transactions')
+            })
         })
         .preload('accountTransaction', (accountTransaction) => {
           accountTransaction.preload('account', (account) => {
@@ -267,6 +271,9 @@ class CategoryController {
         })
         .whereHas('accountTransaction', (q2) => {
           q2.where('pending', true)
+            .andWhereHas('account', (q3) => {
+              q3.where('tracking', 'Transactions')
+            })
         })
         .preload('accountTransaction', (accountTransaction) => {
           accountTransaction.preload('account', (account) => {

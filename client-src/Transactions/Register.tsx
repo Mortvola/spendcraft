@@ -68,13 +68,14 @@ const Register = ({
     <div className="register-dual-pane">
       <div className="register">
         <div />
-        <RegisterTitles categoryView={category !== null} />
+        <RegisterTitles categoryView={category !== null} account={account} />
         <RegisterTransactions
           fetching={fetching}
           transactions={transactions}
           balance={balance}
           isMobile={isMobile}
           category={category}
+          account={account}
         />
       </div>
       {

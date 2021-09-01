@@ -152,15 +152,23 @@ export default class AccountsController {
     const { splits } = requestData;
 
     if (!splits || splits.length === 0) {
-      const unassignedCat = await user.getUnassignedCategory({ client: trx });
+      // We only want to update the unassigned category balance if 
+      // this account is tracking categorized transactions
+      if (account.tracking === 'Transactions') {
+        const unassignedCat = await user.getUnassignedCategory({ client: trx });
 
-      unassignedCat.amount += acctTransaction.amount;
+        unassignedCat.amount += acctTransaction.amount;
 
-      await unassignedCat.save();
+        await unassignedCat.save();
 
-      categoryBalances.push({ id: unassignedCat.id, balance: unassignedCat.amount })
+        categoryBalances.push({ id: unassignedCat.id, balance: unassignedCat.amount })
+      }
     }
     else {
+      if (account.tracking !== 'Transactions') {
+        throw new Error('categorized transaction within an uncategorized account');
+      }
+
       // eslint-disable-next-line no-restricted-syntax
       for (const split of splits) {
         const trxCategory = (new TransactionCategory()).useTransaction(trx);

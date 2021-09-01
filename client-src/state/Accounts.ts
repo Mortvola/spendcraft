@@ -2,7 +2,8 @@ import { makeAutoObservable, runInAction } from 'mobx';
 import Institution from './Institution';
 import Plaid, { PlaidMetaData } from './Plaid';
 import {
-  AccountBalanceProps, Error, isInstitutionProps, isInstitutionsResponse, isLinkTokenResponse, TrackingType,
+  AccountBalanceProps, Error, isAddInstitutionResponse, isDeleteInstitutionResponse, isInstitutionProps,
+  isInstitutionsResponse, isLinkTokenResponse, TrackingType,
 } from '../../common/ResponseTypes';
 import {
   AccountInterface, AccountsInterface, InstitutionInterface, StoreInterface,
@@ -165,7 +166,7 @@ class Accounts implements AccountsInterface {
     if (response.ok) {
       const body = await getBody(response);
 
-      if (isInstitutionProps(body)) {
+      if (isAddInstitutionResponse(body)) {
         runInAction(() => {
           const institution = new Institution(this.store, {
             id: body.id,
@@ -182,6 +183,8 @@ class Accounts implements AccountsInterface {
           if (existingIndex === -1) {
             this.insertInstitution(institution);
           }
+
+          this.store.categoryTree.updateBalances(body.categories);
         });
       }
     }
@@ -201,10 +204,18 @@ class Accounts implements AccountsInterface {
     const response = await httpDelete(`/api/institution/${institution.id}`);
 
     if (response.ok) {
-      const index = this.institutions.findIndex((i) => i.id === institution.id);
+      const body = await getBody(response);
 
-      if (index !== -1) {
-        this.institutions.splice(index, 1);
+      if (isDeleteInstitutionResponse(body)) {
+        runInAction(() => {
+          const index = this.institutions.findIndex((i) => i.id === institution.id);
+
+          if (index !== -1) {
+            this.institutions.splice(index, 1);
+          }
+
+          this.store.categoryTree.updateBalances(body);
+        });
       }
     }
   }

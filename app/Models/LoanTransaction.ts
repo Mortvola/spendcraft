@@ -1,3 +1,4 @@
+/* eslint-disable import/no-cycle */
 import {
   BaseModel, column, belongsTo, BelongsTo,
 } from '@ioc:Adonis/Lucid/Orm'

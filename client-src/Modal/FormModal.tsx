@@ -9,7 +9,7 @@ import { ModalProps } from './useModal';
 
 type PropsType<T> = {
   show: boolean,
-  onHide: (() => void),
+  onHide: () => void,
   initialValues: T,
   title: string,
   formId: string,

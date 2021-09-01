@@ -8,7 +8,7 @@ import Account, { AccountSyncResult } from 'App/Models/Account';
 import Category from 'App/Models/Category';
 import User from 'App/Models/User'
 import {
-  AccountProps, InstitutionProps, TrackingType, UnlinkedAccountProps,
+  AccountProps, CategoryBalanceProps, InstitutionProps, TrackingType, UnlinkedAccountProps,
 } from 'Common/ResponseTypes';
 import { schema } from '@ioc:Adonis/Core/Validator';
 import Transaction from 'App/Models/Transaction';
@@ -38,12 +38,9 @@ type OfflineAccount = {
   tracking: string,
 };
 
-type OnlineAccountsResponse = {
+type AddAccountsResponse = {
   accounts: AccountProps[],
-  categories: {
-    id: number,
-    amount: number,
-  }[],
+  categories: CategoryBalanceProps[],
 }
 
 class InstitutionController {
@@ -131,13 +128,14 @@ class InstitutionController {
       throw new Error('inst is null');
     }
 
-    let accounts: AccountProps[] = [];
+    let accounts: AddAccountsResponse = {
+      accounts: [],
+      categories: [],
+    };
 
     if (requestData.accounts) {
-      const fundingPool = await user.getFundingPoolCategory({ client: trx });
-
       accounts = await InstitutionController.addOfflineAccounts(
-        user, inst, requestData.accounts, requestData.startDate, fundingPool, { client: trx },
+        user, inst, requestData.accounts, requestData.startDate, { client: trx },
       );
     }
 
@@ -147,7 +145,7 @@ class InstitutionController {
       id: inst.id,
       name: inst.name,
       offline: true,
-      accounts,
+      ...accounts,
     };
   }
 
@@ -246,25 +244,27 @@ class InstitutionController {
     // eslint-disable-next-line no-await-in-loop
     await acctTransaction.save();
 
-    // eslint-disable-next-line no-await-in-loop
-    const transactionCategory = (new TransactionCategory())
-      .fill({
-        transactionId: transId,
-        categoryId: fundingPool.id,
-        amount: startingBalance,
-      });
+    if (acct.tracking === 'Transactions') {
+      // eslint-disable-next-line no-await-in-loop
+      const transactionCategory = (new TransactionCategory())
+        .fill({
+          transactionId: transId,
+          categoryId: fundingPool.id,
+          amount: startingBalance,
+        });
 
-    if (options && options.client) {
-      transactionCategory.useTransaction(options.client);
+      if (options && options.client) {
+        transactionCategory.useTransaction(options.client);
+      }
+
+      // eslint-disable-next-line no-await-in-loop
+      await transactionCategory.save();
+
+      fundingPool.amount += startingBalance;
+
+      // eslint-disable-next-line no-await-in-loop
+      await fundingPool.save();
     }
-
-    // eslint-disable-next-line no-await-in-loop
-    await transactionCategory.save();
-
-    fundingPool.amount += startingBalance;
-
-    // eslint-disable-next-line no-await-in-loop
-    await fundingPool.save();
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -273,11 +273,10 @@ class InstitutionController {
     institution: Institution,
     accounts: OnlineAccount[],
     startDate: string,
-    fundingPool: Category,
     options?: {
       client: TransactionClientContract,
     },
-  ): Promise<OnlineAccountsResponse> {
+  ): Promise<AddAccountsResponse> {
     if (!institution.accessToken) {
       throw new Error('accessToken is not defined');
     }
@@ -285,6 +284,8 @@ class InstitutionController {
     const newAccounts: Account[] = [];
 
     let unassignedAmount = 0;
+
+    const fundingPool = await user.getFundingPoolCategory(options);
 
     const unassigned = await user.getUnassignedCategory(options);
 
@@ -318,7 +319,7 @@ class InstitutionController {
         // eslint-disable-next-line no-await-in-loop
         await acct.save();
 
-        if (acct.tracking === 'Transactions') {
+        if (acct.tracking !== 'Balances') {
           // eslint-disable-next-line no-await-in-loop
           const details = await acct.addTransactions(
             institution.accessToken, start, user, options,
@@ -344,8 +345,8 @@ class InstitutionController {
     return {
       accounts: newAccounts,
       categories: [
-        { id: fundingPool.id, amount: fundingPool.amount },
-        { id: unassigned.id, amount: unassignedAmount },
+        { id: fundingPool.id, balance: fundingPool.amount },
+        { id: unassigned.id, balance: unassignedAmount },
       ],
     }
   }
@@ -356,12 +357,13 @@ class InstitutionController {
     institution: Institution,
     accounts: OfflineAccount[],
     startDate: string,
-    fundingPool: Category,
     options?: {
       client: TransactionClientContract,
     },
-  ): Promise<AccountProps[]> {
+  ): Promise<AddAccountsResponse> {
     const newAccounts: Account[] = [];
+
+    const fundingPool = await user.getFundingPoolCategory(options);
 
     const start = (startDate ? moment(startDate) : moment().startOf('month'));
 
@@ -389,13 +391,19 @@ class InstitutionController {
 
       // eslint-disable-next-line no-await-in-loop
       await InstitutionController.insertStartingBalance(
-        user, acct, start.format('YYYY-MM-DD'), account.balance, fundingPool, options,
+        user, acct, start.format('YYYY-MM-DD'), account.balance,
+        fundingPool, options,
       );
 
       newAccounts.push(acct);
     }
 
-    return newAccounts;
+    return {
+      accounts: newAccounts,
+      categories: [
+        { id: fundingPool.id, balance: fundingPool.amount },
+      ],
+    }
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -404,7 +412,7 @@ class InstitutionController {
     auth: {
       user,
     },
-  }: HttpContextContract): Promise<AccountProps[] | OnlineAccountsResponse> {
+  }: HttpContextContract): Promise<AddAccountsResponse> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -444,18 +452,16 @@ class InstitutionController {
 
     const institution = await Institution.findOrFail(request.params().instId, { client: trx });
 
-    const fundingPool = await user.getFundingPoolCategory({ client: trx });
-
-    let result: AccountProps[] | OnlineAccountsResponse;
+    let result: AddAccountsResponse;
 
     if (requestData.plaidAccounts) {
       result = await InstitutionController.addOnlineAccounts(
-        user, institution, requestData.plaidAccounts, requestData.startDate, fundingPool, { client: trx },
+        user, institution, requestData.plaidAccounts, requestData.startDate, { client: trx },
       );
     }
     else if (requestData.offlineAccounts) {
       result = await InstitutionController.addOfflineAccounts(
-        user, institution, requestData.offlineAccounts, requestData.startDate, fundingPool, { client: trx },
+        user, institution, requestData.offlineAccounts, requestData.startDate, { client: trx },
       );
     }
     else {
@@ -586,25 +592,28 @@ class InstitutionController {
   // eslint-disable-next-line class-methods-use-this
   public async deleteAccount(
     { request, auth: { user } }: HttpContextContract,
-  ): Promise<void> {
-    if (!user) {
-      throw new Error('user is not defined');
-    }
-
-    await (await Account.findOrFail(request.params().acctId)).delete();
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  public async delete(
-    { request, auth: { user } }: HttpContextContract,
-  ): Promise<void> {
+  ): Promise<CategoryBalanceProps[]> {
     if (!user) {
       throw new Error('user is not defined');
     }
 
     const trx = await Database.transaction();
 
-    const accounts = await Account.query({ client: trx }).where('institutionId', request.params().instId);
+    const account = await Account.findOrFail(request.params().acctId, { client: trx });
+
+    const result = await InstitutionController.deleteAccounts([account], user, trx);
+
+    await trx.commit();
+
+    return result;
+  }
+
+  private static async deleteAccounts(
+    accounts: Account[],
+    user: User,
+    trx: TransactionClientContract,
+  ): Promise<CategoryBalanceProps[]> {
+    const categoryBalances: CategoryBalanceProps[] = [];
 
     // eslint-disable-next-line no-restricted-syntax
     for (const acct of accounts) {
@@ -623,12 +632,23 @@ class InstitutionController {
             .where('transactionId', transaction.id);
 
           if (transCats.length === 0) {
-            // eslint-disable-next-line no-await-in-loop
-            const unassignedCat = await user.getUnassignedCategory({ client: trx });
+            if (acct.tracking === 'Transactions') {
+              // eslint-disable-next-line no-await-in-loop
+              const unassignedCat = await user.getUnassignedCategory({ client: trx });
 
-            unassignedCat.amount -= acctTran.amount;
+              unassignedCat.amount -= acctTran.amount;
 
-            await unassignedCat.save();
+              await unassignedCat.save();
+
+              const catBalance = categoryBalances.find((cb) => cb.id === unassignedCat.id);
+
+              if (catBalance) {
+                catBalance.balance = unassignedCat.amount;
+              }
+              else {
+                categoryBalances.push({ id: unassignedCat.id, balance: unassignedCat.amount })
+              }
+            }
           }
           else {
             // eslint-disable-next-line no-restricted-syntax
@@ -641,6 +661,15 @@ class InstitutionController {
 
                 // eslint-disable-next-line no-await-in-loop
                 await category.save();
+
+                const catBalance = categoryBalances.find((cb) => cb.id === category.id);
+
+                if (catBalance) {
+                  catBalance.balance = category.amount;
+                }
+                else {
+                  categoryBalances.push({ id: category.id, balance: category.amount })
+                }
               }
 
               // eslint-disable-next-line no-await-in-loop
@@ -666,9 +695,29 @@ class InstitutionController {
       await acct.delete();
     }
 
+    return categoryBalances;
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  public async delete(
+    { request, auth: { user } }: HttpContextContract,
+  ): Promise<CategoryBalanceProps[]> {
+    if (!user) {
+      throw new Error('user is not defined');
+    }
+
+    const trx = await Database.transaction();
+
+    const accounts = await Account.query({ client: trx }).where('institutionId', request.params().instId);
+
+    // eslint-disable-next-line no-restricted-syntax
+    const result = await InstitutionController.deleteAccounts(accounts, user, trx);
+
     await (await Institution.findOrFail(request.params().instId, { client: trx })).delete();
 
     await trx.commit();
+
+    return result;
   }
 }
 

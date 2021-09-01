@@ -16,6 +16,10 @@ const Accounts = () => {
           selectedAccount.getTransactions();
           break;
 
+        case 'Uncategorized Transactions':
+          selectedAccount.getTransactions();
+          break;
+
         case 'Balances':
           balances.load(selectedAccount);
           break;
