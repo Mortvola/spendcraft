@@ -15,6 +15,9 @@ export default class CheckBalances extends BaseCommand {
    */
   public static description = 'Checks the category and account balances'
 
+  @flags.string({ alias: 'u', description: 'Name of the user to analyze' })
+  public user: string
+
   @flags.boolean({ alias: 'f', description: 'Repairs the balances' })
   public fix: boolean
 
@@ -35,7 +38,14 @@ export default class CheckBalances extends BaseCommand {
   private async checkCategoryBalances() {
     const trx = await Database.transaction();
 
-    const users = await User.all({ client: trx });
+    let users: User[] = [];
+
+    if (this.user) {
+      users = await User.query().where('username', this.user);
+    }
+    else {
+      users = await User.query().orderBy('username', 'asc');
+    }
 
     type Failures = {
       category: Category,

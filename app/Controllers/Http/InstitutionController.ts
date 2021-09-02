@@ -206,7 +206,7 @@ class InstitutionController {
   private static async insertStartingBalance(
     user: User,
     acct: Account,
-    startDate: string,
+    startDate: DateTime,
     startingBalance: number,
     fundingPool: Category,
     options?: {
@@ -215,7 +215,7 @@ class InstitutionController {
   ): Promise<void> {
     const transaction = (new Transaction())
       .fill({
-        date: DateTime.fromISO(startDate),
+        date: startDate,
         sortOrder: -1,
         userId: user.id,
       });
@@ -283,11 +283,7 @@ class InstitutionController {
 
     const newAccounts: Account[] = [];
 
-    let unassignedAmount = 0;
-
     const fundingPool = await user.getFundingPoolCategory(options);
-
-    const unassigned = await user.getUnassignedCategory(options);
 
     // eslint-disable-next-line no-restricted-syntax
     for (const account of accounts) {
@@ -295,7 +291,7 @@ class InstitutionController {
       let acct = await Account.findBy('plaidAccountId', account.plaidAccountId, options);
 
       if (!acct) {
-        const start = (startDate ? moment(startDate) : moment().startOf('month'));
+        const start = DateTime.fromISO(startDate);
 
         acct = (new Account())
           .fill({
@@ -306,7 +302,7 @@ class InstitutionController {
             subtype: account.subtype,
             type: account.type,
             institutionId: institution.id,
-            startDate: start.format('YYYY-MM-DD'),
+            startDate: start,
             balance: account.balances.current,
             tracking: account.tracking as TrackingType,
             enabled: true,
@@ -321,20 +317,17 @@ class InstitutionController {
 
         if (acct.tracking !== 'Balances') {
           // eslint-disable-next-line no-await-in-loop
-          const details = await acct.addTransactions(
+          const sum = await acct.addTransactions(
             institution.accessToken, start, user, options,
           );
 
-          if (details.cat) {
-            unassignedAmount = details.cat.amount;
-          }
-
-          const startingBalance = details.balance - details.sum;
+          // eslint-disable-next-line no-await-in-loop
+          await acct.save();
 
           // Insert the 'starting balance' transaction
           // eslint-disable-next-line no-await-in-loop
           await InstitutionController.insertStartingBalance(
-            user, acct, start.format('YYYY-MM-DD'), startingBalance, fundingPool, options,
+            user, acct, start, acct.balance - sum, fundingPool, options,
           );
         }
 
@@ -342,11 +335,13 @@ class InstitutionController {
       }
     }
 
+    const unassigned = await user.getUnassignedCategory(options);
+
     return {
       accounts: newAccounts,
       categories: [
         { id: fundingPool.id, balance: fundingPool.amount },
-        { id: unassigned.id, balance: unassignedAmount },
+        { id: unassigned.id, balance: unassigned.amount },
       ],
     }
   }
@@ -365,7 +360,7 @@ class InstitutionController {
 
     const fundingPool = await user.getFundingPoolCategory(options);
 
-    const start = (startDate ? moment(startDate) : moment().startOf('month'));
+    const start = DateTime.fromISO(startDate);
 
     // eslint-disable-next-line no-restricted-syntax
     for (const account of accounts) {
@@ -378,7 +373,7 @@ class InstitutionController {
       acct.fill({
         name: account.name,
         institutionId: institution.id,
-        startDate: start.format('YYYY-MM-DD'),
+        startDate: start,
         balance: account.balance,
         tracking: account.tracking as TrackingType,
         enabled: true,
@@ -391,7 +386,7 @@ class InstitutionController {
 
       // eslint-disable-next-line no-await-in-loop
       await InstitutionController.insertStartingBalance(
-        user, acct, start.format('YYYY-MM-DD'), account.balance,
+        user, acct, start, account.balance,
         fundingPool, options,
       );
 

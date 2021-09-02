@@ -12,11 +12,45 @@
       "aliases": [],
       "flags": [
         {
+          "name": "user",
+          "propertyName": "user",
+          "type": "string",
+          "alias": "u",
+          "description": "Name of the user to analyze"
+        },
+        {
           "name": "fix",
           "propertyName": "fix",
           "type": "boolean",
           "alias": "f",
           "description": "Repairs the balances"
+        }
+      ]
+    },
+    "check:transactions": {
+      "settings": {
+        "loadApp": true,
+        "stayAlive": false
+      },
+      "commandPath": "./commands/CheckTransactions",
+      "commandName": "check:transactions",
+      "description": "",
+      "args": [],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "user",
+          "propertyName": "user",
+          "type": "string",
+          "alias": "u",
+          "description": "Name of the user to analyze"
+        },
+        {
+          "name": "dump",
+          "propertyName": "dump",
+          "type": "boolean",
+          "alias": "d",
+          "description": "Display all of the details of each plaid transaction"
         }
       ]
     },
