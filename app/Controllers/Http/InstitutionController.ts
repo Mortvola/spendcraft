@@ -1,7 +1,6 @@
 /* eslint-disable no-await-in-loop */
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import Database, { TransactionClientContract } from '@ioc:Adonis/Lucid/Database';
-import moment from 'moment';
 import plaidClient, { PlaidInstitution } from '@ioc:Plaid';
 import Institution from 'App/Models/Institution';
 import Account, { AccountSyncResult } from 'App/Models/Account';
@@ -338,7 +337,13 @@ class InstitutionController {
     const unassigned = await user.getUnassignedCategory(options);
 
     return {
-      accounts: newAccounts,
+      accounts: newAccounts.map((a) => ({
+        id: a.id,
+        name: a.name,
+        tracking: a.tracking,
+        syncDate: a.syncDate.toISO(),
+        balance: a.balance,
+      })),
       categories: [
         { id: fundingPool.id, balance: fundingPool.amount },
         { id: unassigned.id, balance: unassigned.amount },
@@ -379,6 +384,7 @@ class InstitutionController {
         enabled: true,
         type: account.type,
         subtype: account.subtype,
+        syncDate: DateTime.now(),
       });
 
       // eslint-disable-next-line no-await-in-loop
@@ -394,7 +400,13 @@ class InstitutionController {
     }
 
     return {
-      accounts: newAccounts,
+      accounts: newAccounts.map((a) => ({
+        id: a.id,
+        name: a.name,
+        tracking: a.tracking,
+        syncDate: a.syncDate.toISO(),
+        balance: a.balance,
+      })),
       categories: [
         { id: fundingPool.id, balance: fundingPool.amount },
       ],

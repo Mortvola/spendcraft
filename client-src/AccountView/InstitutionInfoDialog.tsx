@@ -1,8 +1,8 @@
 import React, { ReactElement, ReactNode, useState } from 'react';
-import moment from 'moment';
 import { Button, Modal } from 'react-bootstrap';
 import { InstitutionWithInstitutionData, InstitutionWithStatus } from 'plaid';
-import useModal, { ModalProps } from '../Modal/useModal';
+import { DateTime } from 'luxon';
+import useModal, { ModalProps, UseModalType } from '../Modal/useModal';
 import Institution from '../state/Institution';
 import { httpGet } from '../state/Transports';
 
@@ -57,7 +57,7 @@ const InstitutionInfoDialog = ({
               <div>{percent(value.breakdown.success)}</div>
               <div>{percent(value.breakdown.error_plaid)}</div>
               <div>{percent(value.breakdown.error_institution)}</div>
-              <div>{moment(value.last_status_change).fromNow()}</div>
+              <div>{DateTime.fromISO(value.last_status_change).toRelative()}</div>
             </div>
           ));
         }
@@ -111,6 +111,6 @@ const InstitutionInfoDialog = ({
   );
 };
 
-export const useInstitutionInfoDialog = () => useModal(InstitutionInfoDialog);
+export const useInstitutionInfoDialog = (): UseModalType<PropsType> => useModal(InstitutionInfoDialog);
 
 export default InstitutionInfoDialog;

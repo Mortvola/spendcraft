@@ -187,7 +187,13 @@ export default class User extends BaseModel {
       id: i.id,
       name: i.name,
       offline: i.plaidItemId === null,
-      accounts: i.accounts,
+      accounts: i.accounts.map((a) => ({
+        id: a.id,
+        name: a.name,
+        tracking: a.tracking,
+        syncDate: a.syncDate !== null ? a.syncDate.toISO() : null,
+        balance: a.balance,
+      })),
     }));
   }
 

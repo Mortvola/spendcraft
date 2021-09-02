@@ -1,3 +1,4 @@
+import { DateTime } from 'luxon';
 import Reports from './Reports';
 import User from './User';
 import { CategoryType, Error, TrackingType } from '../../common/ResponseTypes'
@@ -228,7 +229,7 @@ export interface AccountInterface {
 
   tracking: TrackingType;
 
-  syncDate: string;
+  syncDate: DateTime | null;
 
   balance: number;
 

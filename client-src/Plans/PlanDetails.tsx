@@ -1,19 +1,18 @@
 import React, { useState, useContext, ReactElement } from 'react';
 import { observer } from 'mobx-react-lite';
-import moment from 'moment';
+import { DateTime } from 'luxon';
 import PlanCategory from './PlanCategory';
 import Amount from '../Amount';
 import MobxStore from '../state/mobxStore';
 import FundingPlanGroup from '../state/FundingPlanGroup';
 import FundingPlanCategory from '../state/FundingPlanCategory';
 import FundingPlanHistoryMonth from '../state/HistoryMonth';
-import HistoryGroup from '../state/HistoryGroup';
 import HistoryCategory from '../state/HistoryCategory';
 
 const PlanDetails = (): ReactElement | null => {
   const { plans: { details } } = useContext(MobxStore);
   const [scroll, setScroll] = useState(0);
-  const [now] = useState({ year: moment().year(), month: moment().month() });
+  const [now] = useState({ year: DateTime.now().year, month: DateTime.now().month - 1 });
 
   const handleOnDeltaChange = (category: FundingPlanCategory, amount: number, delta: number) => {
     if (delta !== 0) {

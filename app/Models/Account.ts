@@ -1,6 +1,5 @@
 /* eslint-disable import/no-cycle */
 import Database, { TransactionClientContract } from '@ioc:Adonis/Lucid/Database';
-import moment, { Moment } from 'moment';
 import {
   BaseModel, hasMany, HasMany, column, belongsTo, BelongsTo,
 } from '@ioc:Adonis/Lucid/Orm';
@@ -15,11 +14,11 @@ import Transaction from 'App/Models/Transaction';
 
 export type AccountSyncResult = {
   categories: CategoryBalanceProps[],
-  accounts: Array<{
+  accounts: {
     id: number,
     balance: number,
-    syncDate: string,
-  }>
+    syncDate: DateTime,
+  }[],
 };
 
 class Account extends BaseModel {
@@ -53,8 +52,8 @@ class Account extends BaseModel {
   @column()
   public type: string;
 
-  @column()
-  public syncDate: string;
+  @column.dateTime()
+  public syncDate: DateTime;
 
   @column()
   public tracking: TrackingType;
@@ -92,8 +91,6 @@ class Account extends BaseModel {
     if (trx === undefined) {
       throw new Error('transaction not defined');
     }
-
-    this.syncDate = moment().format('YYYY-MM-DD hh:mm:ss');
 
     if (this.tracking !== 'Balances') {
       // Retrieve the past 30 days of transactions
@@ -149,6 +146,8 @@ class Account extends BaseModel {
       await this.updateAccountBalanceHistory(
         trx, this.balance,
       );
+
+      this.syncDate = DateTime.now();
 
       result.accounts = [{
         id: this.id,
@@ -291,6 +290,8 @@ class Account extends BaseModel {
 
       unassigned.save();
     }
+
+    this.syncDate = DateTime.now();
 
     if (!options || !options.client) {
       await trx.commit();

@@ -138,7 +138,7 @@ export interface AccountProps {
 
   tracking: TrackingType;
 
-  syncDate: string;
+  syncDate: string | null;
 
   balance: number;
 }

@@ -1,5 +1,4 @@
 import React from 'react';
-import moment from 'moment';
 import { observer } from 'mobx-react-lite';
 import IconButton from '../IconButton';
 import { formatNumber } from '../NumberFormat';
@@ -36,7 +35,7 @@ const Account = ({
 
   let balance = formatNumber(account.balance);
   if (account.syncDate) {
-    balance += ` as of ${moment.utc(account.syncDate).local().format('M-D-YY HH:mm:ss')}`;
+    balance += ` as of ${account.syncDate.toFormat('LL-dd-y T')}`;
   }
 
   return (

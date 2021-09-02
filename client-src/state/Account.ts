@@ -1,3 +1,4 @@
+import { DateTime } from 'luxon';
 import { makeAutoObservable, runInAction } from 'mobx';
 import {
   AccountProps, Error, isAccountSyncResponse, isAccountTransactionsResponse, isAddTransactionResponse, TrackingType,
@@ -23,7 +24,7 @@ class Account implements AccountInterface {
 
   tracking: TrackingType;
 
-  syncDate: string;
+  syncDate: DateTime | null;
 
   balance: number;
 
@@ -47,7 +48,7 @@ class Account implements AccountInterface {
     this.id = props.id;
     this.name = props.name;
     this.tracking = props.tracking;
-    this.syncDate = props.syncDate;
+    this.syncDate = props.syncDate !== null ? DateTime.fromISO(props.syncDate) : null;
     this.balance = props.balance;
     this.institution = institution;
 
@@ -71,7 +72,7 @@ class Account implements AccountInterface {
         }
 
         if (accounts) {
-          this.syncDate = accounts[0].syncDate;
+          this.syncDate = DateTime.fromISO(accounts[0].syncDate);
           this.balance = accounts[0].balance;
         }
       }
