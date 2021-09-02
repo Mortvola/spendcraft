@@ -1,6 +1,8 @@
 import { BaseCommand, flags } from '@adonisjs/core/build/standalone'
 import Database from '@ioc:Adonis/Lucid/Database';
 import Category from 'App/Models/Category';
+import User from 'App/Models/User';
+import Account from 'App/Models/Account';
 
 export default class CheckBalances extends BaseCommand {
   /**
@@ -30,9 +32,7 @@ export default class CheckBalances extends BaseCommand {
     stayAlive: false,
   }
 
-  public async run (): Promise<void> {
-    const { default: User } = await import('App/Models/User');
-
+  private async checkCategoryBalances() {
     const trx = await Database.transaction();
 
     const users = await User.all({ client: trx });
@@ -108,7 +108,90 @@ export default class CheckBalances extends BaseCommand {
       }
     }
     else {
-      this.logger.info('No balance issues found');
+      this.logger.info('No category balance issues found');
     }
+  }
+
+  private async checkAccountBalances() {
+    const trx = await Database.transaction();
+
+    const users = await User.all({ client: trx });
+
+    type Failures = {
+      account: Account,
+      transSum: number,
+    };
+
+    const failedUsers: {
+      username: string,
+      failures: Failures[],
+    }[] = [];
+
+    // eslint-disable-next-line no-restricted-syntax
+    for (const user of users) {
+      // eslint-disable-next-line no-await-in-loop
+      const accounts = await Account
+        .query()
+        // .has('accountTransactions')
+        .where('tracking', '!=', 'Balances')
+        .whereHas('institution', (query) => {
+          query.where('userId', user.id)
+        })
+        .withAggregate('accountTransactions', (query) => {
+          query.sum('amount').where('pending', false).as('trans_sum')
+        })
+
+      const failures: Failures[] = [];
+
+      // eslint-disable-next-line no-restricted-syntax
+      for (const account of accounts) {
+        const transSum = (account.$extras.trans_sum === null ? 0 : parseFloat(account.$extras.trans_sum));
+        if (account.balance !== transSum) {
+          failures.push({
+            account,
+            transSum,
+          })
+        }
+      }
+
+      if (failures.length > 0) {
+        failedUsers.push({
+          username: user.username,
+          failures,
+        });
+      }
+    }
+
+    if (failedUsers.length > 0) {
+      // eslint-disable-next-line no-restricted-syntax
+      for (const user of failedUsers) {
+        this.logger.info(user.username);
+        // eslint-disable-next-line no-restricted-syntax
+        for (const failure of user.failures) {
+          const { account, transSum } = failure;
+          const difference = account.balance - transSum;
+          this.logger.info(`\t"${account.name}" (${account.id}): ${account.balance}, Transactions: ${transSum}, difference: ${difference}`);
+
+          if (this.fix) {
+            account.balance = transSum;
+
+            // eslint-disable-next-line no-await-in-loop
+            await account.save();
+          }
+        }
+      }
+
+      if (this.fix) {
+        await trx.commit();
+      }
+    }
+    else {
+      this.logger.info('No account balance issues found');
+    }
+  }
+
+  public async run (): Promise<void> {
+    await this.checkCategoryBalances();
+    await this.checkAccountBalances();
   }
 }

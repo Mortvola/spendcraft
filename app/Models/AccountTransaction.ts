@@ -1,6 +1,6 @@
 /* eslint-disable import/no-cycle */
 import {
-  BaseModel, BelongsTo, belongsTo, column, hasOne, HasOne,
+  BaseModel, BelongsTo, belongsTo, column,
 } from '@ioc:Adonis/Lucid/Orm';
 import Account from 'App/Models/Account';
 import Transaction from 'App/Models/Transaction';
@@ -15,8 +15,8 @@ class AccountTransaction extends BaseModel {
   @column({ serializeAs: 'id' })
   public transactionId: number;
 
-  @hasOne(() => Transaction)
-  public transaction: HasOne<typeof Transaction>;
+  @belongsTo(() => Transaction)
+  public transaction: BelongsTo<typeof Transaction>;
 
   @belongsTo(() => Account)
   public account: BelongsTo<typeof Account>;
