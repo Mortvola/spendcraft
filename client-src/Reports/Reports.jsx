@@ -22,14 +22,14 @@ const Reports = () => {
   };
 
   return (
-    <div className="reports-page main-tray">
+    <>
       <div className="side-bar window">
         <Nav className="flex-column" onSelect={handleSelect}>
           <Nav.Link eventKey="netWorth">Net Worth</Nav.Link>
         </Nav>
       </div>
       {renderReport()}
-    </div>
+    </>
   );
 };
 

@@ -34,12 +34,12 @@ const Plans = () => {
   );
 
   return (
-    <div className="plans-page main-tray">
+    <>
       <div className="side-bar window">
         {renderPlanList()}
       </div>
       <PlanDetails />
-    </div>
+    </>
   );
 };
 

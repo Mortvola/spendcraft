@@ -35,24 +35,29 @@ const App = () => {
 
   let main = <div />;
   let toolbar: ReactElement | null = null
+  let page = '';
   switch (uiState.view) {
     case 'HOME':
       main = <Home />;
       toolbar = <HomeToolbar />
+      page = 'home-page';
       break;
 
     case 'ACCOUNTS':
       main = <Accounts />;
       toolbar = <AccountsToolbar />
+      page = 'accounts-page';
       break;
 
     case 'REPORTS':
       main = <Reports />;
+      page = 'reports-page'
       break;
 
     case 'PLANS':
       main = <Plans />;
       toolbar = <PlansToolbar />
+      page = 'plans-page'
       break;
 
     case 'LOGOUT':
@@ -74,7 +79,9 @@ const App = () => {
           )
           : <div />
       }
-      {main}
+      <div className={`main-tray ${page}`}>
+        {main}
+      </div>
       <PlaidLink />
     </div>
   );

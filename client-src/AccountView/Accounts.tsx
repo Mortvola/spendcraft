@@ -31,7 +31,7 @@ const Accounts = () => {
   }, [balances, selectedAccount]);
 
   return (
-    <div className="accounts-page main-tray">
+    <>
       <div className="side-bar window">
         <div className="accounts">
           <div className="account-bar">
@@ -47,7 +47,7 @@ const Accounts = () => {
           )
           : <div className="register window" />
       }
-    </div>
+    </>
   );
 };
 
