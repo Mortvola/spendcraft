@@ -329,6 +329,14 @@ class InstitutionController {
             user, acct, start, acct.balance - sum, fundingPool, options,
           );
         }
+        else {
+          await acct.updateAccountBalanceHistory(acct.balance);
+
+          acct.syncDate = DateTime.now();
+
+          // eslint-disable-next-line no-await-in-loop
+          await acct.save();
+        }
 
         newAccounts.push(acct);
       }

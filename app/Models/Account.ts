@@ -11,6 +11,7 @@ import Institution from 'App/Models/Institution';
 import { CategoryBalanceProps, TrackingType } from 'Common/ResponseTypes';
 import User from 'App/Models/User';
 import Transaction from 'App/Models/Transaction';
+import { Transaction as PlaidTransaction } from 'plaid';
 
 export type AccountSyncResult = {
   categories: CategoryBalanceProps[],
@@ -123,9 +124,7 @@ class Account extends BaseModel {
 
       this.balance += sum;
 
-      await this.updateAccountBalanceHistory(
-        trx, this.balance,
-      );
+      await this.updateAccountBalanceHistory(this.balance);
 
       const unassigned = await user.getUnassignedCategory({ client: trx });
       result.categories = [{ id: unassigned.id, balance: unassigned.amount }];
@@ -143,9 +142,7 @@ class Account extends BaseModel {
 
       this.balance = balanceResponse.accounts[0].balances.current;
 
-      await this.updateAccountBalanceHistory(
-        trx, this.balance,
-      );
+      await this.updateAccountBalanceHistory(this.balance);
 
       this.syncDate = DateTime.now();
 
@@ -201,10 +198,36 @@ class Account extends BaseModel {
 
     // console.log(JSON.stringify(transactionsResponse, null, 4));
 
+    const sum = await this.applyTransactions(user, transactionsResponse.transactions, pendingTransactions);
+
+    this.syncDate = DateTime.now();
+
+    if (!options || !options.client) {
+      await trx.commit();
+    }
+
+    return sum;
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  public async applyTransactions(
+    this: Account,
+    user: User,
+    plaidTransactions: PlaidTransaction[],
+    pendingTransactions?: AccountTransaction[],
+  ): Promise<number> {
+    if (!this.$trx) {
+      throw new Error('database transaction not set');
+    }
+
     let sum = 0;
     // let pendingSum = 0;
 
-    await Promise.all(transactionsResponse.transactions.map(async (plaidTransaction) => {
+    await Promise.all(plaidTransactions.map(async (plaidTransaction) => {
+      if (!this.$trx) {
+        throw new Error('database transaction not set');
+      }
+
       // console.log(JSON.stringify(transaction, null, 4));
       // Only consider non-pending transactions
       // console.log(JSON.stringify(transaction, null, 4));
@@ -212,13 +235,13 @@ class Account extends BaseModel {
       if (plaidTransaction.amount !== null) {
         // First check to see if the transaction is present. If it is then don't insert it.
         let acctTrans = await AccountTransaction
-          .findBy('plaidTransactionId', plaidTransaction.transaction_id, { client: trx });
+          .findBy('plaidTransactionId', plaidTransaction.transaction_id, { client: this.$trx });
 
         if (acctTrans) {
           // If the existing transaction was pending
           // and the Plaid transaction is not then remove
           // the transaction from the pending transaction array.
-          if (acctTrans.pending && !plaidTransaction.pending) {
+          if (pendingTransactions && acctTrans.pending && !plaidTransaction.pending) {
             const index = pendingTransactions.findIndex(
               (p) => p.plaidTransactionId === plaidTransaction.transaction_id,
             );
@@ -247,7 +270,7 @@ class Account extends BaseModel {
         }
         else {
           const transaction = await (new Transaction())
-            .useTransaction(trx)
+            .useTransaction(this.$trx)
             .fill({
               date: DateTime.fromISO(plaidTransaction.date),
               userId: user.id,
@@ -257,7 +280,7 @@ class Account extends BaseModel {
           // console.log(JSON.stringify(id, null, 4));
 
           acctTrans = await (new AccountTransaction())
-            .useTransaction(trx)
+            .useTransaction(this.$trx)
             .fill({
               transactionId: transaction.id,
               plaidTransactionId: plaidTransaction.transaction_id,
@@ -276,7 +299,7 @@ class Account extends BaseModel {
     }));
 
     // Delete any pending transaction in the database that remain in the array
-    if (pendingTransactions.length > 0) {
+    if (pendingTransactions && pendingTransactions.length > 0) {
       await Promise.all(pendingTransactions.map(async (pt): Promise<void> => {
         await pt.delete();
         return pt.transaction.delete();
@@ -284,29 +307,32 @@ class Account extends BaseModel {
     }
 
     if (sum !== 0 && this.tracking === 'Transactions') {
-      const unassigned = await user.getUnassignedCategory({ client: trx });
+      const unassigned = await user.getUnassignedCategory({ client: this.$trx });
 
       unassigned.amount += sum;
 
       unassigned.save();
     }
 
-    this.syncDate = DateTime.now();
-
-    if (!options || !options.client) {
-      await trx.commit();
-    }
-
     return sum;
   }
 
   public async updateAccountBalanceHistory(
-    this: Account, trx: TransactionClientContract, balance: number,
+    this: Account,
+    balance: number,
   ): Promise<void> {
+    if (!this.$trx) {
+      throw new Error('database transaction not set');
+    }
+
     const today = DateTime.utc();
 
     await this.load('balanceHistory', (query) => {
-      query.where('date', today.toFormat('yyyy-MM-dd')).useTransaction(trx);
+      if (!this.$trx) {
+        throw new Error('database transaction not set');
+      }
+
+      query.where('date', today.toFormat('yyyy-MM-dd')).useTransaction(this.$trx);
     });
 
     if (this.balanceHistory.length === 0) {

@@ -51,6 +51,12 @@
           "type": "boolean",
           "alias": "d",
           "description": "Display all of the details of each plaid transaction"
+        },
+        {
+          "name": "fix-missing",
+          "propertyName": "fixMissing",
+          "type": "boolean",
+          "description": "Adds missing transactions"
         }
       ]
     },

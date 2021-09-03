@@ -3,6 +3,7 @@ import Database from '@ioc:Adonis/Lucid/Database';
 import Category from 'App/Models/Category';
 import User from 'App/Models/User';
 import Account from 'App/Models/Account';
+import AccountTransaction from 'App/Models/AccountTransaction';
 
 export default class CheckBalances extends BaseCommand {
   /**
@@ -41,10 +42,10 @@ export default class CheckBalances extends BaseCommand {
     let users: User[] = [];
 
     if (this.user) {
-      users = await User.query().where('username', this.user);
+      users = await User.query({ client: trx }).where('username', this.user);
     }
     else {
-      users = await User.query().orderBy('username', 'asc');
+      users = await User.query({ client: trx }).orderBy('username', 'asc');
     }
 
     type Failures = {
@@ -70,8 +71,30 @@ export default class CheckBalances extends BaseCommand {
             transaction.where('userId', user.id)
           });
         })
-        .where('type', '!=', 'UNASSIGNED')
         .preload('group');
+
+      // Sum up all the transactions that do not have categories assigned
+      // and add the amount to the unassigned category.
+      // eslint-disable-next-line no-await-in-loop
+      const unassignedTrans = await AccountTransaction
+        .query({ client: trx })
+        .whereHas('transaction', (query) => {
+          query.where('userId', user.id).doesntHave('transactionCategories')
+        })
+        .whereHas('account', (query) => {
+          query.where('tracking', 'Transactions')
+        })
+        .where('pending', false)
+        .sum('amount')
+        .as('sum')
+        .first();
+
+      if (unassignedTrans && parseFloat(unassignedTrans.$extras.sum) !== 0) {
+        const unassignedCat = categories.find((c) => c.type === 'UNASSIGNED');
+        if (unassignedCat) {
+          unassignedCat.$extras.trans_sum += parseFloat(unassignedTrans.$extras.sum);
+        }
+      }
 
       const failures: Failures[] = [];
 
