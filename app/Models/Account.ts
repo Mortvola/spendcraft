@@ -278,8 +278,8 @@ class Account extends BaseModel {
     // Delete any pending transaction in the database that remain in the array
     if (pendingTransactions.length > 0) {
       await Promise.all(pendingTransactions.map(async (pt): Promise<void> => {
-        await pt.transaction.delete();
-        return pt.delete();
+        await pt.delete();
+        return pt.transaction.delete();
       }));
     }
 
