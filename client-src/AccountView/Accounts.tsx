@@ -31,11 +31,11 @@ const Accounts = () => {
   }, [balances, selectedAccount]);
 
   return (
-    <>
-      <div className="side-bar">
+    <div className="accounts-page main-tray">
+      <div className="side-bar window">
         <div className="accounts">
           <div className="account-bar">
-            <div>Institutions & Accounts</div>
+            Institutions & Accounts
           </div>
           <AccountView />
         </div>
@@ -45,9 +45,9 @@ const Accounts = () => {
           ? (
             <DetailView detailView={selectedAccount.tracking} />
           )
-          : null
+          : <div className="register window" />
       }
-    </>
+    </div>
   );
 };
 

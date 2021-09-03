@@ -21,7 +21,7 @@ const Networth = ({
   });
 
   return (
-    <div className="chart-wrapper">
+    <div className="chart-wrapper window">
       <Chart
         chartType="ComboChart"
         data={data}

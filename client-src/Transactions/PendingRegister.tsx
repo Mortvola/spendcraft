@@ -15,7 +15,7 @@ const PendingRegister = ({
   if (pending && pending.length > 0) {
     return (
       <SecondaryRegister
-        title="Pending Transactions:"
+        title="Pending Transactions"
         titles={<PendingTitles categoryView={categoryView} />}
         transactions={<PendingTransactions pending={pending} categoryView={categoryView} />}
       />

@@ -9,7 +9,7 @@ const BalanceHistory = () => {
   data.splice(0, 0, ['date', 'balance']);
 
   return (
-    <div className="chart-wrapper">
+    <div className="chart-wrapper window">
       <Chart
         chartType="LineChart"
         data={data}

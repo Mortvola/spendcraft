@@ -16,14 +16,14 @@ const Home = () => {
 
   if (categoryTree.initialized) {
     return (
-      <>
-        <div className="side-bar">
+      <div className="home-page main-tray">
+        <div className="side-bar window">
           <div className="categories">
             <CategoryView />
           </div>
         </div>
         <DetailView detailView="Transactions" />
-      </>
+      </div>
     );
   }
 

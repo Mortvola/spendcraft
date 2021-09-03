@@ -161,44 +161,48 @@ const PlanDetails = (): ReactElement | null => {
     setScroll(event.currentTarget.scrollLeft);
   };
 
-  if (details) {
-    return (
-      <div className="plan">
-        <div className="plan-title-wrapper">
-          <div className="plan-total title">
-            <div>Category</div>
-            <div className="currency">Monthly Amount</div>
-            <div className="currency">Annual Amount</div>
-            <div className="plan-wrapper">
-              <div className="plan-history" style={{ position: 'relative', left: -scroll }}>
-                {renderMonthlyTitles()}
+  return (
+    <div className="plan window">
+      {
+        details
+          ? (
+            <>
+              <div className="plan-title-wrapper">
+                <div className="plan-total title">
+                  <div>Category</div>
+                  <div className="currency">Monthly Amount</div>
+                  <div className="currency">Annual Amount</div>
+                  <div className="plan-wrapper">
+                    <div className="plan-history" style={{ position: 'relative', left: -scroll }}>
+                      {renderMonthlyTitles()}
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        </div>
-        <div className="plan-detail-wrapper">
-          <div className="plan-details">
-            {renderGroups(details.groups)}
-          </div>
-          <div className="plan-wrapper">
-            <div style={{ position: 'relative', left: -scroll }}>
-              {renderGroupHistory(details.groups)}
-            </div>
-          </div>
-        </div>
-        <div className="plan-total">
-          Plan Total:
-          <Amount amount={details.total} />
-          <Amount amount={details.total * 12} />
-          <div className="plan-history" onScroll={handleScroll}>
-            {renderMonthlyTotals()}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return null;
+              <div className="plan-detail-wrapper">
+                <div className="plan-details">
+                  {renderGroups(details.groups)}
+                </div>
+                <div className="plan-wrapper">
+                  <div style={{ position: 'relative', left: -scroll }}>
+                    {renderGroupHistory(details.groups)}
+                  </div>
+                </div>
+              </div>
+              <div className="plan-total">
+                Plan Total:
+                <Amount amount={details.total} />
+                <Amount amount={details.total * 12} />
+                <div className="plan-history" onScroll={handleScroll}>
+                  {renderMonthlyTotals()}
+                </div>
+              </div>
+            </>
+          )
+          : null
+      }
+    </div>
+  );
 };
 
 export default observer(PlanDetails);

@@ -65,8 +65,8 @@ const Register = ({
   }
 
   return (
-    <div className="register-dual-pane">
-      <div className="register">
+    <>
+      <div className="register window">
         <div />
         <RegisterTitles categoryView={category !== null} account={account} />
         <RegisterTransactions
@@ -83,7 +83,7 @@ const Register = ({
           ? <LoanRegister loan={loan} />
           : <PendingRegister categoryView={category !== null} pending={pending} />
       }
-    </div>
+    </>
   );
 };
 

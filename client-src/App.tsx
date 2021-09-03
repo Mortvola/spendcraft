@@ -14,6 +14,7 @@ import { httpPost } from './state/Transports';
 import ServerError, { serverError } from './state/ServerError';
 import HomeToolbar from './HomeToolbar';
 import AccountsToolbar from './AccountView/AccountsToolbar';
+import PlansToolbar from './Plans/PlansToolbar';
 
 const Logout = () => {
   (async () => {
@@ -51,6 +52,7 @@ const App = () => {
 
     case 'PLANS':
       main = <Plans />;
+      toolbar = <PlansToolbar />
       break;
 
     case 'LOGOUT':

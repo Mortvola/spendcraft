@@ -11,7 +11,7 @@ const SecondaryRegister = ({
   titles,
   transactions,
 }: PropsType): ReactElement => (
-  <div className="register">
+  <div className="pending window">
     <div className="pending-register-title">
       {title}
     </div>

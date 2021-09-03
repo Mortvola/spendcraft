@@ -3,12 +3,10 @@ import { observer } from 'mobx-react-lite';
 import PlanItem from './PlanItem';
 import PlanDetails from './PlanDetails';
 import MobxStore from '../state/mobxStore';
-import { usePlanDialog } from './PlanDialog';
 import FundingPlan from '../state/FundingPlan';
 
 const Plans = () => {
   const { plans, uiState } = useContext(MobxStore);
-  const [PlanDialog, openPlanDialog] = usePlanDialog();
 
   useEffect(() => {
     plans.load();
@@ -35,27 +33,13 @@ const Plans = () => {
     ))
   );
 
-  const renderPlanDetails = () => {
-    if (uiState.selectedPlanId !== null) {
-      return <PlanDetails />;
-    }
-
-    return <div />;
-  };
-
   return (
-    <>
-      <div className="side-bar">
-        <div className="plan-tools">
-          <button type="button" id="add-group" className="button" onClick={openPlanDialog}>
-            Add Plan
-          </button>
-          <PlanDialog />
-        </div>
+    <div className="plans-page main-tray">
+      <div className="side-bar window">
         {renderPlanList()}
       </div>
-      {renderPlanDetails()}
-    </>
+      <PlanDetails />
+    </div>
   );
 };
 

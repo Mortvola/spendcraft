@@ -17,19 +17,19 @@ const Reports = () => {
       case 'netWorth':
         return <NetWorth balances={data} />;
       default:
-        return null;
+        return <div className="chart-wrapper window" />;
     }
   };
 
   return (
-    <>
-      <div className="side-bar">
+    <div className="reports-page main-tray">
+      <div className="side-bar window">
         <Nav className="flex-column" onSelect={handleSelect}>
           <Nav.Link eventKey="netWorth">Net Worth</Nav.Link>
         </Nav>
       </div>
       {renderReport()}
-    </>
+    </div>
   );
 };
 
