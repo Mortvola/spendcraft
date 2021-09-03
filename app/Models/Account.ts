@@ -67,6 +67,11 @@ class Account extends BaseModel {
   })
   public balance: number;
 
+  @column({
+    consume: (value: string) => parseFloat(value),
+  })
+  public rate: number | null;
+
   @column()
   public enabled: boolean;
 

@@ -148,6 +148,7 @@ class Accounts implements AccountsInterface {
     type: string,
     subtype: string,
     tracking: TrackingType,
+    rate: number,
   ): Promise<Error[] | null> {
     const response = await httpPost('/api/institution', {
       institution: {
@@ -159,6 +160,7 @@ class Accounts implements AccountsInterface {
         type,
         subtype,
         tracking,
+        rate,
       }],
       startDate,
     });

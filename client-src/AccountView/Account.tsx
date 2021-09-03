@@ -4,6 +4,7 @@ import IconButton from '../IconButton';
 import { formatNumber } from '../NumberFormat';
 import { AccountInterface } from '../state/State';
 import Institution from '../state/Institution';
+import { getSubTypeName, getTypeName } from '../state/AccountTypes';
 
 type PropsType = {
   selected: boolean,
@@ -45,9 +46,24 @@ const Account = ({
           ? <IconButton icon="sync-alt" rotate={account.refreshing} onClick={refresh} />
           : <IconButton icon="edit" onClick={() => showAccountDialog(account)} />
       }
-      <div>
+      <div className="acct-info">
         <div className={className} onClick={accountSelected}>{account.name}</div>
         <div className="acct-balance">{balance}</div>
+        <div>{getTypeName(account.type)}</div>
+        <div>{getSubTypeName(account.type, account.subtype)}</div>
+        {
+          account.type === 'loan'
+            ? (
+              <div>
+                {
+                  account.rate === null
+                    ? 'APR: unknown'
+                    : `APR: ${account.rate}%`
+                }
+              </div>
+            )
+            : null
+        }
       </div>
     </div>
   );

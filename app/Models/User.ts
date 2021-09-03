@@ -190,9 +190,12 @@ export default class User extends BaseModel {
       accounts: i.accounts.map((a) => ({
         id: a.id,
         name: a.name,
+        type: a.type,
+        subtype: a.subtype,
         tracking: a.tracking,
         syncDate: a.syncDate !== null ? a.syncDate.toISO() : null,
         balance: a.balance,
+        rate: a.rate,
       })),
     }));
   }

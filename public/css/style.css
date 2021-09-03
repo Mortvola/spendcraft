@@ -140,6 +140,7 @@ body {
   display: flex;
   flex-flow: column;
   overflow-y: auto;
+  padding: 0.25rem;
 }
 
 .account-select-item {
@@ -252,8 +253,14 @@ body {
 
 .acct-list-item {
   display: grid;
-  grid-template-columns: max-content 1fr;
+  grid-template-columns: max-content minmax(0, 1fr);
   align-items: center;
+}
+
+* .acct-list-item:not(:first-child) {
+  border-top: solid thin black;
+  margin-top: 0.25rem;
+  padding-top: 0.25rem;
 }
 
 .acct-list-item>*:nth-child(1) {
@@ -262,6 +269,11 @@ body {
 
 .acct-list-item>*:nth-child(2) {
   overflow: hidden;
+}
+
+.acct-info *:not(:first-child) {
+  margin-left: 4px;
+  font-size: small;
 }
 
 .acct-list-acct {

@@ -82,6 +82,7 @@ class Institution implements InstitutionInterface {
     type: string,
     subtype: string,
     tracking: TrackingType,
+    rate: number,
   ): Promise<Error[] | null> {
     const response = await httpPost(`/api/institution/${this.id}/accounts`, {
       offlineAccounts: [{
@@ -90,6 +91,7 @@ class Institution implements InstitutionInterface {
         type,
         subtype,
         tracking,
+        rate,
       }],
       startDate,
     });

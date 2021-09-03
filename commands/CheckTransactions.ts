@@ -129,6 +129,9 @@ export default class CheckTransactions extends BaseCommand {
                   if (acctTransaction === null) {
                     missingTransactions.push(trans);
                   }
+                  else if (trans.amount !== null && acctTransaction.amount !== -trans.amount) {
+                    this.logger.error(`Amount mismatch: ${acctTransaction.amount} ${-trans.amount}`);
+                  }
                 }
               }
             }

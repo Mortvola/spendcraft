@@ -1,4 +1,6 @@
-import { FieldProps, FormikErrors, FormikHelpers } from 'formik';
+import {
+  FieldProps, FormikErrors, FormikHelpers, useFormikContext,
+} from 'formik';
 import React, { ReactElement, useContext } from 'react';
 import { Error, TrackingType } from '../../common/ResponseTypes';
 import AmountInput from '../AmountInput';
@@ -9,11 +11,39 @@ import useModal, { ModalProps, UseModalType } from '../Modal/useModal';
 import Institution from '../state/Institution';
 import MobxStore from '../state/mobxStore';
 import { AccountInterface } from '../state/State';
+import { getSubtypes, getTypes } from '../state/AccountTypes';
 
 type PropsType = {
   institution?: Institution,
   account?: AccountInterface | null,
   onHide?: () => void,
+}
+
+type ValuesType = {
+  institute: string,
+  account: string,
+  balance: string,
+  startDate: string,
+  type: string,
+  subtype: string,
+  tracking: TrackingType,
+  rate: string,
+};
+
+const APRField = () => {
+  const { values } = useFormikContext<ValuesType>();
+
+  if (values.type === 'loan') {
+    return (
+      <FormField
+        name="rate"
+        label="Annual Percentage Rate (APR):"
+        as={AmountInput}
+      />
+    )
+  }
+
+  return null;
 }
 
 const OfflineAccountDialog = ({
@@ -24,16 +54,6 @@ const OfflineAccountDialog = ({
   onHide,
 }: PropsType & ModalProps): ReactElement => {
   const { accounts, uiState } = useContext(MobxStore);
-
-  type ValuesType = {
-    institute: string,
-    account: string,
-    balance: string,
-    startDate: string,
-    type: string,
-    subtype: string,
-    tracking: TrackingType,
-  };
 
   const handleValidate = (values: ValuesType) => {
     const errors: FormikErrors<ValuesType> = {};
@@ -67,14 +87,14 @@ const OfflineAccountDialog = ({
       else {
         errors = await institution.addOfflineAccount(
           values.account, parseFloat(values.balance), values.startDate,
-          values.type, values.subtype, values.tracking,
+          values.type, values.subtype, values.tracking, parseFloat(values.rate),
         );
       }
     }
     else {
       errors = await accounts.addOfflineAccount(
         values.institute, values.account, parseFloat(values.balance), values.startDate,
-        values.type, values.subtype, values.tracking,
+        values.type, values.subtype, values.tracking, parseFloat(values.rate),
       );
     }
 
@@ -96,87 +116,6 @@ const OfflineAccountDialog = ({
     }
   }
 
-  const subtypes: Record<string, [string, Record<string, string>]> = {
-    depository: ['Depository', {
-      checking: 'Checking',
-      savings: 'Savings',
-      hsa: 'HSA',
-      cd: 'CD',
-      'money market': 'Money Market',
-      paypal: 'Paypal',
-      prepaid: 'Prepaid',
-      'cash management': 'Cash Management',
-      ebt: 'EBT',
-    }],
-    credit: ['Credit', {
-      'credit card': 'Credit Card',
-      paypal: 'Paypayl',
-    }],
-    loan: ['Loan', {
-      auto: 'Auto',
-      business: 'Business',
-      commercial: 'Commercial',
-      construction: 'Construction',
-      consumer: 'Consumer',
-      'home equity': 'Home Equity',
-      loan: 'General Loan',
-      mortgage: 'Mortgage',
-      overdraft: 'Overdraft',
-      'line of credit': 'Line of Credit',
-      student: 'Student',
-      other: 'Other',
-    }],
-    investment: ['Investment', {
-      529: '529',
-      '401a': '401A',
-      '401k': '401K',
-      '403b': '403B',
-      '457b': '457B',
-      brokerage: 'Brokerage',
-      'cash isa': 'Cash ISA',
-      'education savings account': 'Education Savings Account',
-      'fixed annuity': 'Fixed Annuity',
-      gic: 'Guaranteed Investment Certificate',
-      'health reimbursement arrangement': 'Health Reimbursement Arrangement',
-      hsa: 'Health Savings Account',
-      ira: 'IRA',
-      isa: 'ISA',
-      keogh: 'Keogh',
-      lif: 'LIF',
-      'life insurance': 'Life Insurance',
-      lira: 'LIRA',
-      lrif: 'LRIF',
-      lrsp: 'LRSP',
-      'mutual fund': 'Mutual Fund',
-      'non-taxable brokerage account': 'Non-taxable Brokerage Account',
-      other: 'Other',
-      'other annuity': 'Other Annuity',
-      'other insurance': 'Other Insurance',
-      pension: 'Pension',
-      prif: 'PRIF',
-      'profit sharing plan': 'Profit Sharing Plan',
-      qshr: 'QSHR',
-      rdsp: 'RDSP',
-      resp: 'RESP',
-      retirement: 'Other Retirement',
-      rlif: 'RLIF',
-      Roth: 'Roth',
-      'Roth 401k': 'Roth 401K',
-      rrif: 'RRIF',
-      rrsp: 'RRSP',
-      sarsep: 'SARSEP',
-      'sep ira': 'SEP IRA',
-      'simple ira': 'Simple IRA',
-      ssip: 'SSIP',
-      'stock plan': 'Stock Plan',
-      tfsa: 'TFSA',
-      trust: 'Trust',
-      ugma: 'UGMA',
-      utma: 'UTMA',
-      'variable annuity': 'Variable Annuity',
-    }],
-  }
-
   const subtypeList = ({ field, form }: FieldProps<string, ValuesType>) => (
     <select
       name={field.name}
@@ -186,17 +125,11 @@ const OfflineAccountDialog = ({
       onBlur={field.onBlur}
     >
       {
-        (() => {
-          const type = Object.keys(subtypes).find((t) => (t === form.values.type));
-
-          if (type) {
-            return Object.keys(subtypes[type][1]).map((k) => (
-              <option key={k} value={k}>{subtypes[type][1][k]}</option>
-            ));
-          }
-
-          return <option value="other">Other</option>;
-        })()
+        (() => (
+          getSubtypes(form.values.type).map((subtype) => (
+            <option key={subtype.key} value={subtype.key}>{subtype.name}</option>
+          ))
+        ))()
       }
     </select>
   )
@@ -207,18 +140,19 @@ const OfflineAccountDialog = ({
       value={field.value}
       className="form-control"
       onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-        const type = Object.keys(subtypes).find((t) => (t === e.target.value));
+        const subTypes = getSubtypes(e.target.value);
 
-        if (type) {
-          form.setFieldValue('subtype', Object.keys(subtypes[type][1])[0], false);
+        if (subTypes.length > 0) {
+          form.setFieldValue('subtype', subTypes[0].key, false);
         }
+
         field.onChange(e);
       }}
       onBlur={field.onBlur}
     >
       {
-        Object.keys(subtypes).map((t) => (
-          <option key={t} value={t}>{subtypes[t][0]}</option>
+        getTypes().map((t) => (
+          <option key={t.key} value={t.key}>{t.name}</option>
         ))
       }
     </select>
@@ -234,6 +168,7 @@ const OfflineAccountDialog = ({
         type: 'depository',
         subtype: 'checking',
         tracking: 'Transactions',
+        rate: '0',
       }}
       show={show}
       setShow={setShow}
@@ -242,10 +177,15 @@ const OfflineAccountDialog = ({
       onSubmit={handleSubmit}
       title="Add Offline Account"
       formId="UnlinkedAccounts"
-      size="sm"
       onDelete={account ? handleDelete : null}
     >
-      <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(45%, 1fr))',
+          gridGap: '0.5rem',
+        }}
+      >
         <FormTextField name="institute" label="Institution Name:" readOnly={institution !== undefined} />
         <FormTextField name="account" label="Account Name:" />
         {
@@ -260,6 +200,7 @@ const OfflineAccountDialog = ({
                 <FormField name="subtype" label="Account Subtype:">
                   {subtypeList}
                 </FormField>
+                <APRField />
                 <FormField name="tracking" label="Tracking:" as="select">
                   <option value="Transactions">Categorized Transactions</option>
                   <option value="Uncategorized Transactions">Uncategorized Transactions</option>

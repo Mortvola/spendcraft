@@ -17,10 +17,11 @@ class Account implements AccountInterface {
 
   name: string;
 
-  // eslint-disable-next-line camelcase
-  official_name: string | null = null;
+  officialName: string | null = null;
 
-  subtype: string | null = null;
+  type: string;
+
+  subtype: string;
 
   tracking: TrackingType;
 
@@ -31,6 +32,8 @@ class Account implements AccountInterface {
   balances: {
     current: number | null,
   } = { current: null };
+
+  rate: number | null;
 
   transactions: Transaction[] = [];
 
@@ -47,9 +50,12 @@ class Account implements AccountInterface {
   constructor(store: StoreInterface, institution: InstitutionInterface, props: AccountProps) {
     this.id = props.id;
     this.name = props.name;
+    this.type = props.type;
+    this.subtype = props.subtype;
     this.tracking = props.tracking;
     this.syncDate = props.syncDate !== null ? DateTime.fromISO(props.syncDate) : null;
     this.balance = props.balance;
+    this.rate = props.rate;
     this.institution = institution;
 
     makeAutoObservable(this);

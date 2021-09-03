@@ -136,11 +136,17 @@ export interface AccountProps {
 
   name: string;
 
+  type: string;
+
+  subtype: string;
+
   tracking: TrackingType;
 
   syncDate: string | null;
 
   balance: number;
+
+  rate: number | null,
 }
 
 export const isAccountProps = (r: unknown): r is AccountProps => (

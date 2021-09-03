@@ -35,6 +35,7 @@ type OfflineAccount = {
   type: string,
   subtype: string,
   tracking: string,
+  rate?: number | null,
 };
 
 type AddAccountsResponse = {
@@ -67,6 +68,7 @@ class InstitutionController {
           type: schema.string(),
           subtype: schema.string(),
           tracking: schema.string(),
+          rate: schema.number.optional(),
         }),
       ),
       startDate: schema.string.optional(),
@@ -348,9 +350,12 @@ class InstitutionController {
       accounts: newAccounts.map((a) => ({
         id: a.id,
         name: a.name,
+        type: a.type,
+        subtype: a.subtype,
         tracking: a.tracking,
         syncDate: a.syncDate.toISO(),
         balance: a.balance,
+        rate: a.rate,
       })),
       categories: [
         { id: fundingPool.id, balance: fundingPool.amount },
@@ -393,6 +398,7 @@ class InstitutionController {
         type: account.type,
         subtype: account.subtype,
         syncDate: DateTime.now(),
+        rate: account.rate,
       });
 
       // eslint-disable-next-line no-await-in-loop
@@ -411,9 +417,12 @@ class InstitutionController {
       accounts: newAccounts.map((a) => ({
         id: a.id,
         name: a.name,
+        type: a.type,
+        subtype: a.subtype,
         tracking: a.tracking,
         syncDate: a.syncDate.toISO(),
         balance: a.balance,
+        rate: a.rate,
       })),
       categories: [
         { id: fundingPool.id, balance: fundingPool.amount },
@@ -454,6 +463,7 @@ class InstitutionController {
           type: schema.string(),
           subtype: schema.string(),
           tracking: schema.string(),
+          rate: schema.number.optional(),
         }),
       ),
       startDate: schema.string(),

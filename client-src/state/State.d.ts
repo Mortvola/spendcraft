@@ -83,6 +83,7 @@ export interface AccountsInterface {
     type: string,
     subtype: string,
     tracking: TrackingType,
+    rate: number,
   ): Promise<Error[] | null>;
 
   deleteInstitution(instiution: InstitutionInterface): void;
@@ -222,10 +223,11 @@ export interface AccountInterface {
 
   name: string;
 
-  // eslint-disable-next-line camelcase
-  official_name: string | null = null;
+  officialName: string | null = null;
 
-  subtype: string | null = null;
+  type: string;
+
+  subtype: string;
 
   tracking: TrackingType;
 
@@ -236,6 +238,8 @@ export interface AccountInterface {
   balances: {
     current: number | null,
   };
+
+  rate: number | null;
 
   transactions: Transaction[] = [];
 

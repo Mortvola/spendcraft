@@ -1,18 +1,17 @@
 import React, { ReactElement, useState } from 'react';
-import PropTypes from 'prop-types';
 import Amount from '../Amount';
 import { AccountInterface } from '../state/State';
 
 type PropsType = {
   name: string,
   account: AccountInterface,
-  onChange: ((event: React.ChangeEvent<HTMLSelectElement>) => void),
+  onChange?: ((event: React.ChangeEvent<HTMLSelectElement>) => void) | null,
 }
 
 const AccountItem = ({
   name,
   account,
-  onChange,
+  onChange = null,
 }: PropsType): ReactElement => {
   const [option, setOption] = useState('None');
 
@@ -27,7 +26,7 @@ const AccountItem = ({
   return (
     <div className="account-select-item">
       <div className="account-name">
-        {account.official_name ? account.official_name : account.name}
+        {account.officialName ?? account.name}
       </div>
       <div className="account-type">
         <label>Type:</label>
@@ -48,23 +47,6 @@ const AccountItem = ({
       </div>
     </div>
   );
-};
-
-AccountItem.propTypes = {
-  name: PropTypes.string.isRequired,
-  account: PropTypes.shape({
-    official_name: PropTypes.string,
-    name: PropTypes.string,
-    subtype: PropTypes.string,
-    balances: PropTypes.shape({
-      current: PropTypes.number,
-    }),
-  }).isRequired,
-  onChange: PropTypes.func,
-};
-
-AccountItem.defaultProps = {
-  onChange: null,
 };
 
 export default AccountItem;
