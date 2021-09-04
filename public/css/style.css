@@ -320,7 +320,6 @@ body {
 .register-title {
   color: white;
   background-color: gray;
-  overflow-y: scroll;
 }
 
 .register-title div {
@@ -338,7 +337,7 @@ body {
 
 .transaction {
   display: grid;
-  grid-template-columns: 32px 100px minmax(0, 1.8fr) 1fr 125px 125px minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: 32px 100px minmax(0, 1.8fr) 1fr 125px 125px minmax(0, 1fr) minmax(0, 1fr) max-content;
   grid-template-rows: max-content;
   align-items: center;
 }
@@ -349,7 +348,7 @@ body {
 
 .acct-transaction {
   display: grid;
-  grid-template-columns: 32px 100px minmax(0, 1.8fr) 1fr 125px 125px minmax(0, 2fr);
+  grid-template-columns: 32px 100px minmax(0, 1.8fr) 1fr 125px 125px minmax(0, 2fr) max-content;
   grid-template-rows: max-content;
   align-items: center;
 }
