@@ -5,6 +5,7 @@ import { formatNumber } from '../NumberFormat';
 import { AccountInterface } from '../state/State';
 import Institution from '../state/Institution';
 import { getSubTypeName, getTypeName } from '../state/AccountTypes';
+import Amount from '../Amount';
 
 type PropsType = {
   selected: boolean,
@@ -34,9 +35,9 @@ const Account = ({
     className += ' selected';
   }
 
-  let balance = formatNumber(account.balance);
+  let syncDate: string | null = null;
   if (account.syncDate) {
-    balance += ` as of ${account.syncDate.toFormat('LL-dd-y T')}`;
+    syncDate = `as of ${account.syncDate.toFormat('LL-dd-y T')}`;
   }
 
   return (
@@ -48,7 +49,20 @@ const Account = ({
       }
       <div className="acct-info">
         <div className={className} onClick={accountSelected}>{account.name}</div>
-        <div className="acct-balance">{balance}</div>
+        <div style={{ display: 'flex' }}>
+          <Amount style={{ textAlign: 'left' }} amount={account.balance} />
+          {
+            account.plaidBalance !== null && account.balance !== account.plaidBalance
+              ? (
+                <>
+                  <div>/</div>
+                  <Amount style={{ textAlign: 'left' }} amount={account.plaidBalance} />
+                </>
+              )
+              : null
+          }
+        </div>
+        <div style={{ marginLeft: '1rem' }}>{syncDate}</div>
         <div>{getTypeName(account.type)}</div>
         <div>{getSubTypeName(account.type, account.subtype)}</div>
         {

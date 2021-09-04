@@ -18,6 +18,7 @@ export type AccountSyncResult = {
   accounts: {
     id: number,
     balance: number,
+    plaidBalance: number | null,
     syncDate: DateTime,
   }[],
 };
@@ -66,6 +67,11 @@ class Account extends BaseModel {
     consume: (value: string) => parseFloat(value),
   })
   public balance: number;
+
+  @column({
+    consume: (value: string) => parseFloat(value),
+  })
+  public plaidBalance: number | null;
 
   @column({
     consume: (value: string) => parseFloat(value),
@@ -137,6 +143,7 @@ class Account extends BaseModel {
       result.accounts = [{
         id: this.id,
         balance: this.balance,
+        plaidBalance: this.plaidBalance,
         syncDate: this.syncDate,
       }];
     }
@@ -146,6 +153,10 @@ class Account extends BaseModel {
       });
 
       this.balance = balanceResponse.accounts[0].balances.current;
+      this.plaidBalance = balanceResponse.accounts[0].balances.current;
+      if (this.type === 'credit' || this.type === 'loan') {
+        this.plaidBalance = -this.plaidBalance;
+      }
 
       await this.updateAccountBalanceHistory(this.balance);
 
@@ -154,6 +165,7 @@ class Account extends BaseModel {
       result.accounts = [{
         id: this.id,
         balance: this.balance,
+        plaidBalance: this.plaidBalance,
         syncDate: this.syncDate,
       }];
     }
@@ -204,6 +216,11 @@ class Account extends BaseModel {
     // console.log(JSON.stringify(transactionsResponse, null, 4));
 
     const sum = await this.applyTransactions(user, transactionsResponse.transactions, pendingTransactions);
+
+    this.plaidBalance = transactionsResponse.accounts[0].balances.current;
+    if (this.type === 'credit' || this.type === 'loan') {
+      this.plaidBalance = -this.plaidBalance;
+    }
 
     this.syncDate = DateTime.now();
 

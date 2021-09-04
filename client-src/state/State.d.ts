@@ -93,6 +93,8 @@ export interface PendingTransactionProps {
   id: number | null;
   date: string;
 
+  createdAt: string;
+
   accountTransaction: {
     name: string;
 
@@ -235,9 +237,7 @@ export interface AccountInterface {
 
   balance: number;
 
-  balances: {
-    current: number | null,
-  };
+  plaidBalance: number | null;
 
   rate: number | null;
 

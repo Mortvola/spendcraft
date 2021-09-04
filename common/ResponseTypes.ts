@@ -146,6 +146,8 @@ export interface AccountProps {
 
   balance: number;
 
+  plaidBalance: number | null;
+
   rate: number | null,
 }
 
@@ -231,6 +233,8 @@ export interface TransactionProps {
 
   date: string;
 
+  createdAt: string;
+
   sortOrder: number;
 
   type: TransactionType;
@@ -296,6 +300,8 @@ export type LoanTransactionProps = {
       id: number;
 
       date: string;
+
+      createdAt: string;
 
       accountTransaction: {
         name: string;
@@ -587,6 +593,8 @@ export interface AccountSyncProps {
   syncDate: string;
 
   balance: number;
+
+  plaidBalance: number | null;
 }
 
 export interface AccountSyncResponse {

@@ -1,3 +1,4 @@
+import { DateTime } from 'luxon';
 import { makeAutoObservable, runInAction } from 'mobx';
 import {
   Error,
@@ -20,6 +21,8 @@ class Transaction implements TransactionInterface {
 
   date: string;
 
+  createdAt: DateTime;
+
   type: TransactionType;
 
   name: string;
@@ -41,6 +44,7 @@ class Transaction implements TransactionInterface {
 
     this.id = props.id;
     this.date = props.date;
+    this.createdAt = DateTime.fromISO(props.createdAt);
     this.type = props.type;
     this.comment = props.comment;
     if (props.accountTransaction) {

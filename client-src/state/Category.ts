@@ -57,13 +57,13 @@ class Category implements CategoryInterface {
         return -1;
       }
 
-      // if (a.sortOrder < b.sortOrder) {
-      //   return 1;
-      // }
+      if (a.createdAt < b.createdAt) {
+        return 1;
+      }
 
-      // if (a.sortOrder > b.sortOrder) {
-      //   return -1;
-      // }
+      if (a.createdAt > b.createdAt) {
+        return -1;
+      }
 
       return 0;
     });

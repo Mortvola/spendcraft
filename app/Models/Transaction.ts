@@ -13,6 +13,9 @@ class Transaction extends BaseModel {
   @column()
   public id: number;
 
+  @column.dateTime()
+  public createdAt: DateTime;
+
   @column.date()
   public date: DateTime;
 

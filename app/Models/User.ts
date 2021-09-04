@@ -133,55 +133,9 @@ export default class User extends BaseModel {
   }
 
   public async getConnectedAccounts(this: User): Promise<InstitutionProps[]> {
-    // Check to see if we already have the institution. If not, add it.
-    // const result = await Database.query()
-    //   .select(
-    //     'inst.id AS institutionId',
-    //     'inst.name AS institutionName',
-    //     'acct.id AS accountId',
-    //     'acct.name AS accountName',
-    //     'acct.tracking AS tracking',
-    //     Database.raw('CAST(acct.balance AS DOUBLE PRECISION) AS balance'),
-    //     Database.raw('to_char(acct.sync_date  AT TIME ZONE \'UTC\', \'YYYY-MM-DD HH24:MI:SS\') AS syncdate'),
-    //   )
-    //   .from('institutions AS inst')
-    //   .leftJoin('accounts AS acct', 'acct.institution_id', 'inst.id')
-    //   .where('inst.user_id', this.id)
-    //   .orderBy('inst.name')
-    //   .orderBy('acct.name');
-
     const result = await this
       .related('institutions').query()
       .preload('accounts');
-
-    // const institutions: Array<InstitutionResult> = [];
-    // let institution: InstitutionResult | null = null;
-
-    // if (result) {
-    //   result.forEach((acct) => {
-    //     if (!institution) {
-    //       institution = { id: acct.institutionId, name: acct.institutionName, accounts: [] };
-    //     }
-    //     else if (institution.name !== acct.institutionName) {
-    //       institutions.push(institution);
-    //       institution = { id: acct.institutionId, name: acct.institutionName, accounts: [] };
-    //     }
-
-    //     if (acct.accountId) {
-    //       institution.accounts.push({
-    //         id: acct.accountId,
-    //         name: acct.accountName,
-    //         tracking: acct.tracking,
-    //         balance: acct.balance,
-    //         syncDate: acct.syncdate,
-    //       });
-    //     }
-    //   });
-    // }
-
-    // if (institution) {
-    //   institutions.push(institution);
-    // }
 
     return result.map((i) => ({
       id: i.id,
@@ -195,6 +149,7 @@ export default class User extends BaseModel {
         tracking: a.tracking,
         syncDate: a.syncDate !== null ? a.syncDate.toISO() : null,
         balance: a.balance,
+        plaidBalance: a.plaidBalance,
         rate: a.rate,
       })),
     }));

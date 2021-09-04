@@ -11,6 +11,9 @@ export default class Loan extends BaseModel {
   @column({ isPrimary: true })
   public id: number;
 
+  @column.dateTime()
+  public createdAt: DateTime;
+
   @column()
   public name: string;
 
@@ -123,6 +126,7 @@ export default class Loan extends BaseModel {
         transaction: {
           id: -1,
           date: this.startDate.toFormat('yyyy-MM-dd'),
+          createdAt: this.createdAt.toISO(),
           accountTransaction: {
             name: 'Starting Balance',
           },

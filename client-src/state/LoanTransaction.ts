@@ -1,9 +1,12 @@
+import { DateTime } from 'luxon';
 import { LoanTransactionProps } from '../../common/ResponseTypes';
 
 class LoanTransaction {
   id: number;
 
   date: string;
+
+  createdAt: DateTime;
 
   name: string;
 
@@ -18,6 +21,7 @@ class LoanTransaction {
   constructor(props: LoanTransactionProps) {
     this.id = props.id;
     this.date = props.transactionCategory.transaction.date;
+    this.createdAt = DateTime.fromISO(props.transactionCategory.transaction.createdAt);
     this.name = props.transactionCategory.transaction.accountTransaction.name;
     this.principle = props.principle;
     this.interest = -props.transactionCategory.amount - props.principle;

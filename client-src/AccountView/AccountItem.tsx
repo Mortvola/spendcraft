@@ -1,10 +1,10 @@
 import React, { ReactElement, useState } from 'react';
+import { UnlinkedAccountProps } from '../../common/ResponseTypes';
 import Amount from '../Amount';
-import { AccountInterface } from '../state/State';
 
 type PropsType = {
   name: string,
-  account: AccountInterface,
+  account: UnlinkedAccountProps,
   onChange?: ((event: React.ChangeEvent<HTMLSelectElement>) => void) | null,
 }
 

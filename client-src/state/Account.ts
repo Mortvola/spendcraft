@@ -29,9 +29,7 @@ class Account implements AccountInterface {
 
   balance: number;
 
-  balances: {
-    current: number | null,
-  } = { current: null };
+  plaidBalance: number | null;
 
   rate: number | null;
 
@@ -55,6 +53,7 @@ class Account implements AccountInterface {
     this.tracking = props.tracking;
     this.syncDate = props.syncDate !== null ? DateTime.fromISO(props.syncDate) : null;
     this.balance = props.balance;
+    this.plaidBalance = props.plaidBalance;
     this.rate = props.rate;
     this.institution = institution;
 
@@ -80,6 +79,7 @@ class Account implements AccountInterface {
         if (accounts) {
           this.syncDate = DateTime.fromISO(accounts[0].syncDate);
           this.balance = accounts[0].balance;
+          this.plaidBalance = accounts[0].plaidBalance;
         }
       }
 

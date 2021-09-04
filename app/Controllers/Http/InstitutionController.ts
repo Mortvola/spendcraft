@@ -355,6 +355,7 @@ class InstitutionController {
         tracking: a.tracking,
         syncDate: a.syncDate.toISO(),
         balance: a.balance,
+        plaidBalance: a.plaidBalance,
         rate: a.rate,
       })),
       categories: [
@@ -422,6 +423,7 @@ class InstitutionController {
         tracking: a.tracking,
         syncDate: a.syncDate.toISO(),
         balance: a.balance,
+        plaidBalance: a.plaidBalance,
         rate: a.rate,
       })),
       categories: [
