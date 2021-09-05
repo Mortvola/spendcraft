@@ -12,7 +12,6 @@ import Group from '../state/Group';
 import { Error } from '../../common/ResponseTypes';
 import FormModal from '../Modal/FormModal';
 import FormError from '../Modal/FormError';
-import LoansGroup from '../state/LoansGroup';
 
 interface Props {
   // eslint-disable-next-line react/require-default-props

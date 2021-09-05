@@ -1,4 +1,4 @@
-import React, { ReactElement, useContext } from 'react';
+import React, { ReactElement, useContext, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { Nav } from 'react-bootstrap';
 import NetWorth from './NetWorth';
@@ -8,27 +8,23 @@ import { isNetworthReport, isPayeeReport } from '../state/Reports';
 
 const Reports = (): ReactElement => {
   const { reports } = useContext(MobxStore);
-  const { reportType, data } = reports;
+  const [reportType, setReportType] = useState<string | null>(null);
 
   const handleSelect = (eventKey: string | null) => {
-    if (eventKey) {
-      reports.loadReport(eventKey);
-    }
+    setReportType(eventKey);
   };
 
   const renderReport = (): ReactElement | null => {
     switch (reportType) {
       case 'netWorth':
-        if (isNetworthReport(data)) {
-          return <NetWorth balances={data} />;
-        }
+        // if (isNetworthReport(data)) {
+        //   return <NetWorth balances={data} />;
+        // }
 
         break;
 
       case 'payee':
-        if (isPayeeReport(data)) {
-          return <Payee data={data} />;
-        }
+        return <Payee />;
 
         break;
 

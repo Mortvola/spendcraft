@@ -22,8 +22,10 @@ class ReportController {
       case 'networth':
         return ReportController.networth(user);
 
-      case 'payee':
-        return ReportController.payee(user);
+      case 'payee': {
+        const { startDate, endDate } = request.qs();
+        return ReportController.payee(user, startDate, endDate);
+      }
 
       default:
         throw new Error('unknown report request');
@@ -86,7 +88,7 @@ class ReportController {
     return result;
   }
 
-  private static async payee(user: User): Promise<PayeeReportType> {
+  private static async payee(user: User, startDate: string, endDate: string): Promise<PayeeReportType> {
     // return AccountTransaction.query()
     //   .preload('transaction')
     //   .preload('account', (accountQuery) => {
@@ -118,17 +120,22 @@ class ReportController {
     //     })
     //   })
     return Database.query()
-      .select('account_transactions.name', 'mask', 'payment_channel', Database.raw('count(*)'))
+      .select(
+        Database.raw('row_number() over (order by account_transactions.name) as "rowNumber"'),
+        'account_transactions.name',
+        'mask',
+        'payment_channel',
+        Database.raw('count(*)'),
+      )
       .from('account_transactions')
       .join('transactions', 'transactions.id', 'account_transactions.transaction_id')
       .join('accounts', 'accounts.id', 'account_id')
       .join('institutions', 'institutions.id', 'accounts.institution_id')
       .where('pending', false)
-      .andWhere('date', '<=', '2020-09-05')
+      .andWhere('date', '>=', startDate)
       .andWhere('institutions.user_id', user.id)
       .groupBy(['account_transactions.name', 'mask', 'payment_channel'])
-      .orderBy('account_transactions.name', 'asc')
-      .orderBy('mask', 'asc');
+      .orderBy('account_transactions.name', 'asc');
     // select i.user_id, at.name, a.mask, at.payment_channel, count(*)
     // from account_transactions at
     // join transactions t on t.id = at.transaction_id
