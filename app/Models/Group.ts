@@ -1,7 +1,9 @@
+/* eslint-disable import/no-cycle */
 import {
-  BaseModel, BelongsTo, belongsTo, column,
+  BaseModel, BelongsTo, belongsTo, column, hasMany, HasMany,
 } from '@ioc:Adonis/Lucid/Orm';
 import User from 'App/Models/User';
+import Category from 'App/Models/Category';
 
 class Group extends BaseModel {
   @column()
@@ -18,6 +20,9 @@ class Group extends BaseModel {
 
   @column()
   public system: boolean;
+
+  @hasMany(() => Category)
+  public categories: HasMany<typeof Category>;
 }
 
 export default Group;

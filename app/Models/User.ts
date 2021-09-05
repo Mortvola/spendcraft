@@ -15,6 +15,7 @@ import Loan from 'App/Models/Loan';
 import Institution from 'App/Models/Institution';
 import { InstitutionProps } from 'Common/ResponseTypes';
 import Category from './Category';
+import Group from './Group';
 
 type MonthBalance = {
   year: number,
@@ -73,6 +74,9 @@ export default class User extends BaseModel {
 
   @hasMany(() => Loan)
   public loans: HasMany<typeof Loan>;
+
+  @hasMany(() => Group)
+  public groups: HasMany<typeof Group>;
 
   public async history(this: User): Promise<Array<GroupHistoryItem>> {
     const data = await Database.query()

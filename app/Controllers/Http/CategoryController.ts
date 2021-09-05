@@ -17,6 +17,7 @@ import {
   CategoryBalanceProps,
   LoanTransactionProps, TransactionProps, TransactionType, UpdateCategoryResponse,
 } from 'Common/ResponseTypes';
+import Group from 'App/Models/Group';
 
 type TransactionsResponse = {
   transactions: TransactionProps[],
@@ -32,56 +33,16 @@ class CategoryController {
   // eslint-disable-next-line class-methods-use-this
   public async get({
     auth: { user },
-  }: HttpContextContract): Promise<Array<Record<string, unknown>>> {
+  }: HttpContextContract): Promise<Group[]> {
     if (!user) {
       throw new Error('user is not defined');
     }
 
-    const rows = await Database.query()
-      .select(
-        'g.id AS groupId',
-        'g.name AS groupName',
-        'g.system AS systemGroup',
-        'c.id AS categoryId',
-        'c.name as categoryName',
-        'c.type',
-        Database.raw('CAST(amount AS float) as balance'),
-      )
-      .from('groups AS g')
-      .leftJoin('categories AS c', 'c.group_id', 'g.id')
-      .where('user_id', user.id)
-      .orderBy('g.name')
-      .orderBy('c.name');
-
-    const groups: GroupItem[] = [];
-    // let group: GroupItem | null = null;
-
-    // Create a tree structure with groups at the top level
-    // and categories within each group.
-    await Promise.all(rows.map(async (cat) => {
-      let group = groups.find((g) => (g.id === cat.groupId));
-      if (!group) {
-        group = {
-          id: cat.groupId,
-          name: cat.groupName,
-          system: cat.systemGroup,
-          categories: [],
-        };
-
-        groups.push(group);
-      }
-
-      if (cat.categoryId) {
-        group.categories.push({
-          id: cat.categoryId,
-          name: cat.categoryName,
-          type: cat.type,
-          balance: cat.balance,
-        });
-      }
-    }));
-
-    return groups;
+    return await user.related('groups').query()
+      .preload('categories', (catQuery) => {
+        catQuery.orderBy('name', 'asc')
+      })
+      .orderBy('name', 'asc');
   }
 
   // eslint-disable-next-line class-methods-use-this
