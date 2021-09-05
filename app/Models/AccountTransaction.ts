@@ -12,7 +12,7 @@ class AccountTransaction extends BaseModel {
   @column()
   public accountId: number;
 
-  @column({ serializeAs: 'id' })
+  @column()
   public transactionId: number;
 
   @belongsTo(() => Transaction)

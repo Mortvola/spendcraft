@@ -1,0 +1,66 @@
+import React, { ReactElement } from 'react';
+import PropTypes from 'prop-types';
+import Chart from 'react-google-charts';
+
+type PropsType = {
+  balances: number[][] | null,
+}
+
+const Networth = ({
+  balances,
+}: PropsType): ReactElement | null => {
+  if (balances !== null) {
+    const netIndex = balances[0].length - 1;
+    const data = balances.map((item, index) => {
+      if (index === 0) {
+        return 'Net Worth';
+      }
+
+      return item.reduce((accum, balance, index2) => {
+        if (index2 === 0 || balance === null || Number.isNaN(balance)) {
+          return accum;
+        }
+
+        return accum + balance;
+      }, 0);
+    });
+
+    return (
+      <div className="chart-wrapper window">
+        <Chart
+          chartType="ComboChart"
+          data={data}
+          options={{
+            width: ('100%' as unknown) as number,
+            height: ('100%' as unknown) as number,
+            legend: { position: 'none' },
+            isStacked: true,
+            hAxis: {
+              slantedText: true,
+            },
+            seriesType: 'bars',
+            series: {
+              [netIndex]: { type: 'line' },
+            },
+            focusTarget: 'datum',
+          }}
+        />
+      </div>
+    );
+  }
+
+  return null;
+};
+
+Networth.propTypes = {
+  balances: PropTypes.arrayOf(
+    PropTypes.arrayOf(
+      PropTypes.oneOfType([
+        PropTypes.string,
+        PropTypes.number,
+      ]),
+    ),
+  ).isRequired,
+};
+
+export default Networth;

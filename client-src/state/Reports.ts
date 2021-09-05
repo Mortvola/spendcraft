@@ -1,10 +1,25 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import { getBody, httpGet } from './Transports';
 
+export const isNetworthReport = (r: unknown): r is number[][] => (
+  true
+)
+
+type PayeeReport = {
+  name: string,
+}[];
+
+export const isPayeeReport = (r: unknown): r is Record<string, string>[] => (
+  Array.isArray(r)
+  && (r.length === 0 || (
+    (r as PayeeReport)[0].name !== undefined
+  ))
+)
+
 class Reports {
   reportType: string | null = null;
 
-  data: unknown | null = null;
+  data: number[][] | Record<string, string>[] | null = null;
 
   store: unknown;
 
@@ -26,7 +41,26 @@ class Reports {
 
           runInAction(() => {
             this.reportType = reportType;
-            this.data = body;
+            if (isNetworthReport(body)) {
+              this.data = body;
+            }
+          });
+        }
+
+        break;
+      }
+
+      case 'payee': {
+        const response = await httpGet('/api/reports/payee');
+
+        if (response.ok) {
+          const body = await getBody(response);
+
+          runInAction(() => {
+            this.reportType = reportType;
+            if (isPayeeReport(body)) {
+              this.data = body;
+            }
           });
         }
 

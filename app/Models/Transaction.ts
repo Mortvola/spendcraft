@@ -19,9 +19,6 @@ class Transaction extends BaseModel {
   @column.date()
   public date: DateTime;
 
-  @column()
-  public accountTransactionId: number;
-
   @hasMany(() => TransactionCategory)
   public transactionCategories: HasMany<typeof TransactionCategory>;
 
