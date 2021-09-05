@@ -139,6 +139,14 @@ export interface CategoryInterface {
   removeTransaction(transactionId: number): void;
 }
 
+export interface FundingPlanInterface {
+  id: number;
+
+  name: string;
+
+  async update(name: string): Promise<void>;
+}
+
 export type Views = 'HOME' | 'PLANS' | 'ACCOUNTS' | 'REPORTS' | 'ACCOUNT' | 'LOGOUT';
 
 export interface UIStateInterface {
@@ -146,10 +154,10 @@ export interface UIStateInterface {
   selectCategory(category: CategoryInterface | null): void;
   selectAccount(account: AccountInterface | null): void;
   selectedCategory: CategoryInterface | null;
-  selectedPlanId: number | null;
+  selectedPlan: FundingPlanInterface | null;
   selectedAccount: AccountInterface | null;
   setView(view: Views): void;
-  selectPlanId(planId: number): void;
+  selectPlan(plan: FundingPlanInterface | null): void;
 }
 
 export interface CategoryTreeInterface {

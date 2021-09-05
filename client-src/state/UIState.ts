@@ -3,6 +3,7 @@ import Category from './Category';
 import {
   AccountInterface,
   CategoryInterface,
+  FundingPlanInterface,
   StoreInterface, UIStateInterface, Views,
 } from './State';
 
@@ -11,7 +12,7 @@ class UIState implements UIStateInterface {
 
   selectedCategory: CategoryInterface | null = null;
 
-  selectedPlanId: number | null = null;
+  selectedPlan: FundingPlanInterface | null = null;
 
   selectedAccount: AccountInterface | null = null;
 
@@ -48,9 +49,9 @@ class UIState implements UIStateInterface {
     });
   }
 
-  selectPlanId(planId: number): void {
+  selectPlan(plan: FundingPlanInterface | null): void {
     runInAction(() => {
-      this.selectedPlanId = planId;
+      this.selectedPlan = plan;
     });
   }
 }

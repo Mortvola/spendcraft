@@ -1,9 +1,9 @@
 import React, { useContext, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
-import PlanItem from './PlanItem';
 import PlanDetails from './PlanDetails';
 import MobxStore from '../state/mobxStore';
-import FundingPlan from '../state/FundingPlan';
+import PlanList from './PlanList';
+import { FundingPlanInterface } from '../state/State';
 
 const Plans = () => {
   const { plans, uiState } = useContext(MobxStore);
@@ -13,30 +13,19 @@ const Plans = () => {
   }, [plans]);
 
   useEffect(() => {
-    if (uiState.selectedPlanId !== null) {
-      plans.loadDetails(uiState.selectedPlanId);
+    if (uiState.selectedPlan !== null) {
+      plans.loadDetails(uiState.selectedPlan);
     }
-  }, [plans, uiState.selectedPlanId]);
+  }, [plans, uiState.selectedPlan]);
 
-  const handleSelect = (p: FundingPlan) => {
-    uiState.selectPlanId(p.id);
+  const handleSelect = (p: FundingPlanInterface) => {
+    uiState.selectPlan(p);
   };
-
-  const renderPlanList = () => (
-    plans.list.map((p) => (
-      <PlanItem
-        key={p.id}
-        plan={p}
-        onSelect={handleSelect}
-        selected={p.id === uiState.selectedPlanId}
-      />
-    ))
-  );
 
   return (
     <>
       <div className="side-bar window">
-        {renderPlanList()}
+        <PlanList plans={plans.list} selected={uiState.selectedPlan} onSelect={handleSelect} />
       </div>
       <PlanDetails />
     </>

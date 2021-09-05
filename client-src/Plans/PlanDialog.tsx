@@ -9,10 +9,10 @@ import {
 } from 'formik';
 import MobxStore from '../state/mobxStore';
 import useModal from '../Modal/useModal';
-import FundingPlan from '../state/FundingPlan';
+import { FundingPlanInterface } from '../state/State';
 
 interface Props {
-  plan?: FundingPlan | null,
+  plan?: FundingPlanInterface | null,
 }
 
 const PlanDialog = ({
