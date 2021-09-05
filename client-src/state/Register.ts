@@ -2,11 +2,11 @@ import { makeAutoObservable, runInAction } from 'mobx';
 import { DateTime } from 'luxon';
 import Transaction from './Transaction';
 import {
+  CategoryTransferProps,
   isInsertCategoryTransferResponse, TransactionType,
 } from '../../common/ResponseTypes';
 import {
-  NewTransactionCategoryInterface,
-  RegisterInterface, StoreInterface, TransactionCategoryInterface,
+  RegisterInterface, StoreInterface,
 } from './State';
 import { getBody, httpPost } from './Transports';
 
@@ -21,7 +21,7 @@ class Register implements RegisterInterface {
 
   async addCategoryTransfer(
     values: {
-      categories: (TransactionCategoryInterface | NewTransactionCategoryInterface)[];
+      categories: CategoryTransferProps[];
       date: string;
     },
     type: TransactionType,

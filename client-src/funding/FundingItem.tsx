@@ -1,5 +1,4 @@
-import React, { ReactElement, useState } from 'react';
-import PropTypes from 'prop-types';
+import React, { ReactElement } from 'react';
 import AmountInput from '../AmountInput';
 import Amount from '../Amount';
 
@@ -25,17 +24,6 @@ const FundingItem = ({
       <Amount className="fund-list-amt" amount={balance} />
     </div>
   );
-};
-
-FundingItem.propTypes = {
-  name: PropTypes.string.isRequired,
-  initialAmount: PropTypes.number.isRequired,
-  funding: PropTypes.number.isRequired,
-  onDeltaChange: PropTypes.func,
-};
-
-FundingItem.defaultProps = {
-  onDeltaChange: null,
 };
 
 export default FundingItem;

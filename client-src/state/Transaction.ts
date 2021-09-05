@@ -7,6 +7,7 @@ import {
   isUpdateCategoryTransferResponse,
   isDeleteTransactionResponse,
   isUpdateTransactionResponse,
+  CategoryTransferProps,
 } from '../../common/ResponseTypes';
 import {
   NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface,
@@ -151,7 +152,7 @@ class Transaction implements TransactionInterface {
 
   async updateCategoryTransfer(
     values: {
-      categories: (TransactionCategoryInterface | NewTransactionCategoryInterface)[];
+      categories: CategoryTransferProps[];
       date: string;
     },
   ): Promise<null> {

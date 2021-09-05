@@ -553,7 +553,6 @@ export const isFundingPlanDetailsProps = (
 
 export interface FundingPlanProps {
   id: number;
-
   name: string;
 }
 
@@ -570,23 +569,32 @@ export const isFundingPlansResponse = (
   || isFundingPlanProps((r as FundingPlanProps[])[0]))
 );
 
-export type FundingType = {
+export type CategoryTransferProps = {
   id?: number,
-  type: CategoryType,
-  initialAmount: number,
   amount: number,
   categoryId: number,
 }
 
+export type CategoryFundingProps = {
+  id?: number,
+  amount: number,
+  categoryId: number,
+}
+
+const isCategoryFundingProps = (r: unknown): r is CategoryFundingProps => (
+  (r as CategoryFundingProps).amount !== undefined
+  && (r as CategoryFundingProps).categoryId !== undefined
+)
+
 export interface FundingPlan {
   id: number,
-
-  categories: FundingType[],
+  categories: CategoryFundingProps[],
 }
 
 export const isFundingPlanResponse = (r: unknown): r is FundingPlan => (
   (r as FundingPlan).id !== undefined
-  && (r as FundingPlan).categories !== undefined
+  && (Array.isArray((r as FundingPlan).categories))
+  && ((r as FundingPlan).categories.length === 0 || isCategoryFundingProps((r as FundingPlan).categories[0]))
 )
 
 export interface AccountSyncProps {

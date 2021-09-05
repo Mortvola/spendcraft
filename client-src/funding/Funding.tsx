@@ -1,6 +1,13 @@
 import React, { ReactElement, ReactNode, useState } from 'react';
 import FundingItem from './FundingItem';
-import { CategoryProps, FundingType, GroupProps } from '../../common/ResponseTypes';
+import { CategoryProps, GroupProps } from '../../common/ResponseTypes';
+
+export type FundingType = {
+  id?: number,
+  initialAmount: number,
+  amount: number,
+  categoryId: number,
+}
 
 type PropsType = {
   groups: GroupProps[],
@@ -15,11 +22,11 @@ const Funding = ({
   onChange,
   systemGroupId,
 }: PropsType): ReactElement => {
-  const [funding, setFunding] = useState(plan);
+  const [funding, setFunding] = useState<FundingType[]>(plan);
 
   const handleDeltaChange = (amount: number, categoryId: number) => {
     const index = funding.findIndex((c) => c.categoryId === categoryId);
-    let newFunding = [];
+    let newFunding: FundingType[] = [];
 
     if (index !== -1) {
       newFunding = [
@@ -51,7 +58,6 @@ const Funding = ({
           categoryId,
           initialAmount: category.balance,
           amount,
-          type: category.type,
         },
       ];
     }
@@ -67,12 +73,12 @@ const Funding = ({
     categories.map((category) => {
       let amount = 0;
 
-      const index = funding.findIndex((c) => c.categoryId === category.id);
+      const fundingItem = funding.find((c) => c.categoryId === category.id);
 
       let initialAmount = category.balance;
-      if (index !== -1) {
-        initialAmount = funding[index].initialAmount;
-        amount = funding[index].amount;
+      if (fundingItem) {
+        initialAmount = fundingItem.initialAmount;
+        amount = fundingItem.amount;
       }
 
       return (

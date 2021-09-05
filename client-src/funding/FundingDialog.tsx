@@ -10,14 +10,13 @@ import Amount from '../Amount';
 import MobxStore from '../state/mobxStore';
 import useModal, { ModalProps, UseModalType } from '../Modal/useModal';
 import Transaction from '../state/Transaction';
-import { NewTransactionCategoryInterface, TransactionCategoryInterface } from '../state/State';
 import {
   FundingPlanProps, isFundingPlanResponse, isFundingPlansResponse, TransactionType,
-  FundingType,
+  CategoryFundingProps,
 } from '../../common/ResponseTypes';
 import FormModal from '../Modal/FormModal';
 import FormError from '../Modal/FormError';
-import Funding from './Funding';
+import Funding, { FundingType } from './Funding';
 import { getBody, httpGet } from '../state/Transports';
 
 interface Props {
@@ -68,6 +67,15 @@ const FundingDialog = ({
     return category.balance;
   }
 
+  const getPlanCategories = (categories: CategoryFundingProps[]) => (
+    categories.map((c) => ({
+      id: c.id,
+      initialAmount: getCategoryBalance(c.categoryId) - c.amount,
+      amount: c.amount,
+      categoryId: c.categoryId,
+    }))
+  )
+
   const [plansInitialized, setPlansInitialized] = useState(false);
   const [plans, setPlans] = useState<FundingPlanProps[]>([]);
   const [selectedPlan, setSelectedPlan] = useState(-1);
@@ -75,13 +83,7 @@ const FundingDialog = ({
     transaction
       ? {
         planId: -1,
-        categories: transaction.categories.map((c) => ({
-          id: c.id,
-          type: c.type,
-          initialAmount: getCategoryBalance(c.categoryId) - c.amount,
-          amount: c.amount,
-          categoryId: c.categoryId,
-        })),
+        categories: getPlanCategories(transaction.categories),
       }
       : { planId: -1, categories: [] },
   );
@@ -124,7 +126,7 @@ const FundingDialog = ({
     const body = await getBody(response);
 
     if (isFundingPlanResponse(body)) {
-      const newPlan = { planId: body.id, categories: body.categories };
+      const newPlan = { planId: body.id, categories: getPlanCategories(body.categories) };
       setFunding(newPlan);
       resetForm({ values: { ...values, funding: newPlan } });
     }
@@ -151,7 +153,7 @@ const FundingDialog = ({
   const handleSubmit = async (values: ValueType) => {
     type Request = {
       date: string,
-      categories: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
+      categories: CategoryFundingProps[],
     }
 
     const request: Request = {
@@ -161,7 +163,6 @@ const FundingDialog = ({
       ))
         .map((item) => ({
           id: item.id,
-          type: item.type,
           categoryId: item.categoryId,
           amount: item.amount,
         })),
@@ -182,7 +183,6 @@ const FundingDialog = ({
       }
 
       request.categories.push({
-        type: 'REGULAR',
         categoryId: fundingPoolCat.id,
         amount: -sum,
       });
