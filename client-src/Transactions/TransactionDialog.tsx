@@ -145,6 +145,11 @@ const TransactionDialog = ({
 
   const splitItemClass = 'transaction-split-item no-balances';
 
+  let paymentChannel = 'unknown';
+  if (transaction && transaction.paymentChannel) {
+    paymentChannel = transaction.paymentChannel;
+  }
+
   return (
     <FormModal<ValueType>
       initialValues={{
@@ -169,10 +174,13 @@ const TransactionDialog = ({
       onSubmit={handleSubmit}
       onDelete={transaction ? handleDelete : null}
     >
-      <label>
-        Date:
-        <Field className="form-control" type="date" name="date" />
-      </label>
+      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+        <label>
+          Date:
+          <Field className="form-control" type="date" name="date" />
+        </label>
+        <div>{`Payment Channel: ${paymentChannel}`}</div>
+      </div>
       <label style={{ display: 'block' }}>
         Name:
         <Field

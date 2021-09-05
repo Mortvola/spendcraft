@@ -38,6 +38,8 @@ class Transaction implements TransactionInterface {
 
   accountId: number | null = null;
 
+  paymentChannel: string | null = null;
+
   store: StoreInterface;
 
   constructor(store: StoreInterface, props: TransactionProps) {
@@ -54,6 +56,7 @@ class Transaction implements TransactionInterface {
       this.instituteName = props.accountTransaction.account.institution.name;
       this.accountName = props.accountTransaction.account.name;
       this.accountId = props.accountTransaction.account.id;
+      this.paymentChannel = props.accountTransaction.paymentChannel;
     }
     else {
       switch (props.type) {

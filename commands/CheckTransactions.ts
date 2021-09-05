@@ -30,6 +30,9 @@ export default class CheckTransactions extends BaseCommand {
   @flags.boolean({ description: 'Adds missing transactions' })
   public fixMissing: boolean;
 
+  @flags.string({ description: 'Updates the specified field' })
+  public update: string
+
   public static settings = {
     /**
      * Set the following value to true, if you want to load the application
@@ -62,6 +65,7 @@ export default class CheckTransactions extends BaseCommand {
       account: Account,
       missingTransactions: PlaidTransaction[],
       extraTransactions: AccountTransaction[],
+      paymentChannelMismatches: number,
     }
 
     // eslint-disable-next-line no-restricted-syntax
@@ -87,6 +91,8 @@ export default class CheckTransactions extends BaseCommand {
           const extraTransactions: AccountTransaction[] = [];
 
           let plaidTransactions: PlaidTransaction[] = [];
+
+          let paymentChannelMismatches = 0;
 
           do {
             const options: TransactionsRequestOptions = {
@@ -120,17 +126,33 @@ export default class CheckTransactions extends BaseCommand {
               plaidTransactions = plaidTransactions.concat(response.transactions);
 
               // eslint-disable-next-line no-restricted-syntax
-              for (const trans of response.transactions) {
-                if (!trans.pending) {
+              for (const plaidTransaction of response.transactions) {
+                if (!plaidTransaction.pending) {
                   // eslint-disable-next-line no-await-in-loop
                   const acctTransaction = await AccountTransaction
-                    .findBy('plaidTransactionId', trans.transaction_id, { client: trx });
+                    .findBy('plaidTransactionId', plaidTransaction.transaction_id, { client: trx });
 
                   if (acctTransaction === null) {
-                    missingTransactions.push(trans);
+                    missingTransactions.push(plaidTransaction);
                   }
-                  else if (trans.amount !== null && acctTransaction.amount !== -trans.amount) {
-                    this.logger.error(`Amount mismatch: ${acctTransaction.amount} ${-trans.amount}`);
+                  else {
+                    let updated = false;
+
+                    if (plaidTransaction.amount !== null && acctTransaction.amount !== -plaidTransaction.amount) {
+                      this.logger.error(`Amount mismatch: ${acctTransaction.amount} ${-plaidTransaction.amount}`);
+                    }
+                    else if (plaidTransaction.payment_channel !== acctTransaction.paymentChannel) {
+                      paymentChannelMismatches += 1;
+                      if (this.update === 'paymentChannel') {
+                        acctTransaction.paymentChannel = plaidTransaction.payment_channel;
+                        updated = true;
+                      }
+                    }
+
+                    if (updated) {
+                      // eslint-disable-next-line no-await-in-loop
+                      await acctTransaction.save();
+                    }
                   }
                 }
               }
@@ -178,9 +200,17 @@ export default class CheckTransactions extends BaseCommand {
             }
           });
 
-          if (missingTransactions.length > 0 || extraTransactions.length > 0) {
+          if (
+            missingTransactions.length > 0
+            || extraTransactions.length > 0
+            || paymentChannelMismatches !== 0
+          ) {
             failedAccounts.push({
-              institution: inst, account: acct, missingTransactions, extraTransactions,
+              institution: inst,
+              account: acct,
+              missingTransactions,
+              extraTransactions,
+              paymentChannelMismatches,
             });
 
             // // eslint-disable-next-line no-loop-func
@@ -236,9 +266,11 @@ export default class CheckTransactions extends BaseCommand {
           else {
             this.logger.info('\t\t\tNone');
           }
+
+          this.logger.info(`\t\tPayment Channel Mismatches: ${acct.paymentChannelMismatches}`)
         }
 
-        if (this.fixMissing) {
+        if (this.fixMissing || this.update) {
           trx.commit();
         }
       }

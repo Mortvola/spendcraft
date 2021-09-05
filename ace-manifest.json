@@ -57,6 +57,12 @@
           "propertyName": "fixMissing",
           "type": "boolean",
           "description": "Adds missing transactions"
+        },
+        {
+          "name": "update",
+          "propertyName": "update",
+          "type": "string",
+          "description": "Updates the specified field"
         }
       ]
     },

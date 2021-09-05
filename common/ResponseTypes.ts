@@ -248,6 +248,8 @@ export interface TransactionProps {
 
     amount: number;
 
+    paymentChannel: string | null,
+
     account: {
       id: number;
 

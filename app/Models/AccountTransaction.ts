@@ -35,6 +35,9 @@ class AccountTransaction extends BaseModel {
   @column()
   public pending: boolean;
 
+  @column()
+  public paymentChannel: string | null;
+
   public static get Serializer(): string {
     return 'App/Serializer';
   }
