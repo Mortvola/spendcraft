@@ -67,9 +67,10 @@ export default class CheckBalances extends BaseCommand {
           group.where('userId', user.id)
         })
         .withAggregate('transactionCategory', (query) => {
-          query.sum('amount').as('trans_sum').whereHas('transaction', (transaction) => {
-            transaction.where('userId', user.id)
-          });
+          query.sum('amount').as('trans_sum')
+            .whereHas('transaction', (transaction) => {
+              transaction.where('userId', user.id)
+            });
         })
         .preload('group');
 
@@ -92,7 +93,8 @@ export default class CheckBalances extends BaseCommand {
       if (unassignedTrans && parseFloat(unassignedTrans.$extras.sum) !== 0) {
         const unassignedCat = categories.find((c) => c.type === 'UNASSIGNED');
         if (unassignedCat) {
-          unassignedCat.$extras.trans_sum += parseFloat(unassignedTrans.$extras.sum);
+          unassignedCat.$extras.trans_sum = parseFloat(unassignedCat.$extras.trans_sum ?? 0)
+            + parseFloat(unassignedTrans.$extras.sum);
         }
       }
 
