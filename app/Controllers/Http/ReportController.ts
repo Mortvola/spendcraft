@@ -149,7 +149,7 @@ class ReportController {
       .select(
         Database.raw('row_number() over (order by account_transactions.name) as "rowNumber"'),
         'account_transactions.name',
-        'payment_channel as "paymentChannel',
+        'payment_channel as paymentChannel',
         Database.raw('count(*)'),
         Database.raw('sum(amount)'),
       )

@@ -10,7 +10,6 @@ type PayeeReport = {
   rowNumber: string,
   name: string,
   sum: number,
-  // eslint-disable-next-line camelcase
   paymentChannel: string,
   count: number,
 };
@@ -59,7 +58,7 @@ const Payee = (): ReactElement | null => {
       </Formik>
       <div className="title payee-report-item">
         <div>Name</div>
-        <div>Mask</div>
+        <div>Payment Channel</div>
         <div className="dollar-amount">Amount</div>
         <div>Count</div>
       </div>
