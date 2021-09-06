@@ -3,10 +3,7 @@ import Database from '@ioc:Adonis/Lucid/Database';
 import User from 'App/Models/User';
 import Institution from 'App/Models/Institution';
 import AccountTransaction from 'App/Models/AccountTransaction';
-
-type Category = {
-  name: string,
-};
+import { TransactionType } from 'Common/ResponseTypes';
 
 type NetworthReportType = (string | number)[][];
 type PayeeReportType = (Institution | AccountTransaction)[];
@@ -32,24 +29,83 @@ class ReportController {
     }
   }
 
-  static listCategories(categories: Array<Category>): string {
-    let cats = '';
-
-    categories.forEach((c) => {
-      cats += `, "${c.name}" FLOAT`;
-    });
-
-    return cats;
-  }
-
   private static async networth(user: User): Promise<NetworthReportType> {
-    const query = 'select '
-    + 'date::text, accounts.id || \'_\' || accounts.name AS name, CAST(hist.balance AS float) AS balance '
-    + 'from balance_histories AS hist '
-    + 'join accounts ON accounts.id = hist.account_id '
-    + 'join institutions ON institutions.id = accounts.institution_id '
-    + `where institutions.user_id = ${user.id} `
-    + 'order by date';
+    const listCategories = (categories: { name: string }[]): string => {
+      let cats = '';
+
+      categories.forEach((c) => {
+        cats += `, "${c.name}" FLOAT`;
+      });
+
+      return cats;
+    }
+
+    const { days } = await Database.query()
+      .select(Database.raw('current_date - min(date) as days'))
+      .from((query) => {
+        query.select(Database.raw('min(date) as date'))
+          .from('balance_histories')
+          .join('accounts', 'accounts.id', 'balance_histories.account_id')
+          .join('institutions', 'institutions.id', 'accounts.institution_id')
+          .where('user_id', user.id)
+          .union((query2) => {
+            query2.select(Database.raw('min(date) as date'))
+              .from('account_transactions as at')
+              .join('transactions as t', 't.id', 'at.transaction_id')
+              .join('accounts as a', 'a.id', 'at.account_id')
+              .join('institutions as i', 'i.id', 'a.institution_id')
+              .where('i.user_id', user.id)
+              .andWhere('a.tracking', '!=', 'Balances')
+              .andWhereIn('t.type', [
+                TransactionType.STARTING_BALANCE,
+                TransactionType.REGULAR_TRANSACTION,
+                TransactionType.MANUAL_TRANSACTION])
+          })
+          .as('union')
+      })
+      .first();
+
+    let date = 'date::text'
+    if (days > 10 * 365) {
+      date = 'cast(date_trunc(\'year\', date) as date)';
+    }
+    else if (days > 2 * 365) {
+      date = 'cast(date_trunc(\'month\', date) as date)';
+    }
+    else if (days > 0.5 * 365) {
+      date = 'cast(date_trunc(\'week\', date) as date)';
+    }
+
+    const query = `
+      select
+        ${date} AS date,
+        accounts.id || '_' || accounts.name AS name,
+        max(CAST(hist.balance AS float)) AS balance
+      from balance_histories AS hist
+      join accounts ON accounts.id = hist.account_id
+      join institutions ON institutions.id = accounts.institution_id
+      where institutions.user_id = ${user.id}
+      and accounts.tracking = 'Balances'
+      group by ${date}, accounts.id
+      union
+      select
+        date,
+        id || '_' || name as name,
+        sum(balance) over (partition by id order by id, date asc rows between unbounded preceding and current row) as balance
+      from (
+        select a.id, a.name, ${date} as date, sum(at.amount) as balance
+        from account_transactions at
+        join transactions t on t.id = at.transaction_id
+        join accounts a on a.id = at.account_id
+        join institutions i on i.id = a.institution_id
+        where
+          a.tracking != 'Balances'
+          and t.type in (${[TransactionType.STARTING_BALANCE, TransactionType.REGULAR_TRANSACTION, TransactionType.MANUAL_TRANSACTION]}
+          )
+          and i.user_id = ${user.id}
+        group by i.user_id, t.type, ${date}, a.id
+      ) as daily
+      order by date`;
 
     const categoryQuery = 'select accounts.id || \'_\' || accounts.name AS name '
     + 'from accounts '
@@ -60,7 +116,7 @@ class ReportController {
     const categories = await Database.rawQuery(categoryQuery);
 
     const crosstab = `SELECT * FROM crosstab($$${query}$$, $$${categoryQuery}$$) `
-    + `AS (date TEXT ${ReportController.listCategories(categories.rows)})`;
+    + `AS (date TEXT ${listCategories(categories.rows)})`;
 
     const data = await Database.rawQuery(crosstab);
 
@@ -102,7 +158,7 @@ class ReportController {
       .join('accounts', 'accounts.id', 'account_id')
       .join('institutions', 'institutions.id', 'accounts.institution_id')
       .where('pending', false)
-      .andWhereIn('transactions.type', [0, 5])
+      .andWhereIn('transactions.type', [TransactionType.REGULAR_TRANSACTION, TransactionType.MANUAL_TRANSACTION])
       .andWhere('institutions.user_id', user.id)
       .groupBy(['account_transactions.name', 'mask', 'payment_channel'])
       .orderBy('account_transactions.name', 'asc');
