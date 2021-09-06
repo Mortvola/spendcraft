@@ -32,7 +32,7 @@ const RegisterTitles = ({
       <div className="register-title acct-transaction">
         {commonTitles()}
         <div />
-        <div style={{ overflowY: 'scroll', visibility: 'hidden' }} />
+        <div style={{ overflowY: 'scroll', visibility: 'hidden', padding: 0 }} />
       </div>
     );
   }
@@ -42,7 +42,7 @@ const RegisterTitles = ({
       {commonTitles()}
       <div>Institution</div>
       <div>Account</div>
-      <div style={{ overflowY: 'scroll', visibility: 'hidden' }} />
+      <div style={{ overflowY: 'scroll', visibility: 'hidden', padding: 0 }} />
     </div>
   );
 };

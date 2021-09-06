@@ -60,9 +60,10 @@ const Payee = (): ReactElement | null => {
         <div>Name</div>
         <div>Payment Channel</div>
         <div className="dollar-amount">Amount</div>
-        <div>Count</div>
+        <div style={{ textAlign: 'right' }}>Count</div>
+        <div style={{ overflowY: 'scroll', visibility: 'hidden', padding: 0 }} />
       </div>
-      <div className="striped" style={{ overflowY: 'auto' }}>
+      <div className="striped" style={{ overflowY: 'scroll' }}>
         {
           data !== null
             ? (
