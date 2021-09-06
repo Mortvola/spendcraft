@@ -3,7 +3,7 @@ import React, { CSSProperties, ReactElement } from 'react';
 interface Props {
   id?: string,
   noValue?: number | string | null,
-  amount?: number | null,
+  amount?: number | string | null,
   className?: string,
   style?: CSSProperties,
 }
@@ -15,7 +15,7 @@ function Amount({
   className = '',
   style,
 }: Props): ReactElement {
-  let displayedAmount = amount;
+  let displayedAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
   if (displayedAmount === null) {
     if (noValue === null) {
       displayedAmount = 0;

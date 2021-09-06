@@ -17,9 +17,7 @@ const Reports = (): ReactElement => {
   const renderReport = (): ReactElement | null => {
     switch (reportType) {
       case 'netWorth':
-        // if (isNetworthReport(data)) {
-        //   return <NetWorth balances={data} />;
-        // }
+        return <NetWorth />;
 
         break;
 

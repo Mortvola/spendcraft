@@ -89,61 +89,33 @@ class ReportController {
   }
 
   private static async payee(user: User, startDate: string, endDate: string): Promise<PayeeReportType> {
-    // return AccountTransaction.query()
-    //   .preload('transaction')
-    //   .preload('account', (accountQuery) => {
-    //     accountQuery.preload('institution');
-    //   })
-    //   .whereHas('transaction', (transactionQuery) => {
-    //     transactionQuery.where('date', '<=', '2020-09-05')
-    //   })
-    //   .whereHas('account', (accountQuery) => {
-    //     accountQuery.whereHas('institution', (institutionQuery) => {
-    //       institutionQuery.where('userId', user.id)
-    //     })
-    //   })
-    // return user.related('institutions').query()
-    //   .preload('accounts', (accountQuery) => {
-    //     accountQuery.preload('accountTransactions', (accountTransactionQuery) => {
-    //       accountTransactionQuery.preload('transaction')
-    //     })
-    //   })
-    //   .withAggregate('accounts', (q) => {
-    //     q.count('*').as('count')
-    //       .withAggregate('accountTransactions', (q2) => {
-    //         q2.count('*').as('count')
-    //       })
-    //   })
-    //   .whereHas('accounts', (accountQuery) => {
-    //     accountQuery.whereHas('accountTransactions', (accountTransactionQuery) => {
-    //       accountTransactionQuery.where('date', '<=', '2020-09-05')
-    //     })
-    //   })
-    return Database.query()
+    const query = Database.query()
       .select(
         Database.raw('row_number() over (order by account_transactions.name) as "rowNumber"'),
         'account_transactions.name',
-        'mask',
-        'payment_channel',
+        'payment_channel as "paymentChannel',
         Database.raw('count(*)'),
+        Database.raw('sum(amount)'),
       )
       .from('account_transactions')
       .join('transactions', 'transactions.id', 'account_transactions.transaction_id')
       .join('accounts', 'accounts.id', 'account_id')
       .join('institutions', 'institutions.id', 'accounts.institution_id')
       .where('pending', false)
-      .andWhere('date', '>=', startDate)
+      .andWhereIn('transactions.type', [0, 5])
       .andWhere('institutions.user_id', user.id)
       .groupBy(['account_transactions.name', 'mask', 'payment_channel'])
       .orderBy('account_transactions.name', 'asc');
-    // select i.user_id, at.name, a.mask, at.payment_channel, count(*)
-    // from account_transactions at
-    // join transactions t on t.id = at.transaction_id
-    // join accounts a on a.id = at.account_id
-    // join institutions i on i.id = a.institution_id
-    // where at.pending = false and t.date > '2020-09-05'
-    // and a.id = 180
-    // group by i.user_id, at.name, a.mask, at.payment_channel order by at.name, a.mask
+
+    if (startDate) {
+      query.andWhere('date', '>=', startDate);
+    }
+
+    if (endDate) {
+      query.andWhere('date', '<=', endDate);
+    }
+
+    return query;
   }
 }
 

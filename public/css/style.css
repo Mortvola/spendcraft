@@ -839,6 +839,7 @@ body {
 
 .title div {
   padding-left: 0.25rem;
+  padding-right: 0.25rem;
 }
 
 .title div:not(:first-child) {
@@ -900,9 +901,10 @@ body {
 }
 
 .payee-report-controls {
-  display: grid;
+  display: flex;
   column-gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(0, 200px));
+  flex-flow: row;
+  align-items: flex-end;
   padding-bottom: 1rem;
 }
 

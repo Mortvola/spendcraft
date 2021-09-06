@@ -2,15 +2,16 @@ import { Formik, Form } from 'formik';
 import { DateTime } from 'luxon';
 import React, { ReactElement, useState } from 'react';
 import { Button } from 'react-bootstrap';
+import Amount from '../Amount';
 import FormField from '../Modal/FormField';
 import { getBody, httpGet } from '../state/Transports';
 
 type PayeeReport = {
   rowNumber: string,
   name: string,
-  mask: string,
+  sum: number,
   // eslint-disable-next-line camelcase
-  payment_channel: string,
+  paymentChannel: string,
   count: number,
 };
 
@@ -50,7 +51,7 @@ const Payee = (): ReactElement | null => {
         }}
         onSubmit={handleSubmit}
       >
-        <Form>
+        <Form className="payee-report-controls">
           <FormField name="startDate" type="date" label="Start Date:" />
           <FormField name="endDate" type="date" label="End Date:" />
           <Button variant="primary" type="submit">Run Report</Button>
@@ -59,18 +60,18 @@ const Payee = (): ReactElement | null => {
       <div className="title payee-report-item">
         <div>Name</div>
         <div>Mask</div>
-        <div>Channel</div>
+        <div className="dollar-amount">Amount</div>
         <div>Count</div>
       </div>
-      <div className="striped">
+      <div className="striped" style={{ overflowY: 'auto' }}>
         {
           data !== null
             ? (
               data.map((d) => (
                 <div key={d.rowNumber} className="payee-report-item">
                   <div className="ellipsis">{d.name}</div>
-                  <div>{d.mask}</div>
-                  <div>{d.payment_channel}</div>
+                  <div>{d.paymentChannel}</div>
+                  <Amount amount={d.sum} />
                   <div style={{ textAlign: 'right' }}>{d.count}</div>
                 </div>
               ))

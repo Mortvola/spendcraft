@@ -1,66 +1,60 @@
-import React, { ReactElement } from 'react';
-import PropTypes from 'prop-types';
+import React, { ReactElement, useEffect, useState } from 'react';
 import Chart from 'react-google-charts';
+import { getBody, httpGet } from '../state/Transports';
 
-type PropsType = {
-  balances: number[][] | null,
-}
+export const isNetworthReport = (r: unknown): r is number[][] => (
+  true
+)
 
-const Networth = ({
-  balances,
-}: PropsType): ReactElement | null => {
-  if (balances !== null) {
-    const netIndex = balances[0].length - 1;
-    const data = balances.map((item, index) => {
-      if (index === 0) {
-        return 'Net Worth';
-      }
+const Networth = (): ReactElement | null => {
+  const [data, setData] = useState<(number | string)[][] | null>(null);
+  const [netIndex, setNetIndex] = useState<number>(0);
 
-      return item.reduce((accum, balance, index2) => {
-        if (index2 === 0 || balance === null || Number.isNaN(balance)) {
-          return accum;
+  useEffect(() => {
+    (async () => {
+      const response = await httpGet('/api/reports/networth');
+
+      if (response.ok) {
+        const body = await getBody(response);
+
+        if (isNetworthReport(body)) {
+          setNetIndex(body[0].length - 1);
+          setData(body);
         }
+      }
+    })();
+  }, []);
 
-        return accum + balance;
-      }, 0);
-    });
-
-    return (
-      <div className="chart-wrapper window">
-        <Chart
-          chartType="ComboChart"
-          data={data}
-          options={{
-            width: ('100%' as unknown) as number,
-            height: ('100%' as unknown) as number,
-            legend: { position: 'none' },
-            isStacked: true,
-            hAxis: {
-              slantedText: true,
-            },
-            seriesType: 'bars',
-            series: {
-              [netIndex]: { type: 'line' },
-            },
-            focusTarget: 'datum',
-          }}
-        />
-      </div>
-    );
-  }
+  return (
+    <div className="chart-wrapper window">
+      {
+        data !== null
+          ? (
+            <Chart
+              chartType="ComboChart"
+              data={data}
+              options={{
+                width: ('100%' as unknown) as number,
+                height: ('100%' as unknown) as number,
+                legend: { position: 'none' },
+                isStacked: true,
+                hAxis: {
+                  slantedText: true,
+                },
+                seriesType: 'bars',
+                series: {
+                  [netIndex]: { type: 'line' },
+                },
+                focusTarget: 'datum',
+              }}
+            />
+          )
+          : null
+      }
+    </div>
+  );
 
   return null;
-};
-
-Networth.propTypes = {
-  balances: PropTypes.arrayOf(
-    PropTypes.arrayOf(
-      PropTypes.oneOfType([
-        PropTypes.string,
-        PropTypes.number,
-      ]),
-    ),
-  ).isRequired,
 };
 
 export default Networth;
