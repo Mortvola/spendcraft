@@ -18,8 +18,8 @@ class ReportController {
         return ReportController.networth(user);
 
       case 'payee': {
-        const { startDate, endDate, pc } = request.qs();
-        return ReportController.payee(user, startDate, endDate, pc);
+        const { startDate, endDate, pc, a } = request.qs();
+        return ReportController.payee(user, startDate, endDate, pc, a);
       }
 
       default:
@@ -147,8 +147,9 @@ class ReportController {
     startDate: string,
     endDate: string,
     pc?: string[] | string,
+    a?: string[] | string,
   ): Promise<PayeeReportType> {
-    if (pc !== undefined) {
+    if (pc !== undefined && a !== undefined) {
       const paymentColumn = 'coalesce(payment_channel, \'unknown\')';
 
       const query = Database.query()
@@ -189,6 +190,13 @@ class ReportController {
       }
       else {
         query.andWhereRaw(`${paymentColumn} = ?`, [pc]);
+      }
+
+      if (Array.isArray(a)) {
+        query.andWhereRaw(`accounts.id in (${a})`);
+      }
+      else {
+        query.andWhereRaw('accounts.id = ?', [a]);
       }
 
       return query;

@@ -61,7 +61,7 @@ export interface GroupMemberInterface {
 }
 
 export interface AccountsInterface {
-  institutions: Array<Institution>;
+  institutions: InstitutionInterface[];
 
   plaid: unknown | null;
 
@@ -225,7 +225,34 @@ export interface RegisterInterface {
 export interface InstitutionInterface {
   id: number;
 
+  name: string;
+
+  offline: boolean;
+
+  accounts: AccountInterface[];
+
+  unlinkedAccounts: UnlinkedAccountProps[] | null;
+
+  async addOnlineAccounts(
+    accounts: UnlinkedAccountProps[],
+    startDate: string,
+  ): Promise<null>;
+
+  async addOfflineAccount(
+    accountName: string,
+    balance: number,
+    startDate: string,
+    type: string,
+    subtype: string,
+    tracking: TrackingType,
+    rate: number,
+  ): Promise<Error[] | null>;
+
+  async getUnlinkedAccounts(): Promise<void>;
+
   deleteAccount(account: AccountInterface): void;
+
+  delete(): void;
 }
 
 export interface AccountInterface {

@@ -1,10 +1,11 @@
-import { Formik, Form } from 'formik';
+import { Formik, Form, FieldArray } from 'formik';
 import { DateTime } from 'luxon';
-import React, { ReactElement, useState } from 'react';
-import { Button, Dropdown, DropdownButton } from 'react-bootstrap';
+import React, { ReactElement, useContext, useState } from 'react';
+import { Button, DropdownButton } from 'react-bootstrap';
 import Amount from '../Amount';
 import FormCheckbox from '../Modal/FormCheckbox';
 import FormField from '../Modal/FormField';
+import MobxStore from '../state/mobxStore';
 import { getBody, httpGet } from '../state/Transports';
 
 type PayeeReport = {
@@ -23,6 +24,8 @@ export const isPayeeReport = (r: unknown): r is PayeeReport[] => (
 )
 
 const Payee = (): ReactElement | null => {
+  const { accounts } = useContext(MobxStore);
+
   const [data, setData] = useState<PayeeReport[]>([]);
 
   type FormValues = {
@@ -32,6 +35,7 @@ const Payee = (): ReactElement | null => {
     onlineFilter: boolean,
     otherFilter: boolean,
     unknownFilter: boolean,
+    account: { id: number, value: boolean}[],
   }
 
   const handleSubmit = async (values: FormValues): Promise<void> => {
@@ -52,6 +56,12 @@ const Payee = (): ReactElement | null => {
     if (values.unknownFilter) {
       qp += '&pc=unknown';
     }
+
+    values.account.forEach((a) => {
+      if (a.value) {
+        qp += `&a=${a.id}`
+      }
+    })
 
     const response = await httpGet(`/api/reports/payee?${qp}`);
 
@@ -74,6 +84,17 @@ const Payee = (): ReactElement | null => {
           onlineFilter: true,
           otherFilter: true,
           unknownFilter: true,
+          account: accounts.institutions.flatMap((i) => (
+            i.accounts.filter((a) => (
+              a.tracking === 'Transactions'
+            ))
+              .map((a) => (
+                {
+                  value: true,
+                  id: a.id,
+                }
+              ))
+          )),
         }}
         onSubmit={handleSubmit}
       >
@@ -86,6 +107,36 @@ const Payee = (): ReactElement | null => {
               <FormCheckbox name="onlineFilter" label="Online" />
               <FormCheckbox name="otherFilter" label="Other" />
               <FormCheckbox name="unknownFilter" label="Unknown" />
+            </div>
+          </DropdownButton>
+          <DropdownButton id="test" title="Accounts">
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                paddingLeft: '0.5rem',
+                overflowY: 'auto',
+                maxHeight: '300px',
+              }}
+            >
+              <FieldArray name="account">
+                {
+                  () => {
+                    let index = -1;
+                    return accounts.institutions.flatMap((i) => (
+                      i.accounts.filter((a) => (
+                        a.tracking === 'Transactions'
+                      ))
+                        .map((a) => {
+                          index += 1;
+                          return (
+                            <FormCheckbox key={a.id} name={`account[${index}].value`} label={`${i.name}:${a.name}`} />
+                          )
+                        })
+                    ))
+                  }
+                }
+              </FieldArray>
             </div>
           </DropdownButton>
           <Button variant="primary" type="submit">Run Report</Button>

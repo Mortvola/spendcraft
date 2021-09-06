@@ -1,15 +1,13 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
 import IconButton from '../IconButton';
-import { formatNumber } from '../NumberFormat';
-import { AccountInterface } from '../state/State';
-import Institution from '../state/Institution';
+import { AccountInterface, InstitutionInterface } from '../state/State';
 import { getSubTypeName, getTypeName } from '../state/AccountTypes';
 import Amount from '../Amount';
 
 type PropsType = {
   selected: boolean,
-  institution: Institution,
+  institution: InstitutionInterface,
   account: AccountInterface,
   onAccountSelected: ((account: AccountInterface) => void),
   showAccountDialog: ((account: AccountInterface) => void),
