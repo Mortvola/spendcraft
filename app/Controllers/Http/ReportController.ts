@@ -1,12 +1,10 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import Database from '@ioc:Adonis/Lucid/Database';
 import User from 'App/Models/User';
-import Institution from 'App/Models/Institution';
-import AccountTransaction from 'App/Models/AccountTransaction';
 import { TransactionType } from 'Common/ResponseTypes';
 
 type NetworthReportType = (string | number)[][];
-type PayeeReportType = (Institution | AccountTransaction)[];
+type PayeeReportType = Record<string, unknown>[];
 
 class ReportController {
   // eslint-disable-next-line class-methods-use-this
@@ -20,8 +18,8 @@ class ReportController {
         return ReportController.networth(user);
 
       case 'payee': {
-        const { startDate, endDate } = request.qs();
-        return ReportController.payee(user, startDate, endDate);
+        const { startDate, endDate, pc } = request.qs();
+        return ReportController.payee(user, startDate, endDate, pc);
       }
 
       default:
@@ -144,34 +142,59 @@ class ReportController {
     return result;
   }
 
-  private static async payee(user: User, startDate: string, endDate: string): Promise<PayeeReportType> {
-    const query = Database.query()
-      .select(
-        Database.raw('row_number() over (order by account_transactions.name) as "rowNumber"'),
-        'account_transactions.name',
-        'payment_channel as paymentChannel',
-        Database.raw('count(*)'),
-        Database.raw('sum(amount)'),
-      )
-      .from('account_transactions')
-      .join('transactions', 'transactions.id', 'account_transactions.transaction_id')
-      .join('accounts', 'accounts.id', 'account_id')
-      .join('institutions', 'institutions.id', 'accounts.institution_id')
-      .where('pending', false)
-      .andWhereIn('transactions.type', [TransactionType.REGULAR_TRANSACTION, TransactionType.MANUAL_TRANSACTION])
-      .andWhere('institutions.user_id', user.id)
-      .groupBy(['account_transactions.name', 'mask', 'payment_channel'])
-      .orderBy('account_transactions.name', 'asc');
+  private static async payee(
+    user: User,
+    startDate: string,
+    endDate: string,
+    pc?: string[] | string,
+  ): Promise<PayeeReportType> {
+    if (pc !== undefined) {
+      const paymentColumn = 'coalesce(payment_channel, \'unknown\')';
 
-    if (startDate) {
-      query.andWhere('date', '>=', startDate);
+      const query = Database.query()
+        .select(
+          Database.raw('row_number() over (order by account_transactions.name) as "rowNumber"'),
+          'account_transactions.name',
+          Database.raw(`${paymentColumn} as "paymentChannel"`),
+          Database.raw('count(*)'),
+          Database.raw('sum(amount)'),
+        )
+        .from('account_transactions')
+        .join('transactions', 'transactions.id', 'account_transactions.transaction_id')
+        .join('accounts', 'accounts.id', 'account_id')
+        .join('institutions', 'institutions.id', 'accounts.institution_id')
+        .where('pending', false)
+        .andWhereIn('transactions.type', [TransactionType.REGULAR_TRANSACTION, TransactionType.MANUAL_TRANSACTION])
+        .andWhere('institutions.user_id', user.id)
+        .groupBy(['account_transactions.name', 'mask', 'payment_channel'])
+        .orderBy('account_transactions.name', 'asc');
+
+      if (startDate) {
+        query.andWhere('date', '>=', startDate);
+      }
+
+      if (endDate) {
+        query.andWhere('date', '<=', endDate);
+      }
+
+      if (Array.isArray(pc)) {
+        query.andWhereRaw(`${paymentColumn} in (${pc.map((p): string => {
+          switch (p) {
+            case 'instore': return '\'in store\'';
+            case 'online': return '\'online\'';
+            case 'other': return '\'other\'';
+            default: return '\'unknown\'';
+          }
+        })})`);
+      }
+      else {
+        query.andWhereRaw(`${paymentColumn} = ?`, [pc]);
+      }
+
+      return query;
     }
 
-    if (endDate) {
-      query.andWhere('date', '<=', endDate);
-    }
-
-    return query;
+    return [];
   }
 }
 

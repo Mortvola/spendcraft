@@ -1,8 +1,9 @@
 import { Formik, Form } from 'formik';
 import { DateTime } from 'luxon';
 import React, { ReactElement, useState } from 'react';
-import { Button } from 'react-bootstrap';
+import { Button, Dropdown, DropdownButton } from 'react-bootstrap';
 import Amount from '../Amount';
+import FormCheckbox from '../Modal/FormCheckbox';
 import FormField from '../Modal/FormField';
 import { getBody, httpGet } from '../state/Transports';
 
@@ -27,10 +28,32 @@ const Payee = (): ReactElement | null => {
   type FormValues = {
     startDate: string,
     endDate: string,
+    inStoreFilter: boolean,
+    onlineFilter: boolean,
+    otherFilter: boolean,
+    unknownFilter: boolean,
   }
 
   const handleSubmit = async (values: FormValues): Promise<void> => {
-    const response = await httpGet(`/api/reports/payee?startDate=${values.startDate}&endDate=${values.endDate}`);
+    let qp = `startDate=${values.startDate}&endDate=${values.endDate}`;
+
+    if (values.inStoreFilter) {
+      qp += '&pc=instore';
+    }
+
+    if (values.onlineFilter) {
+      qp += '&pc=online'
+    }
+
+    if (values.otherFilter) {
+      qp += '&pc=other';
+    }
+
+    if (values.unknownFilter) {
+      qp += '&pc=unknown';
+    }
+
+    const response = await httpGet(`/api/reports/payee?${qp}`);
 
     if (response.ok) {
       const body = await getBody(response);
@@ -47,12 +70,24 @@ const Payee = (): ReactElement | null => {
         initialValues={{
           startDate: DateTime.now().minus({ years: 1 }).toISODate(),
           endDate: DateTime.now().toISODate(),
+          inStoreFilter: true,
+          onlineFilter: true,
+          otherFilter: true,
+          unknownFilter: true,
         }}
         onSubmit={handleSubmit}
       >
         <Form className="payee-report-controls">
           <FormField name="startDate" type="date" label="Start Date:" />
           <FormField name="endDate" type="date" label="End Date:" />
+          <DropdownButton id="test" title="Payment Channels">
+            <div style={{ display: 'flex', flexDirection: 'column', paddingLeft: '0.5rem' }}>
+              <FormCheckbox name="inStoreFilter" label="In Store" />
+              <FormCheckbox name="onlineFilter" label="Online" />
+              <FormCheckbox name="otherFilter" label="Other" />
+              <FormCheckbox name="unknownFilter" label="Unknown" />
+            </div>
+          </DropdownButton>
           <Button variant="primary" type="submit">Run Report</Button>
         </Form>
       </Formik>
