@@ -1,13 +1,15 @@
-import React, { ReactElement } from 'react';
+import React, { CSSProperties, ReactElement } from 'react';
 
 type PropsType = {
   icon: string,
   rotate?: boolean,
+  style?: CSSProperties,
 }
 
 const Icon = ({
   icon,
   rotate = false,
+  style,
 }: PropsType): ReactElement => {
   let className = `fas fa-${icon}`;
 
@@ -16,7 +18,7 @@ const Icon = ({
   }
 
   return (
-    <i className={className} />
+    <i className={className} style={style} />
   )
 };
 

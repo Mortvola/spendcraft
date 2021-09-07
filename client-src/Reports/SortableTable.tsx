@@ -4,11 +4,6 @@ import React, {
 } from 'react';
 import Icon from '../Icon';
 
-type SortConfig = {
-  column: string,
-  direction: 'ascending' | 'descending',
-}
-
 type SortableTableHeaderProps = {
   className?: string,
   children?: ReactNode,
@@ -36,9 +31,22 @@ type UseSortableTableType<T> = {
   }
 }
 
-export default function useSortableTable<T>(): UseSortableTableType<T> {
+export default function useSortableTable<T>(initialSortKey?: string | undefined): UseSortableTableType<T> {
+  type Direction = 'ascending' | 'descending';
+
+  type SortConfig = {
+    column: string,
+    direction: Direction,
+  }
+
   const [data, setData] = useState<(T & Record<string, unknown>)[]>([]);
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
+
+  useMemo(() => {
+    if (initialSortKey !== undefined) {
+      setSortConfig({ column: initialSortKey, direction: 'ascending' });
+    }
+  }, [initialSortKey]);
 
   const sorted = useMemo(() => {
     const sortedData = data.slice();
@@ -108,13 +116,13 @@ export default function useSortableTable<T>(): UseSortableTableType<T> {
     const sortIcon = () => {
       if (sortConfig && sortConfig.column === column) {
         if (sortConfig.direction === 'ascending') {
-          return <Icon icon="caret-up" />;
+          return <Icon icon="sort-up" />;
         }
 
-        return <Icon icon="caret-down" />;
+        return <Icon icon="sort-down" />;
       }
 
-      return null;
+      return <Icon icon="sort" style={{ color: 'darkgray' }} />;
     }
 
     return (
