@@ -10,10 +10,14 @@ const submitForm = async (
   fail: ((errors: ErrorsType) => void),
 ): Promise<void> => {
   const formData = new FormData(form);
+  const formBody: Record<string, unknown> = {};
 
-  const response = await httpPost(url, {
-    body: formData,
-  });
+  // eslint-disable-next-line no-restricted-syntax
+  for (const pair of formData.entries()) {
+    [, formBody[pair[0]]] = pair;
+  }
+
+  const response = await httpPost(url, formBody);
 
   if (response.ok) {
     if (response.headers.get('Content-Type') === 'application/json') {

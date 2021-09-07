@@ -23,7 +23,7 @@ const Welcome = () => {
     if (body === null) {
       throw new Error('body is null');
     }
-  
+
     body.className = 'background';
     setImageLoaded(true);
   };
