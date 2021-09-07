@@ -38,6 +38,9 @@ class AccountTransaction extends BaseModel {
   @column()
   public paymentChannel: string | null;
 
+  @column()
+  public merchantName: string | null;
+
   public static get Serializer(): string {
     return 'App/Serializer';
   }

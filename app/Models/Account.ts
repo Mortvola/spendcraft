@@ -279,6 +279,7 @@ class Account extends BaseModel {
             amount: -plaidTransaction.amount,
             pending: plaidTransaction.pending ?? false,
             paymentChannel: plaidTransaction.payment_channel,
+            merchantName: plaidTransaction.merchant_name,
           });
 
           await acctTrans.save();
@@ -312,6 +313,7 @@ class Account extends BaseModel {
               amount: -plaidTransaction.amount,
               pending: plaidTransaction.pending ?? false,
               paymentChannel: plaidTransaction.payment_channel,
+              merchantName: plaidTransaction.merchant_name,
             })
             .save();
 

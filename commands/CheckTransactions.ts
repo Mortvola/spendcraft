@@ -31,7 +31,7 @@ export default class CheckTransactions extends BaseCommand {
   public fixMissing: boolean;
 
   @flags.string({ description: 'Updates the specified field' })
-  public update: string
+  public update: 'paymentChannel' | 'merchantName';
 
   public static settings = {
     /**
@@ -66,6 +66,7 @@ export default class CheckTransactions extends BaseCommand {
       missingTransactions: PlaidTransaction[],
       extraTransactions: AccountTransaction[],
       paymentChannelMismatches: number,
+      merchantNameMismatches: number,
     }
 
     // eslint-disable-next-line no-restricted-syntax
@@ -93,6 +94,7 @@ export default class CheckTransactions extends BaseCommand {
           let plaidTransactions: PlaidTransaction[] = [];
 
           let paymentChannelMismatches = 0;
+          let merchantNameMismatches = 0;
 
           do {
             const options: TransactionsRequestOptions = {
@@ -145,6 +147,13 @@ export default class CheckTransactions extends BaseCommand {
                       paymentChannelMismatches += 1;
                       if (this.update === 'paymentChannel') {
                         acctTransaction.paymentChannel = plaidTransaction.payment_channel;
+                        updated = true;
+                      }
+                    }
+                    else if (plaidTransaction.merchant_name !== acctTransaction.merchantName) {
+                      merchantNameMismatches += 1;
+                      if (this.update === 'merchantName') {
+                        acctTransaction.merchantName = plaidTransaction.merchant_name;
                         updated = true;
                       }
                     }
@@ -204,6 +213,7 @@ export default class CheckTransactions extends BaseCommand {
             missingTransactions.length > 0
             || extraTransactions.length > 0
             || paymentChannelMismatches !== 0
+            || merchantNameMismatches !== 0
           ) {
             failedAccounts.push({
               institution: inst,
@@ -211,6 +221,7 @@ export default class CheckTransactions extends BaseCommand {
               missingTransactions,
               extraTransactions,
               paymentChannelMismatches,
+              merchantNameMismatches,
             });
 
             // // eslint-disable-next-line no-loop-func
@@ -268,6 +279,7 @@ export default class CheckTransactions extends BaseCommand {
           }
 
           this.logger.info(`\t\tPayment Channel Mismatches: ${acct.paymentChannelMismatches}`)
+          this.logger.info(`\t\tMerchant Name Mismatches: ${acct.merchantNameMismatches}`)
         }
 
         if (this.fixMissing || this.update) {

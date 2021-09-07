@@ -11,67 +11,48 @@ import MobxStore from '../state/mobxStore';
 import { getBody, httpGet } from '../state/Transports';
 import useSortableTable from './SortableTable';
 
-type PayeeReport = {
+type CategoryReport = {
   [key: string]: string | number,
   rowNumber: string,
-  name: string,
+  groupName: string,
+  categoryName: string,
   sum: number,
-  paymentChannel: string,
   count: number,
 };
 
-const Payee = (): ReactElement | null => {
-  const { accounts } = useContext(MobxStore);
-  const { setData, SortableTable } = useSortableTable<PayeeReport>();
+const Category = (): ReactElement | null => {
+  const { categoryTree: { groups } } = useContext(MobxStore);
+  const { setData, SortableTable } = useSortableTable<CategoryReport>();
 
   type FormValues = {
     startDate: string,
     endDate: string,
-    inStoreFilter: boolean,
-    onlineFilter: boolean,
-    otherFilter: boolean,
-    unknownFilter: boolean,
-    account: { id: number, value: boolean}[],
+    category: { id: number, value: boolean}[],
   }
 
   const handleSubmit = async (values: FormValues): Promise<void> => {
     let qp = `startDate=${values.startDate}&endDate=${values.endDate}`;
 
-    if (values.inStoreFilter) {
-      qp += '&pc=instore';
-    }
-
-    if (values.onlineFilter) {
-      qp += '&pc=online'
-    }
-
-    if (values.otherFilter) {
-      qp += '&pc=other';
-    }
-
-    if (values.unknownFilter) {
-      qp += '&pc=unknown';
-    }
-
-    values.account.forEach((a) => {
-      if (a.value) {
-        qp += `&a=${a.id}`
+    values.category.forEach((c) => {
+      if (c.value) {
+        qp += `&c=${c.id}`
       }
     })
 
-    const response = await httpGet(`/api/reports/payee?${qp}`);
+    const response = await httpGet(`/api/reports/category?${qp}`);
 
     if (response.ok) {
       const body = await getBody(response);
 
-      const isPayeeReport = (r: unknown): r is PayeeReport[] => (
+      const isCategoryReport = (r: unknown): r is CategoryReport[] => (
         Array.isArray(r)
         && (r.length === 0 || (
-          (r as PayeeReport[])[0].name !== undefined
+          (r as CategoryReport[])[0].groupName !== undefined
+          && (r as CategoryReport[])[0].categoryName !== undefined
         ))
       )
 
-      if (isPayeeReport(body)) {
+      if (isCategoryReport(body)) {
         setData(body);
       }
     }
@@ -83,18 +64,14 @@ const Payee = (): ReactElement | null => {
         initialValues={{
           startDate: DateTime.now().minus({ years: 1 }).toISODate(),
           endDate: DateTime.now().toISODate(),
-          inStoreFilter: true,
-          onlineFilter: true,
-          otherFilter: true,
-          unknownFilter: true,
-          account: (accounts.institutions.flatMap((i) => (
-            i.accounts.filter((a) => (
-              a.tracking === 'Transactions'
+          category: (groups.flatMap((g) => (
+            g.categories.filter((c) => (
+              c.type === 'REGULAR'
             )))
-            .map((a) => (
+            .map((c) => (
               {
                 value: true,
-                id: a.id,
+                id: c.id,
               }
             )))),
         }}
@@ -103,15 +80,7 @@ const Payee = (): ReactElement | null => {
         <Form className="payee-report-controls">
           <FormField name="startDate" type="date" label="Start Date:" />
           <FormField name="endDate" type="date" label="End Date:" />
-          <DropdownButton id="test" title="Payment Channels">
-            <div style={{ display: 'flex', flexDirection: 'column', paddingLeft: '0.5rem' }}>
-              <FormCheckbox name="inStoreFilter" label="In Store" />
-              <FormCheckbox name="onlineFilter" label="Online" />
-              <FormCheckbox name="otherFilter" label="Other" />
-              <FormCheckbox name="unknownFilter" label="Unknown" />
-            </div>
-          </DropdownButton>
-          <DropdownButton id="test" title="Accounts">
+          <DropdownButton id="test" title="Categories">
             <div
               style={{
                 display: 'flex',
@@ -125,14 +94,14 @@ const Payee = (): ReactElement | null => {
                 {
                   () => {
                     let index = -1;
-                    return (accounts.institutions.flatMap((i) => (
-                      i.accounts.filter((a) => (
-                        a.tracking === 'Transactions'
+                    return (groups.flatMap((g) => (
+                      g.categories.filter((c) => (
+                        c.type === 'REGULAR'
                       )))
-                      .map((a) => {
+                      .map((c) => {
                         index += 1;
                         return (
-                          <FormCheckbox key={a.id} name={`account[${index}].value`} label={`${i.name}:${a.name}`} />
+                          <FormCheckbox key={c.id} name={`category[${index}].value`} label={`${g.name}:${c.name}`} />
                         )
                       })))
                   }
@@ -144,11 +113,11 @@ const Payee = (): ReactElement | null => {
         </Form>
       </Formik>
       <SortableTable.Header className="title payee-report-item">
-        <SortableTable.Column column="name">
-          Name
+        <SortableTable.Column column="groupName">
+          Group
         </SortableTable.Column>
-        <SortableTable.Column column="paymentChannel">
-          Payment Channel
+        <SortableTable.Column column="categoryName">
+          Category
         </SortableTable.Column>
         <SortableTable.Column className="dolloar-amount" column="sum">
           Amount
@@ -162,8 +131,8 @@ const Payee = (): ReactElement | null => {
         {
           (d) => (
             <div key={d.rowNumber} className="payee-report-item">
-              <div className="ellipsis">{d.name}</div>
-              <div>{d.paymentChannel}</div>
+              <div className="ellipsis">{d.groupName}</div>
+              <div className="ellipsis">{d.categoryName}</div>
               <Amount amount={d.sum} />
               <div style={{ textAlign: 'right' }}>{d.count}</div>
             </div>
@@ -174,4 +143,4 @@ const Payee = (): ReactElement | null => {
   )
 }
 
-export default Payee;
+export default Category;

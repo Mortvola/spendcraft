@@ -27,6 +27,15 @@ class ReportController {
         return ReportController.payee(user, startDate, endDate, pc, a);
       }
 
+      case 'category': {
+        const {
+          startDate,
+          endDate,
+          c,
+        } = request.qs();
+        return ReportController.category(user, startDate, endDate, c);
+      }
+
       default:
         throw new Error('unknown report request');
     }
@@ -159,21 +168,22 @@ class ReportController {
 
       const query = Database.query()
         .select(
-          Database.raw('row_number() over (order by account_transactions.name) as "rowNumber"'),
-          'account_transactions.name',
+          Database.raw('row_number() over (order by coalesce(at.merchant_name, at.name)) as "rowNumber"'),
+          Database.raw('coalesce(at.merchant_name, at.name) as "name"'),
           Database.raw(`${paymentColumn} as "paymentChannel"`),
-          Database.raw('count(*)'),
+          Database.raw('CAST(count(*) as integer) as count'),
           Database.raw('CAST(sum(amount) as float) as sum'),
         )
-        .from('account_transactions')
-        .join('transactions', 'transactions.id', 'account_transactions.transaction_id')
+        .from('account_transactions as at')
+        .join('transactions', 'transactions.id', 'at.transaction_id')
         .join('accounts', 'accounts.id', 'account_id')
         .join('institutions', 'institutions.id', 'accounts.institution_id')
         .where('pending', false)
         .andWhereIn('transactions.type', [TransactionType.REGULAR_TRANSACTION, TransactionType.MANUAL_TRANSACTION])
         .andWhere('institutions.user_id', user.id)
-        .groupBy(['account_transactions.name', 'mask', 'payment_channel'])
-        .orderBy('account_transactions.name', 'asc');
+        .groupBy(['payment_channel'])
+        .groupByRaw('coalesce(at.merchant_name, at.name)')
+        .orderByRaw('coalesce(at.merchant_name, at.name) asc')
 
       if (startDate) {
         query.andWhere('date', '>=', startDate);
@@ -202,6 +212,52 @@ class ReportController {
       }
       else {
         query.andWhereRaw('accounts.id = ?', [a]);
+      }
+
+      return query;
+    }
+
+    return [];
+  }
+
+  private static async category(
+    user: User,
+    startDate: string,
+    endDate: string,
+    c?: string[] | string,
+  ): Promise<PayeeReportType> {
+    if (c !== undefined) {
+      const query = Database.query()
+        .select(
+          Database.raw('row_number() over (order by g.name, c.name) as "rowNumber"'),
+          'g.name as groupName',
+          'c.name as categoryName',
+          Database.raw('CAST(sum(tc.amount) as float) as sum'),
+          Database.raw('CAST(count(*) as integer) as count'),
+        )
+        .from('transaction_categories as tc')
+        .join('categories as c', 'c.id', 'tc.category_id')
+        .join('groups as g', 'g.id', 'c.group_id')
+        .join('transactions as t', 't.id', 'tc.transaction_id')
+        .where('g.user_id', user.id)
+        .andWhereIn('t.type', [TransactionType.MANUAL_TRANSACTION, TransactionType.REGULAR_TRANSACTION])
+        .groupBy(['g.name', 'c.name'])
+        .orderBy('g.name', 'asc')
+        .orderBy('c.name', 'asc');
+
+      if (startDate) {
+        query.andWhere('t.date', '>=', startDate);
+      }
+
+      if (endDate) {
+        query.andWhere('t.date', '<=', endDate);
+      }
+
+      if (Array.isArray(c)) {
+        query.andWhereRaw(`c.id in (${c})`);
+      }
+      else {
+        query.andWhereRaw('c.id = ?', [c]);
       }
 
       return query;
