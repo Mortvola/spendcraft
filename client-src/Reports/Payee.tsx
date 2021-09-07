@@ -22,7 +22,7 @@ type PayeeReport = {
 
 const Payee = (): ReactElement | null => {
   const { accounts } = useContext(MobxStore);
-  const { setData, SortableTable } = useSortableTable<PayeeReport>('name');
+  const { setData, SortableTable } = useSortableTable<PayeeReport>(['name', 'paymentChannel', 'sum', 'count']);
 
   type FormValues = {
     startDate: string,

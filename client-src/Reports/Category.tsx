@@ -12,7 +12,6 @@ import { getBody, httpGet } from '../state/Transports';
 import useSortableTable from './SortableTable';
 
 type CategoryReport = {
-  [key: string]: string | number,
   rowNumber: string,
   groupName: string,
   categoryName: string,
@@ -22,7 +21,7 @@ type CategoryReport = {
 
 const Category = (): ReactElement | null => {
   const { categoryTree: { groups } } = useContext(MobxStore);
-  const { setData, SortableTable } = useSortableTable<CategoryReport>();
+  const { setData, SortableTable } = useSortableTable<CategoryReport>(['groupName', 'categoryName', 'sum', 'count']);
 
   type FormValues = {
     startDate: string,

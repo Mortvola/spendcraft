@@ -31,7 +31,7 @@ type UseSortableTableType<T> = {
   }
 }
 
-export default function useSortableTable<T>(initialSortKey?: string | undefined): UseSortableTableType<T> {
+export default function useSortableTable<T>(keyPrecedence?: string[] | undefined): UseSortableTableType<T> {
   type Direction = 'ascending' | 'descending';
 
   type SortConfig = {
@@ -40,42 +40,72 @@ export default function useSortableTable<T>(initialSortKey?: string | undefined)
   }
 
   const [data, setData] = useState<(T & Record<string, unknown>)[]>([]);
-  const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
-
-  useMemo(() => {
-    if (initialSortKey !== undefined) {
-      setSortConfig({ column: initialSortKey, direction: 'ascending' });
+  const [sortConfig, setSortConfig] = useState<SortConfig | null>(() => {
+    if (keyPrecedence !== undefined) {
+      return { column: keyPrecedence[0], direction: 'ascending' };
     }
-  }, [initialSortKey]);
+
+    return null;
+  });
 
   const sorted = useMemo(() => {
     const sortedData = data.slice();
     if (sortConfig !== null && sortedData !== null) {
-      sortedData.sort((a, b) => {
-        const x = a[sortConfig.column];
-        const y = b[sortConfig.column];
+      const compare2 = (
+        a: T & Record<string, unknown>,
+        b: T & Record<string, unknown>,
+        key: string,
+      ): number => {
+        let value = 0;
+        const x = a[key];
+        const y = b[key];
+
         if (typeof x === 'number' && typeof y === 'number') {
-          return sortConfig.direction === 'ascending' ? x - y : y - x;
+          value = sortConfig.direction === 'ascending' ? x - y : y - x;
+        }
+        else if (typeof x === 'string' && typeof y === 'string') {
+          if (sortConfig.direction === 'ascending') {
+            value = x.localeCompare(y)
+          }
+          else {
+            value = y.localeCompare(x)
+          }
         }
 
-        if (typeof x === 'string' && typeof y === 'string') {
-          if (sortConfig.direction === 'ascending') {
-            return x.localeCompare(y)
+        return value;
+      }
+
+      sortedData.sort(
+        (
+          a: T & Record<string, unknown>,
+          b: T & Record<string, unknown>,
+        ): number => {
+          let value = 0;
+
+          value = compare2(a, b, sortConfig.column);
+
+          if (keyPrecedence) {
+            let index = 0;
+            while (value === 0 && index <= keyPrecedence.length - 1) {
+              if (sortConfig.column !== keyPrecedence[index]) {
+                value = compare2(a, b, keyPrecedence[index]);
+              }
+
+              index += 1;
+            }
           }
 
-          return y.localeCompare(x)
-        }
-
-        return 0;
-      });
+          return value;
+        },
+      );
     }
 
     return sortedData;
-  }, [data, sortConfig]);
+  }, [data, keyPrecedence, sortConfig]);
 
   const processTitleClick = (column: string) => {
-    let direction: 'ascending' | 'descending' = 'ascending';
-    if (sortConfig !== null && column === sortConfig.column) {
+    let direction: Direction = 'ascending';
+    if (sortConfig !== null && sortConfig.column === column) {
       direction = sortConfig.direction === 'ascending' ? 'descending' : 'ascending';
     }
 
