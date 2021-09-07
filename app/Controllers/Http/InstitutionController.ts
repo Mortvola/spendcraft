@@ -7,7 +7,7 @@ import Account, { AccountSyncResult } from 'App/Models/Account';
 import Category from 'App/Models/Category';
 import User from 'App/Models/User'
 import {
-  AccountProps, CategoryBalanceProps, InstitutionProps, TrackingType, UnlinkedAccountProps,
+  AccountProps, CategoryBalanceProps, InstitutionProps, TrackingType, TransactionType, UnlinkedAccountProps,
 } from 'Common/ResponseTypes';
 import { schema } from '@ioc:Adonis/Core/Validator';
 import Transaction from 'App/Models/Transaction';
@@ -219,6 +219,7 @@ class InstitutionController {
         date: startDate,
         sortOrder: -1,
         userId: user.id,
+        type: TransactionType.STARTING_BALANCE,
       });
 
     if (options && options.client) {

@@ -837,6 +837,12 @@ body {
   background-color: gray;
 }
 
+.title div {
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
+  user-select: none;
+}
+
 .title div:not(:first-child) {
   border-left: solid thin black
 }
@@ -884,4 +890,39 @@ body {
   padding-left: 0.5rem;
   padding-right: 0.5rem;
   padding-bottom: 0.25rem;
+}
+
+.payee-report {
+  padding: 1rem;
+  grid-area: window1;
+  display: grid;
+  grid-template-rows: repeat(2, max-content) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
+  /* justify-content: center; */
+}
+
+.payee-report-controls {
+  display: flex;
+  column-gap: 1rem;
+  flex-flow: row;
+  align-items: flex-end;
+  padding-bottom: 1rem;
+}
+
+.payee-report-item {
+  display: grid;
+  grid-template-columns: minmax(0, 4fr) repeat(2, minmax(0, 2fr)) minmax(0, 1fr) max-content;
+  grid-template-rows: max-content;
+  /* max-width: 800px; */
+}
+
+.payee-report-item * {
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
+}
+
+.ellipsis {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
 }

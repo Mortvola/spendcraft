@@ -8,13 +8,12 @@ import FormField from '../Modal/FormField';
 import FormModal from '../Modal/FormModal';
 import FormTextField from '../Modal/FormTextField';
 import useModal, { ModalProps, UseModalType } from '../Modal/useModal';
-import Institution from '../state/Institution';
 import MobxStore from '../state/mobxStore';
-import { AccountInterface } from '../state/State';
+import { AccountInterface, InstitutionInterface } from '../state/State';
 import { getSubtypes, getTypes } from '../state/AccountTypes';
 
 type PropsType = {
-  institution?: Institution,
+  institution?: InstitutionInterface,
   account?: AccountInterface | null,
   onHide?: () => void,
 }

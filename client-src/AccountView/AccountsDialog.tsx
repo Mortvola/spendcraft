@@ -7,13 +7,13 @@ import {
 } from 'formik';
 import AccountItem from './AccountItem';
 import useModal, { ModalProps, UseModalType } from '../Modal/useModal';
-import Institution from '../state/Institution';
 import FormModal from '../Modal/FormModal';
 import { TrackingType, UnlinkedAccountProps } from '../../common/ResponseTypes';
 import FormField from '../Modal/FormField';
+import { InstitutionInterface } from '../state/State';
 
 type PropsType = {
-  institution: Institution,
+  institution: InstitutionInterface,
 }
 
 const AccountsDialog = ({

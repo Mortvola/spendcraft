@@ -4,13 +4,12 @@ import IconButton from '../IconButton';
 import { useAccountsDialog } from './AccountsDialog';
 import { useInstitutionInfoDialog } from './InstitutionInfoDialog';
 import Account from './Account';
-import StateInstitution from '../state/Institution';
-import { AccountInterface } from '../state/State';
+import { AccountInterface, InstitutionInterface } from '../state/State';
 import { useOfflineAccountDialog } from './OfflineAccountDialog';
 import { useDeleteConfirmation } from '../DeleteConfirmation';
 
 type PropsType = {
-  institution: StateInstitution,
+  institution: InstitutionInterface,
   onAccountSelected: ((account: AccountInterface) => void),
   selectedAccount?: AccountInterface | null,
   onRelink: ((id: number) => void),

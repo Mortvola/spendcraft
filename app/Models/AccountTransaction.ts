@@ -12,7 +12,7 @@ class AccountTransaction extends BaseModel {
   @column()
   public accountId: number;
 
-  @column({ serializeAs: 'id' })
+  @column()
   public transactionId: number;
 
   @belongsTo(() => Transaction)
@@ -37,6 +37,9 @@ class AccountTransaction extends BaseModel {
 
   @column()
   public paymentChannel: string | null;
+
+  @column()
+  public merchantName: string | null;
 
   public static get Serializer(): string {
     return 'App/Serializer';
