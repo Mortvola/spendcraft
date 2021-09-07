@@ -1,14 +1,18 @@
+import React, {
+  ReactElement, useContext,
+} from 'react';
 import { Formik, Form, FieldArray } from 'formik';
 import { DateTime } from 'luxon';
-import React, { ReactElement, useContext, useState } from 'react';
 import { Button, DropdownButton } from 'react-bootstrap';
 import Amount from '../Amount';
 import FormCheckbox from '../Modal/FormCheckbox';
 import FormField from '../Modal/FormField';
 import MobxStore from '../state/mobxStore';
 import { getBody, httpGet } from '../state/Transports';
+import useSortableTable from './SortableTable';
 
 type PayeeReport = {
+  [key: string]: string | number,
   rowNumber: string,
   name: string,
   sum: number,
@@ -16,17 +20,9 @@ type PayeeReport = {
   count: number,
 };
 
-export const isPayeeReport = (r: unknown): r is PayeeReport[] => (
-  Array.isArray(r)
-  && (r.length === 0 || (
-    (r as PayeeReport[])[0].name !== undefined
-  ))
-)
-
 const Payee = (): ReactElement | null => {
   const { accounts } = useContext(MobxStore);
-
-  const [data, setData] = useState<PayeeReport[]>([]);
+  const { setData, SortableTable } = useSortableTable<PayeeReport>();
 
   type FormValues = {
     startDate: string,
@@ -67,6 +63,13 @@ const Payee = (): ReactElement | null => {
 
     if (response.ok) {
       const body = await getBody(response);
+
+      const isPayeeReport = (r: unknown): r is PayeeReport[] => (
+        Array.isArray(r)
+        && (r.length === 0 || (
+          (r as PayeeReport[])[0].name !== undefined
+        ))
+      )
 
       if (isPayeeReport(body)) {
         setData(body);
@@ -142,29 +145,33 @@ const Payee = (): ReactElement | null => {
           <Button variant="primary" type="submit">Run Report</Button>
         </Form>
       </Formik>
-      <div className="title payee-report-item">
-        <div>Name</div>
-        <div>Payment Channel</div>
-        <div className="dollar-amount">Amount</div>
-        <div style={{ textAlign: 'right' }}>Count</div>
+      <SortableTable.Header className="title payee-report-item">
+        <SortableTable.Column column="name">
+          Name
+        </SortableTable.Column>
+        <SortableTable.Column column="paymentChannel">
+          Payment Channel
+        </SortableTable.Column>
+        <SortableTable.Column className="dolloar-amount" column="sum">
+          Amount
+        </SortableTable.Column>
+        <SortableTable.Column style={{ textAlign: 'right' }} column="count">
+          Count
+        </SortableTable.Column>
         <div style={{ overflowY: 'scroll', visibility: 'hidden', padding: 0 }} />
-      </div>
-      <div className="striped" style={{ overflowY: 'scroll' }}>
+      </SortableTable.Header>
+      <SortableTable>
         {
-          data !== null
-            ? (
-              data.map((d) => (
-                <div key={d.rowNumber} className="payee-report-item">
-                  <div className="ellipsis">{d.name}</div>
-                  <div>{d.paymentChannel}</div>
-                  <Amount amount={d.sum} />
-                  <div style={{ textAlign: 'right' }}>{d.count}</div>
-                </div>
-              ))
-            )
-            : null
+          (d) => (
+            <div key={d.rowNumber} className="payee-report-item">
+              <div className="ellipsis">{d.name}</div>
+              <div>{d.paymentChannel}</div>
+              <Amount amount={d.sum} />
+              <div style={{ textAlign: 'right' }}>{d.count}</div>
+            </div>
+          )
         }
-      </div>
+      </SortableTable>
     </div>
   )
 }

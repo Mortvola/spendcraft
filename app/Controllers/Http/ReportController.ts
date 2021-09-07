@@ -18,7 +18,12 @@ class ReportController {
         return ReportController.networth(user);
 
       case 'payee': {
-        const { startDate, endDate, pc, a } = request.qs();
+        const {
+          startDate,
+          endDate,
+          pc,
+          a,
+        } = request.qs();
         return ReportController.payee(user, startDate, endDate, pc, a);
       }
 
@@ -158,7 +163,7 @@ class ReportController {
           'account_transactions.name',
           Database.raw(`${paymentColumn} as "paymentChannel"`),
           Database.raw('count(*)'),
-          Database.raw('sum(amount)'),
+          Database.raw('CAST(sum(amount) as float) as sum'),
         )
         .from('account_transactions')
         .join('transactions', 'transactions.id', 'account_transactions.transaction_id')

@@ -1,38 +1,20 @@
 import React, { ReactElement } from 'react';
-import PropTypes from 'prop-types';
+import Icon from './Icon';
 
 interface Props {
   icon: string;
-  rotate: boolean;
+  rotate?: boolean;
   onClick: () => void;
 }
 
-function IconButton({
+const IconButton = ({
   icon,
-  rotate,
+  rotate = false,
   onClick,
-}: Props): ReactElement {
-  let className = `fas fa-${icon}`;
-
-  if (rotate) {
-    className += ' rotate';
-  }
-
-  return (
-    <button type="button" className="btn btn-sm group-button" onClick={onClick}>
-      <i className={className} />
-    </button>
-  );
-}
-
-IconButton.propTypes = {
-  icon: PropTypes.string.isRequired,
-  onClick: PropTypes.func.isRequired,
-  rotate: PropTypes.bool,
-};
-
-IconButton.defaultProps = {
-  rotate: false,
-};
+}: Props): ReactElement => (
+  <button type="button" className="btn btn-sm group-button" onClick={onClick}>
+    <Icon icon={icon} rotate={rotate} />
+  </button>
+);
 
 export default IconButton;

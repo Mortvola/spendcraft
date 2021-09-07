@@ -840,6 +840,7 @@ body {
 .title div {
   padding-left: 0.25rem;
   padding-right: 0.25rem;
+  user-select: none;
 }
 
 .title div:not(:first-child) {
