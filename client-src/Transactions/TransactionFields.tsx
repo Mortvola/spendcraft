@@ -12,7 +12,6 @@ type PropsType = {
   account?: AccountInterface | null,
   amount: number;
   balance: number;
-  selected: boolean;
   isMobile?: boolean;
   showTrxDialog: (transaction: TransactionInterface) => void,
 }
@@ -22,7 +21,6 @@ const TransactionFields = ({
   account = null,
   amount,
   balance,
-  selected,
   isMobile = false,
   showTrxDialog,
 }: PropsType): ReactElement => {
@@ -52,43 +50,32 @@ const TransactionFields = ({
     return <CategoryInput categoryId={catId} onChange={handleChange} />;
   };
 
-  let className = 'transaction';
-  if (selected) {
-    className += ' transaction-selected';
-  }
+  // let className = 'transaction';
+  // if (selected) {
+  //   className += ' transaction-selected';
+  // }
 
-  if (isMobile) {
-    className += ' mobile';
+  // if (isMobile) {
+  //   className += ' mobile';
 
-    return (
-      <div className={className} onClick={() => showTrxDialog(transaction)}>
-        <div>
-          {transaction.date}
-        </div>
-        <div className="transaction-field">
-          {transaction.name}
-        </div>
-        <Amount amount={amount} />
-      </div>
-    );
-  }
+  //   return (
+  //     <div className={className} onClick={() => showTrxDialog(transaction)}>
+  //       <div>
+  //         {transaction.date}
+  //       </div>
+  //       <div className="transaction-field">
+  //         {transaction.name}
+  //       </div>
+  //       <Amount amount={amount} />
+  //     </div>
+  //   );
+  // }
 
   return (
     <>
       <IconButton icon="edit" onClick={() => showTrxDialog(transaction)} />
       <div>{transaction.date}</div>
       <div className="transaction-field">{transaction.name}</div>
-      {
-        transaction.type !== TransactionType.STARTING_BALANCE
-          && (!account || account.tracking !== 'Uncategorized Transactions')
-          ? (
-            <div className="trans-cat-edit">
-              <CategoryButton />
-              <IconButton icon="list-ul" onClick={() => showTrxDialog(transaction)} />
-            </div>
-          )
-          : null
-      }
       <Amount className="transaction-field amount currency" amount={amount} />
       <Amount className="transaction-field balance currency" amount={balance} />
     </>

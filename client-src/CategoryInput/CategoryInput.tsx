@@ -28,12 +28,12 @@ const CategoryInput = ({
   );
   const [open, setOpen] = useExclusiveBool(false);
   const [value, setValue] = useState<string | null>(
-    categoryId === null || categoryTree.unassignedCat && categoryId === categoryTree.unassignedCat.id
+    categoryId === null || (categoryTree.unassignedCat && categoryId === categoryTree.unassignedCat.id)
       ? null
       : categoryTree.getCategoryName(categoryId),
   );
   const [originalValue, setOriginalValue] = useState<string | null>(
-    categoryId === null || categoryTree.unassignedCat && categoryId === categoryTree.unassignedCat.id
+    categoryId === null || (categoryTree.unassignedCat && categoryId === categoryTree.unassignedCat.id)
       ? null
       : categoryTree.getCategoryName(categoryId),
   );

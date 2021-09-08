@@ -337,7 +337,7 @@ body {
 
 .transaction {
   display: grid;
-  grid-template-columns: 32px 100px minmax(0, 1.8fr) 1fr 125px 125px minmax(0, 1fr) minmax(0, 1fr) max-content;
+  grid-template-columns: 32px 100px 1fr 125px 125px minmax(0, 1fr) minmax(0, 1fr) max-content;
   grid-template-rows: max-content;
   align-items: center;
 }
@@ -925,4 +925,20 @@ body {
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
+}
+
+.transaction-wrapper {
+  display: grid;
+  grid-template-rows: max-content minmax(0, 0%);
+  grid-template-columns: minmax(0, 1fr);
+  transition: grid-template-rows 0.5s ease-in;
+}
+
+.transaction-wrapper.open {
+  grid-template-rows: max-content minmax(0, 100%);
+}
+
+.open > .transaction-form {
+  padding: 1rem;
+  border: black thin solid;
 }

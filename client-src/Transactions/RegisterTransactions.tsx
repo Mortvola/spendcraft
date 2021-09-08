@@ -1,8 +1,10 @@
-import React, { ReactElement, useCallback, useState } from 'react';
+import React, {
+  ReactElement, useCallback, useContext, useEffect, useRef, useState,
+} from 'react';
 import { Spinner } from 'react-bootstrap';
+import { observer } from 'mobx-react-lite';
 import { AccountInterface, CategoryInterface, TransactionInterface } from '../state/State';
 import CategoryViewTransaction from './CategoryViewTransaction';
-import Transaction from './Transaction';
 import TransactionFields from './TransactionFields';
 import { useTransactionDialog } from './TransactionDialog';
 import { useCategoryTransferDialog } from '../CategoryTransferDialog';
@@ -10,6 +12,8 @@ import { useFundingDialog } from '../funding/FundingDialog';
 import { useRebalanceDialog } from '../rebalance/RebalanceDialog';
 import { isTransaction } from '../state/Transaction';
 import { TransactionType } from '../../common/ResponseTypes';
+import MobxStore from '../state/mobxStore';
+import TransactionForm from './TransactionForm';
 
 type PropsType = {
   transactions?: TransactionInterface[],
@@ -28,16 +32,12 @@ const RegisterTransactions = ({
   fetching,
   balance,
 }: PropsType): ReactElement => {
-  const [selectedTransaction, setSelectedTransaction] = useState<number | null>(null);
+  const { uiState } = useContext(MobxStore);
   const [TransactionDialog, showTransactionDialog] = useTransactionDialog();
   const [CategoryTransferDialog, showCategoryTransferDialog] = useCategoryTransferDialog();
   const [FundingDialog, showFundingDialog] = useFundingDialog();
   const [RebalanceDialog, showRebalanceDialog] = useRebalanceDialog();
   const [editedTransaction, setEditedTransaction] = useState<TransactionInterface | null>(null);
-
-  const handleClick = (transactionId: number) => {
-    setSelectedTransaction(transactionId);
-  };
 
   const TrxDialog = useCallback(() => {
     if (isTransaction(editedTransaction)) {
@@ -108,31 +108,54 @@ const RegisterTransactions = ({
         amount = transaction.getAmountForCategory(category.id);
       }
 
-      const selected = selectedTransaction === transaction.id;
+      const handleClick = () => {
+        if (uiState.selectedTransaction === transaction) {
+          uiState.selectTransaction(null);
+        }
+        else {
+          uiState.selectTransaction(transaction);
+        }
+      };
+
+      const selected = uiState.selectedTransaction === transaction;
 
       let element: ReactElement;
 
       if (category) {
+        let className = 'transaction-wrapper';
+        if (selected) {
+          className += ' open';
+        }
+
         element = (
-          <CategoryViewTransaction
-            key={transaction.id}
-            className="transaction"
-            transaction={transaction}
-          >
-            <TransactionFields
+          <div className={className} key={transaction.id}>
+            <CategoryViewTransaction
+              className="transaction"
               transaction={transaction}
-              amount={amount}
-              balance={runningBalance}
+              onClick={handleClick}
               selected={selected}
-              isMobile={isMobile}
-              showTrxDialog={showTrxDialog}
-            />
-          </CategoryViewTransaction>
+            >
+              <TransactionFields
+                transaction={transaction}
+                amount={amount}
+                balance={runningBalance}
+                isMobile={isMobile}
+                showTrxDialog={showTrxDialog}
+              />
+            </CategoryViewTransaction>
+            <div className="transaction-form">
+              {
+                selected
+                  ? <TransactionForm transaction={transaction} account={account} />
+                  : null
+              }
+            </div>
+          </div>
         );
       }
       else {
         element = (
-          <Transaction
+          <div
             key={transaction.id}
             className="transaction"
           >
@@ -140,12 +163,11 @@ const RegisterTransactions = ({
               transaction={transaction}
               amount={amount}
               balance={runningBalance}
-              selected={selected}
               isMobile={isMobile}
               showTrxDialog={showTrxDialog}
               account={account}
             />
-          </Transaction>
+          </div>
         );
       }
 
@@ -173,4 +195,4 @@ const RegisterTransactions = ({
   );
 };
 
-export default RegisterTransactions;
+export default observer(RegisterTransactions);

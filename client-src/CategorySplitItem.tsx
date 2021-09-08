@@ -1,4 +1,4 @@
-import React, { ReactElement, useContext, useState } from 'react';
+import React, { ReactElement, useContext } from 'react';
 import CategoryInput from './CategoryInput/CategoryInput';
 import IconButton from './IconButton';
 import AmountInput from './AmountInput';
@@ -7,8 +7,6 @@ import MobxStore from './state/mobxStore';
 
 type PropsType = {
   split: TransactionCategoryInterface,
-  balance?: number | null,
-  credit?: boolean,
   onCategoryChange: (id: number, categoryId: number) => void,
   onDeltaChange: (id: number, amount: number, delta: number) => void,
   onAddItem: (afterId: number) => void,
@@ -18,8 +16,6 @@ type PropsType = {
 
 function CategorySplitItem({
   split,
-  balance = null,
-  credit = false,
   onCategoryChange,
   onDeltaChange,
   onAddItem,
@@ -53,17 +49,8 @@ function CategorySplitItem({
   };
 
   const categoryId = split ? split.categoryId : null;
-  let newBalance: number | null = null;
-  if (balance !== null) {
-    if (credit) {
-      newBalance = balance + split.amount;
-    }
-    else {
-      newBalance = balance - split.amount;
-    }
-  }
 
-  let className = 'transaction-split-item no-balances';
+  const className = 'transaction-split-item no-balances';
 
   return (
     <div className={className}>
@@ -72,7 +59,7 @@ function CategorySplitItem({
         categoryId={categoryId === unassignedCat.id ? null : categoryId}
       />
       <AmountInput onDeltaChange={handleDeltaChange} value={split.amount} />
-      <input type="text" value={split.comment ?? ''} onChange={handleCommentChange}/>
+      <input type="text" value={split.comment ?? ''} onChange={handleCommentChange} />
       <IconButton icon="plus" onClick={handleAddItem} />
       <IconButton icon="minus" onClick={handleDeleteItem} />
     </div>

@@ -57,8 +57,6 @@ function Buttons({ group }: Props): ReactElement | null {
       {renderEditButton()}
     </>
   );
-
-  return null;
 }
 
 Buttons.propTypes = {

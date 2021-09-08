@@ -4,7 +4,7 @@ import {
   AccountInterface,
   CategoryInterface,
   FundingPlanInterface,
-  StoreInterface, UIStateInterface, Views,
+  StoreInterface, TransactionInterface, UIStateInterface, Views,
 } from './State';
 
 class UIState implements UIStateInterface {
@@ -15,6 +15,8 @@ class UIState implements UIStateInterface {
   selectedPlan: FundingPlanInterface | null = null;
 
   selectedAccount: AccountInterface | null = null;
+
+  selectedTransaction: TransactionInterface | null = null;
 
   store: StoreInterface;
 
@@ -52,6 +54,12 @@ class UIState implements UIStateInterface {
   selectPlan(plan: FundingPlanInterface | null): void {
     runInAction(() => {
       this.selectedPlan = plan;
+    });
+  }
+
+  selectTransaction(transaction: TransactionInterface | null): void {
+    runInAction(() => {
+      this.selectedTransaction = transaction;
     });
   }
 }

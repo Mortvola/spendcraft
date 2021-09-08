@@ -43,7 +43,21 @@ export interface TransactionInterface {
     type: number;
   }
 
+  paymentChannel: string | null;
+
+  comment: string;
+
   getAmountForCategory(categoryId: number): number;
+
+  async updateTransaction(
+    values: {
+      date?: string,
+      name?: string,
+      amount?: number,
+      comment?: string,
+      splits: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
+    },
+  ): Promise<null>;
 }
 
 export interface GroupMemberInterface {
@@ -153,11 +167,14 @@ export interface UIStateInterface {
   view: Views;
   selectCategory(category: CategoryInterface | null): void;
   selectAccount(account: AccountInterface | null): void;
+  setView(view: Views): void;
+  selectPlan(plan: FundingPlanInterface | null): void;
+  selectTransaction(transaction: TransactionInterface | null): void;
+
   selectedCategory: CategoryInterface | null;
   selectedPlan: FundingPlanInterface | null;
   selectedAccount: AccountInterface | null;
-  setView(view: Views): void;
-  selectPlan(plan: FundingPlanInterface | null): void;
+  selectedTransaction: TransactionInterface | null;
 }
 
 export interface CategoryTreeInterface {
