@@ -73,7 +73,7 @@ const TransactionFields = ({
 
   return (
     <>
-      <IconButton icon="edit" onClick={() => showTrxDialog(transaction)} />
+      <div />
       <div>{transaction.date}</div>
       <div className="transaction-field">{transaction.name}</div>
       <Amount className="transaction-field amount currency" amount={amount} />
