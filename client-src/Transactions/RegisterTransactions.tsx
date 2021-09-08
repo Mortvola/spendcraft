@@ -43,6 +43,7 @@ const RegisterTransactions = ({
     if (isTransaction(editedTransaction)) {
       const handleDialogHide = () => {
         setEditedTransaction(null);
+        uiState.selectTransaction(null);
       }
 
       switch (editedTransaction.type) {
@@ -75,20 +76,21 @@ const RegisterTransactions = ({
   const showTrxDialog = (transaction: TransactionInterface) => {
     setEditedTransaction(transaction);
     switch (transaction.type) {
-      case 0:
-      case 5:
+      case TransactionType.REGULAR_TRANSACTION:
+      case TransactionType.MANUAL_TRANSACTION:
+      case TransactionType.STARTING_BALANCE:
         showTransactionDialog();
         break;
 
-      case 1:
+      case TransactionType.TRANSFER_TRANSACTION:
         showCategoryTransferDialog();
         break;
 
-      case 2:
+      case TransactionType.FUNDING_TRANSACTION:
         showFundingDialog();
         break;
 
-      case 3:
+      case TransactionType.REBALANCE_TRANSACTION:
         showRebalanceDialog();
         break;
 
@@ -114,17 +116,29 @@ const RegisterTransactions = ({
         }
         else {
           uiState.selectTransaction(transaction);
+          if (transaction.type !== TransactionType.MANUAL_TRANSACTION
+            && transaction.type !== TransactionType.REGULAR_TRANSACTION
+            && transaction.type !== TransactionType.STARTING_BALANCE) {
+            showTrxDialog(transaction);
+          }
         }
       };
 
       const selected = uiState.selectedTransaction === transaction;
+      let open = false;
 
       let element: ReactElement;
 
       let className = 'transaction-wrapper';
       let transactionClassName = 'transaction';
       if (selected) {
-        className += ' open';
+        if (transaction.type === TransactionType.MANUAL_TRANSACTION
+          || transaction.type === TransactionType.REGULAR_TRANSACTION
+          || transaction.type === TransactionType.STARTING_BALANCE) {
+          className += ' open';
+          open = true;
+        }
+
         transactionClassName += ' transaction-selected'
       }
 
@@ -144,7 +158,7 @@ const RegisterTransactions = ({
             </CategoryViewTransaction>
             <div className="transaction-form">
               {
-                selected
+                open
                   ? <TransactionForm transaction={transaction} account={account} />
                   : null
               }
