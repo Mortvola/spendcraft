@@ -122,10 +122,15 @@ class Transaction implements TransactionInterface {
           // Remove the transaction from the selected category, if any, if the transaction
           // no longer has the selected category in its splits.
           if (this.store.uiState.selectedCategory) {
-            if (!body.transaction.transactionCategories.some(
-              (c) => (this.store.uiState.selectedCategory && c.categoryId === this.store.uiState.selectedCategory.id),
-            ) && (body.transaction.transactionCategories.length !== 0
-            || this.store.uiState.selectedCategory.id !== this.store.categoryTree.systemIds.unassignedId)) {
+            if ((body.transaction.transactionCategories.length === 0
+                && this.store.uiState.selectedCategory.id !== this.store.categoryTree.unassignedCat.id)
+              || (body.transaction.transactionCategories.length !== 0
+                && !body.transaction.transactionCategories.some(
+                  (c) => (
+                    this.store.uiState.selectedCategory && c.categoryId === this.store.uiState.selectedCategory.id
+                  ),
+                ))
+            ) {
               if (this.store.uiState.selectedCategory.type === 'LOAN') {
                 this.store.uiState.selectedCategory.getLoanTransactions();
               }

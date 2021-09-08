@@ -58,6 +58,8 @@ export interface TransactionInterface {
       splits: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
     },
   ): Promise<null>;
+
+  async delete(): Promise<null | Error[]>;
 }
 
 export interface GroupMemberInterface {

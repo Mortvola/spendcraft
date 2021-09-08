@@ -1,11 +1,12 @@
 import React, {
   ChangeEvent,
-  ReactElement, useEffect, useMemo, useRef, useState,
+  ReactElement, useContext, useEffect, useMemo, useRef, useState,
 } from 'react';
 import {
   Field, FieldProps, Form,
   FormikErrors,
   Formik,
+  FormikContextType,
 } from 'formik';
 import FormError from '../Modal/FormError';
 import AmountInput from '../AmountInput';
@@ -13,6 +14,8 @@ import { AccountInterface, TransactionCategoryInterface, TransactionInterface } 
 import Amount from '../Amount';
 import CategorySplits from '../CategorySplits';
 import FormField from '../Modal/FormField'
+import Footer from '../Modal/Footer';
+import MobxStore from '../state/mobxStore';
 
 type PropsType = {
   transaction?: TransactionInterface | null,
@@ -23,6 +26,7 @@ const TransactionForm = ({
   transaction = null,
   account = null,
 }: PropsType): ReactElement => {
+  const { uiState } = useContext(MobxStore);
   const ref = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -62,6 +66,12 @@ const TransactionForm = ({
 
     return 0;
   });
+
+  const handleShow = (show: boolean) => {
+    if (!show) {
+      uiState.selectTransaction(null);
+    }
+  }
 
   const validateSplits = (splits: TransactionCategoryInterface[]) => {
     let error;
@@ -127,9 +137,25 @@ const TransactionForm = ({
       });
     }
 
-    // if (!errors) {
-    //   setShow(false);
-    // }
+    if (!errors) {
+      handleShow(false);
+    }
+  };
+
+  const handleDelete = async (bag: FormikContextType<ValueType>) => {
+    const { setTouched, setErrors } = bag;
+
+    if (transaction) {
+      const errors = await transaction.delete();
+
+      if (errors && errors.length > 0) {
+        setTouched({ [errors[0].field]: true }, false);
+        setErrors({ [errors[0].field]: errors[0].message });
+      }
+      else {
+        handleShow(false);
+      }
+    }
   };
 
   const splits = useMemo((): TransactionCategoryInterface[] => {
@@ -241,6 +267,7 @@ const TransactionForm = ({
             )
             : null
         }
+        <Footer<ValueType> setShow={handleShow} onDelete={handleDelete} />
       </Form>
     </Formik>
   )
