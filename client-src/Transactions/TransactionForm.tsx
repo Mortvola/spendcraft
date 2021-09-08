@@ -70,6 +70,7 @@ const TransactionForm = ({
   const handleShow = (show: boolean) => {
     if (!show) {
       uiState.selectTransaction(null);
+      uiState.showAddTransaction(false);
     }
   }
 

@@ -121,26 +121,25 @@ const RegisterTransactions = ({
 
       let element: ReactElement;
 
-      if (category) {
-        let className = 'transaction-wrapper';
-        if (selected) {
-          className += ' open';
-        }
+      let className = 'transaction-wrapper';
+      let transactionClassName = 'transaction';
+      if (selected) {
+        className += ' open';
+        transactionClassName += ' transaction-selected'
+      }
 
+      if (category) {
         element = (
           <div className={className} key={transaction.id}>
             <CategoryViewTransaction
-              className="transaction"
+              className={transactionClassName}
               transaction={transaction}
               onClick={handleClick}
-              selected={selected}
             >
               <TransactionFields
                 transaction={transaction}
                 amount={amount}
                 balance={runningBalance}
-                isMobile={isMobile}
-                showTrxDialog={showTrxDialog}
               />
             </CategoryViewTransaction>
             <div className="transaction-form">
@@ -155,18 +154,22 @@ const RegisterTransactions = ({
       }
       else {
         element = (
-          <div
-            key={transaction.id}
-            className="transaction"
-          >
-            <TransactionFields
-              transaction={transaction}
-              amount={amount}
-              balance={runningBalance}
-              isMobile={isMobile}
-              showTrxDialog={showTrxDialog}
-              account={account}
-            />
+          <div className={className} key={transaction.id}>
+            <div className={transactionClassName} onClick={handleClick}>
+              <TransactionFields
+                transaction={transaction}
+                amount={amount}
+                balance={runningBalance}
+                account={account}
+              />
+            </div>
+            <div className="transaction-form">
+              {
+                selected
+                  ? <TransactionForm transaction={transaction} account={account} />
+                  : null
+              }
+            </div>
           </div>
         );
       }
@@ -187,8 +190,20 @@ const RegisterTransactions = ({
     );
   }
 
+  let transactionFormClass = 'transaction-form';
+  if (uiState.addTransaction) {
+    transactionFormClass += ' open';
+  }
+
   return (
     <div className="transactions striped">
+      <div className={transactionFormClass}>
+        {
+          uiState.addTransaction
+            ? <TransactionForm account={account} />
+            : null
+        }
+      </div>
       {list}
       <TrxDialog />
     </div>

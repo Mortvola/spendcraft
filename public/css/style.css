@@ -948,6 +948,7 @@ body {
   background-color: #fff;
 }
 
+.transaction-form.open,
 .open > .transaction-form {
   padding: 1rem;
   border: black thin solid;

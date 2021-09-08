@@ -12,8 +12,6 @@ type PropsType = {
   account?: AccountInterface | null,
   amount: number;
   balance: number;
-  isMobile?: boolean;
-  showTrxDialog: (transaction: TransactionInterface) => void,
 }
 
 const TransactionFields = ({
@@ -21,34 +19,32 @@ const TransactionFields = ({
   account = null,
   amount,
   balance,
-  isMobile = false,
-  showTrxDialog,
 }: PropsType): ReactElement => {
-  const handleChange = (cat: CategoryInterface) => {
-    if (isTransaction(transaction)) {
-      transaction.updateTransaction({
-        splits: [{
-          type: cat.type, categoryId: cat.id, amount: transaction.amount,
-        }],
-      });
-    }
-  };
+  // const handleChange = (cat: CategoryInterface) => {
+  //   if (isTransaction(transaction)) {
+  //     transaction.updateTransaction({
+  //       splits: [{
+  //         type: cat.type, categoryId: cat.id, amount: transaction.amount,
+  //       }],
+  //     });
+  //   }
+  // };
 
-  const CategoryButton = () => {
-    let catId = null;
+  // const CategoryButton = () => {
+  //   let catId = null;
 
-    if (transaction.categories && transaction.categories.length > 0) {
-      if (transaction.categories.length > 1) {
-        return (
-          <button type="button" className="split-button" onClick={() => showTrxDialog(transaction)}>Split</button>
-        );
-      }
+  //   if (transaction.categories && transaction.categories.length > 0) {
+  //     if (transaction.categories.length > 1) {
+  //       return (
+  //         <button type="button" className="split-button" onClick={() => showTrxDialog(transaction)}>Split</button>
+  //       );
+  //     }
 
-      catId = transaction.categories[0].categoryId;
-    }
+  //     catId = transaction.categories[0].categoryId;
+  //   }
 
-    return <CategoryInput categoryId={catId} onChange={handleChange} />;
-  };
+  //   return <CategoryInput categoryId={catId} onChange={handleChange} />;
+  // };
 
   // let className = 'transaction';
   // if (selected) {
