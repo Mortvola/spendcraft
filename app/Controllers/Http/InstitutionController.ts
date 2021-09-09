@@ -406,11 +406,19 @@ class InstitutionController {
       // eslint-disable-next-line no-await-in-loop
       await acct.save();
 
-      // eslint-disable-next-line no-await-in-loop
-      await InstitutionController.insertStartingBalance(
-        user, acct, start, account.balance,
-        fundingPool, options,
-      );
+      if (acct.tracking !== 'Balances') {
+        // eslint-disable-next-line no-await-in-loop
+        await InstitutionController.insertStartingBalance(
+          user, acct, start, account.balance,
+          fundingPool, options,
+        );
+      }
+      else {
+        await acct.updateAccountBalanceHistory(acct.balance);
+
+        // eslint-disable-next-line no-await-in-loop
+        await acct.save();
+      }
 
       newAccounts.push(acct);
     }
