@@ -58,7 +58,6 @@ const Register = ({
         fetching={fetching}
         transactions={transactions}
         balance={balance}
-        isMobile={isMobile}
         category={category}
       />
     );
@@ -73,7 +72,6 @@ const Register = ({
           fetching={fetching}
           transactions={transactions}
           balance={balance}
-          isMobile={isMobile}
           category={category}
           account={account}
         />

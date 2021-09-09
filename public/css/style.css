@@ -339,7 +339,7 @@ body {
 
 .transaction {
   display: grid;
-  grid-template-columns: 32px 100px 1fr 125px 125px minmax(0, 1fr) minmax(0, 1fr) max-content;
+  grid-template-columns: 32px 100px 1fr 125px 125px 125px minmax(0, 1fr) minmax(0, 1fr) max-content;
   grid-template-rows: max-content;
   align-items: center;
   transition: background-color 0.25s ease-out;

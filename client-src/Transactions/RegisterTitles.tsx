@@ -15,8 +15,6 @@ const RegisterTitles = ({
       <div />
       <div>Date</div>
       <div>Name</div>
-      <div className="currency">Amount</div>
-      <div className="currency">Balance</div>
     </>
   );
 
@@ -24,6 +22,8 @@ const RegisterTitles = ({
     return (
       <div className="register-title acct-transaction">
         {commonTitles()}
+        <div className="currency">Amount</div>
+        <div className="currency">Balance</div>
         <div />
         <div style={{ overflowY: 'scroll', visibility: 'hidden', padding: 0 }} />
       </div>
@@ -33,6 +33,9 @@ const RegisterTitles = ({
   return (
     <div className="register-title transaction">
       {commonTitles()}
+      <div className="currency">Trx Amount</div>
+      <div className="currency">Amount</div>
+      <div className="currency">Balance</div>
       <div>Institution</div>
       <div>Account</div>
       <div style={{ overflowY: 'scroll', visibility: 'hidden', padding: 0 }} />

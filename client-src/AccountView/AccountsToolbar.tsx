@@ -25,7 +25,13 @@ const AccountsToolbar = (): ReactElement => {
       <button type="button" onClick={addInstitution}>Add Online Account</button>
       <button type="button" onClick={showOfflineAccountDialog}>Add Offline Account</button>
       <button type="button" onClick={handleRefresh}>Sync Accounts</button>
-      <button type="button" onClick={handleAddTransactionClick} disabled={uiState.selectedAccount === null}>Add Transaction</button>
+      <button
+        type="button"
+        onClick={handleAddTransactionClick}
+        disabled={uiState.selectedAccount === null}
+      >
+        Add Transaction
+      </button>
       <OfflineAccountDialog />
     </>
   )

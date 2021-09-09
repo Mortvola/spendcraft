@@ -5,7 +5,6 @@ import { Spinner } from 'react-bootstrap';
 import { observer } from 'mobx-react-lite';
 import { AccountInterface, CategoryInterface, TransactionInterface } from '../state/State';
 import CategoryViewTransaction from './CategoryViewTransaction';
-import TransactionFields from './TransactionFields';
 import { useTransactionDialog } from './TransactionDialog';
 import { useCategoryTransferDialog } from '../CategoryTransferDialog';
 import { useFundingDialog } from '../funding/FundingDialog';
@@ -14,12 +13,12 @@ import { isTransaction } from '../state/Transaction';
 import { TransactionType } from '../../common/ResponseTypes';
 import MobxStore from '../state/mobxStore';
 import TransactionForm from './TransactionForm';
+import Amount from '../Amount';
 
 type PropsType = {
   transactions?: TransactionInterface[],
   category?: CategoryInterface | null,
   account?: AccountInterface | null,
-  isMobile?: boolean,
   fetching: boolean,
   balance: number,
 }
@@ -28,7 +27,6 @@ const RegisterTransactions = ({
   transactions,
   category = null,
   account = null,
-  isMobile = false,
   fetching,
   balance,
 }: PropsType): ReactElement => {
@@ -71,7 +69,7 @@ const RegisterTransactions = ({
     }
 
     return null;
-  }, [editedTransaction, CategoryTransferDialog, FundingDialog, RebalanceDialog, TransactionDialog, account]);
+  }, [editedTransaction, uiState, CategoryTransferDialog, FundingDialog, RebalanceDialog, TransactionDialog, account]);
 
   const showTrxDialog = (transaction: TransactionInterface) => {
     setEditedTransaction(transaction);
@@ -130,7 +128,10 @@ const RegisterTransactions = ({
       let element: ReactElement;
 
       let className = 'transaction-wrapper';
-      let transactionClassName = 'transaction';
+      let transactionClassName = 'acct-transaction';
+      if (category) {
+        transactionClassName = 'transaction';
+      }
       if (selected) {
         if (transaction.type === TransactionType.MANUAL_TRANSACTION
           || transaction.type === TransactionType.REGULAR_TRANSACTION
@@ -150,11 +151,12 @@ const RegisterTransactions = ({
               transaction={transaction}
               onClick={handleClick}
             >
-              <TransactionFields
-                transaction={transaction}
-                amount={amount}
-                balance={runningBalance}
-              />
+              <div />
+              <div>{transaction.date}</div>
+              <div className="transaction-field">{transaction.name}</div>
+              <Amount className="transaction-field amount currency" amount={transaction.amount} />
+              <Amount className="transaction-field amount currency" amount={amount} />
+              <Amount className="transaction-field balance currency" amount={runningBalance} />
             </CategoryViewTransaction>
             <div className="transaction-form">
               {
@@ -170,12 +172,11 @@ const RegisterTransactions = ({
         element = (
           <div className={className} key={transaction.id}>
             <div className={transactionClassName} onClick={handleClick}>
-              <TransactionFields
-                transaction={transaction}
-                amount={amount}
-                balance={runningBalance}
-                account={account}
-              />
+              <div />
+              <div>{transaction.date}</div>
+              <div className="transaction-field">{transaction.name}</div>
+              <Amount className="transaction-field amount currency" amount={amount} />
+              <Amount className="transaction-field balance currency" amount={runningBalance} />
             </div>
             <div className="transaction-form">
               {
