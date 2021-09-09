@@ -1,4 +1,6 @@
-import React, { ReactElement, useContext, useState } from 'react';
+import React, {
+  ReactElement, useContext, useEffect, useState,
+} from 'react';
 import CategorySplitItem from './CategorySplitItem';
 import MobxStore from './state/mobxStore';
 import { TransactionCategoryInterface } from './state/State';
@@ -55,7 +57,15 @@ const CategorySplits = ({
       }],
   );
 
-  const handleDeltaChange = (id: number, amount: number, delta: number) => {
+  useEffect(() => {
+    if (splits.length === 0 && categoryTree.unassignedCat) {
+      setEditedSplits([{
+        id: nextId(), type: 'REGULAR', categoryId: categoryTree.unassignedCat.id, amount: total,
+      }]);
+    }
+  }, [categoryTree.unassignedCat, splits.length, total])
+
+  const handleChange = (id: number, amount: number) => {
     const splitIndex = editedSplits.findIndex((s) => s.id === id);
 
     if (splitIndex !== -1) {
@@ -131,7 +141,6 @@ const CategorySplits = ({
 
       if (index !== -1) {
         const newSplits = editedSplits.slice();
-        const { amount } = newSplits[index];
         newSplits.splice(index, 1);
 
         setEditedSplits(newSplits);
@@ -140,34 +149,19 @@ const CategorySplits = ({
     }
   };
 
-  const getCategoryBalance = (categoryId: number) => {
-    const category = categoryTree.getCategory(categoryId);
-
-    if (category) {
-      return category.balance;
-    }
-
-    return 0;
-  };
-
   return (
     <div className="transaction-split-items">
-      {editedSplits.map((s) => {
-        const currentBalance = getCategoryBalance(s.categoryId);
-        return (
-          <CategorySplitItem
-            key={s.id}
-            split={s}
-            balance={currentBalance}
-            onAddItem={handleAddItem}
-            onDeleteItem={handleDeleteItem}
-            onDeltaChange={handleDeltaChange}
-            onCategoryChange={handleCategoryChange}
-            onCommentChange={handleCommentChange}
-            credit={credit}
-          />
-        );
-      })}
+      {editedSplits.map((s) => (
+        <CategorySplitItem
+          key={s.id}
+          split={s}
+          onAddItem={handleAddItem}
+          onDeleteItem={handleDeleteItem}
+          onDeltaChange={handleChange}
+          onCategoryChange={handleCategoryChange}
+          onCommentChange={handleCommentChange}
+        />
+      ))}
     </div>
   );
 };

@@ -101,3 +101,11 @@ export const httpPost = async (url: string, body?: unknown): Promise<Response> =
     body: JSON.stringify(body),
   });
 }
+
+export const httpPostForm = async (url: string, form: FormData): Promise<Response> => (
+  httpFetch(url, {
+    method: 'POST',
+    headers: jsonHeaders(),
+    body: form,
+  })
+)

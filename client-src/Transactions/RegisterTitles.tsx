@@ -15,13 +15,6 @@ const RegisterTitles = ({
       <div />
       <div>Date</div>
       <div>Name</div>
-      {
-        account === null || account.tracking === 'Transactions'
-          ? (
-            <div>Category</div>
-          )
-          : null
-      }
       <div className="currency">Amount</div>
       <div className="currency">Balance</div>
     </>

@@ -1,8 +1,10 @@
-import React, { ReactElement, useCallback, useState } from 'react';
+import React, {
+  ReactElement, useCallback, useContext, useEffect, useRef, useState,
+} from 'react';
 import { Spinner } from 'react-bootstrap';
+import { observer } from 'mobx-react-lite';
 import { AccountInterface, CategoryInterface, TransactionInterface } from '../state/State';
 import CategoryViewTransaction from './CategoryViewTransaction';
-import Transaction from './Transaction';
 import TransactionFields from './TransactionFields';
 import { useTransactionDialog } from './TransactionDialog';
 import { useCategoryTransferDialog } from '../CategoryTransferDialog';
@@ -10,6 +12,8 @@ import { useFundingDialog } from '../funding/FundingDialog';
 import { useRebalanceDialog } from '../rebalance/RebalanceDialog';
 import { isTransaction } from '../state/Transaction';
 import { TransactionType } from '../../common/ResponseTypes';
+import MobxStore from '../state/mobxStore';
+import TransactionForm from './TransactionForm';
 
 type PropsType = {
   transactions?: TransactionInterface[],
@@ -28,21 +32,18 @@ const RegisterTransactions = ({
   fetching,
   balance,
 }: PropsType): ReactElement => {
-  const [selectedTransaction, setSelectedTransaction] = useState<number | null>(null);
+  const { uiState } = useContext(MobxStore);
   const [TransactionDialog, showTransactionDialog] = useTransactionDialog();
   const [CategoryTransferDialog, showCategoryTransferDialog] = useCategoryTransferDialog();
   const [FundingDialog, showFundingDialog] = useFundingDialog();
   const [RebalanceDialog, showRebalanceDialog] = useRebalanceDialog();
   const [editedTransaction, setEditedTransaction] = useState<TransactionInterface | null>(null);
 
-  const handleClick = (transactionId: number) => {
-    setSelectedTransaction(transactionId);
-  };
-
   const TrxDialog = useCallback(() => {
     if (isTransaction(editedTransaction)) {
       const handleDialogHide = () => {
         setEditedTransaction(null);
+        uiState.selectTransaction(null);
       }
 
       switch (editedTransaction.type) {
@@ -75,20 +76,21 @@ const RegisterTransactions = ({
   const showTrxDialog = (transaction: TransactionInterface) => {
     setEditedTransaction(transaction);
     switch (transaction.type) {
-      case 0:
-      case 5:
+      case TransactionType.REGULAR_TRANSACTION:
+      case TransactionType.MANUAL_TRANSACTION:
+      case TransactionType.STARTING_BALANCE:
         showTransactionDialog();
         break;
 
-      case 1:
+      case TransactionType.TRANSFER_TRANSACTION:
         showCategoryTransferDialog();
         break;
 
-      case 2:
+      case TransactionType.FUNDING_TRANSACTION:
         showFundingDialog();
         break;
 
-      case 3:
+      case TransactionType.REBALANCE_TRANSACTION:
         showRebalanceDialog();
         break;
 
@@ -108,44 +110,81 @@ const RegisterTransactions = ({
         amount = transaction.getAmountForCategory(category.id);
       }
 
-      const selected = selectedTransaction === transaction.id;
+      const handleClick = () => {
+        if (uiState.selectedTransaction === transaction) {
+          uiState.selectTransaction(null);
+        }
+        else {
+          uiState.selectTransaction(transaction);
+          if (transaction.type !== TransactionType.MANUAL_TRANSACTION
+            && transaction.type !== TransactionType.REGULAR_TRANSACTION
+            && transaction.type !== TransactionType.STARTING_BALANCE) {
+            showTrxDialog(transaction);
+          }
+        }
+      };
+
+      const selected = uiState.selectedTransaction === transaction;
+      let open = false;
 
       let element: ReactElement;
 
+      let className = 'transaction-wrapper';
+      let transactionClassName = 'transaction';
+      if (selected) {
+        if (transaction.type === TransactionType.MANUAL_TRANSACTION
+          || transaction.type === TransactionType.REGULAR_TRANSACTION
+          || transaction.type === TransactionType.STARTING_BALANCE) {
+          className += ' open';
+          open = true;
+        }
+
+        transactionClassName += ' transaction-selected'
+      }
+
       if (category) {
         element = (
-          <CategoryViewTransaction
-            key={transaction.id}
-            className="transaction"
-            transaction={transaction}
-          >
-            <TransactionFields
+          <div className={className} key={transaction.id}>
+            <CategoryViewTransaction
+              className={transactionClassName}
               transaction={transaction}
-              amount={amount}
-              balance={runningBalance}
-              selected={selected}
-              isMobile={isMobile}
-              showTrxDialog={showTrxDialog}
-            />
-          </CategoryViewTransaction>
+              onClick={handleClick}
+            >
+              <TransactionFields
+                transaction={transaction}
+                amount={amount}
+                balance={runningBalance}
+              />
+            </CategoryViewTransaction>
+            <div className="transaction-form">
+              {
+                open
+                  ? <TransactionForm transaction={transaction} account={account} />
+                  : null
+              }
+            </div>
+          </div>
         );
       }
       else {
         element = (
-          <Transaction
-            key={transaction.id}
-            className="transaction"
-          >
-            <TransactionFields
-              transaction={transaction}
-              amount={amount}
-              balance={runningBalance}
-              selected={selected}
-              isMobile={isMobile}
-              showTrxDialog={showTrxDialog}
-              account={account}
-            />
-          </Transaction>
+          <div className={className} key={transaction.id}>
+            <div className={transactionClassName} onClick={handleClick}>
+              <TransactionFields
+                transaction={transaction}
+                amount={amount}
+                balance={runningBalance}
+                account={account}
+              />
+            </div>
+            <div className="transaction-form">
+              {
+                selected
+                  ? <TransactionForm transaction={transaction} account={account} />
+                  : null
+              }
+            </div>
+          </div>
         );
       }
 
@@ -165,12 +204,24 @@ const RegisterTransactions = ({
     );
   }
 
+  let transactionFormClass = 'transaction-form';
+  if (uiState.addTransaction) {
+    transactionFormClass += ' open';
+  }
+
   return (
     <div className="transactions striped">
+      <div className={transactionFormClass}>
+        {
+          uiState.addTransaction
+            ? <TransactionForm account={account} />
+            : null
+        }
+      </div>
       {list}
       <TrxDialog />
     </div>
   );
 };
 
-export default RegisterTransactions;
+export default observer(RegisterTransactions);

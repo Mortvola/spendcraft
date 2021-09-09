@@ -77,8 +77,8 @@ const AmountInput = ({
       newAmount = 0;
     }
 
-    if (onDeltaChange) {
-      const delta = newAmount - parseFloat(initialValue);
+    const delta = newAmount - parseFloat(initialValue);
+    if (onDeltaChange && delta !== 0) {
       onDeltaChange(newAmount, delta);
     }
 

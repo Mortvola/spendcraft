@@ -54,7 +54,7 @@ function FormModal<ValueType>({
           <ModalBody>
             {children}
           </ModalBody>
-          <Footer<ValueType> setShow={setShow} handleDelete={onDelete} errors={errors} />
+          <Footer<ValueType> setShow={setShow} onDelete={onDelete} errors={errors} />
         </Form>
       </Formik>
     </Modal>

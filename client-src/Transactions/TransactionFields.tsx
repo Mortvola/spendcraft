@@ -12,9 +12,6 @@ type PropsType = {
   account?: AccountInterface | null,
   amount: number;
   balance: number;
-  selected: boolean;
-  isMobile?: boolean;
-  showTrxDialog: (transaction: TransactionInterface) => void,
 }
 
 const TransactionFields = ({
@@ -22,73 +19,59 @@ const TransactionFields = ({
   account = null,
   amount,
   balance,
-  selected,
-  isMobile = false,
-  showTrxDialog,
 }: PropsType): ReactElement => {
-  const handleChange = (cat: CategoryInterface) => {
-    if (isTransaction(transaction)) {
-      transaction.updateTransaction({
-        splits: [{
-          type: cat.type, categoryId: cat.id, amount: transaction.amount,
-        }],
-      });
-    }
-  };
+  // const handleChange = (cat: CategoryInterface) => {
+  //   if (isTransaction(transaction)) {
+  //     transaction.updateTransaction({
+  //       splits: [{
+  //         type: cat.type, categoryId: cat.id, amount: transaction.amount,
+  //       }],
+  //     });
+  //   }
+  // };
 
-  const CategoryButton = () => {
-    let catId = null;
+  // const CategoryButton = () => {
+  //   let catId = null;
 
-    if (transaction.categories && transaction.categories.length > 0) {
-      if (transaction.categories.length > 1) {
-        return (
-          <button type="button" className="split-button" onClick={() => showTrxDialog(transaction)}>Split</button>
-        );
-      }
+  //   if (transaction.categories && transaction.categories.length > 0) {
+  //     if (transaction.categories.length > 1) {
+  //       return (
+  //         <button type="button" className="split-button" onClick={() => showTrxDialog(transaction)}>Split</button>
+  //       );
+  //     }
 
-      catId = transaction.categories[0].categoryId;
-    }
+  //     catId = transaction.categories[0].categoryId;
+  //   }
 
-    return <CategoryInput categoryId={catId} onChange={handleChange} />;
-  };
+  //   return <CategoryInput categoryId={catId} onChange={handleChange} />;
+  // };
 
-  let className = 'transaction';
-  if (selected) {
-    className += ' transaction-selected';
-  }
+  // let className = 'transaction';
+  // if (selected) {
+  //   className += ' transaction-selected';
+  // }
 
-  if (isMobile) {
-    className += ' mobile';
+  // if (isMobile) {
+  //   className += ' mobile';
 
-    return (
-      <div className={className} onClick={() => showTrxDialog(transaction)}>
-        <div>
-          {transaction.date}
-        </div>
-        <div className="transaction-field">
-          {transaction.name}
-        </div>
-        <Amount amount={amount} />
-      </div>
-    );
-  }
+  //   return (
+  //     <div className={className} onClick={() => showTrxDialog(transaction)}>
+  //       <div>
+  //         {transaction.date}
+  //       </div>
+  //       <div className="transaction-field">
+  //         {transaction.name}
+  //       </div>
+  //       <Amount amount={amount} />
+  //     </div>
+  //   );
+  // }
 
   return (
     <>
-      <IconButton icon="edit" onClick={() => showTrxDialog(transaction)} />
+      <div />
       <div>{transaction.date}</div>
       <div className="transaction-field">{transaction.name}</div>
-      {
-        transaction.type !== TransactionType.STARTING_BALANCE
-          && (!account || account.tracking !== 'Uncategorized Transactions')
-          ? (
-            <div className="trans-cat-edit">
-              <CategoryButton />
-              <IconButton icon="list-ul" onClick={() => showTrxDialog(transaction)} />
-            </div>
-          )
-          : null
-      }
       <Amount className="transaction-field amount currency" amount={amount} />
       <Amount className="transaction-field balance currency" amount={balance} />
     </>
