@@ -352,7 +352,7 @@ body {
 
 .acct-transaction {
   display: grid;
-  grid-template-columns: 32px 100px minmax(0, 1.8fr) 1fr 125px 125px minmax(0, 2fr) max-content;
+  grid-template-columns: 32px 100px 1fr 125px 125px minmax(0, 2fr) max-content;
   grid-template-rows: max-content;
   align-items: center;
 }
