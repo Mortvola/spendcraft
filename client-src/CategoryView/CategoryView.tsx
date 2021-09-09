@@ -2,15 +2,16 @@ import React, { ReactElement, useContext, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import Group from './Group';
 import MobxStore from '../state/mobxStore';
-import Category from '../state/Category';
 import { useCategoryTransferDialog } from '../CategoryTransferDialog';
 import SystemCategory from './SystemCategory';
+import { CategoryInterface } from '../state/State';
+import Category from './Category';
 
 const CategoryView = (): ReactElement => {
   const { categoryTree, uiState } = useContext(MobxStore);
   const [CategoryTransferDialog, showCategoryTransferDialog] = useCategoryTransferDialog();
 
-  const handleCategorySelected = (category: Category) => {
+  const handleCategorySelected = (category: CategoryInterface) => {
     uiState.selectCategory(category);
   };
 
@@ -30,7 +31,7 @@ const CategoryView = (): ReactElement => {
       </div>
       <div id="categories">
         {categoryTree.groups.map((group) => {
-          if (!group.system || group.name === 'Loans') {
+          if (group.type === 'REGULAR') {
             return (
               <Group
                 key={group.name}
@@ -39,6 +40,18 @@ const CategoryView = (): ReactElement => {
                 selectedCategory={uiState.selectedCategory}
               />
             );
+          }
+
+          if (group.type === 'NO GROUP') {
+            return group.categories.map((category) => (
+              <Category
+                key={`${group.id}:${category.id}`}
+                group={group}
+                category={category}
+                onCategorySelected={handleCategorySelected}
+                selected={false}
+              />
+            ))
           }
 
           return null;

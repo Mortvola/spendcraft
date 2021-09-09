@@ -1,14 +1,13 @@
 import React, { ReactElement } from 'react';
 import { useCategoryDialog } from './CategoryDialog';
 import IconButton from '../IconButton';
-import Group from '../state/Group';
-import Category from '../state/Category';
 import { useLoanDialog } from './LoanDialog';
 import LoansGroup, { isLoansGroup } from '../state/LoansGroup';
+import { CategoryInterface, GroupInterface } from '../state/State';
 
 type PropsType = {
-  category: Category,
-  group: Group | LoansGroup,
+  category: CategoryInterface,
+  group: GroupInterface | LoansGroup,
 }
 const EditButton = ({
   category,

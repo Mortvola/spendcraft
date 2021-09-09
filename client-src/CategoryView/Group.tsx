@@ -2,14 +2,11 @@ import React, { ReactElement } from 'react';
 import { observer } from 'mobx-react-lite';
 import Buttons from './Buttons';
 import Category from './Category';
-import StateGroup from '../state/Group';
-import LoansGroup from '../state/LoansGroup';
-import StateCategory from '../state/Category';
-import { CategoryInterface } from '../state/State';
+import { CategoryInterface, GroupInterface } from '../state/State';
 
 type Props = {
-  group: StateGroup | LoansGroup,
-  onCategorySelected: ((category: StateCategory) => void),
+  group: GroupInterface,
+  onCategorySelected: ((category: CategoryInterface) => void),
   selectedCategory?: CategoryInterface | null,
 }
 

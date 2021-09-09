@@ -9,11 +9,13 @@ export interface GroupInterface {
 
   name: string;
 
-  system: boolean;
+  type: string;
 
   categories: CategoryInterface[];
 
   insertCategory(category: Category): void;
+
+  async deleteCategory(categoryId: number): Promise<null | Error[]>;
 }
 
 export interface TransactionInterface {
@@ -153,6 +155,8 @@ export interface CategoryInterface {
   insertTransaction(transaction: Transaction): void;
 
   removeTransaction(transactionId: number): void;
+
+  async update(name: string, group: GroupInterface): Promise<null | Error[]>;
 }
 
 export interface FundingPlanInterface {

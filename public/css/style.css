@@ -441,6 +441,10 @@ body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) max-content;
   justify-content: space-between;
+}
+
+.category-list-item>.cat-list-cat,
+.cat-list-group>.cat-list-cat {
   margin-left: 28px;
 }
 
@@ -948,8 +952,7 @@ body {
   background-color: #fff;
 }
 
-.transaction-form.open,
-.open > .transaction-form {
+.transaction-form.open, .open>.transaction-form {
   padding: 1rem;
   border: black thin solid;
   margin: 0 1rem 1rem 1rem;

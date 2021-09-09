@@ -1,14 +1,14 @@
 import React, { ReactElement } from 'react';
-import PropTypes, { string } from 'prop-types';
 import IconButton from '../IconButton';
 import { useCategoryDialog } from './CategoryDialog';
 import { useLoanDialog } from './LoanDialog';
 import { useGroupDialog } from './GroupDialog';
-import GroupState, { isGroup } from '../state/Group';
-import LoansGroup, { isLoansGroup } from '../state/LoansGroup';
+import { isGroup } from '../state/Group';
+import { isLoansGroup } from '../state/LoansGroup';
+import { GroupInterface } from '../state/State';
 
 type Props = {
-  group: GroupState | LoansGroup,
+  group: GroupInterface,
 }
 
 function Buttons({ group }: Props): ReactElement | null {
@@ -17,7 +17,7 @@ function Buttons({ group }: Props): ReactElement | null {
   const [LoanDialog, showLoanDialog] = useLoanDialog();
 
   const renderEditButton = () => {
-    if (!group.system && isGroup(group)) {
+    if (group.type === 'REGULAR' && isGroup(group)) {
       return (
         <>
           <IconButton icon="edit" onClick={showGroupDialog} />
@@ -30,7 +30,7 @@ function Buttons({ group }: Props): ReactElement | null {
   };
 
   const renderAddCategoryButton = () => {
-    if (!group.system && isGroup(group)) {
+    if (group.type === 'REGULAR' && isGroup(group)) {
       return (
         <>
           <IconButton icon="plus" onClick={showCategoryDialog} />
@@ -58,13 +58,5 @@ function Buttons({ group }: Props): ReactElement | null {
     </>
   );
 }
-
-Buttons.propTypes = {
-  group: PropTypes.shape({
-    system: PropTypes.bool.isRequired,
-    id: PropTypes.number.isRequired,
-    name: string,
-  }).isRequired,
-};
 
 export default Buttons;

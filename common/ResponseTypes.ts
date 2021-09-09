@@ -3,7 +3,7 @@ export interface GroupProps {
 
   name: string;
 
-  system: boolean;
+  type: string;
 
   categories: CategoryProps[];
 }
@@ -21,6 +21,8 @@ export interface LoansGroupProps {
   id: number;
 
   name: string;
+
+  type: string;
 
   system: boolean;
 
@@ -469,8 +471,9 @@ export const isInsertCategoryTransferResponse = (r: unknown): r is InsertCategor
   || isCategoryBalance((r as InsertCategoryTransferReponse).balances[0]))
 );
 
-export const isGroupsResponse = (r: Array<GroupProps> | unknown): r is Array<GroupProps> => (
-  (r as Array<GroupProps>).length === 0 || isGroupProps((r as Array<GroupProps>)[0])
+export const isGroupsResponse = (r: unknown): r is GroupProps[] => (
+  Array.isArray(r)
+  && ((r as GroupProps[]).length === 0 || isGroupProps((r as GroupProps[])[0]))
 );
 
 export const isAccountsResponse = (r: unknown): r is AccountProps[] => (

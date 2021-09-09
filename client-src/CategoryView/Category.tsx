@@ -2,17 +2,15 @@ import React, { ReactElement } from 'react';
 import { observer } from 'mobx-react-lite';
 import { useCategoryTransferDialog } from '../CategoryTransferDialog';
 import Amount from '../Amount';
-import IconButton from '../IconButton';
 import EditButton from './EditButton';
-import Group from '../state/Group';
 import LoansGroup from '../state/LoansGroup';
-import StateCategory from '../state/Category';
+import { CategoryInterface, GroupInterface } from '../state/State';
 
 type PropsType = {
-  category: StateCategory,
-  group: Group | LoansGroup,
+  category: CategoryInterface,
+  group: GroupInterface | LoansGroup,
   selected: boolean,
-  onCategorySelected: ((category: StateCategory) => void),
+  onCategorySelected: ((category: CategoryInterface) => void),
 }
 const Category = ({
   category,

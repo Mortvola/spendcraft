@@ -12,11 +12,11 @@ import AmountInput from '../AmountInput';
 import FormError from '../Modal/FormError';
 import FormModal from '../Modal/FormModal';
 import LoansGroup from '../state/LoansGroup';
-import Category from '../state/Category';
 import { Error } from '../../common/ResponseTypes';
+import { CategoryInterface } from '../state/State';
 
 type Props = {
-  category?: Category | null,
+  category?: CategoryInterface | null,
   group: LoansGroup,
 }
 

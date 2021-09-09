@@ -11,6 +11,8 @@ class LoansGroup implements GroupInterface {
 
   name: string;
 
+  type: string;
+
   categories: Category[] = [];
 
   system = true;
@@ -20,6 +22,7 @@ class LoansGroup implements GroupInterface {
   constructor(props: LoansGroupProps | LoansGroup, store: StoreInterface) {
     this.id = props.id;
     this.name = props.name;
+    this.type = props.type;
     this.store = store;
 
     makeAutoObservable(this);

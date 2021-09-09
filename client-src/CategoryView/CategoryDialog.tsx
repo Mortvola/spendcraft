@@ -8,23 +8,23 @@ import {
   FieldProps,
 } from 'formik';
 import useModal, { ModalProps, UseModalType } from '../Modal/useModal';
-import Group, { isGroup } from '../state/Group';
-import Category from '../state/Category';
+import { isGroup } from '../state/Group';
 import FormModal from '../Modal/FormModal';
 import FormError from '../Modal/FormError';
 import MobxStore from '../state/mobxStore';
+import { CategoryInterface, GroupInterface } from '../state/State';
 
 type Props = {
-  category?: Category | null,
-  group: Group,
+  category?: CategoryInterface | null,
+  group?: GroupInterface | null,
 }
 
 const CategoryDialog = ({
   onHide,
   show,
   setShow,
-  category,
-  group,
+  category = null,
+  group = null,
 }: Props & ModalProps): ReactElement => {
   const { categoryTree } = useContext(MobxStore);
 
@@ -81,6 +81,10 @@ const CategoryDialog = ({
       throw new Error('category is null or undefined');
     }
 
+    if (group === null) {
+      throw new Error('group is null');
+    }
+
     const errors = await group.deleteCategory(category.id);
 
     if (errors && errors.length > 0) {
@@ -104,6 +108,10 @@ const CategoryDialog = ({
       <option key={g.id} value={g.id}>{g.name}</option>
     ))
   )
+
+  if (group === null) {
+    throw new Error('group is null');
+  }
 
   return (
     <FormModal<ValueType>

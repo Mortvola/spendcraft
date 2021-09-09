@@ -16,6 +16,7 @@ import Institution from 'App/Models/Institution';
 import { InstitutionProps } from 'Common/ResponseTypes';
 import Category from './Category';
 import Group from './Group';
+import FundingPlan from './FundingPlan';
 
 type MonthBalance = {
   year: number,
@@ -171,5 +172,65 @@ export default class User extends BaseModel {
       .where('type', 'FUNDING POOL')
       .whereHas('group', (query) => query.where('userId', this.id))
       .firstOrFail();
+  }
+
+  public async initialize(this: User): Promise<void> {
+    if (this.$trx === undefined) {
+      throw new Error('transaction must be defined');
+    }
+
+    const systemGroup = await (new Group()).useTransaction(this.$trx)
+      .fill({
+        name: 'System',
+        type: 'SYSTEM',
+        userId: this.id,
+        system: true,
+      })
+      .save();
+
+    await (new Category()).useTransaction(this.$trx)
+      .fill({
+        name: 'Unassigned',
+        type: 'UNASSIGNED',
+        amount: 0,
+        groupId: systemGroup.id,
+      })
+      .save();
+
+    await (new Category()).useTransaction(this.$trx)
+      .fill({
+        name: 'Funding Pool',
+        type: 'FUNDING POOL',
+        amount: 0,
+        groupId: systemGroup.id,
+      })
+      .save();
+
+    await (new Category()).useTransaction(this.$trx)
+      .fill({
+        name: 'Account Transfer',
+        type: 'ACCOUNT TRANSFER',
+        amount: 0,
+        groupId: systemGroup.id,
+      })
+      .save();
+
+    await (new Group()).useTransaction(this.$trx)
+      .fill({
+        name: 'NoGroup',
+        type: 'NO GROUP',
+        userId: this.id,
+        system: true,
+      })
+      .save();
+
+    await (new FundingPlan()).useTransaction(this.$trx)
+      .fill({
+        name: 'Default Plan',
+        userId: this.id,
+      })
+      .save();
+
+    await this.$trx.commit();
   }
 }

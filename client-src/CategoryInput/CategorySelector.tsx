@@ -7,6 +7,7 @@ import MobxStore from '../state/mobxStore';
 import Group, { isCategoriesArray, isGroup } from '../state/Group';
 import Category from '../state/Category';
 import LoansGroup, { isLoansGroup } from '../state/LoansGroup';
+import { GroupProps } from '../../common/ResponseTypes';
 
 type PropsType = {
   selectedGroup?: Group | LoansGroup | null,
@@ -80,20 +81,14 @@ const CategorySelector = React.forwardRef<HTMLDivElement, PropsType>(({
         const categories = filterGroup(group, parts);
 
         if (categories.length > 0) {
-          if (isLoansGroup(group)) {
-            if (!isCategoriesArray(categories)) {
-              throw new Error('categories does not contain loans');
-            }
-
-            groups.push(new LoansGroup({ ...group, categories }, group.store));
+          if (!isCategoriesArray(categories)) {
+            throw new Error('categories does not contain categories');
           }
-          else if (isGroup(group)) {
-            if (!isCategoriesArray(categories)) {
-              throw new Error('categories does not contain categories');
-            }
 
-            groups.push(new Group({ ...group, categories }, group.store));
-          }
+          const grp = new Group(group, group.store);
+          grp.setCategories(categories);
+
+          groups.push(grp);
         }
       });
 

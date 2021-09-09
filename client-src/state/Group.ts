@@ -4,6 +4,7 @@ import {
   Error, GroupProps, isErrorResponse, isGroupProps,
   isAddCategoryResponse,
   CategoryBalanceProps,
+  CategoryProps,
 } from '../../common/ResponseTypes';
 import {
   getBody, httpDelete, httpPatch, httpPost,
@@ -15,7 +16,7 @@ class Group implements GroupInterface {
 
   name: string;
 
-  system = false;
+  type: string;
 
   categories: Category[] = [];
 
@@ -24,34 +25,38 @@ class Group implements GroupInterface {
   constructor(props: GroupProps | Group, store: StoreInterface) {
     this.id = props.id;
     this.name = props.name;
-    this.system = props.system || false;
+    this.type = props.type;
     this.store = store;
 
     if (props.categories && props.categories.length > 0) {
-      props.categories.forEach((c) => {
-        switch (c.type) {
-          case 'UNASSIGNED':
-            this.categories.push(this.store.categoryTree.unassignedCat);
-            break;
-
-          case 'ACCOUNT TRANSFER':
-            this.categories.push(this.store.categoryTree.accountTransferCat);
-            break;
-
-          case 'FUNDING POOL':
-            this.categories.push(this.store.categoryTree.fundingPoolCat);
-            break;
-
-          default: {
-            const category = new Category(c, this.store);
-            this.categories.push(category);
-            break;
-          }
-        }
-      });
+      this.setCategories(props.categories);
     }
 
     makeAutoObservable(this);
+  }
+
+  setCategories(categories: Category[] | CategoryProps[]): void {
+    categories.forEach((c) => {
+      switch (c.type) {
+        case 'UNASSIGNED':
+          this.categories.push(this.store.categoryTree.unassignedCat);
+          break;
+
+        case 'ACCOUNT TRANSFER':
+          this.categories.push(this.store.categoryTree.accountTransferCat);
+          break;
+
+        case 'FUNDING POOL':
+          this.categories.push(this.store.categoryTree.fundingPoolCat);
+          break;
+
+        default: {
+          const category = new Category(c, this.store);
+          this.categories.push(category);
+          break;
+        }
+      }
+    });
   }
 
   findCategory(categoryId: number): Category | null {
@@ -64,7 +69,7 @@ class Group implements GroupInterface {
     return null;
   }
 
-  insertCategory(category: Category) {
+  insertCategory(category: Category): void {
     // Find the position where this new category should be inserted.
     const index = this.categories.findIndex(
       (g) => category.name.toLowerCase().localeCompare(g.name.toLowerCase()) < 0,
@@ -125,7 +130,7 @@ class Group implements GroupInterface {
     return null;
   }
 
-  async deleteCategory(categoryId: number): Promise<null | Array<Error>> {
+  async deleteCategory(categoryId: number): Promise<null | Error[]> {
     const index = this.categories.findIndex((c) => c.id === categoryId);
     if (index !== -1) {
       const response = await httpDelete(`/api/groups/${this.id}/categories/${categoryId}`);
@@ -160,7 +165,6 @@ class Group implements GroupInterface {
 export const isGroup = (r: unknown): r is Group => (
   (r as Group).id !== undefined
   && (r as Group).name !== undefined
-  && (r as Group).system !== undefined
   && (r as Group).categories !== undefined
 );
 

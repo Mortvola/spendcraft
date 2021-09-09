@@ -70,8 +70,6 @@ const Networth = (): ReactElement | null => {
       }
     </div>
   );
-
-  return null;
 };
 
 export default Networth;

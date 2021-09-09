@@ -4,21 +4,22 @@ import Group from './Group';
 import {
   CategoryBalanceProps,
   Error, isErrorResponse,
-  isGroupProps, isGroupsResponse, isLoansGroupProps,
+  isGroupProps, isGroupsResponse,
 } from '../../common/ResponseTypes';
 import { CategoryInterface, CategoryTreeInterface, StoreInterface } from './State';
 import SystemIds from './SystemIds';
 import {
   getBody, httpDelete, httpGet, httpPost,
 } from './Transports';
-import LoansGroup from './LoansGroup';
 
 class CategoryTree implements CategoryTreeInterface {
   initialized = false;
 
-  groups: (Group | LoansGroup)[] = [];
+  groups: Group[] = [];
 
   systemIds = new SystemIds();
+
+  noGroupGroup: Group | null = null;
 
   unassignedCat: Category | null = null;
 
@@ -75,38 +76,32 @@ class CategoryTree implements CategoryTreeInterface {
 
     if (isGroupsResponse(body)) {
       runInAction(() => {
-        const systemGroup = body.find((g) => g.system && g.name === 'System');
-
-        if (isGroupProps(systemGroup)) {
-          this.systemIds.systemGroupId = systemGroup.id;
-
-          const unassignedCategory = systemGroup.categories.find((c) => c.type === 'UNASSIGNED');
-          if (unassignedCategory) {
-            this.unassignedCat = new Category(unassignedCategory, this.store);
-          }
-
-          const fundingPoolCategory = systemGroup.categories.find((c) => c.type === 'FUNDING POOL');
-          if (fundingPoolCategory) {
-            this.fundingPoolCat = new Category(fundingPoolCategory, this.store);
-          }
-
-          const accountTransferCategory = systemGroup.categories.find((c) => c.type === 'ACCOUNT TRANSFER');
-          if (accountTransferCategory) {
-            this.accountTransferCat = new Category(accountTransferCategory, this.store);
-          }
-        }
-
         body.forEach((g) => {
-          if (isLoansGroupProps(g)) {
-            this.systemIds.loansGroupId = g.id;
+          if (g.type !== 'REGULAR') {
+            this.systemIds.systemGroupId = g.id;
 
-            const loans = new LoansGroup(g, this.store);
-            this.groups.push(loans);
+            g.categories.forEach((c) => {
+              switch (c.type) {
+                case 'UNASSIGNED':
+                  this.unassignedCat = new Category(c, this.store);
+                  break;
+
+                case 'FUNDING POOL':
+                  this.fundingPoolCat = new Category(c, this.store);
+                  break;
+
+                case 'ACCOUNT TRANSFER':
+                  this.accountTransferCat = new Category(c, this.store);
+                  break;
+
+                default:
+                  break;
+              }
+            })
           }
-          else {
-            const group = new Group(g, this.store);
-            this.groups.push(group);
-          }
+
+          const group = new Group(g, this.store);
+          this.groups.push(group);
         });
 
         this.initialized = true;
