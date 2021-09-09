@@ -59,14 +59,6 @@ const TransactionForm = ({
     return 0;
   };
 
-  const [remaining, setRemaining] = useState(() => {
-    if (transaction) {
-      return computeRemaining(transaction.categories, transaction.amount);
-    }
-
-    return 0;
-  });
-
   const handleShow = (show: boolean) => {
     if (!show) {
       uiState.selectTransaction(null);
@@ -168,17 +160,19 @@ const TransactionForm = ({
         }));
       }
 
-      // return [{
-      //   id: -1,
-      //   type: 'UNASSIGNED',
-      //   categoryId: 0,
-      //   amount: transaction.amount < 0 ? -transaction.amount : transaction.amount,
-      // }]
       return [];
     }
 
     return [];
   }, [transaction])
+
+  const [remaining, setRemaining] = useState(() => {
+    if (transaction) {
+      return computeRemaining(splits, transaction.amount);
+    }
+
+    return 0;
+  });
 
   const splitItemClass = 'transaction-split-item no-balances';
 
