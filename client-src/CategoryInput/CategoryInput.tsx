@@ -143,93 +143,214 @@ const CategoryInput = ({
       categoryIndex: selected.categoryIndex,
     };
 
-    if (newSelection.groupIndex === null || newSelection.categoryIndex === null) {
-      newSelection.groupIndex = 0;
-      newSelection.categoryIndex = 0;
-    }
-    else {
-      newSelection.categoryIndex += 1;
+    const moveDown = (): boolean => {
+      const selectable = (groupIndex: number, categoryIndex: number): boolean => {
+        const node = nodes[groupIndex];
+        return !(isGroup(node) && node.categories.length === 0)
+      };
 
-      const group = nodes[newSelection.groupIndex];
-      if (isGroup(group)) {
-        if (newSelection.categoryIndex >= group.categories.length) {
-          newSelection.groupIndex += 1;
+      const moveDownOne = (): boolean => {
+        if (newSelection.groupIndex === null || newSelection.categoryIndex === null) {
+          newSelection.groupIndex = 0;
           newSelection.categoryIndex = 0;
+        }
+        else {
+          let node = nodes[newSelection.groupIndex];
+          if (isCategory(node)) {
+            if (newSelection.groupIndex < nodes.length - 1) {
+              newSelection.groupIndex += 1;
+              node = nodes[newSelection.groupIndex];
+              newSelection.categoryIndex = 0;
+            }
+          }
+          else if (newSelection.categoryIndex < node.categories.length - 1) {
+            newSelection.categoryIndex += 1;
+          }
+          else if (newSelection.groupIndex < nodes.length - 1) {
+            newSelection.groupIndex += 1;
+            node = nodes[newSelection.groupIndex];
+            newSelection.categoryIndex = 0;
+          }
+          else {
+            // Could not move down
+            return false;
+          }
+        }
+
+        return true;
+      }
+
+      for (;;) {
+        if (moveDownOne()) {
+          if (newSelection.groupIndex === null) {
+            throw new Error('group index is null');
+          }
+
+          if (newSelection.categoryIndex === null) {
+            throw new Error('category index is null');
+          }
+
+          if (selectable(newSelection.groupIndex, newSelection.categoryIndex)) {
+            return true;
+          }
+        }
+        else {
+          return false;
         }
       }
     }
 
-    const filterParts = filter ? filter.toLowerCase().split(':') : [];
-
-    let group = nodes[newSelection.groupIndex];
-    while (
-      newSelection.groupIndex < nodes.length
-      && ((isGroup(group) && group.categories.length === 0)
-      || (isGroup(group) && categoryFiltered(
-        group,
-        group.categories[newSelection.categoryIndex],
-        filterParts,
-      )))
-    ) {
-      newSelection.categoryIndex += 1;
-
-      if (newSelection.categoryIndex
-        >= group.categories.length) {
-        newSelection.groupIndex += 1;
-        group = nodes[newSelection.groupIndex];
-        newSelection.categoryIndex = 0;
-      }
+    if (moveDown()) {
+      setSelected(newSelection);
     }
 
-    group = nodes[newSelection.groupIndex];
-    if (isGroup(group)) {
-      if (newSelection.groupIndex < nodes.length
-        && newSelection.categoryIndex < group.categories.length) {
-        setSelected(newSelection);
-      }
-    }
+    // if (newSelection.groupIndex === null) {
+    //   throw new Error('group selection index is null');
+    // }
+
+    // let node = nodes[newSelection.groupIndex];
+
+    // while (isGroup(node) && node.categories.length === 0) {
+    //   moveDownOne();
+    //   node = nodes[newSelection.groupIndex];
+    // }
+
+    // const filterParts = filter ? filter.toLowerCase().split(':') : [];
+
+    // let node = nodes[newSelection.groupIndex];
+    // // while (
+    //   newSelection.groupIndex < nodes.length
+    //   && ((isGroup(node) && (node.categories.length === 0
+    //     || categoryFiltered(
+    //       node,
+    //       node.categories[newSelection.categoryIndex],
+    //       filterParts,
+    //     )))
+    //   || isCategory(node))
+    // for (;;) {
+    // }
+
+    // node = nodes[newSelection.groupIndex];
+    // if (newSelection.groupIndex < nodes.length
+    //   && (isCategory(node)
+    //   || (isGroup(node) && newSelection.categoryIndex < node.categories.length))
+    // ) {
+    // setSelected(newSelection);
+    // }
   };
 
   const handleUp = () => {
-    if (selected.groupIndex !== null && selected.categoryIndex !== null) {
-      const newSelection = {
-        groupIndex: selected.groupIndex,
-        categoryIndex: selected.categoryIndex,
+    const newSelection = {
+      groupIndex: selected.groupIndex,
+      categoryIndex: selected.categoryIndex,
+    };
+
+    const moveUp = (): boolean => {
+      const selectable = (groupIndex: number, categoryIndex: number): boolean => {
+        const node = nodes[groupIndex];
+        return !(isGroup(node) && node.categories.length === 0)
       };
 
-      const filterParts = filter ? filter.toLowerCase().split(':') : [];
-
-      let group = nodes[newSelection.groupIndex];
-      do {
-        newSelection.categoryIndex -= 1;
-
-        if (newSelection.categoryIndex < 0) {
-          newSelection.groupIndex -= 1;
-          group = nodes[newSelection.groupIndex];
-          if (isGroup(group)) {
-            if (newSelection.groupIndex >= 0) {
-              newSelection.categoryIndex = group.categories.length - 1;
+      const moveUpOne = (): boolean => {
+        if (newSelection.groupIndex === null || newSelection.categoryIndex === null) {
+          newSelection.groupIndex = 0;
+          newSelection.categoryIndex = 0;
+        }
+        else {
+          let node = nodes[newSelection.groupIndex];
+          if (isCategory(node)) {
+            if (newSelection.groupIndex > 0) {
+              newSelection.groupIndex -= 1;
+              node = nodes[newSelection.groupIndex];
+              newSelection.categoryIndex = 0;
+              if (isGroup(node)) {
+                newSelection.categoryIndex = node.categories.length - 1;
+              }
             }
           }
+          else if (newSelection.categoryIndex > 0) {
+            newSelection.categoryIndex -= 1;
+          }
+          else if (newSelection.groupIndex > 0) {
+            newSelection.groupIndex -= 1;
+            node = nodes[newSelection.groupIndex];
+            newSelection.categoryIndex = 0;
+            if (isGroup(node)) {
+              newSelection.categoryIndex = node.categories.length - 1;
+            }
+          }
+          else {
+            // Could not move up
+            return false;
+          }
         }
-      } while (
-        newSelection.groupIndex >= 0
-        && ((isGroup(group) && group.categories.length === 0)
-        || (isGroup(group) && categoryFiltered(
-          group,
-          group.categories[newSelection.categoryIndex],
-          filterParts,
-        )))
-      );
 
-      if (newSelection.groupIndex >= 0
-        && newSelection.categoryIndex >= 0) {
-        setSelected(newSelection);
+        return true;
+      }
+
+      for (;;) {
+        if (moveUpOne()) {
+          if (newSelection.groupIndex === null) {
+            throw new Error('group index is null');
+          }
+
+          if (newSelection.categoryIndex === null) {
+            throw new Error('category index is null');
+          }
+
+          if (selectable(newSelection.groupIndex, newSelection.categoryIndex)) {
+            return true;
+          }
+        }
+        else {
+          return false;
+        }
       }
     }
-    else {
-      setSelected({ groupIndex: 0, categoryIndex: 0 });
+
+    if (moveUp()) {
+      setSelected(newSelection);
     }
+
+    // if (selected.groupIndex !== null && selected.categoryIndex !== null) {
+    //   const newSelection = {
+    //     groupIndex: selected.groupIndex,
+    //     categoryIndex: selected.categoryIndex,
+    //   };
+
+    //   const filterParts = filter ? filter.toLowerCase().split(':') : [];
+
+    //   let group = nodes[newSelection.groupIndex];
+    //   do {
+    //     newSelection.categoryIndex -= 1;
+
+    //     if (newSelection.categoryIndex < 0) {
+    //       newSelection.groupIndex -= 1;
+    //       group = nodes[newSelection.groupIndex];
+    //       if (isGroup(group)) {
+    //         if (newSelection.groupIndex >= 0) {
+    //           newSelection.categoryIndex = group.categories.length - 1;
+    //         }
+    //       }
+    //     }
+    //   } while (
+    //     newSelection.groupIndex >= 0
+    //     && ((isGroup(group) && group.categories.length === 0)
+    //     || (isGroup(group) && categoryFiltered(
+    //       group,
+    //       group.categories[newSelection.categoryIndex],
+    //       filterParts,
+    //     )))
+    //   );
+
+    //   if (newSelection.groupIndex >= 0
+    //     && newSelection.categoryIndex >= 0) {
+    //     setSelected(newSelection);
+    //   }
+    // }
+    // else {
+    //   setSelected({ groupIndex: 0, categoryIndex: 0 });
+    // }
   };
 
   const handleEnter = () => {
@@ -300,10 +421,9 @@ const CategoryInput = ({
         top = position.top - height;
       }
 
-      let selectedGroup: GroupInterface | CategoryInterface | null = null;
       let selectedCategory: CategoryInterface | null = null;
       if (selected.groupIndex !== null) {
-        selectedGroup = nodes[selected.groupIndex];
+        const selectedGroup: GroupInterface | CategoryInterface = nodes[selected.groupIndex];
         if (isGroup(selectedGroup)) {
           if (selected.categoryIndex === null) {
             throw new Error('category index is null');
@@ -317,7 +437,6 @@ const CategoryInput = ({
           }
 
           selectedCategory = selectedGroup;
-          selectedGroup = null;
         }
       }
 
@@ -331,7 +450,6 @@ const CategoryInput = ({
             top={top}
             width={position.width < 200 ? 200 : position.width}
             height={height}
-            selectedGroup={selectedGroup}
             selectedCategory={selectedCategory}
             onSelect={handleSelect}
             filter={filter}

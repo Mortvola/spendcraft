@@ -4,7 +4,7 @@ import { CategoryInterface, GroupInterface } from '../state/State';
 
 type PropsType = {
   group: GroupInterface,
-  selected: string | null,
+  selected: CategoryInterface | null,
   onSelect: (category: CategoryInterface) => void,
 }
 
@@ -28,7 +28,7 @@ function CategorySelectorGroup({
           <CategorySelectorCategory
             key={c.id}
             category={c}
-            selected={c.name === selected}
+            selected={selected !== null && c.id === selected.id}
             onSelect={onSelect}
           />
         ))}

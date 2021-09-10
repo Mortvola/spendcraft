@@ -10,7 +10,6 @@ import CategorySelectorCategory from './CategorySelectorCategory';
 import { isCategory } from '../state/Category';
 
 type PropsType = {
-  selectedGroup?: GroupInterface | null,
   selectedCategory?: CategoryInterface | null,
   left?: number | null,
   top?: number | null,
@@ -22,7 +21,6 @@ type PropsType = {
 
 // eslint-disable-next-line react/display-name
 const CategorySelector = React.forwardRef<HTMLDivElement, PropsType>(({
-  selectedGroup = null,
   selectedCategory = null,
   left = null,
   top = null,
@@ -131,18 +129,12 @@ const CategorySelector = React.forwardRef<HTMLDivElement, PropsType>(({
     >
       {
         filteredGroups && filteredGroups.map((g) => {
-          let sel = null;
-          if (selectedGroup !== null && selectedCategory !== null
-            && selectedGroup.name === g.name) {
-            sel = selectedCategory.name;
-          }
-
           if (isGroup(g)) {
             return (
               <CategorySelectorGroup
                 key={g.id}
                 group={g}
-                selected={sel}
+                selected={selectedCategory}
                 onSelect={onSelect}
               />
             );
@@ -156,7 +148,7 @@ const CategorySelector = React.forwardRef<HTMLDivElement, PropsType>(({
             <CategorySelectorCategory
               key={`${g.groupId}:${g.id}`}
               category={g}
-              selected={g.name === sel}
+              selected={selectedCategory !== null && g.id === selectedCategory.id}
               onSelect={onSelect}
             />
           );

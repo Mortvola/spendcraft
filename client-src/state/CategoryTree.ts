@@ -6,16 +6,20 @@ import {
   Error, isErrorResponse,
   isGroupProps, isGroupsResponse,
 } from '../../common/ResponseTypes';
-import { CategoryInterface, CategoryTreeInterface, StoreInterface } from './State';
+import {
+  CategoryInterface, CategoryTreeInterface, StoreInterface,
+} from './State';
 import SystemIds from './SystemIds';
 import {
   getBody, httpDelete, httpGet, httpPost,
 } from './Transports';
 
+export type Node = (Category | Group);
+
 class CategoryTree implements CategoryTreeInterface {
   initialized = false;
 
-  nodes: (Category | Group)[] = [];
+  nodes: Node[] = [];
 
   systemIds = new SystemIds();
 
