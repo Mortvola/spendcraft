@@ -116,7 +116,7 @@ const FundingDialog = ({
 
   const handlePlanChange = async (
     event: React.ChangeEvent<HTMLSelectElement>,
-    resetForm: (nextState?: Partial<FormikState<any>> | undefined) => void,
+    resetForm: (nextState?: Partial<FormikState<ValueType>> | undefined) => void,
     values: ValueType,
   ) => {
     const { value } = event.target;
@@ -308,7 +308,7 @@ const FundingDialog = ({
             }: FieldProps<FundingPlanType>) => (
               <Funding
                 key={value.planId}
-                groups={categoryTree.groups}
+                groups={categoryTree.nodes}
                 plan={value.categories}
                 systemGroupId={categoryTree.systemIds.systemGroupId || 0}
                 onChange={(newFunding: FundingType[]) => {

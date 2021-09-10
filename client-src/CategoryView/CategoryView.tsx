@@ -30,7 +30,7 @@ const CategoryView = (): ReactElement => {
         <SystemCategory category={categoryTree.accountTransferCat} />
       </div>
       <div id="categories">
-        {categoryTree.groups.map((group) => {
+        {categoryTree.nodes.map((group) => {
           if (isGroup(group)) {
             if (group.type === 'REGULAR') {
               return (

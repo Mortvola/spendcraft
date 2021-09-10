@@ -19,7 +19,7 @@ const CategoryInput = ({
   onChange,
 }: PropsType): ReactElement => {
   const { categoryTree } = useContext(MobxStore);
-  const { groups } = categoryTree;
+  const { nodes } = categoryTree;
   const [selected, setSelected] = useState<{ groupIndex: number | null, categoryIndex: number | null }>(
     { groupIndex: null, categoryIndex: null },
   );
@@ -106,10 +106,10 @@ const CategoryInput = ({
   };
 
   const handleSelect = (category: CategoryInterface) => {
-    let groupIndex: number | null = groups.findIndex((g) => g.id === category.id || g.id === category.groupId);
+    let groupIndex: number | null = nodes.findIndex((g) => g.id === category.id || g.id === category.groupId);
     let categoryIndex: number;
 
-    const group = groups[groupIndex];
+    const group = nodes[groupIndex];
     if (isGroup(group)) {
       categoryIndex = group.categories.findIndex((c) => c.id === category.id);
     }
@@ -150,7 +150,7 @@ const CategoryInput = ({
     else {
       newSelection.categoryIndex += 1;
 
-      const group = groups[newSelection.groupIndex];
+      const group = nodes[newSelection.groupIndex];
       if (isGroup(group)) {
         if (newSelection.categoryIndex >= group.categories.length) {
           newSelection.groupIndex += 1;
@@ -161,9 +161,9 @@ const CategoryInput = ({
 
     const filterParts = filter ? filter.toLowerCase().split(':') : [];
 
-    let group = groups[newSelection.groupIndex];
+    let group = nodes[newSelection.groupIndex];
     while (
-      newSelection.groupIndex < groups.length
+      newSelection.groupIndex < nodes.length
       && ((isGroup(group) && group.categories.length === 0)
       || (isGroup(group) && categoryFiltered(
         group,
@@ -176,14 +176,14 @@ const CategoryInput = ({
       if (newSelection.categoryIndex
         >= group.categories.length) {
         newSelection.groupIndex += 1;
-        group = groups[newSelection.groupIndex];
+        group = nodes[newSelection.groupIndex];
         newSelection.categoryIndex = 0;
       }
     }
 
-    group = groups[newSelection.groupIndex];
+    group = nodes[newSelection.groupIndex];
     if (isGroup(group)) {
-      if (newSelection.groupIndex < groups.length
+      if (newSelection.groupIndex < nodes.length
         && newSelection.categoryIndex < group.categories.length) {
         setSelected(newSelection);
       }
@@ -199,13 +199,13 @@ const CategoryInput = ({
 
       const filterParts = filter ? filter.toLowerCase().split(':') : [];
 
-      let group = groups[newSelection.groupIndex];
+      let group = nodes[newSelection.groupIndex];
       do {
         newSelection.categoryIndex -= 1;
 
         if (newSelection.categoryIndex < 0) {
           newSelection.groupIndex -= 1;
-          group = groups[newSelection.groupIndex];
+          group = nodes[newSelection.groupIndex];
           if (isGroup(group)) {
             if (newSelection.groupIndex >= 0) {
               newSelection.categoryIndex = group.categories.length - 1;
@@ -236,7 +236,7 @@ const CategoryInput = ({
     if (selected.categoryIndex !== null) {
       let selectedGroup = null;
       if (selected.groupIndex !== null) {
-        selectedGroup = groups[selected.groupIndex];
+        selectedGroup = nodes[selected.groupIndex];
       }
       let selectedCategory = null;
       if (selectedGroup && isGroup(selectedGroup)) {
@@ -303,7 +303,7 @@ const CategoryInput = ({
       let selectedGroup: GroupInterface | CategoryInterface | null = null;
       let selectedCategory: CategoryInterface | null = null;
       if (selected.groupIndex !== null) {
-        selectedGroup = groups[selected.groupIndex];
+        selectedGroup = nodes[selected.groupIndex];
         if (isGroup(selectedGroup)) {
           if (selected.categoryIndex === null) {
             throw new Error('category index is null');

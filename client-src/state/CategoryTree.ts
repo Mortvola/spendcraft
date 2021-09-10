@@ -15,7 +15,7 @@ import {
 class CategoryTree implements CategoryTreeInterface {
   initialized = false;
 
-  groups: (Category | Group)[] = [];
+  nodes: (Category | Group)[] = [];
 
   systemIds = new SystemIds();
 
@@ -36,7 +36,7 @@ class CategoryTree implements CategoryTreeInterface {
   }
 
   getCategoryGroup(categoryId: number): Group | null {
-    const group = this.groups.find((g) => {
+    const group = this.nodes.find((g) => {
       if (isCategory(g)) {
         return false;
       }
@@ -54,7 +54,7 @@ class CategoryTree implements CategoryTreeInterface {
   getCategory(categoryId: number): CategoryInterface | null {
     let category: Category | null = null;
 
-    this.groups.find((node) => {
+    this.nodes.find((node) => {
       if (isCategory(node)) {
         if (node.id === categoryId) {
           category = node;
@@ -79,7 +79,7 @@ class CategoryTree implements CategoryTreeInterface {
   getCategoryName(categoryId: number): string | null {
     let categoryName = null;
 
-    this.groups.find((node) => {
+    this.nodes.find((node) => {
       if (isGroup(node)) {
         const category = node.findCategory(categoryId);
 
@@ -133,16 +133,16 @@ class CategoryTree implements CategoryTreeInterface {
           if (g.type === 'NO GROUP') {
             g.categories.forEach((c) => {
               const category = new Category(c, this.store);
-              this.groups.push(category);
+              this.nodes.push(category);
             })
           }
           else {
             const group = new Group(g, this.store);
-            this.groups.push(group);
+            this.nodes.push(group);
           }
         });
 
-        this.groups.sort((a, b) => a.name.localeCompare(b.name));
+        this.nodes.sort((a, b) => a.name.localeCompare(b.name));
 
         this.initialized = true;
       });
@@ -163,18 +163,18 @@ class CategoryTree implements CategoryTreeInterface {
       runInAction(() => {
         if (isGroupProps(body)) {
           // Find the position where this new group should be inserted.
-          const index = this.groups.findIndex(
+          const index = this.nodes.findIndex(
             (g) => body.name.toLowerCase().localeCompare(g.name.toLowerCase()) < 0,
           );
 
           if (index === -1) {
-            this.groups.push(new Group(body, this.store));
+            this.nodes.push(new Group(body, this.store));
           }
           else {
-            this.groups = [
-              ...this.groups.slice(0, index),
+            this.nodes = [
+              ...this.nodes.slice(0, index),
               new Group(body, this.store),
-              ...this.groups.slice(index),
+              ...this.nodes.slice(index),
             ];
           }
         }
@@ -185,7 +185,7 @@ class CategoryTree implements CategoryTreeInterface {
   }
 
   async deleteGroup(id: number): Promise<null | Array<Error>> {
-    const index = this.groups.findIndex((g) => g.id === id);
+    const index = this.nodes.findIndex((g) => g.id === id);
 
     if (index !== -1) {
       const response = await httpDelete(`/api/groups/${id}`);
@@ -199,7 +199,7 @@ class CategoryTree implements CategoryTreeInterface {
       }
       else {
         runInAction(() => {
-          this.groups.splice(index, 1);
+          this.nodes.splice(index, 1);
         });
       }
     }
@@ -209,7 +209,7 @@ class CategoryTree implements CategoryTreeInterface {
 
   updateBalances(balances: CategoryBalanceProps[]): void {
     runInAction(() => {
-      this.groups.forEach((node) => {
+      this.nodes.forEach((node) => {
         node.updateBalances(balances);
       });
     });

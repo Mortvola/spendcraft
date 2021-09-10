@@ -37,7 +37,7 @@ const CategoryDialog = ({
     const { setErrors } = bag;
     let errors = null;
 
-    const selectedGroup = categoryTree.groups.find((g) => g.id === parseInt(values.groupId, 10));
+    const selectedGroup = categoryTree.nodes.find((g) => g.id === parseInt(values.groupId, 10));
 
     if (!selectedGroup) {
       throw new Error('group is not defined');
@@ -104,7 +104,7 @@ const CategoryDialog = ({
   };
 
   const populateGroups = () => (
-    categoryTree.groups.map((g) => (
+    categoryTree.nodes.map((g) => (
       <option key={g.id} value={g.id}>{g.name}</option>
     ))
   )

@@ -198,7 +198,7 @@ export interface CategoryTreeInterface {
 
   accountTransferCat: Category | null = null;
 
-  groups: (Category | Group)[] = [];
+  nodes: (Category | Group)[] = [];
 
   updateBalances(balances: CategoryBalanceProps[]): void;
   getCategory(categoryId: number): CategoryInterface | null;

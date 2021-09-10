@@ -77,7 +77,7 @@ const CategorySelector = React.forwardRef<HTMLDivElement, PropsType>(({
 
       const groups: (GroupInterface)[] = [];
 
-      categoryTree.groups.forEach((group) => {
+      categoryTree.nodes.forEach((group) => {
         if (isGroup(group)) {
           const categories = filterGroup(group, parts);
 
@@ -97,9 +97,9 @@ const CategorySelector = React.forwardRef<HTMLDivElement, PropsType>(({
       setFilteredGroups(groups);
     }
     else {
-      setFilteredGroups(categoryTree.groups);
+      setFilteredGroups(categoryTree.nodes);
     }
-  }, [categoryTree.groups, filter]);
+  }, [categoryTree.nodes, filter]);
 
   const style: Record<string, unknown> = {}; // { display: 'none' };
   if (left !== null) {
