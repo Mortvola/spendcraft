@@ -2,14 +2,14 @@ import React, { ReactElement, useContext, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import Group from './Group';
 import MobxStore from '../state/mobxStore';
-import { useCategoryTransferDialog } from '../CategoryTransferDialog';
 import SystemCategory from './SystemCategory';
 import { CategoryInterface } from '../state/State';
 import Category from './Category';
+import { isGroup } from '../state/Group';
+import { isCategory } from '../state/Category';
 
 const CategoryView = (): ReactElement => {
   const { categoryTree, uiState } = useContext(MobxStore);
-  const [CategoryTransferDialog, showCategoryTransferDialog] = useCategoryTransferDialog();
 
   const handleCategorySelected = (category: CategoryInterface) => {
     uiState.selectCategory(category);
@@ -31,33 +31,31 @@ const CategoryView = (): ReactElement => {
       </div>
       <div id="categories">
         {categoryTree.groups.map((group) => {
-          if (group.type === 'REGULAR') {
-            return (
-              <Group
-                key={group.name}
-                group={group}
-                onCategorySelected={handleCategorySelected}
-                selectedCategory={uiState.selectedCategory}
-              />
-            );
+          if (isGroup(group)) {
+            if (group.type === 'REGULAR') {
+              return (
+                <Group
+                  key={group.name}
+                  group={group}
+                  onCategorySelected={handleCategorySelected}
+                  selectedCategory={uiState.selectedCategory}
+                />
+              );
+            }
+
+            return null;
           }
 
-          if (group.type === 'NO GROUP') {
-            return group.categories.map((category) => (
-              <Category
-                key={`${group.id}:${category.id}`}
-                group={group}
-                category={category}
-                onCategorySelected={handleCategorySelected}
-                selected={false}
-              />
-            ))
-          }
-
-          return null;
+          return (
+            <Category
+              key={`${group.id}`}
+              category={group}
+              onCategorySelected={handleCategorySelected}
+              selected={false}
+            />
+          );
         })}
       </div>
-      <CategoryTransferDialog />
     </>
   );
 };

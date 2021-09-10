@@ -1,6 +1,6 @@
 import { makeAutoObservable, runInAction } from 'mobx';
-import Category from './Category';
-import Group from './Group';
+import Category, { isCategory } from './Category';
+import Group, { isGroup } from './Group';
 import {
   CategoryBalanceProps,
   Error, isErrorResponse,
@@ -15,7 +15,7 @@ import {
 class CategoryTree implements CategoryTreeInterface {
   initialized = false;
 
-  groups: Group[] = [];
+  groups: (Category | Group)[] = [];
 
   systemIds = new SystemIds();
 
@@ -35,15 +35,39 @@ class CategoryTree implements CategoryTreeInterface {
     this.store = store;
   }
 
+  getCategoryGroup(categoryId: number): Group | null {
+    const group = this.groups.find((g) => {
+      if (isCategory(g)) {
+        return false;
+      }
+
+      return g.categories.some((c) => (c.id === categoryId))
+    });
+
+    if (isGroup(group)) {
+      return group;
+    }
+
+    return null;
+  }
+
   getCategory(categoryId: number): CategoryInterface | null {
     let category: Category | null = null;
 
-    this.groups.find((group) => {
-      const cat = group.findCategory(categoryId);
+    this.groups.find((node) => {
+      if (isCategory(node)) {
+        if (node.id === categoryId) {
+          category = node;
+          return true;
+        }
+      }
+      else {
+        const cat = node.findCategory(categoryId);
 
-      if (cat) {
-        category = cat;
-        return true;
+        if (cat) {
+          category = cat;
+          return true;
+        }
       }
 
       return false;
@@ -55,11 +79,17 @@ class CategoryTree implements CategoryTreeInterface {
   getCategoryName(categoryId: number): string | null {
     let categoryName = null;
 
-    this.groups.find((group) => {
-      const category = group.findCategory(categoryId);
+    this.groups.find((node) => {
+      if (isGroup(node)) {
+        const category = node.findCategory(categoryId);
 
-      if (category) {
-        categoryName = `${group.name}:${category.name}`;
+        if (category) {
+          categoryName = `${node.name}:${category.name}`;
+          return true;
+        }
+      }
+      else if (node.id === categoryId) {
+        categoryName = node.name;
         return true;
       }
 
@@ -100,9 +130,19 @@ class CategoryTree implements CategoryTreeInterface {
             })
           }
 
-          const group = new Group(g, this.store);
-          this.groups.push(group);
+          if (g.type === 'NO GROUP') {
+            g.categories.forEach((c) => {
+              const category = new Category(c, this.store);
+              this.groups.push(category);
+            })
+          }
+          else {
+            const group = new Group(g, this.store);
+            this.groups.push(group);
+          }
         });
+
+        this.groups.sort((a, b) => a.name.localeCompare(b.name));
 
         this.initialized = true;
       });
@@ -169,8 +209,8 @@ class CategoryTree implements CategoryTreeInterface {
 
   updateBalances(balances: CategoryBalanceProps[]): void {
     runInAction(() => {
-      this.groups.forEach((g) => {
-        g.updateBalances(balances);
+      this.groups.forEach((node) => {
+        node.updateBalances(balances);
       });
     });
   }

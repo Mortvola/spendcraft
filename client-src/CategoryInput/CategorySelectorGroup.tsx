@@ -1,37 +1,26 @@
 import React, { ReactElement } from 'react';
 import CategorySelectorCategory from './CategorySelectorCategory';
-import Group from '../state/Group';
-import Category from '../state/Category';
-import LoansGroup from '../state/LoansGroup';
+import { CategoryInterface, GroupInterface } from '../state/State';
 
 type PropsType = {
-  group: Group | LoansGroup,
+  group: GroupInterface,
   selected: string | null,
-  onSelected: (group: Group | LoansGroup, category: Category) => void,
+  onSelect: (category: CategoryInterface) => void,
 }
 
 function CategorySelectorGroup({
   group,
   selected,
-  onSelected,
+  onSelect,
 }: PropsType): ReactElement | null {
-  const handleMouseDown = (event: React.MouseEvent) => {
-    event.preventDefault();
-  };
-
   const handleClick = (event: React.MouseEvent) => {
     event.stopPropagation();
-  };
-
-  const handleSelected = (category: Category) => {
-    onSelected(group, category);
   };
 
   if (group.categories.length > 0) {
     return (
       <div
-        className="category-list-item"
-        onMouseDown={handleMouseDown}
+        className="cat-list-item"
         onClick={handleClick}
       >
         {group.name}
@@ -40,7 +29,7 @@ function CategorySelectorGroup({
             key={c.id}
             category={c}
             selected={c.name === selected}
-            onSelected={handleSelected}
+            onSelect={onSelect}
           />
         ))}
       </div>

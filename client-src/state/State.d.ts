@@ -16,6 +16,8 @@ export interface GroupInterface {
   insertCategory(category: Category): void;
 
   async deleteCategory(categoryId: number): Promise<null | Error[]>;
+
+  async update(name: string): Promise<null | Error[]>;
 }
 
 export interface TransactionInterface {
@@ -135,6 +137,8 @@ export interface CategoryInterface {
 
   type: CategoryType;
 
+  groupId: number;
+
   balance: number;
 
   transactions: Transaction[];
@@ -194,10 +198,11 @@ export interface CategoryTreeInterface {
 
   accountTransferCat: Category | null = null;
 
-  groups: GroupInterface[] = [];
+  groups: (Category | Group)[] = [];
 
   updateBalances(balances: CategoryBalanceProps[]): void;
   getCategory(categoryId: number): CategoryInterface | null;
+  getCategoryGroup(categoryId: number): GroupInterface | null;
 }
 
 export interface CategoryBalanceInterface {

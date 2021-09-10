@@ -6,6 +6,7 @@ import {
   CategoryType,
   isCategoryLoanResponse,
   CategoryLoanResponse,
+  CategoryBalanceProps,
 } from '../../common/ResponseTypes';
 import LoanTransaction from './LoanTransaction';
 import PendingTransaction from './PendingTransaction';
@@ -19,6 +20,8 @@ class Category implements CategoryInterface {
   name: string;
 
   type: CategoryType;
+
+  groupId: number;
 
   balance: number;
 
@@ -41,6 +44,7 @@ class Category implements CategoryInterface {
     this.id = props.id;
     this.name = props.name;
     this.type = props.type;
+    this.groupId = props.groupId;
     this.balance = props.balance;
     this.store = store;
 
@@ -169,9 +173,7 @@ class Category implements CategoryInterface {
 
           // Find the group the category is currently in
           // and possibly move it to the new group.
-          const currentGroup = this.store.categoryTree.groups.find((g) => (
-            g.categories.some((c) => (c.id === this.id))
-          ));
+          const currentGroup = this.store.categoryTree.getCategoryGroup(this.id);
 
           if (!currentGroup || currentGroup.id !== group.id) {
             group.insertCategory(this);
@@ -208,10 +210,18 @@ class Category implements CategoryInterface {
       this.transactions.splice(index, 1);
     }
   }
+
+  updateBalances(balances: CategoryBalanceProps[]): void {
+    const balance = balances.find((b) => b.id === this.id);
+    if (balance) {
+      this.balance = balance.balance;
+    }
+  }
 }
 
 export const isCategory = (r: unknown): r is Category => (
-  (r as Category).id !== undefined
+  r !== undefined && r !== null
+  && (r as Category).id !== undefined
   && (r as Category).name !== undefined
   && (r as Category).type !== undefined
   && (r as Category).balance !== undefined

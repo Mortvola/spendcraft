@@ -441,9 +441,10 @@ body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) max-content;
   justify-content: space-between;
+  user-select: none;
 }
 
-.category-list-item>.cat-list-cat,
+.cat-list-item>.cat-list-cat,
 .cat-list-group>.cat-list-cat {
   margin-left: 28px;
 }

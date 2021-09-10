@@ -41,6 +41,8 @@ export type CategoryType = 'REGULAR' | 'UNASSIGNED' | 'FUNDING POOL' | 'ACCOUNT 
 export interface CategoryProps {
   id: number;
 
+  groupId: number;
+
   balance: number;
 
   name: string;

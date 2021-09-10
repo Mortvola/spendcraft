@@ -109,7 +109,7 @@ class Group implements GroupInterface {
     return null;
   }
 
-  async update(name: string): Promise<null | Array<Error>> {
+  async update(name: string): Promise<null | Error[]> {
     const response = await httpPatch(`/api/groups/${this.id}`, { name });
 
     const body = await getBody(response);
@@ -154,16 +154,14 @@ class Group implements GroupInterface {
 
   updateBalances(balances: CategoryBalanceProps[]): void {
     this.categories.forEach((c) => {
-      const balance = balances.find((b) => b.id === c.id);
-      if (balance) {
-        c.balance = balance.balance;
-      }
+      c.updateBalances(balances);
     });
   }
 }
 
 export const isGroup = (r: unknown): r is Group => (
-  (r as Group).id !== undefined
+  r !== undefined && r !== null
+  && (r as Group).id !== undefined
   && (r as Group).name !== undefined
   && (r as Group).categories !== undefined
 );

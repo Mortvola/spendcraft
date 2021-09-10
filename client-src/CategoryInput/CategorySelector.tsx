@@ -5,18 +5,18 @@ import { observer } from 'mobx-react';
 import CategorySelectorGroup from './CategorySelectorGroup';
 import MobxStore from '../state/mobxStore';
 import Group, { isCategoriesArray, isGroup } from '../state/Group';
-import Category from '../state/Category';
-import LoansGroup, { isLoansGroup } from '../state/LoansGroup';
-import { GroupProps } from '../../common/ResponseTypes';
+import { CategoryInterface, GroupInterface } from '../state/State';
+import CategorySelectorCategory from './CategorySelectorCategory';
+import { isCategory } from '../state/Category';
 
 type PropsType = {
-  selectedGroup?: Group | LoansGroup | null,
-  selectedCategory?: Category | null,
+  selectedGroup?: GroupInterface | null,
+  selectedCategory?: CategoryInterface | null,
   left?: number | null,
   top?: number | null,
   width?: number | null,
   height?: number | null,
-  onSelect: (group: Group | LoansGroup, category: Category) => void,
+  onSelect: (category: CategoryInterface) => void,
   filter?: string | null,
 }
 
@@ -32,11 +32,11 @@ const CategorySelector = React.forwardRef<HTMLDivElement, PropsType>(({
   filter = null,
 }: PropsType, forwardRef): ReactElement => {
   const { categoryTree } = useContext(MobxStore);
-  const [filteredGroups, setFilteredGroups] = useState<(Group | LoansGroup)[] | null>(null);
+  const [filteredGroups, setFilteredGroups] = useState<(GroupInterface | CategoryInterface)[] | null>(null);
 
   useEffect(() => {
     if (filter) {
-      const filterCategories = (categories: Category[], catFilter: string) => {
+      const filterCategories = (categories: CategoryInterface[], catFilter: string) => {
         let result = [];
 
         if (catFilter !== '') {
@@ -50,8 +50,8 @@ const CategorySelector = React.forwardRef<HTMLDivElement, PropsType>(({
         return result;
       };
 
-      const filterGroup = (group: Group | LoansGroup, parts: Array<string>) => {
-        let categories: Category[] = [];
+      const filterGroup = (group: GroupInterface, parts: Array<string>) => {
+        let categories: CategoryInterface[] = [];
 
         if (parts.length === 1) {
           // No colon. Filter can be applied to both group and categories.
@@ -75,20 +75,22 @@ const CategorySelector = React.forwardRef<HTMLDivElement, PropsType>(({
 
       const parts = filter.toLowerCase().split(':');
 
-      const groups: (Group | LoansGroup)[] = [];
+      const groups: (GroupInterface)[] = [];
 
       categoryTree.groups.forEach((group) => {
-        const categories = filterGroup(group, parts);
+        if (isGroup(group)) {
+          const categories = filterGroup(group, parts);
 
-        if (categories.length > 0) {
-          if (!isCategoriesArray(categories)) {
-            throw new Error('categories does not contain categories');
+          if (categories.length > 0) {
+            if (!isCategoriesArray(categories)) {
+              throw new Error('categories does not contain categories');
+            }
+
+            const grp = new Group(group, group.store);
+            grp.setCategories(categories);
+
+            groups.push(grp);
           }
-
-          const grp = new Group(group, group.store);
-          grp.setCategories(categories);
-
-          groups.push(grp);
         }
       });
 
@@ -116,8 +118,17 @@ const CategorySelector = React.forwardRef<HTMLDivElement, PropsType>(({
     style.height = height;
   }
 
+  const handleMouseDown = (event: React.MouseEvent) => {
+    event.preventDefault();
+  };
+
   return (
-    <div ref={forwardRef} className="drop-down" style={style}>
+    <div
+      ref={forwardRef}
+      className="drop-down"
+      style={style}
+      onMouseDown={handleMouseDown}
+    >
       {
         filteredGroups && filteredGroups.map((g) => {
           let sel = null;
@@ -126,12 +137,27 @@ const CategorySelector = React.forwardRef<HTMLDivElement, PropsType>(({
             sel = selectedCategory.name;
           }
 
+          if (isGroup(g)) {
+            return (
+              <CategorySelectorGroup
+                key={g.id}
+                group={g}
+                selected={sel}
+                onSelect={onSelect}
+              />
+            );
+          }
+
+          if (!isCategory(g)) {
+            throw new Error('group is not a category');
+          }
+
           return (
-            <CategorySelectorGroup
-              key={g.id}
-              group={g}
-              selected={sel}
-              onSelected={onSelect}
+            <CategorySelectorCategory
+              key={`${g.groupId}:${g.id}`}
+              category={g}
+              selected={g.name === sel}
+              onSelect={onSelect}
             />
           );
         })

@@ -1,6 +1,8 @@
 import React, { ReactElement, ReactNode, useState } from 'react';
 import FundingItem from './FundingItem';
 import { CategoryProps, GroupProps } from '../../common/ResponseTypes';
+import { isGroup } from '../state/Group';
+import { isCategory } from '../state/Category';
 
 export type FundingType = {
   id?: number,
@@ -10,7 +12,7 @@ export type FundingType = {
 }
 
 type PropsType = {
-  groups: GroupProps[],
+  groups: (GroupProps | CategoryProps)[],
   plan: FundingType[],
   onChange: ((p: FundingType[]) => void),
   systemGroupId: number,
@@ -39,7 +41,16 @@ const Funding = ({
       // Find the category in the group/category tree
       let category: CategoryProps | undefined;
       const group = groups.find((g) => {
-        category = g.categories.find((c) => c.id === categoryId);
+        if (isGroup(g)) {
+          category = g.categories.find((c) => c.id === categoryId);
+        }
+        else {
+          if (!isCategory(g)) {
+            throw new Error('group is not a category');
+          }
+
+          category = g;
+        }
 
         return category !== undefined;
       });
@@ -97,7 +108,7 @@ const Funding = ({
 
   const populateGroups = (): ReactNode => (
     groups.map((group) => {
-      if (group.id !== systemGroupId) {
+      if (group.id !== systemGroupId && isGroup(group)) {
         return (
           <div key={group.id}>
             {group.name}

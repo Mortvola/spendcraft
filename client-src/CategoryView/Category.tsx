@@ -3,12 +3,11 @@ import { observer } from 'mobx-react-lite';
 import { useCategoryTransferDialog } from '../CategoryTransferDialog';
 import Amount from '../Amount';
 import EditButton from './EditButton';
-import LoansGroup from '../state/LoansGroup';
 import { CategoryInterface, GroupInterface } from '../state/State';
 
 type PropsType = {
   category: CategoryInterface,
-  group: GroupInterface | LoansGroup,
+  group?: GroupInterface,
   selected: boolean,
   onCategorySelected: ((category: CategoryInterface) => void),
 }

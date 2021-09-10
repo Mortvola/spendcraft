@@ -8,14 +8,14 @@ import {
 } from 'formik';
 import MobxStore from '../state/mobxStore';
 import useModal, { UseModalType, ModalProps } from '../Modal/useModal';
-import Group from '../state/Group';
 import { Error } from '../../common/ResponseTypes';
 import FormModal from '../Modal/FormModal';
 import FormError from '../Modal/FormError';
+import { GroupInterface } from '../state/State';
 
 interface Props {
   // eslint-disable-next-line react/require-default-props
-  group?: Group,
+  group?: GroupInterface,
 }
 
 const GroupDialog = ({
