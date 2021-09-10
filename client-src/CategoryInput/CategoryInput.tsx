@@ -2,7 +2,7 @@ import React, {
   useState, useRef, useEffect, useContext, ReactElement,
 } from 'react';
 import ReactDOM from 'react-dom';
-import CategorySelector from './CategorySelector';
+import CategorySelector, { categoryFiltered } from './CategorySelector';
 import useExclusiveBool from '../ExclusiveBool';
 import MobxStore from '../state/mobxStore';
 import { CategoryInterface, GroupInterface } from '../state/State';
@@ -20,9 +20,12 @@ const CategoryInput = ({
 }: PropsType): ReactElement => {
   const { categoryTree } = useContext(MobxStore);
   const { nodes } = categoryTree;
-  const [selected, setSelected] = useState<{ groupIndex: number | null, categoryIndex: number | null }>(
+
+  type Selection = { groupIndex: number | null, categoryIndex: number | null};
+  const [selected, setSelected] = useState<Selection>(
     { groupIndex: null, categoryIndex: null },
   );
+
   const [open, setOpen] = useExclusiveBool(false);
   const [value, setValue] = useState<string | null>(
     categoryId === null || (categoryTree.unassignedCat && categoryId === categoryTree.unassignedCat.id)
@@ -34,41 +37,14 @@ const CategoryInput = ({
       ? null
       : categoryTree.getCategoryName(categoryId),
   );
-  const [filter, setFilter] = useState<string | null>(null);
+  const [filter, setFilter] = useState<{ value: string, parts: string[]}>({ value: '', parts: [] });
   const inputRef = useRef<HTMLInputElement | null>(null);
   const selectorRef = useRef<HTMLDivElement | null>(null);
-
-  const categoryFiltered = (
-    group: GroupInterface,
-    category: CategoryInterface,
-    filterParts: string[],
-  ) => {
-    if (filterParts.length > 0) {
-      if (filterParts.length === 1) {
-        // No colon. Filter can be applied to both group and categories.
-        if (category.name.toLowerCase().includes(filterParts[0])) {
-          return false;
-        }
-
-        return !group.name.toLowerCase().includes(filterParts[0]);
-      }
-
-      // If the group contains the first part of the filter then
-      // consider adding the categories
-      if (filterParts[1] === '' || category.name.toLowerCase().includes(filterParts[1])) {
-        return false;
-      }
-
-      return !(filterParts[0] === '' || group.name.toLowerCase().includes(filterParts[0]));
-    }
-
-    return false;
-  };
 
   const handleCancel = () => {
     setOpen(false);
     setValue(originalValue);
-    setFilter(null);
+    setFilter({ value: '', parts: [] });
   };
 
   const handleMouseDown = (event: MouseEvent) => {
@@ -130,227 +106,136 @@ const CategoryInput = ({
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setValue(event.target.value);
-    setFilter(event.target.value);
+    setFilter({
+      value: event.target.value,
+      parts: event.target.value !== '' ? event.target.value.toLowerCase().split(':') : [],
+    });
   };
 
   const handleBlur = () => {
     setOpen(false);
   };
 
-  const handleDown = () => {
-    const newSelection = {
+  const filtered = (groupIndex: number, categoryIndex: number): boolean => {
+    const node = nodes[groupIndex];
+    return (isGroup(node) && (
+      node.categories.length === 0
+      || categoryFiltered(node, node.categories[categoryIndex], filter.parts)
+    )) || (isCategory(node) && categoryFiltered(null, node, filter.parts));
+  };
+
+  const traverseList = (moveOne: (selection: Selection) => boolean): Selection | null => {
+    const newSelection: Selection = {
       groupIndex: selected.groupIndex,
       categoryIndex: selected.categoryIndex,
     };
 
-    const moveDown = (): boolean => {
-      const selectable = (groupIndex: number, categoryIndex: number): boolean => {
-        const node = nodes[groupIndex];
-        return !(isGroup(node) && node.categories.length === 0)
-      };
-
-      const moveDownOne = (): boolean => {
-        if (newSelection.groupIndex === null || newSelection.categoryIndex === null) {
-          newSelection.groupIndex = 0;
-          newSelection.categoryIndex = 0;
+    for (;;) {
+      if (moveOne(newSelection)) {
+        if (newSelection.groupIndex === null) {
+          throw new Error('group index is null');
         }
-        else {
-          let node = nodes[newSelection.groupIndex];
-          if (isCategory(node)) {
-            if (newSelection.groupIndex < nodes.length - 1) {
-              newSelection.groupIndex += 1;
-              node = nodes[newSelection.groupIndex];
-              newSelection.categoryIndex = 0;
-            }
-          }
-          else if (newSelection.categoryIndex < node.categories.length - 1) {
-            newSelection.categoryIndex += 1;
-          }
-          else if (newSelection.groupIndex < nodes.length - 1) {
+
+        if (newSelection.categoryIndex === null) {
+          throw new Error('category index is null');
+        }
+
+        if (!filtered(newSelection.groupIndex, newSelection.categoryIndex)) {
+          return newSelection;
+        }
+      }
+      else {
+        return null;
+      }
+    }
+  }
+
+  const handleDown = () => {
+    const moveDownOne = (newSelection: Selection): boolean => {
+      if (newSelection.groupIndex === null || newSelection.categoryIndex === null) {
+        newSelection.groupIndex = 0;
+        newSelection.categoryIndex = 0;
+      }
+      else {
+        let node = nodes[newSelection.groupIndex];
+        if (isCategory(node)) {
+          if (newSelection.groupIndex < nodes.length - 1) {
             newSelection.groupIndex += 1;
             node = nodes[newSelection.groupIndex];
             newSelection.categoryIndex = 0;
           }
           else {
-            // Could not move down
             return false;
           }
         }
-
-        return true;
-      }
-
-      for (;;) {
-        if (moveDownOne()) {
-          if (newSelection.groupIndex === null) {
-            throw new Error('group index is null');
-          }
-
-          if (newSelection.categoryIndex === null) {
-            throw new Error('category index is null');
-          }
-
-          if (selectable(newSelection.groupIndex, newSelection.categoryIndex)) {
-            return true;
-          }
+        else if (newSelection.categoryIndex < node.categories.length - 1) {
+          newSelection.categoryIndex += 1;
         }
-        else {
-          return false;
-        }
-      }
-    }
-
-    if (moveDown()) {
-      setSelected(newSelection);
-    }
-
-    // if (newSelection.groupIndex === null) {
-    //   throw new Error('group selection index is null');
-    // }
-
-    // let node = nodes[newSelection.groupIndex];
-
-    // while (isGroup(node) && node.categories.length === 0) {
-    //   moveDownOne();
-    //   node = nodes[newSelection.groupIndex];
-    // }
-
-    // const filterParts = filter ? filter.toLowerCase().split(':') : [];
-
-    // let node = nodes[newSelection.groupIndex];
-    // // while (
-    //   newSelection.groupIndex < nodes.length
-    //   && ((isGroup(node) && (node.categories.length === 0
-    //     || categoryFiltered(
-    //       node,
-    //       node.categories[newSelection.categoryIndex],
-    //       filterParts,
-    //     )))
-    //   || isCategory(node))
-    // for (;;) {
-    // }
-
-    // node = nodes[newSelection.groupIndex];
-    // if (newSelection.groupIndex < nodes.length
-    //   && (isCategory(node)
-    //   || (isGroup(node) && newSelection.categoryIndex < node.categories.length))
-    // ) {
-    // setSelected(newSelection);
-    // }
-  };
-
-  const handleUp = () => {
-    const newSelection = {
-      groupIndex: selected.groupIndex,
-      categoryIndex: selected.categoryIndex,
-    };
-
-    const moveUp = (): boolean => {
-      const selectable = (groupIndex: number, categoryIndex: number): boolean => {
-        const node = nodes[groupIndex];
-        return !(isGroup(node) && node.categories.length === 0)
-      };
-
-      const moveUpOne = (): boolean => {
-        if (newSelection.groupIndex === null || newSelection.categoryIndex === null) {
-          newSelection.groupIndex = 0;
+        else if (newSelection.groupIndex < nodes.length - 1) {
+          newSelection.groupIndex += 1;
+          node = nodes[newSelection.groupIndex];
           newSelection.categoryIndex = 0;
         }
         else {
-          let node = nodes[newSelection.groupIndex];
-          if (isCategory(node)) {
-            if (newSelection.groupIndex > 0) {
-              newSelection.groupIndex -= 1;
-              node = nodes[newSelection.groupIndex];
-              newSelection.categoryIndex = 0;
-              if (isGroup(node)) {
-                newSelection.categoryIndex = node.categories.length - 1;
-              }
-            }
-          }
-          else if (newSelection.categoryIndex > 0) {
-            newSelection.categoryIndex -= 1;
-          }
-          else if (newSelection.groupIndex > 0) {
+          // Could not move down
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    const selection = traverseList(moveDownOne);
+    if (selection !== null) {
+      setSelected(selection);
+    }
+  };
+
+  const handleUp = () => {
+    const moveUpOne = (newSelection: Selection): boolean => {
+      if (newSelection.groupIndex === null || newSelection.categoryIndex === null) {
+        newSelection.groupIndex = 0;
+        newSelection.categoryIndex = 0;
+      }
+      else {
+        let node = nodes[newSelection.groupIndex];
+        if (isCategory(node)) {
+          if (newSelection.groupIndex > 0) {
             newSelection.groupIndex -= 1;
             node = nodes[newSelection.groupIndex];
             newSelection.categoryIndex = 0;
-            if (isGroup(node)) {
+            if (isGroup(node) && node.categories.length > 0) {
               newSelection.categoryIndex = node.categories.length - 1;
             }
           }
           else {
-            // Could not move up
             return false;
           }
         }
-
-        return true;
-      }
-
-      for (;;) {
-        if (moveUpOne()) {
-          if (newSelection.groupIndex === null) {
-            throw new Error('group index is null');
-          }
-
-          if (newSelection.categoryIndex === null) {
-            throw new Error('category index is null');
-          }
-
-          if (selectable(newSelection.groupIndex, newSelection.categoryIndex)) {
-            return true;
+        else if (newSelection.categoryIndex > 0) {
+          newSelection.categoryIndex -= 1;
+        }
+        else if (newSelection.groupIndex > 0) {
+          newSelection.groupIndex -= 1;
+          node = nodes[newSelection.groupIndex];
+          newSelection.categoryIndex = 0;
+          if (isGroup(node) && node.categories.length > 0) {
+            newSelection.categoryIndex = node.categories.length - 1;
           }
         }
         else {
+          // Could not move up
           return false;
         }
       }
+
+      return true;
     }
 
-    if (moveUp()) {
-      setSelected(newSelection);
+    const selection = traverseList(moveUpOne);
+    if (selection !== null) {
+      setSelected(selection);
     }
-
-    // if (selected.groupIndex !== null && selected.categoryIndex !== null) {
-    //   const newSelection = {
-    //     groupIndex: selected.groupIndex,
-    //     categoryIndex: selected.categoryIndex,
-    //   };
-
-    //   const filterParts = filter ? filter.toLowerCase().split(':') : [];
-
-    //   let group = nodes[newSelection.groupIndex];
-    //   do {
-    //     newSelection.categoryIndex -= 1;
-
-    //     if (newSelection.categoryIndex < 0) {
-    //       newSelection.groupIndex -= 1;
-    //       group = nodes[newSelection.groupIndex];
-    //       if (isGroup(group)) {
-    //         if (newSelection.groupIndex >= 0) {
-    //           newSelection.categoryIndex = group.categories.length - 1;
-    //         }
-    //       }
-    //     }
-    //   } while (
-    //     newSelection.groupIndex >= 0
-    //     && ((isGroup(group) && group.categories.length === 0)
-    //     || (isGroup(group) && categoryFiltered(
-    //       group,
-    //       group.categories[newSelection.categoryIndex],
-    //       filterParts,
-    //     )))
-    //   );
-
-    //   if (newSelection.groupIndex >= 0
-    //     && newSelection.categoryIndex >= 0) {
-    //     setSelected(newSelection);
-    //   }
-    // }
-    // else {
-    //   setSelected({ groupIndex: 0, categoryIndex: 0 });
-    // }
   };
 
   const handleEnter = () => {
@@ -452,7 +337,7 @@ const CategoryInput = ({
             height={height}
             selectedCategory={selectedCategory}
             onSelect={handleSelect}
-            filter={filter}
+            filter={filter.parts}
           />,
           hiddenElement,
         );

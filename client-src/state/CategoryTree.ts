@@ -7,19 +7,20 @@ import {
   isGroupProps, isGroupsResponse,
 } from '../../common/ResponseTypes';
 import {
-  CategoryInterface, CategoryTreeInterface, StoreInterface,
+  CategoryInterface, CategoryTreeInterface, GroupInterface, StoreInterface,
 } from './State';
 import SystemIds from './SystemIds';
 import {
   getBody, httpDelete, httpGet, httpPost,
 } from './Transports';
 
-export type Node = (Category | Group);
+export type TreeNodeInterface = (CategoryInterface | GroupInterface);
+export type TreeNode = (Category | Group);
 
 class CategoryTree implements CategoryTreeInterface {
   initialized = false;
 
-  nodes: Node[] = [];
+  nodes: TreeNode[] = [];
 
   systemIds = new SystemIds();
 

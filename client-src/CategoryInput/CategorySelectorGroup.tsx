@@ -1,17 +1,14 @@
-import React, { ReactElement } from 'react';
-import CategorySelectorCategory from './CategorySelectorCategory';
-import { CategoryInterface, GroupInterface } from '../state/State';
+import React, { ReactElement, ReactNode } from 'react';
+import { GroupInterface } from '../state/State';
 
 type PropsType = {
   group: GroupInterface,
-  selected: CategoryInterface | null,
-  onSelect: (category: CategoryInterface) => void,
+  children?: ReactNode,
 }
 
 function CategorySelectorGroup({
   group,
-  selected,
-  onSelect,
+  children,
 }: PropsType): ReactElement | null {
   const handleClick = (event: React.MouseEvent) => {
     event.stopPropagation();
@@ -24,14 +21,7 @@ function CategorySelectorGroup({
         onClick={handleClick}
       >
         {group.name}
-        {group.categories.map((c) => (
-          <CategorySelectorCategory
-            key={c.id}
-            category={c}
-            selected={selected !== null && c.id === selected.id}
-            onSelect={onSelect}
-          />
-        ))}
+        {children}
       </div>
     );
   }
