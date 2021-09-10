@@ -483,10 +483,13 @@ body {
 }
 
 .fund-list-cat-name {
-  margin-left: 28px;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+.fund-list-group .fund-list-cat-name {
+  margin-left: 28px;
 }
 
 .group-button {

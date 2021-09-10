@@ -1,8 +1,9 @@
 import React, { ReactElement, ReactNode, useState } from 'react';
 import FundingItem from './FundingItem';
-import { CategoryProps, GroupProps } from '../../common/ResponseTypes';
 import { isGroup } from '../state/Group';
 import { isCategory } from '../state/Category';
+import { CategoryInterface } from '../state/State';
+import { TreeNodeInterface } from '../state/CategoryTree';
 
 export type FundingType = {
   id?: number,
@@ -12,7 +13,7 @@ export type FundingType = {
 }
 
 type PropsType = {
-  groups: (GroupProps | CategoryProps)[],
+  groups: TreeNodeInterface[],
   plan: FundingType[],
   onChange: ((p: FundingType[]) => void),
   systemGroupId: number,
@@ -39,7 +40,7 @@ const Funding = ({
     }
     else {
       // Find the category in the group/category tree
-      let category: CategoryProps | undefined;
+      let category: CategoryInterface | undefined;
       const group = groups.find((g) => {
         if (isGroup(g)) {
           category = g.categories.find((c) => c.id === categoryId);
@@ -80,41 +81,54 @@ const Funding = ({
     }
   };
 
-  const populateCategories = (categories: CategoryProps[]) => (
-    categories.map((category) => {
-      let amount = 0;
+  const renderCategory = (category: CategoryInterface) => {
+    let amount = 0;
 
-      const fundingItem = funding.find((c) => c.categoryId === category.id);
+    const fundingItem = funding.find((c) => c.categoryId === category.id);
 
-      let initialAmount = category.balance;
-      if (fundingItem) {
-        initialAmount = fundingItem.initialAmount;
-        amount = fundingItem.amount;
-      }
+    let initialAmount = category.balance;
+    if (fundingItem) {
+      initialAmount = fundingItem.initialAmount;
+      amount = fundingItem.amount;
+    }
 
-      return (
-        <FundingItem
-          key={`${category.id}`}
-          name={category.name}
-          initialAmount={initialAmount}
-          funding={amount}
-          onDeltaChange={(newAmount) => (
-            handleDeltaChange(newAmount, category.id)
-          )}
-        />
-      );
-    })
+    return (
+      <FundingItem
+        key={`${category.id}`}
+        name={category.name}
+        initialAmount={initialAmount}
+        funding={amount}
+        onDeltaChange={(newAmount) => (
+          handleDeltaChange(newAmount, category.id)
+        )}
+      />
+    );
+  }
+
+  const populateCategories = (categories: CategoryInterface[]) => (
+    categories.map((category) => (
+      renderCategory(category)
+    ))
   );
 
   const populateGroups = (): ReactNode => (
-    groups.map((group) => {
-      if (group.id !== systemGroupId && isGroup(group)) {
-        return (
-          <div key={group.id}>
-            {group.name}
-            {populateCategories(group.categories)}
-          </div>
-        );
+    groups.map((node) => {
+      if (isGroup(node)) {
+        if (node.id !== systemGroupId) {
+          return (
+            <div key={node.id} className="fund-list-group">
+              {node.name}
+              {populateCategories(node.categories)}
+            </div>
+          );
+        }
+      }
+      else {
+        if (!isCategory(node)) {
+          throw new Error('node is not a category');
+        }
+
+        return renderCategory(node);
       }
 
       return null;
