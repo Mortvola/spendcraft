@@ -51,75 +51,33 @@ export default class Category extends BaseModel {
     date: string,
     transactionId: number,
   ): Promise<GroupItem[]> {
-    let transactionsSubquery = `
-      select category_id, splits.amount
-      from transaction_categories AS splits
-      join transactions ON transactions.id = splits.transaction_id
-      where transactions.date > '${date}'
-      and transactions.user_id = ${userId}
-    `;
+    const subQuery = Database.query()
+      .select('category_id', Database.raw('sum(amount) as amount'))
+      .from('transaction_categories as tc')
+      .join('transactions as t', 't.id', 'tc.transaction_id')
+      .where('date', '>', date)
+      .groupBy('category_id');
 
-    // Also subtract out the transaction identified by transactionId
+    // Ignore he transaction identified by transactionId, if any
     if (transactionId !== undefined) {
-      transactionsSubquery += `or transactions.id = ${transactionId}`;
+      subQuery.orWhere('t.id', transactionId);
     }
 
-    const rows = await Database.query()
+    const query = Database.query()
       .select(
-        'groups.id AS groupId',
-        'groups.name AS groupName',
-        'groups.system as groupSystem',
-        'categories.id as categoryId',
-        'categories.name as categoryName',
-        'categories.type as categoryType',
-        Database.raw('categories.amount - COALESCE(sum(splits1.amount), 0) AS balance'),
+        'c.id',
+        Database.raw('CAST(c.amount - sum(coalesce(tc.amount, 0)) as float) as balance'),
       )
-      .from('groups')
-      .join('categories', 'categories.group_id', 'groups.id')
-      .joinRaw(`left join (${transactionsSubquery}) as splits1 ON  splits1.category_id  = categories.id`)
-      .where('groups.user_id', userId)
-      .groupBy('groups.id', 'groups.name', 'categories.id', 'categories.name')
-      .orderBy('groups.name')
-      .orderBy('categories.name');
+      .from('categories as c')
+      .join('groups as g', 'g.id', 'c.group_id')
+      .joinRaw(`left join (${
+        subQuery.toQuery()
+      }) as tc on tc.category_id = c.id`)
+      .where('g.user_id', userId)
+      .groupBy('c.id')
+      .groupByRaw('coalesce(tc.amount, 0)')
 
-    const groups: Array<GroupItem> = [];
-    let group: GroupItem | null = null;
-
-    // Convert array to tree form
-    rows.forEach((cat) => {
-      if (!group) {
-        group = {
-          id: cat.groupId,
-          name: cat.groupName,
-          system: cat.groupSysetem,
-          categories: [],
-        };
-      }
-      else if (group.name !== cat.groupName) {
-        groups.push(group);
-        group = {
-          id: cat.groupId,
-          name: cat.groupName,
-          system: cat.groupSysetem,
-          categories: [],
-        };
-      }
-
-      if (group && cat.categoryId) {
-        group.categories.push({
-          id: cat.categoryId,
-          name: cat.categoryName,
-          balance: parseFloat(cat.balance),
-          type: cat.categoryType,
-        });
-      }
-    });
-
-    if (group) {
-      groups.push(group);
-    }
-
-    return groups;
+    return query;
   }
 }
 

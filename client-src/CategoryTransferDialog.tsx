@@ -101,6 +101,9 @@ const CategoryTransferDialog = ({
   const handleSubmit = async (values: ValueType) => {
     const { date, fromCategories, toCategories } = values;
     const cats = fromCategories.concat(toCategories).map((s) => {
+      if (s.id === undefined) {
+        throw new Error('missing id');
+      }
       if (s.id < 0) {
         const { id, ...newSplit } = s;
 

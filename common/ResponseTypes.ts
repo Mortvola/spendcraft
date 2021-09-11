@@ -709,14 +709,12 @@ export interface CategoryBalanceProps2 {
 
 export interface CategoryTreeBalanceProps {
   id: number,
-  name: string,
-  categories: CategoryBalanceProps2[],
+  balance: number,
 }
 
 export const isCategoryTreeBalanceProps = (r: unknown): r is CategoryTreeBalanceProps => (
   (r as CategoryTreeBalanceProps).id !== undefined
-  && (r as CategoryTreeBalanceProps).name !== undefined
-  && (r as CategoryTreeBalanceProps).categories !== undefined
+  && (r as CategoryTreeBalanceProps).balance !== undefined
 )
 
 export const isCategoryTreeBalanceResponse = (r: unknown): r is CategoryTreeBalanceProps[] => (

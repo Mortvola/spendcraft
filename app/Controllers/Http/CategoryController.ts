@@ -456,7 +456,7 @@ class CategoryController {
 
     const { date, id } = request.qs();
 
-    return Category.balances(user.id, date, id);
+    return Category.balances(user.id, date, id !== undefined ? parseInt(id, 10) : id);
   }
 
   // eslint-disable-next-line class-methods-use-this

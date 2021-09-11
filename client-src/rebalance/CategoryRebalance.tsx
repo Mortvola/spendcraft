@@ -1,91 +1,128 @@
 import React, { ReactElement, useState } from 'react';
 import CategoryRebalanceItem from './CategoryRebalanceItem';
-import { RebalanceCategoryInterface, CategoryBalanceInterface, CategoryTreeBalanceInterace } from '../state/State';
+import { CategoryBalanceInterface, CategoryInterface, TransactionCategoryInterface } from '../state/State';
+import { TreeNodeInterface } from '../state/CategoryTree';
+import { isGroup } from '../state/Group';
+import { isCategory } from '../state/Category';
 
 interface Props {
-  categoryTree: null | CategoryTreeBalanceInterace[],
+  nodes: null | TreeNodeInterface[],
   onDeltaChange: null | ((amunt: number, delta: number, categories: unknown) => void),
-  categories: RebalanceCategoryInterface[],
+  balances: CategoryBalanceInterface[],
+  trxCategories: TransactionCategoryInterface[],
 }
 
 const CategoryRebalance = ({
-  categoryTree,
-  categories,
+  nodes,
+  balances,
+  trxCategories,
   onDeltaChange,
 }: Props): ReactElement => {
-  const [cats, setCats] = useState(categories);
+  const [transactionCategories, setTransactionCategories] = useState<TransactionCategoryInterface[]>(trxCategories);
 
-  const handleDeltaChange = (amount: number, delta: number, categoryId: number) => {
-    const categoriesCopy = cats.slice();
-    const index = cats.findIndex((c) => c.categoryId === categoryId);
+  const handleDeltaChange = (amount: number, delta: number, category: CategoryInterface) => {
+    let categoriesCopy = null;
+    const index = transactionCategories.findIndex((c) => c.categoryId === category.id);
 
     if (index === -1) {
       if (amount !== 0) {
-        categoriesCopy.splice(-1, 0, { categoryId, amount });
-        setCats(categoriesCopy);
+        categoriesCopy = [
+          ...transactionCategories,
+          {
+            categoryId: category.id,
+            amount,
+          },
+        ];
       }
     }
     else if (amount === 0) {
       // Remove category
-      categoriesCopy.splice(index, 1);
-      setCats(categoriesCopy);
+      categoriesCopy = [
+        ...transactionCategories.slice(0, index),
+        ...transactionCategories.slice(index + 1),
+      ];
     }
     else {
-      categoriesCopy[index].amount = amount;
-      setCats(categoriesCopy);
+      categoriesCopy = [
+        ...transactionCategories.slice(0, index),
+        {
+          ...transactionCategories[index],
+          amount,
+        },
+        ...transactionCategories.slice(index + 1),
+      ];
     }
 
-    if (onDeltaChange) {
-      onDeltaChange(amount, delta, categoriesCopy);
+    if (categoriesCopy) {
+      setTransactionCategories(categoriesCopy);
+      if (onDeltaChange) {
+        onDeltaChange(amount, delta, categoriesCopy);
+      }
     }
   };
 
-  const populateCategories = (group: CategoryBalanceInterface[]) => {
+  const categoryItem = (category: CategoryInterface) => {
+    let adjustment = 0;
+    const catAmount = transactionCategories.find((c) => c.categoryId === category.id);
+    if (catAmount) {
+      adjustment = catAmount.amount;
+    }
+    const balance = balances.find((b) => b.id === category.id);
+
+    return (
+      <CategoryRebalanceItem
+        key={category.id}
+        category={{ name: category.name, balance: balance ? balance.balance : 0, adjustment }}
+        onDeltaChange={(amount: number, delta: number) => (
+          handleDeltaChange(amount, delta, category)
+        )}
+      />
+    )
+  }
+
+  const populateCategories = (categories: CategoryInterface[]) => {
     const catItems: unknown[] = [];
 
-    if (group) {
-      group.forEach((category: CategoryBalanceInterface) => {
-        let adjustment = 0;
-        const catAmount = cats.find((c) => c.categoryId === category.id);
-        if (catAmount) {
-          adjustment = catAmount.amount;
-        }
-
-        catItems.push((
-          <CategoryRebalanceItem
-            key={category.id}
-            category={{ name: category.name, balance: category.balance, adjustment }}
-            onDeltaChange={(amount: number, delta: number) => (
-              handleDeltaChange(amount, delta, category.id)
-            )}
-          />
-        ));
+    if (categories) {
+      categories.forEach((category: CategoryInterface) => {
+        catItems.push(categoryItem(category));
       });
     }
 
     return catItems;
   };
 
-  const populateTree = (tree: CategoryTreeBalanceInterace[] | null) => {
-    const groups: unknown[] = [];
+  const populateTree = () => {
+    const tree: ReactElement[] = [];
 
-    if (tree) {
-      tree.forEach((group) => {
-        groups.push((
-          <div key={group.id}>
-            {group.name}
-            {populateCategories(group.categories)}
-          </div>
-        ));
+    if (nodes) {
+      nodes.forEach((node) => {
+        if (isGroup(node)) {
+          if (node.categories.length > 0) {
+            tree.push((
+              <div key={node.id} className="cat-rebalance-group">
+                {node.name}
+                {populateCategories(node.categories)}
+              </div>
+            ));
+          }
+        }
+        else {
+          if (!isCategory(node)) {
+            throw new Error('node is not a category');
+          }
+
+          tree.push(categoryItem(node));
+        }
       });
     }
 
-    return groups;
+    return tree;
   };
 
   return (
     <div className="cat-rebalance-container">
-      {populateTree(categoryTree)}
+      {populateTree()}
     </div>
   );
 };

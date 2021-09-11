@@ -207,39 +207,14 @@ export interface CategoryTreeInterface {
 
 export interface CategoryBalanceInterface {
   id: number,
-  name: string,
   balance:number,
-  system: boolean,
 }
-
-export interface CategoryTreeBalanceInterace {
-  id: number,
-  name: string,
-  categories: CategoryBalanceInterface[],
-}
-
-export const isCategoryTreeBalanceInterface = (r: unknown): r is CategoryTreeBalanceInterace => (
-  (r as CategoryTreeBalanceInterace).id !== undefined
-  && (r as CategoryTreeBalanceInterace).name !== undefined
-  && (r as CategoryTreeBalanceInterace).categories !== undefined
-)
 
 export interface TransactionCategoryInterface {
-  id: number;
-  type: CategoryType;
-  categoryId: number;
-  amount: number;
-  comment?: string;
-
-  loanTransaction?: null | {
-    principle: number;
-  }
-}
-
-export interface RebalanceCategoryInterface {
   id?: number;
   categoryId: number;
   amount: number;
+  comment?: string;
 }
 
 export interface NewTransactionCategoryInterface {

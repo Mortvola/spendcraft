@@ -738,10 +738,13 @@ body {
 }
 
 .cat-rebalance-item div:first-child {
-  margin-left: 28px;
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
+}
+
+.cat-rebalance-group .cat-rebalance-item>div:first-child {
+  margin-left: 28px;
 }
 
 .scrollable-form {
