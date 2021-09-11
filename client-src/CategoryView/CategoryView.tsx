@@ -51,7 +51,7 @@ const CategoryView = (): ReactElement => {
               key={`${group.id}`}
               category={group}
               onCategorySelected={handleCategorySelected}
-              selected={false}
+              selected={uiState.selectedCategory === group}
             />
           );
         })}

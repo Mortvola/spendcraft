@@ -1,6 +1,5 @@
 import React, { ReactElement } from 'react';
 import { observer } from 'mobx-react-lite';
-import { useCategoryTransferDialog } from '../CategoryTransferDialog';
 import Amount from '../Amount';
 import EditButton from './EditButton';
 import { CategoryInterface, GroupInterface } from '../state/State';
@@ -17,7 +16,6 @@ const Category = ({
   selected,
   onCategorySelected,
 }: PropsType): ReactElement => {
-  const [CategoryTransferDialog, showCategoryTransferDialog] = useCategoryTransferDialog();
   const handleClick = () => {
     onCategorySelected(category);
   };
@@ -40,7 +38,6 @@ const Category = ({
             ? <EditButton category={category} group={group} />
             : null
         }
-        <CategoryTransferDialog />
         <div className="cat-list-name">{category.name}</div>
       </div>
       <Amount className="cat-list-amt" amount={category.balance} />
