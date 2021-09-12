@@ -4,60 +4,69 @@ import { DateTime } from 'luxon';
 import PlanCategory from './PlanCategory';
 import Amount from '../Amount';
 import MobxStore from '../State/mobxStore';
-import FundingPlanGroup from '../State/FundingPlanGroup';
-import FundingPlanCategory from '../State/FundingPlanCategory';
 import FundingPlanHistoryMonth from '../State/HistoryMonth';
 import HistoryCategory from '../State/HistoryCategory';
+import { CategoryInterface } from '../State/State';
+import { isGroup } from '../State/Group';
 
 const PlanDetails = (): ReactElement | null => {
-  const { plans: { details } } = useContext(MobxStore);
+  const { plans: { details }, categoryTree } = useContext(MobxStore);
   const [scroll, setScroll] = useState(0);
   const [now] = useState({ year: DateTime.now().year, month: DateTime.now().month - 1 });
 
-  const handleOnDeltaChange = (category: FundingPlanCategory, amount: number, delta: number) => {
+  const handleOnDeltaChange = (category: CategoryInterface, amount: number, delta: number) => {
     if (delta !== 0) {
       if (details === null) {
         throw new Error('details is null');
       }
 
-      details.updateCategoryAmount(category.categoryId, amount, delta);
+      details.updateCategoryAmount(category.id, amount, delta);
     }
   };
 
-  const renderCategories = (
-    cats: FundingPlanCategory[],
-  ) => (
-    cats.map((c) => {
+  const renderCategory = (category: CategoryInterface) => {
+    if (details === null) {
+      throw new Error('details is null');
+    }
+
+    const planCategory = details.categories.find((pc) => pc.categoryId === category.id);
+
+    return (
+      <PlanCategory
+        key={`${category.groupId}:${category.id}`}
+        category={category}
+        amount={planCategory ? planCategory.amount : 0}
+        onDeltaChange={handleOnDeltaChange}
+      />
+    )
+  }
+
+  const renderCategories = (categories: CategoryInterface[]) => (
+    categories.map((c) => {
+      if (details === null) {
+        throw new Error('details is null');
+      }
+
+      return renderCategory(c);
+    })
+  );
+
+  const renderNodes = () => (
+    categoryTree.nodes.map((n) => {
       if (details === null) {
         throw new Error('details i null');
       }
 
       return (
-        <PlanCategory
-          key={`${details.id}-${c.categoryId}`}
-          category={c}
-          onDeltaChange={handleOnDeltaChange}
-        />
+        isGroup(n)
+          ? (
+            <div key={n.id} className="plan-group">
+              {n.name}
+              {renderCategories(n.categories)}
+            </div>
+          )
+          : renderCategory(n)
       );
-    })
-  );
-
-  const renderGroups = (
-    groups: FundingPlanGroup[],
-  ) => (
-    groups.map((g) => {
-      if (details === null) {
-        throw new Error('details i null');
-      }
-
-      // const history = details.history.find((h) => g.id === h.id);
-
-      return ((
-        <div key={g.id}>
-          <div style={{ height: '24px' }}>{g.name}</div>
-          {renderCategories(g.categories)}
-        </div>
-      ));
     })
   );
 
@@ -95,32 +104,41 @@ const PlanDetails = (): ReactElement | null => {
   };
 
   const renderCategoryHistory = (
-    cats: FundingPlanCategory[],
-    groupHistory: HistoryCategory[],
-  ) => (
-    cats.map((c) => {
-      const history = groupHistory.find((h) => c.categoryId === h.id);
+    category: CategoryInterface,
+    categoryHistories: HistoryCategory[],
+  ) => {
+    const history = categoryHistories.find((h) => category.id === h.id);
 
-      return (
-        <div key={c.categoryId} className="plan-history">
-          {renderHistory(history ? history.months : [])}
-        </div>
-      );
-    })
+    return (
+      <div key={category.id} className="plan-history">
+        {renderHistory(history ? history.months : [])}
+      </div>
+    )
+  }
+
+  const renderCategoryHistories = (
+    cats: CategoryInterface[],
+    categoryHistories: HistoryCategory[],
+  ) => (
+    cats.map((c) => renderCategoryHistory(c, categoryHistories))
   );
 
-  const renderGroupHistory = (groups: FundingPlanGroup[]) => (
-    groups.map((g) => {
+  const renderGroupHistory = () => (
+    categoryTree.nodes.map((node) => {
       if (details === null) {
-        throw new Error('details i null');
+        throw new Error('details is null');
       }
 
-      const history = details.history.find((h) => g.id === h.id);
+      const history = details.history.find((h) => node.id === h.id);
 
       return (
-        <div key={g.id}>
+        <div key={node.id}>
           <div style={{ height: '24px' }} />
-          {renderCategoryHistory(g.categories, history ? history.categories : [])}
+          {
+            isGroup(node)
+              ? renderCategoryHistories(node.categories, history ? history.categories : [])
+              : renderCategoryHistory(node, history ? history.categories : [])
+          }
         </div>
       );
     })
@@ -181,11 +199,11 @@ const PlanDetails = (): ReactElement | null => {
               </div>
               <div className="plan-detail-wrapper">
                 <div className="plan-details">
-                  {renderGroups(details.groups)}
+                  {renderNodes()}
                 </div>
                 <div className="plan-wrapper">
                   <div style={{ position: 'relative', left: -scroll }}>
-                    {renderGroupHistory(details.groups)}
+                    {renderGroupHistory()}
                   </div>
                 </div>
               </div>

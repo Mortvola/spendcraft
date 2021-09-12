@@ -347,9 +347,9 @@ export interface BalancesInterface {
 }
 
 export interface PlansInterface {
-  list: Array<FundingPlan>;
+  list: FundingPlan[];
 
-  details: FundingPlanDetails | null;
+  details: FundingPlanDetails | null = null;
 }
 
 export interface StoreInterface {

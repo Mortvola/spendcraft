@@ -813,6 +813,9 @@ body {
 .plan-detail-item {
   display: grid;
   grid-template-columns: 200px repeat(2, 100px) max-content;
+}
+
+.plan-group .plan-detail-item>div:first-child {
   padding-left: 28px;
 }
 
@@ -836,7 +839,7 @@ body {
 .plan-total {
   display: grid;
   grid-template-columns: 200px repeat(2, 100px) 1fr;
-  padding-left: 42px;
+  padding-left: 14px;
   background-color: whitesmoke;
   border-top: thin solid black;
   overflow: auto;

@@ -7,6 +7,7 @@ import {
   isUpdateFundingCategoryResponse,
 } from '../../common/ResponseTypes';
 import HistoryGroup from './HistoryGroup';
+import FundingPlanCategory from './FundingPlanCategory';
 
 class FundingPlanDetails {
   id: number;
@@ -15,18 +16,21 @@ class FundingPlanDetails {
 
   total: number;
 
-  groups: FundingPlanGroup[];
+  categories: FundingPlanCategory[];
 
   store: StoreInterface;
 
   constructor(store: StoreInterface, props: FundingPlanDetailsProps) {
     this.id = props.id;
     this.history = props.history;
-    this.total = props.total;
 
-    this.groups = props.groups.map((g) => (
-      new FundingPlanGroup(store, g)
-    ));
+    let total = 0;
+    this.categories = props.categories.map((c) => {
+      total += c.amount;
+      return new FundingPlanCategory(store, c)
+    });
+
+    this.total = total;
 
     makeAutoObservable(this);
 
@@ -40,9 +44,7 @@ class FundingPlanDetails {
 
     if (response.ok && isUpdateFundingCategoryResponse(body)) {
       runInAction(() => {
-        this.groups.some((g) => {
-          const cat = g.categories.find((c) => c.id === categoryId);
-
+        this.categories.some((cat) => {
           if (cat) {
             cat.amount = body.amount;
 

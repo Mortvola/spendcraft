@@ -537,9 +537,7 @@ export interface FundingPlanDetailsProps {
 
   history: HistoryGroupProps[];
 
-  total: number;
-
-  groups: FundingPlanGroupProps[];
+  categories: FundingPlanCategoryProps[];
 }
 
 export interface UpdateCategoryProps {
@@ -551,8 +549,7 @@ export const isFundingPlanDetailsProps = (
 ): r is FundingPlanDetailsProps => (
   (r as FundingPlanDetailsProps).id !== undefined
   && (r as FundingPlanDetailsProps).history !== undefined
-  && (r as FundingPlanDetailsProps).total !== undefined
-  && (r as FundingPlanDetailsProps).groups !== undefined
+  && (r as FundingPlanDetailsProps).categories !== undefined
 );
 
 export interface FundingPlanProps {
