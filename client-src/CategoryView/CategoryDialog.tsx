@@ -48,7 +48,7 @@ const CategoryDialog = ({
       errors = await category.update(values.name, selectedGroup);
     }
     else {
-      errors = await categoryTree.addCategory(values.name, selectedGroup);
+      errors = await selectedGroup.addCategory(values.name);
     }
 
     if (errors && errors.length > 0) {

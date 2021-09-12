@@ -223,8 +223,6 @@ export interface CategoryTreeInterface {
   getCategoryGroup(categoryId: number): GroupInterface | null;
 
   removeNode(node: GroupInterface | CategoryInterface): void;
-
-  removeCategory(category: CategoryInterface): void;
 }
 
 export interface CategoryBalanceInterface {

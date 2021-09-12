@@ -4,9 +4,10 @@ import {
   Error, GroupProps, isErrorResponse, isGroupProps,
   CategoryBalanceProps,
   CategoryProps,
+  isAddCategoryResponse,
 } from '../../common/ResponseTypes';
 import {
-  getBody, httpDelete, httpPatch,
+  getBody, httpDelete, httpPatch, httpPost,
 } from './Transports';
 import { CategoryInterface, GroupInterface, StoreInterface } from './State';
 
@@ -60,6 +61,10 @@ class Group implements GroupInterface {
 
         default: {
           const category = new Category(c, this.store);
+          if (this.type === 'NO GROUP') {
+            this.store.categoryTree.insertNode(category);
+          }
+
           this.categories.push(category);
           break;
         }
@@ -77,8 +82,34 @@ class Group implements GroupInterface {
     return null;
   }
 
+  async addCategory(name: string): Promise<null| Error[]> {
+    const response = await httpPost(`/api/groups/${this.id}/categories`, { groupId: this.id, name });
+
+    const body = await getBody(response);
+
+    if (!response.ok) {
+      if (isErrorResponse(body)) {
+        return body.errors;
+      }
+    }
+    else if (isAddCategoryResponse(body)) {
+      runInAction(() => {
+        const category = new Category(body, this.store);
+
+        // Find the position where this new category should be inserted.
+        this.insertCategory(category);
+      });
+    }
+
+    return null;
+  }
+
   insertCategory(category: CategoryInterface): void {
     // Find the position where this new category should be inserted.
+    if (this.type === 'NO GROUP') {
+      this.store.categoryTree.insertNode(category);
+    }
+
     const index = this.categories.findIndex((g) => category.name.localeCompare(g.name) < 0);
 
     if (index === -1) {
@@ -134,6 +165,10 @@ class Group implements GroupInterface {
   }
 
   removeCategory(category: CategoryInterface): void {
+    if (this.type === 'NO GROUP') {
+      this.store.categoryTree.removeNode(category);
+    }
+
     const index = this.categories.findIndex((c) => c.id === category.id);
     if (index !== -1) {
       this.categories.splice(index, 1);

@@ -1,3 +1,4 @@
+import { observer } from 'mobx-react-lite';
 import React, { ReactElement, useContext } from 'react';
 import { useFundingDialog } from '../funding/FundingDialog';
 import { useRebalanceDialog } from '../rebalance/RebalanceDialog';
@@ -12,14 +13,18 @@ const CategoryViewToolbar = (): ReactElement => {
   const [CategoryDialog, showCategoryDialog] = useCategoryDialog();
   const [GroupDialog, showGroupDialog] = useGroupDialog();
 
-  if (categoryTree.noGroupGroup === null) {
-    throw new Error('no group is null');
-  }
-
   return (
     <>
-      <button type="button" onClick={showCategoryDialog}>Add Category</button>
-      <CategoryDialog group={categoryTree.noGroupGroup} />
+      {
+        categoryTree.noGroupGroup !== null
+          ? (
+            <>
+              <button type="button" onClick={showCategoryDialog}>Add Category</button>
+              <CategoryDialog group={categoryTree.noGroupGroup} />
+            </>
+          )
+          : null
+      }
       <button type="button" onClick={showGroupDialog}>Add Group</button>
       <GroupDialog />
       <button type="button" onClick={showRebalanceDialog}>Rebalance</button>
@@ -30,4 +35,4 @@ const CategoryViewToolbar = (): ReactElement => {
   )
 }
 
-export default CategoryViewToolbar;
+export default observer(CategoryViewToolbar);

@@ -171,6 +171,7 @@ class Category implements CategoryInterface {
     else {
       runInAction(() => {
         if (isUpdateCategoryResponse(body)) {
+          const nameChanged = this.name !== body.name;
           this.name = body.name;
 
           // Find the group the category is currently in
@@ -183,25 +184,10 @@ class Category implements CategoryInterface {
           }
 
           if (currentGroup !== group) {
-            if (group === this.store.categoryTree.noGroupGroup) {
-              this.store.categoryTree.insertNode(this);
-            }
-            else {
-              group.insertCategory(this);
-            }
-
-            if (currentGroup === this.store.categoryTree.noGroupGroup) {
-              this.store.categoryTree.removeNode(this);
-            }
-            else {
-              currentGroup.removeCategory(this);
-            }
+            group.insertCategory(this);
+            currentGroup.removeCategory(this);
           }
-          else if (currentGroup === this.store.categoryTree.noGroupGroup) {
-            this.store.categoryTree.removeNode(this);
-            this.store.categoryTree.insertNode(this);
-          }
-          else {
+          else if (nameChanged) {
             group.removeCategory(this);
             group.insertCategory(this);
           }
@@ -238,7 +224,7 @@ class Category implements CategoryInterface {
     }
   }
 
-  async delete (): Promise<null | Array<Error>> {
+  async delete (): Promise<null | Error[]> {
     const response = await httpDelete(`/api/groups/${this.groupId}/categories/${this.id}`);
 
     if (!response.ok) {
@@ -250,7 +236,10 @@ class Category implements CategoryInterface {
     }
     else {
       runInAction(() => {
-        this.store.categoryTree.removeCategory(this);
+        const group = this.store.categoryTree.getCategoryGroup(this.id);
+        if (group) {
+          group.removeCategory(this);
+        }
       });
     }
 

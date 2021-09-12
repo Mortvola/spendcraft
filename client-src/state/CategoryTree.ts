@@ -45,8 +45,12 @@ class CategoryTree implements CategoryTreeInterface {
         return false;
       }
 
-      return g.categories.some((c) => (c.id === categoryId))
-    });
+      return g.findCategory(categoryId) !== null
+    }) ?? (
+      this.noGroupGroup && this.noGroupGroup.findCategory(categoryId)
+        ? this.noGroupGroup
+        : null
+    );
 
     if (isGroup(group)) {
       return group;
@@ -153,9 +157,6 @@ class CategoryTree implements CategoryTreeInterface {
           const group = new Group(g, this.store);
           if (group.type === 'NO GROUP') {
             this.noGroupGroup = group;
-            group.categories.forEach((c) => {
-              this.nodes.push(c);
-            })
           }
           else {
             this.nodes.push(group);
@@ -205,48 +206,6 @@ class CategoryTree implements CategoryTreeInterface {
         node.updateBalances(balances);
       });
     });
-  }
-
-  async addCategory(name: string, group: Group): Promise<null| Error[]> {
-    const response = await httpPost(`/api/groups/${group.id}/categories`, { groupId: group.id, name });
-
-    const body = await getBody(response);
-
-    if (!response.ok) {
-      if (isErrorResponse(body)) {
-        return body.errors;
-      }
-    }
-    else if (isAddCategoryResponse(body)) {
-      runInAction(() => {
-        const category = new Category(body, this.store);
-
-        // Find the position where this new category should be inserted.
-        if (group === this.noGroupGroup) {
-          this.insertNode(category);
-        }
-        else {
-          group.insertCategory(category);
-        }
-      });
-    }
-
-    return null;
-  }
-
-  removeCategory(category: CategoryInterface): void {
-    const index = this.nodes.findIndex((g) => g.id === category.id);
-
-    if (index !== -1) {
-      this.nodes.splice(index, 1);
-    }
-    else {
-      const group = this.getCategoryGroup(category.id);
-
-      if (group) {
-        group.removeCategory(category);
-      }
-    }
   }
 }
 
