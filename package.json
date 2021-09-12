@@ -23,9 +23,9 @@
   "license": "UNLICENSED",
   "private": true,
   "dependencies": {
-    "@adonisjs/application": "^5.1.6",
+    "@adonisjs/application": "^5.1.7",
     "@adonisjs/auth": "^8.0.9",
-    "@adonisjs/core": "^5.3.3",
+    "@adonisjs/core": "^5.3.4",
     "@adonisjs/lucid": "^15.0.3",
     "@adonisjs/mail": "^7.2.4",
     "@adonisjs/repl": "^3.1.6",
@@ -33,7 +33,7 @@
     "@adonisjs/shield": "^7.0.6",
     "@adonisjs/view": "^6.1.1",
     "@babel/core": "^7.15.5",
-    "@babel/preset-env": "^7.15.4",
+    "@babel/preset-env": "^7.15.6",
     "@babel/preset-react": "^7.14.5",
     "@phc/argon2": "^1.0.9",
     "argon2": "^0.28.2",
@@ -55,7 +55,7 @@
     "phc-argon2": "^1.1.2",
     "phc-bcrypt": "^1.0.7",
     "pino-pretty": "^4.8.0",
-    "plaid": "^8.5.2",
+    "plaid": "^8.5.3",
     "prop-types": "^15.7.2",
     "react": "^17.0.2",
     "react-bootstrap": "^2.0.0-beta.6",
@@ -65,7 +65,7 @@
     "react-script-hook": "^1.4.1",
     "reflect-metadata": "^0.1.13",
     "regenerator-runtime": "^0.13.9",
-    "set-value": "^4.0.0",
+    "set-value": "^4.1.0",
     "youch": "^2.2.2"
   },
   "devDependencies": {
@@ -88,7 +88,7 @@
     "eslint-plugin-jsx-a11y": "^6.4.1",
     "eslint-plugin-react": "^7.25.1",
     "eslint-plugin-react-hooks": "^4.2.0",
-    "typescript": "^4.4.2"
+    "typescript": "^4.4.3"
   },
   "autoload": {
     "App": "./app"
