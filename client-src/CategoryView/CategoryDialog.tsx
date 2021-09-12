@@ -100,7 +100,7 @@ const CategoryDialog = ({
     const options = [];
 
     if (categoryTree.noGroupGroup !== null) {
-      options.push(<option key="nogroup" value={-1}>No Group</option>);
+      options.push(<option key="nogroup" value={categoryTree.noGroupGroup.id}>No Group</option>);
     }
 
     return options.concat(

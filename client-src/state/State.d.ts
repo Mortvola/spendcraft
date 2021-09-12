@@ -173,6 +173,8 @@ export interface CategoryInterface {
   updateBalances(balances: CategoryBalanceProps[]): void;
 
   setLoanTransactions(loan: CategoryLoanResponse): void;
+
+  getGroup(): GroupInterface;
 }
 
 export interface FundingPlanInterface {
@@ -220,7 +222,7 @@ export interface CategoryTreeInterface {
 
   getCategory(categoryId: number): CategoryInterface | null;
 
-  getCategoryGroup(categoryId: number): GroupInterface | null;
+  getCategoryGroup(categoryId: number): GroupInterface;
 
   removeNode(node: GroupInterface | CategoryInterface): void;
 }
@@ -308,6 +310,8 @@ export interface AccountInterface {
   fetching: boolean;
 
   refreshing: boolean;
+
+  institution: InstitutionInterface;
 
   store: StoreInterface;
 

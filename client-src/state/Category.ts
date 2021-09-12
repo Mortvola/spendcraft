@@ -176,12 +176,7 @@ class Category implements CategoryInterface {
 
           // Find the group the category is currently in
           // and possibly move it to the new group.
-          const currentGroup = this.store.categoryTree.getCategoryGroup(this.id)
-            ?? this.store.categoryTree.noGroupGroup;
-
-          if (currentGroup === null) {
-            throw new Error('current group is null');
-          }
+          const currentGroup = this.store.categoryTree.getCategoryGroup(this.id);
 
           if (currentGroup !== group) {
             group.insertCategory(this);
@@ -237,13 +232,15 @@ class Category implements CategoryInterface {
     else {
       runInAction(() => {
         const group = this.store.categoryTree.getCategoryGroup(this.id);
-        if (group) {
-          group.removeCategory(this);
-        }
+        group.removeCategory(this);
       });
     }
 
     return null;
+  }
+
+  getGroup(): GroupInterface {
+    return this.store.categoryTree.getCategoryGroup(this.id);
   }
 }
 

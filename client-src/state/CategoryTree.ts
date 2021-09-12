@@ -39,7 +39,7 @@ class CategoryTree implements CategoryTreeInterface {
     this.store = store;
   }
 
-  getCategoryGroup(categoryId: number): Group | null {
+  getCategoryGroup(categoryId: number): Group {
     const group = this.nodes.find((g) => {
       if (isCategory(g)) {
         return false;
@@ -56,7 +56,7 @@ class CategoryTree implements CategoryTreeInterface {
       return group;
     }
 
-    return null;
+    throw new Error('group is null');
   }
 
   getCategory(categoryId: number): CategoryInterface | null {

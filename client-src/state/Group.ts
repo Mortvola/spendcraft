@@ -40,21 +40,21 @@ class Group implements GroupInterface {
       switch (c.type) {
         case 'UNASSIGNED':
           if (this.store.categoryTree.unassignedCat === null) {
-            throw new Error('category is null');
+            throw new Error('unassigned category is null');
           }
           this.categories.push(this.store.categoryTree.unassignedCat);
           break;
 
         case 'ACCOUNT TRANSFER':
           if (this.store.categoryTree.accountTransferCat === null) {
-            throw new Error('category is null');
+            throw new Error('account transfer category is null');
           }
           this.categories.push(this.store.categoryTree.accountTransferCat);
           break;
 
         case 'FUNDING POOL':
           if (this.store.categoryTree.fundingPoolCat === null) {
-            throw new Error('category is null');
+            throw new Error('funding category is null');
           }
           this.categories.push(this.store.categoryTree.fundingPoolCat);
           break;
