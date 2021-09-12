@@ -790,6 +790,7 @@ body {
   border-radius: 0.5rem;
   overflow: clip;
   position: relative;
+  grid-area: window1;
 }
 
 .plan-detail-wrapper {
