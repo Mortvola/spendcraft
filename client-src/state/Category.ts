@@ -12,7 +12,9 @@ import LoanTransaction from './LoanTransaction';
 import PendingTransaction from './PendingTransaction';
 import { CategoryInterface, GroupInterface, StoreInterface } from './State';
 import Transaction from './Transaction';
-import { getBody, httpGet, httpPatch } from './Transports';
+import {
+  getBody, httpDelete, httpGet, httpPatch,
+} from './Transports';
 
 class Category implements CategoryInterface {
   id: number;
@@ -173,17 +175,35 @@ class Category implements CategoryInterface {
 
           // Find the group the category is currently in
           // and possibly move it to the new group.
-          const currentGroup = this.store.categoryTree.getCategoryGroup(this.id);
+          const currentGroup = this.store.categoryTree.getCategoryGroup(this.id)
+            ?? this.store.categoryTree.noGroupGroup;
 
-          if (!currentGroup || currentGroup.id !== group.id) {
-            group.insertCategory(this);
+          if (currentGroup === null) {
+            throw new Error('current group is null');
+          }
 
-            if (currentGroup) {
-              const index = currentGroup.categories.findIndex((c) => c.id === this.id);
-              if (index !== -1) {
-                currentGroup.categories.splice(index, 1);
-              }
+          if (currentGroup !== group) {
+            if (group === this.store.categoryTree.noGroupGroup) {
+              this.store.categoryTree.insertNode(this);
             }
+            else {
+              group.insertCategory(this);
+            }
+
+            if (currentGroup === this.store.categoryTree.noGroupGroup) {
+              this.store.categoryTree.removeNode(this);
+            }
+            else {
+              currentGroup.removeCategory(this);
+            }
+          }
+          else if (currentGroup === this.store.categoryTree.noGroupGroup) {
+            this.store.categoryTree.removeNode(this);
+            this.store.categoryTree.insertNode(this);
+          }
+          else {
+            group.removeCategory(this);
+            group.insertCategory(this);
           }
         }
       });
@@ -216,6 +236,25 @@ class Category implements CategoryInterface {
     if (balance) {
       this.balance = balance.balance;
     }
+  }
+
+  async delete (): Promise<null | Array<Error>> {
+    const response = await httpDelete(`/api/groups/${this.groupId}/categories/${this.id}`);
+
+    if (!response.ok) {
+      const body = await getBody(response);
+
+      if (isErrorResponse(body)) {
+        return body.errors;
+      }
+    }
+    else {
+      runInAction(() => {
+        this.store.categoryTree.removeCategory(this);
+      });
+    }
+
+    return null;
   }
 }
 

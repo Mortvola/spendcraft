@@ -3,18 +3,17 @@ import Category, { isCategory } from './Category';
 import Group, { isGroup } from './Group';
 import {
   CategoryBalanceProps,
-  Error, isErrorResponse,
+  Error, isAddCategoryResponse, isErrorResponse,
   isGroupProps, isGroupsResponse,
 } from '../../common/ResponseTypes';
 import {
-  CategoryInterface, CategoryTreeInterface, GroupInterface, StoreInterface,
+  CategoryInterface, CategoryTreeInterface, StoreInterface,
 } from './State';
 import SystemIds from './SystemIds';
 import {
-  getBody, httpDelete, httpGet, httpPost,
+  getBody, httpGet, httpPost,
 } from './Transports';
 
-export type TreeNodeInterface = (CategoryInterface | GroupInterface);
 export type TreeNode = (Category | Group);
 
 class CategoryTree implements CategoryTreeInterface {
@@ -57,7 +56,7 @@ class CategoryTree implements CategoryTreeInterface {
   }
 
   getCategory(categoryId: number): CategoryInterface | null {
-    let category: Category | null = null;
+    let category: CategoryInterface | null = null;
 
     this.nodes.find((node) => {
       if (isCategory(node)) {
@@ -104,6 +103,22 @@ class CategoryTree implements CategoryTreeInterface {
     return categoryName;
   }
 
+  insertNode(node: TreeNode): void {
+    // Find the position where this new node should be inserted.
+    const index = this.nodes.findIndex((n) => (node.name.localeCompare(n.name) < 0));
+
+    if (index === -1) {
+      this.nodes.push(node);
+    }
+    else {
+      this.nodes = [
+        ...this.nodes.slice(0, index),
+        node,
+        ...this.nodes.slice(index),
+      ];
+    }
+  }
+
   async load(): Promise<void> {
     const response = await httpGet('/api/groups');
 
@@ -135,14 +150,14 @@ class CategoryTree implements CategoryTreeInterface {
             })
           }
 
-          if (g.type === 'NO GROUP') {
-            g.categories.forEach((c) => {
-              const category = new Category(c, this.store);
-              this.nodes.push(category);
+          const group = new Group(g, this.store);
+          if (group.type === 'NO GROUP') {
+            this.noGroupGroup = group;
+            group.categories.forEach((c) => {
+              this.nodes.push(c);
             })
           }
           else {
-            const group = new Group(g, this.store);
             this.nodes.push(group);
           }
         });
@@ -167,21 +182,8 @@ class CategoryTree implements CategoryTreeInterface {
     else {
       runInAction(() => {
         if (isGroupProps(body)) {
-          // Find the position where this new group should be inserted.
-          const index = this.nodes.findIndex(
-            (g) => body.name.toLowerCase().localeCompare(g.name.toLowerCase()) < 0,
-          );
-
-          if (index === -1) {
-            this.nodes.push(new Group(body, this.store));
-          }
-          else {
-            this.nodes = [
-              ...this.nodes.slice(0, index),
-              new Group(body, this.store),
-              ...this.nodes.slice(index),
-            ];
-          }
+          const group = new Group(body, this.store);
+          this.insertNode(group);
         }
       });
     }
@@ -189,27 +191,12 @@ class CategoryTree implements CategoryTreeInterface {
     return null;
   }
 
-  async deleteGroup(id: number): Promise<null | Array<Error>> {
-    const index = this.nodes.findIndex((g) => g.id === id);
+  removeNode(node: TreeNode): void {
+    const index = this.nodes.findIndex((n) => n.id === node.id);
 
     if (index !== -1) {
-      const response = await httpDelete(`/api/groups/${id}`);
-
-      const body = await getBody(response);
-
-      if (!response.ok) {
-        if (isErrorResponse(body)) {
-          return body.errors;
-        }
-      }
-      else {
-        runInAction(() => {
-          this.nodes.splice(index, 1);
-        });
-      }
+      this.nodes.splice(index, 1);
     }
-
-    return null;
   }
 
   updateBalances(balances: CategoryBalanceProps[]): void {
@@ -218,6 +205,48 @@ class CategoryTree implements CategoryTreeInterface {
         node.updateBalances(balances);
       });
     });
+  }
+
+  async addCategory(name: string, group: Group): Promise<null| Error[]> {
+    const response = await httpPost(`/api/groups/${group.id}/categories`, { groupId: group.id, name });
+
+    const body = await getBody(response);
+
+    if (!response.ok) {
+      if (isErrorResponse(body)) {
+        return body.errors;
+      }
+    }
+    else if (isAddCategoryResponse(body)) {
+      runInAction(() => {
+        const category = new Category(body, this.store);
+
+        // Find the position where this new category should be inserted.
+        if (group === this.noGroupGroup) {
+          this.insertNode(category);
+        }
+        else {
+          group.insertCategory(category);
+        }
+      });
+    }
+
+    return null;
+  }
+
+  removeCategory(category: CategoryInterface): void {
+    const index = this.nodes.findIndex((g) => g.id === category.id);
+
+    if (index !== -1) {
+      this.nodes.splice(index, 1);
+    }
+    else {
+      const group = this.getCategoryGroup(category.id);
+
+      if (group) {
+        group.removeCategory(category);
+      }
+    }
   }
 }
 

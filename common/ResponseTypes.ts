@@ -8,13 +8,10 @@ export interface GroupProps {
   categories: CategoryProps[];
 }
 
-export const isGroupProps = (
-  r: GroupProps | unknown,
-): r is GroupProps => (
+export const isGroupProps = (r: unknown): r is GroupProps => (
   (r as GroupProps).id !== undefined
   && (r as GroupProps).name !== undefined
-  // && (r as GroupProps).system !== undefined
-  // && (r as GroupProps).categories !== undefined
+  && (r as GroupProps).type !== undefined
 );
 
 export interface LoansGroupProps {

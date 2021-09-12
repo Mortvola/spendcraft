@@ -1,7 +1,8 @@
 import React, { ReactElement, useState } from 'react';
 import CategoryRebalanceItem from './CategoryRebalanceItem';
-import { CategoryBalanceInterface, CategoryInterface, TransactionCategoryInterface } from '../state/State';
-import { TreeNodeInterface } from '../state/CategoryTree';
+import {
+  TreeNodeInterface, CategoryBalanceInterface, CategoryInterface, TransactionCategoryInterface,
+} from '../state/State';
 import { isGroup } from '../state/Group';
 import { isCategory } from '../state/Category';
 

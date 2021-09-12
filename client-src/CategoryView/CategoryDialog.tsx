@@ -16,7 +16,7 @@ import { CategoryInterface, GroupInterface } from '../state/State';
 
 type Props = {
   category?: CategoryInterface | null,
-  group?: GroupInterface | null,
+  group: GroupInterface,
 }
 
 const CategoryDialog = ({
@@ -24,7 +24,7 @@ const CategoryDialog = ({
   show,
   setShow,
   category = null,
-  group = null,
+  group,
 }: Props & ModalProps): ReactElement => {
   const { categoryTree } = useContext(MobxStore);
 
@@ -37,13 +37,10 @@ const CategoryDialog = ({
     const { setErrors } = bag;
     let errors = null;
 
-    const selectedGroup = categoryTree.nodes.find((g) => g.id === parseInt(values.groupId, 10));
+    const selectedGroup = (categoryTree.nodes.find((g) => g.id === parseInt(values.groupId, 10))
+      ?? categoryTree.noGroupGroup);
 
-    if (!selectedGroup) {
-      throw new Error('group is not defined');
-    }
-
-    if (!isGroup(selectedGroup)) {
+    if (selectedGroup === null || !isGroup(selectedGroup)) {
       throw new Error('group is not a group');
     }
 
@@ -51,7 +48,7 @@ const CategoryDialog = ({
       errors = await category.update(values.name, selectedGroup);
     }
     else {
-      errors = await selectedGroup.addCategory(values.name);
+      errors = await categoryTree.addCategory(values.name, selectedGroup);
     }
 
     if (errors && errors.length > 0) {
@@ -81,11 +78,7 @@ const CategoryDialog = ({
       throw new Error('category is null or undefined');
     }
 
-    if (group === null) {
-      throw new Error('group is null');
-    }
-
-    const errors = await group.deleteCategory(category.id);
+    const errors = await category.delete();
 
     if (errors && errors.length > 0) {
       setErrors({ [errors[0].field]: errors[0].message });
@@ -103,14 +96,18 @@ const CategoryDialog = ({
     return 'Add Category';
   };
 
-  const populateGroups = () => (
-    categoryTree.nodes.map((g) => (
-      <option key={g.id} value={g.id}>{g.name}</option>
-    ))
-  )
+  const populateGroups = () => {
+    const options = [];
 
-  if (group === null) {
-    throw new Error('group is null');
+    if (categoryTree.noGroupGroup !== null) {
+      options.push(<option key="nogroup" value={-1}>No Group</option>);
+    }
+
+    return options.concat(
+      categoryTree.nodes.map((g) => (
+        <option key={g.id} value={g.id}>{g.name}</option>
+      )),
+    )
   }
 
   return (
@@ -120,7 +117,7 @@ const CategoryDialog = ({
       onHide={onHide}
       initialValues={{
         name: category && category.name ? category.name : '',
-        groupId: group.id.toString(),
+        groupId: group ? group.id.toString() : '',
       }}
       validate={handleValidate}
       onSubmit={handleSubmit}

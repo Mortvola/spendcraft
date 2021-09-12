@@ -51,23 +51,20 @@ class CategoryController {
     auth: {
       user,
     },
-  }: HttpContextContract): Promise<Record<string, unknown>> {
+  }: HttpContextContract): Promise<Group> {
     if (!user) {
       throw new Error('user is not defined');
     }
 
     const requestData = await request.validate(AddGroupValidator);
 
-    const id = await Database.insertQuery().table('groups')
-      .insert({ name: requestData.name, user_id: user.id })
-      .returning('id');
-
-    return {
-      id: id[0],
-      name: requestData.name,
-      system: false,
-      categories: [],
-    };
+    return (new Group())
+      .fill({
+        name: requestData.name,
+        userId: user.id,
+        type: 'REGULAR',
+      })
+      .save();
   }
 
   // eslint-disable-next-line class-methods-use-this

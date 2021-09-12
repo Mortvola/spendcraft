@@ -6,7 +6,6 @@ import SystemCategory from './SystemCategory';
 import { CategoryInterface } from '../state/State';
 import Category from './Category';
 import { isGroup } from '../state/Group';
-import { isCategory } from '../state/Category';
 
 const CategoryView = (): ReactElement => {
   const { categoryTree, uiState } = useContext(MobxStore);
@@ -46,10 +45,15 @@ const CategoryView = (): ReactElement => {
             return null;
           }
 
+          if (categoryTree.noGroupGroup === null) {
+            throw new Error('no group is null');
+          }
+
           return (
             <Category
               key={`${group.id}`}
               category={group}
+              group={categoryTree.noGroupGroup}
               onCategorySelected={handleCategorySelected}
               selected={uiState.selectedCategory === group}
             />

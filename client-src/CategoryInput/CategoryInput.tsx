@@ -5,10 +5,9 @@ import ReactDOM from 'react-dom';
 import CategorySelector, { categoryFiltered } from './CategorySelector';
 import useExclusiveBool from '../ExclusiveBool';
 import MobxStore from '../state/mobxStore';
-import { CategoryInterface } from '../state/State';
+import { TreeNodeInterface, CategoryInterface } from '../state/State';
 import { isGroup } from '../state/Group';
 import { isCategory } from '../state/Category';
-import { TreeNodeInterface } from '../state/CategoryTree';
 
 type PropsType = {
   categoryId: number | null,

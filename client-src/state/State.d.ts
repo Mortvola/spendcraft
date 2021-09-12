@@ -4,6 +4,8 @@ import User from './User';
 import { CategoryType, Error, TrackingType } from '../../common/ResponseTypes'
 import LoanTransaction from './LoanTransaction';
 
+export type TreeNodeInterface = (CategoryInterface | GroupInterface);
+
 export interface GroupInterface {
   id: number;
 
@@ -13,11 +15,13 @@ export interface GroupInterface {
 
   categories: CategoryInterface[];
 
-  insertCategory(category: Category): void;
+  insertCategory(category: CategoryInterface): void;
 
-  async deleteCategory(categoryId: number): Promise<null | Error[]>;
+  removeCategory(category: CategoryInterface): void;
 
-  async update(name: string): Promise<null | Error[]>;
+  delete (): Promise<null | Error[]>;
+
+  update(name: string): Promise<null | Error[]>;
 }
 
 export interface TransactionInterface {
@@ -152,6 +156,8 @@ export interface CategoryInterface {
 
   fetching: boolean;
 
+  store: StoreInterface;
+
   getTransactions(): Promise<void>;
 
   getLoanTransactions(): Promise<void>;
@@ -160,7 +166,13 @@ export interface CategoryInterface {
 
   removeTransaction(transactionId: number): void;
 
-  async update(name: string, group: GroupInterface): Promise<null | Error[]>;
+  update(name: string, group: GroupInterface): Promise<null | Error[]>;
+
+  delete (): Promise<null | Error[]>;
+
+  updateBalances(balances: CategoryBalanceProps[]): void;
+
+  setLoanTransactions(loan: CategoryLoanResponse): void;
 }
 
 export interface FundingPlanInterface {
@@ -192,17 +204,27 @@ export interface UIStateInterface {
 export interface CategoryTreeInterface {
   systemIds: SystemIds;
 
-  unassignedCat: Category | null = null;
+  noGroupGroup: GroupInterface | null;
 
-  fundingPoolCat: Category | null = null;
+  unassignedCat: CategoryInterface | null;
 
-  accountTransferCat: Category | null = null;
+  fundingPoolCat: CategoryInterface | null;
 
-  nodes: (Category | Group)[] = [];
+  accountTransferCat: CategoryInterface | null;
+
+  nodes: (CategoryInterface | GroupInterface)[] = [];
+
+  insertNode(node: TreeNodeInterface): void;
 
   updateBalances(balances: CategoryBalanceProps[]): void;
+
   getCategory(categoryId: number): CategoryInterface | null;
+
   getCategoryGroup(categoryId: number): GroupInterface | null;
+
+  removeNode(node: GroupInterface | CategoryInterface): void;
+
+  removeCategory(category: CategoryInterface): void;
 }
 
 export interface CategoryBalanceInterface {

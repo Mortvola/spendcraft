@@ -65,7 +65,7 @@ const GroupDialog = ({
     const { setTouched, setErrors } = bag;
 
     if (group) {
-      const errors = await categoryTree.deleteGroup(group.id);
+      const errors = await group.delete();
 
       if (errors && errors.length > 0) {
         setTouched({ name: true }, false);

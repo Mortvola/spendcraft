@@ -5,7 +5,7 @@ import { CategoryInterface, GroupInterface } from '../state/State';
 
 type PropsType = {
   category: CategoryInterface,
-  group?: GroupInterface,
+  group: GroupInterface,
 }
 const EditButton = ({
   category,

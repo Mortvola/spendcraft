@@ -2,8 +2,7 @@ import React, { ReactElement, ReactNode, useState } from 'react';
 import FundingItem from './FundingItem';
 import { isGroup } from '../state/Group';
 import { isCategory } from '../state/Category';
-import { CategoryInterface } from '../state/State';
-import { TreeNodeInterface } from '../state/CategoryTree';
+import { TreeNodeInterface, CategoryInterface } from '../state/State';
 
 export type FundingType = {
   id?: number,

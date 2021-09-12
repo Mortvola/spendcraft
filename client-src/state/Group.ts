@@ -2,14 +2,13 @@ import { makeAutoObservable, runInAction } from 'mobx';
 import Category, { isCategory } from './Category';
 import {
   Error, GroupProps, isErrorResponse, isGroupProps,
-  isAddCategoryResponse,
   CategoryBalanceProps,
   CategoryProps,
 } from '../../common/ResponseTypes';
 import {
-  getBody, httpDelete, httpPatch, httpPost,
+  getBody, httpDelete, httpPatch,
 } from './Transports';
-import { GroupInterface, StoreInterface } from './State';
+import { CategoryInterface, GroupInterface, StoreInterface } from './State';
 
 class Group implements GroupInterface {
   id: number;
@@ -18,7 +17,7 @@ class Group implements GroupInterface {
 
   type: string;
 
-  categories: Category[] = [];
+  categories: CategoryInterface[] = [];
 
   store: StoreInterface;
 
@@ -39,14 +38,23 @@ class Group implements GroupInterface {
     categories.forEach((c) => {
       switch (c.type) {
         case 'UNASSIGNED':
+          if (this.store.categoryTree.unassignedCat === null) {
+            throw new Error('category is null');
+          }
           this.categories.push(this.store.categoryTree.unassignedCat);
           break;
 
         case 'ACCOUNT TRANSFER':
+          if (this.store.categoryTree.accountTransferCat === null) {
+            throw new Error('category is null');
+          }
           this.categories.push(this.store.categoryTree.accountTransferCat);
           break;
 
         case 'FUNDING POOL':
+          if (this.store.categoryTree.fundingPoolCat === null) {
+            throw new Error('category is null');
+          }
           this.categories.push(this.store.categoryTree.fundingPoolCat);
           break;
 
@@ -59,7 +67,7 @@ class Group implements GroupInterface {
     });
   }
 
-  findCategory(categoryId: number): Category | null {
+  findCategory(categoryId: number): CategoryInterface | null {
     const cat = this.categories.find((c) => c.id === categoryId);
 
     if (cat) {
@@ -69,11 +77,9 @@ class Group implements GroupInterface {
     return null;
   }
 
-  insertCategory(category: Category): void {
+  insertCategory(category: CategoryInterface): void {
     // Find the position where this new category should be inserted.
-    const index = this.categories.findIndex(
-      (g) => category.name.toLowerCase().localeCompare(g.name.toLowerCase()) < 0,
-    );
+    const index = this.categories.findIndex((g) => category.name.localeCompare(g.name) < 0);
 
     if (index === -1) {
       this.categories.push(category);
@@ -85,28 +91,6 @@ class Group implements GroupInterface {
         ...this.categories.slice(index),
       ];
     }
-  }
-
-  async addCategory(name: string): Promise<null| Error[]> {
-    const response = await httpPost(`/api/groups/${this.id}/categories`, { groupId: this.id, name });
-
-    const body = await getBody(response);
-
-    if (!response.ok) {
-      if (isErrorResponse(body)) {
-        return body.errors;
-      }
-    }
-    else if (isAddCategoryResponse(body)) {
-      runInAction(() => {
-        const category = new Category(body, this.store);
-
-        // Find the position where this new category should be inserted.
-        this.insertCategory(category);
-      });
-    }
-
-    return null;
   }
 
   async update(name: string): Promise<null | Error[]> {
@@ -130,26 +114,30 @@ class Group implements GroupInterface {
     return null;
   }
 
-  async deleteCategory(categoryId: number): Promise<null | Error[]> {
-    const index = this.categories.findIndex((c) => c.id === categoryId);
-    if (index !== -1) {
-      const response = await httpDelete(`/api/groups/${this.id}/categories/${categoryId}`);
+  async delete (): Promise<null | Error[]> {
+    const response = await httpDelete(`/api/groups/${this.id}`);
 
-      if (!response.ok) {
-        const body = await getBody(response);
+    if (!response.ok) {
+      const body = await getBody(response);
 
-        if (isErrorResponse(body)) {
-          return body.errors;
-        }
+      if (isErrorResponse(body)) {
+        return body.errors;
       }
-      else {
-        runInAction(() => {
-          this.categories.splice(index, 1);
-        });
-      }
+    }
+    else {
+      runInAction(() => {
+        this.store.categoryTree.removeNode(this);
+      });
     }
 
     return null;
+  }
+
+  removeCategory(category: CategoryInterface): void {
+    const index = this.categories.findIndex((c) => c.id === category.id);
+    if (index !== -1) {
+      this.categories.splice(index, 1);
+    }
   }
 
   updateBalances(balances: CategoryBalanceProps[]): void {
