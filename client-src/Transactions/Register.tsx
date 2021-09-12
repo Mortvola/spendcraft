@@ -2,10 +2,10 @@ import React, {
   useContext, ReactElement,
 } from 'react';
 import { observer } from 'mobx-react-lite';
-import MobxStore from '../state/mobxStore';
-import { AccountInterface, CategoryInterface, TransactionInterface } from '../state/State';
-import PendingTransaction from '../state/PendingTransaction';
-import LoanTransaction from '../state/LoanTransaction';
+import MobxStore from '../State/mobxStore';
+import { AccountInterface, CategoryInterface, TransactionInterface } from '../State/State';
+import PendingTransaction from '../State/PendingTransaction';
+import LoanTransaction from '../State/LoanTransaction';
 import LoanRegister from './LoanRegister';
 import PendingRegister from './PendingRegister';
 import RegisterTitles from './RegisterTitles';

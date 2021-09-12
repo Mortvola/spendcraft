@@ -1,8 +1,8 @@
 import React, { ReactElement, ReactNode, useState } from 'react';
 import FundingItem from './FundingItem';
-import { isGroup } from '../state/Group';
-import { isCategory } from '../state/Category';
-import { TreeNodeInterface, CategoryInterface } from '../state/State';
+import { isGroup } from '../State/Group';
+import { isCategory } from '../State/Category';
+import { TreeNodeInterface, CategoryInterface } from '../State/State';
 
 export type FundingType = {
   id?: number,

@@ -1,8 +1,8 @@
 import React, { ReactElement, useContext } from 'react';
 import { observer } from 'mobx-react-lite';
-import MobxStore from '../state/mobxStore';
+import MobxStore from '../State/mobxStore';
 import { useOfflineAccountDialog } from './OfflineAccountDialog';
-import { httpPost } from '../state/Transports';
+import { httpPost } from '../State/Transports';
 
 const AccountsToolbar = (): ReactElement => {
   const { accounts, uiState } = useContext(MobxStore);

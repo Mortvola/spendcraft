@@ -7,9 +7,9 @@ import {
   FormikErrors, FormikState, FormikContextType,
 } from 'formik';
 import Amount from '../Amount';
-import MobxStore from '../state/mobxStore';
+import MobxStore from '../State/mobxStore';
 import useModal, { ModalProps, UseModalType } from '../Modal/useModal';
-import Transaction from '../state/Transaction';
+import Transaction from '../State/Transaction';
 import {
   FundingPlanProps, isFundingPlanResponse, isFundingPlansResponse, TransactionType,
   CategoryFundingProps,
@@ -17,7 +17,7 @@ import {
 import FormModal from '../Modal/FormModal';
 import FormError from '../Modal/FormError';
 import Funding, { FundingType } from './Funding';
-import { getBody, httpGet } from '../state/Transports';
+import { getBody, httpGet } from '../State/Transports';
 
 interface Props {
   transaction?: Transaction;

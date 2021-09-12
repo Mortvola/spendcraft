@@ -8,11 +8,11 @@ import {
   FieldProps,
 } from 'formik';
 import useModal, { ModalProps, UseModalType } from '../Modal/useModal';
-import { isGroup } from '../state/Group';
+import { isGroup } from '../State/Group';
 import FormModal from '../Modal/FormModal';
 import FormError from '../Modal/FormError';
-import MobxStore from '../state/mobxStore';
-import { CategoryInterface, GroupInterface } from '../state/State';
+import MobxStore from '../State/mobxStore';
+import { CategoryInterface, GroupInterface } from '../State/State';
 
 type Props = {
   category?: CategoryInterface | null,

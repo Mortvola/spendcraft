@@ -1,5 +1,5 @@
 import React, { ReactElement } from 'react';
-import LoanTransaction from '../state/LoanTransaction';
+import LoanTransaction from '../State/LoanTransaction';
 import LoanTitles from './LoanTitles';
 import LoanTransactions from './LoanTransactions';
 import SecondaryRegister from './SecondaryRegister';

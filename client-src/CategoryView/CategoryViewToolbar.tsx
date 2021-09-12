@@ -1,8 +1,8 @@
 import { observer } from 'mobx-react-lite';
 import React, { ReactElement, useContext } from 'react';
-import { useFundingDialog } from '../funding/FundingDialog';
-import { useRebalanceDialog } from '../rebalance/RebalanceDialog';
-import MobxStore from '../state/mobxStore';
+import { useFundingDialog } from '../Funding/FundingDialog';
+import { useRebalanceDialog } from '../Rebalance/RebalanceDialog';
+import MobxStore from '../State/mobxStore';
 import { useCategoryDialog } from './CategoryDialog';
 import { useGroupDialog } from './GroupDialog';
 

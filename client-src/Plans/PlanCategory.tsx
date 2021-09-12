@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { observer } from 'mobx-react-lite';
 import AmountInput from '../AmountInput';
 import Amount from '../Amount';
-import FundingPlanCategory from '../state/FundingPlanCategory';
+import FundingPlanCategory from '../State/FundingPlanCategory';
 
 type PropsType = {
   category: FundingPlanCategory,

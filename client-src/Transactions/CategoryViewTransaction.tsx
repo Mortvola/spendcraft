@@ -1,6 +1,6 @@
 import React, { ReactElement, ReactNode } from 'react';
-import PendingTransaction from '../state/PendingTransaction';
-import { TransactionInterface } from '../state/State';
+import PendingTransaction from '../State/PendingTransaction';
+import { TransactionInterface } from '../State/State';
 
 type PropsType = {
   transaction: TransactionInterface | PendingTransaction,

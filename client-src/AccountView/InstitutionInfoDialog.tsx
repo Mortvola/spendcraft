@@ -3,8 +3,8 @@ import { Button, Modal } from 'react-bootstrap';
 import { InstitutionWithInstitutionData, InstitutionWithStatus } from 'plaid';
 import { DateTime } from 'luxon';
 import useModal, { ModalProps, UseModalType } from '../Modal/useModal';
-import { httpGet } from '../state/Transports';
-import { InstitutionInterface } from '../state/State';
+import { httpGet } from '../State/Transports';
+import { InstitutionInterface } from '../State/State';
 
 type PropsType = {
   institution: InstitutionInterface,

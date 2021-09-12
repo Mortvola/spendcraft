@@ -4,10 +4,10 @@ import React, {
 import ReactDOM from 'react-dom';
 import CategorySelector, { categoryFiltered } from './CategorySelector';
 import useExclusiveBool from '../ExclusiveBool';
-import MobxStore from '../state/mobxStore';
-import { TreeNodeInterface, CategoryInterface } from '../state/State';
-import { isGroup } from '../state/Group';
-import { isCategory } from '../state/Category';
+import MobxStore from '../State/mobxStore';
+import { TreeNodeInterface, CategoryInterface } from '../State/State';
+import { isGroup } from '../State/Group';
+import { isCategory } from '../State/Category';
 
 type PropsType = {
   categoryId: number | null,

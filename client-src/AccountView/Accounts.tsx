@@ -2,7 +2,7 @@ import React, { useContext, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import DetailView from '../DetailView';
 import AccountView from './AccountView';
-import MobxStore from '../state/mobxStore';
+import MobxStore from '../State/mobxStore';
 
 const Accounts = () => {
   const {

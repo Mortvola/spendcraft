@@ -3,11 +3,11 @@ import React, {
 } from 'react';
 import { observer } from 'mobx-react';
 import CategorySelectorGroup from './CategorySelectorGroup';
-import MobxStore from '../state/mobxStore';
-import { isGroup } from '../state/Group';
-import { CategoryInterface, GroupInterface } from '../state/State';
+import MobxStore from '../State/mobxStore';
+import { isGroup } from '../State/Group';
+import { CategoryInterface, GroupInterface } from '../State/State';
 import CategorySelectorCategory from './CategorySelectorCategory';
-import { isCategory } from '../state/Category';
+import { isCategory } from '../State/Category';
 
 export const categoryFiltered = (
   group: GroupInterface | null,

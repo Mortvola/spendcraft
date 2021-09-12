@@ -7,9 +7,9 @@ import {
   FormikErrors, FormikHelpers, useFormikContext,
   FormikContextType,
 } from 'formik';
-import MobxStore from '../state/mobxStore';
+import MobxStore from '../State/mobxStore';
 import useModal from '../Modal/useModal';
-import { FundingPlanInterface } from '../state/State';
+import { FundingPlanInterface } from '../State/State';
 
 interface Props {
   plan?: FundingPlanInterface | null,

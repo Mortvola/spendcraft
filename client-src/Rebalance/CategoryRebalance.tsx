@@ -2,9 +2,9 @@ import React, { ReactElement, useState } from 'react';
 import CategoryRebalanceItem from './CategoryRebalanceItem';
 import {
   TreeNodeInterface, CategoryBalanceInterface, CategoryInterface, TransactionCategoryInterface,
-} from '../state/State';
-import { isGroup } from '../state/Group';
-import { isCategory } from '../state/Category';
+} from '../State/State';
+import { isGroup } from '../State/Group';
+import { isCategory } from '../State/Category';
 
 interface Props {
   nodes: null | TreeNodeInterface[],

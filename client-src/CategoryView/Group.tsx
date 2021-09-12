@@ -2,7 +2,7 @@ import React, { ReactElement } from 'react';
 import { observer } from 'mobx-react-lite';
 import Buttons from './GroupButtons';
 import Category from './Category';
-import { CategoryInterface, GroupInterface } from '../state/State';
+import { CategoryInterface, GroupInterface } from '../State/State';
 
 type Props = {
   group: GroupInterface,

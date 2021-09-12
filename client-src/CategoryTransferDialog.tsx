@@ -6,9 +6,9 @@ import {
 } from 'formik';
 import CategorySplits from './CategorySplits';
 import useModal, { ModalProps } from './Modal/useModal';
-import Transaction from './state/Transaction';
-import { httpPatch, httpPost, httpDelete } from './state/Transports';
-import { TransactionCategoryInterface } from './state/State';
+import Transaction from './State/Transaction';
+import { httpPatch, httpPost, httpDelete } from './State/Transports';
+import { TransactionCategoryInterface } from './State/State';
 
 type PropsType = {
   transaction?: Transaction | null,

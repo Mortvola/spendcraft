@@ -3,11 +3,11 @@ import { observer } from 'mobx-react-lite';
 import { DateTime } from 'luxon';
 import PlanCategory from './PlanCategory';
 import Amount from '../Amount';
-import MobxStore from '../state/mobxStore';
-import FundingPlanGroup from '../state/FundingPlanGroup';
-import FundingPlanCategory from '../state/FundingPlanCategory';
-import FundingPlanHistoryMonth from '../state/HistoryMonth';
-import HistoryCategory from '../state/HistoryCategory';
+import MobxStore from '../State/mobxStore';
+import FundingPlanGroup from '../State/FundingPlanGroup';
+import FundingPlanCategory from '../State/FundingPlanCategory';
+import FundingPlanHistoryMonth from '../State/HistoryMonth';
+import HistoryCategory from '../State/HistoryCategory';
 
 const PlanDetails = (): ReactElement | null => {
   const { plans: { details } } = useContext(MobxStore);

@@ -3,15 +3,15 @@ import React, {
 } from 'react';
 import { Spinner } from 'react-bootstrap';
 import { observer } from 'mobx-react-lite';
-import { AccountInterface, CategoryInterface, TransactionInterface } from '../state/State';
+import { AccountInterface, CategoryInterface, TransactionInterface } from '../State/State';
 import CategoryViewTransaction from './CategoryViewTransaction';
 import { useTransactionDialog } from './TransactionDialog';
 import { useCategoryTransferDialog } from '../CategoryTransferDialog';
-import { useFundingDialog } from '../funding/FundingDialog';
-import { useRebalanceDialog } from '../rebalance/RebalanceDialog';
-import { isTransaction } from '../state/Transaction';
+import { useFundingDialog } from '../Funding/FundingDialog';
+import { useRebalanceDialog } from '../Rebalance/RebalanceDialog';
+import { isTransaction } from '../State/Transaction';
 import { TransactionType } from '../../common/ResponseTypes';
-import MobxStore from '../state/mobxStore';
+import MobxStore from '../State/mobxStore';
 import TransactionForm from './TransactionForm';
 import Amount from '../Amount';
 

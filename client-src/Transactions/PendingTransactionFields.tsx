@@ -1,6 +1,6 @@
 import React, { ReactElement } from 'react';
 import Amount from '../Amount';
-import PendingTransaction from '../state/PendingTransaction';
+import PendingTransaction from '../State/PendingTransaction';
 
 type PropsType = {
   transaction: PendingTransaction,

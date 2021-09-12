@@ -1,8 +1,8 @@
 import React, { ReactElement } from 'react';
 import IconButton from '../IconButton';
 import { useGroupDialog } from './GroupDialog';
-import { isGroup } from '../state/Group';
-import { GroupInterface } from '../state/State';
+import { isGroup } from '../State/Group';
+import { GroupInterface } from '../State/State';
 
 type Props = {
   group: GroupInterface,

@@ -2,7 +2,7 @@ import React, { ReactElement, useContext } from 'react';
 import Register from './Transactions/Register';
 import BalanceHistory from './AccountView/BalanceHistory';
 import { TrackingType } from '../common/ResponseTypes';
-import MobxStore from './state/mobxStore';
+import MobxStore from './State/mobxStore';
 
 type PropsType = {
   detailView: TrackingType,

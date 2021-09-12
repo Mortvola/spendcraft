@@ -3,8 +3,8 @@ import { observer } from 'mobx-react-lite';
 import Amount from '../Amount';
 import { useCategoryTransferDialog } from '../CategoryTransferDialog';
 import IconButton from '../IconButton';
-import { CategoryInterface } from '../state/State';
-import MobxStore from '../state/mobxStore';
+import { CategoryInterface } from '../State/State';
+import MobxStore from '../State/mobxStore';
 
 type PropsType = {
   category: CategoryInterface | null,

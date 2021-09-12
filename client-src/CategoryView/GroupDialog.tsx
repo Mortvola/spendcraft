@@ -6,12 +6,12 @@ import {
   FormikErrors,
   FormikContextType,
 } from 'formik';
-import MobxStore from '../state/mobxStore';
+import MobxStore from '../State/mobxStore';
 import useModal, { UseModalType, ModalProps } from '../Modal/useModal';
 import { Error } from '../../common/ResponseTypes';
 import FormModal from '../Modal/FormModal';
 import FormError from '../Modal/FormError';
-import { GroupInterface } from '../state/State';
+import { GroupInterface } from '../State/State';
 
 interface Props {
   // eslint-disable-next-line react/require-default-props

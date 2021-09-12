@@ -3,7 +3,7 @@ import Category, { isCategory } from './Category';
 import Group, { isGroup } from './Group';
 import {
   CategoryBalanceProps,
-  Error, isAddCategoryResponse, isErrorResponse,
+  Error, isErrorResponse,
   isGroupProps, isGroupsResponse,
 } from '../../common/ResponseTypes';
 import {

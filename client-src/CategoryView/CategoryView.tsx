@@ -1,11 +1,11 @@
 import React, { ReactElement, useContext, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import Group from './Group';
-import MobxStore from '../state/mobxStore';
+import MobxStore from '../State/mobxStore';
 import SystemCategory from './SystemCategory';
-import { CategoryInterface } from '../state/State';
+import { CategoryInterface } from '../State/State';
 import Category from './Category';
-import { isGroup } from '../state/Group';
+import { isGroup } from '../State/Group';
 
 const CategoryView = (): ReactElement => {
   const { categoryTree, uiState } = useContext(MobxStore);

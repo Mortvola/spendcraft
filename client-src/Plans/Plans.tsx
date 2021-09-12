@@ -1,9 +1,9 @@
 import React, { useContext, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import PlanDetails from './PlanDetails';
-import MobxStore from '../state/mobxStore';
+import MobxStore from '../State/mobxStore';
 import PlanList from './PlanList';
-import { FundingPlanInterface } from '../state/State';
+import { FundingPlanInterface } from '../State/State';
 
 const Plans = () => {
   const { plans, uiState } = useContext(MobxStore);

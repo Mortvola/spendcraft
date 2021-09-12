@@ -1,4 +1,4 @@
-import { getBody, httpPost } from '../state/Transports';
+import { getBody, httpPost } from '../State/Transports';
 
 type ErrorsType = Record<string, string[]>;
 

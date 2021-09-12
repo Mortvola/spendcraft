@@ -2,7 +2,7 @@ import React, { useContext, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import CategoryView from './CategoryView/CategoryView';
 import DetailView from './DetailView';
-import MobxStore from './state/mobxStore';
+import MobxStore from './State/mobxStore';
 
 const Home = () => {
   const { uiState, categoryTree } = useContext(MobxStore);
