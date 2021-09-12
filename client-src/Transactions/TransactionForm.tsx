@@ -10,12 +10,12 @@ import {
 } from 'formik';
 import FormError from '../Modal/FormError';
 import AmountInput from '../AmountInput';
-import { AccountInterface, TransactionCategoryInterface, TransactionInterface } from '../state/State';
+import { AccountInterface, TransactionCategoryInterface, TransactionInterface } from '../State/State';
 import Amount from '../Amount';
 import CategorySplits from '../CategorySplits';
 import FormField from '../Modal/FormField'
 import Footer from '../Modal/Footer';
-import MobxStore from '../state/mobxStore';
+import MobxStore from '../State/mobxStore';
 
 type PropsType = {
   transaction?: TransactionInterface | null,

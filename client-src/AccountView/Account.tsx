@@ -1,8 +1,8 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
 import IconButton from '../IconButton';
-import { AccountInterface, InstitutionInterface } from '../state/State';
-import { getSubTypeName, getTypeName } from '../state/AccountTypes';
+import { AccountInterface, InstitutionInterface } from '../State/State';
+import { getSubTypeName, getTypeName } from '../State/AccountTypes';
 import Amount from '../Amount';
 
 type PropsType = {

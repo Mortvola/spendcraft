@@ -2,10 +2,10 @@ import React, { ReactElement } from 'react';
 import { observer } from 'mobx-react-lite';
 import Buttons from './Buttons';
 import Category from './Category';
-import StateGroup from '../state/Group';
-import LoansGroup from '../state/LoansGroup';
-import StateCategory from '../state/Category';
-import { CategoryInterface } from '../state/State';
+import StateGroup from '../State/Group';
+import LoansGroup from '../State/LoansGroup';
+import StateCategory from '../State/Category';
+import { CategoryInterface } from '../State/State';
 
 type Props = {
   group: StateGroup | LoansGroup,

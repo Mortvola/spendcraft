@@ -1,5 +1,5 @@
 import React, { ReactElement } from 'react';
-import FundingPlan from '../state/FundingPlan';
+import FundingPlan from '../State/FundingPlan';
 
 type PropsType = {
   plan: FundingPlan,

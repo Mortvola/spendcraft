@@ -2,8 +2,8 @@ import React, { ReactElement, useContext } from 'react';
 import CategoryInput from './CategoryInput/CategoryInput';
 import IconButton from './IconButton';
 import AmountInput from './AmountInput';
-import { CategoryInterface, TransactionCategoryInterface } from './state/State';
-import MobxStore from './state/mobxStore';
+import { CategoryInterface, TransactionCategoryInterface } from './State/State';
+import MobxStore from './State/mobxStore';
 
 type PropsType = {
   split: TransactionCategoryInterface,

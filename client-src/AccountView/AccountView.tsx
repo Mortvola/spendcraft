@@ -1,8 +1,8 @@
 import React, { useContext } from 'react';
 import { observer } from 'mobx-react-lite';
 import Institution from './Institution';
-import MobxStore from '../state/mobxStore';
-import { AccountInterface } from '../state/State';
+import MobxStore from '../State/mobxStore';
+import { AccountInterface } from '../State/State';
 
 const AccountView = () => {
   const { accounts, uiState } = useContext(MobxStore);

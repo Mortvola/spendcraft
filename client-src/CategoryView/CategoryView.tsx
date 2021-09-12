@@ -1,8 +1,8 @@
 import React, { ReactElement, useContext, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import Group from './Group';
-import MobxStore from '../state/mobxStore';
-import Category from '../state/Category';
+import MobxStore from '../State/mobxStore';
+import Category from '../State/Category';
 import { useCategoryTransferDialog } from '../CategoryTransferDialog';
 import SystemCategory from './SystemCategory';
 

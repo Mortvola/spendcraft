@@ -1,6 +1,6 @@
 import React, { ReactElement } from 'react';
-import FundingPlan from '../state/FundingPlan';
-import { FundingPlanInterface } from '../state/State';
+import FundingPlan from '../State/FundingPlan';
+import { FundingPlanInterface } from '../State/State';
 import PlanItem from './PlanItem';
 
 type PropsType = {

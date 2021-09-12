@@ -11,8 +11,8 @@ import useModal, { ModalProps, UseModalType } from '../Modal/useModal';
 import AmountInput from '../AmountInput';
 import FormError from '../Modal/FormError';
 import FormModal from '../Modal/FormModal';
-import LoansGroup from '../state/LoansGroup';
-import Category from '../state/Category';
+import LoansGroup from '../State/LoansGroup';
+import Category from '../State/Category';
 import { Error } from '../../common/ResponseTypes';
 
 type Props = {

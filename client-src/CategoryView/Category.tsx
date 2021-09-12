@@ -4,9 +4,9 @@ import { useCategoryTransferDialog } from '../CategoryTransferDialog';
 import Amount from '../Amount';
 import IconButton from '../IconButton';
 import EditButton from './EditButton';
-import Group from '../state/Group';
-import LoansGroup from '../state/LoansGroup';
-import StateCategory from '../state/Category';
+import Group from '../State/Group';
+import LoansGroup from '../State/LoansGroup';
+import StateCategory from '../State/Category';
 
 type PropsType = {
   category: StateCategory,

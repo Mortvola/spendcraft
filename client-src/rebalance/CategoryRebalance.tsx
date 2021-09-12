@@ -1,6 +1,6 @@
 import React, { ReactElement, useState } from 'react';
 import CategoryRebalanceItem from './CategoryRebalanceItem';
-import { RebalanceCategoryInterface, CategoryBalanceInterface, CategoryTreeBalanceInterace } from '../state/State';
+import { RebalanceCategoryInterface, CategoryBalanceInterface, CategoryTreeBalanceInterace } from '../State/State';
 
 interface Props {
   categoryTree: null | CategoryTreeBalanceInterace[],

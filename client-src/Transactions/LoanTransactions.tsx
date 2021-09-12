@@ -1,6 +1,6 @@
 import React, { ReactElement } from 'react';
 import Amount from '../Amount';
-import LoanTransaction from '../state/LoanTransaction';
+import LoanTransaction from '../State/LoanTransaction';
 
 type LoanType = {
   balance: number,

@@ -4,11 +4,11 @@ import React, {
 import ReactDOM from 'react-dom';
 import CategorySelector from './CategorySelector';
 import useExclusiveBool from '../ExclusiveBool';
-import MobxStore from '../state/mobxStore';
-import Group from '../state/Group';
-import Category from '../state/Category';
-import { CategoryInterface, GroupInterface } from '../state/State';
-import LoansGroup from '../state/LoansGroup';
+import MobxStore from '../State/mobxStore';
+import Group from '../State/Group';
+import Category from '../State/Category';
+import { CategoryInterface, GroupInterface } from '../State/State';
+import LoansGroup from '../State/LoansGroup';
 
 type PropsType = {
   categoryId: number | null,

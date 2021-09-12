@@ -4,7 +4,7 @@ import IconButton from '../IconButton';
 import { useAccountsDialog } from './AccountsDialog';
 import { useInstitutionInfoDialog } from './InstitutionInfoDialog';
 import Account from './Account';
-import { AccountInterface, InstitutionInterface } from '../state/State';
+import { AccountInterface, InstitutionInterface } from '../State/State';
 import { useOfflineAccountDialog } from './OfflineAccountDialog';
 import { useDeleteConfirmation } from '../DeleteConfirmation';
 

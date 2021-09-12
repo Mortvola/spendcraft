@@ -8,8 +8,8 @@ import {
 import CategorySplits from '../CategorySplits';
 import useModal, { ModalProps, UseModalType } from '../Modal/useModal';
 import Amount from '../Amount';
-import Transaction from '../state/Transaction';
-import { AccountInterface, TransactionCategoryInterface } from '../state/State';
+import Transaction from '../State/Transaction';
+import { AccountInterface, TransactionCategoryInterface } from '../State/State';
 import FormError from '../Modal/FormError';
 import AmountInput from '../AmountInput';
 import FormModal from '../Modal/FormModal';

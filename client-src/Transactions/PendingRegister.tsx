@@ -1,5 +1,5 @@
 import React, { ReactElement } from 'react';
-import PendingTransaction from '../state/PendingTransaction';
+import PendingTransaction from '../State/PendingTransaction';
 import PendingTitles from './PendingTItles';
 import PendingTransactions from './PendingTransactions';
 import SecondaryRegister from './SecondaryRegister';

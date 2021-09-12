@@ -10,7 +10,7 @@ import useModal, { ModalProps, UseModalType } from '../Modal/useModal';
 import FormModal from '../Modal/FormModal';
 import { TrackingType, UnlinkedAccountProps } from '../../common/ResponseTypes';
 import FormField from '../Modal/FormField';
-import { InstitutionInterface } from '../state/State';
+import { InstitutionInterface } from '../State/State';
 
 type PropsType = {
   institution: InstitutionInterface,

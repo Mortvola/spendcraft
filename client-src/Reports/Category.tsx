@@ -7,8 +7,8 @@ import { Button, DropdownButton } from 'react-bootstrap';
 import Amount from '../Amount';
 import FormCheckbox from '../Modal/FormCheckbox';
 import FormField from '../Modal/FormField';
-import MobxStore from '../state/mobxStore';
-import { getBody, httpGet } from '../state/Transports';
+import MobxStore from '../State/mobxStore';
+import { getBody, httpGet } from '../State/Transports';
 import useSortableTable from './SortableTable';
 
 type CategoryReport = {

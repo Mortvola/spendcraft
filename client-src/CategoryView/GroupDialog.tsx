@@ -6,9 +6,9 @@ import {
   FormikErrors,
   FormikContextType,
 } from 'formik';
-import MobxStore from '../state/mobxStore';
+import MobxStore from '../State/mobxStore';
 import useModal, { UseModalType, ModalProps } from '../Modal/useModal';
-import Group from '../state/Group';
+import Group from '../State/Group';
 import { Error } from '../../common/ResponseTypes';
 import FormModal from '../Modal/FormModal';
 import FormError from '../Modal/FormError';

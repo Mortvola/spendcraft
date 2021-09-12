@@ -8,9 +8,9 @@ import FormField from '../Modal/FormField';
 import FormModal from '../Modal/FormModal';
 import FormTextField from '../Modal/FormTextField';
 import useModal, { ModalProps, UseModalType } from '../Modal/useModal';
-import MobxStore from '../state/mobxStore';
-import { AccountInterface, InstitutionInterface } from '../state/State';
-import { getSubtypes, getTypes } from '../state/AccountTypes';
+import MobxStore from '../State/mobxStore';
+import { AccountInterface, InstitutionInterface } from '../State/State';
+import { getSubtypes, getTypes } from '../State/AccountTypes';
 
 type PropsType = {
   institution?: InstitutionInterface,

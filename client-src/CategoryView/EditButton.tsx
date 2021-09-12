@@ -1,10 +1,10 @@
 import React, { ReactElement } from 'react';
 import { useCategoryDialog } from './CategoryDialog';
 import IconButton from '../IconButton';
-import Group from '../state/Group';
-import Category from '../state/Category';
+import Group from '../State/Group';
+import Category from '../State/Category';
 import { useLoanDialog } from './LoanDialog';
-import LoansGroup, { isLoansGroup } from '../state/LoansGroup';
+import LoansGroup, { isLoansGroup } from '../State/LoansGroup';
 
 type PropsType = {
   category: Category,

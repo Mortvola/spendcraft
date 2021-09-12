@@ -11,12 +11,12 @@ import { toJS } from 'mobx';
 import CategoryRebalance from './CategoryRebalance';
 import Amount from '../Amount';
 import useModal, { ModalProps, UseModalType } from '../Modal/useModal';
-import Transaction from '../state/Transaction';
-import { CategoryTreeBalanceInterace, TransactionCategoryInterface } from '../state/State';
-import MobxStore from '../state/mobxStore';
+import Transaction from '../State/Transaction';
+import { CategoryTreeBalanceInterace, TransactionCategoryInterface } from '../State/State';
+import MobxStore from '../State/mobxStore';
 import FormModal from '../Modal/FormModal';
 import { isCategoryTreeBalanceResponse, TransactionType } from '../../common/ResponseTypes';
-import { getBody, httpGet } from '../state/Transports';
+import { getBody, httpGet } from '../State/Transports';
 
 interface Props {
   transaction?: Transaction,

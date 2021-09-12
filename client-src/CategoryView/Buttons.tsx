@@ -4,8 +4,8 @@ import IconButton from '../IconButton';
 import { useCategoryDialog } from './CategoryDialog';
 import { useLoanDialog } from './LoanDialog';
 import { useGroupDialog } from './GroupDialog';
-import GroupState, { isGroup } from '../state/Group';
-import LoansGroup, { isLoansGroup } from '../state/LoansGroup';
+import GroupState, { isGroup } from '../State/Group';
+import LoansGroup, { isLoansGroup } from '../State/LoansGroup';
 
 type Props = {
   group: GroupState | LoansGroup,

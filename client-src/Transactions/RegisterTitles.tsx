@@ -1,5 +1,5 @@
 import React, { ReactElement } from 'react';
-import { AccountInterface } from '../state/State';
+import { AccountInterface } from '../State/State';
 
 type PropsType = {
   categoryView?: boolean,

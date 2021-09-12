@@ -1,6 +1,6 @@
 import React, { ReactElement, useEffect, useState } from 'react';
 import Chart from 'react-google-charts';
-import { getBody, httpGet } from '../state/Transports';
+import { getBody, httpGet } from '../State/Transports';
 
 export const isNetworthReport = (r: unknown): r is (number | string)[][] => (
   true

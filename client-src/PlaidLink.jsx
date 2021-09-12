@@ -4,7 +4,7 @@ import React, {
 import { usePlaidLink } from 'react-plaid-link';
 import { observer } from 'mobx-react-lite';
 import { runInAction } from 'mobx';
-import MobxStore from './state/mobxStore';
+import MobxStore from './State/mobxStore';
 import { useAccountsDialog } from './AccountView/AccountsDialog';
 
 const PlaidLinkDialog = ({

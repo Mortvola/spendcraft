@@ -3,10 +3,10 @@ import React, {
 } from 'react';
 import { observer } from 'mobx-react';
 import CategorySelectorGroup from './CategorySelectorGroup';
-import MobxStore from '../state/mobxStore';
-import Group, { isCategoriesArray, isGroup } from '../state/Group';
-import Category from '../state/Category';
-import LoansGroup, { isLoansGroup } from '../state/LoansGroup';
+import MobxStore from '../State/mobxStore';
+import Group, { isCategoriesArray, isGroup } from '../State/Group';
+import Category from '../State/Category';
+import LoansGroup, { isLoansGroup } from '../State/LoansGroup';
 
 type PropsType = {
   selectedGroup?: Group | LoansGroup | null,

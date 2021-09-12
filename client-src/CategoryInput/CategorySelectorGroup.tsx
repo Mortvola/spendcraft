@@ -1,8 +1,8 @@
 import React, { ReactElement } from 'react';
 import CategorySelectorCategory from './CategorySelectorCategory';
-import Group from '../state/Group';
-import Category from '../state/Category';
-import LoansGroup from '../state/LoansGroup';
+import Group from '../State/Group';
+import Category from '../State/Category';
+import LoansGroup from '../State/LoansGroup';
 
 type PropsType = {
   group: Group | LoansGroup,
