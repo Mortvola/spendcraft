@@ -53,14 +53,14 @@ const CategorySplits = ({
         };
       })
       : [{
-        id: nextId(), type: 'REGULAR', categoryId: categoryTree.unassignedCat.id, amount: total,
+        id: nextId(), categoryId: categoryTree.unassignedCat.id, amount: total,
       }],
   );
 
   useEffect(() => {
     if (splits.length === 0 && categoryTree.unassignedCat) {
       setEditedSplits([{
-        id: nextId(), type: 'REGULAR', categoryId: categoryTree.unassignedCat.id, amount: total,
+        id: nextId(), categoryId: categoryTree.unassignedCat.id, amount: total,
       }]);
     }
   }, [categoryTree.unassignedCat, splits.length, total])
@@ -126,7 +126,7 @@ const CategorySplits = ({
         index + 1,
         0,
         {
-          id: nextId(), type: 'REGULAR', categoryId: categoryTree.unassignedCat.id, amount,
+          id: nextId(), categoryId: categoryTree.unassignedCat.id, amount,
         },
       );
 

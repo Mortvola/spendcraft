@@ -8,22 +8,22 @@ import {
   FieldProps,
 } from 'formik';
 import useModal, { ModalProps, UseModalType } from '../Modal/useModal';
-import Group, { isGroup } from '../State/Group';
-import Category from '../State/Category';
+import { isGroup } from '../State/Group';
 import FormModal from '../Modal/FormModal';
 import FormError from '../Modal/FormError';
 import MobxStore from '../State/mobxStore';
+import { CategoryInterface, GroupInterface } from '../State/State';
 
 type Props = {
-  category?: Category | null,
-  group: Group,
+  category?: CategoryInterface | null,
+  group: GroupInterface,
 }
 
 const CategoryDialog = ({
   onHide,
   show,
   setShow,
-  category,
+  category = null,
   group,
 }: Props & ModalProps): ReactElement => {
   const { categoryTree } = useContext(MobxStore);
@@ -37,13 +37,10 @@ const CategoryDialog = ({
     const { setErrors } = bag;
     let errors = null;
 
-    const selectedGroup = categoryTree.groups.find((g) => g.id === parseInt(values.groupId, 10));
+    const selectedGroup = (categoryTree.nodes.find((g) => g.id === parseInt(values.groupId, 10))
+      ?? categoryTree.noGroupGroup);
 
-    if (!selectedGroup) {
-      throw new Error('group is not defined');
-    }
-
-    if (!isGroup(selectedGroup)) {
+    if (selectedGroup === null || !isGroup(selectedGroup)) {
       throw new Error('group is not a group');
     }
 
@@ -81,7 +78,7 @@ const CategoryDialog = ({
       throw new Error('category is null or undefined');
     }
 
-    const errors = await group.deleteCategory(category.id);
+    const errors = await category.delete();
 
     if (errors && errors.length > 0) {
       setErrors({ [errors[0].field]: errors[0].message });
@@ -99,11 +96,19 @@ const CategoryDialog = ({
     return 'Add Category';
   };
 
-  const populateGroups = () => (
-    categoryTree.groups.map((g) => (
-      <option key={g.id} value={g.id}>{g.name}</option>
-    ))
-  )
+  const populateGroups = () => {
+    const options = [];
+
+    if (categoryTree.noGroupGroup !== null) {
+      options.push(<option key="nogroup" value={categoryTree.noGroupGroup.id}>No Group</option>);
+    }
+
+    return options.concat(
+      categoryTree.nodes.map((g) => (
+        <option key={g.id} value={g.id}>{g.name}</option>
+      )),
+    )
+  }
 
   return (
     <FormModal<ValueType>
@@ -112,7 +117,7 @@ const CategoryDialog = ({
       onHide={onHide}
       initialValues={{
         name: category && category.name ? category.name : '',
-        groupId: group.id.toString(),
+        groupId: group ? group.id.toString() : '',
       }}
       validate={handleValidate}
       onSubmit={handleSubmit}

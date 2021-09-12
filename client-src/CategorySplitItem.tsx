@@ -29,22 +29,37 @@ function CategorySplitItem({
   }
 
   const handleCategoryChange = (category: CategoryInterface) => {
+    if (split.id === undefined) {
+      throw new Error('missing id');
+    }
     onCategoryChange(split.id, category.id);
   };
 
   const handleDeltaChange = (amount: number, delta: number) => {
+    if (split.id === undefined) {
+      throw new Error('missing id');
+    }
     onDeltaChange(split.id, amount, delta);
   };
 
   const handleCommentChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (split.id === undefined) {
+      throw new Error('missing id');
+    }
     onCommentChange(split.id, event.target.value);
   }
 
   const handleAddItem = () => {
+    if (split.id === undefined) {
+      throw new Error('missing id');
+    }
     onAddItem(split.id);
   };
 
   const handleDeleteItem = () => {
+    if (split.id === undefined) {
+      throw new Error('missing id');
+    }
     onDeleteItem(split.id);
   };
 

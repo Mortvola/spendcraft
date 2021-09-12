@@ -10,6 +10,7 @@ import FormField from '../Modal/FormField';
 import MobxStore from '../State/mobxStore';
 import { getBody, httpGet } from '../State/Transports';
 import useSortableTable from './SortableTable';
+import { isGroup } from '../State/Group';
 
 type CategoryReport = {
   rowNumber: string,
@@ -20,7 +21,7 @@ type CategoryReport = {
 };
 
 const Category = (): ReactElement | null => {
-  const { categoryTree: { groups } } = useContext(MobxStore);
+  const { categoryTree: { nodes } } = useContext(MobxStore);
   const { setData, SortableTable } = useSortableTable<CategoryReport>(['groupName', 'categoryName', 'sum', 'count']);
 
   type FormValues = {
@@ -63,16 +64,24 @@ const Category = (): ReactElement | null => {
         initialValues={{
           startDate: DateTime.now().minus({ years: 1 }).toISODate(),
           endDate: DateTime.now().toISODate(),
-          category: (groups.flatMap((g) => (
-            g.categories.filter((c) => (
-              c.type === 'REGULAR'
-            )))
-            .map((c) => (
-              {
-                value: true,
-                id: c.id,
-              }
-            )))),
+          category: (nodes.flatMap((g) => {
+            if (isGroup(g)) {
+              return g.categories.filter((c) => (
+                c.type === 'REGULAR'
+              ))
+                .map((c) => (
+                  {
+                    value: true,
+                    id: c.id,
+                  }
+                ));
+            }
+
+            return ({
+              value: true,
+              id: g.id,
+            })
+          })),
         }}
         onSubmit={handleSubmit}
       >
@@ -93,16 +102,23 @@ const Category = (): ReactElement | null => {
                 {
                   () => {
                     let index = -1;
-                    return (groups.flatMap((g) => (
-                      g.categories.filter((c) => (
-                        c.type === 'REGULAR'
-                      )))
-                      .map((c) => {
-                        index += 1;
-                        return (
-                          <FormCheckbox key={c.id} name={`category[${index}].value`} label={`${g.name}:${c.name}`} />
-                        )
-                      })))
+                    return (nodes.flatMap((g) => {
+                      if (isGroup(g)) {
+                        g.categories.filter((c) => (
+                          c.type === 'REGULAR'
+                        ))
+                          .map((c) => {
+                            index += 1;
+                            return (
+                              <FormCheckbox key={c.id} name={`category[${index}].value`} label={`${g.name}:${c.name}`} />
+                            )
+                          })
+                      }
+
+                      return (
+                        <FormCheckbox key={g.id} name={`category[${index}].value`} label={`${g.name}`} />
+                      )
+                    }))
                   }
                 }
               </FieldArray>

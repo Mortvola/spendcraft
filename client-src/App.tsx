@@ -12,7 +12,7 @@ import DetailView from './DetailView';
 import MobxStore, { store as mobxStore } from './State/mobxStore';
 import { httpPost } from './State/Transports';
 import ServerError, { serverError } from './State/ServerError';
-import HomeToolbar from './HomeToolbar';
+import HomeToolbar from './CategoryView/CategoryViewToolbar';
 import AccountsToolbar from './AccountView/AccountsToolbar';
 import PlansToolbar from './Plans/PlansToolbar';
 

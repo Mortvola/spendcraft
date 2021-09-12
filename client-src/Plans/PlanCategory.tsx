@@ -1,49 +1,32 @@
-import React, { ReactElement, useState } from 'react';
-import PropTypes from 'prop-types';
+import React, { ReactElement } from 'react';
 import { observer } from 'mobx-react-lite';
 import AmountInput from '../AmountInput';
 import Amount from '../Amount';
-import FundingPlanCategory from '../State/FundingPlanCategory';
+import { CategoryInterface } from '../State/State';
 
 type PropsType = {
-  category: FundingPlanCategory,
-  onDeltaChange: ((category: FundingPlanCategory, amount: number, delta: number) => void),
+  category: CategoryInterface,
+  amount: number,
+  onDeltaChange: ((category: CategoryInterface, amount: number, delta: number) => void),
 }
 const PlanCategory = ({
   category,
+  amount,
   onDeltaChange,
 }: PropsType): ReactElement => {
-  const [annualAmount, setAnnualAmount] = useState(12 * (category.amount || 0));
-
-  const handleDeltaChange = (amount: number, delta: number) => {
-    setAnnualAmount(amount * 12);
-
+  const handleDeltaChange = (newAmount: number, delta: number) => {
     if (onDeltaChange) {
-      onDeltaChange(category, amount, delta);
+      onDeltaChange(category, newAmount, delta);
     }
   };
 
   return (
     <div className="plan-detail-item">
       <div>{category.name}</div>
-      <AmountInput value={category.amount} onDeltaChange={handleDeltaChange} />
-      <Amount amount={annualAmount} />
+      <AmountInput value={amount} onDeltaChange={handleDeltaChange} />
+      <Amount amount={amount * 12} />
     </div>
   );
-};
-
-PlanCategory.propTypes = {
-  category: PropTypes.shape({
-    id: PropTypes.number,
-    categoryId: PropTypes.number.isRequired,
-    name: PropTypes.string.isRequired,
-    amount: PropTypes.number.isRequired,
-  }).isRequired,
-  onDeltaChange: PropTypes.func,
-};
-
-PlanCategory.defaultProps = {
-  onDeltaChange: null,
 };
 
 export default observer(PlanCategory);

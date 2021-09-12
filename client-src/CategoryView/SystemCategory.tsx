@@ -3,11 +3,11 @@ import { observer } from 'mobx-react-lite';
 import Amount from '../Amount';
 import { useCategoryTransferDialog } from '../CategoryTransferDialog';
 import IconButton from '../IconButton';
-import Category from '../State/Category';
+import { CategoryInterface } from '../State/State';
 import MobxStore from '../State/mobxStore';
 
 type PropsType = {
-  category: Category | null,
+  category: CategoryInterface | null,
 }
 
 const SystemCategory = ({

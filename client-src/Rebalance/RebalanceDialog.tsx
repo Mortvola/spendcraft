@@ -3,20 +3,22 @@ import React, {
   useState, useEffect, useCallback, ReactElement, useContext,
 } from 'react';
 import {
-  Field, ErrorMessage, FormikErrors,
+  Field, FormikErrors,
   FieldProps,
   FormikContextType,
 } from 'formik';
 import { toJS } from 'mobx';
+import { DateTime } from 'luxon';
 import CategoryRebalance from './CategoryRebalance';
 import Amount from '../Amount';
 import useModal, { ModalProps, UseModalType } from '../Modal/useModal';
 import Transaction from '../State/Transaction';
-import { CategoryTreeBalanceInterace, TransactionCategoryInterface } from '../State/State';
+import { CategoryBalanceInterface, TransactionCategoryInterface } from '../State/State';
 import MobxStore from '../State/mobxStore';
 import FormModal from '../Modal/FormModal';
 import { isCategoryTreeBalanceResponse, TransactionType } from '../../common/ResponseTypes';
 import { getBody, httpGet } from '../State/Transports';
+import FormError from '../Modal/FormError';
 
 interface Props {
   transaction?: Transaction,
@@ -29,10 +31,10 @@ const RebalanceDialog = ({
   setShow,
   onHide,
 }: Props & ModalProps): ReactElement => {
-  const { register } = useContext(MobxStore);
-  const [categoryTree, setCategoryTree] = useState<CategoryTreeBalanceInterace[] | null>(null);
+  const { register, categoryTree: { nodes } } = useContext(MobxStore);
+  const [balances, setBalances] = useState<CategoryBalanceInterface[]>([])
   const [unassigned, setUnassigned] = useState(0);
-  const [date, setDate] = useState(transaction ? transaction.date : '');
+  const [date, setDate] = useState(transaction ? transaction.date : DateTime.now().toISODate());
 
   type ValueType = {
     categories: TransactionCategoryInterface[]
@@ -56,7 +58,7 @@ const RebalanceDialog = ({
           const body = await getBody(response);
 
           if (isCategoryTreeBalanceResponse(body)) {
-            setCategoryTree(body);
+            setBalances(body);
           }
         }
       })();
@@ -171,13 +173,14 @@ const RebalanceDialog = ({
                   />
                 )}
               </Field>
+              <FormError name="date" />
             </label>
             <label>
               Unassigned:
               <Amount className="form-control" amount={unassigned} />
             </label>
           </div>
-          <ErrorMessage name="date" />
+          <FormError name="categories" />
           <Field name="categories">
             {({
               field: {
@@ -187,10 +190,11 @@ const RebalanceDialog = ({
               form: {
                 setFieldValue,
               },
-            }: FieldProps<Array<TransactionCategoryInterface>>) => (
+            }: FieldProps<TransactionCategoryInterface[]>) => (
               <CategoryRebalance
-                categoryTree={categoryTree}
-                categories={value}
+                nodes={nodes}
+                trxCategories={value}
+                balances={balances}
                 onDeltaChange={(_amount, delta, categories) => {
                   handleDeltaChange(delta);
                   setFieldValue(name, categories, false);
@@ -198,7 +202,6 @@ const RebalanceDialog = ({
               />
             )}
           </Field>
-          <ErrorMessage name="categories" />
         </div>
       </FormModal>
     </>

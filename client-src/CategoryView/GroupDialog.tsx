@@ -8,14 +8,14 @@ import {
 } from 'formik';
 import MobxStore from '../State/mobxStore';
 import useModal, { UseModalType, ModalProps } from '../Modal/useModal';
-import Group from '../State/Group';
 import { Error } from '../../common/ResponseTypes';
 import FormModal from '../Modal/FormModal';
 import FormError from '../Modal/FormError';
+import { GroupInterface } from '../State/State';
 
 interface Props {
   // eslint-disable-next-line react/require-default-props
-  group?: Group,
+  group?: GroupInterface,
 }
 
 const GroupDialog = ({
@@ -65,7 +65,7 @@ const GroupDialog = ({
     const { setTouched, setErrors } = bag;
 
     if (group) {
-      const errors = await categoryTree.deleteGroup(group.id);
+      const errors = await group.delete();
 
       if (errors && errors.length > 0) {
         setTouched({ name: true }, false);

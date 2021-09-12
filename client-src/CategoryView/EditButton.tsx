@@ -1,30 +1,17 @@
 import React, { ReactElement } from 'react';
 import { useCategoryDialog } from './CategoryDialog';
 import IconButton from '../IconButton';
-import Group from '../State/Group';
-import Category from '../State/Category';
-import { useLoanDialog } from './LoanDialog';
-import LoansGroup, { isLoansGroup } from '../State/LoansGroup';
+import { CategoryInterface, GroupInterface } from '../State/State';
 
 type PropsType = {
-  category: Category,
-  group: Group | LoansGroup,
+  category: CategoryInterface,
+  group: GroupInterface,
 }
 const EditButton = ({
   category,
   group,
 }: PropsType): ReactElement | null => {
   const [CategoryDialog, showCategoryDialog] = useCategoryDialog();
-  const [LoanDialog, showLoanDialog] = useLoanDialog();
-
-  if (isLoansGroup(group)) {
-    return (
-      <>
-        <IconButton icon="edit" onClick={showLoanDialog} />
-        <LoanDialog category={category} group={group} />
-      </>
-    );
-  }
 
   return (
     <>

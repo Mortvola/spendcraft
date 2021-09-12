@@ -2,59 +2,77 @@ import { makeAutoObservable, runInAction } from 'mobx';
 import Category, { isCategory } from './Category';
 import {
   Error, GroupProps, isErrorResponse, isGroupProps,
-  isAddCategoryResponse,
   CategoryBalanceProps,
+  CategoryProps,
+  isAddCategoryResponse,
 } from '../../common/ResponseTypes';
 import {
   getBody, httpDelete, httpPatch, httpPost,
 } from './Transports';
-import { GroupInterface, StoreInterface } from './State';
+import { CategoryInterface, GroupInterface, StoreInterface } from './State';
 
 class Group implements GroupInterface {
   id: number;
 
   name: string;
 
-  system = false;
+  type: string;
 
-  categories: Category[] = [];
+  categories: CategoryInterface[] = [];
 
   store: StoreInterface;
 
   constructor(props: GroupProps | Group, store: StoreInterface) {
     this.id = props.id;
     this.name = props.name;
-    this.system = props.system || false;
+    this.type = props.type;
     this.store = store;
 
     if (props.categories && props.categories.length > 0) {
-      props.categories.forEach((c) => {
-        switch (c.type) {
-          case 'UNASSIGNED':
-            this.categories.push(this.store.categoryTree.unassignedCat);
-            break;
-
-          case 'ACCOUNT TRANSFER':
-            this.categories.push(this.store.categoryTree.accountTransferCat);
-            break;
-
-          case 'FUNDING POOL':
-            this.categories.push(this.store.categoryTree.fundingPoolCat);
-            break;
-
-          default: {
-            const category = new Category(c, this.store);
-            this.categories.push(category);
-            break;
-          }
-        }
-      });
+      this.setCategories(props.categories);
     }
 
     makeAutoObservable(this);
   }
 
-  findCategory(categoryId: number): Category | null {
+  setCategories(categories: Category[] | CategoryProps[]): void {
+    categories.forEach((c) => {
+      switch (c.type) {
+        case 'UNASSIGNED':
+          if (this.store.categoryTree.unassignedCat === null) {
+            throw new Error('unassigned category is null');
+          }
+          this.categories.push(this.store.categoryTree.unassignedCat);
+          break;
+
+        case 'ACCOUNT TRANSFER':
+          if (this.store.categoryTree.accountTransferCat === null) {
+            throw new Error('account transfer category is null');
+          }
+          this.categories.push(this.store.categoryTree.accountTransferCat);
+          break;
+
+        case 'FUNDING POOL':
+          if (this.store.categoryTree.fundingPoolCat === null) {
+            throw new Error('funding category is null');
+          }
+          this.categories.push(this.store.categoryTree.fundingPoolCat);
+          break;
+
+        default: {
+          const category = new Category(c, this.store);
+          if (this.type === 'NO GROUP') {
+            this.store.categoryTree.insertNode(category);
+          }
+
+          this.categories.push(category);
+          break;
+        }
+      }
+    });
+  }
+
+  findCategory(categoryId: number): CategoryInterface | null {
     const cat = this.categories.find((c) => c.id === categoryId);
 
     if (cat) {
@@ -62,24 +80,6 @@ class Group implements GroupInterface {
     }
 
     return null;
-  }
-
-  insertCategory(category: Category) {
-    // Find the position where this new category should be inserted.
-    const index = this.categories.findIndex(
-      (g) => category.name.toLowerCase().localeCompare(g.name.toLowerCase()) < 0,
-    );
-
-    if (index === -1) {
-      this.categories.push(category);
-    }
-    else {
-      this.categories = [
-        ...this.categories.slice(0, index),
-        category,
-        ...this.categories.slice(index),
-      ];
-    }
   }
 
   async addCategory(name: string): Promise<null| Error[]> {
@@ -104,7 +104,27 @@ class Group implements GroupInterface {
     return null;
   }
 
-  async update(name: string): Promise<null | Array<Error>> {
+  insertCategory(category: CategoryInterface): void {
+    // Find the position where this new category should be inserted.
+    if (this.type === 'NO GROUP') {
+      this.store.categoryTree.insertNode(category);
+    }
+
+    const index = this.categories.findIndex((g) => category.name.localeCompare(g.name) < 0);
+
+    if (index === -1) {
+      this.categories.push(category);
+    }
+    else {
+      this.categories = [
+        ...this.categories.slice(0, index),
+        category,
+        ...this.categories.slice(index),
+      ];
+    }
+  }
+
+  async update(name: string): Promise<null | Error[]> {
     const response = await httpPatch(`/api/groups/${this.id}`, { name });
 
     const body = await getBody(response);
@@ -125,42 +145,47 @@ class Group implements GroupInterface {
     return null;
   }
 
-  async deleteCategory(categoryId: number): Promise<null | Array<Error>> {
-    const index = this.categories.findIndex((c) => c.id === categoryId);
-    if (index !== -1) {
-      const response = await httpDelete(`/api/groups/${this.id}/categories/${categoryId}`);
+  async delete (): Promise<null | Error[]> {
+    const response = await httpDelete(`/api/groups/${this.id}`);
 
-      if (!response.ok) {
-        const body = await getBody(response);
+    if (!response.ok) {
+      const body = await getBody(response);
 
-        if (isErrorResponse(body)) {
-          return body.errors;
-        }
+      if (isErrorResponse(body)) {
+        return body.errors;
       }
-      else {
-        runInAction(() => {
-          this.categories.splice(index, 1);
-        });
-      }
+    }
+    else {
+      runInAction(() => {
+        this.store.categoryTree.removeNode(this);
+      });
     }
 
     return null;
   }
 
+  removeCategory(category: CategoryInterface): void {
+    if (this.type === 'NO GROUP') {
+      this.store.categoryTree.removeNode(category);
+    }
+
+    const index = this.categories.findIndex((c) => c.id === category.id);
+    if (index !== -1) {
+      this.categories.splice(index, 1);
+    }
+  }
+
   updateBalances(balances: CategoryBalanceProps[]): void {
     this.categories.forEach((c) => {
-      const balance = balances.find((b) => b.id === c.id);
-      if (balance) {
-        c.balance = balance.balance;
-      }
+      c.updateBalances(balances);
     });
   }
 }
 
 export const isGroup = (r: unknown): r is Group => (
-  (r as Group).id !== undefined
+  r !== undefined && r !== null
+  && (r as Group).id !== undefined
   && (r as Group).name !== undefined
-  && (r as Group).system !== undefined
   && (r as Group).categories !== undefined
 );
 

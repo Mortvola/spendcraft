@@ -5,10 +5,7 @@ import Env from '@ioc:Adonis/Core/Env';
 import Logger from '@ioc:Adonis/Core/Logger';
 import Mail from '@ioc:Adonis/Addons/Mail';
 import User from 'App/Models/User';
-import Group from 'App/Models/Group';
 import Database from '@ioc:Adonis/Lucid/Database';
-import Category from 'App/Models/Category';
-import FundingPlan from 'App/Models/FundingPlan';
 
 export default class AuthController {
   // eslint-disable-next-line class-methods-use-this
@@ -57,52 +54,8 @@ export default class AuthController {
     const trx = await Database.transaction();
 
     try {
-      const systemGroup = (new Group()).useTransaction(trx)
-        .fill({
-          name: 'System',
-          userId: user.id,
-          system: true,
-        });
-
-      await systemGroup.save();
-
-      const unassignedCat = (new Category()).useTransaction(trx)
-        .fill({
-          name: 'Unassigned',
-          type: 'UNASSIGNED',
-          amount: 0,
-          groupId: systemGroup.id,
-        });
-
-      const fundingPoolCat = (new Category()).useTransaction(trx)
-        .fill({
-          name: 'Funding Pool',
-          type: 'FUNDING POOL',
-          amount: 0,
-          groupId: systemGroup.id,
-        });
-
-      const accountTransferCat = (new Category()).useTransaction(trx)
-        .fill({
-          name: 'Account Transfer',
-          type: 'ACCOUNT TRANSFER',
-          amount: 0,
-          groupId: systemGroup.id,
-        });
-
-      await unassignedCat.save();
-      await fundingPoolCat.save();
-      await accountTransferCat.save();
-
-      const fundingPlan = (new FundingPlan()).useTransaction(trx)
-        .fill({
-          name: 'Default Plan',
-          userId: user.id,
-        });
-
-      fundingPlan.save();
-
-      await trx.commit();
+      user.useTransaction(trx);
+      user.initialize();
     }
     catch (error) {
       trx.rollback();

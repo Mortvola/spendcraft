@@ -95,7 +95,7 @@ class FundingPlanController {
 
     const category = await FundingPlanCategory.updateOrCreate(
       {
-        planId: planId,
+        planId,
         categoryId: catId,
       },
       {

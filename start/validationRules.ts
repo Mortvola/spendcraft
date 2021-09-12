@@ -21,7 +21,6 @@ validator.rule(
       return
     }
 
-    console.log(`table: ${table}, column: ${column}, value: ${value}`);
     const exists = await Database.query()
       .select(Database.raw('EXISTS (SELECT 1 FROM ?? WHERE ?? = ?) AS exists', [table, column, value]));
 

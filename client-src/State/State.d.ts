@@ -4,16 +4,24 @@ import User from './User';
 import { CategoryType, Error, TrackingType } from '../../common/ResponseTypes'
 import LoanTransaction from './LoanTransaction';
 
+export type TreeNodeInterface = (CategoryInterface | GroupInterface);
+
 export interface GroupInterface {
   id: number;
 
   name: string;
 
-  system: boolean;
+  type: string;
 
   categories: CategoryInterface[];
 
-  insertCategory(category: Category): void;
+  insertCategory(category: CategoryInterface): void;
+
+  removeCategory(category: CategoryInterface): void;
+
+  delete (): Promise<null | Error[]>;
+
+  update(name: string): Promise<null | Error[]>;
 }
 
 export interface TransactionInterface {
@@ -133,6 +141,8 @@ export interface CategoryInterface {
 
   type: CategoryType;
 
+  groupId: number;
+
   balance: number;
 
   transactions: Transaction[];
@@ -146,6 +156,8 @@ export interface CategoryInterface {
 
   fetching: boolean;
 
+  store: StoreInterface;
+
   getTransactions(): Promise<void>;
 
   getLoanTransactions(): Promise<void>;
@@ -153,6 +165,16 @@ export interface CategoryInterface {
   insertTransaction(transaction: Transaction): void;
 
   removeTransaction(transactionId: number): void;
+
+  update(name: string, group: GroupInterface): Promise<null | Error[]>;
+
+  delete (): Promise<null | Error[]>;
+
+  updateBalances(balances: CategoryBalanceProps[]): void;
+
+  setLoanTransactions(loan: CategoryLoanResponse): void;
+
+  getGroup(): GroupInterface;
 }
 
 export interface FundingPlanInterface {
@@ -184,53 +206,37 @@ export interface UIStateInterface {
 export interface CategoryTreeInterface {
   systemIds: SystemIds;
 
-  unassignedCat: Category | null = null;
+  noGroupGroup: GroupInterface | null;
 
-  fundingPoolCat: Category | null = null;
+  unassignedCat: CategoryInterface | null;
 
-  accountTransferCat: Category | null = null;
+  fundingPoolCat: CategoryInterface | null;
 
-  groups: GroupInterface[] = [];
+  accountTransferCat: CategoryInterface | null;
+
+  nodes: (CategoryInterface | GroupInterface)[] = [];
+
+  insertNode(node: TreeNodeInterface): void;
 
   updateBalances(balances: CategoryBalanceProps[]): void;
+
   getCategory(categoryId: number): CategoryInterface | null;
+
+  getCategoryGroup(categoryId: number): GroupInterface;
+
+  removeNode(node: GroupInterface | CategoryInterface): void;
 }
 
 export interface CategoryBalanceInterface {
   id: number,
-  name: string,
   balance:number,
-  system: boolean,
 }
-
-export interface CategoryTreeBalanceInterace {
-  id: number,
-  name: string,
-  categories: CategoryBalanceInterface[],
-}
-
-export const isCategoryTreeBalanceInterface = (r: unknown): r is CategoryTreeBalanceInterace => (
-  (r as CategoryTreeBalanceInterace).id !== undefined
-  && (r as CategoryTreeBalanceInterace).name !== undefined
-  && (r as CategoryTreeBalanceInterace).categories !== undefined
-)
 
 export interface TransactionCategoryInterface {
-  id: number;
-  type: CategoryType;
-  categoryId: number;
-  amount: number;
-  comment?: string;
-
-  loanTransaction?: null | {
-    principle: number;
-  }
-}
-
-export interface RebalanceCategoryInterface {
   id?: number;
   categoryId: number;
   amount: number;
+  comment?: string;
 }
 
 export interface NewTransactionCategoryInterface {
@@ -305,6 +311,8 @@ export interface AccountInterface {
 
   refreshing: boolean;
 
+  institution: InstitutionInterface;
+
   store: StoreInterface;
 
   async getTransactions(): Promise<void>;
@@ -339,9 +347,9 @@ export interface BalancesInterface {
 }
 
 export interface PlansInterface {
-  list: Array<FundingPlan>;
+  list: FundingPlan[];
 
-  details: FundingPlanDetails | null;
+  details: FundingPlanDetails | null = null;
 }
 
 export interface StoreInterface {

@@ -1,108 +1,82 @@
 import React, {
-  ReactElement, useContext, useEffect, useState,
+  ReactElement, useContext,
 } from 'react';
 import { observer } from 'mobx-react';
 import CategorySelectorGroup from './CategorySelectorGroup';
 import MobxStore from '../State/mobxStore';
-import Group, { isCategoriesArray, isGroup } from '../State/Group';
-import Category from '../State/Category';
-import LoansGroup, { isLoansGroup } from '../State/LoansGroup';
+import { isGroup } from '../State/Group';
+import { CategoryInterface, GroupInterface } from '../State/State';
+import CategorySelectorCategory from './CategorySelectorCategory';
+import { isCategory } from '../State/Category';
+
+export const categoryFiltered = (
+  group: GroupInterface | null,
+  category: CategoryInterface,
+  filterParts: string[],
+): boolean => {
+  if (filterParts.length > 0) {
+    if (filterParts.length === 1) {
+      // No colon. Filter can be applied to both group and categories.
+
+      // If the category's group matches the filter then always include the
+      // category.
+      return ((group === null || !group.name.toLowerCase().includes(filterParts[0]))
+       && !category.name.toLowerCase().includes(filterParts[0]));
+    }
+
+    if (filterParts[0] === '') {
+      // filter only applies to the category
+      return !category.name.toLowerCase().includes(filterParts[1]);
+    }
+
+    if (filterParts[1] === '') {
+      // filter only applies to the group
+      return group === null || !group.name.toLowerCase().includes(filterParts[0]);
+    }
+
+    return (group === null || !group.name.toLowerCase().includes(filterParts[0]))
+      || !category.name.toLowerCase().includes(filterParts[1]);
+  }
+
+  return false;
+};
 
 type PropsType = {
-  selectedGroup?: Group | LoansGroup | null,
-  selectedCategory?: Category | null,
+  selectedCategory?: CategoryInterface | null,
   left?: number | null,
   top?: number | null,
   width?: number | null,
   height?: number | null,
-  onSelect: (group: Group | LoansGroup, category: Category) => void,
-  filter?: string | null,
+  onSelect: (category: CategoryInterface) => void,
+  filter?: string[],
 }
 
 // eslint-disable-next-line react/display-name
 const CategorySelector = React.forwardRef<HTMLDivElement, PropsType>(({
-  selectedGroup = null,
   selectedCategory = null,
   left = null,
   top = null,
   width = null,
   height = null,
   onSelect,
-  filter = null,
+  filter = [],
 }: PropsType, forwardRef): ReactElement => {
   const { categoryTree } = useContext(MobxStore);
-  const [filteredGroups, setFilteredGroups] = useState<(Group | LoansGroup)[] | null>(null);
 
-  useEffect(() => {
-    if (filter) {
-      const filterCategories = (categories: Category[], catFilter: string) => {
-        let result = [];
-
-        if (catFilter !== '') {
-          result = categories.filter((c) => c.name.toLowerCase().includes(catFilter));
-        }
-        else {
-          // No filter. Allow all of the categories.
-          result = categories;
-        }
-
-        return result;
-      };
-
-      const filterGroup = (group: Group | LoansGroup, parts: Array<string>) => {
-        let categories: Category[] = [];
-
-        if (parts.length === 1) {
-          // No colon. Filter can be applied to both group and categories.
-          if (group.name.toLowerCase().includes(parts[0])) {
-            categories = group.categories;
-          }
-          else {
-            categories = filterCategories(group.categories, parts[0]);
-          }
-        }
-        else if (parts.length === 2) {
-          // If the group contains the first part of the filter then
-          // consider adding the categories
-          if (parts[0] === '' || group.name.toLowerCase().includes(parts[0])) {
-            categories = filterCategories(group.categories, parts[1]);
-          }
-        }
-
-        return categories;
-      };
-
-      const parts = filter.toLowerCase().split(':');
-
-      const groups: (Group | LoansGroup)[] = [];
-
-      categoryTree.groups.forEach((group) => {
-        const categories = filterGroup(group, parts);
-
-        if (categories.length > 0) {
-          if (isLoansGroup(group)) {
-            if (!isCategoriesArray(categories)) {
-              throw new Error('categories does not contain loans');
-            }
-
-            groups.push(new LoansGroup({ ...group, categories }, group.store));
-          }
-          else if (isGroup(group)) {
-            if (!isCategoriesArray(categories)) {
-              throw new Error('categories does not contain categories');
-            }
-
-            groups.push(new Group({ ...group, categories }, group.store));
-          }
-        }
-      });
-
-      setFilteredGroups(groups);
-    }
-    else {
-      setFilteredGroups(categoryTree.groups);
-    }
-  }, [categoryTree.groups, filter]);
+  const filteredCategories = (group: GroupInterface) => (
+    group.categories
+      .filter((c) => (
+        !categoryFiltered(group, c, filter)
+      ))
+      .map((c) => (
+        <CategorySelectorCategory
+          key={`${group.id}:${c.id}`}
+          category={c}
+          selected={selectedCategory !== null && c.id === selectedCategory.id}
+          onSelect={onSelect}
+        />
+      ))
+  )
 
   const style: Record<string, unknown> = {}; // { display: 'none' };
   if (left !== null) {
@@ -121,24 +95,51 @@ const CategorySelector = React.forwardRef<HTMLDivElement, PropsType>(({
     style.height = height;
   }
 
+  const handleMouseDown = (event: React.MouseEvent) => {
+    event.preventDefault();
+  };
+
   return (
-    <div ref={forwardRef} className="drop-down" style={style}>
+    <div
+      ref={forwardRef}
+      className="drop-down"
+      style={style}
+      onMouseDown={handleMouseDown}
+    >
       {
-        filteredGroups && filteredGroups.map((g) => {
-          let sel = null;
-          if (selectedGroup !== null && selectedCategory !== null
-            && selectedGroup.name === g.name) {
-            sel = selectedCategory.name;
+        categoryTree.nodes.map((g) => {
+          if (isGroup(g)) {
+            const categories = filteredCategories(g);
+            if (categories.length > 0) {
+              return (
+                <CategorySelectorGroup
+                  key={g.id}
+                  group={g}
+                >
+                  {filteredCategories(g)}
+                </CategorySelectorGroup>
+              );
+            }
+
+            return null;
           }
 
-          return (
-            <CategorySelectorGroup
-              key={g.id}
-              group={g}
-              selected={sel}
-              onSelected={onSelect}
-            />
-          );
+          if (!isCategory(g)) {
+            throw new Error('group is not a category');
+          }
+
+          if (!categoryFiltered(null, g, filter)) {
+            return (
+              <CategorySelectorCategory
+                key={`${g.groupId}:${g.id}`}
+                category={g}
+                selected={selectedCategory !== null && g.id === selectedCategory.id}
+                onSelect={onSelect}
+              />
+            );
+          }
+
+          return null;
         })
       }
     </div>

@@ -7,8 +7,8 @@ import { AccountInterface, CategoryInterface, TransactionInterface } from '../St
 import CategoryViewTransaction from './CategoryViewTransaction';
 import { useTransactionDialog } from './TransactionDialog';
 import { useCategoryTransferDialog } from '../CategoryTransferDialog';
-import { useFundingDialog } from '../funding/FundingDialog';
-import { useRebalanceDialog } from '../rebalance/RebalanceDialog';
+import { useFundingDialog } from '../Funding/FundingDialog';
+import { useRebalanceDialog } from '../Rebalance/RebalanceDialog';
 import { isTransaction } from '../State/Transaction';
 import { TransactionType } from '../../common/ResponseTypes';
 import MobxStore from '../State/mobxStore';

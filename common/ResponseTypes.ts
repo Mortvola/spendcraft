@@ -3,24 +3,23 @@ export interface GroupProps {
 
   name: string;
 
-  system: boolean;
+  type: string;
 
   categories: CategoryProps[];
 }
 
-export const isGroupProps = (
-  r: GroupProps | unknown,
-): r is GroupProps => (
+export const isGroupProps = (r: unknown): r is GroupProps => (
   (r as GroupProps).id !== undefined
   && (r as GroupProps).name !== undefined
-  // && (r as GroupProps).system !== undefined
-  // && (r as GroupProps).categories !== undefined
+  && (r as GroupProps).type !== undefined
 );
 
 export interface LoansGroupProps {
   id: number;
 
   name: string;
+
+  type: string;
 
   system: boolean;
 
@@ -38,6 +37,8 @@ export type CategoryType = 'REGULAR' | 'UNASSIGNED' | 'FUNDING POOL' | 'ACCOUNT 
 
 export interface CategoryProps {
   id: number;
+
+  groupId: number;
 
   balance: number;
 
@@ -469,8 +470,9 @@ export const isInsertCategoryTransferResponse = (r: unknown): r is InsertCategor
   || isCategoryBalance((r as InsertCategoryTransferReponse).balances[0]))
 );
 
-export const isGroupsResponse = (r: Array<GroupProps> | unknown): r is Array<GroupProps> => (
-  (r as Array<GroupProps>).length === 0 || isGroupProps((r as Array<GroupProps>)[0])
+export const isGroupsResponse = (r: unknown): r is GroupProps[] => (
+  Array.isArray(r)
+  && ((r as GroupProps[]).length === 0 || isGroupProps((r as GroupProps[])[0]))
 );
 
 export const isAccountsResponse = (r: unknown): r is AccountProps[] => (
@@ -535,9 +537,7 @@ export interface FundingPlanDetailsProps {
 
   history: HistoryGroupProps[];
 
-  total: number;
-
-  groups: FundingPlanGroupProps[];
+  categories: FundingPlanCategoryProps[];
 }
 
 export interface UpdateCategoryProps {
@@ -549,8 +549,7 @@ export const isFundingPlanDetailsProps = (
 ): r is FundingPlanDetailsProps => (
   (r as FundingPlanDetailsProps).id !== undefined
   && (r as FundingPlanDetailsProps).history !== undefined
-  && (r as FundingPlanDetailsProps).total !== undefined
-  && (r as FundingPlanDetailsProps).groups !== undefined
+  && (r as FundingPlanDetailsProps).categories !== undefined
 );
 
 export interface FundingPlanProps {
@@ -704,14 +703,12 @@ export interface CategoryBalanceProps2 {
 
 export interface CategoryTreeBalanceProps {
   id: number,
-  name: string,
-  categories: CategoryBalanceProps2[],
+  balance: number,
 }
 
 export const isCategoryTreeBalanceProps = (r: unknown): r is CategoryTreeBalanceProps => (
   (r as CategoryTreeBalanceProps).id !== undefined
-  && (r as CategoryTreeBalanceProps).name !== undefined
-  && (r as CategoryTreeBalanceProps).categories !== undefined
+  && (r as CategoryTreeBalanceProps).balance !== undefined
 )
 
 export const isCategoryTreeBalanceResponse = (r: unknown): r is CategoryTreeBalanceProps[] => (

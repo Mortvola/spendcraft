@@ -122,6 +122,10 @@ class Transaction implements TransactionInterface {
           // Remove the transaction from the selected category, if any, if the transaction
           // no longer has the selected category in its splits.
           if (this.store.uiState.selectedCategory) {
+            if (this.store.categoryTree.unassignedCat === null) {
+              throw new Error('category is null');
+            }
+
             if ((body.transaction.transactionCategories.length === 0
                 && this.store.uiState.selectedCategory.id !== this.store.categoryTree.unassignedCat.id)
               || (body.transaction.transactionCategories.length !== 0

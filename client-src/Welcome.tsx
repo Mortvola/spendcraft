@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import ReactDOM from 'react-dom';
 import 'regenerator-runtime/runtime';
 import { Navbar, Nav } from 'react-bootstrap';
-import Login from './login/Login';
-import Register from './login/Register';
+import Login from './Login/Login';
+import Register from './Login/Register';
 
 const Welcome = () => {
   const [showLogin, setShowLogin] = useState(false);

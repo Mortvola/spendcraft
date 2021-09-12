@@ -5,6 +5,12 @@ class FundingPlanCategory extends BaseModel {
   public id: number;
 
   @column({
+    columnName: 'plan_id',
+    serializeAs: null,
+  })
+  public fundingPlanId: number;
+
+  @column({
     consume: (value: string) => parseFloat(value),
   })
   public amount: number;

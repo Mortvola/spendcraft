@@ -1,48 +1,27 @@
-import React, { ReactElement } from 'react';
-import CategorySelectorCategory from './CategorySelectorCategory';
-import Group from '../State/Group';
-import Category from '../State/Category';
-import LoansGroup from '../State/LoansGroup';
+import React, { ReactElement, ReactNode } from 'react';
+import { GroupInterface } from '../State/State';
 
 type PropsType = {
-  group: Group | LoansGroup,
-  selected: string | null,
-  onSelected: (group: Group | LoansGroup, category: Category) => void,
+  group: GroupInterface,
+  children?: ReactNode,
 }
 
 function CategorySelectorGroup({
   group,
-  selected,
-  onSelected,
+  children,
 }: PropsType): ReactElement | null {
-  const handleMouseDown = (event: React.MouseEvent) => {
-    event.preventDefault();
-  };
-
   const handleClick = (event: React.MouseEvent) => {
     event.stopPropagation();
-  };
-
-  const handleSelected = (category: Category) => {
-    onSelected(group, category);
   };
 
   if (group.categories.length > 0) {
     return (
       <div
-        className="category-list-item"
-        onMouseDown={handleMouseDown}
+        className="cat-list-item"
         onClick={handleClick}
       >
         {group.name}
-        {group.categories.map((c) => (
-          <CategorySelectorCategory
-            key={c.id}
-            category={c}
-            selected={c.name === selected}
-            onSelected={handleSelected}
-          />
-        ))}
+        {children}
       </div>
     );
   }

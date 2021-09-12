@@ -28,13 +28,19 @@ body {
 .main-tray {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 5fr);
-  grid-template-rows: minmax(0, 1fr);
+  grid-template-rows: max-content minmax(0, 1fr);
   padding-top: 1rem;
   padding-left: 0.75rem;
   height: 100%;
   width: 100%;
-  grid-template-areas: "sidebar window1" "sidebar window2";
+  grid-template-areas: "sidebar title" "sidebar window1" "sidebar window2";
   transition: background-color 0.35s ease-in;
+}
+
+.main-tray-title {
+  grid-area: title;
+  color: white;
+  font-size:x-large;
 }
 
 .main-tray.home-page {
@@ -441,6 +447,11 @@ body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) max-content;
   justify-content: space-between;
+  user-select: none;
+}
+
+.cat-list-item>.cat-list-cat,
+.cat-list-group>.cat-list-cat {
   margin-left: 28px;
 }
 
@@ -478,10 +489,13 @@ body {
 }
 
 .fund-list-cat-name {
-  margin-left: 28px;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+.fund-list-group .fund-list-cat-name {
+  margin-left: 28px;
 }
 
 .group-button {
@@ -730,10 +744,13 @@ body {
 }
 
 .cat-rebalance-item div:first-child {
-  margin-left: 28px;
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
+}
+
+.cat-rebalance-group .cat-rebalance-item>div:first-child {
+  margin-left: 28px;
 }
 
 .scrollable-form {
@@ -748,6 +765,7 @@ body {
 }
 
 .chart-wrapper {
+  grid-area: window1;
   background-color: #ffffffff;
   border-radius: 0.5rem;
   overflow: clip;
@@ -772,6 +790,7 @@ body {
   border-radius: 0.5rem;
   overflow: clip;
   position: relative;
+  grid-area: window1;
 }
 
 .plan-detail-wrapper {
@@ -794,6 +813,9 @@ body {
 .plan-detail-item {
   display: grid;
   grid-template-columns: 200px repeat(2, 100px) max-content;
+}
+
+.plan-group .plan-detail-item>div:first-child {
   padding-left: 28px;
 }
 
@@ -817,7 +839,7 @@ body {
 .plan-total {
   display: grid;
   grid-template-columns: 200px repeat(2, 100px) 1fr;
-  padding-left: 42px;
+  padding-left: 14px;
   background-color: whitesmoke;
   border-top: thin solid black;
   overflow: auto;
@@ -948,8 +970,7 @@ body {
   background-color: #fff;
 }
 
-.transaction-form.open,
-.open > .transaction-form {
+.transaction-form.open, .open>.transaction-form {
   padding: 1rem;
   border: black thin solid;
   margin: 0 1rem 1rem 1rem;

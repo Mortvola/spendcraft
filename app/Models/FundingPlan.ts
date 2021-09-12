@@ -1,9 +1,10 @@
-import Database from '@ioc:Adonis/Lucid/Database';
+/* eslint-disable import/no-cycle */
 import { DateTime } from 'luxon';
 import {
-  BaseModel, BelongsTo, belongsTo, column,
+  BaseModel, BelongsTo, belongsTo, column, HasMany, hasMany,
 } from '@ioc:Adonis/Lucid/Orm';
 import User, { GroupHistoryItem } from 'App/Models/User';
+import FundingPlanCategory from './FundingPlanCategory';
 
 export type PlanCategory = {
   id?: number,
@@ -12,19 +13,11 @@ export type PlanCategory = {
   categoryId: number,
 };
 
-type PlanGroup = {
-  id: number,
-  name: string,
-  system: boolean,
-  categories: Array<PlanCategory>,
-}
-
 export type Plan = {
   id: number,
   name: string,
-  total: number,
-  groups: Array<PlanGroup>,
-  history: Array<GroupHistoryItem>,
+  categories: FundingPlanCategory[],
+  history: GroupHistoryItem[],
 };
 
 export default class FundingPlan extends BaseModel {
@@ -46,62 +39,16 @@ export default class FundingPlan extends BaseModel {
   @belongsTo(() => User)
   public user: BelongsTo<typeof User>;
 
+  @hasMany(() => FundingPlanCategory)
+  public categories: HasMany<typeof FundingPlanCategory>
+
   public async getFullPlan(this: FundingPlan, user: User): Promise<Plan> {
-    const cats = await Database.query()
-      .select(
-        'fpc.id AS id',
-        'cats.group_id AS groupId',
-        'groups.name AS groupName',
-        'groups.system as groupSystem',
-        'cats.id AS categoryId',
-        'cats.name AS categoryName',
-        'cats.type AS categoryType',
-        Database.raw('CAST(COALESCE(fpc.amount, 0) AS float) AS amount'),
-      )
-      .from('categories AS cats')
-      .join('groups', 'groups.id', 'cats.group_id')
-      .leftJoin('funding_plan_categories AS fpc',
-        'fpc.category_id',
-        Database.raw(`cats.id AND fpc.plan_id = ${this.id}`))
-      .where('groups.user_id', user.id)
-      .andWhere((query) => {
-        query
-          .where('fpc.plan_id', this.id)
-          .orWhereNull('fpc.plan_id');
-      })
-      .orderBy('groups.name')
-      .orderBy('cats.name');
-
-    const groups: Array<PlanGroup> = [];
-    let currentGroupName = null;
-    let total = 0;
-
-    cats.forEach((c) => {
-      if (c.groupName !== currentGroupName) {
-        groups.push({
-          id: c.groupId,
-          name: c.groupName,
-          system: c.groupSystem,
-          categories: [],
-        });
-        currentGroupName = c.groupName;
-      }
-
-      groups[groups.length - 1].categories.push({
-        id: c.categoryId,
-        name: c.categoryName,
-        categoryId: c.categoryId,
-        amount: c.amount,
-      });
-
-      total += c.amount;
-    });
+    const categories = await this.related('categories').query();
 
     return {
       id: this.id,
       name: this.name,
-      total,
-      groups,
+      categories,
       history: await user.history(),
     };
   }

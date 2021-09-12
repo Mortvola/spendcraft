@@ -12,6 +12,9 @@ class Group extends BaseModel {
   @column()
   public name: string;
 
+  @column()
+  public type: string;
+
   @belongsTo(() => User)
   public user: BelongsTo<typeof User>;
 
