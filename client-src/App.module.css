@@ -1,0 +1,34 @@
+.main-tray {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 5fr);
+  grid-template-rows: max-content minmax(0, 1fr);
+  padding-top: 1rem;
+  padding-left: 0.75rem;
+  height: 100%;
+  width: 100%;
+  grid-template-areas: "sidebar title" "sidebar window1" "sidebar window2";
+  transition: background-color 0.35s ease-in;
+  z-index: 5;
+}
+
+:global(.small).main-tray {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "title" "window1" "window2";
+}
+
+.main-tray.home {
+  background-color: #8e2727;
+}
+
+.main-tray.plans {
+  background-color: #dcb43c;
+}
+
+.main-tray.accounts {
+  background-color: #2e5ea8;
+}
+
+.main-trays.reports {
+  background-color: #018447;
+}
+

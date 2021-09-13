@@ -2,19 +2,20 @@ import React, { ReactElement, useContext } from 'react';
 import ReactDOM from 'react-dom';
 import { observer } from 'mobx-react-lite';
 import 'regenerator-runtime';
+import useMediaQuery from './MediaQuery';
 import Menubar from './Menubar';
 import Home from './Home';
 import Accounts from './AccountView/Accounts';
 import Reports from './Reports/Reports';
 import Plans from './Plans/Plans';
 import PlaidLink from './PlaidLink';
-import DetailView from './DetailView';
 import MobxStore, { store as mobxStore } from './State/mobxStore';
 import { httpPost } from './State/Transports';
 import ServerError, { serverError } from './State/ServerError';
 import HomeToolbar from './CategoryView/CategoryViewToolbar';
 import AccountsToolbar from './AccountView/AccountsToolbar';
 import PlansToolbar from './Plans/PlansToolbar';
+import styles from './App.module.css';
 
 const Logout = () => {
   (async () => {
@@ -31,7 +32,7 @@ const Logout = () => {
 const App = () => {
   const { uiState } = useContext(MobxStore);
   const error = useContext(ServerError);
-  const isMobile = window.innerWidth <= 500;
+  const { isDesktop, isMobile } = useMediaQuery();
 
   let main = <div />;
   let toolbar: ReactElement | null = null
@@ -40,24 +41,24 @@ const App = () => {
     case 'HOME':
       main = <Home />;
       toolbar = <HomeToolbar />
-      page = 'home-page';
+      page = styles.home;
       break;
 
     case 'ACCOUNTS':
       main = <Accounts />;
       toolbar = <AccountsToolbar />
-      page = 'accounts-page';
+      page = styles.accounts;
       break;
 
     case 'REPORTS':
       main = <Reports />;
-      page = 'reports-page'
+      page = styles.reports;
       break;
 
     case 'PLANS':
       main = <Plans />;
       toolbar = <PlansToolbar />
-      page = 'plans-page'
+      page = styles.plans;
       break;
 
     case 'LOGOUT':
@@ -79,15 +80,26 @@ const App = () => {
           )
           : <div />
       }
-      <div className={`main-tray ${page}`}>
-        {main}
-      </div>
+      {
+        isDesktop
+          ? (
+            <div className={`${styles.mainTray} ${page}`}>
+              {main}
+            </div>
+          )
+          : null
+      }
+      {
+        isMobile
+          ? (
+            <div className={`small ${styles.mainTray} ${page}`}>
+              {main}
+            </div>
+          )
+          : null
+      }
       <PlaidLink />
     </div>
-  );
-
-  const renderMobile = () => (
-    <DetailView detailView="Transactions" isMobile />
   );
 
   if (error.message) {
@@ -113,11 +125,7 @@ const App = () => {
   return (
     <>
       <Menubar />
-      {
-        isMobile
-          ? renderMobile()
-          : renderDesktop()
-      }
+      {renderDesktop()}
     </>
   );
 };

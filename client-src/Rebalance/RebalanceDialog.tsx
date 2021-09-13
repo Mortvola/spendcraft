@@ -34,7 +34,7 @@ const RebalanceDialog = ({
   const { register, categoryTree: { nodes } } = useContext(MobxStore);
   const [balances, setBalances] = useState<CategoryBalanceInterface[]>([])
   const [unassigned, setUnassigned] = useState(0);
-  const [date, setDate] = useState(transaction ? transaction.date : DateTime.now().toISODate());
+  const [date, setDate] = useState(transaction ? transaction.date.toISODate() : DateTime.now().toISODate());
 
   type ValueType = {
     categories: TransactionCategoryInterface[]

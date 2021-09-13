@@ -67,7 +67,7 @@ const Register = ({
     <>
       <div className="register window">
         <div />
-        <RegisterTitles categoryView={category !== null} account={account} />
+        <RegisterTitles categoryView={category !== null} />
         <RegisterTransactions
           fetching={fetching}
           transactions={transactions}

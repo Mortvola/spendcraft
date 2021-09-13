@@ -84,7 +84,7 @@ const CategoryTransferDialog = ({
     date: string | null,
   }
 
-  function validateSplits(splits: Array<TransactionCategoryInterface>) {
+  const validateSplits = (splits: TransactionCategoryInterface[]) => {
     let error;
 
     if (splits !== undefined && splits.length > 0) {
@@ -191,7 +191,7 @@ const CategoryTransferDialog = ({
           toCategories: transaction && transaction.categories
             ? transaction.categories.filter((c) => c.amount >= 0)
             : [{ id: -1, amount: 0 }],
-          date: transaction ? transaction.date : null,
+          date: transaction ? transaction.date.toISODate() : null,
         }}
         validate={handleValidate}
         onSubmit={handleSubmit}

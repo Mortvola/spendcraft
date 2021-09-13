@@ -20,7 +20,7 @@ class Transaction implements TransactionInterface {
 
   amount: number;
 
-  date: string;
+  date: DateTime;
 
   createdAt: DateTime;
 
@@ -46,7 +46,7 @@ class Transaction implements TransactionInterface {
     this.store = store;
 
     this.id = props.id;
-    this.date = props.date;
+    this.date = DateTime.fromISO(props.date);
     this.createdAt = DateTime.fromISO(props.createdAt);
     this.type = props.type;
     this.comment = props.comment;
@@ -112,8 +112,8 @@ class Transaction implements TransactionInterface {
 
           this.categories = body.transaction.transactionCategories;
 
-          const dateChanged = this.date !== body.transaction.date;
-          this.date = body.transaction.date;
+          const dateChanged = this.date !== DateTime.fromISO(body.transaction.date);
+          this.date = DateTime.fromISO(body.transaction.date);
 
           this.amount = body.transaction.accountTransaction.amount;
           this.name = body.transaction.accountTransaction.name;

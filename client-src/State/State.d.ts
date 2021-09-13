@@ -29,7 +29,7 @@ export interface TransactionInterface {
 
   amount: number;
 
-  date: string;
+  date: DateTime;
 
   type: TransactionType;
 

@@ -246,7 +246,7 @@ const FundingDialog = ({
       setShow={setShow}
       onHide={onHide}
       initialValues={{
-        date: transaction ? transaction.date : '',
+        date: transaction ? transaction.date.toISODate() : '',
         funding,
       }}
       validate={handleValidate}

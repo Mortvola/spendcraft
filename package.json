@@ -7,12 +7,13 @@
   "scripts": {
     "start": "node ace serve",
     "server-build": "node ace build --production",
-    "welcome-build": "NODE_ENV=production browserify -t [ babelify --presets [ @babel/env ] ] -t dotenvify client-build/client-src/Welcome.js | terser --compress --mangle > public/welcome.js",
-    "client-build": "tsc -p client-src && NODE_ENV=production browserify -t [ babelify --presets [ @babel/env ] ] -t dotenvify client-build/client-src/App.js | terser --compress --mangle > public/app.js",
+    "welcome-build": "webpack --config-name welcome --env production",
+    "client-build": "webpack --config-name app --env production",
     "dev-start": "node ace serve -w",
     "dev-server-build": "node ace build",
-    "dev-welcome-build": "tsc -p client-src && browserify -t [ babelify --presets [ @babel/env ] ] -t dotenvify client-build/client-src/Welcome.js > public/welcome.js",
-    "dev-client-build": "tsc -p client-src && browserify -t [ babelify --presets [ @babel/env ] ] -t dotenvify client-build/client-src/App.js > public/app.js",
+    "dev-welcome-build": "webpack --config-name welcome",
+    "dev-client-build": "webpack --config-name app",
+    "dev-test": "which tsc",
     "lint": "eslint ."
   },
   "keywords": [
@@ -62,6 +63,7 @@
     "react-dom": "^17.0.2",
     "react-google-charts": "^3.0.15",
     "react-plaid-link": "^3.2.1",
+    "react-responsive": "^9.0.0-beta.4",
     "react-script-hook": "^1.4.1",
     "reflect-metadata": "^0.1.13",
     "regenerator-runtime": "^0.13.9",
@@ -78,6 +80,7 @@
     "@typescript-eslint/eslint-plugin": "^4.31.0",
     "@typescript-eslint/parser": "^4.31.0",
     "adonis-preset-ts": "^2.1.0",
+    "css-loader": "^6.2.0",
     "dotenvify": "^1.0.0",
     "envify": "^4.1.0",
     "eslint": "^6.8.0",
@@ -88,7 +91,13 @@
     "eslint-plugin-jsx-a11y": "^6.4.1",
     "eslint-plugin-react": "^7.25.1",
     "eslint-plugin-react-hooks": "^4.2.0",
-    "typescript": "^4.4.3"
+    "postcss": "^8.3.6",
+    "postcss-loader": "^6.1.1",
+    "style-loader": "^3.2.1",
+    "ts-loader": "^9.2.5",
+    "typescript": "^4.4.3",
+    "webpack": "^5.52.1",
+    "webpack-cli": "^4.8.0"
   },
   "autoload": {
     "App": "./app"

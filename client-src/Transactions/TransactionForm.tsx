@@ -184,7 +184,7 @@ const TransactionForm = ({
   return (
     <Formik<ValueType>
       initialValues={{
-        date: transaction ? transaction.date : '',
+        date: transaction ? transaction.date.toISODate() : '',
         name: transaction ? transaction.name : '',
         amount: transaction ? transaction.amount : 0,
         comment: transaction && transaction.comment ? transaction.comment : '',

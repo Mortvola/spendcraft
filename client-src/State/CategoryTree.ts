@@ -166,6 +166,10 @@ class CategoryTree implements CategoryTreeInterface {
         this.nodes.sort((a, b) => a.name.localeCompare(b.name));
 
         this.initialized = true;
+
+        if (this.store.uiState.selectedCategory === null) {
+          this.store.uiState.selectedCategory = this.unassignedCat;
+        }
       });
     }
   }

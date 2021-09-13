@@ -1,0 +1,17 @@
+.transaction {
+  display: grid;
+  grid-template-columns: 32px 100px 1fr 125px 125px 125px minmax(0, 1fr) minmax(0, 1fr) max-content;
+  grid-template-rows: max-content;
+  align-items: center;
+  transition: background-color 0.25s ease-out;
+  position: relative;
+  z-index: 2;
+}
+
+.transaction>div {
+  padding-left: 4px;
+}
+
+:global(.mobile).transaction {
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.75fr) minmax(0, 0.9fr);
+}
