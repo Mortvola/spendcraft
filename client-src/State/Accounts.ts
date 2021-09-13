@@ -15,7 +15,7 @@ import {
 class Accounts implements AccountsInterface {
   institutions: Institution[] = [];
 
-  plaid: unknown | null = null;
+  plaid: Plaid | null = null;
 
   store: StoreInterface;
 

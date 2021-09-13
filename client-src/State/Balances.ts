@@ -1,13 +1,12 @@
 import { makeAutoObservable, runInAction } from 'mobx';
-import Account from './Account';
-import { isBalancesResponse } from '../../common/ResponseTypes';
+import { BalanceProps, isBalancesResponse } from '../../common/ResponseTypes';
 import { AccountInterface, BalancesInterface, StoreInterface } from './State';
 import { getBody, httpGet } from './Transports';
 
 class Balances implements BalancesInterface {
   account: AccountInterface| null = null;
 
-  balances: Array<unknown> = [];
+  balances: BalanceProps[] = [];
 
   store: StoreInterface;
 

@@ -87,7 +87,7 @@ export interface GroupMemberInterface {
 export interface AccountsInterface {
   institutions: InstitutionInterface[];
 
-  plaid: unknown | null;
+  plaid: Plaid | null;
 
   store: StoreInterface;
 
@@ -194,13 +194,13 @@ export interface UIStateInterface {
   setView(view: Views): void;
   selectPlan(plan: FundingPlanInterface | null): void;
   selectTransaction(transaction: TransactionInterface | null): void;
-  addTransaction: boolean;
+  showAddTransaction(show: boolean): void;
 
+  addTransaction: boolean;
   selectedCategory: CategoryInterface | null;
   selectedPlan: FundingPlanInterface | null;
   selectedAccount: AccountInterface | null;
   selectedTransaction: TransactionInterface | null;
-  showAddTransaction(show: boolean): void;
 }
 
 export interface CategoryTreeInterface {

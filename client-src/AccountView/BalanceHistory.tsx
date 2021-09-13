@@ -14,8 +14,8 @@ const BalanceHistory = () => {
         chartType="LineChart"
         data={data}
         options={{
-          width: '100%',
-          height: '100%',
+          width: ('100%' as unknown) as number,
+          height: ('100%' as unknown) as number,
           legend: { position: 'none' },
           hAxis: {
             slantedText: true,

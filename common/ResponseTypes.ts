@@ -630,19 +630,16 @@ export const isLinkTokenResponse = (
 
 export interface BalanceProps {
   balance: number;
+  date: string;
 }
 
-export const isBalanceProps = (
-  r: BalanceProps | unknown,
-): r is BalanceProps => (
+export const isBalanceProps = (r: unknown): r is BalanceProps => (
   (r as BalanceProps).balance !== undefined
 );
 
-export const isBalancesResponse = (
-  r: Array<BalanceProps> | unknown,
-): r is Array<BalanceProps> => (
-  (r as Array<BalanceProps>).length === 0
-  || isBalanceProps((r as Array<BalanceProps>)[0])
+export const isBalancesResponse = (r: unknown): r is BalanceProps[] => (
+  (r as BalanceProps[]).length === 0
+  || isBalanceProps((r as BalanceProps[])[0])
 );
 
 export interface UserProps {

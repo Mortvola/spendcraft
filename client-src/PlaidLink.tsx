@@ -1,19 +1,23 @@
 import React, {
-  useEffect, useCallback, useContext, useState,
+  useEffect, useCallback, useContext, useState, ReactElement,
 } from 'react';
 import { usePlaidLink } from 'react-plaid-link';
 import { observer } from 'mobx-react-lite';
 import { runInAction } from 'mobx';
 import MobxStore from './State/mobxStore';
 import { useAccountsDialog } from './AccountView/AccountsDialog';
+import { InstitutionInterface } from './State/State';
+
+type PropsType = {
+  showAccountsDialog: (inst: InstitutionInterface) => void,
+}
 
 const PlaidLinkDialog = ({
   showAccountsDialog,
-}) => {
+}: PropsType): null => {
   const { accounts } = useContext(MobxStore);
 
-  const onEvent = (eventName) => {
-    console.log(`${eventName}`);
+  const onEvent = (eventName: string) => {
     if (eventName === 'HANDOFF') {
       runInAction(() => {
         accounts.plaid = null;
@@ -32,7 +36,11 @@ const PlaidLinkDialog = ({
     });
   }, [accounts]);
 
-  const onSuccess = useCallback(async (publicToken, metadata) => {
+  const onSuccess = useCallback(async (publicToken: unknown, metadata: unknown) => {
+    if (accounts.plaid === null) {
+      throw new Error('plaid is null');
+    }
+
     if (publicToken && accounts.plaid.callback) {
       const institute = await accounts.plaid.callback(publicToken, metadata);
       showAccountsDialog(institute);
@@ -55,12 +63,12 @@ const PlaidLinkDialog = ({
   return null;
 };
 
-const PlaidLink = () => {
+const PlaidLink = (): ReactElement | null => {
   const { accounts } = useContext(MobxStore);
   const [AccountsDialog, showAccountsDialog] = useAccountsDialog();
-  const [institute, setInstitute] = useState();
+  const [institute, setInstitute] = useState<InstitutionInterface>();
 
-  const handleShowDialog = (inst) => {
+  const handleShowDialog = (inst: InstitutionInterface) => {
     setInstitute(inst);
     showAccountsDialog();
   };
@@ -69,7 +77,11 @@ const PlaidLink = () => {
     return <PlaidLinkDialog showAccountsDialog={handleShowDialog} />;
   }
 
-  return <AccountsDialog institution={institute} />;
+  if (institute) {
+    return <AccountsDialog institution={institute} />;
+  }
+
+  return null;
 };
 
 export default observer(PlaidLink);
