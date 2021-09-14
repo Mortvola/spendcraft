@@ -11,7 +11,8 @@ module.exports = {
   },
   plugins: [
     'react',
-    '@typescript-eslint'
+    '@typescript-eslint',
+    'css-modules'
   ],
   extends: [
     'airbnb',
@@ -22,6 +23,7 @@ module.exports = {
     'plugin:@typescript-eslint/recommended',
     'plugin:import/recommended',
     'plugin:import/typescript',
+    'plugin:css-modules/recommended',
   ],
   rules: {
     "react/require-default-props": "off",
@@ -59,6 +61,8 @@ module.exports = {
         "tsx": "never"
       }
     ],
+    "css-modules/no-unused-class": [2, { "camelCase": true }],
+    "css-modules/no-undef-class": [2, { "camelCase": true }],
   },
   settings: {
     'import/resolver': {

@@ -1,0 +1,6 @@
+.main-tray-title {
+  grid-area: title;
+  color: white;
+  font-size:x-large;
+  display: flex;
+}

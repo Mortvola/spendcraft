@@ -6,6 +6,7 @@ import SystemCategory from './SystemCategory';
 import { CategoryInterface } from '../State/State';
 import Category from './Category';
 import { isGroup } from '../State/Group';
+import styles from './CategoryView.module.css'
 
 const CategoryView = (): ReactElement => {
   const { categoryTree, uiState } = useContext(MobxStore);
@@ -28,7 +29,7 @@ const CategoryView = (): ReactElement => {
         <SystemCategory category={categoryTree.fundingPoolCat} />
         <SystemCategory category={categoryTree.accountTransferCat} />
       </div>
-      <div id="categories">
+      <div className={styles.categories}>
         {categoryTree.nodes.map((group) => {
           if (isGroup(group)) {
             if (group.type === 'REGULAR') {

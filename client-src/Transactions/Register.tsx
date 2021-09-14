@@ -11,13 +11,7 @@ import PendingRegister from './PendingRegister';
 import RegisterTitles from './RegisterTitles';
 import RegisterTransactions from './RegisterTransactions';
 
-type PropsType = {
-  isMobile?: boolean;
-}
-
-const Register = ({
-  isMobile,
-}: PropsType): ReactElement => {
+const Register = (): ReactElement => {
   const { uiState } = useContext(MobxStore);
 
   let transactions: TransactionInterface[] | undefined;
@@ -52,17 +46,6 @@ const Register = ({
     }
   }
 
-  if (isMobile) {
-    return (
-      <RegisterTransactions
-        fetching={fetching}
-        transactions={transactions}
-        balance={balance}
-        category={category}
-      />
-    );
-  }
-
   return (
     <>
       <div className="register window">
@@ -83,10 +66,6 @@ const Register = ({
       }
     </>
   );
-};
-
-Register.defaultProps = {
-  isMobile: false,
 };
 
 export default observer(Register);

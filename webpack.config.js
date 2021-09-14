@@ -21,11 +21,11 @@ const config = (name, env) => ({
             options: {
               modules: {
                 exportLocalsConvention: 'camelCaseOnly',
+                localIdentName: '[name]-[local]-[hash:base64:5]',
               },
               importLoaders: 1,
             },
           },
-          'postcss-loader',
         ],
       },
     ],

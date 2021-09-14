@@ -17,36 +17,6 @@ body {
   height: 100%;
 }
 
-.main {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: max-content minmax(0, 1fr);
-  height: 100%;
-  width: 100%;
-}
-
-.main-tray-title {
-  grid-area: title;
-  color: white;
-  font-size:x-large;
-}
-
-.main-tray.home-page {
-  background-color: #8e2727;
-}
-
-.main-tray.accounts-page {
-  background-color: #2e5ea8;
-}
-
-.main-tray.plans-page {
-  background-color: #dcb43c;
-}
-
-.main-tray.reports-page {
-  background-color: #018447;
-}
-
 .window {
   margin-right: 1rem;
   margin-bottom: 1rem;
@@ -106,23 +76,6 @@ body {
 #addCategoryDialog .modal-footer {
   display: grid;
   grid-template-columns: max-content 1fr repeat(2, max-content);
-}
-
-.categories {
-  display: grid;
-  /* flex-flow:column; */
-  height: 100%;
-  width: 100%;
-  user-select: none;
-  grid-template-rows: max-content minmax(0, 1fr);
-  grid-template-columns: minmax(0, 1fr);
-  padding-top: 0.25rem;
-  padding-left: 0.25rem;
-}
-
-#categories {
-  padding-right: 14px;
-  overflow-y: auto;
 }
 
 .accounts {
@@ -487,31 +440,6 @@ body {
   margin-left: 28px;
 }
 
-.group-button {
-  /*	margin: .125rem .25rem;*/
-  padding: .25rem .25rem;
-  display: grid;
-  align-items: center;
-}
-
-.group-button i {
-  color: rgba(0, 0, 0, 0.4);
-  font-size: smaller;
-}
-
-.group-button:hover i {
-  color: black;
-}
-
-.group-button:hover {
-  background-color: lightgray;
-}
-
-.group-button.i {
-  font-size: smaller;
-  color: inherit;
-}
-
 .unassigned-cat {
   font-style: oblique;
   color: rgb(156, 156, 156);
@@ -658,10 +586,6 @@ body {
   text-align: right;
   margin-bottom: 0;
   padding-right: 2px;
-}
-
-.rotate {
-  animation: rotation 2s infinite linear;
 }
 
 .split-button {
@@ -890,14 +814,6 @@ body {
 .item-title-amount {
   text-align: right;
   padding-right: 2px;
-}
-
-.toolbar {
-  /* grid-area: toolbar; */
-  display: flex;
-  padding: 0.25rem;
-  column-gap: 0.5rem;
-  border-bottom: solid black thin;
 }
 
 .plan-list * {

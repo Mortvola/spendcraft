@@ -3,16 +3,15 @@ import Register from './Transactions/Register';
 import BalanceHistory from './AccountView/BalanceHistory';
 import { TrackingType } from '../common/ResponseTypes';
 import MobxStore from './State/mobxStore';
+import styles from './DetailView.module.css';
 
 type PropsType = {
   detailView: TrackingType,
-  isMobile?: boolean,
 }
 
 const DetailView = ({
   detailView,
-  isMobile,
-}: PropsType): ReactElement => {
+}: PropsType): ReactElement | null => {
   const { uiState } = useContext(MobxStore);
 
   let title;
@@ -37,28 +36,25 @@ const DetailView = ({
     case 'Balances':
       return (
         <>
-          <div className="main-tray-title">{title}</div>
+          <div className={styles.mainTrayTitle}>{title}</div>
           <BalanceHistory />
         </>
       )
 
     case 'Transactions':
-    case 'Uncategorized Transactions': {
+    case 'Uncategorized Transactions':
       return (
         <>
-          <div className="main-tray-title">{title}</div>
-          <Register isMobile={isMobile} />
+          <div className={styles.mainTrayTitle}>{title}</div>
+          <Register />
         </>
       );
-    }
 
     default:
       throw new Error('Invalid tracking type');
   }
-};
 
-DetailView.defaultProps = {
-  isMobile: false,
+  return null;
 };
 
 export default DetailView;

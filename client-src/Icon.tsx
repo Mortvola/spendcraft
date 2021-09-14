@@ -1,4 +1,5 @@
 import React, { CSSProperties, ReactElement } from 'react';
+import styles from './Icon.module.css'
 
 type PropsType = {
   icon: string,
@@ -14,7 +15,7 @@ const Icon = ({
   let className = `fas fa-${icon}`;
 
   if (rotate) {
-    className += ' rotate';
+    className += ` ${styles.rotate}`;
   }
 
   return (

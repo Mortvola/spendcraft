@@ -39,6 +39,7 @@ const RegisterTransactions = ({
   const [FundingDialog, showFundingDialog] = useFundingDialog();
   const [RebalanceDialog, showRebalanceDialog] = useRebalanceDialog();
   const [editedTransaction, setEditedTransaction] = useState<TransactionInterface | null>(null);
+  const dateFormat = 'LL/dd/yy';
 
   const TrxDialog = useCallback(() => {
     if (isTransaction(editedTransaction)) {
@@ -135,6 +136,7 @@ const RegisterTransactions = ({
       if (category) {
         transactionClassName = styles.transaction;
       }
+
       if (selected) {
         if (transaction.type === TransactionType.MANUAL_TRANSACTION
           || transaction.type === TransactionType.REGULAR_TRANSACTION
@@ -149,13 +151,14 @@ const RegisterTransactions = ({
       if (category) {
         if (isDesktop) {
           element = (
-            <div className={className} key={transaction.id} onClick={handleClick}>
+            <div className={className} key={transaction.id}>
               <CategoryViewTransaction
                 className={transactionClassName}
                 transaction={transaction}
+                onClick={handleClick}
               >
                 <div />
-                <div className="transaction-field">{transaction.date.toFormat('dd/LL/yy')}</div>
+                <div className="transaction-field">{transaction.date.toFormat(dateFormat)}</div>
                 <div className="transaction-field">{transaction.name}</div>
                 <Amount className="transaction-field amount currency" amount={transaction.amount} />
                 <Amount className="transaction-field amount currency" amount={amount} />
@@ -174,9 +177,9 @@ const RegisterTransactions = ({
 
         if (isMobile) {
           element = (
-            <div className={className} key={transaction.id} onClick={handleClick}>
-              <div className={`mobile ${transactionClassName}`}>
-                <div className="transaction-field">{transaction.date.toFormat('dd/LL/yy')}</div>
+            <div className={className} key={transaction.id}>
+              <div className={`mobile ${transactionClassName}`} onClick={handleClick}>
+                <div className="transaction-field">{transaction.date.toFormat(dateFormat)}</div>
                 <div className="transaction-field">{transaction.name}</div>
                 <Amount className="transaction-field amount currency" amount={amount} />
               </div>
@@ -196,7 +199,7 @@ const RegisterTransactions = ({
           <div className={className} key={transaction.id}>
             <div className={transactionClassName} onClick={handleClick}>
               <div />
-              <div>{transaction.date.toFormat('dd/LL/yy')}</div>
+              <div>{transaction.date.toFormat(dateFormat)}</div>
               <div className="transaction-field">{transaction.name}</div>
               <Amount className="transaction-field amount currency" amount={amount} />
               <Amount className="transaction-field balance currency" amount={runningBalance} />

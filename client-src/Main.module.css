@@ -1,0 +1,19 @@
+.main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: max-content minmax(0, 1fr);
+  height: 100%;
+  width: 100%;
+}
+
+.main-tray.plans {
+  background-color: #dcb43c;
+}
+
+.main-tray.accounts {
+  background-color: #2e5ea8;
+}
+
+.main-tray.reports {
+  background-color: #018447;
+}

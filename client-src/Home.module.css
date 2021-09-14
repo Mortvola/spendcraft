@@ -1,3 +1,37 @@
 .side-bar {
   grid-area: sidebar;
+  background-color: white;
+}
+
+:global(.mobile).side-bar {
+  position: absolute;
+  z-index: 8;
+  height: 100%;
+  width: auto;
+  overflow: hidden;
+  /* display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  grid-template-rows: minmax(0, 1fr); */
+  /* align-items: start; */
+  background-color: #8e2727;
+  padding: 1rem 1rem 1rem 0;
+  /* margin-top: 0.5rem;
+  margin-bottom: 0.5rem; */
+  border: thin black solid;
+}
+
+.categories {
+  display: grid;
+  height: 100%;
+  width: 100%;
+  user-select: none;
+  grid-template-rows: max-content minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
+  padding-top: 0.25rem;
+  padding-left: 0.25rem;
+  background-color: #fff;
+}
+
+.home {
+  background-color: #8e2727;
 }

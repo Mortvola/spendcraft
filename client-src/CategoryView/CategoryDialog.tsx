@@ -104,9 +104,11 @@ const CategoryDialog = ({
     }
 
     return options.concat(
-      categoryTree.nodes.map((g) => (
-        <option key={g.id} value={g.id}>{g.name}</option>
-      )),
+      categoryTree.nodes
+        .filter((g) => isGroup(g) && g.type === 'REGULAR')
+        .map((g) => (
+          <option key={g.id} value={g.id}>{g.name}</option>
+        )),
     )
   }
 
