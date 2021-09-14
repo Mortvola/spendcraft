@@ -1,5 +1,5 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
-import React, { ReactElement, useState } from 'react';
+import React, { ReactElement, useMemo, useState } from 'react';
 import {
   Field, FieldProps,
   FormikErrors,
@@ -47,28 +47,20 @@ const TransactionDialog = ({
     splits: TransactionCategoryInterface[],
   }
 
-  const computeRemaining = (categories: TransactionCategoryInterface[], total: number, sign = 1) => {
+  const computeRemaining = (categories: TransactionCategoryInterface[], total: number) => {
     let sum = 0;
     if (categories && categories.length > 0) {
       sum = categories.reduce((accum: number, item) => (
         accum + item.amount
       ), 0);
 
-      return Math.abs(total) - sign * sum;
+      return Math.abs(total) - sum;
     }
 
     // If there are no categories, assume the transaction total is assigned to a single
     // unassigned item.
     return 0;
   };
-
-  const [remaining, setRemaining] = useState(() => {
-    if (transaction) {
-      return computeRemaining(transaction.categories, transaction.amount, Math.sign(transaction.amount));
-    }
-
-    return 0;
-  });
 
   const handleValidate = (values: ValueType) => {
     const errors: FormikErrors<ValueType> = {};
@@ -143,6 +135,29 @@ const TransactionDialog = ({
     }
   };
 
+  const splits = useMemo((): TransactionCategoryInterface[] => {
+    if (transaction) {
+      if (transaction.categories.length > 0) {
+        return transaction.categories.map((c) => ({
+          ...c,
+          amount: transaction.amount < 0 ? -c.amount : c.amount,
+        }));
+      }
+
+      return [];
+    }
+
+    return [];
+  }, [transaction])
+
+  const [remaining, setRemaining] = useState(() => {
+    if (transaction) {
+      return computeRemaining(splits, transaction.amount);
+    }
+
+    return 0;
+  });
+
   const splitItemClass = 'transaction-split-item no-balances';
 
   let paymentChannel = 'unknown';
@@ -157,12 +172,7 @@ const TransactionDialog = ({
         name: transaction ? transaction.name : '',
         amount: transaction ? transaction.amount : 0,
         comment: transaction && transaction.comment ? transaction.comment : '',
-        splits: transaction
-          ? transaction.categories.map((c) => ({
-            ...c,
-            amount: transaction.amount < 0 ? -c.amount : c.amount,
-          }))
-          : [],
+        splits,
       }}
       show={show}
       setShow={setShow}
@@ -242,18 +252,19 @@ const TransactionDialog = ({
                     setFieldValue,
                     values,
                   },
-                }: FieldProps<TransactionCategoryInterface[]>) => (
-                  <CategorySplits
-                    splits={value}
-                    total={Math.abs(typeof (values.amount) === 'string' ? parseFloat(values.amount) : values.amount)}
-                    onChange={(splits) => {
-                      setFieldValue(name, splits);
-                      setRemaining(computeRemaining(
-                        splits, typeof (values.amount) === 'string' ? parseFloat(values.amount) : values.amount,
-                      ));
-                    }}
-                  />
-                )}
+                }: FieldProps<TransactionCategoryInterface[]>) => {
+                  const amount = typeof (values.amount) === 'string' ? parseFloat(values.amount) : values.amount;
+                  return (
+                    <CategorySplits
+                      splits={value}
+                      total={Math.abs(amount)}
+                      onChange={(s) => {
+                        setFieldValue(name, s);
+                        setRemaining(computeRemaining(s, amount));
+                      }}
+                    />
+                  )
+                }}
               </Field>
               <div className={splitItemClass}>
                 <div className="unassigned-label">Remaining:</div>

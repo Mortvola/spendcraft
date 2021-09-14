@@ -12,7 +12,6 @@ import { useRebalanceDialog } from '../Rebalance/RebalanceDialog';
 import { isTransaction } from '../State/Transaction';
 import { TransactionType } from '../../common/ResponseTypes';
 import MobxStore from '../State/mobxStore';
-import TransactionForm from './TransactionForm';
 import Amount from '../Amount';
 import useMediaQuery from '../MediaQuery';
 import styles from './Transactions.module.css'
@@ -113,16 +112,9 @@ const RegisterTransactions = ({
       }
 
       const handleClick = () => {
-        if (uiState.selectedTransaction === transaction) {
-          uiState.selectTransaction(null);
-        }
-        else {
-          uiState.selectTransaction(transaction);
-          if (transaction.type !== TransactionType.MANUAL_TRANSACTION
-            && transaction.type !== TransactionType.REGULAR_TRANSACTION
-            && transaction.type !== TransactionType.STARTING_BALANCE) {
-            showTrxDialog(transaction);
-          }
+        uiState.selectTransaction(transaction);
+        if (transaction.type !== TransactionType.STARTING_BALANCE) {
+          showTrxDialog(transaction);
         }
       };
 
@@ -164,13 +156,6 @@ const RegisterTransactions = ({
                 <Amount className="transaction-field amount currency" amount={amount} />
                 <Amount className="transaction-field balance currency" amount={runningBalance} />
               </CategoryViewTransaction>
-              <div className="transaction-form">
-                {
-                  open
-                    ? <TransactionForm transaction={transaction} account={account} />
-                    : null
-                }
-              </div>
             </div>
           );
         }
@@ -182,13 +167,6 @@ const RegisterTransactions = ({
                 <div className="transaction-field">{transaction.date.toFormat(dateFormat)}</div>
                 <div className="transaction-field">{transaction.name}</div>
                 <Amount className="transaction-field amount currency" amount={amount} />
-              </div>
-              <div className="transaction-form">
-                {
-                  open
-                    ? <TransactionForm transaction={transaction} account={account} />
-                    : null
-                }
               </div>
             </div>
           );
@@ -203,13 +181,6 @@ const RegisterTransactions = ({
               <div className="transaction-field">{transaction.name}</div>
               <Amount className="transaction-field amount currency" amount={amount} />
               <Amount className="transaction-field balance currency" amount={runningBalance} />
-            </div>
-            <div className="transaction-form">
-              {
-                selected
-                  ? <TransactionForm transaction={transaction} account={account} />
-                  : null
-              }
             </div>
           </div>
         );
@@ -238,13 +209,6 @@ const RegisterTransactions = ({
 
   return (
     <div className="transactions striped">
-      <div className={transactionFormClass}>
-        {
-          uiState.addTransaction
-            ? <TransactionForm account={account} />
-            : null
-        }
-      </div>
       {list}
       <TrxDialog />
     </div>

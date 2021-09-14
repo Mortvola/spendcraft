@@ -23,6 +23,10 @@ const Home = () => {
     setOpen(!open);
   }
 
+  const handleCategorySelected = () => {
+    setOpen(false);
+  }
+
   if (categoryTree.initialized) {
     return (
       <Main toolbar={<HomeToolbar onToggleClick={handleToggleClick} open={open} />} className={styles.home}>
@@ -32,7 +36,7 @@ const Home = () => {
               <>
                 <div className={`mobile ${styles.sideBar}`} style={{ transform: `translateX(${open ? 0 : '-100%'})` }}>
                   <div className={styles.categories}>
-                    <CategoryView />
+                    <CategoryView onCategorySelected={handleCategorySelected} />
                   </div>
                 </div>
               </>

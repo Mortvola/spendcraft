@@ -8,11 +8,20 @@ import Category from './Category';
 import { isGroup } from '../State/Group';
 import styles from './CategoryView.module.css'
 
-const CategoryView = (): ReactElement => {
+type PropsType = {
+  onCategorySelected?: () => void,
+}
+
+const CategoryView = ({
+  onCategorySelected,
+}: PropsType): ReactElement => {
   const { categoryTree, uiState } = useContext(MobxStore);
 
   const handleCategorySelected = (category: CategoryInterface) => {
     uiState.selectCategory(category);
+    if (onCategorySelected) {
+      onCategorySelected();
+    }
   };
 
   useEffect(() => {
@@ -25,9 +34,9 @@ const CategoryView = (): ReactElement => {
   return (
     <>
       <div style={{ borderBottom: 'thin black solid' }}>
-        <SystemCategory category={categoryTree.unassignedCat} />
-        <SystemCategory category={categoryTree.fundingPoolCat} />
-        <SystemCategory category={categoryTree.accountTransferCat} />
+        <SystemCategory category={categoryTree.unassignedCat} onCategorySelected={onCategorySelected} />
+        <SystemCategory category={categoryTree.fundingPoolCat} onCategorySelected={onCategorySelected} />
+        <SystemCategory category={categoryTree.accountTransferCat} onCategorySelected={onCategorySelected} />
       </div>
       <div className={styles.categories}>
         {categoryTree.nodes.map((group) => {

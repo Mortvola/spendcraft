@@ -1,23 +1,25 @@
 import React, { ReactElement, useContext } from 'react';
 import { observer } from 'mobx-react-lite';
 import Amount from '../Amount';
-import { useCategoryTransferDialog } from '../CategoryTransferDialog';
-import IconButton from '../IconButton';
 import { CategoryInterface } from '../State/State';
 import MobxStore from '../State/mobxStore';
 
 type PropsType = {
   category: CategoryInterface | null,
+  onCategorySelected?: () => void,
 }
 
 const SystemCategory = ({
   category,
+  onCategorySelected,
 }: PropsType): ReactElement | null => {
   const { uiState } = useContext(MobxStore);
-  const [CategoryTransferDialog, showCategoryTransferDialog] = useCategoryTransferDialog();
   const handleClick = () => {
     if (category) {
       uiState.selectCategory(category);
+      if (onCategorySelected) {
+        onCategorySelected();
+      }
     }
   };
 
@@ -30,7 +32,6 @@ const SystemCategory = ({
     return (
       <div className={className} onClick={handleClick}>
         <div className="cat-element-bar system">
-          <IconButton icon="random" onClick={showCategoryTransferDialog} />
           <div className="cat-list-name">{category.name}</div>
         </div>
         <Amount className="cat-list-amt" amount={category.balance} />
