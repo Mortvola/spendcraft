@@ -4,6 +4,8 @@ import IconButton from './IconButton';
 import AmountInput from './AmountInput';
 import { CategoryInterface, TransactionCategoryInterface } from './State/State';
 import MobxStore from './State/mobxStore';
+import styles from './CategorySplitItem.module.css';
+import useMediaQuery from './MediaQuery';
 
 type PropsType = {
   split: TransactionCategoryInterface,
@@ -23,6 +25,7 @@ function CategorySplitItem({
   onCommentChange,
 }: PropsType): ReactElement {
   const { categoryTree: { unassignedCat } } = useContext(MobxStore);
+  const { isMobile } = useMediaQuery();
 
   if (!unassignedCat) {
     throw new Error('unassigned category is null');
@@ -65,16 +68,26 @@ function CategorySplitItem({
 
   const categoryId = split ? split.categoryId : null;
 
-  const className = 'transaction-split-item no-balances';
+  let className = styles.transactionSplitItem;
+  if (isMobile) {
+    className = `mobile ${className}`;
+  }
 
   return (
     <div className={className}>
-      <CategoryInput
-        onChange={handleCategoryChange}
-        categoryId={categoryId === unassignedCat.id ? null : categoryId}
-      />
-      <AmountInput onDeltaChange={handleDeltaChange} value={split.amount} />
-      <input type="text" value={split.comment ?? ''} onChange={handleCommentChange} />
+      <div>
+        <CategoryInput
+          onChange={handleCategoryChange}
+          categoryId={categoryId === unassignedCat.id ? null : categoryId}
+        />
+        <AmountInput onDeltaChange={handleDeltaChange} value={split.amount} />
+        <input
+          type="text"
+          value={split.comment ?? ''}
+          onChange={handleCommentChange}
+          placeholder={isMobile ? 'Comment' : ''}
+        />
+      </div>
       <IconButton icon="plus" onClick={handleAddItem} />
       <IconButton icon="minus" onClick={handleDeleteItem} />
     </div>

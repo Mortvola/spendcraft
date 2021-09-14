@@ -13,6 +13,7 @@ import { AccountInterface, TransactionCategoryInterface } from '../State/State';
 import FormError from '../Modal/FormError';
 import AmountInput from '../AmountInput';
 import FormModal from '../Modal/FormModal';
+import useMediaQuery from '../MediaQuery';
 
 function validateSplits(splits: Array<TransactionCategoryInterface>) {
   let error;
@@ -46,6 +47,8 @@ const TransactionDialog = ({
     comment: string,
     splits: TransactionCategoryInterface[],
   }
+
+  const { isMobile } = useMediaQuery();
 
   const computeRemaining = (categories: TransactionCategoryInterface[], total: number) => {
     let sum = 0;
@@ -240,7 +243,11 @@ const TransactionDialog = ({
               <div className={`${splitItemClass} cat-fund-title`}>
                 <div className="item-title">Category</div>
                 <div className="item-title-amount">Amount</div>
-                <div className="item-title">Comment</div>
+                {
+                  !isMobile
+                    ? <div className="item-title">Comment</div>
+                    : null
+                }
               </div>
               <Field name="splits" validate={validateSplits}>
                 {({
