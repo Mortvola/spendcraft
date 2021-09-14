@@ -13,7 +13,7 @@ interface Props {
   onBlur?: (event: React.ChangeEvent<HTMLInputElement>) => void;
   className?: string;
   name?: string;
-  readonly?: boolean,
+  readOnly?: boolean,
 }
 
 const AmountInput = ({
@@ -24,7 +24,7 @@ const AmountInput = ({
   onBlur,
   className = '',
   name,
-  readonly,
+  readOnly,
 }: Props): ReactElement => {
   const [inputAmount, setInputAmount] = useState(
     typeof value === 'string'
@@ -134,10 +134,10 @@ const AmountInput = ({
         onFocus={handleFocus}
         onBlur={handleBlur}
         onKeyDown={handleKeyPress}
-        readOnly={readonly}
+        readOnly={readOnly}
       />
       {
-        !readonly
+        !readOnly
           ? (
             <Overlay
               show={showPopover}

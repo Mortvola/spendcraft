@@ -14,6 +14,7 @@ import FormError from '../Modal/FormError';
 import AmountInput from '../AmountInput';
 import FormModal from '../Modal/FormModal';
 import useMediaQuery from '../MediaQuery';
+import { TransactionType } from '../../common/ResponseTypes';
 
 function validateSplits(splits: Array<TransactionCategoryInterface>) {
   let error;
@@ -168,6 +169,10 @@ const TransactionDialog = ({
     paymentChannel = transaction.paymentChannel;
   }
 
+  const isReadOnly = () => (
+    transaction !== null && transaction.type === TransactionType.REGULAR_TRANSACTION
+  );
+
   return (
     <FormModal<ValueType>
       initialValues={{
@@ -185,12 +190,12 @@ const TransactionDialog = ({
       formId="transactionDialogForm"
       validate={handleValidate}
       onSubmit={handleSubmit}
-      onDelete={transaction ? handleDelete : null}
+      onDelete={transaction && transaction.type === TransactionType.MANUAL_TRANSACTION ? handleDelete : null}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
         <label>
           Date:
-          <Field className="form-control" type="date" name="date" />
+          <Field className="form-control" type="date" name="date" readOnly={isReadOnly()} />
         </label>
         <div>{`Payment Channel: ${paymentChannel}`}</div>
       </div>
@@ -200,6 +205,7 @@ const TransactionDialog = ({
           type="text"
           className="form-control"
           name="name"
+          readOnly={isReadOnly()}
         />
         <FormError name="name" />
       </label>
@@ -216,6 +222,7 @@ const TransactionDialog = ({
               ({ field, form: { values } }: FieldProps<string | number, ValueType>) => (
                 <AmountInput
                   className="form-control"
+                  readOnly={isReadOnly()}
                   {...field}
                   onBlur={(v) => {
                     setRemaining(computeRemaining(values.splits, parseFloat(v.target.value)));
