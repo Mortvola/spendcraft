@@ -48,7 +48,7 @@ body {
 }
 
 .drop-down {
-  position: absolute;
+  position: fixed;
   background-color: white;
   border: black thin solid;
   border-radius: 4px;

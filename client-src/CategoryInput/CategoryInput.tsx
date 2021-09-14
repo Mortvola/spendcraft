@@ -325,17 +325,17 @@ const CategoryInput = ({
   const renderSelector = () => {
     const element = inputRef.current;
     if (open && element) {
-      const position = element.getBoundingClientRect();
+      const input = element.getBoundingClientRect();
       const containerRect = document.documentElement.getBoundingClientRect();
 
-      let height = Math.min(containerRect.bottom - position.bottom, 250);
-      let top = position.bottom;
+      let height = Math.min(containerRect.bottom - input.bottom, 250);
+      let top = input.bottom;
 
-      const topHeight = Math.min(position.top - containerRect.top, 250);
+      const topHeight = Math.min(input.top - containerRect.top, 250);
 
       if (topHeight > height) {
         height = topHeight;
-        top = position.top - height;
+        top = input.top - height;
       }
 
       let selectedCategory: CategoryInterface | null = null;
@@ -360,12 +360,14 @@ const CategoryInput = ({
       const hiddenElement = document.querySelector('#hidden');
 
       if (hiddenElement) {
+        const viewport = window.visualViewport;
+
         return ReactDOM.createPortal(
           <CategorySelector
             ref={selectorRef}
-            left={position.left}
-            top={top}
-            width={position.width < 200 ? 200 : position.width}
+            left={input.left + viewport.offsetLeft}
+            top={top + viewport.offsetTop}
+            width={input.width < 200 ? 200 : input.width}
             height={height}
             selectedCategory={selectedCategory}
             onSelect={handleSelect}
