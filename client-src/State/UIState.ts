@@ -18,8 +18,6 @@ class UIState implements UIStateInterface {
 
   selectedTransaction: TransactionInterface | null = null;
 
-  addTransaction = false;
-
   store: StoreInterface;
 
   constructor(store: StoreInterface) {
@@ -30,10 +28,6 @@ class UIState implements UIStateInterface {
 
   setView(view: Views): void {
     runInAction(() => {
-      if (view !== 'ACCOUNTS') {
-        this.showAddTransaction(false);
-      }
-
       if (view === 'HOME' && this.view === 'HOME') {
         this.selectedCategory = this.store.categoryTree.getCategory(
           this.store.categoryTree.systemIds.unassignedId,
@@ -54,7 +48,6 @@ class UIState implements UIStateInterface {
   selectAccount(account: AccountInterface | null): void {
     runInAction(() => {
       this.selectedAccount = account;
-      this.addTransaction = false;
     });
   }
 
@@ -67,19 +60,7 @@ class UIState implements UIStateInterface {
   selectTransaction(transaction: TransactionInterface | null): void {
     runInAction(() => {
       this.selectedTransaction = transaction;
-      if (transaction) {
-        this.addTransaction = false;
-      }
     });
-  }
-
-  showAddTransaction(show: boolean): void {
-    runInAction(() => {
-      this.addTransaction = show;
-      if (show) {
-        this.selectedTransaction = null;
-      }
-    })
   }
 }
 

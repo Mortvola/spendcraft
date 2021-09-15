@@ -194,9 +194,7 @@ export interface UIStateInterface {
   setView(view: Views): void;
   selectPlan(plan: FundingPlanInterface | null): void;
   selectTransaction(transaction: TransactionInterface | null): void;
-  showAddTransaction(show: boolean): void;
 
-  addTransaction: boolean;
   selectedCategory: CategoryInterface | null;
   selectedPlan: FundingPlanInterface | null;
   selectedAccount: AccountInterface | null;

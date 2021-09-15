@@ -4,6 +4,7 @@ import MobxStore from '../State/mobxStore';
 import { useOfflineAccountDialog } from './OfflineAccountDialog';
 import { httpPost } from '../State/Transports';
 import useMediaQuery from '../MediaQuery';
+import { useTransactionDialog } from '../Transactions/TransactionDialog';
 
 type PropsType = {
   open?: boolean,
@@ -14,6 +15,7 @@ const AccountsToolbar = ({
 }: PropsType): ReactElement => {
   const { accounts, uiState } = useContext(MobxStore);
   const [OfflineAccountDialog, showOfflineAccountDialog] = useOfflineAccountDialog();
+  const [TransactionDialog, showTransactionDialog] = useTransactionDialog();
   const { isMobile } = useMediaQuery();
 
   const addInstitution = () => {
@@ -23,10 +25,6 @@ const AccountsToolbar = ({
   const handleRefresh = async (): Promise<void> => {
     await httpPost('/api/institutions/sync');
   };
-
-  const handleAddTransactionClick = () => {
-    uiState.showAddTransaction(true);
-  }
 
   const renderAccountButtons = () => (
     open || !isMobile
@@ -47,13 +45,16 @@ const AccountsToolbar = ({
       {
         !open || !isMobile
           ? (
-            <button
-              type="button"
-              onClick={handleAddTransactionClick}
-              disabled={uiState.selectedAccount === null}
-            >
-              Add Transaction
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={showTransactionDialog}
+                disabled={uiState.selectedAccount === null}
+              >
+                Add Transaction
+              </button>
+              <TransactionDialog />
+            </>
           )
           : null
       }
