@@ -16,9 +16,9 @@ const PendingTransactionFields = ({
   if (isMobile) {
     return (
       <>
-        <div>{transaction.date.toFormat(dateFormat)}</div>
+        <div className="tranaction-field">{transaction.date.toFormat(dateFormat)}</div>
         <div className="transaction-field">{transaction.name}</div>
-        <Amount amount={transaction.amount} />
+        <Amount className="transaction-field currency" amount={transaction.amount} />
       </>
     );
   }
@@ -26,9 +26,9 @@ const PendingTransactionFields = ({
   return (
     <>
       <div />
-      <div>{transaction.date.toFormat(dateFormat)}</div>
+      <div className="tranaction-field">{transaction.date.toFormat(dateFormat)}</div>
       <div className="transaction-field">{transaction.name}</div>
-      <Amount amount={transaction.amount} />
+      <Amount className="transaction-field currency" amount={transaction.amount} />
     </>
   );
 }

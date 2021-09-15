@@ -1,5 +1,6 @@
 import React, { ReactElement } from 'react';
 import useMediaQuery from '../MediaQuery';
+import TitleStub from './TitleStub';
 import styles from './Transactions.module.css';
 
 type PropsType = {
@@ -36,7 +37,7 @@ const RegisterTitles = ({
         <div className="currency">Amount</div>
         <div className="currency">Balance</div>
         <div />
-        <div style={{ overflowY: 'scroll', visibility: 'hidden', padding: 0 }} />
+        <TitleStub />
       </div>
     );
   }
@@ -49,7 +50,7 @@ const RegisterTitles = ({
       <div className="currency">Balance</div>
       <div>Institution</div>
       <div>Account</div>
-      <div style={{ overflowY: 'scroll', visibility: 'hidden', padding: 0 }} />
+      <TitleStub />
     </div>
   );
 };

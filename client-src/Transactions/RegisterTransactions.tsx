@@ -138,7 +138,7 @@ const RegisterTransactions = ({
             <div className={`mobile ${transactionClassName}`} onClick={handleClick}>
               <div className="transaction-field">{transaction.date.toFormat(dateFormat)}</div>
               <div className="transaction-field">{transaction.name}</div>
-              <Amount className="transaction-field amount currency" amount={amount} />
+              <Amount className="transaction-field currency" amount={amount} />
             </div>
           </div>
         );

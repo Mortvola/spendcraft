@@ -1,5 +1,6 @@
 import React, { ReactElement } from 'react';
 import useMediaQuery from '../MediaQuery';
+import TitleStub from './TitleStub';
 import styles from './Transactions.module.css';
 
 type PropsType = {
@@ -34,6 +35,7 @@ const PendingTitles = ({
     return (
       <div className={`register-title ${styles.acctPendingTransaction}`}>
         {commonTitles()}
+        <TitleStub />
       </div>
     );
   }
@@ -43,6 +45,7 @@ const PendingTitles = ({
       {commonTitles()}
       <div>Institution</div>
       <div>Account</div>
+      <TitleStub />
     </div>
   );
 };
