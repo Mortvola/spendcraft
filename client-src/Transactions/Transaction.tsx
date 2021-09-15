@@ -80,7 +80,14 @@ const Transaction = ({
           <div />
           <div className="transaction-field">{transaction.date.toFormat(dateFormat)}</div>
           <div className="transaction-field">{transaction.name}</div>
-          <Amount className="transaction-field currency" amount={transaction.amount} />
+          {
+            [
+              TransactionType.FUNDING_TRANSACTION,
+              TransactionType.REBALANCE_TRANSACTION
+            ].includes(transaction.type)
+              ? <div />
+              : <Amount className="transaction-field currency" amount={transaction.amount} />
+          }
           <Amount className="transaction-field currency" amount={amount} />
           <Amount className="transaction-field currency" amount={runningBalance} />
           <div className="transaction-field">{transaction.instituteName}</div>
