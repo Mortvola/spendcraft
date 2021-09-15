@@ -35,6 +35,7 @@ const PendingTitles = ({
     return (
       <div className={`register-title ${styles.acctPendingTransaction}`}>
         {commonTitles()}
+        <div />
         <TitleStub />
       </div>
     );
@@ -45,6 +46,7 @@ const PendingTitles = ({
       {commonTitles()}
       <div>Institution</div>
       <div>Account</div>
+      <div />
       <TitleStub />
     </div>
   );
