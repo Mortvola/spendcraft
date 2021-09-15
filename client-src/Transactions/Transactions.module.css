@@ -8,10 +8,27 @@
   z-index: 2;
 }
 
+.acct-transaction {
+  display: grid;
+  grid-template-columns: 32px 100px 1fr 125px 125px minmax(0, 2fr) max-content;
+  grid-template-rows: max-content;
+  align-items: center;
+}
+
+.acct-transaction>div,
 .transaction>div {
   padding-left: 4px;
 }
 
+:global(.mobile).acct-transaction,
 :global(.mobile).transaction {
   grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.75fr) minmax(0, 0.9fr);
 }
+
+.transaction-wrapper {
+  display: grid;
+  grid-template-rows: max-content minmax(0, 0%);
+  grid-template-columns: minmax(0, 1fr);
+  transition: grid-template-rows 0.5s ease-in;
+}
+

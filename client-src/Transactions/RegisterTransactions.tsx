@@ -32,7 +32,7 @@ const RegisterTransactions = ({
   balance,
 }: PropsType): ReactElement => {
   const { uiState } = useContext(MobxStore);
-  const { isMobile, isDesktop } = useMediaQuery();
+  const { isMobile } = useMediaQuery();
   const [TransactionDialog, showTransactionDialog] = useTransactionDialog();
   const [CategoryTransferDialog, showCategoryTransferDialog] = useCategoryTransferDialog();
   const [FundingDialog, showFundingDialog] = useFundingDialog();
@@ -122,53 +122,44 @@ const RegisterTransactions = ({
 
       let element: ReactElement | null = null;
 
-      let className = 'transaction-wrapper';
-      let transactionClassName = 'acct-transaction';
+      const className = styles.transactionWrapper;
+      let transactionClassName = styles.acctTransaction;
       if (category) {
         transactionClassName = styles.transaction;
       }
 
       if (selected) {
-        if (transaction.type === TransactionType.MANUAL_TRANSACTION
-          || transaction.type === TransactionType.REGULAR_TRANSACTION
-          || transaction.type === TransactionType.STARTING_BALANCE) {
-          className += ' open';
-        }
-
         transactionClassName += ' transaction-selected'
       }
 
-      if (category) {
-        if (isDesktop) {
-          element = (
-            <div className={className} key={transaction.id}>
-              <CategoryViewTransaction
-                className={transactionClassName}
-                transaction={transaction}
-                onClick={handleClick}
-              >
-                <div />
-                <div className="transaction-field">{transaction.date.toFormat(dateFormat)}</div>
-                <div className="transaction-field">{transaction.name}</div>
-                <Amount className="transaction-field amount currency" amount={transaction.amount} />
-                <Amount className="transaction-field amount currency" amount={amount} />
-                <Amount className="transaction-field balance currency" amount={runningBalance} />
-              </CategoryViewTransaction>
+      if (isMobile) {
+        element = (
+          <div className={className} key={transaction.id}>
+            <div className={`mobile ${transactionClassName}`} onClick={handleClick}>
+              <div className="transaction-field">{transaction.date.toFormat(dateFormat)}</div>
+              <div className="transaction-field">{transaction.name}</div>
+              <Amount className="transaction-field amount currency" amount={amount} />
             </div>
-          );
-        }
-
-        if (isMobile) {
-          element = (
-            <div className={className} key={transaction.id}>
-              <div className={`mobile ${transactionClassName}`} onClick={handleClick}>
-                <div className="transaction-field">{transaction.date.toFormat(dateFormat)}</div>
-                <div className="transaction-field">{transaction.name}</div>
-                <Amount className="transaction-field amount currency" amount={amount} />
-              </div>
-            </div>
-          );
-        }
+          </div>
+        );
+      }
+      else if (category) {
+        element = (
+          <div className={className} key={transaction.id}>
+            <CategoryViewTransaction
+              className={transactionClassName}
+              transaction={transaction}
+              onClick={handleClick}
+            >
+              <div />
+              <div className="transaction-field">{transaction.date.toFormat(dateFormat)}</div>
+              <div className="transaction-field">{transaction.name}</div>
+              <Amount className="transaction-field amount currency" amount={transaction.amount} />
+              <Amount className="transaction-field amount currency" amount={amount} />
+              <Amount className="transaction-field balance currency" amount={runningBalance} />
+            </CategoryViewTransaction>
+          </div>
+        );
       }
       else {
         element = (
