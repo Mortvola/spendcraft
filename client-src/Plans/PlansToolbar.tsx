@@ -1,4 +1,4 @@
-import React, { ReactElement, useContext } from 'react';
+import React, { ReactElement } from 'react';
 import { usePlanDialog } from './PlanDialog';
 
 const PlansToolbar = (): ReactElement => {

@@ -1,12 +1,18 @@
-import React, { useContext, useEffect } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import PlanDetails from './PlanDetails';
 import MobxStore from '../State/mobxStore';
 import PlanList from './PlanList';
-import { FundingPlanInterface } from '../State/State';
+import PlansToolbar from './PlansToolbar';
+import Main from '../Main';
+import Sidebar from '../Sidebar';
+import useMediaQuery from '../MediaQuery'
+import styles from './Plans.module.css'
 
 const Plans = () => {
   const { plans, uiState } = useContext(MobxStore);
+  const [open, setOpen] = useState<boolean>(false);
+  const { isMobile } = useMediaQuery();
 
   useEffect(() => {
     plans.load();
@@ -18,17 +24,23 @@ const Plans = () => {
     }
   }, [plans, uiState.selectedPlan]);
 
-  const handleSelect = (p: FundingPlanInterface) => {
-    uiState.selectPlan(p);
+  const handleSelect = () => {
+    if (isMobile) {
+      setOpen(false);
+    }
   };
 
+  const handleToggleClick = () => {
+    setOpen(!open);
+  }
+
   return (
-    <>
-      <div className="side-bar window">
+    <Main toolbar={<PlansToolbar />} onToggleClick={handleToggleClick} className={styles.theme}>
+      <Sidebar open={open} className={styles.theme}>
         <PlanList plans={plans.list} selected={uiState.selectedPlan} onSelect={handleSelect} />
-      </div>
+      </Sidebar>
       <PlanDetails />
-    </>
+    </Main>
   );
 };
 

@@ -816,6 +816,13 @@ body {
   padding-right: 2px;
 }
 
+.plan-list {
+  height: 100%;
+  width: 100%;
+  user-select: none;
+  background-color: #fff;
+}
+
 .plan-list * {
   padding-top: 0.25rem;
   padding-left: 0.5rem;
