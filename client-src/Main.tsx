@@ -4,7 +4,7 @@ import Toolbar from './Toolbar';
 import styles from './Main.module.css';
 
 type PropsType = {
-  toolbar: ReactNode,
+  toolbar?: ReactNode,
   children?: ReactNode,
   className?: string,
   onToggleClick: () => void,

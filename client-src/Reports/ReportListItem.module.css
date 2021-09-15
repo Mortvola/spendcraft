@@ -1,0 +1,9 @@
+.report-list-item {
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+.report-list-item:not(:global(.selected)):hover {
+  cursor: pointer;
+  background-color: whitesmoke;
+}

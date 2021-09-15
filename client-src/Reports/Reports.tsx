@@ -4,13 +4,33 @@ import { Nav } from 'react-bootstrap';
 import NetWorth from './NetWorth';
 import Payee from './Payee';
 import Category from './Category';
+import Main from '../Main';
+import styles from './Reports.module.css';
+import Sidebar from '../Sidebar';
+import useMediaQuery from '../MediaQuery'
+import ReportList from './ReportList';
 
 const Reports = (): ReactElement => {
   const [reportType, setReportType] = useState<string | null>(null);
+  const [open, setOpen] = useState<boolean>(false);
+  const { isMobile } = useMediaQuery();
 
-  const handleSelect = (eventKey: string | null) => {
-    setReportType(eventKey);
+  const handleToggleClick = () => {
+    setOpen(!open);
+  }
+
+  const handleSelect = (value: string | null) => {
+    setReportType(value);
+    if (isMobile) {
+      setOpen(false);
+    }
   };
+
+  const reports = [
+    { value: 'netWorth', name: 'Net Worth' },
+    { value: 'payee', name: 'Payee' },
+    { value: 'category', name: 'Category' },
+  ];
 
   const renderReport = (): ReactElement | null => {
     switch (reportType) {
@@ -31,16 +51,12 @@ const Reports = (): ReactElement => {
   };
 
   return (
-    <>
-      <div className="side-bar window">
-        <Nav className="flex-column" onSelect={handleSelect}>
-          <Nav.Link eventKey="netWorth">Net Worth</Nav.Link>
-          <Nav.Link eventKey="payee">Payee</Nav.Link>
-          <Nav.Link eventKey="category">Category</Nav.Link>
-        </Nav>
-      </div>
+    <Main onToggleClick={handleToggleClick} className={styles.theme}>
+      <Sidebar open={open} className={styles.theme}>
+        <ReportList reports={reports} onSelect={handleSelect} selectedValue={reportType} />
+      </Sidebar>
       {renderReport()}
-    </>
+    </Main>
   );
 };
 

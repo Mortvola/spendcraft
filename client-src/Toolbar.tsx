@@ -13,26 +13,22 @@ const Toolbar = ({
 }: PropsType): ReactElement | null => {
   const { isMobile } = useMediaQuery();
 
-  if (children) {
-    return (
-      <div className={styles.toolbar}>
-        {
-          isMobile
-            ? (
-              <div className="navbar-light">
-                <button type="button" className="navbar-toggler" onClick={onToggleClick}>
-                  <span className="navbar-toggler-icon" />
-                </button>
-              </div>
-            )
-            : null
-        }
-        {children}
-      </div>
-    );
-  }
-
-  return null;
+  return (
+    <div className={styles.toolbar}>
+      {
+        isMobile
+          ? (
+            <div className="navbar-light">
+              <button type="button" className="navbar-toggler" onClick={onToggleClick}>
+                <span className="navbar-toggler-icon" />
+              </button>
+            </div>
+          )
+          : null
+      }
+      {children}
+    </div>
+  );
 };
 
 export default Toolbar;
