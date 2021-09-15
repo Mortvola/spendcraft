@@ -1,6 +1,5 @@
-import React, { ReactElement, useContext, useState } from 'react';
+import React, { ReactElement, useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import { Nav } from 'react-bootstrap';
 import NetWorth from './NetWorth';
 import Payee from './Payee';
 import Category from './Category';

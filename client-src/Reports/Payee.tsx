@@ -144,32 +144,34 @@ const Payee = (): ReactElement | null => {
           <Button variant="primary" type="submit">Run Report</Button>
         </ReportControls>
       </Formik>
-      <SortableTable.Header className="title payee-report-item">
-        <SortableTable.Column column="name">
-          Name
-        </SortableTable.Column>
-        <SortableTable.Column column="paymentChannel">
-          Payment Channel
-        </SortableTable.Column>
-        <SortableTable.Column className="dolloar-amount" column="sum">
-          Amount
-        </SortableTable.Column>
-        <SortableTable.Column style={{ textAlign: 'right' }} column="count">
-          Count
-        </SortableTable.Column>
-        <div style={{ overflowY: 'scroll', visibility: 'hidden', padding: 0 }} />
-      </SortableTable.Header>
       <SortableTable>
-        {
-          (d) => (
-            <div key={d.rowNumber} className="payee-report-item">
-              <div className="ellipsis">{d.name}</div>
-              <div>{d.paymentChannel}</div>
-              <Amount amount={d.sum} />
-              <div style={{ textAlign: 'right' }}>{d.count}</div>
-            </div>
-          )
-        }
+        <SortableTable.Header className="title payee-report-item">
+          <SortableTable.Column column="name">
+            Name
+          </SortableTable.Column>
+          <SortableTable.Column column="paymentChannel">
+            Payment Channel
+          </SortableTable.Column>
+          <SortableTable.Column className="dolloar-amount" column="sum">
+            Amount
+          </SortableTable.Column>
+          <SortableTable.Column style={{ textAlign: 'right' }} column="count">
+            Count
+          </SortableTable.Column>
+          <div style={{ overflowY: 'scroll', visibility: 'hidden', padding: 0 }} />
+        </SortableTable.Header>
+        <SortableTable.Body>
+          {
+            (d) => (
+              <div key={d.rowNumber} className="payee-report-item">
+                <div className="ellipsis">{d.name}</div>
+                <div>{d.paymentChannel}</div>
+                <Amount amount={d.sum} />
+                <div style={{ textAlign: 'right' }}>{d.count}</div>
+              </div>
+            )
+          }
+        </SortableTable.Body>
       </SortableTable>
     </div>
   )

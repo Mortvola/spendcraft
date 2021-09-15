@@ -834,7 +834,7 @@ body {
   padding: 1rem;
   grid-area: window1;
   display: grid;
-  grid-template-rows: repeat(2, max-content) minmax(0, 1fr);
+  grid-template-rows: max-content minmax(0, 1fr);
   grid-template-columns: minmax(0, 1fr);
   /* justify-content: center; */
 }

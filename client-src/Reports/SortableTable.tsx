@@ -16,7 +16,11 @@ type SortableColumnProps = {
   children?: ReactNode,
 }
 
-type SortableTableProps<T>= {
+type SortableTableProps = {
+  children: ReactNode,
+}
+
+type SortableBodyProps<T>= {
   className?: string,
   style?: CSSProperties,
   children: (r: T) => void,
@@ -25,9 +29,10 @@ type SortableTableProps<T>= {
 type UseSortableTableType<T> = {
   setData: (data: (T & Record<string, unknown>)[]) => void,
   SortableTable: {
-    (props: SortableTableProps<T>): ReactElement,
+    (props: SortableTableProps): ReactElement,
     Header: (props: SortableTableHeaderProps) => ReactElement,
     Column: (props: SortableColumnProps) => ReactElement,
+    Body: (prosp: SortableBodyProps<T>) => ReactElement,
   }
 }
 
@@ -112,6 +117,23 @@ export default function useSortableTable<T>(keyPrecedence?: string[] | undefined
     setSortConfig({ column, direction });
   }
 
+  const SortableTable = ({
+    children,
+  }: SortableTableProps): ReactElement => (
+    <div style={{ overflowX: 'auto' }}>
+      <div
+        style={{
+          minWidth: '500px',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  )
+
   const SortableTableHeader = ({
     className,
     children,
@@ -121,11 +143,11 @@ export default function useSortableTable<T>(keyPrecedence?: string[] | undefined
     </div>
   )
 
-  const SortableTable = ({
+  const SortableTableBody = ({
     className,
     style,
     children,
-  }: SortableTableProps<T>): ReactElement => (
+  }: SortableBodyProps<T>): ReactElement => (
     <div className={`striped ${className}`} style={{ ...style, overflowY: 'scroll' }}>
       {
         sorted !== null
@@ -165,6 +187,7 @@ export default function useSortableTable<T>(keyPrecedence?: string[] | undefined
 
   SortableTable.Column = SortableColumn;
   SortableTable.Header = SortableTableHeader;
+  SortableTable.Body = SortableTableBody;
 
   return {
     setData,
