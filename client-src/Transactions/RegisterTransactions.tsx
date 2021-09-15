@@ -119,7 +119,6 @@ const RegisterTransactions = ({
       };
 
       const selected = uiState.selectedTransaction === transaction;
-      let open = false;
 
       let element: ReactElement | null = null;
 
@@ -134,7 +133,6 @@ const RegisterTransactions = ({
           || transaction.type === TransactionType.REGULAR_TRANSACTION
           || transaction.type === TransactionType.STARTING_BALANCE) {
           className += ' open';
-          open = true;
         }
 
         transactionClassName += ' transaction-selected'
@@ -200,11 +198,6 @@ const RegisterTransactions = ({
         <Spinner animation="border" />
       </div>
     );
-  }
-
-  let transactionFormClass = 'transaction-form';
-  if (uiState.addTransaction) {
-    transactionFormClass += ' open';
   }
 
   return (

@@ -3,10 +3,18 @@ import { observer } from 'mobx-react-lite';
 import MobxStore from '../State/mobxStore';
 import { useOfflineAccountDialog } from './OfflineAccountDialog';
 import { httpPost } from '../State/Transports';
+import useMediaQuery from '../MediaQuery';
 
-const AccountsToolbar = (): ReactElement => {
+type PropsType = {
+  open?: boolean,
+}
+
+const AccountsToolbar = ({
+  open,
+}: PropsType): ReactElement => {
   const { accounts, uiState } = useContext(MobxStore);
   const [OfflineAccountDialog, showOfflineAccountDialog] = useOfflineAccountDialog();
+  const { isMobile } = useMediaQuery();
 
   const addInstitution = () => {
     accounts.addInstitution();
@@ -20,19 +28,35 @@ const AccountsToolbar = (): ReactElement => {
     uiState.showAddTransaction(true);
   }
 
+  const renderAccountButtons = () => (
+    open || !isMobile
+      ? (
+        <>
+          <button type="button" onClick={addInstitution}>Add Online Account</button>
+          <button type="button" onClick={showOfflineAccountDialog}>Add Offline Account</button>
+          <button type="button" onClick={handleRefresh}>Sync Accounts</button>
+          <OfflineAccountDialog />
+        </>
+      )
+      : null
+  )
+
   return (
     <>
-      <button type="button" onClick={addInstitution}>Add Online Account</button>
-      <button type="button" onClick={showOfflineAccountDialog}>Add Offline Account</button>
-      <button type="button" onClick={handleRefresh}>Sync Accounts</button>
-      <button
-        type="button"
-        onClick={handleAddTransactionClick}
-        disabled={uiState.selectedAccount === null}
-      >
-        Add Transaction
-      </button>
-      <OfflineAccountDialog />
+      {renderAccountButtons()}
+      {
+        !open || !isMobile
+          ? (
+            <button
+              type="button"
+              onClick={handleAddTransactionClick}
+              disabled={uiState.selectedAccount === null}
+            >
+              Add Transaction
+            </button>
+          )
+          : null
+      }
     </>
   )
 }

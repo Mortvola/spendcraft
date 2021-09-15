@@ -1,0 +1,11 @@
+.accounts {
+  display: grid;
+  height: 100%;
+  grid-template-rows: max-content 1fr;
+  user-select: none;
+  background-color: #fff;
+}
+
+.theme {
+  background-color: #2e5ea8;
+}

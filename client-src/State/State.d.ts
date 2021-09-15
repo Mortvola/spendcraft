@@ -315,11 +315,11 @@ export interface AccountInterface {
 
   store: StoreInterface;
 
-  async getTransactions(): Promise<void>;
+  getTransactions(): Promise<void>;
 
-  async refresh(institutionId: number): Promise<void>;
+  refresh(institutionId: number): Promise<void>;
 
-  async addTransaction(
+  addTransaction(
     values: {
       date?: string,
       name?: string,

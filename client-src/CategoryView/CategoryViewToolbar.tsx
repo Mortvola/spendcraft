@@ -8,12 +8,10 @@ import { useGroupDialog } from './GroupDialog';
 import useMediaQuery from '../MediaQuery';
 
 type PropsType = {
-  onToggleClick?: () => void,
   open?: boolean,
 }
 
 const CategoryViewToolbar = ({
-  onToggleClick,
   open = false,
 }: PropsType): ReactElement => {
   const { categoryTree } = useContext(MobxStore);
@@ -23,9 +21,9 @@ const CategoryViewToolbar = ({
   const [GroupDialog, showGroupDialog] = useGroupDialog();
   const { isMobile } = useMediaQuery();
 
-  const renderCategoryButtons = () => {
-    if (open || !isMobile) {
-      return (
+  const renderCategoryButtons = () => (
+    open || !isMobile
+      ? (
         <>
           {
             categoryTree.noGroupGroup !== null
@@ -41,24 +39,11 @@ const CategoryViewToolbar = ({
           <GroupDialog />
         </>
       )
-    }
-
-    return null;
-  }
+      : null
+  )
 
   return (
     <>
-      {
-        isMobile
-          ? (
-            <div className="navbar-light">
-              <button type="button" className="navbar-toggler" onClick={onToggleClick}>
-                <span className="navbar-toggler-icon" />
-              </button>
-            </div>
-          )
-          : null
-      }
       {renderCategoryButtons()}
       {
         !open || !isMobile
