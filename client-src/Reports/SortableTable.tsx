@@ -120,7 +120,7 @@ export default function useSortableTable<T>(keyPrecedence?: string[] | undefined
   const SortableTable = ({
     children,
   }: SortableTableProps): ReactElement => (
-    <div style={{ overflowX: 'auto' }}>
+    <div style={{ overflowX: 'auto', maxHeight: '100%', height: 'max-content' }}>
       <div
         style={{
           minWidth: '500px',

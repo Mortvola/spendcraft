@@ -7,7 +7,6 @@ import MobxStore from './State/mobxStore';
 import styles from './Home.module.css';
 import HomeToolbar from './CategoryView/CategoryViewToolbar';
 import Main from './Main';
-import Sidebar from './Sidebar';
 
 const Home = () => {
   const { uiState, categoryTree } = useContext(MobxStore);
@@ -32,12 +31,17 @@ const Home = () => {
 
   if (categoryTree.initialized) {
     return (
-      <Main toolbar={<HomeToolbar open={open} />} onToggleClick={handleToggleClick} className={styles.theme}>
-        <Sidebar open={open} className={styles.theme}>
+      <Main
+        open={open}
+        toolbar={<HomeToolbar open={open} />}
+        sidebar={(
           <div className={styles.categories}>
             <CategoryView onCategorySelected={handleCategorySelected} />
           </div>
-        </Sidebar>
+        )}
+        onToggleClick={handleToggleClick}
+        className={styles.theme}
+      >
         <DetailView detailView="Transactions" />
       </Main>
     );

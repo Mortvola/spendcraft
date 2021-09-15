@@ -5,7 +5,6 @@ import MobxStore from '../State/mobxStore';
 import PlanList from './PlanList';
 import PlansToolbar from './PlansToolbar';
 import Main from '../Main';
-import Sidebar from '../Sidebar';
 import useMediaQuery from '../MediaQuery'
 import styles from './Plans.module.css'
 
@@ -35,10 +34,13 @@ const Plans = () => {
   }
 
   return (
-    <Main toolbar={<PlansToolbar />} onToggleClick={handleToggleClick} className={styles.theme}>
-      <Sidebar open={open} className={styles.theme}>
-        <PlanList plans={plans.list} selected={uiState.selectedPlan} onSelect={handleSelect} />
-      </Sidebar>
+    <Main
+      open={open}
+      toolbar={<PlansToolbar />}
+      sidebar={<PlanList plans={plans.list} selected={uiState.selectedPlan} onSelect={handleSelect} />}
+      onToggleClick={handleToggleClick}
+      className={styles.theme}
+    >
       <PlanDetails />
     </Main>
   );

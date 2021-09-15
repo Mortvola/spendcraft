@@ -5,7 +5,6 @@ import Payee from './Payee';
 import Category from './Category';
 import Main from '../Main';
 import styles from './Reports.module.css';
-import Sidebar from '../Sidebar';
 import useMediaQuery from '../MediaQuery'
 import ReportList from './ReportList';
 
@@ -50,10 +49,12 @@ const Reports = (): ReactElement => {
   };
 
   return (
-    <Main onToggleClick={handleToggleClick} className={styles.theme}>
-      <Sidebar open={open} className={styles.theme}>
-        <ReportList reports={reports} onSelect={handleSelect} selectedValue={reportType} />
-      </Sidebar>
+    <Main
+      open={open}
+      sidebar={<ReportList reports={reports} onSelect={handleSelect} selectedValue={reportType} />}
+      onToggleClick={handleToggleClick}
+      className={styles.theme}
+    >
       {renderReport()}
     </Main>
   );

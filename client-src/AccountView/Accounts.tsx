@@ -6,7 +6,6 @@ import AccountView from './AccountView';
 import MobxStore from '../State/mobxStore';
 import Main from '../Main';
 import AccountsToolbar from './AccountsToolbar';
-import Sidebar from '../Sidebar';
 import styles from './Accounts.module.css';
 
 const Accounts = () => {
@@ -20,9 +19,6 @@ const Accounts = () => {
     if (selectedAccount) {
       switch (selectedAccount.tracking) {
         case 'Transactions':
-          selectedAccount.getTransactions();
-          break;
-
         case 'Uncategorized Transactions':
           selectedAccount.getTransactions();
           break;
@@ -48,15 +44,20 @@ const Accounts = () => {
   }
 
   return (
-    <Main toolbar={<AccountsToolbar open={open} />} onToggleClick={handleToggleClick} className={styles.theme}>
-      <Sidebar open={open} className={styles.theme}>
+    <Main
+      open={open}
+      toolbar={<AccountsToolbar open={open} />}
+      sidebar={(
         <div className={styles.accounts}>
           <div className="account-bar">
             Institutions & Accounts
           </div>
           <AccountView onAccountSelected={handleAccountSelected} />
         </div>
-      </Sidebar>
+      )}
+      onToggleClick={handleToggleClick}
+      className={styles.theme}
+    >
       {
         selectedAccount
           ? (
