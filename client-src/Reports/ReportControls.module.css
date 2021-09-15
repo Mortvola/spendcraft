@@ -1,0 +1,9 @@
+.report-controls {
+  display: flex;
+  column-gap: 1rem;
+  row-gap: 1rem;
+  flex-flow: row;
+  align-items: flex-end;
+  padding-bottom: 1rem;
+  flex-wrap: wrap;
+}

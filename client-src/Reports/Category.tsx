@@ -1,7 +1,7 @@
 import React, {
   ReactElement, useContext,
 } from 'react';
-import { Formik, Form, FieldArray } from 'formik';
+import { Formik, FieldArray } from 'formik';
 import { DateTime } from 'luxon';
 import { Button, DropdownButton } from 'react-bootstrap';
 import Amount from '../Amount';
@@ -11,6 +11,7 @@ import MobxStore from '../State/mobxStore';
 import { getBody, httpGet } from '../State/Transports';
 import useSortableTable from './SortableTable';
 import { isGroup } from '../State/Group';
+import ReportControls from './ReportControls';
 
 type CategoryReport = {
   rowNumber: string,
@@ -85,7 +86,7 @@ const Category = (): ReactElement | null => {
         }}
         onSubmit={handleSubmit}
       >
-        <Form className="payee-report-controls">
+        <ReportControls>
           <FormField name="startDate" type="date" label="Start Date:" />
           <FormField name="endDate" type="date" label="End Date:" />
           <DropdownButton id="test" title="Categories">
@@ -125,7 +126,7 @@ const Category = (): ReactElement | null => {
             </div>
           </DropdownButton>
           <Button variant="primary" type="submit">Run Report</Button>
-        </Form>
+        </ReportControls>
       </Formik>
       <SortableTable.Header className="title payee-report-item">
         <SortableTable.Column column="groupName">

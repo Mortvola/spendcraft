@@ -1,7 +1,7 @@
 import React, {
   ReactElement, useContext,
 } from 'react';
-import { Formik, Form, FieldArray } from 'formik';
+import { Formik, FieldArray } from 'formik';
 import { DateTime } from 'luxon';
 import { Button, DropdownButton } from 'react-bootstrap';
 import Amount from '../Amount';
@@ -10,6 +10,7 @@ import FormField from '../Modal/FormField';
 import MobxStore from '../State/mobxStore';
 import { getBody, httpGet } from '../State/Transports';
 import useSortableTable from './SortableTable';
+import ReportControls from './ReportControls';
 
 type PayeeReport = {
   [key: string]: string | number,
@@ -100,7 +101,7 @@ const Payee = (): ReactElement | null => {
         }}
         onSubmit={handleSubmit}
       >
-        <Form className="payee-report-controls">
+        <ReportControls>
           <FormField name="startDate" type="date" label="Start Date:" />
           <FormField name="endDate" type="date" label="End Date:" />
           <DropdownButton id="test" title="Payment Channels">
@@ -141,7 +142,7 @@ const Payee = (): ReactElement | null => {
             </div>
           </DropdownButton>
           <Button variant="primary" type="submit">Run Report</Button>
-        </Form>
+        </ReportControls>
       </Formik>
       <SortableTable.Header className="title payee-report-item">
         <SortableTable.Column column="name">
