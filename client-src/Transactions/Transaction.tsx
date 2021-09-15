@@ -74,20 +74,32 @@ const Transaction = ({
   }
 
   if (category) {
+    if (category.type === 'UNASSIGNED') {
+      transactionClassName += ` ${styles.unassigned}`;
+    }
+
+    const transactionAmount = () => {
+      if (category.type === 'UNASSIGNED') {
+        return null;
+      }
+
+      if ([
+        TransactionType.FUNDING_TRANSACTION,
+        TransactionType.REBALANCE_TRANSACTION,
+      ].includes(transaction.type)) {
+        return <div />;
+      }
+
+      return <Amount className="transaction-field currency" amount={transaction.amount} />
+    }
+
     return (
       <div className={styles.transactionWrapper} key={transaction.id}>
         <div className={transactionClassName} onClick={handleClick}>
           <div />
           <div className="transaction-field">{transaction.date.toFormat(dateFormat)}</div>
           <div className="transaction-field">{transaction.name}</div>
-          {
-            [
-              TransactionType.FUNDING_TRANSACTION,
-              TransactionType.REBALANCE_TRANSACTION
-            ].includes(transaction.type)
-              ? <div />
-              : <Amount className="transaction-field currency" amount={transaction.amount} />
-          }
+          {transactionAmount()}
           <Amount className="transaction-field currency" amount={amount} />
           <Amount className="transaction-field currency" amount={runningBalance} />
           <div className="transaction-field">{transaction.instituteName}</div>

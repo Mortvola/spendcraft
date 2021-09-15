@@ -50,7 +50,7 @@ const Register = (): ReactElement => {
     <>
       <div className="register window">
         <div />
-        <RegisterTitles categoryView={category !== null} />
+        <RegisterTitles category={category} />
         <RegisterTransactions
           fetching={fetching}
           transactions={transactions}

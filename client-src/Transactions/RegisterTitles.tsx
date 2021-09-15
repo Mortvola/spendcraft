@@ -1,14 +1,15 @@
 import React, { ReactElement } from 'react';
 import useMediaQuery from '../MediaQuery';
+import { CategoryInterface } from '../State/State';
 import TitleStub from './TitleStub';
 import styles from './Transactions.module.css';
 
 type PropsType = {
-  categoryView?: boolean,
+  category?: CategoryInterface | null,
 }
 
 const RegisterTitles = ({
-  categoryView = false,
+  category = null,
 }: PropsType): ReactElement => {
   const { isMobile } = useMediaQuery();
 
@@ -30,26 +31,35 @@ const RegisterTitles = ({
     </>
   );
 
-  if (!categoryView) {
+  if (category) {
+    let className = `register-title ${styles.transaction}`;
+    if (category.type === 'UNASSIGNED') {
+      className += ` ${styles.unassigned}`;
+    }
+
     return (
-      <div className="register-title acct-transaction">
+      <div className={className}>
         {commonTitles()}
+        {
+          category.type === 'UNASSIGNED'
+            ? null
+            : <div className="currency">Trx Amount</div>
+        }
         <div className="currency">Amount</div>
         <div className="currency">Balance</div>
-        <div />
+        <div>Institution</div>
+        <div>Account</div>
         <TitleStub />
       </div>
     );
   }
 
   return (
-    <div className={`register-title ${styles.transaction}`}>
+    <div className="register-title acct-transaction">
       {commonTitles()}
-      <div className="currency">Trx Amount</div>
       <div className="currency">Amount</div>
       <div className="currency">Balance</div>
-      <div>Institution</div>
-      <div>Account</div>
+      <div />
       <TitleStub />
     </div>
   );
