@@ -19,8 +19,9 @@ const LoanRegister = ({
   <SecondaryRegister
     title="Loan Transactions:"
     titles={<LoanTitles />}
-    transactions={<LoanTransactions loan={loan} />}
-  />
+  >
+    <LoanTransactions loan={loan} />
+  </SecondaryRegister>
 );
 
 export default LoanRegister;

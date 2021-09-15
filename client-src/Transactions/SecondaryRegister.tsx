@@ -1,15 +1,15 @@
-import React, { ReactElement } from 'react';
+import React, { ReactElement, ReactNode } from 'react';
 
 type PropsType = {
   title: string,
   titles: ReactElement,
-  transactions: ReactElement,
+  children: ReactNode,
 }
 
 const SecondaryRegister = ({
   title,
   titles,
-  transactions,
+  children,
 }: PropsType): ReactElement => (
   <div className="pending window">
     <div className="pending-register-title">
@@ -17,7 +17,7 @@ const SecondaryRegister = ({
     </div>
     {titles}
     <div className="transactions striped">
-      {transactions}
+      {children}
     </div>
   </div>
 );

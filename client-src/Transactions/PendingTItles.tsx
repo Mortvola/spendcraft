@@ -1,4 +1,6 @@
 import React, { ReactElement } from 'react';
+import useMediaQuery from '../MediaQuery';
+import styles from './Transactions.module.css';
 
 type PropsType = {
   categoryView?: boolean,
@@ -7,6 +9,18 @@ type PropsType = {
 const PendingTitles = ({
   categoryView = false,
 }: PropsType): ReactElement => {
+  const { isMobile } = useMediaQuery();
+
+  if (isMobile) {
+    return (
+      <div className={`mobile register-title ${styles.acctTransaction}`}>
+        <div>Date</div>
+        <div>Name</div>
+        <div className="currency">Amount</div>
+      </div>
+    )
+  }
+
   const commonTitles = () => (
     <>
       <div />
@@ -18,14 +32,14 @@ const PendingTitles = ({
 
   if (!categoryView) {
     return (
-      <div className="register-title acct-pending-transaction">
+      <div className={`register-title ${styles.acctPendingTransaction}`}>
         {commonTitles()}
       </div>
     );
   }
 
   return (
-    <div className="register-title pending-transaction">
+    <div className={`register-title ${styles.pendingTransaction}`}>
       {commonTitles()}
       <div>Institution</div>
       <div>Account</div>

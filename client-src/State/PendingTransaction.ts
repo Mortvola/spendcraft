@@ -5,7 +5,7 @@ import { PendingTransactionProps } from './State';
 class PendingTransaction {
   id: number | null;
 
-  date: string;
+  date: DateTime;
 
   createdAt: DateTime;
 
@@ -19,7 +19,7 @@ class PendingTransaction {
 
   constructor(props: PendingTransactionProps) {
     this.id = props.id;
-    this.date = props.date;
+    this.date = DateTime.fromISO(props.date);
     this.createdAt = DateTime.fromISO(props.createdAt);
     this.name = props.accountTransaction.name;
     this.amount = props.accountTransaction.amount;

@@ -15,11 +15,29 @@
   align-items: center;
 }
 
+.pending-transaction {
+  display: grid;
+  grid-template-columns: 32px 100px minmax(0, 1.8fr) 125px 125px minmax(0, 3fr);
+  grid-template-rows: max-content;
+  align-items: center;
+}
+
+.acct-pending-transaction {
+  display: grid;
+  grid-template-columns: 32px 100px minmax(0, 1.8fr) 125px 125px minmax(0, 3fr);
+  grid-template-rows: max-content;
+  align-items: center;
+}
+
+.pending-transaction>div,
+.acct-pending-transaction>div,
 .acct-transaction>div,
 .transaction>div {
   padding-left: 4px;
 }
 
+:global(.mobile).acct-pending-transaction,
+:global(.mobile).pending-transaction,
 :global(.mobile).acct-transaction,
 :global(.mobile).transaction {
   grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.75fr) minmax(0, 0.9fr);

@@ -17,8 +17,9 @@ const PendingRegister = ({
       <SecondaryRegister
         title="Pending Transactions"
         titles={<PendingTitles categoryView={categoryView} />}
-        transactions={<PendingTransactions pending={pending} categoryView={categoryView} />}
-      />
+      >
+        <PendingTransactions pending={pending} categoryView={categoryView} />
+      </SecondaryRegister>
     );
   }
 

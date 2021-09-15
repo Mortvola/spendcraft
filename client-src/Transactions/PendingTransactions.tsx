@@ -2,6 +2,8 @@ import React, { ReactElement } from 'react';
 import PendingTransaction from '../State/PendingTransaction';
 import CategoryViewTransaction from './CategoryViewTransaction';
 import PendingTransactionFields from './PendingTransactionFields';
+import useMediaQuery from '../MediaQuery';
+import styles from './Transactions.module.css'
 
 type PropsType = {
   pending?: PendingTransaction[],
@@ -9,38 +11,41 @@ type PropsType = {
 }
 
 const PendingTransactions = ({
-  pending,
+  pending = [],
   categoryView = false,
 }: PropsType): ReactElement | null => {
-  if (pending) {
-    if (!categoryView) {
-      return (
-        <>
-          {
-            pending.map((transaction) => (
-              <div key={transaction.id} className="pending-transaction">
-                <PendingTransactionFields transaction={transaction} />
-              </div>
-            ))
-          }
-        </>
-      )
-    }
+  const { isMobile } = useMediaQuery();
 
+  let className = styles.pendingTransaction;
+  if (isMobile) {
+    className += ' mobile';
+  }
+
+  if (!categoryView) {
     return (
       <>
         {
           pending.map((transaction) => (
-            <CategoryViewTransaction key={transaction.id} className="pending-transaction" transaction={transaction}>
+            <div key={transaction.id} className={className}>
               <PendingTransactionFields transaction={transaction} />
-            </CategoryViewTransaction>
+            </div>
           ))
         }
       </>
-    )
+    );
   }
 
-  return null;
+  return (
+    <>
+      {
+        pending.map((transaction) => (
+          <CategoryViewTransaction key={transaction.id} className={className} transaction={transaction}>
+            <PendingTransactionFields transaction={transaction} />
+          </CategoryViewTransaction>
+        ))
+      }
+    </>
+  )
 };
 
 export default PendingTransactions;
