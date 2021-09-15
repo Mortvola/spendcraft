@@ -36,7 +36,7 @@ export default class UsersController {
       user: {
         client_user_id: auth.user.id.toString(),
       },
-      client_name: 'debertas',
+      client_name: 'Balancing Life',
       products: ['transactions'],
       country_codes: ['US'],
       language: 'en',

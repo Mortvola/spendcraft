@@ -19,7 +19,7 @@ const Menubar = () => {
 
   return (
     <Navbar collapseOnSelect onSelect={handleSelect} expand="md" style={{ userSelect: 'none' }}>
-      <Navbar.Brand href="/">Deber-tas</Navbar.Brand>
+      <Navbar.Brand href="/">Balancing Life</Navbar.Brand>
       <Navbar.Toggle />
       <Navbar.Collapse style={{ justifyContent: 'space-between' }}>
         <Nav>

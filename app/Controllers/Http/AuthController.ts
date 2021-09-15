@@ -69,7 +69,7 @@ export default class AuthController {
       message
         .from(Env.get('MAIL_FROM_ADDRESS') as string, Env.get('MAIL_FROM_NAME') as string)
         .to(user.email)
-        .subject('Welcome to Debertas!')
+        .subject('Welcome to Balancing Life!')
         .htmlView('emails/welcome', { verificationLink, expires: Env.get('TOKEN_EXPIRATION') });
     });
 

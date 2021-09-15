@@ -70,7 +70,7 @@ body {
 }
 
 .background {
-    background: linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.1)), url('/coins.png');
+    background: linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.1)), url('/slackline.png');
     background-repeat: no-repeat;
     background-attachment: fixed;
     background-position: center;
