@@ -1,3 +1,4 @@
+/* eslint-disable max-classes-per-file */
 import jwt from 'jsonwebtoken';
 import njwk from 'node-jwk';
 import plaidClient from '@ioc:Plaid';
@@ -6,6 +7,7 @@ import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import Database from '@ioc:Adonis/Lucid/Database';
 import Institution from 'App/Models/Institution';
 import User from 'App/Models/User';
+import { PlaidError } from 'plaid';
 
 const getVerificationKey = util
   .promisify(plaidClient.getWebhookVerificationKey)
@@ -14,21 +16,57 @@ const getVerificationKey = util
 const keyCache = {};
 const waitingRequests = {};
 
-type TransactionEvent = Record<string, unknown> & {
+class PlaidWebhookError extends PlaidError {
   // eslint-disable-next-line camelcase
-  webhook_code: string,
-  // eslint-disable-next-line camelcase
-  item_id: string,
-  // eslint-disable-next-line camelcase
-  removed_transactions: string[],
-};
+  request_id: string;
+}
 
-const transactionCodes = ['INITIAL_UPDATE', 'HISTORICAL_UPDATE', 'DEFAULT_UPDATE', 'TRANSACTIONS_REMOVED'];
+class WebhookEvent {
+  // eslint-disable-next-line camelcase
+  webhook_type: string;
+
+  // eslint-disable-next-line camelcase
+  webhook_code: string;
+
+  // eslint-disable-next-line camelcase
+  item_id: string;
+
+  error: PlaidWebhookError;
+}
+
+class WebhookItemEvent extends WebhookEvent {
+}
+
+class TransactionEvent extends WebhookEvent {
+  // eslint-disable-next-line camelcase
+  removed_transactions: string[];
+
+  // eslint-disable-next-line camelcase
+  new_transactions: number;
+}
+
+class WebhookAcknoweldgedEvent extends WebhookEvent {
+  // eslint-disable-next-line camelcase
+  new_webhook_url: string;
+}
+
+const itemWebhookCodes = ['ERROR', 'PENDING_EXPIRATION', 'USER_PERMISSION_REVOKED', 'WEBHOOK_UPDATE_ACKNOWLEDGED'];
+const transactionWebhookCodes = ['INITIAL_UPDATE', 'HISTORICAL_UPDATE', 'DEFAULT_UPDATE', 'TRANSACTIONS_REMOVED'];
+
+const isWebhookEvent = (r: unknown): r is WebhookEvent => (
+  (r as TransactionEvent).webhook_type !== undefined
+  && (r as TransactionEvent).webhook_code !== undefined
+);
+
+const isItemEvent = (r: unknown): r is WebhookItemEvent => (
+  isWebhookEvent(r)
+  && itemWebhookCodes.includes((r as TransactionEvent).webhook_code)
+)
 
 const isTransactionEvent = (r: unknown): r is TransactionEvent => (
-  ((r as TransactionEvent).webhook_type !== undefined
-  && (r as TransactionEvent).webhook_code !== undefined
-  && transactionCodes.includes((r as TransactionEvent).webhook_code))
+  isWebhookEvent(r)
+  && (r as TransactionEvent).new_transactions !== undefined
+  && transactionWebhookCodes.includes((r as TransactionEvent).webhook_code)
 );
 
 class WebhookController {
@@ -41,9 +79,10 @@ class WebhookController {
     if (verified) {
       response.noContent();
 
+      const body = request.body();
+
       switch (request.body().webhook_type) {
         case 'TRANSACTIONS': {
-          const body = request.body();
           if (isTransactionEvent(body)) {
             WebhookController.processTransactionEvent(body);
           }
@@ -51,11 +90,13 @@ class WebhookController {
         }
 
         case 'ITEM':
-          WebhookController.processItemEvent(request.body());
+          if (isItemEvent(body)) {
+            WebhookController.processItemEvent(body);
+          }
           break;
 
         default:
-          console.log(`Unhandled webhook type: ${request.body().webhook_type}`);
+          console.log(`Unhandled webhook type: ${body.webhook_type}`);
       }
     }
     else {
@@ -63,17 +104,32 @@ class WebhookController {
     }
   }
 
-  static async processItemEvent(event) {
+  static async processItemEvent(event: WebhookItemEvent) {
     switch (event.webhook_code) {
-      case 'WEBHOOK_UPDATE_ACKNOWLEDGED':
+      case 'WEBHOOK_UPDATE_ACKNOWLEDGED': {
+        const webhookUpdated = event as WebhookAcknoweldgedEvent;
+        console.log(`webhook update acknowledged for ${webhookUpdated.item_id}`);
+        if (webhookUpdated.error) {
+          console.log(`\terror: ${webhookUpdated.error.error_message}`);
+        }
         break;
+      }
+
       case 'PENDING_EXPIRATION':
+        console.log(event.webhook_code);
         break;
+
       case 'USER_PERMISSION_REVOKED':
+        console.log(event.webhook_code);
         break;
+
       case 'ERROR':
+        console.log(event.webhook_code);
         break;
+
       default:
+        console.log(`unknown webhook code: ${event.webhook_code}`);
+
         break;
     }
   }
@@ -115,7 +171,7 @@ class WebhookController {
         const trx = await Database.transaction();
 
         try {
-          const institution = await Institution.findByOrFail('plaid_item_id', event.item_id, { client: trx });
+          const institution = await Institution.findByOrFail('plaidItemId', event.item_id, { client: trx });
 
           await institution.removeTransactions(event.removed_transactions);
 

@@ -5,7 +5,6 @@ import {
   belongsTo,
   BelongsTo,
 } from '@ioc:Adonis/Lucid/Orm';
-import Env from '@ioc:Adonis/Core/Env'
 import Database from '@ioc:Adonis/Lucid/Database'
 import util from 'util';
 import plaidClient, { PlaidInstitution } from '@ioc:Plaid';
@@ -38,27 +37,6 @@ class Institution extends BaseModel {
 
   @belongsTo(() => User)
   public user: BelongsTo<typeof User>;
-
-  public static async updateWebhooks(): Promise<void> {
-    const hook = Env.get('PLAID_WEBHOOK');
-
-    if (hook) {
-      console.log(`Updating webhooks to '${hook}'`);
-
-      if (hook) {
-        const result = await Database.query()
-          .select('inst.access_token AS accessToken')
-          .from('institutions AS inst');
-
-        result.forEach((item) => {
-          console.log(`updating ${item.accessToken}`);
-          plaidClient.updateItemWebhook(item.accessToken, hook, (error, response) => {
-            console.log(`error: ${error}, response: ${JSON.stringify(response)}`);
-          });
-        });
-      }
-    }
-  }
 
   public static async updateItemIds(): Promise<void> {
     const getItem = util.promisify(plaidClient.getItem).bind(plaidClient);

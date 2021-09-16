@@ -66,6 +66,18 @@
         }
       ]
     },
+    "check:webhooks": {
+      "settings": {
+        "loadApp": true,
+        "stayAlive": false
+      },
+      "commandPath": "./commands/CheckWebhooks",
+      "commandName": "check:webhooks",
+      "description": "Updates webhooks for each item",
+      "args": [],
+      "aliases": [],
+      "flags": []
+    },
     "dump:rcfile": {
       "settings": {},
       "commandPath": "@adonisjs/core/build/commands/DumpRc",
