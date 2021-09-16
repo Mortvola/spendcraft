@@ -13,7 +13,6 @@
     "dev-server-build": "node ace build",
     "dev-welcome-build": "webpack --config-name welcome",
     "dev-client-build": "webpack --config-name app",
-    "dev-test": "which tsc",
     "lint": "eslint ."
   },
   "keywords": [

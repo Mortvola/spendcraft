@@ -53,7 +53,11 @@ export default class AccountsController {
       })
       .preload('transactionCategories', (transactionCategory) => {
         transactionCategory.preload('loanTransaction');
-      });
+      })
+      .orderBy('transactions.date', 'desc')
+      .orderBy('transactions.id', 'asc')
+      .limit(request.qs().limit)
+      .offset(request.qs().offset);
 
     const pending = await user
       .related('transactions').query()

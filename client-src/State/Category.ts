@@ -2,18 +2,16 @@ import { makeAutoObservable, runInAction } from 'mobx';
 import {
   CategoryProps, isErrorResponse, Error,
   isUpdateCategoryResponse,
-  isCategoryTransactionsResponse,
   CategoryType,
-  isCategoryLoanResponse,
-  CategoryLoanResponse,
   CategoryBalanceProps,
 } from '../../common/ResponseTypes';
 import LoanTransaction from './LoanTransaction';
 import PendingTransaction from './PendingTransaction';
 import { CategoryInterface, GroupInterface, StoreInterface } from './State';
 import Transaction from './Transaction';
+import TransactionContainer from './TransactionContainer';
 import {
-  getBody, httpDelete, httpGet, httpPatch,
+  getBody, httpDelete, httpPatch,
 } from './Transports';
 
 class Category implements CategoryInterface {
@@ -29,7 +27,7 @@ class Category implements CategoryInterface {
 
   // groupId: number | null = null;
 
-  transactions: Transaction[] = [];
+  transactions: TransactionContainer;
 
   pending: PendingTransaction[] = [];
 
@@ -40,9 +38,9 @@ class Category implements CategoryInterface {
 
   store: StoreInterface;
 
-  fetching = false;
-
   constructor(props: CategoryProps, store: StoreInterface) {
+    this.transactions = new TransactionContainer(store);
+
     this.id = props.id;
     this.name = props.name;
     this.type = props.type;
@@ -53,109 +51,12 @@ class Category implements CategoryInterface {
     makeAutoObservable(this);
   }
 
-  static sort(t: Transaction[] | PendingTransaction[] | LoanTransaction[]): void {
-    t.sort((a, b) => {
-      if (a.date < b.date) {
-        return 1;
-      }
-
-      if (a.date > b.date) {
-        return -1;
-      }
-
-      if (a.createdAt < b.createdAt) {
-        return 1;
-      }
-
-      if (a.createdAt > b.createdAt) {
-        return -1;
-      }
-
-      return 0;
-    });
+  async getTransactions(index = 0): Promise<void> {
+    this.transactions.getTransactions(`/api/category/${this.id}/transactions`, index);
   }
 
-  async getTransactions(): Promise<void> {
-    this.fetching = true;
-    const response = await httpGet(`/api/category/${this.id}/transactions`);
-
-    const body = await getBody(response);
-
-    if (response.ok && isCategoryTransactionsResponse(body)) {
-      runInAction(() => {
-        if (body !== null) {
-          this.balance = body.balance;
-          this.pending = body.pending.map((pt) => new PendingTransaction(pt));
-          this.transactions = body.transactions.map((t) => (
-            new Transaction(this.store, t)
-          ));
-          this.loan.balance = body.loan.balance;
-          this.loan.transactions = body.loan.transactions.map((t) => (
-            new LoanTransaction(t)
-          ));
-
-          Category.sort(this.transactions);
-          Category.sort(this.pending);
-          Category.sort(this.loan.transactions);
-        }
-        else {
-          this.transactions = [];
-        }
-
-        this.fetching = false;
-      });
-    }
-    else {
-      this.fetching = false;
-    }
-  }
-
-  setLoanTransactions(loan: CategoryLoanResponse): void {
-    loan.transactions.sort((a, b) => {
-      if (a.transactionCategory.transaction.date < b.transactionCategory.transaction.date) {
-        return 1;
-      }
-
-      if (a.transactionCategory.transaction.date > b.transactionCategory.transaction.date) {
-        return -1;
-      }
-
-      // if (a.sortOrder < b.sortOrder) {
-      //   return 1;
-      // }
-
-      // if (a.sortOrder > b.sortOrder) {
-      //   return -1;
-      // }
-
-      return 0;
-    });
-
-    runInAction(() => {
-      if (loan !== null) {
-        this.loan.balance = loan.balance;
-        this.loan.transactions = loan.transactions.map((t) => (
-          new LoanTransaction(t)
-        ));
-      }
-      else {
-        this.loan.transactions = [];
-      }
-
-      this.fetching = false;
-    });
-  }
-
-  async getLoanTransactions(): Promise<void> {
-    const response = await httpGet(`/api/loans/${this.id}/transactions`);
-
-    if (response.ok) {
-      const body = await getBody(response);
-
-      if (isCategoryLoanResponse(body)) {
-        this.setLoanTransactions(body);
-      }
-    }
+  getMoreTransactions(): Promise<void> {
+    return this.transactions.getMoreTransactions(`/api/category/${this.id}/transactions`);
   }
 
   async update(name: string, group: GroupInterface): Promise<null | Error[]> {
@@ -194,22 +95,11 @@ class Category implements CategoryInterface {
   }
 
   insertTransaction(transaction: Transaction): void {
-    const index = this.transactions.findIndex((t) => transaction.date >= t.date);
-
-    if (index === -1) {
-      this.transactions.push(transaction);
-    }
-    else {
-      this.transactions.splice(index, 0, transaction)
-    }
+    this.transactions.insertTransaction(transaction);
   }
 
   removeTransaction(transactionId: number): void {
-    const index = this.transactions.findIndex((t) => t.id === transactionId);
-
-    if (index !== -1) {
-      this.transactions.splice(index, 1);
-    }
+    this.transactions.removeTransaction(transactionId);
   }
 
   updateBalances(balances: CategoryBalanceProps[]): void {

@@ -1,9 +1,11 @@
 import React, {
-  ReactElement, useCallback, useContext, useState,
+  ReactElement, useCallback, useContext, useEffect, useRef, useState,
 } from 'react';
 import { Spinner } from 'react-bootstrap';
 import { observer } from 'mobx-react-lite';
-import { AccountInterface, CategoryInterface, TransactionInterface } from '../State/State';
+import {
+  AccountInterface, CategoryInterface, TransactionContainerInterface, TransactionInterface,
+} from '../State/State';
 import { useTransactionDialog } from './TransactionDialog';
 import { useCategoryTransferDialog } from '../CategoryTransferDialog';
 import { useFundingDialog } from '../Funding/FundingDialog';
@@ -14,10 +16,9 @@ import { TransactionType } from '../../common/ResponseTypes';
 import MobxStore from '../State/mobxStore';
 
 type PropsType = {
-  transactions?: TransactionInterface[],
+  transactions: TransactionContainerInterface,
   category?: CategoryInterface | null,
   account?: AccountInterface | null,
-  fetching: boolean,
   balance: number,
 }
 
@@ -25,7 +26,6 @@ const RegisterTransactions = ({
   transactions,
   category = null,
   account = null,
-  fetching,
   balance,
 }: PropsType): ReactElement => {
   const { uiState } = useContext(MobxStore);
@@ -34,6 +34,43 @@ const RegisterTransactions = ({
   const [FundingDialog, showFundingDialog] = useFundingDialog();
   const [RebalanceDialog, showRebalanceDialog] = useRebalanceDialog();
   const [editedTransaction, setEditedTransaction] = useState<TransactionInterface | null>(null);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const checkForNeededData = useCallback((element: HTMLDivElement | null) => {
+    if (element !== null) {
+      const { scrollTop, scrollHeight, clientHeight } = element;
+
+      window.requestAnimationFrame(() => {
+        const scrollBottom = scrollHeight - (scrollTop + clientHeight);
+        const pagesLeft = scrollBottom / clientHeight;
+        console.log(`scrollHeight: ${scrollHeight}, scrollTop: ${scrollTop}, clientHeight: ${clientHeight}, pagesLeft: ${pagesLeft}`);
+        // if (transactions) {
+        //   const pixelsPerItem = scrollHeight / transactions.length;
+        //   const itemsPerPage = clientHeight / pixelsPerItem;
+        //   console.log(`items per page: ${itemsPerPage}`);
+        // }
+
+        if (pagesLeft <= 0.3) {
+          // Query for next set of records
+          if (category) {
+            // console.log(`transactions.length = ${transactions ? transactions.length : null}`)
+            category.getMoreTransactions();
+          }
+          else if (account) {
+            account.getMoreTransactions();
+          }
+        }
+      })
+    }
+  }, [account, category]);
+
+  const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
+    checkForNeededData(event.target as HTMLDivElement);
+  }
+
+  useEffect(() => {
+    checkForNeededData(ref.current);
+  }, [checkForNeededData, transactions.transactions])
 
   const TrxDialog = useCallback(() => {
     if (isTransaction(editedTransaction)) {
@@ -69,7 +106,7 @@ const RegisterTransactions = ({
     return null;
   }, [editedTransaction, uiState, CategoryTransferDialog, FundingDialog, RebalanceDialog, TransactionDialog, account]);
 
-  const showTrxDialog = (transaction: TransactionInterface) => {
+  const showTrxDialog = useCallback((transaction: TransactionInterface) => {
     setEditedTransaction(transaction);
     switch (transaction.type) {
       case TransactionType.REGULAR_TRANSACTION:
@@ -93,39 +130,36 @@ const RegisterTransactions = ({
       default:
         throw new Error('invalid transaction type');
     }
-  };
+  }, [showCategoryTransferDialog, showFundingDialog, showRebalanceDialog, showTransactionDialog]);
 
   const renderTransactions = () => {
-    if (transactions) {
-      let runningBalance = balance;
-      return transactions.map((transaction) => {
-        let { amount } = transaction;
-        if (category !== null) {
-          amount = transaction.getAmountForCategory(category.id);
-        }
+    let runningBalance = balance;
+    return transactions.transactions.map((transaction) => {
+      let { amount } = transaction;
+      if (category !== null) {
+        amount = transaction.getAmountForCategory(category.id);
+      }
 
-        const element = (
-          <Transaction
-            transaction={transaction}
-            amount={amount}
-            runningBalance={runningBalance}
-            category={category}
-            showTrxDialog={showTrxDialog}
-          />
-        )
+      const element = (
+        <Transaction
+          key={transaction.id}
+          transaction={transaction}
+          amount={amount}
+          runningBalance={runningBalance}
+          category={category}
+          showTrxDialog={showTrxDialog}
+        />
+      )
 
-        if (runningBalance !== undefined) {
-          runningBalance -= amount;
-        }
+      if (runningBalance !== undefined) {
+        runningBalance -= amount;
+      }
 
-        return element;
-      });
-    }
-
-    return null;
+      return element;
+    });
   }
 
-  if (fetching) {
+  if (transactions.fetching && transactions.transactions.length === 0) {
     return (
       <div className="please-wait">
         <Spinner animation="border" />
@@ -134,10 +168,12 @@ const RegisterTransactions = ({
   }
 
   return (
-    <div className="transactions striped">
-      {renderTransactions()}
+    <>
+      <div ref={ref} className="transactions striped" onScroll={handleScroll}>
+        {renderTransactions()}
+      </div>
       <TrxDialog />
-    </div>
+    </>
   );
 };
 

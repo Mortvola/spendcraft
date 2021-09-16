@@ -212,7 +212,11 @@ class CategoryController {
             account.preload('institution');
           });
         })
-        .preload('transactionCategories');
+        .preload('transactionCategories')
+        .orderBy('transactions.date', 'desc')
+        .orderBy('transactions.id', 'asc')
+        .limit(request.qs().limit)
+        .offset(request.qs().offset);
 
       result.transactions = transactions.map((t) => (
         t.serialize() as TransactionProps

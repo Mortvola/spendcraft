@@ -272,11 +272,6 @@ export interface CategoryTransactionsResponse {
 
   pending: TransactionProps[];
 
-  loan: {
-    balance: number;
-    transactions: LoanTransactionProps[];
-  };
-
   balance: number;
 }
 

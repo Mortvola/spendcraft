@@ -135,10 +135,6 @@ class Transaction implements TransactionInterface {
                   ),
                 ))
             ) {
-              if (this.store.uiState.selectedCategory.type === 'LOAN') {
-                this.store.uiState.selectedCategory.getLoanTransactions();
-              }
-
               this.store.uiState.selectedCategory.removeTransaction(this.id);
             }
             else if (dateChanged) {

@@ -145,7 +145,7 @@ export interface CategoryInterface {
 
   balance: number;
 
-  transactions: Transaction[];
+  transactions: TransactionContainerInterface;
 
   pending: PendingTransaction[];
 
@@ -154,13 +154,11 @@ export interface CategoryInterface {
     transactions: LoanTransaction[];
   };
 
-  fetching: boolean;
-
   store: StoreInterface;
 
   getTransactions(): Promise<void>;
 
-  getLoanTransactions(): Promise<void>;
+  getMoreTransactions(): Promise<void>;
 
   insertTransaction(transaction: Transaction): void;
 
@@ -171,8 +169,6 @@ export interface CategoryInterface {
   delete (): Promise<null | Error[]>;
 
   updateBalances(balances: CategoryBalanceProps[]): void;
-
-  setLoanTransactions(loan: CategoryLoanResponse): void;
 
   getGroup(): GroupInterface;
 }
@@ -280,6 +276,12 @@ export interface InstitutionInterface {
   delete(): void;
 }
 
+export interface TransactionContainerInterface {
+  transactions: TransactionInterface[] = [];
+
+  fetching: boolean;
+}
+
 export interface AccountInterface {
   id: number;
 
@@ -301,11 +303,9 @@ export interface AccountInterface {
 
   rate: number | null;
 
-  transactions: Transaction[] = [];
+  transactions: TransactionContainerInterface;
 
   pending: PendingTransaction[] = [];
-
-  fetching: boolean;
 
   refreshing: boolean;
 
@@ -314,6 +314,8 @@ export interface AccountInterface {
   store: StoreInterface;
 
   getTransactions(): Promise<void>;
+
+  getMoreTransactions(): Promise<void>;
 
   refresh(institutionId: number): Promise<void>;
 

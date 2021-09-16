@@ -1,15 +1,16 @@
 import { DateTime } from 'luxon';
 import { makeAutoObservable, runInAction } from 'mobx';
 import {
-  AccountProps, Error, isAccountSyncResponse, isAccountTransactionsResponse, isAddTransactionResponse, TrackingType,
+  AccountProps, Error, isAccountSyncResponse, isAddTransactionResponse, TrackingType,
 } from '../../common/ResponseTypes';
 import PendingTransaction from './PendingTransaction';
 import {
   AccountInterface, InstitutionInterface, NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface,
 } from './State';
 import Transaction from './Transaction';
+import TransactionContainer from './TransactionContainer';
 import {
-  getBody, httpGet, httpPatch, httpPost,
+  getBody, httpPatch, httpPost,
 } from './Transports';
 
 class Account implements AccountInterface {
@@ -33,11 +34,9 @@ class Account implements AccountInterface {
 
   rate: number | null;
 
-  transactions: Transaction[] = [];
+  transactions: TransactionContainer;
 
   pending: PendingTransaction[] = [];
-
-  fetching = false;
 
   refreshing = false;
 
@@ -46,6 +45,8 @@ class Account implements AccountInterface {
   store: StoreInterface;
 
   constructor(store: StoreInterface, institution: InstitutionInterface, props: AccountProps) {
+    this.transactions = new TransactionContainer(store);
+
     this.id = props.id;
     this.name = props.name;
     this.type = props.type;
@@ -87,55 +88,12 @@ class Account implements AccountInterface {
     });
   }
 
-  static sort(t: Transaction[] | PendingTransaction[]): void {
-    t.sort((a, b) => {
-      if (a.date < b.date) {
-        return 1;
-      }
-
-      if (a.date > b.date) {
-        return -1;
-      }
-
-      // if (a.sortOrder < b.sortOrder) {
-      //   return 1;
-      // }
-
-      // if (a.sortOrder > b.sortOrder) {
-      //   return -1;
-      // }
-
-      return 0;
-    });
+  async getTransactions(index = 0): Promise<void> {
+    return this.transactions.getTransactions(`/api/account/${this.id}/transactions`, index)
   }
 
-  async getTransactions(): Promise<void> {
-    this.fetching = true;
-    const response = await httpGet(`/api/account/${this.id}/transactions`);
-
-    const body = await getBody(response);
-
-    if (response.ok && isAccountTransactionsResponse(body)) {
-      runInAction(() => {
-        if (body !== null) {
-          this.balance = body.balance;
-          this.pending = body.pending.map((pt) => new PendingTransaction(pt));
-          this.transactions = body.transactions.map((t) => (
-            new Transaction(this.store, t)
-          ));
-          Account.sort(this.transactions);
-          Account.sort(this.pending);
-        }
-        else {
-          this.transactions = [];
-        }
-
-        this.fetching = false;
-      });
-    }
-    else {
-      this.fetching = false;
-    }
+  getMoreTransactions(): Promise<void> {
+    return this.transactions.getMoreTransactions(`/api/account/${this.id}/transactions`);
   }
 
   async addTransaction(
@@ -170,22 +128,11 @@ class Account implements AccountInterface {
   }
 
   insertTransaction(transaction: Transaction): void {
-    const index = this.transactions.findIndex((t) => transaction.date >= t.date);
-
-    if (index === -1) {
-      this.transactions.push(transaction);
-    }
-    else {
-      this.transactions.splice(index, 0, transaction)
-    }
+    this.transactions.insertTransaction(transaction);
   }
 
   removeTransaction(transactionId: number): void {
-    const index = this.transactions.findIndex((t) => t.id === transactionId);
-
-    if (index !== -1) {
-      this.transactions.splice(index, 1);
-    }
+    this.transactions.removeTransaction(transactionId);
   }
 
   delete(): void {

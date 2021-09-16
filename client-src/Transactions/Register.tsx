@@ -3,10 +3,10 @@ import React, {
 } from 'react';
 import { observer } from 'mobx-react-lite';
 import MobxStore from '../State/mobxStore';
-import { AccountInterface, CategoryInterface, TransactionInterface } from '../State/State';
+import {
+  AccountInterface, CategoryInterface, TransactionContainerInterface,
+} from '../State/State';
 import PendingTransaction from '../State/PendingTransaction';
-import LoanTransaction from '../State/LoanTransaction';
-import LoanRegister from './LoanRegister';
 import PendingRegister from './PendingRegister';
 import RegisterTitles from './RegisterTitles';
 import RegisterTransactions from './RegisterTransactions';
@@ -14,11 +14,9 @@ import RegisterTransactions from './RegisterTransactions';
 const Register = (): ReactElement => {
   const { uiState } = useContext(MobxStore);
 
-  let transactions: TransactionInterface[] | undefined;
+  let transactions: TransactionContainerInterface | undefined;
   let pending: PendingTransaction[] | undefined;
-  let loan: { balance: number, transactions: LoanTransaction[] } | undefined;
   let balance = 0;
-  let fetching = false;
 
   let category: CategoryInterface | null = null;
 
@@ -28,9 +26,7 @@ const Register = (): ReactElement => {
     if (category) {
       transactions = category.transactions;
       pending = category.pending;
-      loan = category.loan;
       balance = category.balance;
-      fetching = category.fetching;
     }
   }
 
@@ -42,8 +38,11 @@ const Register = (): ReactElement => {
       transactions = account.transactions;
       pending = account.pending;
       balance = account.balance;
-      fetching = account.fetching;
     }
+  }
+
+  if (!transactions) {
+    throw new Error('transactions is null');
   }
 
   return (
@@ -52,18 +51,13 @@ const Register = (): ReactElement => {
         <div />
         <RegisterTitles category={category} />
         <RegisterTransactions
-          fetching={fetching}
           transactions={transactions}
           balance={balance}
           category={category}
           account={account}
         />
       </div>
-      {
-        category && category.type === 'LOAN'
-          ? <LoanRegister loan={loan} />
-          : <PendingRegister categoryView={category !== null} pending={pending} />
-      }
+      <PendingRegister categoryView={category !== null} pending={pending} />
     </>
   );
 };
