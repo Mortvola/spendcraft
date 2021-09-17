@@ -4,7 +4,7 @@ import React, {
 import { Spinner } from 'react-bootstrap';
 import { observer } from 'mobx-react-lite';
 import {
-  AccountInterface, CategoryInterface, TransactionContainerInterface, TransactionInterface,
+  AccountInterface, CategoryInterface, TransactionInterface,
 } from '../State/State';
 import { useTransactionDialog } from './TransactionDialog';
 import { useCategoryTransferDialog } from '../CategoryTransferDialog';
@@ -16,7 +16,7 @@ import { TransactionType } from '../../common/ResponseTypes';
 import MobxStore from '../State/mobxStore';
 
 type PropsType = {
-  transactions: TransactionContainerInterface<TransactionInterface>,
+  transactions: TransactionInterface[],
   category?: CategoryInterface | null,
   account?: AccountInterface | null,
   balance: number,
@@ -43,7 +43,10 @@ const RegisterTransactions = ({
       window.requestAnimationFrame(() => {
         const scrollBottom = scrollHeight - (scrollTop + clientHeight);
         const pagesLeft = scrollBottom / clientHeight;
-        console.log(`scrollHeight: ${scrollHeight}, scrollTop: ${scrollTop}, clientHeight: ${clientHeight}, pagesLeft: ${pagesLeft}`);
+        // console.log(
+        //   `scrollHeight: ${scrollHeight}, scrollTop: ${scrollTop}, `
+        //   + `clientHeight: ${clientHeight}, pagesLeft: ${pagesLeft}`,
+        // );
         // if (transactions) {
         //   const pixelsPerItem = scrollHeight / transactions.length;
         //   const itemsPerPage = clientHeight / pixelsPerItem;
@@ -70,7 +73,7 @@ const RegisterTransactions = ({
 
   useEffect(() => {
     checkForNeededData(ref.current);
-  }, [checkForNeededData, transactions.transactions])
+  }, [checkForNeededData, transactions])
 
   const TrxDialog = useCallback(() => {
     if (isTransaction(editedTransaction)) {
@@ -134,7 +137,7 @@ const RegisterTransactions = ({
 
   const renderTransactions = () => {
     let runningBalance = balance;
-    return transactions.transactions.map((transaction) => {
+    return transactions.map((transaction) => {
       let { amount } = transaction;
       if (category !== null) {
         amount = transaction.getAmountForCategory(category.id);
@@ -159,7 +162,7 @@ const RegisterTransactions = ({
     });
   }
 
-  if (category && category.transactionsQuery.fetching && transactions.transactions.length === 0) {
+  if (category && category.transactionsQuery.fetching && transactions.length === 0) {
     return (
       <div className="please-wait">
         <Spinner animation="border" />

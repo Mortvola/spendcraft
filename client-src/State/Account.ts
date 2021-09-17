@@ -1,11 +1,9 @@
 import { DateTime } from 'luxon';
-import { makeAutoObservable, runInAction } from 'mobx';
+import { makeObservable, observable, runInAction } from 'mobx';
 import {
   AccountProps, Error, isAccountSyncResponse,
-  isAddTransactionResponse, isPendingTransactionsResponse, isTransactionsResponse, TrackingType,
+  isAddTransactionResponse, TrackingType,
 } from '../../common/ResponseTypes';
-import PendingTransaction from './PendingTransaction';
-import QueryManager from './QueryManager';
 import {
   AccountInterface, InstitutionInterface, NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface,
 } from './State';
@@ -15,7 +13,7 @@ import {
   getBody, httpPatch, httpPost,
 } from './Transports';
 
-class Account implements AccountInterface {
+class Account extends TransactionContainer implements AccountInterface {
   id: number;
 
   name: string;
@@ -30,19 +28,9 @@ class Account implements AccountInterface {
 
   syncDate: DateTime | null;
 
-  balance: number;
-
   plaidBalance: number | null;
 
   rate: number | null;
-
-  transactions: TransactionContainer<Transaction>;
-
-  transactionsQuery: QueryManager = new QueryManager();
-
-  pending: TransactionContainer<PendingTransaction>;
-
-  pendingQuery: QueryManager = new QueryManager();
 
   refreshing = false;
 
@@ -51,8 +39,7 @@ class Account implements AccountInterface {
   store: StoreInterface;
 
   constructor(store: StoreInterface, institution: InstitutionInterface, props: AccountProps) {
-    this.transactions = new TransactionContainer(Transaction, store);
-    this.pending = new TransactionContainer(PendingTransaction, store);
+    super(store);
 
     this.id = props.id;
     this.name = props.name;
@@ -65,7 +52,13 @@ class Account implements AccountInterface {
     this.rate = props.rate;
     this.institution = institution;
 
-    makeAutoObservable(this);
+    makeObservable(this, {
+      name: observable,
+      syncDate: observable,
+      plaidBalance: observable,
+      rate: observable,
+      institution: observable,
+    });
 
     this.store = store;
   }
@@ -99,51 +92,19 @@ class Account implements AccountInterface {
     return this.transactionsQuery.fetch(
       `/api/account/${this.id}/transactions`,
       index,
-      (body: unknown, idx: number, limit: number): boolean => {
-        if (isTransactionsResponse(body)) {
-          this.balance = body.balance;
-
-          if (idx === 0) {
-            this.transactions.setTransactions(body.transactions);
-          }
-          else {
-            this.transactions.appendTransactions(body.transactions);
-          }
-
-          return body.transactions.length < limit;
-        }
-
-        this.transactions.clear();
-
-        return false;
-      },
+      this.transactionResponseHandler,
     );
   }
 
   getMoreTransactions(): Promise<void> {
-    return this.getTransactions(this.transactions.transactions.length);
+    return this.getTransactions(this.transactions.length);
   }
 
   async getPendingTransactions(index = 0): Promise<void> {
     return this.pendingQuery.fetch(
       `/api/account/${this.id}/transactions/pending`,
       index,
-      (body: unknown, idx: number, limit: number) => {
-        if (isPendingTransactionsResponse(body)) {
-          if (idx === 0) {
-            this.pending.setTransactions(body);
-          }
-          else {
-            this.pending.appendTransactions(body);
-          }
-
-          return body.length < limit;
-        }
-
-        this.pending.clear();
-
-        return false;
-      },
+      this.pendingResponseHandler,
     );
   }
 
@@ -176,14 +137,6 @@ class Account implements AccountInterface {
     }
 
     throw new Error('Error response received');
-  }
-
-  insertTransaction(transaction: Transaction): void {
-    this.transactions.insertTransaction(transaction);
-  }
-
-  removeTransaction(transactionId: number): void {
-    this.transactions.removeTransaction(transactionId);
   }
 
   delete(): void {

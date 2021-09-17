@@ -4,7 +4,7 @@ import React, {
 import { observer } from 'mobx-react-lite';
 import MobxStore from '../State/mobxStore';
 import {
-  AccountInterface, CategoryInterface, PendingTransactionInterface, TransactionContainerInterface, TransactionInterface,
+  AccountInterface, CategoryInterface, PendingTransactionInterface, TransactionInterface,
 } from '../State/State';
 import PendingRegister from './PendingRegister';
 import RegisterTitles from './RegisterTitles';
@@ -13,8 +13,8 @@ import RegisterTransactions from './RegisterTransactions';
 const Register = (): ReactElement => {
   const { uiState } = useContext(MobxStore);
 
-  let transactions: TransactionContainerInterface<TransactionInterface> | undefined;
-  let pending: TransactionContainerInterface<PendingTransactionInterface> | undefined;
+  let transactions: TransactionInterface[] | undefined;
+  let pending: PendingTransactionInterface[] | undefined;
   let balance = 0;
 
   let category: CategoryInterface | null = null;

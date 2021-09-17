@@ -1,50 +1,54 @@
-import { DateTime } from 'luxon';
-import { makeAutoObservable } from 'mobx';
-import { TransactionProps, TransactionType } from '../../common/ResponseTypes';
+import { makeObservable, observable } from 'mobx';
+import { isPendingTransactionsResponse, isTransactionsResponse, TransactionProps } from '../../common/ResponseTypes';
+import PendingTransaction from './PendingTransaction';
+import QueryManager from './QueryManager';
 import { StoreInterface, TransactionContainerInterface } from './State';
+import Transaction from './Transaction';
 
-type BaseType = {
-  id: number | null,
-  type: TransactionType,
-  date: DateTime,
-}
+class TransactionContainer implements TransactionContainerInterface {
+  transactions: Transaction[] = [];
 
-class TransactionContainer<T extends BaseType> implements TransactionContainerInterface<T> {
-  transactions: T[] = [];
+  pending: PendingTransaction[] = [];
 
   balance = 0;
 
+  transactionsQuery: QueryManager = new QueryManager();
+
+  pendingQuery: QueryManager = new QueryManager();
+
   store: StoreInterface;
 
-  TrxType: new(store: StoreInterface, props: TransactionProps) => T;
-
   constructor(
-    T: new(store: StoreInterface, props: TransactionProps) => T,
     store: StoreInterface,
   ) {
-    makeAutoObservable(this);
-
-    this.TrxType = T;
+    makeObservable(this, {
+      transactions: observable,
+      pending: observable,
+      balance: observable,
+    })
 
     this.store = store;
   }
 
-  clear(): void {
+  clearTransactions(): void {
     this.transactions = [];
+  }
+
+  clearPending(): void {
+    this.pending = [];
   }
 
   setTransactions(newTransactions: TransactionProps[]): void {
     const transactions = newTransactions.map((t) => (
-      new this.TrxType(this.store, t)
+      new Transaction(this.store, t)
     ));
 
     this.transactions = transactions;
   }
 
   appendTransactions(newTransactions: TransactionProps[]): void {
-    // this.pending = body.pending.map((pt) => new PendingTransaction(pt));
     const transactions = newTransactions.map((t) => (
-      new this.TrxType(this.store, t)
+      new Transaction(this.store, t)
     ));
 
     this.transactions = [
@@ -53,7 +57,26 @@ class TransactionContainer<T extends BaseType> implements TransactionContainerIn
     ];
   }
 
-  insertTransaction(transaction: T): void {
+  setPendingTransactions(newTransactions: TransactionProps[]): void {
+    const pending = newTransactions.map((t) => (
+      new PendingTransaction(this.store, t)
+    ));
+
+    this.pending = pending;
+  }
+
+  appendPendingTransactions(newTransactions: TransactionProps[]): void {
+    const pending = newTransactions.map((t) => (
+      new PendingTransaction(this.store, t)
+    ));
+
+    this.pending = [
+      ...this.pending,
+      ...pending,
+    ];
+  }
+
+  insertTransaction(transaction: Transaction): void {
     const index = this.transactions.findIndex((t) => transaction.date >= t.date);
 
     if (index === -1) {
@@ -70,6 +93,42 @@ class TransactionContainer<T extends BaseType> implements TransactionContainerIn
     if (index !== -1) {
       this.transactions.splice(index, 1);
     }
+  }
+
+  transactionResponseHandler = (body: unknown, idx: number, limit: number): boolean => {
+    if (isTransactionsResponse(body)) {
+      this.balance = body.balance;
+
+      if (idx === 0) {
+        this.setTransactions(body.transactions);
+      }
+      else {
+        this.appendTransactions(body.transactions);
+      }
+
+      return body.transactions.length < limit;
+    }
+
+    this.clearTransactions();
+
+    return false;
+  }
+
+  pendingResponseHandler = (body: unknown, idx: number, limit: number): boolean => {
+    if (isPendingTransactionsResponse(body)) {
+      if (idx === 0) {
+        this.setPendingTransactions(body);
+      }
+      else {
+        this.appendPendingTransactions(body);
+      }
+
+      return body.length < limit;
+    }
+
+    this.clearPending();
+
+    return false;
   }
 }
 

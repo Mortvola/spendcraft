@@ -127,7 +127,7 @@ export interface AccountsInterface {
   deleteInstitution(instiution: InstitutionInterface): void;
 }
 
-export interface CategoryInterface {
+export interface CategoryInterface extends TransactionContainerInterface {
   id: number;
 
   name: string;
@@ -135,14 +135,6 @@ export interface CategoryInterface {
   type: CategoryType;
 
   groupId: number;
-
-  balance: number;
-
-  transactions: TransactionContainerInterface<TransactionInterface>;
-
-  transactionsQuery: QueryManager;
-
-  pending: TransactionContainerInterface<PendingTransactionInterface>;
 
   loan: {
     balance: number;
@@ -277,11 +269,17 @@ export interface QueryManagerInterface {
   fetching: boolean;
 }
 
-export interface TransactionContainerInterface<T> {
-  transactions: T[] = [];
+export interface TransactionContainerInterface {
+  balance: number;
+
+  transactions: TransactionInterface[];
+
+  pending: PendingTransactionInterface[];
+
+  transactionsQuery: QueryManagerInterface;
 }
 
-export interface AccountInterface {
+export interface AccountInterface extends TransactionContainerInterface {
   id: number;
 
   name: string;
@@ -296,17 +294,9 @@ export interface AccountInterface {
 
   syncDate: DateTime | null;
 
-  balance: number;
-
   plaidBalance: number | null;
 
   rate: number | null;
-
-  transactions: TransactionContainerInterface<TransactionInterface>;
-
-  transactionsQuery: QueryManager;
-
-  pending: TransactionContainerInterface<PendingTransactionInterface>;
 
   refreshing: boolean;
 

@@ -1,23 +1,18 @@
-import { makeAutoObservable, runInAction } from 'mobx';
+import { makeObservable, observable, runInAction } from 'mobx';
 import {
   CategoryProps, isErrorResponse, Error,
   isUpdateCategoryResponse,
   CategoryType,
   CategoryBalanceProps,
-  isTransactionsResponse,
-  isPendingTransactionsResponse,
 } from '../../common/ResponseTypes';
 import LoanTransaction from './LoanTransaction';
-import PendingTransaction from './PendingTransaction';
-import QueryManager from './QueryManager';
 import { CategoryInterface, GroupInterface, StoreInterface } from './State';
-import Transaction from './Transaction';
 import TransactionContainer from './TransactionContainer';
 import {
   getBody, httpDelete, httpPatch,
 } from './Transports';
 
-class Category implements CategoryInterface {
+class Category extends TransactionContainer implements CategoryInterface {
   id: number;
 
   name: string;
@@ -25,18 +20,6 @@ class Category implements CategoryInterface {
   type: CategoryType;
 
   groupId: number;
-
-  balance: number;
-
-  // groupId: number | null = null;
-
-  transactions: TransactionContainer<Transaction>;
-
-  transactionsQuery: QueryManager = new QueryManager();
-
-  pending: TransactionContainer<PendingTransaction>;
-
-  pendingQuery: QueryManager = new QueryManager();
 
   loan: {
     balance: number;
@@ -46,8 +29,7 @@ class Category implements CategoryInterface {
   store: StoreInterface;
 
   constructor(props: CategoryProps, store: StoreInterface) {
-    this.transactions = new TransactionContainer(Transaction, store);
-    this.pending = new TransactionContainer(PendingTransaction, store);
+    super(store);
 
     this.id = props.id;
     this.name = props.name;
@@ -56,58 +38,28 @@ class Category implements CategoryInterface {
     this.balance = props.balance;
     this.store = store;
 
-    makeAutoObservable(this);
+    makeObservable(this, {
+      name: observable,
+    });
   }
 
   async getTransactions(index = 0): Promise<void> {
     return this.transactionsQuery.fetch(
       `/api/category/${this.id}/transactions`,
       index,
-      (body: unknown, idx: number, limit: number) => {
-        if (isTransactionsResponse(body)) {
-          this.balance = body.balance;
-
-          if (idx === 0) {
-            this.transactions.setTransactions(body.transactions);
-          }
-          else {
-            this.transactions.appendTransactions(body.transactions);
-          }
-
-          return body.transactions.length < limit;
-        }
-
-        this.transactions.clear();
-
-        return false;
-      },
+      this.transactionResponseHandler,
     );
   }
 
   getMoreTransactions(): Promise<void> {
-    return this.getTransactions(this.transactions.transactions.length);
+    return this.getTransactions(this.transactions.length);
   }
 
   async getPendingTransactions(index = 0): Promise<void> {
     return this.pendingQuery.fetch(
       `/api/category/${this.id}/transactions/pending`,
       index,
-      (body: unknown, idx: number, limit: number) => {
-        if (isPendingTransactionsResponse(body)) {
-          if (idx === 0) {
-            this.pending.setTransactions(body);
-          }
-          else {
-            this.pending.appendTransactions(body);
-          }
-
-          return body.length < limit;
-        }
-
-        this.pending.clear();
-
-        return false;
-      },
+      this.pendingResponseHandler,
     )
   }
 
@@ -144,14 +96,6 @@ class Category implements CategoryInterface {
     }
 
     return null;
-  }
-
-  insertTransaction(transaction: Transaction): void {
-    this.transactions.insertTransaction(transaction);
-  }
-
-  removeTransaction(transactionId: number): void {
-    this.transactions.removeTransaction(transactionId);
   }
 
   updateBalances(balances: CategoryBalanceProps[]): void {

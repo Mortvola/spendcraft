@@ -41,19 +41,19 @@ class Register implements RegisterInterface {
           ))
         ) {
           // Determine where to insert the transaction based on date.
-          let index = this.store.uiState.selectedCategory.transactions.transactions.findIndex(
+          let index = this.store.uiState.selectedCategory.transactions.findIndex(
             (t) => t.date <= DateTime.fromISO(values.date),
           );
 
           // If the index was not found then insert at the end of the list of transactions.
           if (index === -1) {
-            index = this.store.uiState.selectedCategory.transactions.transactions.length;
+            index = this.store.uiState.selectedCategory.transactions.length;
           }
 
-          this.store.uiState.selectedCategory.transactions.transactions = [
-            ...this.store.uiState.selectedCategory.transactions.transactions.slice(0, index),
+          this.store.uiState.selectedCategory.transactions = [
+            ...this.store.uiState.selectedCategory.transactions.slice(0, index),
             new Transaction(this.store, body.transaction),
-            ...this.store.uiState.selectedCategory.transactions.transactions.slice(index),
+            ...this.store.uiState.selectedCategory.transactions.slice(index),
           ];
         }
 
