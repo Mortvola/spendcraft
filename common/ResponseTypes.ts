@@ -14,25 +14,6 @@ export const isGroupProps = (r: unknown): r is GroupProps => (
   && (r as GroupProps).type !== undefined
 );
 
-export interface LoansGroupProps {
-  id: number;
-
-  name: string;
-
-  type: string;
-
-  system: boolean;
-
-  categories: CategoryProps[];
-}
-
-export const isLoansGroupProps = (r: unknown): r is LoansGroupProps => (
-  (r as LoansGroupProps).id !== undefined
-  && (r as LoansGroupProps).name !== undefined
-  && (r as LoansGroupProps).name === 'Loans'
-  && (r as LoansGroupProps).system !== undefined
-);
-
 export type CategoryType = 'REGULAR' | 'UNASSIGNED' | 'FUNDING POOL' | 'ACCOUNT TRANSFER' | 'LOAN';
 
 export interface CategoryProps {
@@ -95,20 +76,6 @@ export const isUpdateLoanResponse = (
   (r as UpdateLoanResponse).name !== undefined
   && (r as UpdateLoanResponse).balance !== undefined
   && (r as UpdateLoanResponse).rate !== undefined
-);
-
-export interface LoanProps {
-  startDate: string;
-
-  startingBalance: number;
-
-  rate: number;
-}
-
-export const isLoanProps = (r: unknown): r is LoanProps => (
-  ((r as LoanProps).startDate !== undefined
-  && (r as LoanProps).startingBalance !== undefined
-  && (r as LoanProps).rate !== undefined)
 );
 
 export interface UpdateFundingCategoryResponse {

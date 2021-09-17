@@ -12,11 +12,6 @@ import { AccountBalanceProps, CategoryBalanceProps, LoanTransactionProps } from 
 import Account from 'App/Models/Account';
 import { schema } from '@ioc:Adonis/Core/Validator';
 
-type LoanProps = {
-  balance: number,
-  transactions: LoanTransactionProps[],
-};
-
 export default class TransactionsController {
   // eslint-disable-next-line class-methods-use-this
   public async update({
@@ -53,7 +48,6 @@ export default class TransactionsController {
     type Result = {
       categories: CategoryBalanceProps[],
       transaction?: Transaction,
-      loan?: LoanProps,
     };
 
     const result: Result = {

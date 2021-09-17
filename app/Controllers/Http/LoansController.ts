@@ -6,7 +6,6 @@ import Category from 'App/Models/Category';
 import Group from 'App/Models/Group';
 import Loan from 'App/Models/Loan';
 import { LoanTransactionsProps, LoanUpdateProps } from 'Common/ResponseTypes';
-// import LoanTransaction from 'App/Models/LoanTransaction';
 
 export default class LoansController {
   // eslint-disable-next-line class-methods-use-this
