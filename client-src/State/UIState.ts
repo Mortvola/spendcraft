@@ -29,9 +29,7 @@ class UIState implements UIStateInterface {
   setView(view: Views): void {
     runInAction(() => {
       if (view === 'HOME' && this.view === 'HOME') {
-        this.selectedCategory = this.store.categoryTree.getCategory(
-          this.store.categoryTree.systemIds.unassignedId,
-        );
+        this.selectedCategory = this.store.categoryTree.unassignedCat;
       }
       else {
         this.view = view;
