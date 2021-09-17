@@ -34,9 +34,9 @@ class Account implements AccountInterface {
 
   rate: number | null;
 
-  transactions: TransactionContainer;
+  transactions: TransactionContainer<Transaction>;
 
-  pending: PendingTransaction[] = [];
+  pending: TransactionContainer<PendingTransaction>;
 
   refreshing = false;
 
@@ -45,7 +45,8 @@ class Account implements AccountInterface {
   store: StoreInterface;
 
   constructor(store: StoreInterface, institution: InstitutionInterface, props: AccountProps) {
-    this.transactions = new TransactionContainer(store);
+    this.transactions = new TransactionContainer(Transaction, store);
+    this.pending = new TransactionContainer(PendingTransaction, store);
 
     this.id = props.id;
     this.name = props.name;
@@ -94,6 +95,10 @@ class Account implements AccountInterface {
 
   getMoreTransactions(): Promise<void> {
     return this.transactions.getMoreTransactions(`/api/account/${this.id}/transactions`);
+  }
+
+  async getPendingTransactions(index = 0): Promise<void> {
+    return this.pending.getTransactions(`/api/account/${this.id}/transactions/pending`, index)
   }
 
   async addTransaction(

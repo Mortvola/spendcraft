@@ -1,11 +1,11 @@
 import React, { ReactElement } from 'react';
-import PendingTransaction from '../State/PendingTransaction';
 import useMediaQuery from '../MediaQuery';
 import styles from './Transactions.module.css'
 import Amount from '../Amount';
+import { PendingTransactionInterface } from '../State/State';
 
 type PropsType = {
-  pending?: PendingTransaction[],
+  pending?: PendingTransactionInterface[],
   categoryView?: boolean,
 }
 

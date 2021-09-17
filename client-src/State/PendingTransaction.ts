@@ -1,8 +1,9 @@
 import { DateTime } from 'luxon';
 import { makeAutoObservable } from 'mobx';
-import { PendingTransactionProps } from './State';
+import { PendingTransactionProps, TransactionType } from '../../common/ResponseTypes';
+import { StoreInterface, PendingTransactionInterface } from './State';
 
-class PendingTransaction {
+class PendingTransaction implements PendingTransactionInterface {
   id: number | null;
 
   date: DateTime;
@@ -11,13 +12,15 @@ class PendingTransaction {
 
   name: string;
 
+  type = TransactionType.REGULAR_TRANSACTION;
+
   amount: number;
 
   instituteName: string;
 
   accountName: string;
 
-  constructor(props: PendingTransactionProps) {
+  constructor(store: StoreInterface, props: PendingTransactionProps) {
     this.id = props.id;
     this.date = DateTime.fromISO(props.date);
     this.createdAt = DateTime.fromISO(props.createdAt);

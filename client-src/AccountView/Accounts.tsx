@@ -21,6 +21,7 @@ const Accounts = () => {
         case 'Transactions':
         case 'Uncategorized Transactions':
           selectedAccount.getTransactions();
+          selectedAccount.getPendingTransactions();
           break;
 
         case 'Balances':

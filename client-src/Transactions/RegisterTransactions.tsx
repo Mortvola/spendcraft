@@ -16,7 +16,7 @@ import { TransactionType } from '../../common/ResponseTypes';
 import MobxStore from '../State/mobxStore';
 
 type PropsType = {
-  transactions: TransactionContainerInterface,
+  transactions: TransactionContainerInterface<TransactionInterface>,
   category?: CategoryInterface | null,
   account?: AccountInterface | null,
   balance: number,

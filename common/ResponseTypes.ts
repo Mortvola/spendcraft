@@ -267,10 +267,29 @@ export const isTransactionProps = (r: unknown): r is TransactionProps => (
   r !== undefined
 );
 
+export interface PendingTransactionProps {
+  id: number | null;
+  date: string;
+
+  createdAt: string;
+
+  accountTransaction: {
+    name: string;
+
+    amount: number;
+
+    account: {
+      name: string,
+
+      institution: {
+        name: string;
+      }
+    }
+  }
+}
+
 export interface CategoryTransactionsResponse {
   transactions: TransactionProps[];
-
-  pending: TransactionProps[];
 
   balance: number;
 }
@@ -278,7 +297,6 @@ export interface CategoryTransactionsResponse {
 export const isCategoryTransactionsResponse = (r: unknown): r is CategoryTransactionsResponse => (
   r !== undefined && r !== null
   && (r as CategoryTransactionsResponse).transactions !== undefined
-  && (r as CategoryTransactionsResponse).pending !== undefined
   && (r as CategoryTransactionsResponse).balance !== undefined
 );
 
@@ -354,15 +372,12 @@ export const isLoanTransactionsResponse = (r: unknown): r is LoanTransactionsRes
 export interface AccountTransactionsResponse {
   transactions: TransactionProps[];
 
-  pending: TransactionProps[];
-
   balance: number;
 }
 
 export const isAccountTransactionsResponse = (r: unknown): r is AccountTransactionsResponse => (
   r !== undefined && r !== null
   && (r as AccountTransactionsResponse).transactions !== undefined
-  && (r as AccountTransactionsResponse).pending !== undefined
   && (r as AccountTransactionsResponse).balance !== undefined
 );
 
