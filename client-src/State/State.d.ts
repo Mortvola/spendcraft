@@ -70,6 +70,20 @@ export interface TransactionInterface {
   async delete(): Promise<null | Error[]>;
 }
 
+export interface PendingTransactionInterface {
+  id: number | null;
+
+  amount: number;
+
+  date: DateTime;
+
+  name: string;
+
+  instituteName: string;
+
+  accountName: string;
+}
+
 export interface GroupMemberInterface {
   id: number;
 
@@ -113,27 +127,6 @@ export interface AccountsInterface {
   deleteInstitution(instiution: InstitutionInterface): void;
 }
 
-export interface PendingTransactionProps {
-  id: number | null;
-  date: string;
-
-  createdAt: string;
-
-  accountTransaction: {
-    name: string;
-
-    amount: number;
-
-    account: {
-      name: string,
-
-      institution: {
-        name: string;
-      }
-    }
-  }
-}
-
 export interface CategoryInterface {
   id: number;
 
@@ -145,9 +138,11 @@ export interface CategoryInterface {
 
   balance: number;
 
-  transactions: TransactionContainerInterface;
+  transactions: TransactionContainerInterface<TransactionInterface>;
 
-  pending: PendingTransaction[];
+  transactionsQuery: QueryManager;
+
+  pending: TransactionContainerInterface<PendingTransactionInterface>;
 
   loan: {
     balance: number;
@@ -159,6 +154,8 @@ export interface CategoryInterface {
   getTransactions(): Promise<void>;
 
   getMoreTransactions(): Promise<void>;
+
+  getPendingTransactions(index = 0): Promise<void>;
 
   insertTransaction(transaction: Transaction): void;
 
@@ -276,10 +273,12 @@ export interface InstitutionInterface {
   delete(): void;
 }
 
-export interface TransactionContainerInterface {
-  transactions: TransactionInterface[] = [];
-
+export interface QueryManagerInterface {
   fetching: boolean;
+}
+
+export interface TransactionContainerInterface<T> {
+  transactions: T[] = [];
 }
 
 export interface AccountInterface {
@@ -303,9 +302,11 @@ export interface AccountInterface {
 
   rate: number | null;
 
-  transactions: TransactionContainerInterface;
+  transactions: TransactionContainerInterface<TransactionInterface>;
 
-  pending: PendingTransaction[] = [];
+  transactionsQuery: QueryManager;
+
+  pending: TransactionContainerInterface<PendingTransactionInterface>;
 
   refreshing: boolean;
 
@@ -316,6 +317,8 @@ export interface AccountInterface {
   getTransactions(): Promise<void>;
 
   getMoreTransactions(): Promise<void>;
+
+  getPendingTransactions(): Promise<void>;
 
   refresh(institutionId: number): Promise<void>;
 

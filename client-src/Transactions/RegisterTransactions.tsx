@@ -16,7 +16,7 @@ import { TransactionType } from '../../common/ResponseTypes';
 import MobxStore from '../State/mobxStore';
 
 type PropsType = {
-  transactions: TransactionContainerInterface,
+  transactions: TransactionContainerInterface<TransactionInterface>,
   category?: CategoryInterface | null,
   account?: AccountInterface | null,
   balance: number,
@@ -159,7 +159,7 @@ const RegisterTransactions = ({
     });
   }
 
-  if (transactions.fetching && transactions.transactions.length === 0) {
+  if (category && category.transactionsQuery.fetching && transactions.transactions.length === 0) {
     return (
       <div className="please-wait">
         <Spinner animation="border" />

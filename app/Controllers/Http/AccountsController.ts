@@ -6,13 +6,9 @@ import BalanceHistory from 'App/Models/BalanceHistory';
 import Category from 'App/Models/Category';
 import Transaction from 'App/Models/Transaction';
 import TransactionCategory from 'App/Models/TransactionCategory';
-import { CategoryBalanceProps, TransactionType } from 'Common/ResponseTypes';
-
-type Transactions = {
-  transactions: Transaction[],
-  pending: Transaction[],
-  balance: number,
-};
+import {
+  TransactionsResponse, CategoryBalanceProps, TransactionProps, TransactionType,
+} from 'Common/ResponseTypes';
 
 export default class AccountsController {
   // eslint-disable-next-line class-methods-use-this
@@ -21,16 +17,15 @@ export default class AccountsController {
     auth: {
       user,
     },
-  }: HttpContextContract): Promise<Transactions> {
+  }: HttpContextContract): Promise<TransactionsResponse> {
     if (!user) {
       throw new Error('user not defined');
     }
 
     const accountId = parseInt(request.params().acctId, 10);
 
-    const result: Transactions = {
+    const result: TransactionsResponse = {
       transactions: [],
-      pending: [],
       balance: 0,
     };
 
@@ -59,6 +54,26 @@ export default class AccountsController {
       .limit(request.qs().limit)
       .offset(request.qs().offset);
 
+    result.transactions = transactions.map((t) => t.serialize() as TransactionProps);
+
+    return result;
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  public async pendingTransactions({
+    request,
+    auth: {
+      user,
+    },
+  }: HttpContextContract): Promise<Transaction[]> {
+    if (!user) {
+      throw new Error('user not defined');
+    }
+
+    const accountId = parseInt(request.params().acctId, 10);
+
+    // Determine if the account belongs to the authenticated user
+    // and get the balance
     const pending = await user
       .related('transactions').query()
       .whereHas('accountTransaction', (query) => {
@@ -72,12 +87,13 @@ export default class AccountsController {
       })
       .preload('transactionCategories', (transactionCategory) => {
         transactionCategory.preload('loanTransaction');
-      });
+      })
+      .orderBy('transactions.date', 'desc')
+      .orderBy('transactions.id', 'asc')
+      .limit(request.qs().limit)
+      .offset(request.qs().offset);
 
-    result.transactions = transactions;
-    result.pending = pending;
-
-    return result;
+    return pending;
   }
 
   // eslint-disable-next-line class-methods-use-this

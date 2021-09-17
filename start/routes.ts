@@ -61,6 +61,7 @@ Route.group(() => {
 
     Route.group(() => {
       Route.get('/:catId/transactions', 'CategoryController.transactions');
+      Route.get('/:catId/transactions/pending', 'CategoryController.pendingTransactions');
       Route.get('/history', 'CategoryController.history');
     }).prefix('/category');
 
@@ -68,6 +69,7 @@ Route.group(() => {
 
     Route.group(() => {
       Route.get('/:acctId/transactions', 'AccountsController.transactions');
+      Route.get('/:acctId/transactions/pending', 'AccountsController.pendingTransactions');
       Route.post('/:acctId/transactions', 'AccountsController.addTransaction');
       Route.get('/:acctId/balances', 'AccountsController.balances');
       Route.patch('/:acctId', 'AccountsController.update');

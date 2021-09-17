@@ -15,19 +15,10 @@ import TransactionCategory from 'App/Models/TransactionCategory';
 import Loan from 'App/Models/Loan';
 import {
   CategoryBalanceProps,
-  LoanTransactionProps, TransactionProps, TransactionType, UpdateCategoryResponse,
+  TransactionsResponse,
+  TransactionProps, TransactionType, UpdateCategoryResponse,
 } from 'Common/ResponseTypes';
 import Group from 'App/Models/Group';
-
-type TransactionsResponse = {
-  transactions: TransactionProps[],
-  pending: TransactionProps[],
-  loan: {
-    balance: number,
-    transactions: LoanTransactionProps[],
-  }
-  balance: number,
-}
 
 class CategoryController {
   // eslint-disable-next-line class-methods-use-this
@@ -178,11 +169,6 @@ class CategoryController {
 
     const result: TransactionsResponse = {
       transactions: [],
-      pending: [],
-      loan: {
-        balance: 0,
-        transactions: [],
-      },
       balance: 0,
     };
 
@@ -221,8 +207,51 @@ class CategoryController {
       result.transactions = transactions.map((t) => (
         t.serialize() as TransactionProps
       ));
+    }
+    else {
+      const transactions = await user
+        .related('transactions').query()
+        .whereHas('transactionCategories', (query) => {
+          query.where('categoryId', cat.id);
+        })
+        .preload('accountTransaction', (accountTransaction) => {
+          accountTransaction.preload('account', (account) => {
+            account.preload('institution');
+          });
+        })
+        .preload('transactionCategories', (transactionCategory) => {
+          transactionCategory.preload('loanTransaction');
+        });
 
-      const pending = await user
+      result.transactions = transactions.map((t) => (
+        t.serialize() as TransactionProps
+      ));
+    }
+
+    return result;
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  public async pendingTransactions({
+    request,
+    auth: {
+      user,
+    },
+  }: HttpContextContract): Promise<Transaction[]> {
+    if (!user) {
+      throw new Error('user is not defined');
+    }
+
+    const { catId } = request.params();
+
+    const categoryId = parseInt(catId, 10);
+
+    let pending: Transaction[] = [];
+
+    const cat = await Category.findOrFail(categoryId);
+
+    if (cat.type === 'UNASSIGNED') {
+      pending = await user
         .related('transactions').query()
         .where((query) => {
           query
@@ -243,38 +272,9 @@ class CategoryController {
           });
         })
         .preload('transactionCategories');
-
-      result.pending = pending.map((t) => (
-        t.serialize() as TransactionProps
-      ));
-    }
-    else {
-      const transactions = await user
-        .related('transactions').query()
-        .whereHas('transactionCategories', (query) => {
-          query.where('categoryId', cat.id);
-        })
-        .preload('accountTransaction', (accountTransaction) => {
-          accountTransaction.preload('account', (account) => {
-            account.preload('institution');
-          });
-        })
-        .preload('transactionCategories', (transactionCategory) => {
-          transactionCategory.preload('loanTransaction');
-        });
-
-      result.transactions = transactions.map((t) => (
-        t.serialize() as TransactionProps
-      ));
-
-      if (cat.type === 'LOAN') {
-        const loan = await Loan.findByOrFail('categoryId', cat.id);
-
-        result.loan = await loan.getProps();
-      }
     }
 
-    return result;
+    return pending;
   }
 
   // eslint-disable-next-line class-methods-use-this

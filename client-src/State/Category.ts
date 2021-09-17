@@ -4,9 +4,12 @@ import {
   isUpdateCategoryResponse,
   CategoryType,
   CategoryBalanceProps,
+  isTransactionsResponse,
+  isPendingTransactionsResponse,
 } from '../../common/ResponseTypes';
 import LoanTransaction from './LoanTransaction';
 import PendingTransaction from './PendingTransaction';
+import QueryManager from './QueryManager';
 import { CategoryInterface, GroupInterface, StoreInterface } from './State';
 import Transaction from './Transaction';
 import TransactionContainer from './TransactionContainer';
@@ -27,9 +30,13 @@ class Category implements CategoryInterface {
 
   // groupId: number | null = null;
 
-  transactions: TransactionContainer;
+  transactions: TransactionContainer<Transaction>;
 
-  pending: PendingTransaction[] = [];
+  transactionsQuery: QueryManager = new QueryManager();
+
+  pending: TransactionContainer<PendingTransaction>;
+
+  pendingQuery: QueryManager = new QueryManager();
 
   loan: {
     balance: number;
@@ -39,7 +46,8 @@ class Category implements CategoryInterface {
   store: StoreInterface;
 
   constructor(props: CategoryProps, store: StoreInterface) {
-    this.transactions = new TransactionContainer(store);
+    this.transactions = new TransactionContainer(Transaction, store);
+    this.pending = new TransactionContainer(PendingTransaction, store);
 
     this.id = props.id;
     this.name = props.name;
@@ -52,11 +60,55 @@ class Category implements CategoryInterface {
   }
 
   async getTransactions(index = 0): Promise<void> {
-    this.transactions.getTransactions(`/api/category/${this.id}/transactions`, index);
+    return this.transactionsQuery.fetch(
+      `/api/category/${this.id}/transactions`,
+      index,
+      (body: unknown, idx: number, limit: number) => {
+        if (isTransactionsResponse(body)) {
+          this.balance = body.balance;
+
+          if (idx === 0) {
+            this.transactions.setTransactions(body.transactions);
+          }
+          else {
+            this.transactions.appendTransactions(body.transactions);
+          }
+
+          return body.transactions.length < limit;
+        }
+
+        this.transactions.clear();
+
+        return false;
+      },
+    );
   }
 
   getMoreTransactions(): Promise<void> {
-    return this.transactions.getMoreTransactions(`/api/category/${this.id}/transactions`);
+    return this.getTransactions(this.transactions.transactions.length);
+  }
+
+  async getPendingTransactions(index = 0): Promise<void> {
+    return this.pendingQuery.fetch(
+      `/api/category/${this.id}/transactions/pending`,
+      index,
+      (body: unknown, idx: number, limit: number) => {
+        if (isPendingTransactionsResponse(body)) {
+          if (idx === 0) {
+            this.pending.setTransactions(body);
+          }
+          else {
+            this.pending.appendTransactions(body);
+          }
+
+          return body.length < limit;
+        }
+
+        this.pending.clear();
+
+        return false;
+      },
+    )
   }
 
   async update(name: string, group: GroupInterface): Promise<null | Error[]> {

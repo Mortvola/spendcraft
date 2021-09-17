@@ -1,105 +1,59 @@
-import { makeAutoObservable, runInAction } from 'mobx';
-import { isAccountTransactionsResponse } from '../../common/ResponseTypes';
-import PendingTransaction from './PendingTransaction';
-import { StoreInterface } from './State';
-import Transaction from './Transaction';
-import { getBody, httpGet } from './Transports';
+import { DateTime } from 'luxon';
+import { makeAutoObservable } from 'mobx';
+import { TransactionProps, TransactionType } from '../../common/ResponseTypes';
+import { StoreInterface, TransactionContainerInterface } from './State';
 
-class TransactionContainer {
-  transactions: Transaction[] = [];
+type BaseType = {
+  id: number | null,
+  type: TransactionType,
+  date: DateTime,
+}
+
+class TransactionContainer<T extends BaseType> implements TransactionContainerInterface<T> {
+  transactions: T[] = [];
 
   balance = 0;
 
-  fetching = false;
-
-  fetchComplete = false;
-
   store: StoreInterface;
 
-  constructor(store: StoreInterface) {
+  TrxType: new(store: StoreInterface, props: TransactionProps) => T;
+
+  constructor(
+    T: new(store: StoreInterface, props: TransactionProps) => T,
+    store: StoreInterface,
+  ) {
     makeAutoObservable(this);
+
+    this.TrxType = T;
 
     this.store = store;
   }
 
-  async getTransactions(url: string, index = 0): Promise<void> {
-    if (index === 0) {
-      this.fetchComplete = false;
-    }
-
-    if (!this.fetching && !this.fetchComplete) {
-      this.fetching = true;
-      const limit = 30;
-      const response = await httpGet(`${url}?offset=${index ?? 0}&limit=${limit}`);
-
-      const body = await getBody(response);
-
-      if (response.ok && isAccountTransactionsResponse(body)) {
-        runInAction(() => {
-          if (body !== null) {
-            this.balance = body.balance;
-            // this.pending = body.pending.map((pt) => new PendingTransaction(pt));
-            const transactions = body.transactions.map((t) => (
-              new Transaction(this.store, t)
-            ));
-
-            if (transactions.length < limit) {
-              this.fetchComplete = true;
-            }
-
-            // Account.sort(this.transactions);
-            // TransactionContainer.sort(this.pending);
-
-            if (index === 0) {
-              this.transactions = transactions;
-            }
-            else {
-              this.transactions = [
-                ...this.transactions,
-                ...transactions,
-              ];
-            }
-          }
-          else {
-            this.transactions = [];
-          }
-
-          this.fetching = false;
-        });
-      }
-      else {
-        this.fetching = false;
-      }
-    }
+  clear(): void {
+    this.transactions = [];
   }
 
-  getMoreTransactions(url: string): Promise<void> {
-    return this.getTransactions(url, this.transactions.length);
+  setTransactions(newTransactions: TransactionProps[]): void {
+    const transactions = newTransactions.map((t) => (
+      new this.TrxType(this.store, t)
+    ));
+
+    this.transactions = transactions;
   }
 
-  static sort(t: Transaction[] | PendingTransaction[]): void {
-    t.sort((a, b) => {
-      if (a.date < b.date) {
-        return 1;
-      }
+  appendTransactions(newTransactions: TransactionProps[]): void {
+    // this.pending = body.pending.map((pt) => new PendingTransaction(pt));
+    const transactions = newTransactions.map((t) => (
+      new this.TrxType(this.store, t)
+    ));
 
-      if (a.date > b.date) {
-        return -1;
-      }
-
-      // if (a.sortOrder < b.sortOrder) {
-      //   return 1;
-      // }
-
-      // if (a.sortOrder > b.sortOrder) {
-      //   return -1;
-      // }
-
-      return 0;
-    });
+    this.transactions = [
+      ...this.transactions,
+      ...transactions,
+    ];
   }
 
-  insertTransaction(transaction: Transaction): void {
+  insertTransaction(transaction: T): void {
     const index = this.transactions.findIndex((t) => transaction.date >= t.date);
 
     if (index === -1) {

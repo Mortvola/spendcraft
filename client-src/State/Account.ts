@@ -1,9 +1,11 @@
 import { DateTime } from 'luxon';
 import { makeAutoObservable, runInAction } from 'mobx';
 import {
-  AccountProps, Error, isAccountSyncResponse, isAddTransactionResponse, TrackingType,
+  AccountProps, Error, isAccountSyncResponse,
+  isAddTransactionResponse, isPendingTransactionsResponse, isTransactionsResponse, TrackingType,
 } from '../../common/ResponseTypes';
 import PendingTransaction from './PendingTransaction';
+import QueryManager from './QueryManager';
 import {
   AccountInterface, InstitutionInterface, NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface,
 } from './State';
@@ -34,9 +36,13 @@ class Account implements AccountInterface {
 
   rate: number | null;
 
-  transactions: TransactionContainer;
+  transactions: TransactionContainer<Transaction>;
 
-  pending: PendingTransaction[] = [];
+  transactionsQuery: QueryManager = new QueryManager();
+
+  pending: TransactionContainer<PendingTransaction>;
+
+  pendingQuery: QueryManager = new QueryManager();
 
   refreshing = false;
 
@@ -45,7 +51,8 @@ class Account implements AccountInterface {
   store: StoreInterface;
 
   constructor(store: StoreInterface, institution: InstitutionInterface, props: AccountProps) {
-    this.transactions = new TransactionContainer(store);
+    this.transactions = new TransactionContainer(Transaction, store);
+    this.pending = new TransactionContainer(PendingTransaction, store);
 
     this.id = props.id;
     this.name = props.name;
@@ -89,11 +96,55 @@ class Account implements AccountInterface {
   }
 
   async getTransactions(index = 0): Promise<void> {
-    return this.transactions.getTransactions(`/api/account/${this.id}/transactions`, index)
+    return this.transactionsQuery.fetch(
+      `/api/account/${this.id}/transactions`,
+      index,
+      (body: unknown, idx: number, limit: number): boolean => {
+        if (isTransactionsResponse(body)) {
+          this.balance = body.balance;
+
+          if (idx === 0) {
+            this.transactions.setTransactions(body.transactions);
+          }
+          else {
+            this.transactions.appendTransactions(body.transactions);
+          }
+
+          return body.transactions.length < limit;
+        }
+
+        this.transactions.clear();
+
+        return false;
+      },
+    );
   }
 
   getMoreTransactions(): Promise<void> {
-    return this.transactions.getMoreTransactions(`/api/account/${this.id}/transactions`);
+    return this.getTransactions(this.transactions.transactions.length);
+  }
+
+  async getPendingTransactions(index = 0): Promise<void> {
+    return this.pendingQuery.fetch(
+      `/api/account/${this.id}/transactions/pending`,
+      index,
+      (body: unknown, idx: number, limit: number) => {
+        if (isPendingTransactionsResponse(body)) {
+          if (idx === 0) {
+            this.pending.setTransactions(body);
+          }
+          else {
+            this.pending.appendTransactions(body);
+          }
+
+          return body.length < limit;
+        }
+
+        this.pending.clear();
+
+        return false;
+      },
+    );
   }
 
   async addTransaction(

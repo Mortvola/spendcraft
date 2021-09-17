@@ -16,6 +16,7 @@ const Home = () => {
   useEffect(() => {
     if (uiState.selectedCategory) {
       uiState.selectedCategory.getTransactions();
+      uiState.selectedCategory.getPendingTransactions();
     }
   }, [uiState.selectedCategory]);
 
