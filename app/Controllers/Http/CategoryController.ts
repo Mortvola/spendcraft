@@ -15,7 +15,7 @@ import TransactionCategory from 'App/Models/TransactionCategory';
 import Loan from 'App/Models/Loan';
 import {
   CategoryBalanceProps,
-  CategoryTransactionsResponse,
+  TransactionsResponse,
   TransactionProps, TransactionType, UpdateCategoryResponse,
 } from 'Common/ResponseTypes';
 import Group from 'App/Models/Group';
@@ -158,7 +158,7 @@ class CategoryController {
     auth: {
       user,
     },
-  }: HttpContextContract): Promise<CategoryTransactionsResponse> {
+  }: HttpContextContract): Promise<TransactionsResponse> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -167,7 +167,7 @@ class CategoryController {
 
     const categoryId = parseInt(catId, 10);
 
-    const result: CategoryTransactionsResponse = {
+    const result: TransactionsResponse = {
       transactions: [],
       balance: 0,
     };

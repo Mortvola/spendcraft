@@ -6,7 +6,9 @@ import BalanceHistory from 'App/Models/BalanceHistory';
 import Category from 'App/Models/Category';
 import Transaction from 'App/Models/Transaction';
 import TransactionCategory from 'App/Models/TransactionCategory';
-import { AccountTransactionsResponse, CategoryBalanceProps, TransactionProps, TransactionType } from 'Common/ResponseTypes';
+import {
+  TransactionsResponse, CategoryBalanceProps, TransactionProps, TransactionType,
+} from 'Common/ResponseTypes';
 
 export default class AccountsController {
   // eslint-disable-next-line class-methods-use-this
@@ -15,14 +17,14 @@ export default class AccountsController {
     auth: {
       user,
     },
-  }: HttpContextContract): Promise<AccountTransactionsResponse> {
+  }: HttpContextContract): Promise<TransactionsResponse> {
     if (!user) {
       throw new Error('user not defined');
     }
 
     const accountId = parseInt(request.params().acctId, 10);
 
-    const result: AccountTransactionsResponse = {
+    const result: TransactionsResponse = {
       transactions: [],
       balance: 0,
     };

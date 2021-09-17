@@ -140,6 +140,8 @@ export interface CategoryInterface {
 
   transactions: TransactionContainerInterface<TransactionInterface>;
 
+  transactionsQuery: QueryManager;
+
   pending: TransactionContainerInterface<PendingTransactionInterface>;
 
   loan: {
@@ -271,10 +273,12 @@ export interface InstitutionInterface {
   delete(): void;
 }
 
+export interface QueryManagerInterface {
+  fetching: boolean;
+}
+
 export interface TransactionContainerInterface<T> {
   transactions: T[] = [];
-
-  fetching: boolean;
 }
 
 export interface AccountInterface {
@@ -299,6 +303,8 @@ export interface AccountInterface {
   rate: number | null;
 
   transactions: TransactionContainerInterface<TransactionInterface>;
+
+  transactionsQuery: QueryManager;
 
   pending: TransactionContainerInterface<PendingTransactionInterface>;
 

@@ -288,18 +288,6 @@ export interface PendingTransactionProps {
   }
 }
 
-export interface CategoryTransactionsResponse {
-  transactions: TransactionProps[];
-
-  balance: number;
-}
-
-export const isCategoryTransactionsResponse = (r: unknown): r is CategoryTransactionsResponse => (
-  r !== undefined && r !== null
-  && (r as CategoryTransactionsResponse).transactions !== undefined
-  && (r as CategoryTransactionsResponse).balance !== undefined
-);
-
 export type LoanTransactionProps = {
   id: number;
 
@@ -369,17 +357,25 @@ export const isLoanTransactionsResponse = (r: unknown): r is LoanTransactionsRes
   ))
 );
 
-export interface AccountTransactionsResponse {
+export interface TransactionsResponse {
   transactions: TransactionProps[];
 
   balance: number;
 }
 
-export const isAccountTransactionsResponse = (r: unknown): r is AccountTransactionsResponse => (
+export const isTransactionsResponse = (r: unknown): r is TransactionsResponse => (
   r !== undefined && r !== null
-  && (r as AccountTransactionsResponse).transactions !== undefined
-  && (r as AccountTransactionsResponse).balance !== undefined
+  && (r as TransactionsResponse).transactions !== undefined
+  && (Array.isArray((r as TransactionsResponse).transactions))
+  && ((r as TransactionsResponse).transactions.length === 0
+    || isTransactionProps((r as TransactionsResponse).transactions[0]))
+  && (r as TransactionsResponse).balance !== undefined
 );
+
+export const isPendingTransactionsResponse = (r: unknown): r is TransactionProps[] => (
+  r !== undefined && r !== null
+  && Array.isArray(r) && (r.length === 0 || isTransactionProps((r as TransactionProps[])[0]))
+)
 
 export interface Error {
   field: string;

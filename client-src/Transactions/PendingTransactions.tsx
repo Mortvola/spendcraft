@@ -3,6 +3,7 @@ import useMediaQuery from '../MediaQuery';
 import styles from './Transactions.module.css'
 import Amount from '../Amount';
 import { PendingTransactionInterface } from '../State/State';
+import { observer } from 'mobx-react-lite';
 
 type PropsType = {
   pending?: PendingTransactionInterface[],
@@ -89,4 +90,4 @@ const PendingTransactions = ({
   );
 };
 
-export default PendingTransactions;
+export default observer(PendingTransactions);

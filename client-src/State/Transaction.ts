@@ -8,7 +8,6 @@ import {
   isDeleteTransactionResponse,
   isUpdateTransactionResponse,
   CategoryTransferProps,
-  isAccountTransactionsResponse,
 } from '../../common/ResponseTypes';
 import {
   NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface,

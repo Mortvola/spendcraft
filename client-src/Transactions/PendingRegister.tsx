@@ -1,3 +1,4 @@
+import { observer } from 'mobx-react-lite';
 import React, { ReactElement } from 'react';
 import { PendingTransactionInterface, TransactionContainerInterface } from '../State/State';
 import PendingTitles from './PendingTItles';
@@ -26,4 +27,4 @@ const PendingRegister = ({
   return null;
 };
 
-export default PendingRegister;
+export default observer(PendingRegister);
