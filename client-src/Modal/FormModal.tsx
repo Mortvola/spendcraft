@@ -3,9 +3,9 @@ import {
   Formik, Form, FormikContextType, FormikHelpers, FormikErrors,
 } from 'formik';
 import { Modal, ModalBody } from 'react-bootstrap';
+import { ModalProps } from '@mortvola/usemodal';
 import Header from './Header';
 import Footer from './Footer';
-import { ModalProps } from './useModal';
 
 type PropsType<T> = {
   show: boolean,

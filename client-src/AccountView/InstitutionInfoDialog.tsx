@@ -2,7 +2,7 @@ import React, { ReactElement, ReactNode, useState } from 'react';
 import { Button, Modal } from 'react-bootstrap';
 import { InstitutionWithInstitutionData, InstitutionWithStatus } from 'plaid';
 import { DateTime } from 'luxon';
-import useModal, { ModalProps, UseModalType } from '../Modal/useModal';
+import useModal, { ModalProps, UseModalType } from '@mortvola/usemodal';
 import { httpGet } from '../State/Transports';
 import { InstitutionInterface } from '../State/State';
 

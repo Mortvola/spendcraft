@@ -5,8 +5,8 @@ import {
   FormikErrors,
   FormikContextType,
 } from 'formik';
+import useModal, { ModalProps, UseModalType } from '@mortvola/usemodal';
 import CategorySplits from '../CategorySplits';
-import useModal, { ModalProps, UseModalType } from '../Modal/useModal';
 import Amount from '../Amount';
 import Transaction from '../State/Transaction';
 import { AccountInterface, TransactionCategoryInterface } from '../State/State';

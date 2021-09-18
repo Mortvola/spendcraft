@@ -6,9 +6,9 @@ import {
   Field, FieldProps,
   FormikErrors, FormikState, FormikContextType,
 } from 'formik';
+import useModal, { ModalProps, UseModalType } from '@mortvola/usemodal';
 import Amount from '../Amount';
 import MobxStore from '../State/mobxStore';
-import useModal, { ModalProps, UseModalType } from '../Modal/useModal';
 import Transaction from '../State/Transaction';
 import {
   FundingPlanProps, isFundingPlanResponse, isFundingPlansResponse, TransactionType,

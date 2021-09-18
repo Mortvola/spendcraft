@@ -9,9 +9,9 @@ import {
 } from 'formik';
 import { toJS } from 'mobx';
 import { DateTime } from 'luxon';
+import useModal, { ModalProps, UseModalType } from '@mortvola/usemodal';
 import CategoryRebalance from './CategoryRebalance';
 import Amount from '../Amount';
-import useModal, { ModalProps, UseModalType } from '../Modal/useModal';
 import Transaction from '../State/Transaction';
 import { CategoryBalanceInterface, TransactionCategoryInterface } from '../State/State';
 import MobxStore from '../State/mobxStore';

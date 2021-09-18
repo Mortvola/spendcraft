@@ -7,8 +7,8 @@ import {
   FormikErrors, FormikHelpers, useFormikContext,
   FormikContextType,
 } from 'formik';
+import useModal from '@mortvola/usemodal';
 import MobxStore from '../State/mobxStore';
-import useModal from '../Modal/useModal';
 import { FundingPlanInterface } from '../State/State';
 
 interface Props {

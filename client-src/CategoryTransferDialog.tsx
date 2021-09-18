@@ -4,8 +4,8 @@ import { Modal, Button } from 'react-bootstrap';
 import {
   Formik, Form, Field, ErrorMessage, FormikErrors, FieldProps,
 } from 'formik';
+import useModal, { ModalProps } from '@mortvola/usemodal';
 import CategorySplits from './CategorySplits';
-import useModal, { ModalProps } from './Modal/useModal';
 import Transaction from './State/Transaction';
 import { httpPatch, httpPost, httpDelete } from './State/Transports';
 import { TransactionCategoryInterface } from './State/State';

@@ -2,12 +2,12 @@ import {
   FieldProps, FormikErrors, FormikHelpers, useFormikContext,
 } from 'formik';
 import React, { ReactElement, useContext } from 'react';
+import useModal, { ModalProps, UseModalType } from '@mortvola/usemodal';
 import { Error, TrackingType } from '../../common/ResponseTypes';
 import AmountInput from '../AmountInput';
 import FormField from '../Modal/FormField';
 import FormModal from '../Modal/FormModal';
 import FormTextField from '../Modal/FormTextField';
-import useModal, { ModalProps, UseModalType } from '../Modal/useModal';
 import MobxStore from '../State/mobxStore';
 import { AccountInterface, InstitutionInterface } from '../State/State';
 import { getSubtypes, getTypes } from '../State/AccountTypes';

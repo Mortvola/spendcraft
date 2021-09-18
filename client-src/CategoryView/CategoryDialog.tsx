@@ -7,7 +7,7 @@ import {
   FormikErrors,
   FieldProps,
 } from 'formik';
-import useModal, { ModalProps, UseModalType } from '../Modal/useModal';
+import useModal, { UseModalType, ModalProps } from '@mortvola/usemodal';
 import { isGroup } from '../State/Group';
 import FormModal from '../Modal/FormModal';
 import FormError from '../Modal/FormError';

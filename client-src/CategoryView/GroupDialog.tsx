@@ -6,8 +6,8 @@ import {
   FormikErrors,
   FormikContextType,
 } from 'formik';
+import useModal, { UseModalType, ModalProps } from '@mortvola/usemodal';
 import MobxStore from '../State/mobxStore';
-import useModal, { UseModalType, ModalProps } from '../Modal/useModal';
 import { Error } from '../../common/ResponseTypes';
 import FormModal from '../Modal/FormModal';
 import FormError from '../Modal/FormError';
