@@ -7,6 +7,7 @@ import Account from './Account';
 import { AccountInterface, InstitutionInterface } from '../State/State';
 import { useOfflineAccountDialog } from './OfflineAccountDialog';
 import { useDeleteConfirmation } from '../DeleteConfirmation';
+import styles from './Institution.module.css';
 
 type PropsType = {
   institution: InstitutionInterface,
@@ -68,7 +69,7 @@ function Institution({
 
   return (
     <div className="inst-card">
-      <div className="acct-list-inst">
+      <div className={styles.institution}>
         <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div className="institution-name">{institution.name}</div>
           <div style={{ display: 'flex', alignSelf: 'flex-end' }}>

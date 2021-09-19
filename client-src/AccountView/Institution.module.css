@@ -1,0 +1,11 @@
+.institution {
+  display: grid;
+  grid-template-columns: 1fr repeat(3, auto max-content);
+  white-space: nowrap;
+  padding-left: 4px;
+  background-color: #3F76CA;
+  color: white;
+  border-bottom: thin gray solid;
+  border-radius: 8px 8px 0px 0px;
+}
+
