@@ -86,7 +86,8 @@ const Transaction = ({
       if ([
         TransactionType.FUNDING_TRANSACTION,
         TransactionType.REBALANCE_TRANSACTION,
-      ].includes(transaction.type)) {
+      ].includes(transaction.type)
+      || transaction.amount === amount) {
         return <div />;
       }
 
