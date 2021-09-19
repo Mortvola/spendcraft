@@ -176,6 +176,7 @@ body {
 .institution-name {
   text-overflow: ellipsis;
   overflow: hidden;
+  font-size: larger;
 }
 
 .inst-card {

@@ -66,8 +66,18 @@ const InstitutionInfoDialog = ({
     if (info) {
       return (
         <div>
-          <img src={`data:image/png;base64, ${info.logo}`} alt="logo" width="48" height="48" />
-          <a href={info.url} rel="noopener noreferrer" target="_blank">{info.name}</a>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
+            <img src={`data:image/png;base64, ${info.logo}`} alt="logo" width="48" height="48" />
+            <div style={{ marginLeft: '1rem' }}>
+              <div style={{ fontSize: 'x-large' }}>{info.name}</div>
+              <a href={info.url} rel="noopener noreferrer" target="_blank">{info.url}</a>
+            </div>
+          </div>
           <div>
             <div className={`${styles.title} ${styles.statusItem}`}>
               <div>Product</div>
