@@ -58,34 +58,44 @@ class Account extends TransactionContainer implements AccountInterface {
       plaidBalance: observable,
       rate: observable,
       institution: observable,
+      refreshing: observable,
     });
 
     this.store = store;
   }
 
   async refresh(institutionId: number): Promise<void> {
-    this.refreshing = true;
+    runInAction(() => {
+      this.refreshing = true;
+    });
 
     const response = await httpPost(`/api/institution/${institutionId}/accounts/${this.id}/transactions/sync`);
 
-    const body = await getBody(response);
+    if (response.ok) {
+      const body = await getBody(response);
 
-    runInAction(() => {
-      if (response.ok && isAccountSyncResponse(body)) {
-        const { categories, accounts } = body;
-        if (categories.length > 0) {
-          this.store.categoryTree.updateBalances(categories);
+      runInAction(() => {
+        if (isAccountSyncResponse(body)) {
+          const { categories, accounts } = body;
+          if (categories.length > 0) {
+            this.store.categoryTree.updateBalances(categories);
+          }
+
+          if (accounts) {
+            this.syncDate = DateTime.fromISO(accounts[0].syncDate);
+            this.balance = accounts[0].balance;
+            this.plaidBalance = accounts[0].plaidBalance;
+          }
         }
 
-        if (accounts) {
-          this.syncDate = DateTime.fromISO(accounts[0].syncDate);
-          this.balance = accounts[0].balance;
-          this.plaidBalance = accounts[0].plaidBalance;
-        }
-      }
-
-      this.refreshing = false;
-    });
+        this.refreshing = false;
+      });
+    }
+    else {
+      runInAction(() => {
+        this.refreshing = false;
+      });
+    }
   }
 
   async getTransactions(index = 0): Promise<void> {

@@ -1,0 +1,12 @@
+.title {
+	font-weight: bold;
+	margin-bottom: 1rem;
+	border-bottom: thin black solid;
+	align-items: end;
+}
+
+.status-item {
+  display: grid;
+  grid-template-columns: 1.5fr repeat(5, minmax(0, 1fr));
+}
+

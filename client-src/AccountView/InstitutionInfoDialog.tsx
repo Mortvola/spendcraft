@@ -5,6 +5,7 @@ import { DateTime } from 'luxon';
 import useModal, { ModalProps, UseModalType } from '@mortvola/usemodal';
 import { httpGet } from '../State/Transports';
 import { InstitutionInterface } from '../State/State';
+import styles from './InstitutionInfoDialog.module.css';
 
 type PropsType = {
   institution: InstitutionInterface,
@@ -32,39 +33,33 @@ const InstitutionInfoDialog = ({
   }
 
   const product = (value: string) => {
-    switch (value) {
-      case 'auth': return 'AUTH';
-      case 'balance': return 'BALANCE';
-      case 'identity': return 'IDENTITY';
-      case 'item_logins': return 'ITEM ADDS';
-      case 'transactions_updates': return 'TRANSACTIONS';
-      default: return value;
-    }
+    const words = value.replace('_', ' ').split(' ');
+
+    return words.map((w) => (
+      w[0].toUpperCase() + w.substring(1)
+    ))
+      .join(' ');
   };
 
   const percent = (value: number) => `${(value * 100).toFixed(0)}%`;
 
-  const renderStatus = () => {
-    const stats: ReactNode[] = [];
-
+  const renderStatus = (): ReactElement[] | null => {
     if (info && info.status !== undefined) {
-      Object.entries(info.status).forEach(([key, value]) => {
-        if (value !== null) {
-          stats.push((
-            <div className="status-item" key={key}>
-              <div>{product(key)}</div>
-              <div>{value.status}</div>
-              <div>{percent(value.breakdown.success)}</div>
-              <div>{percent(value.breakdown.error_plaid)}</div>
-              <div>{percent(value.breakdown.error_institution)}</div>
-              <div>{DateTime.fromISO(value.last_status_change).toRelative()}</div>
-            </div>
-          ));
-        }
-      });
+      return Object.entries(info.status)
+        .filter(([, value]) => value !== null)
+        .map(([key, value]) => (
+          <div className={styles.statusItem} key={key}>
+            <div>{product(key)}</div>
+            <div>{value.status}</div>
+            <div>{percent(value.breakdown.success)}</div>
+            <div>{percent(value.breakdown.error_plaid)}</div>
+            <div>{percent(value.breakdown.error_institution)}</div>
+            <div>{DateTime.fromISO(value.last_status_change).toRelative()}</div>
+          </div>
+        ));
     }
 
-    return stats;
+    return null;
   };
 
   const renderForm = () => {
@@ -73,7 +68,15 @@ const InstitutionInfoDialog = ({
         <div>
           <img src={`data:image/png;base64, ${info.logo}`} alt="logo" width="48" height="48" />
           <a href={info.url} rel="noopener noreferrer" target="_blank">{info.name}</a>
-          <div className="status-table">
+          <div>
+            <div className={`${styles.title} ${styles.statusItem}`}>
+              <div>Product</div>
+              <div>Status</div>
+              <div>Success Rate</div>
+              <div>Plaid Errors</div>
+              <div>Institution Errors</div>
+              <div>Last Status Change</div>
+            </div>
             {renderStatus()}
           </div>
         </div>

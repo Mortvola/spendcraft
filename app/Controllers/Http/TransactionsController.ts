@@ -8,7 +8,7 @@ import TransactionCategory from 'App/Models/TransactionCategory';
 import Loan from 'App/Models/Loan';
 import LoanTransaction from 'App/Models/LoanTransaction';
 import AccountTransaction from 'App/Models/AccountTransaction';
-import { AccountBalanceProps, CategoryBalanceProps, LoanTransactionProps } from 'Common/ResponseTypes';
+import { AccountBalanceProps, CategoryBalanceProps } from 'Common/ResponseTypes';
 import Account from 'App/Models/Account';
 import { schema } from '@ioc:Adonis/Core/Validator';
 
