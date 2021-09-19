@@ -69,23 +69,27 @@ function Institution({
   return (
     <div className="inst-card">
       <div className="acct-list-inst">
-        <div className="institution-name">{institution.name}</div>
-        <IconButton icon="trash-alt" onClick={handleDeleteClick} />
-        <IconButton icon="plus" onClick={handleAddClick} />
-        <OnlineAccountsDialog institution={institution} />
-        <OfflineAccountDialog institution={institution} account={editedAccount} onHide={handleDialogHide} />
-        <DeleteConfirmation />
-        {
-          !institution.offline
-            ? (
-              <>
-                <IconButton icon="link" onClick={handleRelinkClick} />
-                <IconButton icon="info-circle" onClick={showInstitutionInfoDialog} />
-                <InstitutionInfoDialog institution={institution} />
-              </>
-            )
-            : null
-        }
+        <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <div className="institution-name">{institution.name}</div>
+          <div style={{ display: 'flex', alignSelf: 'flex-end' }}>
+            <IconButton icon="trash-alt" onClick={handleDeleteClick} />
+            <IconButton icon="plus" onClick={handleAddClick} />
+            <OnlineAccountsDialog institution={institution} />
+            <OfflineAccountDialog institution={institution} account={editedAccount} onHide={handleDialogHide} />
+            <DeleteConfirmation />
+            {
+              !institution.offline
+                ? (
+                  <>
+                    <IconButton icon="link" onClick={handleRelinkClick} />
+                    <IconButton icon="info-circle" onClick={showInstitutionInfoDialog} />
+                    <InstitutionInfoDialog institution={institution} />
+                  </>
+                )
+                : null
+            }
+          </div>
+        </div>
       </div>
       <div className="acct-list-accounts">
         {
