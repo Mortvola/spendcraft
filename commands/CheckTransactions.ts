@@ -54,10 +54,14 @@ export default class CheckTransactions extends BaseCommand {
     const trx = await Database.transaction();
 
     if (this.user) {
-      users = await User.query({ client: trx }).where('username', this.user);
+      users = await User.query({ client: trx })
+        .where('username', this.user)
+        .preload('application');
     }
     else {
-      users = await User.query({ client: trx }).orderBy('username', 'asc');
+      users = await User.query({ client: trx })
+        .preload('application')
+        .orderBy('username', 'asc');
     }
 
     type FailedAccount = {
@@ -72,7 +76,10 @@ export default class CheckTransactions extends BaseCommand {
     // eslint-disable-next-line no-restricted-syntax
     for (const user of users) {
       // eslint-disable-next-line no-await-in-loop
-      const institutions = await user.related('institutions').query().whereNotNull('plaidItemId');
+      const application = await user.related('application').query().firstOrFail();
+
+      // eslint-disable-next-line no-await-in-loop
+      const institutions = await user.application.related('institutions').query().whereNotNull('plaidItemId');
 
       const failedAccounts: FailedAccount[] = [];
 
@@ -254,7 +261,7 @@ export default class CheckTransactions extends BaseCommand {
 
               if (this.fixMissing) {
                 // eslint-disable-next-line no-await-in-loop
-                const sum = await acct.account.applyTransactions(user, [tran]);
+                const sum = await acct.account.applyTransactions(application, [tran]);
 
                 acct.account.balance += sum;
 

@@ -9,7 +9,7 @@ import Database from '@ioc:Adonis/Lucid/Database'
 import util from 'util';
 import plaidClient, { PlaidInstitution } from '@ioc:Plaid';
 import Account from 'App/Models/Account';
-import User from 'App/Models/User';
+import Application from './Application';
 
 class Institution extends BaseModel {
   @column()
@@ -33,10 +33,10 @@ class Institution extends BaseModel {
   public accounts: HasMany<typeof Account>;
 
   @column()
-  public userId: number;
+  public applicationId: number;
 
-  @belongsTo(() => User)
-  public user: BelongsTo<typeof User>;
+  @belongsTo(() => Application)
+  public application: BelongsTo<typeof Application>;
 
   public static async updateItemIds(): Promise<void> {
     const getItem = util.promisify(plaidClient.getItem).bind(plaidClient);

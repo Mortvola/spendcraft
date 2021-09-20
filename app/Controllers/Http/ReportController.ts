@@ -1,6 +1,6 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import Database from '@ioc:Adonis/Lucid/Database';
-import User from 'App/Models/User';
+import Application from 'App/Models/Application';
 import { TransactionType } from 'Common/ResponseTypes';
 
 type NetworthReportType = (string | number)[][];
@@ -13,9 +13,11 @@ class ReportController {
       throw new Error('user not defined');
     }
 
+    const application = await user.related('application').query().firstOrFail();
+
     switch (request.params().report) {
       case 'networth':
-        return ReportController.networth(user);
+        return ReportController.networth(application);
 
       case 'payee': {
         const {
@@ -24,7 +26,7 @@ class ReportController {
           pc,
           a,
         } = request.qs();
-        return ReportController.payee(user, startDate, endDate, pc, a);
+        return ReportController.payee(application, startDate, endDate, pc, a);
       }
 
       case 'category': {
@@ -33,7 +35,7 @@ class ReportController {
           endDate,
           c,
         } = request.qs();
-        return ReportController.category(user, startDate, endDate, c);
+        return ReportController.category(application, startDate, endDate, c);
       }
 
       default:
@@ -41,7 +43,7 @@ class ReportController {
     }
   }
 
-  private static async networth(user: User): Promise<NetworthReportType> {
+  private static async networth(application: Application): Promise<NetworthReportType> {
     const listCategories = (categories: { name: string }[]): string => {
       let cats = '';
 
@@ -59,14 +61,14 @@ class ReportController {
           .from('balance_histories')
           .join('accounts', 'accounts.id', 'balance_histories.account_id')
           .join('institutions', 'institutions.id', 'accounts.institution_id')
-          .where('user_id', user.id)
+          .where('application_id', application.id)
           .union((query2) => {
             query2.select(Database.raw('min(date) as date'))
               .from('account_transactions as at')
               .join('transactions as t', 't.id', 'at.transaction_id')
               .join('accounts as a', 'a.id', 'at.account_id')
               .join('institutions as i', 'i.id', 'a.institution_id')
-              .where('i.user_id', user.id)
+              .where('i.application_id', application.id)
               .andWhere('a.tracking', '!=', 'Balances')
               .andWhereIn('t.type', [
                 TransactionType.STARTING_BALANCE,
@@ -96,7 +98,7 @@ class ReportController {
       from balance_histories AS hist
       join accounts ON accounts.id = hist.account_id
       join institutions ON institutions.id = accounts.institution_id
-      where institutions.user_id = ${user.id}
+      where institutions.application_id = ${application.id}
       and accounts.tracking = 'Balances'
       group by ${date}, accounts.id
       union
@@ -114,15 +116,15 @@ class ReportController {
           a.tracking != 'Balances'
           and t.type in (${[TransactionType.STARTING_BALANCE, TransactionType.REGULAR_TRANSACTION, TransactionType.MANUAL_TRANSACTION]}
           )
-          and i.user_id = ${user.id}
-        group by i.user_id, t.type, ${date}, a.id
+          and i.application_id = ${application.id}
+        group by i.application_id, t.type, ${date}, a.id
       ) as daily
       order by date`;
 
     const categoryQuery = 'select accounts.id || \'_\' || accounts.name AS name '
     + 'from accounts '
     + 'join institutions ON institutions.id = accounts.institution_id '
-    + `where institutions.user_id = ${user.id} `
+    + `where institutions.application_id = ${application.id} `
     + 'order by name';
 
     const categories = await Database.rawQuery(categoryQuery);
@@ -157,7 +159,7 @@ class ReportController {
   }
 
   private static async payee(
-    user: User,
+    application: Application,
     startDate: string,
     endDate: string,
     pc?: string[] | string,
@@ -180,7 +182,7 @@ class ReportController {
         .join('institutions', 'institutions.id', 'accounts.institution_id')
         .where('pending', false)
         .andWhereIn('transactions.type', [TransactionType.REGULAR_TRANSACTION, TransactionType.MANUAL_TRANSACTION])
-        .andWhere('institutions.user_id', user.id)
+        .andWhere('institutions.application_id', application.id)
         .groupBy(['payment_channel'])
         .groupByRaw('coalesce(at.merchant_name, at.name)')
         .orderByRaw('coalesce(at.merchant_name, at.name) asc')
@@ -221,7 +223,7 @@ class ReportController {
   }
 
   private static async category(
-    user: User,
+    application: Application,
     startDate: string,
     endDate: string,
     c?: string[] | string,
@@ -239,7 +241,7 @@ class ReportController {
         .join('categories as c', 'c.id', 'tc.category_id')
         .join('groups as g', 'g.id', 'c.group_id')
         .join('transactions as t', 't.id', 'tc.transaction_id')
-        .where('g.user_id', user.id)
+        .where('g.application_id', application.id)
         .andWhereIn('t.type', [TransactionType.MANUAL_TRANSACTION, TransactionType.REGULAR_TRANSACTION])
         .groupBy(['g.name', 'c.name'])
         .orderBy('g.name', 'asc')

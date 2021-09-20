@@ -31,6 +31,8 @@ export default class LoansController {
       throw new Error('user is not defined');
     }
 
+    const application = await user.related('application').query().firstOrFail();
+
     const validationSchema = schema.create({
       name: schema.string(),
       rate: schema.number(),
@@ -45,7 +47,7 @@ export default class LoansController {
     const trx = await Database.transaction();
 
     const loanGroup = await Group.query({ client: trx })
-      .where({ userId: user.id, system: true, name: 'Loans' })
+      .where({ applicationId: application.id, system: true, name: 'Loans' })
       .firstOrFail();
 
     const category = (new Category()).useTransaction(trx);
@@ -61,7 +63,7 @@ export default class LoansController {
     const loan = (new Loan()).useTransaction(trx);
 
     loan.fill({
-      userId: user.id,
+      applicationId: application.id,
       rate: requestData.rate,
       startDate: requestData.startDate,
       startingBalance: requestData.amount,

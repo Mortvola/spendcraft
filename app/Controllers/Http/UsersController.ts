@@ -1,7 +1,7 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import plaidClient from '@ioc:Plaid';
 import { InstitutionProps } from 'Common/ResponseTypes';
-// import User from 'App/Models/User';
+import Env from '@ioc:Adonis/Core/Env'
 
 export default class UsersController {
   // eslint-disable-next-line class-methods-use-this
@@ -23,23 +23,28 @@ export default class UsersController {
       throw new Error('user is not defined');
     }
 
-    return user.getConnectedAccounts();
+    const application = await user.related('application').query().firstOrFail();
+
+    return application.getConnectedAccounts();
   }
 
   // eslint-disable-next-line class-methods-use-this
-  async getLinkToken({ auth, response }: HttpContextContract): Promise<void> {
-    if (!auth.user) {
+  async getLinkToken({ auth: { user }, response }: HttpContextContract): Promise<void> {
+    if (!user) {
       throw new Error('user is not defined');
     }
 
+    const webhook = Env.get('PLAID_WEBHOOK');
+
     const linkTokenResponse = await plaidClient.createLinkToken({
       user: {
-        client_user_id: auth.user.id.toString(),
+        client_user_id: user.id.toString(),
       },
       client_name: 'Balancing Life',
       products: ['transactions'],
       country_codes: ['US'],
       language: 'en',
+      webhook,
     });
     response.json({ linkToken: linkTokenResponse.link_token });
   }

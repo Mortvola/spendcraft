@@ -6,8 +6,8 @@ import {
 import { DateTime } from 'luxon';
 import TransactionCategory from 'App/Models/TransactionCategory';
 import AccountTransaction from 'App/Models/AccountTransaction';
-import User from 'App/Models/User';
 import { TransactionType } from 'Common/ResponseTypes';
+import Application from './Application';
 
 class Transaction extends BaseModel {
   @column()
@@ -31,11 +31,11 @@ class Transaction extends BaseModel {
   @hasOne(() => AccountTransaction)
   public accountTransaction: HasOne<typeof AccountTransaction>
 
-  @belongsTo(() => User)
-  public user: BelongsTo<typeof User>;
+  @belongsTo(() => Application)
+  public application: BelongsTo<typeof Application>;
 
   @column({ serializeAs: null })
-  public userId: number;
+  public applicationId: number;
 
   @column()
   public comment: string;

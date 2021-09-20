@@ -6,6 +6,7 @@ import Database from '@ioc:Adonis/Lucid/Database';
 import Group from 'App/Models/Group';
 import { CategoryType } from 'Common/ResponseTypes';
 import TransactionCategory from 'App/Models/TransactionCategory';
+import Application from './Application';
 
 type CategoryItem = {
   id: number,
@@ -47,7 +48,7 @@ export default class Category extends BaseModel {
   public transactionCategory: HasMany<typeof TransactionCategory>;
 
   public static async balances(
-    userId: number,
+    application: Application,
     date: string,
     transactionId: number,
   ): Promise<GroupItem[]> {
@@ -73,7 +74,7 @@ export default class Category extends BaseModel {
       .joinRaw(`left join (${
         subQuery.toQuery()
       }) as tc on tc.category_id = c.id`)
-      .where('g.user_id', userId)
+      .where('g.application_id', application.id)
       .groupBy('c.id')
       .groupByRaw('coalesce(tc.amount, 0)')
 

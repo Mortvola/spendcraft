@@ -2,8 +2,8 @@
 import {
   BaseModel, BelongsTo, belongsTo, column, hasMany, HasMany,
 } from '@ioc:Adonis/Lucid/Orm';
-import User from 'App/Models/User';
 import Category from 'App/Models/Category';
+import Application from './Application';
 
 class Group extends BaseModel {
   @column()
@@ -15,11 +15,11 @@ class Group extends BaseModel {
   @column()
   public type: string;
 
-  @belongsTo(() => User)
-  public user: BelongsTo<typeof User>;
+  @belongsTo(() => Application)
+  public application: BelongsTo<typeof Application>;
 
   @column({ serializeAs: null })
-  public userId: number;
+  public applicationId: number;
 
   @column()
   public system: boolean;

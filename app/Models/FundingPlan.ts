@@ -3,8 +3,8 @@ import { DateTime } from 'luxon';
 import {
   BaseModel, BelongsTo, belongsTo, column, HasMany, hasMany,
 } from '@ioc:Adonis/Lucid/Orm';
-import User, { GroupHistoryItem } from 'App/Models/User';
 import FundingPlanCategory from './FundingPlanCategory';
+import Application, { GroupHistoryItem } from './Application';
 
 export type PlanCategory = {
   id?: number,
@@ -34,22 +34,22 @@ export default class FundingPlan extends BaseModel {
   public name: string;
 
   @column()
-  public userId: number;
+  public applicationId: number;
 
-  @belongsTo(() => User)
-  public user: BelongsTo<typeof User>;
+  @belongsTo(() => Application)
+  public application: BelongsTo<typeof Application>;
 
   @hasMany(() => FundingPlanCategory)
   public categories: HasMany<typeof FundingPlanCategory>
 
-  public async getFullPlan(this: FundingPlan, user: User): Promise<Plan> {
+  public async getFullPlan(this: FundingPlan, application: Application): Promise<Plan> {
     const categories = await this.related('categories').query();
 
     return {
       id: this.id,
       name: this.name,
       categories,
-      history: await user.history(),
+      history: await application.history(),
     };
   }
 }

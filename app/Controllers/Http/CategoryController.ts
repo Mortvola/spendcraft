@@ -2,7 +2,7 @@ import Database, { StrictValues } from '@ioc:Adonis/Lucid/Database';
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import Category, { GroupItem } from 'App/Models/Category';
 import CategoryTransfer from 'App/Models/CategoryTransfer';
-import { GroupHistoryItem } from 'App/Models/User';
+import { GroupHistoryItem } from 'App/Models/Application';
 import AddGroupValidator from 'App/Validators/AddGroupValidator';
 import UpdateGroupValidator from 'App/Validators/UpdateGroupValidator';
 import DeleteGroupValidator from 'App/Validators/DeleteGroupValidator';
@@ -29,7 +29,9 @@ class CategoryController {
       throw new Error('user is not defined');
     }
 
-    return await user.related('groups').query()
+    const application = await user.related('application').query().firstOrFail();
+
+    return await application.related('groups').query()
       .preload('categories', (catQuery) => {
         catQuery.orderBy('name', 'asc')
       })
@@ -52,7 +54,7 @@ class CategoryController {
     return (new Group())
       .fill({
         name: requestData.name,
-        userId: user.id,
+        applicationId: user.applicationId,
         type: 'REGULAR',
       })
       .save();
@@ -72,9 +74,11 @@ class CategoryController {
     const { groupId } = request.params();
     const requestData = await request.validate(UpdateGroupValidator);
 
-    await Database.query().from('groups')
-      .where({ id: groupId, user_id: user.id })
-      .update({ name: requestData.name });
+    const group = await Group.findOrFail(groupId);
+
+    group.merge({ name: requestData.name });
+
+    await group.save();
 
     return { id: groupId, name: requestData.name };
   }
@@ -88,7 +92,9 @@ class CategoryController {
     const { groupId } = request.params();
     await request.validate(DeleteGroupValidator);
 
-    await Database.query().from('groups').where({ id: groupId, user_id: user.id }).delete();
+    const group = await Group.findOrFail(groupId);
+
+    await group.delete();
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -163,6 +169,8 @@ class CategoryController {
       throw new Error('user is not defined');
     }
 
+    const application = await user.related('application').query().firstOrFail();
+
     const { catId } = request.params();
 
     const categoryId = parseInt(catId, 10);
@@ -177,7 +185,7 @@ class CategoryController {
     result.balance = cat.amount;
 
     if (cat.type === 'UNASSIGNED') {
-      const transactions = await user
+      const transactions = await application
         .related('transactions').query()
         .where((query) => {
           query
@@ -209,7 +217,7 @@ class CategoryController {
       ));
     }
     else {
-      const transactions = await user
+      const transactions = await application
         .related('transactions').query()
         .whereHas('transactionCategories', (query) => {
           query.where('categoryId', cat.id);
@@ -247,6 +255,8 @@ class CategoryController {
       throw new Error('user is not defined');
     }
 
+    const application = await user.related('application').query().firstOrFail();
+
     const { catId } = request.params();
 
     const categoryId = parseInt(catId, 10);
@@ -256,7 +266,7 @@ class CategoryController {
     const cat = await Category.findOrFail(categoryId);
 
     if (cat.type === 'UNASSIGNED') {
-      pending = await user
+      pending = await application
         .related('transactions').query()
         .where((query) => {
           query
@@ -290,6 +300,8 @@ class CategoryController {
       throw new Error('user is not defined');
     }
 
+    const application = await user.related('application').query().firstOrFail();
+
     const { tfrId } = request.params();
     const requestData = await request.validate(UpdateCategoryTransferValidator);
 
@@ -318,7 +330,7 @@ class CategoryController {
 
         if (transactionId === undefined) {
           [transactionId] = await trx.insertQuery().insert({
-            date, type, user_id: user.id,
+            date, type, application_id: application.id,
           }).table('transactions').returning('id');
 
           result.transaction = {
@@ -460,9 +472,11 @@ class CategoryController {
       throw new Error('user is not defined');
     }
 
+    const application = await user.related('application').query().firstOrFail();
+
     const { date, id } = request.qs();
 
-    return Category.balances(user.id, date, id !== undefined ? parseInt(id, 10) : id);
+    return Category.balances(application, date, id !== undefined ? parseInt(id, 10) : id);
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -471,7 +485,9 @@ class CategoryController {
       throw new Error('user is not defined');
     }
 
-    return user.history();
+    const application = await user.related('application').query().firstOrFail();
+
+    return application.history();
   }
 }
 

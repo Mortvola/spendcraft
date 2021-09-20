@@ -6,7 +6,7 @@ export default class AddGroupValidator {
     this.ctx = ctx;
   }
 
-  public refs = schema.refs({ userId: this.ctx.auth.user ? this.ctx.auth.user.id : null });
+  public refs = schema.refs({ applicationId: this.ctx.auth.user ? this.ctx.auth.user.applicationId : null });
 
   public schema = schema.create({
     name: schema.string({}, [
@@ -14,7 +14,7 @@ export default class AddGroupValidator {
       rules.unique({
         table: 'groups',
         column: 'name',
-        where: { user_id: this.refs.userId },
+        where: { application_id: this.refs.applicationId },
       }),
     ]),
   })

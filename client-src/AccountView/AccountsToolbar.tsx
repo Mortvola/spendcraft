@@ -53,7 +53,7 @@ const AccountsToolbar = ({
               >
                 Add Transaction
               </button>
-              <TransactionDialog />
+              <TransactionDialog account={uiState.selectedAccount} />
             </>
           )
           : null

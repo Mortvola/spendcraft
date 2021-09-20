@@ -17,6 +17,8 @@ class FundingPlanController {
       throw new Error('user is undefined');
     }
 
+    const application = await user.related('application').query().firstOrFail();
+
     const validationSchema = schema.create({
       name: schema.string(),
     });
@@ -29,7 +31,7 @@ class FundingPlanController {
 
     plan.name = requestData.name;
 
-    await plan.related('user').associate(user);
+    await plan.related('application').associate(application);
 
     return plan;
   }
@@ -39,15 +41,14 @@ class FundingPlanController {
     auth: {
       user,
     },
-  }: HttpContextContract): Promise<Array<Record<string, unknown>>> {
+  }: HttpContextContract): Promise<FundingPlan[]> {
     if (!user) {
       throw new Error('user is undefined');
     }
 
-    return Database.query()
-      .select('id', 'name')
-      .from('funding_plans')
-      .where('user_id', user.id);
+    const application = await user.related('application').query().firstOrFail();
+
+    return FundingPlan.query().where('applicationId', application.id);
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -71,13 +72,15 @@ class FundingPlanController {
       throw new Error('user is undefined');
     }
 
+    const application = await user.related('application').query().firstOrFail();
+
     const plan = await FundingPlan.find(request.params().planId);
 
     if (!plan) {
       throw new Error('plan not found');
     }
 
-    return plan.getFullPlan(user);
+    return plan.getFullPlan(application);
   }
 
   // eslint-disable-next-line class-methods-use-this

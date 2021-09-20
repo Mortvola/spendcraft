@@ -6,6 +6,7 @@ import Logger from '@ioc:Adonis/Core/Logger';
 import Mail from '@ioc:Adonis/Addons/Mail';
 import User from 'App/Models/User';
 import Database from '@ioc:Adonis/Lucid/Database';
+import Application from 'App/Models/Application';
 
 export default class AuthController {
   // eslint-disable-next-line class-methods-use-this
@@ -55,7 +56,15 @@ export default class AuthController {
 
     try {
       user.useTransaction(trx);
-      user.initialize();
+
+      const application = new Application();
+
+      application.fill({
+        userId: user.id,
+      })
+        .save();
+
+      application.initialize();
     }
     catch (error) {
       trx.rollback();

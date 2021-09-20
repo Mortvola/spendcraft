@@ -22,6 +22,8 @@ export default class AccountsController {
       throw new Error('user not defined');
     }
 
+    const application = await user.related('application').query().firstOrFail();
+
     const accountId = parseInt(request.params().acctId, 10);
 
     const result: TransactionsResponse = {
@@ -35,7 +37,7 @@ export default class AccountsController {
 
     result.balance = acct.balance;
 
-    const transactions = await user
+    const transactions = await application
       .related('transactions').query()
       .whereHas('accountTransaction', (query) => {
         query.where('account_id', accountId)
@@ -70,11 +72,13 @@ export default class AccountsController {
       throw new Error('user not defined');
     }
 
+    const application = await user.related('application').query().firstOrFail();
+
     const accountId = parseInt(request.params().acctId, 10);
 
     // Determine if the account belongs to the authenticated user
     // and get the balance
-    const pending = await user
+    const pending = await application
       .related('transactions').query()
       .whereHas('accountTransaction', (query) => {
         query.where('account_id', accountId)
@@ -123,6 +127,8 @@ export default class AccountsController {
       throw new Error('user not defined');
     }
 
+    const application = await user.related('application').query().firstOrFail();
+
     const validationSchema = schema.create({
       date: schema.date(),
       name: schema.string(),
@@ -155,7 +161,7 @@ export default class AccountsController {
       comment: requestData.comment,
     });
 
-    await transaction.related('user').associate(user);
+    await transaction.related('application').associate(application);
 
     const acctTransaction = await account.related('accountTransactions').create({
       name: requestData.name,
@@ -175,7 +181,7 @@ export default class AccountsController {
       // We only want to update the unassigned category balance if 
       // this account is tracking categorized transactions
       if (account.tracking === 'Transactions') {
-        const unassignedCat = await user.getUnassignedCategory({ client: trx });
+        const unassignedCat = await application.getUnassignedCategory({ client: trx });
 
         unassignedCat.amount += acctTransaction.amount;
 

@@ -9,9 +9,9 @@ import AccountTransaction from 'App/Models/AccountTransaction';
 import BalanceHistory from 'App/Models/BalanceHistory';
 import Institution from 'App/Models/Institution';
 import { CategoryBalanceProps, TrackingType } from 'Common/ResponseTypes';
-import User from 'App/Models/User';
 import Transaction from 'App/Models/Transaction';
 import { Transaction as PlaidTransaction } from 'plaid';
+import Application from './Application';
 
 export type AccountSyncResult = {
   categories: CategoryBalanceProps[],
@@ -92,7 +92,7 @@ class Account extends BaseModel {
   public async sync(
     this: Account,
     accessToken: string,
-    user: User,
+    application: Application,
   ): Promise<AccountSyncResult | null> {
     const result: AccountSyncResult = {
       categories: [],
@@ -129,7 +129,7 @@ class Account extends BaseModel {
       const sum = await this.addTransactions(
         accessToken,
         startDate,
-        user,
+        application,
         { client: trx },
       );
 
@@ -137,7 +137,7 @@ class Account extends BaseModel {
 
       await this.updateAccountBalanceHistory(this.balance);
 
-      const unassigned = await user.getUnassignedCategory({ client: trx });
+      const unassigned = await application.getUnassignedCategory({ client: trx });
       result.categories = [{ id: unassigned.id, balance: unassigned.amount }];
 
       result.accounts = [{
@@ -179,7 +179,7 @@ class Account extends BaseModel {
     this: Account,
     accessToken: string,
     startDate: DateTime,
-    user: User,
+    application: Application,
     options?: {
       client: TransactionClientContract,
     },
@@ -215,7 +215,7 @@ class Account extends BaseModel {
 
     // console.log(JSON.stringify(transactionsResponse, null, 4));
 
-    const sum = await this.applyTransactions(user, transactionsResponse.transactions, pendingTransactions);
+    const sum = await this.applyTransactions(application, transactionsResponse.transactions, pendingTransactions);
 
     this.plaidBalance = transactionsResponse.accounts[0].balances.current;
     if (this.type === 'credit' || this.type === 'loan') {
@@ -234,7 +234,7 @@ class Account extends BaseModel {
   // eslint-disable-next-line class-methods-use-this
   public async applyTransactions(
     this: Account,
-    user: User,
+    application: Application,
     plaidTransactions: PlaidTransaction[],
     pendingTransactions?: AccountTransaction[],
   ): Promise<number> {
@@ -297,7 +297,7 @@ class Account extends BaseModel {
             .useTransaction(this.$trx)
             .fill({
               date: DateTime.fromISO(plaidTransaction.date),
-              userId: user.id,
+              applicationId: application.id,
             })
             .save();
 
@@ -333,7 +333,7 @@ class Account extends BaseModel {
     }
 
     if (sum !== 0 && this.tracking === 'Transactions') {
-      const unassigned = await user.getUnassignedCategory({ client: this.$trx });
+      const unassigned = await application.getUnassignedCategory({ client: this.$trx });
 
       unassigned.amount += sum;
 
