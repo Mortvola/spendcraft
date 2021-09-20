@@ -44,7 +44,7 @@ export default class Application extends BaseModel {
   public userId: number;
 
   @hasMany(() => User)
-  public application: HasMany<typeof User>;
+  public users: HasMany<typeof User>;
 
   @hasMany(() => Institution)
   public institutions: HasMany<typeof Institution>;

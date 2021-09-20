@@ -8,6 +8,8 @@ import Database from '@ioc:Adonis/Lucid/Database';
 import Institution from 'App/Models/Institution';
 import { PlaidError } from 'plaid';
 import Application from 'App/Models/Application';
+import Mail from '@ioc:Adonis/Addons/Mail';
+import Env from '@ioc:Adonis/Core/Env';
 
 const getVerificationKey = util
   .promisify(plaidClient.getWebhookVerificationKey)
@@ -116,19 +118,38 @@ class WebhookController {
       }
 
       case 'PENDING_EXPIRATION':
-        console.log(event.webhook_code);
+        console.log(JSON.stringify(event));
         break;
 
       case 'USER_PERMISSION_REVOKED':
-        console.log(event.webhook_code);
+        console.log(JSON.stringify(event));
         break;
 
       case 'ERROR':
-        console.log(event.webhook_code);
+        if (event.error.error_code === 'ITEM_LOGIN_REQUIRED') {
+          const institution = await Institution.findByOrFail('plaid_item_id', event.item_id);
+
+          const application = await institution.related('application').query().firstOrFail();
+
+          const users = await application.related('users').query();
+
+          await Promise.all(users.map((user) => (
+            Mail.send((message) => {
+              message
+                .from(Env.get('MAIL_FROM_ADDRESS') as string, Env.get('MAIL_FROM_NAME') as string)
+                .to(user.email)
+                .subject('Action Required')
+                .htmlView('emails/item-login-required', { institution: institution.name });
+            })
+          )));
+        }
+        else {
+          console.log(JSON.stringify(event));
+        }
         break;
 
       default:
-        console.log(`unknown webhook code: ${event.webhook_code}`);
+        console.log(`unknown webhook code: ${JSON.stringify(event)}`);
 
         break;
     }

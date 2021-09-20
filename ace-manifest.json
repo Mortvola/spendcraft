@@ -78,6 +78,46 @@
       "aliases": [],
       "flags": []
     },
+    "plaid:get-item": {
+      "settings": {
+        "loadApp": true,
+        "stayAlive": false
+      },
+      "commandPath": "./commands/PlaidGetItem",
+      "commandName": "plaid:get-item",
+      "description": "Retrieves the institution with the provided access token",
+      "args": [
+        {
+          "type": "string",
+          "propertyName": "accessToken",
+          "name": "accessToken",
+          "required": true,
+          "description": "Access token of the item to reset"
+        }
+      ],
+      "aliases": [],
+      "flags": []
+    },
+    "plaid:reset-login": {
+      "settings": {
+        "loadApp": true,
+        "stayAlive": false
+      },
+      "commandPath": "./commands/PlaidResetLogin",
+      "commandName": "plaid:reset-login",
+      "description": "Resets the login for the institution with the provided access token",
+      "args": [
+        {
+          "type": "string",
+          "propertyName": "accessToken",
+          "name": "accessToken",
+          "required": true,
+          "description": "Access token of the item to reset"
+        }
+      ],
+      "aliases": [],
+      "flags": []
+    },
     "dump:rcfile": {
       "settings": {},
       "commandPath": "@adonisjs/core/build/commands/DumpRc",

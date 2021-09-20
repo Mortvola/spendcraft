@@ -29,9 +29,6 @@ export default class User extends BaseModel {
   @column()
   public rememberMeToken?: string
 
-  @column()
-  public applicationId: number;
-
   @column.dateTime({ autoCreate: true })
   public createdAt: DateTime
 
@@ -47,4 +44,7 @@ export default class User extends BaseModel {
 
   @belongsTo(() => Application)
   public application: BelongsTo<typeof Application>;
+
+  @column()
+  public applicationId: number;
 }
