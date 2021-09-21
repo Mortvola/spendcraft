@@ -19,7 +19,7 @@ const AccountsToolbar = ({
   const { isMobile } = useMediaQuery();
 
   const addInstitution = () => {
-    accounts.addInstitution();
+    accounts.linkInstitution();
   };
 
   const handleRefresh = async (): Promise<void> => {

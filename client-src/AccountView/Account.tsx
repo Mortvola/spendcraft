@@ -4,6 +4,7 @@ import IconButton from '../IconButton';
 import { AccountInterface, InstitutionInterface } from '../State/State';
 import { getSubTypeName, getTypeName } from '../State/AccountTypes';
 import Amount from '../Amount';
+import { useRelinkDialog } from '../RelinkDialog';
 
 type PropsType = {
   selected: boolean,
@@ -20,8 +21,14 @@ const Account = ({
   onAccountSelected,
   showAccountDialog,
 }: PropsType) => {
-  const refresh = () => {
-    account.refresh(institution.id);
+  const [RelinkDialog, showRelinkDialog] = useRelinkDialog();
+
+  const refresh = async () => {
+    const result = await account.refresh(institution.id);
+
+    if (!result) {
+      showRelinkDialog();
+    }
   };
 
   const accountSelected = () => {
@@ -77,6 +84,7 @@ const Account = ({
             : null
         }
       </div>
+      <RelinkDialog account={account} />
     </div>
   );
 };

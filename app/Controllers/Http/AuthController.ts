@@ -153,6 +153,9 @@ export default class AuthController {
           ],
         };
       }
+      else {
+        throw (error);
+      }
     }
 
     response.send(responseData);

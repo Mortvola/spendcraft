@@ -1,5 +1,6 @@
 import { ApplicationContract } from '@ioc:Adonis/Core/Application'
-import plaid from 'plaid';
+import plaid from 'App/Plaid/Plaid';
+import { environments } from 'plaid';
 
 export default class AppProvider {
 	public static needsApplication = true
@@ -11,10 +12,10 @@ export default class AppProvider {
     // Register your own bindings
     this.app.container.singleton('Plaid', () => {
       const Config = this.app.container.use('Adonis/Core/Config');
-      return new plaid.Client({
+      return new plaid({
         clientID: Config.get('plaid.clientId'),
         secret: Config.get('plaid.secret'),
-        env: plaid.environments[Config.get('plaid.environment')],
+        env: environments[Config.get('plaid.environment')],
         options: {},
       })
     });

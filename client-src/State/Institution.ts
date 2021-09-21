@@ -1,13 +1,14 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import Account from './Account';
 import {
-  UnlinkedAccountProps, InstitutionProps, isAccountsResponse, isUnlinkedAccounts, AccountBalanceProps, Error,
-  TrackingType, isAddAccountsResponse, isDeleteAccountResponse,
+  UnlinkedAccountProps, InstitutionProps, isUnlinkedAccounts, AccountBalanceProps, Error,
+  TrackingType, isAddAccountsResponse, isDeleteAccountResponse, isLinkTokenResponse,
 } from '../../common/ResponseTypes';
 import { AccountInterface, InstitutionInterface, StoreInterface } from './State';
 import {
   getBody, httpDelete, httpGet, httpPost,
 } from './Transports';
+import Plaid from './Plaid';
 
 class Institution implements InstitutionInterface {
   id: number;
@@ -35,6 +36,22 @@ class Institution implements InstitutionInterface {
     makeAutoObservable(this);
 
     this.store = store;
+  }
+
+  async relink(): Promise<void> {
+    const response = await httpGet(`/api/institution/${this.id}/link-token`);
+
+    if (!response.ok) {
+      throw new Error('invalid response');
+    }
+
+    const body = await getBody(response);
+
+    runInAction(() => {
+      if (isLinkTokenResponse(body)) {
+        this.store.uiState.plaid = new Plaid(body.linkToken);
+      }
+    });
   }
 
   insertAccount(account: Account): void {

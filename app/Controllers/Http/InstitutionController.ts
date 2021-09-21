@@ -515,7 +515,6 @@ class InstitutionController {
 
   // eslint-disable-next-line class-methods-use-this
   public async syncAll({
-    response,
     auth: {
       user,
     },
@@ -528,35 +527,26 @@ class InstitutionController {
 
     const trx = await Database.transaction();
 
-    try {
-      const institutions = await Institution.query().where('applicationId', application.id);
+    const institutions = await Institution.query().where('applicationId', application.id);
 
-      const result: AccountSyncResult[] | null = [];
+    const result: AccountSyncResult[] | null = [];
 
-      await Promise.all(institutions.map(async (institution) => {
-        const accounts = await institution.related('accounts').query();
+    await Promise.all(institutions.map(async (institution) => {
+      const accounts = await institution.related('accounts').query();
 
-        return Promise.all(accounts.map(async (acct) => (
-          acct.sync(institution.accessToken, application)
-        )));
-      }));
+      return Promise.all(accounts.map(async (acct) => (
+        acct.sync(institution.accessToken, application)
+      )));
+    }));
 
-      await trx.commit();
+    await trx.commit();
 
-      return result;
-    }
-    catch (error) {
-      console.log(error);
-      await trx.rollback();
-      response.internalServerError(error);
-      return null;
-    }
+    return result;
   }
 
   // eslint-disable-next-line class-methods-use-this
   public async sync({
     request,
-    response,
     auth: {
       user,
     },
@@ -569,26 +559,18 @@ class InstitutionController {
 
     const trx = await Database.transaction();
 
-    try {
-      const institution = await Institution.findOrFail(request.params().instId, { client: trx });
-      const account = await Account.findOrFail(request.params().acctId, { client: trx });
+    const institution = await Institution.findOrFail(request.params().instId, { client: trx });
+    const account = await Account.findOrFail(request.params().acctId, { client: trx });
 
-      let result: AccountSyncResult | null = null;
+    let result: AccountSyncResult | null = null;
 
-      result = await account.sync(
-        institution.accessToken, application,
-      );
+    result = await account.sync(
+      institution.accessToken, application,
+    );
 
-      await trx.commit();
+    await trx.commit();
 
-      return result;
-    }
-    catch (error) {
-      console.log(error);
-      await trx.rollback();
-      response.internalServerError(error);
-      return null;
-    }
+    return result;
   }
 
   // eslint-disable-next-line class-methods-use-this

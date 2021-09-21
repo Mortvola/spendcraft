@@ -13,20 +13,18 @@ type PropsType = {
   institution: InstitutionInterface,
   onAccountSelected: ((account: AccountInterface) => void),
   selectedAccount?: AccountInterface | null,
-  onRelink: ((id: number) => void),
 }
 
 function Institution({
   institution,
   onAccountSelected,
   selectedAccount = null,
-  onRelink,
 }: PropsType): ReactElement {
   const [OnlineAccountsDialog, showOnlineAccountsDialog] = useAccountsDialog();
   const [InstitutionInfoDialog, showInstitutionInfoDialog] = useInstitutionInfoDialog();
   const [OfflineAccountDialog, showOfflineAccountDialog] = useOfflineAccountDialog();
   const handleRelinkClick = () => {
-    onRelink(institution.id);
+    institution.relink();
   };
   const [editedAccount, setEditedAccount] = useState<AccountInterface | null>(null);
   const [DeleteConfirmation, handleDeleteClick] = useDeleteConfirmation(

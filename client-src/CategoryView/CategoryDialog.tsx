@@ -172,10 +172,6 @@ const CategoryDialog = ({
   );
 };
 
-CategoryDialog.defaultProps = {
-  category: undefined,
-};
-
 export const useCategoryDialog = (): UseModalType<Props> => useModal<Props>(CategoryDialog);
 
 export default CategoryDialog;

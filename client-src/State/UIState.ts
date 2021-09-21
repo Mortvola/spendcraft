@@ -6,6 +6,7 @@ import {
   FundingPlanInterface,
   StoreInterface, TransactionInterface, UIStateInterface, Views,
 } from './State';
+import Plaid from './Plaid';
 
 class UIState implements UIStateInterface {
   view: Views = 'HOME';
@@ -17,6 +18,8 @@ class UIState implements UIStateInterface {
   selectedAccount: AccountInterface | null = null;
 
   selectedTransaction: TransactionInterface | null = null;
+
+  plaid: Plaid | null = null;
 
   store: StoreInterface;
 

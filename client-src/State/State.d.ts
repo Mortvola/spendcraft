@@ -101,15 +101,11 @@ export interface GroupMemberInterface {
 export interface AccountsInterface {
   institutions: InstitutionInterface[];
 
-  plaid: Plaid | null;
-
   store: StoreInterface;
 
   async load(): Promise<void>;
 
-  async relinkInstitution(institutionId: number): Promise<void>;
-
-  async addInstitution(): Promise<void>;
+  async linkInstitution(): Promise<void>;
 
   updateBalances(balances: AccountBalanceProps[]): void;
 
@@ -184,6 +180,7 @@ export interface UIStateInterface {
   selectedPlan: FundingPlanInterface | null;
   selectedAccount: AccountInterface | null;
   selectedTransaction: TransactionInterface | null;
+  plaid: Plaid | null;
 }
 
 export interface CategoryTreeInterface {
@@ -243,12 +240,14 @@ export interface InstitutionInterface {
 
   unlinkedAccounts: UnlinkedAccountProps[] | null;
 
-  async addOnlineAccounts(
+  relink(): Promise<void>;
+
+  addOnlineAccounts(
     accounts: UnlinkedAccountProps[],
     startDate: string,
   ): Promise<null>;
 
-  async addOfflineAccount(
+  addOfflineAccount(
     accountName: string,
     balance: number,
     startDate: string,
@@ -258,7 +257,7 @@ export interface InstitutionInterface {
     rate: number,
   ): Promise<Error[] | null>;
 
-  async getUnlinkedAccounts(): Promise<void>;
+  getUnlinkedAccounts(): Promise<void>;
 
   deleteAccount(account: AccountInterface): void;
 
@@ -310,7 +309,7 @@ export interface AccountInterface extends TransactionContainerInterface {
 
   getPendingTransactions(): Promise<void>;
 
-  refresh(institutionId: number): Promise<void>;
+  refresh(institutionId: number): Promise<boolean>;
 
   addTransaction(
     values: {

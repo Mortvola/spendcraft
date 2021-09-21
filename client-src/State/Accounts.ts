@@ -15,8 +15,6 @@ import {
 class Accounts implements AccountsInterface {
   institutions: Institution[] = [];
 
-  plaid: Plaid | null = null;
-
   store: StoreInterface;
 
   constructor(store: StoreInterface) {
@@ -50,22 +48,6 @@ class Accounts implements AccountsInterface {
     }
   }
 
-  async relinkInstitution(institutionId: number): Promise<void> {
-    const response = await httpGet(`/api/institution/${institutionId}/link-token`);
-
-    if (!response.ok) {
-      throw new Error('invalid response');
-    }
-
-    const body = await getBody(response);
-
-    runInAction(() => {
-      if (isLinkTokenResponse(body)) {
-        this.plaid = new Plaid(body.linkToken);
-      }
-    });
-  }
-
   insertInstitution(institution: Institution): void {
     const index = this.institutions.findIndex(
       (inst) => institution.name.localeCompare(inst.name) < 0,
@@ -79,7 +61,7 @@ class Accounts implements AccountsInterface {
     }
   }
 
-  async addInstitution(): Promise<void> {
+  async linkInstitution(): Promise<void> {
     const response = await httpGet('/api/user/link-token');
 
     if (response.ok) {
@@ -87,57 +69,61 @@ class Accounts implements AccountsInterface {
 
       runInAction(() => {
         if (isLinkTokenResponse(body)) {
-          this.plaid = new Plaid(
+          this.store.uiState.plaid = new Plaid(
             body.linkToken,
-            async (publicToken, metadata: PlaidMetaData) => {
-              const i = metadata.institution as {
-                name: string,
-                // eslint-disable-next-line camelcase
-                institution_id: string,
-              };
+            async (publicToken, metadata: PlaidMetaData): Promise<Institution | null> => {
+              const i = metadata.institution;
 
-              const response2 = await httpPost('/api/institution', {
-                publicToken,
-                institution: {
-                  name: i.name,
-                  institutionId: i.institution_id,
-                },
-              });
-
-              const body2 = await getBody(response2);
-              if (response2.ok && isInstitutionProps(body2)) {
-                let institution = new Institution(
-                  this.store, {
-                    id: body2.id,
-                    name: body2.name,
-                    offline: false,
-                    accounts: [],
-                  },
-                );
-
-                runInAction(() => {
-                  // Make sure we don't already have the institution in the list.
-                  const existingIndex = this.institutions.findIndex(
-                    (inst) => inst.id === institution.id,
-                  );
-
-                  if (existingIndex === -1) {
-                    this.insertInstitution(institution);
-                  }
-                  else {
-                    institution = this.institutions[existingIndex];
-                  }
-                });
-
-                return institution;
-              }
-
-              return null;
+              return this.addInstitution(publicToken, i.name, i.institution_id);
             },
           );
         }
       });
     }
+  }
+
+  async addInstitution(
+    publicToken: string,
+    name: string,
+    plaidInstitutionId: string,
+  ): Promise<Institution | null> {
+    const response2 = await httpPost('/api/institution', {
+      publicToken,
+      institution: {
+        name,
+        institutionId: plaidInstitutionId,
+      },
+    });
+
+    const body2 = await getBody(response2);
+    if (response2.ok && isInstitutionProps(body2)) {
+      let institution = new Institution(
+        this.store, {
+          id: body2.id,
+          name: body2.name,
+          offline: false,
+          accounts: [],
+        },
+      );
+
+      runInAction(() => {
+        // Make sure we don't already have the institution in the list.
+        const existingIndex = this.institutions.findIndex(
+          (inst) => inst.id === institution.id,
+        );
+
+        if (existingIndex === -1) {
+          this.insertInstitution(institution);
+        }
+        else {
+          institution = this.institutions[existingIndex];
+        }
+      });
+
+      return institution;
+    }
+
+    return null;
   }
 
   async addOfflineAccount(

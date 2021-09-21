@@ -22,10 +22,6 @@ const AccountView = ({
     }
   };
 
-  const handleRelink = (institutionId: number) => {
-    accounts.relinkInstitution(institutionId);
-  };
-
   return (
     <div id="accounts">
       {institutions.map((institution) => (
@@ -34,7 +30,6 @@ const AccountView = ({
           institution={institution}
           onAccountSelected={handleAccountSelected}
           selectedAccount={selectedAccount}
-          onRelink={handleRelink}
         />
       ))}
     </div>

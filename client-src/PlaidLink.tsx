@@ -15,12 +15,12 @@ type PropsType = {
 const PlaidLinkDialog = ({
   showAccountsDialog,
 }: PropsType): null => {
-  const { accounts } = useContext(MobxStore);
+  const { uiState } = useContext(MobxStore);
 
   const onEvent = (eventName: string) => {
     if (eventName === 'HANDOFF') {
       runInAction(() => {
-        accounts.plaid = null;
+        uiState.plaid = null;
       });
     }
   };
@@ -32,39 +32,39 @@ const PlaidLinkDialog = ({
     }
 
     runInAction(() => {
-      accounts.plaid = null;
+      uiState.plaid = null;
     });
-  }, [accounts]);
+  }, [uiState]);
 
   const onSuccess = useCallback(async (publicToken: unknown, metadata: unknown) => {
-    if (accounts.plaid === null) {
+    if (uiState.plaid === null) {
       throw new Error('plaid is null');
     }
 
-    if (publicToken && accounts.plaid.callback) {
-      const institute = await accounts.plaid.callback(publicToken, metadata);
+    if (publicToken && uiState.plaid.callback) {
+      const institute = await uiState.plaid.callback(publicToken, metadata);
       showAccountsDialog(institute);
     }
-  }, [accounts, showAccountsDialog]);
+  }, [showAccountsDialog, uiState.plaid]);
 
   const { open, ready } = usePlaidLink({
-    token: accounts.plaid.linkToken,
+    token: uiState.plaid.linkToken,
     onSuccess,
     onExit,
     onEvent,
   });
 
   useEffect(() => {
-    if (accounts.plaid && open && ready) {
+    if (uiState.plaid && open && ready) {
       open();
     }
-  }, [accounts.plaid, open, ready]);
+  }, [uiState.plaid, open, ready]);
 
   return null;
 };
 
 const PlaidLink = (): ReactElement | null => {
-  const { accounts } = useContext(MobxStore);
+  const { uiState } = useContext(MobxStore);
   const [AccountsDialog, showAccountsDialog] = useAccountsDialog();
   const [institute, setInstitute] = useState<InstitutionInterface>();
 
@@ -73,7 +73,7 @@ const PlaidLink = (): ReactElement | null => {
     showAccountsDialog();
   };
 
-  if (accounts.plaid) {
+  if (uiState.plaid) {
     return <PlaidLinkDialog showAccountsDialog={handleShowDialog} />;
   }
 

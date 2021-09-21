@@ -64,7 +64,7 @@ class Account extends TransactionContainer implements AccountInterface {
     this.store = store;
   }
 
-  async refresh(institutionId: number): Promise<void> {
+  async refresh(institutionId: number): Promise<boolean> {
     runInAction(() => {
       this.refreshing = true;
     });
@@ -90,12 +90,15 @@ class Account extends TransactionContainer implements AccountInterface {
 
         this.refreshing = false;
       });
+
+      return true;
     }
-    else {
-      runInAction(() => {
-        this.refreshing = false;
-      });
-    }
+
+    runInAction(() => {
+      this.refreshing = false;
+    });
+
+    return false;
   }
 
   async getTransactions(index = 0): Promise<void> {

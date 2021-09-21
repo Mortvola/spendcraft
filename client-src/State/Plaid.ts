@@ -1,10 +1,14 @@
-import Institution from './Institution';
+import { InstitutionInterface } from './State';
 
 export type PlaidMetaData = {
-  institution: unknown,
+  institution: {
+    name: string,
+    // eslint-disable-next-line camelcase
+    institution_id: string,
+  },
 }
 
-type PlaidCallback = (token: string, metaData: PlaidMetaData) => Promise<Institution | null>;
+type PlaidCallback = (token: string, metaData: PlaidMetaData) => Promise<InstitutionInterface | null>;
 
 class Plaid {
   callback: undefined | PlaidCallback;
