@@ -84,11 +84,6 @@ class Account extends BaseModel {
   @belongsTo(() => Institution)
   public institution: BelongsTo<typeof Institution>;
 
-  // eslint-disable-next-line class-methods-use-this
-  public async getBalance(balance: string): Promise<number> {
-    return parseFloat(balance);
-  }
-
   public async sync(
     this: Account,
     accessToken: string,

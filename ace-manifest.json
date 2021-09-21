@@ -98,6 +98,33 @@
       "aliases": [],
       "flags": []
     },
+    "plaid:get-account": {
+      "settings": {
+        "loadApp": true,
+        "stayAlive": false
+      },
+      "commandPath": "./commands/PlaidGetAccount",
+      "commandName": "plaid:get-account",
+      "description": "Retrieves the institution with the provided access token",
+      "args": [
+        {
+          "type": "string",
+          "propertyName": "accessToken",
+          "name": "accessToken",
+          "required": true,
+          "description": "Access token of the item to retrieve"
+        },
+        {
+          "type": "string",
+          "propertyName": "accountId",
+          "name": "accountId",
+          "required": true,
+          "description": "Account ID of the account to retreive"
+        }
+      ],
+      "aliases": [],
+      "flags": []
+    },
     "plaid:get-item": {
       "settings": {
         "loadApp": true,
@@ -112,7 +139,7 @@
           "propertyName": "accessToken",
           "name": "accessToken",
           "required": true,
-          "description": "Access token of the item to reset"
+          "description": "Access token of the item to retreive"
         }
       ],
       "aliases": [],

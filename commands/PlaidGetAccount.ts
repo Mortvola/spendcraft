@@ -2,19 +2,22 @@ import { BaseCommand, args } from '@adonisjs/core/build/standalone'
 import plaidClient from '@ioc:Plaid';
 import Logger from '@ioc:Adonis/Core/Logger'
 
-export default class PlaidGetItem extends BaseCommand {
+export default class PlaidGetAccount extends BaseCommand {
   /**
    * Command name is used to run the command
    */
-  public static commandName = 'plaid:get-item'
+  public static commandName = 'plaid:get-account'
 
   /**
    * Command description is displayed in the "help" output
    */
   public static description = 'Retrieves the institution with the provided access token'
 
-  @args.string({ description: 'Access token of the item to retreive' })
+  @args.string({ description: 'Access token of the item to retrieve' })
   public accessToken: string
+
+  @args.string({ description: 'Account ID of the account to retreive' })
+  public accountId: string
 
   public static settings = {
     /**
@@ -31,7 +34,9 @@ export default class PlaidGetItem extends BaseCommand {
   }
 
   public async run (): Promise<void> {
-    const item = await plaidClient.getItem(this.accessToken);
-    Logger.info(JSON.stringify(item, null, 2));
+    const account = await plaidClient.getAccounts(this.accessToken, {
+      account_ids: [this.accountId],
+    });
+    Logger.info(JSON.stringify(account, null, 2));
   }
 }
