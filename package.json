@@ -44,6 +44,8 @@
     "bootstrap": "^5.1.1",
     "camelcase-keys": "^6.2.2",
     "formik": "^2.2.9",
+    "jose": "^3.17.0",
+    "js-sha256": "^0.9.0",
     "jsonwebtoken": "^8.5.1",
     "knex": "^0.21.21",
     "luxon": "^1.28.0",
@@ -68,6 +70,7 @@
     "react-script-hook": "^1.5.0",
     "reflect-metadata": "^0.1.13",
     "regenerator-runtime": "^0.13.9",
+    "secure-compare": "^3.0.1",
     "set-value": "^4.1.0",
     "youch": "^2.2.2"
   },

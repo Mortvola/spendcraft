@@ -1,22 +1,36 @@
 /* eslint-disable max-classes-per-file */
-import jwt from 'jsonwebtoken';
-import njwk from 'node-jwk';
+import compare from 'secure-compare';
+import { sha256 } from 'js-sha256';
+import { decodeProtectedHeader } from 'jose/util/decode_protected_header';
+import { jwtVerify } from 'jose/jwt/verify';
+import { parseJwk } from 'jose/jwk/parse';
+import { DateTime } from 'luxon';
 import plaidClient from '@ioc:Plaid';
-import util from 'util';
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
+import { RequestContract } from '@ioc:Adonis/Core/Request';
 import Database from '@ioc:Adonis/Lucid/Database';
 import Institution from 'App/Models/Institution';
 import { PlaidError } from 'plaid';
 import Application from 'App/Models/Application';
 import Mail from '@ioc:Adonis/Addons/Mail';
 import Env from '@ioc:Adonis/Core/Env';
+import { Exception } from '@adonisjs/drive/node_modules/@poppinss/utils';
 
-const getVerificationKey = util
-  .promisify(plaidClient.getWebhookVerificationKey)
-  .bind(plaidClient);
+type Key = {
+  alg: string;
+  // eslint-disable-next-line camelcase
+  created_at: number;
+  crv: string;
+  // eslint-disable-next-line camelcase
+  expired_at: null | number;
+  kid: string;
+  kty: string;
+  use: string;
+  x: string;
+  y: string;
+};
 
-const keyCache = {};
-const waitingRequests = {};
+const keyCache = new Map<string, { cacheTime: DateTime, key: Key}>();
 
 class PlaidWebhookError extends PlaidError {
   // eslint-disable-next-line camelcase
@@ -86,14 +100,14 @@ class WebhookController {
       switch (request.body().webhook_type) {
         case 'TRANSACTIONS': {
           if (isTransactionEvent(body)) {
-            WebhookController.processTransactionEvent(body);
+            await WebhookController.processTransactionEvent(body);
           }
           break;
         }
 
         case 'ITEM':
           if (isItemEvent(body)) {
-            WebhookController.processItemEvent(body);
+            await WebhookController.processItemEvent(body);
           }
           break;
 
@@ -212,67 +226,80 @@ class WebhookController {
     }
   }
 
-  static verify(request) {
-    return new Promise((resolve) => {
-      jwt.verify(request.header('Plaid-Verification'), ({ kid }, callback) => {
-        if (kid === undefined) {
-          throw new Error('kid is undefined');
-        }
+  static async verify(request: RequestContract): Promise<boolean> {
+    const signedJwtString = request.header('Plaid-Verification');
+    if (!signedJwtString) {
+      throw new Exception('Plaid-Verification header is missing');
+    }
 
-        const currentKey = keyCache[kid];
+    const signedJwt = signedJwtString;
+    const decodeTokenHeader = decodeProtectedHeader(signedJwt);
+    const currentKid = decodeTokenHeader.kid;
 
-        if (currentKey === undefined) {
-          const waiting = waitingRequests[kid];
-          if (waiting !== undefined) {
-            waiting.push(callback);
-          }
-          else {
-            waitingRequests[kid] = [callback];
+    if (!currentKid) {
+      throw new Exception('kid is not defined');
+    }
 
-            getVerificationKey(kid)
-              .then(({ key }) => {
-                if (key) {
-                  keyCache[kid] = key;
-                  waitingRequests[kid].forEach((cb) => {
-                    cb(
-                      null,
-                      njwk.JWK.fromObject(key).key.toPublicKeyPEM(),
-                    );
-                  });
-                }
-                else {
-                  // todo: What do if res.key is null?
-                  // eslint-disable-next-line no-console
-                  console.log('key is null');
-                }
+    // If the kid is in the cache but it has been cached for more than 24 hours
+    // then remove it.
+    if (keyCache.has(currentKid)) {
+      const cachedKey = keyCache.get(currentKid);
+      if (cachedKey !== undefined
+        && cachedKey.cacheTime.plus({ hours: 24 }) <= DateTime.now()) {
+        keyCache.delete(currentKid);
+      }
+    }
 
-                delete waitingRequests[kid];
-              })
-              .catch((error) => {
-                // eslint-disable-next-line no-console
-                console.log(`getVerificationKey error: ${error}`);
-              });
-          }
-        }
-        else {
-          callback(
-            null,
-            njwk.JWK.fromObject(currentKey).key.toPublicKeyPEM(),
-          );
-        }
-      },
-      { algorithms: ['ES256'] },
-      (error, decoded) => {
-        if (error) {
-          // eslint-disable-next-line no-console
-          console.log(`error: ${error}, decoded: ${JSON.stringify(decoded, null, 4)}`);
-          resolve(false);
-        }
-        else {
-          resolve(true);
+    // If the kid is not in the cache, retrieve it 
+    // and refresh any others that are currently in the cache.
+    if (!keyCache.has(currentKid)) {
+      const keyIDsToUpdate: string[] = [currentKid];
+      keyCache.forEach(({ key }, kid) => {
+        if (key.expired_at === null) {
+          keyIDsToUpdate.push(kid);
         }
       });
-    });
+
+      // Fetch the latest key from the verication server for
+      // all kids that need to be updated.
+      await Promise.all(keyIDsToUpdate.map(async (kid) => {
+        const { key } = await plaidClient.getWebhookVerificationKey(kid);
+
+        if (key.expired_at === null) {
+          keyCache.set(kid, { cacheTime: DateTime.now(), key });
+        }
+        else {
+          // If the key has expired then remove it from the cache.
+          keyCache.delete(kid);
+        }
+      }));
+    }
+
+    const cachedKey = keyCache.get(currentKid);
+
+    if (!cachedKey) {
+      throw new Exception('kid is not found in cache');
+    }
+
+    const { key } = cachedKey;
+
+    try {
+      const pk = await parseJwk(key);
+      const result = await jwtVerify(signedJwt, pk, { maxTokenAge: '5 min' });
+
+      const body = request.raw();
+      if (body === null) {
+        throw new Exception('body is null');
+      }
+
+      const bodyHash = sha256(body);
+
+      return compare(bodyHash, result.payload.request_body_sha256);
+    }
+    catch (error) {
+      console.log(`token verification failed: ${error.message}`);
+      return false;
+    }
   }
 }
 

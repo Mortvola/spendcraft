@@ -1,7 +1,6 @@
 /* eslint-disable import/no-cycle */
 import PlaidException from 'App/Exceptions/PlaidException';
 import * as Plaid from 'plaid';
-import util from 'util';
 
 class PlaidWrapper {
   plaid: Plaid.Client;
@@ -46,11 +45,9 @@ class PlaidWrapper {
     }
   }
 
-  async getWebhookVerificationKey(keyId: string): Promise<void> {
+  async getWebhookVerificationKey(keyId: string): Promise<Plaid.WebhookVerificationKeyResponse> {
     try {
-      return await (util
-        .promisify(this.plaid.getWebhookVerificationKey)
-        .bind(this.plaid))(keyId);
+      return await this.plaid.getWebhookVerificationKey(keyId);
     }
     catch (error) {
       throw new PlaidException(error);
