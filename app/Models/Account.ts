@@ -143,12 +143,12 @@ class Account extends BaseModel {
       }];
     }
     else {
-      const balanceResponse = await plaidClient.getBalance(accessToken, {
+      const accountsResponse = await plaidClient.getAccounts(accessToken, {
         account_ids: [this.plaidAccountId],
       });
 
-      this.balance = balanceResponse.accounts[0].balances.current;
-      this.plaidBalance = balanceResponse.accounts[0].balances.current;
+      this.balance = accountsResponse.accounts[0].balances.current;
+      this.plaidBalance = accountsResponse.accounts[0].balances.current;
       if (this.type === 'credit' || this.type === 'loan') {
         this.plaidBalance = -this.plaidBalance;
       }
