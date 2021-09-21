@@ -107,6 +107,15 @@ class PlaidWrapper {
       throw new PlaidException(error);
     }
   }
+
+  async sandboxItemFireWebhook(accessToken: string): Promise<Plaid.SandboxItemFireWebhookResponse> {
+    try {
+      return await this.plaid.sandboxItemFireWebhook(accessToken, 'DEFAULT_UPDATE');
+    }
+    catch (error) {
+      throw new PlaidException(error);
+    }
+  }
 }
 
 export default PlaidWrapper;

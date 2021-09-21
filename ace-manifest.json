@@ -78,6 +78,26 @@
       "aliases": [],
       "flags": []
     },
+    "plaid:fire-webhook": {
+      "settings": {
+        "loadApp": true,
+        "stayAlive": false
+      },
+      "commandPath": "./commands/PlaidFireWebhook",
+      "commandName": "plaid:fire-webhook",
+      "description": "Fires an item webhook",
+      "args": [
+        {
+          "type": "string",
+          "propertyName": "accessToken",
+          "name": "accessToken",
+          "required": true,
+          "description": "Access token of the item to reset"
+        }
+      ],
+      "aliases": [],
+      "flags": []
+    },
     "plaid:get-item": {
       "settings": {
         "loadApp": true,
