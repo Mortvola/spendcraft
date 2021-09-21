@@ -213,8 +213,6 @@ class Account extends BaseModel {
       },
     );
 
-    // console.log(JSON.stringify(transactionsResponse, null, 4));
-
     const sum = await this.applyTransactions(application, transactionsResponse.transactions, pendingTransactions);
 
     this.plaidBalance = transactionsResponse.accounts[0].balances.current;
@@ -249,10 +247,6 @@ class Account extends BaseModel {
       if (!this.$trx) {
         throw new Error('database transaction not set');
       }
-
-      // console.log(JSON.stringify(transaction, null, 4));
-      // Only consider non-pending transactions
-      // console.log(JSON.stringify(transaction, null, 4));
 
       if (plaidTransaction.amount !== null) {
         // First check to see if the transaction is present. If it is then don't insert it.
@@ -300,8 +294,6 @@ class Account extends BaseModel {
               applicationId: application.id,
             })
             .save();
-
-          // console.log(JSON.stringify(id, null, 4));
 
           acctTrans = await (new AccountTransaction())
             .useTransaction(this.$trx)

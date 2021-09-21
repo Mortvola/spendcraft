@@ -1,5 +1,6 @@
 import { BaseCommand, args } from '@adonisjs/core/build/standalone'
 import plaidClient from '@ioc:Plaid';
+import Logger from '@ioc:Adonis/Core/Logger'
 
 export default class PlaidGetItem extends BaseCommand {
   /**
@@ -31,6 +32,6 @@ export default class PlaidGetItem extends BaseCommand {
 
   public async run (): Promise<void> {
     const item = await plaidClient.getItem(this.accessToken);
-    console.log(JSON.stringify(item, null, 2));
+    Logger.info(JSON.stringify(item, null, 2));
   }
 }

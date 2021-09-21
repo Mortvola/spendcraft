@@ -610,8 +610,6 @@ class InstitutionController {
 
     const plaidInstitution = institution.getPlaidInstition();
 
-    // console.log(JSON.stringify(plaidInstitution, null, 4));
-
     return plaidInstitution;
   }
 

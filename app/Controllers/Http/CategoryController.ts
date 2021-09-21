@@ -19,6 +19,7 @@ import {
   TransactionProps, TransactionType, UpdateCategoryResponse,
 } from 'Common/ResponseTypes';
 import Group from 'App/Models/Group';
+import Logger from '@ioc:Adonis/Core/Logger';
 
 class CategoryController {
   // eslint-disable-next-line class-methods-use-this
@@ -418,7 +419,7 @@ class CategoryController {
       await trx.commit();
     }
     catch (error) {
-      console.log(error);
+      Logger.error(error);
       await trx.rollback();
     }
 
@@ -456,7 +457,7 @@ class CategoryController {
       await trx.commit();
     }
     catch (error) {
-      console.log(error);
+      Logger.error(error);
       await trx.rollback();
     }
   }

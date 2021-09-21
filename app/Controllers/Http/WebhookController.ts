@@ -15,6 +15,7 @@ import Application from 'App/Models/Application';
 import Mail from '@ioc:Adonis/Addons/Mail';
 import Env from '@ioc:Adonis/Core/Env';
 import { Exception } from '@adonisjs/drive/node_modules/@poppinss/utils';
+import Logger from '@ioc:Adonis/Core/Logger'
 
 type Key = {
   alg: string;
@@ -88,8 +89,6 @@ const isTransactionEvent = (r: unknown): r is TransactionEvent => (
 class WebhookController {
   // eslint-disable-next-line class-methods-use-this
   public async post({ request, response }: HttpContextContract) {
-    // console.log(JSON.stringify(request.body()));
-
     const verified = await WebhookController.verify(request);
 
     if (verified) {
@@ -112,7 +111,7 @@ class WebhookController {
           break;
 
         default:
-          console.log(`Unhandled webhook type: ${body.webhook_type}`);
+          Logger.warn(`Unhandled webhook type: ${body.webhook_type}`);
       }
     }
     else {
@@ -124,19 +123,19 @@ class WebhookController {
     switch (event.webhook_code) {
       case 'WEBHOOK_UPDATE_ACKNOWLEDGED': {
         const webhookUpdated = event as WebhookAcknoweldgedEvent;
-        console.log(`webhook update acknowledged for ${webhookUpdated.item_id}`);
+        Logger.info(`webhook update acknowledged for ${webhookUpdated.item_id}`);
         if (webhookUpdated.error) {
-          console.log(`\terror: ${webhookUpdated.error.error_message}`);
+          Logger.error(`\terror: ${webhookUpdated.error.error_message}`);
         }
         break;
       }
 
       case 'PENDING_EXPIRATION':
-        console.log(JSON.stringify(event));
+        Logger.info(JSON.stringify(event));
         break;
 
       case 'USER_PERMISSION_REVOKED':
-        console.log(JSON.stringify(event));
+        Logger.info(JSON.stringify(event));
         break;
 
       case 'ERROR':
@@ -158,12 +157,12 @@ class WebhookController {
           )));
         }
         else {
-          console.log(JSON.stringify(event));
+          Logger.info(JSON.stringify(event));
         }
         break;
 
       default:
-        console.log(`unknown webhook code: ${JSON.stringify(event)}`);
+        Logger.warn(`unknown webhook code: ${JSON.stringify(event)}`);
 
         break;
     }
@@ -173,8 +172,10 @@ class WebhookController {
   static async processTransactionEvent(event: TransactionEvent) {
     switch (event.webhook_code) {
       case 'INITIAL_UPDATE':
+        Logger.info(JSON.stringify(event));
         break;
       case 'HISTORICAL_UPDATE':
+        Logger.info(JSON.stringify(event));
         break;
       case 'DEFAULT_UPDATE': {
         const trx = await Database.transaction();
@@ -195,7 +196,7 @@ class WebhookController {
           await trx.commit();
         }
         catch (error) {
-          console.log(error);
+          Logger.error(error);
           await trx.rollback();
           throw error;
         }
@@ -213,7 +214,7 @@ class WebhookController {
           await trx.commit();
         }
         catch (error) {
-          console.log(error);
+          Logger.error(error);
           await trx.rollback();
           throw error;
         }
@@ -297,7 +298,7 @@ class WebhookController {
       return compare(bodyHash, result.payload.request_body_sha256);
     }
     catch (error) {
-      console.log(`token verification failed: ${error.message}`);
+      Logger.error(`token verification failed: ${error.message}`);
       return false;
     }
   }

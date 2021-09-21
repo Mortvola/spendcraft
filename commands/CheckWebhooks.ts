@@ -2,6 +2,7 @@ import { BaseCommand } from '@adonisjs/core/build/standalone'
 import Institution from 'App/Models/Institution'
 import Env from '@ioc:Adonis/Core/Env'
 import plaidClient from '@ioc:Plaid';
+import { logger } from 'Config/app';
 
 export default class CheckWebhooks extends BaseCommand {
   /**
@@ -35,18 +36,18 @@ export default class CheckWebhooks extends BaseCommand {
 
     if (hook) {
       if (institution.accessToken) {
-        console.log(`updating ${institution.plaidItemId} webhook to ${hook}`);
+        logger.info(`updating ${institution.plaidItemId} webhook to ${hook}`);
         try {
           const response = await plaidClient.updateItemWebhook(institution.accessToken, hook);
-          console.log(`new webhook for ${institution.plaidItemId}: ${response.item.webhook}`);
+          logger.info(`new webhook for ${institution.plaidItemId}: ${response.item.webhook}`);
         }
         catch (error) {
-          console.log(`updateItemWebhook failed: ${error.message}`);
+          logger.error(`updateItemWebhook failed: ${error.message}`);
         }
       }
     }
     else {
-      console.log('PLAID_WEBHOOK variable not set');
+      logger.error('PLAID_WEBHOOK variable not set');
     }
   }
 
