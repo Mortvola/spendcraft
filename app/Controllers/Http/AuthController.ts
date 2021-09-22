@@ -7,6 +7,7 @@ import Mail from '@ioc:Adonis/Addons/Mail';
 import User from 'App/Models/User';
 import Database from '@ioc:Adonis/Lucid/Database';
 import Application from 'App/Models/Application';
+import { sha256 } from 'js-sha256';
 
 export default class AuthController {
   // eslint-disable-next-line class-methods-use-this
@@ -70,16 +71,15 @@ export default class AuthController {
       trx.rollback();
     }
 
-    const token = AuthController.generateToken(user);
-
-    const verificationLink = `${Env.get('APP_URL') as string}/activate/${token}/${user.id}`;
-
     Mail.send((message) => {
       message
         .from(Env.get('MAIL_FROM_ADDRESS') as string, Env.get('MAIL_FROM_NAME') as string)
         .to(user.email)
         .subject('Welcome to Balancing Life!')
-        .htmlView('emails/welcome', { verificationLink, expires: Env.get('TOKEN_EXPIRATION') });
+        .htmlView('emails/welcome', {
+          url: user.getEmailVerificationLink(),
+          expires: Env.get('TOKEN_EXPIRATION'),
+        });
     });
 
     response.header('Content-type', 'application/json');
@@ -93,14 +93,28 @@ export default class AuthController {
 
     if (user) {
       const payload = jwt.verify(
-        params.token, AuthController.generateSecret(user),
+        params.token, user.generateSecret(),
       ) as Record<string, unknown>;
 
-      if (payload.id === parseInt(params.id, 10)) {
-        user.activated = true;
-        user.save();
+      if (payload.id === user.id) {
+        if (!user.activated) {
+          user.activated = true;
+          user.save();
 
-        return view.render('emailVerified');
+          return view.render('emailVerified');
+        }
+
+        if (user.pendingEmail) {
+          // todo: if the matches fail, send the user to a failure page.
+          if (payload.hash === sha256(user.pendingEmail)) {
+            user.email = user.pendingEmail;
+            user.pendingEmail = null;
+
+            await user.save();
+
+            return view.render('emailVerified');
+          }
+        }
       }
 
       Logger.error(`Invalid payload "${payload.id}" in token for user ${user.username}`);
@@ -166,15 +180,6 @@ export default class AuthController {
     auth.logout();
   }
 
-  static generateSecret(user: User) : string {
-    return `${user.password}-${user.createdAt.toMillis()}`;
-  }
-
-  static generateToken(user: User) : unknown {
-    const expiresIn = parseInt(Env.get('TOKEN_EXPIRATION') as string, 10) * 60;
-    return jwt.sign({ id: user.id }, AuthController.generateSecret(user), { expiresIn });
-  }
-
   // eslint-disable-next-line class-methods-use-this
   public async forgotPassword({ request, response }: HttpContextContract) : Promise<void> {
     const validationSchema = schema.create({
@@ -188,16 +193,15 @@ export default class AuthController {
     const user = await User.findBy('email', requestData.email);
 
     if (user) {
-      const token = AuthController.generateToken(user);
-
-      const url = `${Env.get('APP_URL') as string}/password/reset/${user.id}/${token}`;
-
       Mail.send((message) => {
         message
           .from(Env.get('MAIL_FROM_ADDRESS') as string, Env.get('MAIL_FROM_NAME') as string)
           .to(user.email)
           .subject('Reset Password Notification')
-          .htmlView('emails/reset-password', { url, expires: Env.get('TOKEN_EXPIRATION') });
+          .htmlView('emails/reset-password', {
+            url: user.getPasswordResetLink(),
+            expires: Env.get('TOKEN_EXPIRATION'),
+          });
       });
 
       response.header('content-type', 'application/json');
@@ -211,7 +215,7 @@ export default class AuthController {
 
     if (user) {
       const payload = jwt.verify(
-        params.token, AuthController.generateSecret(user),
+        params.token, user.generateSecret(),
       ) as Record<string, unknown>;
 
       if (payload.id === parseInt(params.id, 10)) {
@@ -258,7 +262,7 @@ export default class AuthController {
     let payload: Record<string, unknown> = { id: null };
 
     try {
-      payload = jwt.verify(requestData.token, AuthController.generateSecret(user)) as Record<string, unknown>;
+      payload = jwt.verify(requestData.token, user.generateSecret()) as Record<string, unknown>;
     }
     catch (error) {
       Logger.error(error);

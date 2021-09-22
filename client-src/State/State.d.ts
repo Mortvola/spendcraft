@@ -1,8 +1,13 @@
 import { DateTime } from 'luxon';
 import Reports from './Reports';
-import User from './User';
 import { CategoryType, Error, TrackingType } from '../../common/ResponseTypes'
 import LoanTransaction from './LoanTransaction';
+
+export interface UserInterface {
+  username: string | null;
+
+  email: string | null;
+}
 
 export type TreeNodeInterface = (CategoryInterface | GroupInterface);
 
@@ -166,7 +171,7 @@ export interface FundingPlanInterface {
   async update(name: string): Promise<void>;
 }
 
-export type Views = 'HOME' | 'PLANS' | 'ACCOUNTS' | 'REPORTS' | 'ACCOUNT' | 'LOGOUT';
+export type Views = 'HOME' | 'PLANS' | 'ACCOUNTS' | 'REPORTS' | 'USER_ACCOUNT' | 'LOGOUT';
 
 export interface UIStateInterface {
   view: Views;
@@ -345,7 +350,7 @@ export interface PlansInterface {
 }
 
 export interface StoreInterface {
-  user: User;
+  user: UserInterface;
 
   categoryTree: CategoryTreeInterface;
 

@@ -11,6 +11,7 @@ import PlaidLink from './PlaidLink';
 import MobxStore, { store as mobxStore } from './State/mobxStore';
 import { httpPost } from './State/Transports';
 import ServerError, { serverError } from './State/ServerError';
+import UserAccount from './UserAccount';
 
 const Logout = () => {
   (async () => {
@@ -64,6 +65,10 @@ const App = () => {
 
     case 'PLANS':
       page = <Plans />;
+      break;
+
+    case 'USER_ACCOUNT':
+      page = <UserAccount />
       break;
 
     case 'LOGOUT':

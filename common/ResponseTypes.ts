@@ -617,12 +617,17 @@ export const isBalancesResponse = (r: unknown): r is BalanceProps[] => (
 
 export interface UserProps {
   username: string;
+
+  email: string;
+
+  pendingEmail?: string;
 }
 
 export const isUserProps = (
   r: UserProps | unknown,
 ): r is UserProps => (
   (r as UserProps).username !== undefined
+  && (r as UserProps).email !== undefined
 );
 
 export type TrackingType = 'None' | 'Balances' | 'Transactions' | 'Uncategorized Transactions';

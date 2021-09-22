@@ -32,19 +32,24 @@ Route.get('/health', async ({ response }) => {
 
 Route.group(() => {
   Route.post('/register', 'AuthController.register');
-  Route.get('/activate/:token/:id', 'AuthController.verifyEmail');
+  Route.get('/verify-email/:token/:id', 'AuthController.verifyEmail');
   Route.post('/login', 'AuthController.login');
   Route.on('/email-verified').render('emailVerified');
   Route.post('/password/email', 'AuthController.forgotPassword');
-  Route.get('/password/reset/:id/:token', 'AuthController.resetPassword');
+  Route.get('/password/reset/:token/:id', 'AuthController.resetPassword');
   Route.post('/password/update', 'AuthController.updatePassword').as('updatePassword');
 }); // .middleware('guest');
 
 Route.group(() => {
     Route.post('/logout', 'AuthController.logout');
 
-    Route.get('/user', 'UsersController.get');
-    Route.get('/user/link-token', 'UsersController.getLinkToken');
+    Route.group(() => {
+      Route.get('', 'UsersController.get');
+      Route.patch('', 'UsersController.update');
+      Route.post('/pending-email/resend', 'UsersController.resendEmailVerification');
+      Route.delete('/pending-email', 'UsersController.deletePending')
+      Route.get('/link-token', 'UsersController.getLinkToken');
+    }).prefix('/user');
 
     Route.group(() => {
       Route.get('', 'CategoryController.get');

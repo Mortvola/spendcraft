@@ -2,15 +2,82 @@ import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import plaidClient from '@ioc:Plaid';
 import { InstitutionProps } from 'Common/ResponseTypes';
 import Env from '@ioc:Adonis/Core/Env'
+import { rules, schema } from '@ioc:Adonis/Core/Validator';
+import User from 'App/Models/User';
 
 export default class UsersController {
   // eslint-disable-next-line class-methods-use-this
-  async get({ auth }: HttpContextContract): Promise<Record<string, unknown>> {
+  public async get({ auth }: HttpContextContract): Promise<User> {
     if (!auth.user) {
       throw new Error('user is not defined');
     }
 
-    return { username: auth.user.username };
+    return auth.user;
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  public async update({
+    request,
+    auth: {
+      user,
+    },
+  }: HttpContextContract): Promise<User> {
+    if (!user) {
+      throw new Error('user is not defined');
+    }
+
+    const validationSchema = schema.create({
+      email: schema.string({ trim: true }, [
+        rules.email({ sanitize: true }),
+        rules.unique({ table: 'users', column: 'email' }),
+      ]),
+    });
+
+    const requestData = await request.validate({
+      schema: validationSchema,
+      messages: {
+        'email.email': 'The email address is not valid.',
+        'email.unique': 'This email address is already in use.',
+      },
+    });
+
+    user.pendingEmail = requestData.email;
+
+    await user.save();
+
+    user.sendEmailAddressVerification();
+
+    return user;
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  public async resendEmailVerification({
+    auth: {
+      user,
+    },
+  }: HttpContextContract): Promise<void> {
+    if (!user) {
+      throw new Error('user is not defined');
+    }
+
+    user.sendEmailAddressVerification();
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  public async deletePending({
+    auth: {
+      user,
+    },
+  }: HttpContextContract): Promise<User> {
+    if (!user) {
+      throw new Error('user is not defined');
+    }
+
+    user.pendingEmail = null;
+
+    await user.save();
+
+    return user;
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -23,9 +90,7 @@ export default class UsersController {
       throw new Error('user is not defined');
     }
 
-    const application = await user.related('application').query().firstOrFail();
-
-    return application.getConnectedAccounts();
+    return user.getConnectedAccounts();
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -46,42 +111,7 @@ export default class UsersController {
       language: 'en',
       webhook,
     });
+
     response.json({ linkToken: linkTokenResponse.link_token });
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public static async getProfile({ auth }: HttpContextContract): Promise<void> {
-    if (auth.user) {
-      // response.send(auth.user.serialize({
-      //   fields: [
-      //     'endOfHikeDayExtension',
-      //     'paceFactor',
-      //     'startTime',
-      //     'endTime',
-      //     'breakDuration',
-      //     'endDayExtension',
-      //     'endHikeDayExtension',
-      //   ],
-      // }));
-    }
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public static async putProfile({ auth }: HttpContextContract): Promise<void> {
-    if (auth.user) {
-      // const profile = request.post();
-
-      // auth.user.endHikeDayExtension = profile.endHikeDayExtension;
-      // auth.user.paceFactor = profile.paceFactor;
-      // auth.user.startTime = profile.startTime;
-      // auth.user.endTime = profile.endTime;
-      // auth.user.breakDuration = profile.breakDuration;
-      // auth.user.endDayExtension = profile.endDayExtension;
-      // auth.user.endHikeDayExtension = profile.endHikeDayExtension;
-
-      // auth.user.save();
-    }
   }
 }

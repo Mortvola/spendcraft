@@ -7,7 +7,9 @@ import Reports from './Reports';
 import UIState from './UIState';
 import User from './User';
 import Plans from './Plans';
-import { AccountsInterface, StoreInterface, UIStateInterface } from './State';
+import {
+  AccountsInterface, StoreInterface, UIStateInterface,
+} from './State';
 
 class Store implements StoreInterface {
   user: User;
