@@ -5,7 +5,7 @@ import {
   FormikErrors,
   FormikContextType,
 } from 'formik';
-import useModal, { ModalProps, UseModalType } from '@mortvola/usemodal';
+import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import CategorySplits from '../CategorySplits';
 import Amount from '../Amount';
 import Transaction from '../State/Transaction';
@@ -31,13 +31,10 @@ function validateSplits(splits: Array<TransactionCategoryInterface>) {
 type PropsType = {
   transaction?: Transaction | null,
   account?: AccountInterface | null,
-  onHide?: () => void,
 }
 
 const TransactionDialog = ({
-  show,
   setShow,
-  onHide,
   transaction = null,
   account = null,
 }: PropsType & ModalProps): ReactElement => {
@@ -182,10 +179,7 @@ const TransactionDialog = ({
         comment: transaction && transaction.comment ? transaction.comment : '',
         splits,
       }}
-      show={show}
       setShow={setShow}
-      onHide={onHide}
-      size="lg"
       title={transaction ? 'Edit Transaction' : 'Add Transaction'}
       formId="transactionDialogForm"
       validate={handleValidate}
@@ -293,6 +287,6 @@ const TransactionDialog = ({
   );
 };
 
-export const useTransactionDialog = (): UseModalType<PropsType> => useModal<PropsType>(TransactionDialog);
+export const useTransactionDialog = makeUseModal<PropsType>(TransactionDialog, 'lg');
 
 export default TransactionDialog;

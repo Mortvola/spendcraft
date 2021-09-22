@@ -4,7 +4,7 @@ import IconButton from '../IconButton';
 import { AccountInterface, InstitutionInterface } from '../State/State';
 import { getSubTypeName, getTypeName } from '../State/AccountTypes';
 import Amount from '../Amount';
-import { useRelinkDialog } from '../RelinkDialog';
+import { useRelinkDialog } from './RelinkDialog';
 
 type PropsType = {
   selected: boolean,

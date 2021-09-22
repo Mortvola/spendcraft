@@ -6,7 +6,7 @@ import {
   FormikErrors,
   FormikContextType,
 } from 'formik';
-import useModal, { UseModalType, ModalProps } from '@mortvola/usemodal';
+import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import MobxStore from '../State/mobxStore';
 import { Error } from '../../common/ResponseTypes';
 import FormModal from '../Modal/FormModal';
@@ -19,8 +19,6 @@ interface Props {
 }
 
 const GroupDialog = ({
-  onHide,
-  show,
   setShow,
   group,
 }: Props & ModalProps): ReactElement => {
@@ -87,9 +85,7 @@ const GroupDialog = ({
 
   return (
     <FormModal<ValueType>
-      show={show}
       setShow={setShow}
-      onHide={onHide}
       initialValues={{
         name: group && group.name ? group.name : '',
       }}
@@ -112,6 +108,6 @@ const GroupDialog = ({
   );
 };
 
-export const useGroupDialog = (): UseModalType<Props> => useModal<Props>(GroupDialog);
+export const useGroupDialog = makeUseModal<Props>(GroupDialog);
 
 export default GroupDialog;

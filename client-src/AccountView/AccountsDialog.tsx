@@ -5,7 +5,7 @@ import { toJS } from 'mobx';
 import {
   Field, ErrorMessage, FormikErrors,
 } from 'formik';
-import useModal, { ModalProps, UseModalType } from '@mortvola/usemodal';
+import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import AccountItem from './AccountItem';
 import FormModal from '../Modal/FormModal';
 import { TrackingType, UnlinkedAccountProps } from '../../common/ResponseTypes';
@@ -18,9 +18,7 @@ type PropsType = {
 
 const AccountsDialog = ({
   institution,
-  show,
   setShow,
-  onHide,
 }: PropsType & ModalProps): ReactElement => {
   type ValuesType = {
     selections: UnlinkedAccountProps[] | null,
@@ -96,9 +94,7 @@ const AccountsDialog = ({
         selections: toJS(institution.unlinkedAccounts),
         startDate: '',
       }}
-      show={show}
       setShow={setShow}
-      onHide={onHide}
       validate={handleValidate}
       onSubmit={handleSubmit}
       title="Accounts"
@@ -114,6 +110,6 @@ const AccountsDialog = ({
 
 const observedAccountsDialog = observer(AccountsDialog);
 
-export const useAccountsDialog = (): UseModalType<PropsType> => useModal<PropsType>(AccountsDialog);
+export const useAccountsDialog = makeUseModal<PropsType>(AccountsDialog);
 
 export default observedAccountsDialog;

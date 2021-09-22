@@ -1,8 +1,8 @@
-import React, { ReactElement, ReactNode, useState } from 'react';
+import React, { ReactElement, useState } from 'react';
 import { Button, Modal } from 'react-bootstrap';
 import { InstitutionWithInstitutionData, InstitutionWithStatus } from 'plaid';
 import { DateTime } from 'luxon';
-import useModal, { ModalProps, UseModalType } from '@mortvola/usemodal';
+import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import { httpGet } from '../State/Transports';
 import { InstitutionInterface } from '../State/State';
 import styles from './InstitutionInfoDialog.module.css';
@@ -13,9 +13,7 @@ type PropsType = {
 
 const InstitutionInfoDialog = ({
   institution,
-  show,
   setShow,
-  onHide,
 }: PropsType & ModalProps): ReactElement => {
   const [infoInitialized, setInfoInitialized] = useState(false);
   const [info, setInfo] = useState<InstitutionWithStatus & InstitutionWithInstitutionData | null>(null);
@@ -112,7 +110,7 @@ const InstitutionInfoDialog = ({
   );
 
   return (
-    <Modal show={show} onHide={onHide} size="lg">
+    <>
       <Header />
       <Modal.Body>
         {
@@ -120,10 +118,10 @@ const InstitutionInfoDialog = ({
         }
       </Modal.Body>
       <Footer />
-    </Modal>
+    </>
   );
 };
 
-export const useInstitutionInfoDialog = (): UseModalType<PropsType> => useModal(InstitutionInfoDialog);
+export const useInstitutionInfoDialog = makeUseModal<PropsType>(InstitutionInfoDialog, 'lg');
 
 export default InstitutionInfoDialog;

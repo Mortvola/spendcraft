@@ -6,7 +6,7 @@ import {
   Field, FieldProps,
   FormikErrors, FormikState, FormikContextType,
 } from 'formik';
-import useModal, { ModalProps, UseModalType } from '@mortvola/usemodal';
+import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import Amount from '../Amount';
 import MobxStore from '../State/mobxStore';
 import Transaction from '../State/Transaction';
@@ -21,13 +21,10 @@ import { getBody, httpGet } from '../State/Transports';
 
 interface Props {
   transaction?: Transaction;
-  onHide?: () => void,
 }
 
 const FundingDialog = ({
   transaction,
-  onHide,
-  show,
   setShow,
 }: Props & ModalProps): ReactElement => {
   const { categoryTree, register } = useContext(MobxStore);
@@ -242,9 +239,7 @@ const FundingDialog = ({
 
   return (
     <FormModal<ValueType>
-      show={show}
       setShow={setShow}
-      onHide={onHide}
       initialValues={{
         date: transaction ? transaction.date.toISODate() : '',
         funding,
@@ -253,7 +248,6 @@ const FundingDialog = ({
       onSubmit={handleSubmit}
       title="Fund Categories"
       formId="fundingDialogForm"
-      size="lg"
       onDelete={transaction ? handleDelete : null}
     >
       <div className="fund-container">
@@ -335,6 +329,6 @@ const FundingDialog = ({
   );
 };
 
-export const useFundingDialog = (): UseModalType<Props> => useModal<Props>(FundingDialog);
+export const useFundingDialog = makeUseModal<Props>(FundingDialog, 'lg');
 
 export default FundingDialog;

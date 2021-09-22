@@ -8,7 +8,7 @@ type PropsType = {
 const Header = ({
   title,
 }: PropsType): ReactElement => (
-  <Modal.Header closeButton>
+  <Modal.Header>
     <h4 id="modalTitle" className="modal-title">{title}</h4>
   </Modal.Header>
 );

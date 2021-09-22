@@ -2,7 +2,7 @@ import {
   FieldProps, FormikErrors, FormikHelpers, useFormikContext,
 } from 'formik';
 import React, { ReactElement, useContext } from 'react';
-import useModal, { ModalProps, UseModalType } from '@mortvola/usemodal';
+import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import { Error, TrackingType } from '../../common/ResponseTypes';
 import AmountInput from '../AmountInput';
 import FormField from '../Modal/FormField';
@@ -15,7 +15,6 @@ import { getSubtypes, getTypes } from '../State/AccountTypes';
 type PropsType = {
   institution?: InstitutionInterface,
   account?: AccountInterface | null,
-  onHide?: () => void,
 }
 
 type ValuesType = {
@@ -48,9 +47,7 @@ const APRField = () => {
 const OfflineAccountDialog = ({
   institution,
   account = null,
-  show,
   setShow,
-  onHide,
 }: PropsType & ModalProps): ReactElement => {
   const { accounts, uiState } = useContext(MobxStore);
 
@@ -169,9 +166,7 @@ const OfflineAccountDialog = ({
         tracking: 'Transactions',
         rate: '0',
       }}
-      show={show}
       setShow={setShow}
-      onHide={onHide}
       validate={handleValidate}
       onSubmit={handleSubmit}
       title="Add Offline Account"
@@ -214,6 +209,6 @@ const OfflineAccountDialog = ({
   );
 }
 
-export const useOfflineAccountDialog = (): UseModalType<PropsType> => useModal<PropsType>(OfflineAccountDialog);
+export const useOfflineAccountDialog = makeUseModal<PropsType>(OfflineAccountDialog);
 
 export default OfflineAccountDialog;

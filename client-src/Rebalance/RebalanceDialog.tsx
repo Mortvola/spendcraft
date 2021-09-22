@@ -9,7 +9,7 @@ import {
 } from 'formik';
 import { toJS } from 'mobx';
 import { DateTime } from 'luxon';
-import useModal, { ModalProps, UseModalType } from '@mortvola/usemodal';
+import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import CategoryRebalance from './CategoryRebalance';
 import Amount from '../Amount';
 import Transaction from '../State/Transaction';
@@ -22,14 +22,11 @@ import FormError from '../Modal/FormError';
 
 interface Props {
   transaction?: Transaction,
-  onHide?: () => void,
 }
 
 const RebalanceDialog = ({
   transaction,
-  show,
   setShow,
-  onHide,
 }: Props & ModalProps): ReactElement => {
   const { register, categoryTree: { nodes } } = useContext(MobxStore);
   const [balances, setBalances] = useState<CategoryBalanceInterface[]>([])
@@ -134,10 +131,7 @@ const RebalanceDialog = ({
   return (
     <>
       <FormModal<ValueType>
-        show={show}
         setShow={setShow}
-        onHide={onHide}
-        size="lg"
         initialValues={{
           categories: transaction ? toJS(transaction.categories) : [],
           date,
@@ -208,6 +202,6 @@ const RebalanceDialog = ({
   );
 };
 
-export const useRebalanceDialog = (): UseModalType<Props> => useModal<Props>(RebalanceDialog);
+export const useRebalanceDialog = makeUseModal<Props>(RebalanceDialog, 'lg');
 
 export default RebalanceDialog;

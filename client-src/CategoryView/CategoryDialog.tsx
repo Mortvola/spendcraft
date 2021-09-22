@@ -7,7 +7,7 @@ import {
   FormikErrors,
   FieldProps,
 } from 'formik';
-import useModal, { UseModalType, ModalProps } from '@mortvola/usemodal';
+import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import { isGroup } from '../State/Group';
 import FormModal from '../Modal/FormModal';
 import FormError from '../Modal/FormError';
@@ -20,8 +20,6 @@ type Props = {
 }
 
 const CategoryDialog = ({
-  onHide,
-  show,
   setShow,
   category = null,
   group,
@@ -114,9 +112,7 @@ const CategoryDialog = ({
 
   return (
     <FormModal<ValueType>
-      show={show}
       setShow={setShow}
-      onHide={onHide}
       initialValues={{
         name: category && category.name ? category.name : '',
         groupId: group ? group.id.toString() : '',
@@ -172,6 +168,6 @@ const CategoryDialog = ({
   );
 };
 
-export const useCategoryDialog = (): UseModalType<Props> => useModal<Props>(CategoryDialog);
+export const useCategoryDialog = makeUseModal<Props>(CategoryDialog);
 
 export default CategoryDialog;

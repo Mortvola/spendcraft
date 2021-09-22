@@ -1,13 +1,13 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 import React, { ReactElement, useContext } from 'react';
 // import PropTypes from 'prop-types';
-import { Button, Modal, ModalProps } from 'react-bootstrap';
+import { Button, Modal } from 'react-bootstrap';
 import {
   Formik, Form, Field, ErrorMessage,
   FormikErrors, FormikHelpers, useFormikContext,
   FormikContextType,
 } from 'formik';
-import useModal from '@mortvola/usemodal';
+import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import MobxStore from '../State/mobxStore';
 import { FundingPlanInterface } from '../State/State';
 
@@ -17,8 +17,7 @@ interface Props {
 
 const PlanDialog = ({
   plan,
-  show,
-  onHide,
+  setShow,
 }: Props & ModalProps): ReactElement => {
   const { plans } = useContext(MobxStore);
 
@@ -42,8 +41,8 @@ const PlanDialog = ({
       // TODO: Display all the errors?
       setErrors({ name: errors[0].message });
     }
-    else if (onHide) {
-      onHide();
+    else if (setShow) {
+      setShow(false);
     }
   };
 
@@ -72,8 +71,8 @@ const PlanDialog = ({
       setTouched({ name: true }, false);
       setErrors({ name: errors[0].message });
     }
-    else if (onHide) {
-      onHide();
+    else if (setShow) {
+      setShow(false);
     }
   };
 
@@ -97,48 +96,39 @@ const PlanDialog = ({
     <Modal.Footer>
       <DeleteButton />
       <div />
-      <Button variant="secondary" onClick={onHide}>Cancel</Button>
+      <Button variant="secondary" onClick={() => setShow(false)}>Cancel</Button>
       <Button variant="primary" type="submit">Save</Button>
     </Modal.Footer>
   );
 
   return (
-    <Modal show={show} onHide={onHide}>
-      <Formik<ValueType>
-        initialValues={{
-          name: plan && plan.name ? plan.name : '',
-        }}
-        validate={handleValidate}
-        onSubmit={handleSubmit}
-      >
-        <Form>
-          <Header />
-          <Modal.Body>
-            <label>
-              Plan Name:
-              <Field
-                type="text"
-                className="form-control"
-                name="name"
-              />
-            </label>
-            <br />
-            <ErrorMessage name="name" />
-          </Modal.Body>
-          <Footer />
-        </Form>
-      </Formik>
-    </Modal>
+    <Formik<ValueType>
+      initialValues={{
+        name: plan && plan.name ? plan.name : '',
+      }}
+      validate={handleValidate}
+      onSubmit={handleSubmit}
+    >
+      <Form>
+        <Header />
+        <Modal.Body>
+          <label>
+            Plan Name:
+            <Field
+              type="text"
+              className="form-control"
+              name="name"
+            />
+          </label>
+          <br />
+          <ErrorMessage name="name" />
+        </Modal.Body>
+        <Footer />
+      </Form>
+    </Formik>
   );
 };
 
-PlanDialog.defaultProps = {
-  plan: null,
-};
-
-export const usePlanDialog = (): [
-  (props: Props) => (ReactElement | null),
-  () => void,
-] => useModal<Props>(PlanDialog);
+export const usePlanDialog = makeUseModal<Props>(PlanDialog);
 
 export default PlanDialog;
