@@ -1,4 +1,4 @@
-import { getBody, httpPost } from '../State/Transports';
+import { httpPost } from '../State/Transports';
 
 type ErrorsType = Record<string, string[]>;
 
@@ -21,7 +21,7 @@ const submitForm = async (
 
   if (response.ok) {
     if (response.headers.get('Content-Type') === 'application/json') {
-      const body = await getBody(response);
+      const body = await response.body();
       if (typeof body !== 'string') {
         throw new Error('response body is not a string');
       }

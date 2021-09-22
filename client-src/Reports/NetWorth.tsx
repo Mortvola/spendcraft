@@ -1,6 +1,6 @@
 import React, { ReactElement, useEffect, useState } from 'react';
 import Chart from 'react-google-charts';
-import { getBody, httpGet } from '../State/Transports';
+import { httpGet } from '../State/Transports';
 
 export const isNetworthReport = (r: unknown): r is (number | string)[][] => (
   true
@@ -14,7 +14,7 @@ const Networth = (): ReactElement | null => {
       const response = await httpGet('/api/reports/networth');
 
       if (response.ok) {
-        const body = await getBody(response);
+        const body = await response.body();
 
         if (isNetworthReport(body)) {
           // Append the networth data to the end of each row of the table.

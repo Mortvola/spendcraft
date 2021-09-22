@@ -8,7 +8,7 @@ import Amount from '../Amount';
 import FormCheckbox from '../Modal/FormCheckbox';
 import FormField from '../Modal/FormField';
 import MobxStore from '../State/mobxStore';
-import { getBody, httpGet } from '../State/Transports';
+import { httpGet } from '../State/Transports';
 import useSortableTable from './SortableTable';
 import { isGroup } from '../State/Group';
 import ReportControls from './ReportControls';
@@ -43,7 +43,7 @@ const Category = (): ReactElement | null => {
     const response = await httpGet(`/api/reports/category?${qp}`);
 
     if (response.ok) {
-      const body = await getBody(response);
+      const body = await response.body();
 
       const isCategoryReport = (r: unknown): r is CategoryReport[] => (
         Array.isArray(r)

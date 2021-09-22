@@ -1,7 +1,7 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import { BalanceProps, isBalancesResponse } from '../../common/ResponseTypes';
 import { AccountInterface, BalancesInterface, StoreInterface } from './State';
-import { getBody, httpGet } from './Transports';
+import { httpGet } from './Transports';
 
 class Balances implements BalancesInterface {
   account: AccountInterface| null = null;
@@ -24,7 +24,7 @@ class Balances implements BalancesInterface {
         throw new Error('invalid response');
       }
 
-      const body = await getBody(response);
+      const body = await response.body();
 
       if (isBalancesResponse(body)) {
         runInAction(() => {

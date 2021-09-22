@@ -10,7 +10,7 @@ import {
 import Transaction from './Transaction';
 import TransactionContainer from './TransactionContainer';
 import {
-  getBody, httpPatch, httpPost,
+  httpPatch, httpPost,
 } from './Transports';
 
 class Account extends TransactionContainer implements AccountInterface {
@@ -72,7 +72,7 @@ class Account extends TransactionContainer implements AccountInterface {
     const response = await httpPost(`/api/institution/${institutionId}/accounts/${this.id}/transactions/sync`);
 
     if (response.ok) {
-      const body = await getBody(response);
+      const body = await response.body();
 
       runInAction(() => {
         if (isAccountSyncResponse(body)) {
@@ -132,7 +132,7 @@ class Account extends TransactionContainer implements AccountInterface {
     const response = await httpPost(`/api/account/${this.id}/transactions`, values);
 
     if (response.ok) {
-      const body = await getBody(response);
+      const body = await response.body();
 
       if (isAddTransactionResponse(body)) {
         runInAction(() => {

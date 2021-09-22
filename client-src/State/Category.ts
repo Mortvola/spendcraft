@@ -9,7 +9,7 @@ import LoanTransaction from './LoanTransaction';
 import { CategoryInterface, GroupInterface, StoreInterface } from './State';
 import TransactionContainer from './TransactionContainer';
 import {
-  getBody, httpDelete, httpPatch,
+  httpDelete, httpPatch,
 } from './Transports';
 
 class Category extends TransactionContainer implements CategoryInterface {
@@ -66,7 +66,7 @@ class Category extends TransactionContainer implements CategoryInterface {
   async update(name: string, group: GroupInterface): Promise<null | Error[]> {
     const response = await httpPatch(`/api/groups/${group.id}/categories/${this.id}`, { name });
 
-    const body = await getBody(response);
+    const body = await response.body();
 
     if (!response.ok) {
       if (isErrorResponse(body)) {
@@ -109,7 +109,7 @@ class Category extends TransactionContainer implements CategoryInterface {
     const response = await httpDelete(`/api/groups/${this.groupId}/categories/${this.id}`);
 
     if (!response.ok) {
-      const body = await getBody(response);
+      const body = await response.body();
 
       if (isErrorResponse(body)) {
         return body.errors;

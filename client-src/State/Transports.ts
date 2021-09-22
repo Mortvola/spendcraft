@@ -1,5 +1,68 @@
 import { isRouteNotFound, isServerErrorResponse, serverError } from './ServerError';
 
+export class HttpResponse {
+  fetchedBody: unknown | null = null;
+
+  response: Response;
+
+  constructor(response: Response) {
+    this.response = response;
+  }
+
+  get ok(): boolean {
+    return this.response.ok;
+  }
+
+  get headers(): Headers {
+    return this.response.headers;
+  }
+
+  get status(): number {
+    return this.response.status;
+  }
+
+  async json (): Promise<any> {
+    return this.body();
+  }
+
+  async body (): Promise<unknown> {
+    if (this.fetchedBody !== null) {
+      return this.fetchedBody;
+    }
+
+    try {
+      const contentType = this.response.headers.get('Content-Type');
+      if (contentType && /^application\/json/.test(contentType)) {
+        this.fetchedBody = this.response.json();
+      }
+    }
+    catch (error) {
+      console.log(error);
+    }
+
+    return this.fetchedBody;
+  }
+
+  async check (): Promise<void> {
+    if (!this.response.ok) {
+      const responseBody = await this.body();
+
+      if (this.response.status >= 500) {
+        if (isServerErrorResponse(responseBody)) {
+          serverError.setError(responseBody);
+          throw new Error('server error');
+        }
+      }
+      else if (this.response.status === 404) {
+        if (isRouteNotFound(responseBody)) {
+          serverError.setError(responseBody);
+          throw new Error('server error');
+        }
+      }
+    }
+  }
+}
+
 const defaultHeaders = () => {
   const headers = new Headers({
     Accept: 'application/json',
@@ -16,48 +79,17 @@ const jsonHeaders = () => {
   return headers;
 };
 
-export const getBody = async (response: Response): Promise<unknown> => {
-  try {
-    const contentType = response.headers.get('Content-Type');
-    if (contentType && /^application\/json/.test(contentType)) {
-      return response.json();
-    }
-  }
-  catch (error) {
-    console.log(error);
-  }
+const httpFetch = async (url: string, options?: RequestInit): Promise<HttpResponse> => {
+  const res = await fetch(url, options);
 
-  return null;
-};
+  const response = new HttpResponse(res);
 
-const checkResponse = async (response: Response) => {
-  if (!response.ok) {
-    const responseBody = await getBody(response);
-
-    if (response.status >= 500) {
-      if (isServerErrorResponse(responseBody)) {
-        serverError.setError(responseBody);
-        throw new Error('server error');
-      }
-    }
-    else if (response.status === 404) {
-      if (isRouteNotFound(responseBody)) {
-        serverError.setError(responseBody);
-        throw new Error('server error');
-      }
-    }
-  }
-}
-
-const httpFetch = async (url: string, options?: RequestInit): Promise<Response> => {
-  const response = await fetch(url, options);
-
-  await checkResponse(response);
+  await response.check();
 
   return response;
 }
 
-export const httpPatch = async (url: string, body: unknown): Promise<Response> => (
+export const httpPatch = async (url: string, body: unknown): Promise<HttpResponse> => (
   httpFetch(url, {
     method: 'PATCH',
     headers: jsonHeaders(),
@@ -65,7 +97,7 @@ export const httpPatch = async (url: string, body: unknown): Promise<Response> =
   })
 )
 
-export const httpPut = async (url: string, body: unknown): Promise<Response> => (
+export const httpPut = async (url: string, body: unknown): Promise<HttpResponse> => (
   httpFetch(url, {
     method: 'PUT',
     headers: jsonHeaders(),
@@ -73,21 +105,21 @@ export const httpPut = async (url: string, body: unknown): Promise<Response> => 
   })
 )
 
-export const httpGet = async (url: string): Promise<Response> => (
+export const httpGet = async (url: string): Promise<HttpResponse> => (
   httpFetch(url, {
     method: 'GET',
     headers: defaultHeaders(),
   })
 )
 
-export const httpDelete = async (url: string): Promise<Response> => (
+export const httpDelete = async (url: string): Promise<HttpResponse> => (
   httpFetch(url, {
     method: 'DELETE',
     headers: defaultHeaders(),
   })
 )
 
-export const httpPost = async (url: string, body?: unknown): Promise<Response> => {
+export const httpPost = async (url: string, body?: unknown): Promise<HttpResponse> => {
   if (body === undefined) {
     return httpFetch(url, {
       method: 'POST',
@@ -102,7 +134,7 @@ export const httpPost = async (url: string, body?: unknown): Promise<Response> =
   });
 }
 
-export const httpPostForm = async (url: string, form: FormData): Promise<Response> => (
+export const httpPostForm = async (url: string, form: FormData): Promise<HttpResponse> => (
   httpFetch(url, {
     method: 'POST',
     headers: jsonHeaders(),

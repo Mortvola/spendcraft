@@ -2,7 +2,7 @@ import { makeAutoObservable, runInAction } from 'mobx';
 import FundingPlan from './FundingPlan';
 import FundingPlanDetails from './FundingPlanDetails';
 import { FundingPlanInterface, PlansInterface, StoreInterface } from './State';
-import { getBody, httpGet, httpPost } from './Transports';
+import { httpGet, httpPost } from './Transports';
 import { isFundingPlansResponse, isFundingPlanProps, isFundingPlanDetailsProps } from '../../common/ResponseTypes';
 
 class Plans implements PlansInterface {
@@ -22,7 +22,7 @@ class Plans implements PlansInterface {
     const response = await httpGet('/api/funding-plans');
 
     if (response.ok) {
-      const body = await getBody(response);
+      const body = await response.body();
 
       runInAction(() => {
         if (isFundingPlansResponse(body)) {
@@ -42,7 +42,7 @@ class Plans implements PlansInterface {
       const response = await httpGet(`/api/funding-plans/${fundingPlan.id}/details`);
 
       if (response.ok) {
-        const body = await getBody(response);
+        const body = await response.body();
 
         if (isFundingPlanDetailsProps(body)) {
           runInAction(() => {
@@ -57,7 +57,7 @@ class Plans implements PlansInterface {
     const response = await httpPost('/api/funding-plans', { name });
 
     if (response.ok) {
-      const body = await getBody(response);
+      const body = await response.body();
 
       runInAction(() => {
         if (isFundingPlanProps(body)) {

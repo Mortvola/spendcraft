@@ -9,7 +9,7 @@ import {
   AccountInterface, AccountsInterface, InstitutionInterface, StoreInterface,
 } from './State';
 import {
-  getBody, httpDelete, httpGet, httpPost,
+  httpDelete, httpGet, httpPost,
 } from './Transports';
 
 class Accounts implements AccountsInterface {
@@ -34,7 +34,7 @@ class Accounts implements AccountsInterface {
       throw new Error('invalid response');
     }
 
-    const body = await getBody(response);
+    const body = await response.body();
 
     if (body) {
       if (isInstitutionsResponse(body)) {
@@ -65,7 +65,7 @@ class Accounts implements AccountsInterface {
     const response = await httpGet('/api/user/link-token');
 
     if (response.ok) {
-      const body = await getBody(response);
+      const body = await response.body();
 
       runInAction(() => {
         if (isLinkTokenResponse(body)) {
@@ -87,7 +87,7 @@ class Accounts implements AccountsInterface {
     name: string,
     plaidInstitutionId: string,
   ): Promise<Institution | null> {
-    const response2 = await httpPost('/api/institution', {
+    const response = await httpPost('/api/institution', {
       publicToken,
       institution: {
         name,
@@ -95,8 +95,8 @@ class Accounts implements AccountsInterface {
       },
     });
 
-    const body2 = await getBody(response2);
-    if (response2.ok && isInstitutionProps(body2)) {
+    const body2 = await response.body();
+    if (response.ok && isInstitutionProps(body2)) {
       let institution = new Institution(
         this.store, {
           id: body2.id,
@@ -152,7 +152,7 @@ class Accounts implements AccountsInterface {
     });
 
     if (response.ok) {
-      const body = await getBody(response);
+      const body = await response.body();
 
       if (isAddInstitutionResponse(body)) {
         runInAction(() => {
@@ -192,7 +192,7 @@ class Accounts implements AccountsInterface {
     const response = await httpDelete(`/api/institution/${institution.id}`);
 
     if (response.ok) {
-      const body = await getBody(response);
+      const body = await response.body();
 
       if (isDeleteInstitutionResponse(body)) {
         runInAction(() => {

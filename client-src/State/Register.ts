@@ -8,7 +8,7 @@ import {
 import {
   RegisterInterface, StoreInterface,
 } from './State';
-import { getBody, httpPost } from './Transports';
+import { httpPost } from './Transports';
 
 class Register implements RegisterInterface {
   store: StoreInterface;
@@ -28,7 +28,7 @@ class Register implements RegisterInterface {
   ): Promise<null> {
     const response = await httpPost('/api/category-transfer', { ...values, type });
 
-    const body = await getBody(response);
+    const body = await response.body();
 
     if (isInsertCategoryTransferResponse(body)) {
       runInAction(() => {

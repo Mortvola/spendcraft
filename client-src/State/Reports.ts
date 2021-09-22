@@ -1,5 +1,5 @@
 import { makeAutoObservable, runInAction } from 'mobx';
-import { getBody, httpGet } from './Transports';
+import { httpGet } from './Transports';
 
 export const isNetworthReport = (r: unknown): r is number[][] => (
   true
@@ -37,7 +37,7 @@ class Reports {
         const response = await httpGet('/api/reports/networth');
 
         if (response.ok) {
-          const body = await getBody(response);
+          const body = await response.body();
 
           runInAction(() => {
             this.reportType = reportType;
@@ -54,7 +54,7 @@ class Reports {
         const response = await httpGet('/api/reports/payee');
 
         if (response.ok) {
-          const body = await getBody(response);
+          const body = await response.body();
 
           runInAction(() => {
             this.reportType = reportType;

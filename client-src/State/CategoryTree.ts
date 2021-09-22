@@ -11,7 +11,7 @@ import {
 } from './State';
 import SystemIds from './SystemIds';
 import {
-  getBody, httpGet, httpPost,
+  httpGet, httpPost,
 } from './Transports';
 
 export type TreeNode = (Category | Group);
@@ -126,7 +126,7 @@ class CategoryTree implements CategoryTreeInterface {
   async load(): Promise<void> {
     const response = await httpGet('/api/groups');
 
-    const body = await getBody(response);
+    const body = await response.body();
 
     if (isGroupsResponse(body)) {
       runInAction(() => {
@@ -177,7 +177,7 @@ class CategoryTree implements CategoryTreeInterface {
   async addGroup(name: string): Promise<null | Error[]> {
     const response = await httpPost('/api/groups', { name });
 
-    const body = await getBody(response);
+    const body = await response.body();
 
     if (!response.ok) {
       if (isErrorResponse(body)) {

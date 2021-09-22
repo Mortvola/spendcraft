@@ -17,7 +17,7 @@ import { CategoryBalanceInterface, TransactionCategoryInterface } from '../State
 import MobxStore from '../State/mobxStore';
 import FormModal from '../Modal/FormModal';
 import { isCategoryTreeBalanceResponse, TransactionType } from '../../common/ResponseTypes';
-import { getBody, httpGet } from '../State/Transports';
+import { httpGet } from '../State/Transports';
 import FormError from '../Modal/FormError';
 
 interface Props {
@@ -52,7 +52,7 @@ const RebalanceDialog = ({
         const response = await httpGet(url.toString());
 
         if (response.ok) {
-          const body = await getBody(response);
+          const body = await response.body();
 
           if (isCategoryTreeBalanceResponse(body)) {
             setBalances(body);

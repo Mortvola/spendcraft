@@ -1,6 +1,6 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import { isUserProps } from '../../common/ResponseTypes';
-import { getBody, httpGet } from './Transports';
+import { httpGet } from './Transports';
 
 class User {
   username: string | null = null;
@@ -17,7 +17,7 @@ class User {
     const response = await httpGet('/api/user');
 
     if (response.ok) {
-      const body = await getBody(response);
+      const body = await response.body();
 
       runInAction(() => {
         if (isUserProps(body)) {

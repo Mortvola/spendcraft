@@ -13,7 +13,7 @@ import {
   NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface,
   TransactionInterface,
 } from './State';
-import { getBody, httpDelete, httpPatch } from './Transports';
+import { httpDelete, httpPatch } from './Transports';
 
 class Transaction implements TransactionInterface {
   id: number | null;
@@ -100,7 +100,7 @@ class Transaction implements TransactionInterface {
     const response = await httpPatch(`/api/transaction/${this.id}`, values);
 
     if (response.ok) {
-      const body = await getBody(response);
+      const body = await response.body();
 
       if (isUpdateTransactionResponse(body)) {
         runInAction(() => {
@@ -171,7 +171,7 @@ class Transaction implements TransactionInterface {
     const response = await httpPatch(`/api/category-transfer/${this.id}`, { ...values, type: 3 });
 
     if (response.ok) {
-      const body = await getBody(response);
+      const body = await response.body();
 
       if (isUpdateCategoryTransferResponse(body)) {
         runInAction(() => {
@@ -204,7 +204,7 @@ class Transaction implements TransactionInterface {
     const response = await httpDelete(`/api/transaction/${this.id}`);
 
     if (response.ok) {
-      const body = await getBody(response);
+      const body = await response.body();
 
       if (isDeleteTransactionResponse(body)) {
         runInAction(() => {

@@ -17,7 +17,7 @@ import {
 import FormModal from '../Modal/FormModal';
 import FormError from '../Modal/FormError';
 import Funding, { FundingType } from './Funding';
-import { getBody, httpGet } from '../State/Transports';
+import { httpGet } from '../State/Transports';
 
 interface Props {
   transaction?: Transaction;
@@ -103,7 +103,7 @@ const FundingDialog = ({
     (async () => {
       const response = await httpGet('/api/funding-plans');
 
-      const body = await getBody(response);
+      const body = await response.body();
 
       if (isFundingPlansResponse(body)) {
         setPlans(body);
@@ -120,7 +120,7 @@ const FundingDialog = ({
     setSelectedPlan(parseInt(value, 10));
     const response = await httpGet(`/api/funding-plans/${value}`);
 
-    const body = await getBody(response);
+    const body = await response.body();
 
     if (isFundingPlanResponse(body)) {
       const newPlan = { planId: body.id, categories: getPlanCategories(body.categories) };

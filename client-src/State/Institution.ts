@@ -6,7 +6,7 @@ import {
 } from '../../common/ResponseTypes';
 import { AccountInterface, InstitutionInterface, StoreInterface } from './State';
 import {
-  getBody, httpDelete, httpGet, httpPost,
+  httpDelete, httpGet, httpPost,
 } from './Transports';
 import Plaid from './Plaid';
 
@@ -45,7 +45,7 @@ class Institution implements InstitutionInterface {
       throw new Error('invalid response');
     }
 
-    const body = await getBody(response);
+    const body = await response.body();
 
     runInAction(() => {
       if (isLinkTokenResponse(body)) {
@@ -77,7 +77,7 @@ class Institution implements InstitutionInterface {
     });
 
     if (response.ok) {
-      const body = await getBody(response);
+      const body = await response.body();
 
       runInAction(() => {
         if (isAddAccountsResponse(body)) {
@@ -114,7 +114,7 @@ class Institution implements InstitutionInterface {
     });
 
     if (response.ok) {
-      const body = await getBody(response);
+      const body = await response.body();
 
       if (isAddAccountsResponse(body)) {
         runInAction(() => {
@@ -133,7 +133,7 @@ class Institution implements InstitutionInterface {
     const response = await httpGet(`/api/institution/${this.id}/accounts`);
 
     if (response.ok) {
-      const body = await getBody(response);
+      const body = await response.body();
 
       if (isUnlinkedAccounts(body)) {
         runInAction(() => {
@@ -156,7 +156,7 @@ class Institution implements InstitutionInterface {
     const response = await httpDelete(`/api/institution/${this.id}/accounts/${account.id}`);
 
     if (response.ok) {
-      const body = await getBody(response);
+      const body = await response.body();
 
       if (isDeleteAccountResponse(body)) {
         runInAction(() => {

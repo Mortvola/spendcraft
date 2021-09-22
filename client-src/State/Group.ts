@@ -7,7 +7,7 @@ import {
   isAddCategoryResponse,
 } from '../../common/ResponseTypes';
 import {
-  getBody, httpDelete, httpPatch, httpPost,
+  httpDelete, httpPatch, httpPost,
 } from './Transports';
 import { CategoryInterface, GroupInterface, StoreInterface } from './State';
 
@@ -85,7 +85,7 @@ class Group implements GroupInterface {
   async addCategory(name: string): Promise<null| Error[]> {
     const response = await httpPost(`/api/groups/${this.id}/categories`, { groupId: this.id, name });
 
-    const body = await getBody(response);
+    const body = await response.body();
 
     if (!response.ok) {
       if (isErrorResponse(body)) {
@@ -127,7 +127,7 @@ class Group implements GroupInterface {
   async update(name: string): Promise<null | Error[]> {
     const response = await httpPatch(`/api/groups/${this.id}`, { name });
 
-    const body = await getBody(response);
+    const body = await response.body();
 
     if (!response.ok) {
       if (isErrorResponse(body)) {
@@ -149,7 +149,7 @@ class Group implements GroupInterface {
     const response = await httpDelete(`/api/groups/${this.id}`);
 
     if (!response.ok) {
-      const body = await getBody(response);
+      const body = await response.body();
 
       if (isErrorResponse(body)) {
         return body.errors;
