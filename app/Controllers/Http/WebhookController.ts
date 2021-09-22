@@ -174,50 +174,39 @@ class WebhookController {
       case 'INITIAL_UPDATE':
         Logger.info(JSON.stringify(event));
         break;
+
       case 'HISTORICAL_UPDATE':
         Logger.info(JSON.stringify(event));
         break;
+
       case 'DEFAULT_UPDATE': {
         const trx = await Database.transaction();
 
-        try {
-          const institution = await Institution.findByOrFail('plaidItemId', event.item_id, { client: trx });
+        const institution = await Institution.findByOrFail('plaidItemId', event.item_id, { client: trx });
 
-          const accounts = await institution.related('accounts').query();
-          const application = await Application.findOrFail(institution.applicationId);
+        const accounts = await institution.related('accounts').query();
+        const application = await Application.findOrFail(institution.applicationId);
 
-          await Promise.all(accounts.map(async (acct) => (
-            acct.sync(
-              institution.accessToken,
-              application,
-            )
-          )));
+        await Promise.all(accounts.map(async (acct) => (
+          acct.sync(
+            institution.accessToken,
+            application,
+          )
+        )));
 
-          await trx.commit();
-        }
-        catch (error) {
-          Logger.error(error);
-          await trx.rollback();
-          throw error;
-        }
+        await trx.commit();
 
         break;
       }
+
       case 'TRANSACTIONS_REMOVED': {
         const trx = await Database.transaction();
 
-        try {
-          const institution = await Institution.findByOrFail('plaidItemId', event.item_id, { client: trx });
+        const institution = await Institution.findByOrFail('plaidItemId', event.item_id, { client: trx });
 
-          await institution.removeTransactions(event.removed_transactions);
+        await institution.removeTransactions(event.removed_transactions);
 
-          await trx.commit();
-        }
-        catch (error) {
-          Logger.error(error);
-          await trx.rollback();
-          throw error;
-        }
+        await trx.commit();
 
         break;
       }

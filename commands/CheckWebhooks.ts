@@ -2,7 +2,6 @@ import { BaseCommand } from '@adonisjs/core/build/standalone'
 import Institution from 'App/Models/Institution'
 import Env from '@ioc:Adonis/Core/Env'
 import plaidClient from '@ioc:Plaid';
-import { logger } from 'Config/app';
 
 export default class CheckWebhooks extends BaseCommand {
   /**
@@ -29,25 +28,25 @@ export default class CheckWebhooks extends BaseCommand {
     stayAlive: false,
   }
 
-  private static async updateWebhook(
+  private async updateWebhook(
     institution: Institution,
   ): Promise<void> {
     const hook = Env.get('PLAID_WEBHOOK');
 
     if (hook) {
       if (institution.accessToken) {
-        logger.info(`updating ${institution.plaidItemId} webhook to ${hook}`);
+        this.logger.info(`updating ${institution.plaidItemId} webhook to ${hook}`);
         try {
           const response = await plaidClient.updateItemWebhook(institution.accessToken, hook);
-          logger.info(`new webhook for ${institution.plaidItemId}: ${response.item.webhook}`);
+          this.logger.info(`new webhook for ${institution.plaidItemId}: ${response.item.webhook}`);
         }
         catch (error) {
-          logger.error(`updateItemWebhook failed: ${error.message}`);
+          this.logger.error(`updateItemWebhook failed: ${error.message}`);
         }
       }
     }
     else {
-      logger.error('PLAID_WEBHOOK variable not set');
+      this.logger.error('PLAID_WEBHOOK variable not set');
     }
   }
 
@@ -55,6 +54,6 @@ export default class CheckWebhooks extends BaseCommand {
   public async run (): Promise<void> {
     const institutions = await Institution.all();
 
-    await Promise.all(institutions.map(async (i) => CheckWebhooks.updateWebhook(i)));
+    await Promise.all(institutions.map(async (i) => this.updateWebhook(i)));
   }
 }

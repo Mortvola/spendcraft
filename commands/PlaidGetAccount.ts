@@ -1,6 +1,5 @@
 import { BaseCommand, args } from '@adonisjs/core/build/standalone'
 import plaidClient from '@ioc:Plaid';
-import Logger from '@ioc:Adonis/Core/Logger'
 
 export default class PlaidGetAccount extends BaseCommand {
   /**
@@ -37,6 +36,6 @@ export default class PlaidGetAccount extends BaseCommand {
     const account = await plaidClient.getAccounts(this.accessToken, {
       account_ids: [this.accountId],
     });
-    Logger.info(JSON.stringify(account, null, 2));
+    this.logger.info(JSON.stringify(account, null, 2));
   }
 }
