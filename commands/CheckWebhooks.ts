@@ -35,10 +35,14 @@ export default class CheckWebhooks extends BaseCommand {
 
     if (hook) {
       if (institution.accessToken) {
-        this.logger.info(`updating ${institution.plaidItemId} webhook to ${hook}`);
+        this.logger.info(`checking webhook for ${institution.plaidItemId}`);
         try {
-          const response = await plaidClient.updateItemWebhook(institution.accessToken, hook);
-          this.logger.info(`new webhook for ${institution.plaidItemId}: ${response.item.webhook}`);
+          const { item } = await plaidClient.getItem(institution.accessToken);
+
+          if (item.webhook !== hook) {
+            const response = await plaidClient.updateItemWebhook(institution.accessToken, hook);
+            this.logger.info(`updated webhook for ${institution.plaidItemId}: old: ${item.webhook}, new: ${response.item.webhook}`);
+          }
         }
         catch (error) {
           this.logger.error(`updateItemWebhook failed: ${error.message}`);
