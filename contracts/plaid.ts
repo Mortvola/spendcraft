@@ -1,10 +1,13 @@
 declare module '@ioc:Plaid' {
-  import {
-    AccountsResponse, Account, Institution,
-  } from 'plaid';
-  import Plaid from 'App/Plaid/Plaid';
+  import Plaid, {
+    PlaidConfig, AccountsResponse, PlaidAccount, PlaidInstitution,
+    PlaidError, PlaidTransaction,
+  } from 'providers/Plaid/Plaid';
 
   const PlaidClient: Plaid;
   export default PlaidClient;
-  export { AccountsResponse, Account as PlaidAccount, Institution as PlaidInstitution };
+  export {
+    AccountsResponse, PlaidAccount, PlaidInstitution,
+    PlaidConfig, PlaidError, PlaidTransaction,
+  };
 }

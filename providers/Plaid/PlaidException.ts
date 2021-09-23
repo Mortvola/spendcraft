@@ -1,6 +1,6 @@
 import { Exception } from '@adonisjs/core/build/standalone'
-import PlaidError from 'App/Plaid/PlaidError';
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
+import PlaidError from './PlaidError';
 
 /*
 |--------------------------------------------------------------------------

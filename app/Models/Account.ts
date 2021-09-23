@@ -4,13 +4,12 @@ import {
   BaseModel, hasMany, HasMany, column, belongsTo, BelongsTo,
 } from '@ioc:Adonis/Lucid/Orm';
 import { DateTime } from 'luxon';
-import plaidClient from '@ioc:Plaid';
+import plaidClient, { PlaidTransaction } from '@ioc:Plaid';
 import AccountTransaction from 'App/Models/AccountTransaction';
 import BalanceHistory from 'App/Models/BalanceHistory';
 import Institution from 'App/Models/Institution';
 import { CategoryBalanceProps, TrackingType } from 'Common/ResponseTypes';
 import Transaction from 'App/Models/Transaction';
-import { Transaction as PlaidTransaction } from 'plaid';
 import Application from './Application';
 
 export type AccountSyncResult = {
