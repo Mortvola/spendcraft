@@ -1,4 +1,5 @@
 import { ApplicationContract } from '@ioc:Adonis/Core/Application'
+import BalanceUpdater from './BalanceUpdater/BalanceUpdater';
 import Plaid from './Plaid/Plaid';
 
 export default class AppProvider {
@@ -8,10 +9,15 @@ export default class AppProvider {
   }
 
   public register () {
-    // Register your own bindings
+    // Register the plaid binding.
     this.app.container.singleton('Plaid', () => {
       return new Plaid(this.app.config.get('plaid', {}))
     });
+
+    // Register the balance updater binding.
+    this.app.container.singleton('BalanceUpdater', () => {
+      return new BalanceUpdater();
+    })
   }
 
   public async boot () {
@@ -20,6 +26,10 @@ export default class AppProvider {
 
   public async ready () {
     // App is ready
+
+    // Importing the BalanceUpdater will instantiate an instance
+    // which will start it running.
+    import('@ioc:BalanceUpdater');
   }
 
   public async shutdown () {

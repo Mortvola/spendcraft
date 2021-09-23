@@ -45,6 +45,7 @@
     "base64url": "^3.0.1",
     "bootstrap": "^5.1.1",
     "camelcase-keys": "^6.2.2",
+    "cron": "^1.8.2",
     "formik": "^2.2.9",
     "jose": "^3.17.0",
     "js-sha256": "^0.9.0",
@@ -78,6 +79,7 @@
   },
   "devDependencies": {
     "@adonisjs/assembler": "^5.3.7",
+    "@types/cron": "^1.7.3",
     "@types/jsonwebtoken": "^8.5.5",
     "@types/prop-types": "^15.7.4",
     "@types/react": "^16.14.15",

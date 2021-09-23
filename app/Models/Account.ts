@@ -142,19 +142,7 @@ class Account extends BaseModel {
       }];
     }
     else {
-      const accountsResponse = await plaidClient.getAccounts(accessToken, {
-        account_ids: [this.plaidAccountId],
-      });
-
-      this.balance = accountsResponse.accounts[0].balances.current;
-      this.plaidBalance = accountsResponse.accounts[0].balances.current;
-      if (this.type === 'credit' || this.type === 'loan') {
-        this.plaidBalance = -this.plaidBalance;
-      }
-
-      await this.updateAccountBalanceHistory(this.balance);
-
-      this.syncDate = DateTime.now();
+      await this.updateBalance(accessToken);
 
       result.accounts = [{
         id: this.id,
@@ -167,6 +155,24 @@ class Account extends BaseModel {
     await this.save();
 
     return result;
+  }
+
+  public async updateBalance(
+    accessToken: string,
+  ): Promise<void> {
+    const accountsResponse = await plaidClient.getAccounts(accessToken, {
+      account_ids: [this.plaidAccountId],
+    });
+
+    this.balance = accountsResponse.accounts[0].balances.current;
+    this.plaidBalance = accountsResponse.accounts[0].balances.current;
+    if (this.type === 'credit' || this.type === 'loan') {
+      this.plaidBalance = -this.plaidBalance;
+    }
+
+    await this.updateAccountBalanceHistory(this.balance);
+
+    this.syncDate = DateTime.now();
   }
 
   public async addTransactions(
@@ -333,22 +339,24 @@ class Account extends BaseModel {
     this: Account,
     balance: number,
   ): Promise<void> {
-    if (!this.$trx) {
-      throw new Error('database transaction not set');
-    }
-
     const today = DateTime.utc();
 
-    await this.load('balanceHistory', (query) => {
-      if (!this.$trx) {
-        throw new Error('database transaction not set');
-      }
+    const history = await this.related('balanceHistory')
+      .query()
+      .where('date', today.toFormat('yyyy-MM-dd'))
+      .first();
 
-      query.where('date', today.toFormat('yyyy-MM-dd')).useTransaction(this.$trx);
-    });
-
-    if (this.balanceHistory.length === 0) {
-      await this.related('balanceHistory').create({ date: today, balance });
+    // If the history record was not found then create one.
+    // Otherwise, update the one that was found (if the balance has
+    // changed).
+    if (history === null) {
+      await (await this.related('balanceHistory')
+        .create({ date: today, balance }))
+        .save();
+    }
+    else if (history.balance !== balance) {
+      history.balance = balance;
+      await history.save();
     }
   }
 }
