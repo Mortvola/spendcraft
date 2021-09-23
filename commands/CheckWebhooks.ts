@@ -4,6 +4,8 @@ import Env from '@ioc:Adonis/Core/Env'
 import plaidClient from '@ioc:Plaid';
 
 export default class CheckWebhooks extends BaseCommand {
+  environmentRegEx: RegExp;
+
   /**
    * Command name is used to run the command
    */
@@ -35,17 +37,22 @@ export default class CheckWebhooks extends BaseCommand {
 
     if (hook) {
       if (institution.accessToken) {
-        this.logger.info(`checking webhook for ${institution.plaidItemId}`);
-        try {
-          const { item } = await plaidClient.getItem(institution.accessToken);
+        if (institution.accessToken.match(this.environmentRegEx)) {
+          this.logger.info(`checking webhook for ${institution.plaidItemId}`);
+          try {
+            const { item } = await plaidClient.getItem(institution.accessToken);
 
-          if (item.webhook !== hook) {
-            const response = await plaidClient.updateItemWebhook(institution.accessToken, hook);
-            this.logger.info(`updated webhook for ${institution.plaidItemId}: old: ${item.webhook}, new: ${response.item.webhook}`);
+            if (item.webhook !== hook) {
+              const response = await plaidClient.updateItemWebhook(institution.accessToken, hook);
+              this.logger.info(`updated webhook for ${institution.plaidItemId}: old: ${item.webhook}, new: ${response.item.webhook}`);
+            }
+          }
+          catch (error) {
+            this.logger.error(`updateItemWebhook failed: ${error.message}`);
           }
         }
-        catch (error) {
-          this.logger.error(`updateItemWebhook failed: ${error.message}`);
+        else {
+          this.logger.info(`skipping ${institution.plaidItemId} because it is not in the current environment`);
         }
       }
     }
@@ -56,6 +63,8 @@ export default class CheckWebhooks extends BaseCommand {
 
   // eslint-disable-next-line class-methods-use-this
   public async run (): Promise<void> {
+    this.environmentRegEx = new RegExp(`access-${Env.get('PLAID_ENV')}.+`)
+
     const institutions = await Institution.all();
 
     await Promise.all(institutions.map(async (i) => this.updateWebhook(i)));

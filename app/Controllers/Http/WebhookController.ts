@@ -187,12 +187,18 @@ class WebhookController {
         const accounts = await institution.related('accounts').query();
         const application = await Application.findOrFail(institution.applicationId);
 
-        await Promise.all(accounts.map(async (acct) => (
-          acct.sync(
-            institution.accessToken,
-            application,
-          )
-        )));
+        await Promise.all(accounts.map(async (acct) => {
+          if (institution.accessToken === null || institution.accessToken === '') {
+            throw new Exception(`acces token not set for ${institution.plaidItemId}`);
+          }
+
+          return (
+            acct.sync(
+              institution.accessToken,
+              application,
+            )
+          );
+        }));
 
         await trx.commit();
 

@@ -23,10 +23,10 @@ class Institution extends BaseModel {
   @column({
     serializeAs: null,
   })
-  public accessToken: string;
+  public accessToken: string | null;
 
   @column()
-  public plaidItemId: string;
+  public plaidItemId: string | null;
 
   @hasMany(() => Account)
   public accounts: HasMany<typeof Account>;

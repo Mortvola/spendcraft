@@ -1,19 +1,20 @@
 import { BaseCommand, args } from '@adonisjs/core/build/standalone'
 import plaidClient from '@ioc:Plaid';
 import Env from '@ioc:Adonis/Core/Env'
+import Institution from 'App/Models/Institution';
 
 export default class PlaidGetItem extends BaseCommand {
   /**
    * Command name is used to run the command
    */
-  public static commandName = 'plaid:get-item'
+  public static commandName = 'plaid:remove-item'
 
   /**
    * Command description is displayed in the "help" output
    */
-  public static description = 'Retrieves the institution with the provided access token'
+  public static description = 'Removes the institution with the provided access token'
 
-  @args.string({ description: 'Access token of the item to retreive' })
+  @args.string({ description: 'Access token of the item to remove' })
   public accessToken: string
 
   public static settings = {
@@ -35,8 +36,18 @@ export default class PlaidGetItem extends BaseCommand {
 
     try {
       if (this.accessToken.match(environmentRegEx)) {
-        const item = await plaidClient.getItem(this.accessToken);
+        const institution = await Institution.findBy('accessToken', this.accessToken);
+
+        this.logger.info(`Removing item for ${institution ? institution.name : 'unknown'}`);
+
+        const item = await plaidClient.removeItem(this.accessToken);
         this.logger.info(JSON.stringify(item, null, 2));
+
+        if (institution) {
+          institution.accessToken = null;
+          institution.plaidItemId = null;
+          await institution.save();
+        }
       }
       else {
         this.logger.error('Access token and current environment do not match');

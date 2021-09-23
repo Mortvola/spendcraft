@@ -145,6 +145,26 @@
       "aliases": [],
       "flags": []
     },
+    "plaid:remove-item": {
+      "settings": {
+        "loadApp": true,
+        "stayAlive": false
+      },
+      "commandPath": "./commands/PlaidRemoveItem",
+      "commandName": "plaid:remove-item",
+      "description": "Removes the institution with the provided access token",
+      "args": [
+        {
+          "type": "string",
+          "propertyName": "accessToken",
+          "name": "accessToken",
+          "required": true,
+          "description": "Access token of the item to remove"
+        }
+      ],
+      "aliases": [],
+      "flags": []
+    },
     "plaid:reset-login": {
       "settings": {
         "loadApp": true,

@@ -6,12 +6,26 @@ class PlaidWrapper {
   plaid: Plaid.Client;
 
   constructor (configs: Plaid.ClientConfigs) {
-    this.plaid = new Plaid.Client(configs);
+    try {
+      this.plaid = new Plaid.Client(configs);
+    }
+    catch (error) {
+      throw new PlaidException(error);
+    }
   }
 
   async getItem(accessToken: string): Promise<Plaid.ItemResponse> {
     try {
       return await this.plaid.getItem(accessToken);
+    }
+    catch (error) {
+      throw new PlaidException(error);
+    }
+  }
+
+  async removeItem(accessToken: string): Promise<Plaid.ItemRemoveResponse> {
+    try {
+      return await this.plaid.removeItem(accessToken);
     }
     catch (error) {
       throw new PlaidException(error);

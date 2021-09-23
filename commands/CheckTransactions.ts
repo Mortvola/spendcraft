@@ -1,4 +1,4 @@
-import { BaseCommand, flags } from '@adonisjs/core/build/standalone'
+import { BaseCommand, flags, Exception } from '@adonisjs/core/build/standalone'
 import plaidClient from '@ioc:Plaid';
 import Account from 'App/Models/Account';
 import AccountTransaction from 'App/Models/AccountTransaction';
@@ -112,6 +112,10 @@ export default class CheckTransactions extends BaseCommand {
 
             try {
               const endDate = DateTime.now();
+
+              if (inst.accessToken === null || inst.accessToken === '') {
+                throw new Exception(`acces token not set for ${inst.plaidItemId}`);
+              }
 
               // eslint-disable-next-line no-await-in-loop
               response = await plaidClient.getTransactions(

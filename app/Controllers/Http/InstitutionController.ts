@@ -15,6 +15,7 @@ import TransactionCategory from 'App/Models/TransactionCategory';
 import { DateTime } from 'luxon';
 import BalanceHistory from 'App/Models/BalanceHistory';
 import Application from 'App/Models/Application';
+import { Exception } from '@adonisjs/drive/node_modules/@poppinss/utils';
 
 type OnlineAccount = {
   plaidAccountId: string,
@@ -518,7 +519,7 @@ class InstitutionController {
     auth: {
       user,
     },
-  }: HttpContextContract): Promise<Array<AccountSyncResult> | null> {
+  }: HttpContextContract): Promise<(AccountSyncResult | null)[]> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -527,16 +528,23 @@ class InstitutionController {
 
     const trx = await Database.transaction();
 
-    const institutions = await Institution.query().where('applicationId', application.id);
+    const institutions = await Institution.query()
+      .where('applicationId', application.id)
+      .whereNotNull('accessToken')
+      .andWhere('acessToken', '!=', '');
 
     const result: AccountSyncResult[] | null = [];
 
     await Promise.all(institutions.map(async (institution) => {
       const accounts = await institution.related('accounts').query();
 
-      return Promise.all(accounts.map(async (acct) => (
-        acct.sync(institution.accessToken, application)
-      )));
+      return Promise.all(accounts.map(async (acct) => {
+        if (institution.accessToken === null || institution.accessToken === '') {
+          throw new Exception(`access token not set for ${institution.plaidItemId}`);
+        }
+
+        return acct.sync(institution.accessToken, application)
+      }));
     }));
 
     await trx.commit();
@@ -560,6 +568,11 @@ class InstitutionController {
     const trx = await Database.transaction();
 
     const institution = await Institution.findOrFail(request.params().instId, { client: trx });
+
+    if (institution.accessToken === null || institution.accessToken === '') {
+      throw new Exception(`acces token not set for ${institution.plaidItemId}`);
+    }
+
     const account = await Account.findOrFail(request.params().acctId, { client: trx });
 
     let result: AccountSyncResult | null = null;
@@ -586,6 +599,10 @@ class InstitutionController {
     }
 
     const institution = await Institution.findOrFail(parseInt(request.params().instId, 10));
+
+    if (institution.accessToken === null || institution.accessToken === '') {
+      throw new Exception(`acces token not set for ${institution.plaidItemId}`);
+    }
 
     const linkTokenResponse = await plaidClient.createLinkToken({
       user: {
