@@ -41,35 +41,28 @@ export default class AuthController {
       },
     });
 
+    const trx = await Database.transaction();
+
+    const application = await (new Application())
+      .useTransaction(trx)
+      .save();
+
+    application.initialize();
+
     /**
      * Create a new user
      */
-    const user = (new User())
+    const user = await (new User())
+      .useTransaction(trx)
       .fill({
         username: userDetails.username,
         email: userDetails.email,
         password: userDetails.password,
-      });
-
-    await user.save();
-
-    const trx = await Database.transaction();
-
-    try {
-      user.useTransaction(trx);
-
-      const application = new Application();
-
-      application.fill({
-        userId: user.id,
+        applicationId: application.id,
       })
-        .save();
+      .save();
 
-      application.initialize();
-    }
-    catch (error) {
-      trx.rollback();
-    }
+    await trx.commit();
 
     Mail.send((message) => {
       message
