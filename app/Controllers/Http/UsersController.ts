@@ -105,7 +105,7 @@ export default class UsersController {
       user: {
         client_user_id: user.id.toString(),
       },
-      client_name: 'Balancing Life',
+      client_name: 'SpendCraft',
       products: ['transactions'],
       country_codes: ['US'],
       language: 'en',

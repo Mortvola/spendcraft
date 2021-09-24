@@ -55,7 +55,7 @@ const Welcome = () => {
   return (
     <>
       <Navbar collapseOnSelect onSelect={handleSelect} expand="md">
-        <Navbar.Brand href="/">Balancing Life</Navbar.Brand>
+        <Navbar.Brand href="/">SpendCraft</Navbar.Brand>
         <Navbar.Toggle />
         <Navbar.Collapse>
           <Nav className="ml-auto">

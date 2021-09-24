@@ -608,7 +608,7 @@ class InstitutionController {
       user: {
         client_user_id: user.id.toString(),
       },
-      client_name: 'Balancing Life',
+      client_name: 'SpendCraft',
       country_codes: ['US'],
       language: 'en',
       access_token: institution.accessToken,
