@@ -3,8 +3,9 @@ import { DateTime } from 'luxon';
 import {
   BaseModel, BelongsTo, belongsTo, column, HasMany, hasMany,
 } from '@ioc:Adonis/Lucid/Orm';
-import FundingPlanCategory from './FundingPlanCategory';
-import Application, { GroupHistoryItem } from './Application';
+import FundingPlanCategory from 'App/Models/FundingPlanCategory';
+import { GroupHistoryItem } from 'App/Models/GroupHistoryItem';
+import Application from 'App/Models/Application';
 
 export type PlanCategory = {
   id?: number,

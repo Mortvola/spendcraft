@@ -7,7 +7,7 @@ import { DateTime } from 'luxon';
 import TransactionCategory from 'App/Models/TransactionCategory';
 import AccountTransaction from 'App/Models/AccountTransaction';
 import { TransactionType } from 'Common/ResponseTypes';
-import Application from './Application';
+import Application from 'App/Models/Application';
 
 class Transaction extends BaseModel {
   @column()

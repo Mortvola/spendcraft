@@ -4,7 +4,7 @@ import {
 } from '@ioc:Adonis/Lucid/Orm';
 import Category from 'App/Models/Category';
 import LoanTransaction from 'App/Models/LoanTransaction';
-import Transaction from './Transaction';
+import Transaction from 'App/Models/Transaction';
 
 class TransactionCategory extends BaseModel {
   @column()

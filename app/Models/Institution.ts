@@ -8,7 +8,7 @@ import {
 import plaidClient, { PlaidInstitution } from '@ioc:Plaid';
 import Account from 'App/Models/Account';
 import Logger from '@ioc:Adonis/Core/Logger'
-import Application from './Application';
+import Application from 'App/Models/Application';
 
 class Institution extends BaseModel {
   @column()

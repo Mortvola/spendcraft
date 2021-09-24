@@ -32,7 +32,7 @@ type Key = {
 
 const keyCache = new Map<string, { cacheTime: DateTime, key: Key}>();
 
-class PlaidWebhookError extends PlaidError {
+interface PlaidWebhookError extends PlaidError {
   // eslint-disable-next-line camelcase
   request_id: string;
 }

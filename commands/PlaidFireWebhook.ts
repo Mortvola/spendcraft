@@ -1,5 +1,6 @@
 import { BaseCommand, args } from '@adonisjs/core/build/standalone'
 import plaidClient from '@ioc:Plaid';
+import Env from '@ioc:Adonis/Core/Env'
 
 export default class PlaidFireWebhook extends BaseCommand {
   /**
@@ -30,6 +31,18 @@ export default class PlaidFireWebhook extends BaseCommand {
   }
 
   public async run (): Promise<void> {
-    await plaidClient.sandboxItemFireWebhook(this.accessToken);
+    const environmentRegEx = new RegExp(`access-${Env.get('PLAID_ENV')}.+`)
+
+    try {
+      if (this.accessToken.match(environmentRegEx)) {
+        await plaidClient.sandboxItemFireWebhook(this.accessToken);
+      }
+      else {
+        this.logger.error('Access token and current environment do not match');
+      }
+    }
+    catch (error) {
+      this.logger.error(error);
+    }
   }
 }

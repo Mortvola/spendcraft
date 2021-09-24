@@ -3,7 +3,7 @@ import {
   BaseModel, BelongsTo, belongsTo, column, hasMany, HasMany,
 } from '@ioc:Adonis/Lucid/Orm';
 import Category from 'App/Models/Category';
-import Application from './Application';
+import Application from 'App/Models/Application';
 
 class Group extends BaseModel {
   @column()

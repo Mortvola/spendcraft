@@ -2,7 +2,7 @@ import Database, { StrictValues } from '@ioc:Adonis/Lucid/Database';
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import Category, { GroupItem } from 'App/Models/Category';
 import CategoryTransfer from 'App/Models/CategoryTransfer';
-import { GroupHistoryItem } from 'App/Models/Application';
+import { GroupHistoryItem } from 'App/Models/GroupHistoryItem';
 import AddGroupValidator from 'App/Validators/AddGroupValidator';
 import UpdateGroupValidator from 'App/Validators/UpdateGroupValidator';
 import DeleteGroupValidator from 'App/Validators/DeleteGroupValidator';
@@ -478,17 +478,6 @@ class CategoryController {
     const { date, id } = request.qs();
 
     return Category.balances(application, date, id !== undefined ? parseInt(id, 10) : id);
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  public async history({ auth: { user } }: HttpContextContract): Promise<Array<GroupHistoryItem>> {
-    if (!user) {
-      throw new Error('user is not defined');
-    }
-
-    const application = await user.related('application').query().firstOrFail();
-
-    return application.history();
   }
 }
 

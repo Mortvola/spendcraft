@@ -73,7 +73,6 @@ Route.group(() => {
     Route.group(() => {
       Route.get('/:catId/transactions', 'CategoryController.transactions');
       Route.get('/:catId/transactions/pending', 'CategoryController.pendingTransactions');
-      Route.get('/history', 'CategoryController.history');
     }).prefix('/category');
 
     Route.get('/connected-accounts', 'UsersController.getConnectedAccounts');

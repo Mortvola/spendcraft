@@ -1,4 +1,3 @@
-/* eslint-disable import/no-cycle */
 import PlaidException from './PlaidException';
 import Plaid, {
   AccountsResponse, Account, Institution, PlaidError,

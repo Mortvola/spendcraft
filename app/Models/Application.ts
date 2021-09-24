@@ -5,30 +5,14 @@ import {
 } from '@ioc:Adonis/Lucid/Orm'
 import Database from '@ioc:Adonis/Lucid/Database';
 import { InstitutionProps } from 'Common/ResponseTypes';
-import User from './User'
-import Category from './Category';
-import Group from './Group';
-import FundingPlan from './FundingPlan';
-import Institution from './Institution';
-import Transaction from './Transaction';
-import Loan from './Loan';
-
-type MonthBalance = {
-  year: number,
-  month: number,
-  amount: number,
-}
-
-export type CategoryHistoryItem = {
-  id: number,
-  months: MonthBalance[],
-};
-
-export type GroupHistoryItem = {
-  id: number,
-  name: string,
-  categories: CategoryHistoryItem[],
-};
+import User from 'App/Models/User'
+import Category from 'App/Models/Category';
+import Group from 'App/Models/Group';
+import FundingPlan from 'App/Models/FundingPlan';
+import Institution from 'App/Models/Institution';
+import Transaction from 'App/Models/Transaction';
+import Loan from 'App/Models/Loan';
+import { GroupHistoryItem, CategoryHistoryItem } from 'App/Models/GroupHistoryItem';
 
 export default class Application extends BaseModel {
   @column({ isPrimary: true })

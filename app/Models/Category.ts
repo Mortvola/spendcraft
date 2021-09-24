@@ -6,7 +6,7 @@ import Database from '@ioc:Adonis/Lucid/Database';
 import Group from 'App/Models/Group';
 import { CategoryType } from 'Common/ResponseTypes';
 import TransactionCategory from 'App/Models/TransactionCategory';
-import Application from './Application';
+import Application from 'App/Models/Application';
 
 type CategoryItem = {
   id: number,

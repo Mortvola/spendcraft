@@ -10,7 +10,7 @@ import BalanceHistory from 'App/Models/BalanceHistory';
 import Institution from 'App/Models/Institution';
 import { CategoryBalanceProps, TrackingType } from 'Common/ResponseTypes';
 import Transaction from 'App/Models/Transaction';
-import Application from './Application';
+import Application from 'App/Models/Application';
 
 export type AccountSyncResult = {
   categories: CategoryBalanceProps[],
