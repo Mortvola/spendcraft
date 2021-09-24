@@ -66,11 +66,12 @@ html, body {
 }
 
 body {
-    background-color: black;
+    background-color: white;
 }
 
 .background {
-    background: linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.1)), url('/slackline.png');
+    /* background: linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.1)), url('/budgeting.svg'); */
+    background-color: white;
     background-repeat: no-repeat;
     background-attachment: fixed;
     background-position: center;

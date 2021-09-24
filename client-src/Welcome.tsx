@@ -1,75 +1,85 @@
-import React, { useState } from 'react';
+import React from 'react';
 import ReactDOM from 'react-dom';
 import 'regenerator-runtime/runtime';
-import { Navbar, Nav } from 'react-bootstrap';
-import Login from './Login/Login';
-import Register from './Login/Register';
+import styles from './Welcome.module.css';
 
 const Welcome = () => {
-  const [showLogin, setShowLogin] = useState(false);
-  const [showRegister, setShowRegister] = useState(false);
-  const [imageLoaded, setImageLoaded] = useState(false);
-
-  const handleLoginHide = () => {
-    setShowLogin(false);
-  };
-
-  const handleRegisterHide = () => {
-    setShowRegister(false);
-  };
-
-  const handleLoad = () => {
-    const body = document.querySelector('body');
-    if (body === null) {
-      throw new Error('body is null');
-    }
-
-    body.className = 'background';
-    setImageLoaded(true);
-  };
-
-  let className = 'flex-center position-ref full-height';
-  if (imageLoaded) {
-    className += ' light';
-  }
-  else {
-    className += ' dark';
-  }
-
-  const handleSelect = (eventKey: any) => {
-    switch (eventKey) {
-      case 'login':
-        setShowLogin(true);
-        break;
-
-      case 'register':
-        setShowRegister(true);
-        break;
-
-      default:
-        break;
-    }
-    // uiState.setView(eventKey);
-  };
+  const className = 'flex-center position-ref full-height';
 
   return (
-    <>
-      <Navbar collapseOnSelect onSelect={handleSelect} expand="md">
-        <Navbar.Brand href="/">SpendCraft</Navbar.Brand>
-        <Navbar.Toggle />
-        <Navbar.Collapse>
-          <Nav className="ml-auto">
-            <Nav.Link eventKey="login">Login</Nav.Link>
-            <Nav.Link eventKey="register">Register</Nav.Link>
-          </Nav>
-        </Navbar.Collapse>
-      </Navbar>
-      <div className={className}>
-        <Login show={showLogin} onHide={handleLoginHide} />
-        <Register show={showRegister} onHide={handleRegisterHide} />
-        <img src="/slackline.png" alt="" onLoad={handleLoad} style={{ display: 'none' }} />
+    <div style={{ maxWidth: '1400px', justifySelf: 'center' }}>
+      <div
+        className={className}
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0,1fr)',
+          gridTemplateRows: 'max-content minmax(0,1fr)',
+          width: '100%',
+          height: '100%',
+        }}
+      >
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'max-content max-content',
+            gridTemplateRows: 'max-content',
+            columnGap: '2rem',
+            marginTop: '1rem',
+            justifyContent: 'center',
+          }}
+        >
+          <a href="/register" className={styles.linkButton} style={{ fontSize: '1.25rem' }}>Sign up</a>
+          <a href="/login" className={styles.linkButton} style={{ fontSize: '1.25rem' }}>Sign in</a>
+        </div>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'minmax(0,1.2fr) minmax(0,2fr)',
+            gridTemplateRows: 'minmax(0,1fr)',
+            width: '100%',
+            height: '100%',
+            alignItems: 'start',
+            justifyItems: 'center',
+          }}
+        >
+          <div
+            style={{
+              marginLeft: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'start',
+            }}
+          >
+            <div
+              style={{
+                fontSize: '4.5rem',
+                fontFamily: 'Georgiate, sans-serif',
+                color: '#8e2727',
+              }}
+            >
+              SpendCraft
+            </div>
+            <div style={{ fontSize: '2rem' }}>We all spend money.</div>
+            <div style={{ fontSize: '2rem' }}>Be smart about how you spend it.</div>
+            <div style={{ marginTop: '1rem', marginBottom: '2rem' }}>
+              With an easy to use envelope style budgeting system,
+              take control of your expenditures and spend your money
+              on the things that are important to you.
+            </div>
+            <a
+              href="/register"
+              className={styles.linkButton}
+              style={{
+                fontSize: '2rem',
+                padding: '0.5rem 1rem',
+                backgroundColor: '#308730',
+                color: 'white',
+              }}
+            >
+              Sign up for free
+            </a>
+          </div>
+          <img src="/budgeting.svg" alt="" style={{ maxWidth: '90%', maxHeight: '90%', alignSelf: 'center' }} />
+        </div>
       </div>
-    </>
+    </div>
   );
 };
 
