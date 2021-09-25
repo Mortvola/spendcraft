@@ -56,9 +56,9 @@ const Intro = (): ReactElement => {
             take control of your expenditures and spend your money
             on the things that are important to you.
           </div>
-          <a href="/signup" className={`${styles.linkButton} ${styles.signupFreeButton}`}>
+          <div className={`${styles.linkButton} ${styles.signupFreeButton}`} onClick={handleSignupClick}>
             Sign up for free
-          </a>
+          </div>
         </div>
         <img
           src="/budgeting.svg"
