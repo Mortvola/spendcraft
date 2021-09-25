@@ -19,6 +19,8 @@
   background-color: whitesmoke;
 }
 
+.medium .title,
+.small .title,
 .title {
   font-size: 4rem;
   font-family: Georgiate, sans-serif;
@@ -27,8 +29,16 @@
   margin-bottom: 2rem;
 }
 
+.tiny .title {
+  font-size: 3rem;
+}
+
 .subtitle {
   font-size: 2rem;
+}
+
+.tiny .subtitle {
+  font-size: 1.5rem;
 }
 
 .button {

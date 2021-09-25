@@ -1,6 +1,7 @@
 import React, { ReactElement } from 'react';
 import { Form, Formik, FormikHelpers } from 'formik';
 import { Button } from 'react-bootstrap';
+import * as responsive from 'react-responsive';
 import { httpPost } from './State/Transports';
 import styles from './Signin.module.css';
 import FormError from './Modal/FormError';
@@ -8,10 +9,30 @@ import FormField from './Modal/FormField';
 import { isErrorResponse } from '../common/ResponseTypes';
 
 const Signin = (): ReactElement => {
+  const tiny = responsive.useMediaQuery({ query: '(max-width: 350px)' });
+  const small = responsive.useMediaQuery({ query: '(max-width: 600px)' });
+  const medium = responsive.useMediaQuery({ query: '(max-width: 1224px)' });
+
   type FormValues = {
     username: string,
     password: string,
   };
+
+  const addSizeClass = (className: string): string => {
+    if (tiny && styles.tiny) {
+      return `${styles.tiny} ${className}`;
+    }
+
+    if (small && styles.small) {
+      return `${styles.small} ${className}`;
+    }
+
+    if (medium && styles.medium) {
+      return `${styles.medium} ${className}`
+    }
+
+    return className
+  }
 
   const handleSubmit = async (values: FormValues, { setErrors }: FormikHelpers<FormValues>) => {
     const response = await httpPost('/login', values);
@@ -35,7 +56,7 @@ const Signin = (): ReactElement => {
   }
 
   return (
-    <div className={styles.frame}>
+    <div className={addSizeClass(styles.frame)}>
       <div className={styles.title}>SpendCraft</div>
       <Formik<FormValues>
         initialValues={{
