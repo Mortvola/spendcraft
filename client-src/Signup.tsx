@@ -1,6 +1,7 @@
 import React, { ReactElement } from 'react';
 import { Form, Formik, FormikHelpers } from 'formik';
 import { Button } from 'react-bootstrap';
+import * as responsive from 'react-responsive';
 import FormField from './Modal/FormField';
 import styles from './Signup.module.css';
 import FormError from './Modal/FormError';
@@ -8,6 +9,10 @@ import { httpPost } from './State/Transports';
 import { isErrorResponse } from '../common/ResponseTypes';
 
 const Signup = (): ReactElement => {
+  const tiny = responsive.useMediaQuery({ query: '(max-width: 350px)' });
+  const small = responsive.useMediaQuery({ query: '(max-width: 600px)' });
+  const medium = responsive.useMediaQuery({ query: '(max-width: 1224px)' });
+
   type FormValues = {
     username: string,
     email: string,
@@ -15,6 +20,25 @@ const Signup = (): ReactElement => {
     // eslint-disable-next-line camelcase
     password_confirmation: string,
   };
+
+  const addSizeClass = (className: string): string => {
+    if (tiny) {
+      // eslint-disable-next-line css-modules/no-undef-class
+      return `${styles.tiny} ${className}`;
+    }
+
+    if (small) {
+      // eslint-disable-next-line css-modules/no-undef-class
+      return `${styles.small} ${className}`;
+    }
+
+    if (medium) {
+      // eslint-disable-next-line css-modules/no-undef-class
+      return `${styles.medium} ${className}`
+    }
+
+    return className
+  }
 
   const handleSubmit = async (values: FormValues, { setErrors }: FormikHelpers<FormValues>) => {
     const response = await httpPost('/register', values);
@@ -37,7 +61,7 @@ const Signup = (): ReactElement => {
   }
 
   return (
-    <div className={styles.frame}>
+    <div className={addSizeClass(styles.frame)}>
       <div className={styles.title}>SpendCraft</div>
       <Formik<FormValues>
         initialValues={{
