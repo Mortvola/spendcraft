@@ -53,6 +53,11 @@ export class HttpResponse {
           throw new Error('server error');
         }
       }
+      else if (this.response.status === 401) {
+        // If the user is not authorized, then send them 
+        // back to the signin page.
+        window.location.replace('/signin');
+      }
       else if (this.response.status === 404) {
         if (isRouteNotFound(responseBody)) {
           serverError.setError(responseBody);

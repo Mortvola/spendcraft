@@ -5,14 +5,58 @@ import {
   Nav,
   NavDropdown,
 } from 'react-bootstrap';
+import { useHistory } from 'react-router-dom';
 import MobxStore from './State/mobxStore';
 import { Views } from './State/State';
+import { httpPost } from './State/Transports';
 
 const Menubar = () => {
   const { uiState, user: { username } } = useContext(MobxStore);
+  const history = useHistory();
+
+  const logout = () => {
+    (async () => {
+      const response = await httpPost('/api/logout');
+
+      if (response.ok) {
+        window.location.replace('/');
+      }
+    })();
+
+    return null;
+  };
 
   const handleSelect = (eventKey: Views | string | null) => {
-    if (eventKey) {
+    switch (eventKey) {
+      case 'HOME':
+        history.push('/home');
+        break;
+
+      case 'ACCOUNTS':
+        history.push('/accounts');
+        break;
+
+      case 'REPORTS':
+        history.push('/reports');
+        break;
+
+      case 'PLANS':
+        history.push('/plans');
+        break;
+
+      case 'USER_ACCOUNT':
+        history.push('/user');
+        break;
+
+      case 'LOGOUT':
+        logout();
+        break;
+
+      default:
+        break;
+    }
+
+    if (eventKey && eventKey !== 'LOGOUT') {
       uiState.setView(eventKey as Views);
     }
   };

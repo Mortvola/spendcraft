@@ -12,7 +12,7 @@ export default class AuthMiddleware {
   /**
   * The URL to redirect to when request is Unauthorized
   */
-  protected redirectTo = '/login'
+  protected redirectTo = '/signin'
 
   /**
    * Authenticates the current HTTP request against a custom set of defined
@@ -31,9 +31,11 @@ export default class AuthMiddleware {
      */
     let guardLastAttempted: string | undefined;
 
+    // eslint-disable-next-line no-restricted-syntax
     for (const guard of guards) {
       guardLastAttempted = guard;
 
+      // eslint-disable-next-line no-await-in-loop
       if (await auth.use(guard).check()) {
         /**
          * Instruct auth to use the given guard as the default guard for

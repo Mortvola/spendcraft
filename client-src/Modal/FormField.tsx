@@ -10,6 +10,7 @@ type PropsType<V, T, E> = {
   as?: unknown,
   type?: string,
   readOnly?: boolean,
+  autoComplete?: boolean | string,
   onChange?: (event: ChangeEvent<E>, props: FieldProps<V, T>) => void,
   onBlur?: (event: ChangeEvent<E>, props: FieldProps<V, T>) => void,
   children?: ReactNode,
@@ -21,6 +22,7 @@ function FormField<V = unknown, T = unknown, E = HTMLInputElement>({
   as,
   type,
   readOnly,
+  autoComplete,
   onChange,
   onBlur,
   children,
@@ -50,6 +52,7 @@ function FormField<V = unknown, T = unknown, E = HTMLInputElement>({
         type={type ?? 'text'}
         className="form-control"
         readOnly={readOnly}
+        autoComplete={autoComplete}
         name={name}
         onChange={handleChange}
         onBlur={handleBlur}
