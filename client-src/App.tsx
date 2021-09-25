@@ -14,9 +14,11 @@ import PlaidLink from './PlaidLink';
 import MobxStore, { store as mobxStore } from './State/mobxStore';
 import ServerError, { serverError } from './State/ServerError';
 import UserAccount from './UserAccount';
+import usePageViews from './Tracker';
 
 const App = () => {
   const error = useContext(ServerError);
+  usePageViews();
 
   if (error.message) {
     return (
@@ -39,7 +41,7 @@ const App = () => {
   }
 
   return (
-    <Router>
+    <>
       <Menubar />
       <Switch>
         <Route path="/home">
@@ -62,7 +64,7 @@ const App = () => {
         </Route>
       </Switch>
       <PlaidLink />
-    </Router>
+    </>
   );
 };
 
@@ -71,7 +73,9 @@ const ObserverApp = observer(App);
 ReactDOM.render(
   <MobxStore.Provider value={mobxStore}>
     <ServerError.Provider value={serverError}>
-      <ObserverApp />
+      <Router>
+        <ObserverApp />
+      </Router>
     </ServerError.Provider>
   </MobxStore.Provider>,
   document.querySelector('.app'),

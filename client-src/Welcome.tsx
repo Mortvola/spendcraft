@@ -1,13 +1,18 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import 'regenerator-runtime/runtime';
-import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
+import {
+  BrowserRouter as Router, Switch, Route,
+} from 'react-router-dom';
 import Intro from './Intro';
 import Signin from './Signin';
 import Signup from './Signup';
+import usePageViews from './Tracker';
 
-const Welcome = () => (
-  <Router>
+const Welcome = () => {
+  usePageViews();
+
+  return (
     <Switch>
       <Route path="/signup">
         <Signup />
@@ -19,10 +24,12 @@ const Welcome = () => (
         <Intro />
       </Route>
     </Switch>
-  </Router>
-);
+  );
+};
 
 ReactDOM.render(
-  <Welcome />,
+  <Router>
+    <Welcome />
+  </Router>,
   document.querySelector('.app'),
 );
