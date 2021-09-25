@@ -1,5 +1,10 @@
 @layout('layouts/app')
 
+@section('title')
+	@super
+    @!component('seo')
+@endsection
+
 @section('header')
 	@super
     <link rel="stylesheet" href="css/welcome.css">
