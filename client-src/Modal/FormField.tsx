@@ -10,7 +10,7 @@ type PropsType<V, T, E> = {
   as?: unknown,
   type?: string,
   readOnly?: boolean,
-  autoComplete?: boolean | string,
+  autoComplete?: string,
   onChange?: (event: ChangeEvent<E>, props: FieldProps<V, T>) => void,
   onBlur?: (event: ChangeEvent<E>, props: FieldProps<V, T>) => void,
   children?: ReactNode,

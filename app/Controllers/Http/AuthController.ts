@@ -138,17 +138,6 @@ export default class AuthController {
 
     try {
       await auth.attempt(credentials.username, credentials.password, credentials.remember === 'on');
-
-      if (auth.user) {
-        if (!auth.user.activated) {
-          response.status(422);
-          responseData = {
-            errors: [
-              { field: 'username', message: 'The account associated with this username has not been activated.' },
-            ],
-          };
-        }
-      }
     }
     catch (error) {
       if (error.code === 'E_INVALID_AUTH_UID' || error.code === 'E_INVALID_AUTH_PASSWORD') {

@@ -67,12 +67,12 @@ const Signin = (): ReactElement => {
       >
         <Form className={styles.form}>
           <div className={styles.subtitle}>Enter your username and password.</div>
-          <FormField name="username" label="Username" />
+          <FormField name="username" label="Username" autoComplete="username" />
           <FormField
             type="password"
             name="password"
             label="Password"
-            autoComplete
+            autoComplete="current-password"
           />
 
           <Button className={styles.button} type="submit" variant="primary">

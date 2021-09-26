@@ -44,6 +44,7 @@ const Signup = (): ReactElement => {
     const response = await httpPost('/register', values);
 
     if (response.ok) {
+      window.location.replace('/home');
     }
     else {
       const body = await response.body();
@@ -80,7 +81,7 @@ const Signup = (): ReactElement => {
             type="password"
             name="password"
             label="Password"
-            autoComplete
+            autoComplete="new-password"
           />
           <FormField
             type="password"
