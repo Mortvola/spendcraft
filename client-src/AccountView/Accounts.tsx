@@ -62,7 +62,10 @@ const Accounts = () => {
       {
         selectedAccount
           ? (
-            <DetailView detailView={selectedAccount.tracking} />
+            <DetailView
+              detailView={selectedAccount.tracking}
+              title={`${selectedAccount.institution.name}: ${selectedAccount.name}`}
+            />
           )
           : <div className="register window" />
       }

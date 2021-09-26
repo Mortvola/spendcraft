@@ -3,6 +3,7 @@ import { observer } from 'mobx-react-lite';
 import Institution from './Institution';
 import MobxStore from '../State/mobxStore';
 import { AccountInterface } from '../State/State';
+import styles from './AccountView.module.css';
 
 type PropsType = {
   onAccountSelected: () => void,
@@ -23,7 +24,7 @@ const AccountView = ({
   };
 
   return (
-    <div id="accounts">
+    <div className={styles.accounts}>
       {institutions.map((institution) => (
         <Institution
           key={institution.name}

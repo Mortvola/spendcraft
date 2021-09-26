@@ -85,13 +85,6 @@ body {
   user-select: none;
 }
 
-#accounts {
-  display: flex;
-  flex-flow: column;
-  overflow-y: auto;
-  padding: 0.25rem;
-}
-
 .account-select-item {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
@@ -171,70 +164,6 @@ body {
 
 .add-acct:hover {
   color: white;
-}
-
-.institution-name {
-  text-overflow: ellipsis;
-  overflow: hidden;
-  font-size: larger;
-}
-
-.inst-card {
-  border: thin solid black;
-  border-radius: 8px;
-  margin: 4px;
-  /* overflow: hidden; */
-  box-shadow: 3px 4px 4px 0px rgb(0 0 0 / 25%);
-}
-
-.acct-list-accounts {
-  padding: 4px;
-}
-
-.acct-list-item {
-  display: grid;
-  grid-template-columns: max-content minmax(0, 1fr);
-  align-items: center;
-}
-
-* .acct-list-item:not(:first-child) {
-  border-top: solid thin black;
-  margin-top: 0.25rem;
-  padding-top: 0.25rem;
-}
-
-.acct-list-item>*:nth-child(1) {
-  align-self: start;
-}
-
-.acct-list-item>*:nth-child(2) {
-  overflow: hidden;
-}
-
-.acct-info *:not(:first-child) {
-  margin-left: 4px;
-  font-size: small;
-}
-
-.acct-list-acct {
-  margin-left: 4px;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  overflow: hidden;
-}
-
-.acct-balance {
-  margin-left: 4px;
-  font-size: small;
-}
-
-.acct-list-acct:not(.selected):hover {
-  cursor: pointer;
-  background-color: whitesmoke;
-}
-
-.acct-list-acct.selected {
-  background-color: lightblue;
 }
 
 .register {

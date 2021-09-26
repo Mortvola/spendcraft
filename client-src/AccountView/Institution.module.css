@@ -1,3 +1,11 @@
+.institution-card {
+  border: thin solid black;
+  border-radius: 8px;
+  margin: 4px;
+  overflow: hidden;
+  box-shadow: 3px 4px 4px 0px rgb(0 0 0 / 25%);
+}
+
 .institution {
   display: grid;
   grid-template-columns: 1fr repeat(3, auto max-content);
@@ -7,5 +15,15 @@
   color: white;
   border-bottom: thin gray solid;
   border-radius: 8px 8px 0px 0px;
+}
+
+.institution-name {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  font-size: larger;
+}
+
+.separator {
+  border-top: thin black solid;
 }
 

@@ -66,10 +66,10 @@ function Institution({
   }
 
   return (
-    <div className="inst-card">
+    <div className={styles.institutionCard}>
       <div className={styles.institution}>
         <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <div className="institution-name">{institution.name}</div>
+          <div className={styles.institutionName}>{institution.name}</div>
           <div style={{ display: 'flex', alignSelf: 'flex-end' }}>
             <IconButton icon="trash-alt" onClick={handleDeleteClick} />
             <IconButton icon="plus" onClick={handleAddClick} />
@@ -90,22 +90,29 @@ function Institution({
           </div>
         </div>
       </div>
-      <div className="acct-list-accounts">
+      <div>
         {
-          institution.accounts.map((account) => {
+          institution.accounts.map((account, index) => {
             const selected = selectedAccount
               ? selectedAccount.id === account.id
               : false;
 
             return (
-              <Account
-                key={account.id}
-                institution={institution}
-                account={account}
-                onAccountSelected={onAccountSelected}
-                selected={selected}
-                showAccountDialog={handleEditAccount}
-              />
+              <>
+                {
+                  index !== 0
+                    ? <div key={`sep-${account.id}`} className={styles.separator} />
+                    : null
+                }
+                <Account
+                  key={account.id}
+                  institution={institution}
+                  account={account}
+                  onAccountSelected={onAccountSelected}
+                  selected={selected}
+                  showAccountDialog={handleEditAccount}
+                />
+              </>
             );
           })
         }

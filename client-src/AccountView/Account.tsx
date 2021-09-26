@@ -5,6 +5,7 @@ import { AccountInterface, InstitutionInterface } from '../State/State';
 import { getSubTypeName, getTypeName } from '../State/AccountTypes';
 import Amount from '../Amount';
 import { useRelinkDialog } from './RelinkDialog';
+import styles from './Account.module.css';
 
 type PropsType = {
   selected: boolean,
@@ -35,25 +36,32 @@ const Account = ({
     onAccountSelected(account);
   };
 
-  let className = 'acct-list-acct';
-  if (selected) {
-    className += ' selected';
-  }
-
   let syncDate: string | null = null;
   if (account.syncDate) {
     syncDate = `as of ${account.syncDate.toFormat('LL-dd-y T')}`;
   }
 
+  let acctClassName = styles.account;
+  if (account.type === 'other') {
+    acctClassName += ` ${styles.otherAccount}`
+  }
+  else if (['loan', 'credit'].includes(account.type)) {
+    acctClassName += ` ${styles.creditAccount}`
+  }
+
+  if (selected) {
+    acctClassName += ` ${styles.selected}`;
+  }
+
   return (
-    <div className="acct-list-item">
+    <div className={acctClassName} onClick={accountSelected}>
       {
         !institution.offline
           ? <IconButton icon="sync-alt" rotate={account.refreshing} onClick={refresh} />
           : <IconButton icon="edit" onClick={() => showAccountDialog(account)} />
       }
-      <div className="acct-info">
-        <div className={className} onClick={accountSelected}>{account.name}</div>
+      <div className={styles.accountInfo}>
+        <div className={styles.accountName}>{account.name}</div>
         <div style={{ display: 'flex' }}>
           <Amount style={{ textAlign: 'left' }} amount={account.balance} />
           {

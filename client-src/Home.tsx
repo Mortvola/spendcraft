@@ -31,6 +31,11 @@ const Home = () => {
   }
 
   if (categoryTree.initialized) {
+    let title;
+    if (uiState.selectedCategory) {
+      title = uiState.selectedCategory.name;
+    }
+
     return (
       <Main
         open={open}
@@ -43,7 +48,7 @@ const Home = () => {
         onToggleClick={handleToggleClick}
         className={styles.theme}
       >
-        <DetailView detailView="Transactions" />
+        <DetailView detailView="Transactions" title={title} />
       </Main>
     );
   }
