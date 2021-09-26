@@ -89,20 +89,6 @@ export interface PendingTransactionInterface {
   accountName: string;
 }
 
-export interface GroupMemberInterface {
-  id: number;
-
-  type: CategoryType;
-
-  name: string;
-
-  balance: number;
-
-  transactions: TransactionInterface[];
-
-  getTransactions(): Promise<void>;
-}
-
 export interface AccountsInterface {
   institutions: InstitutionInterface[];
 
@@ -310,7 +296,7 @@ export interface AccountInterface extends TransactionContainerInterface {
 
   getTransactions(): Promise<void>;
 
-  getMoreTransactions(): Promise<void>;
+  getMoreTransactions(): void;
 
   getPendingTransactions(): Promise<void>;
 
