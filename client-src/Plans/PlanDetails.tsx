@@ -8,19 +8,26 @@ import FundingPlanHistoryMonth from '../State/HistoryMonth';
 import HistoryCategory from '../State/HistoryCategory';
 import { CategoryInterface } from '../State/State';
 import { isGroup } from '../State/Group';
+import FundingPlanCategory from '../State/FundingPlanCategory';
 
-const PlanDetails = (): ReactElement | null => {
+type PropsType = {
+  onEditCategory: (category: CategoryInterface, planCategory: FundingPlanCategory) => void,
+}
+
+const PlanDetails = ({
+  onEditCategory,
+}: PropsType): ReactElement | null => {
   const { plans: { details }, categoryTree } = useContext(MobxStore);
   const [scroll, setScroll] = useState(0);
   const [now] = useState({ year: DateTime.now().year, month: DateTime.now().month - 1 });
 
-  const handleOnDeltaChange = (category: CategoryInterface, amount: number, delta: number) => {
-    if (delta !== 0) {
+  const handleDeltaChange = (category: FundingPlanCategory, amount: number) => {
+    if (category.amount !== amount) {
       if (details === null) {
         throw new Error('details is null');
       }
 
-      details.updateCategoryAmount(category.id, amount, delta);
+      details.updateCategoryAmount(category, amount);
     }
   };
 
@@ -29,14 +36,28 @@ const PlanDetails = (): ReactElement | null => {
       throw new Error('details is null');
     }
 
-    const planCategory = details.categories.find((pc) => pc.categoryId === category.id);
+    let planCategory = details.categories.find((pc) => pc.categoryId === category.id)
+
+    if (!planCategory) {
+      console.log('creating new FundingPlanCategory');
+      planCategory = new FundingPlanCategory({
+        amount: 0,
+        categoryId: category.id,
+        useGoal: false,
+        goalDate: DateTime.now().toISODate(),
+        recurrence: 1,
+      })
+
+      details.categories.push(planCategory);
+    }
 
     return (
       <PlanCategory
         key={`${category.groupId}:${category.id}`}
         category={category}
-        amount={planCategory ? planCategory.amount : 0}
-        onDeltaChange={handleOnDeltaChange}
+        planCategory={planCategory}
+        onDeltaChange={handleDeltaChange}
+        onEditCategory={onEditCategory}
       />
     )
   }
@@ -54,7 +75,7 @@ const PlanDetails = (): ReactElement | null => {
   const renderNodes = () => (
     categoryTree.nodes.map((n) => {
       if (details === null) {
-        throw new Error('details i null');
+        throw new Error('details is null');
       }
 
       return (
@@ -179,6 +200,28 @@ const PlanDetails = (): ReactElement | null => {
     setScroll(event.currentTarget.scrollLeft);
   };
 
+  let total = 0;
+  if (details) {
+    total = details.categories.reduce(
+      (accumulator, c) => {
+        if (typeof c.categoryId === 'string') {
+          console.log('categoryId is a string');
+        }
+
+        const cat = categoryTree.getCategory(c.categoryId);
+
+        if (!cat) {
+          throw new Error('category not found');
+        }
+
+        return (
+          accumulator + c.monthlyAmount(cat)
+        );
+      },
+      0,
+    );
+  }
+
   return (
     <div className="plan window">
       {
@@ -209,8 +252,8 @@ const PlanDetails = (): ReactElement | null => {
               </div>
               <div className="plan-total">
                 Plan Total:
-                <Amount amount={details.total} />
-                <Amount amount={details.total * 12} />
+                <Amount amount={total} />
+                <Amount amount={total * 12} />
                 <div className="plan-history" onScroll={handleScroll}>
                   {renderMonthlyTotals()}
                 </div>

@@ -9,7 +9,7 @@ import Footer from './Footer';
 type PropsType<T> = {
   initialValues: T,
   title: string,
-  formId: string,
+  formId?: string,
   children?: ReactNode,
   setShow: (show: boolean) => void,
   onSubmit: ((values: T, bag: FormikHelpers<T>) => void),

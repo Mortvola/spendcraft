@@ -111,7 +111,7 @@ Route.group(() => {
     Route.post('', 'FundingPlanController.add');
     Route.get('/:planId', 'FundingPlanController.getPlan');
     Route.get('/:planId/details', 'FundingPlanController.getFullPlan');
-    Route.put('/:planId/item/:catId', 'FundingPlanController.updateCategory');
+    Route.put('/:planId/item/:catId', 'FundingPlanController.updateOrCreateCategory');
   }).prefix('/funding-plans');
 
   Route.group(() => {

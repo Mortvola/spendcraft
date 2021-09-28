@@ -1,4 +1,9 @@
-import { BaseModel, column } from '@ioc:Adonis/Lucid/Orm';
+/* eslint-disable import/no-cycle */
+import {
+  BaseModel, BelongsTo, belongsTo, column,
+} from '@ioc:Adonis/Lucid/Orm';
+import { DateTime } from 'luxon';
+import Category from './Category';
 
 class FundingPlanCategory extends BaseModel {
   @column()
@@ -21,14 +26,17 @@ class FundingPlanCategory extends BaseModel {
   @column()
   public planId: number;
 
-  static get Serializer(): string {
-    return 'App/Serializer';
-  }
+  @column()
+  public useGoal: boolean;
 
-  // eslint-disable-next-line class-methods-use-this
-  getAmount(amount: string): number {
-    return parseFloat(amount);
-  }
+  @column()
+  public goalDate: DateTime;
+
+  @column()
+  public recurrence: number;
+
+  @belongsTo(() => Category)
+  public category: BelongsTo<typeof Category>;
 }
 
 export default FundingPlanCategory;

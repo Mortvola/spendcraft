@@ -1,0 +1,13 @@
+.plan-detail-item {
+  display: grid;
+  grid-template-columns: 200px 125px 100px max-content;
+}
+
+:global(.plan-group) .plan-detail-item>div:first-child {
+  padding-left: 28px;
+}
+
+.monthly-amount {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+}

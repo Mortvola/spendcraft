@@ -1,9 +1,7 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import { schema } from '@ioc:Adonis/Core/Validator';
-import Database from '@ioc:Adonis/Lucid/Database';
 import FundingPlan, { Plan } from 'App/Models/FundingPlan';
 import FundingPlanCategory from 'App/Models/FundingPlanCategory';
-import { UpdateFundingCategoryResponse } from 'common/ResponseTypes';
 
 class FundingPlanController {
   // eslint-disable-next-line class-methods-use-this
@@ -55,10 +53,7 @@ class FundingPlanController {
   public async getPlan({ request }: HttpContextContract): Promise<Record<string, unknown>> {
     const planId = parseInt(request.params().planId, 10);
 
-    const categories = await FundingPlanCategory
-      .query()
-      .select('category_id', Database.raw('CAST(amount AS DOUBLE PRECISION) AS amount'))
-      .where('plan_id', planId);
+    const categories = await FundingPlanCategory.query().where('planId', planId);
 
     return {
       id: planId,
@@ -84,11 +79,14 @@ class FundingPlanController {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  public async updateCategory({
+  public async updateOrCreateCategory({
     request,
-  }: HttpContextContract): Promise<UpdateFundingCategoryResponse> {
+  }: HttpContextContract): Promise<FundingPlanCategory> {
     const validationSchema = schema.create({
       amount: schema.number(),
+      useGoal: schema.boolean(),
+      goalDate: schema.date(),
+      recurrence: schema.number(),
     });
 
     const { planId, catId } = request.params();
@@ -96,20 +94,17 @@ class FundingPlanController {
       schema: validationSchema,
     });
 
-    const category = await FundingPlanCategory.updateOrCreate(
-      {
-        planId,
-        categoryId: catId,
-      },
+    const item = (await FundingPlanCategory.updateOrCreate(
+      { planId: parseInt(planId, 10), categoryId: parseInt(catId, 10) },
       {
         amount: requestData.amount,
+        useGoal: requestData.useGoal,
+        goalDate: requestData.goalDate,
+        recurrence: requestData.recurrence,
       },
-    );
+    ));
 
-    return {
-      amount: category.amount,
-      categoryId: category.categoryId,
-    };
+    return item;
   }
 }
 

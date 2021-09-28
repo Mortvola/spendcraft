@@ -1,0 +1,33 @@
+.form {
+  padding: 1rem;
+}
+
+.controls {
+  /* display: grid; */
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  column-gap: 1rem;
+}
+
+.goal-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  column-gap: 1rem;
+}
+
+.monthly-amount {
+  margin-top: 8px;
+}
+
+.monthly-amount>div {
+  padding: 6px 12px;
+}
+
+.goal-date-description {
+  font-size: 0.8rem;
+  padding-left: 0.5rem;
+}
+
+.balance {
+  font-size: 0.8rem;
+  padding-left: 0.5rem;
+}

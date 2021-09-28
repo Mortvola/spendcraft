@@ -8,6 +8,7 @@ type PropsType = {
   funding: number,
   onDeltaChange: ((amount: number, delta: number) => void),
 }
+
 const FundingItem = ({
   name,
   initialAmount,

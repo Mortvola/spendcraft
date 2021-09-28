@@ -10,7 +10,6 @@ import Application from 'App/Models/Application';
 export type PlanCategory = {
   id?: number,
   amount: number,
-  name?: string,
   categoryId: number,
 };
 

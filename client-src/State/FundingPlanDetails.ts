@@ -1,5 +1,4 @@
 import { makeAutoObservable, runInAction } from 'mobx';
-import FundingPlanGroup from './FundingPlanGroup';
 import { StoreInterface } from './State';
 import { httpPut } from './Transports';
 import {
@@ -14,8 +13,6 @@ class FundingPlanDetails {
 
   history: HistoryGroup[];
 
-  total: number;
-
   categories: FundingPlanCategory[];
 
   store: StoreInterface;
@@ -24,40 +21,30 @@ class FundingPlanDetails {
     this.id = props.id;
     this.history = props.history;
 
-    let total = 0;
-    this.categories = props.categories.map((c) => {
-      total += c.amount;
-      return new FundingPlanCategory(store, c)
-    });
-
-    this.total = total;
+    this.categories = props.categories.map((c) => (
+      new FundingPlanCategory(c)
+    ));
 
     makeAutoObservable(this);
 
     this.store = store;
   }
 
-  async updateCategoryAmount(categoryId: number, amount: number, delta: number): Promise<void> {
-    const response = await httpPut(`/api/funding-plans/${this.id}/item/${categoryId}`, { amount });
+  async updateCategoryAmount(category: FundingPlanCategory, amount: number): Promise<void> {
+    const oldAmount = category.amount;
+    category.amount = amount;
+
+    const response = await httpPut(`/api/funding-plans/${this.id}/item/${category.categoryId}`, {
+      amount,
+      useGoal: category.useGoal,
+      goalDate: category.goalDate,
+      recurrence: category.recurrence,
+    });
 
     const body = await response.body();
 
-    if (response.ok && isUpdateFundingCategoryResponse(body)) {
-      runInAction(() => {
-        this.categories.some((cat) => {
-          if (cat) {
-            cat.amount = body.amount;
-
-            return true;
-          }
-
-          return false;
-        });
-
-        this.total += delta;
-      });
-    }
-    else {
+    if (!response.ok || !isUpdateFundingCategoryResponse(body)) {
+      category.amount = oldAmount;
       throw new Error('invalid response');
     }
   }

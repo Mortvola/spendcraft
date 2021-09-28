@@ -18,6 +18,7 @@ import FormModal from '../Modal/FormModal';
 import FormError from '../Modal/FormError';
 import Funding, { FundingType } from './Funding';
 import { httpGet } from '../State/Transports';
+import FundingPlanCategory from '../State/FundingPlanCategory';
 
 interface Props {
   transaction?: Transaction;
@@ -120,12 +121,32 @@ const FundingDialog = ({
     setSelectedPlan(parseInt(value, 10));
     const response = await httpGet(`/api/funding-plans/${value}`);
 
-    const body = await response.body();
+    if (response.ok) {
+      const body = await response.body();
 
-    if (isFundingPlanResponse(body)) {
-      const newPlan = { planId: body.id, categories: getPlanCategories(body.categories) };
-      setFunding(newPlan);
-      resetForm({ values: { ...values, funding: newPlan } });
+      if (isFundingPlanResponse(body)) {
+        const newPlan = {
+          planId: body.id,
+          categories: getPlanCategories(
+            body.categories.map((c) => {
+              const fundingCategory = new FundingPlanCategory(c);
+
+              const category = categoryTree.getCategory(c.categoryId);
+
+              if (category === null) {
+                throw new Error('category is null');
+              }
+
+              return {
+                categoryId: c.categoryId,
+                amount: fundingCategory.monthlyAmount(category),
+              }
+            }),
+          ),
+        };
+        setFunding(newPlan);
+        resetForm({ values: { ...values, funding: newPlan } });
+      }
     }
   };
 

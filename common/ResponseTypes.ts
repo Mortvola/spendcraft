@@ -464,24 +464,38 @@ export const isAddAccountsResponse = (r: unknown): r is AddAccountsResponse => (
 );
 
 export interface FundingPlanCategoryProps {
-  id: number;
+  id?: number;
 
   categoryId: number;
 
   amount: number;
 
-  name: string;
+  useGoal: boolean;
+
+  goalDate: string | null;
+
+  recurrence: number;
 }
 
-export interface FundingPlanGroupProps {
-  id: number;
+export const isFundingPlanCategoryProps = (r: unknown): r is FundingPlanCategoryProps => (
+  (r as FundingPlanCategoryProps).id !== undefined
+  && (r as FundingPlanCategoryProps).categoryId !== undefined
+  && (r as FundingPlanCategoryProps).amount !== undefined
+  && (r as FundingPlanCategoryProps).useGoal !== undefined
+  && (r as FundingPlanCategoryProps).goalDate !== undefined
+  && (r as FundingPlanCategoryProps).recurrence !== undefined
+);
 
-  categories: FundingPlanCategoryProps[];
-
-  name: string;
-
-  system: boolean;
+export interface FundingPlan {
+  id: number,
+  categories: FundingPlanCategoryProps[],
 }
+
+export const isFundingPlanResponse = (r: unknown): r is FundingPlan => (
+  (r as FundingPlan).id !== undefined
+  && (Array.isArray((r as FundingPlan).categories))
+  && ((r as FundingPlan).categories.length === 0 || isFundingPlanCategoryProps((r as FundingPlan).categories[0]))
+)
 
 export interface HistoryMonthProps {
   year: number;
@@ -505,16 +519,16 @@ export interface HistoryGroupProps {
   categories: HistoryCategoryProps[];
 }
 
+export interface UpdateCategoryProps {
+  amount: number;
+}
+
 export interface FundingPlanDetailsProps {
   id: number;
 
   history: HistoryGroupProps[];
 
   categories: FundingPlanCategoryProps[];
-}
-
-export interface UpdateCategoryProps {
-  amount: number;
 }
 
 export const isFundingPlanDetailsProps = (
@@ -555,20 +569,9 @@ export type CategoryFundingProps = {
   categoryId: number,
 }
 
-const isCategoryFundingProps = (r: unknown): r is CategoryFundingProps => (
+export const isCategoryFundingProps = (r: unknown): r is CategoryFundingProps => (
   (r as CategoryFundingProps).amount !== undefined
   && (r as CategoryFundingProps).categoryId !== undefined
-)
-
-export interface FundingPlan {
-  id: number,
-  categories: CategoryFundingProps[],
-}
-
-export const isFundingPlanResponse = (r: unknown): r is FundingPlan => (
-  (r as FundingPlan).id !== undefined
-  && (Array.isArray((r as FundingPlan).categories))
-  && ((r as FundingPlan).categories.length === 0 || isCategoryFundingProps((r as FundingPlan).categories[0]))
 )
 
 export interface AccountSyncProps {

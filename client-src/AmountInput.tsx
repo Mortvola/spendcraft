@@ -26,21 +26,20 @@ const AmountInput = ({
   name,
   readOnly,
 }: Props): ReactElement => {
-  const [inputAmount, setInputAmount] = useState(
-    typeof value === 'string'
-      ? parseFloat(value).toFixed(2)
-      : value.toFixed(2),
+  const convertAmount = (amount: string | number) => (
+    typeof amount === 'string'
+      ? parseFloat(amount).toFixed(2)
+      : amount.toFixed(2)
   );
-  const [initialValue, setInitialValue] = useState(
-    typeof value === 'string'
-      ? parseFloat(value).toFixed(2)
-      : value.toFixed(2),
-  );
+
+  const [inputAmount, setInputAmount] = useState<string>(convertAmount(value));
+  const [initialValue, setInitialValue] = useState<string>(convertAmount(value));
   const [showPopover, setShowPopover] = useState(false);
   const ref = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [equation, setEquation] = useState('');
   const [previousAmount, setPreviousAmount] = useState('0');
+  const [focus, setFocus] = useState<boolean>(false);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setInputAmount(event.target.value);
@@ -68,6 +67,7 @@ const AmountInput = ({
 
   const handleFocus = (event: React.ChangeEvent<HTMLInputElement>) => {
     setInitialValue(parseFloat(event.target.value).toFixed(2));
+    setFocus(true);
   };
 
   const handleBlur = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -87,6 +87,8 @@ const AmountInput = ({
     if (onBlur) {
       onBlur(event);
     }
+
+    setFocus(false);
   };
 
   const handleKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -121,6 +123,22 @@ const AmountInput = ({
     setPreviousAmount(inputAmount);
   };
 
+  let inputValue = inputAmount;
+  if (!focus) {
+    let v = value;
+    if (typeof v === 'string') {
+      v = (parseFloat(v) * 100.0) / 100.0;
+    }
+
+    v = Math.round(v * 100.0) / 100.0;
+
+    if (Number.isNaN(v)) {
+      v = 0;
+    }
+
+    inputValue = v.toFixed(2);
+  }
+
   return (
     <>
       <input
@@ -128,7 +146,7 @@ const AmountInput = ({
         ref={ref}
         className={`amount-input dollar-amount ${className}`}
         type="text"
-        value={inputAmount}
+        value={inputValue}
         name={name}
         onChange={handleChange}
         onFocus={handleFocus}

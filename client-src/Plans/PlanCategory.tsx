@@ -3,28 +3,45 @@ import { observer } from 'mobx-react-lite';
 import AmountInput from '../AmountInput';
 import Amount from '../Amount';
 import { CategoryInterface } from '../State/State';
+import IconButton from '../IconButton';
+import styles from './PlanCategory.module.css';
+import FundingPlanCategory from '../State/FundingPlanCategory';
 
 type PropsType = {
   category: CategoryInterface,
-  amount: number,
-  onDeltaChange: ((category: CategoryInterface, amount: number, delta: number) => void),
+  planCategory: FundingPlanCategory,
+  onDeltaChange: ((planCategory: FundingPlanCategory, amount: number) => void),
+  onEditCategory: (category: CategoryInterface, planCategory: FundingPlanCategory) => void,
 }
+
 const PlanCategory = ({
   category,
-  amount,
+  planCategory,
   onDeltaChange,
+  onEditCategory,
 }: PropsType): ReactElement => {
-  const handleDeltaChange = (newAmount: number, delta: number) => {
+  const handleDeltaChange = (newAmount: number) => {
     if (onDeltaChange) {
-      onDeltaChange(category, newAmount, delta);
+      onDeltaChange(planCategory, newAmount);
     }
   };
 
+  const handleEditCategory = () => {
+    onEditCategory(category, planCategory);
+  }
+
   return (
-    <div className="plan-detail-item">
+    <div className={styles.planDetailItem}>
       <div>{category.name}</div>
-      <AmountInput value={amount} onDeltaChange={handleDeltaChange} />
-      <Amount amount={amount * 12} />
+      <div className={styles.monthlyAmount}>
+        {
+          planCategory.useGoal
+            ? <Amount amount={planCategory.monthlyAmount(category)} />
+            : <AmountInput value={planCategory.amount} onDeltaChange={handleDeltaChange} />
+        }
+        <IconButton icon="pencil-alt" onClick={handleEditCategory} />
+      </div>
+      <Amount amount={planCategory.amount * 12} />
     </div>
   );
 };
