@@ -1,5 +1,5 @@
 import { makeAutoObservable, runInAction } from 'mobx';
-import Http from '../Transports/Transports';
+import Http from '@mortvola/http';
 
 export const isNetworthReport = (r: unknown): r is number[][] => (
   true

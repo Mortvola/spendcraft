@@ -2,7 +2,7 @@ import React, { ReactElement, useContext } from 'react';
 import { observer } from 'mobx-react-lite';
 import MobxStore from '../State/mobxStore';
 import { useOfflineAccountDialog } from './OfflineAccountDialog';
-import Http from '../Transports/Transports';
+import Http from '@mortvola/http';
 import useMediaQuery from '../MediaQuery';
 import { useTransactionDialog } from '../Transactions/TransactionDialog';
 

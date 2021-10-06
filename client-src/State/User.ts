@@ -1,7 +1,7 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import { Error, isErrorResponse, isUserProps } from '../../common/ResponseTypes';
 import { UserInterface } from './State';
-import Http from '../Transports/Transports';
+import Http from '@mortvola/http';
 
 class User implements UserInterface {
   username: string | null = null;

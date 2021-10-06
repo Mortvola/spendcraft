@@ -9,7 +9,7 @@ import {
 } from './State';
 import Transaction from './Transaction';
 import TransactionContainer from './TransactionContainer';
-import Http from '../Transports/Transports';
+import Http from '@mortvola/http';
 
 class Account extends TransactionContainer implements AccountInterface {
   id: number;

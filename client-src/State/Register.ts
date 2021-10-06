@@ -8,7 +8,7 @@ import {
 import {
   RegisterInterface, StoreInterface,
 } from './State';
-import Http from '../Transports/Transports';
+import Http from '@mortvola/http';
 
 class Register implements RegisterInterface {
   store: StoreInterface;

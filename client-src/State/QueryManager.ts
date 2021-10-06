@@ -1,6 +1,6 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import { QueryManagerInterface } from './State';
-import Http from '../Transports/Transports';
+import Http from '@mortvola/http';
 
 class QueryManager implements QueryManagerInterface {
   fetching = false;

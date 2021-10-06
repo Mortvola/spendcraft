@@ -1,6 +1,6 @@
 import React, { ReactElement, useEffect, useState } from 'react';
 import Chart from 'react-google-charts';
-import Http from '../Transports/Transports';
+import Http from '@mortvola/http';
 
 export const isNetworthReport = (r: unknown): r is (number | string)[][] => (
   true

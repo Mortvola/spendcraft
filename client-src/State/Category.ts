@@ -8,7 +8,7 @@ import {
 import LoanTransaction from './LoanTransaction';
 import { CategoryInterface, GroupInterface, StoreInterface } from './State';
 import TransactionContainer from './TransactionContainer';
-import Http from '../Transports/Transports';
+import Http from '@mortvola/http';
 
 class Category extends TransactionContainer implements CategoryInterface {
   id: number;

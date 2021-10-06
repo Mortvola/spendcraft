@@ -6,7 +6,7 @@ import {
   CategoryProps,
   isAddCategoryResponse,
 } from '../../common/ResponseTypes';
-import Http from '../Transports/Transports';
+import Http from '@mortvola/http';
 import { CategoryInterface, GroupInterface, StoreInterface } from './State';
 
 class Group implements GroupInterface {

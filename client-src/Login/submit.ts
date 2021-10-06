@@ -1,4 +1,4 @@
-import Http from '../Transports/Transports';
+import Http from '@mortvola/http';
 
 type ErrorsType = Record<string, string[]>;
 

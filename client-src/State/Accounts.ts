@@ -8,7 +8,7 @@ import {
 import {
   AccountInterface, AccountsInterface, InstitutionInterface, StoreInterface,
 } from './State';
-import Http from '../Transports/Transports';
+import Http from '@mortvola/http';
 
 class Accounts implements AccountsInterface {
   institutions: Institution[] = [];

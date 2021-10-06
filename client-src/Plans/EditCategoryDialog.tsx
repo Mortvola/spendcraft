@@ -12,7 +12,7 @@ import FundingPlanCategory from '../State/FundingPlanCategory';
 import Amount from '../Amount';
 import AmountInput from '../AmountInput';
 import FormModal from '../Modal/FormModal';
-import Http from '../Transports/Transports';
+import Http from '@mortvola/http';
 import { isFundingPlanCategoryProps } from '../../common/ResponseTypes';
 import MobxStore from '../State/mobxStore';
 

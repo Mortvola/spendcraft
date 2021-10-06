@@ -8,7 +8,7 @@ import Amount from '../Amount';
 import FormCheckbox from '../Modal/FormCheckbox';
 import FormField from '../Modal/FormField';
 import MobxStore from '../State/mobxStore';
-import Http from '../Transports/Transports';
+import Http from '@mortvola/http';
 import useSortableTable from './SortableTable';
 import ReportControls from './ReportControls';
 

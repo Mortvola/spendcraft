@@ -7,7 +7,7 @@ import {
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import CategorySplits from './CategorySplits';
 import Transaction from './State/Transaction';
-import Http from './Transports/Transports';
+import Http from '@mortvola/http';
 import { TransactionCategoryInterface } from './State/State';
 
 type PropsType = {

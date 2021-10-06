@@ -13,7 +13,7 @@ import {
   NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface,
   TransactionInterface,
 } from './State';
-import Http from '../Transports/Transports';
+import Http from '@mortvola/http';
 
 class Transaction implements TransactionInterface {
   id: number | null;

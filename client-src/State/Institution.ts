@@ -5,7 +5,7 @@ import {
   TrackingType, isAddAccountsResponse, isDeleteAccountResponse, isLinkTokenResponse,
 } from '../../common/ResponseTypes';
 import { AccountInterface, InstitutionInterface, StoreInterface } from './State';
-import Http from '../Transports/Transports';
+import Http from '@mortvola/http';
 import Plaid from './Plaid';
 
 class Institution implements InstitutionInterface {

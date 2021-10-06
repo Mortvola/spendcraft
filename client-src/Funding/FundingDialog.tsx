@@ -17,7 +17,7 @@ import {
 import FormModal from '../Modal/FormModal';
 import FormError from '../Modal/FormError';
 import Funding, { FundingType } from './Funding';
-import Http from '../Transports/Transports';
+import Http from '@mortvola/http';
 import FundingPlanCategory from '../State/FundingPlanCategory';
 
 interface Props {

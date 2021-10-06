@@ -10,7 +10,7 @@ import {
   CategoryInterface, CategoryTreeInterface, StoreInterface,
 } from './State';
 import SystemIds from './SystemIds';
-import Http from '../Transports/Transports';
+import Http from '@mortvola/http';
 
 export type TreeNode = (Category | Group);
 

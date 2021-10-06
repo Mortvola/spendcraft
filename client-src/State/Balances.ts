@@ -1,7 +1,7 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import { BalanceProps, isBalancesResponse } from '../../common/ResponseTypes';
 import { AccountInterface, BalancesInterface, StoreInterface } from './State';
-import Http from '../Transports/Transports';
+import Http from '@mortvola/http';
 
 class Balances implements BalancesInterface {
   account: AccountInterface| null = null;

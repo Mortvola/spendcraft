@@ -17,7 +17,7 @@ import { CategoryBalanceInterface, TransactionCategoryInterface } from '../State
 import MobxStore from '../State/mobxStore';
 import FormModal from '../Modal/FormModal';
 import { isCategoryTreeBalanceResponse, TransactionType } from '../../common/ResponseTypes';
-import Http from '../Transports/Transports';
+import Http from '@mortvola/http';
 import FormError from '../Modal/FormError';
 
 interface Props {

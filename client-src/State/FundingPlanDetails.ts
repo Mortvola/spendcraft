@@ -1,6 +1,6 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import { StoreInterface } from './State';
-import Http from '../Transports/Transports';
+import Http from '@mortvola/http';
 import {
   FundingPlanDetailsProps,
   isUpdateFundingCategoryResponse,

@@ -8,7 +8,7 @@ import {
 import { useHistory } from 'react-router-dom';
 import MobxStore from './State/mobxStore';
 import { Views } from './State/State';
-import Http from './Transports/Transports';
+import Http from '@mortvola/http';
 
 const Menubar = () => {
   const { uiState, user: { username } } = useContext(MobxStore);

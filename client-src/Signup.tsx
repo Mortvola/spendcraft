@@ -5,7 +5,7 @@ import * as responsive from 'react-responsive';
 import FormField from './Modal/FormField';
 import styles from './Signup.module.css';
 import FormError from './Modal/FormError';
-import Http from './Transports/Transports';
+import Http from '@mortvola/http';
 import { isErrorResponse } from '../common/ResponseTypes';
 
 const Signup = (): ReactElement => {

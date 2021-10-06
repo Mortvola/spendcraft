@@ -5,6 +5,7 @@ import 'regenerator-runtime';
 import {
   BrowserRouter as Router, Switch, Route, Redirect,
 } from 'react-router-dom';
+import { ServerError, serverError } from '@mortvola/http';
 import Menubar from './Menubar';
 import Home from './Home';
 import Accounts from './AccountView/Accounts';
@@ -12,7 +13,6 @@ import Reports from './Reports/Reports';
 import Plans from './Plans/Plans';
 import PlaidLink from './PlaidLink';
 import MobxStore, { store as mobxStore } from './State/mobxStore';
-import ServerError, { serverError } from './Transports/ServerError';
 import UserAccount from './UserAccount';
 import usePageViews from './Tracker';
 

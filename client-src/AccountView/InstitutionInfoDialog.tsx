@@ -3,7 +3,7 @@ import { Button, Modal } from 'react-bootstrap';
 import { InstitutionWithInstitutionData, InstitutionWithStatus } from 'plaid';
 import { DateTime } from 'luxon';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
-import Http from '../Transports/Transports';
+import Http from '@mortvola/http';
 import { InstitutionInterface } from '../State/State';
 import styles from './InstitutionInfoDialog.module.css';
 

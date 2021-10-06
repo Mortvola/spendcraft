@@ -2,7 +2,7 @@ import { makeAutoObservable, runInAction } from 'mobx';
 import FundingPlan from './FundingPlan';
 import FundingPlanDetails from './FundingPlanDetails';
 import { FundingPlanInterface, PlansInterface, StoreInterface } from './State';
-import Http from '../Transports/Transports';
+import Http from '@mortvola/http';
 import { isFundingPlansResponse, isFundingPlanProps, isFundingPlanDetailsProps } from '../../common/ResponseTypes';
 
 class Plans implements PlansInterface {
