@@ -8,7 +8,7 @@ import {
 import {
   RegisterInterface, StoreInterface,
 } from './State';
-import { httpPost } from './Transports';
+import Http from '../Transports/Transports';
 
 class Register implements RegisterInterface {
   store: StoreInterface;
@@ -26,7 +26,7 @@ class Register implements RegisterInterface {
     },
     type: TransactionType,
   ): Promise<null> {
-    const response = await httpPost('/api/category-transfer', { ...values, type });
+    const response = await Http.post('/api/category-transfer', { ...values, type });
 
     const body = await response.body();
 

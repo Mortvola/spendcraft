@@ -9,9 +9,7 @@ import {
 } from './State';
 import Transaction from './Transaction';
 import TransactionContainer from './TransactionContainer';
-import {
-  httpPatch, httpPost,
-} from './Transports';
+import Http from '../Transports/Transports';
 
 class Account extends TransactionContainer implements AccountInterface {
   id: number;
@@ -69,7 +67,7 @@ class Account extends TransactionContainer implements AccountInterface {
       this.refreshing = true;
     });
 
-    const response = await httpPost(`/api/institution/${institutionId}/accounts/${this.id}/transactions/sync`);
+    const response = await Http.post(`/api/institution/${institutionId}/accounts/${this.id}/transactions/sync`);
 
     if (response.ok) {
       const body = await response.body();
@@ -129,7 +127,7 @@ class Account extends TransactionContainer implements AccountInterface {
       splits: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
     },
   ): Promise<Error[] | null> {
-    const response = await httpPost(`/api/account/${this.id}/transactions`, values);
+    const response = await Http.post(`/api/account/${this.id}/transactions`, values);
 
     if (response.ok) {
       const body = await response.body();
@@ -157,7 +155,7 @@ class Account extends TransactionContainer implements AccountInterface {
   }
 
   async updateOfflineAccount (name: string): Promise<void> {
-    const response = await httpPatch(`/api/account/${this.id}`, {
+    const response = await Http.patch(`/api/account/${this.id}`, {
       name,
     });
 

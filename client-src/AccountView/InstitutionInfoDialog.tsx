@@ -3,7 +3,7 @@ import { Button, Modal } from 'react-bootstrap';
 import { InstitutionWithInstitutionData, InstitutionWithStatus } from 'plaid';
 import { DateTime } from 'luxon';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
-import { httpGet } from '../State/Transports';
+import Http from '../Transports/Transports';
 import { InstitutionInterface } from '../State/State';
 import styles from './InstitutionInfoDialog.module.css';
 
@@ -22,7 +22,7 @@ const InstitutionInfoDialog = ({
     setInfoInitialized(true);
 
     (async () => {
-      const response = await httpGet(`/api/institution/${institution.id}/info`);
+      const response = await Http.get(`/api/institution/${institution.id}/info`);
 
       if (response.ok) {
         setInfo(await response.json());

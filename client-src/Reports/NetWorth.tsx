@@ -1,6 +1,6 @@
 import React, { ReactElement, useEffect, useState } from 'react';
 import Chart from 'react-google-charts';
-import { httpGet } from '../State/Transports';
+import Http from '../Transports/Transports';
 
 export const isNetworthReport = (r: unknown): r is (number | string)[][] => (
   true
@@ -11,7 +11,7 @@ const Networth = (): ReactElement | null => {
 
   useEffect(() => {
     (async () => {
-      const response = await httpGet('/api/reports/networth');
+      const response = await Http.get('/api/reports/networth');
 
       if (response.ok) {
         const body = await response.body();

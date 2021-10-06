@@ -5,9 +5,7 @@ import {
   TrackingType, isAddAccountsResponse, isDeleteAccountResponse, isLinkTokenResponse,
 } from '../../common/ResponseTypes';
 import { AccountInterface, InstitutionInterface, StoreInterface } from './State';
-import {
-  httpDelete, httpGet, httpPost,
-} from './Transports';
+import Http from '../Transports/Transports';
 import Plaid from './Plaid';
 
 class Institution implements InstitutionInterface {
@@ -39,7 +37,7 @@ class Institution implements InstitutionInterface {
   }
 
   async relink(): Promise<void> {
-    const response = await httpGet(`/api/institution/${this.id}/link-token`);
+    const response = await Http.get(`/api/institution/${this.id}/link-token`);
 
     if (!response.ok) {
       throw new Error('invalid response');
@@ -71,7 +69,7 @@ class Institution implements InstitutionInterface {
     accounts: UnlinkedAccountProps[],
     startDate: string,
   ): Promise<null> {
-    const response = await httpPost(`/api/institution/${this.id}/accounts`, {
+    const response = await Http.post(`/api/institution/${this.id}/accounts`, {
       plaidAccounts: accounts,
       startDate,
     });
@@ -101,7 +99,7 @@ class Institution implements InstitutionInterface {
     tracking: TrackingType,
     rate: number,
   ): Promise<Error[] | null> {
-    const response = await httpPost(`/api/institution/${this.id}/accounts`, {
+    const response = await Http.post(`/api/institution/${this.id}/accounts`, {
       offlineAccounts: [{
         name: accountName,
         balance,
@@ -130,7 +128,7 @@ class Institution implements InstitutionInterface {
   }
 
   async getUnlinkedAccounts(): Promise<void> {
-    const response = await httpGet(`/api/institution/${this.id}/accounts`);
+    const response = await Http.get(`/api/institution/${this.id}/accounts`);
 
     if (response.ok) {
       const body = await response.body();
@@ -153,7 +151,7 @@ class Institution implements InstitutionInterface {
   }
 
   async deleteAccount(account: AccountInterface): Promise<void> {
-    const response = await httpDelete(`/api/institution/${this.id}/accounts/${account.id}`);
+    const response = await Http.delete(`/api/institution/${this.id}/accounts/${account.id}`);
 
     if (response.ok) {
       const body = await response.body();

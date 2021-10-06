@@ -1,9 +1,7 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import { Error, isErrorResponse, isUserProps } from '../../common/ResponseTypes';
 import { UserInterface } from './State';
-import {
-  httpDelete, httpGet, httpPatch, httpPost,
-} from './Transports';
+import Http from '../Transports/Transports';
 
 class User implements UserInterface {
   username: string | null = null;
@@ -21,7 +19,7 @@ class User implements UserInterface {
   }
 
   async load(): Promise<void> {
-    const response = await httpGet('/api/user');
+    const response = await Http.get('/api/user');
 
     if (response.ok) {
       const body = await response.body();
@@ -37,7 +35,7 @@ class User implements UserInterface {
   }
 
   async update(email: string): Promise<Error[] | null> {
-    const response = await httpPatch('/api/user', { email });
+    const response = await Http.patch('/api/user', { email });
 
     const body = await response.body();
 
@@ -62,7 +60,7 @@ class User implements UserInterface {
 
   // eslint-disable-next-line class-methods-use-this
   async resendVerificationLink(): Promise<Error[] | null> {
-    const response = await httpPost('/api/user/pending-email/resend');
+    const response = await Http.post('/api/user/pending-email/resend');
 
     const body = await response.body();
 
@@ -78,7 +76,7 @@ class User implements UserInterface {
   }
 
   async deletePendingEmail(): Promise<Error[] | null> {
-    const response = await httpDelete('/api/user/pending-email');
+    const response = await Http.delete('/api/user/pending-email');
 
     const body = await response.body();
 

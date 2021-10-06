@@ -1,7 +1,7 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import { BalanceProps, isBalancesResponse } from '../../common/ResponseTypes';
 import { AccountInterface, BalancesInterface, StoreInterface } from './State';
-import { httpGet } from './Transports';
+import Http from '../Transports/Transports';
 
 class Balances implements BalancesInterface {
   account: AccountInterface| null = null;
@@ -18,7 +18,7 @@ class Balances implements BalancesInterface {
 
   async load(account: AccountInterface): Promise<void> {
     if (account !== this.account) {
-      const response = await httpGet(`/api/account/${account.id}/balances`);
+      const response = await Http.get(`/api/account/${account.id}/balances`);
 
       if (!response.ok) {
         throw new Error('invalid response');

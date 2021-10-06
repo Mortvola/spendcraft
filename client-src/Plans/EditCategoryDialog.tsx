@@ -12,7 +12,7 @@ import FundingPlanCategory from '../State/FundingPlanCategory';
 import Amount from '../Amount';
 import AmountInput from '../AmountInput';
 import FormModal from '../Modal/FormModal';
-import { httpPut } from '../State/Transports';
+import Http from '../Transports/Transports';
 import { isFundingPlanCategoryProps } from '../../common/ResponseTypes';
 import MobxStore from '../State/mobxStore';
 
@@ -78,7 +78,7 @@ const EditCategoryDialog = ({
     }
 
     const handleSubmit = async (values: FormValues) => {
-      const response = await httpPut(`/api/funding-plans/${plan.id}/item/${category.id}`, {
+      const response = await Http.put(`/api/funding-plans/${plan.id}/item/${category.id}`, {
         amount: values.useGoal === 'goal' ? values.goalAmount : values.amount,
         useGoal: values.useGoal === 'goal',
         goalDate: values.goalDate,

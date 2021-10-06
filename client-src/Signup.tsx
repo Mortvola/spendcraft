@@ -5,7 +5,7 @@ import * as responsive from 'react-responsive';
 import FormField from './Modal/FormField';
 import styles from './Signup.module.css';
 import FormError from './Modal/FormError';
-import { httpPost } from './State/Transports';
+import Http from './Transports/Transports';
 import { isErrorResponse } from '../common/ResponseTypes';
 
 const Signup = (): ReactElement => {
@@ -41,7 +41,7 @@ const Signup = (): ReactElement => {
   }
 
   const handleSubmit = async (values: FormValues, { setErrors }: FormikHelpers<FormValues>) => {
-    const response = await httpPost('/register', values);
+    const response = await Http.post('/register', values);
 
     if (response.ok) {
       window.location.replace('/home');

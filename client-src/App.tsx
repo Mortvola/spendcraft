@@ -12,7 +12,7 @@ import Reports from './Reports/Reports';
 import Plans from './Plans/Plans';
 import PlaidLink from './PlaidLink';
 import MobxStore, { store as mobxStore } from './State/mobxStore';
-import ServerError, { serverError } from './State/ServerError';
+import ServerError, { serverError } from './Transports/ServerError';
 import UserAccount from './UserAccount';
 import usePageViews from './Tracker';
 

@@ -8,9 +8,7 @@ import {
 import LoanTransaction from './LoanTransaction';
 import { CategoryInterface, GroupInterface, StoreInterface } from './State';
 import TransactionContainer from './TransactionContainer';
-import {
-  httpDelete, httpPatch,
-} from './Transports';
+import Http from '../Transports/Transports';
 
 class Category extends TransactionContainer implements CategoryInterface {
   id: number;
@@ -64,7 +62,7 @@ class Category extends TransactionContainer implements CategoryInterface {
   }
 
   async update(name: string, group: GroupInterface): Promise<null | Error[]> {
-    const response = await httpPatch(`/api/groups/${group.id}/categories/${this.id}`, { name });
+    const response = await Http.patch(`/api/groups/${group.id}/categories/${this.id}`, { name });
 
     const body = await response.body();
 
@@ -106,7 +104,7 @@ class Category extends TransactionContainer implements CategoryInterface {
   }
 
   async delete (): Promise<null | Error[]> {
-    const response = await httpDelete(`/api/groups/${this.groupId}/categories/${this.id}`);
+    const response = await Http.delete(`/api/groups/${this.groupId}/categories/${this.id}`);
 
     if (!response.ok) {
       const body = await response.body();

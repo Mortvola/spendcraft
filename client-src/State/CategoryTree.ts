@@ -10,9 +10,7 @@ import {
   CategoryInterface, CategoryTreeInterface, StoreInterface,
 } from './State';
 import SystemIds from './SystemIds';
-import {
-  httpGet, httpPost,
-} from './Transports';
+import Http from '../Transports/Transports';
 
 export type TreeNode = (Category | Group);
 
@@ -124,7 +122,7 @@ class CategoryTree implements CategoryTreeInterface {
   }
 
   async load(): Promise<void> {
-    const response = await httpGet('/api/groups');
+    const response = await Http.get('/api/groups');
 
     const body = await response.body();
 
@@ -175,7 +173,7 @@ class CategoryTree implements CategoryTreeInterface {
   }
 
   async addGroup(name: string): Promise<null | Error[]> {
-    const response = await httpPost('/api/groups', { name });
+    const response = await Http.post('/api/groups', { name });
 
     const body = await response.body();
 

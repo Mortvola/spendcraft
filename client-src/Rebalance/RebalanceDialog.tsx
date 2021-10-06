@@ -17,7 +17,7 @@ import { CategoryBalanceInterface, TransactionCategoryInterface } from '../State
 import MobxStore from '../State/mobxStore';
 import FormModal from '../Modal/FormModal';
 import { isCategoryTreeBalanceResponse, TransactionType } from '../../common/ResponseTypes';
-import { httpGet } from '../State/Transports';
+import Http from '../Transports/Transports';
 import FormError from '../Modal/FormError';
 
 interface Props {
@@ -49,7 +49,7 @@ const RebalanceDialog = ({
       url.search = (new URLSearchParams(params)).toString();
 
       (async () => {
-        const response = await httpGet(url.toString());
+        const response = await Http.get(url.toString());
 
         if (response.ok) {
           const body = await response.body();

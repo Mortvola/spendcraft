@@ -2,7 +2,7 @@ import React, { ReactElement, useContext } from 'react';
 import { observer } from 'mobx-react-lite';
 import MobxStore from '../State/mobxStore';
 import { useOfflineAccountDialog } from './OfflineAccountDialog';
-import { httpPost } from '../State/Transports';
+import Http from '../Transports/Transports';
 import useMediaQuery from '../MediaQuery';
 import { useTransactionDialog } from '../Transactions/TransactionDialog';
 
@@ -23,7 +23,7 @@ const AccountsToolbar = ({
   };
 
   const handleRefresh = async (): Promise<void> => {
-    await httpPost('/api/institutions/sync');
+    await Http.post('/api/institutions/sync');
   };
 
   const renderAccountButtons = () => (

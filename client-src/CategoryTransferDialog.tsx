@@ -7,7 +7,7 @@ import {
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import CategorySplits from './CategorySplits';
 import Transaction from './State/Transaction';
-import { httpPatch, httpPost, httpDelete } from './State/Transports';
+import Http from './Transports/Transports';
 import { TransactionCategoryInterface } from './State/State';
 
 type PropsType = {
@@ -111,7 +111,7 @@ const CategoryTransferDialog = ({
     });
 
     if (transaction) {
-      const response = await httpPatch(`/api/category-transfer/${transaction.id}`,
+      const response = await Http.patch(`/api/category-transfer/${transaction.id}`,
         { date, categories: cats });
 
       if (response.ok) {
@@ -119,7 +119,7 @@ const CategoryTransferDialog = ({
       }
     }
     else {
-      const response = await httpPost('/api/category-transfer',
+      const response = await Http.post('/api/category-transfer',
         { date, categories: cats });
 
       if (response.ok) {
@@ -151,7 +151,7 @@ const CategoryTransferDialog = ({
       throw new Error('transaction is null');
     }
 
-    await httpDelete(`/api/category-transfer/${transaction.id}`);
+    await Http.delete(`/api/category-transfer/${transaction.id}`);
 
     setShow(false);
   };

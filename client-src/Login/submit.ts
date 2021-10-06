@@ -1,4 +1,4 @@
-import { httpPost } from '../State/Transports';
+import Http from '../Transports/Transports';
 
 type ErrorsType = Record<string, string[]>;
 
@@ -17,7 +17,7 @@ const submitForm = async (
     [, formBody[pair[0]]] = pair;
   }
 
-  const response = await httpPost(url, formBody);
+  const response = await Http.post(url, formBody);
 
   if (response.ok) {
     if (response.headers.get('Content-Type') === 'application/json') {

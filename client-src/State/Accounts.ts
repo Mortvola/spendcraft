@@ -8,9 +8,7 @@ import {
 import {
   AccountInterface, AccountsInterface, InstitutionInterface, StoreInterface,
 } from './State';
-import {
-  httpDelete, httpGet, httpPost,
-} from './Transports';
+import Http from '../Transports/Transports';
 
 class Accounts implements AccountsInterface {
   institutions: Institution[] = [];
@@ -28,7 +26,7 @@ class Accounts implements AccountsInterface {
   }
 
   async load(): Promise<void> {
-    const response = await httpGet('/api/connected-accounts');
+    const response = await Http.get('/api/connected-accounts');
 
     if (!response.ok) {
       throw new Error('invalid response');
@@ -62,7 +60,7 @@ class Accounts implements AccountsInterface {
   }
 
   async linkInstitution(): Promise<void> {
-    const response = await httpGet('/api/user/link-token');
+    const response = await Http.get('/api/user/link-token');
 
     if (response.ok) {
       const body = await response.body();
@@ -87,7 +85,7 @@ class Accounts implements AccountsInterface {
     name: string,
     plaidInstitutionId: string,
   ): Promise<Institution | null> {
-    const response = await httpPost('/api/institution', {
+    const response = await Http.post('/api/institution', {
       publicToken,
       institution: {
         name,
@@ -136,7 +134,7 @@ class Accounts implements AccountsInterface {
     tracking: TrackingType,
     rate: number,
   ): Promise<Error[] | null> {
-    const response = await httpPost('/api/institution', {
+    const response = await Http.post('/api/institution', {
       institution: {
         name: instituteName,
       },
@@ -189,7 +187,7 @@ class Accounts implements AccountsInterface {
   }
 
   async deleteInstitution(institution: InstitutionInterface): Promise<void> {
-    const response = await httpDelete(`/api/institution/${institution.id}`);
+    const response = await Http.delete(`/api/institution/${institution.id}`);
 
     if (response.ok) {
       const body = await response.body();

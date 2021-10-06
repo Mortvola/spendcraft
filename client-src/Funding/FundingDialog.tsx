@@ -17,7 +17,7 @@ import {
 import FormModal from '../Modal/FormModal';
 import FormError from '../Modal/FormError';
 import Funding, { FundingType } from './Funding';
-import { httpGet } from '../State/Transports';
+import Http from '../Transports/Transports';
 import FundingPlanCategory from '../State/FundingPlanCategory';
 
 interface Props {
@@ -102,7 +102,7 @@ const FundingDialog = ({
     setPlansInitialized(true);
 
     (async () => {
-      const response = await httpGet('/api/funding-plans');
+      const response = await Http.get('/api/funding-plans');
 
       const body = await response.body();
 
@@ -119,7 +119,7 @@ const FundingDialog = ({
   ) => {
     const { value } = event.target;
     setSelectedPlan(parseInt(value, 10));
-    const response = await httpGet(`/api/funding-plans/${value}`);
+    const response = await Http.get(`/api/funding-plans/${value}`);
 
     if (response.ok) {
       const body = await response.body();

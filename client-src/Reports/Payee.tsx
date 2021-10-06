@@ -8,7 +8,7 @@ import Amount from '../Amount';
 import FormCheckbox from '../Modal/FormCheckbox';
 import FormField from '../Modal/FormField';
 import MobxStore from '../State/mobxStore';
-import { httpGet } from '../State/Transports';
+import Http from '../Transports/Transports';
 import useSortableTable from './SortableTable';
 import ReportControls from './ReportControls';
 
@@ -60,7 +60,7 @@ const Payee = (): ReactElement | null => {
       }
     })
 
-    const response = await httpGet(`/api/reports/payee?${qp}`);
+    const response = await Http.get(`/api/reports/payee?${qp}`);
 
     if (response.ok) {
       const body = await response.body();

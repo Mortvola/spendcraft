@@ -1,5 +1,5 @@
 import { makeAutoObservable, runInAction } from 'mobx';
-import { httpGet } from './Transports';
+import Http from '../Transports/Transports';
 
 export const isNetworthReport = (r: unknown): r is number[][] => (
   true
@@ -34,7 +34,7 @@ class Reports {
   async loadReport(reportType: string): Promise<void> {
     switch (reportType) {
       case 'netWorth': {
-        const response = await httpGet('/api/reports/networth');
+        const response = await Http.get('/api/reports/networth');
 
         if (response.ok) {
           const body = await response.body();
@@ -51,7 +51,7 @@ class Reports {
       }
 
       case 'payee': {
-        const response = await httpGet('/api/reports/payee');
+        const response = await Http.get('/api/reports/payee');
 
         if (response.ok) {
           const body = await response.body();

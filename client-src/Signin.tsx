@@ -2,7 +2,7 @@ import React, { ReactElement } from 'react';
 import { Form, Formik, FormikHelpers } from 'formik';
 import { Button } from 'react-bootstrap';
 import * as responsive from 'react-responsive';
-import { httpPost } from './State/Transports';
+import Http from './Transports/Transports';
 import styles from './Signin.module.css';
 import FormError from './Modal/FormError';
 import FormField from './Modal/FormField';
@@ -35,7 +35,7 @@ const Signin = (): ReactElement => {
   }
 
   const handleSubmit = async (values: FormValues, { setErrors }: FormikHelpers<FormValues>) => {
-    const response = await httpPost('/login', values);
+    const response = await Http.post('/login', values);
 
     if (response.ok) {
       window.location.replace('/home');

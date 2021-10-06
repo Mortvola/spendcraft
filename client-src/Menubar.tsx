@@ -8,7 +8,7 @@ import {
 import { useHistory } from 'react-router-dom';
 import MobxStore from './State/mobxStore';
 import { Views } from './State/State';
-import { httpPost } from './State/Transports';
+import Http from './Transports/Transports';
 
 const Menubar = () => {
   const { uiState, user: { username } } = useContext(MobxStore);
@@ -16,7 +16,7 @@ const Menubar = () => {
 
   const logout = () => {
     (async () => {
-      const response = await httpPost('/api/logout');
+      const response = await Http.post('/api/logout');
 
       if (response.ok) {
         window.location.replace('/');
