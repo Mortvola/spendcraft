@@ -122,6 +122,6 @@ const InstitutionInfoDialog = ({
   );
 };
 
-export const useInstitutionInfoDialog = makeUseModal<PropsType>(InstitutionInfoDialog, 'lg');
+export const useInstitutionInfoDialog = makeUseModal<PropsType>(InstitutionInfoDialog, { size: 'lg' });
 
 export default InstitutionInfoDialog;

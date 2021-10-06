@@ -202,6 +202,6 @@ const RebalanceDialog = ({
   );
 };
 
-export const useRebalanceDialog = makeUseModal<Props>(RebalanceDialog, 'lg');
+export const useRebalanceDialog = makeUseModal<Props>(RebalanceDialog, { size: 'lg' });
 
 export default RebalanceDialog;

@@ -287,6 +287,6 @@ const TransactionDialog = ({
   );
 };
 
-export const useTransactionDialog = makeUseModal<PropsType>(TransactionDialog, 'lg');
+export const useTransactionDialog = makeUseModal<PropsType>(TransactionDialog, { size: 'lg' });
 
 export default TransactionDialog;

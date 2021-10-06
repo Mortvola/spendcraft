@@ -350,6 +350,6 @@ const FundingDialog = ({
   );
 };
 
-export const useFundingDialog = makeUseModal<Props>(FundingDialog, 'lg');
+export const useFundingDialog = makeUseModal<Props>(FundingDialog, { size: 'lg' });
 
 export default FundingDialog;
