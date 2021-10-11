@@ -67,7 +67,7 @@ const Accounts = () => {
               title={`${selectedAccount.institution.name}: ${selectedAccount.name}`}
             />
           )
-          : <div className="register window" />
+          : <div className="register window window1" />
       }
     </Main>
   );

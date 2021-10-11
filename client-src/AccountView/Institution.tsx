@@ -98,21 +98,20 @@ function Institution({
               : false;
 
             return (
-              <>
+              <div key={account.id}>
                 {
                   index !== 0
-                    ? <div key={`sep-${account.id}`} className={styles.separator} />
+                    ? <div className={styles.separator} />
                     : null
                 }
                 <Account
-                  key={account.id}
                   institution={institution}
                   account={account}
                   onAccountSelected={onAccountSelected}
                   selected={selected}
                   showAccountDialog={handleEditAccount}
                 />
-              </>
+              </div>
             );
           })
         }

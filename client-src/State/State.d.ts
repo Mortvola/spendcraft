@@ -321,12 +321,40 @@ export interface AccountInterface extends TransactionContainerInterface {
   updateOfflineAccount(name: string): void;
 }
 
+export interface BalanceInterface {
+  id: number;
+
+  date: DateTime;
+
+  balance: number;
+
+  update(
+    values: {
+      date: string,
+      amount: number,
+    },
+  ): Promise<Error[] | null>;
+
+  delete(): Promise<null | Error[]>;
+}
+
 export interface BalancesInterface {
   account: AccountInterface | null;
 
-  balances: Array<unknown>;
+  balances: Balance[];
 
   store: StoreInterface;
+
+  addBalance(
+    values: {
+      date: string,
+      amount: number,
+    },
+  ): Promise<Error[] | null>;
+
+  insertBalance(balance: Balance): void;
+
+  removeBalance(balance: BalanceInterface);
 }
 
 export interface PlansInterface {

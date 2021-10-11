@@ -27,7 +27,7 @@ const AccountView = ({
     <div className={styles.accounts}>
       {institutions.map((institution) => (
         <Institution
-          key={institution.name}
+          key={institution.id}
           institution={institution}
           onAccountSelected={handleAccountSelected}
           selectedAccount={selectedAccount}

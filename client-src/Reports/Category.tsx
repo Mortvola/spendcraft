@@ -60,7 +60,7 @@ const Category = (): ReactElement | null => {
   }
 
   return (
-    <div className="payee-report window">
+    <div className="payee-report window window1">
       <Formik<FormValues>
         initialValues={{
           startDate: DateTime.now().minus({ years: 1 }).toISODate(),

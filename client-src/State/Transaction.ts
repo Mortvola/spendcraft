@@ -1,5 +1,6 @@
 import { DateTime } from 'luxon';
 import { makeAutoObservable, runInAction } from 'mobx';
+import Http from '@mortvola/http';
 import {
   Error,
   TransactionType,
@@ -13,7 +14,6 @@ import {
   NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface,
   TransactionInterface,
 } from './State';
-import Http from '@mortvola/http';
 
 class Transaction implements TransactionInterface {
   id: number | null;

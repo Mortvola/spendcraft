@@ -5,6 +5,7 @@ import { CategoryInterface, TransactionInterface } from '../State/State';
 import useMediaQuery from '../MediaQuery';
 import { TransactionType } from '../../common/ResponseTypes';
 import styles from './Transactions.module.css'
+import Date from '../Date';
 
 type PropsType = {
   transaction: TransactionInterface,
@@ -23,7 +24,6 @@ const Transaction = ({
 }: PropsType): ReactElement => {
   const { uiState } = useContext(MobxStore);
   const { isMobile } = useMediaQuery();
-  const dateFormat = 'LL/dd/yy';
 
   const handleClick = () => {
     uiState.selectTransaction(transaction);
@@ -48,7 +48,7 @@ const Transaction = ({
       return (
         <div className={styles.transactionWrapper} key={transaction.id}>
           <div className={`mobile ${transactionClassName}`} onClick={handleClick}>
-            <div className="transaction-field">{transaction.date.toFormat(dateFormat)}</div>
+            <Date className="transaction-field" date={transaction.date} />
             <div className="transaction-field">{transaction.name}</div>
             <Amount className="transaction-field currency" amount={amount} />
             <div
@@ -65,7 +65,7 @@ const Transaction = ({
     return (
       <div className={styles.transactionWrapper} key={transaction.id}>
         <div className={`mobile ${transactionClassName}`} onClick={handleClick}>
-          <div className="transaction-field">{transaction.date.toFormat(dateFormat)}</div>
+          <Date className="transaction-field" date={transaction.date} />
           <div className="transaction-field">{transaction.name}</div>
           <Amount className="transaction-field currency" amount={amount} />
         </div>
@@ -98,7 +98,7 @@ const Transaction = ({
       <div className={styles.transactionWrapper} key={transaction.id}>
         <div className={transactionClassName} onClick={handleClick}>
           <div />
-          <div className="transaction-field">{transaction.date.toFormat(dateFormat)}</div>
+          <Date className="transaction-field" date={transaction.date} />
           <div className="transaction-field">{transaction.name}</div>
           {transactionAmount()}
           <Amount className="transaction-field currency" amount={amount} />
@@ -114,7 +114,7 @@ const Transaction = ({
     <div className={styles.transactionWrapper} key={transaction.id}>
       <div className={transactionClassName} onClick={handleClick}>
         <div />
-        <div>{transaction.date.toFormat(dateFormat)}</div>
+        <Date date={transaction.date} />
         <div className="transaction-field">{transaction.name}</div>
         <Amount className="transaction-field currency" amount={amount} />
         <Amount className="transaction-field currency" amount={runningBalance} />

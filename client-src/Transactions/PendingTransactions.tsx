@@ -4,6 +4,7 @@ import useMediaQuery from '../MediaQuery';
 import styles from './Transactions.module.css'
 import Amount from '../Amount';
 import { PendingTransactionInterface } from '../State/State';
+import Date from '../Date';
 
 type PropsType = {
   pending?: PendingTransactionInterface[],
@@ -15,7 +16,6 @@ const PendingTransactions = ({
   categoryView = false,
 }: PropsType): ReactElement | null => {
   const { isMobile } = useMediaQuery();
-  const dateFormat = 'LL/dd/yy';
 
   if (isMobile) {
     if (categoryView) {
@@ -24,7 +24,7 @@ const PendingTransactions = ({
           {
             pending.map((transaction) => (
               <div key={transaction.id} className={`mobile ${styles.pendingTransaction}`}>
-                <div className="tranaction-field">{transaction.date.toFormat(dateFormat)}</div>
+                <Date className="tranaction-field" date={transaction.date} />
                 <div className="transaction-field">{transaction.name}</div>
                 <Amount className="transaction-field currency" amount={transaction.amount} />
                 <div
@@ -45,7 +45,7 @@ const PendingTransactions = ({
         {
           pending.map((transaction) => (
             <div key={transaction.id} className={`mobile ${styles.acctPendingTransaction}`}>
-              <div className="tranaction-field">{transaction.date.toFormat(dateFormat)}</div>
+              <Date className="tranaction-field" date={transaction.date} />
               <div className="transaction-field">{transaction.name}</div>
               <Amount className="transaction-field currency" amount={transaction.amount} />
             </div>
@@ -62,7 +62,7 @@ const PendingTransactions = ({
           pending.map((transaction) => (
             <div key={transaction.id} className={styles.pendingTransaction}>
               <div />
-              <div className="tranaction-field">{transaction.date.toFormat(dateFormat)}</div>
+              <Date className="tranaction-field" date={transaction.date} />
               <div className="transaction-field">{transaction.name}</div>
               <Amount className="transaction-field currency" amount={transaction.amount} />
               <div className="transaction-field">{transaction.instituteName}</div>
@@ -80,7 +80,7 @@ const PendingTransactions = ({
         pending.map((transaction) => (
           <div key={transaction.id} className={styles.acctPendingTransaction}>
             <div />
-            <div className="tranaction-field">{transaction.date.toFormat(dateFormat)}</div>
+            <Date className="tranaction-field" date={transaction.date} />
             <div className="transaction-field">{transaction.name}</div>
             <Amount className="transaction-field currency" amount={transaction.amount} />
           </div>

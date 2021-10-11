@@ -46,7 +46,7 @@ const Register = (): ReactElement => {
 
   return (
     <>
-      <div className="register window">
+      <div className="register window window1">
         <div />
         <RegisterTitles category={category} />
         <RegisterTransactions

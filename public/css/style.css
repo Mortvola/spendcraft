@@ -171,7 +171,6 @@ body {
   grid-template-rows: repeat(2, max-content) 1fr;
   user-select: none;
   min-height: 25%;
-  grid-area: window1;
 }
 
 .pending {
@@ -588,8 +587,11 @@ body {
   grid-template-columns: 1.5fr repeat(5, minmax(0, 1fr));
 }
 
-.chart-wrapper {
+.window1 {
   grid-area: window1;
+}
+
+.chart-wrapper {
   background-color: #ffffffff;
   border-radius: 0.5rem;
   overflow: clip;
@@ -614,7 +616,6 @@ body {
   border-radius: 0.5rem;
   overflow: clip;
   position: relative;
-  grid-area: window1;
 }
 
 .plan-detail-wrapper {
@@ -734,7 +735,6 @@ body {
 
 .payee-report {
   padding: 1rem;
-  grid-area: window1;
   display: grid;
   grid-template-rows: max-content minmax(0, 1fr);
   grid-template-columns: minmax(0, 1fr);

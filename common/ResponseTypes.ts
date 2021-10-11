@@ -605,6 +605,7 @@ export const isLinkTokenResponse = (
 );
 
 export interface BalanceProps {
+  id: number,
   balance: number;
   date: string;
 }
@@ -617,6 +618,28 @@ export const isBalancesResponse = (r: unknown): r is BalanceProps[] => (
   (r as BalanceProps[]).length === 0
   || isBalanceProps((r as BalanceProps[])[0])
 );
+
+export type AddBalanceResponse = {
+  id: number,
+  balance: number,
+  date: string,
+  accountBalance: number,
+}
+
+export const isAddBalanceResponse = (r: unknown): r is AddBalanceResponse => (
+  (r as AddBalanceResponse).balance !== undefined
+)
+
+export type UpdateBalanceResponse = {
+  balance: number,
+  date: string,
+  accountBalance: number,
+}
+
+export const isUpdateBalanceResponse = (r: unknown): r is UpdateBalanceResponse => (
+  (r as UpdateBalanceResponse).balance !== undefined
+  && (r as UpdateBalanceResponse).date !== undefined
+)
 
 export interface UserProps {
   username: string;

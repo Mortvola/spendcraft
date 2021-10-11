@@ -223,7 +223,7 @@ const PlanDetails = ({
   }
 
   return (
-    <div className="plan window">
+    <div className="plan window window1">
       {
         details
           ? (

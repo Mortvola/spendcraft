@@ -42,7 +42,7 @@ const Reports = (): ReactElement => {
         return <Category />;
 
       default:
-        return <div className="chart-wrapper window" />;
+        return <div className="chart-wrapper window window1" />;
     }
 
     return null;

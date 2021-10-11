@@ -43,7 +43,7 @@ const Networth = (): ReactElement | null => {
   }, []);
 
   return (
-    <div className="chart-wrapper window">
+    <div className="chart-wrapper window window1">
       {
         data !== null
           ? (

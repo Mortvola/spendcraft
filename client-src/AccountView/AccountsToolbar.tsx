@@ -1,10 +1,11 @@
 import React, { ReactElement, useContext } from 'react';
 import { observer } from 'mobx-react-lite';
+import Http from '@mortvola/http';
 import MobxStore from '../State/mobxStore';
 import { useOfflineAccountDialog } from './OfflineAccountDialog';
-import Http from '@mortvola/http';
 import useMediaQuery from '../MediaQuery';
 import { useTransactionDialog } from '../Transactions/TransactionDialog';
+import { useBalanceDialog } from './BalanceDialog';
 
 type PropsType = {
   open?: boolean,
@@ -13,9 +14,10 @@ type PropsType = {
 const AccountsToolbar = ({
   open,
 }: PropsType): ReactElement => {
-  const { accounts, uiState } = useContext(MobxStore);
+  const { accounts, uiState, balances } = useContext(MobxStore);
   const [OfflineAccountDialog, showOfflineAccountDialog] = useOfflineAccountDialog();
   const [TransactionDialog, showTransactionDialog] = useTransactionDialog();
+  const [BalanceDialog, showBalanceDialog] = useBalanceDialog();
   const { isMobile } = useMediaQuery();
 
   const addInstitution = () => {
@@ -39,6 +41,17 @@ const AccountsToolbar = ({
       : null
   )
 
+  const showDialog = () => {
+    if (uiState.selectedAccount
+      && uiState.selectedAccount.tracking === 'Balances'
+    ) {
+      showBalanceDialog();
+    }
+    else {
+      showTransactionDialog();
+    }
+  }
+
   return (
     <>
       {renderAccountButtons()}
@@ -48,12 +61,17 @@ const AccountsToolbar = ({
             <>
               <button
                 type="button"
-                onClick={showTransactionDialog}
+                onClick={showDialog}
                 disabled={uiState.selectedAccount === null}
               >
-                Add Transaction
+                {
+                  uiState.selectedAccount && uiState.selectedAccount.tracking === 'Balances'
+                    ? 'Add Balance'
+                    : 'Add Transaction'
+                }
               </button>
               <TransactionDialog account={uiState.selectedAccount} />
+              <BalanceDialog balances={balances} />
             </>
           )
           : null
