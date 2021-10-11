@@ -13,7 +13,7 @@ import { sha256 } from 'js-sha256';
 import jwt from 'jsonwebtoken';
 import Env from '@ioc:Adonis/Core/Env';
 import Mail from '@ioc:Adonis/Addons/Mail';
-import { Exception } from '@adonisjs/drive/node_modules/@poppinss/utils';
+import { Exception } from '@poppinss/utils';
 import Application from 'App/Models/Application';
 
 export default class User extends BaseModel {

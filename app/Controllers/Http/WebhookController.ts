@@ -13,7 +13,7 @@ import Institution from 'App/Models/Institution';
 import Application from 'App/Models/Application';
 import Mail from '@ioc:Adonis/Addons/Mail';
 import Env from '@ioc:Adonis/Core/Env';
-import { Exception } from '@adonisjs/drive/node_modules/@poppinss/utils';
+import { Exception } from '@poppinss/utils';
 import Logger from '@ioc:Adonis/Core/Logger'
 
 type Key = {

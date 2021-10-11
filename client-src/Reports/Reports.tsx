@@ -7,6 +7,7 @@ import Main from '../Main';
 import styles from './Reports.module.css';
 import useMediaQuery from '../MediaQuery'
 import ReportList from './ReportList';
+import IncomeVsExpenses from './IncomeVsExpenses';
 
 const Reports = (): ReactElement => {
   const [reportType, setReportType] = useState<string | null>(null);
@@ -28,6 +29,7 @@ const Reports = (): ReactElement => {
     { value: 'netWorth', name: 'Net Worth' },
     { value: 'payee', name: 'Payee' },
     { value: 'category', name: 'Category' },
+    { value: 'incomeVsExpenses', name: 'Income Vs. Expenses' },
   ];
 
   const renderReport = (): ReactElement | null => {
@@ -40,6 +42,9 @@ const Reports = (): ReactElement => {
 
       case 'category':
         return <Category />;
+
+      case 'incomeVsExpenses':
+        return <IncomeVsExpenses />
 
       default:
         return <div className="chart-wrapper window window1" />;

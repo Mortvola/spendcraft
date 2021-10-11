@@ -15,7 +15,7 @@ import TransactionCategory from 'App/Models/TransactionCategory';
 import { DateTime } from 'luxon';
 import BalanceHistory from 'App/Models/BalanceHistory';
 import Application from 'App/Models/Application';
-import { Exception } from '@adonisjs/drive/node_modules/@poppinss/utils';
+import { Exception } from '@poppinss/utils';
 
 type OnlineAccount = {
   plaidAccountId: string,

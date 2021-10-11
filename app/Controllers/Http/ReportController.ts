@@ -5,6 +5,7 @@ import { TransactionType } from 'Common/ResponseTypes';
 
 type NetworthReportType = (string | number)[][];
 type PayeeReportType = Record<string, unknown>[];
+type IncomeVsExpensesReportType = [string, number, number, number][];
 
 class ReportController {
   // eslint-disable-next-line class-methods-use-this
@@ -36,6 +37,10 @@ class ReportController {
           c,
         } = request.qs();
         return ReportController.category(application, startDate, endDate, c);
+      }
+
+      case 'income-vs-expenses': {
+        return ReportController.incomeVsExpenses(application)
       }
 
       default:
@@ -266,6 +271,35 @@ class ReportController {
     }
 
     return [];
+  }
+
+  private static async incomeVsExpenses(
+    application: Application,
+  ): Promise<IncomeVsExpensesReportType> {
+    const query = await Database.query()
+      .select(
+        Database.raw(
+          'date_part(\'year\', date) || '
+          + '\'-\' || lpad(cast(date_part(\'month\', date) as varchar), 2, \'0\') as month',
+        ),
+        Database.raw('sum(cASE WHEN amount >= 0 THEN amount ELSE 0 END) as income'),
+        Database.raw('sum(cASE WHEN amount < 0 THEN amount ELSE 0 END) as expenses'),
+      )
+      .from('transactions as t')
+      .join('account_transactions as at', 'at.transaction_id', 't.id')
+      .join('accounts as a', 'a.id', 'at.account_id')
+      .where('t.application_id', application.id)
+      .andWhere('a.tracking', 'Transactions')
+      .andWhere('t.type', '!=', TransactionType.STARTING_BALANCE)
+      .groupByRaw('date_part(\'year\', date) || \'-\' || lpad(cast(date_part(\'month\', date) as varchar), 2, \'0\')')
+      .orderBy('month', 'asc');
+
+    return query.map((row) => [
+      row.month,
+      parseFloat(row.income),
+      parseFloat(row.expenses),
+      parseFloat(row.income) + parseFloat(row.expenses),
+    ]);
   }
 }
 
