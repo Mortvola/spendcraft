@@ -25,7 +25,7 @@
   "dependencies": {
     "@adonisjs/application": "^5.1.7",
     "@adonisjs/auth": "^8.0.9",
-    "@adonisjs/core": "^5.3.4",
+    "@adonisjs/core": "^5.4.0",
     "@adonisjs/lucid": "^15.0.3",
     "@adonisjs/mail": "^7.2.4",
     "@adonisjs/repl": "^3.1.6",
