@@ -1,7 +1,7 @@
 import { BaseCommand, flags } from '@adonisjs/core/build/standalone'
 import Database from '@ioc:Adonis/Lucid/Database';
 import Category from 'App/Models/Category';
-import User from 'App/Models/User';
+import Application from 'App/Models/Application';
 import Account from 'App/Models/Account';
 import AccountTransaction from 'App/Models/AccountTransaction';
 
@@ -39,13 +39,16 @@ export default class CheckBalances extends BaseCommand {
   private async checkCategoryBalances() {
     const trx = await Database.transaction();
 
-    let users: User[] = [];
+    let apps: Application[] = [];
 
     if (this.user) {
-      users = await User.query({ client: trx }).where('username', this.user);
+      apps = await Application.query({ client: trx })
+        .whereHas('users', (query) => {
+          query.where('username', this.user)
+        });
     }
     else {
-      users = await User.query({ client: trx }).orderBy('username', 'asc');
+      apps = await Application.query({ client: trx });
     }
 
     type Failures = {
@@ -53,23 +56,23 @@ export default class CheckBalances extends BaseCommand {
       transSum: number,
     };
 
-    const failedUsers: {
-      username: string,
+    const failedApps: {
+      appId: number,
       failures: Failures[],
     }[] = [];
 
     // eslint-disable-next-line no-restricted-syntax
-    for (const user of users) {
+    for (const app of apps) {
       // eslint-disable-next-line no-await-in-loop
       const categories = await Category
         .query({ client: trx })
         .whereHas('group', (group) => {
-          group.where('userId', user.id)
+          group.where('applicationId', app.id)
         })
         .withAggregate('transactionCategory', (query) => {
           query.sum('amount').as('trans_sum')
             .whereHas('transaction', (transaction) => {
-              transaction.where('userId', user.id)
+              transaction.where('applicationId', app.id)
             });
         })
         .preload('group');
@@ -80,7 +83,7 @@ export default class CheckBalances extends BaseCommand {
       const unassignedTrans = await AccountTransaction
         .query({ client: trx })
         .whereHas('transaction', (query) => {
-          query.where('userId', user.id).doesntHave('transactionCategories')
+          query.where('applicationId', app.id).doesntHave('transactionCategories')
         })
         .whereHas('account', (query) => {
           query.where('tracking', 'Transactions')
@@ -90,11 +93,11 @@ export default class CheckBalances extends BaseCommand {
         .as('sum')
         .first();
 
-      if (unassignedTrans && parseFloat(unassignedTrans.$extras.sum) !== 0) {
+      if (unassignedTrans && parseFloat(unassignedTrans.$extras.sum ?? 0) !== 0) {
         const unassignedCat = categories.find((c) => c.type === 'UNASSIGNED');
         if (unassignedCat) {
           unassignedCat.$extras.trans_sum = parseFloat(unassignedCat.$extras.trans_sum ?? 0)
-            + parseFloat(unassignedTrans.$extras.sum);
+            + parseFloat(unassignedTrans.$extras.sum ?? 0);
         }
       }
 
@@ -112,19 +115,19 @@ export default class CheckBalances extends BaseCommand {
       }
 
       if (failures.length > 0) {
-        failedUsers.push({
-          username: user.username,
+        failedApps.push({
+          appId: app.id,
           failures,
         });
       }
     }
 
-    if (failedUsers.length > 0) {
+    if (failedApps.length > 0) {
       // eslint-disable-next-line no-restricted-syntax
-      for (const user of failedUsers) {
-        this.logger.info(user.username);
+      for (const app of failedApps) {
+        this.logger.info(`${app.appId}`);
         // eslint-disable-next-line no-restricted-syntax
-        for (const failure of user.failures) {
+        for (const failure of app.failures) {
           const { category, transSum } = failure;
           const difference = category.amount - transSum;
           this.logger.info(`\t"${category.group.name}:${category.name}" (${category.id}): ${category.amount}, Transactions: ${transSum}, difference: ${difference}`);
@@ -150,27 +153,27 @@ export default class CheckBalances extends BaseCommand {
   private async checkAccountBalances() {
     const trx = await Database.transaction();
 
-    const users = await User.all({ client: trx });
+    const apps = await Application.all({ client: trx });
 
     type Failures = {
       account: Account,
       transSum: number,
     };
 
-    const failedUsers: {
-      username: string,
+    const failedApps: {
+      appId: number,
       failures: Failures[],
     }[] = [];
 
     // eslint-disable-next-line no-restricted-syntax
-    for (const user of users) {
+    for (const app of apps) {
       // eslint-disable-next-line no-await-in-loop
       const accounts = await Account
         .query()
         // .has('accountTransactions')
         .where('tracking', '!=', 'Balances')
         .whereHas('institution', (query) => {
-          query.where('userId', user.id)
+          query.where('applicationId', app.id)
         })
         .withAggregate('accountTransactions', (query) => {
           query.sum('amount').where('pending', false).as('trans_sum')
@@ -190,19 +193,19 @@ export default class CheckBalances extends BaseCommand {
       }
 
       if (failures.length > 0) {
-        failedUsers.push({
-          username: user.username,
+        failedApps.push({
+          appId: app.id,
           failures,
         });
       }
     }
 
-    if (failedUsers.length > 0) {
+    if (failedApps.length > 0) {
       // eslint-disable-next-line no-restricted-syntax
-      for (const user of failedUsers) {
-        this.logger.info(user.username);
+      for (const app of failedApps) {
+        this.logger.info(`${app.appId}`);
         // eslint-disable-next-line no-restricted-syntax
-        for (const failure of user.failures) {
+        for (const failure of app.failures) {
           const { account, transSum } = failure;
           const difference = account.balance - transSum;
           this.logger.info(`\t"${account.name}" (${account.id}): ${account.balance}, Transactions: ${transSum}, difference: ${difference}`);
