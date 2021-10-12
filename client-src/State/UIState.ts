@@ -9,8 +9,6 @@ import {
 import Plaid from './Plaid';
 
 class UIState implements UIStateInterface {
-  view: Views = 'HOME';
-
   selectedCategory: CategoryInterface | null = null;
 
   selectedPlan: FundingPlanInterface | null = null;
@@ -27,17 +25,6 @@ class UIState implements UIStateInterface {
     makeAutoObservable(this);
 
     this.store = store;
-  }
-
-  setView(view: Views): void {
-    runInAction(() => {
-      if (view === 'HOME' && this.view === 'HOME') {
-        this.selectedCategory = this.store.categoryTree.unassignedCat;
-      }
-      else {
-        this.view = view;
-      }
-    });
   }
 
   selectCategory(category: Category | null): void {

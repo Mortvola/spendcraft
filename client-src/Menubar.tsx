@@ -6,9 +6,9 @@ import {
   NavDropdown,
 } from 'react-bootstrap';
 import { useHistory } from 'react-router-dom';
+import Http from '@mortvola/http';
 import MobxStore from './State/mobxStore';
 import { Views } from './State/State';
-import Http from '@mortvola/http';
 
 const Menubar = () => {
   const { uiState, user: { username } } = useContext(MobxStore);
@@ -54,10 +54,6 @@ const Menubar = () => {
 
       default:
         break;
-    }
-
-    if (eventKey && eventKey !== 'LOGOUT') {
-      uiState.setView(eventKey as Views);
     }
   };
 

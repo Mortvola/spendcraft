@@ -160,10 +160,8 @@ export interface FundingPlanInterface {
 export type Views = 'HOME' | 'PLANS' | 'ACCOUNTS' | 'REPORTS' | 'USER_ACCOUNT' | 'LOGOUT';
 
 export interface UIStateInterface {
-  view: Views;
   selectCategory(category: CategoryInterface | null): void;
   selectAccount(account: AccountInterface | null): void;
-  setView(view: Views): void;
   selectPlan(plan: FundingPlanInterface | null): void;
   selectTransaction(transaction: TransactionInterface | null): void;
 

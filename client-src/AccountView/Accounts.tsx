@@ -65,6 +65,7 @@ const Accounts = () => {
             <DetailView
               detailView={selectedAccount.tracking}
               title={`${selectedAccount.institution.name}: ${selectedAccount.name}`}
+              type="account"
             />
           )
           : <div className="register window window1" />

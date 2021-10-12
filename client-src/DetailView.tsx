@@ -6,11 +6,13 @@ import styles from './DetailView.module.css';
 
 type PropsType = {
   detailView: TrackingType,
+  type: 'category' | 'account',
   title?: string,
 }
 
 const DetailView = ({
   detailView,
+  type,
   title,
 }: PropsType): ReactElement | null => {
   switch (detailView) {
@@ -27,7 +29,7 @@ const DetailView = ({
       return (
         <>
           <div className={styles.mainTrayTitle}>{title}</div>
-          <Register />
+          <Register type={type} />
         </>
       );
 

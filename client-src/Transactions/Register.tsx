@@ -10,7 +10,13 @@ import PendingRegister from './PendingRegister';
 import RegisterTitles from './RegisterTitles';
 import RegisterTransactions from './RegisterTransactions';
 
-const Register = (): ReactElement => {
+type PropsType = {
+  type: 'category' | 'account',
+}
+
+const Register = ({
+  type,
+}: PropsType): ReactElement => {
   const { uiState } = useContext(MobxStore);
 
   let transactions: TransactionInterface[] | undefined;
@@ -19,7 +25,7 @@ const Register = (): ReactElement => {
 
   let category: CategoryInterface | null = null;
 
-  if (uiState.view === 'HOME') {
+  if (type === 'category') {
     category = uiState.selectedCategory;
 
     if (category) {
@@ -30,7 +36,7 @@ const Register = (): ReactElement => {
   }
 
   let account: AccountInterface | null = null;
-  if (uiState.view === 'ACCOUNTS') {
+  if (type === 'account') {
     account = uiState.selectedAccount;
 
     if (account) {

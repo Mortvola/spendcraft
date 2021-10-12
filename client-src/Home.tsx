@@ -48,7 +48,7 @@ const Home = () => {
         onToggleClick={handleToggleClick}
         className={styles.theme}
       >
-        <DetailView detailView="Transactions" title={title} />
+        <DetailView detailView="Transactions" title={title} type="category" />
       </Main>
     );
   }
