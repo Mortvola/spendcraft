@@ -62,11 +62,13 @@ const BalanceHistory = () => {
         />
       </div>
       <div className="window">
-        {
-          balances.map((b) => (
-            <Balance key={b.id} balance={b} showBalanceDialog={showDialog} />
-          ))
-        }
+        <div className={styles.list}>
+          {
+            balances.map((b) => (
+              <Balance key={b.id} balance={b} showBalanceDialog={showDialog} />
+            ))
+          }
+        </div>
       </div>
       <BalanceDialog balance={editedBalance} onHide={handleHideDialog} />
     </div>

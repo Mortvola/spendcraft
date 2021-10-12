@@ -4,11 +4,19 @@
   grid-template-rows: minmax(0,1fr);
 }
 
-.main :global(.window) {
+/* .main :global(.window) {
   padding: 1rem;
-}
+} */
 
 :global(.mobile).main {
   grid-template-columns: minmax(0,1fr);
   grid-template-rows: minmax(0,3fr) minmax(0,1fr);
+}
+
+.list {
+  overflow-y: auto;
+  height: 100%;
+  padding-right: 1rem;
+  padding-left: 1rem;
+  padding-top: 0.5rem;
 }
