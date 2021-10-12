@@ -137,6 +137,13 @@ export default class Application extends BaseModel {
       .firstOrFail();
   }
 
+  public async getAccountTransferCategory(options?: ModelAdapterOptions): Promise<Category> {
+    return await Category.query(options)
+      .where('type', 'ACCOUNT TRANSFER')
+      .whereHas('group', (query) => query.where('applicationId', this.id))
+      .firstOrFail();
+  }
+
   public async initialize(this: Application): Promise<void> {
     if (this.$trx === undefined) {
       throw new Error('transaction must be defined');

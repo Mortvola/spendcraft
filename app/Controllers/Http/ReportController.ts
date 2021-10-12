@@ -276,18 +276,25 @@ class ReportController {
   private static async incomeVsExpenses(
     application: Application,
   ): Promise<IncomeVsExpensesReportType> {
+    const acctTransfer = await application.getAccountTransferCategory();
+
     const query = await Database.query()
       .select(
         Database.raw(
           'date_part(\'year\', date) || '
           + '\'-\' || lpad(cast(date_part(\'month\', date) as varchar), 2, \'0\') as month',
         ),
-        Database.raw('sum(cASE WHEN amount >= 0 THEN amount ELSE 0 END) as income'),
-        Database.raw('sum(cASE WHEN amount < 0 THEN amount ELSE 0 END) as expenses'),
+        // The tc.amount is for removing any amount that was an account transfer
+        Database.raw('sum(CASE WHEN at.amount >= 0 THEN at.amount - COALESCE(tc.amount, 0) ELSE 0 END) as income'),
+        Database.raw('sum(CASE WHEN at.amount < 0 THEN at.amount - COALESCE(tc.amount, 0) ELSE 0 END) as expenses'),
       )
       .from('transactions as t')
       .join('account_transactions as at', 'at.transaction_id', 't.id')
       .join('accounts as a', 'a.id', 'at.account_id')
+      .leftJoin('transaction_categories as tc', (q) => {
+        q.on('tc.transaction_id', 't.id')
+          .andOnVal('category_id', '=', acctTransfer.id)
+      })
       .where('t.application_id', application.id)
       .andWhere('a.tracking', 'Transactions')
       .andWhere('t.type', '!=', TransactionType.STARTING_BALANCE)
