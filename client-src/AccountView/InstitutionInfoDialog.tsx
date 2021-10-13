@@ -15,17 +15,20 @@ const InstitutionInfoDialog = ({
   institution,
   setShow,
 }: PropsType & ModalProps): ReactElement => {
+  type InstitutionInfo = InstitutionWithInstitutionData & InstitutionWithStatus;
+
   const [infoInitialized, setInfoInitialized] = useState(false);
-  const [info, setInfo] = useState<InstitutionWithStatus & InstitutionWithInstitutionData | null>(null);
+  const [info, setInfo] = useState<InstitutionInfo | null>(null);
 
   if (!infoInitialized) {
     setInfoInitialized(true);
 
     (async () => {
-      const response = await Http.get(`/api/institution/${institution.id}/info`);
+      const response = await Http.get<InstitutionInfo>(`/api/institution/${institution.id}/info`);
 
       if (response.ok) {
-        setInfo(await response.json());
+        const institutionInfo = await response.body();
+        setInfo(institutionInfo);
       }
     })();
   }

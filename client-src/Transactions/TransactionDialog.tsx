@@ -15,6 +15,7 @@ import AmountInput from '../AmountInput';
 import FormModal from '../Modal/FormModal';
 import useMediaQuery from '../MediaQuery';
 import { TransactionType } from '../../common/ResponseTypes';
+import { setFormErrors } from '../Modal/Errors';
 
 function validateSplits(splits: Array<TransactionCategoryInterface>) {
   let error;
@@ -128,7 +129,7 @@ const TransactionDialog = ({
 
       if (errors && errors.length > 0) {
         setTouched({ [errors[0].field]: true }, false);
-        setErrors({ [errors[0].field]: errors[0].message });
+        setFormErrors(setErrors, errors);
       }
       else {
         setShow(false);

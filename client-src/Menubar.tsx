@@ -11,7 +11,7 @@ import MobxStore from './State/mobxStore';
 import { Views } from './State/State';
 
 const Menubar = () => {
-  const { uiState, user: { username } } = useContext(MobxStore);
+  const { user: { username } } = useContext(MobxStore);
   const history = useHistory();
 
   const logout = () => {

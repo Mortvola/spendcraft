@@ -2,11 +2,12 @@ import React, { ReactElement } from 'react';
 import { Form, Formik, FormikHelpers } from 'formik';
 import { Button } from 'react-bootstrap';
 import * as responsive from 'react-responsive';
+import Http from '@mortvola/http';
 import FormField from './Modal/FormField';
 import styles from './Signup.module.css';
 import FormError from './Modal/FormError';
-import Http from '@mortvola/http';
 import { isErrorResponse } from '../common/ResponseTypes';
+import { setFormErrors } from './Modal/Errors';
 
 const Signup = (): ReactElement => {
   const tiny = responsive.useMediaQuery({ query: '(max-width: 350px)' });
@@ -50,13 +51,7 @@ const Signup = (): ReactElement => {
       const body = await response.body();
 
       if (isErrorResponse(body)) {
-        const errors: Record<string, string> = {};
-
-        body.errors.forEach((error) => {
-          errors[error.field] = error.message;
-        });
-
-        setErrors(errors);
+        setFormErrors(setErrors, body.errors);
       }
     }
   }

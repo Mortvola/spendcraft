@@ -2,11 +2,12 @@ import { DateTime } from 'luxon';
 import { makeObservable, observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 import {
-  AccountProps, Error, isAccountSyncResponse,
+  AccountProps, AccountSyncResponse, AddTransactionResponse, Error,
   isAddTransactionResponse, TrackingType,
 } from '../../common/ResponseTypes';
 import {
   AccountInterface, InstitutionInterface, NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface,
+  AddTransactionRequest,
 } from './State';
 import Transaction from './Transaction';
 import TransactionContainer from './TransactionContainer';
@@ -67,23 +68,21 @@ class Account extends TransactionContainer implements AccountInterface {
       this.refreshing = true;
     });
 
-    const response = await Http.post(`/api/institution/${institutionId}/accounts/${this.id}/transactions/sync`);
+    const response = await Http.post<void, AccountSyncResponse>(`/api/institution/${institutionId}/accounts/${this.id}/transactions/sync`);
 
     if (response.ok) {
       const body = await response.body();
 
       runInAction(() => {
-        if (isAccountSyncResponse(body)) {
-          const { categories, accounts } = body;
-          if (categories.length > 0) {
-            this.store.categoryTree.updateBalances(categories);
-          }
+        const { categories, accounts } = body;
+        if (categories.length > 0) {
+          this.store.categoryTree.updateBalances(categories);
+        }
 
-          if (accounts) {
-            this.syncDate = DateTime.fromISO(accounts[0].syncDate);
-            this.balance = accounts[0].balance;
-            this.plaidBalance = accounts[0].plaidBalance;
-          }
+        if (accounts) {
+          this.syncDate = DateTime.fromISO(accounts[0].syncDate);
+          this.balance = accounts[0].balance;
+          this.plaidBalance = accounts[0].plaidBalance;
         }
 
         this.refreshing = false;
@@ -127,7 +126,7 @@ class Account extends TransactionContainer implements AccountInterface {
       splits: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
     },
   ): Promise<Error[] | null> {
-    const response = await Http.post(`/api/account/${this.id}/transactions`, values);
+    const response = await Http.post<AddTransactionRequest, AddTransactionResponse>(`/api/account/${this.id}/transactions`, values);
 
     if (response.ok) {
       const body = await response.body();

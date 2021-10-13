@@ -1,4 +1,5 @@
 import Http from '@mortvola/http';
+import { isErrorResponse } from '../../common/ResponseTypes';
 
 type ErrorsType = Record<string, string[]>;
 
@@ -33,14 +34,16 @@ const submitForm = async (
     if (response.status === 422) {
       const body = await response.json();
       const errors: Record<string, string[]> = {};
-      body.errors.forEach((error: { rule: string, field: string, message: string }) => {
-        if (errors[error.field] === undefined) {
-          errors[error.field] = [];
-        }
+      if (isErrorResponse(body)) {
+        body.errors.forEach((error: { rule: string, field: string, message: string }) => {
+          if (errors[error.field] === undefined) {
+            errors[error.field] = [];
+          }
 
-        errors[error.field] = errors[error.field].concat(error.message);
-      });
-      fail(errors);
+          errors[error.field] = errors[error.field].concat(error.message);
+        });
+        fail(errors);
+      }
     }
     else {
       fail({ general: ['An error occured. Please try again later.'] });

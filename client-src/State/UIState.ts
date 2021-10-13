@@ -4,7 +4,7 @@ import {
   AccountInterface,
   CategoryInterface,
   FundingPlanInterface,
-  StoreInterface, TransactionInterface, UIStateInterface, Views,
+  StoreInterface, TransactionInterface, UIStateInterface,
 } from './State';
 import Plaid from './Plaid';
 

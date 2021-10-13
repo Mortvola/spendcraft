@@ -13,6 +13,7 @@ import FormModal from '../Modal/FormModal';
 import FormError from '../Modal/FormError';
 import MobxStore from '../State/mobxStore';
 import { CategoryInterface, GroupInterface } from '../State/State';
+import { setFormErrors } from '../Modal/Errors';
 
 type Props = {
   category?: CategoryInterface | null,
@@ -49,10 +50,8 @@ const CategoryDialog = ({
       errors = await selectedGroup.addCategory(values.name);
     }
 
-    if (errors && errors.length > 0) {
-      // Display the first error
-      // TODO: Display all the errors?
-      setErrors({ [errors[0].field]: errors[0].message });
+    if (errors) {
+      setFormErrors(setErrors, errors);
     }
     else {
       setShow(false);
@@ -78,8 +77,8 @@ const CategoryDialog = ({
 
     const errors = await category.delete();
 
-    if (errors && errors.length > 0) {
-      setErrors({ [errors[0].field]: errors[0].message });
+    if (errors) {
+      setFormErrors(setErrors, errors);
     }
     else {
       setShow(false);

@@ -1,4 +1,6 @@
-import React, { ReactElement, useContext, useEffect, useState } from 'react';
+import React, {
+  ReactElement, useContext, useEffect, useState,
+} from 'react';
 import {
   Form, Formik, FormikHelpers, FormikProps,
 } from 'formik';
@@ -9,6 +11,7 @@ import {
 import MobxStore from './State/mobxStore';
 import IconButton from './IconButton';
 import FormField from './Modal/FormField';
+import { setFormErrors } from './Modal/Errors';
 
 const UserAccount = (): ReactElement | null => {
   const { user } = useContext(MobxStore);
@@ -29,8 +32,8 @@ const UserAccount = (): ReactElement | null => {
   const handleSubmit = async (values: FormValues, { setErrors }: FormikHelpers<FormValues>) => {
     const errors = await user.update(values.email);
 
-    if (errors && errors.length !== 0) {
-      setErrors({ [errors[0].field]: errors[0].message });
+    if (errors) {
+      setFormErrors(setErrors, errors);
     }
   }
 

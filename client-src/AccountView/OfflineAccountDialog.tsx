@@ -11,6 +11,7 @@ import FormTextField from '../Modal/FormTextField';
 import MobxStore from '../State/mobxStore';
 import { AccountInterface, InstitutionInterface } from '../State/State';
 import { getSubtypes, getTypes } from '../State/AccountTypes';
+import { setFormErrors } from '../Modal/Errors';
 
 type PropsType = {
   institution?: InstitutionInterface,
@@ -95,7 +96,7 @@ const OfflineAccountDialog = ({
     }
 
     if (errors) {
-      setErrors({ [errors[0].field]: errors[0].message });
+      setFormErrors(setErrors, errors);
     }
     else {
       setShow(false);

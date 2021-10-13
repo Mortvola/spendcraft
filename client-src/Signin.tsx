@@ -7,6 +7,7 @@ import styles from './Signin.module.css';
 import FormError from './Modal/FormError';
 import FormField from './Modal/FormField';
 import { isErrorResponse } from '../common/ResponseTypes';
+import { setFormErrors } from './Modal/Errors';
 
 const Signin = (): ReactElement => {
   const tiny = responsive.useMediaQuery({ query: '(max-width: 350px)' });
@@ -44,13 +45,7 @@ const Signin = (): ReactElement => {
       const body = await response.body();
 
       if (isErrorResponse(body)) {
-        const errors: Record<string, string> = {};
-
-        body.errors.forEach((error) => {
-          errors[error.field] = error.message;
-        });
-
-        setErrors(errors);
+        setFormErrors(setErrors, body.errors);
       }
     }
   }

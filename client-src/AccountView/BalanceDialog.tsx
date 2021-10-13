@@ -9,7 +9,6 @@ import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import { BalanceInterface, BalancesInterface } from '../State/State';
 import AmountInput from '../AmountInput';
 import FormModal from '../Modal/FormModal';
-import useMediaQuery from '../MediaQuery';
 import FormField from '../Modal/FormField';
 import styles from './BalanceDialog.module.css';
 import { setFormErrors } from '../Modal/Errors';
@@ -28,8 +27,6 @@ const BalanceDialog = ({
     date: string,
     amount: number,
   }
-
-  const { isMobile } = useMediaQuery();
 
   const handleValidate = (values: FormValues) => {
     const errors: FormikErrors<FormValues> = {};
@@ -67,14 +64,13 @@ const BalanceDialog = ({
   };
 
   const handleDelete = async (bag: FormikContextType<FormValues>) => {
-    const { setTouched, setErrors } = bag;
+    const { setErrors } = bag;
 
     if (balance) {
       const errors = await balance.delete();
 
-      if (errors && errors.length > 0) {
-        setTouched({ [errors[0].field]: true }, false);
-        setErrors({ [errors[0].field]: errors[0].message });
+      if (errors) {
+        setFormErrors(setErrors, errors);
       }
       else {
         setShow(false);

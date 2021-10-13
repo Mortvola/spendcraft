@@ -7,6 +7,7 @@ import {
   FormikErrors, FormikState, FormikContextType,
 } from 'formik';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
+import Http from '@mortvola/http';
 import Amount from '../Amount';
 import MobxStore from '../State/mobxStore';
 import Transaction from '../State/Transaction';
@@ -17,8 +18,8 @@ import {
 import FormModal from '../Modal/FormModal';
 import FormError from '../Modal/FormError';
 import Funding, { FundingType } from './Funding';
-import Http from '@mortvola/http';
 import FundingPlanCategory from '../State/FundingPlanCategory';
+import { setFormErrors } from '../Modal/Errors';
 
 interface Props {
   transaction?: Transaction;
@@ -251,9 +252,9 @@ const FundingDialog = ({
     if (transaction) {
       const errors = await transaction.delete();
 
-      if (errors && errors.length > 0) {
+      if (errors) {
         setTouched({ [errors[0].field]: true }, false);
-        setErrors({ [errors[0].field]: errors[0].message });
+        setFormErrors(setErrors, errors);
       }
     }
   }

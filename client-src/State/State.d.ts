@@ -378,3 +378,10 @@ export interface StoreInterface {
 
   plans: PlansInterface;
 }
+
+export type AddTransactionRequest = {
+  date?: string,
+  name?: string,
+  amount?: number,
+  splits:(TransactionCategoryInterface | NewTransactionCategoryInterface)[],
+};

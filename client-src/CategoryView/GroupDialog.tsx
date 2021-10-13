@@ -12,6 +12,7 @@ import { Error } from '../../common/ResponseTypes';
 import FormModal from '../Modal/FormModal';
 import FormError from '../Modal/FormError';
 import { GroupInterface } from '../State/State';
+import { setFormErrors } from '../Modal/Errors';
 
 interface Props {
   // eslint-disable-next-line react/require-default-props
@@ -39,10 +40,8 @@ const GroupDialog = ({
       errors = await categoryTree.addGroup(values.name);
     }
 
-    if (errors && errors.length > 0) {
-      // Display the first error
-      // TODO: Display all the errors?
-      setErrors({ [errors[0].field]: errors[0].message });
+    if (errors) {
+      setFormErrors(setErrors, errors);
     }
     else {
       setShow(false);
@@ -60,14 +59,13 @@ const GroupDialog = ({
   };
 
   const handleDelete = async (bag: FormikContextType<ValueType>) => {
-    const { setTouched, setErrors } = bag;
+    const { setErrors } = bag;
 
     if (group) {
       const errors = await group.delete();
 
-      if (errors && errors.length > 0) {
-        setTouched({ name: true }, false);
-        setErrors({ [errors[0].field]: errors[0].message });
+      if (errors) {
+        setFormErrors(setErrors, errors);
       }
       else {
         setShow(false);

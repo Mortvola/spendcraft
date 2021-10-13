@@ -10,6 +10,7 @@ import {
 import { toJS } from 'mobx';
 import { DateTime } from 'luxon';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
+import Http from '@mortvola/http';
 import CategoryRebalance from './CategoryRebalance';
 import Amount from '../Amount';
 import Transaction from '../State/Transaction';
@@ -17,8 +18,8 @@ import { CategoryBalanceInterface, TransactionCategoryInterface } from '../State
 import MobxStore from '../State/mobxStore';
 import FormModal from '../Modal/FormModal';
 import { isCategoryTreeBalanceResponse, TransactionType } from '../../common/ResponseTypes';
-import Http from '@mortvola/http';
 import FormError from '../Modal/FormError';
+import { setFormErrors } from '../Modal/Errors';
 
 interface Props {
   transaction?: Transaction,
@@ -123,7 +124,7 @@ const RebalanceDialog = ({
 
       if (errors && errors.length > 0) {
         setTouched({ [errors[0].field]: true }, false);
-        setErrors({ [errors[0].field]: errors[0].message });
+        setFormErrors(setErrors, errors);
       }
     }
   };
