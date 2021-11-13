@@ -68,11 +68,6 @@ body {
   height: 100%;
 }
 
-.multi-buttons.modal-footer {
-  display: grid;
-  grid-template-columns: max-content 1fr repeat(2, max-content);
-}
-
 #addCategoryDialog .modal-footer {
   display: grid;
   grid-template-columns: max-content 1fr repeat(2, max-content);
