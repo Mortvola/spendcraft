@@ -1,9 +1,3 @@
-/*
-
-Base
-
-*/
-
 body {
   background: #ffffff;
   height: 100vh;
@@ -698,11 +692,6 @@ body {
 
 .selected {
   background-color: lightblue;
-}
-
-.modal-content-fix {
-  display: grid;
-  grid-template-rows: minmax(0, 1fr);
 }
 
 .item-title {

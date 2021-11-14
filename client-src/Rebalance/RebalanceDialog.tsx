@@ -130,76 +130,74 @@ const RebalanceDialog = ({
   };
 
   return (
-    <>
-      <FormModal<ValueType>
-        setShow={setShow}
-        initialValues={{
-          categories: transaction ? toJS(transaction.categories) : [],
-          date,
-        }}
-        title="Rebalance Categories"
-        formId="rebalanceForm"
-        validate={handleValidate}
-        onSubmit={handleSubmit}
-        onDelete={transaction ? handleDelete : null}
-      >
-        <div className="rebalance-container">
-          <div className="rebalance-header">
-            <label>
-              Date:
-              <Field name="date">
-                {({
-                  field: {
-                    name,
-                    value,
-                  },
-                  form: {
-                    setFieldValue,
-                  },
-                }: FieldProps<string>) => (
-                  <input
-                    className="form-control"
-                    value={value}
-                    type="date"
-                    onChange={(event) => {
-                      handleDateChange(event);
-                      setFieldValue(name, event.target.value, false);
-                    }}
-                  />
-                )}
-              </Field>
-              <FormError name="date" />
-            </label>
-            <label>
-              Unassigned:
-              <Amount className="form-control" amount={unassigned} />
-            </label>
-          </div>
-          <FormError name="categories" />
-          <Field name="categories">
-            {({
-              field: {
-                name,
-                value,
-              },
-              form: {
-                setFieldValue,
-              },
-            }: FieldProps<TransactionCategoryInterface[]>) => (
-              <CategoryRebalance
-                nodes={nodes}
-                trxCategories={value}
-                balances={balances}
-                onDeltaChange={(_amount, delta, categories) => {
-                  handleDeltaChange(delta);
-                  setFieldValue(name, categories, false);
-                }}
-              />
-            )}
-          </Field>
+    <FormModal<ValueType>
+      setShow={setShow}
+      initialValues={{
+        categories: transaction ? toJS(transaction.categories) : [],
+        date,
+      }}
+      title="Rebalance Categories"
+      formId="rebalanceForm"
+      validate={handleValidate}
+      onSubmit={handleSubmit}
+      onDelete={transaction ? handleDelete : null}
+    >
+      <div className="rebalance-container">
+        <div className="rebalance-header">
+          <label>
+            Date:
+            <Field name="date">
+              {({
+                field: {
+                  name,
+                  value,
+                },
+                form: {
+                  setFieldValue,
+                },
+              }: FieldProps<string>) => (
+                <input
+                  className="form-control"
+                  value={value}
+                  type="date"
+                  onChange={(event) => {
+                    handleDateChange(event);
+                    setFieldValue(name, event.target.value, false);
+                  }}
+                />
+              )}
+            </Field>
+            <FormError name="date" />
+          </label>
+          <label>
+            Unassigned:
+            <Amount className="form-control" amount={unassigned} />
+          </label>
         </div>
-      </FormModal>
-    </>
+        <FormError name="categories" />
+        <Field name="categories">
+          {({
+            field: {
+              name,
+              value,
+            },
+            form: {
+              setFieldValue,
+            },
+          }: FieldProps<TransactionCategoryInterface[]>) => (
+            <CategoryRebalance
+              nodes={nodes}
+              trxCategories={value}
+              balances={balances}
+              onDeltaChange={(_amount, delta, categories) => {
+                handleDeltaChange(delta);
+                setFieldValue(name, categories, false);
+              }}
+            />
+          )}
+        </Field>
+      </div>
+    </FormModal>
   );
 };
 

@@ -6,6 +6,7 @@ import {
   BrowserRouter as Router, Switch, Route, Redirect,
 } from 'react-router-dom';
 import { ServerError, serverError } from '@mortvola/http';
+import '@mortvola/usemodal/dist/main.css';
 import Menubar from './Menubar';
 import Home from './Home';
 import Accounts from './AccountView/Accounts';
@@ -15,6 +16,7 @@ import PlaidLink from './PlaidLink';
 import MobxStore, { store as mobxStore } from './State/mobxStore';
 import UserAccount from './UserAccount';
 import usePageViews from './Tracker';
+import './style.css';
 
 const App = () => {
   const error = useContext(ServerError);

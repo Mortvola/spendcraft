@@ -1,3 +1,6 @@
 /bundle.js
 /app.js
 /welcome.js
+/welcome.css
+/main.css
+*.css.map

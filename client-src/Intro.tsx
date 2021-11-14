@@ -35,7 +35,7 @@ const Intro = (): ReactElement => {
   }
 
   return (
-    <div className={addSizeClass(`${styles.frame} flex-center position-ref full-height`)}>
+    <div className={addSizeClass(`${styles.frame} position-ref full-height`)}>
       <div className={styles.buttonTray}>
         <div className={styles.linkButton} onClick={handleSignupClick}>
           Sign up

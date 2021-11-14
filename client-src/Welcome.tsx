@@ -8,6 +8,7 @@ import Intro from './Intro';
 import Signin from './Signin';
 import Signup from './Signup';
 import usePageViews from './Tracker';
+import './welcome.css';
 
 const Welcome = () => {
   usePageViews();
