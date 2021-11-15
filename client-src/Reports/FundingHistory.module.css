@@ -1,0 +1,20 @@
+.report {
+  overflow: auto;
+  height: 100%;
+  width: 100%;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: repeat(13, max-content);
+  grid-template-rows: max-content;
+}
+
+.category {
+  width: 10rem;
+  padding-left: 0.5rem;
+}
+
+.historyItem {
+  width: 5rem;
+}

@@ -3,7 +3,7 @@ import React, { ReactElement, useEffect, useState } from 'react';
 import Chart from 'react-google-charts';
 
 const IncomeVsExpenses = (): ReactElement => {
-type IncomeVsExpensesResponse = [string, number | string, number | string, number | string][];
+  type IncomeVsExpensesResponse = [string, number | string, number | string, number | string][];
 
   const [data, setData] = useState<(number | string)[][] | null>(null);
 

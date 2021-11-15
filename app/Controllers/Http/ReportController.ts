@@ -6,6 +6,7 @@ import { TransactionType } from 'Common/ResponseTypes';
 type NetworthReportType = (string | number)[][];
 type PayeeReportType = Record<string, unknown>[];
 type IncomeVsExpensesReportType = [string, number, number, number][];
+type FundingHistoryReportType = [string, number, number, number][];
 
 class ReportController {
   // eslint-disable-next-line class-methods-use-this
@@ -41,6 +42,10 @@ class ReportController {
 
       case 'income-vs-expenses': {
         return ReportController.incomeVsExpenses(application)
+      }
+
+      case 'funding-history': {
+        return ReportController.fundingHistory(application)
       }
 
       default:
@@ -307,6 +312,40 @@ class ReportController {
       parseFloat(row.expenses),
       parseFloat(row.income) + parseFloat(row.expenses),
     ]);
+  }
+
+  private static async fundingHistory(
+    application: Application,
+  ): Promise<FundingHistoryReportType> {
+    const query = await Database.query()
+      .select(
+        'g.id as groupId',
+        'g.name as groupName',
+        'c.id as categoryId',
+        'c.name as categoryName',
+        Database.raw(`(
+          select json_agg(monthly_amount)
+          from (
+            select 
+              json_build_object(
+                'year', EXTRACT(YEAR FROM t.date),
+                'month', EXTRACT(MONTH FROM t.date),
+                'amount', sum(tc.amount)) AS monthly_amount
+            from transaction_categories AS tc
+            join transactions as t on t.id = tc.transaction_id and t.type = 2
+            where tc.category_id = c.id
+            group by EXTRACT(MONTH FROM date), EXTRACT(YEAR FROM date)
+          ) as amounts
+        ) as history`),
+      )
+      .from('categories AS c')
+      .join('groups as g', 'g.id', 'c.group_id')
+      .where('c.type', '!=', 'FUNDING POOL')
+      .andWhere('g.application_id', application.id)
+      .orderBy('g.name')
+      .orderBy('c.name');
+
+    return query;
   }
 }
 
