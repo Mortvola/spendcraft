@@ -8,10 +8,9 @@ import { Observer } from 'mobx-react-lite';
 import {
   FormControl, InputGroup, Button,
 } from 'react-bootstrap';
+import { FormField, setFormErrors } from '@mortvola/forms';
 import MobxStore from './State/mobxStore';
 import IconButton from './IconButton';
-import FormField from './Modal/FormField';
-import { setFormErrors } from './Modal/Errors';
 
 const UserAccount = (): ReactElement | null => {
   const { user } = useContext(MobxStore);

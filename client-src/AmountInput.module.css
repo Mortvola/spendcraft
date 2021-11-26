@@ -1,0 +1,11 @@
+.amount-input {
+  border: solid 1px gray;
+  border-radius: 4px;
+  margin: 1px;
+  padding: 1px;
+  /* width: 100%; */
+}
+
+.dollar-amount {
+  text-align: right;
+}

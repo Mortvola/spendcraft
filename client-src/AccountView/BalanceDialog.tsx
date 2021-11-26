@@ -6,12 +6,10 @@ import {
   FormikHelpers,
 } from 'formik';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
+import { FormModal, FormField, setFormErrors } from '@mortvola/forms';
 import { BalanceInterface, BalancesInterface } from '../State/State';
 import AmountInput from '../AmountInput';
-import FormModal from '../Modal/FormModal';
-import FormField from '../Modal/FormField';
 import styles from './BalanceDialog.module.css';
-import { setFormErrors } from '../Modal/Errors';
 
 type PropsType = {
   balance?: BalanceInterface | null,

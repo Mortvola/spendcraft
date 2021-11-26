@@ -6,16 +6,14 @@ import {
   FormikContextType,
 } from 'formik';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
+import { FormError, FormModal, setFormErrors } from '@mortvola/forms';
 import CategorySplits from '../CategorySplits';
 import Amount from '../Amount';
 import Transaction from '../State/Transaction';
 import { AccountInterface, TransactionCategoryInterface } from '../State/State';
-import FormError from '../Modal/FormError';
 import AmountInput from '../AmountInput';
-import FormModal from '../Modal/FormModal';
 import useMediaQuery from '../MediaQuery';
 import { TransactionType } from '../../common/ResponseTypes';
-import { setFormErrors } from '../Modal/Errors';
 
 function validateSplits(splits: Array<TransactionCategoryInterface>) {
   let error;

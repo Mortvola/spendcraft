@@ -44,3 +44,9 @@
   margin-bottom: 0;
   padding-right: 2px;
 }
+
+.comment {
+  border-radius: 4px;
+  border: thin solid gray;
+  margin: 1px;
+}

@@ -6,10 +6,9 @@ import {
   Field, ErrorMessage, FormikErrors,
 } from 'formik';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
+import { FormModal, FormField } from '@mortvola/forms';
 import AccountItem from './AccountItem';
-import FormModal from '../Modal/FormModal';
 import { TrackingType, UnlinkedAccountProps } from '../../common/ResponseTypes';
-import FormField from '../Modal/FormField';
 import { InstitutionInterface } from '../State/State';
 
 type PropsType = {

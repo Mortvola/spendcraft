@@ -1,6 +1,6 @@
 import React from 'react';
 // import PropTypes from 'prop-types';
-import Errors from '../Modal/Errors';
+import { Errors } from '@mortvola/forms';
 import { ErrorsType } from './submit';
 
 type PropsType = {

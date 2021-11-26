@@ -8,6 +8,7 @@ import {
 } from 'formik';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import Http from '@mortvola/http';
+import { FormModal, FormError, setFormErrors } from '@mortvola/forms';
 import Amount from '../Amount';
 import MobxStore from '../State/mobxStore';
 import Transaction from '../State/Transaction';
@@ -15,11 +16,8 @@ import {
   FundingPlanProps, isFundingPlanResponse, isFundingPlansResponse, TransactionType,
   CategoryFundingProps,
 } from '../../common/ResponseTypes';
-import FormModal from '../Modal/FormModal';
-import FormError from '../Modal/FormError';
 import Funding, { FundingType } from './Funding';
 import FundingPlanCategory from '../State/FundingPlanCategory';
-import { setFormErrors } from '../Modal/Errors';
 
 interface Props {
   transaction?: Transaction;

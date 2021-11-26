@@ -4,6 +4,7 @@ import Popover from 'react-bootstrap/Popover';
 import PopoverHeader from 'react-bootstrap/PopoverHeader';
 import PopoverBody from 'react-bootstrap/PopoverBody';
 import parseEquation from './EquationParser';
+import styles from './AmountInput.module.css';
 
 interface Props {
   id?: string,
@@ -144,7 +145,7 @@ const AmountInput = ({
       <input
         id={id}
         ref={ref}
-        className={`amount-input dollar-amount ${className}`}
+        className={`${styles.amountInput} ${styles.dollarAmount} ${className}`}
         type="text"
         value={inputValue}
         name={name}

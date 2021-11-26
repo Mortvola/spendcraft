@@ -3,11 +3,9 @@ import { Form, Formik, FormikHelpers } from 'formik';
 import { Button } from 'react-bootstrap';
 import * as responsive from 'react-responsive';
 import Http from '@mortvola/http';
+import { FormError, setFormErrors, FormField } from '@mortvola/forms';
 import styles from './Signin.module.css';
-import FormError from './Modal/FormError';
-import FormField from './Modal/FormField';
 import { isErrorResponse } from '../common/ResponseTypes';
-import { setFormErrors } from './Modal/Errors';
 
 const Signin = (): ReactElement => {
   const tiny = responsive.useMediaQuery({ query: '(max-width: 350px)' });

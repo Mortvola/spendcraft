@@ -4,6 +4,7 @@ import 'regenerator-runtime/runtime';
 import {
   BrowserRouter as Router, Switch, Route,
 } from 'react-router-dom';
+import '@mortvola/forms/dist/main.css';
 import Intro from './Intro';
 import Signin from './Signin';
 import Signup from './Signup';

@@ -4,11 +4,10 @@ import React, {
 import { Formik, FieldArray } from 'formik';
 import { DateTime } from 'luxon';
 import { Button, DropdownButton } from 'react-bootstrap';
-import Amount from '../Amount';
-import FormCheckbox from '../Modal/FormCheckbox';
-import FormField from '../Modal/FormField';
-import MobxStore from '../State/mobxStore';
+import { FormCheckbox, FormField } from '@mortvola/forms';
 import Http from '@mortvola/http';
+import Amount from '../Amount';
+import MobxStore from '../State/mobxStore';
 import useSortableTable from './SortableTable';
 import { isGroup } from '../State/Group';
 import ReportControls from './ReportControls';

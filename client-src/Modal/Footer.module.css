@@ -1,5 +1,0 @@
-.multi-buttons:global(.modal-footer) {
-  display: grid;
-  grid-template-columns: max-content 1fr repeat(2, max-content);
-}
-

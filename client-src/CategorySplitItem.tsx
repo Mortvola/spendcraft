@@ -83,6 +83,7 @@ function CategorySplitItem({
         <AmountInput onDeltaChange={handleDeltaChange} value={split.amount} />
         <input
           type="text"
+          className={styles.comment}
           value={split.comment ?? ''}
           onChange={handleCommentChange}
           placeholder={isMobile ? 'Comment' : ''}

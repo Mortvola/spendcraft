@@ -11,15 +11,13 @@ import { toJS } from 'mobx';
 import { DateTime } from 'luxon';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import Http from '@mortvola/http';
+import { FormModal, FormError, setFormErrors } from '@mortvola/forms';
 import CategoryRebalance from './CategoryRebalance';
 import Amount from '../Amount';
 import Transaction from '../State/Transaction';
 import { CategoryBalanceInterface, TransactionCategoryInterface } from '../State/State';
 import MobxStore from '../State/mobxStore';
-import FormModal from '../Modal/FormModal';
 import { isCategoryTreeBalanceResponse, TransactionType } from '../../common/ResponseTypes';
-import FormError from '../Modal/FormError';
-import { setFormErrors } from '../Modal/Errors';
 
 interface Props {
   transaction?: Transaction,

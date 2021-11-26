@@ -3,15 +3,14 @@ import {
 } from 'formik';
 import React, { ReactElement, useContext } from 'react';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
+import {
+  FormField, FormModal, FormTextField, setFormErrors,
+} from '@mortvola/forms';
 import { Error, TrackingType } from '../../common/ResponseTypes';
 import AmountInput from '../AmountInput';
-import FormField from '../Modal/FormField';
-import FormModal from '../Modal/FormModal';
-import FormTextField from '../Modal/FormTextField';
 import MobxStore from '../State/mobxStore';
 import { AccountInterface, InstitutionInterface } from '../State/State';
 import { getSubtypes, getTypes } from '../State/AccountTypes';
-import { setFormErrors } from '../Modal/Errors';
 
 type PropsType = {
   institution?: InstitutionInterface,

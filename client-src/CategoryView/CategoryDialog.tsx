@@ -8,12 +8,10 @@ import {
   FieldProps,
 } from 'formik';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
+import { FormModal, FormError, setFormErrors } from '@mortvola/forms';
 import { isGroup } from '../State/Group';
-import FormModal from '../Modal/FormModal';
-import FormError from '../Modal/FormError';
 import MobxStore from '../State/mobxStore';
 import { CategoryInterface, GroupInterface } from '../State/State';
-import { setFormErrors } from '../Modal/Errors';
 
 type Props = {
   category?: CategoryInterface | null,

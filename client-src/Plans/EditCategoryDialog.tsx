@@ -4,15 +4,13 @@ import {
   FieldProps, FormikErrors,
 } from 'formik';
 import { runInAction } from 'mobx';
+import { FormField, FormRadio, FormModal } from '@mortvola/forms';
+import Http from '@mortvola/http';
 import { CategoryInterface, FundingPlanInterface } from '../State/State';
-import FormField from '../Modal/FormField';
-import FormRadio from '../Modal/FormRadio';
 import styles from './EditCategoryDialog.module.css';
 import FundingPlanCategory from '../State/FundingPlanCategory';
 import Amount from '../Amount';
 import AmountInput from '../AmountInput';
-import FormModal from '../Modal/FormModal';
-import Http from '@mortvola/http';
 import { isFundingPlanCategoryProps } from '../../common/ResponseTypes';
 import MobxStore from '../State/mobxStore';
 

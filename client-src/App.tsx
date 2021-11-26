@@ -7,6 +7,7 @@ import {
 } from 'react-router-dom';
 import { ServerError, serverError } from '@mortvola/http';
 import '@mortvola/usemodal/dist/main.css';
+import '@mortvola/forms/dist/main.css';
 import Menubar from './Menubar';
 import Home from './Home';
 import Accounts from './AccountView/Accounts';
