@@ -1,9 +1,11 @@
+export type GroupType = 'NO GROUP' | 'REGULAR';
+
 export interface GroupProps {
   id: number;
 
   name: string;
 
-  type: string;
+  type: GroupType;
 
   categories: CategoryProps[];
 }

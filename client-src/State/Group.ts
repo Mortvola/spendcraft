@@ -1,12 +1,13 @@
 import { makeAutoObservable, runInAction } from 'mobx';
+import Http from '@mortvola/http';
 import Category, { isCategory } from './Category';
 import {
   Error, GroupProps, isErrorResponse, isGroupProps,
   CategoryBalanceProps,
   CategoryProps,
   isAddCategoryResponse,
+  GroupType,
 } from '../../common/ResponseTypes';
-import Http from '@mortvola/http';
 import { CategoryInterface, GroupInterface, StoreInterface } from './State';
 
 class Group implements GroupInterface {
@@ -14,7 +15,7 @@ class Group implements GroupInterface {
 
   name: string;
 
-  type: string;
+  type: GroupType;
 
   categories: CategoryInterface[] = [];
 

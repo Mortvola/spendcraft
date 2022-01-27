@@ -321,6 +321,7 @@ class ReportController {
       .select(
         'g.id as groupId',
         'g.name as groupName',
+        'g.type as groupType',
         'c.id as categoryId',
         'c.name as categoryName',
         Database.raw(`(

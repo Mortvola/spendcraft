@@ -1,4 +1,5 @@
 import { makeAutoObservable, runInAction } from 'mobx';
+import Http from '@mortvola/http';
 import Category, { isCategory } from './Category';
 import Group, { isGroup } from './Group';
 import {
@@ -10,7 +11,6 @@ import {
   CategoryInterface, CategoryTreeInterface, StoreInterface,
 } from './State';
 import SystemIds from './SystemIds';
-import Http from '@mortvola/http';
 
 export type TreeNode = (Category | Group);
 

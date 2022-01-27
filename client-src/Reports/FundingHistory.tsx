@@ -1,6 +1,7 @@
 import Http from '@mortvola/http';
 import { DateTime, MonthNumbers } from 'luxon';
 import React, { ReactElement, useEffect, useState } from 'react';
+import { GroupType } from '../../common/ResponseTypes';
 import Amount from '../Amount';
 import styles from './FundingHistory.module.css';
 
@@ -9,6 +10,7 @@ const FundingHistory = (): ReactElement => {
   type FundingHistoryResponse = {
     groupId: number,
     groupName: string,
+    groupType: GroupType,
     categoryId: number,
     categoryName: string,
     history: FundingHistoryItem[] | null,
@@ -23,6 +25,26 @@ const FundingHistory = (): ReactElement => {
 
       if (response.ok) {
         const body = await response.body();
+        body.sort((a, b) => {
+          if (a.groupType === 'NO GROUP') {
+            if (b.groupType === 'NO GROUP') {
+              return a.categoryName.localeCompare(b.categoryName);
+            }
+
+            return a.categoryName.localeCompare(b.groupName);
+          }
+
+          if (b.groupType === 'NO GROUP') {
+            return a.groupName.localeCompare(b.categoryName);
+          }
+
+          if (a.groupName === b.groupName) {
+            return a.categoryName.localeCompare(b.categoryName);
+          }
+
+          return a.groupName.localeCompare(b.groupName);
+        });
+
         setData(body);
       }
     })();
@@ -103,14 +125,18 @@ const FundingHistory = (): ReactElement => {
       <div className={styles.report}>
         {
           data
-            ? data.map((d) => (
-              <div className={styles.row} key={d.categoryId}>
-                <div className={`${styles.category} ellipsis`}>{`${d.groupName}:${d.categoryName}`}</div>
-                {
-                  renderHistory(d.history)
-                }
-              </div>
-            ))
+            ? data.map((d) => {
+              const name = d.groupType === 'NO GROUP' ? d.categoryName : `${d.groupName}:${d.categoryName}`;
+
+              return (
+                <div className={styles.row} key={d.categoryId}>
+                  <div className={`${styles.category} ellipsis`}>{name}</div>
+                  {
+                    renderHistory(d.history)
+                  }
+                </div>
+              );
+            })
             : null
         }
       </div>
