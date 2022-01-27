@@ -1,5 +1,5 @@
 import Http from '@mortvola/http';
-import { DateTime } from 'luxon';
+import { DateTime, MonthNumbers } from 'luxon';
 import React, { ReactElement, useEffect, useState } from 'react';
 import Amount from '../Amount';
 import styles from './FundingHistory.module.css';
@@ -15,6 +15,7 @@ const FundingHistory = (): ReactElement => {
   }[];
 
   const [data, setData] = useState<FundingHistoryResponse | null>(null);
+  const maxDisplayedMonths = 12;
 
   useEffect(() => {
     (async () => {
@@ -27,23 +28,27 @@ const FundingHistory = (): ReactElement => {
     })();
   }, []);
 
+  const subtractMonth = (month: MonthNumbers, year: number): [MonthNumbers, number] => {
+    if (month === 1) {
+      return [12, year - 1];
+    }
+
+    return [(month - 1) as MonthNumbers, year];
+  }
+
   const renderHistoryTitles = () => {
     let [year, month] = [DateTime.now().year, DateTime.now().month];
 
     const elements: React.ReactElement[] = [];
 
-    for (let i = 0; i < 12; i += 1) {
+    for (let i = 0; i < maxDisplayedMonths; i += 1) {
       elements.push(
         <div key={i} className={`${styles.historyItem} dollar-amount`}>
           {`${year}-${month}`}
         </div>,
       );
 
-      month -= 1;
-      if (month < 1) {
-        month = 12;
-        year -= 1;
-      }
+      [month, year] = subtractMonth(month, year);
     }
 
     return elements;
@@ -51,25 +56,34 @@ const FundingHistory = (): ReactElement => {
 
   const renderHistory = (history: FundingHistoryItem[] | null): React.ReactElement[] | null => {
     if (history) {
-      let year = 2021;
-      let month = 11;
+      let [year, month] = [DateTime.now().year, DateTime.now().month];
       const elements: React.ReactElement[] = [];
 
-      for (let i = 0; i < 12; i += 1) {
+      for (let i = 0; i < maxDisplayedMonths; i += 1) {
         // eslint-disable-next-line no-loop-func
         const entry = history.find((h) => h.year === year && h.month === month)
+
+        const [prevMonth, prevYear] = subtractMonth(month, year);
+        const prevEntry = history.find((h) => h.year === prevYear && h.month === prevMonth);
+
         if (entry) {
-          elements.push(<Amount key={i} className={styles.historyItem} amount={entry.amount} />)
+          let className = styles.historyItem;
+          if (i !== maxDisplayedMonths - 1 && (!prevEntry || (prevEntry && prevEntry.amount !== entry.amount))) {
+            className += ` ${styles.change}`;
+          }
+
+          elements.push(<Amount key={i} className={className} amount={entry.amount} />)
         }
         else {
-          elements.push(<div key={i} className={styles.historyItem} />)
+          let className = styles.historyItem;
+          if (i !== maxDisplayedMonths - 1 && prevEntry) {
+            className += ` ${styles.change}`;
+          }
+
+          elements.push(<div key={i} className={className} />)
         }
 
-        month -= 1;
-        if (month < 1) {
-          month = 12;
-          year -= 1;
-        }
+        [month, year] = subtractMonth(month, year);
       }
 
       return elements;

@@ -18,3 +18,7 @@
 .historyItem {
   width: 5rem;
 }
+
+.change {
+  background-color: yellow;
+}
