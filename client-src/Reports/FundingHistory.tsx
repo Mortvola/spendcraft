@@ -7,16 +7,17 @@ import styles from './FundingHistory.module.css';
 
 const FundingHistory = (): ReactElement => {
   type FundingHistoryItem = { year: number, month: number, amount: number};
-  type FundingHistoryResponse = {
+  type FundingHistoryCategory = {
     groupId: number,
     groupName: string,
     groupType: GroupType,
     categoryId: number,
     categoryName: string,
     history: FundingHistoryItem[] | null,
-  }[];
+  };
+  type FundingHistoryResponse = FundingHistoryCategory[];
 
-  const [data, setData] = useState<FundingHistoryResponse | null>(null);
+  const [data, setData] = useState<FundingHistoryCategory[] | null>(null);
   const maxDisplayedMonths = 12;
 
   useEffect(() => {
@@ -114,6 +115,17 @@ const FundingHistory = (): ReactElement => {
     return null;
   }
 
+  let currentGroup: null | string = null;
+
+  const renderRow = (d: FundingHistoryCategory, indent: string) => (
+    <div className={styles.row} key={d.categoryId}>
+      <div className={`${styles.category} ${indent} ellipsis`}>{d.categoryName}</div>
+      {
+        renderHistory(d.history)
+      }
+    </div>
+  );
+
   return (
     <div className="window window1">
       <div className={`${styles.row} title`}>
@@ -126,16 +138,26 @@ const FundingHistory = (): ReactElement => {
         {
           data
             ? data.map((d) => {
-              const name = d.groupType === 'NO GROUP' ? d.categoryName : `${d.groupName}:${d.categoryName}`;
+              if (d.groupType === 'NO GROUP') {
+                currentGroup = d.groupName;
 
-              return (
-                <div className={styles.row} key={d.categoryId}>
-                  <div className={`${styles.category} ellipsis`}>{name}</div>
-                  {
-                    renderHistory(d.history)
-                  }
-                </div>
-              );
+                return renderRow(d, styles.indent1);
+              }
+
+              if (d.groupName !== currentGroup) {
+                currentGroup = d.groupName;
+
+                return (
+                  <>
+                    <div className={styles.indent1}>{d.groupName}</div>
+                    {
+                      renderRow(d, styles.indent2)
+                    }
+                  </>
+                )
+              }
+
+              return renderRow(d, styles.indent2);
             })
             : null
         }
