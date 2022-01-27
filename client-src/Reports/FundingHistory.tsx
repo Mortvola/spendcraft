@@ -1,4 +1,5 @@
 import Http from '@mortvola/http';
+import { DateTime } from 'luxon';
 import React, { ReactElement, useEffect, useState } from 'react';
 import Amount from '../Amount';
 import styles from './FundingHistory.module.css';
@@ -27,8 +28,8 @@ const FundingHistory = (): ReactElement => {
   }, []);
 
   const renderHistoryTitles = () => {
-    let year = 2021;
-    let month = 11;
+    let [year, month] = [DateTime.now().year, DateTime.now().month];
+
     const elements: React.ReactElement[] = [];
 
     for (let i = 0; i < 12; i += 1) {
