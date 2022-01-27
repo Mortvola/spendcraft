@@ -1,4 +1,9 @@
 .report {
+  display: grid;
+  grid-template-rows: max-content;
+}
+
+.report-items {
   overflow: auto;
   height: 100%;
   width: 100%;
@@ -8,6 +13,11 @@
   display: grid;
   grid-template-columns: repeat(13, max-content);
   grid-template-rows: max-content;
+}
+
+.totals {
+  border-top: thin black solid;
+  padding-top: 0.25rem;
 }
 
 .indent1 {
@@ -24,6 +34,7 @@
 
 .historyItem {
   width: 5rem;
+  margin-left: 0.25rem;
 }
 
 .change {

@@ -18,6 +18,7 @@ const FundingHistory = (): ReactElement => {
   type FundingHistoryResponse = FundingHistoryCategory[];
 
   const [data, setData] = useState<FundingHistoryCategory[] | null>(null);
+  const [totals, setTotals] = useState<FundingHistoryItem[] | null>(null);
   const maxDisplayedMonths = 12;
 
   useEffect(() => {
@@ -46,7 +47,23 @@ const FundingHistory = (): ReactElement => {
           return a.groupName.localeCompare(b.groupName);
         });
 
+        const newTotals: FundingHistoryItem[] = [];
+
+        body.forEach((g) => {
+          g.history?.forEach((h) => {
+            const total = newTotals.find((t) => t.year === h.year && t.month === h.month);
+
+            if (total) {
+              total.amount += h.amount;
+            }
+            else {
+              newTotals.push({ year: h.year, month: h.month, amount: h.amount });
+            }
+          })
+        });
+
         setData(body);
+        setTotals(newTotals);
       }
     })();
   }, []);
@@ -127,14 +144,14 @@ const FundingHistory = (): ReactElement => {
   );
 
   return (
-    <div className="window window1">
+    <div className={`window window1 ${styles.report}`}>
       <div className={`${styles.row} title`}>
         <div className={`${styles.category} ellipsis`}>Category</div>
         {
           renderHistoryTitles()
         }
       </div>
-      <div className={styles.report}>
+      <div className={styles.reportItems}>
         {
           data
             ? data.map((d) => {
@@ -161,6 +178,12 @@ const FundingHistory = (): ReactElement => {
             })
             : null
         }
+        <div className={`${styles.row} ${styles.totals}`} key="total">
+          <div className={`${styles.category} ${styles.indent1} ellipsis`}>Totals</div>
+          {
+            renderHistory(totals)
+          }
+        </div>
       </div>
     </div>
   );
