@@ -94,6 +94,10 @@ const FundingHistory = (): ReactElement => {
     return elements;
   }
 
+  const amountsMatch = (a: number, b: number) => (
+    a.toFixed(2) === b.toFixed(2)
+  );
+
   const renderHistory = (history: FundingHistoryItem[] | null): React.ReactElement[] | null => {
     if (history) {
       let [year, month] = [DateTime.now().year, DateTime.now().month];
@@ -108,7 +112,9 @@ const FundingHistory = (): ReactElement => {
 
         if (entry) {
           let className = styles.historyItem;
-          if (i !== maxDisplayedMonths - 1 && (!prevEntry || (prevEntry && prevEntry.amount !== entry.amount))) {
+          if (i !== maxDisplayedMonths - 1
+            && (!prevEntry || (prevEntry && !amountsMatch(prevEntry.amount, entry.amount)))
+          ) {
             className += ` ${styles.change}`;
           }
 
