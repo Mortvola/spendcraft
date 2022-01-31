@@ -104,7 +104,7 @@ const Category = (): ReactElement | null => {
                     let index = -1;
                     return (nodes.flatMap((g) => {
                       if (isGroup(g)) {
-                        g.categories.filter((c) => (
+                        return g.categories.filter((c) => (
                           c.type === 'REGULAR'
                         ))
                           .map((c) => {
@@ -115,6 +115,7 @@ const Category = (): ReactElement | null => {
                           })
                       }
 
+                      index += 1;
                       return (
                         <FormCheckbox key={g.id} name={`category[${index}].value`} label={`${g.name}`} />
                       )
