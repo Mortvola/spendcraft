@@ -1,4 +1,4 @@
-import { logger } from 'Config/app';
+import Logger from '@ioc:Adonis/Core/Logger'
 import { CronJob } from 'cron';
 
 class BalanceUpdater {
@@ -48,7 +48,7 @@ class BalanceUpdater {
       trx.commit();
     }
     catch (error) {
-      logger.error(error, 'balance update failed');
+      Logger.error(error, 'balance update failed');
     }
   }
 }
