@@ -39,7 +39,6 @@ const PlanDetails = ({
     let planCategory = details.categories.find((pc) => pc.categoryId === category.id)
 
     if (!planCategory) {
-      console.log('creating new FundingPlanCategory');
       planCategory = new FundingPlanCategory({
         amount: 0,
         categoryId: category.id,
