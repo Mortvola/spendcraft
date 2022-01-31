@@ -137,7 +137,7 @@ const Category = (): ReactElement | null => {
           <SortableTable.Column column="categoryName">
             Category
           </SortableTable.Column>
-          <SortableTable.Column className="dolloar-amount" column="sum">
+          <SortableTable.Column className="dollar-amount" column="sum">
             Amount
           </SortableTable.Column>
           <SortableTable.Column style={{ textAlign: 'right' }} column="count">
