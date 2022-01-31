@@ -9,3 +9,7 @@
 .theme {
   background-color: #2e5ea8;
 }
+
+.accounts :global(.tab-content) {
+  overflow-y: auto;
+}

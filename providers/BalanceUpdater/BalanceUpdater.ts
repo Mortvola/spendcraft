@@ -23,7 +23,7 @@ class BalanceUpdater {
       const institutions = await Institution.query({ client: trx })
         .whereNotNull('accessToken')
         .andWhereHas('accounts', (accountsQuery) => {
-          accountsQuery.where('tracking', 'Balances');
+          accountsQuery.where('tracking', 'Balances').andWhere('closed', false);
         })
         .preload('accounts', (accountsQuery) => {
           accountsQuery.where('tracking', 'Balances');

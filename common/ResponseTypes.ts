@@ -106,6 +106,8 @@ export interface AccountProps {
 
   name: string;
 
+  closed: boolean;
+
   type: string;
 
   subtype: string;

@@ -183,7 +183,7 @@ class WebhookController {
 
         const institution = await Institution.findByOrFail('plaidItemId', event.item_id, { client: trx });
 
-        const accounts = await institution.related('accounts').query();
+        const accounts = await institution.related('accounts').query().where('closed', false);
         const application = await Application.findOrFail(institution.applicationId);
 
         await Promise.all(accounts.map(async (acct) => {

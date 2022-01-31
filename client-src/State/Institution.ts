@@ -1,11 +1,11 @@
 import { makeAutoObservable, runInAction } from 'mobx';
+import Http from '@mortvola/http';
 import Account from './Account';
 import {
   UnlinkedAccountProps, InstitutionProps, isUnlinkedAccounts, AccountBalanceProps, Error,
   TrackingType, isAddAccountsResponse, isDeleteAccountResponse, isLinkTokenResponse,
 } from '../../common/ResponseTypes';
 import { AccountInterface, InstitutionInterface, StoreInterface } from './State';
-import Http from '@mortvola/http';
 import Plaid from './Plaid';
 
 class Institution implements InstitutionInterface {
@@ -150,6 +150,14 @@ class Institution implements InstitutionInterface {
     });
   }
 
+  removeAccount(account: AccountInterface): void {
+    const index = this.accounts.findIndex((a) => a.id === account.id);
+
+    if (index !== -1) {
+      this.accounts.splice(index, 1);
+    }
+  }
+
   async deleteAccount(account: AccountInterface): Promise<void> {
     const response = await Http.delete(`/api/institution/${this.id}/accounts/${account.id}`);
 
@@ -158,11 +166,7 @@ class Institution implements InstitutionInterface {
 
       if (isDeleteAccountResponse(body)) {
         runInAction(() => {
-          const index = this.accounts.findIndex((a) => a.id === account.id);
-
-          if (index !== -1) {
-            this.accounts.splice(index, 1);
-          }
+          this.removeAccount(account);
 
           this.store.categoryTree.updateBalances(body);
         });
@@ -172,6 +176,14 @@ class Institution implements InstitutionInterface {
 
   delete(): void {
     this.store.accounts.deleteInstitution(this);
+  }
+
+  hasOpenAccounts(): boolean {
+    return this.accounts.some((a) => !a.closed);
+  }
+
+  hasClosedAccounts(): boolean {
+    return this.accounts.some((a) => a.closed);
   }
 }
 

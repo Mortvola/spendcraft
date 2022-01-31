@@ -72,6 +72,7 @@ class ReportController {
           .join('accounts', 'accounts.id', 'balance_histories.account_id')
           .join('institutions', 'institutions.id', 'accounts.institution_id')
           .where('application_id', application.id)
+          .andWhere('accounts.closed', false)
           .union((query2) => {
             query2.select(Database.raw('min(date) as date'))
               .from('account_transactions as at')
@@ -79,6 +80,7 @@ class ReportController {
               .join('accounts as a', 'a.id', 'at.account_id')
               .join('institutions as i', 'i.id', 'a.institution_id')
               .where('i.application_id', application.id)
+              .andWhere('a.closed', false)
               .andWhere('a.tracking', '!=', 'Balances')
               .andWhereIn('t.type', [
                 TransactionType.STARTING_BALANCE,
@@ -191,6 +193,7 @@ class ReportController {
         .join('accounts', 'accounts.id', 'account_id')
         .join('institutions', 'institutions.id', 'accounts.institution_id')
         .where('pending', false)
+        .andWhere('accounts.closed', false)
         .andWhereIn('transactions.type', [TransactionType.REGULAR_TRANSACTION, TransactionType.MANUAL_TRANSACTION])
         .andWhere('institutions.application_id', application.id)
         .groupBy(['payment_channel'])

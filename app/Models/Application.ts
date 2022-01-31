@@ -112,6 +112,7 @@ export default class Application extends BaseModel {
       accounts: i.accounts.map((a) => ({
         id: a.id,
         name: a.name,
+        closed: a.closed,
         type: a.type,
         subtype: a.subtype,
         tracking: a.tracking,

@@ -250,7 +250,13 @@ export interface InstitutionInterface {
 
   deleteAccount(account: AccountInterface): void;
 
+  removeAccount(account: AccountInterface): void;
+
   delete(): void;
+
+  hasOpenAccounts(): boolean;
+
+  hasClosedAccounts(): boolean;
 }
 
 export interface QueryManagerInterface {
@@ -273,6 +279,8 @@ export interface AccountInterface extends TransactionContainerInterface {
   name: string;
 
   officialName: string | null = null;
+
+  closed: boolean;
 
   type: string;
 
@@ -317,6 +325,8 @@ export interface AccountInterface extends TransactionContainerInterface {
   delete(): void;
 
   updateOfflineAccount(name: string): void;
+
+  setClosed(closed: boolean): void;
 }
 
 export interface BalanceInterface {

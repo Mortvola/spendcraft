@@ -353,7 +353,8 @@ export default class AccountsController {
     }
 
     const validationSchema = schema.create({
-      name: schema.string({ trim: true }),
+      name: schema.string.optional(({ trim: true })),
+      closed: schema.boolean.optional(),
     });
 
     const requestData = await request.validate({
@@ -362,7 +363,13 @@ export default class AccountsController {
 
     const account = await Account.findOrFail(request.params().acctId);
 
-    account.name = requestData.name;
+    if (requestData.name) {
+      account.name = requestData.name;
+    }
+
+    if (requestData.closed) {
+      account.closed = requestData.closed;
+    }
 
     account.save();
   }

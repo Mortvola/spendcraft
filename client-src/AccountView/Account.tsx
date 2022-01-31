@@ -6,6 +6,7 @@ import { getSubTypeName, getTypeName } from '../State/AccountTypes';
 import Amount from '../Amount';
 import { useRelinkDialog } from './RelinkDialog';
 import styles from './Account.module.css';
+import { useDeleteConfirmation } from '../DeleteConfirmation';
 
 type PropsType = {
   selected: boolean,
@@ -23,6 +24,27 @@ const Account = ({
   showAccountDialog,
 }: PropsType) => {
   const [RelinkDialog, showRelinkDialog] = useRelinkDialog();
+  const [CloseConfirmation, handleCloseClick] = useDeleteConfirmation(
+    account.closed ? 'Open Confirmation' : 'Close Confirmation',
+    account.closed ? 'Open' : 'Close',
+    (
+      <>
+        <div>
+          {
+            `Are you sure you want to ${account.closed ? 'open' : 'close'} this account?`
+          }
+        </div>
+        <div style={{ marginTop: '1rem' }}>
+          {
+            `Accounts can be ${account.closed ? 'reclosed' : 'reopened'} from the ${account.closed ? 'Opened' : 'Closed'} tab.`
+          }
+        </div>
+      </>
+    ),
+    () => {
+      account.setClosed(!account.closed);
+    },
+  );
 
   const refresh = async () => {
     const result = await account.refresh(institution.id);
@@ -55,11 +77,14 @@ const Account = ({
 
   return (
     <div className={acctClassName} onClick={accountSelected}>
-      {
-        !institution.offline
-          ? <IconButton icon="sync-alt" rotate={account.refreshing} onClick={refresh} />
-          : <IconButton icon="edit" onClick={() => showAccountDialog(account)} />
-      }
+      <div className={styles.buttons}>
+        {
+          !institution.offline
+            ? <IconButton icon="sync-alt" rotate={account.refreshing} onClick={refresh} />
+            : <IconButton icon="edit" onClick={() => showAccountDialog(account)} />
+        }
+        <IconButton icon={account.closed ? 'circle' : 'times-circle'} solid={false} onClick={handleCloseClick} />
+      </div>
       <div className={styles.accountInfo}>
         <div className={styles.accountName}>{account.name}</div>
         <div style={{ display: 'flex' }}>
@@ -93,6 +118,7 @@ const Account = ({
         }
       </div>
       <RelinkDialog account={account} />
+      <CloseConfirmation />
     </div>
   );
 };

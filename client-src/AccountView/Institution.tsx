@@ -11,12 +11,14 @@ import styles from './Institution.module.css';
 
 type PropsType = {
   institution: InstitutionInterface,
+  opened: boolean,
   onAccountSelected: ((account: AccountInterface) => void),
   selectedAccount?: AccountInterface | null,
 }
 
 function Institution({
   institution,
+  opened,
   onAccountSelected,
   selectedAccount = null,
 }: PropsType): ReactElement {
@@ -28,6 +30,8 @@ function Institution({
   };
   const [editedAccount, setEditedAccount] = useState<AccountInterface | null>(null);
   const [DeleteConfirmation, handleDeleteClick] = useDeleteConfirmation(
+    'Delete Confirmation',
+    'Delete',
     (
       <>
         <div>
@@ -92,28 +96,30 @@ function Institution({
       </div>
       <div>
         {
-          institution.accounts.map((account, index) => {
-            const selected = selectedAccount
-              ? selectedAccount.id === account.id
-              : false;
+          institution.accounts
+            .filter((account) => account.closed !== opened)
+            .map((account, index) => {
+              const selected = selectedAccount
+                ? selectedAccount.id === account.id
+                : false;
 
-            return (
-              <div key={account.id}>
-                {
-                  index !== 0
-                    ? <div className={styles.separator} />
-                    : null
-                }
-                <Account
-                  institution={institution}
-                  account={account}
-                  onAccountSelected={onAccountSelected}
-                  selected={selected}
-                  showAccountDialog={handleEditAccount}
-                />
-              </div>
-            );
-          })
+              return (
+                <div key={account.id}>
+                  {
+                    index !== 0
+                      ? <div className={styles.separator} />
+                      : null
+                  }
+                  <Account
+                    institution={institution}
+                    account={account}
+                    onAccountSelected={onAccountSelected}
+                    selected={selected}
+                    showAccountDialog={handleEditAccount}
+                  />
+                </div>
+              );
+            })
         }
       </div>
     </div>

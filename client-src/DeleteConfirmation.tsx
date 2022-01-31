@@ -2,11 +2,15 @@ import React, { ReactElement, ReactNode, useState } from 'react';
 import { Modal, Button } from 'react-bootstrap';
 
 type Props = {
+  title: string,
+  buttonTitle: string,
   onConfirm: () => void;
   children: ReactNode;
 }
 
-const DeleteConfirmation = ({
+const Confirmation = ({
+  title,
+  buttonTitle,
   onConfirm,
   onHide,
   show,
@@ -15,7 +19,7 @@ const DeleteConfirmation = ({
   <Modal onHide={onHide} show={show}>
     <Modal.Header closeButton>
       <Modal.Title>
-        Delete Confirmation
+        {title}
       </Modal.Title>
     </Modal.Header>
     <Modal.Body>
@@ -23,7 +27,7 @@ const DeleteConfirmation = ({
     </Modal.Body>
     <Modal.Footer>
       <Button variant="secondary" onClick={onHide}>Cancel</Button>
-      <Button variant="danger" onClick={onConfirm}>Delete</Button>
+      <Button variant="danger" onClick={onConfirm}>{buttonTitle}</Button>
     </Modal.Footer>
   </Modal>
 );
@@ -37,12 +41,14 @@ type ConfirmProps = {
 }
 
 function useDeleteConfirmation<T>(
+  title: string,
+  buttonTitle: string,
   children: ReactNode,
   onDelete: OnDelete,
 ): [(props: T) => ReactElement | null, HandleDeleteClick] {
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  const handleDeleteClick = () => {
+  const handleConfirmClick = () => {
     setConfirmDelete(true);
   };
 
@@ -56,20 +62,22 @@ function useDeleteConfirmation<T>(
   };
 
   const createConfirmation = () => (
-    <DeleteConfirmation
+    <Confirmation
+      title={title}
+      buttonTitle={buttonTitle}
       show={confirmDelete}
       onHide={handleHide}
       onConfirm={handleConfirm}
     >
       {children}
-    </DeleteConfirmation>
+    </Confirmation>
   );
 
   return [
     createConfirmation,
-    handleDeleteClick,
+    handleConfirmClick,
   ];
 }
 
-export default DeleteConfirmation;
+export default Confirmation;
 export { useDeleteConfirmation };

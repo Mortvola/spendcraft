@@ -2,6 +2,7 @@
   border: thin solid black;
   border-radius: 8px;
   margin: 4px;
+  margin-bottom: 8px;
   overflow: hidden;
   box-shadow: 3px 4px 4px 0px rgb(0 0 0 / 25%);
 }

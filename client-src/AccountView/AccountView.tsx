@@ -6,10 +6,12 @@ import { AccountInterface } from '../State/State';
 import styles from './AccountView.module.css';
 
 type PropsType = {
+  opened: boolean,
   onAccountSelected: () => void,
 }
 
 const AccountView = ({
+  opened,
   onAccountSelected,
 }: PropsType) => {
   const { accounts, uiState } = useContext(MobxStore);
@@ -25,14 +27,19 @@ const AccountView = ({
 
   return (
     <div className={styles.accounts}>
-      {institutions.map((institution) => (
-        <Institution
-          key={institution.id}
-          institution={institution}
-          onAccountSelected={handleAccountSelected}
-          selectedAccount={selectedAccount}
-        />
-      ))}
+      {
+        institutions
+          .filter((institution) => (opened ? institution.hasOpenAccounts() : institution.hasClosedAccounts()))
+          .map((institution) => (
+            <Institution
+              key={institution.id}
+              institution={institution}
+              onAccountSelected={handleAccountSelected}
+              selectedAccount={selectedAccount}
+              opened={opened}
+            />
+          ))
+      }
     </div>
   );
 };

@@ -26,6 +26,9 @@ class Account extends BaseModel {
   @column()
   public id: number;
 
+  @column()
+  closed: boolean;
+
   @hasMany(() => AccountTransaction)
   public accountTransactions: HasMany<typeof AccountTransaction>;
 

@@ -1,5 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { observer } from 'mobx-react-lite';
+import { Tab, Tabs } from 'react-bootstrap';
 import useMediaQuery from '../MediaQuery'
 import DetailView from '../DetailView';
 import AccountView from './AccountView';
@@ -50,10 +51,14 @@ const Accounts = () => {
       toolbar={<AccountsToolbar open={open} />}
       sidebar={(
         <div className={styles.accounts}>
-          <div className="account-bar">
-            Institutions & Accounts
-          </div>
-          <AccountView onAccountSelected={handleAccountSelected} />
+          <Tabs className="mb-3">
+            <Tab eventKey="opened" title="Opened">
+              <AccountView onAccountSelected={handleAccountSelected} opened />
+            </Tab>
+            <Tab eventKey="closed" title="Closed">
+              <AccountView onAccountSelected={handleAccountSelected} opened={false} />
+            </Tab>
+          </Tabs>
         </div>
       )}
       onToggleClick={handleToggleClick}

@@ -354,6 +354,7 @@ class InstitutionController {
       accounts: newAccounts.map((a) => ({
         id: a.id,
         name: a.name,
+        closed: a.closed,
         type: a.type,
         subtype: a.subtype,
         tracking: a.tracking,
@@ -430,6 +431,7 @@ class InstitutionController {
       accounts: newAccounts.map((a) => ({
         id: a.id,
         name: a.name,
+        closed: a.closed,
         type: a.type,
         subtype: a.subtype,
         tracking: a.tracking,
@@ -536,7 +538,7 @@ class InstitutionController {
     const result: AccountSyncResult[] | null = [];
 
     await Promise.all(institutions.map(async (institution) => {
-      const accounts = await institution.related('accounts').query();
+      const accounts = await institution.related('accounts').query().where('closed', false);
 
       return Promise.all(accounts.map(async (acct) => {
         if (institution.accessToken === null || institution.accessToken === '') {

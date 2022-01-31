@@ -19,6 +19,8 @@ class Account extends TransactionContainer implements AccountInterface {
 
   officialName: string | null = null;
 
+  closed: boolean;
+
   type: string;
 
   subtype: string;
@@ -42,6 +44,7 @@ class Account extends TransactionContainer implements AccountInterface {
 
     this.id = props.id;
     this.name = props.name;
+    this.closed = props.closed;
     this.type = props.type;
     this.subtype = props.subtype;
     this.tracking = props.tracking;
@@ -61,6 +64,22 @@ class Account extends TransactionContainer implements AccountInterface {
     });
 
     this.store = store;
+  }
+
+  async setClosed(closed: boolean): Promise<void> {
+    const response = await Http.patch(`/api/account/${this.id}`, {
+      closed,
+    });
+
+    if (response.ok) {
+      runInAction(() => {
+        this.closed = closed;
+
+        if (this.store.uiState.selectedAccount === this) {
+          this.store.uiState.selectAccount(null);
+        }
+      });
+    }
   }
 
   async refresh(institutionId: number): Promise<boolean> {
