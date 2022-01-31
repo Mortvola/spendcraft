@@ -3,6 +3,7 @@ import React, {
   ReactElement, ReactNode, useMemo, useState,
 } from 'react';
 import Icon from '../Icon';
+import styles from './SortableTable.module.css';
 
 type SortableTableHeaderProps = {
   className?: string,
@@ -120,15 +121,8 @@ export default function useSortableTable<T>(keyPrecedence?: string[] | undefined
   const SortableTable = ({
     children,
   }: SortableTableProps): ReactElement => (
-    <div style={{ overflowX: 'auto', maxHeight: '100%', height: 'max-content' }}>
-      <div
-        style={{
-          minWidth: '500px',
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
+    <div className={styles.tableWrapper}>
+      <div className={styles.table}>
         {children}
       </div>
     </div>

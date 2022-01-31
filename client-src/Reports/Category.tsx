@@ -11,6 +11,7 @@ import MobxStore from '../State/mobxStore';
 import useSortableTable from './SortableTable';
 import { isGroup } from '../State/Group';
 import ReportControls from './ReportControls';
+import styles from './Category.module.css';
 
 type CategoryReport = {
   rowNumber: string,
@@ -129,7 +130,7 @@ const Category = (): ReactElement | null => {
         </ReportControls>
       </Formik>
       <SortableTable>
-        <SortableTable.Header className="title payee-report-item">
+        <SortableTable.Header className={`title ${styles.reportItem}`}>
           <SortableTable.Column column="groupName">
             Group
           </SortableTable.Column>
@@ -147,7 +148,7 @@ const Category = (): ReactElement | null => {
         <SortableTable.Body>
           {
             (d) => (
-              <div key={d.rowNumber} className="payee-report-item">
+              <div key={d.rowNumber} className={styles.reportItem}>
                 <div className="ellipsis">{d.groupName}</div>
                 <div className="ellipsis">{d.categoryName}</div>
                 <Amount amount={d.sum} />

@@ -10,6 +10,7 @@ import Amount from '../Amount';
 import MobxStore from '../State/mobxStore';
 import useSortableTable from './SortableTable';
 import ReportControls from './ReportControls';
+import styles from './Payee.module.css';
 
 type PayeeReport = {
   [key: string]: string | number,
@@ -144,14 +145,14 @@ const Payee = (): ReactElement | null => {
         </ReportControls>
       </Formik>
       <SortableTable>
-        <SortableTable.Header className="title payee-report-item">
+        <SortableTable.Header className={`title ${styles.reportItem}`}>
           <SortableTable.Column column="name">
             Name
           </SortableTable.Column>
           <SortableTable.Column column="paymentChannel">
             Payment Channel
           </SortableTable.Column>
-          <SortableTable.Column className="dolloar-amount" column="sum">
+          <SortableTable.Column className="dollar-amount" column="sum">
             Amount
           </SortableTable.Column>
           <SortableTable.Column style={{ textAlign: 'right' }} column="count">
@@ -162,7 +163,7 @@ const Payee = (): ReactElement | null => {
         <SortableTable.Body>
           {
             (d) => (
-              <div key={d.rowNumber} className="payee-report-item">
+              <div key={d.rowNumber} className={styles.reportItem}>
                 <div className="ellipsis">{d.name}</div>
                 <div>{d.paymentChannel}</div>
                 <Amount amount={d.sum} />
