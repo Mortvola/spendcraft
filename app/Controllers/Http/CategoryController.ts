@@ -330,7 +330,7 @@ class CategoryController {
         let transactionId = tfrId;
 
         if (transactionId === undefined) {
-          [transactionId] = await trx.insertQuery().insert({
+          [{ id: transactionId }] = await trx.insertQuery().insert({
             date, type, application_id: application.id,
           }).table('transactions').returning('id');
 

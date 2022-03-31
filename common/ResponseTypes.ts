@@ -668,9 +668,9 @@ export type UnlinkedAccountProps = {
   officialName: string | null,
   mask: string | null,
   type: string,
-  subtype: string,
+  subtype: string | null,
   balances: {
-    current: number,
+    current: number | null,
   },
   tracking: TrackingType,
 };

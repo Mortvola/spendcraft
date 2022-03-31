@@ -1,6 +1,6 @@
 import React, { ReactElement, useState } from 'react';
 import { Button, Modal } from 'react-bootstrap';
-import { InstitutionWithInstitutionData, InstitutionWithStatus } from 'plaid';
+import { Institution } from 'plaid';
 import { DateTime } from 'luxon';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import Http from '@mortvola/http';
@@ -15,7 +15,7 @@ const InstitutionInfoDialog = ({
   institution,
   setShow,
 }: PropsType & ModalProps): ReactElement => {
-  type InstitutionInfo = InstitutionWithInstitutionData & InstitutionWithStatus;
+  type InstitutionInfo = Institution; // InstitutionWithInstitutionData & InstitutionWithStatus;
 
   const [infoInitialized, setInfoInitialized] = useState(false);
   const [info, setInfo] = useState<InstitutionInfo | null>(null);
@@ -45,7 +45,7 @@ const InstitutionInfoDialog = ({
   const percent = (value: number) => `${(value * 100).toFixed(0)}%`;
 
   const renderStatus = (): ReactElement[] | null => {
-    if (info && info.status !== undefined) {
+    if (info && info.status) {
       return Object.entries(info.status)
         .filter(([, value]) => value !== null)
         .map(([key, value]) => (
@@ -76,7 +76,11 @@ const InstitutionInfoDialog = ({
             <img src={`data:image/png;base64, ${info.logo}`} alt="logo" width="48" height="48" />
             <div style={{ marginLeft: '1rem' }}>
               <div style={{ fontSize: 'x-large' }}>{info.name}</div>
-              <a href={info.url} rel="noopener noreferrer" target="_blank">{info.url}</a>
+              {
+                info.url
+                  ? <a href={info.url} rel="noopener noreferrer" target="_blank">{info.url}</a>
+                  : null
+              }
             </div>
           </div>
           <div>

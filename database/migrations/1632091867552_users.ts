@@ -12,7 +12,7 @@ export default class Users extends BaseSchema {
       const users = await db.from('users');
 
       await Promise.all(users.map(async (u) => {
-        const [appId] = await db.table('applications')
+        const [{ id: appId }] = await db.table('applications')
           .insert({})
           .returning('id');
 

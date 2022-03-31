@@ -5,7 +5,7 @@ import AccountTransaction from 'App/Models/AccountTransaction';
 import User from 'App/Models/User';
 import Institution from 'App/Models/Institution';
 import {
-  TransactionsRequestOptions, TransactionsResponse, Transaction as PlaidTransaction,
+  TransactionsGetRequestOptions, TransactionsGetResponse, Transaction as PlaidTransaction,
 } from 'plaid';
 import { DateTime } from 'luxon';
 import Database from '@ioc:Adonis/Lucid/Database';
@@ -93,7 +93,7 @@ export default class CheckTransactions extends BaseCommand {
 
         // eslint-disable-next-line no-restricted-syntax
         for (const acct of accounts) {
-          let response: TransactionsResponse | null = null;
+          let response: TransactionsGetResponse | null = null;
 
           const missingTransactions: PlaidTransaction[] = [];
           const extraTransactions: AccountTransaction[] = [];
@@ -104,7 +104,7 @@ export default class CheckTransactions extends BaseCommand {
           let merchantNameMismatches = 0;
 
           do {
-            const options: TransactionsRequestOptions = {
+            const options: TransactionsGetRequestOptions = {
               account_ids: [acct.plaidAccountId],
               count: 500,
               offset: plaidTransactions.length,
@@ -164,7 +164,7 @@ export default class CheckTransactions extends BaseCommand {
                     else if (plaidTransaction.merchant_name !== acctTransaction.merchantName) {
                       merchantNameMismatches += 1;
                       if (this.update === 'merchantName') {
-                        acctTransaction.merchantName = plaidTransaction.merchant_name;
+                        acctTransaction.merchantName = plaidTransaction.merchant_name ?? null;
                         updated = true;
                       }
                     }

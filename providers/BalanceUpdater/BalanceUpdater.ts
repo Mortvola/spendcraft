@@ -38,7 +38,7 @@ class BalanceUpdater {
         
           await Promise.all(institution.accounts.map(async (account) => {
             const plaidAccount = response.accounts.find((a) => a.account_id === account.plaidAccountId);
-            if (plaidAccount) {
+            if (plaidAccount && plaidAccount.balances.current !== null) {
               await account.updateAccountBalanceHistory(plaidAccount.balances.current);
             }
           }))

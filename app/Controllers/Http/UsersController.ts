@@ -4,6 +4,7 @@ import { InstitutionProps } from 'Common/ResponseTypes';
 import Env from '@ioc:Adonis/Core/Env'
 import { rules, schema } from '@ioc:Adonis/Core/Validator';
 import User from 'App/Models/User';
+import { CountryCode, Products } from 'plaid';
 
 export default class UsersController {
   // eslint-disable-next-line class-methods-use-this
@@ -106,8 +107,8 @@ export default class UsersController {
         client_user_id: user.id.toString(),
       },
       client_name: 'SpendCraft',
-      products: ['transactions'],
-      country_codes: ['US'],
+      products: [Products.Transactions],
+      country_codes: [CountryCode.Us],
       language: 'en',
       webhook,
     });

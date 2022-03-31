@@ -9,6 +9,7 @@ import plaidClient, { PlaidInstitution } from '@ioc:Plaid';
 import Account from 'App/Models/Account';
 import Logger from '@ioc:Adonis/Core/Logger'
 import Application from 'App/Models/Application';
+import { CountryCode } from 'plaid';
 
 class Institution extends BaseModel {
   @column()
@@ -45,7 +46,7 @@ class Institution extends BaseModel {
 
   public async getPlaidInstition(this: Institution): Promise<PlaidInstitution> {
     const response = await plaidClient.getInstitutionById(
-      this.institutionId, ['US'], {
+      this.institutionId, [CountryCode.Us], {
         include_optional_metadata: true,
         include_status: true,
       },

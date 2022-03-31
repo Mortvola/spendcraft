@@ -11,6 +11,7 @@ import Institution from 'App/Models/Institution';
 import { CategoryBalanceProps, TrackingType } from 'Common/ResponseTypes';
 import Transaction from 'App/Models/Transaction';
 import Application from 'App/Models/Application';
+import { Exception } from '@poppinss/utils';
 
 export type AccountSyncResult = {
   categories: CategoryBalanceProps[],
@@ -167,9 +168,13 @@ class Account extends BaseModel {
       account_ids: [this.plaidAccountId],
     });
 
+    if (accountsResponse.accounts[0].balances.current === null) {
+      throw new Exception('Balance is null');
+    }
+
     this.balance = accountsResponse.accounts[0].balances.current;
     this.plaidBalance = accountsResponse.accounts[0].balances.current;
-    if (this.type === 'credit' || this.type === 'loan') {
+    if (this.plaidBalance && (this.type === 'credit' || this.type === 'loan')) {
       this.plaidBalance = -this.plaidBalance;
     }
 
@@ -219,7 +224,7 @@ class Account extends BaseModel {
     const sum = await this.applyTransactions(application, transactionsResponse.transactions, pendingTransactions);
 
     this.plaidBalance = transactionsResponse.accounts[0].balances.current;
-    if (this.type === 'credit' || this.type === 'loan') {
+    if (this.plaidBalance && (this.type === 'credit' || this.type === 'loan')) {
       this.plaidBalance = -this.plaidBalance;
     }
 

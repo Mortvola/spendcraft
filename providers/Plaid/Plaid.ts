@@ -1,11 +1,17 @@
 import PlaidException from './PlaidException';
 import Plaid, {
-  AccountsResponse, Account, Institution, PlaidError,
+  Institution, PlaidError,
   Transaction,
+  PlaidApi,
+  PlaidEnvironments,
+  Configuration,
+  CountryCode,
+  Products,
 } from 'plaid';
 
 export {
-  AccountsResponse, Account as PlaidAccount, Institution as PlaidInstitution,
+  CountryCode, Products,
+  Institution as PlaidInstitution,
   PlaidError, Transaction as PlaidTransaction,
 };
 
@@ -18,7 +24,11 @@ export type PlaidConfig = {
 }
 
 class PlaidWrapper {
-  plaid: Plaid.Client;
+  plaid: PlaidApi;
+
+  clientId: string;
+  
+  secret: string;
 
   constructor (config: PlaidConfig) {
     let secret = '';
@@ -33,80 +43,123 @@ class PlaidWrapper {
       secret = config.productionSecret;
     }
 
-    const clientConfig: Plaid.ClientConfigs = {
-      clientID: config.clientId,
-      secret,
-      env: Plaid.environments[env],
-      options: {
-        version: '2020-09-14',
+    this.secret = secret;
+    this.clientId = config.clientId;
+
+    const clientConfig: Configuration = new Configuration({
+      basePath: PlaidEnvironments[env],
+      baseOptions: {
+        'PLAID-CLIENT-ID': config.clientId,
+        'PLAID-SECRET': secret,
       },
-    };
+      // options: {
+      //   version: '2020-09-14',
+      // },
+    });
 
     try {
-      this.plaid = new Plaid.Client(clientConfig);
+      this.plaid = new PlaidApi(clientConfig);
     }
     catch (error) {
       throw new PlaidException(error);
     }
   }
 
-  async getItem(accessToken: string): Promise<Plaid.ItemResponse> {
+  async getItem(accessToken: string): Promise<Plaid.ItemGetResponse> {
     try {
-      return await this.plaid.getItem(accessToken);
+      const response = await this.plaid.itemGet({
+        client_id: this.clientId,
+        secret: this.secret,
+        access_token: accessToken,
+      });
+
+      return response.data;
     }
     catch (error) {
+      // console.log(JSON.stringify(error.response.data));
       throw new PlaidException(error);
     }
   }
 
   async removeItem(accessToken: string): Promise<Plaid.ItemRemoveResponse> {
     try {
-      return await this.plaid.removeItem(accessToken);
+      const response = await this.plaid.itemRemove({
+        client_id: this.clientId,
+        secret: this.secret,
+        access_token: accessToken,
+      });
+
+      return response.data;
     }
     catch (error) {
       throw new PlaidException(error);
     }
   }
 
-  async getAccounts(accessToken: string, options?: Plaid.ItemRequestOptions): Promise<Plaid.AccountsResponse> {
+  async getAccounts(accessToken: string, options?: Plaid.AccountsGetRequestOptions): Promise<Plaid.AccountsGetResponse> {
     try {
-      return await this.plaid.getAccounts(accessToken, options);
+      const response = await this.plaid.accountsGet(
+        {
+          client_id: this.clientId,
+          secret: this.secret,
+          access_token: accessToken,
+        },
+        options,
+      );
+
+      return response.data;
+    }
+    catch (error) {
+      // console.log(JSON.stringify(error.response.data));
+      throw new PlaidException(error);
+    }
+  }
+
+  async exchangePublicToken(publicToken: string): Promise<Plaid.ItemPublicTokenExchangeResponse> {
+    try {
+      const response = await this.plaid.itemPublicTokenExchange({ public_token: publicToken });
+
+      return response.data;
     }
     catch (error) {
       throw new PlaidException(error);
     }
   }
 
-  async exchangePublicToken(publicToken: string): Promise<Plaid.TokenResponse> {
+  async createLinkToken(options: Plaid.LinkTokenCreateRequest): Promise<Plaid.LinkTokenCreateResponse> {
     try {
-      return await this.plaid.exchangePublicToken(publicToken)
+      const response = await this.plaid.linkTokenCreate(options);
+
+      return response.data;
     }
     catch (error) {
       throw new PlaidException(error);
     }
   }
 
-  async createLinkToken(options: Plaid.CreateLinkTokenOptions): Promise<Plaid.CreateLinkTokenResponse> {
+  async getWebhookVerificationKey(keyId: string): Promise<Plaid.WebhookVerificationKeyGetResponse> {
     try {
-      return await this.plaid.createLinkToken(options);
+      const response = await this.plaid.webhookVerificationKeyGet({ key_id: keyId });
+
+      return response.data;
     }
     catch (error) {
       throw new PlaidException(error);
     }
   }
 
-  async getWebhookVerificationKey(keyId: string): Promise<Plaid.WebhookVerificationKeyResponse> {
+  async getBalance(accessToken: string, options?: Plaid.AccountsBalanceGetRequestOptions): Promise<Plaid.AccountsGetResponse> {
     try {
-      return await this.plaid.getWebhookVerificationKey(keyId);
-    }
-    catch (error) {
-      throw new PlaidException(error);
-    }
-  }
+      const response = await this.plaid.accountsBalanceGet(
+        {
+          client_id: this.clientId,
+          secret: this.secret,
+          access_token: accessToken,
+        },
+        options,
+      );
 
-  async getBalance(accessToken: string, options?: Plaid.BalanceRequestOptions): Promise<Plaid.AccountsResponse> {
-    try {
-      return await this.plaid.getBalance(accessToken, options);
+      return response.data;
     }
     catch (error) {
       throw new PlaidException(error);
@@ -117,41 +170,74 @@ class PlaidWrapper {
     accessToken: string,
     startDate: string,
     endDate: string,
-    options?: Plaid.TransactionsRequestOptions,
-  ): Promise<Plaid.TransactionsResponse> {
+    options?: Plaid.TransactionsGetRequestOptions,
+  ): Promise<Plaid.TransactionsGetResponse> {
     try {
-      return await this.plaid.getTransactions(accessToken, startDate, endDate, options);
+      const response = await this.plaid.transactionsGet(
+        {
+          client_id: this.clientId,
+          secret: this.secret,
+          access_token: accessToken,
+          start_date: startDate,
+          end_date: endDate,
+        },
+        options,
+      );
+
+      return response.data;
     }
     catch (error) {
+      // console.log(JSON.stringify(error.response.data));
       throw new PlaidException(error);
     }
   }
 
   async getInstitutionById(
     institutionId: string,
-    countryCodes: string[],
-    options?: Plaid.GetInstitutionByIdOptions,
-  ): Promise<Plaid.GetInstitutionByIdResponse<Plaid.Institution>> {
+    countryCodes: Plaid.CountryCode[],
+    options?: Plaid.InstitutionsGetByIdRequestOptions,
+  ): Promise<Plaid.InstitutionsGetByIdResponse> {
     try {
-      return await this.plaid.getInstitutionById(institutionId, countryCodes, options);
+      const response = await this.plaid.institutionsGetById(
+        {
+          institution_id: institutionId,
+          country_codes: countryCodes,
+        },
+        options,
+      );
+
+      return response.data;
     }
     catch (error) {
       throw new PlaidException(error);
     }
   }
 
-  async updateItemWebhook(accessToken: string, webhook: string): Promise<Plaid.ItemResponse> {
+  async updateItemWebhook(accessToken: string, webhook: string): Promise<Plaid.ItemWebhookUpdateResponse> {
     try {
-      return await this.plaid.updateItemWebhook(accessToken, webhook);
+      const response = await this.plaid.itemWebhookUpdate({
+        client_id: this.clientId,
+        secret: this.secret,
+        access_token: accessToken,
+        webhook,
+      });
+
+      return response.data;
     }
     catch (error) {
       throw new PlaidException(error);
     }
   }
 
-  async resetLogin(accessToken: string): Promise<Plaid.ResetLoginResponse> {
+  async resetLogin(accessToken: string): Promise<Plaid.SandboxItemResetLoginResponse> {
     try {
-      return await this.plaid.resetLogin(accessToken);
+      const response = await this.plaid.sandboxItemResetLogin({
+        client_id: this.clientId,
+        secret: this.secret,
+        access_token: accessToken,
+      });
+
+      return response.data;
     }
     catch (error) {
       throw new PlaidException(error);
@@ -160,7 +246,14 @@ class PlaidWrapper {
 
   async sandboxItemFireWebhook(accessToken: string): Promise<Plaid.SandboxItemFireWebhookResponse> {
     try {
-      return await this.plaid.sandboxItemFireWebhook(accessToken, 'DEFAULT_UPDATE');
+      const response = await this.plaid.sandboxItemFireWebhook({
+        client_id: this.clientId,
+        secret: this.secret,
+        access_token: accessToken,
+        webhook_code: Plaid.SandboxItemFireWebhookRequestWebhookCodeEnum.DefaultUpdate,
+      });
+
+      return response.data;
     }
     catch (error) {
       throw new PlaidException(error);

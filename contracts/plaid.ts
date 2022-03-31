@@ -4,7 +4,7 @@ declare module '@ioc:Plaid' {
   const PlaidClient: Plaid;
   export default PlaidClient;
   export {
-    AccountsResponse, PlaidAccount, PlaidInstitution,
+    PlaidInstitution,
     PlaidConfig, PlaidError, PlaidTransaction,
   } from 'providers/Plaid/Plaid';
 }

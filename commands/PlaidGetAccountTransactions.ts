@@ -5,18 +5,24 @@ export default class PlaidGetAccount extends BaseCommand {
   /**
    * Command name is used to run the command
    */
-  public static commandName = 'plaid:get-account'
+  public static commandName = 'plaid:get-account-transactions'
 
   /**
    * Command description is displayed in the "help" output
    */
-  public static description = 'Retrieves the account with the provided access token and account ID'
+  public static description = 'Retrieves an accounts transactions'
 
   @args.string({ description: 'Access token of the item to retrieve' })
   public accessToken: string
 
   @args.string({ description: 'Account ID of the account to retreive' })
   public accountId: string
+
+  @args.string({ description: 'Transation period start date' })
+  public startDate: string
+
+  @args.string({ description: 'Transation period end date' })
+  public endDate: string
 
   public static settings = {
     /**
@@ -33,9 +39,14 @@ export default class PlaidGetAccount extends BaseCommand {
   }
 
   public async run (): Promise<void> {
-    const account = await plaidClient.getAccounts(this.accessToken, {
-      account_ids: [this.accountId],
-    });
+    const account = await plaidClient.getTransactions(
+      this.accessToken,
+      this.startDate,
+      this.endDate,
+      {
+        account_ids: [this.accountId],
+      },
+    );
     this.logger.info(JSON.stringify(account, null, 2));
   }
 }

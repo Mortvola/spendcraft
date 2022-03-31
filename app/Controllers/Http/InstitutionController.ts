@@ -16,6 +16,7 @@ import { DateTime } from 'luxon';
 import BalanceHistory from 'App/Models/BalanceHistory';
 import Application from 'App/Models/Application';
 import { Exception } from '@poppinss/utils';
+import { CountryCode } from 'plaid';
 
 type OnlineAccount = {
   plaidAccountId: string,
@@ -171,7 +172,7 @@ class InstitutionController {
 
       return accounts.map((acct) => {
         let balance = acct.balances.current;
-        if (acct.type === 'credit' || acct.type === 'loan') {
+        if (balance !== null && (acct.type === 'credit' || acct.type === 'loan')) {
           balance = -balance;
         }
 
@@ -181,7 +182,7 @@ class InstitutionController {
           officialName: acct.official_name,
           mask: acct.mask,
           type: acct.type,
-          subtype: acct.subtype,
+          subtype: acct.subtype as string,
           balances: {
             current: balance,
           },
@@ -611,7 +612,7 @@ class InstitutionController {
         client_user_id: user.id.toString(),
       },
       client_name: 'SpendCraft',
-      country_codes: ['US'],
+      country_codes: [CountryCode.Us],
       language: 'en',
       access_token: institution.accessToken,
     });
