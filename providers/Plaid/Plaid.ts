@@ -26,10 +26,6 @@ export type PlaidConfig = {
 class PlaidWrapper {
   plaid: PlaidApi;
 
-  clientId: string;
-  
-  secret: string;
-
   constructor (config: PlaidConfig) {
     let secret = '';
     const env = config.environment;
@@ -43,18 +39,14 @@ class PlaidWrapper {
       secret = config.productionSecret;
     }
 
-    this.secret = secret;
-    this.clientId = config.clientId;
-
     const clientConfig: Configuration = new Configuration({
       basePath: PlaidEnvironments[env],
       baseOptions: {
-        'PLAID-CLIENT-ID': config.clientId,
-        'PLAID-SECRET': secret,
+        headers: {
+          'PLAID-CLIENT-ID': config.clientId,
+          'PLAID-SECRET': secret,  
+        }
       },
-      // options: {
-      //   version: '2020-09-14',
-      // },
     });
 
     try {
@@ -68,8 +60,6 @@ class PlaidWrapper {
   async getItem(accessToken: string): Promise<Plaid.ItemGetResponse> {
     try {
       const response = await this.plaid.itemGet({
-        client_id: this.clientId,
-        secret: this.secret,
         access_token: accessToken,
       });
 
@@ -84,8 +74,6 @@ class PlaidWrapper {
   async removeItem(accessToken: string): Promise<Plaid.ItemRemoveResponse> {
     try {
       const response = await this.plaid.itemRemove({
-        client_id: this.clientId,
-        secret: this.secret,
         access_token: accessToken,
       });
 
@@ -100,8 +88,6 @@ class PlaidWrapper {
     try {
       const response = await this.plaid.accountsGet(
         {
-          client_id: this.clientId,
-          secret: this.secret,
           access_token: accessToken,
         },
         options,
@@ -152,8 +138,6 @@ class PlaidWrapper {
     try {
       const response = await this.plaid.accountsBalanceGet(
         {
-          client_id: this.clientId,
-          secret: this.secret,
           access_token: accessToken,
         },
         options,
@@ -175,8 +159,6 @@ class PlaidWrapper {
     try {
       const response = await this.plaid.transactionsGet(
         {
-          client_id: this.clientId,
-          secret: this.secret,
           access_token: accessToken,
           start_date: startDate,
           end_date: endDate,
@@ -216,8 +198,6 @@ class PlaidWrapper {
   async updateItemWebhook(accessToken: string, webhook: string): Promise<Plaid.ItemWebhookUpdateResponse> {
     try {
       const response = await this.plaid.itemWebhookUpdate({
-        client_id: this.clientId,
-        secret: this.secret,
         access_token: accessToken,
         webhook,
       });
@@ -232,8 +212,6 @@ class PlaidWrapper {
   async resetLogin(accessToken: string): Promise<Plaid.SandboxItemResetLoginResponse> {
     try {
       const response = await this.plaid.sandboxItemResetLogin({
-        client_id: this.clientId,
-        secret: this.secret,
         access_token: accessToken,
       });
 
@@ -247,8 +225,6 @@ class PlaidWrapper {
   async sandboxItemFireWebhook(accessToken: string): Promise<Plaid.SandboxItemFireWebhookResponse> {
     try {
       const response = await this.plaid.sandboxItemFireWebhook({
-        client_id: this.clientId,
-        secret: this.secret,
         access_token: accessToken,
         webhook_code: Plaid.SandboxItemFireWebhookRequestWebhookCodeEnum.DefaultUpdate,
       });

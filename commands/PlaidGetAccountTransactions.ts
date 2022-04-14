@@ -18,10 +18,10 @@ export default class PlaidGetAccount extends BaseCommand {
   @args.string({ description: 'Account ID of the account to retreive' })
   public accountId: string
 
-  @args.string({ description: 'Transation period start date' })
+  @args.string({ description: 'Transation period start date (YYYY-MM-DD)' })
   public startDate: string
 
-  @args.string({ description: 'Transation period end date' })
+  @args.string({ description: 'Transation period end date (YYYY-MM-DD)' })
   public endDate: string
 
   public static settings = {
