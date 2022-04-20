@@ -1,6 +1,6 @@
 // import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
-import { schema } from '@ioc:Adonis/Core/Validator';
+import { schema, rules } from '@ioc:Adonis/Core/Validator';
 import Database from '@ioc:Adonis/Lucid/Database';
 import Category from 'App/Models/Category';
 import Group from 'App/Models/Group';
@@ -87,7 +87,7 @@ export default class LoansController {
     }
 
     const validationSchema = schema.create({
-      name: schema.string({ trim: true }),
+      name: schema.string([rules.trim()]),
       rate: schema.number(),
       startDate: schema.date(),
       startingBalance: schema.number(),

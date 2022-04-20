@@ -1,5 +1,6 @@
 import { BaseCommand, args } from '@adonisjs/core/build/standalone'
 import plaidClient from '@ioc:Plaid';
+import { TransactionsGetResponse } from 'plaid';
 
 export default class PlaidGetAccount extends BaseCommand {
   /**
@@ -15,14 +16,14 @@ export default class PlaidGetAccount extends BaseCommand {
   @args.string({ description: 'Access token of the item to retrieve' })
   public accessToken: string
 
-  @args.string({ description: 'Account ID of the account to retreive' })
-  public accountId: string
-
   @args.string({ description: 'Transation period start date (YYYY-MM-DD)' })
   public startDate: string
 
   @args.string({ description: 'Transation period end date (YYYY-MM-DD)' })
   public endDate: string
+
+  @args.spread()
+  public accountIds: [string];
 
   public static settings = {
     /**
@@ -39,14 +40,26 @@ export default class PlaidGetAccount extends BaseCommand {
   }
 
   public async run (): Promise<void> {
-    const account = await plaidClient.getTransactions(
-      this.accessToken,
-      this.startDate,
-      this.endDate,
-      {
-        account_ids: [this.accountId],
-      },
-    );
-    this.logger.info(JSON.stringify(account, null, 2));
+    let account: TransactionsGetResponse | null = null;
+  
+    if (this.accountIds[0] === 'all') {
+      account = await plaidClient.getTransactions(
+        this.accessToken,
+        this.startDate,
+        this.endDate,
+      );
+    }
+    else {
+      account = await plaidClient.getTransactions(
+        this.accessToken,
+        this.startDate,
+        this.endDate,
+        {
+          account_ids: this.accountIds,
+        },
+      );
+    }
+
+    this.logger.info(JSON.stringify(account, null, 2));  
   }
 }

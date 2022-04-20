@@ -16,14 +16,17 @@ export default class AuthController {
      * Validate user details
      */
     const validationSchema = schema.create({
-      username: schema.string({ trim: true }, [
+      username: schema.string([
+        rules.trim(),
         rules.unique({ table: 'users', column: 'username' }),
       ]),
-      email: schema.string({ trim: true }, [
-        rules.email(),
+      email: schema.string([
+        rules.trim(),
+        rules.normalizeEmail({ allLowercase: true }),
         rules.unique({ table: 'users', column: 'email' }),
       ]),
-      password: schema.string({ trim: true }, [
+      password: schema.string([
+        rules.trim(),
         rules.confirmed(),
       ]),
     });
@@ -119,9 +122,9 @@ export default class AuthController {
   // eslint-disable-next-line class-methods-use-this
   public async login({ auth, request, response }: HttpContextContract) : Promise<void> {
     const validationSchema = schema.create({
-      username: schema.string({ trim: true }),
-      password: schema.string({ trim: true }),
-      remember: schema.string.optional({ trim: true }),
+      username: schema.string([rules.trim()]),
+      password: schema.string([rules.trim()]),
+      remember: schema.string.optional([rules.trim()]),
     });
 
     const credentials = await request.validate({

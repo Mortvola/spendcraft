@@ -10,7 +10,7 @@ import LoanTransaction from 'App/Models/LoanTransaction';
 import AccountTransaction from 'App/Models/AccountTransaction';
 import { AccountBalanceProps, CategoryBalanceProps } from 'Common/ResponseTypes';
 import Account from 'App/Models/Account';
-import { schema } from '@ioc:Adonis/Core/Validator';
+import { schema, rules } from '@ioc:Adonis/Core/Validator';
 
 export default class TransactionsController {
   // eslint-disable-next-line class-methods-use-this
@@ -27,15 +27,15 @@ export default class TransactionsController {
     const application = await user.related('application').query().firstOrFail();
 
     const validationSchema = schema.create({
-      name: schema.string.optional({ trim: true }),
+      name: schema.string.optional([rules.trim()]),
       amount: schema.number.optional(),
       date: schema.date.optional(),
-      comment: schema.string.optional({ trim: true }),
+      comment: schema.string.optional([rules.trim()]),
       splits: schema.array().members(
         schema.object().members({
           categoryId: schema.number(),
           amount: schema.number(),
-          comment: schema.string.optional({ trim: true }),
+          comment: schema.string.optional([rules.trim()]),
         }),
       ),
     });

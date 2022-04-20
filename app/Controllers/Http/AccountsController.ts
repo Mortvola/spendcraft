@@ -353,7 +353,7 @@ export default class AccountsController {
     }
 
     const validationSchema = schema.create({
-      name: schema.string.optional(({ trim: true })),
+      name: schema.string.optional([rules.trim()]),
       closed: schema.boolean.optional(),
     });
 
