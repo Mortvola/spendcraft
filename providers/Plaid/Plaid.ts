@@ -7,12 +7,16 @@ import Plaid, {
   Configuration,
   CountryCode,
   Products,
+  TransactionsGetResponse,
+  AccountsGetResponse,
 } from 'plaid';
 
 export {
   CountryCode, Products,
   Institution as PlaidInstitution,
   PlaidError, Transaction as PlaidTransaction,
+  TransactionsGetResponse,
+  AccountsGetResponse,
 };
 
 export type PlaidConfig = {
@@ -86,17 +90,21 @@ class PlaidWrapper {
 
   async getAccounts(accessToken: string, options?: Plaid.AccountsGetRequestOptions): Promise<Plaid.AccountsGetResponse> {
     try {
-      const response = await this.plaid.accountsGet(
-        {
-          access_token: accessToken,
-        },
+      const param =         {
+        access_token: accessToken,
         options,
+      };
+
+      console.log(`param = ${JSON.stringify(param)}`);
+
+      const response = await this.plaid.accountsGet(
+        param,
       );
 
       return response.data;
     }
     catch (error) {
-      // console.log(JSON.stringify(error.response.data));
+      console.log(JSON.stringify(error.response.data));
       throw new PlaidException(error);
     }
   }
@@ -114,6 +122,7 @@ class PlaidWrapper {
 
   async createLinkToken(options: Plaid.LinkTokenCreateRequest): Promise<Plaid.LinkTokenCreateResponse> {
     try {
+      console.log(`options: ${JSON.stringify(options)}`);
       const response = await this.plaid.linkTokenCreate(options);
 
       return response.data;
@@ -157,19 +166,22 @@ class PlaidWrapper {
     options?: Plaid.TransactionsGetRequestOptions,
   ): Promise<Plaid.TransactionsGetResponse> {
     try {
-      const response = await this.plaid.transactionsGet(
-        {
-          access_token: accessToken,
-          start_date: startDate,
-          end_date: endDate,
-        },
+      const param = {
+        access_token: accessToken,
+        start_date: startDate,
+        end_date: endDate,
         options,
+      };
+
+      console.log(JSON.stringify(param));
+      const response = await this.plaid.transactionsGet(
+        param,
       );
 
       return response.data;
     }
     catch (error) {
-      // console.log(JSON.stringify(error.response.data));
+      console.log(JSON.stringify(error.response.data));
       throw new PlaidException(error);
     }
   }

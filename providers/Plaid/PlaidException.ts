@@ -15,16 +15,20 @@ import PlaidError from './PlaidError';
 |
 */
 export default class PlaidException extends Exception {
-  plaidError: PlaidError;
+  plaidError: unknown;
 
   constructor(plaidError: PlaidError) {
-    super('Plaid Error', plaidError.status_code, 'PLAID_ERROR');
+    super(plaidError.response.data.error_message, plaidError.status_code, 'PLAID_ERROR');
 
-    this.plaidError = plaidError;
+    this.plaidError = plaidError.response.data;
   }
 
   // eslint-disable-next-line class-methods-use-this
   public async handle(error: this, ctx: HttpContextContract): Promise<void> {
-    ctx.response.status(error.status).send({ code: 'PLAID_ERROR', plaidError: error.plaidError.error_code });
+    ctx.response.status(error.status).send({
+      message: error.message,
+      code: 'PLAID_ERROR',
+      plaidError: error.plaidError,
+    });
   }
 }

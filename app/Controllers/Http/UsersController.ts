@@ -102,12 +102,13 @@ export default class UsersController {
     }
 
     const webhook = Env.get('PLAID_WEBHOOK');
+    const appName = Env.get('APP_NAME');
 
     const linkTokenResponse = await plaidClient.createLinkToken({
       user: {
         client_user_id: user.id.toString(),
       },
-      client_name: 'SpendCraft',
+      client_name: appName,
       products: [Products.Transactions],
       country_codes: [CountryCode.Us],
       language: 'en',

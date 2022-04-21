@@ -3,6 +3,7 @@ import Database, { TransactionClientContract } from '@ioc:Adonis/Lucid/Database'
 import {
   BaseModel, hasMany, HasMany, column, belongsTo, BelongsTo,
 } from '@ioc:Adonis/Lucid/Orm';
+import Logger from '@ioc:Adonis/Core/Logger'
 import { DateTime } from 'luxon';
 import plaidClient, { PlaidTransaction } from '@ioc:Plaid';
 import AccountTransaction from 'App/Models/AccountTransaction';
@@ -210,6 +211,8 @@ class Account extends BaseModel {
       .where('pending', true)
       .preload('transaction');
 
+    console.log(`plaid account id: ${this.plaidAccountId}`);
+
     const transactionsResponse = await plaidClient.getTransactions(
       accessToken,
       startDate.toISODate(),
@@ -221,8 +224,18 @@ class Account extends BaseModel {
       },
     );
 
+    if (
+      transactionsResponse.accounts.length === 1
+      && transactionsResponse.accounts[0].account_id !== this.plaidAccountId
+    ) {
+      // The plaid account ID has changed. Update the account with the new ID
+      Logger.info(`Changed plaid account id from ${this.plaidAccountId} to ${transactionsResponse.accounts[0].account_id}`)
+      this.plaidAccountId = transactionsResponse.accounts[0].account_id;
+    }
+
     const sum = await this.applyTransactions(application, transactionsResponse.transactions, pendingTransactions);
 
+    console.log(JSON.stringify(transactionsResponse.accounts[0]));
     this.plaidBalance = transactionsResponse.accounts[0].balances.current;
     if (this.plaidBalance && (this.type === 'credit' || this.type === 'loan')) {
       this.plaidBalance = -this.plaidBalance;

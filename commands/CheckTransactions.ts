@@ -9,6 +9,28 @@ import {
 } from 'plaid';
 import { DateTime } from 'luxon';
 import Database from '@ioc:Adonis/Lucid/Database';
+import Application from 'App/Models/Application';
+
+type ErrorTransaction = {
+  date: string,
+  name: string,
+  amount: number,
+  plaidId: string,
+  id: number,
+  transaction: AccountTransaction,
+  correctAccount: Account | null,
+};
+
+type FailedAccount = {
+  institution: Institution,
+  account: Account,
+  missingTransactions: PlaidTransaction[],
+  extraTransactions: AccountTransaction[],
+  duplicateTransactions: AccountTransaction[],
+  accountMismatchTransactions: ErrorTransaction[],
+  paymentChannelMismatches: number,
+  merchantNameMismatches: number,
+}
 
 export default class CheckTransactions extends BaseCommand {
   /**
@@ -24,11 +46,17 @@ export default class CheckTransactions extends BaseCommand {
   @flags.string({ alias: 'u', description: 'Name of the user to analyze' })
   public user: string
 
+  @flags.string({ alias: 'i', description: 'Item ID of the institution to analyze' })
+  public item: string
+
   @flags.boolean({ alias: 'd', description: 'Display all of the details of each plaid transaction' })
   public dump: boolean
 
   @flags.boolean({ description: 'Adds missing transactions' })
   public fixMissing: boolean;
+
+  @flags.boolean({ description: 'Fixes account mismath' })
+  public fixAccountMismatch: boolean;
 
   @flags.string({ description: 'Updates the specified field' })
   public update: 'paymentChannel' | 'merchantName';
@@ -45,6 +73,80 @@ export default class CheckTransactions extends BaseCommand {
      * you manually decide to exit the process
      */
     stayAlive: false,
+  }
+
+  private async report (
+    user: User,
+    application: Application,
+    failedAccounts: FailedAccount[],
+  ): Promise<void> {
+    this.logger.info(user.username);
+
+    // eslint-disable-next-line no-restricted-syntax
+    for (const acct of failedAccounts) {
+      this.logger.info(`\t${acct.institution.name}, ${acct.account.name}, item id: ${acct.institution.plaidItemId}, account id: ${acct.account.plaidAccountId}`);
+
+      this.logger.info('\t\tMissing Transactions:');
+      if (acct.missingTransactions.length > 0) {
+        // eslint-disable-next-line no-restricted-syntax
+        for (const tran of acct.missingTransactions) {
+          this.logger.info(`\t\t\t${tran.date} ${tran.name} ${tran.amount} ${tran.transaction_id}`);
+          if (this.dump) {
+            this.logger.info(JSON.stringify(tran, null, '\t\t\t\t'));
+          }
+
+          if (this.fixMissing) {
+            // eslint-disable-next-line no-await-in-loop
+            const sum = await acct.account.applyTransactions(application, [tran]);
+
+            acct.account.balance += sum;
+
+            // eslint-disable-next-line no-await-in-loop
+            await acct.account.save();
+          }
+        }
+      }
+      else {
+        this.logger.info('\t\t\tNone');
+      }
+
+      this.logger.info('\t\tDuplicate Transactions:');
+      if (acct.duplicateTransactions.length > 0) {
+        // eslint-disable-next-line no-restricted-syntax
+        for (const tran of acct.duplicateTransactions) {
+          this.logger.info(`\t\t\t${tran.transaction.date.toISODate()} ${tran.name} ${tran.amount} ${tran.plaidTransactionId} ${tran.id}`);
+        }
+      }
+      else {
+        this.logger.info('\t\t\tNone');
+      }
+
+      this.logger.info('\t\tExtra Transactions:');
+      if (acct.extraTransactions.length > 0) {
+        // eslint-disable-next-line no-restricted-syntax
+        for (const tran of acct.extraTransactions) {
+          this.logger.info(`\t\t\t${tran.transaction.date.toISODate()} ${tran.name} ${tran.amount} ${tran.plaidTransactionId} ${tran.id}`);
+        }
+      }
+      else {
+        this.logger.info('\t\t\tNone');
+      }
+
+      this.logger.info('\t\tAccount Mismatch Transactions:');
+      if (acct.accountMismatchTransactions.length > 0) {
+        // eslint-disable-next-line no-restricted-syntax
+        for (const tran of acct.accountMismatchTransactions) {
+          this.logger.info(`\t\t\t${tran.date} ${tran.name} ${tran.amount} ${tran.plaidId} ${tran.id}`);
+          this.logger.info(`\t\t\t\t${tran.correctAccount?.plaidAccountId ?? 'unknown'} ${tran.correctAccount?.name ?? 'unknown'}`)
+        }
+      }
+      else {
+        this.logger.info('\t\t\tNone');
+      }
+
+      this.logger.info(`\t\tPayment Channel Mismatches: ${acct.paymentChannelMismatches}`)
+      this.logger.info(`\t\tMerchant Name Mismatches: ${acct.merchantNameMismatches}`)
+    }
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -64,22 +166,20 @@ export default class CheckTransactions extends BaseCommand {
         .orderBy('username', 'asc');
     }
 
-    type FailedAccount = {
-      institution: Institution,
-      account: Account,
-      missingTransactions: PlaidTransaction[],
-      extraTransactions: AccountTransaction[],
-      paymentChannelMismatches: number,
-      merchantNameMismatches: number,
-    }
-
     // eslint-disable-next-line no-restricted-syntax
     for (const user of users) {
       // eslint-disable-next-line no-await-in-loop
       const application = await user.related('application').query().firstOrFail();
 
       // eslint-disable-next-line no-await-in-loop
-      const institutions = await user.application.related('institutions').query().whereNotNull('plaidItemId');
+      let institutions: Institution[] = [];
+
+      if (this.item) {
+        institutions = await user.application.related('institutions').query().where('plaidItemId', this.item);
+      }
+      else {
+        institutions = await user.application.related('institutions').query().whereNotNull('plaidItemId');
+      }
 
       const failedAccounts: FailedAccount[] = [];
 
@@ -97,6 +197,8 @@ export default class CheckTransactions extends BaseCommand {
 
           const missingTransactions: PlaidTransaction[] = [];
           const extraTransactions: AccountTransaction[] = [];
+          const duplicateTransactions: AccountTransaction[] = [];
+          const accountMismatchTransactions: ErrorTransaction[] = [];
 
           let plaidTransactions: PlaidTransaction[] = [];
 
@@ -114,7 +216,7 @@ export default class CheckTransactions extends BaseCommand {
               const endDate = DateTime.now();
 
               if (inst.accessToken === null || inst.accessToken === '') {
-                throw new Exception(`acces token not set for ${inst.plaidItemId}`);
+                throw new Exception(`access token not set for ${inst.plaidItemId}`);
               }
 
               // eslint-disable-next-line no-await-in-loop
@@ -212,17 +314,48 @@ export default class CheckTransactions extends BaseCommand {
             return 0;
           });
 
-          acctTransactions.forEach((at) => {
+          await Promise.all(acctTransactions.map(async (at) => {
             const plaidTran = plaidTransactions.find((pt) => pt.transaction_id === at.plaidTransactionId);
 
             if (!plaidTran) {
-              extraTransactions.push(at);
+              const dupTransQuery = AccountTransaction.query()
+                .whereHas('transaction', (query) => {
+                  query.where('date', at.transaction.date.toString())
+                    .andWhere('pending', false);
+                })
+                .where('accountId', at.accountId)
+                .andWhere('name', at.name)
+                .andWhere('amount', at.amount)
+                .andWhere('id', '!=', at.id);
+                
+              const dupTrans = await dupTransQuery;
+              if (dupTrans.length !== 0) {
+                // console.log(dupTransQuery.toQuery());
+                duplicateTransactions.push(at);
+              }
+              else {
+                extraTransactions.push(at);
+              }
             }
-          });
+            else if (acct.plaidAccountId !== plaidTran.account_id) {
+              const correctAcct = await Account.findBy('plaidAccountId', plaidTran.account_id);
+              accountMismatchTransactions.push({
+                date: at.transaction.date.toISODate(),
+                name: at.name,
+                amount: at.amount,
+                plaidId: at.plaidTransactionId,
+                id: at.id,
+                transaction: at,
+                correctAccount: correctAcct,
+              });
+            }
+          }));
 
           if (
             missingTransactions.length > 0
             || extraTransactions.length > 0
+            || duplicateTransactions.length > 0
+            || accountMismatchTransactions.length > 0
             || paymentChannelMismatches !== 0
             || merchantNameMismatches !== 0
           ) {
@@ -231,6 +364,8 @@ export default class CheckTransactions extends BaseCommand {
               account: acct,
               missingTransactions,
               extraTransactions,
+              duplicateTransactions,
+              accountMismatchTransactions,
               paymentChannelMismatches,
               merchantNameMismatches,
             });
@@ -248,55 +383,26 @@ export default class CheckTransactions extends BaseCommand {
       }
 
       if (failedAccounts.length > 0) {
-        this.logger.info(user.username);
+        await this.report(user, application, failedAccounts);
 
-        // eslint-disable-next-line no-restricted-syntax
-        for (const acct of failedAccounts) {
-          this.logger.info(`\t${acct.institution.name}, ${acct.account.name}, item id: ${acct.institution.plaidItemId}, account id: ${acct.account.plaidAccountId}`);
+        if (this.fixAccountMismatch) {
+          await Promise.all(failedAccounts.map(async (a) => {
+            return Promise.all(a.accountMismatchTransactions.map(async (t) => {
+              if (t.correctAccount) {
+                t.transaction.accountId = t.correctAccount.id;
 
-          this.logger.info('\t\tMissing Transactions:');
-          if (acct.missingTransactions.length > 0) {
-            // eslint-disable-next-line no-restricted-syntax
-            for (const tran of acct.missingTransactions) {
-              this.logger.info(`\t\t\t${tran.date} ${tran.name} ${tran.amount} ${tran.transaction_id}`);
-              if (this.dump) {
-                this.logger.info(JSON.stringify(tran, null, '\t\t\t\t'));
+                await t.transaction.save();
               }
-
-              if (this.fixMissing) {
-                // eslint-disable-next-line no-await-in-loop
-                const sum = await acct.account.applyTransactions(application, [tran]);
-
-                acct.account.balance += sum;
-
-                // eslint-disable-next-line no-await-in-loop
-                await acct.account.save();
-              }
-            }
-          }
-          else {
-            this.logger.info('\t\t\tNone');
-          }
-
-          this.logger.info('\t\tExtra Transactions:');
-          if (acct.extraTransactions.length > 0) {
-            // eslint-disable-next-line no-restricted-syntax
-            for (const tran of acct.extraTransactions) {
-              this.logger.info(`\t\t\t${tran.transaction.date.toISODate()} ${tran.name} ${tran.amount} ${tran.plaidTransactionId} ${tran.id}`);
-            }
-          }
-          else {
-            this.logger.info('\t\t\tNone');
-          }
-
-          this.logger.info(`\t\tPayment Channel Mismatches: ${acct.paymentChannelMismatches}`)
-          this.logger.info(`\t\tMerchant Name Mismatches: ${acct.merchantNameMismatches}`)
+            }));
+          }));
         }
 
-        if (this.fixMissing || this.update) {
-          trx.commit();
+        if (this.fixMissing || this.fixAccountMismatch || this.update) {
+          await trx.commit();
         }
       }
+
+      this.logger.info('completed');
     }
   }
 }

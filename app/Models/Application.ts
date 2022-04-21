@@ -201,7 +201,5 @@ export default class Application extends BaseModel {
         applicationId: this.id,
       })
       .save();
-
-    await this.$trx.commit();
   }
 }

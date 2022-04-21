@@ -17,6 +17,7 @@ import BalanceHistory from 'App/Models/BalanceHistory';
 import Application from 'App/Models/Application';
 import { Exception } from '@poppinss/utils';
 import { CountryCode } from 'plaid';
+import Env from '@ioc:Adonis/Core/Env'
 
 type OnlineAccount = {
   plaidAccountId: string,
@@ -573,7 +574,7 @@ class InstitutionController {
     const institution = await Institution.findOrFail(request.params().instId, { client: trx });
 
     if (institution.accessToken === null || institution.accessToken === '') {
-      throw new Exception(`acces token not set for ${institution.plaidItemId}`);
+      throw new Exception(`access token not set for ${institution.plaidItemId}`);
     }
 
     const account = await Account.findOrFail(request.params().acctId, { client: trx });
@@ -604,17 +605,27 @@ class InstitutionController {
     const institution = await Institution.findOrFail(parseInt(request.params().instId, 10));
 
     if (institution.accessToken === null || institution.accessToken === '') {
-      throw new Exception(`acces token not set for ${institution.plaidItemId}`);
+      throw new Exception(`access token not set for ${institution.plaidItemId}`);
     }
+
+    console.log(`${institution.id} ${institution.name}`)
+    const appName = Env.get('APP_NAME');
+    const webhook = Env.get('PLAID_WEBHOOK');
 
     const linkTokenResponse = await plaidClient.createLinkToken({
       user: {
         client_user_id: user.id.toString(),
       },
-      client_name: 'SpendCraft',
+      client_name: appName,
       country_codes: [CountryCode.Us],
       language: 'en',
+      webhook,
+      products: [],
       access_token: institution.accessToken,
+      link_customization_name: 'account_select',
+      update: {
+        account_selection_enabled: true,
+      }
     });
 
     response.json({ linkToken: linkTokenResponse.link_token });

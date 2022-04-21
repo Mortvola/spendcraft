@@ -50,7 +50,7 @@ export default class AuthController {
       .useTransaction(trx)
       .save();
 
-    application.initialize();
+    await application.initialize();
 
     /**
      * Create a new user
