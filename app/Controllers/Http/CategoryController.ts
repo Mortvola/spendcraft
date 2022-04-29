@@ -282,6 +282,7 @@ class CategoryController {
               q3.where('tracking', 'Transactions')
             })
         })
+        .orderBy('date', 'desc')
         .preload('accountTransaction', (accountTransaction) => {
           accountTransaction.preload('account', (account) => {
             account.preload('institution');
