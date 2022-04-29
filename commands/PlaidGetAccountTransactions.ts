@@ -40,26 +40,31 @@ export default class PlaidGetAccount extends BaseCommand {
   }
 
   public async run (): Promise<void> {
-    let account: TransactionsGetResponse | null = null;
+    try {
+      let account: TransactionsGetResponse | null = null;
   
-    if (this.accountIds[0] === 'all') {
-      account = await plaidClient.getTransactions(
-        this.accessToken,
-        this.startDate,
-        this.endDate,
-      );
+      if (this.accountIds[0] === 'all') {
+        account = await plaidClient.getTransactions(
+          this.accessToken,
+          this.startDate,
+          this.endDate,
+        );
+      }
+      else {
+        account = await plaidClient.getTransactions(
+          this.accessToken,
+          this.startDate,
+          this.endDate,
+          {
+            account_ids: this.accountIds,
+          },
+        );
+      }
+  
+      this.logger.info(JSON.stringify(account, null, 2));    
     }
-    else {
-      account = await plaidClient.getTransactions(
-        this.accessToken,
-        this.startDate,
-        this.endDate,
-        {
-          account_ids: this.accountIds,
-        },
-      );
+    catch(error) {
+      console.log(error);
     }
-
-    this.logger.info(JSON.stringify(account, null, 2));  
   }
 }
