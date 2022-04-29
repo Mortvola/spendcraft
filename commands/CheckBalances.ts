@@ -39,192 +39,210 @@ export default class CheckBalances extends BaseCommand {
   private async checkCategoryBalances() {
     const trx = await Database.transaction();
 
-    let apps: Application[] = [];
+    try {
+      let apps: Application[] = [];
 
-    if (this.user) {
-      apps = await Application.query({ client: trx })
-        .whereHas('users', (query) => {
-          query.where('username', this.user)
-        });
-    }
-    else {
-      apps = await Application.query({ client: trx });
-    }
-
-    type Failures = {
-      category: Category,
-      transSum: number,
-    };
-
-    const failedApps: {
-      appId: number,
-      failures: Failures[],
-    }[] = [];
-
-    // eslint-disable-next-line no-restricted-syntax
-    for (const app of apps) {
-      // eslint-disable-next-line no-await-in-loop
-      const categories = await Category
-        .query({ client: trx })
-        .whereHas('group', (group) => {
-          group.where('applicationId', app.id)
-        })
-        .withAggregate('transactionCategory', (query) => {
-          query.sum('amount').as('trans_sum')
-            .whereHas('transaction', (transaction) => {
-              transaction.where('applicationId', app.id)
-            });
-        })
-        .preload('group');
-
-      // Sum up all the transactions that do not have categories assigned
-      // and add the amount to the unassigned category.
-      // eslint-disable-next-line no-await-in-loop
-      const unassignedTrans = await AccountTransaction
-        .query({ client: trx })
-        .whereHas('transaction', (query) => {
-          query.where('applicationId', app.id).doesntHave('transactionCategories')
-        })
-        .whereHas('account', (query) => {
-          query.where('tracking', 'Transactions')
-        })
-        .where('pending', false)
-        .sum('amount')
-        .as('sum')
-        .first();
-
-      if (unassignedTrans && parseFloat(unassignedTrans.$extras.sum ?? 0) !== 0) {
-        const unassignedCat = categories.find((c) => c.type === 'UNASSIGNED');
-        if (unassignedCat) {
-          unassignedCat.$extras.trans_sum = parseFloat(unassignedCat.$extras.trans_sum ?? 0)
-            + parseFloat(unassignedTrans.$extras.sum ?? 0);
-        }
+      if (this.user) {
+        apps = await Application.query({ client: trx })
+          .whereHas('users', (query) => {
+            query.where('username', this.user)
+          });
       }
-
-      const failures: Failures[] = [];
-
+      else {
+        apps = await Application.query({ client: trx });
+      }
+  
+      type Failures = {
+        category: Category,
+        transSum: number,
+      };
+  
+      const failedApps: {
+        appId: number,
+        failures: Failures[],
+      }[] = [];
+  
       // eslint-disable-next-line no-restricted-syntax
-      for (const cat of categories) {
-        const transSum = (cat.$extras.trans_sum === null ? 0 : parseFloat(cat.$extras.trans_sum));
-        if (cat.amount !== transSum) {
-          failures.push({
-            category: cat,
-            transSum,
+      for (const app of apps) {
+        // eslint-disable-next-line no-await-in-loop
+        const categories = await Category
+          .query({ client: trx })
+          .whereHas('group', (group) => {
+            group.where('applicationId', app.id)
           })
-        }
-      }
-
-      if (failures.length > 0) {
-        failedApps.push({
-          appId: app.id,
-          failures,
-        });
-      }
-    }
-
-    if (failedApps.length > 0) {
-      // eslint-disable-next-line no-restricted-syntax
-      for (const app of failedApps) {
-        this.logger.info(`${app.appId}`);
-        // eslint-disable-next-line no-restricted-syntax
-        for (const failure of app.failures) {
-          const { category, transSum } = failure;
-          const difference = category.amount - transSum;
-          this.logger.info(`\t"${category.group.name}:${category.name}" (${category.id}): ${category.amount}, Transactions: ${transSum}, difference: ${difference}`);
-
-          if (this.fix) {
-            category.amount = transSum;
-
-            // eslint-disable-next-line no-await-in-loop
-            await category.save();
+          .withAggregate('transactionCategory', (query) => {
+            query.sum('amount').as('trans_sum')
+              .whereHas('transaction', (transaction) => {
+                transaction.where('applicationId', app.id)
+              });
+          })
+          .preload('group');
+  
+        // Sum up all the transactions that do not have categories assigned
+        // and add the amount to the unassigned category.
+        // eslint-disable-next-line no-await-in-loop
+        const unassignedTrans = await AccountTransaction
+          .query({ client: trx })
+          .whereHas('transaction', (query) => {
+            query.where('applicationId', app.id).doesntHave('transactionCategories')
+          })
+          .whereHas('account', (query) => {
+            query.where('tracking', 'Transactions')
+          })
+          .where('pending', false)
+          .sum('amount')
+          .as('sum')
+          .first();
+  
+        if (unassignedTrans && parseFloat(unassignedTrans.$extras.sum ?? 0) !== 0) {
+          const unassignedCat = categories.find((c) => c.type === 'UNASSIGNED');
+          if (unassignedCat) {
+            unassignedCat.$extras.trans_sum = parseFloat(unassignedCat.$extras.trans_sum ?? 0)
+              + parseFloat(unassignedTrans.$extras.sum ?? 0);
           }
         }
+  
+        const failures: Failures[] = [];
+  
+        // eslint-disable-next-line no-restricted-syntax
+        for (const cat of categories) {
+          const transSum = (cat.$extras.trans_sum === null ? 0 : parseFloat(cat.$extras.trans_sum));
+          if (cat.amount !== transSum) {
+            failures.push({
+              category: cat,
+              transSum,
+            })
+          }
+        }
+  
+        if (failures.length > 0) {
+          failedApps.push({
+            appId: app.id,
+            failures,
+          });
+        }
       }
-
-      if (this.fix) {
-        await trx.commit();
+  
+      if (failedApps.length > 0) {
+        // eslint-disable-next-line no-restricted-syntax
+        for (const app of failedApps) {
+          this.logger.info(`${app.appId}`);
+          // eslint-disable-next-line no-restricted-syntax
+          for (const failure of app.failures) {
+            const { category, transSum } = failure;
+            const difference = category.amount - transSum;
+            this.logger.info(`\t"${category.group.name}:${category.name}" (${category.id}): ${category.amount}, Transactions: ${transSum}, difference: ${difference}`);
+  
+            if (this.fix) {
+              category.amount = transSum;
+  
+              // eslint-disable-next-line no-await-in-loop
+              await category.save();
+            }
+          }
+        }
+  
+        if (this.fix) {
+          await trx.commit();
+        }
+        else {
+          await trx.rollback();
+        }
+      }
+      else {
+        this.logger.info('No category balance issues found');
+        await trx.rollback();
       }
     }
-    else {
-      this.logger.info('No category balance issues found');
+    catch(error) {
+      await trx.rollback();
     }
   }
 
   private async checkAccountBalances() {
     const trx = await Database.transaction();
 
-    const apps = await Application.all({ client: trx });
+    try {
+      const apps = await Application.all({ client: trx });
 
-    type Failures = {
-      account: Account,
-      transSum: number,
-    };
-
-    const failedApps: {
-      appId: number,
-      failures: Failures[],
-    }[] = [];
-
-    // eslint-disable-next-line no-restricted-syntax
-    for (const app of apps) {
-      // eslint-disable-next-line no-await-in-loop
-      const accounts = await Account
-        .query()
-        // .has('accountTransactions')
-        .where('tracking', '!=', 'Balances')
-        .whereHas('institution', (query) => {
-          query.where('applicationId', app.id)
-        })
-        .withAggregate('accountTransactions', (query) => {
-          query.sum('amount').where('pending', false).as('trans_sum')
-        })
-
-      const failures: Failures[] = [];
-
+      type Failures = {
+        account: Account,
+        transSum: number,
+      };
+  
+      const failedApps: {
+        appId: number,
+        failures: Failures[],
+      }[] = [];
+  
       // eslint-disable-next-line no-restricted-syntax
-      for (const account of accounts) {
-        const transSum = (account.$extras.trans_sum === null ? 0 : parseFloat(account.$extras.trans_sum));
-        if (account.balance !== transSum) {
-          failures.push({
-            account,
-            transSum,
+      for (const app of apps) {
+        // eslint-disable-next-line no-await-in-loop
+        const accounts = await Account
+          .query()
+          // .has('accountTransactions')
+          .where('tracking', '!=', 'Balances')
+          .whereHas('institution', (query) => {
+            query.where('applicationId', app.id)
           })
-        }
-      }
-
-      if (failures.length > 0) {
-        failedApps.push({
-          appId: app.id,
-          failures,
-        });
-      }
-    }
-
-    if (failedApps.length > 0) {
-      // eslint-disable-next-line no-restricted-syntax
-      for (const app of failedApps) {
-        this.logger.info(`${app.appId}`);
+          .withAggregate('accountTransactions', (query) => {
+            query.sum('amount').where('pending', false).as('trans_sum')
+          })
+  
+        const failures: Failures[] = [];
+  
         // eslint-disable-next-line no-restricted-syntax
-        for (const failure of app.failures) {
-          const { account, transSum } = failure;
-          const difference = account.balance - transSum;
-          this.logger.info(`\t"${account.name}" (${account.id}): ${account.balance}, Transactions: ${transSum}, difference: ${difference}`);
-
-          if (this.fix) {
-            account.balance = transSum;
-
-            // eslint-disable-next-line no-await-in-loop
-            await account.save();
+        for (const account of accounts) {
+          const transSum = (account.$extras.trans_sum === null ? 0 : parseFloat(account.$extras.trans_sum));
+          if (account.balance !== transSum) {
+            failures.push({
+              account,
+              transSum,
+            })
           }
         }
+  
+        if (failures.length > 0) {
+          failedApps.push({
+            appId: app.id,
+            failures,
+          });
+        }
       }
-
-      if (this.fix) {
-        await trx.commit();
+  
+      if (failedApps.length > 0) {
+        // eslint-disable-next-line no-restricted-syntax
+        for (const app of failedApps) {
+          this.logger.info(`${app.appId}`);
+          // eslint-disable-next-line no-restricted-syntax
+          for (const failure of app.failures) {
+            const { account, transSum } = failure;
+            const difference = account.balance - transSum;
+            this.logger.info(`\t"${account.name}" (${account.id}): ${account.balance}, Transactions: ${transSum}, difference: ${difference}`);
+  
+            if (this.fix) {
+              account.balance = transSum;
+  
+              // eslint-disable-next-line no-await-in-loop
+              await account.save();
+            }
+          }
+        }
+  
+        if (this.fix) {
+          await trx.commit();
+        }
+        else {
+          await trx.rollback();
+        }
+      }
+      else {
+        this.logger.info('No account balance issues found');
+        await trx.rollback();
       }
     }
-    else {
-      this.logger.info('No account balance issues found');
+    catch(error) {
+      await trx.rollback();
     }
   }
 

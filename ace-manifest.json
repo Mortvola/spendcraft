@@ -46,6 +46,13 @@
           "description": "Name of the user to analyze"
         },
         {
+          "name": "item",
+          "propertyName": "item",
+          "type": "string",
+          "alias": "i",
+          "description": "Item ID of the institution to analyze"
+        },
+        {
           "name": "dump",
           "propertyName": "dump",
           "type": "boolean",
@@ -57,6 +64,12 @@
           "propertyName": "fixMissing",
           "type": "boolean",
           "description": "Adds missing transactions"
+        },
+        {
+          "name": "fix-account-mismatch",
+          "propertyName": "fixAccountMismatch",
+          "type": "boolean",
+          "description": "Fixes account mismath"
         },
         {
           "name": "update",
@@ -115,11 +128,10 @@
           "description": "Access token of the item to retrieve"
         },
         {
-          "type": "string",
-          "propertyName": "accountId",
-          "name": "accountId",
-          "required": true,
-          "description": "Account ID of the account to retreive"
+          "type": "spread",
+          "propertyName": "accountIds",
+          "name": "accountIds",
+          "required": true
         }
       ],
       "aliases": [],
@@ -143,24 +155,23 @@
         },
         {
           "type": "string",
-          "propertyName": "accountId",
-          "name": "accountId",
-          "required": true,
-          "description": "Account ID of the account to retreive"
-        },
-        {
-          "type": "string",
           "propertyName": "startDate",
           "name": "startDate",
           "required": true,
-          "description": "Transation period start date"
+          "description": "Transation period start date (YYYY-MM-DD)"
         },
         {
           "type": "string",
           "propertyName": "endDate",
           "name": "endDate",
           "required": true,
-          "description": "Transation period end date"
+          "description": "Transation period end date (YYYY-MM-DD)"
+        },
+        {
+          "type": "spread",
+          "propertyName": "accountIds",
+          "name": "accountIds",
+          "required": true
         }
       ],
       "aliases": [],

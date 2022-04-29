@@ -325,7 +325,7 @@ class InstitutionController {
         if (acct.tracking !== 'Balances') {
           // eslint-disable-next-line no-await-in-loop
           const sum = await acct.addTransactions(
-            institution.accessToken, start, application, options,
+            institution.accessToken, start, application,
           );
 
           // eslint-disable-next-line no-await-in-loop
@@ -532,7 +532,7 @@ class InstitutionController {
 
     const trx = await Database.transaction();
 
-    const institutions = await Institution.query()
+    const institutions = await Institution.query({ client: trx })
       .where('applicationId', application.id)
       .whereNotNull('accessToken')
       .andWhere('acessToken', '!=', '');

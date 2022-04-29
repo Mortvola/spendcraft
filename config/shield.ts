@@ -73,7 +73,7 @@ export const csrf: ShieldConfig['csrf'] = {
   | Enable/Disable CSRF
   |--------------------------------------------------------------------------
   */
-  enabled: false, // Env.get('NODE_ENV') !== 'testing',
+  enabled: false, // Env.get('NODE_ENV') !== 'test',
 
   /*
   |--------------------------------------------------------------------------

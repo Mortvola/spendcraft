@@ -1,5 +1,4 @@
 /* eslint-disable import/no-cycle */
-import Database, { TransactionClientContract } from '@ioc:Adonis/Lucid/Database';
 import {
   BaseModel, hasMany, HasMany, column, belongsTo, BelongsTo,
 } from '@ioc:Adonis/Lucid/Orm';
@@ -129,7 +128,6 @@ class Account extends BaseModel {
         accessToken,
         startDate,
         application,
-        { client: trx },
       );
 
       this.balance += sum;
@@ -189,23 +187,7 @@ class Account extends BaseModel {
     accessToken: string,
     startDate: DateTime,
     application: Application,
-    options?: {
-      client: TransactionClientContract,
-    },
   ): Promise<number> {
-    let trx: TransactionClientContract;
-
-    if (options && options.client) {
-      trx = options.client;
-    }
-    else {
-      trx = await Database.transaction();
-    }
-
-    if (!this.$trx) {
-      this.useTransaction(trx);
-    }
-
     const pendingTransactions = await this.related('accountTransactions')
       .query()
       .where('pending', true)
@@ -242,10 +224,6 @@ class Account extends BaseModel {
     }
 
     this.syncDate = DateTime.now();
-
-    if (!options || !options.client) {
-      await trx.commit();
-    }
 
     return sum;
   }

@@ -181,25 +181,30 @@ class WebhookController {
       case 'DEFAULT_UPDATE': {
         const trx = await Database.transaction();
 
-        const institution = await Institution.findByOrFail('plaidItemId', event.item_id, { client: trx });
+        try {
+          const institution = await Institution.findByOrFail('plaidItemId', event.item_id, { client: trx });
 
-        const accounts = await institution.related('accounts').query().where('closed', false);
-        const application = await Application.findOrFail(institution.applicationId);
-
-        await Promise.all(accounts.map(async (acct) => {
-          if (institution.accessToken === null || institution.accessToken === '') {
-            throw new Exception(`acces token not set for ${institution.plaidItemId}`);
-          }
-
-          return (
-            acct.sync(
-              institution.accessToken,
-              application,
-            )
-          );
-        }));
-
-        await trx.commit();
+          const accounts = await institution.related('accounts').query().where('closed', false);
+          const application = await Application.findOrFail(institution.applicationId);
+  
+          await Promise.all(accounts.map(async (acct) => {
+            if (institution.accessToken === null || institution.accessToken === '') {
+              throw new Exception(`access token not set for ${institution.plaidItemId}`);
+            }
+  
+            return (
+              acct.sync(
+                institution.accessToken,
+                application,
+              )
+            );
+          }));
+  
+          await trx.commit();  
+        }
+        catch (error) {
+          await trx.rollback();
+        }
 
         break;
       }
@@ -207,11 +212,16 @@ class WebhookController {
       case 'TRANSACTIONS_REMOVED': {
         const trx = await Database.transaction();
 
-        const institution = await Institution.findByOrFail('plaidItemId', event.item_id, { client: trx });
+        try {
+          const institution = await Institution.findByOrFail('plaidItemId', event.item_id, { client: trx });
 
-        await institution.removeTransactions(event.removed_transactions);
-
-        await trx.commit();
+          await institution.removeTransactions(event.removed_transactions);
+  
+          await trx.commit();  
+        }
+        catch (error) {
+          await trx.rollback();
+        }
 
         break;
       }
