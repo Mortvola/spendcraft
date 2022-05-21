@@ -7,6 +7,25 @@ import Http from '@mortvola/http';
 import { InstitutionInterface } from '../State/State';
 import styles from './InstitutionInfoDialog.module.css';
 
+const Header: React.FC = () => (
+  <Modal.Header closeButton>
+    <h4 id="modalTitle" className="modal-title">Institution Information</h4>
+  </Modal.Header>
+);
+
+type FooterProps = {
+  setShow: (show: boolean) => void,
+}
+
+const Footer: React.FC<FooterProps> = ({ setShow }) => (
+  <Modal.Footer>
+    <div />
+    <div />
+    <Button variant="secondary" onClick={() => setShow(false)}>Cancel</Button>
+    <Button variant="primary" type="submit">Save</Button>
+  </Modal.Footer>
+);
+
 type PropsType = {
   institution: InstitutionInterface,
 }
@@ -101,21 +120,6 @@ const InstitutionInfoDialog = ({
     return null;
   };
 
-  const Header = () => (
-    <Modal.Header closeButton>
-      <h4 id="modalTitle" className="modal-title">Institution Information</h4>
-    </Modal.Header>
-  );
-
-  const Footer = () => (
-    <Modal.Footer>
-      <div />
-      <div />
-      <Button variant="secondary" onClick={() => setShow(false)}>Cancel</Button>
-      <Button variant="primary" type="submit">Save</Button>
-    </Modal.Footer>
-  );
-
   return (
     <>
       <Header />
@@ -124,7 +128,7 @@ const InstitutionInfoDialog = ({
           renderForm()
         }
       </Modal.Body>
-      <Footer />
+      <Footer setShow={setShow} />
     </>
   );
 };

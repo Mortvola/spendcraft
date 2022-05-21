@@ -1,6 +1,6 @@
 import { makeAutoObservable, runInAction } from 'mobx';
-import { QueryManagerInterface } from './State';
 import Http from '@mortvola/http';
+import { QueryManagerInterface } from './State';
 
 class QueryManager implements QueryManagerInterface {
   fetching = false;
@@ -13,7 +13,7 @@ class QueryManager implements QueryManagerInterface {
 
   async fetch(
     url: string,
-    index = 0,
+    index: number,
     handleResponse: (body: unknown, index: number, limit: number) => boolean,
   ): Promise<void> {
     if (index === 0) {

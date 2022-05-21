@@ -1,12 +1,13 @@
-import React, { useState, useRef, ReactElement } from 'react';
+import React, { useState, useRef } from 'react';
 import { Overlay } from 'react-bootstrap';
 import Popover from 'react-bootstrap/Popover';
 import PopoverHeader from 'react-bootstrap/PopoverHeader';
 import PopoverBody from 'react-bootstrap/PopoverBody';
 import parseEquation from './EquationParser';
 import styles from './AmountInput.module.css';
+import Console from './Console';
 
-interface Props {
+interface PropsType {
   id?: string,
   value?: number | string;
   onDeltaChange?: (amount: number, delta: number) => void;
@@ -17,7 +18,7 @@ interface Props {
   readOnly?: boolean,
 }
 
-const AmountInput = ({
+const AmountInput: React.FC<PropsType> = ({
   id,
   value = 0,
   onDeltaChange,
@@ -26,7 +27,7 @@ const AmountInput = ({
   className = '',
   name,
   readOnly,
-}: Props): ReactElement => {
+}) => {
   const convertAmount = (amount: string | number) => (
     typeof amount === 'string'
       ? parseFloat(amount).toFixed(2)
@@ -62,7 +63,7 @@ const AmountInput = ({
       }
     }
     catch (error) {
-      console.log(error);
+      Console.log(error);
     }
   };
 

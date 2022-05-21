@@ -1,14 +1,14 @@
-import React, { ReactElement } from 'react';
+import React from 'react';
 import IconButton from '../IconButton';
 import { useGroupDialog } from './GroupDialog';
 import { isGroup } from '../State/Group';
 import { GroupInterface } from '../State/State';
 
-type Props = {
+type PropsType = {
   group: GroupInterface,
 }
 
-function GroupButtons({ group }: Props): ReactElement | null {
+const GroupButtons: React.FC<PropsType> = ({ group }) => {
   const [GroupDialog, showGroupDialog] = useGroupDialog();
 
   const renderEditButton = () => {

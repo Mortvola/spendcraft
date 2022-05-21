@@ -30,7 +30,7 @@ export default class UsersController {
     const validationSchema = schema.create({
       email: schema.string([
         rules.trim(),
-        rules.normalizeEmail({ allLowercase: true}),
+        rules.normalizeEmail({ allLowercase: true }),
         rules.unique({ table: 'users', column: 'email' }),
       ]),
     });

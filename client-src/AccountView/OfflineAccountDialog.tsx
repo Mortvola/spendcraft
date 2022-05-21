@@ -82,15 +82,26 @@ const OfflineAccountDialog = ({
       }
       else {
         errors = await institution.addOfflineAccount(
-          values.account, parseFloat(values.balance), values.startDate,
-          values.type, values.subtype, values.tracking, parseFloat(values.rate),
+          values.account,
+          parseFloat(values.balance),
+          values.startDate,
+          values.type,
+          values.subtype,
+          values.tracking,
+          parseFloat(values.rate),
         );
       }
     }
     else {
       errors = await accounts.addOfflineAccount(
-        values.institute, values.account, parseFloat(values.balance), values.startDate,
-        values.type, values.subtype, values.tracking, parseFloat(values.rate),
+        values.institute,
+        values.account,
+        parseFloat(values.balance),
+        values.startDate,
+        values.type,
+        values.subtype,
+        values.tracking,
+        parseFloat(values.rate),
       );
     }
 

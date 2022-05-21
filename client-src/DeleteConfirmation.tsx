@@ -1,21 +1,21 @@
 import React, { ReactElement, ReactNode, useState } from 'react';
 import { Modal, Button } from 'react-bootstrap';
 
-type Props = {
+type PropsType = {
   title: string,
   buttonTitle: string,
   onConfirm: () => void;
   children: ReactNode;
 }
 
-const Confirmation = ({
+const Confirmation: React.FC<PropsType & ConfirmProps> = ({
   title,
   buttonTitle,
   onConfirm,
   onHide,
   show,
   children,
-}: Props & ConfirmProps): ReactElement => (
+}) => (
   <Modal onHide={onHide} show={show}>
     <Modal.Header closeButton>
       <Modal.Title>

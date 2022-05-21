@@ -15,29 +15,21 @@ const Sidebar = ({
 }: PropsType): ReactElement => {
   const { isMobile } = useMediaQuery();
 
+  if (isMobile) {
+    return (
+      <div
+        className={`mobile ${styles.sideBar} ${className}`}
+        style={{ transform: `translateX(${open ? 0 : '-100%'})` }}
+      >
+        {children}
+      </div>
+    );
+  }
+
   return (
-    <>
-      {
-        isMobile
-          ? (
-            <>
-              <div
-                className={`mobile ${styles.sideBar} ${className}`}
-                style={{ transform: `translateX(${open ? 0 : '-100%'})` }}
-              >
-                {children}
-              </div>
-            </>
-          )
-          : (
-            <>
-              <div className={`${styles.sideBar} window ${className}`}>
-                {children}
-              </div>
-            </>
-          )
-      }
-    </>
+    <div className={`${styles.sideBar} window ${className}`}>
+      {children}
+    </div>
   );
 }
 

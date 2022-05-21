@@ -54,7 +54,13 @@ const RegisterPanel = React.forwardRef<HTMLFormElement, PropTypes>(({
       <label htmlFor="password-confirm" className="col-md-3 col-form-label text-md-right">Confirm Password</label>
 
       <div className="col-md-8">
-        <input type="password" className="form-control" name="password_confirmation" required autoComplete="new-password" />
+        <input
+          type="password"
+          className="form-control"
+          name="password_confirmation"
+          required
+          autoComplete="new-password"
+        />
 
         <span className="text-danger" role="alert">
           <Errors errors={errors.password_confirmation} />

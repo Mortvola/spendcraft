@@ -9,6 +9,7 @@ import HistoryCategory from '../State/HistoryCategory';
 import { CategoryInterface } from '../State/State';
 import { isGroup } from '../State/Group';
 import FundingPlanCategory from '../State/FundingPlanCategory';
+import Console from '../Console';
 
 type PropsType = {
   onEditCategory: (category: CategoryInterface, planCategory: FundingPlanCategory) => void,
@@ -204,7 +205,7 @@ const PlanDetails = ({
     total = details.categories.reduce(
       (accumulator, c) => {
         if (typeof c.categoryId === 'string') {
-          console.log('categoryId is a string');
+          Console.log('categoryId is a string');
         }
 
         const cat = categoryTree.getCategory(c.categoryId);

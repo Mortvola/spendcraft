@@ -88,9 +88,7 @@ export default class AuthController {
     const user = await User.find(params.id);
 
     if (user) {
-      const payload = jwt.verify(
-        params.token, user.generateSecret(),
-      ) as Record<string, unknown>;
+      const payload = jwt.verify(params.token, user.generateSecret()) as Record<string, unknown>;
 
       if (payload.id === user.id) {
         if (!user.activated) {
@@ -199,9 +197,7 @@ export default class AuthController {
     const user = await User.find(params.id);
 
     if (user) {
-      const payload = jwt.verify(
-        params.token, user.generateSecret(),
-      ) as Record<string, unknown>;
+      const payload = jwt.verify(params.token, user.generateSecret()) as Record<string, unknown>;
 
       if (payload.id === parseInt(params.id, 10)) {
         return view.render('reset-password', { user, token: params.token });
@@ -234,13 +230,15 @@ export default class AuthController {
 
     if (!user) {
       return view.render(
-        'reset-password', { user, token: requestData.token, errorMessage: 'The user could not be found.' },
+        'reset-password',
+        { user, token: requestData.token, errorMessage: 'The user could not be found.' },
       );
     }
 
     if (requestData.password !== requestData.passwordConfirmation) {
       return view.render(
-        'reset-password', { user, token: requestData.token, errorMessage: 'The passwords do not match.' },
+        'reset-password',
+        { user, token: requestData.token, errorMessage: 'The passwords do not match.' },
       );
     }
 
@@ -255,7 +253,8 @@ export default class AuthController {
 
     if (payload.id !== user.id) {
       return view.render(
-        'reset-password', { user, token: requestData.token, errorMessage: 'The token is no longer valid.' },
+        'reset-password',
+        { user, token: requestData.token, errorMessage: 'The token is no longer valid.' },
       );
     }
 

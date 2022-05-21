@@ -1,15 +1,15 @@
 import { DateTime } from 'luxon';
-import React, { ReactElement } from 'react';
+import React from 'react';
 
 type PropsType = {
   date: DateTime,
   className?: string,
 }
 
-const Date = ({
+const Date: React.FC<PropsType> = ({
   date,
   className,
-}: PropsType): ReactElement => (
+}) => (
   <div className={className}>{date.toFormat('LL/dd/yy')}</div>
 )
 

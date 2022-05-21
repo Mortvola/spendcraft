@@ -1,4 +1,4 @@
-import React, { ReactElement, useState } from 'react';
+import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import IconButton from '../IconButton';
 import { useAccountsDialog } from './AccountsDialog';
@@ -16,12 +16,12 @@ type PropsType = {
   selectedAccount?: AccountInterface | null,
 }
 
-function Institution({
+const Institution: React.FC<PropsType> = ({
   institution,
   opened,
   onAccountSelected,
   selectedAccount = null,
-}: PropsType): ReactElement {
+}) => {
   const [OnlineAccountsDialog, showOnlineAccountsDialog] = useAccountsDialog();
   const [InstitutionInfoDialog, showInstitutionInfoDialog] = useInstitutionInfoDialog();
   const [OfflineAccountDialog, showOfflineAccountDialog] = useOfflineAccountDialog();

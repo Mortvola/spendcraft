@@ -37,7 +37,10 @@ const Login = ({
       throw new Error('form ref is null');
     }
 
-    submitForm(null, formRef.current, '/login',
+    submitForm(
+      null,
+      formRef.current,
+      '/login',
       (responseText: string) => {
         if (responseText) {
           setWaiting(false);
@@ -47,7 +50,8 @@ const Login = ({
       (err) => {
         setWaiting(false);
         setErrors({ ...defaultErrors, ...err });
-      });
+      },
+    );
   };
 
   const requestResetLink = (event: React.MouseEvent) => {
@@ -57,7 +61,10 @@ const Login = ({
       throw new Error('form ref is null');
     }
 
-    submitForm(event, formRef.current, '/password/email',
+    submitForm(
+      event,
+      formRef.current,
+      '/password/email',
       (responseText) => {
         setResetMessage(responseText);
         setCard('reset');
@@ -66,7 +73,8 @@ const Login = ({
       (err) => {
         setWaiting(false);
         setErrors({ ...defaultErrors, ...err });
-      });
+      },
+    );
   };
 
   const handleExited = () => {

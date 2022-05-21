@@ -1,5 +1,5 @@
 import React, {
-  ReactElement, useContext, useEffect, useState,
+  useContext, useEffect, useState,
 } from 'react';
 import CategorySplitItem from './CategorySplitItem';
 import MobxStore from './State/mobxStore';
@@ -25,12 +25,12 @@ type PropsType = {
   credit?: boolean,
 }
 
-const CategorySplits = ({
+const CategorySplits: React.FC<PropsType> = ({
   splits,
   onChange,
   total,
   credit = true,
-}: PropsType): ReactElement => {
+}) => {
   const { categoryTree } = useContext(MobxStore);
 
   if (!categoryTree.unassignedCat) {

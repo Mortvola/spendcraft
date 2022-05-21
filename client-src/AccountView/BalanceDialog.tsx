@@ -26,7 +26,7 @@ const BalanceDialog = ({
     amount: number,
   }
 
-  const handleValidate = (values: FormValues) => {
+  const handleValidate = () => {
     const errors: FormikErrors<FormValues> = {};
 
     return errors;

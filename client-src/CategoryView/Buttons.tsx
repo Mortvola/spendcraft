@@ -1,15 +1,15 @@
-import React, { ReactElement } from 'react';
+import React from 'react';
 import IconButton from '../IconButton';
 import { useCategoryDialog } from './CategoryDialog';
 import { useGroupDialog } from './GroupDialog';
 import { isGroup } from '../State/Group';
 import { GroupInterface } from '../State/State';
 
-type Props = {
+type PropsType = {
   group: GroupInterface,
 }
 
-function Buttons({ group }: Props): ReactElement | null {
+const Buttons: React.FC<PropsType> = ({ group }) => {
   const [GroupDialog, showGroupDialog] = useGroupDialog();
   const [CategoryDialog, showCategoryDialog] = useCategoryDialog();
 

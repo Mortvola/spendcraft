@@ -3,6 +3,7 @@ import { runInAction } from 'mobx';
 import { usePlaidLink } from 'react-plaid-link';
 import MobxStore from './State/mobxStore';
 import { InstitutionInterface } from './State/State';
+import Console from './Console';
 
 type PropsType = {
   showAccountsDialog: (inst: InstitutionInterface) => void,
@@ -14,7 +15,7 @@ const PlaidLinkDialog: React.FC<PropsType> = ({
   const { uiState } = React.useContext(MobxStore);
 
   const onEvent = (eventName: string) => {
-    console.log(`plaid event: ${eventName}`);
+    Console.log(`plaid event: ${eventName}`);
     // if (eventName === 'HANDOFF') {
     //   runInAction(() => {
     //     uiState.plaid = null;
@@ -24,8 +25,8 @@ const PlaidLinkDialog: React.FC<PropsType> = ({
 
   const onExit = React.useCallback((err: unknown, metaData: unknown) => {
     if (err) {
-      console.log(err);
-      console.log(JSON.stringify(metaData));
+      Console.log(err);
+      Console.log(JSON.stringify(metaData));
     }
 
     runInAction(() => {

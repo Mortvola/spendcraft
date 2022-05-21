@@ -12,6 +12,22 @@ import { FormField, setFormErrors } from '@mortvola/forms';
 import MobxStore from './State/mobxStore';
 import IconButton from './IconButton';
 
+type FormValues = {
+  username: string,
+  email: string,
+};
+
+const MyInputGroup: React.FC<FormikProps<FormValues>> = (props: FormikProps<FormValues>) => {
+  const { user } = useContext(MobxStore);
+
+  return (
+    <InputGroup>
+      <FormControl {...props} readOnly={user.pendingEmail !== null} />
+      <Button type="submit">Change</Button>
+    </InputGroup>
+  );
+}
+
 const UserAccount = (): ReactElement | null => {
   const { user } = useContext(MobxStore);
   const [initialized, setInitialized] = useState<boolean>(false);
@@ -22,11 +38,6 @@ const UserAccount = (): ReactElement | null => {
       setInitialized(true);
     })();
   }, [user]);
-
-  type FormValues = {
-    username: string,
-    email: string,
-  }
 
   const handleSubmit = async (values: FormValues, { setErrors }: FormikHelpers<FormValues>) => {
     const errors = await user.update(values.email);
@@ -43,13 +54,6 @@ const UserAccount = (): ReactElement | null => {
   const handleResendClick = () => {
     user.resendVerificationLink();
   }
-
-  const MyInputGroup = (props: FormikProps<FormValues>) => (
-    <InputGroup>
-      <FormControl {...props} readOnly={user.pendingEmail !== null} />
-      <Button type="submit">Change</Button>
-    </InputGroup>
-  )
 
   if (initialized) {
     return (

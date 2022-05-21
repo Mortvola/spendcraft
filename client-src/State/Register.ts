@@ -1,5 +1,6 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import { DateTime } from 'luxon';
+import Http from '@mortvola/http';
 import Transaction from './Transaction';
 import {
   CategoryTransferProps,
@@ -8,7 +9,6 @@ import {
 import {
   RegisterInterface, StoreInterface,
 } from './State';
-import Http from '@mortvola/http';
 
 class Register implements RegisterInterface {
   store: StoreInterface;

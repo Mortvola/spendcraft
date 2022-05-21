@@ -27,7 +27,10 @@ const Register = ({
       throw new Error('form element is null');
     }
 
-    submitForm(null, formRef.current, '/register',
+    submitForm(
+      null,
+      formRef.current,
+      '/register',
       () => {
         setConfirmationSent(true);
         setWaiting(false);
@@ -35,7 +38,8 @@ const Register = ({
       (err: ErrorsType) => {
         setWaiting(false);
         setErrors({ ...defaultErrors, ...err });
-      });
+      },
+    );
   };
 
   const handleExited = () => {
@@ -47,7 +51,8 @@ const Register = ({
 
   const panel = () => {
     if (confirmationSent) {
-      const resetMessage = 'We sent an email to your email address for email verification. Click on the link and then return here to log in.';
+      const resetMessage = 'We sent an email to your email address for '
+        + 'email verification. Click on the link and then return here to log in.';
       title = 'Reset Link';
       return <ResetEmailSentPanel resetMessage={resetMessage} />;
     }

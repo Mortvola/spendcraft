@@ -1,23 +1,42 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
-import React, { ReactElement } from 'react';
+import React from 'react';
 import { Modal, Button } from 'react-bootstrap';
 import {
   Formik, Form, Field, ErrorMessage, FormikErrors, FieldProps,
 } from 'formik';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
+import Http from '@mortvola/http';
 import CategorySplits from './CategorySplits';
 import Transaction from './State/Transaction';
-import Http from '@mortvola/http';
 import { TransactionCategoryInterface } from './State/State';
+
+const Header: React.FC = () => (
+  <Modal.Header closeButton>
+    <h4 id="modalTitle" className="modal-title">Category Transfer</h4>
+  </Modal.Header>
+);
+
+type FooterPropsType = {
+  setShow: (show: boolean) => void,
+}
+
+const Footer: React.FC<FooterPropsType> = ({ setShow }) => (
+  <Modal.Footer>
+    <div />
+    <div />
+    <Button variant="secondary" onClick={() => setShow(false)}>Cancel</Button>
+    <Button variant="primary" type="submit">Save</Button>
+  </Modal.Footer>
+);
 
 type PropsType = {
   transaction?: Transaction | null,
 }
 
-const CategoryTransferDialog = ({
+const CategoryTransferDialog: React.FC<PropsType & ModalProps> = ({
   setShow,
   transaction = null,
-}: PropsType & ModalProps): ReactElement => {
+}) => {
   // const amount = 0;
 
   // if (!date) {
@@ -146,31 +165,6 @@ const CategoryTransferDialog = ({
 
   const handleTotalChange = () => null;
 
-  const handleDelete = async () => {
-    if (!transaction) {
-      throw new Error('transaction is null');
-    }
-
-    await Http.delete(`/api/category-transfer/${transaction.id}`);
-
-    setShow(false);
-  };
-
-  const Header = () => (
-    <Modal.Header closeButton>
-      <h4 id="modalTitle" className="modal-title">Category Transfer</h4>
-    </Modal.Header>
-  );
-
-  const Footer = () => (
-    <Modal.Footer>
-      <div />
-      <div />
-      <Button variant="secondary" onClick={() => setShow(false)}>Cancel</Button>
-      <Button variant="primary" type="submit">Save</Button>
-    </Modal.Footer>
-  );
-
   return (
     <Formik<ValueType>
       initialValues={{
@@ -271,7 +265,7 @@ const CategoryTransferDialog = ({
           </label>
         </div>
         <ErrorMessage name="splits" />
-        <Footer />
+        <Footer setShow={setShow} />
       </Form>
     </Formik>
   );

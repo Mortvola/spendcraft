@@ -11,6 +11,65 @@ import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import MobxStore from '../State/mobxStore';
 import { FundingPlanInterface } from '../State/State';
 
+type ValueType = {
+  name: string;
+}
+
+const Header: React.FC = () => (
+  <Modal.Header closeButton>
+    <h4 id="modalTitle" className="modal-title">Plan</h4>
+  </Modal.Header>
+);
+
+type DeleteButtonPropsType = {
+  plan?: FundingPlanInterface | null,
+  setShow: (show: boolean) => void,
+}
+
+const DeleteButton: React.FC<DeleteButtonPropsType> = ({ plan, setShow }) => {
+  const formikBag = useFormikContext<ValueType>();
+  const { plans } = useContext(MobxStore);
+
+  const handleDelete = async (bag: FormikContextType<ValueType>) => {
+    const { setTouched, setErrors } = bag;
+
+    if (!plan) {
+      throw new Error('plan is null');
+    }
+
+    const errors = await plans.deletePlan(plan.id);
+
+    if (errors && errors.length > 0) {
+      // Display the first error
+      // TODO: Display all the errors?
+      setTouched({ name: true }, false);
+      setErrors({ name: errors[0].message });
+    }
+    else if (setShow) {
+      setShow(false);
+    }
+  };
+
+  if (plan) {
+    return (<Button variant="danger" onClick={() => handleDelete(formikBag)}>Delete</Button>);
+  }
+
+  return <div />;
+};
+
+type FooterPropsType = {
+  setShow: (show: boolean) => void,
+}
+
+const Footer: React.FC<FooterPropsType> = ({ setShow }) => (
+  <Modal.Footer>
+    <DeleteButton setShow={setShow} />
+    <div />
+    <Button variant="secondary" onClick={() => setShow(false)}>Cancel</Button>
+    <Button variant="primary" type="submit">Save</Button>
+  </Modal.Footer>
+);
+
 interface Props {
   plan?: FundingPlanInterface | null,
 }
@@ -20,10 +79,6 @@ const PlanDialog = ({
   setShow,
 }: Props & ModalProps): ReactElement => {
   const { plans } = useContext(MobxStore);
-
-  type ValueType = {
-    name: string;
-  }
 
   const handleSubmit = async (values: ValueType, bag: FormikHelpers<ValueType>) => {
     const { setErrors } = bag;
@@ -56,51 +111,6 @@ const PlanDialog = ({
     return errors;
   };
 
-  const handleDelete = async (bag: FormikContextType<ValueType>) => {
-    const { setTouched, setErrors } = bag;
-
-    if (!plan) {
-      throw new Error('plan is null');
-    }
-
-    const errors = await plans.deletePlan(plan.id);
-
-    if (errors && errors.length > 0) {
-      // Display the first error
-      // TODO: Display all the errors?
-      setTouched({ name: true }, false);
-      setErrors({ name: errors[0].message });
-    }
-    else if (setShow) {
-      setShow(false);
-    }
-  };
-
-  const Header = () => (
-    <Modal.Header closeButton>
-      <h4 id="modalTitle" className="modal-title">Plan</h4>
-    </Modal.Header>
-  );
-
-  const DeleteButton = () => {
-    const bag = useFormikContext<ValueType>();
-
-    if (plan) {
-      return (<Button variant="danger" onClick={() => handleDelete(bag)}>Delete</Button>);
-    }
-
-    return <div />;
-  };
-
-  const Footer = () => (
-    <Modal.Footer>
-      <DeleteButton />
-      <div />
-      <Button variant="secondary" onClick={() => setShow(false)}>Cancel</Button>
-      <Button variant="primary" type="submit">Save</Button>
-    </Modal.Footer>
-  );
-
   return (
     <Formik<ValueType>
       initialValues={{
@@ -123,7 +133,7 @@ const PlanDialog = ({
           <br />
           <ErrorMessage name="name" />
         </Modal.Body>
-        <Footer />
+        <Footer setShow={setShow} />
       </Form>
     </Formik>
   );

@@ -1,4 +1,4 @@
-import React, { ReactElement, ReactNode } from 'react';
+import React, { ReactNode } from 'react';
 import { GroupInterface } from '../State/State';
 
 type PropsType = {
@@ -6,10 +6,10 @@ type PropsType = {
   children?: ReactNode,
 }
 
-function CategorySelectorGroup({
+const CategorySelectorGroup: React.FC<PropsType> = ({
   group,
   children,
-}: PropsType): ReactElement | null {
+}) => {
   const handleClick = (event: React.MouseEvent) => {
     event.stopPropagation();
   };

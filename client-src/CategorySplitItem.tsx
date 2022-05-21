@@ -1,4 +1,4 @@
-import React, { ReactElement, useContext } from 'react';
+import React, { useContext } from 'react';
 import CategoryInput from './CategoryInput/CategoryInput';
 import IconButton from './IconButton';
 import AmountInput from './AmountInput';
@@ -16,14 +16,14 @@ type PropsType = {
   onCommentChange: (id: number, comment: string) => void,
 }
 
-function CategorySplitItem({
+const CategorySplitItem: React.FC<PropsType> = ({
   split,
   onCategoryChange,
   onDeltaChange,
   onAddItem,
   onDeleteItem,
   onCommentChange,
-}: PropsType): ReactElement {
+}) => {
   const { categoryTree: { unassignedCat } } = useContext(MobxStore);
   const { isMobile } = useMediaQuery();
 

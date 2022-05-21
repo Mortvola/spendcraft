@@ -1,4 +1,5 @@
 import { makeObservable, observable, runInAction } from 'mobx';
+import Http from '@mortvola/http';
 import {
   CategoryProps, isErrorResponse, Error,
   isUpdateCategoryResponse,
@@ -8,7 +9,6 @@ import {
 import LoanTransaction from './LoanTransaction';
 import { CategoryInterface, GroupInterface, StoreInterface } from './State';
 import TransactionContainer from './TransactionContainer';
-import Http from '@mortvola/http';
 
 class Category extends TransactionContainer implements CategoryInterface {
   id: number;

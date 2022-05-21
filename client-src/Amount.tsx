@@ -1,6 +1,6 @@
-import React, { CSSProperties, ReactElement } from 'react';
+import React, { CSSProperties } from 'react';
 
-interface Props {
+interface PropsType {
   id?: string,
   noValue?: number | string | null,
   amount?: number | string | null,
@@ -8,13 +8,13 @@ interface Props {
   style?: CSSProperties,
 }
 
-function Amount({
+const Amount: React.FC<PropsType> = ({
   id,
   noValue = null,
   amount = null,
   className = '',
   style,
-}: Props): ReactElement {
+}) => {
   let displayedAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
   if (displayedAmount === null) {
     if (noValue === null) {

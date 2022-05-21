@@ -101,7 +101,7 @@ const EditCategoryDialog = ({
       }
     }
 
-    const handleValidate = (values: FormValues): FormikErrors<FormValues> => {
+    const handleValidate = (): FormikErrors<FormValues> => {
       const errors: FormikErrors<FormValues> = {};
 
       return errors;

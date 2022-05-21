@@ -27,17 +27,18 @@ module.exports = {
   ],
   rules: {
     "react/require-default-props": "off",
+    "react/jsx-props-no-spreading": ["off"],
+    "react/jsx-filename-extension": [1, { "extensions": [".tsx", ".jsx"] }],
+    "react/function-component-definition": [2, { "namedComponents": "arrow-function" }],
     "no-shadow": "off",
     "@typescript-eslint/no-shadow": ["error"],
     "no-use-before-define": "off",
     "@typescript-eslint/no-use-before-define": ["error"],
     "brace-style": ["error", "stroustrup"],
-    "react/jsx-props-no-spreading": ["off"],
     "jsx-a11y/click-events-have-key-events": ["off"],
     "jsx-a11y/no-static-element-interactions": ["off"],
     "no-param-reassign": ["error", { "props": false }],
     "jsx-a11y/label-has-associated-control": ["off"],
-    "react/jsx-filename-extension": [1, { "extensions": [".tsx", ".jsx"] }],
     "semi": "off",
     "import/no-unresolved": ["off"],
     "@typescript-eslint/semi": [
@@ -61,8 +62,9 @@ module.exports = {
         "tsx": "never"
       }
     ],
-    "css-modules/no-unused-class": [2, { "camelCase": true }],
+    "css-modules/no-unused-class": "off",
     "css-modules/no-undef-class": [2, { "camelCase": true }],
+    "function-paren-newline": ["error", "consistent"],
   },
   settings: {
     'import/resolver': {

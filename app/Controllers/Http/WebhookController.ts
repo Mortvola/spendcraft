@@ -87,7 +87,7 @@ const isTransactionEvent = (r: unknown): r is TransactionEvent => (
 
 class WebhookController {
   // eslint-disable-next-line class-methods-use-this
-  public async post({ request, response }: HttpContextContract) {
+  public async post({ request, response }: HttpContextContract): Promise<void> {
     const verified = await WebhookController.verify(request);
 
     if (verified) {
@@ -118,7 +118,7 @@ class WebhookController {
     }
   }
 
-  static async processItemEvent(event: WebhookItemEvent) {
+  static async processItemEvent(event: WebhookItemEvent): Promise<void> {
     switch (event.webhook_code) {
       case 'WEBHOOK_UPDATE_ACKNOWLEDGED': {
         const webhookUpdated = event as WebhookAcknoweldgedEvent;
@@ -168,7 +168,7 @@ class WebhookController {
   }
 
   // eslint-disable-next-line camelcase
-  static async processTransactionEvent(event: TransactionEvent) {
+  static async processTransactionEvent(event: TransactionEvent): Promise<void> {
     switch (event.webhook_code) {
       case 'INITIAL_UPDATE':
         Logger.info(JSON.stringify(event));
@@ -308,4 +308,4 @@ class WebhookController {
   }
 }
 
-module.exports = WebhookController;
+export default WebhookController;

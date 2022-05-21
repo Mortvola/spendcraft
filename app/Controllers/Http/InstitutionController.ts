@@ -421,8 +421,7 @@ class InstitutionController {
       if (acct.tracking !== 'Balances') {
         // eslint-disable-next-line no-await-in-loop
         await InstitutionController.insertStartingBalance(
-          application, acct, start, account.balance,
-          fundingPool, options,
+          application, acct, start, account.balance, fundingPool, options,
         );
       }
       else {
