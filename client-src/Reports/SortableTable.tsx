@@ -24,7 +24,7 @@ type SortableTableProps = {
 type SortableBodyProps<T>= {
   className?: string,
   style?: CSSProperties,
-  children: (r: T) => void,
+  children: (r: T) => ReactElement,
 }
 
 type UseSortableTableType<T> = {

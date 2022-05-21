@@ -81,17 +81,11 @@ const CategoryRebalance = ({
     )
   }
 
-  const populateCategories = (categories: CategoryInterface[]) => {
-    const catItems: unknown[] = [];
-
-    if (categories) {
-      categories.forEach((category: CategoryInterface) => {
-        catItems.push(categoryItem(category));
-      });
-    }
-
-    return catItems;
-  };
+  const populateCategories = (categories: CategoryInterface[]) => (
+    categories.map((category: CategoryInterface) => (
+      categoryItem(category)
+    ))
+  );
 
   const populateTree = () => {
     const tree: ReactElement[] = [];

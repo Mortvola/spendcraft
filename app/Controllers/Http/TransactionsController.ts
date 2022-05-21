@@ -218,95 +218,101 @@ export default class TransactionsController {
 
     const trx = await Database.transaction();
 
-    const result: {
-      balances: CategoryBalanceProps[],
-      acctBalances: AccountBalanceProps[],
-    } = { balances: [], acctBalances: [] };
+    try {
+      const result: {
+        balances: CategoryBalanceProps[],
+        acctBalances: AccountBalanceProps[],
+      } = { balances: [], acctBalances: [] };
 
-    const { trxId } = request.params();
+      const { trxId } = request.params();
 
-    const transaction = await Transaction.findOrFail(trxId, { client: trx });
+      const transaction = await Transaction.findOrFail(trxId, { client: trx });
 
-    const acctTransaction = await AccountTransaction.findBy('transactionId', transaction.id, { client: trx });
+      const acctTransaction = await AccountTransaction.findBy('transactionId', transaction.id, { client: trx });
 
-    let account: Account | null = null;
+      let account: Account | null = null;
 
-    if (acctTransaction) {
-      account = await Account.findOrFail(acctTransaction.accountId, { client: trx });
-    }
+      if (acctTransaction) {
+        account = await Account.findOrFail(acctTransaction.accountId, { client: trx });
+      }
 
-    const trxCategories = await transaction.related('transactionCategories').query();
+      const trxCategories = await transaction.related('transactionCategories').query();
 
-    if (trxCategories.length === 0) {
-      if (account && account.tracking === 'Transactions') {
+      if (trxCategories.length === 0) {
+        if (account && account.tracking === 'Transactions') {
+          if (!acctTransaction) {
+            throw new Error('acctTransaction is null');
+          }
+
+          const unassignedCat = await application.getUnassignedCategory({ client: trx });
+
+          unassignedCat.amount -= acctTransaction.amount;
+
+          result.balances.push({ id: unassignedCat.id, balance: unassignedCat.amount });
+
+          await unassignedCat.save();
+        }
+      }
+      else {
+        // eslint-disable-next-line no-restricted-syntax
+        for (const trxCat of trxCategories) {
+          // eslint-disable-next-line no-await-in-loop
+          const category = await Category.findOrFail(trxCat.categoryId, { client: trx });
+
+          category.amount -= trxCat.amount;
+
+          const balance = result.balances.find((b) => b.id === category.id);
+
+          if (balance) {
+            balance.balance = category.amount;
+          }
+          else {
+            result.balances.push({ id: category.id, balance: category.amount });
+          }
+
+          if (category.type === 'LOAN') {
+            // eslint-disable-next-line no-await-in-loop
+            const loanTransaction = await trxCat.related('loanTransaction').query().firstOrFail();
+
+            // eslint-disable-next-line no-await-in-loop
+            await loanTransaction.delete();
+
+            // eslint-disable-next-line no-await-in-loop
+            const loan = await loanTransaction.related('loan').query().firstOrFail();
+
+            loan.updateBalance();
+          }
+
+          category.save();
+
+          // eslint-disable-next-line no-await-in-loop
+          await trxCat.delete();
+        }
+      }
+
+      if (account) {
         if (!acctTransaction) {
           throw new Error('acctTransaction is null');
         }
 
-        const unassignedCat = await application.getUnassignedCategory({ client: trx });
+        account.balance -= acctTransaction.amount;
 
-        unassignedCat.amount -= acctTransaction.amount;
+        account.save();
 
-        result.balances.push({ id: unassignedCat.id, balance: unassignedCat.amount });
+        result.acctBalances.push({ id: account.id, balance: account.balance });
 
-        await unassignedCat.save();
-      }
-    }
-    else {
-      // eslint-disable-next-line no-restricted-syntax
-      for (const trxCat of trxCategories) {
-        // eslint-disable-next-line no-await-in-loop
-        const category = await Category.findOrFail(trxCat.categoryId, { client: trx });
-
-        category.amount -= trxCat.amount;
-
-        const balance = result.balances.find((b) => b.id === category.id);
-
-        if (balance) {
-          balance.balance = category.amount;
-        }
-        else {
-          result.balances.push({ id: category.id, balance: category.amount });
-        }
-
-        if (category.type === 'LOAN') {
-          // eslint-disable-next-line no-await-in-loop
-          const loanTransaction = await trxCat.related('loanTransaction').query().firstOrFail();
-
-          // eslint-disable-next-line no-await-in-loop
-          await loanTransaction.delete();
-
-          // eslint-disable-next-line no-await-in-loop
-          const loan = await loanTransaction.related('loan').query().firstOrFail();
-
-          loan.updateBalance();
-        }
-
-        category.save();
-
-        // eslint-disable-next-line no-await-in-loop
-        await trxCat.delete();
-      }
-    }
-
-    if (account) {
-      if (!acctTransaction) {
-        throw new Error('acctTransaction is null');
+        await acctTransaction.delete();
       }
 
-      account.balance -= acctTransaction.amount;
+      await transaction.delete();
 
-      account.save();
+      await trx.commit();
 
-      result.acctBalances.push({ id: account.id, balance: account.balance });
-
-      await acctTransaction.delete();
+      return result;
     }
-
-    await transaction.delete();
-
-    await trx.commit();
-
-    return result;
+    catch (error) {
+      await trx.rollback();
+      throw error;
+    }
   }
 }

@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import { observer } from 'mobx-react-lite';
 import 'regenerator-runtime';
 import {
@@ -19,7 +19,7 @@ import UserAccount from './UserAccount';
 import usePageViews from './Tracker';
 import './style.css';
 
-const App = () => {
+const App: React.FC = observer(() => {
   const error = useContext(ServerError);
   usePageViews();
 
@@ -69,17 +69,19 @@ const App = () => {
       <PlaidLink />
     </>
   );
-};
+});
 
-const ObserverApp = observer(App);
+const container = document.querySelector('.app');
 
-ReactDOM.render(
-  <MobxStore.Provider value={mobxStore}>
-    <ServerError.Provider value={serverError}>
-      <Router>
-        <ObserverApp />
-      </Router>
-    </ServerError.Provider>
-  </MobxStore.Provider>,
-  document.querySelector('.app'),
-);
+if (container) {
+  const root = createRoot(container);
+  root.render(
+    <MobxStore.Provider value={mobxStore}>
+      <ServerError.Provider value={serverError}>
+        <Router>
+          <App />
+        </Router>
+      </ServerError.Provider>
+    </MobxStore.Provider>,
+  );
+}

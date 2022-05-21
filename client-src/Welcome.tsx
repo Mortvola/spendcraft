@@ -1,5 +1,5 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import 'regenerator-runtime/runtime';
 import {
   BrowserRouter as Router, Switch, Route,
@@ -11,7 +11,7 @@ import Signup from './Signup';
 import usePageViews from './Tracker';
 import './welcome.css';
 
-const Welcome = () => {
+const Welcome: React.FC = () => {
   usePageViews();
 
   return (
@@ -29,9 +29,13 @@ const Welcome = () => {
   );
 };
 
-ReactDOM.render(
-  <Router>
-    <Welcome />
-  </Router>,
-  document.querySelector('.app'),
-);
+const container = document.querySelector('.app');
+
+if (container) {
+  const root = createRoot(container);
+  root.render(
+    <Router>
+      <Welcome />
+    </Router>,
+  );
+}

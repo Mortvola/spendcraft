@@ -51,17 +51,17 @@ export default class CheckBalances extends BaseCommand {
       else {
         apps = await Application.query({ client: trx });
       }
-  
+
       type Failures = {
         category: Category,
         transSum: number,
       };
-  
+
       const failedApps: {
         appId: number,
         failures: Failures[],
       }[] = [];
-  
+
       // eslint-disable-next-line no-restricted-syntax
       for (const app of apps) {
         // eslint-disable-next-line no-await-in-loop
@@ -77,7 +77,7 @@ export default class CheckBalances extends BaseCommand {
               });
           })
           .preload('group');
-  
+
         // Sum up all the transactions that do not have categories assigned
         // and add the amount to the unassigned category.
         // eslint-disable-next-line no-await-in-loop
@@ -93,7 +93,7 @@ export default class CheckBalances extends BaseCommand {
           .sum('amount')
           .as('sum')
           .first();
-  
+
         if (unassignedTrans && parseFloat(unassignedTrans.$extras.sum ?? 0) !== 0) {
           const unassignedCat = categories.find((c) => c.type === 'UNASSIGNED');
           if (unassignedCat) {
@@ -101,9 +101,9 @@ export default class CheckBalances extends BaseCommand {
               + parseFloat(unassignedTrans.$extras.sum ?? 0);
           }
         }
-  
+
         const failures: Failures[] = [];
-  
+
         // eslint-disable-next-line no-restricted-syntax
         for (const cat of categories) {
           const transSum = (cat.$extras.trans_sum === null ? 0 : parseFloat(cat.$extras.trans_sum));
@@ -114,7 +114,7 @@ export default class CheckBalances extends BaseCommand {
             })
           }
         }
-  
+
         if (failures.length > 0) {
           failedApps.push({
             appId: app.id,
@@ -122,7 +122,7 @@ export default class CheckBalances extends BaseCommand {
           });
         }
       }
-  
+
       if (failedApps.length > 0) {
         // eslint-disable-next-line no-restricted-syntax
         for (const app of failedApps) {
@@ -132,16 +132,16 @@ export default class CheckBalances extends BaseCommand {
             const { category, transSum } = failure;
             const difference = category.amount - transSum;
             this.logger.info(`\t"${category.group.name}:${category.name}" (${category.id}): ${category.amount}, Transactions: ${transSum}, difference: ${difference}`);
-  
+
             if (this.fix) {
               category.amount = transSum;
-  
+
               // eslint-disable-next-line no-await-in-loop
               await category.save();
             }
           }
         }
-  
+
         if (this.fix) {
           await trx.commit();
         }
@@ -154,7 +154,7 @@ export default class CheckBalances extends BaseCommand {
         await trx.rollback();
       }
     }
-    catch(error) {
+    catch (error) {
       await trx.rollback();
     }
   }
@@ -169,12 +169,12 @@ export default class CheckBalances extends BaseCommand {
         account: Account,
         transSum: number,
       };
-  
+
       const failedApps: {
         appId: number,
         failures: Failures[],
       }[] = [];
-  
+
       // eslint-disable-next-line no-restricted-syntax
       for (const app of apps) {
         // eslint-disable-next-line no-await-in-loop
@@ -188,9 +188,9 @@ export default class CheckBalances extends BaseCommand {
           .withAggregate('accountTransactions', (query) => {
             query.sum('amount').where('pending', false).as('trans_sum')
           })
-  
+
         const failures: Failures[] = [];
-  
+
         // eslint-disable-next-line no-restricted-syntax
         for (const account of accounts) {
           const transSum = (account.$extras.trans_sum === null ? 0 : parseFloat(account.$extras.trans_sum));
@@ -201,7 +201,7 @@ export default class CheckBalances extends BaseCommand {
             })
           }
         }
-  
+
         if (failures.length > 0) {
           failedApps.push({
             appId: app.id,
@@ -209,7 +209,7 @@ export default class CheckBalances extends BaseCommand {
           });
         }
       }
-  
+
       if (failedApps.length > 0) {
         // eslint-disable-next-line no-restricted-syntax
         for (const app of failedApps) {
@@ -219,16 +219,16 @@ export default class CheckBalances extends BaseCommand {
             const { account, transSum } = failure;
             const difference = account.balance - transSum;
             this.logger.info(`\t"${account.name}" (${account.id}): ${account.balance}, Transactions: ${transSum}, difference: ${difference}`);
-  
+
             if (this.fix) {
               account.balance = transSum;
-  
+
               // eslint-disable-next-line no-await-in-loop
               await account.save();
             }
           }
         }
-  
+
         if (this.fix) {
           await trx.commit();
         }
@@ -241,7 +241,7 @@ export default class CheckBalances extends BaseCommand {
         await trx.rollback();
       }
     }
-    catch(error) {
+    catch (error) {
       await trx.rollback();
     }
   }

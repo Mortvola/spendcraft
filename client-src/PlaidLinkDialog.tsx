@@ -22,7 +22,7 @@ const PlaidLinkDialog: React.FC<PropsType> = ({
     // }
   };
 
-  const onExit = React.useCallback((err, metaData) => {
+  const onExit = React.useCallback((err: unknown, metaData: unknown) => {
     if (err) {
       console.log(err);
       console.log(JSON.stringify(metaData));
@@ -46,7 +46,7 @@ const PlaidLinkDialog: React.FC<PropsType> = ({
     runInAction(() => {
       uiState.plaid = null;
     });
-  }, [showAccountsDialog, uiState.plaid]);
+  }, [showAccountsDialog, uiState]);
 
   const { open, ready } = usePlaidLink({
     token: uiState.plaid.linkToken,
