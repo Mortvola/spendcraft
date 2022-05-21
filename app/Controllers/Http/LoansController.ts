@@ -46,35 +46,41 @@ export default class LoansController {
 
     const trx = await Database.transaction();
 
-    const loanGroup = await Group.query({ client: trx })
-      .where({ applicationId: application.id, system: true, name: 'Loans' })
-      .firstOrFail();
+    try {
+      const loanGroup = await Group.query({ client: trx })
+        .where({ applicationId: application.id, system: true, name: 'Loans' })
+        .firstOrFail();
 
-    const category = (new Category()).useTransaction(trx);
+      const category = (new Category()).useTransaction(trx);
 
-    category.fill({
-      name: requestData.name,
-      amount: 0,
-      type: 'LOAN',
-    });
+      category.fill({
+        name: requestData.name,
+        amount: 0,
+        type: 'LOAN',
+      });
 
-    await category.related('group').associate(loanGroup);
+      await category.related('group').associate(loanGroup);
 
-    const loan = (new Loan()).useTransaction(trx);
+      const loan = (new Loan()).useTransaction(trx);
 
-    loan.fill({
-      applicationId: application.id,
-      rate: requestData.rate,
-      startDate: requestData.startDate,
-      startingBalance: requestData.amount,
-      balance: -requestData.amount,
-    });
+      loan.fill({
+        applicationId: application.id,
+        rate: requestData.rate,
+        startDate: requestData.startDate,
+        startingBalance: requestData.amount,
+        balance: -requestData.amount,
+      });
 
-    await loan.related('category').associate(category);
+      await loan.related('category').associate(category);
 
-    await trx.commit();
+      await trx.commit();
 
-    return category;
+      return category;
+    }
+    catch (error) {
+      await trx.rollback();
+      throw error;
+    }
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -99,29 +105,35 @@ export default class LoansController {
 
     const trx = await Database.transaction();
 
-    const loan = await Loan.findByOrFail('categoryId', request.params().catId, { client: trx });
+    try {
+      const loan = await Loan.findByOrFail('categoryId', request.params().catId, { client: trx });
 
-    loan.merge({
-      startDate: requestData.startDate,
-      startingBalance: requestData.startingBalance,
-      rate: requestData.rate,
-    });
+      loan.merge({
+        startDate: requestData.startDate,
+        startingBalance: requestData.startingBalance,
+        rate: requestData.rate,
+      });
 
-    await loan.updateBalance();
+      await loan.updateBalance();
 
-    const category = await loan.related('category').query().firstOrFail();
+      const category = await loan.related('category').query().firstOrFail();
 
-    category.merge({
-      name: requestData.name,
-    });
+      category.merge({
+        name: requestData.name,
+      });
 
-    await category.save();
+      await category.save();
 
-    await trx.commit();
+      await trx.commit();
 
-    return {
-      name: category.name,
-      loan: await loan.getProps(),
+      return {
+        name: category.name,
+        loan: await loan.getProps(),
+      }
+    }
+    catch (error) {
+      await trx.rollback();
+      throw error;
     }
   }
 

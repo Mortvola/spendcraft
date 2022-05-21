@@ -186,12 +186,12 @@ class WebhookController {
 
           const accounts = await institution.related('accounts').query().where('closed', false);
           const application = await Application.findOrFail(institution.applicationId);
-  
+
           await Promise.all(accounts.map(async (acct) => {
             if (institution.accessToken === null || institution.accessToken === '') {
               throw new Exception(`access token not set for ${institution.plaidItemId}`);
             }
-  
+
             return (
               acct.sync(
                 institution.accessToken,
@@ -199,8 +199,8 @@ class WebhookController {
               )
             );
           }));
-  
-          await trx.commit();  
+
+          await trx.commit();
         }
         catch (error) {
           await trx.rollback();
@@ -216,8 +216,8 @@ class WebhookController {
           const institution = await Institution.findByOrFail('plaidItemId', event.item_id, { client: trx });
 
           await institution.removeTransactions(event.removed_transactions);
-  
-          await trx.commit();  
+
+          await trx.commit();
         }
         catch (error) {
           await trx.rollback();

@@ -122,37 +122,43 @@ class InstitutionController {
 
     const trx = await Database.transaction();
 
-    const inst = await (new Institution())
-      .fill({
-        name: requestData.institution.name,
-        applicationId: application.id,
-      })
-      .useTransaction(trx)
-      .save();
+    try {
+      const inst = await (new Institution())
+        .fill({
+          name: requestData.institution.name,
+          applicationId: application.id,
+        })
+        .useTransaction(trx)
+        .save();
 
-    if (inst === null) {
-      throw new Error('inst is null');
+      if (inst === null) {
+        throw new Error('inst is null');
+      }
+
+      let accounts: AddAccountsResponse = {
+        accounts: [],
+        categories: [],
+      };
+
+      if (requestData.accounts) {
+        accounts = await InstitutionController.addOfflineAccounts(
+          application, inst, requestData.accounts, requestData.startDate, { client: trx },
+        );
+      }
+
+      await trx.commit();
+
+      return {
+        id: inst.id,
+        name: inst.name,
+        offline: true,
+        ...accounts,
+      };
     }
-
-    let accounts: AddAccountsResponse = {
-      accounts: [],
-      categories: [],
-    };
-
-    if (requestData.accounts) {
-      accounts = await InstitutionController.addOfflineAccounts(
-        application, inst, requestData.accounts, requestData.startDate, { client: trx },
-      );
+    catch (error) {
+      await trx.rollback();
+      throw error;
     }
-
-    await trx.commit();
-
-    return {
-      id: inst.id,
-      name: inst.name,
-      offline: true,
-      ...accounts,
-    };
   }
 
   static async getUnconnectedAccounts(
@@ -454,7 +460,7 @@ class InstitutionController {
     auth: {
       user,
     },
-  }: HttpContextContract): Promise<AddAccountsResponse> {
+  }: HttpContextContract): Promise<AddAccountsResponse | void> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -495,27 +501,33 @@ class InstitutionController {
 
     const trx = await Database.transaction();
 
-    const institution = await Institution.findOrFail(request.params().instId, { client: trx });
+    try {
+      const institution = await Institution.findOrFail(request.params().instId, { client: trx });
 
-    let result: AddAccountsResponse;
+      let result: AddAccountsResponse;
 
-    if (requestData.plaidAccounts) {
-      result = await InstitutionController.addOnlineAccounts(
-        application, institution, requestData.plaidAccounts, requestData.startDate, { client: trx },
-      );
+      if (requestData.plaidAccounts) {
+        result = await InstitutionController.addOnlineAccounts(
+          application, institution, requestData.plaidAccounts, requestData.startDate, { client: trx },
+        );
+      }
+      else if (requestData.offlineAccounts) {
+        result = await InstitutionController.addOfflineAccounts(
+          application, institution, requestData.offlineAccounts, requestData.startDate, { client: trx },
+        );
+      }
+      else {
+        throw new Error('plaidAccounts nor offlineAccounts are defined');
+      }
+
+      await trx.commit();
+
+      return result;
     }
-    else if (requestData.offlineAccounts) {
-      result = await InstitutionController.addOfflineAccounts(
-        application, institution, requestData.offlineAccounts, requestData.startDate, { client: trx },
-      );
+    catch (error) {
+      await trx.rollback();
+      throw error;
     }
-    else {
-      throw new Error('plaidAccounts nor offlineAccounts are defined');
-    }
-
-    await trx.commit();
-
-    return result;
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -532,28 +544,34 @@ class InstitutionController {
 
     const trx = await Database.transaction();
 
-    const institutions = await Institution.query({ client: trx })
-      .where('applicationId', application.id)
-      .whereNotNull('accessToken')
-      .andWhere('acessToken', '!=', '');
+    try {
+      const institutions = await Institution.query({ client: trx })
+        .where('applicationId', application.id)
+        .whereNotNull('accessToken')
+        .andWhere('acessToken', '!=', '');
 
-    const result: AccountSyncResult[] | null = [];
+      const result: AccountSyncResult[] | null = [];
 
-    await Promise.all(institutions.map(async (institution) => {
-      const accounts = await institution.related('accounts').query().where('closed', false);
+      await Promise.all(institutions.map(async (institution) => {
+        const accounts = await institution.related('accounts').query().where('closed', false);
 
-      return Promise.all(accounts.map(async (acct) => {
-        if (institution.accessToken === null || institution.accessToken === '') {
-          throw new Exception(`access token not set for ${institution.plaidItemId}`);
-        }
+        return Promise.all(accounts.map(async (acct) => {
+          if (institution.accessToken === null || institution.accessToken === '') {
+            throw new Exception(`access token not set for ${institution.plaidItemId}`);
+          }
 
-        return acct.sync(institution.accessToken, application)
+          return acct.sync(institution.accessToken, application)
+        }));
       }));
-    }));
 
-    await trx.commit();
+      await trx.commit();
 
-    return result;
+      return result;
+    }
+    catch (error) {
+      await trx.rollback();
+      throw error;
+    }
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -571,23 +589,29 @@ class InstitutionController {
 
     const trx = await Database.transaction();
 
-    const institution = await Institution.findOrFail(request.params().instId, { client: trx });
+    try {
+      const institution = await Institution.findOrFail(request.params().instId, { client: trx });
 
-    if (institution.accessToken === null || institution.accessToken === '') {
-      throw new Exception(`access token not set for ${institution.plaidItemId}`);
+      if (institution.accessToken === null || institution.accessToken === '') {
+        throw new Exception(`access token not set for ${institution.plaidItemId}`);
+      }
+
+      const account = await Account.findOrFail(request.params().acctId, { client: trx });
+
+      let result: AccountSyncResult | null = null;
+
+      result = await account.sync(
+        institution.accessToken, application,
+      );
+
+      await trx.commit();
+
+      return result;
     }
-
-    const account = await Account.findOrFail(request.params().acctId, { client: trx });
-
-    let result: AccountSyncResult | null = null;
-
-    result = await account.sync(
-      institution.accessToken, application,
-    );
-
-    await trx.commit();
-
-    return result;
+    catch (error) {
+      await trx.rollback();
+      throw error;
+    }
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -625,7 +649,7 @@ class InstitutionController {
       link_customization_name: 'account_select',
       update: {
         account_selection_enabled: true,
-      }
+      },
     });
 
     response.json({ linkToken: linkTokenResponse.link_token });
@@ -656,13 +680,19 @@ class InstitutionController {
 
     const trx = await Database.transaction();
 
-    const account = await Account.findOrFail(request.params().acctId, { client: trx });
+    try {
+      const account = await Account.findOrFail(request.params().acctId, { client: trx });
 
-    const result = await InstitutionController.deleteAccounts([account], application, trx);
+      const result = await InstitutionController.deleteAccounts([account], application, trx);
 
-    await trx.commit();
+      await trx.commit();
 
-    return result;
+      return result;
+    }
+    catch (error) {
+      await trx.rollback();
+      throw error;
+    }
   }
 
   private static async deleteAccounts(
@@ -767,16 +797,22 @@ class InstitutionController {
 
     const trx = await Database.transaction();
 
-    const accounts = await Account.query({ client: trx }).where('institutionId', request.params().instId);
+    try {
+      const accounts = await Account.query({ client: trx }).where('institutionId', request.params().instId);
 
-    // eslint-disable-next-line no-restricted-syntax
-    const result = await InstitutionController.deleteAccounts(accounts, application, trx);
+      // eslint-disable-next-line no-restricted-syntax
+      const result = await InstitutionController.deleteAccounts(accounts, application, trx);
 
-    await (await Institution.findOrFail(request.params().instId, { client: trx })).delete();
+      await (await Institution.findOrFail(request.params().instId, { client: trx })).delete();
 
-    await trx.commit();
+      await trx.commit();
 
-    return result;
+      return result;
+    }
+    catch (error) {
+      await trx.rollback();
+      throw error;
+    }
   }
 }
 

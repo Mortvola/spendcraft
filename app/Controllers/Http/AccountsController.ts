@@ -14,7 +14,7 @@ type AddedTransaction = {
   categories: CategoryBalanceProps[],
   transaction: Transaction,
   balance: number,
-};  
+};
 
 export default class AccountsController {
   // eslint-disable-next-line class-methods-use-this
@@ -155,40 +155,40 @@ export default class AccountsController {
       const account = await Account.findOrFail(acctId, { client: trx });
 
       const transaction = (new Transaction()).useTransaction(trx);
-  
+
       transaction.fill({
         type: TransactionType.MANUAL_TRANSACTION,
         date: requestData.date,
         sortOrder: 2147483647,
         comment: requestData.comment,
       });
-  
+
       await transaction.related('application').associate(application);
-  
+
       const acctTransaction = await account.related('accountTransactions').create({
         name: requestData.name,
         transactionId: transaction.id,
         amount: requestData.amount,
       });
-  
+
       account.balance += acctTransaction.amount;
-  
+
       await account.save();
-  
+
       const categoryBalances: CategoryBalanceProps[] = [];
-  
+
       const { splits } = requestData;
-  
+
       if (!splits || splits.length === 0) {
         // We only want to update the unassigned category balance if 
         // this account is tracking categorized transactions
         if (account.tracking === 'Transactions') {
           const unassignedCat = await application.getUnassignedCategory({ client: trx });
-  
+
           unassignedCat.amount += acctTransaction.amount;
-  
+
           await unassignedCat.save();
-  
+
           categoryBalances.push({ id: unassignedCat.id, balance: unassignedCat.amount })
         }
       }
@@ -196,31 +196,31 @@ export default class AccountsController {
         if (account.tracking !== 'Transactions') {
           throw new Error('categorized transaction within an uncategorized account');
         }
-  
+
         // eslint-disable-next-line no-restricted-syntax
         for (const split of splits) {
           const trxCategory = (new TransactionCategory()).useTransaction(trx);
-  
+
           trxCategory.fill({
             transactionId: transaction.id,
             categoryId: split.categoryId,
             amount: split.amount,
             comment: split.comment,
           })
-  
+
           // eslint-disable-next-line no-await-in-loop
           await trxCategory.save();
-  
+
           // eslint-disable-next-line no-await-in-loop
           const category = await Category.findOrFail(split.categoryId, { client: trx });
-  
+
           category.amount += split.amount;
-  
+
           // eslint-disable-next-line no-await-in-loop
           await category.save();
-  
+
           const balance = categoryBalances.find((b) => b.id === category.id);
-  
+
           if (balance) {
             balance.balance = category.amount;
           }
@@ -229,17 +229,17 @@ export default class AccountsController {
           }
         }
       }
-  
+
       await transaction.load('accountTransaction', (acctTrx) => {
         acctTrx.preload('account', (acct) => {
           acct.preload('institution')
         })
       });
-  
+
       await transaction.load('transactionCategories');
-  
+
       await trx.commit();
-  
+
       const result: AddedTransaction = {
         categories: categoryBalances,
         transaction,
@@ -248,8 +248,9 @@ export default class AccountsController {
 
       return result;
     }
-    catch(error) {
+    catch (error) {
       await trx.rollback();
+      throw error;
     }
   }
 

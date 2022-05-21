@@ -144,19 +144,26 @@ class CategoryController {
     await request.validate(DeleteCategoryValidator);
 
     const trx = await Database.transaction();
-    const category = await Category.findOrFail(catId, { client: trx });
 
-    if (category.type === 'LOAN') {
-      const loan = await Loan.findBy('categoryId', catId, { client: trx });
+    try {
+      const category = await Category.findOrFail(catId, { client: trx });
 
-      if (loan) {
-        await loan.delete();
+      if (category.type === 'LOAN') {
+        const loan = await Loan.findBy('categoryId', catId, { client: trx });
+
+        if (loan) {
+          await loan.delete();
+        }
       }
+
+      await category.delete();
+
+      await trx.commit();
     }
-
-    await category.delete();
-
-    await trx.commit();
+    catch (error) {
+      await trx.rollback();
+      throw error;
+    }
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -308,23 +315,24 @@ class CategoryController {
     const requestData = await request.validate(UpdateCategoryTransferValidator);
 
     const trx = await Database.transaction();
-    const result: {
-      balances: CategoryBalanceProps[],
-      transaction: {
-        transactionCategories: unknown[],
-        id?: number,
-        date?: string,
-        name?: string,
-        pending?: boolean,
-        sortOrder?: number,
-        type?: TransactionType,
-        accountName?: string | null,
-        amount?: string | null,
-        institutionName?: string | null,
-      },
-    } = { balances: [], transaction: { transactionCategories: [] } };
 
     try {
+      const result: {
+        balances: CategoryBalanceProps[],
+        transaction: {
+          transactionCategories: unknown[],
+          id?: number,
+          date?: string,
+          name?: string,
+          pending?: boolean,
+          sortOrder?: number,
+          type?: TransactionType,
+          accountName?: string | null,
+          amount?: string | null,
+          institutionName?: string | null,
+        },
+      } = { balances: [], transaction: { transactionCategories: [] } };
+
       const { categories } = requestData;
       if (Array.isArray(categories)) {
         const { date, type } = requestData;
@@ -418,13 +426,14 @@ class CategoryController {
       }
 
       await trx.commit();
+
+      return result;
     }
     catch (error) {
       Logger.error(error);
       await trx.rollback();
+      throw error;
     }
-
-    return result;
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -460,6 +469,7 @@ class CategoryController {
     catch (error) {
       Logger.error(error);
       await trx.rollback();
+      throw error;
     }
   }
 

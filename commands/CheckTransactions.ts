@@ -166,24 +166,24 @@ export default class CheckTransactions extends BaseCommand {
           .preload('application')
           .orderBy('username', 'asc');
       }
-  
+
       // eslint-disable-next-line no-restricted-syntax
       for (const user of users) {
         // eslint-disable-next-line no-await-in-loop
         const application = await user.related('application').query().firstOrFail();
-  
+
         // eslint-disable-next-line no-await-in-loop
         let institutions: Institution[] = [];
-  
+
         if (this.item) {
           institutions = await user.application.related('institutions').query().where('plaidItemId', this.item);
         }
         else {
           institutions = await user.application.related('institutions').query().whereNotNull('plaidItemId');
         }
-  
+
         const failedAccounts: FailedAccount[] = [];
-  
+
         // eslint-disable-next-line no-restricted-syntax
         for (const inst of institutions) {
           // eslint-disable-next-line no-await-in-loop
@@ -191,40 +191,40 @@ export default class CheckTransactions extends BaseCommand {
             .query()
             .whereNotNull('plaidAccountId')
             .where('tracking', '!=', 'Balances');
-  
+
           // eslint-disable-next-line no-restricted-syntax
           for (const acct of accounts) {
             let response: TransactionsGetResponse | null = null;
-  
+
             const missingTransactions: PlaidTransaction[] = [];
             const extraTransactions: AccountTransaction[] = [];
             const duplicateTransactions: AccountTransaction[] = [];
             const accountMismatchTransactions: ErrorTransaction[] = [];
-  
+
             let plaidTransactions: PlaidTransaction[] = [];
-  
+
             let paymentChannelMismatches = 0;
             let merchantNameMismatches = 0;
-  
+
             do {
               const options: TransactionsGetRequestOptions = {
                 account_ids: [acct.plaidAccountId],
                 count: 500,
                 offset: plaidTransactions.length,
               };
-  
+
               try {
                 const endDate = DateTime.now();
-  
+
                 if (inst.accessToken === null || inst.accessToken === '') {
                   throw new Exception(`access token not set for ${inst.plaidItemId}`);
                 }
-  
+
                 // eslint-disable-next-line no-await-in-loop
                 response = await plaidClient.getTransactions(
                   inst.accessToken, acct.startDate.toISODate(), endDate.toISODate(), options,
                 );
-  
+
                 // if (response.transactions.length > 0) {
                 //   this.logger.info(
                 //     `acct: ${acct.name} request id: ${response.request_id} ${response.transactions[0].date} `
@@ -238,22 +238,22 @@ export default class CheckTransactions extends BaseCommand {
                 //     + `No transactions ${JSON.stringify(options)}`,
                 //   )
                 // }
-  
+
                 plaidTransactions = plaidTransactions.concat(response.transactions);
-  
+
                 // eslint-disable-next-line no-restricted-syntax
                 for (const plaidTransaction of response.transactions) {
                   if (!plaidTransaction.pending) {
                     // eslint-disable-next-line no-await-in-loop
                     const acctTransaction = await AccountTransaction
                       .findBy('plaidTransactionId', plaidTransaction.transaction_id, { client: trx });
-  
+
                     if (acctTransaction === null) {
                       missingTransactions.push(plaidTransaction);
                     }
                     else {
                       let updated = false;
-  
+
                       if (plaidTransaction.amount !== null && acctTransaction.amount !== -plaidTransaction.amount) {
                         this.logger.error(`Amount mismatch: ${acctTransaction.amount} ${-plaidTransaction.amount}`);
                       }
@@ -271,7 +271,7 @@ export default class CheckTransactions extends BaseCommand {
                           updated = true;
                         }
                       }
-  
+
                       if (updated) {
                         // eslint-disable-next-line no-await-in-loop
                         await acctTransaction.save();
@@ -290,11 +290,11 @@ export default class CheckTransactions extends BaseCommand {
               }
             }
             while (response !== null && plaidTransactions.length < response.total_transactions);
-  
+
             if (response && plaidTransactions.length !== response.total_transactions) {
               this.logger.error(`Mismatch in the number of transactions: ${plaidTransactions.length}, ${response.total_transactions}`);
             }
-  
+
             // Look for extra transactions
             // eslint-disable-next-line no-await-in-loop
             const acctTransactions = await acct.related('accountTransactions')
@@ -302,22 +302,22 @@ export default class CheckTransactions extends BaseCommand {
               .where('pending', false)
               .whereNotNull('plaidTransactionId')
               .preload('transaction');
-  
+
             acctTransactions.sort((a, b) => {
               if (a.transaction.date < b.transaction.date) {
                 return 1;
               }
-  
+
               if (a.transaction.date > b.transaction.date) {
                 return -1;
               }
-  
+
               return 0;
             });
-  
+
             await Promise.all(acctTransactions.map(async (at) => {
               const plaidTran = plaidTransactions.find((pt) => pt.transaction_id === at.plaidTransactionId);
-  
+
               if (!plaidTran) {
                 const dupTransQuery = AccountTransaction.query()
                   .whereHas('transaction', (query) => {
@@ -328,7 +328,7 @@ export default class CheckTransactions extends BaseCommand {
                   .andWhere('name', at.name)
                   .andWhere('amount', at.amount)
                   .andWhere('id', '!=', at.id);
-                  
+
                 const dupTrans = await dupTransQuery;
                 if (dupTrans.length !== 0) {
                   // console.log(dupTransQuery.toQuery());
@@ -351,7 +351,7 @@ export default class CheckTransactions extends BaseCommand {
                 });
               }
             }));
-  
+
             if (
               missingTransactions.length > 0
               || extraTransactions.length > 0
@@ -370,7 +370,7 @@ export default class CheckTransactions extends BaseCommand {
                 paymentChannelMismatches,
                 merchantNameMismatches,
               });
-  
+
               // // eslint-disable-next-line no-loop-func
               // this.logger.info(`\t\tPlaid statement for ${acct.name}:`)
               // plaidTransactions.forEach((tran) => {
@@ -382,21 +382,23 @@ export default class CheckTransactions extends BaseCommand {
             }
           }
         }
-  
+
         if (failedAccounts.length > 0) {
+          // eslint-disable-next-line no-await-in-loop
           await this.report(user, application, failedAccounts);
-  
+
           if (this.fixAccountMismatch) {
-            await Promise.all(failedAccounts.map(async (a) => {
-              return Promise.all(a.accountMismatchTransactions.map(async (t) => {
+            // eslint-disable-next-line no-await-in-loop
+            await Promise.all(failedAccounts.map(async (a) => (
+              Promise.all(a.accountMismatchTransactions.map(async (t) => {
                 if (t.correctAccount) {
                   t.transaction.accountId = t.correctAccount.id;
-  
+
                   await t.transaction.save();
                 }
-              }));
-            }));
-          }  
+              }))
+            )));
+          }
         }
       }
 
@@ -406,11 +408,11 @@ export default class CheckTransactions extends BaseCommand {
       else {
         await trx.rollback();
       }
-  
+
       this.logger.info('completed');
     }
-    catch(error) {
-      trx.rollback();
+    catch (error) {
+      await trx.rollback();
     }
   }
 }
