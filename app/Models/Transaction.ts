@@ -39,6 +39,9 @@ class Transaction extends BaseModel {
 
   @column()
   public comment: string;
+
+  @column({ serializeAs: null })
+  public deleted: boolean;
 }
 
 export default Transaction;

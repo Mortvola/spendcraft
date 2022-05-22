@@ -57,6 +57,7 @@ export default class AccountsController {
       .preload('transactionCategories', (transactionCategory) => {
         transactionCategory.preload('loanTransaction');
       })
+      .where('deleted', false)
       .orderBy('transactions.date', 'desc')
       .orderBy('transactions.id', 'asc')
       .limit(request.qs().limit)

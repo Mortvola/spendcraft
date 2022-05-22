@@ -73,7 +73,9 @@ export default class CheckBalances extends BaseCommand {
           .withAggregate('transactionCategory', (query) => {
             query.sum('amount').as('trans_sum')
               .whereHas('transaction', (transaction) => {
-                transaction.where('applicationId', app.id)
+                transaction
+                  .where('applicationId', app.id)
+                  .andWhere('deleted', false)
               });
           })
           .preload('group');
@@ -84,7 +86,10 @@ export default class CheckBalances extends BaseCommand {
         const unassignedTrans = await AccountTransaction
           .query({ client: trx })
           .whereHas('transaction', (query) => {
-            query.where('applicationId', app.id).doesntHave('transactionCategories')
+            query
+              .where('applicationId', app.id)
+              .andWhere('deleted', false)
+              .doesntHave('transactionCategories')
           })
           .whereHas('account', (query) => {
             query.where('tracking', 'Transactions')
@@ -186,14 +191,23 @@ export default class CheckBalances extends BaseCommand {
             query.where('applicationId', app.id)
           })
           .withAggregate('accountTransactions', (query) => {
-            query.sum('amount').where('pending', false).as('trans_sum')
+            query.sum('amount')
+              .whereHas('transaction', (trxQuery) => {
+                trxQuery.where('deleted', false);
+              })
+              .where('pending', false).as('trans_sum')
           })
 
         const failures: Failures[] = [];
 
         // eslint-disable-next-line no-restricted-syntax
         for (const account of accounts) {
-          const transSum = (account.$extras.trans_sum === null ? 0 : parseFloat(account.$extras.trans_sum));
+          const transSum = (
+            account.$extras.trans_sum === null
+              ? 0
+              : parseFloat(account.$extras.trans_sum)
+          );
+
           if (account.balance !== transSum) {
             failures.push({
               account,

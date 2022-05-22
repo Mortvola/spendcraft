@@ -300,11 +300,11 @@ export default class TransactionsController {
         account.save();
 
         result.acctBalances.push({ id: account.id, balance: account.balance });
-
-        await acctTransaction.delete();
       }
 
-      await transaction.delete();
+      transaction.deleted = true;
+
+      await transaction.save();
 
       await trx.commit();
 

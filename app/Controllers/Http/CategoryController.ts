@@ -215,6 +215,7 @@ class CategoryController {
           });
         })
         .preload('transactionCategories')
+        .where('deleted', false)
         .orderBy('transactions.date', 'desc')
         .orderBy('transactions.id', 'asc')
         .limit(request.qs().limit)
@@ -239,6 +240,7 @@ class CategoryController {
           transactionCategory.preload('loanTransaction');
         })
         .preload('transactionCategories')
+        .where('deleted', false)
         .orderBy('transactions.date', 'desc')
         .orderBy('transactions.id', 'asc')
         .limit(request.qs().limit)

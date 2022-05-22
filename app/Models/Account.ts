@@ -253,37 +253,40 @@ class Account extends BaseModel {
           .findBy('plaidTransactionId', plaidTransaction.transaction_id, { client: this.$trx });
 
         if (acctTrans) {
-          // If the existing transaction was pending
-          // and the Plaid transaction is not then remove
-          // the transaction from the pending transaction array.
-          if (pendingTransactions && acctTrans.pending && !plaidTransaction.pending) {
-            const index = pendingTransactions.findIndex(
-              (p) => p.plaidTransactionId === plaidTransaction.transaction_id,
-            );
-
-            if (index !== -1) {
-              pendingTransactions.splice(index, 1);
-            }
-          }
-
-          // todo: check to see if any of these attributes have changed
-          acctTrans.merge({
-            name: plaidTransaction.name ?? undefined,
-            amount: -plaidTransaction.amount,
-            pending: plaidTransaction.pending ?? false,
-            paymentChannel: plaidTransaction.payment_channel,
-            merchantName: plaidTransaction.merchant_name,
-          });
-
-          await acctTrans.save();
-
           const transaction = await Transaction.findOrFail(acctTrans.transactionId);
 
-          transaction.merge({
-            date: DateTime.fromISO(plaidTransaction.date),
-          });
+          // if the transaction was deleted then do nothing.
+          if (!transaction.deleted) {
+            // If the existing transaction was pending
+            // and the Plaid transaction is not then remove
+            // the transaction from the pending transaction array.
+            if (pendingTransactions && acctTrans.pending && !plaidTransaction.pending) {
+              const index = pendingTransactions.findIndex(
+                (p) => p.plaidTransactionId === plaidTransaction.transaction_id,
+              );
 
-          await transaction.save();
+              if (index !== -1) {
+                pendingTransactions.splice(index, 1);
+              }
+            }
+
+            // todo: check to see if any of these attributes have changed
+            acctTrans.merge({
+              name: plaidTransaction.name ?? undefined,
+              amount: -plaidTransaction.amount,
+              pending: plaidTransaction.pending ?? false,
+              paymentChannel: plaidTransaction.payment_channel,
+              merchantName: plaidTransaction.merchant_name,
+            });
+
+            await acctTrans.save();
+
+            transaction.merge({
+              date: DateTime.fromISO(plaidTransaction.date),
+            });
+
+            await transaction.save();
+          }
         }
         else {
           const transaction = await (new Transaction())
