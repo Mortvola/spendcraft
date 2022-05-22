@@ -24,7 +24,7 @@ const Transaction = ({
   showTrxDialog,
 }: PropsType): ReactElement => {
   const { uiState } = useContext(MobxStore);
-  const { isMobile } = useMediaQuery();
+  const { isMobile, addMediaClass } = useMediaQuery();
 
   const handleClick = () => {
     uiState.selectTransaction(transaction);
@@ -33,29 +33,18 @@ const Transaction = ({
     }
   };
 
-  const selected = uiState.selectedTransaction === transaction;
-
   let transactionClassName = `${styles.acct} ${styles.transaction}`;
   if (category) {
     transactionClassName = styles.transaction;
   }
 
-  if (selected) {
-    transactionClassName += ' transaction-selected'
-  }
+  transactionClassName = addMediaClass(transactionClassName);
 
-  if (isMobile) {
-    if (category) {
-      return (
-        <div className={styles.transactionWrapper} key={transaction.id}>
-          <div className={`mobile ${transactionClassName}`} onClick={handleClick}>
-            {
-              transaction.duplicateOfTransactionId
-                ? <Icon icon="arrow-right-arrow-left" iconClass="fa-solid" />
-                : <div />
-            }
-            <Date className="transaction-field" date={transaction.date} />
-            <div className="transaction-field">{transaction.name}</div>
+  const transactionDetails = () => {
+    if (isMobile) {
+      if (category) {
+        return (
+          <>
             <Amount className="transaction-field currency" amount={amount} />
             <div
               className="transaction-field"
@@ -63,80 +52,68 @@ const Transaction = ({
             >
               {`${transaction.instituteName}:${transaction.accountName}`}
             </div>
-          </div>
-        </div>
+          </>
+        );
+      }
+
+      return (
+        <Amount className="transaction-field currency" amount={amount} />
       );
     }
 
-    return (
-      <div className={styles.transactionWrapper} key={transaction.id}>
-        <div className={`mobile ${transactionClassName}`} onClick={handleClick}>
-          {
-            transaction.duplicateOfTransactionId
-              ? <Icon icon="arrow-right-arrow-left" iconClass="fa-solid" />
-              : <div />
-          }
-          <Date className="transaction-field" date={transaction.date} />
-          <div className="transaction-field">{transaction.name}</div>
-          <Amount className="transaction-field currency" amount={amount} />
-        </div>
-      </div>
-    );
-  }
-
-  if (category) {
-    if (category.type === 'UNASSIGNED') {
-      transactionClassName += ` ${styles.unassigned}`;
-    }
-
-    const transactionAmount = () => {
+    if (category) {
       if (category.type === 'UNASSIGNED') {
-        return null;
+        transactionClassName += ` ${styles.unassigned}`;
       }
 
-      if ([
-        TransactionType.FUNDING_TRANSACTION,
-        TransactionType.REBALANCE_TRANSACTION,
-      ].includes(transaction.type)
-      || transaction.amount === amount) {
-        return <div />;
+      const transactionAmount = () => {
+        if (category.type === 'UNASSIGNED') {
+          return null;
+        }
+
+        if ([
+          TransactionType.FUNDING_TRANSACTION,
+          TransactionType.REBALANCE_TRANSACTION,
+        ].includes(transaction.type)
+        || transaction.amount === amount) {
+          return <div />;
+        }
+
+        return <Amount className="transaction-field currency" amount={transaction.amount} />
       }
 
-      return <Amount className="transaction-field currency" amount={transaction.amount} />
-    }
-
-    return (
-      <div className={styles.transactionWrapper} key={transaction.id}>
-        <div className={transactionClassName} onClick={handleClick}>
-          {
-            transaction.duplicateOfTransactionId
-              ? <Icon icon="arrow-right-arrow-left" iconClass="fa-solid" />
-              : <div />
-          }
-          <Date className="transaction-field" date={transaction.date} />
-          <div className="transaction-field">{transaction.name}</div>
+      return (
+        <>
           {transactionAmount()}
           <Amount className="transaction-field currency" amount={amount} />
           <Amount className="transaction-field currency" amount={runningBalance} />
           <div className="transaction-field">{transaction.instituteName}</div>
           <div className="transaction-field">{transaction.accountName}</div>
-        </div>
-      </div>
-    );
-  }
+        </>
+      );
+    }
+
+    return (
+      <>
+        <Amount className="transaction-field currency" amount={amount} />
+        <Amount className="transaction-field currency" amount={runningBalance} />
+      </>
+    )
+  };
 
   return (
-    <div className={styles.transactionWrapper} key={transaction.id}>
+    <div className={styles.transactionWrapper}>
       <div className={transactionClassName} onClick={handleClick}>
         {
           transaction.duplicateOfTransactionId
             ? <Icon icon="arrow-right-arrow-left" iconClass="fa-solid" />
             : <div />
         }
-        <Date date={transaction.date} />
+        <Date className="transaction-field" date={transaction.date} />
         <div className="transaction-field">{transaction.name}</div>
-        <Amount className="transaction-field currency" amount={amount} />
-        <Amount className="transaction-field currency" amount={runningBalance} />
+        {
+          transactionDetails()
+        }
       </div>
     </div>
   );

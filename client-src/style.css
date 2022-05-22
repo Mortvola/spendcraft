@@ -199,14 +199,6 @@ body {
   align-items: center;
 }
 
-.striped>div:not(.transaction-selected):nth-child(odd) {
-  background-color: whitesmoke;
-}
-
-.transactions div.transaction-selected {
-  background-color: lightblue;
-}
-
 .trans-cat-edit {
   display: grid;
   grid-template-columns: minmax(0, 1fr) max-content;
