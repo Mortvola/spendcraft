@@ -215,6 +215,8 @@ export interface TransactionProps {
 
   transactionCategories: TransactionCategoryProps[];
 
+  duplicateOfTransactionId: number | null;
+
   accountTransaction: {
     name: string;
 

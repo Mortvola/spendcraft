@@ -192,41 +192,6 @@ body {
   overflow-y: scroll;
 }
 
-.transaction {
-  display: grid;
-  grid-template-columns: 32px 100px 1fr 125px 125px 125px minmax(0, 1fr) minmax(0, 1fr) max-content;
-  grid-template-rows: max-content;
-  align-items: center;
-  transition: background-color 0.25s ease-out;
-  position: relative;
-  z-index: 2;
-}
-
-.transaction.mobile {
-  grid-template-columns: max-content minmax(0, 3fr) minmax(0, 1fr);
-}
-
-.acct-transaction {
-  display: grid;
-  grid-template-columns: 32px 100px 1fr 125px 125px minmax(0, 2fr) max-content;
-  grid-template-rows: max-content;
-  align-items: center;
-}
-
-.pending-transaction {
-  display: grid;
-  grid-template-columns: 32px 100px minmax(0, 1.8fr) 125px 125px minmax(0, 3fr);
-  grid-template-rows: max-content;
-  align-items: center;
-}
-
-.acct-pending-transaction {
-  display: grid;
-  grid-template-columns: 32px 100px minmax(0, 1.8fr) 125px 125px minmax(0, 3fr);
-  grid-template-rows: max-content;
-  align-items: center;
-}
-
 .loan-transaction {
   display: grid;
   grid-template-columns: 32px 100px minmax(0, 1fr) 125px 125px 125px 32px;
@@ -236,10 +201,6 @@ body {
 
 .striped>div:not(.transaction-selected):nth-child(odd) {
   background-color: whitesmoke;
-}
-
-.acct-transaction div, .pending-transaction div, .acct-pending-transaction div, .transaction div {
-  padding-left: 4px;
 }
 
 .transactions div.transaction-selected {
@@ -729,17 +690,6 @@ body {
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
-}
-
-.transaction-wrapper {
-  display: grid;
-  grid-template-rows: max-content minmax(0, 0%);
-  grid-template-columns: minmax(0, 1fr);
-  transition: grid-template-rows 0.5s ease-in;
-}
-
-.transaction-wrapper.open {
-  grid-template-rows: max-content minmax(0, 100%);
 }
 
 .transaction-form {

@@ -1,52 +1,46 @@
+:root {
+  --icon-width: 16px;
+  --date-width: 100px;
+  --amount-width: 7rem;
+  --balance-width: 8rem;
+}
+
 .transaction {
   display: grid;
-  grid-template-columns: 32px 100px 1fr repeat(3, 125px) minmax(0, 1fr) minmax(0, 1fr) max-content;
+  grid-template-columns: var(--icon-width) var(--date-width) 1fr var(--amount-width) var(--amount-width) var(--balance-width) minmax(0, 1fr) minmax(0, 1fr) max-content;
   grid-template-rows: max-content;
   align-items: center;
   transition: background-color 0.25s ease-out;
   position: relative;
   z-index: 2;
+  padding-left: 0.5rem;
 }
 
 .unassigned.transaction {
-  grid-template-columns: 32px 100px 1fr repeat(2, 125px) minmax(0, 0.5fr) minmax(0, 0.5fr) max-content;
+  grid-template-columns: var(--icon-width) var(--date-width) 1fr var(--amount-width) var(--balance-width) minmax(0, 0.5fr) minmax(0, 0.5fr) max-content;
 }
 
-.acct-transaction {
-  display: grid;
-  grid-template-columns: 32px 100px 1fr repeat(2, 125px) minmax(0, 2fr) max-content;
-  grid-template-rows: max-content;
-  align-items: center;
+.acct.transaction {
+  grid-template-columns: var(--icon-width) var(--date-width) 1fr var(--amount-width) var(--balance-width) minmax(0, 2fr) max-content;
 }
 
-.pending-transaction {
-  display: grid;
-  grid-template-columns: 32px 100px minmax(0, 1.8fr) repeat(2, 125px) minmax(0, 3fr) max-content;
-  grid-template-rows: max-content;
-  align-items: center;
+.pending.transaction {
+  grid-template-columns: var(--icon-width) var(--date-width) minmax(0, 1.8fr) var(--amount-width) var(--balance-width) minmax(0, 3fr) max-content;
 }
 
-.acct-pending-transaction {
-  display: grid;
-  grid-template-columns: 32px 100px minmax(0, 1.8fr) 125px minmax(0, 3fr) max-content;
-  grid-template-rows: max-content;
-  align-items: center;
+.acct.pending.transaction {
+  grid-template-columns: var(--icon-width) var(--date-width) minmax(0, 1.8fr) var(--amount-width) minmax(0, 3fr) max-content;
 }
 
-.pending-transaction>div,
-.acct-pending-transaction>div,
-.acct-transaction>div,
+/* For left-padding of each column in transaction */
 .transaction>div {
   padding-left: 4px;
 }
 
-:global(.mobile).acct-pending-transaction,
-:global(.mobile).pending-transaction,
-:global(.mobile).acct-transaction,
 :global(.mobile).transaction {
-  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.75fr) minmax(0, 0.9fr);
+  grid-template-columns: var(--icon-width) var(--date-width) minmax(0, 1fr) var(--amount-width);
   grid-template-rows: max-content max-content;
-  grid-template-areas: ". . ." "account account account"
+  grid-template-areas: ". . . ." ". account account account";
 }
 
 .transaction-wrapper {

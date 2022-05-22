@@ -10,6 +10,7 @@ import {
 import { DateTime } from 'luxon';
 import Database, { TransactionClientContract } from '@ioc:Adonis/Lucid/Database';
 import Application from 'App/Models/Application';
+import Transaction from 'App/Models/Transaction';
 
 type ErrorTransaction = {
   date: string,
@@ -21,12 +22,19 @@ type ErrorTransaction = {
   correctAccount: Account | null,
 };
 
+type DuplicateTransaction = {
+  duplicates: number[],
+  date: string,
+  amount: number,
+  name: string,
+}
+
 type FailedAccount = {
   institution: Institution,
   account: Account,
   missingTransactions: PlaidTransaction[],
   extraTransactions: AccountTransaction[],
-  duplicateTransactions: AccountTransaction[],
+  duplicateTransactions: DuplicateTransaction[],
   accountMismatchTransactions: ErrorTransaction[],
   paymentChannelMismatches: number,
   merchantNameMismatches: number,
@@ -57,6 +65,9 @@ export default class CheckTransactions extends BaseCommand {
 
   @flags.string({ description: 'Updates the specified field' })
   public update: 'paymentChannel' | 'merchantName';
+
+  @flags.boolean({ description: 'Marks duplicates' })
+  public markDuplicates: boolean;
 
   public static settings = {
     /**
@@ -111,7 +122,7 @@ export default class CheckTransactions extends BaseCommand {
       if (acct.duplicateTransactions.length > 0) {
         // eslint-disable-next-line no-restricted-syntax
         for (const tran of acct.duplicateTransactions) {
-          this.logger.info(`\t\t\t${tran.transaction.date.toISODate()} ${tran.name} ${tran.amount.toFixed(2)} ${tran.plaidTransactionId} ${tran.id}`);
+          this.logger.info(`\t\t\t${tran.date} ${tran.name} ${tran.amount} ${tran.duplicates}`);
         }
       }
       else {
@@ -227,7 +238,6 @@ export default class CheckTransactions extends BaseCommand {
     plaidTransactions: PlaidTransaction[],
   ) {
     const extraTransactions: AccountTransaction[] = [];
-    const duplicateTransactions: AccountTransaction[] = [];
     const accountMismatchTransactions: ErrorTransaction[] = [];
 
     // Look for extra transactions
@@ -257,23 +267,7 @@ export default class CheckTransactions extends BaseCommand {
       const plaidTran = plaidTransactions.find((pt) => pt.transaction_id === at.plaidTransactionId);
 
       if (!plaidTran) {
-        const dupTrans = await AccountTransaction.query()
-          .whereHas('transaction', (query) => {
-            query.where('date', at.transaction.date.toString())
-              .andWhere('pending', false)
-              .andWhere('deleted', false);
-          })
-          .where('accountId', at.accountId)
-          .andWhere('name', at.name)
-          .andWhere('amount', at.amount)
-          .andWhere('id', '!=', at.id);
-
-        if (dupTrans.length !== 0) {
-          duplicateTransactions.push(at);
-        }
-        else {
-          extraTransactions.push(at);
-        }
+        extraTransactions.push(at);
       }
       else if (acct.plaidAccountId !== plaidTran.account_id) {
         const correctAcct = await Account.findBy('plaidAccountId', plaidTran.account_id);
@@ -291,9 +285,49 @@ export default class CheckTransactions extends BaseCommand {
 
     return {
       extraTransactions,
-      duplicateTransactions,
       accountMismatchTransactions,
     }
+  }
+
+  private static async checkDuplicates(
+    trx: TransactionClientContract,
+  ): Promise<DuplicateTransaction[]> {
+    const duplicates = await Database.query()
+      .useTransaction(trx)
+      .select(
+        Database.raw('json_agg(t.id order by t.id) as duplicates'),
+        Database.raw('to_char(t.date, \'YYYY-MM-DD\') as date'),
+        'at.amount',
+        Database.raw('json_agg(distinct upper(at.name)) as name'),
+      )
+      .from('account_transactions as at')
+      .join('transactions as t', 't.id', 'at.transaction_id')
+      .whereNull('duplicate_of_transaction_id')
+      .groupBy(['t.date', 'at.amount', 'at.account_id'])
+      .groupByRaw('UPPER(at.name)')
+      .havingRaw('count(*) > 1')
+      .orderBy('t.date', 'desc');
+
+    return duplicates;
+  }
+
+  private static async markDuplicateTransactions(
+    duplicates: DuplicateTransaction[],
+    trx: TransactionClientContract,
+  ) {
+    return Promise.all(duplicates.map(async (tran) => {
+      for (let i = 1; i < tran.duplicates.length; i += 1) {
+        // eslint-disable-next-line no-await-in-loop
+        const transaction = await Transaction.find(tran.duplicates[i], { client: trx });
+
+        if (transaction) {
+          [transaction.duplicateOfTransactionId] = tran.duplicates;
+
+          // eslint-disable-next-line no-await-in-loop
+          await transaction.save();
+        }
+      }
+    }));
   }
 
   private async fetchPlaidTransactions(
@@ -425,10 +459,12 @@ export default class CheckTransactions extends BaseCommand {
 
         const {
           extraTransactions,
-          duplicateTransactions,
           accountMismatchTransactions,
         // eslint-disable-next-line no-await-in-loop
         } = await CheckTransactions.analyzeAccountTransactions(acct, plaidTransactions);
+
+        // eslint-disable-next-line no-await-in-loop
+        const duplicateTransactions = await CheckTransactions.checkDuplicates(trx);
 
         if (
           missingTransactions.length > 0
@@ -464,6 +500,12 @@ export default class CheckTransactions extends BaseCommand {
         // eslint-disable-next-line no-await-in-loop
         await this.report(user, application, failedAccounts);
 
+        if (this.markDuplicates) {
+          await Promise.all(failedAccounts.map(async (a) => (
+            CheckTransactions.markDuplicateTransactions(a.duplicateTransactions, trx)
+          )))
+        }
+
         if (this.fixAccountMismatch) {
           // eslint-disable-next-line no-await-in-loop
           await Promise.all(failedAccounts.map(async (a) => (
@@ -478,7 +520,7 @@ export default class CheckTransactions extends BaseCommand {
         }
       }
 
-      if (this.fixMissing || this.fixAccountMismatch || this.update) {
+      if (this.fixMissing || this.fixAccountMismatch || this.update || this.markDuplicates) {
         await trx.commit();
       }
       else {

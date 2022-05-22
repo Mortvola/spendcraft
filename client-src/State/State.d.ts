@@ -60,6 +60,8 @@ export interface TransactionInterface {
 
   comment: string;
 
+  duplicateOfTransactionId: number | null;
+
   getAmountForCategory(categoryId: number): number;
 
   async updateTransaction(

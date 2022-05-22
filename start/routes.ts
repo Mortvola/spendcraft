@@ -79,22 +79,22 @@ Route.group(() => {
   Route.get('/category-balances', 'CategoryController.balances');
 
   Route.group(() => {
-    Route.get('/:catId/transactions', 'CategoryController.transactions');
-    Route.get('/:catId/transactions/pending', 'CategoryController.pendingTransactions');
-  }).prefix('/category');
+    Route.get('/transactions', 'CategoryController.transactions');
+    Route.get('/transactions/pending', 'CategoryController.pendingTransactions');
+  }).prefix('/category/:catId');
 
   Route.get('/connected-accounts', 'UsersController.getConnectedAccounts');
 
   Route.group(() => {
-    Route.get('/:acctId/transactions', 'AccountsController.transactions');
-    Route.get('/:acctId/transactions/pending', 'AccountsController.pendingTransactions');
-    Route.post('/:acctId/transactions', 'AccountsController.addTransaction');
-    Route.get('/:acctId/balances', 'AccountsController.balances');
-    Route.post('/:acctId/balances', 'AccountsController.addBalance');
-    Route.patch('/:acctId', 'AccountsController.update');
-    Route.delete('/:acctId/balances/:id', 'AccountsController.deleteBalance');
-    Route.patch('/:acctId/balances/:id', 'AccountsController.updateBalance');
-  }).prefix('/account');
+    Route.get('/transactions', 'AccountsController.transactions');
+    Route.get('/transactions/pending', 'AccountsController.pendingTransactions');
+    Route.post('/transactions', 'AccountsController.addTransaction');
+    Route.get('/balances', 'AccountsController.balances');
+    Route.post('/balances', 'AccountsController.addBalance');
+    Route.patch('', 'AccountsController.update');
+    Route.delete('/balances/:id', 'AccountsController.deleteBalance');
+    Route.patch('/balances/:id', 'AccountsController.updateBalance');
+  }).prefix('/account/:acctId');
 
   Route.group(() => {
     Route.delete('/:id', 'AccountsController.deleteBalance');
@@ -131,9 +131,13 @@ Route.group(() => {
 
   Route.group(() => {
     Route.post('', 'LoansController.add');
-    Route.get('/:catId', 'LoansController.get');
-    Route.patch('/:catId', 'LoansController.update');
-    Route.get('/:catId/transactions', 'LoansController.getTransactions');
+
+    Route.group(() => {
+      Route.get('', 'LoansController.get');
+      Route.patch('', 'LoansController.update');
+      Route.get('/transactions', 'LoansController.getTransactions');  
+    })
+      .prefix('/:catId');
   })
     .prefix('/loans');
 })

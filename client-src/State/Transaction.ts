@@ -40,6 +40,8 @@ class Transaction implements TransactionInterface {
 
   paymentChannel: string | null = null;
 
+  duplicateOfTransactionId: number | null = null;
+
   store: StoreInterface;
 
   constructor(store: StoreInterface, props: TransactionProps) {
@@ -50,6 +52,8 @@ class Transaction implements TransactionInterface {
     this.createdAt = DateTime.fromISO(props.createdAt);
     this.type = props.type;
     this.comment = props.comment;
+    this.duplicateOfTransactionId = props.duplicateOfTransactionId;
+
     if (props.accountTransaction) {
       this.name = props.accountTransaction.name;
       this.amount = props.accountTransaction.amount;

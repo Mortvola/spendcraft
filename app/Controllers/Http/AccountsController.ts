@@ -59,7 +59,7 @@ export default class AccountsController {
       })
       .where('deleted', false)
       .orderBy('transactions.date', 'desc')
-      .orderBy('transactions.id', 'asc')
+      .orderBy('transactions.id', 'desc')
       .limit(request.qs().limit)
       .offset(request.qs().offset);
 
@@ -100,7 +100,7 @@ export default class AccountsController {
         transactionCategory.preload('loanTransaction');
       })
       .orderBy('transactions.date', 'desc')
-      .orderBy('transactions.id', 'asc')
+      .orderBy('transactions.id', 'desc')
       .limit(request.qs().limit)
       .offset(request.qs().offset);
 

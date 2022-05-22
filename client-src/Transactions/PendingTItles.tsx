@@ -14,7 +14,7 @@ const PendingTitles = ({
 
   if (isMobile) {
     return (
-      <div className={`mobile register-title ${styles.acctTransaction}`}>
+      <div className={`mobile register-title ${styles.transaction} ${styles.acct}`}>
         <div>Date</div>
         <div>Name</div>
         <div className="currency">Amount</div>
@@ -33,7 +33,7 @@ const PendingTitles = ({
 
   if (!categoryView) {
     return (
-      <div className={`register-title ${styles.acctPendingTransaction}`}>
+      <div className={`register-title ${styles.acct} ${styles.pending} ${styles.transaction}`}>
         {commonTitles()}
         <div />
         <TitleStub />
@@ -42,7 +42,7 @@ const PendingTitles = ({
   }
 
   return (
-    <div className={`register-title ${styles.pendingTransaction}`}>
+    <div className={`register-title ${styles.pending} ${styles.transaction}`}>
       {commonTitles()}
       <div>Institution</div>
       <div>Account</div>

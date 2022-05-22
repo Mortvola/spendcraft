@@ -23,7 +23,7 @@ const PendingTransactions = ({
         <>
           {
             pending.map((transaction) => (
-              <div key={transaction.id} className={`mobile ${styles.pendingTransaction}`}>
+              <div key={transaction.id} className={`mobile ${styles.pending} ${styles.transaction}`}>
                 <Date className="tranaction-field" date={transaction.date} />
                 <div className="transaction-field">{transaction.name}</div>
                 <Amount className="transaction-field currency" amount={transaction.amount} />
@@ -44,7 +44,7 @@ const PendingTransactions = ({
       <>
         {
           pending.map((transaction) => (
-            <div key={transaction.id} className={`mobile ${styles.acctPendingTransaction}`}>
+            <div key={transaction.id} className={`mobile ${styles.acct} ${styles.pending} ${styles.transaction}`}>
               <Date className="tranaction-field" date={transaction.date} />
               <div className="transaction-field">{transaction.name}</div>
               <Amount className="transaction-field currency" amount={transaction.amount} />
@@ -60,7 +60,7 @@ const PendingTransactions = ({
       <>
         {
           pending.map((transaction) => (
-            <div key={transaction.id} className={styles.pendingTransaction}>
+            <div key={transaction.id} className={`${styles.pending} ${styles.transaction}`}>
               <div />
               <Date className="tranaction-field" date={transaction.date} />
               <div className="transaction-field">{transaction.name}</div>
@@ -78,7 +78,7 @@ const PendingTransactions = ({
     <>
       {
         pending.map((transaction) => (
-          <div key={transaction.id} className={styles.acctPendingTransaction}>
+          <div key={transaction.id} className={`${styles.acct} ${styles.pending} ${styles.transaction}`}>
             <div />
             <Date className="tranaction-field" date={transaction.date} />
             <div className="transaction-field">{transaction.name}</div>

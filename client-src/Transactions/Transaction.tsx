@@ -6,6 +6,7 @@ import useMediaQuery from '../MediaQuery';
 import { TransactionType } from '../../common/ResponseTypes';
 import styles from './Transactions.module.css'
 import Date from '../Date';
+import Icon from '../Icon';
 
 type PropsType = {
   transaction: TransactionInterface,
@@ -34,7 +35,7 @@ const Transaction = ({
 
   const selected = uiState.selectedTransaction === transaction;
 
-  let transactionClassName = styles.acctTransaction;
+  let transactionClassName = `${styles.acct} ${styles.transaction}`;
   if (category) {
     transactionClassName = styles.transaction;
   }
@@ -48,6 +49,11 @@ const Transaction = ({
       return (
         <div className={styles.transactionWrapper} key={transaction.id}>
           <div className={`mobile ${transactionClassName}`} onClick={handleClick}>
+            {
+              transaction.duplicateOfTransactionId
+                ? <Icon icon="arrow-right-arrow-left" iconClass="fa-solid" />
+                : <div />
+            }
             <Date className="transaction-field" date={transaction.date} />
             <div className="transaction-field">{transaction.name}</div>
             <Amount className="transaction-field currency" amount={amount} />
@@ -65,6 +71,11 @@ const Transaction = ({
     return (
       <div className={styles.transactionWrapper} key={transaction.id}>
         <div className={`mobile ${transactionClassName}`} onClick={handleClick}>
+          {
+            transaction.duplicateOfTransactionId
+              ? <Icon icon="arrow-right-arrow-left" iconClass="fa-solid" />
+              : <div />
+          }
           <Date className="transaction-field" date={transaction.date} />
           <div className="transaction-field">{transaction.name}</div>
           <Amount className="transaction-field currency" amount={amount} />
@@ -97,7 +108,11 @@ const Transaction = ({
     return (
       <div className={styles.transactionWrapper} key={transaction.id}>
         <div className={transactionClassName} onClick={handleClick}>
-          <div />
+          {
+            transaction.duplicateOfTransactionId
+              ? <Icon icon="arrow-right-arrow-left" iconClass="fa-solid" />
+              : <div />
+          }
           <Date className="transaction-field" date={transaction.date} />
           <div className="transaction-field">{transaction.name}</div>
           {transactionAmount()}
@@ -113,7 +128,11 @@ const Transaction = ({
   return (
     <div className={styles.transactionWrapper} key={transaction.id}>
       <div className={transactionClassName} onClick={handleClick}>
-        <div />
+        {
+          transaction.duplicateOfTransactionId
+            ? <Icon icon="arrow-right-arrow-left" iconClass="fa-solid" />
+            : <div />
+        }
         <Date date={transaction.date} />
         <div className="transaction-field">{transaction.name}</div>
         <Amount className="transaction-field currency" amount={amount} />

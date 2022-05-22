@@ -16,6 +16,7 @@ const RegisterTitles = ({
   if (isMobile) {
     return (
       <div className={`mobile register-title ${styles.transaction}`}>
+        <div />
         <div>Date</div>
         <div>Name</div>
         <div className="currency">Amount</div>
@@ -55,7 +56,7 @@ const RegisterTitles = ({
   }
 
   return (
-    <div className="register-title acct-transaction">
+    <div className={`register-title ${styles.acct} ${styles.transaction}`}>
       {commonTitles()}
       <div className="currency">Amount</div>
       <div className="currency">Balance</div>

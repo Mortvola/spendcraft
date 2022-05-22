@@ -42,6 +42,9 @@ class Transaction extends BaseModel {
 
   @column({ serializeAs: null })
   public deleted: boolean;
+
+  @column()
+  public duplicateOfTransactionId: number;
 }
 
 export default Transaction;
