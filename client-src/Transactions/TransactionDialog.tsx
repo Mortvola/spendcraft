@@ -183,7 +183,7 @@ const TransactionDialog = ({
       formId="transactionDialogForm"
       validate={handleValidate}
       onSubmit={handleSubmit}
-      onDelete={transaction && transaction.type === TransactionType.MANUAL_TRANSACTION ? handleDelete : null}
+      onDelete={transaction && transaction.type !== TransactionType.STARTING_BALANCE ? handleDelete : null}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
         <label>
