@@ -57,6 +57,18 @@ class Accounts implements AccountsInterface {
     else {
       this.institutions.splice(index, 0, institution);
     }
+
+    // Make sure the accounts are sorted by name.
+    institution.accounts.sort((a, b) => {
+      const c = a.name.localeCompare(b.name);
+
+      // If the names are the same then sort by id
+      if (c === 0) {
+        return a.id - b.id;
+      }
+
+      return c;
+    });
   }
 
   async linkInstitution(): Promise<void> {

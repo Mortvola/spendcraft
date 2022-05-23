@@ -44,7 +44,7 @@ class Transaction extends BaseModel {
   public deleted: boolean;
 
   @column()
-  public duplicateOfTransactionId: number;
+  public duplicateOfTransactionId: number | null;
 }
 
 export default Transaction;

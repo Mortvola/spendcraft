@@ -14,6 +14,22 @@ import { schema, rules } from '@ioc:Adonis/Core/Validator';
 
 export default class TransactionsController {
   // eslint-disable-next-line class-methods-use-this
+  public async get({
+    request,
+  }: HttpContextContract): Promise<Transaction> {
+    const { trxId } = request.params();
+
+    const transaction = await Transaction.query()
+      .where('id', trxId)
+      .andWhere('deleted', false)
+      .firstOrFail();
+
+    await transaction.load('accountTransaction');
+
+    return transaction;
+  }
+
+  // eslint-disable-next-line class-methods-use-this
   public async update({
     request,
     auth: {
@@ -40,7 +56,7 @@ export default class TransactionsController {
       ),
     });
 
-    const { txId } = request.params();
+    const { trxId } = request.params();
     const requestData = await request.validate({
       schema: validationSchema,
     });
@@ -59,7 +75,7 @@ export default class TransactionsController {
 
       if (requestData.date !== undefined
         || requestData.comment !== undefined) {
-        const transaction = await Transaction.findOrFail(txId, { client: trx });
+        const transaction = await Transaction.findOrFail(trxId, { client: trx });
 
         transaction.merge({
           date: requestData.date,
@@ -74,7 +90,7 @@ export default class TransactionsController {
 
       const splits = await TransactionCategory.query({ client: trx })
         .preload('loanTransaction')
-        .where('transactionId', txId);
+        .where('transactionId', trxId);
 
       if (splits.length > 0) {
         // There are pre-existing category splits.
@@ -109,7 +125,7 @@ export default class TransactionsController {
       else {
         // There are no category splits. Debit the 'Unassigned' category
 
-        const trans = await AccountTransaction.findByOrFail('transaction_id', txId, { client: trx });
+        const trans = await AccountTransaction.findByOrFail('transaction_id', trxId, { client: trx });
 
         unassigned.amount -= trans.amount;
 
@@ -129,7 +145,7 @@ export default class TransactionsController {
             categoryId: split.categoryId,
             amount: split.amount,
             comment: split.comment,
-            transactionId: txId,
+            transactionId: trxId,
           });
 
           txCategory.save();
@@ -175,7 +191,7 @@ export default class TransactionsController {
 
       if (requestData.name !== undefined
         || requestData.amount !== undefined) {
-        const acctTransaction = await AccountTransaction.findByOrFail('transactionId', txId, { client: trx });
+        const acctTransaction = await AccountTransaction.findByOrFail('transactionId', trxId, { client: trx });
 
         acctTransaction.merge({
           name: requestData.name,
@@ -185,7 +201,7 @@ export default class TransactionsController {
         await acctTransaction.save();
       }
 
-      result.transaction = await Transaction.findOrFail(txId, { client: trx });
+      result.transaction = await Transaction.findOrFail(trxId, { client: trx });
 
       await result.transaction.load('transactionCategories');
 
@@ -201,6 +217,22 @@ export default class TransactionsController {
       await trx.rollback();
       throw error;
     }
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  public async dedup({
+    request,
+  }: HttpContextContract): Promise<void> {
+    const { trxId } = request.params();
+
+    const transaction = await Transaction.query()
+      .where('id', trxId)
+      .andWhere('deleted', false)
+      .firstOrFail();
+
+    transaction.duplicateOfTransactionId = null;
+
+    await transaction.save();
   }
 
   // eslint-disable-next-line class-methods-use-this

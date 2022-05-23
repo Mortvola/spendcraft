@@ -14,6 +14,7 @@ import { isTransaction } from '../State/Transaction';
 import Transaction from './Transaction';
 import { TransactionType } from '../../common/ResponseTypes';
 import MobxStore from '../State/mobxStore';
+import { useDuplicateDialog } from './DuplicateDialog';
 
 type PropsType = {
   transactions: TransactionInterface[],
@@ -30,6 +31,7 @@ const RegisterTransactions = ({
 }: PropsType): ReactElement => {
   const { uiState } = useContext(MobxStore);
   const [TransactionDialog, showTransactionDialog] = useTransactionDialog();
+  const [DuplicateDialog, showDuplicateDialog] = useDuplicateDialog();
   const [CategoryTransferDialog, showCategoryTransferDialog] = useCategoryTransferDialog();
   const [FundingDialog, showFundingDialog] = useFundingDialog();
   const [RebalanceDialog, showRebalanceDialog] = useRebalanceDialog();
@@ -100,6 +102,12 @@ const RegisterTransactions = ({
 
         case TransactionType.REGULAR_TRANSACTION:
         default:
+          if (editedTransaction.duplicateOfTransactionId !== null) {
+            return (
+              <DuplicateDialog transaction={editedTransaction} onHide={handleDialogHide} />
+            )
+          }
+
           return (
             <TransactionDialog transaction={editedTransaction} onHide={handleDialogHide} account={account} />
           );
@@ -107,7 +115,16 @@ const RegisterTransactions = ({
     }
 
     return null;
-  }, [editedTransaction, uiState, CategoryTransferDialog, FundingDialog, RebalanceDialog, TransactionDialog, account]);
+  }, [
+    editedTransaction,
+    account,
+    uiState,
+    CategoryTransferDialog,
+    FundingDialog,
+    RebalanceDialog,
+    TransactionDialog,
+    DuplicateDialog,
+  ]);
 
   const showTrxDialog = useCallback((transaction: TransactionInterface) => {
     setEditedTransaction(transaction);
@@ -115,7 +132,13 @@ const RegisterTransactions = ({
       case TransactionType.REGULAR_TRANSACTION:
       case TransactionType.MANUAL_TRANSACTION:
       case TransactionType.STARTING_BALANCE:
-        showTransactionDialog();
+        if (transaction.duplicateOfTransactionId !== null) {
+          showDuplicateDialog();
+        }
+        else {
+          showTransactionDialog();
+        }
+
         break;
 
       case TransactionType.TRANSFER_TRANSACTION:
@@ -133,7 +156,7 @@ const RegisterTransactions = ({
       default:
         throw new Error('invalid transaction type');
     }
-  }, [showCategoryTransferDialog, showFundingDialog, showRebalanceDialog, showTransactionDialog]);
+  }, [showCategoryTransferDialog, showDuplicateDialog, showFundingDialog, showRebalanceDialog, showTransactionDialog]);
 
   const renderTransactions = () => {
     let runningBalance = balance;

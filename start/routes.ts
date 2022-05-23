@@ -123,8 +123,10 @@ Route.group(() => {
   }).prefix('/funding-plans');
 
   Route.group(() => {
-    Route.patch('/:txId', 'TransactionsController.update');
+    Route.patch('/:trxId', 'TransactionsController.update');
     Route.delete('/:trxId', 'TransactionsController.delete');
+    Route.get('/:trxId', 'TransactionsController.get');
+    Route.post('/:trxId/dedup', 'TransactionsController.dedup');
   }).prefix('/transaction');
 
   Route.get('/reports/:report', 'ReportController.get');

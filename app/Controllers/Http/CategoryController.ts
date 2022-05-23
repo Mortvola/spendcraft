@@ -217,6 +217,7 @@ class CategoryController {
         .preload('transactionCategories')
         .where('deleted', false)
         .orderBy('transactions.date', 'desc')
+        .orderByRaw('COALESCE(transactions.duplicate_of_transaction_id, transactions.id) desc')
         .orderBy('transactions.id', 'desc')
         .limit(request.qs().limit)
         .offset(request.qs().offset);
@@ -242,6 +243,7 @@ class CategoryController {
         .preload('transactionCategories')
         .where('deleted', false)
         .orderBy('transactions.date', 'desc')
+        .orderByRaw('COALESCE(transactions.duplicate_of_transaction_id, transactions.id) desc')
         .orderBy('transactions.id', 'desc')
         .limit(request.qs().limit)
         .offset(request.qs().offset);

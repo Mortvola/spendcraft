@@ -228,6 +228,20 @@ class Transaction implements TransactionInterface {
     throw new Error('invalid response');
   }
 
+  async dedup(): Promise<null | Error[]> {
+    const response = await Http.post(`/api/transaction/${this.id}/dedup`);
+
+    if (response.ok) {
+      runInAction(() => {
+        this.duplicateOfTransactionId = null;
+      });
+
+      return null;
+    }
+
+    throw new Error('invalid response');
+  }
+
   getAmountForCategory(
     categoryId: number,
   ): number {
