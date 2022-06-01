@@ -27,14 +27,14 @@ const setExclusiveBool = (id: number, boolState: boolean) => {
         }
       }
 
-      if (!states[id].bool && states[id].listener) {
+      if (!states[id].bool) {
         states[id].listener(true);
       }
 
       currentTrue = id;
     }
     else {
-      if (states[id].bool && states[id].listener) {
+      if (states[id].bool) {
         states[id].listener(false);
       }
 
