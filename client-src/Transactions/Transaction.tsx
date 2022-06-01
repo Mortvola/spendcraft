@@ -1,4 +1,5 @@
 import React, { ReactElement, useContext } from 'react';
+import { observer } from 'mobx-react-lite';
 import Amount from '../Amount';
 import MobxStore from '../State/mobxStore';
 import { CategoryInterface, TransactionInterface } from '../State/State';
@@ -16,7 +17,7 @@ type PropsType = {
   showTrxDialog: (transaction: TransactionInterface) => void,
 }
 
-const Transaction = ({
+const Transaction = observer(({
   transaction,
   amount,
   runningBalance,
@@ -26,7 +27,7 @@ const Transaction = ({
   const { uiState } = useContext(MobxStore);
   const { isMobile, addMediaClass } = useMediaQuery();
 
-  const handleClick = () => {
+  const handleClick: React.MouseEventHandler = () => {
     uiState.selectTransaction(transaction);
     if (transaction.type !== TransactionType.STARTING_BALANCE) {
       showTrxDialog(transaction);
@@ -41,8 +42,8 @@ const Transaction = ({
   transactionClassName = addMediaClass(transactionClassName);
 
   const transactionDetails = () => {
-    if (isMobile) {
-      if (category) {
+    if (category) {
+      if (isMobile) {
         return (
           <>
             <Amount className="transaction-field currency" amount={amount} />
@@ -56,12 +57,6 @@ const Transaction = ({
         );
       }
 
-      return (
-        <Amount className="transaction-field currency" amount={amount} />
-      );
-    }
-
-    if (category) {
       if (category.type === 'UNASSIGNED') {
         transactionClassName += ` ${styles.unassigned}`;
       }
@@ -93,10 +88,30 @@ const Transaction = ({
       );
     }
 
+    if (isMobile) {
+      return (
+        <Amount className="transaction-field currency" amount={amount} />
+      );
+    }
+
+    const handleReconcileChange: React.ChangeEventHandler<HTMLInputElement> = (event) => {
+      transaction.toggleReconciled();
+    };
+
+    const handleReconcileClick: React.MouseEventHandler<HTMLInputElement> = (event) => {
+      event.stopPropagation();
+    };
+
     return (
       <>
         <Amount className="transaction-field currency" amount={amount} />
         <Amount className="transaction-field currency" amount={runningBalance} />
+        <input
+          type="checkbox"
+          checked={transaction.reconciled}
+          onChange={handleReconcileChange}
+          onClick={handleReconcileClick}
+        />
       </>
     )
   };
@@ -117,6 +132,6 @@ const Transaction = ({
       </div>
     </div>
   );
-};
+});
 
 export default Transaction;

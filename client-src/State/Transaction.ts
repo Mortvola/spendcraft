@@ -42,6 +42,8 @@ class Transaction implements TransactionInterface {
 
   duplicateOfTransactionId: number | null = null;
 
+  reconciled = false;
+
   store: StoreInterface;
 
   constructor(store: StoreInterface, props: TransactionProps) {
@@ -61,6 +63,7 @@ class Transaction implements TransactionInterface {
       this.accountName = props.accountTransaction.account.name;
       this.accountId = props.accountTransaction.account.id;
       this.paymentChannel = props.accountTransaction.paymentChannel;
+      this.reconciled = props.accountTransaction.reconciled;
     }
     else {
       switch (props.type) {
@@ -265,6 +268,12 @@ class Transaction implements TransactionInterface {
     }
 
     return amount;
+  }
+
+  toggleReconciled(): void {
+    runInAction(() => {
+      this.reconciled = !this.reconciled;
+    })
   }
 }
 

@@ -46,6 +46,8 @@ export interface TransactionInterface {
 
   accountName: string;
 
+  reconciled: boolean;
+
   transaction?: {
     date: string;
 
@@ -75,6 +77,8 @@ export interface TransactionInterface {
   ): Promise<null>;
 
   async delete(): Promise<null | Error[]>;
+
+  toggleReconciled(): void;
 }
 
 export interface PendingTransactionInterface {

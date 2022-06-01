@@ -22,7 +22,7 @@
 }
 
 .acct.transaction {
-  grid-template-columns: var(--icon-width) var(--date-width) 1fr var(--amount-width) var(--balance-width) minmax(0, 2fr) max-content;
+  grid-template-columns: var(--icon-width) var(--date-width) 1fr var(--amount-width) var(--balance-width) max-content minmax(0, 2fr) max-content;
 }
 
 .pending.transaction {

@@ -224,6 +224,8 @@ export interface TransactionProps {
 
     paymentChannel: string | null,
 
+    reconciled: boolean;
+
     account: {
       id: number;
 

@@ -9,8 +9,8 @@ import {
 } from 'plaid';
 import { DateTime } from 'luxon';
 import Database, { TransactionClientContract } from '@ioc:Adonis/Lucid/Database';
-import Application from 'App/Models/Application';
 import Transaction from 'App/Models/Transaction';
+import Application from 'App/Models/Application';
 
 type ErrorTransaction = {
   date: string,
@@ -83,6 +83,72 @@ export default class CheckTransactions extends BaseCommand {
     stayAlive: false,
   }
 
+  private async reportMissingTransactions(acct: FailedAccount, application: Application) {
+    this.logger.info('\t\tMissing Transactions:');
+    if (acct.missingTransactions.length > 0) {
+      // eslint-disable-next-line no-restricted-syntax
+      for (const tran of acct.missingTransactions) {
+        this.logger.info(`\t\t\t${tran.date} ${tran.name} ${tran.amount.toFixed(2)} ${tran.transaction_id}`);
+        if (this.dump) {
+          this.logger.info(JSON.stringify(tran, null, '\t\t\t\t'));
+        }
+
+        if (this.fixMissing) {
+          // eslint-disable-next-line no-await-in-loop
+          const sum = await acct.account.applyTransactions(application, [tran]);
+
+          acct.account.balance += sum;
+
+          // eslint-disable-next-line no-await-in-loop
+          await acct.account.save();
+        }
+      }
+    }
+    else {
+      this.logger.info('\t\t\tNone');
+    }
+  }
+
+  private reportDuplicateTransactions(acct: FailedAccount) {
+    this.logger.info('\t\tDuplicate Transactions:');
+    if (acct.duplicateTransactions.length > 0) {
+      // eslint-disable-next-line no-restricted-syntax
+      for (const tran of acct.duplicateTransactions) {
+        this.logger.info(`\t\t\t${tran.date} ${tran.name} ${tran.amount} ${tran.duplicates}`);
+      }
+    }
+    else {
+      this.logger.info('\t\t\tNone');
+    }
+  }
+
+  private reportExtraTransactions(acct: FailedAccount) {
+    this.logger.info('\t\tExtra Transactions:');
+    if (acct.extraTransactions.length > 0) {
+      // eslint-disable-next-line no-restricted-syntax
+      for (const tran of acct.extraTransactions) {
+        this.logger.info(`\t\t\t${tran.transaction.date.toISODate()} ${tran.name} ${tran.amount.toFixed(2)} ${tran.plaidTransactionId} ${tran.id}`);
+      }
+    }
+    else {
+      this.logger.info('\t\t\tNone');
+    }
+  }
+
+  private reportAccountMismatchTransactions(acct: FailedAccount) {
+    this.logger.info('\t\tAccount Mismatch Transactions:');
+    if (acct.accountMismatchTransactions.length > 0) {
+      // eslint-disable-next-line no-restricted-syntax
+      for (const tran of acct.accountMismatchTransactions) {
+        this.logger.info(`\t\t\t${tran.date} ${tran.name} ${tran.amount.toFixed(2)} ${tran.plaidId} ${tran.id}`);
+        this.logger.info(`\t\t\t\t${tran.correctAccount?.plaidAccountId ?? 'unknown'} ${tran.correctAccount?.name ?? 'unknown'}`)
+      }
+    }
+    else {
+      this.logger.info('\t\t\tNone');
+    }
+  }
+
   private async report (
     user: User,
     application: Application,
@@ -94,63 +160,14 @@ export default class CheckTransactions extends BaseCommand {
     for (const acct of failedAccounts) {
       this.logger.info(`\t${acct.institution.name}, ${acct.account.name}, item id: ${acct.institution.plaidItemId}, account id: ${acct.account.plaidAccountId}`);
 
-      this.logger.info('\t\tMissing Transactions:');
-      if (acct.missingTransactions.length > 0) {
-        // eslint-disable-next-line no-restricted-syntax
-        for (const tran of acct.missingTransactions) {
-          this.logger.info(`\t\t\t${tran.date} ${tran.name} ${tran.amount.toFixed(2)} ${tran.transaction_id}`);
-          if (this.dump) {
-            this.logger.info(JSON.stringify(tran, null, '\t\t\t\t'));
-          }
+      // eslint-disable-next-line no-await-in-loop
+      await this.reportMissingTransactions(acct, application);
 
-          if (this.fixMissing) {
-            // eslint-disable-next-line no-await-in-loop
-            const sum = await acct.account.applyTransactions(application, [tran]);
+      this.reportDuplicateTransactions(acct);
 
-            acct.account.balance += sum;
+      this.reportExtraTransactions(acct);
 
-            // eslint-disable-next-line no-await-in-loop
-            await acct.account.save();
-          }
-        }
-      }
-      else {
-        this.logger.info('\t\t\tNone');
-      }
-
-      this.logger.info('\t\tDuplicate Transactions:');
-      if (acct.duplicateTransactions.length > 0) {
-        // eslint-disable-next-line no-restricted-syntax
-        for (const tran of acct.duplicateTransactions) {
-          this.logger.info(`\t\t\t${tran.date} ${tran.name} ${tran.amount} ${tran.duplicates}`);
-        }
-      }
-      else {
-        this.logger.info('\t\t\tNone');
-      }
-
-      this.logger.info('\t\tExtra Transactions:');
-      if (acct.extraTransactions.length > 0) {
-        // eslint-disable-next-line no-restricted-syntax
-        for (const tran of acct.extraTransactions) {
-          this.logger.info(`\t\t\t${tran.transaction.date.toISODate()} ${tran.name} ${tran.amount.toFixed(2)} ${tran.plaidTransactionId} ${tran.id}`);
-        }
-      }
-      else {
-        this.logger.info('\t\t\tNone');
-      }
-
-      this.logger.info('\t\tAccount Mismatch Transactions:');
-      if (acct.accountMismatchTransactions.length > 0) {
-        // eslint-disable-next-line no-restricted-syntax
-        for (const tran of acct.accountMismatchTransactions) {
-          this.logger.info(`\t\t\t${tran.date} ${tran.name} ${tran.amount.toFixed(2)} ${tran.plaidId} ${tran.id}`);
-          this.logger.info(`\t\t\t\t${tran.correctAccount?.plaidAccountId ?? 'unknown'} ${tran.correctAccount?.name ?? 'unknown'}`)
-        }
-      }
-      else {
-        this.logger.info('\t\t\tNone');
-      }
+      this.reportAccountMismatchTransactions(acct);
 
       this.logger.info(`\t\tPayment Channel Mismatches: ${acct.paymentChannelMismatches}`)
       this.logger.info(`\t\tMerchant Name Mismatches: ${acct.merchantNameMismatches}`)
@@ -175,27 +192,27 @@ export default class CheckTransactions extends BaseCommand {
         if (acctTransaction === null) {
           missingTransactions.push(plaidTransaction);
 
-          // eslint-disable-next-line no-await-in-loop
-          const dupTrans = await AccountTransaction.query()
-            .preload('transaction')
-            .whereHas('transaction', (query) => {
-              query.where('date', plaidTransaction.date)
-                .andWhere('pending', false)
-                .andWhere('deleted', false);
-            })
-            .whereHas('account', (query) => {
-              query.where('plaidAccountId', plaidTransaction.account_id)
-            })
-            // .where('plaidAccountId', plaidTransaction.account_id)
-            .where('name', plaidTransaction.name)
-            .andWhere('amount', plaidTransaction.amount.toFixed(2));
+          // // eslint-disable-next-line no-await-in-loop
+          // const dupTrans = await AccountTransaction.query()
+          //   .preload('transaction')
+          //   .whereHas('transaction', (query) => {
+          //     query.where('date', plaidTransaction.date)
+          //       .andWhere('pending', false)
+          //       .andWhere('deleted', false);
+          //   })
+          //   .whereHas('account', (query) => {
+          //     query.where('plaidAccountId', plaidTransaction.account_id)
+          //   })
+          //   // .where('plaidAccountId', plaidTransaction.account_id)
+          //   .where('name', plaidTransaction.name)
+          //   .andWhere('amount', plaidTransaction.amount.toFixed(2));
 
-          if (dupTrans.length > 0) {
-            console.log('found possible dup:');
-            dupTrans.forEach((dt) => {
-              console.log(`\t${dt.transaction.date}, ${dt.name}, ${dt.amount.toFixed(2)}`)
-            })
-          }
+          // if (dupTrans.length > 0) {
+          //   console.log('found possible dup:');
+          //   dupTrans.forEach((dt) => {
+          //     console.log(`\t${dt.transaction.date}, ${dt.name}, ${dt.amount.toFixed(2)}`)
+          //   })
+          // }
         }
         else {
           let updated = false;
@@ -246,6 +263,9 @@ export default class CheckTransactions extends BaseCommand {
       .query()
       .where('pending', false)
       .whereNotNull('plaidTransactionId')
+      .whereHas('transaction', (query) => {
+        query.where('deleted', false)
+      })
       .preload('transaction', (query) => {
         query.where('deleted', false)
       });
@@ -374,10 +394,10 @@ export default class CheckTransactions extends BaseCommand {
       }
       catch (error) {
         if (error.error_message !== undefined) {
-          this.logger.info(`${acct.name}: ${error.error_message}`);
+          this.logger.error(`${acct.name}: ${error.error_message}`);
         }
         else {
-          this.logger.info(`${acct.name}: ${error.message}`);
+          this.logger.error(`${acct.name}: ${error.message}`);
         }
       }
     }
@@ -425,8 +445,6 @@ export default class CheckTransactions extends BaseCommand {
         throw new Error('institution not found');
       }
 
-      const failedAccounts: FailedAccount[] = [];
-
       // eslint-disable-next-line no-await-in-loop
       const accounts = await inst.related('accounts')
         .query()
@@ -434,10 +452,19 @@ export default class CheckTransactions extends BaseCommand {
         .where('tracking', '!=', 'Balances')
         .orderBy('name');
 
-      const selectedAccounts = await this.prompt.multiple(
-        'Select the accounts',
-        accounts.map((a) => a.name),
-      );
+      let selectedAccounts: string[] = [];
+
+      if (accounts.length === 1) {
+        selectedAccounts = [accounts[0].name];
+      }
+      else {
+        selectedAccounts = await this.prompt.multiple(
+          'Select the accounts',
+          accounts.map((a) => a.name),
+        );
+      }
+
+      const failedAccounts: FailedAccount[] = [];
 
       // eslint-disable-next-line no-restricted-syntax
       for (const acctName of selectedAccounts) {
