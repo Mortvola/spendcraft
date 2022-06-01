@@ -15,6 +15,7 @@ const PendingTitles = ({
   if (isMobile) {
     return (
       <div className={`mobile register-title ${styles.transaction} ${styles.acct}`}>
+        <div />
         <div>Date</div>
         <div>Name</div>
         <div className="currency">Amount</div>

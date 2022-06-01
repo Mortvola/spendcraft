@@ -24,6 +24,7 @@ const PendingTransactions = ({
           {
             pending.map((transaction) => (
               <div key={transaction.id} className={`mobile ${styles.pending} ${styles.transaction}`}>
+                <div />
                 <Date className="tranaction-field" date={transaction.date} />
                 <div className="transaction-field">{transaction.name}</div>
                 <Amount className="transaction-field currency" amount={transaction.amount} />
@@ -45,6 +46,7 @@ const PendingTransactions = ({
         {
           pending.map((transaction) => (
             <div key={transaction.id} className={`mobile ${styles.acct} ${styles.pending} ${styles.transaction}`}>
+              <div />
               <Date className="tranaction-field" date={transaction.date} />
               <div className="transaction-field">{transaction.name}</div>
               <Amount className="transaction-field currency" amount={transaction.amount} />
