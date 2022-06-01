@@ -5,14 +5,14 @@ import {
   Nav,
   NavDropdown,
 } from 'react-bootstrap';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import Http from '@mortvola/http';
 import MobxStore from './State/mobxStore';
 import { Views } from './State/State';
 
 const Menubar = () => {
   const { user: { username } } = useContext(MobxStore);
-  const history = useHistory();
+  const navigate = useNavigate();
 
   const logout = () => {
     (async () => {
@@ -29,23 +29,23 @@ const Menubar = () => {
   const handleSelect = (eventKey: Views | string | null) => {
     switch (eventKey) {
       case 'HOME':
-        history.push('/home');
+        navigate('/home');
         break;
 
       case 'ACCOUNTS':
-        history.push('/accounts');
+        navigate('/accounts');
         break;
 
       case 'REPORTS':
-        history.push('/reports');
+        navigate('/reports');
         break;
 
       case 'PLANS':
-        history.push('/plans');
+        navigate('/plans');
         break;
 
       case 'USER_ACCOUNT':
-        history.push('/user');
+        navigate('/user');
         break;
 
       case 'LOGOUT':

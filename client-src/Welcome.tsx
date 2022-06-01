@@ -1,9 +1,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import 'regenerator-runtime/runtime';
-import {
-  BrowserRouter as Router, Switch, Route,
-} from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import '@mortvola/forms/dist/main.css';
 import Intro from './Intro';
 import Signin from './Signin';
@@ -15,17 +13,11 @@ const Welcome: React.FC = () => {
   usePageViews();
 
   return (
-    <Switch>
-      <Route path="/signup">
-        <Signup />
-      </Route>
-      <Route path="/signin">
-        <Signin />
-      </Route>
-      <Route path="/">
-        <Intro />
-      </Route>
-    </Switch>
+    <Routes>
+      <Route path="/signup" element={<Signup />} />
+      <Route path="/signin" element={<Signin />} />
+      <Route path="/" element={<Intro />} />
+    </Routes>
   );
 };
 
@@ -34,8 +26,8 @@ const container = document.querySelector('.app');
 if (container) {
   const root = createRoot(container);
   root.render(
-    <Router>
+    <BrowserRouter>
       <Welcome />
-    </Router>,
+    </BrowserRouter>,
   );
 }

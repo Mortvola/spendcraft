@@ -1,21 +1,21 @@
 import React, { ReactElement } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import * as responsive from 'react-responsive';
 import 'regenerator-runtime';
 import styles from './Intro.module.css';
 
 const Intro = (): ReactElement => {
-  const history = useHistory();
+  const navigate = useNavigate();
   const tiny = responsive.useMediaQuery({ query: '(max-width: 350px)' });
   const small = responsive.useMediaQuery({ query: '(max-width: 600px)' });
   const medium = responsive.useMediaQuery({ query: '(max-width: 1224px)' });
 
   const handleSignupClick = () => {
-    history.push('/signup');
+    navigate('/signup');
   }
 
   const handleSigninClick = () => {
-    history.push('/signin');
+    navigate('/signin');
   }
 
   const addSizeClass = (className: string): string => {

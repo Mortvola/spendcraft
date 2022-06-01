@@ -28,7 +28,7 @@ const MyInputGroup: React.FC<FormikProps<FormValues>> = (props: FormikProps<Form
   );
 }
 
-const UserAccount = (): ReactElement | null => {
+const UserAccount: React.FC = () => {
   const { user } = useContext(MobxStore);
   const [initialized, setInitialized] = useState<boolean>(false);
 

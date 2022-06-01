@@ -12,7 +12,7 @@ import FundingHistory from './FundingHistory';
 
 type ReportTypes = 'netWorth' | 'payee' | 'category' | 'incomeVsExpenses' | 'fundingHistory';
 
-const Reports = (): ReactElement => {
+const Reports: React.FC = observer(() => {
   const [reportType, setReportType] = useState<ReportTypes | null>(null);
   const [open, setOpen] = useState<boolean>(false);
   const { isMobile } = useMediaQuery();
@@ -70,6 +70,6 @@ const Reports = (): ReactElement => {
       {renderReport()}
     </Main>
   );
-};
+});
 
-export default observer(Reports);
+export default Reports;

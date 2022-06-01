@@ -2,9 +2,7 @@ import React, { useContext } from 'react';
 import { createRoot } from 'react-dom/client';
 import { observer } from 'mobx-react-lite';
 import 'regenerator-runtime';
-import {
-  BrowserRouter as Router, Switch, Route, Redirect,
-} from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ServerError, serverError } from '@mortvola/http';
 import '@mortvola/usemodal/dist/main.css';
 import '@mortvola/forms/dist/main.css';
@@ -46,26 +44,13 @@ const App: React.FC = observer(() => {
   return (
     <>
       <Menubar />
-      <Switch>
-        <Route path="/home">
-          <Home />
-        </Route>
-        <Route path="/plans">
-          <Plans />
-        </Route>
-        <Route path="/accounts">
-          <Accounts />
-        </Route>
-        <Route path="/reports">
-          <Reports />
-        </Route>
-        <Route path="/user">
-          <UserAccount />
-        </Route>
-        <Route path="/">
-          <Redirect to="/home" />
-        </Route>
-      </Switch>
+      <Routes>
+        <Route path="/home" element={<Home />} />
+        <Route path="/plans" element={<Plans />} />
+        <Route path="/accounts" element={<Accounts />} />
+        <Route path="/reports" element={<Reports />} />
+        <Route path="/user" element={<UserAccount />} />
+      </Routes>
       <PlaidLink />
     </>
   );
@@ -78,9 +63,9 @@ if (container) {
   root.render(
     <MobxStore.Provider value={mobxStore}>
       <ServerError.Provider value={serverError}>
-        <Router>
+        <BrowserRouter>
           <App />
-        </Router>
+        </BrowserRouter>
       </ServerError.Provider>
     </MobxStore.Provider>,
   );

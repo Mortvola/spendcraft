@@ -9,7 +9,7 @@ import Main from '../Main';
 import AccountsToolbar from './AccountsToolbar';
 import styles from './Accounts.module.css';
 
-const Accounts = () => {
+const Accounts: React.FC = observer(() => {
   const {
     balances, uiState: { selectedAccount },
   } = useContext(MobxStore);
@@ -77,6 +77,6 @@ const Accounts = () => {
       }
     </Main>
   );
-};
+});
 
-export default observer(Accounts);
+export default Accounts;

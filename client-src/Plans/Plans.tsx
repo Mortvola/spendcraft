@@ -11,7 +11,7 @@ import { CategoryInterface } from '../State/State';
 import { useEditCategoryDialog } from './EditCategoryDialog';
 import FundingPlanCategory from '../State/FundingPlanCategory';
 
-const Plans = () => {
+const Plans: React.FC = observer(() => {
   const { plans, uiState } = useContext(MobxStore);
   const [open, setOpen] = useState<boolean>(false);
   const { isMobile } = useMediaQuery();
@@ -65,6 +65,6 @@ const Plans = () => {
       />
     </Main>
   );
-};
+});
 
-export default observer(Plans);
+export default Plans;

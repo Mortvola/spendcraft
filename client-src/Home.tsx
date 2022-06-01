@@ -8,7 +8,7 @@ import styles from './Home.module.css';
 import HomeToolbar from './CategoryView/CategoryViewToolbar';
 import Main from './Main';
 
-const Home = () => {
+const Home: React.FC = observer(() => {
   const { uiState, categoryTree } = useContext(MobxStore);
   const { isMobile } = useMediaQuery();
   const [open, setOpen] = useState<boolean>(false);
@@ -54,6 +54,6 @@ const Home = () => {
   }
 
   return null;
-};
+});
 
-export default observer(Home);
+export default Home;
