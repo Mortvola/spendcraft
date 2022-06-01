@@ -203,6 +203,7 @@ class WebhookController {
           await trx.commit();
         }
         catch (error) {
+          Logger.error(`default update failed: ${error.message}, event: ${JSON.stringify(event)}`);
           await trx.rollback();
         }
 
@@ -220,6 +221,7 @@ class WebhookController {
           await trx.commit();
         }
         catch (error) {
+          Logger.error(`transactions removed failed: ${error.message}, event: ${JSON.stringify(event)}`);
           await trx.rollback();
         }
 
