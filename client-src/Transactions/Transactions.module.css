@@ -5,6 +5,11 @@
   --balance-width: 8rem;
 }
 
+.transactions {
+  height: 100%;
+  overflow-y: scroll;
+}
+
 .transaction {
   display: grid;
   grid-template-columns: var(--icon-width) var(--date-width) 1fr var(--amount-width) var(--amount-width) var(--balance-width) minmax(0, 1fr) minmax(0, 1fr) max-content;

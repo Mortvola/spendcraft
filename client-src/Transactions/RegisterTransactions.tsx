@@ -1,7 +1,6 @@
 import React, {
-  ReactElement, useCallback, useContext, useEffect, useRef, useState,
+  useCallback, useContext, useEffect, useRef, useState,
 } from 'react';
-import { Spinner } from 'react-bootstrap';
 import { observer } from 'mobx-react-lite';
 import {
   AccountInterface, CategoryInterface, TransactionInterface,
@@ -15,6 +14,8 @@ import Transaction from './Transaction';
 import { TransactionType } from '../../common/ResponseTypes';
 import MobxStore from '../State/mobxStore';
 import { useDuplicateDialog } from './DuplicateDialog';
+import PleaseWait from '../PleaseWait';
+import styles from './Transactions.module.css';
 
 type PropsType = {
   transactions: TransactionInterface[],
@@ -23,12 +24,12 @@ type PropsType = {
   balance: number,
 }
 
-const RegisterTransactions = ({
+const RegisterTransactions: React.FC<PropsType> = observer(({
   transactions,
   category = null,
   account = null,
   balance,
-}: PropsType): ReactElement => {
+}) => {
   const { uiState } = useContext(MobxStore);
   const [TransactionDialog, showTransactionDialog] = useTransactionDialog();
   const [DuplicateDialog, showDuplicateDialog] = useDuplicateDialog();
@@ -185,22 +186,22 @@ const RegisterTransactions = ({
     });
   }
 
-  if (category && category.transactionsQuery.fetching && transactions.length === 0) {
-    return (
-      <div className="please-wait">
-        <Spinner animation="border" />
-      </div>
-    );
+  if (
+    transactions.length === 0
+    && ((category && category.transactionsQuery.fetching)
+    || (account && account.transactionsQuery.fetching))
+  ) {
+    return <PleaseWait />;
   }
 
   return (
     <>
-      <div ref={ref} className="transactions striped" onScroll={handleScroll}>
+      <div ref={ref} className={`${styles.transactions} striped`} onScroll={handleScroll}>
         {renderTransactions()}
       </div>
       <TrxDialog />
     </>
   );
-};
+});
 
-export default observer(RegisterTransactions);
+export default RegisterTransactions;

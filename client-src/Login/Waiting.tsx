@@ -1,29 +1,25 @@
-import React, { ReactElement } from 'react';
-import PropTypes from 'prop-types';
+import React from 'react';
 import { Spinner } from 'react-bootstrap';
+import styles from './Waiting.module.css';
 
-type PropTypes = {
-  show: boolean,
+type PropsType = {
+  show?: boolean,
 }
 
-const Waiting = ({
-  show,
-}: PropTypes): ReactElement | null => (
+const Waiting: React.FC<PropsType> = ({
+  show = true,
+}) => (
   show
     ? (
-      <div className="wait-background">
+      <div className={styles.waitBackground}>
         <Spinner
           animation="border"
-          className="abs-centered"
+          className={styles.absCentered}
           variant="light"
         />
       </div>
     )
     : null
 );
-
-Waiting.propTypes = {
-  show: PropTypes.bool.isRequired,
-};
 
 export default Waiting;

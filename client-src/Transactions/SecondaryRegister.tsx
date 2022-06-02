@@ -1,4 +1,6 @@
 import React, { ReactElement, ReactNode } from 'react';
+import styles from './SecondaryRegister.module.css';
+import transactionStyles from './Transactions.module.css';
 
 type PropsType = {
   title: string,
@@ -6,17 +8,17 @@ type PropsType = {
   children: ReactNode,
 }
 
-const SecondaryRegister = ({
+const SecondaryRegister: React.FC<PropsType> = ({
   title,
   titles,
   children,
-}: PropsType): ReactElement => (
-  <div className="pending window">
-    <div className="pending-register-title">
+}) => (
+  <div className={`${styles.pending} window`}>
+    <div className={styles.pendingRegisterTitle}>
       {title}
     </div>
     {titles}
-    <div className="transactions striped">
+    <div className={`${transactionStyles.transactions} striped`}>
       {children}
     </div>
   </div>
