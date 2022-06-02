@@ -53,6 +53,7 @@ class InstitutionController {
     auth: {
       user,
     },
+    logger,
   }: HttpContextContract): Promise<InstitutionProps> {
     if (!user) {
       throw new Error('user is not defined');
@@ -157,6 +158,7 @@ class InstitutionController {
     }
     catch (error) {
       await trx.rollback();
+      logger.error(error);
       throw error;
     }
   }
@@ -459,6 +461,7 @@ class InstitutionController {
     auth: {
       user,
     },
+    logger,
   }: HttpContextContract): Promise<AddAccountsResponse | void> {
     if (!user) {
       throw new Error('user is not defined');
@@ -525,6 +528,7 @@ class InstitutionController {
     }
     catch (error) {
       await trx.rollback();
+      logger.error(error);
       throw error;
     }
   }
@@ -534,6 +538,7 @@ class InstitutionController {
     auth: {
       user,
     },
+    logger,
   }: HttpContextContract): Promise<(AccountSyncResult | null)[]> {
     if (!user) {
       throw new Error('user is not defined');
@@ -569,6 +574,7 @@ class InstitutionController {
     }
     catch (error) {
       await trx.rollback();
+      logger.error(error);
       throw error;
     }
   }
@@ -579,6 +585,7 @@ class InstitutionController {
     auth: {
       user,
     },
+    logger,
   }: HttpContextContract): Promise<Record<string, unknown> | null> {
     if (!user) {
       throw new Error('user is not defined');
@@ -609,6 +616,7 @@ class InstitutionController {
     }
     catch (error) {
       await trx.rollback();
+      logger.error(error);
       throw error;
     }
   }
@@ -631,7 +639,6 @@ class InstitutionController {
       throw new Exception(`access token not set for ${institution.plaidItemId}`);
     }
 
-    console.log(`${institution.id} ${institution.name}`)
     const appName = Env.get('APP_NAME');
     const webhook = Env.get('PLAID_WEBHOOK');
 
@@ -669,7 +676,7 @@ class InstitutionController {
 
   // eslint-disable-next-line class-methods-use-this
   public async deleteAccount(
-    { request, auth: { user } }: HttpContextContract,
+    { request, auth: { user }, logger }: HttpContextContract,
   ): Promise<CategoryBalanceProps[]> {
     if (!user) {
       throw new Error('user is not defined');
@@ -690,6 +697,7 @@ class InstitutionController {
     }
     catch (error) {
       await trx.rollback();
+      logger.error(error);
       throw error;
     }
   }
@@ -786,7 +794,7 @@ class InstitutionController {
 
   // eslint-disable-next-line class-methods-use-this
   public async delete(
-    { request, auth: { user } }: HttpContextContract,
+    { request, auth: { user }, logger }: HttpContextContract,
   ): Promise<CategoryBalanceProps[]> {
     if (!user) {
       throw new Error('user is not defined');
@@ -810,6 +818,7 @@ class InstitutionController {
     }
     catch (error) {
       await trx.rollback();
+      logger.error(error);
       throw error;
     }
   }

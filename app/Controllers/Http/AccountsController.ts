@@ -304,8 +304,6 @@ export default class AccountsController {
         .orderBy('date', 'desc')
         .firstOrFail();
 
-      console.log(`balance id: ${balance.id}, latestBalance id: ${latestBalance.id}`);
-
       if (balance.id === latestBalance.id) {
         // We just added a new latest balance. Update the account
         // record with the new balance.

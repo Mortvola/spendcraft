@@ -19,7 +19,6 @@ import {
   TransactionProps, TransactionType, UpdateCategoryResponse,
 } from 'Common/ResponseTypes';
 import Group from 'App/Models/Group';
-import Logger from '@ioc:Adonis/Core/Logger';
 
 class CategoryController {
   // eslint-disable-next-line class-methods-use-this
@@ -139,7 +138,7 @@ class CategoryController {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  public async deleteCategory({ request }: HttpContextContract): Promise<void> {
+  public async deleteCategory({ request, logger }: HttpContextContract): Promise<void> {
     const { catId } = request.params();
     await request.validate(DeleteCategoryValidator);
 
@@ -162,6 +161,7 @@ class CategoryController {
     }
     catch (error) {
       await trx.rollback();
+      logger.error(error);
       throw error;
     }
   }
@@ -307,7 +307,7 @@ class CategoryController {
 
   // eslint-disable-next-line class-methods-use-this
   public async transfer(
-    { request, auth: { user } }: HttpContextContract,
+    { request, auth: { user }, logger }: HttpContextContract,
   ): Promise<{ balances: CategoryBalanceProps[] }> {
     if (!user) {
       throw new Error('user is not defined');
@@ -434,14 +434,14 @@ class CategoryController {
       return result;
     }
     catch (error) {
-      Logger.error(error);
       await trx.rollback();
+      logger.error(error);
       throw error;
     }
   }
 
   // eslint-disable-next-line class-methods-use-this
-  public async transferDelete({ request }: HttpContextContract): Promise<void> {
+  public async transferDelete({ request, logger }: HttpContextContract): Promise<void> {
     const trx = await Database.transaction();
 
     try {
@@ -471,8 +471,8 @@ class CategoryController {
       await trx.commit();
     }
     catch (error) {
-      Logger.error(error);
       await trx.rollback();
+      logger.error(error);
       throw error;
     }
   }

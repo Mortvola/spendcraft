@@ -35,6 +35,7 @@ export default class TransactionsController {
     auth: {
       user,
     },
+    logger,
   }: HttpContextContract): Promise<Record<string, unknown>> {
     if (!user) {
       throw new Error('user is not defined');
@@ -215,6 +216,7 @@ export default class TransactionsController {
     }
     catch (error) {
       await trx.rollback();
+      logger.error(error);
       throw error;
     }
   }
@@ -241,6 +243,7 @@ export default class TransactionsController {
     auth: {
       user,
     },
+    logger,
   }: HttpContextContract): Promise<{ balances: CategoryBalanceProps[] }> {
     if (!user) {
       throw new Error('user is not defined');
@@ -344,6 +347,7 @@ export default class TransactionsController {
     }
     catch (error) {
       await trx.rollback();
+      logger.error(error);
       throw error;
     }
   }

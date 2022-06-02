@@ -26,6 +26,7 @@ export default class LoansController {
   public async add({
     request,
     auth: { user },
+    logger,
   }: HttpContextContract): Promise<Category> {
     if (!user) {
       throw new Error('user is not defined');
@@ -79,6 +80,7 @@ export default class LoansController {
     }
     catch (error) {
       await trx.rollback();
+      logger.error(error);
       throw error;
     }
   }
@@ -87,6 +89,7 @@ export default class LoansController {
   public async update({
     request,
     auth: { user },
+    logger,
   }: HttpContextContract): Promise<LoanUpdateProps> {
     if (!user) {
       throw new Error('user is not defined');
@@ -133,6 +136,7 @@ export default class LoansController {
     }
     catch (error) {
       await trx.rollback();
+      logger.error(error);
       throw error;
     }
   }
