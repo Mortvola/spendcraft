@@ -125,6 +125,7 @@ export default class AccountsController {
     auth: {
       user,
     },
+    logger,
   }: HttpContextContract): Promise<AddedTransaction | void> {
     if (!user) {
       throw new Error('user not defined');
@@ -252,6 +253,7 @@ export default class AccountsController {
     }
     catch (error) {
       await trx.rollback();
+      logger.error(error);
       throw error;
     }
   }
@@ -262,6 +264,7 @@ export default class AccountsController {
     auth: {
       user,
     },
+    logger,
   }: HttpContextContract): Promise<BalanceHistory> {
     if (!user) {
       throw new Error('user not defined');
@@ -269,29 +272,58 @@ export default class AccountsController {
 
     const { acctId } = request.params();
 
-    const validationSchema = schema.create({
-      date: schema.date({}, [
-        rules.unique({ table: 'balance_histories', column: 'date', where: { account_id: acctId } }),
-      ]),
-      amount: schema.number(),
-    });
-
     const requestData = await request.validate({
-      schema: validationSchema,
+      schema: schema.create({
+        date: schema.date({}, [
+          rules.unique({ table: 'balance_histories', column: 'date', where: { account_id: acctId } }),
+        ]),
+        amount: schema.number(),
+      }),
       messages: {
         'date.unique': 'Only one balance per date is allowed.',
       },
     });
 
-    const balance = await (new BalanceHistory())
-      .fill({
-        accountId: parseInt(acctId, 10),
-        balance: requestData.amount,
-        date: requestData.date,
-      })
-      .save();
+    const trx = await Database.transaction();
 
-    return balance;
+    try {
+      const account = await Account.findOrFail(acctId, { client: trx });
+
+      const balance = (new BalanceHistory())
+        .useTransaction(trx)
+        .fill({
+          accountId: parseInt(acctId, 10),
+          balance: requestData.amount,
+          date: requestData.date,
+        });
+
+      await balance.save();
+
+      const latestBalance = await BalanceHistory.query({ client: trx })
+        .where('accountId', account.id)
+        .orderBy('date', 'desc')
+        .firstOrFail();
+
+      console.log(`balance id: ${balance.id}, latestBalance id: ${latestBalance.id}`);
+
+      if (balance.id === latestBalance.id) {
+        // We just added a new latest balance. Update the account
+        // record with the new balance.
+        account.balance = latestBalance.balance;
+        account.syncDate = latestBalance.date;
+
+        await account.save();
+      }
+
+      await trx.commit();
+
+      return balance;
+    }
+    catch (error) {
+      await trx.rollback();
+      logger.error(error);
+      throw error;
+    }
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -300,6 +332,7 @@ export default class AccountsController {
     auth: {
       user,
     },
+    logger,
   }: HttpContextContract): Promise<BalanceHistory> {
     if (!user) {
       throw new Error('user not defined');
@@ -307,30 +340,58 @@ export default class AccountsController {
 
     const { acctId, id } = request.params();
 
-    const validationSchema = schema.create({
-      date: schema.date({}, [
-        rules.unique({
-          table: 'balance_histories', column: 'date', where: { account_id: acctId }, whereNot: { id },
-        }),
-      ]),
-      amount: schema.number(),
-    });
-
     const requestData = await request.validate({
-      schema: validationSchema,
+      schema: schema.create({
+        date: schema.date({}, [
+          rules.unique({
+            table: 'balance_histories', column: 'date', where: { account_id: acctId }, whereNot: { id },
+          }),
+        ]),
+        amount: schema.number(),
+      }),
       messages: {
         'date.unique': 'Only one balance per date is allowed.',
       },
     });
 
-    const balance = await (await BalanceHistory.findOrFail(id))
-      .merge({
-        balance: requestData.amount,
-        date: requestData.date,
-      })
-      .save();
+    const trx = await Database.transaction();
 
-    return balance;
+    try {
+      const balance = await BalanceHistory.findOrFail(id, { client: trx });
+
+      balance
+        .merge({
+          balance: requestData.amount,
+          date: requestData.date,
+        });
+
+      await balance.save();
+
+      const latestBalance = await BalanceHistory.query({ client: trx })
+        .where('accountId', balance.accountId)
+        .orderBy('date', 'desc')
+        .firstOrFail();
+
+      if (balance.id === latestBalance.id) {
+        // We just updated the latest balance. Update the account
+        // record with the new balance;
+        const account = await Account.findOrFail(balance.accountId, { client: trx });
+
+        account.balance = latestBalance.balance;
+        account.syncDate = latestBalance.date;
+
+        await account.save();
+      }
+
+      await trx.commit();
+
+      return balance;
+    }
+    catch (error) {
+      await trx.rollback();
+      logger.error(error);
+      throw error;
+    }
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -339,6 +400,7 @@ export default class AccountsController {
     auth: {
       user,
     },
+    logger,
   }: HttpContextContract): Promise<void> {
     if (!user) {
       throw new Error('user not defined');
@@ -346,9 +408,48 @@ export default class AccountsController {
 
     const { id } = request.params();
 
-    const balance = await BalanceHistory.findOrFail(id);
+    const trx = await Database.transaction();
 
-    await balance.delete();
+    try {
+      const balance = await BalanceHistory.findOrFail(id);
+
+      let latestBalance: BalanceHistory | null = await BalanceHistory.query({ client: trx })
+        .where('accountId', balance.accountId)
+        .orderBy('date', 'desc')
+        .firstOrFail();
+
+      await balance.delete();
+
+      if (balance.id === latestBalance.id) {
+        // We just deleted the latest balance record.
+        // Find the next latest, if any, and use that to update
+        // the account balance;
+        const account = await Account.findOrFail(balance.accountId, { client: trx });
+
+        latestBalance = await BalanceHistory.query({ client: trx })
+          .where('accountId', balance.accountId)
+          .orderBy('date', 'desc')
+          .first();
+
+        if (latestBalance) {
+          account.balance = latestBalance.balance;
+          account.syncDate = latestBalance.date;
+        }
+        else {
+          account.balance = 0;
+          account.syncDate = null;
+        }
+
+        await account.save();
+      }
+
+      await trx.commit();
+    }
+    catch (error) {
+      await trx.rollback();
+      logger.error(error);
+      throw error;
+    }
   }
 
   // eslint-disable-next-line class-methods-use-this

@@ -19,7 +19,7 @@ export type AccountSyncResult = {
     id: number,
     balance: number,
     plaidBalance: number | null,
-    syncDate: DateTime,
+    syncDate: DateTime | null,
   }[],
 };
 
@@ -58,7 +58,7 @@ class Account extends BaseModel {
   public type: string;
 
   @column.dateTime()
-  public syncDate: DateTime;
+  public syncDate: DateTime | null;
 
   @column()
   public tracking: TrackingType;
