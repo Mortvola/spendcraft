@@ -1,6 +1,7 @@
-import { BaseCommand, args } from '@adonisjs/core/build/standalone'
+import { BaseCommand, args, flags } from '@adonisjs/core/build/standalone'
 import plaidClient from '@ioc:Plaid';
 import Env from '@ioc:Adonis/Core/Env'
+import Institution from 'App/Models/Institution';
 
 export default class PlaidGetItem extends BaseCommand {
   /**
@@ -15,6 +16,9 @@ export default class PlaidGetItem extends BaseCommand {
 
   @args.string({ description: 'Access token of the item to retreive' })
   public accessToken: string
+
+  @flags.boolean({ alias: 'f', description: 'Updates item id' })
+  public fix: boolean
 
   public static settings = {
     /**
@@ -35,8 +39,23 @@ export default class PlaidGetItem extends BaseCommand {
 
     try {
       if (this.accessToken.match(environmentRegEx)) {
-        const item = await plaidClient.getItem(this.accessToken);
-        this.logger.info(JSON.stringify(item, null, 2));
+        const response = await plaidClient.getItem(this.accessToken);
+        this.logger.info(JSON.stringify(response, null, 2));
+
+        if (this.fix) {
+          const institution = await Institution.findBy('accessToken', this.accessToken);
+
+          if (institution && institution.plaidItemId !== response.item.item_id) {
+            this.logger.info(`Changing item id from ${institution.plaidItemId} to ${response.item.item_id}`);
+
+            institution.plaidItemId = response.item.item_id;
+
+            await institution.save();
+          }
+          else {
+            this.logger.info('Items IDs are the same');
+          }
+        }
       }
       else {
         this.logger.error('Access token and current environment do not match');
