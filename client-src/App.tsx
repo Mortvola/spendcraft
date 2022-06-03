@@ -16,6 +16,7 @@ import MobxStore, { store as mobxStore } from './State/mobxStore';
 import UserAccount from './UserAccount';
 import usePageViews from './Tracker';
 import './style.css';
+import AccountDetails from './AccountView/AccountDetails';
 
 const App: React.FC = observer(() => {
   const error = useContext(ServerError);
@@ -47,7 +48,10 @@ const App: React.FC = observer(() => {
       <Routes>
         <Route path="/home" element={<Home />} />
         <Route path="/plans" element={<Plans />} />
-        <Route path="/accounts" element={<Accounts />} />
+        <Route path="/accounts" element={<Accounts />}>
+          <Route index element={<div className="register window window1" />} />
+          <Route path=":accountId" element={<AccountDetails />} />
+        </Route>
         <Route path="/reports" element={<Reports />} />
         <Route path="/user" element={<UserAccount />} />
       </Routes>

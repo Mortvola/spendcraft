@@ -2,7 +2,7 @@
 
 @section('header')
 	@super
-    <link rel="stylesheet" href="main.css" />
+    <link rel="stylesheet" href="/main.css" />
   @!component('globalsitetag')
 @endsection
 
@@ -10,5 +10,5 @@
     <div id="hidden">
     </div>
     <div class="app" data-props="{{ JSON.stringify(props) }}" />
-    <script src="app.js"></script>
+    <script src="/app.js"></script>
 @endsection

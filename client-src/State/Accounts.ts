@@ -25,6 +25,22 @@ class Accounts implements AccountsInterface {
     this.store.uiState.selectAccount(account);
   }
 
+  findAccount(id: number): AccountInterface | null {
+    let foundAccount: AccountInterface | null = null;
+    this.institutions.some((i) => {
+      const account = i.accounts.find((a) => a.id === id);
+
+      if (account) {
+        foundAccount = account;
+        return true;
+      }
+
+      return false;
+    });
+
+    return foundAccount;
+  }
+
   async load(): Promise<void> {
     const response = await Http.get('/api/connected-accounts');
 
@@ -52,10 +68,17 @@ class Accounts implements AccountsInterface {
     );
 
     if (index === -1) {
-      this.institutions.push(institution);
+      this.institutions = [
+        ...this.institutions.slice(),
+        institution,
+      ];
     }
     else {
-      this.institutions.splice(index, 0, institution);
+      this.institutions = [
+        ...this.institutions.slice(0, index),
+        institution,
+        ...this.institutions.slice(index),
+      ]
     }
 
     // Make sure the accounts are sorted by name.
@@ -209,7 +232,10 @@ class Accounts implements AccountsInterface {
           const index = this.institutions.findIndex((i) => i.id === institution.id);
 
           if (index !== -1) {
-            this.institutions.splice(index, 1);
+            this.institutions = [
+              ...this.institutions.slice(0, index),
+              ...this.institutions.slice(index + 1),
+            ];
           }
 
           this.store.categoryTree.updateBalances(body);

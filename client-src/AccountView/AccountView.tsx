@@ -1,5 +1,6 @@
 import React, { useContext } from 'react';
 import { observer } from 'mobx-react-lite';
+import { useNavigate } from 'react-router-dom';
 import Institution from './Institution';
 import MobxStore from '../State/mobxStore';
 import { AccountInterface } from '../State/State';
@@ -14,12 +15,14 @@ const AccountView = ({
   opened,
   onAccountSelected,
 }: PropsType) => {
+  const navigate = useNavigate();
   const { accounts, uiState } = useContext(MobxStore);
   const { selectedAccount } = uiState;
   const { institutions } = accounts;
 
   const handleAccountSelected = (account: AccountInterface) => {
     uiState.selectAccount(account);
+    navigate(account.id.toString());
     if (onAccountSelected) {
       onAccountSelected();
     }

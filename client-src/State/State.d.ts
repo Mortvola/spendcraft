@@ -102,6 +102,8 @@ export interface AccountsInterface {
 
   async load(): Promise<void>;
 
+  findAccount(id: number): AccountInterface | null;
+
   async linkInstitution(): Promise<void>;
 
   updateBalances(balances: AccountBalanceProps[]): void;

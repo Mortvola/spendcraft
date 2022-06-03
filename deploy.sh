@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 ./build.sh
 
 rm build.zip;
