@@ -461,22 +461,20 @@ export default class AccountsController {
       throw new Error('user not defined');
     }
 
-    const validationSchema = schema.create({
-      name: schema.string.optional([rules.trim()]),
-      closed: schema.boolean.optional(),
-    });
-
     const requestData = await request.validate({
-      schema: validationSchema,
+      schema: schema.create({
+        name: schema.string.optional([rules.trim()]),
+        closed: schema.boolean.optional(),
+      }),
     });
 
     const account = await Account.findOrFail(request.params().acctId);
 
-    if (requestData.name) {
+    if (requestData.name !== undefined) {
       account.name = requestData.name;
     }
 
-    if (requestData.closed) {
+    if (requestData.closed !== undefined) {
       account.closed = requestData.closed;
     }
 

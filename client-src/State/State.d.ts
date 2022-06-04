@@ -96,6 +96,8 @@ export interface PendingTransactionInterface {
 }
 
 export interface AccountsInterface {
+  initialized: boolean;
+
   institutions: InstitutionInterface[];
 
   store: StoreInterface;
@@ -120,6 +122,8 @@ export interface AccountsInterface {
   ): Promise<Error[] | null>;
 
   deleteInstitution(instiution: InstitutionInterface): void;
+
+  closeAccount();
 }
 
 export interface CategoryInterface extends TransactionContainerInterface {
@@ -258,7 +262,7 @@ export interface InstitutionInterface {
 
   deleteAccount(account: AccountInterface): void;
 
-  removeAccount(account: AccountInterface): void;
+  closeAccount(account: AccountInterface): void;
 
   delete(): void;
 

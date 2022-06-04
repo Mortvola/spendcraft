@@ -28,7 +28,7 @@ const Accounts: React.FC = observer(() => {
       toolbar={<AccountsToolbar open={open} />}
       sidebar={(
         <div className={styles.accounts}>
-          <Tabs className="mb-3">
+          <Tabs className="mb-3" mountOnEnter unmountOnExit>
             <Tab eventKey="opened" title="Opened">
               <AccountView onAccountSelected={handleAccountSelected} opened />
             </Tab>

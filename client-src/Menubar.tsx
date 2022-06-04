@@ -5,14 +5,13 @@ import {
   Nav,
   NavDropdown,
 } from 'react-bootstrap';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import Http from '@mortvola/http';
 import MobxStore from './State/mobxStore';
 import { Views } from './State/State';
 
 const Menubar = () => {
   const { user: { username } } = useContext(MobxStore);
-  const navigate = useNavigate();
 
   const logout = () => {
     (async () => {
@@ -28,26 +27,6 @@ const Menubar = () => {
 
   const handleSelect = (eventKey: Views | string | null) => {
     switch (eventKey) {
-      case 'HOME':
-        navigate('/home');
-        break;
-
-      case 'ACCOUNTS':
-        navigate('/accounts');
-        break;
-
-      case 'REPORTS':
-        navigate('/reports');
-        break;
-
-      case 'PLANS':
-        navigate('/plans');
-        break;
-
-      case 'USER_ACCOUNT':
-        navigate('/user');
-        break;
-
       case 'LOGOUT':
         logout();
         break;
@@ -63,14 +42,14 @@ const Menubar = () => {
       <Navbar.Toggle />
       <Navbar.Collapse style={{ justifyContent: 'space-between' }}>
         <Nav>
-          <Nav.Link eventKey="HOME">Home</Nav.Link>
-          <Nav.Link eventKey="PLANS">Plans</Nav.Link>
-          <Nav.Link eventKey="ACCOUNTS">Accounts</Nav.Link>
-          <Nav.Link eventKey="REPORTS">Reports</Nav.Link>
+          <Nav.Link as={Link} to="/home">Home</Nav.Link>
+          <Nav.Link as={Link} to="/plans">Plans</Nav.Link>
+          <Nav.Link as={Link} to="/accounts">Accounts</Nav.Link>
+          <Nav.Link as={Link} to="/reports">Reports</Nav.Link>
         </Nav>
         <Nav>
           <NavDropdown className="dropdown menubar-item" title={username || ''} id="menubar-dropdown" align="end">
-            <NavDropdown.Item eventKey="USER_ACCOUNT">Account</NavDropdown.Item>
+            <NavDropdown.Item as={Link} to="/user">Account</NavDropdown.Item>
             <NavDropdown.Item eventKey="LOGOUT">Logout</NavDropdown.Item>
           </NavDropdown>
         </Nav>

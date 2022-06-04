@@ -42,9 +42,7 @@ const AccountsToolbar = ({
   )
 
   const showDialog = () => {
-    if (uiState.selectedAccount
-      && uiState.selectedAccount.tracking === 'Balances'
-    ) {
+    if (uiState.selectedAccount?.tracking === 'Balances') {
       showBalanceDialog();
     }
     else {

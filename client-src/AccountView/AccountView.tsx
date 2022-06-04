@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { observer } from 'mobx-react-lite';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import Institution from './Institution';
 import MobxStore from '../State/mobxStore';
 import { AccountInterface } from '../State/State';
@@ -11,40 +11,61 @@ type PropsType = {
   onAccountSelected: () => void,
 }
 
-const AccountView = ({
+const AccountView: React.FC<PropsType> = observer(({
   opened,
   onAccountSelected,
-}: PropsType) => {
+}) => {
   const navigate = useNavigate();
+  const params = useParams();
   const { accounts, uiState } = useContext(MobxStore);
-  const { selectedAccount } = uiState;
-  const { institutions } = accounts;
+
+  React.useEffect(() => {
+    if (accounts.initialized) {
+      if (params.accountId !== undefined) {
+        const acct = accounts.findAccount(parseInt(params.accountId, 10));
+
+        if (acct && acct.closed === !opened) {
+          uiState.selectAccount(acct);
+        }
+        else {
+          navigate('/accounts');
+        }
+      }
+      else {
+        uiState.selectAccount(null);
+      }
+    }
+  }, [accounts, accounts.initialized, accounts.institutions, navigate, opened, params, params.accountId, uiState]);
 
   const handleAccountSelected = (account: AccountInterface) => {
-    uiState.selectAccount(account);
     navigate(account.id.toString());
-    if (onAccountSelected) {
-      onAccountSelected();
+    onAccountSelected();
+  };
+
+  const handleAccountStateChange = (account: AccountInterface) => {
+    if (uiState.selectedAccount === account) {
+      uiState.selectAccount(null);
     }
   };
 
   return (
     <div className={styles.accounts}>
       {
-        institutions
+        accounts.institutions
           .filter((institution) => (opened ? institution.hasOpenAccounts() : institution.hasClosedAccounts()))
           .map((institution) => (
             <Institution
               key={institution.id}
               institution={institution}
               onAccountSelected={handleAccountSelected}
-              selectedAccount={selectedAccount}
+              onAccountStateChange={handleAccountStateChange}
+              selectedAccount={uiState.selectedAccount}
               opened={opened}
             />
           ))
       }
     </div>
   );
-};
+});
 
-export default observer(AccountView);
+export default AccountView;

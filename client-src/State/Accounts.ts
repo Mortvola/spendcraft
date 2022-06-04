@@ -11,6 +11,8 @@ import {
 } from './State';
 
 class Accounts implements AccountsInterface {
+  initialized = false;
+
   institutions: Institution[] = [];
 
   store: StoreInterface;
@@ -19,10 +21,6 @@ class Accounts implements AccountsInterface {
     makeAutoObservable(this);
 
     this.store = store;
-  }
-
-  selectAccount(account: AccountInterface): void {
-    this.store.uiState.selectAccount(account);
   }
 
   findAccount(id: number): AccountInterface | null {
@@ -56,6 +54,7 @@ class Accounts implements AccountsInterface {
           body.forEach((i) => {
             const institution = new Institution(this.store, i);
             this.insertInstitution(institution);
+            this.initialized = true;
           });
         });
       }
@@ -242,6 +241,12 @@ class Accounts implements AccountsInterface {
         });
       }
     }
+  }
+
+  closeAccount() {
+    runInAction(() => {
+      this.institutions = this.institutions.slice();
+    });
   }
 }
 

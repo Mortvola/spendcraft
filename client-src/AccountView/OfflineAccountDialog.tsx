@@ -116,9 +116,6 @@ const OfflineAccountDialog = ({
   const handleDelete = () => {
     if (account) {
       account.delete();
-      if (uiState.selectedAccount === account) {
-        uiState.selectAccount(null);
-      }
       setShow(false);
     }
   }

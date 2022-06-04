@@ -1,8 +1,10 @@
-import React, { useContext } from 'react';
+import React, { ReactNode, useContext } from 'react';
 import { createRoot } from 'react-dom/client';
 import { observer } from 'mobx-react-lite';
 import 'regenerator-runtime';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import {
+  BrowserRouter, Routes, Route, Outlet, useRoutes, createRoutesFromChildren,
+} from 'react-router-dom';
 import { ServerError, serverError } from '@mortvola/http';
 import '@mortvola/usemodal/dist/main.css';
 import '@mortvola/forms/dist/main.css';
@@ -45,16 +47,7 @@ const App: React.FC = observer(() => {
   return (
     <>
       <Menubar />
-      <Routes>
-        <Route path="/home" element={<Home />} />
-        <Route path="/plans" element={<Plans />} />
-        <Route path="/accounts" element={<Accounts />}>
-          <Route index element={<div className="register window window1" />} />
-          <Route path=":accountId" element={<AccountDetails />} />
-        </Route>
-        <Route path="/reports" element={<Reports />} />
-        <Route path="/user" element={<UserAccount />} />
-      </Routes>
+      <Outlet />
       <PlaidLink />
     </>
   );
@@ -68,7 +61,18 @@ if (container) {
     <MobxStore.Provider value={mobxStore}>
       <ServerError.Provider value={serverError}>
         <BrowserRouter>
-          <App />
+          <Routes>
+            <Route path="/" element={<App />}>
+              <Route path="home" element={<Home />} />
+              <Route path="plans" element={<Plans />} />
+              <Route path="accounts" element={<Accounts />}>
+                <Route index element={<div className="register window window1" />} />
+                <Route path=":accountId" element={<AccountDetails />} />
+              </Route>
+              <Route path="reports" element={<Reports />} />
+              <Route path="user" element={<UserAccount />} />
+            </Route>
+          </Routes>
         </BrowserRouter>
       </ServerError.Provider>
     </MobxStore.Provider>,

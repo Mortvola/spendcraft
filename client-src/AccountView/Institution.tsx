@@ -12,14 +12,16 @@ import styles from './Institution.module.css';
 type PropsType = {
   institution: InstitutionInterface,
   opened: boolean,
-  onAccountSelected: ((account: AccountInterface) => void),
+  onAccountSelected: (account: AccountInterface) => void,
+  onAccountStateChange: (account: AccountInterface) => void,
   selectedAccount?: AccountInterface | null,
 }
 
-const Institution: React.FC<PropsType> = ({
+const Institution: React.FC<PropsType> = observer(({
   institution,
   opened,
   onAccountSelected,
+  onAccountStateChange,
   selectedAccount = null,
 }) => {
   const [OnlineAccountsDialog, showOnlineAccountsDialog] = useAccountsDialog();
@@ -114,6 +116,7 @@ const Institution: React.FC<PropsType> = ({
                     institution={institution}
                     account={account}
                     onAccountSelected={onAccountSelected}
+                    onAccountStateChange={onAccountStateChange}
                     selected={selected}
                     showAccountDialog={handleEditAccount}
                   />
@@ -124,6 +127,6 @@ const Institution: React.FC<PropsType> = ({
       </div>
     </div>
   );
-}
+});
 
-export default observer(Institution);
+export default Institution;

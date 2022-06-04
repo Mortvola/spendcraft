@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { observer } from 'mobx-react-lite';
+import { useNavigate, useLocation } from 'react-router-dom';
 import IconButton from '../IconButton';
 import { AccountInterface, InstitutionInterface } from '../State/State';
 import { getSubTypeName, getTypeName } from '../State/AccountTypes';
@@ -7,22 +8,25 @@ import Amount from '../Amount';
 import { useRelinkDialog } from './RelinkDialog';
 import styles from './Account.module.css';
 import { useDeleteConfirmation } from '../DeleteConfirmation';
+import MobxStore from '../State/mobxStore';
 
 type PropsType = {
   selected: boolean,
   institution: InstitutionInterface,
   account: AccountInterface,
-  onAccountSelected: ((account: AccountInterface) => void),
-  showAccountDialog: ((account: AccountInterface) => void),
+  onAccountSelected: (account: AccountInterface) => void,
+  onAccountStateChange: (account: AccountInterface) => void,
+  showAccountDialog: (account: AccountInterface) => void,
 }
 
-const Account = ({
+const Account: React.FC<PropsType> = observer(({
   selected,
   institution,
   account,
   onAccountSelected,
+  onAccountStateChange,
   showAccountDialog,
-}: PropsType) => {
+}) => {
   const [RelinkDialog, showRelinkDialog] = useRelinkDialog();
   const [CloseConfirmation, handleCloseClick] = useDeleteConfirmation(
     account.closed ? 'Open Confirmation' : 'Close Confirmation',
@@ -43,6 +47,7 @@ const Account = ({
     ),
     () => {
       account.setClosed(!account.closed);
+      onAccountStateChange(account);
     },
   );
 
@@ -121,6 +126,6 @@ const Account = ({
       <CloseConfirmation />
     </div>
   );
-};
+});
 
-export default observer(Account);
+export default Account;

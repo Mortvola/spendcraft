@@ -74,10 +74,7 @@ class Account extends TransactionContainer implements AccountInterface {
     if (response.ok) {
       runInAction(() => {
         this.closed = closed;
-
-        if (this.store.uiState.selectedAccount === this) {
-          this.store.uiState.selectAccount(null);
-        }
+        this.institution.closeAccount(this);
       });
     }
   }

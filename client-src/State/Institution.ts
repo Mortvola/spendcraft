@@ -58,10 +58,17 @@ class Institution implements InstitutionInterface {
     );
 
     if (index === -1) {
-      this.accounts.push(account);
+      this.accounts = [
+        ...this.accounts.slice(),
+        account,
+      ];
     }
     else {
-      this.accounts.splice(index, 0, account);
+      this.accounts = [
+        ...this.accounts.slice(0, index),
+        account,
+        ...this.accounts.slice(index),
+      ]
     }
   }
 
@@ -154,7 +161,10 @@ class Institution implements InstitutionInterface {
     const index = this.accounts.findIndex((a) => a.id === account.id);
 
     if (index !== -1) {
-      this.accounts.splice(index, 1);
+      this.accounts = [
+        ...this.accounts.slice(0, index),
+        ...this.accounts.slice(index + 1),
+      ];
     }
   }
 
@@ -172,6 +182,13 @@ class Institution implements InstitutionInterface {
         });
       }
     }
+  }
+
+  closeAccount(account: AccountInterface) {
+    runInAction(() => {
+      this.accounts = this.accounts.slice();
+      this.store.accounts.closeAccount();
+    });
   }
 
   delete(): void {
