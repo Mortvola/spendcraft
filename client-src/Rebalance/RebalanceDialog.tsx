@@ -27,7 +27,7 @@ const RebalanceDialog = ({
   transaction,
   setShow,
 }: Props & ModalProps): ReactElement => {
-  const { register, categoryTree: { nodes } } = useContext(MobxStore);
+  const { register } = useContext(MobxStore);
   const [balances, setBalances] = useState<CategoryBalanceInterface[]>([])
   const [unassigned, setUnassigned] = useState(0);
   const [date, setDate] = useState(transaction ? transaction.date.toISODate() : DateTime.now().toISODate());
@@ -131,7 +131,10 @@ const RebalanceDialog = ({
     <FormModal<ValueType>
       setShow={setShow}
       initialValues={{
-        categories: transaction ? toJS(transaction.categories) : [],
+        categories:
+          transaction
+            ? toJS(transaction.categories)
+            : [],
         date,
       }}
       title="Rebalance Categories"
@@ -184,7 +187,6 @@ const RebalanceDialog = ({
             },
           }: FieldProps<TransactionCategoryInterface[]>) => (
             <CategoryRebalance
-              nodes={nodes}
               trxCategories={value}
               balances={balances}
               onDeltaChange={(_amount, delta, categories) => {

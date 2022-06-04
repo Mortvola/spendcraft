@@ -1,24 +1,24 @@
-import React, { ReactElement, useState } from 'react';
+import React, { ReactElement, useContext, useState } from 'react';
 import CategoryRebalanceItem from './CategoryRebalanceItem';
 import {
   TreeNodeInterface, CategoryBalanceInterface, CategoryInterface, TransactionCategoryInterface,
 } from '../State/State';
 import { isGroup } from '../State/Group';
 import { isCategory } from '../State/Category';
+import MobxStore from '../State/mobxStore';
 
 interface Props {
-  nodes: null | TreeNodeInterface[],
   onDeltaChange: null | ((amunt: number, delta: number, categories: unknown) => void),
   balances: CategoryBalanceInterface[],
   trxCategories: TransactionCategoryInterface[],
 }
 
 const CategoryRebalance = ({
-  nodes,
   balances,
   trxCategories,
   onDeltaChange,
 }: Props): ReactElement => {
+  const { categoryTree } = useContext(MobxStore);
   const [transactionCategories, setTransactionCategories] = useState<TransactionCategoryInterface[]>(trxCategories);
 
   const handleDeltaChange = (amount: number, delta: number, category: CategoryInterface) => {
@@ -82,34 +82,47 @@ const CategoryRebalance = ({
   }
 
   const populateCategories = (categories: CategoryInterface[]) => (
-    categories.map((category: CategoryInterface) => (
-      categoryItem(category)
-    ))
+    categories
+      .filter((category) => (
+        category.type !== 'UNASSIGNED'
+        && category.type !== 'ACCOUNT TRANSFER'
+      ))
+      .map((category) => (
+        categoryItem(category)
+      ))
   );
 
   const populateTree = () => {
     const tree: ReactElement[] = [];
 
-    if (nodes) {
-      nodes.forEach((node) => {
-        if (isGroup(node)) {
-          if (node.categories.length > 0) {
-            tree.push((
-              <div key={node.id} className="cat-rebalance-group">
-                {node.name}
-                {populateCategories(node.categories)}
-              </div>
-            ));
+    if (categoryTree.nodes) {
+      categoryTree.nodes
+        .filter((n) => (
+          isGroup(n)
+          || (
+            n.type !== 'UNASSIGNED'
+            && n.type !== 'ACCOUNT TRANSFER'
+          )
+        ))
+        .forEach((node) => {
+          if (isGroup(node)) {
+            if (node.categories.length > 0) {
+              tree.push((
+                <div key={node.id} className="cat-rebalance-group">
+                  {node.name}
+                  {populateCategories(node.categories)}
+                </div>
+              ));
+            }
           }
-        }
-        else {
-          if (!isCategory(node)) {
-            throw new Error('node is not a category');
-          }
+          else {
+            if (!isCategory(node)) {
+              throw new Error('node is not a category');
+            }
 
-          tree.push(categoryItem(node));
-        }
-      });
+            tree.push(categoryItem(node));
+          }
+        });
     }
 
     return tree;
