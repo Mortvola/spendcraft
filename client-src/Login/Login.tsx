@@ -1,4 +1,4 @@
-import React, { useState, useRef, ReactElement } from 'react';
+import React, { useState, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { Modal } from 'react-bootstrap';
 import { submitForm, defaultErrors } from './submit';
@@ -7,15 +7,15 @@ import ForgotPasswordPanel from './ForgotPasswordPanel';
 import ResetEmailSentPanel from './ResetEmailSentPanel';
 import Waiting from './Waiting';
 
-type PropTypes = {
+type PropsType = {
   show: boolean,
   onHide: (() => void),
 }
 
-const Login = ({
+const Login: React.FC<PropsType> = ({
   show,
   onHide,
-}: PropTypes): ReactElement => {
+}) => {
   const [card, setCard] = useState('login');
   const [resetMessage, setResetMessage] = useState('');
   const [waiting, setWaiting] = useState(false);

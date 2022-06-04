@@ -1,5 +1,5 @@
 import React, {
-  useCallback, useContext, useEffect, useRef, useState,
+  useCallback, useEffect, useRef, useState,
 } from 'react';
 import { observer } from 'mobx-react-lite';
 import {
@@ -12,7 +12,7 @@ import { useRebalanceDialog } from '../Rebalance/RebalanceDialog';
 import { isTransaction } from '../State/Transaction';
 import Transaction from './Transaction';
 import { TransactionType } from '../../common/ResponseTypes';
-import MobxStore from '../State/mobxStore';
+import { useStores } from '../State/mobxStore';
 import { useDuplicateDialog } from './DuplicateDialog';
 import PleaseWait from '../PleaseWait';
 import styles from './Transactions.module.css';
@@ -30,7 +30,7 @@ const RegisterTransactions: React.FC<PropsType> = observer(({
   account = null,
   balance,
 }) => {
-  const { uiState } = useContext(MobxStore);
+  const { uiState } = useStores();
   const [TransactionDialog, showTransactionDialog] = useTransactionDialog();
   const [DuplicateDialog, showDuplicateDialog] = useDuplicateDialog();
   const [CategoryTransferDialog, showCategoryTransferDialog] = useCategoryTransferDialog();

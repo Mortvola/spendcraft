@@ -1,20 +1,20 @@
-import React, { ReactElement } from 'react';
+import React from 'react';
 import { observer } from 'mobx-react-lite';
 import Buttons from './GroupButtons';
 import Category from './Category';
 import { CategoryInterface, GroupInterface } from '../State/State';
 
-type Props = {
+type PropsType = {
   group: GroupInterface,
   onCategorySelected: ((category: CategoryInterface) => void),
   selectedCategory?: CategoryInterface | null,
 }
 
-const Group = ({
+const Group: React.FC<PropsType> = observer(({
   group,
   onCategorySelected,
-  selectedCategory,
-}: Props): ReactElement => (
+  selectedCategory = null,
+}) => (
   <div className="cat-list-group">
     <div className="group-element-bar">
       <Buttons group={group} />
@@ -32,10 +32,6 @@ const Group = ({
       ))
     }
   </div>
-);
+));
 
-Group.defaultProps = {
-  selectedCategory: null,
-};
-
-export default observer(Group);
+export default Group;

@@ -1,12 +1,12 @@
-import React, { useContext, useState } from 'react';
+import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import MobxStore from './State/mobxStore';
+import { useStores } from './State/mobxStore';
 import { useAccountsDialog } from './AccountView/AccountsDialog';
 import { InstitutionInterface } from './State/State';
 import PlaidLinkDialog from './PlaidLinkDialog';
 
-const PlaidLink: React.FC = () => {
-  const { uiState } = useContext(MobxStore);
+const PlaidLink: React.FC = observer(() => {
+  const { uiState } = useStores();
   const [AccountsDialog, showAccountsDialog] = useAccountsDialog();
   const [institute, setInstitute] = useState<InstitutionInterface>();
 
@@ -24,6 +24,6 @@ const PlaidLink: React.FC = () => {
   }
 
   return null;
-};
+});
 
-export default observer(PlaidLink);
+export default PlaidLink;

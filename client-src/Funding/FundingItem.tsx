@@ -1,4 +1,4 @@
-import React, { ReactElement } from 'react';
+import React from 'react';
 import AmountInput from '../AmountInput';
 import Amount from '../Amount';
 
@@ -9,12 +9,12 @@ type PropsType = {
   onDeltaChange: ((amount: number, delta: number) => void),
 }
 
-const FundingItem = ({
+const FundingItem: React.FC<PropsType> = ({
   name,
   initialAmount,
   funding,
   onDeltaChange,
-}: PropsType): ReactElement => {
+}) => {
   const balance = initialAmount + funding;
 
   return (

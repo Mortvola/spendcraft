@@ -1,7 +1,7 @@
-import React, { ReactElement, useContext } from 'react';
+import React from 'react';
 import { observer } from 'mobx-react-lite';
 import Amount from '../Amount';
-import MobxStore from '../State/mobxStore';
+import { useStores } from '../State/mobxStore';
 import { CategoryInterface, TransactionInterface } from '../State/State';
 import useMediaQuery from '../MediaQuery';
 import { TransactionType } from '../../common/ResponseTypes';
@@ -17,14 +17,14 @@ type PropsType = {
   showTrxDialog: (transaction: TransactionInterface) => void,
 }
 
-const Transaction = observer(({
+const Transaction: React.FC<PropsType> = observer(({
   transaction,
   amount,
   runningBalance,
   category,
   showTrxDialog,
-}: PropsType): ReactElement => {
-  const { uiState } = useContext(MobxStore);
+}) => {
+  const { uiState } = useStores();
   const { isMobile, addMediaClass } = useMediaQuery();
 
   const handleClick: React.MouseEventHandler = () => {

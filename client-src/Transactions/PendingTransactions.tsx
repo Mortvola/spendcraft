@@ -1,4 +1,4 @@
-import React, { ReactElement } from 'react';
+import React from 'react';
 import { observer } from 'mobx-react-lite';
 import useMediaQuery from '../MediaQuery';
 import styles from './Transactions.module.css'
@@ -11,10 +11,10 @@ type PropsType = {
   categoryView?: boolean,
 }
 
-const PendingTransactions = ({
+const PendingTransactions: React.FC<PropsType> = observer(({
   pending = [],
   categoryView = false,
-}: PropsType): ReactElement | null => {
+}) => {
   const { isMobile } = useMediaQuery();
 
   if (isMobile) {
@@ -90,6 +90,6 @@ const PendingTransactions = ({
       }
     </>
   );
-};
+});
 
-export default observer(PendingTransactions);
+export default PendingTransactions;

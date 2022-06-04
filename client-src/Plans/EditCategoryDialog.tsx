@@ -1,4 +1,4 @@
-import React, { ReactElement, useContext, useState } from 'react';
+import React, { useState } from 'react';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import {
   FieldProps, FormikErrors,
@@ -12,7 +12,7 @@ import FundingPlanCategory from '../State/FundingPlanCategory';
 import Amount from '../Amount';
 import AmountInput from '../AmountInput';
 import { isFundingPlanCategoryProps } from '../../common/ResponseTypes';
-import MobxStore from '../State/mobxStore';
+import { useStores } from '../State/mobxStore';
 
 type PropsType = {
   plan: FundingPlanInterface | null,
@@ -20,13 +20,13 @@ type PropsType = {
   planCategory?: FundingPlanCategory,
 }
 
-const EditCategoryDialog = ({
+const EditCategoryDialog: React.FC<PropsType & ModalProps> = ({
   plan,
   category,
   planCategory,
   setShow,
-}: PropsType & ModalProps): ReactElement | null => {
-  const { plans: { details } } = useContext(MobxStore);
+}) => {
+  const { plans: { details } } = useStores();
   const [monthlyFundingAmount, setMonthlyFundingAmount] = useState<number>(
     planCategory && category
       ? FundingPlanCategory

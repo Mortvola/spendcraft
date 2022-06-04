@@ -1,4 +1,4 @@
-import { createContext } from 'react';
+import { createContext, useContext } from 'react';
 import Accounts from './Accounts';
 import Balances from './Balances';
 import CategoryTree from './CategoryTree';
@@ -41,11 +41,14 @@ class Store implements StoreInterface {
 }
 
 const store = new Store();
-const MobxStore = createContext(store);
+const StoreContext = createContext(store);
 
 store.user.load();
 store.categoryTree.load();
 store.accounts.load();
 
-export default MobxStore;
-export { store };
+const useStores = (): Store => (
+  useContext(StoreContext)
+);
+
+export { StoreContext, store, useStores };

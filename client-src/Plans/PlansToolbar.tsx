@@ -1,7 +1,7 @@
-import React, { ReactElement } from 'react';
+import React from 'react';
 import { usePlanDialog } from './PlanDialog';
 
-const PlansToolbar = (): ReactElement => {
+const PlansToolbar: React.FC = () => {
   const [PlanDialog, openPlanDialog] = usePlanDialog();
 
   return (

@@ -1,5 +1,5 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
-import React, { ReactElement } from 'react';
+import React from 'react';
 import {
   FormikErrors,
   FormikContextType,
@@ -16,11 +16,11 @@ type PropsType = {
   balances?: BalancesInterface | null,
 }
 
-const BalanceDialog = ({
+const BalanceDialog: React.FC<PropsType & ModalProps> = ({
   setShow,
   balance = null,
   balances = null,
-}: PropsType & ModalProps): ReactElement => {
+}) => {
   type FormValues = {
     date: string,
     amount: number,

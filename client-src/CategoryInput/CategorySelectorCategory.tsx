@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, ReactElement } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { CategoryInterface } from '../State/State';
 
 type PropsType = {
@@ -6,11 +6,12 @@ type PropsType = {
   selected?: boolean,
   onSelect: (category: CategoryInterface) => void,
 }
-const CategorySelectorCategory = ({
+
+const CategorySelectorCategory: React.FC<PropsType> = ({
   category,
   selected,
   onSelect,
-}: PropsType): ReactElement => {
+}) => {
   const ref = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {

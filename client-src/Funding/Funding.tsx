@@ -1,4 +1,4 @@
-import React, { ReactElement, ReactNode, useState } from 'react';
+import React, { ReactNode, useState } from 'react';
 import FundingItem from './FundingItem';
 import { isGroup } from '../State/Group';
 import { isCategory } from '../State/Category';
@@ -18,12 +18,12 @@ type PropsType = {
   systemGroupId: number,
 }
 
-const Funding = ({
+const Funding: React.FC<PropsType> = ({
   groups,
   plan,
   onChange,
   systemGroupId,
-}: PropsType): ReactElement => {
+}) => {
   const [funding, setFunding] = useState<FundingType[]>(plan);
 
   const handleDeltaChange = (amount: number, categoryId: number) => {

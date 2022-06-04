@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { observer } from 'mobx-react-lite';
 import {
   Navbar,
@@ -7,11 +7,11 @@ import {
 } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import Http from '@mortvola/http';
-import MobxStore from './State/mobxStore';
+import { useStores } from './State/mobxStore';
 import { Views } from './State/State';
 
-const Menubar = () => {
-  const { user: { username } } = useContext(MobxStore);
+const Menubar: React.FC = observer(() => {
+  const { user: { username } } = useStores();
 
   const logout = () => {
     (async () => {
@@ -56,6 +56,6 @@ const Menubar = () => {
       </Navbar.Collapse>
     </Navbar>
   );
-};
+});
 
-export default observer(Menubar);
+export default Menubar;

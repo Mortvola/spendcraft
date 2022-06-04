@@ -1,10 +1,10 @@
-import React, { ReactElement } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as responsive from 'react-responsive';
 import 'regenerator-runtime';
 import styles from './Intro.module.css';
 
-const Intro = (): ReactElement => {
+const Intro: React.FC = () => {
   const navigate = useNavigate();
   const tiny = responsive.useMediaQuery({ query: '(max-width: 350px)' });
   const small = responsive.useMediaQuery({ query: '(max-width: 600px)' });

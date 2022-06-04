@@ -1,4 +1,4 @@
-import React, { ReactElement, ReactNode } from 'react';
+import React, { ReactNode } from 'react';
 import styles from './MainTray.module.css';
 import useMediaQuery from './MediaQuery';
 
@@ -7,10 +7,10 @@ type PropsType = {
   children?: ReactNode,
 }
 
-const MainTray = ({
+const MainTray: React.FC<PropsType> = ({
   className,
   children,
-}: PropsType): ReactElement | null => {
+}) => {
   const { isMobile } = useMediaQuery();
 
   return (

@@ -1,8 +1,8 @@
 import { observer } from 'mobx-react-lite';
-import React, { ReactElement, useContext } from 'react';
+import React from 'react';
 import { useFundingDialog } from '../Funding/FundingDialog';
 import { useRebalanceDialog } from '../Rebalance/RebalanceDialog';
-import MobxStore from '../State/mobxStore';
+import { useStores } from '../State/mobxStore';
 import { useCategoryDialog } from './CategoryDialog';
 import { useGroupDialog } from './GroupDialog';
 import useMediaQuery from '../MediaQuery';
@@ -11,10 +11,10 @@ type PropsType = {
   open?: boolean,
 }
 
-const CategoryViewToolbar = ({
+const CategoryViewToolbar: React.FC<PropsType> = observer(({
   open = false,
-}: PropsType): ReactElement => {
-  const { categoryTree } = useContext(MobxStore);
+}) => {
+  const { categoryTree } = useStores();
   const [RebalanceDialog, showRebalanceDialog] = useRebalanceDialog();
   const [FundingDialog, showFundingDialog] = useFundingDialog();
   const [CategoryDialog, showCategoryDialog] = useCategoryDialog();
@@ -59,6 +59,6 @@ const CategoryViewToolbar = ({
       }
     </>
   )
-}
+});
 
-export default observer(CategoryViewToolbar);
+export default CategoryViewToolbar;

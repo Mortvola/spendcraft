@@ -1,4 +1,4 @@
-import React, { ReactElement } from 'react';
+import React from 'react';
 import style from './ReportList.module.css';
 import ReportListItem from './ReportListItem';
 
@@ -13,11 +13,11 @@ type PropsType = {
   selectedValue?: string | null,
 }
 
-const ReportList = ({
+const ReportList: React.FC<PropsType> = ({
   reports,
   onSelect,
   selectedValue = '',
-}: PropsType): ReactElement => {
+}) => {
   const handleSelect = (value: string) => {
     onSelect(value);
   }

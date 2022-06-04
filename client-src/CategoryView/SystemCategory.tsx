@@ -1,19 +1,19 @@
-import React, { ReactElement, useContext } from 'react';
+import React from 'react';
 import { observer } from 'mobx-react-lite';
 import Amount from '../Amount';
 import { CategoryInterface } from '../State/State';
-import MobxStore from '../State/mobxStore';
+import { useStores } from '../State/mobxStore';
 
 type PropsType = {
   category: CategoryInterface | null,
   onCategorySelected?: () => void,
 }
 
-const SystemCategory = ({
+const SystemCategory: React.FC<PropsType> = observer(({
   category,
   onCategorySelected,
-}: PropsType): ReactElement | null => {
-  const { uiState } = useContext(MobxStore);
+}) => {
+  const { uiState } = useStores();
   const handleClick = () => {
     if (category) {
       uiState.selectCategory(category);
@@ -40,6 +40,6 @@ const SystemCategory = ({
   }
 
   return null;
-};
+});
 
-export default observer(SystemCategory);
+export default SystemCategory;

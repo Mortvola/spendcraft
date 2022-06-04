@@ -1,4 +1,4 @@
-import React, { ReactElement } from 'react';
+import React from 'react';
 import Register from './Transactions/Register';
 import BalanceHistory from './AccountView/BalanceHistory';
 import { TrackingType } from '../common/ResponseTypes';
@@ -10,11 +10,11 @@ type PropsType = {
   title?: string,
 }
 
-const DetailView = ({
+const DetailView: React.FC<PropsType> = ({
   detailView,
   type,
   title,
-}: PropsType): ReactElement | null => {
+}) => {
   switch (detailView) {
     case 'Balances':
       return (

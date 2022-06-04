@@ -1,11 +1,11 @@
 import Http from '@mortvola/http';
 import { DateTime, MonthNumbers } from 'luxon';
-import React, { ReactElement, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { GroupType } from '../../common/ResponseTypes';
 import Amount from '../Amount';
 import styles from './FundingHistory.module.css';
 
-const FundingHistory = (): ReactElement => {
+const FundingHistory: React.FC = () => {
   type FundingHistoryItem = { year: number, month: number, amount: number};
   type FundingHistoryCategory = {
     groupId: number,

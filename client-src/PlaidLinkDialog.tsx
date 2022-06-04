@@ -1,7 +1,7 @@
 import React from 'react';
 import { runInAction } from 'mobx';
 import { usePlaidLink } from 'react-plaid-link';
-import MobxStore from './State/mobxStore';
+import { useStores } from './State/mobxStore';
 import { InstitutionInterface } from './State/State';
 import Console from './Console';
 
@@ -12,7 +12,7 @@ type PropsType = {
 const PlaidLinkDialog: React.FC<PropsType> = ({
   showAccountsDialog,
 }) => {
-  const { uiState } = React.useContext(MobxStore);
+  const { uiState } = useStores();
 
   const onEvent = (eventName: string) => {
     Console.log(`plaid event: ${eventName}`);

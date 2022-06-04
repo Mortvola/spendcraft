@@ -1,5 +1,5 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
-import React, { ReactElement, useContext } from 'react';
+import React from 'react';
 import {
   Field,
   FormikHelpers,
@@ -10,7 +10,7 @@ import {
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import { FormModal, FormError, setFormErrors } from '@mortvola/forms';
 import { isGroup } from '../State/Group';
-import MobxStore from '../State/mobxStore';
+import { useStores } from '../State/mobxStore';
 import { CategoryInterface, GroupInterface } from '../State/State';
 
 type Props = {
@@ -18,12 +18,12 @@ type Props = {
   group: GroupInterface,
 }
 
-const CategoryDialog = ({
+const CategoryDialog: React.FC<Props & ModalProps> = ({
   setShow,
   category = null,
   group,
-}: Props & ModalProps): ReactElement => {
-  const { categoryTree } = useContext(MobxStore);
+}) => {
+  const { categoryTree } = useStores();
 
   type ValueType = {
     name: string,

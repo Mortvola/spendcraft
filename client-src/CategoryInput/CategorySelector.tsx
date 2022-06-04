@@ -1,9 +1,7 @@
-import React, {
-  ReactElement, useContext,
-} from 'react';
+import React from 'react';
 import { observer } from 'mobx-react';
 import CategorySelectorGroup from './CategorySelectorGroup';
-import MobxStore from '../State/mobxStore';
+import { useStores } from '../State/mobxStore';
 import { isGroup } from '../State/Group';
 import { CategoryInterface, GroupInterface } from '../State/State';
 import CategorySelectorCategory from './CategorySelectorCategory';
@@ -52,7 +50,7 @@ type PropsType = {
 }
 
 // eslint-disable-next-line react/display-name
-const CategorySelector = React.forwardRef<HTMLDivElement, PropsType>(({
+const CategorySelector = observer(React.forwardRef<HTMLDivElement, PropsType>(({
   selectedCategory = null,
   left = null,
   top = null,
@@ -60,8 +58,8 @@ const CategorySelector = React.forwardRef<HTMLDivElement, PropsType>(({
   height = null,
   onSelect,
   filter = [],
-}: PropsType, forwardRef): ReactElement => {
-  const { categoryTree } = useContext(MobxStore);
+}, forwardRef) => {
+  const { categoryTree } = useStores();
 
   const filteredCategories = (group: GroupInterface) => (
     group.categories
@@ -144,6 +142,6 @@ const CategorySelector = React.forwardRef<HTMLDivElement, PropsType>(({
       }
     </div>
   );
-});
+}));
 
-export default observer(CategorySelector);
+export default CategorySelector;

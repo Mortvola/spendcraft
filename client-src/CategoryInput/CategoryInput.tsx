@@ -1,10 +1,10 @@
 import React, {
-  useState, useRef, useEffect, useContext, ReactElement,
+  useState, useRef, useEffect,
 } from 'react';
 import ReactDOM from 'react-dom';
 import CategorySelector, { categoryFiltered } from './CategorySelector';
 import useExclusiveBool from '../ExclusiveBool';
-import MobxStore from '../State/mobxStore';
+import { useStores } from '../State/mobxStore';
 import { TreeNodeInterface, CategoryInterface } from '../State/State';
 import { isGroup } from '../State/Group';
 import { isCategory } from '../State/Category';
@@ -14,11 +14,11 @@ type PropsType = {
   onChange: (category: CategoryInterface) => void,
 }
 
-const CategoryInput = ({
+const CategoryInput: React.FC<PropsType> = ({
   categoryId = null,
   onChange,
-}: PropsType): ReactElement => {
-  const { categoryTree } = useContext(MobxStore);
+}) => {
+  const { categoryTree } = useStores();
   const { nodes } = categoryTree;
 
   type Selection = { groupIndex: number | null, categoryIndex: number | null};

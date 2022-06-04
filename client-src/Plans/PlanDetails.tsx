@@ -1,9 +1,9 @@
-import React, { useState, useContext, ReactElement } from 'react';
+import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { DateTime } from 'luxon';
 import PlanCategory from './PlanCategory';
 import Amount from '../Amount';
-import MobxStore from '../State/mobxStore';
+import { useStores } from '../State/mobxStore';
 import FundingPlanHistoryMonth from '../State/HistoryMonth';
 import HistoryCategory from '../State/HistoryCategory';
 import { CategoryInterface } from '../State/State';
@@ -15,10 +15,10 @@ type PropsType = {
   onEditCategory: (category: CategoryInterface, planCategory: FundingPlanCategory) => void,
 }
 
-const PlanDetails = ({
+const PlanDetails: React.FC<PropsType> = observer(({
   onEditCategory,
-}: PropsType): ReactElement | null => {
-  const { plans: { details }, categoryTree } = useContext(MobxStore);
+}) => {
+  const { plans: { details }, categoryTree } = useStores();
   const [scroll, setScroll] = useState(0);
   const [now] = useState({ year: DateTime.now().year, month: DateTime.now().month - 1 });
 
@@ -264,6 +264,6 @@ const PlanDetails = ({
       }
     </div>
   );
-};
+});
 
-export default observer(PlanDetails);
+export default PlanDetails;

@@ -1,7 +1,7 @@
-import React, { ReactElement, useContext } from 'react';
+import React from 'react';
 import { observer } from 'mobx-react-lite';
 import Http from '@mortvola/http';
-import MobxStore from '../State/mobxStore';
+import { useStores } from '../State/mobxStore';
 import { useOfflineAccountDialog } from './OfflineAccountDialog';
 import useMediaQuery from '../MediaQuery';
 import { useTransactionDialog } from '../Transactions/TransactionDialog';
@@ -11,10 +11,10 @@ type PropsType = {
   open?: boolean,
 }
 
-const AccountsToolbar = ({
+const AccountsToolbar: React.FC<PropsType> = observer(({
   open,
-}: PropsType): ReactElement => {
-  const { accounts, uiState, balances } = useContext(MobxStore);
+}) => {
+  const { accounts, uiState, balances } = useStores();
   const [OfflineAccountDialog, showOfflineAccountDialog] = useOfflineAccountDialog();
   const [TransactionDialog, showTransactionDialog] = useTransactionDialog();
   const [BalanceDialog, showBalanceDialog] = useBalanceDialog();
@@ -76,6 +76,6 @@ const AccountsToolbar = ({
       }
     </>
   )
-}
+});
 
-export default observer(AccountsToolbar);
+export default AccountsToolbar;

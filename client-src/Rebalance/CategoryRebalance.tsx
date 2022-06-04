@@ -1,24 +1,24 @@
-import React, { ReactElement, useContext, useState } from 'react';
+import React, { ReactElement, useState } from 'react';
 import CategoryRebalanceItem from './CategoryRebalanceItem';
 import {
-  TreeNodeInterface, CategoryBalanceInterface, CategoryInterface, TransactionCategoryInterface,
+  CategoryBalanceInterface, CategoryInterface, TransactionCategoryInterface,
 } from '../State/State';
 import { isGroup } from '../State/Group';
 import { isCategory } from '../State/Category';
-import MobxStore from '../State/mobxStore';
+import { useStores } from '../State/mobxStore';
 
-interface Props {
+type PropsType = {
   onDeltaChange: null | ((amunt: number, delta: number, categories: unknown) => void),
   balances: CategoryBalanceInterface[],
   trxCategories: TransactionCategoryInterface[],
 }
 
-const CategoryRebalance = ({
+const CategoryRebalance: React.FC<PropsType> = ({
   balances,
   trxCategories,
   onDeltaChange,
-}: Props): ReactElement => {
-  const { categoryTree } = useContext(MobxStore);
+}) => {
+  const { categoryTree } = useStores();
   const [transactionCategories, setTransactionCategories] = useState<TransactionCategoryInterface[]>(trxCategories);
 
   const handleDeltaChange = (amount: number, delta: number, category: CategoryInterface) => {

@@ -1,8 +1,8 @@
 import Http from '@mortvola/http';
-import React, { ReactElement, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Chart from 'react-google-charts';
 
-const IncomeVsExpenses = (): ReactElement => {
+const IncomeVsExpenses: React.FC = () => {
   type IncomeVsExpensesResponse = [string, number | string, number | string, number | string][];
 
   const [data, setData] = useState<(number | string)[][] | null>(null);

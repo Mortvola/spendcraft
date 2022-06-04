@@ -1,4 +1,4 @@
-import React, { ReactElement } from 'react';
+import React from 'react';
 import { observer } from 'mobx-react-lite';
 import AmountInput from '../AmountInput';
 import Amount from '../Amount';
@@ -14,12 +14,12 @@ type PropsType = {
   onEditCategory: (category: CategoryInterface, planCategory: FundingPlanCategory) => void,
 }
 
-const PlanCategory = ({
+const PlanCategory: React.FC<PropsType> = observer(({
   category,
   planCategory,
   onDeltaChange,
   onEditCategory,
-}: PropsType): ReactElement => {
+}) => {
   const handleDeltaChange = (newAmount: number) => {
     if (onDeltaChange) {
       onDeltaChange(planCategory, newAmount);
@@ -44,6 +44,6 @@ const PlanCategory = ({
       <Amount amount={planCategory.amount * 12} />
     </div>
   );
-};
+});
 
-export default observer(PlanCategory);
+export default PlanCategory;

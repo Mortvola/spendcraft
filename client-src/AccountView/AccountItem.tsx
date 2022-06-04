@@ -1,4 +1,4 @@
-import React, { ReactElement, useState } from 'react';
+import React, { useState } from 'react';
 import { UnlinkedAccountProps } from '../../common/ResponseTypes';
 import Amount from '../Amount';
 
@@ -8,11 +8,11 @@ type PropsType = {
   onChange?: ((event: React.ChangeEvent<HTMLSelectElement>) => void) | null,
 }
 
-const AccountItem = ({
+const AccountItem: React.FC<PropsType> = ({
   name,
   account,
   onChange = null,
-}: PropsType): ReactElement => {
+}) => {
   const [option, setOption] = useState('None');
 
   const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {

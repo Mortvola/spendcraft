@@ -1,14 +1,13 @@
-import React, { ReactElement } from 'react';
-import PropTypes from 'prop-types';
+import React from 'react';
 import Amount from '../Amount';
 
-type Props = {
+type PropsType = {
   history: { amount: number }[],
 }
 
-const CategoryHistory = ({
+const CategoryHistory: React.FC<PropsType> = ({
   history,
-}: Props): ReactElement => {
+}) => {
   const renderHistory = () => {
     const list = [];
 
@@ -30,17 +29,6 @@ const CategoryHistory = ({
       {renderHistory()}
     </div>
   );
-};
-
-CategoryHistory.propTypes = {
-  history: PropTypes.arrayOf(PropTypes.shape({
-    year: PropTypes.number.isRequired,
-    month: PropTypes.number.isRequired,
-    amount: PropTypes.number.isRequired,
-  })).isRequired,
-};
-
-CategoryHistory.defaultProps = {
 };
 
 export default CategoryHistory;

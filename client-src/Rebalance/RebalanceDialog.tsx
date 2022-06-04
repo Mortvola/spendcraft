@@ -1,6 +1,6 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 import React, {
-  useState, useEffect, useCallback, ReactElement, useContext,
+  useState, useEffect, useCallback,
 } from 'react';
 import {
   Field, FormikErrors,
@@ -16,18 +16,18 @@ import CategoryRebalance from './CategoryRebalance';
 import Amount from '../Amount';
 import Transaction from '../State/Transaction';
 import { CategoryBalanceInterface, TransactionCategoryInterface } from '../State/State';
-import MobxStore from '../State/mobxStore';
+import { useStores } from '../State/mobxStore';
 import { isCategoryTreeBalanceResponse, TransactionType } from '../../common/ResponseTypes';
 
-interface Props {
+type PropsType = {
   transaction?: Transaction,
 }
 
-const RebalanceDialog = ({
+const RebalanceDialog: React.FC<PropsType & ModalProps> = ({
   transaction,
   setShow,
-}: Props & ModalProps): ReactElement => {
-  const { register } = useContext(MobxStore);
+}) => {
+  const { register } = useStores();
   const [balances, setBalances] = useState<CategoryBalanceInterface[]>([])
   const [unassigned, setUnassigned] = useState(0);
   const [date, setDate] = useState(transaction ? transaction.date.toISODate() : DateTime.now().toISODate());
@@ -201,6 +201,6 @@ const RebalanceDialog = ({
   );
 };
 
-export const useRebalanceDialog = makeUseModal<Props>(RebalanceDialog, { size: 'lg' });
+export const useRebalanceDialog = makeUseModal<PropsType>(RebalanceDialog, { size: 'lg' });
 
 export default RebalanceDialog;

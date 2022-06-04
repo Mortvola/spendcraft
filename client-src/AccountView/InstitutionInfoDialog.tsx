@@ -30,10 +30,10 @@ type PropsType = {
   institution: InstitutionInterface,
 }
 
-const InstitutionInfoDialog = ({
+const InstitutionInfoDialog: React.FC<PropsType & ModalProps> = ({
   institution,
   setShow,
-}: PropsType & ModalProps): ReactElement => {
+}) => {
   type InstitutionInfo = Institution; // InstitutionWithInstitutionData & InstitutionWithStatus;
 
   const [infoInitialized, setInfoInitialized] = useState(false);

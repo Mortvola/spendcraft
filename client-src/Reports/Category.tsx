@@ -1,13 +1,11 @@
-import React, {
-  ReactElement, useContext,
-} from 'react';
+import React from 'react';
 import { Formik, FieldArray } from 'formik';
 import { DateTime } from 'luxon';
 import { Button, DropdownButton } from 'react-bootstrap';
 import { FormCheckbox, FormField } from '@mortvola/forms';
 import Http from '@mortvola/http';
 import Amount from '../Amount';
-import MobxStore from '../State/mobxStore';
+import { useStores } from '../State/mobxStore';
 import useSortableTable from './SortableTable';
 import { isGroup } from '../State/Group';
 import ReportControls from './ReportControls';
@@ -21,8 +19,8 @@ type CategoryReport = {
   count: number,
 };
 
-const Category = (): ReactElement | null => {
-  const { categoryTree: { nodes } } = useContext(MobxStore);
+const Category: React.FC = () => {
+  const { categoryTree: { nodes } } = useStores();
   const { setData, SortableTable } = useSortableTable<CategoryReport>(['groupName', 'categoryName', 'sum', 'count']);
 
   type FormValues = {

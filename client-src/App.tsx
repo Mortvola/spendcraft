@@ -1,9 +1,9 @@
-import React, { ReactNode, useContext } from 'react';
+import React, { useContext } from 'react';
 import { createRoot } from 'react-dom/client';
 import { observer } from 'mobx-react-lite';
 import 'regenerator-runtime';
 import {
-  BrowserRouter, Routes, Route, Outlet, useRoutes, createRoutesFromChildren,
+  BrowserRouter, Routes, Route, Outlet,
 } from 'react-router-dom';
 import { ServerError, serverError } from '@mortvola/http';
 import '@mortvola/usemodal/dist/main.css';
@@ -14,7 +14,7 @@ import Accounts from './AccountView/Accounts';
 import Reports from './Reports/Reports';
 import Plans from './Plans/Plans';
 import PlaidLink from './PlaidLink';
-import MobxStore, { store as mobxStore } from './State/mobxStore';
+import { StoreContext, store } from './State/mobxStore';
 import UserAccount from './UserAccount';
 import usePageViews from './Tracker';
 import './style.css';
@@ -58,7 +58,7 @@ const container = document.querySelector('.app');
 if (container) {
   const root = createRoot(container);
   root.render(
-    <MobxStore.Provider value={mobxStore}>
+    <StoreContext.Provider value={store}>
       <ServerError.Provider value={serverError}>
         <BrowserRouter>
           <Routes>
@@ -75,6 +75,6 @@ if (container) {
           </Routes>
         </BrowserRouter>
       </ServerError.Provider>
-    </MobxStore.Provider>,
+    </StoreContext.Provider>,
   );
 }

@@ -1,4 +1,4 @@
-import React, { useState, useRef, ReactElement } from 'react';
+import React, { useState, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { Modal } from 'react-bootstrap';
 import { submitForm, defaultErrors, ErrorsType } from './submit';
@@ -6,15 +6,15 @@ import Waiting from './Waiting';
 import RegisterPanel from './RegisterPanel';
 import ResetEmailSentPanel from './ResetEmailSentPanel';
 
-type PropTypes = {
+type PropsType = {
   show: boolean;
   onHide: (() => void);
 }
 
-const Register = ({
+const Register: React.FC<PropsType> = ({
   show,
   onHide,
-}: PropTypes): ReactElement => {
+}) => {
   const [confirmationSent, setConfirmationSent] = useState(false);
   const [waiting, setWaiting] = useState(false);
   const [errors, setErrors] = useState(defaultErrors);

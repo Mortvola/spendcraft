@@ -1,8 +1,8 @@
 import React, {
-  useContext, useEffect, useState,
+  useEffect, useState,
 } from 'react';
 import CategorySplitItem from './CategorySplitItem';
-import MobxStore from './State/mobxStore';
+import { useStores } from './State/mobxStore';
 import { TransactionCategoryInterface } from './State/State';
 
 function* creatNextIdGen(): Generator<number, number> {
@@ -31,7 +31,7 @@ const CategorySplits: React.FC<PropsType> = ({
   total,
   credit = true,
 }) => {
-  const { categoryTree } = useContext(MobxStore);
+  const { categoryTree } = useStores();
 
   if (!categoryTree.unassignedCat) {
     throw new Error('unassigned category is null');

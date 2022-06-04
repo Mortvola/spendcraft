@@ -1,4 +1,4 @@
-import React, { ReactElement } from 'react';
+import React from 'react';
 import { Form, Formik, FormikHelpers } from 'formik';
 import { Button } from 'react-bootstrap';
 import * as responsive from 'react-responsive';
@@ -7,7 +7,7 @@ import { FormError, setFormErrors, FormField } from '@mortvola/forms';
 import styles from './Signin.module.css';
 import { isErrorResponse } from '../common/ResponseTypes';
 
-const Signin = (): ReactElement => {
+const Signin: React.FC = () => {
   const tiny = responsive.useMediaQuery({ query: '(max-width: 350px)' });
   const small = responsive.useMediaQuery({ query: '(max-width: 600px)' });
   const medium = responsive.useMediaQuery({ query: '(max-width: 1224px)' });

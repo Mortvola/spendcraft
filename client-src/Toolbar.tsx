@@ -1,4 +1,4 @@
-import React, { ReactElement, ReactNode } from 'react';
+import React, { ReactNode } from 'react';
 import useMediaQuery from './MediaQuery'
 import styles from './Toolbar.module.css';
 
@@ -7,10 +7,10 @@ type PropsType = {
   onToggleClick?: () => void,
 }
 
-const Toolbar = ({
+const Toolbar: React.FC<PropsType> = ({
   children,
   onToggleClick,
-}: PropsType): ReactElement | null => {
+}) => {
   const { isMobile } = useMediaQuery();
 
   return (

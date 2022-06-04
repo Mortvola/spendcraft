@@ -1,6 +1,5 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
-import React, { ReactElement, useContext } from 'react';
-// import PropTypes from 'prop-types';
+import React from 'react';
 import { Button, Modal } from 'react-bootstrap';
 import {
   Formik, Form, Field, ErrorMessage,
@@ -8,7 +7,7 @@ import {
   FormikContextType,
 } from 'formik';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
-import MobxStore from '../State/mobxStore';
+import { useStores } from '../State/mobxStore';
 import { FundingPlanInterface } from '../State/State';
 
 type ValueType = {
@@ -28,7 +27,7 @@ type DeleteButtonPropsType = {
 
 const DeleteButton: React.FC<DeleteButtonPropsType> = ({ plan, setShow }) => {
   const formikBag = useFormikContext<ValueType>();
-  const { plans } = useContext(MobxStore);
+  const { plans } = useStores();
 
   const handleDelete = async (bag: FormikContextType<ValueType>) => {
     const { setTouched, setErrors } = bag;
@@ -70,15 +69,15 @@ const Footer: React.FC<FooterPropsType> = ({ setShow }) => (
   </Modal.Footer>
 );
 
-interface Props {
+type PropsType = {
   plan?: FundingPlanInterface | null,
 }
 
-const PlanDialog = ({
+const PlanDialog: React.FC<PropsType & ModalProps> = ({
   plan,
   setShow,
-}: Props & ModalProps): ReactElement => {
-  const { plans } = useContext(MobxStore);
+}) => {
+  const { plans } = useStores();
 
   const handleSubmit = async (values: ValueType, bag: FormikHelpers<ValueType>) => {
     const { setErrors } = bag;
@@ -139,6 +138,6 @@ const PlanDialog = ({
   );
 };
 
-export const usePlanDialog = makeUseModal<Props>(PlanDialog);
+export const usePlanDialog = makeUseModal<PropsType>(PlanDialog);
 
 export default PlanDialog;

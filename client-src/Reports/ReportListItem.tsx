@@ -1,4 +1,4 @@
-import React, { ReactElement, ReactNode } from 'react';
+import React, { ReactNode } from 'react';
 import styles from './ReportListItem.module.css';
 
 type PropsType = {
@@ -8,12 +8,12 @@ type PropsType = {
   children: ReactNode,
 }
 
-const ReportListItem = ({
+const ReportListItem: React.FC<PropsType> = ({
   value,
   onSelect,
   selected = false,
   children,
-}: PropsType): ReactElement => {
+}) => {
   const handleClick = () => {
     onSelect(value);
   }

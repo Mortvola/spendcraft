@@ -1,4 +1,4 @@
-import React, { ReactElement } from 'react';
+import React from 'react';
 import LoanTransaction from '../State/LoanTransaction';
 import LoanTitles from './LoanTitles';
 import LoanTransactions from './LoanTransactions';
@@ -13,9 +13,9 @@ type PropsType = {
   loan?: LoanType,
 }
 
-const LoanRegister = ({
+const LoanRegister: React.FC<PropsType> = ({
   loan,
-}: PropsType): ReactElement => (
+}) => (
   <SecondaryRegister
     title="Loan Transactions:"
     titles={<LoanTitles />}

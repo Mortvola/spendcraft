@@ -1,5 +1,5 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
-import React, { ReactElement, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Field, FieldProps,
   FormikErrors,
@@ -32,11 +32,11 @@ type PropsType = {
   account?: AccountInterface | null,
 }
 
-const TransactionDialog = ({
+const TransactionDialog: React.FC<PropsType & ModalProps> = ({
   setShow,
   transaction = null,
   account = null,
-}: PropsType & ModalProps): ReactElement => {
+}) => {
   type ValueType = {
     date: string,
     name: string,

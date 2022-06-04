@@ -1,4 +1,4 @@
-import React, { ReactElement, ReactNode } from 'react';
+import React, { ReactNode } from 'react';
 import useMediaQuery from './MediaQuery'
 import styles from './Sidebar.module.css'
 
@@ -8,11 +8,11 @@ type PropsType = {
   className?: string,
 }
 
-const Sidebar = ({
+const Sidebar: React.FC<PropsType> = ({
   open = true,
   children,
   className,
-}: PropsType): ReactElement => {
+}) => {
   const { isMobile } = useMediaQuery();
 
   if (isMobile) {

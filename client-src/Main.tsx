@@ -1,4 +1,4 @@
-import React, { ReactElement, ReactNode } from 'react';
+import React, { ReactNode } from 'react';
 import MainTray from './MainTray';
 import Toolbar from './Toolbar';
 import styles from './Main.module.css';
@@ -13,14 +13,14 @@ type PropsType = {
   onToggleClick: () => void,
 }
 
-const Main = ({
+const Main: React.FC<PropsType> = ({
   open = false,
   toolbar,
   sidebar,
   children,
   className,
   onToggleClick,
-}: PropsType): ReactElement => (
+}) => (
   <div className={styles.main}>
     <Toolbar onToggleClick={onToggleClick}>
       {toolbar}

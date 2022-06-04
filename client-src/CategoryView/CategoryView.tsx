@@ -1,7 +1,7 @@
-import React, { ReactElement, useContext, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import Group from './Group';
-import MobxStore from '../State/mobxStore';
+import { useStores } from '../State/mobxStore';
 import SystemCategory from './SystemCategory';
 import { CategoryInterface } from '../State/State';
 import Category from './Category';
@@ -12,10 +12,10 @@ type PropsType = {
   onCategorySelected?: () => void,
 }
 
-const CategoryView = ({
+const CategoryView: React.FC<PropsType> = observer(({
   onCategorySelected,
-}: PropsType): ReactElement => {
-  const { categoryTree, uiState } = useContext(MobxStore);
+}) => {
+  const { categoryTree, uiState } = useStores();
 
   const handleCategorySelected = (category: CategoryInterface) => {
     uiState.selectCategory(category);
@@ -72,6 +72,6 @@ const CategoryView = ({
       </div>
     </>
   );
-};
+});
 
-export default observer(CategoryView);
+export default CategoryView;

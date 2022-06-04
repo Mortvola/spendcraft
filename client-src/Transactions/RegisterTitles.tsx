@@ -1,4 +1,4 @@
-import React, { ReactElement } from 'react';
+import React from 'react';
 import useMediaQuery from '../MediaQuery';
 import { CategoryInterface } from '../State/State';
 import TitleStub from './TitleStub';
@@ -8,9 +8,9 @@ type PropsType = {
   category?: CategoryInterface | null,
 }
 
-const RegisterTitles = ({
+const RegisterTitles: React.FC<PropsType> = ({
   category = null,
-}: PropsType): ReactElement => {
+}) => {
   const { isMobile } = useMediaQuery();
 
   if (isMobile) {

@@ -1,6 +1,6 @@
-import React, { ReactElement } from 'react'
+import React from 'react'
 
-const TitleStub = (): ReactElement => (
+const TitleStub: React.FC = () => (
   <div style={{ overflowY: 'scroll', visibility: 'hidden', padding: 0 }} />
 )
 

@@ -1,5 +1,5 @@
 import { observer } from 'mobx-react-lite';
-import React, { ReactElement } from 'react';
+import React from 'react';
 import { PendingTransactionInterface } from '../State/State';
 import PendingTitles from './PendingTItles';
 import PendingTransactions from './PendingTransactions';
@@ -9,10 +9,11 @@ type PropsType = {
   categoryView: boolean,
   pending?: PendingTransactionInterface[],
 }
-const PendingRegister = ({
+
+const PendingRegister: React.FC<PropsType> = observer(({
   categoryView,
   pending,
-}: PropsType): ReactElement | null => {
+}) => {
   if (pending && pending.length > 0) {
     return (
       <SecondaryRegister
@@ -25,6 +26,6 @@ const PendingRegister = ({
   }
 
   return null;
-};
+});
 
-export default observer(PendingRegister);
+export default PendingRegister;

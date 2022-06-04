@@ -1,14 +1,14 @@
 import {
   FieldProps, FormikErrors, FormikHelpers, useFormikContext,
 } from 'formik';
-import React, { ReactElement, useContext } from 'react';
+import React from 'react';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import {
   FormField, FormModal, FormTextField, setFormErrors,
 } from '@mortvola/forms';
 import { Error, TrackingType } from '../../common/ResponseTypes';
 import AmountInput from '../AmountInput';
-import MobxStore from '../State/mobxStore';
+import { useStores } from '../State/mobxStore';
 import { AccountInterface, InstitutionInterface } from '../State/State';
 import { getSubtypes, getTypes } from '../State/AccountTypes';
 
@@ -44,12 +44,12 @@ const APRField = () => {
   return null;
 }
 
-const OfflineAccountDialog = ({
+const OfflineAccountDialog: React.FC<PropsType & ModalProps> = ({
   institution,
   account = null,
   setShow,
-}: PropsType & ModalProps): ReactElement => {
-  const { accounts, uiState } = useContext(MobxStore);
+}) => {
+  const { accounts } = useStores();
 
   const handleValidate = (values: ValuesType) => {
     const errors: FormikErrors<ValuesType> = {};

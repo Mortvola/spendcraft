@@ -1,5 +1,5 @@
 import React, {
-  ReactElement, useContext, useEffect, useState,
+  useEffect, useState,
 } from 'react';
 import {
   Form, Formik, FormikHelpers, FormikProps,
@@ -9,7 +9,7 @@ import {
   FormControl, InputGroup, Button,
 } from 'react-bootstrap';
 import { FormField, setFormErrors } from '@mortvola/forms';
-import MobxStore from './State/mobxStore';
+import { useStores } from './State/mobxStore';
 import IconButton from './IconButton';
 
 type FormValues = {
@@ -18,7 +18,7 @@ type FormValues = {
 };
 
 const MyInputGroup: React.FC<FormikProps<FormValues>> = (props: FormikProps<FormValues>) => {
-  const { user } = useContext(MobxStore);
+  const { user } = useStores();
 
   return (
     <InputGroup>
@@ -29,7 +29,7 @@ const MyInputGroup: React.FC<FormikProps<FormValues>> = (props: FormikProps<Form
 }
 
 const UserAccount: React.FC = () => {
-  const { user } = useContext(MobxStore);
+  const { user } = useStores();
   const [initialized, setInitialized] = useState<boolean>(false);
 
   useEffect(() => {

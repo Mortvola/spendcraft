@@ -1,4 +1,4 @@
-import React, { ReactElement } from 'react';
+import React from 'react';
 import { observer } from 'mobx-react-lite';
 import Amount from '../Amount';
 import EditButton from './EditButton';
@@ -10,12 +10,13 @@ type PropsType = {
   selected: boolean,
   onCategorySelected: ((category: CategoryInterface) => void),
 }
-const Category = ({
+
+const Category: React.FC<PropsType> = observer(({
   category,
   group,
   selected,
   onCategorySelected,
-}: PropsType): ReactElement => {
+}) => {
   const handleClick = () => {
     onCategorySelected(category);
   };
@@ -43,6 +44,6 @@ const Category = ({
       <Amount className="cat-list-amt" amount={category.balance} />
     </div>
   );
-};
+});
 
-export default observer(Category);
+export default Category;

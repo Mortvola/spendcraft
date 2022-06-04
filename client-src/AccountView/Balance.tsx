@@ -1,4 +1,4 @@
-import React, { ReactElement } from 'react';
+import React from 'react';
 import Amount from '../Amount';
 import Date from '../Date';
 import { BalanceInterface } from '../State/State';
@@ -8,10 +8,11 @@ type PropsType = {
   balance: BalanceInterface,
   showBalanceDialog: (balance: BalanceInterface) => void,
 }
-const Balance = ({
+
+const Balance: React.FC<PropsType> = ({
   balance,
   showBalanceDialog,
-}: PropsType): ReactElement => {
+}) => {
   const handleClick = () => {
     showBalanceDialog(balance);
   }

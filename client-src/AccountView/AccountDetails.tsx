@@ -1,12 +1,12 @@
 import { observer } from 'mobx-react-lite';
 import React from 'react';
 import DetailView from '../DetailView';
-import MobxStore from '../State/mobxStore';
+import { useStores } from '../State/mobxStore';
 
 const AccountDetails: React.FC = observer(() => {
   const {
     balances, uiState: { selectedAccount },
-  } = React.useContext(MobxStore);
+  } = useStores();
 
   React.useEffect(() => {
     if (selectedAccount) {

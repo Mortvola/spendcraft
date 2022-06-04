@@ -1,11 +1,11 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import CategoryInput from './CategoryInput/CategoryInput';
 import IconButton from './IconButton';
 import AmountInput from './AmountInput';
 import { CategoryInterface, TransactionCategoryInterface } from './State/State';
-import MobxStore from './State/mobxStore';
 import styles from './CategorySplitItem.module.css';
 import useMediaQuery from './MediaQuery';
+import { useStores } from './State/mobxStore';
 
 type PropsType = {
   split: TransactionCategoryInterface,
@@ -24,7 +24,7 @@ const CategorySplitItem: React.FC<PropsType> = ({
   onDeleteItem,
   onCommentChange,
 }) => {
-  const { categoryTree: { unassignedCat } } = useContext(MobxStore);
+  const { categoryTree: { unassignedCat } } = useStores();
   const { isMobile } = useMediaQuery();
 
   if (!unassignedCat) {

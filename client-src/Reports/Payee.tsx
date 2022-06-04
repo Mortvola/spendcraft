@@ -1,13 +1,11 @@
-import React, {
-  ReactElement, useContext,
-} from 'react';
+import React from 'react';
 import { Formik, FieldArray } from 'formik';
 import { DateTime } from 'luxon';
 import { Button, DropdownButton } from 'react-bootstrap';
 import { FormCheckbox, FormField } from '@mortvola/forms';
 import Http from '@mortvola/http';
 import Amount from '../Amount';
-import MobxStore from '../State/mobxStore';
+import { useStores } from '../State/mobxStore';
 import useSortableTable from './SortableTable';
 import ReportControls from './ReportControls';
 import styles from './Payee.module.css';
@@ -21,8 +19,8 @@ type PayeeReport = {
   count: number,
 };
 
-const Payee = (): ReactElement | null => {
-  const { accounts } = useContext(MobxStore);
+const Payee: React.FC = () => {
+  const { accounts } = useStores();
   const { setData, SortableTable } = useSortableTable<PayeeReport>(['name', 'paymentChannel', 'sum', 'count']);
 
   type FormValues = {

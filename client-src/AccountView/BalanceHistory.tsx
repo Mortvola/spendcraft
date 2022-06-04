@@ -1,15 +1,15 @@
-import React, { useContext, useState } from 'react';
+import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import Chart from 'react-google-charts';
-import MobxStore from '../State/mobxStore';
+import { useStores } from '../State/mobxStore';
 import styles from './BalanceHistory.module.css';
 import Balance from './Balance';
 import { useBalanceDialog } from './BalanceDialog';
 import { BalanceInterface } from '../State/State';
 import useMediaQuery from '../MediaQuery';
 
-const BalanceHistory = () => {
-  const { balances: { balances } } = useContext(MobxStore);
+const BalanceHistory: React.FC = observer(() => {
+  const { balances: { balances } } = useStores();
   const [BalanceDialog, showBalanceDialog] = useBalanceDialog();
   const [editedBalance, setEditedBalance] = useState<BalanceInterface | null>(null);
 
@@ -73,6 +73,6 @@ const BalanceHistory = () => {
       <BalanceDialog balance={editedBalance} onHide={handleHideDialog} />
     </div>
   );
-};
+});
 
-export default observer(BalanceHistory);
+export default BalanceHistory;

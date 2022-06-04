@@ -1,5 +1,5 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
-import React, { ReactElement, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Observer, observer } from 'mobx-react-lite';
 import { toJS } from 'mobx';
 import {
@@ -15,10 +15,10 @@ type PropsType = {
   institution: InstitutionInterface,
 }
 
-const AccountsDialog = ({
+const AccountsDialog: React.FC<PropsType & ModalProps> = ({
   institution,
   setShow,
-}: PropsType & ModalProps): ReactElement => {
+}) => {
   type ValuesType = {
     selections: UnlinkedAccountProps[] | null,
     startDate: string,

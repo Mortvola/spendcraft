@@ -1,4 +1,4 @@
-import React, { CSSProperties, ReactElement } from 'react';
+import React, { CSSProperties } from 'react';
 import styles from './Icon.module.css'
 
 type PropsType = {
@@ -9,13 +9,13 @@ type PropsType = {
   solid?: boolean,
 }
 
-const Icon = ({
+const Icon: React.FC<PropsType> = ({
   icon,
   iconClass,
   rotate = false,
   style,
   solid = true,
-}: PropsType): ReactElement => {
+}) => {
   let className = '';
 
   if (iconClass) {

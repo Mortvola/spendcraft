@@ -1,4 +1,4 @@
-import React, { ReactElement } from 'react';
+import React from 'react';
 import useMediaQuery from '../MediaQuery';
 import TitleStub from './TitleStub';
 import styles from './Transactions.module.css';
@@ -7,9 +7,9 @@ type PropsType = {
   categoryView?: boolean,
 }
 
-const PendingTitles = ({
+const PendingTitles: React.FC<PropsType> = ({
   categoryView = false,
-}: PropsType): ReactElement => {
+}) => {
   const { isMobile } = useMediaQuery();
 
   if (isMobile) {

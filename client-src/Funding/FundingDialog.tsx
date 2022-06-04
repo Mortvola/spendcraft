@@ -1,6 +1,5 @@
 import React, {
-  useState, useEffect, useContext, useCallback,
-  ReactElement,
+  useState, useEffect, useCallback,
 } from 'react';
 import {
   Field, FieldProps,
@@ -10,7 +9,7 @@ import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import Http from '@mortvola/http';
 import { FormModal, FormError, setFormErrors } from '@mortvola/forms';
 import Amount from '../Amount';
-import MobxStore from '../State/mobxStore';
+import { useStores } from '../State/mobxStore';
 import Transaction from '../State/Transaction';
 import {
   FundingPlanProps, isFundingPlanResponse, isFundingPlansResponse, TransactionType,
@@ -19,15 +18,15 @@ import {
 import Funding, { FundingType } from './Funding';
 import FundingPlanCategory from '../State/FundingPlanCategory';
 
-interface Props {
+type PropsType = {
   transaction?: Transaction;
 }
 
-const FundingDialog = ({
+const FundingDialog: React.FC<PropsType & ModalProps> = ({
   transaction,
   setShow,
-}: Props & ModalProps): ReactElement => {
-  const { categoryTree, register } = useContext(MobxStore);
+}) => {
+  const { categoryTree, register } = useStores();
   const { fundingPoolCat } = categoryTree;
 
   if (!fundingPoolCat) {
@@ -349,6 +348,6 @@ const FundingDialog = ({
   );
 };
 
-export const useFundingDialog = makeUseModal<Props>(FundingDialog, { size: 'lg' });
+export const useFundingDialog = makeUseModal<PropsType>(FundingDialog, { size: 'lg' });
 
 export default FundingDialog;

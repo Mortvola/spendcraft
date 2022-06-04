@@ -1,8 +1,6 @@
-import React, {
-  useContext, ReactElement,
-} from 'react';
+import React from 'react';
 import { observer } from 'mobx-react-lite';
-import MobxStore from '../State/mobxStore';
+import { useStores } from '../State/mobxStore';
 import {
   AccountInterface, CategoryInterface, PendingTransactionInterface, TransactionInterface,
 } from '../State/State';
@@ -14,10 +12,10 @@ type PropsType = {
   type: 'category' | 'account',
 }
 
-const Register = ({
+const Register: React.FC<PropsType> = observer(({
   type,
-}: PropsType): ReactElement => {
-  const { uiState } = useContext(MobxStore);
+}) => {
+  const { uiState } = useStores();
 
   let transactions: TransactionInterface[] | undefined;
   let pending: PendingTransactionInterface[] | undefined;
@@ -65,6 +63,6 @@ const Register = ({
       <PendingRegister categoryView={category !== null} pending={pending} />
     </>
   );
-};
+});
 
-export default observer(Register);
+export default Register;

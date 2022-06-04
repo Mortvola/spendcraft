@@ -1,7 +1,7 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import PlanDetails from './PlanDetails';
-import MobxStore from '../State/mobxStore';
+import { useStores } from '../State/mobxStore';
 import PlanList from './PlanList';
 import PlansToolbar from './PlansToolbar';
 import Main from '../Main';
@@ -12,7 +12,7 @@ import { useEditCategoryDialog } from './EditCategoryDialog';
 import FundingPlanCategory from '../State/FundingPlanCategory';
 
 const Plans: React.FC = observer(() => {
-  const { plans, uiState } = useContext(MobxStore);
+  const { plans, uiState } = useStores();
   const [open, setOpen] = useState<boolean>(false);
   const { isMobile } = useMediaQuery();
   const [EditCategoryDialog, showEditCategoryDialog] = useEditCategoryDialog();

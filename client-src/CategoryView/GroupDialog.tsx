@@ -1,5 +1,5 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
-import React, { ReactElement, useContext } from 'react';
+import React from 'react';
 import {
   Field,
   FormikHelpers,
@@ -8,20 +8,19 @@ import {
 } from 'formik';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import { FormModal, FormError, setFormErrors } from '@mortvola/forms';
-import MobxStore from '../State/mobxStore';
+import { useStores } from '../State/mobxStore';
 import { Error } from '../../common/ResponseTypes';
 import { GroupInterface } from '../State/State';
 
-interface Props {
-  // eslint-disable-next-line react/require-default-props
+type PropsType = {
   group?: GroupInterface,
 }
 
-const GroupDialog = ({
+const GroupDialog: React.FC<PropsType & ModalProps> = ({
   setShow,
   group,
-}: Props & ModalProps): ReactElement => {
-  const { categoryTree } = useContext(MobxStore);
+}) => {
+  const { categoryTree } = useStores();
 
   interface ValueType {
     name: string,
@@ -104,6 +103,6 @@ const GroupDialog = ({
   );
 };
 
-export const useGroupDialog = makeUseModal<Props>(GroupDialog);
+export const useGroupDialog = makeUseModal<PropsType>(GroupDialog);
 
 export default GroupDialog;

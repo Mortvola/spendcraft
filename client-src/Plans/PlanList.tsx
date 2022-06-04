@@ -1,6 +1,6 @@
-import React, { ReactElement, useContext } from 'react';
+import React from 'react';
 import FundingPlan from '../State/FundingPlan';
-import MobxStore from '../State/mobxStore';
+import { useStores } from '../State/mobxStore';
 import { FundingPlanInterface } from '../State/State';
 import PlanItem from './PlanItem';
 
@@ -10,12 +10,12 @@ type PropsType = {
   onSelect?: () => void,
 }
 
-const PlanList = ({
+const PlanList: React.FC<PropsType> = ({
   plans,
   selected = null,
   onSelect,
-}: PropsType): ReactElement => {
-  const { uiState } = useContext(MobxStore);
+}) => {
+  const { uiState } = useStores();
 
   const handleSelect = (p: FundingPlanInterface) => {
     uiState.selectPlan(p);

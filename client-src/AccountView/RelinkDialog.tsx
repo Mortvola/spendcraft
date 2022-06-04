@@ -1,4 +1,4 @@
-import React, { ReactElement } from 'react';
+import React from 'react';
 import { ModalBody, Button } from 'react-bootstrap';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import { AccountInterface } from '../State/State';
@@ -8,10 +8,10 @@ type PropsType = {
   account: AccountInterface,
 }
 
-const RelinkDialog = ({
+const RelinkDialog: React.FC<PropsType & ModalProps> = ({
   account,
   setShow,
-}: PropsType & ModalProps): ReactElement => {
+}) => {
   const handleNo = () => {
     setShow(false);
   }

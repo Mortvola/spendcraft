@@ -1,8 +1,8 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { observer } from 'mobx-react-lite';
 import { useNavigate, useParams } from 'react-router-dom';
 import Institution from './Institution';
-import MobxStore from '../State/mobxStore';
+import { useStores } from '../State/mobxStore';
 import { AccountInterface } from '../State/State';
 import styles from './AccountView.module.css';
 
@@ -17,7 +17,7 @@ const AccountView: React.FC<PropsType> = observer(({
 }) => {
   const navigate = useNavigate();
   const params = useParams();
-  const { accounts, uiState } = useContext(MobxStore);
+  const { accounts, uiState } = useStores();
 
   React.useEffect(() => {
     if (accounts.initialized) {

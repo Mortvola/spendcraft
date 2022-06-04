@@ -1,4 +1,4 @@
-import React, { ReactElement } from 'react';
+import React from 'react';
 import FundingPlan from '../State/FundingPlan';
 
 type PropsType = {
@@ -7,11 +7,11 @@ type PropsType = {
   selected?: boolean,
 }
 
-const PlanItem = ({
+const PlanItem: React.FC<PropsType> = ({
   plan,
   onSelect,
   selected = false,
-}: PropsType): ReactElement => {
+}) => {
   const handleClick = () => {
     if (onSelect) {
       onSelect(plan);
