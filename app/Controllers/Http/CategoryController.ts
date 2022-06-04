@@ -19,6 +19,7 @@ import {
   TransactionProps, TransactionType, UpdateCategoryResponse,
 } from 'Common/ResponseTypes';
 import Group from 'App/Models/Group';
+import transactionFields from './transactionFields';
 
 class CategoryController {
   // eslint-disable-next-line class-methods-use-this
@@ -223,7 +224,7 @@ class CategoryController {
         .offset(request.qs().offset);
 
       result.transactions = transactions.map((t) => (
-        t.serialize() as TransactionProps
+        t.serialize(transactionFields) as TransactionProps
       ));
     }
     else {
@@ -249,7 +250,7 @@ class CategoryController {
         .offset(request.qs().offset);
 
       result.transactions = transactions.map((t) => (
-        t.serialize() as TransactionProps
+        t.serialize(transactionFields) as TransactionProps
       ));
     }
 
@@ -262,7 +263,7 @@ class CategoryController {
     auth: {
       user,
     },
-  }: HttpContextContract): Promise<Transaction[]> {
+  }: HttpContextContract): Promise<TransactionProps[]> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -302,7 +303,7 @@ class CategoryController {
         .preload('transactionCategories');
     }
 
-    return pending;
+    return pending.map((p) => p.serialize(transactionFields) as TransactionProps);
   }
 
   // eslint-disable-next-line class-methods-use-this
