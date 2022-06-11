@@ -98,7 +98,7 @@ class WebhookController {
       switch (request.body().webhook_type) {
         case 'TRANSACTIONS': {
           if (isTransactionEvent(body)) {
-            await WebhookController.processTransactionEvent(body);
+            WebhookController.processTransactionEvent(body);
           }
           break;
         }
@@ -167,8 +167,54 @@ class WebhookController {
     }
   }
 
+  static async defaultUpdate(event: TransactionEvent) {
+    const trx = await Database.transaction();
+
+    try {
+      const institution = await Institution.findByOrFail('plaidItemId', event.item_id, { client: trx });
+
+      const accounts = await institution.related('accounts').query().where('closed', false);
+      const application = await Application.findOrFail(institution.applicationId);
+
+      await Promise.all(accounts.map(async (acct) => {
+        if (institution.accessToken === null || institution.accessToken === '') {
+          throw new Exception(`access token not set for ${institution.plaidItemId}`);
+        }
+
+        return (
+          acct.sync(
+            institution.accessToken,
+            application,
+          )
+        );
+      }));
+
+      await trx.commit();
+    }
+    catch (error) {
+      Logger.error(`default update failed: ${error.message}, event: ${JSON.stringify(event)}`);
+      await trx.rollback();
+    }
+  }
+
+  static async removeTransactions(event: TransactionEvent) {
+    const trx = await Database.transaction();
+
+    try {
+      const institution = await Institution.findByOrFail('plaidItemId', event.item_id, { client: trx });
+
+      await institution.removeTransactions(event.removed_transactions);
+
+      await trx.commit();
+    }
+    catch (error) {
+      Logger.error(`transactions removed failed: ${error.message}, event: ${JSON.stringify(event)}`);
+      await trx.rollback();
+    }
+  }
+
   // eslint-disable-next-line camelcase
-  static async processTransactionEvent(event: TransactionEvent): Promise<void> {
+  static processTransactionEvent(event: TransactionEvent): void {
     switch (event.webhook_code) {
       case 'INITIAL_UPDATE':
         Logger.info(JSON.stringify(event));
@@ -179,51 +225,13 @@ class WebhookController {
         break;
 
       case 'DEFAULT_UPDATE': {
-        const trx = await Database.transaction();
-
-        try {
-          const institution = await Institution.findByOrFail('plaidItemId', event.item_id, { client: trx });
-
-          const accounts = await institution.related('accounts').query().where('closed', false);
-          const application = await Application.findOrFail(institution.applicationId);
-
-          await Promise.all(accounts.map(async (acct) => {
-            if (institution.accessToken === null || institution.accessToken === '') {
-              throw new Exception(`access token not set for ${institution.plaidItemId}`);
-            }
-
-            return (
-              acct.sync(
-                institution.accessToken,
-                application,
-              )
-            );
-          }));
-
-          await trx.commit();
-        }
-        catch (error) {
-          Logger.error(`default update failed: ${error.message}, event: ${JSON.stringify(event)}`);
-          await trx.rollback();
-        }
+        WebhookController.defaultUpdate(event);
 
         break;
       }
 
       case 'TRANSACTIONS_REMOVED': {
-        const trx = await Database.transaction();
-
-        try {
-          const institution = await Institution.findByOrFail('plaidItemId', event.item_id, { client: trx });
-
-          await institution.removeTransactions(event.removed_transactions);
-
-          await trx.commit();
-        }
-        catch (error) {
-          Logger.error(`transactions removed failed: ${error.message}, event: ${JSON.stringify(event)}`);
-          await trx.rollback();
-        }
+        WebhookController.removeTransactions(event);
 
         break;
       }
