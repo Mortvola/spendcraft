@@ -14,6 +14,7 @@ interface PropsType {
   onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onBlur?: (event: React.ChangeEvent<HTMLInputElement>) => void;
   className?: string;
+  style?: React.CSSProperties,
   name?: string;
   readOnly?: boolean,
 }
@@ -25,6 +26,7 @@ const AmountInput: React.FC<PropsType> = ({
   onChange,
   onBlur,
   className = '',
+  style,
   name,
   readOnly,
 }) => {
@@ -147,6 +149,7 @@ const AmountInput: React.FC<PropsType> = ({
         id={id}
         ref={ref}
         className={`${styles.amountInput} ${styles.dollarAmount} ${className}`}
+        style={style}
         type="text"
         value={inputValue}
         name={name}

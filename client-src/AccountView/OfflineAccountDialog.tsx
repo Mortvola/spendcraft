@@ -177,7 +177,7 @@ const OfflineAccountDialog: React.FC<PropsType & ModalProps> = ({
       setShow={setShow}
       validate={handleValidate}
       onSubmit={handleSubmit}
-      title="Add Offline Account"
+      title={account ? 'Edit Offline Account' : 'Add Offline Account'}
       formId="UnlinkedAccounts"
       onDelete={account ? handleDelete : null}
     >

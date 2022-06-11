@@ -6,7 +6,9 @@ import {
   FormikContextType,
 } from 'formik';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
-import { FormError, FormModal, setFormErrors } from '@mortvola/forms';
+import {
+  FormError, FormField, FormModal, setFormErrors,
+} from '@mortvola/forms';
 import CategorySplits from '../CategorySplits';
 import Amount from '../Amount';
 import Transaction from '../State/Transaction';
@@ -169,6 +171,49 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
     transaction !== null && transaction.type === TransactionType.REGULAR_TRANSACTION
   );
 
+  const renderSplits = () => (
+    <div className="cat-fund-table">
+      <div className={`${splitItemClass} cat-fund-title`}>
+        <div className="item-title">Category</div>
+        <div className="item-title-amount">Amount</div>
+        {
+          !isMobile
+            ? <div className="item-title">Comment</div>
+            : null
+        }
+      </div>
+      <Field name="splits" validate={validateSplits}>
+        {({
+          field: {
+            value,
+            name,
+          },
+          form: {
+            setFieldValue,
+            values,
+          },
+        }: FieldProps<TransactionCategoryInterface[]>) => {
+          const amount = typeof (values.amount) === 'string' ? parseFloat(values.amount) : values.amount;
+          return (
+            <CategorySplits
+              splits={value}
+              total={Math.abs(amount)}
+              onChange={(s) => {
+                setFieldValue(name, s);
+                setRemaining(computeRemaining(s, amount));
+              }}
+            />
+          )
+        }}
+      </Field>
+      <div className={splitItemClass}>
+        <div className="unassigned-label">Remaining:</div>
+        <Amount amount={remaining} style={{ margin: '1px', padding: '1px' }} />
+      </div>
+      <FormError name="splits" />
+    </div>
+  );
+
   return (
     <FormModal<ValueType>
       initialValues={{
@@ -186,100 +231,49 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
       onDelete={transaction && transaction.type !== TransactionType.STARTING_BALANCE ? handleDelete : null}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-        <label>
-          Date:
-          <Field className="form-control" type="date" name="date" readOnly={isReadOnly()} />
-        </label>
-        <div>{`Payment Channel: ${paymentChannel}`}</div>
+        <FormField name="date" type="date" label="Date:" readOnly={isReadOnly()} />
+        {
+          transaction !== null
+            ? <div>{`Payment Channel: ${paymentChannel}`}</div>
+            : null
+        }
       </div>
-      <label style={{ display: 'block' }}>
-        Name:
-        <Field
-          type="text"
-          className="form-control"
-          name="name"
-          readOnly={isReadOnly()}
-        />
-        <FormError name="name" />
-      </label>
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'minmax(0, 8rem) minmax(0, 1fr)',
-        columnGap: '1rem',
-      }}
+      <FormField
+        name="name"
+        label="Name:"
+        readOnly={isReadOnly()}
+        style={{ width: '100%' }}
+      />
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 8rem) minmax(0, 1fr)',
+          columnGap: '1rem',
+        }}
       >
-        <label>
-          Amount:
-          <Field name="amount">
-            {
-              ({ field, form: { values } }: FieldProps<string | number, ValueType>) => (
-                <AmountInput
-                  className="form-control"
-                  readOnly={isReadOnly()}
-                  {...field}
-                  onBlur={(v) => {
-                    setRemaining(computeRemaining(values.splits, parseFloat(v.target.value)));
-                  }}
-                />
-              )
-            }
-          </Field>
-          <FormError name="amount" />
-        </label>
-        <label>
-          Memo:
-          <Field
-            type="text"
-            className="form-control"
-            name="comment"
-          />
-          <FormError name="comment" />
-        </label>
+        <FormField
+          name="amount"
+          label="Amount:"
+          readOnly={isReadOnly()}
+        >
+          {
+            ({ field, form: { values } }: FieldProps<string | number, ValueType>) => (
+              <AmountInput
+                className="form-control"
+                readOnly={isReadOnly()}
+                {...field}
+                onBlur={(v) => {
+                  setRemaining(computeRemaining(values.splits, parseFloat(v.target.value)));
+                }}
+              />
+            )
+          }
+        </FormField>
+        <FormField name="comment" label="Memo:" />
       </div>
       {
         account === null || account.tracking === 'Transactions'
-          ? (
-            <div className="cat-fund-table">
-              <div className={`${splitItemClass} cat-fund-title`}>
-                <div className="item-title">Category</div>
-                <div className="item-title-amount">Amount</div>
-                {
-                  !isMobile
-                    ? <div className="item-title">Comment</div>
-                    : null
-                }
-              </div>
-              <Field name="splits" validate={validateSplits}>
-                {({
-                  field: {
-                    value,
-                    name,
-                  },
-                  form: {
-                    setFieldValue,
-                    values,
-                  },
-                }: FieldProps<TransactionCategoryInterface[]>) => {
-                  const amount = typeof (values.amount) === 'string' ? parseFloat(values.amount) : values.amount;
-                  return (
-                    <CategorySplits
-                      splits={value}
-                      total={Math.abs(amount)}
-                      onChange={(s) => {
-                        setFieldValue(name, s);
-                        setRemaining(computeRemaining(s, amount));
-                      }}
-                    />
-                  )
-                }}
-              </Field>
-              <div className={splitItemClass}>
-                <div className="unassigned-label">Remaining:</div>
-                <Amount amount={remaining} style={{ margin: '1px', padding: '1px' }} />
-              </div>
-              <FormError name="splits" />
-            </div>
-          )
+          ? renderSplits()
           : null
       }
     </FormModal>
