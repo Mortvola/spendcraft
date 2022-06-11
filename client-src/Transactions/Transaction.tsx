@@ -37,6 +37,10 @@ const Transaction: React.FC<PropsType> = observer(({
   let transactionClassName = `${styles.acct} ${styles.transaction}`;
   if (category) {
     transactionClassName = styles.transaction;
+
+    if (category.type === 'UNASSIGNED') {
+      transactionClassName += ` ${styles.unassigned}`;
+    }
   }
 
   transactionClassName = addMediaClass(transactionClassName);
@@ -55,10 +59,6 @@ const Transaction: React.FC<PropsType> = observer(({
             </div>
           </>
         );
-      }
-
-      if (category.type === 'UNASSIGNED') {
-        transactionClassName += ` ${styles.unassigned}`;
       }
 
       const transactionAmount = () => {
