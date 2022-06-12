@@ -43,6 +43,8 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
     date: string,
     name: string,
     amount: number,
+    principle?: number,
+    interest?: number,
     comment: string,
     splits: TransactionCategoryInterface[],
   }
@@ -83,6 +85,7 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
 
   const handleSubmit = async (values: ValueType) => {
     const amount = typeof values.amount === 'string' ? parseFloat(values.amount) : values.amount;
+    const principle = typeof values.principle === 'string' ? parseFloat(values.principle) : values.principle;
 
     // If the transaction amount is less then zero then
     // negate all of the category amounts.
@@ -98,6 +101,7 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
         name: values.name,
         date: values.date,
         amount,
+        principle,
         comment: values.comment,
         splits: values.splits,
       });
@@ -111,6 +115,7 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
         name: values.name,
         date: values.date,
         amount,
+        principle,
         comment: values.comment,
         splits: values.splits,
       });
@@ -220,6 +225,8 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
         date: transaction ? transaction.date.toISODate() : '',
         name: transaction ? transaction.name : '',
         amount: transaction ? transaction.amount : 0,
+        principle: transaction ? (transaction.principle ?? 0) : 0,
+        interest: transaction ? (transaction.amount - (transaction.principle ?? 0)) : 0,
         comment: transaction && transaction.comment ? transaction.comment : '',
         splits,
       }}
@@ -247,7 +254,10 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'minmax(0, 8rem) minmax(0, 1fr)',
+          gridTemplateColumns:
+            account && account.type === 'loan'
+              ? 'minmax(0, 8rem) minmax(0, 8rem) minmax(0, 8rem) minmax(0, 1fr)'
+              : 'minmax(0, 8rem) minmax(0, 1fr)',
           columnGap: '1rem',
         }}
       >
@@ -269,6 +279,27 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
             )
           }
         </FormField>
+        {
+          account && account.type === 'loan'
+            ? (
+              <>
+                <FormField
+                  name="principle"
+                  label="Principle:"
+                  as={AmountInput}
+                  onBlur={() => console.log('principle blur')}
+                />
+                <FormField
+                  name="interest"
+                  label="Interest:"
+                  as={AmountInput}
+                  onBlur={() => console.log('interest blur')}
+                  readOnly
+                />
+              </>
+            )
+            : null
+        }
         <FormField name="comment" label="Memo:" />
       </div>
       {

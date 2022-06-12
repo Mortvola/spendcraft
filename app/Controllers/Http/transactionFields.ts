@@ -13,7 +13,7 @@ const transactionFields = {
     },
     accountTransaction: {
       fields: {
-        pick: ['name', 'amount', 'paymentChannel', 'reconciled', 'account'],
+        pick: ['name', 'amount', 'principle', 'paymentChannel', 'reconciled', 'account'],
       },
       relations: {
         account: {

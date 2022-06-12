@@ -30,6 +30,10 @@
   grid-template-columns: var(--icon-width) var(--date-width) 1fr var(--amount-width) var(--balance-width) max-content minmax(0, 2fr) max-content;
 }
 
+.loan.transaction {
+  grid-template-columns: var(--icon-width) var(--date-width) 1fr repeat(3, var(--amount-width)) var(--balance-width) max-content minmax(0, 2fr) max-content;
+}
+
 .pending.transaction {
   grid-template-columns: var(--icon-width) var(--date-width) minmax(0, 1.8fr) var(--amount-width) var(--balance-width) minmax(0, 3fr) max-content;
 }

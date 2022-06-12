@@ -1,15 +1,17 @@
 import React from 'react';
 import useMediaQuery from '../MediaQuery';
-import { CategoryInterface } from '../State/State';
+import { AccountInterface, CategoryInterface } from '../State/State';
 import TitleStub from './TitleStub';
 import styles from './Transactions.module.css';
 
 type PropsType = {
   category?: CategoryInterface | null,
+  account?: AccountInterface | null,
 }
 
 const RegisterTitles: React.FC<PropsType> = ({
   category = null,
+  account = null,
 }) => {
   const { isMobile } = useMediaQuery();
 
@@ -55,10 +57,28 @@ const RegisterTitles: React.FC<PropsType> = ({
     );
   }
 
+  let className = `register-title ${styles.acct} ${styles.transaction}`;
+  if (account && account.type === 'loan') {
+    className += ` ${styles.loan}`;
+  }
+  else {
+    className += ` ${styles.acct}`;
+  }
+
   return (
-    <div className={`register-title ${styles.acct} ${styles.transaction}`}>
+    <div className={className}>
       {commonTitles()}
       <div className="currency">Amount</div>
+      {
+        account && account.type === 'loan'
+          ? (
+            <>
+              <div className="currency">Interest</div>
+              <div className="currency">Principle</div>
+            </>
+          )
+          : null
+      }
       <div className="currency">Balance</div>
       <div />
       <TitleStub />

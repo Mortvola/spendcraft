@@ -20,6 +20,8 @@ class Transaction implements TransactionInterface {
 
   amount: number;
 
+  principle: number | null;
+
   date: DateTime;
 
   createdAt: DateTime;
@@ -59,6 +61,7 @@ class Transaction implements TransactionInterface {
     if (props.accountTransaction) {
       this.name = props.accountTransaction.name;
       this.amount = props.accountTransaction.amount;
+      this.principle = props.accountTransaction.principle;
       this.instituteName = props.accountTransaction.account.institution.name;
       this.accountName = props.accountTransaction.account.name;
       this.accountId = props.accountTransaction.account.id;
@@ -80,6 +83,7 @@ class Transaction implements TransactionInterface {
       }
 
       this.amount = 0;
+      this.principle = null;
       this.instituteName = '';
       this.accountName = '';
     }
@@ -96,6 +100,7 @@ class Transaction implements TransactionInterface {
       date?: string,
       name?: string,
       amount?: number,
+      principle?: number,
       comment?: string,
       splits: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
     },
@@ -123,6 +128,7 @@ class Transaction implements TransactionInterface {
           this.date = DateTime.fromISO(body.transaction.date);
 
           this.amount = body.transaction.accountTransaction.amount;
+          this.principle = body.transaction.accountTransaction.principle;
           this.name = body.transaction.accountTransaction.name;
           this.comment = body.transaction.comment;
 
@@ -150,11 +156,19 @@ class Transaction implements TransactionInterface {
             }
           }
 
+          // Remove and re-insert the transaction if the
+          // date has changed to ensure proper ordering
           if (this.store.uiState.selectedAccount
             && this.store.uiState.selectedAccount.id === this.accountId
             && dateChanged) {
             this.store.uiState.selectedAccount.removeTransaction(this.id);
             this.store.uiState.selectedAccount.insertTransaction(this);
+          }
+
+          const account = this.store.accounts.findAccount(body.acctBalances[0].id);
+
+          if (account) {
+            account.balance = body.acctBalances[0].balance;
           }
         });
 
@@ -219,7 +233,7 @@ class Transaction implements TransactionInterface {
             throw new Error('transaction has a null id');
           }
 
-          this.store.categoryTree.updateBalances(body.balances);
+          this.store.categoryTree.updateBalances(body.categories);
           this.store.accounts.updateBalances(body.acctBalances);
           this.store.register.removeTransaction(this.id);
         });

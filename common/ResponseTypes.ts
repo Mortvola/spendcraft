@@ -101,6 +101,8 @@ export const isCategoryProps = (
   // && (r as CategoryProps).system !== undefined
 );
 
+export type AccountType = 'depository' | 'credit' | 'loan' | 'investment' | 'brokerage' | 'other';
+
 export interface AccountProps {
   id: number;
 
@@ -108,7 +110,7 @@ export interface AccountProps {
 
   closed: boolean;
 
-  type: string;
+  type: AccountType;
 
   subtype: string;
 
@@ -221,6 +223,8 @@ export interface TransactionProps {
     name: string;
 
     amount: number;
+
+    principle: number | null;
 
     paymentChannel: string | null,
 
@@ -391,11 +395,15 @@ export interface UpdateTransactionResponse {
     accountTransaction: {
       amount: number,
 
+      principle: number,
+
       name: string,
     }
   },
 
   categories: CategoryBalanceProps[];
+
+  acctBalances: AccountBalanceProps[],
 }
 
 export const isUpdateTransactionResponse = (r: unknown): r is UpdateTransactionResponse => (
@@ -425,17 +433,17 @@ export const isUpdateCategoryTransferResponse = (
 );
 
 export interface DeleteTransactionResponse {
-  balances: CategoryBalanceProps[],
+  categories: CategoryBalanceProps[],
   acctBalances: AccountBalanceProps[],
 }
 
 export const isDeleteTransactionResponse = (
   r: DeleteTransactionResponse | unknown,
 ): r is DeleteTransactionResponse => (
-  (r as DeleteTransactionResponse).balances !== undefined
-  && Array.isArray((r as DeleteTransactionResponse).balances)
-  && ((r as DeleteTransactionResponse).balances.length === 0
-  || isCategoryBalance((r as DeleteTransactionResponse).balances[0]))
+  (r as DeleteTransactionResponse).categories !== undefined
+  && Array.isArray((r as DeleteTransactionResponse).categories)
+  && ((r as DeleteTransactionResponse).categories.length === 0
+  || isCategoryBalance((r as DeleteTransactionResponse).categories[0]))
 );
 
 export interface InsertCategoryTransferReponse {
@@ -695,7 +703,7 @@ export type AddTransactionProps = {
 export type AddTransactionResponse = {
   categories: CategoryBalanceProps[],
   transaction: TransactionProps,
-  balance: number,
+  acctBalances: AccountBalanceProps[],
 }
 
 export const isAddTransactionResponse = (r: unknown): r is AddTransactionResponse => (

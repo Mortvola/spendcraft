@@ -1,6 +1,8 @@
 import { DateTime } from 'luxon';
 import Reports from './Reports';
-import { CategoryType, Error, TrackingType } from '../../common/ResponseTypes'
+import {
+  CategoryType, Error, TrackingType, AccountType,
+} from '../../common/ResponseTypes'
 import LoanTransaction from './LoanTransaction';
 
 export interface UserInterface {
@@ -33,6 +35,8 @@ export interface TransactionInterface {
   id: number | null;
 
   amount: number;
+
+  principle: number | null,
 
   date: DateTime;
 
@@ -294,7 +298,7 @@ export interface AccountInterface extends TransactionContainerInterface {
 
   closed: boolean;
 
-  type: string;
+  type: AccountType;
 
   subtype: string;
 
@@ -325,6 +329,7 @@ export interface AccountInterface extends TransactionContainerInterface {
       date?: string,
       name?: string,
       amount?: number,
+      principle?: number,
       comment?: string,
       splits: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
     },

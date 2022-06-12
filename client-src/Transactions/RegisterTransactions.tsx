@@ -133,7 +133,10 @@ const RegisterTransactions: React.FC<PropsType> = observer(({
       case TransactionType.REGULAR_TRANSACTION:
       case TransactionType.MANUAL_TRANSACTION:
       case TransactionType.STARTING_BALANCE:
-        if (transaction.duplicateOfTransactionId !== null) {
+        if (
+          transaction.duplicateOfTransactionId !== null
+          && transaction.duplicateOfTransactionId !== undefined
+        ) {
           showDuplicateDialog();
         }
         else {
@@ -166,6 +169,9 @@ const RegisterTransactions: React.FC<PropsType> = observer(({
       if (category !== null) {
         amount = transaction.getAmountForCategory(category.id);
       }
+      else if (account && account.type === 'loan') {
+        amount = transaction.principle ?? 0;
+      }
 
       const element = (
         <Transaction
@@ -174,6 +180,7 @@ const RegisterTransactions: React.FC<PropsType> = observer(({
           amount={amount}
           runningBalance={runningBalance}
           category={category}
+          account={account}
           showTrxDialog={showTrxDialog}
         />
       )

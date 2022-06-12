@@ -52,7 +52,7 @@ const Register: React.FC<PropsType> = observer(({
     <>
       <div className="register window window1">
         <div />
-        <RegisterTitles category={category} />
+        <RegisterTitles category={category} account={account} />
         <RegisterTransactions
           transactions={transactions}
           balance={balance}

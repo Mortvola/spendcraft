@@ -7,14 +7,14 @@ import Category from 'App/Models/Category';
 import Transaction from 'App/Models/Transaction';
 import TransactionCategory from 'App/Models/TransactionCategory';
 import {
-  TransactionsResponse, CategoryBalanceProps, TransactionProps, TransactionType,
+  TransactionsResponse, CategoryBalanceProps, TransactionProps, TransactionType, AccountBalanceProps,
 } from 'Common/ResponseTypes';
 import transactionFields from './transactionFields';
 
 type AddedTransaction = {
   categories: CategoryBalanceProps[],
-  transaction: Transaction,
-  balance: number,
+  transaction: Record<string, unknown>,
+  acctBalances: AccountBalanceProps[],
 };
 
 export default class AccountsController {
@@ -134,23 +134,22 @@ export default class AccountsController {
 
     const application = await user.related('application').query().firstOrFail();
 
-    const validationSchema = schema.create({
-      date: schema.date(),
-      name: schema.string(),
-      amount: schema.number(),
-      comment: schema.string.optional(),
-      splits: schema.array().members(
-        schema.object().members({
-          categoryId: schema.number(),
-          amount: schema.number(),
-          comment: schema.string.optional(),
-        }),
-      ),
-    });
-
     const { acctId } = request.params();
     const requestData = await request.validate({
-      schema: validationSchema,
+      schema: schema.create({
+        date: schema.date(),
+        name: schema.string(),
+        amount: schema.number(),
+        principle: schema.number.optional(),
+        comment: schema.string.optional(),
+        splits: schema.array().members(
+          schema.object().members({
+            categoryId: schema.number(),
+            amount: schema.number(),
+            comment: schema.string.optional(),
+          }),
+        ),
+      }),
     });
 
     const trx = await Database.transaction();
@@ -173,9 +172,15 @@ export default class AccountsController {
         name: requestData.name,
         transactionId: transaction.id,
         amount: requestData.amount,
+        principle: requestData.principle,
       });
 
-      account.balance += acctTransaction.amount;
+      if (account.type === 'loan') {
+        account.balance += acctTransaction.principle ?? 0;
+      }
+      else {
+        account.balance += acctTransaction.amount;
+      }
 
       await account.save();
 
@@ -246,8 +251,8 @@ export default class AccountsController {
 
       const result: AddedTransaction = {
         categories: categoryBalances,
-        transaction,
-        balance: account.balance,
+        transaction: transaction.serialize(transactionFields),
+        acctBalances: [{ id: account.id, balance: account.balance }],
       };
 
       return result;

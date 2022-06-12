@@ -6,7 +6,8 @@ import Institution from 'App/Models/Institution';
 import Account, { AccountSyncResult } from 'App/Models/Account';
 import Category from 'App/Models/Category';
 import {
-  AccountProps, CategoryBalanceProps, InstitutionProps, TrackingType, TransactionType, UnlinkedAccountProps,
+  AccountProps, AccountType, CategoryBalanceProps,
+  InstitutionProps, TrackingType, TransactionType, UnlinkedAccountProps,
 } from 'Common/ResponseTypes';
 import { schema } from '@ioc:Adonis/Core/Validator';
 import Transaction from 'App/Models/Transaction';
@@ -16,7 +17,7 @@ import { DateTime } from 'luxon';
 import BalanceHistory from 'App/Models/BalanceHistory';
 import Application from 'App/Models/Application';
 import { Exception } from '@poppinss/utils';
-import { CountryCode } from 'plaid';
+import { CountryCode, AccountType as PlaidAccountType } from 'plaid';
 import Env from '@ioc:Adonis/Core/Env'
 
 type OnlineAccount = {
@@ -24,7 +25,7 @@ type OnlineAccount = {
   name: string,
   officialName?: string | null,
   mask: string,
-  type: string,
+  type: AccountType,
   subtype: string,
   balances: {
     current: number,
@@ -35,7 +36,7 @@ type OnlineAccount = {
 type OfflineAccount = {
   name: string,
   balance: number,
-  type: string,
+  type: AccountType,
   subtype: string,
   tracking: string,
   rate?: number | null,
@@ -61,27 +62,25 @@ class InstitutionController {
 
     const application = await user.related('application').query().firstOrFail();
 
-    const validationSchema = schema.create({
-      institution: schema.object().members({
-        institutionId: schema.string.optional(),
-        name: schema.string(),
-      }),
-      publicToken: schema.string.optional(),
-      accounts: schema.array.optional().members(
-        schema.object().members({
-          name: schema.string(),
-          balance: schema.number(),
-          type: schema.string(),
-          subtype: schema.string(),
-          tracking: schema.string(),
-          rate: schema.number.optional(),
-        }),
-      ),
-      startDate: schema.string.optional(),
-    });
-
     const requestData = await request.validate({
-      schema: validationSchema,
+      schema: schema.create({
+        institution: schema.object().members({
+          institutionId: schema.string.optional(),
+          name: schema.string(),
+        }),
+        publicToken: schema.string.optional(),
+        accounts: schema.array.optional().members(
+          schema.object().members({
+            name: schema.string(),
+            balance: schema.number(),
+            type: schema.enum(Object.values(PlaidAccountType)),
+            subtype: schema.string(),
+            tracking: schema.string(),
+            rate: schema.number.optional(),
+          }),
+        ),
+        startDate: schema.string.optional(),
+      }),
     });
 
     // Check to see if we already have the institution. If not, add it.
@@ -469,36 +468,34 @@ class InstitutionController {
 
     const application = await user.related('application').query().firstOrFail();
 
-    const validationSchema = schema.create({
-      plaidAccounts: schema.array.optional().members(
-        schema.object().members({
-          plaidAccountId: schema.string(),
-          name: schema.string(),
-          officialName: schema.string.optional(),
-          mask: schema.string(),
-          type: schema.string(),
-          subtype: schema.string(),
-          balances: schema.object().members({
-            current: schema.number(),
-          }),
-          tracking: schema.string(),
-        }),
-      ),
-      offlineAccounts: schema.array.optional().members(
-        schema.object().members({
-          name: schema.string(),
-          balance: schema.number(),
-          type: schema.string(),
-          subtype: schema.string(),
-          tracking: schema.string(),
-          rate: schema.number.optional(),
-        }),
-      ),
-      startDate: schema.string(),
-    });
-
     const requestData = await request.validate({
-      schema: validationSchema,
+      schema: schema.create({
+        plaidAccounts: schema.array.optional().members(
+          schema.object().members({
+            plaidAccountId: schema.string(),
+            name: schema.string(),
+            officialName: schema.string.optional(),
+            mask: schema.string(),
+            type: schema.enum(Object.values(PlaidAccountType)),
+            subtype: schema.string(),
+            balances: schema.object().members({
+              current: schema.number(),
+            }),
+            tracking: schema.string(),
+          }),
+        ),
+        offlineAccounts: schema.array.optional().members(
+          schema.object().members({
+            name: schema.string(),
+            balance: schema.number(),
+            type: schema.enum(Object.values(PlaidAccountType)),
+            subtype: schema.string(),
+            tracking: schema.string(),
+            rate: schema.number.optional(),
+          }),
+        ),
+        startDate: schema.string(),
+      }),
     });
 
     const trx = await Database.transaction();

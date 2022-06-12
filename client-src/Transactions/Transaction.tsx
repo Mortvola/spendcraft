@@ -2,7 +2,7 @@ import React from 'react';
 import { observer } from 'mobx-react-lite';
 import Amount from '../Amount';
 import { useStores } from '../State/mobxStore';
-import { CategoryInterface, TransactionInterface } from '../State/State';
+import { AccountInterface, CategoryInterface, TransactionInterface } from '../State/State';
 import useMediaQuery from '../MediaQuery';
 import { TransactionType } from '../../common/ResponseTypes';
 import styles from './Transactions.module.css'
@@ -14,6 +14,7 @@ type PropsType = {
   amount: number,
   runningBalance: number,
   category?: CategoryInterface | null,
+  account?: AccountInterface | null,
   showTrxDialog: (transaction: TransactionInterface) => void,
 }
 
@@ -22,6 +23,7 @@ const Transaction: React.FC<PropsType> = observer(({
   amount,
   runningBalance,
   category,
+  account,
   showTrxDialog,
 }) => {
   const { uiState } = useStores();
@@ -34,12 +36,18 @@ const Transaction: React.FC<PropsType> = observer(({
     }
   };
 
-  let transactionClassName = `${styles.acct} ${styles.transaction}`;
+  let transactionClassName = styles.transaction;
   if (category) {
-    transactionClassName = styles.transaction;
-
     if (category.type === 'UNASSIGNED') {
       transactionClassName += ` ${styles.unassigned}`;
+    }
+  }
+  else if (account) {
+    if (account.type === 'loan') {
+      transactionClassName += ` ${styles.loan}`;
+    }
+    else {
+      transactionClassName += ` ${styles.acct}`;
     }
   }
 
@@ -102,9 +110,37 @@ const Transaction: React.FC<PropsType> = observer(({
       event.stopPropagation();
     };
 
+    const loanFields = () => (
+      <>
+        <Amount className="transaction-field currency" amount={transaction.amount} />
+        {
+          transaction.type !== TransactionType.STARTING_BALANCE
+            ? (
+              <>
+                <Amount className="transaction-field currency" amount={transaction.amount - amount} />
+                <Amount className="transaction-field currency" amount={amount} />
+              </>
+            )
+            : (
+              <>
+                <div />
+                <div />
+              </>
+            )
+        }
+      </>
+    );
+
     return (
       <>
-        <Amount className="transaction-field currency" amount={amount} />
+        {
+          // eslint-disable-next-line no-nested-ternary
+          account && account.type === 'loan'
+            ? (
+              loanFields()
+            )
+            : <Amount className="transaction-field currency" amount={amount} />
+        }
         <Amount className="transaction-field currency" amount={runningBalance} />
         <input
           type="checkbox"

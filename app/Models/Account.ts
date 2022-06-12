@@ -8,7 +8,7 @@ import plaidClient, { PlaidTransaction } from '@ioc:Plaid';
 import AccountTransaction from 'App/Models/AccountTransaction';
 import BalanceHistory from 'App/Models/BalanceHistory';
 import Institution from 'App/Models/Institution';
-import { CategoryBalanceProps, TrackingType } from 'Common/ResponseTypes';
+import { AccountType, CategoryBalanceProps, TrackingType } from 'Common/ResponseTypes';
 import Transaction from 'App/Models/Transaction';
 import Application from 'App/Models/Application';
 import { Exception } from '@poppinss/utils';
@@ -55,7 +55,7 @@ class Account extends BaseModel {
   public subtype: string;
 
   @column()
-  public type: string;
+  public type: AccountType;
 
   @column.dateTime()
   public syncDate: DateTime | null;

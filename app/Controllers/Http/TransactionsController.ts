@@ -11,6 +11,7 @@ import AccountTransaction from 'App/Models/AccountTransaction';
 import { AccountBalanceProps, CategoryBalanceProps } from 'Common/ResponseTypes';
 import Account from 'App/Models/Account';
 import { schema, rules } from '@ioc:Adonis/Core/Validator';
+import transactionFields from './transactionFields';
 
 export default class TransactionsController {
   // eslint-disable-next-line class-methods-use-this
@@ -43,23 +44,22 @@ export default class TransactionsController {
 
     const application = await user.related('application').query().firstOrFail();
 
-    const validationSchema = schema.create({
-      name: schema.string.optional([rules.trim()]),
-      amount: schema.number.optional(),
-      date: schema.date.optional(),
-      comment: schema.string.optional([rules.trim()]),
-      splits: schema.array().members(
-        schema.object().members({
-          categoryId: schema.number(),
-          amount: schema.number(),
-          comment: schema.string.optional([rules.trim()]),
-        }),
-      ),
-    });
-
     const { trxId } = request.params();
     const requestData = await request.validate({
-      schema: validationSchema,
+      schema: schema.create({
+        name: schema.string.optional([rules.trim()]),
+        amount: schema.number.optional(),
+        principle: schema.number.optional(),
+        date: schema.date.optional(),
+        comment: schema.string.optional([rules.trim()]),
+        splits: schema.array().members(
+          schema.object().members({
+            categoryId: schema.number(),
+            amount: schema.number(),
+            comment: schema.string.optional([rules.trim()]),
+          }),
+        ),
+      }),
     });
 
     const trx = await Database.transaction();
@@ -67,11 +67,13 @@ export default class TransactionsController {
     try {
       type Result = {
         categories: CategoryBalanceProps[],
-        transaction?: Transaction,
+        transaction?: Record<string, unknown>,
+        acctBalances: AccountBalanceProps[],
       };
 
       const result: Result = {
         categories: [],
+        acctBalances: [],
       };
 
       if (requestData.date !== undefined
@@ -88,6 +90,10 @@ export default class TransactionsController {
 
       // Get the 'unassigned' category id
       const unassigned = await application.getUnassignedCategory({ client: trx });
+
+      const acctTrans = await AccountTransaction.findByOrFail('transactionId', trxId, { client: trx });
+
+      const account = await Account.findOrFail(acctTrans.accountId);
 
       const splits = await TransactionCategory.query({ client: trx })
         .preload('loanTransaction')
@@ -123,15 +129,13 @@ export default class TransactionsController {
           split.delete();
         }
       }
-      else {
+      else if (account.tracking === 'Transactions') {
         // There are no category splits. Debit the 'Unassigned' category
-
-        const trans = await AccountTransaction.findByOrFail('transaction_id', trxId, { client: trx });
-
-        unassigned.amount -= trans.amount;
-
-        await unassigned.save();
-
+        if (requestData.amount !== undefined) {
+          unassigned.amount -= acctTrans.amount;
+          unassigned.amount += requestData.amount;
+          await unassigned.save();
+        }
         result.categories.push({ id: unassigned.id, balance: unassigned.amount });
       }
 
@@ -191,24 +195,47 @@ export default class TransactionsController {
       }
 
       if (requestData.name !== undefined
-        || requestData.amount !== undefined) {
-        const acctTransaction = await AccountTransaction.findByOrFail('transactionId', trxId, { client: trx });
+        || requestData.amount !== undefined
+        || requestData.principle !== undefined) {
+        if (account.type === 'loan') {
+          account.balance -= acctTrans.principle ?? 0;
+        }
+        else {
+          account.balance -= acctTrans.amount;
+        }
 
-        acctTransaction.merge({
+        acctTrans.merge({
           name: requestData.name,
           amount: requestData.amount,
+          principle: requestData.principle,
         });
 
-        await acctTransaction.save();
+        await acctTrans.save();
+
+        if (account.type === 'loan') {
+          account.balance += acctTrans.principle ?? 0;
+        }
+        else {
+          account.balance += acctTrans.amount;
+        }
+
+        await account.save();
       }
 
-      result.transaction = await Transaction.findOrFail(trxId, { client: trx });
+      const transaction = await Transaction.findOrFail(trxId, { client: trx });
 
-      await result.transaction.load('transactionCategories');
+      await transaction.load('transactionCategories');
 
-      await result.transaction.load('accountTransaction', (accountTrx) => {
+      await transaction.load('accountTransaction', (accountTrx) => {
         accountTrx.preload('account');
       });
+
+      result.transaction = transaction.serialize(transactionFields)
+
+      result.acctBalances = [{
+        id: account.id,
+        balance: account.balance,
+      }];
 
       await trx.commit();
 
@@ -244,7 +271,7 @@ export default class TransactionsController {
       user,
     },
     logger,
-  }: HttpContextContract): Promise<{ balances: CategoryBalanceProps[] }> {
+  }: HttpContextContract): Promise<{ categories: CategoryBalanceProps[] }> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -255,9 +282,9 @@ export default class TransactionsController {
 
     try {
       const result: {
-        balances: CategoryBalanceProps[],
+        categories: CategoryBalanceProps[],
         acctBalances: AccountBalanceProps[],
-      } = { balances: [], acctBalances: [] };
+      } = { categories: [], acctBalances: [] };
 
       const { trxId } = request.params();
 
@@ -283,7 +310,7 @@ export default class TransactionsController {
 
           unassignedCat.amount -= acctTransaction.amount;
 
-          result.balances.push({ id: unassignedCat.id, balance: unassignedCat.amount });
+          result.categories.push({ id: unassignedCat.id, balance: unassignedCat.amount });
 
           await unassignedCat.save();
         }
@@ -296,13 +323,13 @@ export default class TransactionsController {
 
           category.amount -= trxCat.amount;
 
-          const balance = result.balances.find((b) => b.id === category.id);
+          const balance = result.categories.find((b) => b.id === category.id);
 
           if (balance) {
             balance.balance = category.amount;
           }
           else {
-            result.balances.push({ id: category.id, balance: category.amount });
+            result.categories.push({ id: category.id, balance: category.amount });
           }
 
           if (category.type === 'LOAN') {
@@ -330,7 +357,12 @@ export default class TransactionsController {
           throw new Error('acctTransaction is null');
         }
 
-        account.balance -= acctTransaction.amount;
+        if (account.type === 'loan') {
+          account.balance -= acctTransaction.principle ?? 0;
+        }
+        else {
+          account.balance -= acctTransaction.amount;
+        }
 
         account.save();
 

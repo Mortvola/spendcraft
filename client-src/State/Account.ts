@@ -3,7 +3,7 @@ import { makeObservable, observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 import {
   AccountProps, AccountSyncResponse, AddTransactionResponse, Error,
-  isAddTransactionResponse, TrackingType,
+  isAddTransactionResponse, TrackingType, AccountType,
 } from '../../common/ResponseTypes';
 import {
   AccountInterface, InstitutionInterface, NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface,
@@ -21,7 +21,7 @@ class Account extends TransactionContainer implements AccountInterface {
 
   closed: boolean;
 
-  type: string;
+  type: AccountType;
 
   subtype: string;
 
@@ -155,7 +155,7 @@ class Account extends TransactionContainer implements AccountInterface {
 
           this.insertTransaction(transaction);
 
-          this.balance = body.balance;
+          this.balance = body.acctBalances[0].balance;
         });
 
         return null;
