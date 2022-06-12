@@ -202,6 +202,17 @@ export enum TransactionType {
   MANUAL_TRANSACTION = 5,
 }
 
+export type Location = {
+  address: string | null,
+  city: string | null,
+  region: string | null,
+  postalCode: string | null,
+  country: string | null,
+  lat: number | null,
+  lon: number | null,
+  storeNumber: string | null,
+};
+
 export interface TransactionProps {
   id: number | null;
 
@@ -227,6 +238,8 @@ export interface TransactionProps {
     principle: number | null;
 
     paymentChannel: string | null,
+
+    location: Location | null,
 
     reconciled: boolean;
 

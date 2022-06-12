@@ -5,6 +5,17 @@ import {
 import Account from 'App/Models/Account';
 import Transaction from 'App/Models/Transaction';
 
+type Location = {
+  address: string | null,
+  city: string | null,
+  region: string | null,
+  postalCode: string | null,
+  country: string | null,
+  lat: number | null,
+  lon: number | null,
+  storeNumber: string | null,
+};
+
 class AccountTransaction extends BaseModel {
   @column({ serializeAs: null })
   public id: number;
@@ -45,6 +56,11 @@ class AccountTransaction extends BaseModel {
 
   @column()
   public merchantName: string | null;
+
+  @column({
+    prepare: (value: Location) => JSON.stringify(value),
+  })
+  public location: Location | null;
 
   public static get Serializer(): string {
     return 'App/Serializer';

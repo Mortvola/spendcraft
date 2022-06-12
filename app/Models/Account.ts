@@ -12,6 +12,7 @@ import { AccountType, CategoryBalanceProps, TrackingType } from 'Common/Response
 import Transaction from 'App/Models/Transaction';
 import Application from 'App/Models/Application';
 import { Exception } from '@poppinss/utils';
+import { Location } from 'plaid';
 
 export type AccountSyncResult = {
   categories: CategoryBalanceProps[],
@@ -193,8 +194,6 @@ class Account extends BaseModel {
       .where('pending', true)
       .preload('transaction');
 
-    console.log(`plaid account id: ${this.plaidAccountId}`);
-
     const transactionsResponse = await plaidClient.getTransactions(
       accessToken,
       startDate.toISODate(),
@@ -217,7 +216,6 @@ class Account extends BaseModel {
 
     const sum = await this.applyTransactions(application, transactionsResponse.transactions, pendingTransactions);
 
-    console.log(JSON.stringify(transactionsResponse.accounts[0]));
     this.plaidBalance = transactionsResponse.accounts[0].balances.current;
     if (this.plaidBalance && (this.type === 'credit' || this.type === 'loan')) {
       this.plaidBalance = -this.plaidBalance;
@@ -248,6 +246,31 @@ class Account extends BaseModel {
       }
 
       if (plaidTransaction.amount !== null) {
+        const getLocation = (location: Location) => {
+          if (location.address !== null
+            || location.city !== null
+            || location.country !== null
+            || location.lat !== null
+            || location.lon !== null
+            || location.postal_code !== null
+            || location.region !== null
+            || location.store_number !== null
+          ) {
+            return {
+              address: plaidTransaction.location.address,
+              city: plaidTransaction.location.city,
+              region: plaidTransaction.location.region,
+              postalCode: plaidTransaction.location.postal_code,
+              country: plaidTransaction.location.country,
+              lat: plaidTransaction.location.lat,
+              lon: plaidTransaction.location.lon,
+              storeNumber: plaidTransaction.location.store_number,
+            }
+          }
+
+          return null;
+        }
+
         // First check to see if the transaction is present. If it is then don't insert it.
         let acctTrans = await AccountTransaction
           .findBy('plaidTransactionId', plaidTransaction.transaction_id, { client: this.$trx });
@@ -277,6 +300,7 @@ class Account extends BaseModel {
               pending: plaidTransaction.pending ?? false,
               paymentChannel: plaidTransaction.payment_channel,
               merchantName: plaidTransaction.merchant_name,
+              location: getLocation(plaidTransaction.location),
             });
 
             await acctTrans.save();
@@ -308,6 +332,7 @@ class Account extends BaseModel {
               pending: plaidTransaction.pending ?? false,
               paymentChannel: plaidTransaction.payment_channel,
               merchantName: plaidTransaction.merchant_name,
+              location: getLocation(plaidTransaction.location),
             })
             .save();
 

@@ -11,11 +11,12 @@ import {
 } from '@mortvola/forms';
 import CategorySplits from '../CategorySplits';
 import Amount from '../Amount';
-import Transaction from '../State/Transaction';
-import { AccountInterface, TransactionCategoryInterface } from '../State/State';
+import { AccountInterface, TransactionCategoryInterface, TransactionInterface } from '../State/State';
 import AmountInput from '../AmountInput';
 import useMediaQuery from '../MediaQuery';
 import { TransactionType } from '../../common/ResponseTypes';
+import styles from './TransactionDialog.module.css';
+import PurchaseLocation from './PurchaseLocation';
 
 function validateSplits(splits: Array<TransactionCategoryInterface>) {
   let error;
@@ -30,7 +31,7 @@ function validateSplits(splits: Array<TransactionCategoryInterface>) {
 }
 
 type PropsType = {
-  transaction?: Transaction | null,
+  transaction?: TransactionInterface | null,
   account?: AccountInterface | null,
 }
 
@@ -237,11 +238,20 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
       onSubmit={handleSubmit}
       onDelete={transaction && transaction.type !== TransactionType.STARTING_BALANCE ? handleDelete : null}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+      <div className={styles.main}>
         <FormField name="date" type="date" label="Date:" readOnly={isReadOnly()} />
         {
           transaction !== null
-            ? <div>{`Payment Channel: ${paymentChannel}`}</div>
+            ? (
+              <div>
+                <div>{`Payment Channel: ${paymentChannel}`}</div>
+                {
+                  transaction.location
+                    ? <PurchaseLocation location={transaction.location} />
+                    : null
+                }
+              </div>
+            )
             : null
         }
       </div>

@@ -1,7 +1,7 @@
 import { DateTime } from 'luxon';
 import Reports from './Reports';
 import {
-  CategoryType, Error, TrackingType, AccountType,
+  CategoryType, Error, TrackingType, AccountType, Location,
 } from '../../common/ResponseTypes'
 import LoanTransaction from './LoanTransaction';
 
@@ -64,6 +64,8 @@ export interface TransactionInterface {
 
   paymentChannel: string | null;
 
+  location: Location | null;
+
   comment: string;
 
   duplicateOfTransactionId: number | null;
@@ -75,6 +77,7 @@ export interface TransactionInterface {
       date?: string,
       name?: string,
       amount?: number,
+      principle?: number,
       comment?: string,
       splits: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
     },

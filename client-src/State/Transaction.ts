@@ -9,6 +9,7 @@ import {
   isDeleteTransactionResponse,
   isUpdateTransactionResponse,
   CategoryTransferProps,
+  Location,
 } from '../../common/ResponseTypes';
 import {
   NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface,
@@ -42,6 +43,8 @@ class Transaction implements TransactionInterface {
 
   paymentChannel: string | null = null;
 
+  location: Location | null = null;
+
   duplicateOfTransactionId: number | null = null;
 
   reconciled = false;
@@ -66,6 +69,7 @@ class Transaction implements TransactionInterface {
       this.accountName = props.accountTransaction.account.name;
       this.accountId = props.accountTransaction.account.id;
       this.paymentChannel = props.accountTransaction.paymentChannel;
+      this.location = props.accountTransaction.location;
       this.reconciled = props.accountTransaction.reconciled;
     }
     else {
