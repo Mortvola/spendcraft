@@ -12,6 +12,7 @@ import { Views } from './State/State';
 
 const Menubar: React.FC = observer(() => {
   const { user: { username } } = useStores();
+  const [expanded, setExpanded] = React.useState<boolean>(false);
 
   const logout = () => {
     (async () => {
@@ -26,6 +27,7 @@ const Menubar: React.FC = observer(() => {
   };
 
   const handleSelect = (eventKey: Views | string | null) => {
+    setExpanded(false);
     switch (eventKey) {
       case 'LOGOUT':
         logout();
@@ -36,20 +38,30 @@ const Menubar: React.FC = observer(() => {
     }
   };
 
+  const handleToggle = (expand: boolean) => {
+    setExpanded(expand);
+  };
+
   return (
-    <Navbar collapseOnSelect onSelect={handleSelect} expand="md" style={{ userSelect: 'none' }}>
+    <Navbar
+      onSelect={handleSelect}
+      onToggle={handleToggle}
+      expand="md"
+      expanded={expanded}
+      style={{ userSelect: 'none' }}
+    >
       <Navbar.Brand href="/">SpendCraft</Navbar.Brand>
       <Navbar.Toggle />
       <Navbar.Collapse style={{ justifyContent: 'space-between' }}>
         <Nav>
-          <Nav.Link as={Link} to="/home">Home</Nav.Link>
-          <Nav.Link as={Link} to="/plans">Plans</Nav.Link>
-          <Nav.Link as={Link} to="/accounts">Accounts</Nav.Link>
-          <Nav.Link as={Link} to="/reports">Reports</Nav.Link>
+          <Nav.Link as={Link} to="/home" eventKey="NOOP">Home</Nav.Link>
+          <Nav.Link as={Link} to="/plans" eventKey="NOOP">Plans</Nav.Link>
+          <Nav.Link as={Link} to="/accounts" eventKey="NOOP">Accounts</Nav.Link>
+          <Nav.Link as={Link} to="/reports" eventKey="NOOP">Reports</Nav.Link>
         </Nav>
         <Nav>
           <NavDropdown className="dropdown menubar-item" title={username || ''} id="menubar-dropdown" align="end">
-            <NavDropdown.Item as={Link} to="/user">Account</NavDropdown.Item>
+            <NavDropdown.Item as={Link} to="/user" eventKey="NOOP">Account</NavDropdown.Item>
             <NavDropdown.Item eventKey="LOGOUT">Logout</NavDropdown.Item>
           </NavDropdown>
         </Nav>
