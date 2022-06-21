@@ -1,5 +1,5 @@
 import React from 'react';
-import { Formik, FieldArray } from 'formik';
+import { Formik, FieldArray, FormikState } from 'formik';
 import { DateTime } from 'luxon';
 import { Button, DropdownButton } from 'react-bootstrap';
 import { FormCheckbox, FormField } from '@mortvola/forms';
@@ -10,6 +10,7 @@ import useSortableTable from './SortableTable';
 import { isGroup } from '../State/Group';
 import ReportControls from './ReportControls';
 import styles from './Category.module.css';
+import { SubmitButton } from '@mortvola/forms';
 
 type CategoryReport = {
   rowNumber: string,
@@ -84,48 +85,56 @@ const Category: React.FC = () => {
         }}
         onSubmit={handleSubmit}
       >
-        <ReportControls>
-          <FormField name="startDate" type="date" label="Start Date:" />
-          <FormField name="endDate" type="date" label="End Date:" />
-          <DropdownButton id="test" title="Categories">
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                paddingLeft: '0.5rem',
-                overflowY: 'auto',
-                maxHeight: '300px',
-              }}
-            >
-              <FieldArray name="account">
-                {
-                  () => {
-                    let index = -1;
-                    return (nodes.flatMap((g) => {
-                      if (isGroup(g)) {
-                        return g.categories.filter((c) => (
-                          c.type === 'REGULAR'
-                        ))
-                          .map((c) => {
-                            index += 1;
-                            return (
-                              <FormCheckbox key={c.id} name={`category[${index}].value`} label={`${g.name}:${c.name}`} />
-                            )
-                          })
-                      }
+        {
+          ({ isSubmitting }: FormikState<FormValues>) => (
+            <ReportControls>
+              <FormField name="startDate" type="date" label="Start Date:" />
+              <FormField name="endDate" type="date" label="End Date:" />
+              <DropdownButton id="test" title="Categories">
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    paddingLeft: '0.5rem',
+                    overflowY: 'auto',
+                    maxHeight: '300px',
+                  }}
+                >
+                  <FieldArray name="account">
+                    {
+                      () => {
+                        let index = -1;
+                        return (nodes.flatMap((g) => {
+                          if (isGroup(g)) {
+                            return g.categories.filter((c) => (
+                              c.type === 'REGULAR'
+                            ))
+                              .map((c) => {
+                                index += 1;
+                                return (
+                                  <FormCheckbox key={c.id} name={`category[${index}].value`} label={`${g.name}:${c.name}`} />
+                                )
+                              })
+                          }
 
-                      index += 1;
-                      return (
-                        <FormCheckbox key={g.id} name={`category[${index}].value`} label={`${g.name}`} />
-                      )
-                    }))
-                  }
-                }
-              </FieldArray>
-            </div>
-          </DropdownButton>
-          <Button variant="primary" type="submit">Run Report</Button>
-        </ReportControls>
+                          index += 1;
+                          return (
+                            <FormCheckbox key={g.id} name={`category[${index}].value`} label={`${g.name}`} />
+                          )
+                        }))
+                      }
+                    }
+                  </FieldArray>
+                </div>
+              </DropdownButton>
+              <SubmitButton
+                isSubmitting={isSubmitting}
+                label="Run Report"
+                submitLabel="Running Report"
+              />
+            </ReportControls>
+          )
+        }
       </Formik>
       <SortableTable>
         <SortableTable.Header className={`title ${styles.reportItem}`}>

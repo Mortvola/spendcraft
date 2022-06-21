@@ -2,13 +2,13 @@ import React, {
   useEffect, useState,
 } from 'react';
 import {
-  Form, Formik, FormikHelpers, FormikProps,
+  Form, Formik, FormikHelpers, FormikProps, useFormikContext,
 } from 'formik';
 import { Observer } from 'mobx-react-lite';
 import {
-  FormControl, InputGroup, Button,
+  FormControl, InputGroup,
 } from 'react-bootstrap';
-import { FormField, setFormErrors } from '@mortvola/forms';
+import { FormField, setFormErrors, SubmitButton } from '@mortvola/forms';
 import { useStores } from './State/mobxStore';
 import IconButton from './IconButton';
 
@@ -19,11 +19,16 @@ type FormValues = {
 
 const MyInputGroup: React.FC<FormikProps<FormValues>> = (props: FormikProps<FormValues>) => {
   const { user } = useStores();
+  const { isSubmitting } = useFormikContext();
 
   return (
     <InputGroup>
       <FormControl {...props} readOnly={user.pendingEmail !== null} />
-      <Button type="submit">Change</Button>
+      <SubmitButton
+        isSubmitting={isSubmitting}
+        label="Change"
+        submitLabel="Changing"
+      />
     </InputGroup>
   );
 }

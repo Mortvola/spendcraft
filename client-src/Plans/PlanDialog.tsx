@@ -5,8 +5,10 @@ import {
   Formik, Form, Field, ErrorMessage,
   FormikErrors, FormikHelpers, useFormikContext,
   FormikContextType,
+  FormikState,
 } from 'formik';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
+import { SubmitButton } from '@mortvola/forms';
 import { useStores } from '../State/mobxStore';
 import { FundingPlanInterface } from '../State/State';
 
@@ -58,14 +60,19 @@ const DeleteButton: React.FC<DeleteButtonPropsType> = ({ plan, setShow }) => {
 
 type FooterPropsType = {
   setShow: (show: boolean) => void,
+  isSubmitting: boolean,
 }
 
-const Footer: React.FC<FooterPropsType> = ({ setShow }) => (
+const Footer: React.FC<FooterPropsType> = ({ setShow, isSubmitting }) => (
   <Modal.Footer>
     <DeleteButton setShow={setShow} />
     <div />
     <Button variant="secondary" onClick={() => setShow(false)}>Cancel</Button>
-    <Button variant="primary" type="submit">Save</Button>
+    <SubmitButton
+      isSubmitting={isSubmitting}
+      label="Save"
+      submitLabel="Saving"
+    />
   </Modal.Footer>
 );
 
@@ -118,22 +125,26 @@ const PlanDialog: React.FC<PropsType & ModalProps> = ({
       validate={handleValidate}
       onSubmit={handleSubmit}
     >
-      <Form>
-        <Header />
-        <Modal.Body>
-          <label>
-            Plan Name:
-            <Field
-              type="text"
-              className="form-control"
-              name="name"
-            />
-          </label>
-          <br />
-          <ErrorMessage name="name" />
-        </Modal.Body>
-        <Footer setShow={setShow} />
-      </Form>
+      {
+        ({ isSubmitting }: FormikState<ValueType>) => (
+          <Form>
+            <Header />
+            <Modal.Body>
+              <label>
+                Plan Name:
+                <Field
+                  type="text"
+                  className="form-control"
+                  name="name"
+                />
+              </label>
+              <br />
+              <ErrorMessage name="name" />
+            </Modal.Body>
+            <Footer setShow={setShow} isSubmitting={isSubmitting} />
+          </Form>
+        )
+      }
     </Formik>
   );
 };

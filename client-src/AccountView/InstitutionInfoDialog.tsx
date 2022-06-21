@@ -4,6 +4,7 @@ import { Institution } from 'plaid';
 import { DateTime } from 'luxon';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import Http from '@mortvola/http';
+import { SubmitButton } from '@mortvola/forms';
 import { InstitutionInterface } from '../State/State';
 import styles from './InstitutionInfoDialog.module.css';
 
@@ -15,14 +16,19 @@ const Header: React.FC = () => (
 
 type FooterProps = {
   setShow: (show: boolean) => void,
+  isSubmitting: boolean,
 }
 
-const Footer: React.FC<FooterProps> = ({ setShow }) => (
+const Footer: React.FC<FooterProps> = ({ setShow, isSubmitting }) => (
   <Modal.Footer>
     <div />
     <div />
     <Button variant="secondary" onClick={() => setShow(false)}>Cancel</Button>
-    <Button variant="primary" type="submit">Save</Button>
+    <SubmitButton
+      isSubmitting={isSubmitting}
+      label="Save"
+      submitLabel="Saving"
+    />
   </Modal.Footer>
 );
 
@@ -128,7 +134,7 @@ const InstitutionInfoDialog: React.FC<PropsType & ModalProps> = ({
           renderForm()
         }
       </Modal.Body>
-      <Footer setShow={setShow} />
+      <Footer setShow={setShow} isSubmitting={false} />
     </>
   );
 };

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Formik, FieldArray } from 'formik';
+import { Formik, FieldArray, FormikState } from 'formik';
 import { DateTime } from 'luxon';
 import { Button, DropdownButton } from 'react-bootstrap';
 import { FormCheckbox, FormField } from '@mortvola/forms';
@@ -9,6 +9,7 @@ import { useStores } from '../State/mobxStore';
 import useSortableTable from './SortableTable';
 import ReportControls from './ReportControls';
 import styles from './Payee.module.css';
+import { SubmitButton } from '@mortvola/forms';
 
 type PayeeReport = {
   [key: string]: string | number,
@@ -99,48 +100,56 @@ const Payee: React.FC = () => {
         }}
         onSubmit={handleSubmit}
       >
-        <ReportControls>
-          <FormField name="startDate" type="date" label="Start Date:" />
-          <FormField name="endDate" type="date" label="End Date:" />
-          <DropdownButton id="test" title="Payment Channels">
-            <div style={{ display: 'flex', flexDirection: 'column', paddingLeft: '0.5rem' }}>
-              <FormCheckbox name="inStoreFilter" label="In Store" />
-              <FormCheckbox name="onlineFilter" label="Online" />
-              <FormCheckbox name="otherFilter" label="Other" />
-              <FormCheckbox name="unknownFilter" label="Unknown" />
-            </div>
-          </DropdownButton>
-          <DropdownButton id="test" title="Accounts">
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                paddingLeft: '0.5rem',
-                overflowY: 'auto',
-                maxHeight: '300px',
-              }}
-            >
-              <FieldArray name="account">
-                {
-                  () => {
-                    let index = -1;
-                    return (accounts.institutions.flatMap((i) => (
-                      i.accounts.filter((a) => (
-                        a.tracking === 'Transactions'
-                      )))
-                      .map((a) => {
-                        index += 1;
-                        return (
-                          <FormCheckbox key={a.id} name={`account[${index}].value`} label={`${i.name}:${a.name}`} />
-                        )
-                      })))
-                  }
-                }
-              </FieldArray>
-            </div>
-          </DropdownButton>
-          <Button variant="primary" type="submit">Run Report</Button>
-        </ReportControls>
+        {
+          ({ isSubmitting }: FormikState<FormValues>) => (
+            <ReportControls>
+              <FormField name="startDate" type="date" label="Start Date:" />
+              <FormField name="endDate" type="date" label="End Date:" />
+              <DropdownButton id="test" title="Payment Channels">
+                <div style={{ display: 'flex', flexDirection: 'column', paddingLeft: '0.5rem' }}>
+                  <FormCheckbox name="inStoreFilter" label="In Store" />
+                  <FormCheckbox name="onlineFilter" label="Online" />
+                  <FormCheckbox name="otherFilter" label="Other" />
+                  <FormCheckbox name="unknownFilter" label="Unknown" />
+                </div>
+              </DropdownButton>
+              <DropdownButton id="test" title="Accounts">
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    paddingLeft: '0.5rem',
+                    overflowY: 'auto',
+                    maxHeight: '300px',
+                  }}
+                >
+                  <FieldArray name="account">
+                    {
+                      () => {
+                        let index = -1;
+                        return (accounts.institutions.flatMap((i) => (
+                          i.accounts.filter((a) => (
+                            a.tracking === 'Transactions'
+                          )))
+                          .map((a) => {
+                            index += 1;
+                            return (
+                              <FormCheckbox key={a.id} name={`account[${index}].value`} label={`${i.name}:${a.name}`} />
+                            )
+                          })))
+                      }
+                    }
+                  </FieldArray>
+                </div>
+              </DropdownButton>
+              <SubmitButton
+                isSubmitting={isSubmitting}
+                label="Run Report"
+                submitLabel="Running Report"
+              />
+            </ReportControls>
+          )
+        }
       </Formik>
       <SortableTable>
         <SortableTable.Header className={`title ${styles.reportItem}`}>

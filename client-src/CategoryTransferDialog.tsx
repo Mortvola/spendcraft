@@ -2,9 +2,10 @@
 import React from 'react';
 import { Modal, Button } from 'react-bootstrap';
 import {
-  Formik, Form, Field, ErrorMessage, FormikErrors, FieldProps,
+  Formik, Form, Field, ErrorMessage, FormikErrors, FieldProps, FormikState,
 } from 'formik';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
+import { SubmitButton } from '@mortvola/forms';
 import Http from '@mortvola/http';
 import CategorySplits from './CategorySplits';
 import Transaction from './State/Transaction';
@@ -18,14 +19,19 @@ const Header: React.FC = () => (
 
 type FooterPropsType = {
   setShow: (show: boolean) => void,
+  isSubmitting: boolean,
 }
 
-const Footer: React.FC<FooterPropsType> = ({ setShow }) => (
+const Footer: React.FC<FooterPropsType> = ({ setShow, isSubmitting }) => (
   <Modal.Footer>
     <div />
     <div />
     <Button variant="secondary" onClick={() => setShow(false)}>Cancel</Button>
-    <Button variant="primary" type="submit">Save</Button>
+    <SubmitButton
+      isSubmitting={isSubmitting}
+      label="Save"
+      submitLabel="Saving"
+    />
   </Modal.Footer>
 );
 
@@ -179,94 +185,98 @@ const CategoryTransferDialog: React.FC<PropsType & ModalProps> = ({
       validate={handleValidate}
       onSubmit={handleSubmit}
     >
-      <Form id="catTransferForm" className="scrollable-form">
-        <Header />
-        <div>
-          <div>
-            <label>
-              Date
-              <Field type="date" name="date" />
-            </label>
-          </div>
-          <label>
-            From:
-          </label>
-          <div className="cat-fund-table">
-            <div className="transaction-split-item cat-fund-title">
-              <div className="fund-list-cat-name">Category</div>
-              <div className="dollar-amount">Balance</div>
-              <div className="dollar-amount">Amount</div>
-              <div className="dollar-amount">New Balance</div>
+      {
+        ({ isSubmitting }: FormikState<ValueType>) => (
+          <Form id="catTransferForm" className="scrollable-form">
+            <Header />
+            <div>
+              <div>
+                <label>
+                  Date
+                  <Field type="date" name="date" />
+                </label>
+              </div>
+              <label>
+                From:
+              </label>
+              <div className="cat-fund-table">
+                <div className="transaction-split-item cat-fund-title">
+                  <div className="fund-list-cat-name">Category</div>
+                  <div className="dollar-amount">Balance</div>
+                  <div className="dollar-amount">Amount</div>
+                  <div className="dollar-amount">New Balance</div>
+                </div>
+                <Field name="fromCategories" validate={validateSplits}>
+                  {({
+                    field: {
+                      value,
+                      name,
+                    },
+                    form: {
+                      setFieldValue,
+                    },
+                  }: FieldProps<Array<TransactionCategoryInterface>>) => (
+                    <CategorySplits
+                      splits={value.map((s) => (
+                        { ...s, ...{ amount: s.amount * -1 } }
+                      ))}
+                      total={0}
+                      onChange={(splits) => {
+                        setFieldValue(name, splits.map((s) => (
+                          { ...s, ...{ amount: s.amount * -1 } }
+                        )));
+                        handleTotalChange();
+                      }}
+                    />
+                  )}
+                </Field>
+                <label>
+                  Transfer Total
+                  <div className="transfer-total splits-total dollar-amount">0.00</div>
+                </label>
+              </div>
             </div>
-            <Field name="fromCategories" validate={validateSplits}>
-              {({
-                field: {
-                  value,
-                  name,
-                },
-                form: {
-                  setFieldValue,
-                },
-              }: FieldProps<Array<TransactionCategoryInterface>>) => (
-                <CategorySplits
-                  splits={value.map((s) => (
-                    { ...s, ...{ amount: s.amount * -1 } }
-                  ))}
-                  total={0}
-                  onChange={(splits) => {
-                    setFieldValue(name, splits.map((s) => (
-                      { ...s, ...{ amount: s.amount * -1 } }
-                    )));
-                    handleTotalChange();
-                  }}
-                />
-              )}
-            </Field>
+            <br />
             <label>
-              Transfer Total
-              <div className="transfer-total splits-total dollar-amount">0.00</div>
+              To:
             </label>
-          </div>
-        </div>
-        <br />
-        <label>
-          To:
-        </label>
-        <div className="cat-fund-table">
-          <div className="transaction-split-item cat-fund-title">
-            <div className="fund-list-cat-name">Category</div>
-            <div className="dollar-amount">Balance</div>
-            <div className="dollar-amount">Amount</div>
-            <div className="dollar-amount">New Balance</div>
-          </div>
-          <Field name="toCategories" validate={validateSplits}>
-            {({
-              field: {
-                value,
-                name,
-              },
-              form: {
-                setFieldValue,
-              },
-            }: FieldProps<Array<TransactionCategoryInterface>>) => (
-              <CategorySplits
-                splits={value}
-                total={0}
-                onChange={(splits) => {
-                  setFieldValue(name, splits);
-                  handleTotalChange();
-                }}
-              />
-            )}
-          </Field>
-          <label className="dollar-amount">
-            Unassigned
-            <div className="available-funds splits-total dollar-amount">0.00</div>
-          </label>
-        </div>
-        <ErrorMessage name="splits" />
-        <Footer setShow={setShow} />
-      </Form>
+            <div className="cat-fund-table">
+              <div className="transaction-split-item cat-fund-title">
+                <div className="fund-list-cat-name">Category</div>
+                <div className="dollar-amount">Balance</div>
+                <div className="dollar-amount">Amount</div>
+                <div className="dollar-amount">New Balance</div>
+              </div>
+              <Field name="toCategories" validate={validateSplits}>
+                {({
+                  field: {
+                    value,
+                    name,
+                  },
+                  form: {
+                    setFieldValue,
+                  },
+                }: FieldProps<Array<TransactionCategoryInterface>>) => (
+                  <CategorySplits
+                    splits={value}
+                    total={0}
+                    onChange={(splits) => {
+                      setFieldValue(name, splits);
+                      handleTotalChange();
+                    }}
+                  />
+                )}
+              </Field>
+              <label className="dollar-amount">
+                Unassigned
+                <div className="available-funds splits-total dollar-amount">0.00</div>
+              </label>
+            </div>
+            <ErrorMessage name="splits" />
+            <Footer setShow={setShow} isSubmitting={isSubmitting} />
+          </Form>
+        )
+      }
     </Formik>
   );
 };

@@ -1,11 +1,12 @@
 import React from 'react';
-import { Form, Formik, FormikHelpers } from 'formik';
+import { Form, Formik, FormikHelpers, FormikState } from 'formik';
 import { Button } from 'react-bootstrap';
 import * as responsive from 'react-responsive';
 import Http from '@mortvola/http';
 import { FormField, FormError, setFormErrors } from '@mortvola/forms';
 import styles from './Signup.module.css';
 import { isErrorResponse } from '../common/ResponseTypes';
+import { SubmitButton } from '@mortvola/forms';
 
 const Signup: React.FC = () => {
   const tiny = responsive.useMediaQuery({ query: '(max-width: 350px)' });
@@ -66,35 +67,42 @@ const Signup: React.FC = () => {
         }}
         onSubmit={handleSubmit}
       >
-        <Form className={styles.form}>
-          <div className={styles.subtitle}>{'Let\'s get your account set up!'}</div>
-          <FormField name="username" label="Username" />
-          <FormField name="email" label="E-Mail Address" />
-          <FormField
-            type="password"
-            name="password"
-            label="Password"
-            autoComplete="new-password"
-          />
-          <FormField
-            type="password"
-            name="password_confirmation"
-            label="Confirm Password"
-            autoComplete="new-password"
-          />
+        {
+          ({ isSubmitting }: FormikState<FormValues>) => (
+            <Form className={styles.form}>
+              <div className={styles.subtitle}>{'Let\'s get your account set up!'}</div>
+              <FormField name="username" label="Username" />
+              <FormField name="email" label="E-Mail Address" />
+              <FormField
+                type="password"
+                name="password"
+                label="Password"
+                autoComplete="new-password"
+              />
+              <FormField
+                type="password"
+                name="password_confirmation"
+                label="Confirm Password"
+                autoComplete="new-password"
+              />
 
-          <Button className={styles.button} type="submit" variant="primary">
-            Create my account
-          </Button>
+              <SubmitButton
+                className={styles.button}
+                isSubmitting={isSubmitting}
+                label="Create my account"
+                submitLabel="Creating your acccount"
+              />
 
-          <FormError name="general" />
-          <div className={styles.finePrint}>
-            {
-              'By selecting "Create my account", you agree to our Terms'
-              + ' and have read and acknowledge our Privacy Statement.'
-            }
-          </div>
-        </Form>
+              <FormError name="general" />
+              <div className={styles.finePrint}>
+                {
+                  'By selecting "Create my account", you agree to our Terms'
+                  + ' and have read and acknowledge our Privacy Statement.'
+                }
+              </div>
+            </Form>
+          )
+        }
       </Formik>
     </div>
   );

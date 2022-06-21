@@ -1,9 +1,10 @@
 import React from 'react';
-import { Form, Formik, FormikHelpers } from 'formik';
-import { Button } from 'react-bootstrap';
+import { Form, Formik, FormikHelpers, FormikState } from 'formik';
 import * as responsive from 'react-responsive';
 import Http from '@mortvola/http';
-import { FormError, setFormErrors, FormField } from '@mortvola/forms';
+import {
+  FormError, setFormErrors, FormField, SubmitButton,
+} from '@mortvola/forms';
 import styles from './Signin.module.css';
 import { isErrorResponse } from '../common/ResponseTypes';
 
@@ -58,22 +59,29 @@ const Signin: React.FC = () => {
         }}
         onSubmit={handleSubmit}
       >
-        <Form className={styles.form}>
-          <div className={styles.subtitle}>Enter your username and password.</div>
-          <FormField name="username" label="Username" autoComplete="username" />
-          <FormField
-            type="password"
-            name="password"
-            label="Password"
-            autoComplete="current-password"
-          />
+        {
+          ({ isSubmitting }: FormikState<FormValues>) => (
+            <Form className={styles.form}>
+              <div className={styles.subtitle}>Enter your username and password.</div>
+              <FormField name="username" label="Username" autoComplete="username" />
+              <FormField
+                type="password"
+                name="password"
+                label="Password"
+                autoComplete="current-password"
+              />
 
-          <Button className={styles.button} type="submit" variant="primary">
-            Signin
-          </Button>
+              <SubmitButton
+                className={styles.button}
+                isSubmitting={isSubmitting}
+                label="Sign In"
+                submitLabel="Signing In"
+              />
 
-          <FormError name="general" />
-        </Form>
+              <FormError name="general" />
+            </Form>
+          )
+        }
       </Formik>
     </div>
   );
