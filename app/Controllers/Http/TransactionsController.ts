@@ -133,9 +133,9 @@ export default class TransactionsController {
         // There are no category splits. Debit the 'Unassigned' category
         if (requestData.amount !== undefined) {
           unassigned.amount -= acctTrans.amount;
-          unassigned.amount += requestData.amount;
           await unassigned.save();
         }
+
         result.categories.push({ id: unassigned.id, balance: unassigned.amount });
       }
 
@@ -191,6 +191,22 @@ export default class TransactionsController {
           else {
             result.categories.push({ id: category.id, balance: category.amount });
           }
+        }
+      }
+      else if (account.tracking === 'Transactions') {
+        // There are no category splits. Debit the 'Unassigned' category
+        if (requestData.amount !== undefined) {
+          unassigned.amount += requestData.amount;
+          await unassigned.save();
+        }
+
+        const index = result.categories.findIndex((c) => c.id === unassigned.id);
+
+        if (index !== -1) {
+          result.categories[index].balance = unassigned.amount;
+        }
+        else {
+          result.categories.push({ id: unassigned.id, balance: unassigned.amount });
         }
       }
 
