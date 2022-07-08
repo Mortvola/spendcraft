@@ -1,6 +1,7 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import { rules, schema } from '@ioc:Adonis/Core/Validator';
 import Database from '@ioc:Adonis/Lucid/Database';
+import { Exception } from '@poppinss/utils';
 import Account from 'App/Models/Account';
 import BalanceHistory from 'App/Models/BalanceHistory';
 import Category from 'App/Models/Category';
@@ -60,6 +61,7 @@ export default class AccountsController {
       })
       .where('deleted', false)
       .orderBy('transactions.date', 'desc')
+      .orderByRaw('CASE WHEN transactions.type = 4 THEN 0 ELSE 1 END DESC')
       .orderByRaw('COALESCE(transactions.duplicate_of_transaction_id, transactions.id) desc')
       .orderBy('transactions.id', 'desc')
       .limit(request.qs().limit)
@@ -485,5 +487,42 @@ export default class AccountsController {
     }
 
     account.save();
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  public async uploadOfx({
+    request,
+    auth: {
+      user,
+    },
+    logger,
+  }: HttpContextContract): Promise<void> {
+    if (!user) {
+      throw new Error('user not defined');
+    }
+
+    const application = await user.related('application').query().firstOrFail();
+
+    const { acctId } = request.params();
+
+    const trx = await Database.transaction();
+
+    try {
+      const account = await Account.findOrFail(acctId, { client: trx });
+
+      const body = request.raw();
+
+      if (!body) {
+        throw new Exception('missing ofx data', 400);
+      }
+
+      await account.processOfx(body, application);
+
+      await trx.commit();
+    }
+    catch (error) {
+      logger.error(error);
+      await trx.rollback();
+    }
   }
 }

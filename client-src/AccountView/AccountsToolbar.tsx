@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { ChangeEventHandler } from 'react';
 import { observer } from 'mobx-react-lite';
 import Http from '@mortvola/http';
 import { useStores } from '../State/mobxStore';
@@ -6,6 +6,7 @@ import { useOfflineAccountDialog } from './OfflineAccountDialog';
 import useMediaQuery from '../MediaQuery';
 import { useTransactionDialog } from '../Transactions/TransactionDialog';
 import { useBalanceDialog } from './BalanceDialog';
+import UploadFileButton from '../UploadFileButton';
 
 type PropsType = {
   open?: boolean,
@@ -50,6 +51,23 @@ const AccountsToolbar: React.FC<PropsType> = observer(({
     }
   }
 
+  const handleUploadOfx: ChangeEventHandler<HTMLInputElement> = async (event) => {
+    if (event.target.files && event.target.files[0]) {
+      if (uiState.selectedAccount?.tracking !== 'Transactions') {
+        throw new Error('account not selected or not tracking transactions')
+      }
+
+      await fetch(`/api/account/${uiState.selectedAccount.id}/ofx`, {
+        method: 'POST',
+        headers: new Headers({
+          Accept: 'application/json',
+          'Content-Type': 'text/plain',
+        }),
+        body: event.target.files[0],
+      });
+    }
+  };
+
   return (
     <>
       {renderAccountButtons()}
@@ -68,6 +86,11 @@ const AccountsToolbar: React.FC<PropsType> = observer(({
                     : 'Add Transaction'
                 }
               </button>
+              <UploadFileButton
+                onFileSelection={handleUploadOfx}
+                label="Upload OFX"
+                disabled={uiState.selectedAccount?.tracking !== 'Transactions'}
+              />
               <TransactionDialog account={uiState.selectedAccount} />
               <BalanceDialog balances={balances} />
             </>

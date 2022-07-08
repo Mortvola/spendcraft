@@ -33,7 +33,10 @@ class AccountTransaction extends BaseModel {
   public account: BelongsTo<typeof Account>;
 
   @column({ serializeAs: null })
-  public plaidTransactionId: string;
+  public provider: 'NONE' | 'PLAID' | 'OFX';
+
+  @column({ serializeAs: null })
+  public providerTransactionId: string;
 
   @column({
     consume: (value: string) => parseFloat(value),

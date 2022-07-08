@@ -127,7 +127,7 @@ export default class CheckTransactions extends BaseCommand {
     if (acct.extraTransactions.length > 0) {
       // eslint-disable-next-line no-restricted-syntax
       for (const tran of acct.extraTransactions) {
-        this.logger.info(`\t\t\t${tran.transaction.date.toISODate()} ${tran.name} ${tran.amount.toFixed(2)} ${tran.plaidTransactionId} ${tran.id}`);
+        this.logger.info(`\t\t\t${tran.transaction.date.toISODate()} ${tran.name} ${tran.amount.toFixed(2)} ${tran.providerTransactionId} ${tran.id}`);
       }
     }
     else {
@@ -187,7 +187,7 @@ export default class CheckTransactions extends BaseCommand {
       if (!plaidTransaction.pending) {
         // eslint-disable-next-line no-await-in-loop
         const acctTransaction = await AccountTransaction
-          .findBy('plaidTransactionId', plaidTransaction.transaction_id, { client: trx });
+          .findBy('providerTransactionId', plaidTransaction.transaction_id, { client: trx });
 
         if (acctTransaction === null) {
           missingTransactions.push(plaidTransaction);
@@ -262,7 +262,7 @@ export default class CheckTransactions extends BaseCommand {
     const acctTransactions = await acct.related('accountTransactions')
       .query()
       .where('pending', false)
-      .whereNotNull('plaidTransactionId')
+      .whereNotNull('providerTransactionId')
       .whereHas('transaction', (query) => {
         query.where('deleted', false)
       })
@@ -284,7 +284,7 @@ export default class CheckTransactions extends BaseCommand {
 
     // eslint-disable-next-line no-await-in-loop
     await Promise.all(acctTransactions.map(async (at) => {
-      const plaidTran = plaidTransactions.find((pt) => pt.transaction_id === at.plaidTransactionId);
+      const plaidTran = plaidTransactions.find((pt) => pt.transaction_id === at.providerTransactionId);
 
       if (!plaidTran) {
         extraTransactions.push(at);
@@ -295,7 +295,7 @@ export default class CheckTransactions extends BaseCommand {
           date: at.transaction.date.toISODate(),
           name: at.name,
           amount: at.amount,
-          plaidId: at.plaidTransactionId,
+          plaidId: at.providerTransactionId,
           id: at.id,
           transaction: at,
           correctAccount: correctAcct,

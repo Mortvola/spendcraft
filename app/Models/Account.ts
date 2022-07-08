@@ -13,6 +13,7 @@ import Transaction from 'App/Models/Transaction';
 import Application from 'App/Models/Application';
 import { Exception } from '@poppinss/utils';
 import { Location } from 'plaid';
+import { XMLParser } from 'fast-xml-parser';
 
 export type AccountSyncResult = {
   categories: CategoryBalanceProps[],
@@ -29,7 +30,7 @@ class Account extends BaseModel {
   public id: number;
 
   @column()
-  closed: boolean;
+  public closed: boolean;
 
   @hasMany(() => AccountTransaction)
   public accountTransactions: HasMany<typeof AccountTransaction>;
@@ -273,7 +274,7 @@ class Account extends BaseModel {
 
         // First check to see if the transaction is present. If it is then don't insert it.
         let acctTrans = await AccountTransaction
-          .findBy('plaidTransactionId', plaidTransaction.transaction_id, { client: this.$trx });
+          .findBy('providerTransactionId', plaidTransaction.transaction_id, { client: this.$trx });
 
         if (acctTrans) {
           const transaction = await Transaction.findOrFail(acctTrans.transactionId);
@@ -285,7 +286,7 @@ class Account extends BaseModel {
             // the transaction from the pending transaction array.
             if (pendingTransactions && acctTrans.pending && !plaidTransaction.pending) {
               const index = pendingTransactions.findIndex(
-                (p) => p.plaidTransactionId === plaidTransaction.transaction_id,
+                (p) => p.provider === 'PLAID' && p.providerTransactionId === plaidTransaction.transaction_id,
               );
 
               if (index !== -1) {
@@ -325,7 +326,8 @@ class Account extends BaseModel {
             .useTransaction(this.$trx)
             .fill({
               transactionId: transaction.id,
-              plaidTransactionId: plaidTransaction.transaction_id,
+              provider: 'PLAID',
+              providerTransactionId: plaidTransaction.transaction_id,
               accountId: this.id,
               name: plaidTransaction.name ?? undefined,
               amount: -plaidTransaction.amount,
@@ -385,6 +387,155 @@ class Account extends BaseModel {
       history.balance = balance;
       await history.save();
     }
+  }
+
+  public async processOfx(
+    this: Account,
+    data: string,
+    application: Application,
+  ): Promise<void> {
+    let sum = 0;
+
+    // Grab the text after the first pair of line feeds.
+    const entities = data.toString().split('\n\n');
+    let ofxData = entities[1];
+
+    if (ofxData) {
+      const sgml2Xml = (sgml: string) => (
+        sgml
+          .replace(/>\s+</g, '><') // remove whitespace inbetween tag close/open
+          .replace(/\s+</g, '<') // remove whitespace before a close tag
+          .replace(/>\s+/g, '>') // remove whitespace after a close tag
+        // eslint-disable-next-line no-useless-escape
+          .replace(/<([A-Z0-9_]*)+\.+([A-Z0-9_]*)>([^<]+)/g, '<\$1\$2>\$3')
+        // eslint-disable-next-line no-useless-escape
+          .replace(/<(\w+?)>([^<]+)/g, '<\$1>\$2</\$1>')
+      );
+
+      ofxData = sgml2Xml(ofxData);
+
+      const parser = new XMLParser();
+      const parsed = parser.parse(ofxData);
+
+      const messages = Object.keys(parsed.OFX).filter((key) => /.*MSGSRSV.*/.test(key));
+
+      const signOnMessage = messages.find((m) => /SIGNONMSGSRSV.*/.test(m));
+
+      if (!signOnMessage) {
+        throw Error('SignOn not found');
+      }
+
+      const signOn = parsed.OFX[signOnMessage];
+
+      // eslint-disable-next-line no-restricted-syntax
+      for (const message of messages) {
+        if (/CREDITCARDMSGSRSV.*/.test(message)) {
+          const ccStmtTrnResponse = parsed.OFX[message].CCSTMTTRNRS;
+          const statement = ccStmtTrnResponse.CCSTMTRS;
+          const accountFrom = statement.CCACCTFROM;
+          const bankTransList = statement.BANKTRANLIST;
+          const transactions = bankTransList.STMTTRN;
+
+          // eslint-disable-next-line no-restricted-syntax
+          for (const t of transactions) {
+            const transactionData: {
+              date: DateTime,
+              name: string,
+              amount: number,
+              transactionId: string,
+            } = {
+              date: DateTime.fromFormat(t.DTPOSTED.slice(0, 8), 'yyyyMMdd'),
+              name: t.NAME,
+              amount: -t.TRNAMT,
+              transactionId: `${signOn.SONRS.FI.FID}:${accountFrom.ACCTID}:${t.FITID}`,
+            }
+
+            // First check to see if the transaction is present. If it is then don't insert it.
+            // eslint-disable-next-line no-await-in-loop
+            let acctTrans = await this.related('accountTransactions').query()
+              .where('providerTransactionId', transactionData.transactionId)
+              .first();
+
+            if (acctTrans) {
+              // eslint-disable-next-line no-await-in-loop
+              const transaction = await acctTrans.related('transaction').query().firstOrFail();
+
+              // The amount to add to the balance is the difference between
+              // the old transaction amount and the new transaction amount unless
+              // the transaction was previously deleted. In that case, the amount
+              // is the amount of the new transaction.
+              let amount = -transactionData.amount - acctTrans.amount;
+
+              if (transaction.deleted) {
+                amount = -transactionData.amount;
+              }
+
+              // eslint-disable-next-line no-await-in-loop
+              await transaction
+                .merge({
+                  deleted: false,
+                  date: transactionData.date,
+                })
+                .save();
+
+              // eslint-disable-next-line no-await-in-loop
+              await acctTrans
+                .merge({
+                  transactionId: transaction.id,
+                  provider: 'OFX',
+                  providerTransactionId: transactionData.transactionId,
+                  name: transactionData.name ?? undefined,
+                  amount: -transactionData.amount,
+                })
+                .save();
+
+              sum += amount;
+            }
+            else {
+              if (!this.$trx) {
+                throw new Error('database transaction not set');
+              }
+
+              // eslint-disable-next-line no-await-in-loop
+              const transaction = await (new Transaction())
+                .useTransaction(this.$trx)
+                .fill({
+                  date: transactionData.date,
+                  applicationId: application.id,
+                })
+                .save();
+
+              // eslint-disable-next-line no-await-in-loop
+              acctTrans = await this.related('accountTransactions')
+                .create({
+                  transactionId: transaction.id,
+                  provider: 'OFX',
+                  providerTransactionId: transactionData.transactionId,
+                  accountId: this.id,
+                  name: transactionData.name ?? undefined,
+                  amount: -transactionData.amount,
+                });
+
+              sum += acctTrans.amount;
+            }
+          }
+        }
+      }
+    }
+
+    this.balance += sum;
+
+    if (sum !== 0 && this.tracking === 'Transactions') {
+      const unassigned = await application.getUnassignedCategory({ client: this.$trx });
+
+      unassigned.amount += sum;
+
+      unassigned.save();
+    }
+
+    await this.updateAccountBalanceHistory(this.balance);
+
+    await this.save();
   }
 }
 

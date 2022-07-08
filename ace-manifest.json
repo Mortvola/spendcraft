@@ -39,13 +39,6 @@
       "aliases": [],
       "flags": [
         {
-          "name": "user",
-          "propertyName": "user",
-          "type": "string",
-          "alias": "u",
-          "description": "Name of the user to analyze"
-        },
-        {
           "name": "item",
           "propertyName": "item",
           "type": "string",
@@ -76,6 +69,12 @@
           "propertyName": "update",
           "type": "string",
           "description": "Updates the specified field"
+        },
+        {
+          "name": "mark-duplicates",
+          "propertyName": "markDuplicates",
+          "type": "boolean",
+          "description": "Marks duplicates"
         }
       ]
     },
@@ -88,6 +87,26 @@
       "commandName": "check:webhooks",
       "description": "Updates webhooks for each item",
       "args": [],
+      "aliases": [],
+      "flags": []
+    },
+    "ofx:upload": {
+      "settings": {
+        "loadApp": true,
+        "stayAlive": false
+      },
+      "commandPath": "./commands/OfxUpload",
+      "commandName": "ofx:upload",
+      "description": "Uploads an OFX file to the specified account",
+      "args": [
+        {
+          "type": "string",
+          "propertyName": "ofx",
+          "name": "ofx",
+          "required": true,
+          "description": "Name of the OFX file to upload"
+        }
+      ],
       "aliases": [],
       "flags": []
     },
@@ -195,7 +214,15 @@
         }
       ],
       "aliases": [],
-      "flags": []
+      "flags": [
+        {
+          "name": "fix",
+          "propertyName": "fix",
+          "type": "boolean",
+          "alias": "f",
+          "description": "Updates item id"
+        }
+      ]
     },
     "plaid:remove-item": {
       "settings": {
@@ -248,7 +275,8 @@
     },
     "list:routes": {
       "settings": {
-        "loadApp": true
+        "loadApp": true,
+        "stayAlive": true
       },
       "commandPath": "@adonisjs/core/build/commands/ListRoutes/index",
       "commandName": "list:routes",
@@ -362,6 +390,12 @@
           "type": "array",
           "description": "Define a custom set of seeders files names to run",
           "alias": "f"
+        },
+        {
+          "name": "compact-output",
+          "propertyName": "compactOutput",
+          "type": "boolean",
+          "description": "A compact single-line output"
         }
       ]
     },
@@ -396,6 +430,13 @@
           "type": "boolean",
           "alias": "c",
           "description": "Generate the controller for the model"
+        },
+        {
+          "name": "factory",
+          "propertyName": "factory",
+          "type": "boolean",
+          "alias": "f",
+          "description": "Generate a factory for the model"
         }
       ]
     },
@@ -459,6 +500,37 @@
       ],
       "aliases": [],
       "flags": []
+    },
+    "make:factory": {
+      "settings": {},
+      "commandPath": "@adonisjs/lucid/build/commands/MakeFactory",
+      "commandName": "make:factory",
+      "description": "Make a new factory",
+      "args": [
+        {
+          "type": "string",
+          "propertyName": "model",
+          "name": "model",
+          "required": true,
+          "description": "The name of the model"
+        }
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "model-path",
+          "propertyName": "modelPath",
+          "type": "string",
+          "description": "The path to the model"
+        },
+        {
+          "name": "exact",
+          "propertyName": "exact",
+          "type": "boolean",
+          "description": "Create the factory with the exact name as provided",
+          "alias": "e"
+        }
+      ]
     },
     "db:wipe": {
       "settings": {
@@ -525,6 +597,12 @@
           "propertyName": "dryRun",
           "type": "boolean",
           "description": "Do not run actual queries. Instead view the SQL output"
+        },
+        {
+          "name": "compact-output",
+          "propertyName": "compactOutput",
+          "type": "boolean",
+          "description": "A compact single-line output"
         }
       ]
     },
@@ -562,6 +640,12 @@
           "propertyName": "batch",
           "type": "number",
           "description": "Define custom batch number for rollback. Use 0 to rollback to initial state"
+        },
+        {
+          "name": "compact-output",
+          "propertyName": "compactOutput",
+          "type": "boolean",
+          "description": "A compact single-line output"
         }
       ]
     },

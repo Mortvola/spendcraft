@@ -95,7 +95,9 @@ Route.group(() => {
     Route.patch('', 'AccountsController.update');
     Route.delete('/balances/:id', 'AccountsController.deleteBalance');
     Route.patch('/balances/:id', 'AccountsController.updateBalance');
-  }).prefix('/account/:acctId');
+    Route.post('/ofx', 'AccountsController.uploadOfx');
+  })
+    .prefix('/account/:acctId');
 
   Route.group(() => {
     Route.delete('/:id', 'AccountsController.deleteBalance');
