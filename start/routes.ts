@@ -23,6 +23,7 @@ import Route from '@ioc:Adonis/Core/Route'
 
 Route.group(() => {
   Route.get('/home', 'HomeController.index');
+  Route.get('/home/:categoryId', 'HomeController.index');
   Route.get('/plans', 'HomeController.index');
   Route.get('/accounts', 'HomeController.index');
   Route.get('/accounts/:accountId', 'HomeController.index');

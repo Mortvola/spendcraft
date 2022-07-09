@@ -6,7 +6,7 @@ import { useStores } from '../State/mobxStore';
 
 type PropsType = {
   category: CategoryInterface | null,
-  onCategorySelected?: () => void,
+  onCategorySelected: (category: CategoryInterface) => void,
 }
 
 const SystemCategory: React.FC<PropsType> = observer(({
@@ -16,10 +16,7 @@ const SystemCategory: React.FC<PropsType> = observer(({
   const { uiState } = useStores();
   const handleClick = () => {
     if (category) {
-      uiState.selectCategory(category);
-      if (onCategorySelected) {
-        onCategorySelected();
-      }
+      onCategorySelected(category);
     }
   };
 

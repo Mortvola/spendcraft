@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
+import { Outlet } from 'react-router-dom';
 import useMediaQuery from './MediaQuery'
 import CategoryView from './CategoryView/CategoryView';
-import DetailView from './DetailView';
 import { useStores } from './State/mobxStore';
 import styles from './Home.module.css';
 import HomeToolbar from './CategoryView/CategoryViewToolbar';
@@ -12,13 +12,6 @@ const Home: React.FC = observer(() => {
   const { uiState, categoryTree } = useStores();
   const { isMobile } = useMediaQuery();
   const [open, setOpen] = useState<boolean>(false);
-
-  useEffect(() => {
-    if (uiState.selectedCategory) {
-      uiState.selectedCategory.getTransactions();
-      uiState.selectedCategory.getPendingTransactions();
-    }
-  }, [uiState.selectedCategory]);
 
   const handleToggleClick = () => {
     setOpen(!open);
@@ -48,7 +41,7 @@ const Home: React.FC = observer(() => {
         onToggleClick={handleToggleClick}
         className={styles.theme}
       >
-        <DetailView detailView="Transactions" title={title} type="category" />
+        <Outlet />
       </Main>
     );
   }

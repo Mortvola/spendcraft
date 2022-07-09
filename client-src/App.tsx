@@ -19,6 +19,7 @@ import UserAccount from './UserAccount';
 import usePageViews from './Tracker';
 import './style.css';
 import AccountDetails from './AccountView/AccountDetails';
+import CategoryDetails from './CategoryDetails';
 
 const App: React.FC = observer(() => {
   const error = useContext(ServerError);
@@ -63,7 +64,11 @@ if (container) {
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<App />}>
-              <Route path="home" element={<Home />} />
+              <Route path="home" element={<Home />}>
+                <Route index element={<CategoryDetails />} />
+                <Route path=":categoryId" element={<CategoryDetails />} />
+                <Route path="rebalances" element={<div className="register window window1" />} />
+              </Route>
               <Route path="plans" element={<Plans />} />
               <Route path="accounts" element={<Accounts />}>
                 <Route index element={<div className="register window window1" />} />

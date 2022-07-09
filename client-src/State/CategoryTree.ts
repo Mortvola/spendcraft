@@ -8,7 +8,7 @@ import {
   isGroupProps, isGroupsResponse,
 } from '../../common/ResponseTypes';
 import {
-  CategoryInterface, CategoryTreeInterface, StoreInterface,
+  CategoryInterface, CategoryTreeInterface, RebalancesInterface, StoreInterface,
 } from './State';
 import SystemIds from './SystemIds';
 
@@ -28,6 +28,8 @@ class CategoryTree implements CategoryTreeInterface {
   fundingPoolCat: Category | null = null;
 
   accountTransferCat: Category | null = null;
+
+  rebalances: RebalancesInterface | null = null;
 
   store: StoreInterface;
 

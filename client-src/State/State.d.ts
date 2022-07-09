@@ -168,6 +168,10 @@ export interface CategoryInterface extends TransactionContainerInterface {
   getGroup(): GroupInterface;
 }
 
+export interface RebalancesInterface {
+  getTransactions(): Promise<void>;
+}
+
 export interface FundingPlanInterface {
   id: number;
 
@@ -201,6 +205,8 @@ export interface CategoryTreeInterface {
   fundingPoolCat: CategoryInterface | null;
 
   accountTransferCat: CategoryInterface | null;
+
+  rebalances: RebalancesInterface | null;
 
   nodes: (CategoryInterface | GroupInterface)[] = [];
 

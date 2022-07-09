@@ -1,5 +1,8 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { observer } from 'mobx-react-lite';
+import {
+  useMatch, useNavigate, useParams, useResolvedPath,
+} from 'react-router-dom';
 import Group from './Group';
 import { useStores } from '../State/mobxStore';
 import SystemCategory from './SystemCategory';
@@ -9,34 +12,73 @@ import { isGroup } from '../State/Group';
 import styles from './CategoryView.module.css'
 
 type PropsType = {
-  onCategorySelected?: () => void,
+  onCategorySelected: () => void,
 }
 
 const CategoryView: React.FC<PropsType> = observer(({
   onCategorySelected,
 }) => {
+  const navigate = useNavigate();
+  const params = useParams();
+  const rebalancesPath = useResolvedPath('rebalances');
+  const rebalancesMatch = useMatch({ path: rebalancesPath.pathname, end: true });
   const { categoryTree, uiState } = useStores();
 
   const handleCategorySelected = (category: CategoryInterface) => {
-    uiState.selectCategory(category);
-    if (onCategorySelected) {
-      onCategorySelected();
+    if (category === categoryTree.unassignedCat) {
+      navigate('');
     }
+    else {
+      navigate(category.id.toString());
+    }
+
+    uiState.selectCategory(category);
+    onCategorySelected();
   };
 
-  useEffect(() => {
-    // If there isn't a category selected then select the unassigned category
-    if (uiState.selectedCategory === null) {
-      uiState.selectCategory(categoryTree.unassignedCat);
+  const handleRebalancesClick = () => {
+    navigate('rebalances');
+  }
+
+  React.useEffect(() => {
+    if (categoryTree.initialized) {
+      if (params.categoryId !== undefined) {
+        const category = categoryTree.getCategory(parseInt(params.categoryId, 10));
+
+        if (category) {
+          uiState.selectCategory(category);
+        }
+        else {
+          // category wasn't found for the categoryId. Navigate back home.
+          navigate('');
+        }
+      }
+      else if (rebalancesMatch) {
+        uiState.selectCategory(null);
+      }
+      else {
+        uiState.selectCategory(categoryTree.unassignedCat);
+      }
     }
-  }, [uiState.selectedCategory, categoryTree.unassignedCat, uiState, categoryTree]);
+  }, [categoryTree, navigate, params.categoryId, rebalancesMatch, uiState]);
+
+  let rebalancesClassName = 'cat-list-cat system';
+  if (rebalancesMatch) {
+    rebalancesClassName += ' selected';
+  }
 
   return (
     <>
       <div style={{ borderBottom: 'thin black solid' }}>
-        <SystemCategory category={categoryTree.unassignedCat} onCategorySelected={onCategorySelected} />
-        <SystemCategory category={categoryTree.fundingPoolCat} onCategorySelected={onCategorySelected} />
-        <SystemCategory category={categoryTree.accountTransferCat} onCategorySelected={onCategorySelected} />
+        <SystemCategory category={categoryTree.unassignedCat} onCategorySelected={handleCategorySelected} />
+        <SystemCategory category={categoryTree.fundingPoolCat} onCategorySelected={handleCategorySelected} />
+        <SystemCategory category={categoryTree.accountTransferCat} onCategorySelected={handleCategorySelected} />
+        <div
+          className={rebalancesClassName}
+          onClick={handleRebalancesClick}
+        >
+          Rebalances
+        </div>
       </div>
       <div className={styles.categories}>
         {categoryTree.nodes.map((group) => {

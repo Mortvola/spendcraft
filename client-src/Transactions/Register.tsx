@@ -15,7 +15,17 @@ type PropsType = {
 const Register: React.FC<PropsType> = observer(({
   type,
 }) => {
-  const { uiState } = useStores();
+  const { uiState, categoryTree } = useStores();
+
+  React.useEffect(() => {
+    if (type === 'category' && uiState.selectedCategory) {
+      uiState.selectedCategory.getTransactions();
+
+      if (uiState.selectedCategory === categoryTree.unassignedCat) {
+        uiState.selectedCategory.getPendingTransactions();
+      }
+    }
+  }, [categoryTree.unassignedCat, type, uiState.selectedCategory]);
 
   let transactions: TransactionInterface[] | undefined;
   let pending: PendingTransactionInterface[] | undefined;
