@@ -146,6 +146,8 @@ Route.group(() => {
       .prefix('/:catId');
   })
     .prefix('/loans');
+
+  Route.get('/rebalances', 'TransactionsController.getRebalances')
 })
   .prefix('/api')
   .middleware(['auth']);

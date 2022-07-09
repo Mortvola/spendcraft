@@ -58,13 +58,7 @@ const RegisterTransactions: React.FC<PropsType> = observer(({
 
         if (pagesLeft <= 0.3) {
           // Query for next set of records
-          if (category) {
-            // console.log(`transactions.length = ${transactions ? transactions.length : null}`)
-            category.getMoreTransactions();
-          }
-          else if (account) {
-            account.getMoreTransactions();
-          }
+          (category ?? account)?.getMoreTransactions();
         }
       })
     }

@@ -2,6 +2,7 @@ import { observer } from 'mobx-react-lite';
 import React from 'react';
 import DetailView from '../DetailView';
 import { useStores } from '../State/mobxStore';
+import Register from '../Transactions/Register';
 
 const CategoryDetails: React.FC = observer(() => {
   const {
@@ -14,10 +15,10 @@ const CategoryDetails: React.FC = observer(() => {
 
   return (
     <DetailView
-      detailView="Transactions"
       title={selectedCategory.name}
-      type="category"
-    />
+    >
+      <Register type="category" />
+    </DetailView>
   );
 });
 

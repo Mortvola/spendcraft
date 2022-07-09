@@ -9,13 +9,18 @@ import { BalanceInterface } from '../State/State';
 import useMediaQuery from '../MediaQuery';
 
 const BalanceHistory: React.FC = observer(() => {
-  const { balances: { balances } } = useStores();
+  const { balances, uiState: { selectedAccount } } = useStores();
   const [BalanceDialog, showBalanceDialog] = useBalanceDialog();
   const [editedBalance, setEditedBalance] = useState<BalanceInterface | null>(null);
-
   const { isMobile } = useMediaQuery();
 
-  const data = balances.slice()
+  React.useEffect(() => {
+    if (selectedAccount && selectedAccount.tracking === 'Balances') {
+      balances.load(selectedAccount);
+    }
+  }, [balances, selectedAccount]);
+
+  const data = balances.balances.slice()
     .sort((a, b) => {
       if (a.date > b.date) {
         return 1;
@@ -64,7 +69,7 @@ const BalanceHistory: React.FC = observer(() => {
       <div className="window">
         <div className={styles.list}>
           {
-            balances.map((b) => (
+            balances.balances.map((b) => (
               <Balance key={b.id} balance={b} showBalanceDialog={showDialog} />
             ))
           }

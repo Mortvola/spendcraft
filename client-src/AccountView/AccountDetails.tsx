@@ -2,30 +2,13 @@ import { observer } from 'mobx-react-lite';
 import React from 'react';
 import DetailView from '../DetailView';
 import { useStores } from '../State/mobxStore';
+import Register from '../Transactions/Register';
+import BalanceHistory from './BalanceHistory';
 
 const AccountDetails: React.FC = observer(() => {
   const {
-    balances, uiState: { selectedAccount },
+    uiState: { selectedAccount },
   } = useStores();
-
-  React.useEffect(() => {
-    if (selectedAccount) {
-      switch (selectedAccount.tracking) {
-        case 'Transactions':
-        case 'Uncategorized Transactions':
-          selectedAccount.getTransactions();
-          selectedAccount.getPendingTransactions();
-          break;
-
-        case 'Balances':
-          balances.load(selectedAccount);
-          break;
-
-        default:
-          throw new Error('Invalid tracking type');
-      }
-    }
-  }, [balances, selectedAccount]);
 
   if (!selectedAccount) {
     return null;
@@ -33,10 +16,14 @@ const AccountDetails: React.FC = observer(() => {
 
   return (
     <DetailView
-      detailView={selectedAccount.tracking}
       title={`${selectedAccount.institution.name}: ${selectedAccount.name}`}
-      type="account"
-    />
+    >
+      {
+        selectedAccount.tracking === 'Balances'
+          ? <BalanceHistory />
+          : <Register type="account" />
+      }
+    </DetailView>
   );
 });
 

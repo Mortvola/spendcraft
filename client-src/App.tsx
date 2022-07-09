@@ -20,6 +20,7 @@ import usePageViews from './Tracker';
 import './style.css';
 import AccountDetails from './AccountView/AccountDetails';
 import CategoryDetails from './Categories/CategoryDetails';
+import Rebalances from './Categories/Rebalances';
 
 const App: React.FC = observer(() => {
   const error = useContext(ServerError);
@@ -67,7 +68,7 @@ if (container) {
               <Route path="home" element={<Home />}>
                 <Route index element={<CategoryDetails />} />
                 <Route path=":categoryId" element={<CategoryDetails />} />
-                <Route path="rebalances" element={<div className="register window window1" />} />
+                <Route path="rebalances" element={<Rebalances />} />
               </Route>
               <Route path="plans" element={<Plans />} />
               <Route path="accounts" element={<Accounts />}>

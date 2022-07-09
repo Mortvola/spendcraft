@@ -42,6 +42,10 @@
   grid-template-columns: var(--icon-width) var(--date-width) minmax(0, 1.8fr) var(--amount-width) minmax(0, 3fr) max-content;
 }
 
+.rebalances.transaction {
+  grid-template-columns: var(--icon-width) var(--date-width) var(--amount-width) minmax(0, 1fr) max-content;
+}
+
 /* For left-padding of each column in transaction */
 .transaction>div {
   padding-left: 4px;
