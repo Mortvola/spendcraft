@@ -1,7 +1,7 @@
 import { observer } from 'mobx-react-lite';
 import React from 'react';
-import DetailView from './DetailView';
-import { useStores } from './State/mobxStore';
+import DetailView from '../DetailView';
+import { useStores } from '../State/mobxStore';
 
 const CategoryDetails: React.FC = observer(() => {
   const {

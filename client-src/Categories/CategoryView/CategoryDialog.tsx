@@ -9,9 +9,9 @@ import {
 } from 'formik';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import { FormModal, FormError, setFormErrors } from '@mortvola/forms';
-import { isGroup } from '../State/Group';
-import { useStores } from '../State/mobxStore';
-import { CategoryInterface, GroupInterface } from '../State/State';
+import { isGroup } from '../../State/Group';
+import { useStores } from '../../State/mobxStore';
+import { CategoryInterface, GroupInterface } from '../../State/State';
 
 type Props = {
   category?: CategoryInterface | null,

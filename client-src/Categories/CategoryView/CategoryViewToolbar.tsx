@@ -1,11 +1,11 @@
 import { observer } from 'mobx-react-lite';
 import React from 'react';
-import { useFundingDialog } from '../Funding/FundingDialog';
-import { useRebalanceDialog } from '../Rebalance/RebalanceDialog';
-import { useStores } from '../State/mobxStore';
+import { useFundingDialog } from '../../Funding/FundingDialog';
+import { useRebalanceDialog } from '../../Rebalance/RebalanceDialog';
+import { useStores } from '../../State/mobxStore';
 import { useCategoryDialog } from './CategoryDialog';
 import { useGroupDialog } from './GroupDialog';
-import useMediaQuery from '../MediaQuery';
+import useMediaQuery from '../../MediaQuery';
 
 type PropsType = {
   open?: boolean,

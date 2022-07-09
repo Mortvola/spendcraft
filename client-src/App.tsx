@@ -9,7 +9,7 @@ import { ServerError, serverError } from '@mortvola/http';
 import '@mortvola/usemodal/dist/main.css';
 import '@mortvola/forms/dist/main.css';
 import Menubar from './Menubar';
-import Home from './Home';
+import Home from './Categories/Home';
 import Accounts from './AccountView/Accounts';
 import Reports from './Reports/Reports';
 import Plans from './Plans/Plans';
@@ -19,7 +19,7 @@ import UserAccount from './UserAccount';
 import usePageViews from './Tracker';
 import './style.css';
 import AccountDetails from './AccountView/AccountDetails';
-import CategoryDetails from './CategoryDetails';
+import CategoryDetails from './Categories/CategoryDetails';
 
 const App: React.FC = observer(() => {
   const error = useContext(ServerError);

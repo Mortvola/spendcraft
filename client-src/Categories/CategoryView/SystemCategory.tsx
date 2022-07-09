@@ -1,8 +1,8 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
-import Amount from '../Amount';
-import { CategoryInterface } from '../State/State';
-import { useStores } from '../State/mobxStore';
+import Amount from '../../Amount';
+import { CategoryInterface } from '../../State/State';
+import { useStores } from '../../State/mobxStore';
 
 type PropsType = {
   category: CategoryInterface | null,

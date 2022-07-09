@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { Outlet } from 'react-router-dom';
-import useMediaQuery from './MediaQuery'
+import useMediaQuery from '../MediaQuery'
 import CategoryView from './CategoryView/CategoryView';
-import { useStores } from './State/mobxStore';
-import styles from './Home.module.css';
 import HomeToolbar from './CategoryView/CategoryViewToolbar';
-import Main from './Main';
+import { useStores } from '../State/mobxStore';
+import styles from './Home.module.css';
+import Main from '../Main';
 
 const Home: React.FC = observer(() => {
-  const { uiState, categoryTree } = useStores();
+  const { categoryTree } = useStores();
   const { isMobile } = useMediaQuery();
   const [open, setOpen] = useState<boolean>(false);
 
@@ -24,11 +24,6 @@ const Home: React.FC = observer(() => {
   }
 
   if (categoryTree.initialized) {
-    let title;
-    if (uiState.selectedCategory) {
-      title = uiState.selectedCategory.name;
-    }
-
     return (
       <Main
         open={open}

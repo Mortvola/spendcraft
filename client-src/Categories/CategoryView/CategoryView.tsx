@@ -3,12 +3,12 @@ import { observer } from 'mobx-react-lite';
 import {
   useMatch, useNavigate, useParams, useResolvedPath,
 } from 'react-router-dom';
+import { useStores } from '../../State/mobxStore';
+import { CategoryInterface } from '../../State/State';
+import { isGroup } from '../../State/Group';
 import Group from './Group';
-import { useStores } from '../State/mobxStore';
 import SystemCategory from './SystemCategory';
-import { CategoryInterface } from '../State/State';
 import Category from './Category';
-import { isGroup } from '../State/Group';
 import styles from './CategoryView.module.css'
 
 type PropsType = {
