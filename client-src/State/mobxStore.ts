@@ -10,6 +10,7 @@ import Plans from './Plans';
 import {
   AccountsInterface, StoreInterface, UIStateInterface,
 } from './State';
+import Rebalances from './Rebalances';
 
 class Store implements StoreInterface {
   user: User;
@@ -28,6 +29,8 @@ class Store implements StoreInterface {
 
   plans: Plans;
 
+  rebalances: Rebalances;
+
   constructor() {
     this.user = new User(this);
     this.categoryTree = new CategoryTree(this);
@@ -37,6 +40,7 @@ class Store implements StoreInterface {
     this.uiState = new UIState(this);
     this.reports = new Reports(this);
     this.plans = new Plans(this);
+    this.rebalances = new Rebalances(this);
   }
 }
 

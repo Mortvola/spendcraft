@@ -16,10 +16,13 @@ class TransactionContainer implements TransactionContainerInterface {
 
   pendingQuery: QueryManager = new QueryManager();
 
+  url: string;
+
   store: StoreInterface;
 
   constructor(
     store: StoreInterface,
+    url: string,
   ) {
     makeObservable(this, {
       transactions: observable,
@@ -27,7 +30,20 @@ class TransactionContainer implements TransactionContainerInterface {
       balance: observable,
     })
 
+    this.url = url;
     this.store = store;
+  }
+
+  async getTransactions(index = 0): Promise<void> {
+    return this.transactionsQuery.fetch(
+      this.url,
+      index,
+      this.transactionResponseHandler,
+    );
+  }
+
+  getMoreTransactions(): Promise<void> {
+    return this.getTransactions(this.transactions.length);
   }
 
   clearTransactions(): void {

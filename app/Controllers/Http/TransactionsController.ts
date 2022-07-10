@@ -8,10 +8,11 @@ import TransactionCategory from 'App/Models/TransactionCategory';
 import Loan from 'App/Models/Loan';
 import LoanTransaction from 'App/Models/LoanTransaction';
 import AccountTransaction from 'App/Models/AccountTransaction';
-import { AccountBalanceProps, CategoryBalanceProps, TransactionType } from 'Common/ResponseTypes';
+import {
+  AccountBalanceProps, CategoryBalanceProps, TransactionProps, TransactionsResponse, TransactionType,
+} from 'Common/ResponseTypes';
 import Account from 'App/Models/Account';
 import { schema, rules } from '@ioc:Adonis/Core/Validator';
-import { ModelObject } from '@ioc:Adonis/Lucid/Orm';
 import transactionFields from './transactionFields';
 
 export default class TransactionsController {
@@ -406,7 +407,7 @@ export default class TransactionsController {
     auth: {
       user,
     },
-  }: HttpContextContract): Promise<ModelObject[]> {
+  }: HttpContextContract): Promise<TransactionsResponse> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -418,8 +419,11 @@ export default class TransactionsController {
       .where('type', TransactionType.REBALANCE_TRANSACTION)
       .orderBy('date', 'desc');
 
-    return rebalances.map((r) => (
-      r.serialize(transactionFields)
-    ));
+    return {
+      transactions: rebalances.map((r) => (
+        r.serialize(transactionFields) as TransactionProps
+      )),
+      balance: 0,
+    }
   }
 }

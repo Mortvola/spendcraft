@@ -1,17 +1,19 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
-import Http from '@mortvola/http';
 import { useStores } from '../State/mobxStore';
 import {
-  AccountInterface, CategoryInterface, PendingTransactionInterface, TransactionInterface,
+  AccountInterface, CategoryInterface, PendingTransactionInterface, TransactionContainerInterface, TransactionInterface,
 } from '../State/State';
 import PendingRegister from './PendingRegister';
 import RegisterTitles from './RegisterTitles';
 import RegisterTransactions from './RegisterTransactions';
 import RebalancesTitles from './RebalancesTitles';
-import { TransactionProps } from '../../common/ResponseTypes';
-import RebalancesTransactions from './RebalancesTransactions';
-import Transaction from '../State/Transaction';
+import styles from './Transactions.module.css';
+import Transaction from './Transactions/Transaction';
+import AccountTransaction from './Transactions/AccountTransaction';
+import CategoryTransaction from './Transactions/CategoryTransaction';
+import useTrxDialog from './TrxDialog';
+import RebalanceTransaction from './Transactions/RebalanceTransaction';
 
 type PropsType = {
   type: 'category' | 'account' | 'rebalances',
@@ -21,20 +23,9 @@ const Register: React.FC<PropsType> = observer(({
   type,
 }) => {
   const store = useStores();
-  const { uiState, categoryTree } = store;
-  const [rebalances, setRebalances] = React.useState<TransactionInterface[]>([]);
+  const { uiState, categoryTree, rebalances } = store;
 
   React.useEffect(() => {
-    const getRebalances = async () => {
-      const response = await Http.get<TransactionProps[]>('/api/rebalances');
-
-      if (response.ok) {
-        const body = await response.body();
-
-        setRebalances(body.map((t) => new Transaction(store, t)));
-      }
-    };
-
     switch (type) {
       case 'category':
         if (uiState.selectedCategory) {
@@ -59,76 +50,183 @@ const Register: React.FC<PropsType> = observer(({
         break;
 
       case 'rebalances':
-        getRebalances();
+        rebalances.getTransactions();
         break;
 
       default:
         throw new Error(`unknown type: ${type}`);
     }
-  }, [categoryTree.unassignedCat, store, type, uiState.selectedAccount, uiState.selectedCategory]);
-
-  let transactions: TransactionInterface[] = [];
-  let pending: PendingTransactionInterface[] = [];
-  let balance = 0;
+  }, [categoryTree.unassignedCat, rebalances, store, type, uiState.selectedAccount, uiState.selectedCategory]);
 
   let category: CategoryInterface | null = null;
   let account: AccountInterface | null = null;
 
+  let trxContainer: TransactionContainerInterface | null = null;
+
+  let transactionClassName: string | undefined;
+
   switch (type) {
     case 'category':
       category = uiState.selectedCategory;
+      trxContainer = category;
 
       if (category) {
-        transactions = category.transactions;
-        pending = category.pending;
-        balance = category.balance;
+        if (category.type === 'UNASSIGNED') {
+          transactionClassName = ` ${styles.unassigned}`;
+        }
       }
 
       break;
 
     case 'account':
       account = uiState.selectedAccount;
+      trxContainer = account;
 
       if (account) {
-        transactions = account.transactions;
-        pending = account.pending;
-        balance = account.balance;
+        if (account.type === 'loan') {
+          transactionClassName = ` ${styles.loan}`;
+        }
+        else {
+          transactionClassName = ` ${styles.acct}`;
+        }
       }
 
       break;
 
     case 'rebalances':
+      trxContainer = rebalances;
+
       break;
 
     default:
       throw new Error(`unkonwn type: ${type}`);
   }
 
-  if (type === 'rebalances') {
-    return (
-      <div className="register window window1">
-        <div />
-        <RebalancesTitles />
-        <RebalancesTransactions
-          transactions={rebalances}
+  const [TrxDialog, showTrxDialog] = useTrxDialog(account ?? undefined);
+
+  let titles = (
+    <RegisterTitles
+      category={category}
+      account={account}
+      transactionClassName={transactionClassName}
+    />
+  );
+
+  const renderTransactionType = (
+    transaction: TransactionInterface,
+    amount: number,
+    runningBalance: number,
+  ) => {
+    if (category) {
+      return (
+        <CategoryTransaction
+          transaction={transaction}
+          amount={amount}
+          runningBalance={runningBalance}
+          category={category}
         />
-      </div>
-    );
+      );
+    }
+
+    if (account) {
+      return (
+        <AccountTransaction
+          transaction={transaction}
+          amount={amount}
+          runningBalance={runningBalance}
+          account={account}
+        />
+      )
+    }
+
+    return null;
+  };
+
+  let renderTransactions = () => {
+    if (trxContainer === null) {
+      throw new Error('trxContainer is not set');
+    }
+
+    let runningBalance = trxContainer.balance;
+
+    return trxContainer.transactions.map((transaction) => {
+      let { amount } = transaction;
+      if (category !== null) {
+        amount = transaction.getAmountForCategory(category.id);
+      }
+      else if (account && account.type === 'loan') {
+        amount = transaction.principle ?? 0;
+      }
+
+      const element = (
+        <Transaction
+          key={transaction.id}
+          transaction={transaction}
+          showTrxDialog={showTrxDialog}
+          className={transactionClassName}
+        >
+          { renderTransactionType(transaction, amount, runningBalance) }
+        </Transaction>
+      )
+
+      if (runningBalance !== undefined) {
+        runningBalance -= amount;
+      }
+
+      return element;
+    });
+  }
+
+  if (type === 'rebalances') {
+    titles = <RebalancesTitles />;
+
+    renderTransactions = () => {
+      if (trxContainer === null) {
+        throw new Error('trxContainer is not set');
+      }
+
+      return trxContainer.transactions.map((transaction) => {
+        const amount = transaction.categories.reduce((prev, c) => {
+          if (c.amount > 0) {
+            return prev + c.amount;
+          }
+
+          return prev;
+        }, 0);
+
+        return (
+          <Transaction
+            key={transaction.id}
+            transaction={transaction}
+            showTrxDialog={showTrxDialog}
+            className={styles.rebalances}
+          >
+            <RebalanceTransaction
+              amount={amount}
+            />
+          </Transaction>
+        );
+      })
+    };
+  }
+
+  if (!trxContainer) {
+    return null;
   }
 
   return (
     <>
       <div className="register window window1">
         <div />
-        <RegisterTitles category={category} account={account} />
+        { titles }
         <RegisterTransactions
-          transactions={transactions}
-          balance={balance}
-          category={category}
-          account={account}
-        />
+          trxContainer={trxContainer}
+        >
+          { renderTransactions() }
+        </RegisterTransactions>
+        <TrxDialog />
       </div>
-      <PendingRegister categoryView={category !== null} pending={pending} />
+      <PendingRegister categoryView={type === 'category'} pending={trxContainer.pending} />
     </>
   );
 });

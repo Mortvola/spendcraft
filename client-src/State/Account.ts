@@ -40,7 +40,7 @@ class Account extends TransactionContainer implements AccountInterface {
   store: StoreInterface;
 
   constructor(store: StoreInterface, institution: InstitutionInterface, props: AccountProps) {
-    super(store);
+    super(store, `/api/account/${props.id}/transactions`);
 
     this.id = props.id;
     this.name = props.name;
@@ -112,18 +112,6 @@ class Account extends TransactionContainer implements AccountInterface {
     });
 
     return false;
-  }
-
-  async getTransactions(index = 0): Promise<void> {
-    return this.transactionsQuery.fetch(
-      `/api/account/${this.id}/transactions`,
-      index,
-      this.transactionResponseHandler,
-    );
-  }
-
-  getMoreTransactions(): Promise<void> {
-    return this.getTransactions(this.transactions.length);
   }
 
   async getPendingTransactions(index = 0): Promise<void> {

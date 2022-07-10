@@ -27,7 +27,7 @@ class Category extends TransactionContainer implements CategoryInterface {
   store: StoreInterface;
 
   constructor(props: CategoryProps, store: StoreInterface) {
-    super(store);
+    super(store, `/api/category/${props.id}/transactions`);
 
     this.id = props.id;
     this.name = props.name;
@@ -39,18 +39,6 @@ class Category extends TransactionContainer implements CategoryInterface {
     makeObservable(this, {
       name: observable,
     });
-  }
-
-  async getTransactions(index = 0): Promise<void> {
-    return this.transactionsQuery.fetch(
-      `/api/category/${this.id}/transactions`,
-      index,
-      this.transactionResponseHandler,
-    );
-  }
-
-  getMoreTransactions(): Promise<void> {
-    return this.getTransactions(this.transactions.length);
   }
 
   async getPendingTransactions(index = 0): Promise<void> {

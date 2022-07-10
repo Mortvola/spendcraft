@@ -149,10 +149,6 @@ export interface CategoryInterface extends TransactionContainerInterface {
 
   store: StoreInterface;
 
-  getTransactions(): Promise<void>;
-
-  getMoreTransactions(): Promise<void>;
-
   getPendingTransactions(index = 0): Promise<void>;
 
   insertTransaction(transaction: Transaction): void;
@@ -168,9 +164,7 @@ export interface CategoryInterface extends TransactionContainerInterface {
   getGroup(): GroupInterface;
 }
 
-export interface RebalancesInterface {
-  getTransactions(): Promise<void>;
-}
+export type RebalancesInterface = TransactionContainerInterface;
 
 export interface FundingPlanInterface {
   id: number;
@@ -296,6 +290,10 @@ export interface TransactionContainerInterface {
   pending: PendingTransactionInterface[];
 
   transactionsQuery: QueryManagerInterface;
+
+  getTransactions(index?: number): Promise<void>;
+
+  getMoreTransactions(): Promise<void>;
 }
 
 export interface AccountInterface extends TransactionContainerInterface {
@@ -324,10 +322,6 @@ export interface AccountInterface extends TransactionContainerInterface {
   institution: InstitutionInterface;
 
   store: StoreInterface;
-
-  getTransactions(): Promise<void>;
-
-  getMoreTransactions(): void;
 
   getPendingTransactions(): Promise<void>;
 

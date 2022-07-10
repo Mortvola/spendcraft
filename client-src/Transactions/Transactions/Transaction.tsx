@@ -1,23 +1,24 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
-import Amount from '../Amount';
-import { useStores } from '../State/mobxStore';
-import { TransactionInterface } from '../State/State';
-import useMediaQuery from '../MediaQuery';
-import { TransactionType } from '../../common/ResponseTypes';
-import styles from './Transactions.module.css'
-import Date from '../Date';
-import Icon from '../Icon';
+import { useStores } from '../../State/mobxStore';
+import { TransactionInterface } from '../../State/State';
+import useMediaQuery from '../../MediaQuery';
+import { TransactionType } from '../../../common/ResponseTypes';
+import styles from '../Transactions.module.css'
+import Date from '../../Date';
+import Icon from '../../Icon';
 
 type PropsType = {
   transaction: TransactionInterface,
-  amount: number,
+  className?: string,
+  children?: React.ReactNode,
   showTrxDialog: (transaction: TransactionInterface) => void,
 }
 
-const Rebalance: React.FC<PropsType> = observer(({
+const Transaction: React.FC<PropsType> = observer(({
   transaction,
-  amount,
+  className,
+  children,
   showTrxDialog,
 }) => {
   const { uiState } = useStores();
@@ -30,7 +31,7 @@ const Rebalance: React.FC<PropsType> = observer(({
     }
   };
 
-  let transactionClassName = `${styles.rebalances} ${styles.transaction}`;
+  let transactionClassName = `${className ?? ''} ${styles.transaction}`;
 
   transactionClassName = addMediaClass(transactionClassName);
 
@@ -43,10 +44,10 @@ const Rebalance: React.FC<PropsType> = observer(({
             : <div />
         }
         <Date className="transaction-field" date={transaction.date} />
-        <Amount className="transaction-field currency" amount={amount} />
+        { children }
       </div>
     </div>
   );
 });
 
-export default Rebalance;
+export default Transaction;

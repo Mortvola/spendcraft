@@ -7,24 +7,15 @@ import styles from './Transactions.module.css';
 type PropsType = {
   category?: CategoryInterface | null,
   account?: AccountInterface | null,
+  transactionClassName?: string,
 }
 
 const RegisterTitles: React.FC<PropsType> = ({
   category = null,
   account = null,
+  transactionClassName,
 }) => {
   const { isMobile } = useMediaQuery();
-
-  if (isMobile) {
-    return (
-      <div className={`mobile register-title ${styles.transaction}`}>
-        <div />
-        <div>Date</div>
-        <div>Name</div>
-        <div className="currency">Amount</div>
-      </div>
-    );
-  }
 
   const commonTitles = () => (
     <>
@@ -34,12 +25,18 @@ const RegisterTitles: React.FC<PropsType> = ({
     </>
   );
 
-  if (category) {
-    let className = `register-title ${styles.transaction}`;
-    if (category.type === 'UNASSIGNED') {
-      className += ` ${styles.unassigned}`;
-    }
+  if (isMobile) {
+    return (
+      <div className={`mobile register-title ${styles.transaction}`}>
+        { commonTitles() }
+        <div className="currency">Amount</div>
+      </div>
+    );
+  }
 
+  const className = `register-title ${styles.transaction} ${transactionClassName ?? ''}`;
+
+  if (category) {
     return (
       <div className={className}>
         {commonTitles()}
@@ -55,14 +52,6 @@ const RegisterTitles: React.FC<PropsType> = ({
         <TitleStub />
       </div>
     );
-  }
-
-  let className = `register-title ${styles.acct} ${styles.transaction}`;
-  if (account && account.type === 'loan') {
-    className += ` ${styles.loan}`;
-  }
-  else {
-    className += ` ${styles.acct}`;
   }
 
   return (
