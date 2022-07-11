@@ -20,6 +20,7 @@ export default class UpdateCategoryValidator {
         },
       }),
     ]),
+    monthlyExpenses: schema.boolean(),
   })
 
   public messages = {

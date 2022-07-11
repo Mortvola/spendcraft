@@ -19,6 +19,8 @@ class Category extends TransactionContainer implements CategoryInterface {
 
   groupId: number;
 
+  monthlyExpenses: boolean;
+
   loan: {
     balance: number;
     transactions: LoanTransaction[];
@@ -34,6 +36,7 @@ class Category extends TransactionContainer implements CategoryInterface {
     this.type = props.type;
     this.groupId = props.groupId;
     this.balance = props.balance;
+    this.monthlyExpenses = props.monthlyExpenses;
     this.store = store;
 
     makeObservable(this, {
@@ -49,8 +52,15 @@ class Category extends TransactionContainer implements CategoryInterface {
     )
   }
 
-  async update(name: string, group: GroupInterface): Promise<null | Error[]> {
-    const response = await Http.patch(`/api/groups/${group.id}/categories/${this.id}`, { name });
+  async update(
+    name: string,
+    group: GroupInterface,
+    monthlyExpenses: boolean,
+  ): Promise<null | Error[]> {
+    const response = await Http.patch(`/api/groups/${group.id}/categories/${this.id}`, {
+      name,
+      monthlyExpenses,
+    });
 
     const body = await response.body();
 
@@ -64,6 +74,7 @@ class Category extends TransactionContainer implements CategoryInterface {
         if (isUpdateCategoryResponse(body)) {
           const nameChanged = this.name !== body.name;
           this.name = body.name;
+          this.monthlyExpenses = body.monthlyExpenses;
 
           // Find the group the category is currently in
           // and possibly move it to the new group.

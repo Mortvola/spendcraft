@@ -142,6 +142,8 @@ export interface CategoryInterface extends TransactionContainerInterface {
 
   groupId: number;
 
+  monthlyExpenses: boolean;
+
   loan: {
     balance: number;
     transactions: LoanTransaction[];
@@ -155,7 +157,7 @@ export interface CategoryInterface extends TransactionContainerInterface {
 
   removeTransaction(transactionId: number): void;
 
-  update(name: string, group: GroupInterface): Promise<null | Error[]>;
+  update(name: string, group: GroupInterface, monthlyExpenses: boolean): Promise<null | Error[]>;
 
   delete (): Promise<null | Error[]>;
 

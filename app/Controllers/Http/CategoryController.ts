@@ -112,6 +112,7 @@ class CategoryController {
         groupId: parseInt(groupId, 10),
         name: requestData.name,
         amount: 0,
+        monthlyExpenses: requestData.monthlyExpenses,
         type: 'REGULAR',
       })
       .save();
@@ -130,12 +131,13 @@ class CategoryController {
 
     category.merge({
       name: requestData.name,
+      monthlyExpenses: requestData.monthlyExpenses,
       groupId,
     });
 
     await category.save();
 
-    return { name: requestData.name };
+    return { name: category.name, monthlyExpenses: category.monthlyExpenses };
   }
 
   // eslint-disable-next-line class-methods-use-this

@@ -28,6 +28,8 @@ export interface CategoryProps {
   name: string;
 
   type: CategoryType;
+
+  monthlyExpenses: boolean;
 }
 
 export const isCategoryBalance = (r: unknown): r is CategoryBalanceProps => (
@@ -58,6 +60,7 @@ export const isAddCategoryResponse = (r: unknown): r is AddCategoryResponse => (
 
 export interface UpdateCategoryResponse {
   name: string;
+  monthlyExpenses: boolean;
 }
 
 export const isUpdateCategoryResponse = (

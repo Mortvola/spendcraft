@@ -81,8 +81,12 @@ class Group implements GroupInterface {
     return null;
   }
 
-  async addCategory(name: string): Promise<null| Error[]> {
-    const response = await Http.post(`/api/groups/${this.id}/categories`, { groupId: this.id, name });
+  async addCategory(name: string, monthlyExpenses: boolean): Promise<null| Error[]> {
+    const response = await Http.post(`/api/groups/${this.id}/categories`, {
+      groupId: this.id,
+      name,
+      monthlyExpenses,
+    });
 
     const body = await response.body();
 

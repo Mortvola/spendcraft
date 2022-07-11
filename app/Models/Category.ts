@@ -39,6 +39,9 @@ export default class Category extends BaseModel {
   public amount: number;
 
   @column()
+  public monthlyExpenses: boolean;
+
+  @column()
   public type: CategoryType;
 
   @column()

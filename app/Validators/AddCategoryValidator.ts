@@ -15,6 +15,7 @@ export default class AddCategoryValidator {
         where: { group_id: this.ctx.request.params().groupId },
       }),
     ]),
+    monthlyExpenses: schema.boolean(),
   })
 
   public messages = {
