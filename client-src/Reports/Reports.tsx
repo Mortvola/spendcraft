@@ -9,8 +9,9 @@ import useMediaQuery from '../MediaQuery'
 import ReportList from './ReportList';
 import IncomeVsExpenses from './IncomeVsExpenses';
 import FundingHistory from './FundingHistory';
+import BudgetProgress from './BudgetProgress';
 
-type ReportTypes = 'netWorth' | 'payee' | 'category' | 'incomeVsExpenses' | 'fundingHistory';
+type ReportTypes = 'netWorth' | 'payee' | 'category' | 'incomeVsExpenses' | 'fundingHistory' | 'budgetProgress';
 
 const Reports: React.FC = observer(() => {
   const [reportType, setReportType] = useState<ReportTypes | null>(null);
@@ -34,6 +35,7 @@ const Reports: React.FC = observer(() => {
     { value: 'category', name: 'Category' },
     { value: 'incomeVsExpenses', name: 'Income Vs. Expenses' },
     { value: 'fundingHistory', name: 'Funding History' },
+    { value: 'budgetProgress', name: 'Budget Progress' },
   ];
 
   const renderReport = (): ReactElement | null => {
@@ -52,6 +54,9 @@ const Reports: React.FC = observer(() => {
 
       case 'fundingHistory':
         return <FundingHistory />
+
+      case 'budgetProgress':
+        return <BudgetProgress />
 
       default:
         return <div className="chart-wrapper window window1" />;

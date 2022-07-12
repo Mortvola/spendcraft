@@ -3,7 +3,7 @@ import { Form } from 'formik';
 import styles from './ReportControls.module.css'
 
 type PropsType = {
-  children: ReactNode,
+  children?: ReactNode,
 }
 
 const ReportControls: React.FC<PropsType> = ({

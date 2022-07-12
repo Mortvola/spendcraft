@@ -1,0 +1,51 @@
+.control {
+  position: relative;
+}
+
+.control > input {
+  width: max-content;
+}
+
+.drop-down {
+  position: absolute;
+  left: 0;
+  top: 0;
+  background-color: white;
+  border: thin black solid;
+  border-radius: 4px;
+  z-index: 1;
+  padding: 0.25rem;
+}
+
+.months {
+  display: grid;
+  grid-template-rows: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.25rem;
+  width: max-content;
+  height: max-content;
+}
+
+.months > div {
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.months > div:hover {
+  background-color: whitesmoke;
+}
+
+.year {
+  display: flex;
+  justify-content: space-evenly;
+}
+
+.year > div {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.year > div {
+  cursor: default;
+}

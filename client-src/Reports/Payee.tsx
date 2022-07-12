@@ -1,15 +1,14 @@
 import React from 'react';
 import { Formik, FieldArray, FormikState } from 'formik';
 import { DateTime } from 'luxon';
-import { Button, DropdownButton } from 'react-bootstrap';
-import { FormCheckbox, FormField } from '@mortvola/forms';
+import { DropdownButton } from 'react-bootstrap';
+import { FormCheckbox, FormField, SubmitButton } from '@mortvola/forms';
 import Http from '@mortvola/http';
 import Amount from '../Amount';
 import { useStores } from '../State/mobxStore';
 import useSortableTable from './SortableTable';
 import ReportControls from './ReportControls';
 import styles from './Payee.module.css';
-import { SubmitButton } from '@mortvola/forms';
 
 type PayeeReport = {
   [key: string]: string | number,

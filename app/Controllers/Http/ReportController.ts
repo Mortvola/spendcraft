@@ -1,7 +1,8 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import Database from '@ioc:Adonis/Lucid/Database';
 import Application from 'App/Models/Application';
-import { TransactionType } from 'Common/ResponseTypes';
+import { BudgetProgressReportResponse, TransactionType } from 'Common/ResponseTypes';
+import { DateTime } from 'luxon';
 
 type NetworthReportType = (string | number)[][];
 type PayeeReportType = Record<string, unknown>[];
@@ -46,6 +47,15 @@ class ReportController {
 
       case 'funding-history': {
         return ReportController.fundingHistory(application)
+      }
+
+      case 'budget-progress': {
+        const {
+          m,
+        } = request.qs();
+        const startDate = DateTime.fromFormat(`1-${m}`, 'd-M-yyyy');
+        const endDate = startDate.endOf('month');
+        return ReportController.budgetProgress(application, startDate, endDate);
       }
 
       default:
@@ -350,6 +360,57 @@ class ReportController {
       .orderBy('c.name');
 
     return query;
+  }
+
+  private static async budgetProgress(
+    application: Application,
+    startDate: DateTime,
+    endDate: DateTime,
+  ): Promise<BudgetProgressReportResponse> {
+    const acctTransfer = await application.getAccountTransferCategory();
+
+    const fundingQuery = await Database.query()
+      .select(
+        Database.raw('sum(tc.amount) AS amount'),
+      )
+      .from('transaction_categories AS tc')
+      .join('transactions AS t', 't.id', 'tc.transaction_id')
+      .join('categories AS c', 'c.id', 'tc.category_id')
+      .where('t.application_id', application.id)
+      .whereBetween('t.date', [startDate.toISODate(), endDate.toISODate()])
+      .andWhere('tc.category_id', '!=', acctTransfer.id)
+      .andWhere('t.type', '=', TransactionType.FUNDING_TRANSACTION)
+      .andWhere('c.monthly_expenses', true);
+
+    const fundingAmount = parseFloat(fundingQuery[0].amount);
+
+    const query = await Database.query()
+      .select(
+        Database.raw('to_char(t.date, \'YYYY-MM-DD\') as date'),
+        Database.raw('sum(tc.amount) AS amount'),
+      )
+      .from('transaction_categories AS tc')
+      .join('transactions AS t', 't.id', 'tc.transaction_id')
+      .join('categories AS c', 'c.id', 'tc.category_id')
+      .where('t.application_id', application.id)
+      .whereBetween('t.date', [startDate.toISODate(), endDate.toISODate()])
+      .andWhere('tc.category_id', '!=', acctTransfer.id)
+      .andWhereNotIn('t.type', [
+        TransactionType.FUNDING_TRANSACTION,
+        TransactionType.REBALANCE_TRANSACTION,
+        TransactionType.STARTING_BALANCE,
+      ])
+      .andWhere('c.monthly_expenses', true)
+      .groupBy('t.date')
+      .orderBy('t.date', 'asc');
+
+    let runningBalance = fundingAmount;
+
+    return query.map((row) => {
+      runningBalance += parseFloat(row.amount);
+
+      return [row.date, runningBalance];
+    });
   }
 }
 

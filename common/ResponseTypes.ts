@@ -758,3 +758,5 @@ export const isDeleteAccountResponse = (r: unknown): r is CategoryBalanceProps[]
   Array.isArray(r)
   && (r.length === 0 || isCategoryBalance(r[0]))
 )
+
+export type BudgetProgressReportResponse = [string, number][];
