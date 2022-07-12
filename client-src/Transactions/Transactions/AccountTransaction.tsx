@@ -22,7 +22,10 @@ const AccountTransaction: React.FC<PropsType> = observer(({
 
   if (isMobile) {
     return (
-      <Amount className="transaction-field currency" amount={amount} />
+      <>
+        <div className="transaction-field">{transaction.name}</div>
+        <Amount className="transaction-field currency" amount={amount} />
+      </>
     );
   }
 
