@@ -5,6 +5,7 @@ import { observer } from 'mobx-react-lite';
 import React, { useEffect, useState } from 'react';
 import Chart, { GoogleChartWrapper } from 'react-google-charts';
 import { BudgetProgressReportResponse } from '../../common/ResponseTypes';
+import PleaseWait from '../PleaseWait';
 import { useStores } from '../State/mobxStore';
 import TransactionContainer from '../State/TransactionContainer';
 import RegisterTransactions from '../Transactions/RegisterTransactions';
@@ -22,42 +23,51 @@ const BudgetProgress: React.FC = observer(() => {
     return `${n.month}-${n.year}`;
   });
   const [transactions, setTransactions] = React.useState<TransactionContainer | null>(null);
+  const [querying, setQuerying] = React.useState<boolean>(false);
 
   useEffect(() => {
+    setQuerying(true);
     (async () => {
-      const response = await Http.get<BudgetProgressReportResponse>(`/api/reports/budget-progress?m=${value}`);
+      try {
+        const response = await Http.get<BudgetProgressReportResponse>(`/api/reports/budget-progress?m=${value}`);
 
-      if (response.ok) {
-        const body = await response.body();
+        if (response.ok) {
+          const body = await response.body();
 
-        const date = DateTime.fromFormat(value, 'M-yyyy');
-        const newDays = new Array<[number, number[]]>(date.daysInMonth);
+          const date = DateTime.fromFormat(value, 'M-yyyy');
+          const newDays = new Array<[number, number[]]>(date.daysInMonth);
 
-        body.forEach((m) => {
-          newDays[DateTime.fromISO(m[0]).day - 1] = [m[1], m[2]];
-        });
+          body.forEach((m) => {
+            newDays[DateTime.fromISO(m[0]).day - 1] = [m[1], m[2]];
+          });
 
-        for (let d = 0; d < newDays.length; d += 1) {
-          if (newDays[d] === undefined) {
-            if (d > 0) {
-              newDays[d] = newDays[d - 1];
-            }
-            else {
-              newDays[d] = [0, []];
+          for (let d = 0; d < newDays.length; d += 1) {
+            if (newDays[d] === undefined) {
+              if (d > 0) {
+                newDays[d] = newDays[d - 1];
+              }
+              else {
+                newDays[d] = [0, []];
+              }
             }
           }
+
+          setDays(newDays);
+
+          setData([
+            ['date', 'amount'],
+            ...newDays.map((d, index) => ([
+              index + 1,
+              d[0],
+            ])),
+          ]);
         }
-
-        setDays(newDays);
-
-        setData([
-          ['date', 'amount'],
-          ...newDays.map((d, index) => ([
-            index + 1,
-            d[0],
-          ])),
-        ]);
       }
+      catch (error) {
+        console.log(error);
+      }
+
+      setQuerying(false);
     })();
   }, [value]);
 
@@ -99,46 +109,54 @@ const BudgetProgress: React.FC = observer(() => {
           <MonthSelector value={value} onChange={handleChangeEvent} />
         </ReportControls>
       </Formik>
-      <div className="chart-wrapper">
-        {
-          data !== null && data.length > 1
-            ? (
-              <Chart
-                chartType="ColumnChart"
-                data={data}
-                width="100%"
-                height="100%"
-                chartEvents={[{
-                  eventName: 'select',
-                  callback: selectCallback,
-                }]}
-                options={{
-                  legend: { position: 'none' },
-                  isStacked: true,
-                  focusTarget: 'datum',
-                  hAxis: {
-                    minValue: 1,
-                  },
-                }}
-              />
-            )
-            : null
-        }
-      </div>
       {
-        transactions
-          ? (
-            <RegisterTransactions trxContainer={transactions}>
+        querying
+          ? <PleaseWait />
+          : (
+            <>
+              <div className="chart-wrapper">
+                {
+                  data !== null && data.length > 1
+                    ? (
+                      <Chart
+                        chartType="ColumnChart"
+                        data={data}
+                        width="100%"
+                        height="100%"
+                        chartEvents={[{
+                          eventName: 'select',
+                          callback: selectCallback,
+                        }]}
+                        options={{
+                          legend: { position: 'none' },
+                          isStacked: true,
+                          focusTarget: 'datum',
+                          hAxis: {
+                            minValue: 1,
+                          },
+                        }}
+                      />
+                    )
+                    : null
+                }
+              </div>
               {
-                transactions.transactions.map((t) => (
-                  <TransactionBase key={t.id} transaction={t}>
-                    <Transaction transaction={t} amount={t.amount} />
-                  </TransactionBase>
-                ))
+                transactions
+                  ? (
+                    <RegisterTransactions trxContainer={transactions}>
+                      {
+                        transactions.transactions.map((t) => (
+                          <TransactionBase key={t.id} transaction={t}>
+                            <Transaction transaction={t} amount={t.amount} />
+                          </TransactionBase>
+                        ))
+                      }
+                    </RegisterTransactions>
+                  )
+                  : null
               }
-            </RegisterTransactions>
+            </>
           )
-          : null
       }
     </div>
   );
