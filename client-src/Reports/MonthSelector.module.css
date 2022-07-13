@@ -1,3 +1,7 @@
+.controlWrapper {
+  display: flex;
+}
+
 .control {
   position: relative;
 }

@@ -111,6 +111,50 @@ const MonthSelector: React.FC<PropsType> = ({
     setOpen(false);
   };
 
+  const handleMonthDecrement = () => {
+    if (value && /\d{1,2}-\d{4}/.test(value)) {
+      const input = inputRef.current;
+      if (input) {
+        const [monthStr, yearStr] = value.split('-');
+        let month = parseInt(monthStr, 10);
+        let year = parseInt(yearStr, 10);
+
+        month -= 1;
+        if (month < 1) {
+          year -= 1;
+          month = 12;
+        }
+
+        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+        nativeInputValueSetter?.call(input, `${month}-${year}`);
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+      }
+    }
+    setOpen(false);
+  }
+
+  const handleMonthIncrement = () => {
+    if (value && /\d{1,2}-\d{4}/.test(value)) {
+      const input = inputRef.current;
+      if (input) {
+        const [monthStr, yearStr] = value.split('-');
+        let month = parseInt(monthStr, 10);
+        let year = parseInt(yearStr, 10);
+
+        month += 1;
+        if (month > 12) {
+          year += 1;
+          month = 1;
+        }
+
+        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+        nativeInputValueSetter?.call(input, `${month}-${year}`);
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+      }
+    }
+    setOpen(false);
+  }
+
   const handleChange: React.ChangeEventHandler<HTMLInputElement> = (event) => {
     if (onChange) {
       onChange(event);
@@ -118,21 +162,25 @@ const MonthSelector: React.FC<PropsType> = ({
   }
 
   return (
-    <div className={styles.control} onClick={handleClick}>
-      <input
-        ref={inputRef}
-        type="text"
-        value={value}
-        onChange={handleChange}
-        style={{ width: '6rem', textAlign: 'center' }}
-      />
-      {
-        open
-          ? (
-            <DropDown initialValue={value} onSelect={handleSelect} />
-          )
-          : null
-      }
+    <div className={styles.controlWrapper}>
+      <button type="button" onClick={handleMonthDecrement}>&lt;</button>
+      <div className={styles.control} onClick={handleClick}>
+        <input
+          ref={inputRef}
+          type="text"
+          value={value}
+          onChange={handleChange}
+          style={{ width: '6rem', textAlign: 'center' }}
+        />
+        {
+          open
+            ? (
+              <DropDown initialValue={value} onSelect={handleSelect} />
+            )
+            : null
+        }
+      </div>
+      <button type="button" onClick={handleMonthIncrement}>&gt;</button>
     </div>
   );
 };
