@@ -1,18 +1,27 @@
 import Http from '@mortvola/http';
 import { Formik } from 'formik';
 import { DateTime } from 'luxon';
+import { observer } from 'mobx-react-lite';
 import React, { useEffect, useState } from 'react';
-import Chart from 'react-google-charts';
+import Chart, { GoogleChartWrapper } from 'react-google-charts';
 import { BudgetProgressReportResponse } from '../../common/ResponseTypes';
+import { useStores } from '../State/mobxStore';
+import TransactionContainer from '../State/TransactionContainer';
+import RegisterTransactions from '../Transactions/RegisterTransactions';
+import Transaction from '../Transactions/Transactions/Transaction';
+import TransactionBase from '../Transactions/Transactions/TransactionBase';
 import MonthSelector from './MonthSelector';
 import ReportControls from './ReportControls';
 
-const BudgetProgress: React.FC = () => {
+const BudgetProgress: React.FC = observer(() => {
+  const store = useStores();
   const [data, setData] = useState<(number | string)[][] | null>(null);
+  const [days, setDays] = useState<[number, number[]][]>([]);
   const [value, setValue] = React.useState<string>(() => {
     const n = DateTime.now();
     return `${n.month}-${n.year}`;
   });
+  const [transactions, setTransactions] = React.useState<TransactionContainer | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -22,28 +31,30 @@ const BudgetProgress: React.FC = () => {
         const body = await response.body();
 
         const date = DateTime.fromFormat(value, 'M-yyyy');
-        const days = new Array(date.daysInMonth);
+        const newDays = new Array<[number, number[]]>(date.daysInMonth);
 
         body.forEach((m) => {
-          [, days[DateTime.fromISO(m[0]).day - 1]] = m;
+          newDays[DateTime.fromISO(m[0]).day - 1] = [m[1], m[2]];
         });
 
-        for (let d = 0; d < days.length; d += 1) {
-          if (days[d] === undefined) {
+        for (let d = 0; d < newDays.length; d += 1) {
+          if (newDays[d] === undefined) {
             if (d > 0) {
-              days[d] = days[d - 1];
+              newDays[d] = newDays[d - 1];
             }
             else {
-              days[d] = 0;
+              newDays[d] = [0, []];
             }
           }
         }
 
+        setDays(newDays);
+
         setData([
           ['date', 'amount'],
-          ...days.map((d, index) => ([
+          ...newDays.map((d, index) => ([
             index + 1,
-            d,
+            d[0],
           ])),
         ]);
       }
@@ -53,6 +64,33 @@ const BudgetProgress: React.FC = () => {
   const handleChangeEvent: React.ChangeEventHandler<HTMLInputElement> = (event) => {
     setValue(event.target.value);
   }
+
+  const fetchTransactions = React.useCallback(async (transactionIds: number[]) => {
+    const queryParams = transactionIds.reduce((accum, t, index) => {
+      if (index === 0) {
+        return `t=${t}`;
+      }
+
+      return `${accum}&t=${t}`;
+    }, '');
+
+    const container = new TransactionContainer(store, `/api/transactions?${queryParams}`);
+    container.getTransactions();
+    setTransactions(container);
+    // const response = await Http.get<TransactionProps>(`/api/transactions?${queryParams}`);
+
+    // if (response.ok) {
+    //   const body = await response.body();
+    // }
+  }, [store]);
+
+  const selectCallback = React.useCallback(({ chartWrapper }: { chartWrapper: GoogleChartWrapper}) => {
+    const selection = chartWrapper.getChart().getSelection();
+    if (selection.length > 0) {
+      const transactionIds = days[selection[0].row][1];
+      fetchTransactions(transactionIds);
+    }
+  }, [days, fetchTransactions]);
 
   return (
     <div className="chart-wrapper window window1">
@@ -68,9 +106,13 @@ const BudgetProgress: React.FC = () => {
               <Chart
                 chartType="ColumnChart"
                 data={data}
+                width="100%"
+                height="100%"
+                chartEvents={[{
+                  eventName: 'select',
+                  callback: selectCallback,
+                }]}
                 options={{
-                  width: ('100%' as unknown) as number,
-                  height: ('100%' as unknown) as number,
                   legend: { position: 'none' },
                   isStacked: true,
                   focusTarget: 'datum',
@@ -83,8 +125,23 @@ const BudgetProgress: React.FC = () => {
             : null
         }
       </div>
+      {
+        transactions
+          ? (
+            <RegisterTransactions trxContainer={transactions}>
+              {
+                transactions.transactions.map((t) => (
+                  <TransactionBase key={t.id} transaction={t}>
+                    <Transaction transaction={t} amount={t.amount} />
+                  </TransactionBase>
+                ))
+              }
+            </RegisterTransactions>
+          )
+          : null
+      }
     </div>
   );
-}
+});
 
 export default BudgetProgress;

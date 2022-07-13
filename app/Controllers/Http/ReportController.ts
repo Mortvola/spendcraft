@@ -11,7 +11,10 @@ type FundingHistoryReportType = [string, number, number, number][];
 
 class ReportController {
   // eslint-disable-next-line class-methods-use-this
-  public async get({ request, auth: { user } }: HttpContextContract): Promise<NetworthReportType | PayeeReportType> {
+  public async get({
+    request,
+    auth: { user },
+  }: HttpContextContract): Promise<NetworthReportType | PayeeReportType | BudgetProgressReportResponse> {
     if (!user) {
       throw new Error('user not defined');
     }
@@ -388,6 +391,7 @@ class ReportController {
       .select(
         Database.raw('to_char(t.date, \'YYYY-MM-DD\') as date'),
         Database.raw('sum(tc.amount) AS amount'),
+        Database.raw('array_agg(t.id) as transactions'),
       )
       .from('transaction_categories AS tc')
       .join('transactions AS t', 't.id', 'tc.transaction_id')
@@ -409,7 +413,7 @@ class ReportController {
     return query.map((row) => {
       runningBalance += parseFloat(row.amount);
 
-      return [row.date, runningBalance];
+      return [row.date, runningBalance, row.transactions];
     });
   }
 }

@@ -23,7 +23,16 @@ class QueryManager implements QueryManagerInterface {
     if (!this.fetching && !this.fetchComplete) {
       this.fetching = true;
       const limit = 30;
-      const response = await Http.get(`${url}?offset=${index ?? 0}&limit=${limit}`);
+      let newUrl: string;
+
+      if (url.includes('?')) {
+        newUrl = `${url}&offset=${index ?? 0}&limit=${limit}`;
+      }
+      else {
+        newUrl = `${url}?offset=${index ?? 0}&limit=${limit}`;
+      }
+
+      const response = await Http.get(newUrl);
 
       if (response.ok) {
         const body = await response.body();

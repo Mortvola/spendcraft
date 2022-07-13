@@ -2,14 +2,14 @@ import React from 'react';
 import { observer } from 'mobx-react-lite';
 import { useStores } from '../State/mobxStore';
 import {
-  AccountInterface, CategoryInterface, PendingTransactionInterface, TransactionContainerInterface, TransactionInterface,
+  AccountInterface, CategoryInterface, TransactionContainerInterface, TransactionInterface,
 } from '../State/State';
 import PendingRegister from './PendingRegister';
 import RegisterTitles from './RegisterTitles';
 import RegisterTransactions from './RegisterTransactions';
 import RebalancesTitles from './RebalancesTitles';
 import styles from './Transactions.module.css';
-import Transaction from './Transactions/Transaction';
+import TransactionBase from './Transactions/TransactionBase';
 import AccountTransaction from './Transactions/AccountTransaction';
 import CategoryTransaction from './Transactions/CategoryTransaction';
 import useTrxDialog from './TrxDialog';
@@ -159,14 +159,14 @@ const Register: React.FC<PropsType> = observer(({
       }
 
       const element = (
-        <Transaction
+        <TransactionBase
           key={transaction.id}
           transaction={transaction}
           showTrxDialog={showTrxDialog}
           className={transactionClassName}
         >
           { renderTransactionType(transaction, amount, runningBalance) }
-        </Transaction>
+        </TransactionBase>
       )
 
       if (runningBalance !== undefined) {
@@ -195,7 +195,7 @@ const Register: React.FC<PropsType> = observer(({
         }, 0);
 
         return (
-          <Transaction
+          <TransactionBase
             key={transaction.id}
             transaction={transaction}
             showTrxDialog={showTrxDialog}
@@ -204,7 +204,7 @@ const Register: React.FC<PropsType> = observer(({
             <RebalanceTransaction
               amount={amount}
             />
-          </Transaction>
+          </TransactionBase>
         );
       })
     };

@@ -33,6 +33,33 @@ export default class TransactionsController {
   }
 
   // eslint-disable-next-line class-methods-use-this
+  public async getMultiple({
+    request,
+  }: HttpContextContract): Promise<TransactionsResponse> {
+    let { t } = request.qs();
+
+    if (!Array.isArray(t)) {
+      t = [t];
+    }
+
+    const transactions = await Transaction.query()
+      .preload('accountTransaction', (accountTransaction) => {
+        accountTransaction.preload('account', (account) => {
+          account.preload('institution');
+        });
+      })
+      .whereIn('id', t)
+      .andWhere('deleted', false);
+
+    return {
+      transactions: transactions.map((transaction) => (
+        transaction.serialize(transactionFields) as TransactionProps
+      )),
+      balance: 0,
+    };
+  }
+
+  // eslint-disable-next-line class-methods-use-this
   public async update({
     request,
     auth: {

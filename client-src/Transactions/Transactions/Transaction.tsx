@@ -1,52 +1,43 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
-import { useStores } from '../../State/mobxStore';
-import { TransactionInterface } from '../../State/State';
+import Amount from '../../Amount';
+import { CategoryInterface, TransactionInterface } from '../../State/State';
 import useMediaQuery from '../../MediaQuery';
 import { TransactionType } from '../../../common/ResponseTypes';
-import styles from '../Transactions.module.css'
-import Date from '../../Date';
-import Icon from '../../Icon';
 
 type PropsType = {
   transaction: TransactionInterface,
-  className?: string,
-  children?: React.ReactNode,
-  showTrxDialog: (transaction: TransactionInterface) => void,
+  amount: number,
 }
 
 const Transaction: React.FC<PropsType> = observer(({
   transaction,
-  className,
-  children,
-  showTrxDialog,
+  amount,
 }) => {
-  const { uiState } = useStores();
-  const { addMediaClass } = useMediaQuery();
+  const { isMobile } = useMediaQuery();
 
-  const handleClick: React.MouseEventHandler = () => {
-    uiState.selectTransaction(transaction);
-    if (transaction.type !== TransactionType.STARTING_BALANCE) {
-      showTrxDialog(transaction);
-    }
-  };
-
-  let transactionClassName = `${className ?? ''} ${styles.transaction}`;
-
-  transactionClassName = addMediaClass(transactionClassName);
+  if (isMobile) {
+    return (
+      <>
+        <div className="transaction-field">{transaction.name}</div>
+        <Amount className="transaction-field currency" amount={amount} />
+        <div
+          className="transaction-field"
+          style={{ gridArea: 'account', fontSize: 'x-small' }}
+        >
+          {`${transaction.instituteName}:${transaction.accountName}`}
+        </div>
+      </>
+    );
+  }
 
   return (
-    <div className={styles.transactionWrapper}>
-      <div className={transactionClassName} onClick={handleClick}>
-        {
-          transaction.duplicateOfTransactionId
-            ? <Icon icon="arrow-right-arrow-left" iconClass="fa-solid" />
-            : <div />
-        }
-        <Date className="transaction-field" date={transaction.date} />
-        { children }
-      </div>
-    </div>
+    <>
+      <div className="transaction-field">{transaction.name}</div>
+      <Amount className="transaction-field currency" amount={amount} />
+      <div className="transaction-field">{transaction.instituteName}</div>
+      <div className="transaction-field">{transaction.accountName}</div>
+    </>
   );
 });
 

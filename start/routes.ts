@@ -133,6 +133,8 @@ Route.group(() => {
     Route.post('/:trxId/dedup', 'TransactionsController.dedup');
   }).prefix('/transaction');
 
+  Route.get('/transactions', 'TransactionsController.getMultiple')
+
   Route.get('/reports/:report', 'ReportController.get');
 
   Route.group(() => {
