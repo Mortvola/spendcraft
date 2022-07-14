@@ -193,22 +193,53 @@ export default class CheckBalances extends BaseCommand {
           .withAggregate('accountTransactions', (query) => {
             query.sum('amount')
               .whereHas('transaction', (trxQuery) => {
-                trxQuery.where('deleted', false);
+                trxQuery
+                  .where('deleted', false)
+                  .andWhere('type', '!=', 4);
               })
-              .where('pending', false).as('trans_sum')
+              .where('pending', false)
+              .as('trans_sum')
+          })
+          .withAggregate('accountTransactions', (query) => {
+            query.sum('principle')
+              .whereHas('transaction', (trxQuery) => {
+                trxQuery
+                  .where('deleted', false)
+                  .andWhere('type', '!=', 4);
+              })
+              .where('pending', false)
+              .as('principle_sum')
           })
 
         const failures: Failures[] = [];
 
         // eslint-disable-next-line no-restricted-syntax
         for (const account of accounts) {
-          const transSum = (
-            account.$extras.trans_sum === null
-              ? 0
-              : parseFloat(account.$extras.trans_sum)
-          );
+          // eslint-disable-next-line no-await-in-loop
+          const startingTrx = await account.related('accountTransactions').query()
+            .whereHas('transaction', (query2) => {
+              query2.where('type', 4)
+            })
+            .firstOrFail();
 
-          if (account.balance !== transSum) {
+          let transSum: number;
+
+          if (account.type === 'loan') {
+            transSum = (
+              account.$extras.principle_sum === null
+                ? 0
+                : parseFloat(account.$extras.principle_sum)
+            ) + startingTrx.amount;
+          }
+          else {
+            transSum = (
+              account.$extras.trans_sum === null
+                ? 0
+                : parseFloat(account.$extras.trans_sum)
+            ) + startingTrx.amount;
+          }
+
+          if (account.balance.toFixed(2) !== transSum.toFixed(2)) {
             failures.push({
               account,
               transSum,
