@@ -297,6 +297,7 @@ class CategoryController {
             })
         })
         .orderBy('date', 'desc')
+        .orderBy('transactions.id', 'desc')
         .preload('accountTransaction', (accountTransaction) => {
           accountTransaction.preload('account', (account) => {
             account.preload('institution');
