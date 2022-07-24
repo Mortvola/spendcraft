@@ -1,7 +1,8 @@
 import React from 'react'
+import styles from './transactions.module.css';
 
 const TitleStub: React.FC = () => (
-  <div style={{ overflowY: 'scroll', visibility: 'hidden', padding: 0 }} />
+  <div className={styles.titleStub} />
 )
 
 export default TitleStub;

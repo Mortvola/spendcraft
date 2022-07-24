@@ -52,6 +52,8 @@ export interface TransactionInterface {
 
   reconciled: boolean;
 
+  accountOwner: string | null;
+
   transaction?: {
     date: string;
 
@@ -100,6 +102,8 @@ export interface PendingTransactionInterface {
   instituteName: string;
 
   accountName: string;
+
+  accountOwner: string | null;
 }
 
 export interface AccountsInterface {

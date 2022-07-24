@@ -27,14 +27,14 @@ const RegisterTitles: React.FC<PropsType> = ({
 
   if (isMobile) {
     return (
-      <div className={`mobile register-title ${styles.transaction}`}>
+      <div className={`mobile ${styles.registerTitle} ${styles.transaction}`}>
         { commonTitles() }
         <div className="currency">Amount</div>
       </div>
     );
   }
 
-  const className = `register-title ${styles.transaction} ${transactionClassName ?? ''}`;
+  const className = `${styles.registerTitle} ${styles.transaction} ${transactionClassName ?? ''}`;
 
   if (category) {
     return (
@@ -69,7 +69,8 @@ const RegisterTitles: React.FC<PropsType> = ({
           : null
       }
       <div className="currency">Balance</div>
-      <div />
+      <div>C</div>
+      <div>Owner</div>
       <TitleStub />
     </div>
   );

@@ -162,26 +162,6 @@ body {
   min-height: 25%;
 }
 
-.register-title {
-  color: white;
-  background-color: gray;
-}
-
-.register-title div {
-  height: 100%;
-}
-
-.register-title div:not(:first-child) {
-  border-left: solid thin black
-}
-
-.loan-transaction {
-  display: grid;
-  grid-template-columns: 32px 100px minmax(0, 1fr) 125px 125px 125px 32px;
-  grid-template-rows: max-content;
-  align-items: center;
-}
-
 .trans-cat-edit {
   display: grid;
   grid-template-columns: minmax(0, 1fr) max-content;

@@ -20,6 +20,8 @@ class PendingTransaction implements PendingTransactionInterface {
 
   accountName: string;
 
+  accountOwner: string | null = null;
+
   constructor(store: StoreInterface, props: PendingTransactionProps) {
     this.id = props.id;
     this.date = DateTime.fromISO(props.date);
@@ -31,6 +33,7 @@ class PendingTransaction implements PendingTransactionInterface {
       this.amount = props.accountTransaction.amount;
       this.instituteName = props.accountTransaction.account.institution.name;
       this.accountName = props.accountTransaction.account.name;
+      this.accountOwner = props.accountTransaction.accountOwner;
     }
     else {
       this.name = 'Unknown';

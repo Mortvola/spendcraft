@@ -308,6 +308,7 @@ class Account extends BaseModel {
               pending: plaidTransaction.pending ?? false,
               paymentChannel: plaidTransaction.payment_channel,
               merchantName: plaidTransaction.merchant_name,
+              accountOwner: plaidTransaction.account_owner,
               location: getLocation(plaidTransaction.location),
             });
 
@@ -341,6 +342,7 @@ class Account extends BaseModel {
               pending: plaidTransaction.pending ?? false,
               paymentChannel: plaidTransaction.payment_channel,
               merchantName: plaidTransaction.merchant_name,
+              accountOwner: plaidTransaction.account_owner,
               location: getLocation(plaidTransaction.location),
             })
             .save();

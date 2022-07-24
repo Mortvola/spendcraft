@@ -12,7 +12,7 @@
 
 .transaction {
   display: grid;
-  grid-template-columns: var(--icon-width) var(--date-width) 1fr var(--amount-width) var(--amount-width) var(--balance-width) minmax(0, 1fr) minmax(0, 1fr) max-content;
+  grid-template-columns: var(--icon-width) var(--date-width) minmax(0,1fr) var(--amount-width) var(--amount-width) var(--balance-width) minmax(0, 1fr) minmax(0, 1fr) max-content;
   grid-template-rows: max-content;
   align-items: center;
   transition: background-color 0.25s ease-out;
@@ -23,19 +23,19 @@
 }
 
 .unassigned.transaction {
-  grid-template-columns: var(--icon-width) var(--date-width) 1fr var(--amount-width) var(--balance-width) minmax(0, 0.5fr) minmax(0, 0.5fr) max-content;
+  grid-template-columns: var(--icon-width) var(--date-width) minmax(0,1fr) var(--amount-width) var(--balance-width) minmax(0, 0.5fr) minmax(0, 0.5fr) max-content;
 }
 
 .acct.transaction {
-  grid-template-columns: var(--icon-width) var(--date-width) 1fr var(--amount-width) var(--balance-width) max-content minmax(0, 2fr) max-content;
+  grid-template-columns: var(--icon-width) var(--date-width) minmax(0,1fr) var(--amount-width) var(--balance-width) max-content minmax(0, 2fr);
 }
 
 .loan.transaction {
-  grid-template-columns: var(--icon-width) var(--date-width) 1fr repeat(3, var(--amount-width)) var(--balance-width) max-content minmax(0, 2fr) max-content;
+  grid-template-columns: var(--icon-width) var(--date-width) minmax(0,1fr) repeat(3, var(--amount-width)) var(--balance-width) max-content minmax(0, 2fr) max-content;
 }
 
 .pending.transaction {
-  grid-template-columns: var(--icon-width) var(--date-width) minmax(0, 1.8fr) var(--amount-width) var(--balance-width) minmax(0, 3fr) max-content;
+  grid-template-columns: var(--icon-width) var(--date-width) minmax(0, 1.8fr) var(--amount-width) minmax(0,0.8fr) minmax(0, 0.8fr);
 }
 
 .acct.pending.transaction {
@@ -47,8 +47,9 @@
 }
 
 /* For left-padding of each column in transaction */
-.transaction>div {
-  padding-left: 4px;
+.transaction>* {
+  padding-left: 5px;
+  min-width: 1.25rem;
 }
 
 :global(.mobile).transaction {
@@ -64,3 +65,23 @@
   transition: grid-template-rows 0.5s ease-in;
 }
 
+.register-title {
+  color: white;
+  background-color: gray;
+}
+
+.register-title div {
+  height: 100%;
+}
+
+.register-title>:not(:first-child, :last-child) {
+  border-left: solid 1px black;
+  padding-left: 4px;
+}
+
+.title-stub {
+  overflow-y: scroll;
+  visibility: hidden;
+  padding: 0;
+  min-width: 0;
+}

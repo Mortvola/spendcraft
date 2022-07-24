@@ -45,7 +45,7 @@ const PendingTransactions: React.FC<PropsType> = observer(({
       <>
         {
           pending.map((transaction) => (
-            <div key={transaction.id} className={`mobile ${styles.acct} ${styles.pending} ${styles.transaction}`}>
+            <div key={transaction.id} className={`mobile ${styles.transaction}`}>
               <div />
               <Date className="tranaction-field" date={transaction.date} />
               <div className="transaction-field">{transaction.name}</div>
@@ -85,6 +85,7 @@ const PendingTransactions: React.FC<PropsType> = observer(({
             <Date className="tranaction-field" date={transaction.date} />
             <div className="transaction-field">{transaction.name}</div>
             <Amount className="transaction-field currency" amount={transaction.amount} />
+            <div className="transaction-field">{transaction.accountOwner}</div>
           </div>
         ))
       }

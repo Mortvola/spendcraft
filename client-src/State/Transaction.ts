@@ -49,6 +49,8 @@ class Transaction implements TransactionInterface {
 
   reconciled = false;
 
+  accountOwner: string | null = null;
+
   store: StoreInterface;
 
   constructor(store: StoreInterface, props: TransactionProps) {
@@ -71,6 +73,7 @@ class Transaction implements TransactionInterface {
       this.paymentChannel = props.accountTransaction.paymentChannel;
       this.location = props.accountTransaction.location;
       this.reconciled = props.accountTransaction.reconciled;
+      this.accountOwner = props.accountTransaction.accountOwner;
     }
     else {
       switch (props.type) {

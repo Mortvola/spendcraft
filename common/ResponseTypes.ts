@@ -246,6 +246,8 @@ export interface TransactionProps {
 
     reconciled: boolean;
 
+    accountOwner: string | null;
+
     account: {
       id: number;
 
@@ -272,6 +274,8 @@ export interface PendingTransactionProps {
     name: string;
 
     amount: number;
+
+    accountOwner: string | null;
 
     account: {
       name: string,

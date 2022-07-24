@@ -76,6 +76,7 @@ const AccountTransaction: React.FC<PropsType> = observer(({
         onChange={handleReconcileChange}
         onClick={handleReconcileClick}
       />
+      <div className="transaction-field">{transaction.accountOwner}</div>
     </>
   );
 });
