@@ -190,6 +190,10 @@ class Account extends BaseModel {
     startDate: DateTime,
     application: Application,
   ): Promise<number> {
+    // Get the current pending transactions fom the databse. If there
+    // are any remaining in this array at the end
+    // of the process of adding the plaid transactions then
+    // delete them from the database.
     const pendingTransactions = await this.related('accountTransactions')
       .query()
       .where('pending', true)
@@ -281,15 +285,18 @@ class Account extends BaseModel {
 
           // if the transaction was deleted then do nothing.
           if (!transaction.deleted) {
-            // If the existing transaction was pending
-            // and the Plaid transaction is not then remove
-            // the transaction from the pending transaction array.
-            if (pendingTransactions && acctTrans.pending && !plaidTransaction.pending) {
+            // If the existing transaction is pending
+            // and the Plaid transaction is still pending then remove
+            // the transaction from the pending transaction array (transactions in the
+            // pending transaction array will be removed from the database).
+            if (pendingTransactions && acctTrans.pending && plaidTransaction.pending) {
               const index = pendingTransactions.findIndex(
                 (p) => p.provider === 'PLAID' && p.providerTransactionId === plaidTransaction.transaction_id,
               );
 
               if (index !== -1) {
+                // Transaction is still pending and it was found in the pending transaction
+                // array so remove it so it is not deleted from the database.
                 pendingTransactions.splice(index, 1);
               }
             }
@@ -345,7 +352,8 @@ class Account extends BaseModel {
       }
     }));
 
-    // Delete any pending transaction in the database that remain in the array
+    // Delete any pending transaction in the database that remain in the
+    // pending transaction array
     if (pendingTransactions && pendingTransactions.length > 0) {
       await Promise.all(pendingTransactions.map(async (pt): Promise<void> => {
         await pt.delete();
