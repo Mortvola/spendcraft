@@ -76,7 +76,12 @@ const AccountTransaction: React.FC<PropsType> = observer(({
         onChange={handleReconcileChange}
         onClick={handleReconcileClick}
       />
-      <div className="transaction-field">{transaction.accountOwner}</div>
+      <div
+        className="transaction-field"
+        style={{ textTransform: 'capitalize' }}
+      >
+        {transaction.accountOwner?.toLocaleLowerCase()}
+      </div>
     </>
   );
 });

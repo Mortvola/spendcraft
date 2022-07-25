@@ -27,7 +27,7 @@
 }
 
 .acct.transaction {
-  grid-template-columns: var(--icon-width) var(--date-width) minmax(0,1fr) var(--amount-width) var(--balance-width) max-content minmax(0, 2fr);
+  grid-template-columns: var(--icon-width) var(--date-width) minmax(0,1fr) var(--amount-width) var(--balance-width) max-content minmax(0, 1fr);
 }
 
 .loan.transaction {
@@ -39,7 +39,7 @@
 }
 
 .acct.pending.transaction {
-  grid-template-columns: var(--icon-width) var(--date-width) minmax(0, 1.8fr) var(--amount-width) minmax(0, 3fr) max-content;
+  grid-template-columns: var(--icon-width) var(--date-width) minmax(0, 1fr) var(--amount-width) minmax(0, 1fr) max-content;
 }
 
 .rebalances.transaction {

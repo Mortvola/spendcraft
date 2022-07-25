@@ -85,7 +85,12 @@ const PendingTransactions: React.FC<PropsType> = observer(({
             <Date className="tranaction-field" date={transaction.date} />
             <div className="transaction-field">{transaction.name}</div>
             <Amount className="transaction-field currency" amount={transaction.amount} />
-            <div className="transaction-field">{transaction.accountOwner}</div>
+            <div
+              className="transaction-field"
+              style={{ textTransform: 'capitalize' }}
+            >
+              {transaction.accountOwner?.toLocaleLowerCase()}
+            </div>
           </div>
         ))
       }
