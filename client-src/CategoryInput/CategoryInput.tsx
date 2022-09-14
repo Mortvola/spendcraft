@@ -362,6 +362,10 @@ const CategoryInput: React.FC<PropsType> = ({
       if (hiddenElement) {
         const viewport = window.visualViewport;
 
+        if (viewport === null) {
+          throw new Error('viewport is null');
+        }
+
         return ReactDOM.createPortal(
           <CategorySelector
             ref={selectorRef}

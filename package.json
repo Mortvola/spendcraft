@@ -40,7 +40,7 @@
     "@mortvola/usemodal": "^0.2.1",
     "@phc/argon2": "^1.0.9",
     "@popperjs/core": "^2.11.2",
-    "@poppinss/utils": "^4.0.4",
+    "@poppinss/utils": "^5.0.0",
     "acorn": "^8.7.0",
     "ajv": "^8.9.0",
     "argon2": "^0.28.5",
