@@ -15,6 +15,10 @@ import Mail from '@ioc:Adonis/Addons/Mail';
 import Env from '@ioc:Adonis/Core/Env';
 import { Exception } from '@poppinss/utils';
 import Logger from '@ioc:Adonis/Core/Logger'
+import fs from 'fs'
+import { fetch } from 'fetch-h2'
+import { SignJWT } from 'jose/jwt/sign'
+import { importPKCS8 } from 'jose/key/import'
 
 type Key = {
   alg: string;
@@ -190,10 +194,84 @@ class WebhookController {
       }));
 
       await trx.commit();
+
+      this.sendPushNotifications(application)
     }
     catch (error) {
-      Logger.error(`default update failed: ${error.message}, event: ${JSON.stringify(event)}`);
+      Logger.error({ err: error }, `default update failed, event: ${JSON.stringify(event)}`);
       await trx.rollback();
+    }
+  }
+
+  private static async sendPushNotifications(application: Application) {
+    try {
+      const users = await application.related('users').query();
+
+      if (users.length > 0) {
+        users.map(async (user) => {
+          const userTokens = await user.related('apnsTokens').query();
+
+          userTokens.map(async (userToken) => {
+            try {
+              WebhookController.sendPushNotification(userToken.token);
+            }
+            catch (error) {
+              Logger.error({ err: error }, 'Push notification failed');
+            }
+          });
+        });
+      }
+    }
+    catch (error) {
+      Logger.error({ err: error }, 'push notification failed');
+    }
+  }
+
+  private static async sendPushNotification(deviceToken: string) {
+    const privateKey = fs.readFileSync('./PushNotificationKey.p8')
+    const key = await importPKCS8(privateKey.toString(), 'ES256');
+
+    const jwt = await new SignJWT({
+      iss: 'N7MR48SV68', // Team ID
+      iat: DateTime.now().toSeconds(),
+    })
+      .setProtectedHeader({
+        alg: 'ES256',
+        kid: 'L5KGW6G49S', // push notification key ID
+      })
+      .sign(key)
+
+    const notifictation = {
+      aps: {
+        alert: {
+          title: 'New Transactions',
+          body: 'New transations are ready to be assigned.',
+        },
+        sound: 'default',
+      },
+    }
+
+    try {
+      const response = await fetch(`https://api.sandbox.push.apple.com/3/device/${deviceToken}`, {
+        method: 'POST',
+        body: JSON.stringify(notifictation),
+        headers: {
+          'Content-Type': 'application/json',
+          authorization: `bearer ${jwt}`,
+          'apns-priority': '5',
+          'apns-topic': 'app.spendcraft',
+          'apns-push-type': 'alert',
+          'apns-collapse-id': 'new-transactions',
+        },
+      })
+
+      if (!response.ok) {
+        const body = await response.json();
+        Logger.error(`apns failure: ${response.status}: ${response.statusText}, body: ${JSON.stringify(body)}`)
+      }
+    }
+    catch (error) {
+      Logger.error({ err: error }, 'send push notification');
     }
   }
 

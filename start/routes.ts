@@ -59,6 +59,7 @@ Route.group(() => {
     Route.post('/pending-email/resend', 'UsersController.resendEmailVerification');
     Route.delete('/pending-email', 'UsersController.deletePending')
     Route.get('/link-token', 'UsersController.getLinkToken');
+    Route.post('/apns-token', 'UsersController.addApnsToken')
   }).prefix('/user');
 
   Route.group(() => {

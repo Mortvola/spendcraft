@@ -7,6 +7,8 @@ import {
   BaseModel,
   belongsTo,
   BelongsTo,
+  hasMany,
+  HasMany,
 } from '@ioc:Adonis/Lucid/Orm';
 import { InstitutionProps } from 'Common/ResponseTypes';
 import { sha256 } from 'js-sha256';
@@ -15,6 +17,7 @@ import Env from '@ioc:Adonis/Core/Env';
 import Mail from '@ioc:Adonis/Addons/Mail';
 import { Exception } from '@poppinss/utils';
 import Application from 'App/Models/Application';
+import ApnsToken from './ApnsToken';
 
 export default class User extends BaseModel {
   @column({ isPrimary: true, serializeAs: null })
@@ -56,6 +59,9 @@ export default class User extends BaseModel {
 
   @column({ serializeAs: null })
   public applicationId: number;
+
+  @hasMany(() => ApnsToken)
+  public apnsTokens: HasMany<typeof ApnsToken>
 
   public async getConnectedAccounts(this: User): Promise<InstitutionProps[]> {
     const application = await this.related('application').query().firstOrFail();

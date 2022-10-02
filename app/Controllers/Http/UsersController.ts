@@ -117,4 +117,31 @@ export default class UsersController {
 
     response.json({ linkToken: linkTokenResponse.link_token });
   }
+
+  // eslint-disable-next-line class-methods-use-this
+  async addApnsToken({ auth: { user }, request }: HttpContextContract): Promise<void> {
+    if (!user) {
+      throw new Error('user is not defined');
+    }
+
+    const requestData = await request.validate({
+      schema: schema.create({
+        token: schema.string([
+          rules.trim(),
+          rules.minLength(1),
+        ]),
+      }),
+    });
+
+    const existingToken = await user.related('apnsTokens')
+      .query()
+      .where('token', requestData.token)
+      .first();
+
+    if (!existingToken) {
+      user.related('apnsTokens').create({
+        token: requestData.token,
+      });
+    }
+  }
 }
