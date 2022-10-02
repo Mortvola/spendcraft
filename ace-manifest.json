@@ -1,5 +1,17 @@
 {
   "commands": {
+    "apn:push": {
+      "settings": {
+        "loadApp": false,
+        "stayAlive": false
+      },
+      "commandPath": "./commands/ApnPush",
+      "commandName": "apn:push",
+      "description": "",
+      "args": [],
+      "aliases": [],
+      "flags": []
+    },
     "check:balances": {
       "settings": {
         "loadApp": true,

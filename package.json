@@ -50,6 +50,7 @@
     "camelcase-keys": "^6.2.2",
     "cron": "^2.0.0",
     "fast-xml-parser": "^4.0.8",
+    "fetch-h2": "^3.0.2",
     "formik": "^2.2.9",
     "jose": "^3.20.3",
     "js-sha256": "^0.9.0",
