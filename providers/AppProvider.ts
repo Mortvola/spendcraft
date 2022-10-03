@@ -1,4 +1,5 @@
 import { ApplicationContract } from '@ioc:Adonis/Core/Application'
+import ApplePushNotifications from './ApplePushNotifications';
 import BalanceUpdater from './BalanceUpdater/BalanceUpdater';
 import Plaid from './Plaid/Plaid';
 
@@ -17,6 +18,11 @@ export default class AppProvider {
     // Register the balance updater binding.
     this.app.container.singleton('BalanceUpdater', () => {
       return new BalanceUpdater();
+    })
+
+    // Register the Apple Push Notifications binding.
+    this.app.container.singleton('ApplePushNotifications', () => {
+      return new ApplePushNotifications();
     })
   }
 

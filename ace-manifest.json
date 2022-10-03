@@ -2,7 +2,7 @@
   "commands": {
     "apn:push": {
       "settings": {
-        "loadApp": false,
+        "loadApp": true,
         "stayAlive": false
       },
       "commandPath": "./commands/ApnPush",
