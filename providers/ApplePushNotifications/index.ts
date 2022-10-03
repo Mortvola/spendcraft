@@ -75,7 +75,7 @@ class ApplePushNotifications {
     try {
       Logger.info(`pushing notification to ${deviceToken}`);
 
-      const response = await fetch(`https://api.sandbox.push.apple.com/3/device/${deviceToken}`, {
+      const response = await fetch(`https://api.push.apple.com/3/device/${deviceToken}`, {
         method: 'POST',
         body: JSON.stringify(notification),
         headers: {
