@@ -1,11 +1,13 @@
 import fs from 'fs';
-import { fetch } from 'fetch-h2';
+import { context, FetchInit, Request, Response } from 'fetch-h2';
 import { SignJWT } from 'jose/jwt/sign';
 import { importPKCS8, KeyLike } from 'jose/key/import';
 import { DateTime } from "luxon";
 import Application from 'App/Models/Application';
 import Logger from '@ioc:Adonis/Core/Logger';
 import ApnsToken from 'App/Models/ApnsToken';
+
+type FetchType = (input: string | Request, init?: Partial<FetchInit> | undefined) => Promise<Response>;
 
 class ApplePushNotifications {
   pushNotificationKey: KeyLike | null = null;
@@ -15,6 +17,8 @@ class ApplePushNotifications {
   providerJwt: string | null = null;
 
   public async sendPushNotifications(application: Application) {
+    const { fetch, disconnectAll } = context();
+
     try {
       const users = await application.related('users').query();
       // const users = await User.query().where('applicationId', application.id)
@@ -23,20 +27,22 @@ class ApplePushNotifications {
         await Promise.all(users.map(async (user) => {
           const userTokens = await user.related('apnsTokens').query();
 
-          await Promise.all(userTokens.map(async (userToken) => {
+          for (let userToken of userTokens) {
             try {
-              await this.sendPushNotification(userToken);
+              await this.sendPushNotification(fetch, userToken);
             }
             catch (error) {
               Logger.error({ err: error }, 'Push notification failed');
             }
-          }));
+          }
         }));
       }
     }
     catch (error) {
       Logger.error({ err: error }, 'push notification failed');
     }
+
+    disconnectAll();
   }
 
   private async generateProviderJWT() {
@@ -49,9 +55,16 @@ class ApplePushNotifications {
       throw new Error('push notification key is null');
     }
 
-    if (this.providerJwt === null || this.providerJwtTime == null
-      || this.providerJwtTime.diff(DateTime.now()).as('minutes') > 30
+    let age: Number | null = null;
+    if (this.providerJwtTime) {
+      age = DateTime.now().diff(this.providerJwtTime, 'minutes').minutes;
+    }
+
+    if (this.providerJwt === null || age == null
+      || age > 30
     ) {
+      Logger.info(`Generating new provider token. Age: ${age}`);
+
       this.providerJwtTime = DateTime.now();
   
       this.providerJwt = await new SignJWT({
@@ -66,7 +79,7 @@ class ApplePushNotifications {
       }
   }
 
-  private async sendPushNotification(deviceToken: ApnsToken) {
+  private async sendPushNotification(fetch: FetchType, deviceToken: ApnsToken) {
     await this.generateProviderJWT();
 
     const jwt = this.providerJwt;
