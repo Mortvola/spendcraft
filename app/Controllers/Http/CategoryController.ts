@@ -52,13 +52,15 @@ class CategoryController {
 
     const requestData = await request.validate(AddGroupValidator);
 
-    return (new Group())
+    const group = await new Group()
       .fill({
         name: requestData.name,
         applicationId: user.applicationId,
         type: 'REGULAR',
       })
       .save();
+
+    return group;
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -195,66 +197,11 @@ class CategoryController {
 
     result.balance = cat.amount;
 
-    if (cat.type === 'UNASSIGNED') {
-      const transactions = await application
-        .related('transactions').query()
-        .where((query) => {
-          query
-            .doesntHave('transactionCategories')
-            .orWhereHas('transactionCategories', (q) => {
-              q.where('categoryId', cat.id);
-            })
-        })
-        .whereHas('accountTransaction', (q2) => {
-          q2
-            .where('pending', false)
-            .andWhereHas('account', (q3) => {
-              q3.where('tracking', 'Transactions')
-            })
-        })
-        .preload('accountTransaction', (accountTransaction) => {
-          accountTransaction.preload('account', (account) => {
-            account.preload('institution');
-          });
-        })
-        .preload('transactionCategories')
-        .where('deleted', false)
-        .orderBy('transactions.date', 'desc')
-        .orderByRaw('COALESCE(transactions.duplicate_of_transaction_id, transactions.id) desc')
-        .orderBy('transactions.id', 'desc')
-        .limit(request.qs().limit)
-        .offset(request.qs().offset);
+    const transactions = await cat.transactions(application, request.qs().limit, request.qs().offset);
 
-      result.transactions = transactions.map((t) => (
-        t.serialize(transactionFields) as TransactionProps
-      ));
-    }
-    else {
-      const transactions = await application
-        .related('transactions').query()
-        .whereHas('transactionCategories', (query) => {
-          query.where('categoryId', cat.id);
-        })
-        .preload('accountTransaction', (accountTransaction) => {
-          accountTransaction.preload('account', (account) => {
-            account.preload('institution');
-          });
-        })
-        .preload('transactionCategories', (transactionCategory) => {
-          transactionCategory.preload('loanTransaction');
-        })
-        .preload('transactionCategories')
-        .where('deleted', false)
-        .orderBy('transactions.date', 'desc')
-        .orderByRaw('COALESCE(transactions.duplicate_of_transaction_id, transactions.id) desc')
-        .orderBy('transactions.id', 'desc')
-        .limit(request.qs().limit)
-        .offset(request.qs().offset);
-
-      result.transactions = transactions.map((t) => (
-        t.serialize(transactionFields) as TransactionProps
-      ));
-    }
+    result.transactions = transactions.map((t) => (
+      t.serialize(transactionFields) as TransactionProps
+    ));
 
     return result;
   }

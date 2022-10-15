@@ -83,6 +83,73 @@ export default class Category extends BaseModel {
 
     return query;
   }
+
+  private getTransactionQuery(application: Application) {
+    if (this.type === 'UNASSIGNED') {
+      const transactionQuery = application
+        .related('transactions').query()
+        .where((query) => {
+          query
+            .doesntHave('transactionCategories')
+            .orWhereHas('transactionCategories', (q) => {
+              q.where('categoryId', this.id);
+            })
+        })
+        .whereHas('accountTransaction', (q2) => {
+          q2
+            .where('pending', false)
+            .andWhereHas('account', (q3) => {
+              q3.where('tracking', 'Transactions')
+            })
+        })
+        .preload('accountTransaction', (accountTransaction) => {
+          accountTransaction.preload('account', (account) => {
+            account.preload('institution');
+          });
+        })
+
+      return transactionQuery;
+    }
+
+    const transactionQuery = application
+      .related('transactions').query()
+      .whereHas('transactionCategories', (query) => {
+        query.where('categoryId', this.id);
+      })
+      .preload('accountTransaction', (accountTransaction) => {
+        accountTransaction.preload('account', (account) => {
+          account.preload('institution');
+        });
+      })
+      .preload('transactionCategories', (transactionCategory) => {
+        transactionCategory.preload('loanTransaction');
+      })
+
+    return transactionQuery
+  }
+
+  public async transactions(application: Application, limit?: number, offset?: number) {
+    let transactionQuery = this.getTransactionQuery(application);
+
+    transactionQuery
+      .preload('transactionCategories')
+      .where('deleted', false)
+      .orderBy('transactions.date', 'desc')
+      .orderByRaw('COALESCE(transactions.duplicate_of_transaction_id, transactions.id) desc')
+      .orderBy('transactions.id', 'desc')
+
+    if (limit !== undefined) {
+      transactionQuery = transactionQuery
+        .limit(limit)
+    }
+
+    if (offset !== undefined) {
+      transactionQuery = transactionQuery
+        .offset(offset);
+    }
+
+    return transactionQuery;
+  }
 }
 
 export { GroupItem, CategoryItem };

@@ -20,22 +20,27 @@ class ApplePushNotifications {
     const { fetch, disconnectAll } = context();
 
     try {
-      const users = await application.related('users').query();
-      // const users = await User.query().where('applicationId', application.id)
+      const unassigned = await application.getUnassignedCategory();
+      const transactions = await unassigned.transactions(application);
 
-      if (users.length > 0) {
-        await Promise.all(users.map(async (user) => {
-          const userTokens = await user.related('apnsTokens').query();
+      if (transactions.length > 0) {
+        const users = await application.related('users').query();
+        // const users = await User.query().where('applicationId', application.id)
 
-          for (let userToken of userTokens) {
-            try {
-              await this.sendPushNotification(fetch, userToken);
+        if (users.length > 0) {
+          await Promise.all(users.map(async (user) => {
+            const userTokens = await user.related('apnsTokens').query();
+
+            for (let userToken of userTokens) {
+              try {
+                await this.sendPushNotification(fetch, userToken, transactions.length);
+              }
+              catch (error) {
+                Logger.error({ err: error }, 'Push notification failed');
+              }
             }
-            catch (error) {
-              Logger.error({ err: error }, 'Push notification failed');
-            }
-          }
-        }));
+          }));
+        }
       }
     }
     catch (error) {
@@ -79,7 +84,11 @@ class ApplePushNotifications {
       }
   }
 
-  private async sendPushNotification(fetch: FetchType, deviceToken: ApnsToken) {
+  private async sendPushNotification(
+    fetch: FetchType,
+    deviceToken: ApnsToken,
+    unassigned: number,
+  ) {
     await this.generateProviderJWT();
 
     const jwt = this.providerJwt;
@@ -92,7 +101,7 @@ class ApplePushNotifications {
       aps: {
         alert: {
           title: 'New Transactions',
-          body: 'New transations are ready to be assigned.',
+          body: `You have ${unassigned} transactions ready to be assigned.`,
         },
         sound: 'default',
       },
