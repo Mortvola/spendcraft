@@ -272,7 +272,9 @@ export default class TransactionsController {
       await transaction.load('transactionCategories');
 
       await transaction.load('accountTransaction', (accountTrx) => {
-        accountTrx.preload('account');
+        accountTrx.preload('account', (acct) => {
+          acct.preload('institution');
+        });
       });
 
       result.transaction = transaction.serialize(transactionFields)
