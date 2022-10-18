@@ -101,7 +101,7 @@ class ApplePushNotifications {
       aps: {
         alert: {
           title: 'New Transactions',
-          body: `You have ${unassigned} transactions ready to be assigned.`,
+          body: `You have ${unassigned} transaction${unassigned == 1 ? '' : 's'} ready to be assigned.`,
         },
         sound: 'default',
       },
