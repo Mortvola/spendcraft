@@ -29,7 +29,7 @@ class FundingPlanCategory extends BaseModel {
   @column()
   public useGoal: boolean;
 
-  @column()
+  @column.date()
   public goalDate: DateTime;
 
   @column()

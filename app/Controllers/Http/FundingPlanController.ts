@@ -95,7 +95,10 @@ class FundingPlanController {
     });
 
     const item = (await FundingPlanCategory.updateOrCreate(
-      { planId: parseInt(planId, 10), categoryId: parseInt(catId, 10) },
+      {
+        planId: parseInt(planId, 10),
+        categoryId: parseInt(catId, 10),
+      },
       {
         amount: requestData.amount,
         useGoal: requestData.useGoal,
