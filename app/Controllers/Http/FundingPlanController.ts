@@ -82,30 +82,29 @@ class FundingPlanController {
   public async updateOrCreateCategory({
     request,
   }: HttpContextContract): Promise<FundingPlanCategory> {
-    const validationSchema = schema.create({
-      amount: schema.number(),
-      useGoal: schema.boolean(),
-      goalDate: schema.date(),
-      recurrence: schema.number(),
-    });
-
     const { planId, catId } = request.params();
+
     const requestData = await request.validate({
-      schema: validationSchema,
+      schema: schema.create({
+        amount: schema.number(),
+        useGoal: schema.boolean.optional(),
+        goalDate: schema.date.optional(),
+        recurrence: schema.number(),
+      }),
     });
 
-    const item = (await FundingPlanCategory.updateOrCreate(
+    const item = await FundingPlanCategory.updateOrCreate(
       {
         planId: parseInt(planId, 10),
         categoryId: parseInt(catId, 10),
       },
       {
         amount: requestData.amount,
-        useGoal: requestData.useGoal,
-        goalDate: requestData.goalDate,
+        useGoal: requestData.useGoal ?? false,
+        goalDate: requestData.goalDate ?? null,
         recurrence: requestData.recurrence,
       },
-    ));
+    );
 
     return item;
   }

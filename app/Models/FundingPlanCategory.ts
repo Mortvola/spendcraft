@@ -30,7 +30,7 @@ class FundingPlanCategory extends BaseModel {
   public useGoal: boolean;
 
   @column.date()
-  public goalDate: DateTime;
+  public goalDate: DateTime | null;
 
   @column()
   public recurrence: number;
