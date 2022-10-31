@@ -90,6 +90,7 @@ class FundingPlanController {
         useGoal: schema.boolean.optional(),
         goalDate: schema.date.optional(),
         recurrence: schema.number(),
+        expectedToSpend: schema.number.optional(),
       }),
     });
 
@@ -103,6 +104,7 @@ class FundingPlanController {
         useGoal: requestData.useGoal ?? false,
         goalDate: requestData.goalDate ?? null,
         recurrence: requestData.recurrence,
+        expectedToSpend: requestData.expectedToSpend ?? null,
       },
     );
 

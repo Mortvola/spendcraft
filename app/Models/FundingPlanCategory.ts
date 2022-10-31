@@ -35,6 +35,11 @@ class FundingPlanCategory extends BaseModel {
   @column()
   public recurrence: number;
 
+  @column({
+    consume: (value: string) => parseFloat(value),
+  })
+  public expectedToSpend: number | null;
+
   @belongsTo(() => Category)
   public category: BelongsTo<typeof Category>;
 }
