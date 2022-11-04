@@ -24,6 +24,9 @@ class Group extends BaseModel {
   @column()
   public system: boolean;
 
+  @column()
+  public hidden: boolean;
+
   @hasMany(() => Category)
   public categories: HasMany<typeof Category>;
 }

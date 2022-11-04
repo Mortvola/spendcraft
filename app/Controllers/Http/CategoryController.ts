@@ -16,10 +16,11 @@ import Loan from 'App/Models/Loan';
 import {
   CategoryBalanceProps,
   TransactionsResponse,
-  TransactionProps, TransactionType, UpdateCategoryResponse,
+  TransactionProps, TransactionType,
 } from 'Common/ResponseTypes';
 import Group from 'App/Models/Group';
 import transactionFields from './transactionFields';
+import { DateTime } from 'luxon';
 
 class CategoryController {
   // eslint-disable-next-line class-methods-use-this
@@ -79,11 +80,14 @@ class CategoryController {
 
     const group = await Group.findOrFail(groupId);
 
-    group.merge({ name: requestData.name });
+    group.merge({
+      name: requestData.name,
+      hidden: requestData.hidden,
+    });
 
     await group.save();
 
-    return { id: groupId, name: requestData.name };
+    return { id: groupId, name: group.name, hidden: group.hidden };
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -125,7 +129,7 @@ class CategoryController {
   // eslint-disable-next-line class-methods-use-this
   public async updateCategory({
     request,
-  }: HttpContextContract): Promise<UpdateCategoryResponse> {
+  }: HttpContextContract): Promise<Category> {
     const { groupId, catId } = request.params();
     const requestData = await request.validate(UpdateCategoryValidator);
 
@@ -135,11 +139,12 @@ class CategoryController {
       name: requestData.name,
       monthlyExpenses: requestData.monthlyExpenses,
       groupId,
+      hidden: requestData.hidden,
     });
 
     await category.save();
 
-    return { name: category.name, monthlyExpenses: category.monthlyExpenses };
+    return category;
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -291,15 +296,18 @@ class CategoryController {
       const { categories } = requestData;
       if (Array.isArray(categories)) {
         const { date, type } = requestData;
-        let transactionId = tfrId;
+        let transaction: Transaction;
 
-        if (transactionId === undefined) {
-          [{ id: transactionId }] = await trx.insertQuery().insert({
-            date, type, application_id: application.id,
-          }).table('transactions').returning('id');
+        if (tfrId === undefined) {
+          transaction = await new Transaction()
+            .useTransaction(trx)
+            .fill({
+              date: DateTime.fromISO(date), type, applicationId: application.id,
+            })
+            .save()
 
           result.transaction = {
-            id: transactionId,
+            id: transaction.id,
             date,
             name: type === TransactionType.FUNDING_TRANSACTION ? 'Category Funding' : 'Category Rebalance',
             pending: false,
@@ -310,6 +318,15 @@ class CategoryController {
             institutionName: null,
             transactionCategories: [],
           };
+        }
+        else {
+          transaction = await Transaction.findOrFail(tfrId, { client: trx });
+
+          await transaction
+            .merge({
+              date: DateTime.fromISO(date),
+            })
+            .save()
         }
 
         const existingSplits: StrictValues[] = [];
@@ -336,7 +353,7 @@ class CategoryController {
 
               // eslint-disable-next-line no-await-in-loop
               await newSplit
-                .fill({ transactionId, categoryId: split.categoryId, amount: split.amount })
+                .fill({ transactionId: transaction.id, categoryId: split.categoryId, amount: split.amount })
                 .save();
 
               existingSplits.push(newSplit.id);
@@ -359,7 +376,7 @@ class CategoryController {
         const query = trx
           .from('transaction_categories')
           .whereNotIn('id', existingSplits)
-          .andWhere('transaction_id', transactionId);
+          .andWhere('transaction_id', transaction.id);
         const toDelete = await query.select('category_id AS categoryId', 'amount');
 
         // eslint-disable-next-line no-restricted-syntax
@@ -376,7 +393,6 @@ class CategoryController {
 
         await query.delete();
 
-        const transaction = await Transaction.findOrFail(transactionId, { client: trx });
         result.transaction.transactionCategories = await transaction.related('transactionCategories').query();
       }
 

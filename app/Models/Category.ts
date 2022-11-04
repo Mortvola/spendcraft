@@ -47,6 +47,9 @@ export default class Category extends BaseModel {
   @column()
   public groupId: number;
 
+  @column()
+  public hidden: boolean;
+
   @hasMany(() => TransactionCategory)
   public transactionCategory: HasMany<typeof TransactionCategory>;
 

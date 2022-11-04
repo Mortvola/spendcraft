@@ -21,6 +21,7 @@ export default class UpdateCategoryValidator {
       }),
     ]),
     monthlyExpenses: schema.boolean(),
+    hidden: schema.boolean(),
   })
 
   public messages = {

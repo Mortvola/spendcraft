@@ -22,6 +22,7 @@ export default class UpdateGroupValidator {
         },
       }),
     ]),
+    hidden: schema.boolean(),
   })
 
   public messages = {
