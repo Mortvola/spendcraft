@@ -346,6 +346,11 @@ class CategoryController {
               amount = split.amount - existingSplit.amount;
 
               existingSplit.amount = split.amount;
+
+              if (split.expected !== undefined) {
+                existingSplit.expected = split.expected;
+              }
+
               existingSplit.save();
             }
             else {
@@ -353,7 +358,12 @@ class CategoryController {
 
               // eslint-disable-next-line no-await-in-loop
               await newSplit
-                .fill({ transactionId: transaction.id, categoryId: split.categoryId, amount: split.amount })
+                .fill({
+                  transactionId: transaction.id,
+                  categoryId: split.categoryId,
+                  amount: split.amount,
+                  expected: split.expected,
+                })
                 .save();
 
               existingSplits.push(newSplit.id);

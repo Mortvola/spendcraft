@@ -13,6 +13,7 @@ export default class UpdateCategoryTransferValidator {
         id: schema.number.optional(),
         categoryId: schema.number(),
         amount: schema.number(),
+        expected: schema.number.nullableAndOptional(),
       }),
     ), // 'required|validCategory|!allZero:amount|zeroSum:amount',
     type: schema.number(),

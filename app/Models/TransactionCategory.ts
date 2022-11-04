@@ -21,6 +21,11 @@ class TransactionCategory extends BaseModel {
   })
   public amount: number;
 
+  @column({
+    consume: (value: string) => parseFloat(value),
+  })
+  public expected: number | null;
+
   @hasOne(() => Category, {
     foreignKey: 'id',
     localKey: 'categoryId',

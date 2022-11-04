@@ -8,7 +8,7 @@ const transactionFields = {
   relations: {
     transactionCategories: {
       fields: {
-        pick: ['id', 'type', 'categoryId', 'amount', 'comment'],
+        pick: ['id', 'type', 'categoryId', 'amount', 'expected', 'comment'],
       },
     },
     accountTransaction: {
