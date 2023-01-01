@@ -67,7 +67,7 @@
     "phc-argon2": "^1.1.3",
     "phc-bcrypt": "^1.0.7",
     "pino-pretty": "^4.8.0",
-    "plaid": "^10.1.0",
+    "plaid": "^12.2.0",
     "prop-types": "^15.8.1",
     "react": "^18.1.0",
     "react-bootstrap": "^2.2.2",
