@@ -8,14 +8,13 @@ import {
 import styles from './Signin.module.css';
 import { isErrorResponse } from '../common/ResponseTypes';
 
-const Signin: React.FC = () => {
+const RecoverPassword: React.FC = () => {
   const tiny = responsive.useMediaQuery({ query: '(max-width: 350px)' });
   const small = responsive.useMediaQuery({ query: '(max-width: 600px)' });
   const medium = responsive.useMediaQuery({ query: '(max-width: 1224px)' });
 
   type FormValues = {
-    username: string,
-    password: string,
+    email: string,
   };
 
   const addSizeClass = (className: string): string => {
@@ -35,10 +34,10 @@ const Signin: React.FC = () => {
   }
 
   const handleSubmit = async (values: FormValues, { setErrors }: FormikHelpers<FormValues>) => {
-    const response = await Http.post('/login', values);
+    const response = await Http.post('/password/email', values);
 
     if (response.ok) {
-      window.location.replace('/home');
+      window.location.replace('/signin');
     }
     else {
       const body = await response.body();
@@ -54,31 +53,24 @@ const Signin: React.FC = () => {
       <div className={styles.title}>SpendCraft</div>
       <Formik<FormValues>
         initialValues={{
-          username: '',
-          password: '',
+          email: '',
         }}
         onSubmit={handleSubmit}
       >
         {
           ({ isSubmitting }: FormikState<FormValues>) => (
             <Form className={styles.form}>
-              <div className={styles.subtitle}>Enter your username and password.</div>
-              <FormField name="username" label="Username" autoComplete="username" />
-              <FormField
-                type="password"
-                name="password"
-                label="Password"
-                autoComplete="current-password"
-              />
+              <div className={styles.subtitle}>Enter the email address associated with your account.</div>
+              <FormField name="email" label="E-Mail" autoComplete="email" />
 
               <SubmitButton
                 className={styles.button}
                 isSubmitting={isSubmitting}
-                label="Sign In"
-                submitLabel="Signing In"
+                label="Reset Password"
+                submitLabel="Resetting Password"
               />
 
-              <a href="/recover-password">Forgot Password?</a>
+              <a href="/signin">I remember my password.</a>
               <FormError name="general" />
             </Form>
           )
@@ -88,4 +80,4 @@ const Signin: React.FC = () => {
   );
 }
 
-export default Signin;
+export default RecoverPassword;

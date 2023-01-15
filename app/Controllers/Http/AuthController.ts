@@ -23,6 +23,7 @@ export default class AuthController {
       email: schema.string([
         rules.trim(),
         rules.normalizeEmail({ allLowercase: true }),
+        rules.email(),
         rules.unique({ table: 'users', column: 'email' }),
       ]),
       password: schema.string([
@@ -133,29 +134,28 @@ export default class AuthController {
       },
     });
 
-    response.header('content-type', 'application/json');
-
-    let responseData: unknown = JSON.stringify('/');
-
     try {
       await auth.attempt(credentials.username, credentials.password, credentials.remember === 'on');
+      response.status(204);
     }
     catch (error) {
       if (error.code === 'E_INVALID_AUTH_UID' || error.code === 'E_INVALID_AUTH_PASSWORD') {
         response.status(422);
-        responseData = {
+        response.header('content-type', 'application/json');
+
+        const responseData: unknown = {
           errors: [
             { field: 'username', message: 'The username or password does not match our records.' },
             { field: 'password', message: 'The username or password does not match our records.' },
           ],
         };
+
+        response.send(responseData);
       }
       else {
         throw (error);
       }
     }
-
-    response.send(responseData);
   }
 
   // eslint-disable-next-line class-methods-use-this

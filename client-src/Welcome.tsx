@@ -8,6 +8,7 @@ import Signin from './Signin';
 import Signup from './Signup';
 import usePageViews from './Tracker';
 import './welcome.css';
+import RecoverPassword from './RecoverPassword';
 
 const Welcome: React.FC = () => {
   usePageViews();
@@ -16,6 +17,7 @@ const Welcome: React.FC = () => {
     <Routes>
       <Route path="/signup" element={<Signup />} />
       <Route path="/signin" element={<Signin />} />
+      <Route path="/recover-password" element={<RecoverPassword />} />
       <Route path="/" element={<Intro />} />
     </Routes>
   );

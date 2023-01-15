@@ -119,7 +119,7 @@ export default class UsersController {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  async addApnsToken({ auth: { user }, request }: HttpContextContract): Promise<void> {
+  async addApnsToken({ auth: { user }, request, response }: HttpContextContract): Promise<void> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -143,5 +143,7 @@ export default class UsersController {
         token: requestData.token,
       });
     }
+
+    response.status(204)
   }
 }

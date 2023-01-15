@@ -41,11 +41,9 @@ const Login: React.FC<PropsType> = ({
       null,
       formRef.current,
       '/login',
-      (responseText: string) => {
-        if (responseText) {
-          setWaiting(false);
-          window.location.assign(responseText);
-        }
+      () => {
+        setWaiting(false);
+        window.location.assign('/');
       },
       (err) => {
         setWaiting(false);
@@ -66,7 +64,7 @@ const Login: React.FC<PropsType> = ({
       formRef.current,
       '/password/email',
       (responseText) => {
-        setResetMessage(responseText);
+        setResetMessage(responseText ?? '');
         setCard('reset');
         setWaiting(false);
       },

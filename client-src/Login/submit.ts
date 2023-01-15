@@ -7,7 +7,7 @@ const submitForm = async (
   event: React.MouseEvent | null,
   form: HTMLFormElement,
   url: string,
-  success: ((data: string) => void),
+  success: ((data?: string) => void),
   fail: ((errors: ErrorsType) => void),
 ): Promise<void> => {
   const formData = new FormData(form);
@@ -28,6 +28,9 @@ const submitForm = async (
       }
 
       success(body);
+    }
+    else {
+      success();
     }
   }
   else if (fail) {
