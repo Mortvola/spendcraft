@@ -7,11 +7,13 @@ import { FormField, FormError, setFormErrors } from '@mortvola/forms';
 import styles from './Signup.module.css';
 import { isErrorResponse } from '../common/ResponseTypes';
 import { SubmitButton } from '@mortvola/forms';
+import { useNavigate } from 'react-router-dom';
 
 const Signup: React.FC = () => {
   const tiny = responsive.useMediaQuery({ query: '(max-width: 350px)' });
   const small = responsive.useMediaQuery({ query: '(max-width: 600px)' });
   const medium = responsive.useMediaQuery({ query: '(max-width: 1224px)' });
+  const navigate = useNavigate();
 
   type FormValues = {
     username: string,
@@ -41,10 +43,10 @@ const Signup: React.FC = () => {
   }
 
   const handleSubmit = async (values: FormValues, { setErrors }: FormikHelpers<FormValues>) => {
-    const response = await Http.post('/register', values);
+    const response = await Http.post('/api/register', values);
 
     if (response.ok) {
-      window.location.replace('/home');
+      navigate('/home', { replace: true });
     }
     else {
       const body = await response.body();

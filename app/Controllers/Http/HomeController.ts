@@ -5,18 +5,6 @@ export default class HomeController {
   public async index({
     auth, view, request, response,
   }: HttpContextContract) : Promise<string | void> {
-    if (auth.user) {
-      if (request.matchesRoute('/')) {
-        return response.redirect('/home');
-      }
-
-      const props = {
-        username: auth.user.username,
-      };
-
-      return view.render('home', { props });
-    }
-
-    return view.render('welcome');
+    return view.render('home');
   }
 }

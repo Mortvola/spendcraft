@@ -1,10 +1,13 @@
 import React from 'react';
-import { Form, Formik, FormikHelpers, FormikState } from 'formik';
+import {
+  Form, Formik, FormikHelpers, FormikState,
+} from 'formik';
 import * as responsive from 'react-responsive';
 import Http from '@mortvola/http';
 import {
   FormError, setFormErrors, FormField, SubmitButton,
 } from '@mortvola/forms';
+import { useNavigate } from 'react-router-dom';
 import styles from './Signin.module.css';
 import { isErrorResponse } from '../common/ResponseTypes';
 
@@ -12,6 +15,7 @@ const RecoverPassword: React.FC = () => {
   const tiny = responsive.useMediaQuery({ query: '(max-width: 350px)' });
   const small = responsive.useMediaQuery({ query: '(max-width: 600px)' });
   const medium = responsive.useMediaQuery({ query: '(max-width: 1224px)' });
+  const navigate = useNavigate();
 
   type FormValues = {
     email: string,
@@ -34,10 +38,10 @@ const RecoverPassword: React.FC = () => {
   }
 
   const handleSubmit = async (values: FormValues, { setErrors }: FormikHelpers<FormValues>) => {
-    const response = await Http.post('/password/email', values);
+    const response = await Http.post('/api/password/email', values);
 
     if (response.ok) {
-      window.location.replace('/signin');
+      navigate('/signin', { replace: true });
     }
     else {
       const body = await response.body();

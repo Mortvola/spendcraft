@@ -135,8 +135,11 @@ export default class AuthController {
     });
 
     try {
-      await auth.attempt(credentials.username, credentials.password, credentials.remember === 'on');
-      response.status(204);
+      const token = await auth.attempt(credentials.username, credentials.password, credentials.remember === 'on');
+      response.header('content-type', 'application/json');
+      response.send({
+        data: token.token,
+      })
     }
     catch (error) {
       if (error.code === 'E_INVALID_AUTH_UID' || error.code === 'E_INVALID_AUTH_PASSWORD') {

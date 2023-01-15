@@ -40,7 +40,7 @@ const Login: React.FC<PropsType> = ({
     submitForm(
       null,
       formRef.current,
-      '/login',
+      '/api/login',
       () => {
         setWaiting(false);
         window.location.assign('/');
@@ -62,7 +62,7 @@ const Login: React.FC<PropsType> = ({
     submitForm(
       event,
       formRef.current,
-      '/password/email',
+      '/api/password/email',
       (responseText) => {
         setResetMessage(responseText ?? '');
         setCard('reset');

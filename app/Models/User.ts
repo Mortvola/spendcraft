@@ -85,13 +85,13 @@ export default class User extends BaseModel {
   public getEmailVerificationLink(): string {
     const token = this.generateToken();
 
-    return `${Env.get('APP_URL') as string}/verify-email/${token}/${this.id}`;
+    return `${Env.get('APP_URL') as string}/api/verify-email/${token}/${this.id}`;
   }
 
   public getPasswordResetLink(): string {
     const token = this.generateToken();
 
-    return `${Env.get('APP_URL') as string}/password/reset/${token}/${this.id}`;
+    return `${Env.get('APP_URL') as string}/api/password/reset/${token}/${this.id}`;
   }
 
   public sendEmailAddressVerification(): void {

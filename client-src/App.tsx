@@ -5,7 +5,7 @@ import 'regenerator-runtime';
 import {
   BrowserRouter, Routes, Route, Outlet,
 } from 'react-router-dom';
-import { ServerError, serverError } from '@mortvola/http';
+import Http, { ServerError, serverError } from '@mortvola/http';
 import '@mortvola/usemodal/dist/main.css';
 import '@mortvola/forms/dist/main.css';
 import Menubar from './Menubar';
@@ -14,17 +14,38 @@ import Accounts from './AccountView/Accounts';
 import Reports from './Reports/Reports';
 import Plans from './Plans/Plans';
 import PlaidLink from './PlaidLink';
-import { StoreContext, store } from './State/mobxStore';
+import { StoreContext, store, useStores } from './State/mobxStore';
 import UserAccount from './UserAccount';
 import usePageViews from './Tracker';
 import './style.css';
 import AccountDetails from './AccountView/AccountDetails';
 import CategoryDetails from './Categories/CategoryDetails';
 import Rebalances from './Categories/Rebalances';
+import Signup from './Signup';
+import Signin from './Signin';
+import RecoverPassword from './RecoverPassword';
+import Intro from './Intro';
+import RequireAuth from './RequireAuth';
 
 const App: React.FC = observer(() => {
   const error = useContext(ServerError);
   usePageViews();
+  const stores = useStores();
+  const [initialized, setInitialized] = React.useState(false)
+
+  const token = window.localStorage.getItem('token');
+  Http.token = token;
+  if (token) {
+    stores.user.authenticated = true;
+
+    if (!initialized) {
+      store.user.load();
+      store.categoryTree.load();
+      store.accounts.load();
+
+      setInitialized(true);
+    }
+  }
 
   if (error.message) {
     return (
@@ -47,11 +68,13 @@ const App: React.FC = observer(() => {
   }
 
   return (
-    <>
-      <Menubar />
-      <Outlet />
-      <PlaidLink />
-    </>
+    <RequireAuth>
+      <>
+        <Menubar />
+        <Outlet />
+        <PlaidLink />
+      </>
+    </RequireAuth>
   );
 });
 
@@ -64,6 +87,10 @@ if (container) {
       <ServerError.Provider value={serverError}>
         <BrowserRouter>
           <Routes>
+            <Route path="/" element={<Intro />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/signin" element={<Signin />} />
+            <Route path="/recover-password" element={<RecoverPassword />} />
             <Route path="/" element={<App />}>
               <Route path="home" element={<Home />}>
                 <Route index element={<CategoryDetails />} />

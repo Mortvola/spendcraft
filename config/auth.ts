@@ -1,11 +1,11 @@
 /**
- * Config source: https://git.io/JvyKy
+ * Config source: https://git.io/JY0mp
  *
  * Feel free to let us know via PR, if you find something broken in this config
  * file.
  */
 
-import { AuthConfig } from '@ioc:Adonis/Addons/Auth'
+import type { AuthConfig } from '@ioc:Adonis/Addons/Auth'
 
 /*
 |--------------------------------------------------------------------------
@@ -17,20 +17,46 @@ import { AuthConfig } from '@ioc:Adonis/Addons/Auth'
 |
 */
 const authConfig: AuthConfig = {
-  guard: 'web',
+  guard: 'api',
   guards: {
     /*
     |--------------------------------------------------------------------------
-    | Web Guard
+    | OAT Guard
     |--------------------------------------------------------------------------
     |
-    | Web guard uses classic old school sessions for authenticating users.
-    | If you are building a standard web application, it is recommended to
-    | use web guard with session driver
+    | OAT (Opaque access tokens) guard uses database backed tokens to authenticate
+    | HTTP request. This guard DOES NOT rely on sessions or cookies and uses
+    | Authorization header value for authentication.
+    |
+    | Use this guard to authenticate mobile apps or web clients that cannot rely
+    | on cookies/sessions.
     |
     */
-    web: {
-      driver: 'session',
+    api: {
+      driver: 'oat',
+
+      /*
+      |--------------------------------------------------------------------------
+      | Redis provider for managing tokens
+      |--------------------------------------------------------------------------
+      |
+      | Uses Redis for managing tokens. We recommend using the "redis" driver
+      | over the "database" driver when the tokens based auth is the
+      | primary authentication mode.
+      |
+      | Redis ensure that all the expired tokens gets cleaned up automatically.
+      | Whereas with SQL, you have to cleanup expired tokens manually.
+      |
+      | The foreignKey column is used to make the relationship between the user
+      | and the token. You are free to use any column name here.
+      |
+      */
+      tokenProvider: {
+        type: 'api',
+        driver: 'redis',
+        redisConnection: 'local',
+        foreignKey: 'user_id',
+      },
 
       provider: {
         /*

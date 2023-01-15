@@ -52,5 +52,4 @@ const config = (name, env) => ({
 
 module.exports = [
   (env) => config('app', env),
-  (env) => config('welcome', env),
 ];

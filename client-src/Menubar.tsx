@@ -5,7 +5,7 @@ import {
   Nav,
   NavDropdown,
 } from 'react-bootstrap';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Http from '@mortvola/http';
 import { useStores } from './State/mobxStore';
 import { Views } from './State/State';
@@ -13,13 +13,15 @@ import { Views } from './State/State';
 const Menubar: React.FC = observer(() => {
   const { user: { username } } = useStores();
   const [expanded, setExpanded] = React.useState<boolean>(false);
+  const navigate = useNavigate();
 
   const logout = () => {
     (async () => {
       const response = await Http.post('/api/logout');
 
       if (response.ok) {
-        window.location.replace('/');
+        window.localStorage.removeItem('token')
+        navigate('/', { replace: true });
       }
     })();
 

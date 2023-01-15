@@ -30,7 +30,7 @@ const Register: React.FC<PropsType> = ({
     submitForm(
       null,
       formRef.current,
-      '/register',
+      '/api/register',
       () => {
         setConfirmationSent(true);
         setWaiting(false);

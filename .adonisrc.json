@@ -45,7 +45,8 @@
     "@adonisjs/lucid",
     "@adonisjs/auth",
     "@adonisjs/shield",
-    "@adonisjs/mail"
+    "@adonisjs/mail",
+    "@adonisjs/redis"
   ],
   "metaFiles": [
     {

@@ -10,6 +10,8 @@ class User implements UserInterface {
 
   pendingEmail: string | null = null;
 
+  authenticated = false;
+
   store: unknown;
 
   constructor(store: unknown) {

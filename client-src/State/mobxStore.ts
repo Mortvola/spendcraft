@@ -47,10 +47,6 @@ class Store implements StoreInterface {
 const store = new Store();
 const StoreContext = createContext(store);
 
-store.user.load();
-store.categoryTree.load();
-store.accounts.load();
-
 const useStores = (): Store => (
   useContext(StoreContext)
 );
