@@ -5,6 +5,7 @@ import Env from '@ioc:Adonis/Core/Env'
 import { rules, schema } from '@ioc:Adonis/Core/Validator';
 import User from 'App/Models/User';
 import { CountryCode, Products } from 'plaid';
+import Database from '@ioc:Adonis/Lucid/Database';
 
 export default class UsersController {
   // eslint-disable-next-line class-methods-use-this
@@ -145,5 +146,70 @@ export default class UsersController {
     }
 
     response.status(204)
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  async delete({ auth: { user } }: HttpContextContract): Promise<void> {
+    if (!user) {
+      throw new Error('user is not defined');
+    }
+
+    const trx = await Database.transaction();
+
+    try {
+      user.useTransaction(trx);
+
+      await user.delete();
+
+      const others = await User.query({ client: trx }).where('applicationId', user.applicationId);
+
+      if (others.length === 0) {
+        // No other users are using this budget so delete it
+        const application = await user.related('application').query().first();
+
+        if (application) {
+          // Delete funding plans
+          const fundingPlans = await application.related('plans').query();
+
+          await Promise.all(fundingPlans.map(async (plan) => (
+            plan.delete()
+          )));
+
+          // Delete groups
+          const groups = await application.related('groups').query();
+
+          await Promise.all(groups.map(async (group) => {
+            const categories = await group.related('categories').query();
+
+            await Promise.all(categories.map(async (category) => (
+              category.delete()
+            )));
+
+            return group.delete()
+          }));
+
+          // Delete institutions
+          const institutions = await application.related('institutions').query();
+
+          await Promise.all(institutions.map(async (institution) => (
+            institution.delete()
+          )))
+
+          // Delete transactions
+          const transactions = await application.related('transactions').query();
+
+          await Promise.all(transactions.map(async (transaction) => (
+            transaction.delete()
+          )))
+
+          await application.delete();
+        }
+      }
+
+      await trx.commit();
+    }
+    catch (error) {
+      await trx.rollback();
+    }
   }
 }

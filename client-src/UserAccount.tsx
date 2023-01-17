@@ -6,11 +6,13 @@ import {
 } from 'formik';
 import { Observer } from 'mobx-react-lite';
 import {
+  Button,
   FormControl, InputGroup,
 } from 'react-bootstrap';
 import { FormField, setFormErrors, SubmitButton } from '@mortvola/forms';
 import { useStores } from './State/mobxStore';
 import IconButton from './IconButton';
+import Http from '@mortvola/http';
 
 type FormValues = {
   username: string,
@@ -58,6 +60,14 @@ const UserAccount: React.FC = () => {
 
   const handleResendClick = () => {
     user.resendVerificationLink();
+  }
+
+  const deleteAccount = async () => {
+    const response = await Http.delete('/api/user');
+
+    if (response.ok) {
+      console.log('user deleted')
+    }
   }
 
   if (initialized) {
@@ -124,6 +134,9 @@ const UserAccount: React.FC = () => {
                     )
                     : null
                 }
+                <Button variant="danger" onClick={deleteAccount}>
+                  Delete Account
+                </Button>
               </Form>
             </Formik>
           )

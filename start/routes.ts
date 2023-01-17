@@ -60,6 +60,7 @@ Route.group(() => {
       Route.delete('/pending-email', 'UsersController.deletePending')
       Route.get('/link-token', 'UsersController.getLinkToken');
       Route.post('/apns-token', 'UsersController.addApnsToken')
+      Route.delete('', 'UsersController.delete');
     }).prefix('/user');
 
     Route.group(() => {
@@ -152,6 +153,6 @@ Route.group(() => {
 
     Route.get('/rebalances', 'TransactionsController.getRebalances')    
   })
-  .middleware(['auth']);
+    .middleware(['auth']);
 })
   .prefix('/api')

@@ -42,6 +42,9 @@ export default class Application extends BaseModel {
   @hasMany(() => Group)
   public groups: HasMany<typeof Group>;
 
+  @hasMany(() => FundingPlan)
+  public plans: HasMany<typeof FundingPlan>;
+
   public async history(this: Application): Promise<Array<GroupHistoryItem>> {
     const data = await Database.query()
       .select(
