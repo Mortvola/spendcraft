@@ -1,13 +1,15 @@
 import React from 'react';
-import { Form, Formik, FormikHelpers, FormikState } from 'formik';
-import { Button } from 'react-bootstrap';
+import {
+  Form, Formik, FormikHelpers, FormikState,
+} from 'formik';
 import * as responsive from 'react-responsive';
 import Http from '@mortvola/http';
-import { FormField, FormError, setFormErrors } from '@mortvola/forms';
-import styles from './Signup.module.css';
-import { isErrorResponse } from '../common/ResponseTypes';
-import { SubmitButton } from '@mortvola/forms';
+import {
+  FormField, FormError, setFormErrors, SubmitButton,
+} from '@mortvola/forms';
 import { useNavigate } from 'react-router-dom';
+import styles from './Signup.module.css';
+import { isErrorResponse } from '../../common/ResponseTypes';
 
 const Signup: React.FC = () => {
   const tiny = responsive.useMediaQuery({ query: '(max-width: 350px)' });
@@ -20,7 +22,7 @@ const Signup: React.FC = () => {
     email: string,
     password: string,
     // eslint-disable-next-line camelcase
-    password_confirmation: string,
+    passwordConfirmation: string,
   };
 
   const addSizeClass = (className: string): string => {
@@ -65,7 +67,7 @@ const Signup: React.FC = () => {
           username: '',
           email: '',
           password: '',
-          password_confirmation: '',
+          passwordConfirmation: '',
         }}
         onSubmit={handleSubmit}
       >
@@ -83,7 +85,7 @@ const Signup: React.FC = () => {
               />
               <FormField
                 type="password"
-                name="password_confirmation"
+                name="passwordConfirmation"
                 label="Confirm Password"
                 autoComplete="new-password"
               />

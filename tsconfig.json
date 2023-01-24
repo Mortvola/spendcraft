@@ -38,7 +38,8 @@
       "@adonisjs/session",
       "@adonisjs/view",
       "@adonisjs/mail",
-      "@adonisjs/redis"
+      "@adonisjs/redis",
+      "adonis5-jwt"
     ]
   }
 }

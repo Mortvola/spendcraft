@@ -19,8 +19,8 @@ import {
   TransactionProps, TransactionType,
 } from 'Common/ResponseTypes';
 import Group from 'App/Models/Group';
-import transactionFields from './transactionFields';
 import { DateTime } from 'luxon';
+import transactionFields from './transactionFields';
 
 class CategoryController {
   // eslint-disable-next-line class-methods-use-this

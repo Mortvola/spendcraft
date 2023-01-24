@@ -9,16 +9,17 @@ import {
 } from '@mortvola/forms';
 import { useNavigate } from 'react-router-dom';
 import styles from './Signin.module.css';
-import { isErrorResponse } from '../common/ResponseTypes';
+import { isErrorResponse } from '../../common/ResponseTypes';
 
-const RecoverPassword: React.FC = () => {
+const Signin: React.FC = () => {
   const tiny = responsive.useMediaQuery({ query: '(max-width: 350px)' });
   const small = responsive.useMediaQuery({ query: '(max-width: 600px)' });
   const medium = responsive.useMediaQuery({ query: '(max-width: 1224px)' });
   const navigate = useNavigate();
 
   type FormValues = {
-    email: string,
+    username: string,
+    password: string,
   };
 
   const addSizeClass = (className: string): string => {
@@ -38,10 +39,21 @@ const RecoverPassword: React.FC = () => {
   }
 
   const handleSubmit = async (values: FormValues, { setErrors }: FormikHelpers<FormValues>) => {
-    const response = await Http.post('/api/password/email', values);
+    type LoginResponse = {
+      data: {
+        access: string,
+        refresh: string,
+      },
+    };
+
+    const response = await Http.post<FormValues, LoginResponse>('/api/login', values);
 
     if (response.ok) {
-      navigate('/signin', { replace: true });
+      const body = await response.body()
+
+      Http.setTokens(body.data.access, body.data.refresh);
+
+      navigate('/home');
     }
     else {
       const body = await response.body();
@@ -57,24 +69,31 @@ const RecoverPassword: React.FC = () => {
       <div className={styles.title}>SpendCraft</div>
       <Formik<FormValues>
         initialValues={{
-          email: '',
+          username: '',
+          password: '',
         }}
         onSubmit={handleSubmit}
       >
         {
           ({ isSubmitting }: FormikState<FormValues>) => (
             <Form className={styles.form}>
-              <div className={styles.subtitle}>Enter the email address associated with your account.</div>
-              <FormField name="email" label="E-Mail" autoComplete="email" />
+              <div className={styles.subtitle}>Enter your username and password.</div>
+              <FormField name="username" label="Username" autoComplete="username" />
+              <FormField
+                type="password"
+                name="password"
+                label="Password"
+                autoComplete="current-password"
+              />
 
               <SubmitButton
                 className={styles.button}
                 isSubmitting={isSubmitting}
-                label="Reset Password"
-                submitLabel="Resetting Password"
+                label="Sign In"
+                submitLabel="Signing In"
               />
 
-              <a href="/signin">I remember my password.</a>
+              <a href="/recover-password">Forgot Password?</a>
               <FormError name="general" />
             </Form>
           )
@@ -84,4 +103,4 @@ const RecoverPassword: React.FC = () => {
   );
 }
 
-export default RecoverPassword;
+export default Signin;

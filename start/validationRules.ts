@@ -61,3 +61,53 @@ validator.rule(
     }
   }
 )
+
+
+validator.rule(
+  'password',
+  (value, _, options) => {
+    if (typeof value !== 'string') {
+      return
+    }
+
+    if (value.length < 8) {
+      options.errorReporter.report(
+        options.pointer,
+        'password.minimum', 
+        'Passwords must be at least 8 characters.',
+        options.arrayExpressionPointer)
+    }
+
+    if (value.length > 64) {
+      options.errorReporter.report(
+        options.pointer,
+        'password.maximum', 
+        'Passwords must be no longer than 64 characters.',
+        options.arrayExpressionPointer)
+    }
+
+    if (!/(?=.*?[A-Z])/.test(value)) {
+      options.errorReporter.report(
+        options.pointer,
+        'password.upper', 
+        'Passwords must contain at least one uppercase letter.',
+        options.arrayExpressionPointer)
+    }
+
+    if (!/(?=.*?[a-z])/.test(value)) {
+      options.errorReporter.report(
+        options.pointer,
+        'password.lower', 
+        'Passwords must contain at least one lowercase letter.',
+        options.arrayExpressionPointer)
+    }
+    
+    if (!/(?=.*?[0-9])/.test(value)) {
+      options.errorReporter.report(
+        options.pointer,
+        'password.digit', 
+        'Passwords must contain at least one digit.',
+        options.arrayExpressionPointer)
+    }
+  }
+)

@@ -8,6 +8,7 @@ import User from 'App/Models/User';
 import Database from '@ioc:Adonis/Lucid/Database';
 import Application from 'App/Models/Application';
 import { sha256 } from 'js-sha256';
+import { DateTime } from 'luxon';
 
 export default class AuthController {
   // eslint-disable-next-line class-methods-use-this
@@ -15,25 +16,24 @@ export default class AuthController {
     /**
      * Validate user details
      */
-    const validationSchema = schema.create({
-      username: schema.string([
-        rules.trim(),
-        rules.unique({ table: 'users', column: 'username' }),
-      ]),
-      email: schema.string([
-        rules.trim(),
-        rules.normalizeEmail({ allLowercase: true }),
-        rules.email(),
-        rules.unique({ table: 'users', column: 'email' }),
-      ]),
-      password: schema.string([
-        rules.trim(),
-        rules.confirmed(),
-      ]),
-    });
-
     const userDetails = await request.validate({
-      schema: validationSchema,
+      schema: schema.create({
+        username: schema.string([
+          rules.trim(),
+          rules.unique({ table: 'users', column: 'username' }),
+        ]),
+        email: schema.string([
+          rules.trim(),
+          rules.normalizeEmail({ allLowercase: true }),
+          rules.email(),
+          rules.unique({ table: 'users', column: 'email' }),
+        ]),
+        password: schema.string([
+          rules.trim(),
+          rules.confirmed('passwordConfirmation'),
+          rules.password(),
+        ]),
+      }),
       messages: {
         'username.unique': 'An account with the requested username already exists',
         'username.required': 'A username is required',
@@ -41,7 +41,7 @@ export default class AuthController {
         'email.required': 'An email address is required',
         'email.unique': 'An account with the requested email address already exists',
         'password.required': 'A password is required',
-        'password_confirmation.confirmed': 'The password confirmation does not match the password',
+        'passwordConfirmation.confirmed': 'The password confirmation does not match the password',
       },
     });
 
@@ -120,14 +120,13 @@ export default class AuthController {
 
   // eslint-disable-next-line class-methods-use-this
   public async login({ auth, request, response }: HttpContextContract) : Promise<void> {
-    const validationSchema = schema.create({
-      username: schema.string([rules.trim()]),
-      password: schema.string([rules.trim()]),
-      remember: schema.string.optional([rules.trim()]),
-    });
-
     const credentials = await request.validate({
-      schema: validationSchema,
+      schema: schema.create({
+        username: schema.string([rules.trim()]),
+        password: schema.string([
+          rules.trim(),
+        ]),
+      }),
       messages: {
         'username.required': 'A username is required',
         'password.required': 'A password is required',
@@ -135,15 +134,20 @@ export default class AuthController {
     });
 
     try {
-      const token = await auth.attempt(credentials.username, credentials.password, credentials.remember === 'on');
+      const token = await auth.use('jwt').attempt(
+        credentials.username, credentials.password,
+      );
       response.header('content-type', 'application/json');
       response.send({
-        data: token.token,
+        data: {
+          access: token.accessToken,
+          refresh: token.refreshToken,
+        },
       })
     }
     catch (error) {
       if (error.code === 'E_INVALID_AUTH_UID' || error.code === 'E_INVALID_AUTH_PASSWORD') {
-        response.status(422);
+        response.status(401);
         response.header('content-type', 'application/json');
 
         const responseData: unknown = {
@@ -162,152 +166,163 @@ export default class AuthController {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  public async logout({ auth }: HttpContextContract) : Promise<void> {
-    auth.logout();
+  public async refresh({ auth, request, response }: HttpContextContract) : Promise<void> {
+    const payload = await request.validate({
+      schema: schema.create({
+        data: schema.object().members({
+          refresh: schema.string(),
+        }),
+      }),
+    });
+
+    try {
+      const token = await auth.use('jwt').loginViaRefreshToken(payload.data.refresh);
+
+      console.log(`new refresh token: ${token.refreshToken}`);
+
+      response.header('content-type', 'application/json');
+      response.send({
+        data: {
+          access: token.accessToken,
+          refresh: token.refreshToken,
+        },
+      });
+    }
+    catch (error) {
+      if (error.message === 'Invalid refresh token') {
+        response.status(400)
+      }
+      else {
+        response.status(500)
+      }
+    }
   }
 
   // eslint-disable-next-line class-methods-use-this
-  public async forgotPassword({ request, response }: HttpContextContract) : Promise<void> {
-    const validationSchema = schema.create({
-      email: schema.string(),
+  public async logout({ auth, request }: HttpContextContract) : Promise<void> {
+    const payload = await request.validate({
+      schema: schema.create({
+        data: schema.object().members({
+          refresh: schema.string(),
+        }),
+      }),
     });
 
+    auth.use('jwt').revoke({ refreshToken: payload.data.refresh });
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  public async requestCode({ request, response }: HttpContextContract) : Promise<void> {
     const requestData = await request.validate({
-      schema: validationSchema,
+      schema: schema.create({
+        email: schema.string(),
+      }),
     });
 
     const user = await User.findBy('email', requestData.email);
 
     if (user) {
+      const code = user.generatePassCode();
+
+      await user.save();
+
       Mail.send((message) => {
         message
           .from(Env.get('MAIL_FROM_ADDRESS') as string, Env.get('MAIL_FROM_NAME') as string)
           .to(user.email)
-          .subject('Reset Password Notification')
-          .htmlView('emails/reset-password', {
-            url: user.getPasswordResetLink(),
+          .subject('Verification Code')
+          .htmlView('emails/verification-code', {
+            code,
             expires: Env.get('TOKEN_EXPIRATION'),
           });
       });
 
       response.header('content-type', 'application/json');
-      response.send(JSON.stringify('We have e-mailed your password reset link!'));
     }
   }
 
   // eslint-disable-next-line class-methods-use-this
-  public async resetPassword({ params, view }: HttpContextContract) : Promise<(string | void)> {
-    const user = await User.find(params.id);
-
-    if (user) {
-      const payload = jwt.verify(params.token, user.generateSecret()) as Record<string, unknown>;
-
-      if (payload.id === parseInt(params.id, 10)) {
-        return view.render('reset-password', { user, token: params.token });
-      }
-
-      Logger.error(`Invalid payload "${payload.id}" in token for user ${user.username}`);
-    }
-
-    return undefined;
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  public async updatePassword({
-    request,
-    response,
-    view,
-  }: HttpContextContract) : Promise<(string | void)> {
-    const validationSchema = schema.create({
-      email: schema.string(),
-      password: schema.string(),
-      passwordConfirmation: schema.string(),
-      token: schema.string(),
-    });
-
+  public async verifyCode({ auth, request, response }: HttpContextContract): Promise<void> {
     const requestData = await request.validate({
-      schema: validationSchema,
+      schema: schema.create({
+        email: schema.string(),
+        code: schema.string(),
+      }),
     });
 
     const user = await User.findBy('email', requestData.email);
 
-    if (!user) {
-      return view.render(
-        'reset-password',
-        { user, token: requestData.token, errorMessage: 'The user could not be found.' },
-      );
+    if (user && user.oneTimePassCode) {
+      if (requestData.code.toUpperCase() === user.oneTimePassCode.code.toUpperCase()) {
+        const now = DateTime.now();
+
+        if (now > user.oneTimePassCode.expires) {
+          console.log(`code has expired: ${now.toString()}, ${user.oneTimePassCode.expires.toString()}`)
+
+          response.status(422)
+
+          response.json({
+            errors: [{
+              field: 'code',
+              message: 'This code has expired.',
+            }],
+          })
+        }
+        else {
+          user.oneTimePassCode = null;
+          await user.save();
+
+          const token = await auth.use('jwt').generate(user);
+
+          response.header('content-type', 'application/json');
+          response.send({
+            data: {
+              access: token.accessToken,
+              refresh: token.refreshToken,
+              username: user.username,
+            },
+          });
+        }
+      }
+      else {
+        console.log(`code does not match: ${requestData.code}, ${user.oneTimePassCode.code}`)
+        response.status(422)
+
+        response.json({
+          errors: [{
+            field: 'code',
+            message: 'This code is not valid.',
+          }],
+        });
+      }
     }
-
-    if (requestData.password !== requestData.passwordConfirmation) {
-      return view.render(
-        'reset-password',
-        { user, token: requestData.token, errorMessage: 'The passwords do not match.' },
-      );
+    else {
+      response.status(422)
     }
-
-    let payload: Record<string, unknown> = { id: null };
-
-    try {
-      payload = jwt.verify(requestData.token, user.generateSecret()) as Record<string, unknown>;
-    }
-    catch (error) {
-      Logger.error(error);
-    }
-
-    if (payload.id !== user.id) {
-      return view.render(
-        'reset-password',
-        { user, token: requestData.token, errorMessage: 'The token is no longer valid.' },
-      );
-    }
-
-    user.password = requestData.password;
-    await user.save();
-
-    response.redirect('/');
-
-    return undefined;
   }
 
   // eslint-disable-next-line class-methods-use-this
-  public async changePassword({
-    auth,
+  public async updatePassword({
+    auth: { user },
     request,
-    response,
   }: HttpContextContract) : Promise<(string | void)> {
-    const validationSchema = schema.create({
-      currentPassword: schema.string(),
-      password: schema.string(),
-      passwordConfirmation: schema.string(),
-    })
+    if (!user) {
+      throw new Error('user is not defined');
+    }
 
     const requestData = await request.validate({
-      schema: validationSchema,
+      schema: schema.create({
+        password: schema.string([
+          rules.trim(),
+          rules.confirmed('passwordConfirmation'),
+          rules.password(),
+        ]),
+      }),
+      messages: {
+        'password.required': 'A password is required',
+        'passwordConfirmation.confirmed': 'The password confirmation does not match the password',
+      },
     });
-
-    let { user } = auth;
-
-    response.header('content-type', 'application/json');
-
-    if (!user) {
-      response.unauthorized({ errors: { currentPassword: 'User is unauthorized' } });
-      return undefined;
-    }
-
-    try {
-      user = await auth.verifyCredentials(user.username, requestData.currentPassword);
-    }
-    catch {
-      response.notAcceptable(JSON.stringify({ errors: { currentPassword: 'Password is not valid' } }));
-      return undefined;
-    }
-
-    if (!requestData.password || requestData.password !== requestData.passwordConfirmation) {
-      response.notAcceptable(
-        JSON.stringify({ errors: { passwordConfirmation: 'New password and confirmation do not match' } }),
-      );
-      return undefined;
-    }
 
     user.password = requestData.password;
     await user.save();

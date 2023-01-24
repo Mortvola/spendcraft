@@ -30,7 +30,6 @@ Route.get('/reports', 'HomeController.index');
 Route.get('/signup', 'HomeController.index');
 Route.get('/signin', 'HomeController.index');
 Route.get('/recover-password', 'HomeController.index');
-Route.get('/reset-password', 'HomeController.index');
 Route.get('/user', 'HomeController.index');
 Route.get('/', 'HomeController.index');
 
@@ -46,11 +45,14 @@ Route.group(() => {
   Route.get('/verify-email/:token/:id', 'AuthController.verifyEmail');
   Route.post('/login', 'AuthController.login');
   Route.on('/email-verified').render('emailVerified');
-  Route.post('/password/email', 'AuthController.forgotPassword');
-  Route.get('/password/reset/:token/:id', 'AuthController.resetPassword');
-  Route.post('/password/update', 'AuthController.updatePassword').as('updatePassword');
-  
+  Route.post('/code-request', 'AuthController.requestCode');
+  Route.post('/code-verify', 'AuthController.verifyCode');
+
+  Route.post('/refresh', 'AuthController.refresh');
+
+  // Authentication required for this group of routes.
   Route.group(() => {
+    Route.post('/password/update', 'AuthController.updatePassword').as('updatePassword');
     Route.post('/logout', 'AuthController.logout');
 
     Route.group(() => {

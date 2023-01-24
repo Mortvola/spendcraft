@@ -7,11 +7,9 @@
   "scripts": {
     "start": "node ace serve",
     "server-build": "node ace build --production",
-    "welcome-build": "webpack --config-name welcome --env production",
     "client-build": "webpack --config-name app --env production",
     "dev-start": "node ace serve -w",
     "dev-server-build": "node ace build",
-    "dev-welcome-build": "webpack --config-name welcome",
     "dev-client-build": "webpack --config-name app",
     "lint": "eslint ."
   },
@@ -43,6 +41,7 @@
     "@popperjs/core": "^2.11.2",
     "@poppinss/utils": "^5.0.0",
     "acorn": "^8.7.0",
+    "adonis5-jwt": "^1.1.7",
     "ajv": "^8.9.0",
     "argon2": "^0.28.5",
     "babelify": "^10.0.0",

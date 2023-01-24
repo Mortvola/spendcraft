@@ -19,6 +19,11 @@ import { Exception } from '@poppinss/utils';
 import Application from 'App/Models/Application';
 import ApnsToken from './ApnsToken';
 
+type PassCode = {
+  code: string,
+  expires: DateTime,
+}
+
 export default class User extends BaseModel {
   @column({ isPrimary: true, serializeAs: null })
   public id: number
@@ -40,6 +45,21 @@ export default class User extends BaseModel {
 
   @column({ serializeAs: null })
   public rememberMeToken?: string
+
+  @column({
+    prepare: (value: PassCode) => JSON.stringify(value),
+    consume: (value: PassCode | null) => {
+      if (value) {
+        return {
+          code: value.code,
+          expires: DateTime.fromISO((value.expires as unknown) as string),
+        };
+      }
+
+      return null;
+    },
+  })
+  public oneTimePassCode: PassCode | null;
 
   @column.dateTime({ autoCreate: true, serializeAs: null })
   public createdAt: DateTime
@@ -69,6 +89,21 @@ export default class User extends BaseModel {
     return application.getConnectedAccounts();
   }
 
+  // eslint-disable-next-line class-methods-use-this
+  public generatePassCode(): string {
+    // max 8 digit base 32 number = 32^8 - 1
+    let value = Math.trunc(Math.random() * 1099511627775)
+      .toString(32)
+      .toUpperCase()
+      .padStart(8, '0')
+
+    value = `${value.slice(0, 4)}-${value.slice(4)}`;
+
+    this.oneTimePassCode = { code: value, expires: DateTime.now().plus({ minutes: 5 }) };
+
+    return value;
+  }
+
   public generateToken() : unknown {
     const expiresIn = parseInt(Env.get('TOKEN_EXPIRATION') as string, 10) * 60;
     return jwt.sign(
@@ -86,12 +121,6 @@ export default class User extends BaseModel {
     const token = this.generateToken();
 
     return `${Env.get('APP_URL') as string}/api/verify-email/${token}/${this.id}`;
-  }
-
-  public getPasswordResetLink(): string {
-    const token = this.generateToken();
-
-    return `${Env.get('APP_URL') as string}/api/password/reset/${token}/${this.id}`;
   }
 
   public sendEmailAddressVerification(): void {

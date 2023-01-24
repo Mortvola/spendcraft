@@ -16,12 +16,24 @@ const Menubar: React.FC = observer(() => {
   const navigate = useNavigate();
 
   const logout = () => {
+    type LogoutRequest = {
+      data: {
+        refresh: string | null,
+      }
+    }
+
     (async () => {
-      const response = await Http.post('/api/logout');
+      const payload = {
+        data: {
+          refresh: Http.refreshToken,
+        },
+      };
+
+      const response = await Http.post<LogoutRequest, void>('/api/logout', payload);
 
       if (response.ok) {
-        window.localStorage.removeItem('token')
-        navigate('/', { replace: true });
+        Http.setTokens(null, null);
+        navigate('/');
       }
     })();
 

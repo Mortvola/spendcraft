@@ -1,3 +1,4 @@
+import { observer } from 'mobx-react-lite';
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useStores } from './State/mobxStore';
@@ -6,7 +7,7 @@ type PropsType = {
   children: React.ReactNode,
 }
 
-const RequireAuth: React.FC<PropsType> = ({ children }) => {
+const RequireAuth: React.FC<PropsType> = observer(({ children }) => {
   const store = useStores();
   const location = useLocation();
 
@@ -20,6 +21,6 @@ const RequireAuth: React.FC<PropsType> = ({ children }) => {
       {children}
     </>
   );
-}
+})
 
 export default RequireAuth;

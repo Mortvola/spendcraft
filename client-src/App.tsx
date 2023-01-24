@@ -8,6 +8,7 @@ import {
 import Http, { ServerError, serverError } from '@mortvola/http';
 import '@mortvola/usemodal/dist/main.css';
 import '@mortvola/forms/dist/main.css';
+import { runInAction } from 'mobx';
 import Menubar from './Menubar';
 import Home from './Categories/Home';
 import Accounts from './AccountView/Accounts';
@@ -21,30 +22,29 @@ import './style.css';
 import AccountDetails from './AccountView/AccountDetails';
 import CategoryDetails from './Categories/CategoryDetails';
 import Rebalances from './Categories/Rebalances';
-import Signup from './Signup';
-import Signin from './Signin';
-import RecoverPassword from './RecoverPassword';
+import Signup from './Credentials/Signup';
+import Signin from './Credentials/Signin';
 import Intro from './Intro';
 import RequireAuth from './RequireAuth';
+import RecoverPassword from './Credentials/RecoverPassword';
 
 const App: React.FC = observer(() => {
   const error = useContext(ServerError);
   usePageViews();
   const stores = useStores();
-  const [initialized, setInitialized] = React.useState(false)
 
-  const token = window.localStorage.getItem('token');
-  Http.token = token;
-  if (token) {
-    stores.user.authenticated = true;
+  if (Http.refreshToken) {
+    runInAction(() => {
+      stores.user.authenticated = true;
 
-    if (!initialized) {
-      store.user.load();
-      store.categoryTree.load();
-      store.accounts.load();
+      if (!store.initialized) {
+        store.user.load();
+        store.categoryTree.load();
+        store.accounts.load();
 
-      setInitialized(true);
-    }
+        store.initialized = true
+      }
+    });
   }
 
   if (error.message) {

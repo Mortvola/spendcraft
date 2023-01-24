@@ -31,6 +31,8 @@ class Store implements StoreInterface {
 
   rebalances: Rebalances;
 
+  initialized = false;
+
   constructor() {
     this.user = new User(this);
     this.categoryTree = new CategoryTree(this);
