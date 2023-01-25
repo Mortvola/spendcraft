@@ -12,7 +12,7 @@ import { DateTime } from 'luxon';
 
 export default class AuthController {
   // eslint-disable-next-line class-methods-use-this
-  public async register({ request, response }: HttpContextContract) : Promise<string> {
+  public async register({ request }: HttpContextContract) : Promise<void> {
     /**
      * Validate user details
      */
@@ -37,7 +37,7 @@ export default class AuthController {
       messages: {
         'username.unique': 'An account with the requested username already exists',
         'username.required': 'A username is required',
-        'email.email': 'A valid email address must be specified',
+        'email.email': 'A valid email address must be provided',
         'email.required': 'An email address is required',
         'email.unique': 'An account with the requested email address already exists',
         'password.required': 'A password is required',
@@ -63,8 +63,11 @@ export default class AuthController {
         email: userDetails.email,
         password: userDetails.password,
         applicationId: application.id,
-      })
-      .save();
+      });
+
+    user.generatePassCode();
+
+    user.save();
 
     await trx.commit();
 
@@ -72,16 +75,12 @@ export default class AuthController {
       message
         .from(Env.get('MAIL_FROM_ADDRESS') as string, Env.get('MAIL_FROM_NAME') as string)
         .to(user.email)
-        .subject('Welcome to SpendCraft!')
+        .subject('Welcome!')
         .htmlView('emails/welcome', {
-          url: user.getEmailVerificationLink(),
+          code: user.oneTimePassCode?.code,
           expires: Env.get('TOKEN_EXPIRATION'),
         });
     });
-
-    response.header('Content-type', 'application/json');
-
-    return JSON.stringify('Your account has been created');
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -215,8 +214,13 @@ export default class AuthController {
   public async requestCode({ request, response }: HttpContextContract) : Promise<void> {
     const requestData = await request.validate({
       schema: schema.create({
-        email: schema.string(),
+        email: schema.string([
+          rules.email(),
+        ]),
       }),
+      messages: {
+        'email.email': 'A valid email address must be provided',
+      },
     });
 
     const user = await User.findBy('email', requestData.email);

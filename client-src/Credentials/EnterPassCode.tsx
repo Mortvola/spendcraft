@@ -6,23 +6,26 @@ import Http from '@mortvola/http';
 import {
   FormError, setFormErrors, FormField, SubmitButton,
 } from '@mortvola/forms';
+import { Button } from 'react-bootstrap';
 import styles from './Signin.module.css';
 import { isErrorResponse } from '../../common/ResponseTypes';
 import { Context } from './Types';
 
 type PropsType = {
   context: Context,
-  onCompletion: (context: Context) => void,
-  link: React.ReactNode,
+  onNext: (context: Context) => void,
+  link?: React.ReactNode,
 }
 
 const EnterPassCode: React.FC<PropsType> = ({
   context,
-  onCompletion,
+  onNext,
   link,
 }) => {
+  const [resendStatus, setResendStatus] = React.useState<string>('')
+
   type FormValues = {
-    passCode: string,
+    code: string,
   };
 
   type VerifyCodeRequest = {
@@ -41,7 +44,7 @@ const EnterPassCode: React.FC<PropsType> = ({
   const handleSubmit = async (values: FormValues, { setErrors }: FormikHelpers<FormValues>) => {
     const response = await Http.post<VerifyCodeRequest, VerifyCodeResponse>('/api/code-verify', {
       email: context.email,
-      code: values.passCode,
+      code: values.code,
     });
 
     if (response.ok) {
@@ -49,7 +52,7 @@ const EnterPassCode: React.FC<PropsType> = ({
 
       Http.setTokens(body.data.access, body.data.refresh);
 
-      onCompletion({ ...context, state: 'Change Password' })
+      onNext(context)
     }
     else {
       const body = await response.body();
@@ -60,20 +63,36 @@ const EnterPassCode: React.FC<PropsType> = ({
     }
   }
 
+  const sendCode = async () => {
+    setResendStatus('Sending new code.')
+    const response = await Http.post('/api/code-request', {
+      email: context.email,
+    });
+
+    if (response.ok) {
+      setResendStatus('A new code has been sent to the email address you provided.')
+    }
+    else {
+      setResendStatus('An error occured. Please try again later.')
+    }
+  }
+
   return (
     <Formik<FormValues>
       initialValues={{
-        passCode: '',
+        code: '',
       }}
       onSubmit={handleSubmit}
     >
       {
         ({ isSubmitting }: FormikState<FormValues>) => (
           <Form className={styles.form}>
-            <div className={styles.subtitle}>
-              We sent a code to the email address you provided. Enter the code below and click the Verify Code button.
+            <div className={styles.description}>
+              A a one-time pass code has been sent to the email address you provided
+              to verify you are the owner. Enter the one-time pass code below and
+              click the Verify Code button.
             </div>
-            <FormField name="passCode" label="Pass Code" autoComplete="one-time-code" />
+            <FormField name="code" label="Pass Code" autoComplete="one-time-code" />
 
             <SubmitButton
               className={styles.button}
@@ -81,6 +100,13 @@ const EnterPassCode: React.FC<PropsType> = ({
               label="Verify Code"
               submitLabel="Verifying Code"
             />
+
+            <div className={styles.description}>
+              If you did not receive the code or if the code has expired,
+              click the button below to send a new code to your email address.
+            </div>
+            <Button className={styles.button} onClick={sendCode}>Send New Code</Button>
+            <div className={styles.status}>{resendStatus}</div>
 
             { link }
             <FormError name="general" />

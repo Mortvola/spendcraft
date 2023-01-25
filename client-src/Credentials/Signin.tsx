@@ -64,9 +64,13 @@ const Signin: React.FC = () => {
     }
   }
 
+  const handleTitleClick = () => {
+    navigate('/');
+  }
+
   return (
     <div className={addSizeClass(styles.frame)}>
-      <div className={styles.title}>SpendCraft</div>
+      <div className={styles.title} onClick={handleTitleClick}>SpendCraft</div>
       <Formik<FormValues>
         initialValues={{
           username: '',
@@ -77,7 +81,8 @@ const Signin: React.FC = () => {
         {
           ({ isSubmitting }: FormikState<FormValues>) => (
             <Form className={styles.form}>
-              <div className={styles.subtitle}>Enter your username and password.</div>
+              <div className={styles.subtitle}>Sign In</div>
+              <div className={styles.description}>Enter your username and password.</div>
               <FormField name="username" label="Username" autoComplete="username" />
               <FormField
                 type="password"
@@ -93,7 +98,7 @@ const Signin: React.FC = () => {
                 submitLabel="Signing In"
               />
 
-              <a href="/recover-password">Forgot Password?</a>
+              <a href="/recover-password">Forgot Your Password?</a>
               <FormError name="general" />
             </Form>
           )

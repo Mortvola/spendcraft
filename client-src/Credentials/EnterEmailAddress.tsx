@@ -12,13 +12,13 @@ import { Context } from './Types';
 
 type PropsType = {
   context: Context,
-  onCompletion: (context: Context) => void,
+  onNext: (context: Context) => void,
   link: React.ReactNode,
 }
 
 const EnterEmailAddress: React.FC<PropsType> = ({
   context,
-  onCompletion,
+  onNext,
   link,
 }) => {
   type FormValues = {
@@ -29,7 +29,7 @@ const EnterEmailAddress: React.FC<PropsType> = ({
     const response = await Http.post('/api/code-request', values);
 
     if (response.ok) {
-      onCompletion({ ...context, state: 'Verify Code', email: values.email })
+      onNext({ ...context, email: values.email })
     }
     else {
       const body = await response.body();

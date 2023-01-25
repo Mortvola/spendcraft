@@ -1,5 +1,6 @@
 import React from 'react';
 import * as responsive from 'react-responsive';
+import { useNavigate } from 'react-router-dom';
 import styles from './Signin.module.css';
 import EnterEmailAddress from './EnterEmailAddress';
 import EnterPassCode from './EnterPassCode';
@@ -11,6 +12,7 @@ const RecoverPassword: React.FC = () => {
   const small = responsive.useMediaQuery({ query: '(max-width: 600px)' });
   const medium = responsive.useMediaQuery({ query: '(max-width: 1224px)' });
   const [context, setContext] = React.useState<Context>({ state: 'Enter Email', email: '' });
+  const navigate = useNavigate();
 
   const addSizeClass = (className: string): string => {
     if (tiny && styles.tiny) {
@@ -28,26 +30,42 @@ const RecoverPassword: React.FC = () => {
     return className
   }
 
-  const handleCompletion = (newContext: Context) => {
-    setContext(newContext);
+  const handleNext = (newContext: Context) => {
+    setContext((prev) => {
+      switch (prev.state) {
+        case 'Enter Email':
+          return { ...newContext, state: 'Verify Code' };
+        case 'Verify Code':
+          return { ...newContext, state: 'Change Password' };
+        case 'Change Password':
+          navigate('/home');
+          return prev;
+        default:
+          return prev;
+      }
+    })
   }
 
   const renderForm = (rememberedLink: React.ReactNode) => {
     switch (context.state) {
       case 'Enter Email':
-        return <EnterEmailAddress context={context} onCompletion={handleCompletion} link={rememberedLink} />;
+        return <EnterEmailAddress context={context} onNext={handleNext} link={rememberedLink} />;
       case 'Verify Code':
-        return <EnterPassCode context={context} onCompletion={handleCompletion} link={rememberedLink} />;
+        return <EnterPassCode context={context} onNext={handleNext} link={rememberedLink} />;
       case 'Change Password':
-        return <ChangePassword context={context} link={rememberedLink} />;
+        return <ChangePassword context={context} onNext={handleNext} link={rememberedLink} />;
       default:
         return null;
     }
   }
 
+  const handleTitleClick = () => {
+    navigate('/');
+  }
+
   return (
     <div className={addSizeClass(styles.frame)}>
-      <div className={styles.title}>SpendCraft</div>
+      <div className={styles.title} onClick={handleTitleClick}>SpendCraft</div>
       {
         renderForm(<a href="/signin">I remember my password.</a>)
       }

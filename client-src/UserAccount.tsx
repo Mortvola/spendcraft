@@ -10,9 +10,10 @@ import {
   FormControl, InputGroup,
 } from 'react-bootstrap';
 import { FormField, setFormErrors, SubmitButton } from '@mortvola/forms';
+import Http from '@mortvola/http';
 import { useStores } from './State/mobxStore';
 import IconButton from './IconButton';
-import Http from '@mortvola/http';
+import styles from './UserAccount.module.css'
 
 type FormValues = {
   username: string,
@@ -66,7 +67,7 @@ const UserAccount: React.FC = () => {
     const response = await Http.delete('/api/user');
 
     if (response.ok) {
-      console.log('user deleted')
+      user.authenticated = false
     }
   }
 
@@ -134,7 +135,7 @@ const UserAccount: React.FC = () => {
                     )
                     : null
                 }
-                <Button variant="danger" onClick={deleteAccount}>
+                <Button variant="danger" className={styles.delete} onClick={deleteAccount}>
                   Delete Account
                 </Button>
               </Form>

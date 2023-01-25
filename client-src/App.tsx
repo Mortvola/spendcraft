@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { observer } from 'mobx-react-lite';
 import 'regenerator-runtime';
 import {
-  BrowserRouter, Routes, Route, Outlet,
+  BrowserRouter, Routes, Route, Outlet, useLocation, useNavigate,
 } from 'react-router-dom';
 import Http, { ServerError, serverError } from '@mortvola/http';
 import '@mortvola/usemodal/dist/main.css';
@@ -32,6 +32,15 @@ const App: React.FC = observer(() => {
   const error = useContext(ServerError);
   usePageViews();
   const stores = useStores();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  Http.unauthorizedHandler = () => {
+    if (location.pathname !== '/signin') {
+      stores.user.authenticated = false;
+      navigate('/signin');
+    }
+  };
 
   if (Http.refreshToken) {
     runInAction(() => {

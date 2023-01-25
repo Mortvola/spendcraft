@@ -1,29 +1,17 @@
 import React from 'react';
-import {
-  Form, Formik, FormikHelpers, FormikState,
-} from 'formik';
 import * as responsive from 'react-responsive';
-import Http from '@mortvola/http';
-import {
-  FormField, FormError, setFormErrors, SubmitButton,
-} from '@mortvola/forms';
 import { useNavigate } from 'react-router-dom';
 import styles from './Signup.module.css';
-import { isErrorResponse } from '../../common/ResponseTypes';
+import EnterUserInfo from './EnterUserInfo';
+import { Context } from './Types';
+import EnterPassCode from './EnterPassCode';
 
 const Signup: React.FC = () => {
   const tiny = responsive.useMediaQuery({ query: '(max-width: 350px)' });
   const small = responsive.useMediaQuery({ query: '(max-width: 600px)' });
   const medium = responsive.useMediaQuery({ query: '(max-width: 1224px)' });
+  const [context, setContext] = React.useState<Context>({ state: 'Enter Info', email: '' });
   const navigate = useNavigate();
-
-  type FormValues = {
-    username: string,
-    email: string,
-    password: string,
-    // eslint-disable-next-line camelcase
-    passwordConfirmation: string,
-  };
 
   const addSizeClass = (className: string): string => {
     if (tiny) {
@@ -44,70 +32,39 @@ const Signup: React.FC = () => {
     return className
   }
 
-  const handleSubmit = async (values: FormValues, { setErrors }: FormikHelpers<FormValues>) => {
-    const response = await Http.post('/api/register', values);
-
-    if (response.ok) {
-      navigate('/home', { replace: true });
-    }
-    else {
-      const body = await response.body();
-
-      if (isErrorResponse(body)) {
-        setFormErrors(setErrors, body.errors);
+  const handleNext = (newContext: Context) => {
+    setContext((prev) => {
+      switch (prev.state) {
+        case 'Enter Info':
+          return { ...newContext, state: 'Verify Code' };
+        case 'Verify Code':
+          navigate('/home');
+          return prev;
+        default:
+          return prev;
       }
+    });
+  }
+
+  const renderForm = () => {
+    switch (context.state) {
+      case 'Enter Info':
+        return <EnterUserInfo context={context} onNext={handleNext} />
+      case 'Verify Code':
+        return <EnterPassCode context={context} onNext={handleNext} />
+      default:
+        return null;
     }
+  }
+
+  const handleTitleClick = () => {
+    navigate('/');
   }
 
   return (
     <div className={addSizeClass(styles.frame)}>
-      <div className={styles.title}>SpendCraft</div>
-      <Formik<FormValues>
-        initialValues={{
-          username: '',
-          email: '',
-          password: '',
-          passwordConfirmation: '',
-        }}
-        onSubmit={handleSubmit}
-      >
-        {
-          ({ isSubmitting }: FormikState<FormValues>) => (
-            <Form className={styles.form}>
-              <div className={styles.subtitle}>{'Let\'s get your account set up!'}</div>
-              <FormField name="username" label="Username" />
-              <FormField name="email" label="E-Mail Address" />
-              <FormField
-                type="password"
-                name="password"
-                label="Password"
-                autoComplete="new-password"
-              />
-              <FormField
-                type="password"
-                name="passwordConfirmation"
-                label="Confirm Password"
-                autoComplete="new-password"
-              />
-
-              <SubmitButton
-                className={styles.button}
-                isSubmitting={isSubmitting}
-                label="Create my account"
-                submitLabel="Creating your acccount"
-              />
-
-              <FormError name="general" />
-              <div className={styles.finePrint}>
-                {
-                  'By selecting "Create my account", you agree to our Terms'
-                  + ' and have read and acknowledge our Privacy Statement.'
-                }
-              </div>
-            </Form>
-          )
-        }
-      </Formik>
+      <div className={styles.title} onClick={handleTitleClick}>SpendCraft</div>
+      { renderForm() }
     </div>
   );
 }

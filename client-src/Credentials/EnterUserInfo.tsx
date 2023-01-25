@@ -4,44 +4,34 @@ import {
 } from 'formik';
 import Http from '@mortvola/http';
 import {
-  FormError, setFormErrors, FormField, SubmitButton,
+  FormField, FormError, setFormErrors, SubmitButton,
 } from '@mortvola/forms';
-import { useNavigate } from 'react-router-dom';
-import styles from './Signin.module.css';
+import styles from './Signup.module.css';
 import { isErrorResponse } from '../../common/ResponseTypes';
 import { Context } from './Types';
 
 type PropsType = {
   context: Context,
   onNext: (context: Context) => void,
-  link: React.ReactNode,
 }
 
-const ChangePassword: React.FC<PropsType> = ({
+const EnterUserInfo: React.FC<PropsType> = ({
   context,
   onNext,
-  link,
 }) => {
-  const navigate = useNavigate();
-
   type FormValues = {
+    username: string,
+    email: string,
     password: string,
+    // eslint-disable-next-line camelcase
     passwordConfirmation: string,
   };
 
-  type UpdatePasswordRequest = {
-    password: string,
-    passwordConfirmation: string,
-  }
-
   const handleSubmit = async (values: FormValues, { setErrors }: FormikHelpers<FormValues>) => {
-    const response = await Http.post<UpdatePasswordRequest, void>('/api/password/update', {
-      password: values.password,
-      passwordConfirmation: values.passwordConfirmation,
-    });
+    const response = await Http.post('/api/register', values);
 
     if (response.ok) {
-      onNext(context)
+      onNext({ ...context, email: values.email })
     }
     else {
       const body = await response.body();
@@ -55,6 +45,8 @@ const ChangePassword: React.FC<PropsType> = ({
   return (
     <Formik<FormValues>
       initialValues={{
+        username: '',
+        email: '',
         password: '',
         passwordConfirmation: '',
       }}
@@ -63,7 +55,10 @@ const ChangePassword: React.FC<PropsType> = ({
       {
         ({ isSubmitting }: FormikState<FormValues>) => (
           <Form className={styles.form}>
-            <div className={styles.subtitle}>Enter your new password.</div>
+            <div className={styles.subtitle}>Sign Up</div>
+            <div className={styles.description}>{'Let\'s get your account set up!'}</div>
+            <FormField name="username" label="Username" />
+            <FormField name="email" label="E-Mail Address" />
             <FormField
               type="password"
               name="password"
@@ -80,12 +75,17 @@ const ChangePassword: React.FC<PropsType> = ({
             <SubmitButton
               className={styles.button}
               isSubmitting={isSubmitting}
-              label="Change Password"
-              submitLabel="Changing Password"
+              label="Create my account"
+              submitLabel="Creating your acccount"
             />
 
-            { link }
             <FormError name="general" />
+            <div className={styles.finePrint}>
+              {
+                'By selecting "Create my account", you agree to our Terms'
+                  + ' and have read and acknowledge our Privacy Statement.'
+              }
+            </div>
           </Form>
         )
       }
@@ -93,4 +93,4 @@ const ChangePassword: React.FC<PropsType> = ({
   );
 }
 
-export default ChangePassword;
+export default EnterUserInfo;

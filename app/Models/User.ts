@@ -91,11 +91,20 @@ export default class User extends BaseModel {
 
   // eslint-disable-next-line class-methods-use-this
   public generatePassCode(): string {
-    // max 8 digit base 32 number = 32^8 - 1
-    let value = Math.trunc(Math.random() * 1099511627775)
+    const randomNumber = Math.trunc(Math.random() * 1099511627775);
+
+    let value = Math.trunc(randomNumber)
       .toString(32)
-      .toUpperCase()
-      .padStart(8, '0')
+      .padStart(8, 'O')
+      .split('')
+      .map((c) => {
+        // Convert from javascript's native base32 conversion to crockford's.
+        const v = parseInt(c, 32);
+        const alphabet = '0123456789ABCDEFGHJKMNPQRSTVWXYZ'; // Crockford's alphabet
+
+        return alphabet.charAt(v);
+      })
+      .join('')
 
     value = `${value.slice(0, 4)}-${value.slice(4)}`;
 

@@ -76,7 +76,7 @@ const Menubar: React.FC = observer(() => {
         <Nav>
           <NavDropdown className="dropdown menubar-item" title={username || ''} id="menubar-dropdown" align="end">
             <NavDropdown.Item as={Link} to="/user" eventKey="NOOP">Account</NavDropdown.Item>
-            <NavDropdown.Item eventKey="LOGOUT">Logout</NavDropdown.Item>
+            <NavDropdown.Item eventKey="LOGOUT">Sign Out</NavDropdown.Item>
           </NavDropdown>
         </Nav>
       </Navbar.Collapse>

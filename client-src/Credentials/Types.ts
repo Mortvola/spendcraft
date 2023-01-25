@@ -1,6 +1,6 @@
-export type RecoverPasswordState = 'Enter Email' | 'Verify Code' | 'Change Password';
+export type State = 'Enter Email' | 'Verify Code' | 'Change Password' | 'Enter Info';
 
 export type Context = {
-  state: RecoverPasswordState,
+  state: State,
   email: string,
 };
