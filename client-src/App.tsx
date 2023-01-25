@@ -38,6 +38,7 @@ const App: React.FC = observer(() => {
   Http.unauthorizedHandler = () => {
     if (location.pathname !== '/signin') {
       stores.user.authenticated = false;
+      stores.initialized = false;
       navigate('/signin');
     }
   };
@@ -46,12 +47,12 @@ const App: React.FC = observer(() => {
     runInAction(() => {
       stores.user.authenticated = true;
 
-      if (!store.initialized) {
-        store.user.load();
-        store.categoryTree.load();
-        store.accounts.load();
+      if (!stores.initialized) {
+        stores.user.load();
+        stores.categoryTree.load();
+        stores.accounts.load();
 
-        store.initialized = true
+        stores.initialized = true
       }
     });
   }

@@ -9,9 +9,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import Http from '@mortvola/http';
 import { useStores } from './State/mobxStore';
 import { Views } from './State/State';
+import { runInAction } from 'mobx';
 
 const Menubar: React.FC = observer(() => {
-  const { user: { username } } = useStores();
+  const store = useStores();
   const [expanded, setExpanded] = React.useState<boolean>(false);
   const navigate = useNavigate();
 
@@ -32,6 +33,9 @@ const Menubar: React.FC = observer(() => {
       const response = await Http.post<LogoutRequest, void>('/api/v1/logout', payload);
 
       if (response.ok) {
+        runInAction(() => {
+          store.initialized = false
+        })
         Http.setTokens(null, null);
         navigate('/');
       }
@@ -74,7 +78,12 @@ const Menubar: React.FC = observer(() => {
           <Nav.Link as={Link} to="/reports" eventKey="NOOP">Reports</Nav.Link>
         </Nav>
         <Nav>
-          <NavDropdown className="dropdown menubar-item" title={username || ''} id="menubar-dropdown" align="end">
+          <NavDropdown
+            className="dropdown menubar-item"
+            title={store.user.username || ''}
+            id="menubar-dropdown"
+            align="end"
+          >
             <NavDropdown.Item as={Link} to="/user" eventKey="NOOP">Account</NavDropdown.Item>
             <NavDropdown.Item eventKey="LOGOUT">Sign Out</NavDropdown.Item>
           </NavDropdown>

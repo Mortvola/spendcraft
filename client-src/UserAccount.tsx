@@ -37,18 +37,18 @@ const MyInputGroup: React.FC<FormikProps<FormValues>> = (props: FormikProps<Form
 }
 
 const UserAccount: React.FC = () => {
-  const { user } = useStores();
+  const stores = useStores();
   const [initialized, setInitialized] = useState<boolean>(false);
 
   useEffect(() => {
     (async () => {
-      await user.load();
+      await stores.user.load();
       setInitialized(true);
     })();
-  }, [user]);
+  }, [stores.user]);
 
   const handleSubmit = async (values: FormValues, { setErrors }: FormikHelpers<FormValues>) => {
-    const errors = await user.update(values.email);
+    const errors = await stores.user.update(values.email);
 
     if (errors) {
       setFormErrors(setErrors, errors);
@@ -56,18 +56,19 @@ const UserAccount: React.FC = () => {
   }
 
   const handleDeletePending = async () => {
-    await user.deletePendingEmail();
+    await stores.user.deletePendingEmail();
   }
 
   const handleResendClick = () => {
-    user.resendVerificationLink();
+    stores.user.resendVerificationLink();
   }
 
   const deleteAccount = async () => {
     const response = await Http.delete('/api/v1/user');
 
     if (response.ok) {
-      user.authenticated = false
+      stores.user.authenticated = false
+      stores.initialized = false
     }
   }
 
@@ -78,8 +79,8 @@ const UserAccount: React.FC = () => {
           () => (
             <Formik<FormValues>
               initialValues={{
-                username: user.username ?? '',
-                email: user.email ?? '',
+                username: stores.user.username ?? '',
+                email: stores.user.email ?? '',
               }}
               onSubmit={handleSubmit}
             >
@@ -96,7 +97,7 @@ const UserAccount: React.FC = () => {
                   <FormField name="email" label="Email:" as={MyInputGroup} />
                 </div>
                 {
-                  user.pendingEmail
+                  stores.user.pendingEmail
                     ? (
                       <div
                         style={{
@@ -110,7 +111,7 @@ const UserAccount: React.FC = () => {
                         <div style={{ display: 'flex', flexDirection: 'column' }}>
                           <div>Pending verification:</div>
                           <div style={{ display: 'flex', whiteSpace: 'nowrap' }}>
-                            <div className="ellipsis" style={{ margin: '0 0.5rem' }}>{user.pendingEmail}</div>
+                            <div className="ellipsis" style={{ margin: '0 0.5rem' }}>{stores.user.pendingEmail}</div>
                             <IconButton
                               icon="trash"
                               iconColor="red"
