@@ -29,7 +29,7 @@ const BudgetProgress: React.FC = observer(() => {
     setQuerying(true);
     (async () => {
       try {
-        const response = await Http.get<BudgetProgressReportResponse>(`/api/reports/budget-progress?m=${value}`);
+        const response = await Http.get<BudgetProgressReportResponse>(`/api/v1/reports/budget-progress?m=${value}`);
 
         if (response.ok) {
           const body = await response.body();
@@ -84,10 +84,10 @@ const BudgetProgress: React.FC = observer(() => {
       return `${accum}&t=${t}`;
     }, '');
 
-    const container = new TransactionContainer(store, `/api/transactions?${queryParams}`);
+    const container = new TransactionContainer(store, `/api/v1/transactions?${queryParams}`);
     container.getTransactions();
     setTransactions(container);
-    // const response = await Http.get<TransactionProps>(`/api/transactions?${queryParams}`);
+    // const response = await Http.get<TransactionProps>(`/api/v1/transactions?${queryParams}`);
 
     // if (response.ok) {
     //   const body = await response.body();

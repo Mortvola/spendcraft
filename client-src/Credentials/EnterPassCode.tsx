@@ -42,7 +42,7 @@ const EnterPassCode: React.FC<PropsType> = ({
   }
 
   const handleSubmit = async (values: FormValues, { setErrors }: FormikHelpers<FormValues>) => {
-    const response = await Http.post<VerifyCodeRequest, VerifyCodeResponse>('/api/code-verify', {
+    const response = await Http.post<VerifyCodeRequest, VerifyCodeResponse>('/api/v1/code-verify', {
       email: context.email,
       code: values.code,
     });
@@ -65,7 +65,7 @@ const EnterPassCode: React.FC<PropsType> = ({
 
   const sendCode = async () => {
     setResendStatus('Sending new code.')
-    const response = await Http.post('/api/code-request', {
+    const response = await Http.post('/api/v1/code-request', {
       email: context.email,
     });
 

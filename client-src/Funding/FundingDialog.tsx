@@ -100,7 +100,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
     setPlansInitialized(true);
 
     (async () => {
-      const response = await Http.get('/api/funding-plans');
+      const response = await Http.get('/api/v1/funding-plans');
 
       const body = await response.body();
 
@@ -117,7 +117,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
   ) => {
     const { value } = event.target;
     setSelectedPlan(parseInt(value, 10));
-    const response = await Http.get(`/api/funding-plans/${value}`);
+    const response = await Http.get(`/api/v1/funding-plans/${value}`);
 
     if (response.ok) {
       const body = await response.body();

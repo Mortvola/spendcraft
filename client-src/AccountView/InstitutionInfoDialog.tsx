@@ -49,7 +49,7 @@ const InstitutionInfoDialog: React.FC<PropsType & ModalProps> = ({
     setInfoInitialized(true);
 
     (async () => {
-      const response = await Http.get<InstitutionInfo>(`/api/institution/${institution.id}/info`);
+      const response = await Http.get<InstitutionInfo>(`/api/v1/institution/${institution.id}/info`);
 
       if (response.ok) {
         const institutionInfo = await response.body();

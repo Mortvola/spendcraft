@@ -82,7 +82,7 @@ class Group implements GroupInterface {
   }
 
   async addCategory(name: string, monthlyExpenses: boolean): Promise<null| Error[]> {
-    const response = await Http.post(`/api/groups/${this.id}/categories`, {
+    const response = await Http.post(`/api/v1/groups/${this.id}/categories`, {
       groupId: this.id,
       name,
       monthlyExpenses,
@@ -128,7 +128,7 @@ class Group implements GroupInterface {
   }
 
   async update(name: string): Promise<null | Error[]> {
-    const response = await Http.patch(`/api/groups/${this.id}`, { name });
+    const response = await Http.patch(`/api/v1/groups/${this.id}`, { name });
 
     const body = await response.body();
 
@@ -149,7 +149,7 @@ class Group implements GroupInterface {
   }
 
   async delete (): Promise<null | Error[]> {
-    const response = await Http.delete(`/api/groups/${this.id}`);
+    const response = await Http.delete(`/api/v1/groups/${this.id}`);
 
     if (!response.ok) {
       const body = await response.body();

@@ -39,7 +39,7 @@ const Category: React.FC = () => {
       }
     })
 
-    const response = await Http.get(`/api/reports/category?${qp}`);
+    const response = await Http.get(`/api/v1/reports/category?${qp}`);
 
     if (response.ok) {
       const body = await response.body();

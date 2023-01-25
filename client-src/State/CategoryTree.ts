@@ -124,7 +124,7 @@ class CategoryTree implements CategoryTreeInterface {
   }
 
   async load(): Promise<void> {
-    const response = await Http.get('/api/groups');
+    const response = await Http.get('/api/v1/groups');
 
     const body = await response.body();
 
@@ -175,7 +175,7 @@ class CategoryTree implements CategoryTreeInterface {
   }
 
   async addGroup(name: string): Promise<null | Error[]> {
-    const response = await Http.post('/api/groups', { name });
+    const response = await Http.post('/api/v1/groups', { name });
 
     const body = await response.body();
 

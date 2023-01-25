@@ -23,7 +23,7 @@ class Balances implements BalancesInterface {
 
   async load(account: AccountInterface): Promise<void> {
     if (account !== this.account) {
-      const response = await Http.get(`/api/account/${account.id}/balances`);
+      const response = await Http.get(`/api/v1/account/${account.id}/balances`);
 
       if (!response.ok) {
         throw new Error('invalid response');
@@ -73,7 +73,7 @@ class Balances implements BalancesInterface {
       throw new Error('account is null');
     }
 
-    const response = await Http.post(`/api/account/${this.account.id}/balances`, values);
+    const response = await Http.post(`/api/v1/account/${this.account.id}/balances`, values);
 
     const body = await response.body();
 

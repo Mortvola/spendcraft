@@ -26,7 +26,7 @@ const EnterEmailAddress: React.FC<PropsType> = ({
   };
 
   const handleSubmit = async (values: FormValues, { setErrors }: FormikHelpers<FormValues>) => {
-    const response = await Http.post('/api/code-request', values);
+    const response = await Http.post('/api/v1/code-request', values);
 
     if (response.ok) {
       onNext({ ...context, email: values.email })

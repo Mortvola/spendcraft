@@ -35,7 +35,7 @@ const ChangePassword: React.FC<PropsType> = ({
   }
 
   const handleSubmit = async (values: FormValues, { setErrors }: FormikHelpers<FormValues>) => {
-    const response = await Http.post<UpdatePasswordRequest, void>('/api/password/update', {
+    const response = await Http.post<UpdatePasswordRequest, void>('/api/v1/password/update', {
       password: values.password,
       passwordConfirmation: values.passwordConfirmation,
     });

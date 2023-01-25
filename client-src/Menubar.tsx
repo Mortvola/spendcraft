@@ -29,7 +29,7 @@ const Menubar: React.FC = observer(() => {
         },
       };
 
-      const response = await Http.post<LogoutRequest, void>('/api/logout', payload);
+      const response = await Http.post<LogoutRequest, void>('/api/v1/logout', payload);
 
       if (response.ok) {
         Http.setTokens(null, null);

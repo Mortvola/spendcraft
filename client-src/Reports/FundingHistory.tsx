@@ -23,7 +23,7 @@ const FundingHistory: React.FC = () => {
 
   useEffect(() => {
     (async () => {
-      const response = await Http.get<FundingHistoryResponse>('/api/reports/funding-history');
+      const response = await Http.get<FundingHistoryResponse>('/api/v1/reports/funding-history');
 
       if (response.ok) {
         const body = await response.body();

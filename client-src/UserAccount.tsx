@@ -64,7 +64,7 @@ const UserAccount: React.FC = () => {
   }
 
   const deleteAccount = async () => {
-    const response = await Http.delete('/api/user');
+    const response = await Http.delete('/api/v1/user');
 
     if (response.ok) {
       user.authenticated = false

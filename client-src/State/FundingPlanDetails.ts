@@ -34,7 +34,7 @@ class FundingPlanDetails {
     const oldAmount = category.amount;
     category.amount = amount;
 
-    const response = await Http.put(`/api/funding-plans/${this.id}/item/${category.categoryId}`, {
+    const response = await Http.put(`/api/v1/funding-plans/${this.id}/item/${category.categoryId}`, {
       amount,
       useGoal: category.useGoal,
       goalDate: category.goalDate,

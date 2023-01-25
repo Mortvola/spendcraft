@@ -19,7 +19,7 @@ class Plans implements PlansInterface {
   }
 
   async load(): Promise<void> {
-    const response = await Http.get('/api/funding-plans');
+    const response = await Http.get('/api/v1/funding-plans');
 
     if (response.ok) {
       const body = await response.body();
@@ -39,7 +39,7 @@ class Plans implements PlansInterface {
       this.details = null;
     }
     else {
-      const response = await Http.get(`/api/funding-plans/${fundingPlan.id}/details`);
+      const response = await Http.get(`/api/v1/funding-plans/${fundingPlan.id}/details`);
 
       if (response.ok) {
         const body = await response.body();
@@ -54,7 +54,7 @@ class Plans implements PlansInterface {
   }
 
   async addPlan(name: string): Promise<{ message: string }[] | null> {
-    const response = await Http.post('/api/funding-plans', { name });
+    const response = await Http.post('/api/v1/funding-plans', { name });
 
     if (response.ok) {
       const body = await response.body();

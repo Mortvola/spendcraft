@@ -26,7 +26,7 @@ class Register implements RegisterInterface {
     },
     type: TransactionType,
   ): Promise<null> {
-    const response = await Http.post('/api/category-transfer', { ...values, type });
+    const response = await Http.post('/api/v1/category-transfer', { ...values, type });
 
     const body = await response.body();
 

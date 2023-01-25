@@ -11,7 +11,7 @@ const Networth: React.FC = () => {
 
   useEffect(() => {
     (async () => {
-      const response = await Http.get('/api/reports/networth');
+      const response = await Http.get('/api/v1/reports/networth');
 
       if (response.ok) {
         const body = await response.body();

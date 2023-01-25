@@ -44,7 +44,7 @@ const RebalanceDialog: React.FC<PropsType & ModalProps> = ({
         params.id = transaction.id.toString();
       }
 
-      const url = new URL('/api/category-balances', window.location.href);
+      const url = new URL('/api/v1/category-balances', window.location.href);
       url.search = (new URLSearchParams(params)).toString();
 
       (async () => {

@@ -25,7 +25,7 @@ const PurchaseLocation: React.FC<PropsType> = ({ location }) => (
       }
     </div>
     {/* <img
-      src={`https://maps.googleapis.com/maps/api/staticmap?markers=color:red%7C${location.lat},${location.lon}&size=480x480&key=${key}`}
+      src={`https://maps.googleapis.com/maps/api/v1/staticmap?markers=color:red%7C${location.lat},${location.lon}&size=480x480&key=${key}`}
       alt=""
       width="480"
       height="480"

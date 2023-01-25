@@ -27,7 +27,7 @@ class Balance implements BalanceInterface {
       throw new Error('balance has a null id');
     }
 
-    const response = await Http.delete(`/api/balance/${this.id}`);
+    const response = await Http.delete(`/api/v1/balance/${this.id}`);
 
     if (response.ok) {
       runInAction(() => {
@@ -50,7 +50,7 @@ class Balance implements BalanceInterface {
       throw new Error('account is null');
     }
 
-    const response = await Http.patch(`/api/account/${this.balances.account.id}/balances/${this.id}`, values);
+    const response = await Http.patch(`/api/v1/account/${this.balances.account.id}/balances/${this.id}`, values);
 
     const body = await response.body();
 

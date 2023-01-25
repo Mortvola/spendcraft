@@ -46,7 +46,7 @@ const Signin: React.FC = () => {
       },
     };
 
-    const response = await Http.post<FormValues, LoginResponse>('/api/login', values);
+    const response = await Http.post<FormValues, LoginResponse>('/api/v1/login', values);
 
     if (response.ok) {
       const body = await response.body()

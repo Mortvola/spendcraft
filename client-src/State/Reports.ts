@@ -34,7 +34,7 @@ class Reports {
   async loadReport(reportType: string): Promise<void> {
     switch (reportType) {
       case 'netWorth': {
-        const response = await Http.get('/api/reports/networth');
+        const response = await Http.get('/api/v1/reports/networth');
 
         if (response.ok) {
           const body = await response.body();
@@ -51,7 +51,7 @@ class Reports {
       }
 
       case 'payee': {
-        const response = await Http.get('/api/reports/payee');
+        const response = await Http.get('/api/v1/reports/payee');
 
         if (response.ok) {
           const body = await response.body();

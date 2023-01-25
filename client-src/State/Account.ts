@@ -40,7 +40,7 @@ class Account extends TransactionContainer implements AccountInterface {
   store: StoreInterface;
 
   constructor(store: StoreInterface, institution: InstitutionInterface, props: AccountProps) {
-    super(store, `/api/account/${props.id}/transactions`);
+    super(store, `/api/v1/account/${props.id}/transactions`);
 
     this.id = props.id;
     this.name = props.name;
@@ -67,7 +67,7 @@ class Account extends TransactionContainer implements AccountInterface {
   }
 
   async setClosed(closed: boolean): Promise<void> {
-    const response = await Http.patch(`/api/account/${this.id}`, {
+    const response = await Http.patch(`/api/v1/account/${this.id}`, {
       closed,
     });
 
@@ -84,7 +84,7 @@ class Account extends TransactionContainer implements AccountInterface {
       this.refreshing = true;
     });
 
-    const response = await Http.post<void, AccountSyncResponse>(`/api/institution/${institutionId}/accounts/${this.id}/transactions/sync`);
+    const response = await Http.post<void, AccountSyncResponse>(`/api/v1/institution/${institutionId}/accounts/${this.id}/transactions/sync`);
 
     if (response.ok) {
       const body = await response.body();
@@ -116,7 +116,7 @@ class Account extends TransactionContainer implements AccountInterface {
 
   async getPendingTransactions(index = 0): Promise<void> {
     return this.pendingQuery.fetch(
-      `/api/account/${this.id}/transactions/pending`,
+      `/api/v1/account/${this.id}/transactions/pending`,
       index,
       this.pendingResponseHandler,
     );
@@ -130,7 +130,7 @@ class Account extends TransactionContainer implements AccountInterface {
       splits: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
     },
   ): Promise<Error[] | null> {
-    const response = await Http.post<AddTransactionRequest, AddTransactionResponse>(`/api/account/${this.id}/transactions`, values);
+    const response = await Http.post<AddTransactionRequest, AddTransactionResponse>(`/api/v1/account/${this.id}/transactions`, values);
 
     if (response.ok) {
       const body = await response.body();
@@ -158,7 +158,7 @@ class Account extends TransactionContainer implements AccountInterface {
   }
 
   async updateOfflineAccount (name: string): Promise<void> {
-    const response = await Http.patch(`/api/account/${this.id}`, {
+    const response = await Http.patch(`/api/v1/account/${this.id}`, {
       name,
     });
 

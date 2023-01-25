@@ -26,7 +26,7 @@ const AccountsToolbar: React.FC<PropsType> = observer(({
   };
 
   const handleRefresh = async (): Promise<void> => {
-    await Http.post('/api/institutions/sync');
+    await Http.post('/api/v1/institutions/sync');
   };
 
   const renderAccountButtons = () => (
@@ -57,7 +57,7 @@ const AccountsToolbar: React.FC<PropsType> = observer(({
         throw new Error('account not selected or not tracking transactions')
       }
 
-      await fetch(`/api/account/${uiState.selectedAccount.id}/ofx`, {
+      await fetch(`/api/v1/account/${uiState.selectedAccount.id}/ofx`, {
         method: 'POST',
         headers: new Headers({
           Accept: 'application/json',

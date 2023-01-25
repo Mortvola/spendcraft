@@ -29,7 +29,7 @@ class Category extends TransactionContainer implements CategoryInterface {
   store: StoreInterface;
 
   constructor(props: CategoryProps, store: StoreInterface) {
-    super(store, `/api/category/${props.id}/transactions`);
+    super(store, `/api/v1/category/${props.id}/transactions`);
 
     this.id = props.id;
     this.name = props.name;
@@ -46,7 +46,7 @@ class Category extends TransactionContainer implements CategoryInterface {
 
   async getPendingTransactions(index = 0): Promise<void> {
     return this.pendingQuery.fetch(
-      `/api/category/${this.id}/transactions/pending`,
+      `/api/v1/category/${this.id}/transactions/pending`,
       index,
       this.pendingResponseHandler,
     )
@@ -57,7 +57,7 @@ class Category extends TransactionContainer implements CategoryInterface {
     group: GroupInterface,
     monthlyExpenses: boolean,
   ): Promise<null | Error[]> {
-    const response = await Http.patch(`/api/groups/${group.id}/categories/${this.id}`, {
+    const response = await Http.patch(`/api/v1/groups/${group.id}/categories/${this.id}`, {
       name,
       monthlyExpenses,
     });
@@ -103,7 +103,7 @@ class Category extends TransactionContainer implements CategoryInterface {
   }
 
   async delete (): Promise<null | Error[]> {
-    const response = await Http.delete(`/api/groups/${this.groupId}/categories/${this.id}`);
+    const response = await Http.delete(`/api/v1/groups/${this.groupId}/categories/${this.id}`);
 
     if (!response.ok) {
       const body = await response.body();

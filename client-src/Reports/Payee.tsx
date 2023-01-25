@@ -58,7 +58,7 @@ const Payee: React.FC = () => {
       }
     })
 
-    const response = await Http.get(`/api/reports/payee?${qp}`);
+    const response = await Http.get(`/api/v1/reports/payee?${qp}`);
 
     if (response.ok) {
       const body = await response.body();

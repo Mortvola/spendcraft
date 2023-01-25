@@ -136,7 +136,7 @@ const CategoryTransferDialog: React.FC<PropsType & ModalProps> = ({
     });
 
     if (transaction) {
-      const response = await Http.patch(`/api/category-transfer/${transaction.id}`,
+      const response = await Http.patch(`/api/v1/category-transfer/${transaction.id}`,
         { date, categories: cats });
 
       if (response.ok) {
@@ -144,7 +144,7 @@ const CategoryTransferDialog: React.FC<PropsType & ModalProps> = ({
       }
     }
     else {
-      const response = await Http.post('/api/category-transfer',
+      const response = await Http.post('/api/v1/category-transfer',
         { date, categories: cats });
 
       if (response.ok) {
