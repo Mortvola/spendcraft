@@ -130,6 +130,7 @@ class CategoryTree implements CategoryTreeInterface {
 
     if (isGroupsResponse(body)) {
       runInAction(() => {
+        this.nodes = [];
         body.forEach((g) => {
           if (g.type !== 'REGULAR') {
             this.systemIds.systemGroupId = g.id;

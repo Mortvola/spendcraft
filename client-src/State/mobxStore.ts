@@ -44,6 +44,20 @@ class Store implements StoreInterface {
     this.plans = new Plans(this);
     this.rebalances = new Rebalances(this);
   }
+
+  refresh() {
+    this.initialized = false;
+
+    this.user = new User(this);
+    this.categoryTree = new CategoryTree(this);
+    this.register = new Register(this);
+    this.accounts = new Accounts(this);
+    this.balances = new Balances(this);
+    this.uiState = new UIState(this);
+    this.reports = new Reports(this);
+    this.plans = new Plans(this);
+    this.rebalances = new Rebalances(this);
+  }
 }
 
 const store = new Store();

@@ -14,6 +14,7 @@ import Http from '@mortvola/http';
 import { useStores } from './State/mobxStore';
 import IconButton from './IconButton';
 import styles from './UserAccount.module.css'
+import { useDeleteConfirmation } from './DeleteConfirmation';
 
 type FormValues = {
   username: string,
@@ -39,6 +40,27 @@ const MyInputGroup: React.FC<FormikProps<FormValues>> = (props: FormikProps<Form
 const UserAccount: React.FC = () => {
   const stores = useStores();
   const [initialized, setInitialized] = useState<boolean>(false);
+  const [DeleteConfirmation, handleDeleteClick] = useDeleteConfirmation(
+    'Delete Confirmation',
+    'Delete',
+    (
+      <>
+        <div>
+          Are you sure you want to delete your account?
+        </div>
+        <div style={{ marginTop: '1rem' }}>
+          This is an irreverisible action.
+        </div>
+      </>
+    ),
+    async () => {
+      const response = await Http.delete('/api/v1/user');
+
+      if (response.ok) {
+        stores.refresh();
+      }
+    },
+  );
 
   useEffect(() => {
     (async () => {
@@ -63,87 +85,81 @@ const UserAccount: React.FC = () => {
     stores.user.resendVerificationLink();
   }
 
-  const deleteAccount = async () => {
-    const response = await Http.delete('/api/v1/user');
-
-    if (response.ok) {
-      stores.user.authenticated = false
-      stores.initialized = false
-    }
-  }
-
   if (initialized) {
     return (
-      <Observer>
-        {
-          () => (
-            <Formik<FormValues>
-              initialValues={{
-                username: stores.user.username ?? '',
-                email: stores.user.email ?? '',
-              }}
-              onSubmit={handleSubmit}
-            >
-              <Form
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  maxWidth: '20rem',
-                  margin: '1rem',
+      <>
+        <Observer>
+          {
+            () => (
+              <Formik<FormValues>
+                initialValues={{
+                  username: stores.user.username ?? '',
+                  email: stores.user.email ?? '',
                 }}
+                onSubmit={handleSubmit}
               >
-                <FormField name="username" readOnly label="Username:" />
-                <div style={{ display: 'flex', alignItems: 'end' }}>
-                  <FormField name="email" label="Email:" as={MyInputGroup} />
-                </div>
-                {
-                  stores.user.pendingEmail
-                    ? (
-                      <div
-                        style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          marginTop: '0.5rem',
-                          maxWidth: 'max-content',
-                          overflow: 'hidden',
-                        }}
-                      >
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          <div>Pending verification:</div>
-                          <div style={{ display: 'flex', whiteSpace: 'nowrap' }}>
-                            <div className="ellipsis" style={{ margin: '0 0.5rem' }}>{stores.user.pendingEmail}</div>
-                            <IconButton
-                              icon="trash"
-                              iconColor="red"
-                              onClick={handleDeletePending}
-                            />
-                          </div>
-                        </div>
-                        <button
-                          type="button"
+                <Form
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    maxWidth: '20rem',
+                    margin: '1rem',
+                  }}
+                >
+                  <FormField name="username" readOnly label="Username:" />
+                  <div style={{ display: 'flex', alignItems: 'end' }}>
+                    <FormField name="email" label="Email:" as={MyInputGroup} />
+                  </div>
+                  {
+                    stores.user.pendingEmail
+                      ? (
+                        <div
                           style={{
-                            border: 'none',
-                            background: 'transparent',
-                            color: 'blue',
-                            fontSize: 'small',
-                            width: 'max-content',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            marginTop: '0.5rem',
+                            maxWidth: 'max-content',
+                            overflow: 'hidden',
                           }}
-                          onClick={handleResendClick}
                         >
-                          Resend verification link
-                        </button>
-                      </div>
-                    )
-                    : null
-                }
-                <Button variant="danger" className={styles.delete} onClick={deleteAccount}>
-                  Delete Account
-                </Button>
-              </Form>
-            </Formik>
-          )
-        }
-      </Observer>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <div>Pending verification:</div>
+                            <div style={{ display: 'flex', whiteSpace: 'nowrap' }}>
+                              <div className="ellipsis" style={{ margin: '0 0.5rem' }}>{stores.user.pendingEmail}</div>
+                              <IconButton
+                                icon="trash"
+                                iconColor="red"
+                                onClick={handleDeletePending}
+                              />
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            style={{
+                              border: 'none',
+                              background: 'transparent',
+                              color: 'blue',
+                              fontSize: 'small',
+                              width: 'max-content',
+                            }}
+                            onClick={handleResendClick}
+                          >
+                            Resend verification link
+                          </button>
+                        </div>
+                      )
+                      : null
+                  }
+                  <Button variant="danger" className={styles.delete} onClick={handleDeleteClick}>
+                    Delete Account
+                  </Button>
+                </Form>
+              </Formik>
+            )
+          }
+        </Observer>
+        <DeleteConfirmation />
+      </>
     )
   }
 

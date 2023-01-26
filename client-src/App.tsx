@@ -37,8 +37,7 @@ const App: React.FC = observer(() => {
 
   Http.unauthorizedHandler = () => {
     if (location.pathname !== '/signin') {
-      stores.user.authenticated = false;
-      stores.initialized = false;
+      stores.refresh();
       navigate('/signin');
     }
   };

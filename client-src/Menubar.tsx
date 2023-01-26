@@ -34,7 +34,7 @@ const Menubar: React.FC = observer(() => {
 
       if (response.ok) {
         runInAction(() => {
-          store.initialized = false
+          store.refresh();
         })
         Http.setTokens(null, null);
         navigate('/');
