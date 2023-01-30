@@ -1,10 +1,12 @@
 import { HistoryCategoryProps } from '../../common/ResponseTypes';
-import FundingPlanHistoryMonth from './HistoryMonth';
 
 class HistoryCategory {
   id: number;
 
-  months: FundingPlanHistoryMonth[];
+  months: {
+    expenses: number,
+    funding: number,
+  }[]
 
   constructor(props: HistoryCategoryProps) {
     this.id = props.id;

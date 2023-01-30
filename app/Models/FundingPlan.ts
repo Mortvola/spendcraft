@@ -4,8 +4,8 @@ import {
   BaseModel, BelongsTo, belongsTo, column, HasMany, hasMany,
 } from '@ioc:Adonis/Lucid/Orm';
 import FundingPlanCategory from 'App/Models/FundingPlanCategory';
-import { GroupHistoryItem } from 'App/Models/GroupHistoryItem';
 import Application from 'App/Models/Application';
+import CategoryHistoryItem from './CategoryHistoryItem';
 
 export type PlanCategory = {
   id?: number,
@@ -17,23 +17,23 @@ export type Plan = {
   id: number,
   name: string,
   categories: FundingPlanCategory[],
-  history: GroupHistoryItem[],
+  history: CategoryHistoryItem[],
 };
 
 export default class FundingPlan extends BaseModel {
   @column({ isPrimary: true })
   public id: number
 
-  @column.dateTime({ autoCreate: true })
+  @column.dateTime({ autoCreate: true, serializeAs: null })
   public createdAt: DateTime
 
-  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  @column.dateTime({ autoCreate: true, autoUpdate: true, serializeAs: null })
   public updatedAt: DateTime
 
   @column()
   public name: string;
 
-  @column()
+  @column({ serializeAs: null })
   public applicationId: number;
 
   @belongsTo(() => Application)
@@ -42,14 +42,14 @@ export default class FundingPlan extends BaseModel {
   @hasMany(() => FundingPlanCategory)
   public categories: HasMany<typeof FundingPlanCategory>
 
-  public async getFullPlan(this: FundingPlan, application: Application): Promise<Plan> {
-    const categories = await this.related('categories').query();
+  // public async getFullPlan(this: FundingPlan, application: Application): Promise<Plan> {
+  //   const categories = await this.related('categories').query();
 
-    return {
-      id: this.id,
-      name: this.name,
-      categories,
-      history: await application.history(),
-    };
-  }
+  //   return {
+  //     id: this.id,
+  //     name: this.name,
+  //     categories,
+  //     history: await application.history(),
+  //   };
+  // }
 }

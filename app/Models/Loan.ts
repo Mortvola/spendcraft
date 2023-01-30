@@ -11,7 +11,7 @@ export default class Loan extends BaseModel {
   @column({ isPrimary: true })
   public id: number;
 
-  @column.dateTime()
+  @column.dateTime({ serializeAs: null })
   public createdAt: DateTime;
 
   @column()

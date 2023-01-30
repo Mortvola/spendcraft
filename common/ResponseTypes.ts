@@ -1,4 +1,4 @@
-export type GroupType = 'NO GROUP' | 'REGULAR';
+export type GroupType = 'NO GROUP' | 'REGULAR' | 'SYSTEM';
 
 export interface GroupProps {
   id: number;
@@ -221,8 +221,6 @@ export interface TransactionProps {
 
   date: string;
 
-  createdAt: string;
-
   sortOrder: number;
 
   type: TransactionType;
@@ -268,8 +266,6 @@ export interface PendingTransactionProps {
   id: number | null;
   date: string;
 
-  createdAt: string;
-
   accountTransaction: {
     name: string;
 
@@ -303,8 +299,6 @@ export type LoanTransactionProps = {
       id: number;
 
       date: string;
-
-      createdAt: string;
 
       accountTransaction: {
         name: string;
@@ -544,16 +538,19 @@ export interface HistoryMonthProps {
 export interface HistoryCategoryProps {
   id: number;
 
-  months: HistoryMonthProps[];
+  months: {
+    expenses: number,
+    funding: number,
+  }[]
 }
 
-export interface HistoryGroupProps {
-  id: number;
+// export interface HistoryGroupProps {
+//   id: number;
 
-  name: string;
+//   name: string;
 
-  categories: HistoryCategoryProps[];
-}
+//   categories: HistoryCategoryProps[];
+// }
 
 export interface UpdateCategoryProps {
   amount: number;
@@ -562,7 +559,7 @@ export interface UpdateCategoryProps {
 export interface FundingPlanDetailsProps {
   id: number;
 
-  history: HistoryGroupProps[];
+  history: HistoryCategoryProps[];
 
   categories: FundingPlanCategoryProps[];
 }

@@ -4,10 +4,9 @@ import { DateTime } from 'luxon';
 import PlanCategory from './PlanCategory';
 import Amount from '../Amount';
 import { useStores } from '../State/mobxStore';
-import FundingPlanHistoryMonth from '../State/HistoryMonth';
 import HistoryCategory from '../State/HistoryCategory';
 import { CategoryInterface } from '../State/State';
-import { isGroup } from '../State/Group';
+import Group, { isGroup } from '../State/Group';
 import FundingPlanCategory from '../State/FundingPlanCategory';
 import Console from '../Console';
 
@@ -72,6 +71,17 @@ const PlanDetails: React.FC<PropsType> = observer(({
     })
   );
 
+  const renderGroup = (group: Group) => (
+    group.type !== 'SYSTEM'
+      ? (
+        <div key={group.id} className="plan-group">
+          {group.name}
+          {renderCategories(group.categories)}
+        </div>
+      )
+      : null
+  );
+
   const renderNodes = () => (
     categoryTree.nodes.map((n) => {
       if (details === null) {
@@ -80,35 +90,19 @@ const PlanDetails: React.FC<PropsType> = observer(({
 
       return (
         isGroup(n)
-          ? (
-            <div key={n.id} className="plan-group">
-              {n.name}
-              {renderCategories(n.categories)}
-            </div>
-          )
+          ? renderGroup(n)
           : renderCategory(n)
       );
     })
   );
 
-  const renderHistory = (history: FundingPlanHistoryMonth[]) => {
+  const renderHistory = (history: { expenses: number, funding: number }[]) => {
     const list = [];
     let { year, month } = now;
 
-    const sortedHistory = history.slice().sort((a, b) => {
-      if (a.year === b.year) {
-        return b.month - a.month;
-      }
-
-      return b.year - a.year;
-    });
-
-    for (let i = 0, h = 0; i < 13; i += 1) {
-      if (h < sortedHistory.length
-        && year === sortedHistory[h].year
-        && month === sortedHistory[h].month - 1) {
-        list.push(<Amount key={`${year}:${month}`} amount={sortedHistory[h].amount} />);
-        h += 1;
+    for (let i = 0; i < 13; i += 1) {
+      if (i < history.length && history[i].expenses) {
+        list.push(<Amount key={`${year}:${month}`} amount={history[i].expenses} />);
       }
       else {
         list.push(<Amount key={`${year}:${month}`} noValue="-" />);
@@ -150,15 +144,13 @@ const PlanDetails: React.FC<PropsType> = observer(({
         throw new Error('details is null');
       }
 
-      const history = details.history.find((h) => node.id === h.id);
-
       return (
-        <div key={node.id}>
+        <div key={isGroup(node) ? `g:${node.id}` : `c:${node.id}`}>
           <div style={{ height: '24px' }} />
           {
             isGroup(node)
-              ? renderCategoryHistories(node.categories, history ? history.categories : [])
-              : renderCategoryHistory(node, history ? history.categories : [])
+              ? renderCategoryHistories(node.categories, details.history ?? [])
+              : renderCategoryHistory(node, details.history ?? [])
           }
         </div>
       );

@@ -8,8 +8,6 @@ class PendingTransaction implements PendingTransactionInterface {
 
   date: DateTime;
 
-  createdAt: DateTime;
-
   name: string;
 
   type = TransactionType.REGULAR_TRANSACTION;
@@ -25,7 +23,6 @@ class PendingTransaction implements PendingTransactionInterface {
   constructor(store: StoreInterface, props: PendingTransactionProps) {
     this.id = props.id;
     this.date = DateTime.fromISO(props.date);
-    this.createdAt = DateTime.fromISO(props.createdAt);
     this.name = props.accountTransaction.name;
     this.amount = props.accountTransaction.amount;
     if (props.accountTransaction) {

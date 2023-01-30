@@ -1,7 +1,9 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import { schema } from '@ioc:Adonis/Core/Validator';
-import FundingPlan, { Plan } from 'App/Models/FundingPlan';
+import FundingPlan from 'App/Models/FundingPlan';
 import FundingPlanCategory from 'App/Models/FundingPlanCategory';
+import CategoryHistoryItem from 'App/Models/CategoryHistoryItem';
+import { FundingPlanDetailsProps } from 'Common/ResponseTypes';
 
 class FundingPlanController {
   // eslint-disable-next-line class-methods-use-this
@@ -50,33 +52,55 @@ class FundingPlanController {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  public async getPlan({ request }: HttpContextContract): Promise<Record<string, unknown>> {
-    const planId = parseInt(request.params().planId, 10);
-
-    const categories = await FundingPlanCategory.query().where('planId', planId);
-
-    return {
-      id: planId,
-      categories,
-    };
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  public async getFullPlan({ request, auth: { user } }: HttpContextContract): Promise<Plan> {
+  public async getPlan({ request, auth: { user } }: HttpContextContract): Promise<FundingPlanDetailsProps> {
     if (!user) {
       throw new Error('user is undefined');
     }
 
+    const { h } = request.qs();
+
     const application = await user.related('application').query().firstOrFail();
 
-    const plan = await FundingPlan.find(request.params().planId);
+    const planId = parseInt(request.params().planId, 10);
 
-    if (!plan) {
-      throw new Error('plan not found');
+    const categories = await FundingPlanCategory.query().where('planId', planId);
+
+    let history: CategoryHistoryItem[] = [];
+
+    if (h) {
+      history = await application.history(parseInt(h, 10));
     }
 
-    return plan.getFullPlan(application);
+    return {
+      id: planId,
+      categories: categories.map((c) => ({
+        id: c.id,
+        categoryId: c.categoryId,
+        amount: c.amount,
+        useGoal: c.useGoal,
+        goalDate: c.goalDate?.toISODate() ?? null,
+        recurrence: c.recurrence,
+      })),
+      history,
+    };
   }
+
+  // eslint-disable-next-line class-methods-use-this
+  // public async getFullPlan({ request, auth: { user } }: HttpContextContract): Promise<Plan> {
+  //   if (!user) {
+  //     throw new Error('user is undefined');
+  //   }
+
+  //   const application = await user.related('application').query().firstOrFail();
+
+  //   const plan = await FundingPlan.find(request.params().planId);
+
+  //   if (!plan) {
+  //     throw new Error('plan not found');
+  //   }
+
+  //   return plan.getFullPlan(application);
+  // }
 
   // eslint-disable-next-line class-methods-use-this
   public async updateOrCreateCategory({

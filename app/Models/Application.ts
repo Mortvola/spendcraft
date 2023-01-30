@@ -4,7 +4,7 @@ import {
   BaseModel, column, HasMany, hasMany, ModelAdapterOptions,
 } from '@ioc:Adonis/Lucid/Orm'
 import Database from '@ioc:Adonis/Lucid/Database';
-import { InstitutionProps } from 'Common/ResponseTypes';
+import { InstitutionProps, TransactionType } from 'Common/ResponseTypes';
 import User from 'App/Models/User'
 import Category from 'App/Models/Category';
 import Group from 'App/Models/Group';
@@ -12,16 +12,16 @@ import FundingPlan from 'App/Models/FundingPlan';
 import Institution from 'App/Models/Institution';
 import Transaction from 'App/Models/Transaction';
 import Loan from 'App/Models/Loan';
-import { GroupHistoryItem, CategoryHistoryItem } from 'App/Models/GroupHistoryItem';
+import CategoryHistoryItem from 'App/Models/CategoryHistoryItem';
 
 export default class Application extends BaseModel {
   @column({ isPrimary: true })
   public id: number
 
-  @column.dateTime({ autoCreate: true })
+  @column.dateTime({ autoCreate: true, serializeAs: null })
   public createdAt: DateTime
 
-  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  @column.dateTime({ autoCreate: true, autoUpdate: true, serializeAs: null })
   public updatedAt: DateTime
 
   @column()
@@ -45,59 +45,86 @@ export default class Application extends BaseModel {
   @hasMany(() => FundingPlan)
   public plans: HasMany<typeof FundingPlan>;
 
-  public async history(this: Application): Promise<Array<GroupHistoryItem>> {
+  public async history(this: Application, numberOfMonths: number): Promise<CategoryHistoryItem[]> {
+    const startDate = DateTime.now().set({
+      hour: 0, minute: 0, second: 0, millisecond: 0,
+    });
+    const endDate = startDate.minus({ months: numberOfMonths }).set({
+      hour: 0, minute: 0, second: 0, millisecond: 0,
+    });
+
     const data = await Database.query()
       .select(
-        Database.raw('EXTRACT(MONTH FROM date) AS month'),
-        Database.raw('EXTRACT(YEAR FROM date) AS year'),
-        'groups.id AS groupId',
-        'groups.name AS groupName',
-        'cats.id AS categoryId',
-        'cats.name as categoryName',
-        Database.raw('CAST(sum(transcats.amount) AS float) AS amount'),
+        Database.raw('CAST(EXTRACT(MONTH FROM date) AS integer) AS month'),
+        Database.raw('CAST(EXTRACT(YEAR FROM date) AS integer) AS year'),
+        'cats.id AS id',
+        Database.raw(`CAST(
+          sum(
+            CASE WHEN trans.type not in (${TransactionType.FUNDING_TRANSACTION}, ${TransactionType.REBALANCE_TRANSACTION}) THEN
+              transcats.amount
+            ELSE
+              0
+            END
+            ) AS float) AS expenses
+        `),
+        Database.raw(`CAST(
+          sum(
+            CASE WHEN trans.type = ${TransactionType.FUNDING_TRANSACTION} THEN
+              transcats.amount
+            ELSE
+              0
+            END
+            ) AS float) AS funding
+        `),
       )
       .from('transaction_categories AS transcats')
       .join('transactions AS trans', 'trans.id', 'transcats.transaction_id')
       .join('categories AS cats', 'cats.id', 'transcats.category_id')
-      .join('groups', 'groups.id', 'cats.group_id')
       .where('trans.application_id', this.id)
-      .where('groups.id', '!=', -1)
-      .whereNotIn('trans.type', [2, 3])
-      .groupBy('month', 'year', 'groups.id', 'groups.name', 'cats.id', 'cats.name')
-      .orderBy('groups.name')
-      .orderBy('cats.name')
-      .orderBy('year')
-      .orderBy('month');
+      .andWhere('trans.date', '>=', endDate.toISODate())
+      .groupBy('month', 'year', 'cats.id')
+      .orderBy('cats.id')
+      .orderBy('year', 'desc')
+      .orderBy('month', 'desc');
 
-    const history: GroupHistoryItem[] = [];
-    let currentGroup: GroupHistoryItem | null = null;
+    const history: CategoryHistoryItem[] = [];
     let currentCategory: CategoryHistoryItem | null = null;
 
-    data.forEach((item) => {
-      if (currentGroup === null || item.groupId !== currentGroup.id) {
-        history.push({
-          id: item.groupId,
-          name: item.groupName,
-          categories: [],
-        });
-        currentGroup = history[history.length - 1];
-        currentCategory = null;
-      }
+    let month = 0;
+    let year = 0;
 
-      if (currentCategory === null || item.categoryId !== currentCategory.id) {
-        currentGroup.categories.push({ id: item.categoryId, months: [] });
-        currentCategory = currentGroup.categories[currentGroup.categories.length - 1];
+    const decrementMonth = () => {
+      month -= 1;
+
+      if (month < 1) {
+        year -= 1;
+        month = 12;
+      }
+    }
+
+    data.forEach((category) => {
+      if (currentCategory === null || category.id !== currentCategory.id) {
+        month = startDate.month;
+        year = startDate.year;
+
+        history.push({
+          id: category.id,
+          months: [],
+        });
+        currentCategory = history[history.length - 1];
       }
 
       if (currentCategory === null) {
         throw new Error('category is null');
       }
 
-      currentCategory.months.push({
-        year: item.year,
-        month: item.month,
-        amount: item.amount,
-      });
+      while (month !== category.month || year !== category.year) {
+        currentCategory.months.push({ expenses: 0, funding: 0 })
+        decrementMonth();
+      }
+
+      currentCategory.months.push({ expenses: category.expenses, funding: category.funding });
+      decrementMonth();
     });
 
     return history;
@@ -145,6 +172,13 @@ export default class Application extends BaseModel {
     return await Category.query(options)
       .where('type', 'ACCOUNT TRANSFER')
       .whereHas('group', (query) => query.where('applicationId', this.id))
+      .firstOrFail();
+  }
+
+  public async getSystemGroup(options?: ModelAdapterOptions): Promise<Group> {
+    return await Group.query(options)
+      .where('type', 'SYSTEM')
+      .andWhere('applicationId', this.id)
       .firstOrFail();
   }
 

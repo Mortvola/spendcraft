@@ -32,7 +32,7 @@ class Institution extends BaseModel {
   @hasMany(() => Account)
   public accounts: HasMany<typeof Account>;
 
-  @column()
+  @column({ serializeAs: null })
   public applicationId: number;
 
   @belongsTo(() => Application)

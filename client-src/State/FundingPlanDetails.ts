@@ -5,13 +5,13 @@ import {
   FundingPlanDetailsProps,
   isUpdateFundingCategoryResponse,
 } from '../../common/ResponseTypes';
-import HistoryGroup from './HistoryGroup';
 import FundingPlanCategory from './FundingPlanCategory';
+import HistoryCategory from './HistoryCategory';
 
 class FundingPlanDetails {
   id: number;
 
-  history: HistoryGroup[];
+  history: HistoryCategory[];
 
   categories: FundingPlanCategory[];
 

@@ -3,7 +3,7 @@ import Http from '@mortvola/http';
 import FundingPlan from './FundingPlan';
 import FundingPlanDetails from './FundingPlanDetails';
 import { FundingPlanInterface, PlansInterface, StoreInterface } from './State';
-import { isFundingPlansResponse, isFundingPlanProps, isFundingPlanDetailsProps } from '../../common/ResponseTypes';
+import { isFundingPlansResponse, isFundingPlanProps, isFundingPlanDetailsProps, FundingPlanDetailsProps } from '../../common/ResponseTypes';
 
 class Plans implements PlansInterface {
   list: FundingPlan[] = [];
@@ -39,16 +39,14 @@ class Plans implements PlansInterface {
       this.details = null;
     }
     else {
-      const response = await Http.get(`/api/v1/funding-plans/${fundingPlan.id}/details`);
+      const response = await Http.get<FundingPlanDetailsProps>(`/api/v1/funding-plans/${fundingPlan.id}?h=12`);
 
       if (response.ok) {
         const body = await response.body();
 
-        if (isFundingPlanDetailsProps(body)) {
-          runInAction(() => {
-            this.details = new FundingPlanDetails(this.store, body);
-          });
-        }
+        runInAction(() => {
+          this.details = new FundingPlanDetails(this.store, body);
+        });
       }
     }
   }

@@ -492,6 +492,7 @@ export default class AccountsController {
   // eslint-disable-next-line class-methods-use-this
   public async uploadOfx({
     request,
+    response,
     auth: {
       user,
     },
@@ -523,6 +524,14 @@ export default class AccountsController {
     catch (error) {
       logger.error(error);
       await trx.rollback();
+
+      response.status(500);
+
+      response.send({
+        errors: [{
+          message: error.message,
+        }],
+      })
     }
   }
 }

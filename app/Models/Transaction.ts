@@ -13,7 +13,7 @@ class Transaction extends BaseModel {
   @column()
   public id: number;
 
-  @column.dateTime()
+  @column.dateTime({ serializeAs: null })
   public createdAt: DateTime;
 
   @column.date()

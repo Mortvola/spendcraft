@@ -25,8 +25,6 @@ class Transaction implements TransactionInterface {
 
   date: DateTime;
 
-  createdAt: DateTime;
-
   type: TransactionType;
 
   name: string;
@@ -58,7 +56,6 @@ class Transaction implements TransactionInterface {
 
     this.id = props.id;
     this.date = DateTime.fromISO(props.date);
-    this.createdAt = DateTime.fromISO(props.createdAt);
     this.type = props.type;
     this.comment = props.comment;
     this.duplicateOfTransactionId = props.duplicateOfTransactionId;

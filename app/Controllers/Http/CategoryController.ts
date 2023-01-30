@@ -2,7 +2,6 @@ import Database, { StrictValues } from '@ioc:Adonis/Lucid/Database';
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import Category, { GroupItem } from 'App/Models/Category';
 import CategoryTransfer from 'App/Models/CategoryTransfer';
-import { GroupHistoryItem } from 'App/Models/GroupHistoryItem';
 import AddGroupValidator from 'App/Validators/AddGroupValidator';
 import UpdateGroupValidator from 'App/Validators/UpdateGroupValidator';
 import DeleteGroupValidator from 'App/Validators/DeleteGroupValidator';
@@ -474,4 +473,3 @@ class CategoryController {
 }
 
 export default CategoryController;
-export { GroupHistoryItem };
