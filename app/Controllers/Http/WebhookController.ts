@@ -1,9 +1,7 @@
 /* eslint-disable max-classes-per-file */
 import compare from 'secure-compare';
 import { sha256 } from 'js-sha256';
-import { decodeProtectedHeader } from 'jose/util/decode_protected_header';
-import { jwtVerify } from 'jose/jwt/verify';
-import { parseJwk } from 'jose/jwk/parse';
+import { decodeProtectedHeader, importJWK, jwtVerify } from 'jose';
 import { DateTime } from 'luxon';
 import plaidClient, { PlaidError } from '@ioc:Plaid';
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
@@ -302,7 +300,7 @@ class WebhookController {
     const { key } = cachedKey;
 
     try {
-      const pk = await parseJwk(key);
+      const pk = await importJWK(key)
       const result = await jwtVerify(signedJwt, pk, { maxTokenAge: '5 min' });
 
       const body = request.raw();

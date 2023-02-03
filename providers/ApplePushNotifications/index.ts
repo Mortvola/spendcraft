@@ -1,7 +1,6 @@
 import fs from 'fs';
 import { context, FetchInit, Request, Response } from 'fetch-h2';
-import { SignJWT } from 'jose/jwt/sign';
-import { importPKCS8, KeyLike } from 'jose/key/import';
+import { SignJWT, importPKCS8, KeyLike } from 'jose';
 import { DateTime } from "luxon";
 import Application from 'App/Models/Application';
 import Logger from '@ioc:Adonis/Core/Logger';
