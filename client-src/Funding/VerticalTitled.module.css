@@ -1,0 +1,18 @@
+.vertical-titled {
+  display: flex;
+  flex-direction: column;
+  align-items: end;
+  width: 100%;
+}
+
+.vertical-titled > :first-child {
+  text-align: end;
+}
+
+.underscored > :first-child {
+  border-bottom: thin black solid;
+}
+
+.vertical-titled > * {
+  width: 100%;
+}

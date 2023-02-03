@@ -3,13 +3,8 @@ import FundingItem from './FundingItem';
 import { isGroup } from '../State/Group';
 import { isCategory } from '../State/Category';
 import { TreeNodeInterface, CategoryInterface } from '../State/State';
-
-export type FundingType = {
-  id?: number,
-  initialAmount: number,
-  amount: number,
-  categoryId: number,
-}
+import styles from './Funding.module.css';
+import { FundingType } from './Types';
 
 type PropsType = {
   groups: TreeNodeInterface[],
@@ -93,7 +88,8 @@ const Funding: React.FC<PropsType> = ({
 
     return (
       <FundingItem
-        key={`${category.id}`}
+        key={`c:${category.id}`}
+        fundingItem={fundingItem}
         name={category.name}
         initialAmount={initialAmount}
         funding={amount}
@@ -115,7 +111,7 @@ const Funding: React.FC<PropsType> = ({
       if (isGroup(node)) {
         if (node.id !== systemGroupId) {
           return (
-            <div key={node.id} className="fund-list-group">
+            <div key={`g:${node.id}`} className={styles.fundListGroup}>
               {node.name}
               {populateCategories(node.categories)}
             </div>

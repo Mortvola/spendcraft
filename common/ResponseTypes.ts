@@ -577,6 +577,16 @@ export interface FundingPlanProps {
   name: string;
 }
 
+export interface ProposedFundingCateggoryProps {
+  categoryId: number,
+  amount: number,
+  expectedToSpend: number,
+  adjusted: boolean,
+  adjustedReason: string | null,
+  previousFunding: number,
+  previousExpenses: number,
+}
+
 export const isFundingPlanProps = (r: unknown): r is FundingPlanProps => (
   (r as FundingPlanProps).id !== undefined
   && (r as FundingPlanProps).name !== undefined
@@ -600,6 +610,12 @@ export type CategoryFundingProps = {
   id?: number,
   amount: number,
   categoryId: number,
+
+  expectedToSpend?: number,
+  adjusted?: boolean,
+  adjustedReason?: string | null,
+  previousFunding?: number,
+  previousExpenses?: number,
 }
 
 export const isCategoryFundingProps = (r: unknown): r is CategoryFundingProps => (

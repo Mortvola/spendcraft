@@ -239,29 +239,8 @@ body {
   height: 100%;
 }
 
-.fund-list-item {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) repeat(3, minmax(0, 0.6fr));
-  align-items: center;
-}
-
 .cat-list-group div.fund-list-item:nth-child(odd) {
   background-color: whitesmoke;
-}
-
-.fund-list-amt {
-  justify-self: right;
-  padding-right: 8px;
-}
-
-.fund-list-cat-name {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.fund-list-group .fund-list-cat-name {
-  margin-left: 28px;
 }
 
 .unassigned-cat {
@@ -310,12 +289,6 @@ body {
 
 .category-select-item.selected {
   background-color: lightblue;
-}
-
-.cat-fund-title {
-  background-color: gray;
-  color: white;
-  overflow-y: scroll;
 }
 
 .cat-fund-table {

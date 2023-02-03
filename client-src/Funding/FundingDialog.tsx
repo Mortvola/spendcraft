@@ -12,11 +12,13 @@ import Amount from '../Amount';
 import { useStores } from '../State/mobxStore';
 import Transaction from '../State/Transaction';
 import {
-  FundingPlanProps, isFundingPlanResponse, isFundingPlansResponse, TransactionType,
+  FundingPlanProps, isFundingPlansResponse, TransactionType,
   CategoryFundingProps,
+  ProposedFundingCateggoryProps,
 } from '../../common/ResponseTypes';
-import Funding, { FundingType } from './Funding';
-import FundingPlanCategory from '../State/FundingPlanCategory';
+import Funding from './Funding';
+import { FundingPlanType, FundingType } from './Types'
+import styles from './Funding.module.css'
 
 type PropsType = {
   transaction?: Transaction;
@@ -43,11 +45,6 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
     ), 0)
   ), [fundingPoolCat]);
 
-  type FundingPlanType = {
-    planId: number;
-    categories: FundingType[]
-  }
-
   type ValueType = {
     date: string,
     funding: FundingPlanType,
@@ -69,6 +66,11 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
       initialAmount: getCategoryBalance(c.categoryId) - c.amount,
       amount: c.amount,
       categoryId: c.categoryId,
+      expectedToSpend: c.expectedToSpend,
+      adjusted: c.adjusted,
+      adjustedReason: c.adjustedReason,
+      previousFunding: c.previousFunding,
+      previousExpenses: c.previousExpenses,
     }))
   )
 
@@ -116,35 +118,19 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
     values: ValueType,
   ) => {
     const { value } = event.target;
-    setSelectedPlan(parseInt(value, 10));
-    const response = await Http.get(`/api/v1/funding-plans/${value}`);
+    const planId = parseInt(value, 10)
+    setSelectedPlan(planId);
+    const response = await Http.get<ProposedFundingCateggoryProps[]>(`/api/v1/funding-plans/${planId}/proposed`);
 
     if (response.ok) {
       const body = await response.body();
 
-      if (isFundingPlanResponse(body)) {
-        const newPlan = {
-          planId: body.id,
-          categories: getPlanCategories(
-            body.categories.map((c) => {
-              const fundingCategory = new FundingPlanCategory(c);
-
-              const category = categoryTree.getCategory(c.categoryId);
-
-              if (category === null) {
-                throw new Error('category is null');
-              }
-
-              return {
-                categoryId: c.categoryId,
-                amount: fundingCategory.monthlyAmount(category),
-              }
-            }),
-          ),
-        };
-        setFunding(newPlan);
-        resetForm({ values: { ...values, funding: newPlan } });
-      }
+      const newPlan = {
+        planId,
+        categories: getPlanCategories(body),
+      };
+      setFunding(newPlan);
+      resetForm({ values: { ...values, funding: newPlan } });
     }
   };
 
@@ -303,12 +289,6 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
         </div>
         <FormError name="date" />
         <div className="cat-fund-table">
-          <div className="fund-list-item cat-fund-title">
-            <div className="fund-list-cat-name">Category</div>
-            <div className="dollar-amount fund-list-amt">Current</div>
-            <div className="dollar-amount">Funding</div>
-            <div className="dollar-amount fund-list-amt">Balance</div>
-          </div>
           <Field name="funding">
             {({
               field: {
@@ -337,17 +317,19 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
           </Field>
           <FormError name="funding" />
         </div>
-        <div className="fund-list-item cat-fund-title">
-          <div className="fund-list-cat-name" />
-          <div className="dollar-amount fund-list-amt">Total</div>
-          <div className="dollar-amount"><Amount amount={total} /></div>
-          <div className="dollar-amount fund-list-amt" />
+        <div className={`${styles.fundListItem} ${styles.catFundTitle}`}>
+          <div className={styles.fundListCatName} />
+          <div className={styles.labeledAmount}>
+            Total
+            <Amount style={{ minWidth: '6rem' }} amount={total} />
+          </div>
+          <div className={`dollar-amount ${styles.fundListAmt}`} />
         </div>
       </div>
     </FormModal>
   );
 };
 
-export const useFundingDialog = makeUseModal<PropsType>(FundingDialog, { size: 'lg' });
+export const useFundingDialog = makeUseModal<PropsType>(FundingDialog);
 
 export default FundingDialog;

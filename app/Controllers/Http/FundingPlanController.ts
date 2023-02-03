@@ -3,7 +3,7 @@ import { schema } from '@ioc:Adonis/Core/Validator';
 import FundingPlan from 'App/Models/FundingPlan';
 import FundingPlanCategory from 'App/Models/FundingPlanCategory';
 import CategoryHistoryItem from 'App/Models/CategoryHistoryItem';
-import { FundingPlanDetailsProps } from 'Common/ResponseTypes';
+import { FundingPlanDetailsProps, ProposedFundingCateggoryProps } from 'Common/ResponseTypes';
 
 class FundingPlanController {
   // eslint-disable-next-line class-methods-use-this
@@ -83,6 +83,19 @@ class FundingPlanController {
       })),
       history,
     };
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  public async getProposed({ request, auth: { user } }: HttpContextContract): Promise<ProposedFundingCateggoryProps[]> {
+    if (!user) {
+      throw new Error('user is undefined');
+    }
+
+    const planId = parseInt(request.params().planId, 10);
+
+    const application = await user.related('application').query().firstOrFail();
+
+    return application.getProposedFunding(planId);
   }
 
   // eslint-disable-next-line class-methods-use-this

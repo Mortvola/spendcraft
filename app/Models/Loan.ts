@@ -126,7 +126,6 @@ export default class Loan extends BaseModel {
         transaction: {
           id: -1,
           date: this.startDate.toFormat('yyyy-MM-dd'),
-          createdAt: this.createdAt.toISO(),
           accountTransaction: {
             name: 'Starting Balance',
           },
