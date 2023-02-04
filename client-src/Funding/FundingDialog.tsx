@@ -101,15 +101,17 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
   if (!plansInitialized) {
     setPlansInitialized(true);
 
-    (async () => {
-      const response = await Http.get('/api/v1/funding-plans');
+    if (!transaction) {
+      (async () => {
+        const response = await Http.get('/api/v1/funding-plans');
 
-      const body = await response.body();
+        const body = await response.body();
 
-      if (isFundingPlansResponse(body)) {
-        setPlans(body);
-      }
-    })()
+        if (isFundingPlansResponse(body)) {
+          setPlans(body);
+        }
+      })()
+    }
   }
 
   const handlePlanChange = async (
@@ -257,27 +259,33 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
     >
       <div className="fund-container">
         <div className="funding-header">
-          <label>
-            Plan:
-            <Field name="plans">
-              {({
-                form: {
-                  resetForm,
-                  values,
-                },
-              }: FieldProps<ValueType>) => (
-                <select
-                  className="form-control"
-                  value={selectedPlan}
-                  onChange={(event) => (
-                    handlePlanChange(event, resetForm, values)
-                  )}
-                >
-                  {populatePlans()}
-                </select>
-              )}
-            </Field>
-          </label>
+          {
+            !transaction
+              ? (
+                <label>
+                  Plan:
+                  <Field name="plans">
+                    {({
+                      form: {
+                        resetForm,
+                        values,
+                      },
+                    }: FieldProps<ValueType>) => (
+                      <select
+                        className="form-control"
+                        value={selectedPlan}
+                        onChange={(event) => (
+                          handlePlanChange(event, resetForm, values)
+                        )}
+                      >
+                        {populatePlans()}
+                      </select>
+                    )}
+                  </Field>
+                </label>
+              )
+              : null
+          }
           <label>
             Date:
             <Field className="form-control" type="date" name="date" />
