@@ -6,7 +6,7 @@ export default class UpdateGroupValidator {
     this.ctx = ctx;
   }
 
-  public refs = schema.refs({ applicationId: this.ctx.auth.user ? this.ctx.auth.user.applicationId : null });
+  public refs = schema.refs({ budgetId: this.ctx.auth.user ? this.ctx.auth.user.budgetId : null });
 
   public schema = schema.create({
     name: schema.string({}, [
@@ -15,7 +15,7 @@ export default class UpdateGroupValidator {
         table: 'groups',
         column: 'name',
         where: {
-          application_id: this.refs.applicationId,
+          application_id: this.refs.budgetId,
         },
         whereNot: {
           id: this.ctx.request.params().groupId,

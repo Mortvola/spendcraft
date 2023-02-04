@@ -1,5 +1,5 @@
 import { BaseCommand } from '@adonisjs/core/build/standalone'
-import Application from 'App/Models/Application';
+import Budget from 'App/Models/Budget';
 import applePushNotifications from '@ioc:ApplePushNotifications';
 
 export default class ApnPush extends BaseCommand {
@@ -31,10 +31,10 @@ export default class ApnPush extends BaseCommand {
 
   // eslint-disable-next-line class-methods-use-this
   public async run() {
-    const applications = await Application.all();
+    const budgets = await Budget.all();
 
-    await Promise.all(applications.map(async (application) => {
-      await applePushNotifications.sendPushNotifications(application);
+    await Promise.all(budgets.map(async (budget) => {
+      await applePushNotifications.sendPushNotifications(budget);
     }));
   }
 }

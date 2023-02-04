@@ -4,7 +4,7 @@ import {
   BaseModel, BelongsTo, belongsTo, column, HasMany, hasMany,
 } from '@ioc:Adonis/Lucid/Orm';
 import FundingPlanCategory from 'App/Models/FundingPlanCategory';
-import Application from 'App/Models/Application';
+import Budget from 'App/Models/Budget';
 import CategoryHistoryItem from './CategoryHistoryItem';
 
 export type PlanCategory = {
@@ -33,23 +33,23 @@ export default class FundingPlan extends BaseModel {
   @column()
   public name: string;
 
-  @column({ serializeAs: null })
-  public applicationId: number;
+  @column({ serializeAs: null, columnName: 'application_id' })
+  public budgetId: number;
 
-  @belongsTo(() => Application)
-  public application: BelongsTo<typeof Application>;
+  @belongsTo(() => Budget)
+  public budget: BelongsTo<typeof Budget>;
 
   @hasMany(() => FundingPlanCategory)
   public categories: HasMany<typeof FundingPlanCategory>
 
-  // public async getFullPlan(this: FundingPlan, application: Application): Promise<Plan> {
+  // public async getFullPlan(this: FundingPlan, budget: Budget): Promise<Plan> {
   //   const categories = await this.related('categories').query();
 
   //   return {
   //     id: this.id,
   //     name: this.name,
   //     categories,
-  //     history: await application.history(),
+  //     history: await budget.history(),
   //   };
   // }
 }

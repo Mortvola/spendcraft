@@ -71,7 +71,7 @@ export default class TransactionsController {
       throw new Error('user is not defined');
     }
 
-    const application = await user.related('application').query().firstOrFail();
+    const budget = await user.related('budget').query().firstOrFail();
 
     const { trxId } = request.params();
     const requestData = await request.validate({
@@ -118,7 +118,7 @@ export default class TransactionsController {
       }
 
       // Get the 'unassigned' category id
-      const unassigned = await application.getUnassignedCategory({ client: trx });
+      const unassigned = await budget.getUnassignedCategory({ client: trx });
 
       const acctTrans = await AccountTransaction.findByOrFail('transactionId', trxId, { client: trx });
 
@@ -323,7 +323,7 @@ export default class TransactionsController {
       throw new Error('user is not defined');
     }
 
-    const application = await user.related('application').query().firstOrFail();
+    const budget = await user.related('budget').query().firstOrFail();
 
     const trx = await Database.transaction();
 
@@ -353,7 +353,7 @@ export default class TransactionsController {
             throw new Error('acctTransaction is null');
           }
 
-          const unassignedCat = await application.getUnassignedCategory({ client: trx });
+          const unassignedCat = await budget.getUnassignedCategory({ client: trx });
 
           unassignedCat.amount -= acctTransaction.amount;
 
@@ -441,9 +441,9 @@ export default class TransactionsController {
       throw new Error('user is not defined');
     }
 
-    const application = await user.related('application').query().firstOrFail();
+    const budget = await user.related('budget').query().firstOrFail();
 
-    const rebalances = await application.related('transactions').query()
+    const rebalances = await budget.related('transactions').query()
       .preload('transactionCategories')
       .where('type', TransactionType.REBALANCE_TRANSACTION)
       .orderBy('date', 'desc');

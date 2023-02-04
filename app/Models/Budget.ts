@@ -14,7 +14,9 @@ import Transaction from 'App/Models/Transaction';
 import Loan from 'App/Models/Loan';
 import CategoryHistoryItem from 'App/Models/CategoryHistoryItem';
 
-export default class Application extends BaseModel {
+export default class Budget extends BaseModel {
+  public static table = 'applications';
+
   @column({ isPrimary: true })
   public id: number
 
@@ -45,7 +47,7 @@ export default class Application extends BaseModel {
   @hasMany(() => FundingPlan)
   public plans: HasMany<typeof FundingPlan>;
 
-  public async history(this: Application, numberOfMonths: number): Promise<CategoryHistoryItem[]> {
+  public async history(this: Budget, numberOfMonths: number): Promise<CategoryHistoryItem[]> {
     const startDate = DateTime.now().set({
       hour: 0, minute: 0, second: 0, millisecond: 0,
     });
@@ -130,7 +132,7 @@ export default class Application extends BaseModel {
     return history;
   }
 
-  public async getConnectedAccounts(this: Application): Promise<InstitutionProps[]> {
+  public async getConnectedAccounts(this: Budget): Promise<InstitutionProps[]> {
     const result = await this
       .related('institutions').query()
       .preload('accounts');
@@ -157,32 +159,32 @@ export default class Application extends BaseModel {
   public async getUnassignedCategory(options?: ModelAdapterOptions): Promise<Category> {
     return await Category.query(options)
       .where('type', 'UNASSIGNED')
-      .whereHas('group', (query) => query.where('applicationId', this.id))
+      .whereHas('group', (query) => query.where('budgetId', this.id))
       .firstOrFail();
   }
 
   public async getFundingPoolCategory(options?: ModelAdapterOptions): Promise<Category> {
     return await Category.query(options)
       .where('type', 'FUNDING POOL')
-      .whereHas('group', (query) => query.where('applicationId', this.id))
+      .whereHas('group', (query) => query.where('budgetId', this.id))
       .firstOrFail();
   }
 
   public async getAccountTransferCategory(options?: ModelAdapterOptions): Promise<Category> {
     return await Category.query(options)
       .where('type', 'ACCOUNT TRANSFER')
-      .whereHas('group', (query) => query.where('applicationId', this.id))
+      .whereHas('group', (query) => query.where('budgetId', this.id))
       .firstOrFail();
   }
 
   public async getSystemGroup(options?: ModelAdapterOptions): Promise<Group> {
     return await Group.query(options)
       .where('type', 'SYSTEM')
-      .andWhere('applicationId', this.id)
+      .andWhere('budgetId', this.id)
       .firstOrFail();
   }
 
-  public async initialize(this: Application): Promise<void> {
+  public async initialize(this: Budget): Promise<void> {
     if (this.$trx === undefined) {
       throw new Error('transaction must be defined');
     }
@@ -191,7 +193,7 @@ export default class Application extends BaseModel {
       .fill({
         name: 'System',
         type: 'SYSTEM',
-        applicationId: this.id,
+        budgetId: this.id,
         system: true,
       })
       .save();
@@ -227,7 +229,7 @@ export default class Application extends BaseModel {
       .fill({
         name: 'NoGroup',
         type: 'NO GROUP',
-        applicationId: this.id,
+        budgetId: this.id,
         system: true,
       })
       .save();
@@ -235,7 +237,7 @@ export default class Application extends BaseModel {
     await (new FundingPlan()).useTransaction(this.$trx)
       .fill({
         name: 'Default Plan',
-        applicationId: this.id,
+        budgetId: this.id,
       })
       .save();
   }
@@ -246,7 +248,7 @@ export default class Application extends BaseModel {
 
     const cats = await Category.query()
       .whereHas('group', (query) => {
-        query.where('applicationId', this.id)
+        query.where('budgetId', this.id)
       });
 
     const fundingCats = await plan.related('categories').query();

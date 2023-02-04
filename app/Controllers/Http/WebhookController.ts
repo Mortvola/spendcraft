@@ -8,7 +8,7 @@ import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import { RequestContract } from '@ioc:Adonis/Core/Request';
 import Database from '@ioc:Adonis/Lucid/Database';
 import Institution from 'App/Models/Institution';
-import Application from 'App/Models/Application';
+import Budget from 'App/Models/Budget';
 import Mail from '@ioc:Adonis/Addons/Mail';
 import Env from '@ioc:Adonis/Core/Env';
 import { Exception } from '@poppinss/utils';
@@ -140,9 +140,9 @@ class WebhookController {
         if (event.error.error_code === 'ITEM_LOGIN_REQUIRED') {
           const institution = await Institution.findByOrFail('plaid_item_id', event.item_id);
 
-          const application = await institution.related('application').query().firstOrFail();
+          const budget = await institution.related('budget').query().firstOrFail();
 
-          const users = await application.related('users').query();
+          const users = await budget.related('users').query();
 
           await Promise.all(users.map((user) => (
             Mail.send((message) => {
@@ -173,7 +173,7 @@ class WebhookController {
       const institution = await Institution.findByOrFail('plaidItemId', event.item_id, { client: trx });
 
       const accounts = await institution.related('accounts').query().where('closed', false);
-      const application = await Application.findOrFail(institution.applicationId);
+      const budget = await Budget.findOrFail(institution.budgetId);
 
       await Promise.all(accounts.map(async (acct) => {
         if (institution.accessToken === null || institution.accessToken === '') {
@@ -183,14 +183,14 @@ class WebhookController {
         return (
           acct.sync(
             institution.accessToken,
-            application,
+            budget,
           )
         );
       }));
 
       await trx.commit();
 
-      await applePushNotifications.sendPushNotifications(application)
+      await applePushNotifications.sendPushNotifications(budget)
     }
     catch (error) {
       Logger.error({ err: error }, `default update failed, event: ${JSON.stringify(event)}`);

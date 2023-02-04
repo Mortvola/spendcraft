@@ -30,7 +30,7 @@ export default class AccountsController {
       throw new Error('user not defined');
     }
 
-    const application = await user.related('application').query().firstOrFail();
+    const budget = await user.related('budget').query().firstOrFail();
 
     const accountId = parseInt(request.params().acctId, 10);
 
@@ -45,7 +45,7 @@ export default class AccountsController {
 
     result.balance = acct.balance;
 
-    const transactions = await application
+    const transactions = await budget
       .related('transactions').query()
       .whereHas('accountTransaction', (query) => {
         query.where('account_id', accountId)
@@ -83,13 +83,13 @@ export default class AccountsController {
       throw new Error('user not defined');
     }
 
-    const application = await user.related('application').query().firstOrFail();
+    const budget = await user.related('budget').query().firstOrFail();
 
     const accountId = parseInt(request.params().acctId, 10);
 
     // Determine if the account belongs to the authenticated user
     // and get the balance
-    const pending = await application
+    const pending = await budget
       .related('transactions').query()
       .whereHas('accountTransaction', (query) => {
         query.where('account_id', accountId)
@@ -134,7 +134,7 @@ export default class AccountsController {
       throw new Error('user not defined');
     }
 
-    const application = await user.related('application').query().firstOrFail();
+    const budget = await user.related('budget').query().firstOrFail();
 
     const { acctId } = request.params();
     const requestData = await request.validate({
@@ -168,7 +168,7 @@ export default class AccountsController {
         comment: requestData.comment,
       });
 
-      await transaction.related('application').associate(application);
+      await transaction.related('budget').associate(budget);
 
       const acctTransaction = await account.related('accountTransactions').create({
         name: requestData.name,
@@ -194,7 +194,7 @@ export default class AccountsController {
         // We only want to update the unassigned category balance if 
         // this account is tracking categorized transactions
         if (account.tracking === 'Transactions') {
-          const unassignedCat = await application.getUnassignedCategory({ client: trx });
+          const unassignedCat = await budget.getUnassignedCategory({ client: trx });
 
           unassignedCat.amount += acctTransaction.amount;
 
@@ -502,7 +502,7 @@ export default class AccountsController {
       throw new Error('user not defined');
     }
 
-    const application = await user.related('application').query().firstOrFail();
+    const budget = await user.related('budget').query().firstOrFail();
 
     const { acctId } = request.params();
 
@@ -517,7 +517,7 @@ export default class AccountsController {
         throw new Exception('missing ofx data', 400);
       }
 
-      await account.processOfx(body, application);
+      await account.processOfx(body, budget);
 
       await trx.commit();
     }

@@ -16,7 +16,7 @@ import jwt from 'jsonwebtoken';
 import Env from '@ioc:Adonis/Core/Env';
 import Mail from '@ioc:Adonis/Addons/Mail';
 import { Exception } from '@poppinss/utils';
-import Application from 'App/Models/Application';
+import Budget from 'App/Models/Budget';
 import ApnsToken from './ApnsToken';
 
 type PassCode = {
@@ -74,19 +74,19 @@ export default class User extends BaseModel {
     }
   }
 
-  @belongsTo(() => Application)
-  public application: BelongsTo<typeof Application>;
+  @belongsTo(() => Budget)
+  public budget: BelongsTo<typeof Budget>;
 
-  @column({ serializeAs: null })
-  public applicationId: number;
+  @column({ serializeAs: null, columnName: 'application_id' })
+  public budgetId: number;
 
   @hasMany(() => ApnsToken)
   public apnsTokens: HasMany<typeof ApnsToken>
 
   public async getConnectedAccounts(this: User): Promise<InstitutionProps[]> {
-    const application = await this.related('application').query().firstOrFail();
+    const budget = await this.related('budget').query().firstOrFail();
 
-    return application.getConnectedAccounts();
+    return budget.getConnectedAccounts();
   }
 
   // eslint-disable-next-line class-methods-use-this

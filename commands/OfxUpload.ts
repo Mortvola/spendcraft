@@ -60,9 +60,9 @@ export default class OfxUpload extends BaseCommand {
         throw new Error('Username not found');
       }
 
-      const application = await user.related('application').query().firstOrFail();
+      const budget = await user.related('budget').query().firstOrFail();
 
-      const institutions = await application.related('institutions').query()
+      const institutions = await budget.related('institutions').query()
         .whereHas('accounts', (accountQuery) => accountQuery.where('tracking', '!=', 'Balances'))
         .orderBy('name');
 
@@ -92,7 +92,7 @@ export default class OfxUpload extends BaseCommand {
         throw new Error('account not found');
       }
 
-      await account.processOfx(data.toString(), application);
+      await account.processOfx(data.toString(), budget);
 
       await trx.commit();
     }

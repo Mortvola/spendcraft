@@ -2,7 +2,7 @@ import fs from 'fs';
 import { context, FetchInit, Request, Response } from 'fetch-h2';
 import { SignJWT, importPKCS8, KeyLike } from 'jose';
 import { DateTime } from "luxon";
-import Application from 'App/Models/Application';
+import Budget from 'App/Models/Budget';
 import Logger from '@ioc:Adonis/Core/Logger';
 import ApnsToken from 'App/Models/ApnsToken';
 
@@ -15,16 +15,16 @@ class ApplePushNotifications {
 
   providerJwt: string | null = null;
 
-  public async sendPushNotifications(application: Application) {
+  public async sendPushNotifications(budget: Budget) {
     const { fetch, disconnectAll } = context();
 
     try {
-      const unassigned = await application.getUnassignedCategory();
-      const transactions = await unassigned.transactions(application);
+      const unassigned = await budget.getUnassignedCategory();
+      const transactions = await unassigned.transactions(budget);
 
       if (transactions.length > 0) {
-        const users = await application.related('users').query();
-        // const users = await User.query().where('applicationId', application.id)
+        const users = await budget.related('users').query();
+        // const users = await User.query().where('applicationId', budget.id)
 
         if (users.length > 0) {
           await Promise.all(users.map(async (user) => {

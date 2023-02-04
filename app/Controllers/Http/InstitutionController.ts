@@ -15,7 +15,7 @@ import AccountTransaction from 'App/Models/AccountTransaction';
 import TransactionCategory from 'App/Models/TransactionCategory';
 import { DateTime } from 'luxon';
 import BalanceHistory from 'App/Models/BalanceHistory';
-import Application from 'App/Models/Application';
+import Budget from 'App/Models/Budget';
 import { Exception } from '@poppinss/utils';
 import { CountryCode, AccountType as PlaidAccountType } from 'plaid';
 import Env from '@ioc:Adonis/Core/Env'
@@ -60,7 +60,7 @@ class InstitutionController {
       throw new Error('user is not defined');
     }
 
-    const application = await user.related('application').query().firstOrFail();
+    const budget = await user.related('budget').query().firstOrFail();
 
     const requestData = await request.validate({
       schema: schema.create({
@@ -87,7 +87,7 @@ class InstitutionController {
     if (requestData.institution.institutionId) {
       let inst = await Institution
         .query()
-        .where({ institutionId: requestData.institution.institutionId, applicationId: application.id })
+        .where({ institutionId: requestData.institution.institutionId, budgetId: budget.id })
         .first();
 
       if (!inst) {
@@ -103,7 +103,7 @@ class InstitutionController {
             plaidItemId: tokenResponse.item_id,
             name: requestData.institution.name,
             accessToken: tokenResponse.access_token,
-            applicationId: application.id,
+            budgetId: budget.id,
           })
           .save();
       }
@@ -126,7 +126,7 @@ class InstitutionController {
       const inst = await (new Institution())
         .fill({
           name: requestData.institution.name,
-          applicationId: application.id,
+          budgetId: budget.id,
         })
         .useTransaction(trx)
         .save();
@@ -142,7 +142,7 @@ class InstitutionController {
 
       if (requestData.accounts) {
         accounts = await InstitutionController.addOfflineAccounts(
-          application, inst, requestData.accounts, requestData.startDate, { client: trx },
+          budget, inst, requestData.accounts, requestData.startDate, { client: trx },
         );
       }
 
@@ -217,7 +217,7 @@ class InstitutionController {
   }
 
   private static async insertStartingBalance(
-    application: Application,
+    budget: Budget,
     acct: Account,
     startDate: DateTime,
     startingBalance: number,
@@ -230,7 +230,7 @@ class InstitutionController {
       .fill({
         date: startDate,
         sortOrder: -1,
-        applicationId: application.id,
+        budgetId: budget.id,
         type: TransactionType.STARTING_BALANCE,
       });
 
@@ -283,7 +283,7 @@ class InstitutionController {
 
   // eslint-disable-next-line class-methods-use-this
   private static async addOnlineAccounts(
-    application: Application,
+    budget: Budget,
     institution: Institution,
     accounts: OnlineAccount[],
     startDate: string,
@@ -297,7 +297,7 @@ class InstitutionController {
 
     const newAccounts: Account[] = [];
 
-    const fundingPool = await application.getFundingPoolCategory(options);
+    const fundingPool = await budget.getFundingPoolCategory(options);
 
     // eslint-disable-next-line no-restricted-syntax
     for (const account of accounts) {
@@ -332,7 +332,7 @@ class InstitutionController {
         if (acct.tracking !== 'Balances') {
           // eslint-disable-next-line no-await-in-loop
           const sum = await acct.addTransactions(
-            institution.accessToken, start, application,
+            institution.accessToken, start, budget,
           );
 
           // eslint-disable-next-line no-await-in-loop
@@ -341,7 +341,7 @@ class InstitutionController {
           // Insert the 'starting balance' transaction
           // eslint-disable-next-line no-await-in-loop
           await InstitutionController.insertStartingBalance(
-            application, acct, start, acct.balance - sum, fundingPool, options,
+            budget, acct, start, acct.balance - sum, fundingPool, options,
           );
         }
         else {
@@ -357,7 +357,7 @@ class InstitutionController {
       }
     }
 
-    const unassigned = await application.getUnassignedCategory(options);
+    const unassigned = await budget.getUnassignedCategory(options);
 
     return {
       accounts: newAccounts.map((a) => ({
@@ -381,7 +381,7 @@ class InstitutionController {
 
   // eslint-disable-next-line class-methods-use-this
   private static async addOfflineAccounts(
-    application: Application,
+    budget: Budget,
     institution: Institution,
     accounts: OfflineAccount[],
     startDate: string,
@@ -391,7 +391,7 @@ class InstitutionController {
   ): Promise<AddAccountsResponse> {
     const newAccounts: Account[] = [];
 
-    const fundingPool = await application.getFundingPoolCategory(options);
+    const fundingPool = await budget.getFundingPoolCategory(options);
 
     const start = DateTime.fromISO(startDate);
 
@@ -422,7 +422,7 @@ class InstitutionController {
       if (acct.tracking !== 'Balances') {
         // eslint-disable-next-line no-await-in-loop
         await InstitutionController.insertStartingBalance(
-          application, acct, start, account.balance, fundingPool, options,
+          budget, acct, start, account.balance, fundingPool, options,
         );
       }
       else {
@@ -466,7 +466,7 @@ class InstitutionController {
       throw new Error('user is not defined');
     }
 
-    const application = await user.related('application').query().firstOrFail();
+    const budget = await user.related('budget').query().firstOrFail();
 
     const requestData = await request.validate({
       schema: schema.create({
@@ -507,12 +507,12 @@ class InstitutionController {
 
       if (requestData.plaidAccounts) {
         result = await InstitutionController.addOnlineAccounts(
-          application, institution, requestData.plaidAccounts, requestData.startDate, { client: trx },
+          budget, institution, requestData.plaidAccounts, requestData.startDate, { client: trx },
         );
       }
       else if (requestData.offlineAccounts) {
         result = await InstitutionController.addOfflineAccounts(
-          application, institution, requestData.offlineAccounts, requestData.startDate, { client: trx },
+          budget, institution, requestData.offlineAccounts, requestData.startDate, { client: trx },
         );
       }
       else {
@@ -541,13 +541,13 @@ class InstitutionController {
       throw new Error('user is not defined');
     }
 
-    const application = await user.related('application').query().firstOrFail();
+    const budget = await user.related('budget').query().firstOrFail();
 
     const trx = await Database.transaction();
 
     try {
       const institutions = await Institution.query({ client: trx })
-        .where('applicationId', application.id)
+        .where('budgetId', budget.id)
         .whereNotNull('accessToken')
         .andWhere('acessToken', '!=', '');
 
@@ -561,7 +561,7 @@ class InstitutionController {
             throw new Exception(`access token not set for ${institution.plaidItemId}`);
           }
 
-          return acct.sync(institution.accessToken, application)
+          return acct.sync(institution.accessToken, budget)
         }));
       }));
 
@@ -588,7 +588,7 @@ class InstitutionController {
       throw new Error('user is not defined');
     }
 
-    const application = await user.related('application').query().firstOrFail();
+    const budget = await user.related('budget').query().firstOrFail();
 
     const trx = await Database.transaction();
 
@@ -604,7 +604,7 @@ class InstitutionController {
       let result: AccountSyncResult | null = null;
 
       result = await account.sync(
-        institution.accessToken, application,
+        institution.accessToken, budget,
       );
 
       await trx.commit();
@@ -679,14 +679,14 @@ class InstitutionController {
       throw new Error('user is not defined');
     }
 
-    const application = await user.related('application').query().firstOrFail();
+    const budget = await user.related('budget').query().firstOrFail();
 
     const trx = await Database.transaction();
 
     try {
       const account = await Account.findOrFail(request.params().acctId, { client: trx });
 
-      const result = await InstitutionController.deleteAccounts([account], application, trx);
+      const result = await InstitutionController.deleteAccounts([account], budget, trx);
 
       await trx.commit();
 
@@ -701,7 +701,7 @@ class InstitutionController {
 
   private static async deleteAccounts(
     accounts: Account[],
-    application: Application,
+    budget: Budget,
     trx: TransactionClientContract,
   ): Promise<CategoryBalanceProps[]> {
     const categoryBalances: CategoryBalanceProps[] = [];
@@ -725,7 +725,7 @@ class InstitutionController {
           if (transCats.length === 0) {
             if (acct.tracking === 'Transactions') {
               // eslint-disable-next-line no-await-in-loop
-              const unassignedCat = await application.getUnassignedCategory({ client: trx });
+              const unassignedCat = await budget.getUnassignedCategory({ client: trx });
 
               unassignedCat.amount -= acctTran.amount;
 
@@ -797,7 +797,7 @@ class InstitutionController {
       throw new Error('user is not defined');
     }
 
-    const application = await user.related('application').query().firstOrFail();
+    const budget = await user.related('budget').query().firstOrFail();
 
     const trx = await Database.transaction();
 
@@ -805,7 +805,7 @@ class InstitutionController {
       const accounts = await Account.query({ client: trx }).where('institutionId', request.params().instId);
 
       // eslint-disable-next-line no-restricted-syntax
-      const result = await InstitutionController.deleteAccounts(accounts, application, trx);
+      const result = await InstitutionController.deleteAccounts(accounts, budget, trx);
 
       await (await Institution.findOrFail(request.params().instId, { client: trx })).delete();
 

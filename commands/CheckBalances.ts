@@ -1,7 +1,7 @@
 import { BaseCommand, flags } from '@adonisjs/core/build/standalone'
 import Database from '@ioc:Adonis/Lucid/Database';
 import Category from 'App/Models/Category';
-import Application from 'App/Models/Application';
+import Budget from 'App/Models/Budget';
 import Account from 'App/Models/Account';
 import AccountTransaction from 'App/Models/AccountTransaction';
 
@@ -40,16 +40,16 @@ export default class CheckBalances extends BaseCommand {
     const trx = await Database.transaction();
 
     try {
-      let apps: Application[] = [];
+      let apps: Budget[] = [];
 
       if (this.user) {
-        apps = await Application.query({ client: trx })
+        apps = await Budget.query({ client: trx })
           .whereHas('users', (query) => {
             query.where('username', this.user)
           });
       }
       else {
-        apps = await Application.query({ client: trx });
+        apps = await Budget.query({ client: trx });
       }
 
       type Failures = {
@@ -168,7 +168,7 @@ export default class CheckBalances extends BaseCommand {
     const trx = await Database.transaction();
 
     try {
-      const apps = await Application.all({ client: trx });
+      const apps = await Budget.all({ client: trx });
 
       type Failures = {
         account: Account,

@@ -33,8 +33,8 @@ export default class Loan extends BaseModel {
   @column()
   public rate: number;
 
-  @column({ serializeAs: null })
-  public applicationId: number;
+  @column({ serializeAs: null, columnName: 'application_id' })
+  public budgetId: number;
 
   @hasMany(() => LoanTransaction)
   public loanTransactions: HasMany<typeof LoanTransaction>;

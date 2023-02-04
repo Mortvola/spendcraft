@@ -6,7 +6,7 @@ import Logger from '@ioc:Adonis/Core/Logger';
 import Mail from '@ioc:Adonis/Addons/Mail';
 import User from 'App/Models/User';
 import Database from '@ioc:Adonis/Lucid/Database';
-import Application from 'App/Models/Application';
+import Budget from 'App/Models/Budget';
 import { sha256 } from 'js-sha256';
 import { DateTime } from 'luxon';
 
@@ -47,11 +47,11 @@ export default class AuthController {
 
     const trx = await Database.transaction();
 
-    const application = await (new Application())
+    const budget = await (new Budget())
       .useTransaction(trx)
       .save();
 
-    await application.initialize();
+    await budget.initialize();
 
     /**
      * Create a new user
@@ -62,7 +62,7 @@ export default class AuthController {
         username: userDetails.username,
         email: userDetails.email,
         password: userDetails.password,
-        applicationId: application.id,
+        budgetId: budget.id,
       });
 
     user.generatePassCode();

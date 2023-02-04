@@ -1,6 +1,6 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import Database from '@ioc:Adonis/Lucid/Database';
-import Application from 'App/Models/Application';
+import Budget from 'App/Models/Budget';
 import { BudgetProgressReportResponse, TransactionType } from 'Common/ResponseTypes';
 import { DateTime } from 'luxon';
 
@@ -19,11 +19,11 @@ class ReportController {
       throw new Error('user not defined');
     }
 
-    const application = await user.related('application').query().firstOrFail();
+    const budget = await user.related('budget').query().firstOrFail();
 
     switch (request.params().report) {
       case 'networth':
-        return ReportController.networth(application);
+        return ReportController.networth(budget);
 
       case 'payee': {
         const {
@@ -32,7 +32,7 @@ class ReportController {
           pc,
           a,
         } = request.qs();
-        return ReportController.payee(application, startDate, endDate, pc, a);
+        return ReportController.payee(budget, startDate, endDate, pc, a);
       }
 
       case 'category': {
@@ -41,15 +41,15 @@ class ReportController {
           endDate,
           c,
         } = request.qs();
-        return ReportController.category(application, startDate, endDate, c);
+        return ReportController.category(budget, startDate, endDate, c);
       }
 
       case 'income-vs-expenses': {
-        return ReportController.incomeVsExpenses(application)
+        return ReportController.incomeVsExpenses(budget)
       }
 
       case 'funding-history': {
-        return ReportController.fundingHistory(application)
+        return ReportController.fundingHistory(budget)
       }
 
       case 'budget-progress': {
@@ -58,7 +58,7 @@ class ReportController {
         } = request.qs();
         const startDate = DateTime.fromFormat(`1-${m}`, 'd-M-yyyy');
         const endDate = startDate.endOf('month');
-        return ReportController.budgetProgress(application, startDate, endDate);
+        return ReportController.budgetProgress(budget, startDate, endDate);
       }
 
       default:
@@ -66,7 +66,7 @@ class ReportController {
     }
   }
 
-  private static async networth(application: Application): Promise<NetworthReportType> {
+  private static async networth(budget: Budget): Promise<NetworthReportType> {
     const listCategories = (categories: { name: string }[]): string => {
       let cats = '';
 
@@ -84,7 +84,7 @@ class ReportController {
           .from('balance_histories')
           .join('accounts', 'accounts.id', 'balance_histories.account_id')
           .join('institutions', 'institutions.id', 'accounts.institution_id')
-          .where('application_id', application.id)
+          .where('application_id', budget.id)
           .andWhere('accounts.closed', false)
           .union((query2) => {
             query2.select(Database.raw('min(date) as date'))
@@ -92,7 +92,7 @@ class ReportController {
               .join('transactions as t', 't.id', 'at.transaction_id')
               .join('accounts as a', 'a.id', 'at.account_id')
               .join('institutions as i', 'i.id', 'a.institution_id')
-              .where('i.application_id', application.id)
+              .where('i.application_id', budget.id)
               .andWhere('a.closed', false)
               .andWhere('a.tracking', '!=', 'Balances')
               .andWhereIn('t.type', [
@@ -123,7 +123,7 @@ class ReportController {
       from balance_histories AS hist
       join accounts ON accounts.id = hist.account_id
       join institutions ON institutions.id = accounts.institution_id
-      where institutions.application_id = ${application.id}
+      where institutions.application_id = ${budget.id}
       and accounts.tracking = 'Balances'
       group by ${date}, accounts.id
       union
@@ -141,7 +141,7 @@ class ReportController {
           a.tracking != 'Balances'
           and t.type in (${[TransactionType.STARTING_BALANCE, TransactionType.REGULAR_TRANSACTION, TransactionType.MANUAL_TRANSACTION]}
           )
-          and i.application_id = ${application.id}
+          and i.application_id = ${budget.id}
         group by i.application_id, t.type, ${date}, a.id
       ) as daily
       order by date`;
@@ -149,7 +149,7 @@ class ReportController {
     const categoryQuery = 'select accounts.id || \'_\' || accounts.name AS name '
     + 'from accounts '
     + 'join institutions ON institutions.id = accounts.institution_id '
-    + `where institutions.application_id = ${application.id} `
+    + `where institutions.application_id = ${budget.id} `
     + 'order by name';
 
     const categories = await Database.rawQuery(categoryQuery);
@@ -184,7 +184,7 @@ class ReportController {
   }
 
   private static async payee(
-    application: Application,
+    budget: Budget,
     startDate: string,
     endDate: string,
     pc?: string[] | string,
@@ -208,7 +208,7 @@ class ReportController {
         .where('pending', false)
         .andWhere('accounts.closed', false)
         .andWhereIn('transactions.type', [TransactionType.REGULAR_TRANSACTION, TransactionType.MANUAL_TRANSACTION])
-        .andWhere('institutions.application_id', application.id)
+        .andWhere('institutions.application_id', budget.id)
         .groupBy(['payment_channel'])
         .groupByRaw('coalesce(at.merchant_name, at.name)')
         .orderByRaw('coalesce(at.merchant_name, at.name) asc')
@@ -249,7 +249,7 @@ class ReportController {
   }
 
   private static async category(
-    application: Application,
+    budget: Budget,
     startDate: string,
     endDate: string,
     c?: string[] | string,
@@ -267,7 +267,7 @@ class ReportController {
         .join('categories as c', 'c.id', 'tc.category_id')
         .join('groups as g', 'g.id', 'c.group_id')
         .join('transactions as t', 't.id', 'tc.transaction_id')
-        .where('g.application_id', application.id)
+        .where('g.application_id', budget.id)
         .andWhereIn('t.type', [TransactionType.MANUAL_TRANSACTION, TransactionType.REGULAR_TRANSACTION])
         .groupBy(['g.name', 'c.name'])
         .orderBy('g.name', 'asc')
@@ -295,9 +295,9 @@ class ReportController {
   }
 
   private static async incomeVsExpenses(
-    application: Application,
+    budget: Budget,
   ): Promise<IncomeVsExpensesReportType> {
-    const acctTransfer = await application.getAccountTransferCategory();
+    const acctTransfer = await budget.getAccountTransferCategory();
 
     const query = await Database.query()
       .select(
@@ -316,7 +316,7 @@ class ReportController {
         q.on('tc.transaction_id', 't.id')
           .andOnVal('category_id', '=', acctTransfer.id)
       })
-      .where('t.application_id', application.id)
+      .where('t.application_id', budget.id)
       .andWhere('a.tracking', 'Transactions')
       .andWhere('t.type', '!=', TransactionType.STARTING_BALANCE)
       .groupByRaw('date_part(\'year\', date) || \'-\' || lpad(cast(date_part(\'month\', date) as varchar), 2, \'0\')')
@@ -331,7 +331,7 @@ class ReportController {
   }
 
   private static async fundingHistory(
-    application: Application,
+    budget: Budget,
   ): Promise<FundingHistoryReportType> {
     const query = await Database.query()
       .select(
@@ -358,7 +358,7 @@ class ReportController {
       .from('categories AS c')
       .join('groups as g', 'g.id', 'c.group_id')
       .where('c.type', '!=', 'FUNDING POOL')
-      .andWhere('g.application_id', application.id)
+      .andWhere('g.application_id', budget.id)
       .orderBy('g.name')
       .orderBy('c.name');
 
@@ -366,11 +366,11 @@ class ReportController {
   }
 
   private static async budgetProgress(
-    application: Application,
+    budget: Budget,
     startDate: DateTime,
     endDate: DateTime,
   ): Promise<BudgetProgressReportResponse> {
-    const acctTransfer = await application.getAccountTransferCategory();
+    const acctTransfer = await budget.getAccountTransferCategory();
 
     const fundingQuery = await Database.query()
       .select(
@@ -379,7 +379,7 @@ class ReportController {
       .from('transaction_categories AS tc')
       .join('transactions AS t', 't.id', 'tc.transaction_id')
       .join('categories AS c', 'c.id', 'tc.category_id')
-      .where('t.application_id', application.id)
+      .where('t.application_id', budget.id)
       .whereBetween('t.date', [startDate.toISODate(), endDate.toISODate()])
       .andWhere('tc.category_id', '!=', acctTransfer.id)
       .andWhere('t.type', '=', TransactionType.FUNDING_TRANSACTION)
@@ -396,7 +396,7 @@ class ReportController {
       .from('transaction_categories AS tc')
       .join('transactions AS t', 't.id', 'tc.transaction_id')
       .join('categories AS c', 'c.id', 'tc.category_id')
-      .where('t.application_id', application.id)
+      .where('t.application_id', budget.id)
       .whereBetween('t.date', [startDate.toISODate(), endDate.toISODate()])
       .andWhere('tc.category_id', '!=', acctTransfer.id)
       .andWhereNotIn('t.type', [

@@ -161,22 +161,22 @@ export default class UsersController {
 
       await user.delete();
 
-      const others = await User.query({ client: trx }).where('applicationId', user.applicationId);
+      const others = await User.query({ client: trx }).where('budgetId', user.budgetId);
 
       if (others.length === 0) {
         // No other users are using this budget so delete it
-        const application = await user.related('application').query().first();
+        const budget = await user.related('budget').query().first();
 
-        if (application) {
+        if (budget) {
           // Delete funding plans
-          const fundingPlans = await application.related('plans').query();
+          const fundingPlans = await budget.related('plans').query();
 
           await Promise.all(fundingPlans.map(async (plan) => (
             plan.delete()
           )));
 
           // Delete groups
-          const groups = await application.related('groups').query();
+          const groups = await budget.related('groups').query();
 
           await Promise.all(groups.map(async (group) => {
             const categories = await group.related('categories').query();
@@ -189,20 +189,20 @@ export default class UsersController {
           }));
 
           // Delete institutions
-          const institutions = await application.related('institutions').query();
+          const institutions = await budget.related('institutions').query();
 
           await Promise.all(institutions.map(async (institution) => (
             institution.delete()
           )))
 
           // Delete transactions
-          const transactions = await application.related('transactions').query();
+          const transactions = await budget.related('transactions').query();
 
           await Promise.all(transactions.map(async (transaction) => (
             transaction.delete()
           )))
 
-          await application.delete();
+          await budget.delete();
         }
       }
 

@@ -6,7 +6,7 @@ import Database from '@ioc:Adonis/Lucid/Database';
 import Group from 'App/Models/Group';
 import { CategoryType } from 'Common/ResponseTypes';
 import TransactionCategory from 'App/Models/TransactionCategory';
-import Application from 'App/Models/Application';
+import Budget from 'App/Models/Budget';
 
 type CategoryItem = {
   id: number,
@@ -54,7 +54,7 @@ export default class Category extends BaseModel {
   public transactionCategory: HasMany<typeof TransactionCategory>;
 
   public static async balances(
-    application: Application,
+    budget: Budget,
     date: string,
     transactionId: number,
   ): Promise<GroupItem[]> {
@@ -80,16 +80,16 @@ export default class Category extends BaseModel {
       .joinRaw(`left join (${
         subQuery.toQuery()
       }) as tc on tc.category_id = c.id`)
-      .where('g.application_id', application.id)
+      .where('g.application_id', budget.id)
       .groupBy('c.id')
       .groupByRaw('coalesce(tc.amount, 0)')
 
     return query;
   }
 
-  private getTransactionQuery(application: Application) {
+  private getTransactionQuery(budget: Budget) {
     if (this.type === 'UNASSIGNED') {
-      const transactionQuery = application
+      const transactionQuery = budget
         .related('transactions').query()
         .where((query) => {
           query
@@ -114,7 +114,7 @@ export default class Category extends BaseModel {
       return transactionQuery;
     }
 
-    const transactionQuery = application
+    const transactionQuery = budget
       .related('transactions').query()
       .whereHas('transactionCategories', (query) => {
         query.where('categoryId', this.id);
@@ -131,8 +131,8 @@ export default class Category extends BaseModel {
     return transactionQuery
   }
 
-  public async transactions(application: Application, limit?: number, offset?: number) {
-    let transactionQuery = this.getTransactionQuery(application);
+  public async transactions(budget: Budget, limit?: number, offset?: number) {
+    let transactionQuery = this.getTransactionQuery(budget);
 
     transactionQuery
       .preload('transactionCategories')

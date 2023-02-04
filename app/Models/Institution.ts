@@ -8,7 +8,7 @@ import {
 import plaidClient, { PlaidInstitution } from '@ioc:Plaid';
 import Account from 'App/Models/Account';
 import Logger from '@ioc:Adonis/Core/Logger'
-import Application from 'App/Models/Application';
+import Budget from 'App/Models/Budget';
 import { CountryCode } from 'plaid';
 
 class Institution extends BaseModel {
@@ -32,11 +32,11 @@ class Institution extends BaseModel {
   @hasMany(() => Account)
   public accounts: HasMany<typeof Account>;
 
-  @column({ serializeAs: null })
-  public applicationId: number;
+  @column({ serializeAs: null, columnName: 'application_id' })
+  public budgetId: number;
 
-  @belongsTo(() => Application)
-  public application: BelongsTo<typeof Application>;
+  @belongsTo(() => Budget)
+  public budget: BelongsTo<typeof Budget>;
 
   public async removeTransactions(
     removedTransactions: string[],

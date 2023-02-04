@@ -30,9 +30,9 @@ class CategoryController {
       throw new Error('user is not defined');
     }
 
-    const application = await user.related('application').query().firstOrFail();
+    const budget = await user.related('budget').query().firstOrFail();
 
-    return await application.related('groups').query()
+    return await budget.related('groups').query()
       .preload('categories', (catQuery) => {
         catQuery.orderBy('name', 'asc')
       })
@@ -55,7 +55,7 @@ class CategoryController {
     const group = await new Group()
       .fill({
         name: requestData.name,
-        applicationId: user.applicationId,
+        budgetId: user.budgetId,
         type: 'REGULAR',
       })
       .save();
@@ -186,7 +186,7 @@ class CategoryController {
       throw new Error('user is not defined');
     }
 
-    const application = await user.related('application').query().firstOrFail();
+    const budget = await user.related('budget').query().firstOrFail();
 
     const { catId } = request.params();
 
@@ -201,7 +201,7 @@ class CategoryController {
 
     result.balance = cat.amount;
 
-    const transactions = await cat.transactions(application, request.qs().limit, request.qs().offset);
+    const transactions = await cat.transactions(budget, request.qs().limit, request.qs().offset);
 
     result.transactions = transactions.map((t) => (
       t.serialize(transactionFields) as TransactionProps
@@ -221,7 +221,7 @@ class CategoryController {
       throw new Error('user is not defined');
     }
 
-    const application = await user.related('application').query().firstOrFail();
+    const budget = await user.related('budget').query().firstOrFail();
 
     const { catId } = request.params();
 
@@ -232,7 +232,7 @@ class CategoryController {
     const cat = await Category.findOrFail(categoryId);
 
     if (cat.type === 'UNASSIGNED') {
-      pending = await application
+      pending = await budget
         .related('transactions').query()
         .where((query) => {
           query
@@ -268,7 +268,7 @@ class CategoryController {
       throw new Error('user is not defined');
     }
 
-    const application = await user.related('application').query().firstOrFail();
+    const budget = await user.related('budget').query().firstOrFail();
 
     const { tfrId } = request.params();
     const requestData = await request.validate(UpdateCategoryTransferValidator);
@@ -301,7 +301,7 @@ class CategoryController {
           transaction = await new Transaction()
             .useTransaction(trx)
             .fill({
-              date: DateTime.fromISO(date), type, applicationId: application.id,
+              date: DateTime.fromISO(date), type, budgetId: budget.id,
             })
             .save()
 
@@ -464,11 +464,11 @@ class CategoryController {
       throw new Error('user is not defined');
     }
 
-    const application = await user.related('application').query().firstOrFail();
+    const budget = await user.related('budget').query().firstOrFail();
 
     const { date, id } = request.qs();
 
-    return Category.balances(application, date, id !== undefined ? parseInt(id, 10) : id);
+    return Category.balances(budget, date, id !== undefined ? parseInt(id, 10) : id);
   }
 }
 

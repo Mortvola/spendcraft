@@ -10,7 +10,7 @@ import {
 import { DateTime } from 'luxon';
 import Database, { TransactionClientContract } from '@ioc:Adonis/Lucid/Database';
 import Transaction from 'App/Models/Transaction';
-import Application from 'App/Models/Application';
+import Budget from 'App/Models/Budget';
 
 type ErrorTransaction = {
   date: string,
@@ -83,7 +83,7 @@ export default class CheckTransactions extends BaseCommand {
     stayAlive: false,
   }
 
-  private async reportMissingTransactions(acct: FailedAccount, application: Application) {
+  private async reportMissingTransactions(acct: FailedAccount, budget: Budget) {
     this.logger.info('\t\tMissing Transactions:');
     if (acct.missingTransactions.length > 0) {
       // eslint-disable-next-line no-restricted-syntax
@@ -95,7 +95,7 @@ export default class CheckTransactions extends BaseCommand {
 
         if (this.fixMissing) {
           // eslint-disable-next-line no-await-in-loop
-          const sum = await acct.account.applyTransactions(application, [tran]);
+          const sum = await acct.account.applyTransactions(budget, [tran]);
 
           acct.account.balance += sum;
 
@@ -151,7 +151,7 @@ export default class CheckTransactions extends BaseCommand {
 
   private async report (
     user: User,
-    application: Application,
+    budget: Budget,
     failedAccounts: FailedAccount[],
   ): Promise<void> {
     this.logger.info(user.username);
@@ -161,7 +161,7 @@ export default class CheckTransactions extends BaseCommand {
       this.logger.info(`\t${acct.institution.name}, ${acct.account.name}, item id: ${acct.institution.plaidItemId}, account id: ${acct.account.plaidAccountId}`);
 
       // eslint-disable-next-line no-await-in-loop
-      await this.reportMissingTransactions(acct, application);
+      await this.reportMissingTransactions(acct, budget);
 
       this.reportDuplicateTransactions(acct);
 
@@ -431,9 +431,9 @@ export default class CheckTransactions extends BaseCommand {
         throw new Error('Username not found');
       }
 
-      const application = await user.related('application').query().firstOrFail();
+      const budget = await user.related('budget').query().firstOrFail();
 
-      const institutions = await application.related('institutions').query()
+      const institutions = await budget.related('institutions').query()
         .whereNotNull('plaidItemId')
         .orderBy('name');
 
@@ -525,7 +525,7 @@ export default class CheckTransactions extends BaseCommand {
 
       if (failedAccounts.length > 0) {
         // eslint-disable-next-line no-await-in-loop
-        await this.report(user, application, failedAccounts);
+        await this.report(user, budget, failedAccounts);
 
         if (this.markDuplicates) {
           await Promise.all(failedAccounts.map(async (a) => (

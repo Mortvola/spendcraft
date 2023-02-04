@@ -17,7 +17,7 @@ class FundingPlanController {
       throw new Error('user is undefined');
     }
 
-    const application = await user.related('application').query().firstOrFail();
+    const budget = await user.related('budget').query().firstOrFail();
 
     const validationSchema = schema.create({
       name: schema.string(),
@@ -31,7 +31,7 @@ class FundingPlanController {
 
     plan.name = requestData.name;
 
-    await plan.related('application').associate(application);
+    await plan.related('budget').associate(budget);
 
     return plan;
   }
@@ -46,9 +46,9 @@ class FundingPlanController {
       throw new Error('user is undefined');
     }
 
-    const application = await user.related('application').query().firstOrFail();
+    const budget = await user.related('budget').query().firstOrFail();
 
-    return FundingPlan.query().where('applicationId', application.id);
+    return FundingPlan.query().where('budgetId', budget.id);
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -59,7 +59,7 @@ class FundingPlanController {
 
     const { h } = request.qs();
 
-    const application = await user.related('application').query().firstOrFail();
+    const budget = await user.related('budget').query().firstOrFail();
 
     const planId = parseInt(request.params().planId, 10);
 
@@ -68,7 +68,7 @@ class FundingPlanController {
     let history: CategoryHistoryItem[] = [];
 
     if (h) {
-      history = await application.history(parseInt(h, 10));
+      history = await budget.history(parseInt(h, 10));
     }
 
     return {
@@ -93,9 +93,9 @@ class FundingPlanController {
 
     const planId = parseInt(request.params().planId, 10);
 
-    const application = await user.related('application').query().firstOrFail();
+    const budget = await user.related('budget').query().firstOrFail();
 
-    return application.getProposedFunding(planId);
+    return budget.getProposedFunding(planId);
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -104,7 +104,7 @@ class FundingPlanController {
   //     throw new Error('user is undefined');
   //   }
 
-  //   const application = await user.related('application').query().firstOrFail();
+  //   const budget = await user.related('budget').query().firstOrFail();
 
   //   const plan = await FundingPlan.find(request.params().planId);
 
@@ -112,7 +112,7 @@ class FundingPlanController {
   //     throw new Error('plan not found');
   //   }
 
-  //   return plan.getFullPlan(application);
+  //   return plan.getFullPlan(budget);
   // }
 
   // eslint-disable-next-line class-methods-use-this
