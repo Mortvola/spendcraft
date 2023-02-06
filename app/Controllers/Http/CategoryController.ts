@@ -15,7 +15,7 @@ import Loan from 'App/Models/Loan';
 import {
   CategoryBalanceProps,
   TransactionsResponse,
-  TransactionProps, TransactionType,
+  TransactionProps, TransactionType, FundingInfoProps,
 } from 'Common/ResponseTypes';
 import Group from 'App/Models/Group';
 import { DateTime } from 'luxon';
@@ -24,13 +24,79 @@ import transactionFields from './transactionFields';
 class CategoryController {
   // eslint-disable-next-line class-methods-use-this
   public async get({
+    request,
     auth: { user },
-  }: HttpContextContract): Promise<Group[]> {
+  }: HttpContextContract): Promise<Group[] | FundingInfoProps[]> {
     if (!user) {
       throw new Error('user is not defined');
     }
 
     const budget = await user.related('budget').query().firstOrFail();
+
+    const { date } = request.qs();
+
+    if (date) {
+      // Get the first day of the month
+      const firstDayOfMonth = DateTime.fromISO(date)
+        .set({
+          day: 1, hour: 0, minute: 0, second: 0, millisecond: 0,
+        })
+
+      // Get the date of the first day of the previous month.
+      const firstDayOfPreviousMonth = firstDayOfMonth
+        .minus({ days: 1 })
+        .set({
+          day: 1, hour: 0, minute: 0, second: 0, millisecond: 0,
+        })
+
+      const categories = await Category.query()
+        .whereHas('group', (query) => {
+          query.where('budgetId', budget.id)
+        })
+        // Get the sum of the transations since the first of the month.
+        .withAggregate('transactionCategory', (query) => {
+          query.sum('amount').as('sum')
+            .whereHas('transaction', (transQuery) => {
+              transQuery.where('date', '>=', firstDayOfMonth.toISODate())
+            })
+        })
+        // Get the sum of the transactions (minus funding and category transfers) from the prrevious month
+        .withAggregate('transactionCategory', (query) => {
+          query.sum('amount').as('previousSum')
+            .whereHas('transaction', (transQuery) => {
+              transQuery.where('date', '<', firstDayOfMonth.toISODate())
+                .andWhere('date', '>=', firstDayOfPreviousMonth.toISODate())
+                .andWhereNotIn('type', [TransactionType.FUNDING_TRANSACTION, TransactionType.REBALANCE_TRANSACTION])
+            })
+        })
+        // Get the sum of the funding transactions from the previous month
+        .withAggregate('transactionCategory', (query) => {
+          query.sum('amount').as('previousFunding')
+            .whereHas('transaction', (transQuery) => {
+              transQuery.where('date', '<', firstDayOfMonth.toISODate())
+                .andWhere('date', '>=', firstDayOfPreviousMonth.toISODate())
+                .andWhere('type', TransactionType.FUNDING_TRANSACTION)
+            })
+        })
+        // Get the sum of the category transfers from the previous month
+        .withAggregate('transactionCategory', (query) => {
+          query.sum('amount').as('previousCatTransfers')
+            .whereHas('transaction', (transQuery) => {
+              transQuery.where('date', '<', firstDayOfMonth.toISODate())
+                .andWhere('date', '>=', firstDayOfPreviousMonth.toISODate())
+                .andWhere('type', TransactionType.REBALANCE_TRANSACTION)
+            })
+        })
+
+      return categories.map((c) => ({
+        id: c.id,
+        name: c.name,
+        balance: (c.amount - (parseFloat(c.$extras.sum) ?? 0)) ?? 0,
+        previousSum: parseFloat(c.$extras.previousSum) ?? 0,
+        previousFunding: parseFloat(c.$extras.previousFunding) ?? 0,
+        previousCatTransfers: parseFloat(c.$extras.previousCatTransfers) ?? 0,
+      }));
+    }
 
     return await budget.related('groups').query()
       .preload('categories', (catQuery) => {

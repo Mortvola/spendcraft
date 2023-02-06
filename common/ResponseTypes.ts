@@ -583,8 +583,6 @@ export interface ProposedFundingCateggoryProps {
   expectedToSpend: number,
   adjusted: boolean,
   adjustedReason: string | null,
-  previousFunding: number,
-  previousExpenses: number,
 }
 
 export const isFundingPlanProps = (r: unknown): r is FundingPlanProps => (
@@ -614,8 +612,15 @@ export type CategoryFundingProps = {
   expectedToSpend?: number,
   adjusted?: boolean,
   adjustedReason?: string | null,
-  previousFunding?: number,
-  previousExpenses?: number,
+}
+
+export type FundingInfoProps = {
+  id: number,
+  name: string,
+  balance: number,
+  previousSum: number,
+  previousFunding: number,
+  previousCatTransfers: number,
 }
 
 export const isCategoryFundingProps = (r: unknown): r is CategoryFundingProps => (

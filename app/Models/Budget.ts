@@ -257,21 +257,15 @@ export default class Budget extends BaseModel {
       day: 0, hour: 0, minute: 0, second: 0, millisecond: 0,
     });
 
-    const history = await this.history(2);
-
     const proposedCats: ProposedFundingCateggoryProps[] = [];
 
     fundingCats.forEach((planCat) => {
-      const h = history.find((hist) => hist.id === planCat.categoryId);
-
       const proposedCat: ProposedFundingCateggoryProps = {
         categoryId: planCat.categoryId,
         amount: 0,
         expectedToSpend: 0,
         adjusted: false,
         adjustedReason: null,
-        previousExpenses: ((h?.months.length ?? 0) >= 2 ? h?.months[1].expenses : 0) ?? 0,
-        previousFunding: ((h?.months.length ?? 0) >= 2 ? h?.months[1].funding : 0) ?? 0,
       };
 
       const gd = planCat.goalDate?.set({

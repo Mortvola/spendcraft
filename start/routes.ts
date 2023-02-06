@@ -71,11 +71,14 @@ Route.group(() => {
         Route.post('', 'CategoryController.addGroup');
         Route.patch('/:groupId', 'CategoryController.updateGroup');
         Route.delete('/:groupId', 'CategoryController.deleteGroup');
-        Route.get('/:groupId/categories', 'CategoryController.get');
         Route.post('/:groupId/categories', 'CategoryController.addCategory');
         Route.patch('/:groupId/categories/:catId', 'CategoryController.updateCategory');
         Route.delete('/:groupId/categories/:catId', 'CategoryController.deleteCategory');
       }).prefix('/groups');
+
+      Route.group(() => {
+        Route.get('', 'CategoryController.get')
+      }).prefix('/categories')
   
       Route.group(() => {
         Route.post('', 'CategoryController.transfer');

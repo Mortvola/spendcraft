@@ -8,6 +8,7 @@ import {
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import Http from '@mortvola/http';
 import { FormModal, FormError, setFormErrors } from '@mortvola/forms';
+import { DateTime } from 'luxon';
 import Amount from '../Amount';
 import { useStores } from '../State/mobxStore';
 import Transaction from '../State/Transaction';
@@ -15,9 +16,10 @@ import {
   FundingPlanProps, isFundingPlansResponse, TransactionType,
   CategoryFundingProps,
   ProposedFundingCateggoryProps,
+  FundingInfoProps,
 } from '../../common/ResponseTypes';
 import Funding from './Funding';
-import { FundingPlanType, FundingType } from './Types'
+import { FundingInfoType, FundingPlanType, FundingType } from './Types'
 import styles from './Funding.module.css'
 
 type PropsType = {
@@ -69,8 +71,6 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
       expectedToSpend: c.expectedToSpend,
       adjusted: c.adjusted,
       adjustedReason: c.adjustedReason,
-      previousFunding: c.previousFunding,
-      previousExpenses: c.previousExpenses,
     }))
   )
 
@@ -91,6 +91,28 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
       : 0,
   );
   const [availableFunds, setAvailableFunds] = useState(fundingPoolCat.balance);
+  const [catFundingInfo, setCatFundingInfo] = useState<FundingInfoType[]>([]);
+
+  const getFundingInfo = async (date: DateTime) => {
+    const newDate = date
+      .set({
+        day: 1, hour: 0, minute: 0, second: 0, millisecond: 0,
+      }); // .minus({ days: 1 });
+
+    const response = await Http.get<FundingInfoProps[]>(`/api/v1/categories?date=${newDate.toISODate()}`);
+
+    if (response.ok) {
+      const body = await response.body();
+
+      setCatFundingInfo(body.map((c) => ({
+        categoryId: c.id,
+        initialAmount: c.balance,
+        previousFunding: c.previousFunding,
+        previousExpenses: c.previousSum,
+        previousCatTransfers: c.previousCatTransfers,
+      })));
+    }
+  };
 
   useEffect(() => {
     const funded = getTotal(funding.categories);
@@ -110,6 +132,20 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
         if (isFundingPlansResponse(body)) {
           setPlans(body);
         }
+      })();
+
+      (async () => {
+        // Get the date of the first day of the month.
+        const date = DateTime.now().set({
+          day: 1, hour: 0, minute: 0, second: 0, millisecond: 0,
+        })
+
+        getFundingInfo(date)
+      })();
+    }
+    else {
+      (async () => {
+        getFundingInfo(transaction.date)
       })()
     }
   }
@@ -248,7 +284,11 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
     <FormModal<ValueType>
       setShow={setShow}
       initialValues={{
-        date: transaction ? transaction.date.toISODate() : '',
+        date: transaction
+          ? transaction.date.toISODate()
+          : DateTime.now().set({
+            day: 1, hour: 0, minute: 0, second: 0, millisecond: 0,
+          }).toISODate(),
         funding,
       }}
       validate={handleValidate}
@@ -304,6 +344,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
                 value,
               },
               form: {
+                values,
                 setFieldValue,
               },
             }: FieldProps<FundingPlanType>) => (
@@ -311,6 +352,8 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
                 key={value.planId}
                 groups={categoryTree.nodes}
                 plan={value.categories}
+                catFundingInfo={catFundingInfo}
+                date={DateTime.fromISO(values.date)}
                 systemGroupId={categoryTree.systemIds.systemGroupId || 0}
                 onChange={(newFunding: FundingType[]) => {
                   const newPlan = {

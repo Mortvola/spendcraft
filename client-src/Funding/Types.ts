@@ -1,10 +1,15 @@
 export type FundingType = {
   id?: number,
-  initialAmount: number,
   amount: number,
   categoryId: number,
-  previousFunding?: number,
-  previousExpenses?: number,
+}
+
+export type FundingInfoType = {
+  categoryId: number,
+  initialAmount: number,
+  previousFunding: number,
+  previousExpenses: number,
+  previousCatTransfers: number,
 }
 
 export type FundingPlanType = {

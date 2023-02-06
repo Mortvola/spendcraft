@@ -1,14 +1,17 @@
 import React, { ReactNode, useState } from 'react';
+import { DateTime } from 'luxon';
 import FundingItem from './FundingItem';
 import { isGroup } from '../State/Group';
 import { isCategory } from '../State/Category';
 import { TreeNodeInterface, CategoryInterface } from '../State/State';
 import styles from './Funding.module.css';
-import { FundingType } from './Types';
+import { FundingInfoType, FundingType } from './Types';
 
 type PropsType = {
   groups: TreeNodeInterface[],
   plan: FundingType[],
+  catFundingInfo: FundingInfoType[],
+  date: DateTime,
   onChange: ((p: FundingType[]) => void),
   systemGroupId: number,
 }
@@ -16,6 +19,8 @@ type PropsType = {
 const Funding: React.FC<PropsType> = ({
   groups,
   plan,
+  catFundingInfo,
+  date,
   onChange,
   systemGroupId,
 }) => {
@@ -62,7 +67,6 @@ const Funding: React.FC<PropsType> = ({
         ...funding.slice(),
         {
           categoryId,
-          initialAmount: category.balance,
           amount,
         },
       ];
@@ -76,23 +80,16 @@ const Funding: React.FC<PropsType> = ({
   };
 
   const renderCategory = (category: CategoryInterface) => {
-    let amount = 0;
-
     const fundingItem = funding.find((c) => c.categoryId === category.id);
-
-    let initialAmount = category.balance;
-    if (fundingItem) {
-      initialAmount = fundingItem.initialAmount;
-      amount = fundingItem.amount;
-    }
+    const fundingInfo = catFundingInfo.find((c) => c.categoryId === category.id)
 
     return (
       <FundingItem
         key={`c:${category.id}`}
-        fundingItem={fundingItem}
+        fundingInfo={fundingInfo}
         name={category.name}
-        initialAmount={initialAmount}
-        funding={amount}
+        funding={fundingItem?.amount ?? 0}
+        date={date}
         onDeltaChange={(newAmount) => (
           handleDeltaChange(newAmount, category.id)
         )}
