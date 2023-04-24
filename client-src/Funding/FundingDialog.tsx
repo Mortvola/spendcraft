@@ -1,9 +1,9 @@
 import React, {
-  useState, useEffect, useCallback,
+  useState, useCallback,
 } from 'react';
 import {
   Field, FieldProps,
-  FormikErrors, FormikState, FormikContextType,
+  FormikErrors, FormikContextType,
 } from 'formik';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import Http from '@mortvola/http';
@@ -15,11 +15,12 @@ import Transaction from '../State/Transaction';
 import {
   FundingPlanProps, isFundingPlansResponse, TransactionType,
   CategoryFundingProps,
-  ProposedFundingCateggoryProps,
-  FundingInfoProps,
 } from '../../common/ResponseTypes';
 import Funding from './Funding';
-import { FundingInfoType, FundingPlanType, FundingType } from './Types'
+import {
+  CategoriesValueType,
+  FundingType, ValueType,
+} from './Types'
 import styles from './Funding.module.css'
 
 type PropsType = {
@@ -37,88 +38,9 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
     throw new Error('funding pool is unassigned');
   }
 
-  const getTotal = useCallback((
-    categories: FundingType[],
-  ) => (
-    categories.reduce((accumulator: number, item) => (
-      fundingPoolCat && item.categoryId === fundingPoolCat.id
-        ? accumulator
-        : accumulator + item.amount
-    ), 0)
-  ), [fundingPoolCat]);
-
-  type ValueType = {
-    date: string,
-    funding: FundingPlanType,
-  }
-
-  const getCategoryBalance = (categoryId: number) => {
-    const category = categoryTree.getCategory(categoryId);
-
-    if (!category) {
-      throw new Error('category is null');
-    }
-
-    return category.balance;
-  }
-
-  const getPlanCategories = (categories: CategoryFundingProps[]) => (
-    categories.map((c) => ({
-      id: c.id,
-      initialAmount: getCategoryBalance(c.categoryId) - c.amount,
-      amount: c.amount,
-      categoryId: c.categoryId,
-      expectedToSpend: c.expectedToSpend,
-      adjusted: c.adjusted,
-      adjustedReason: c.adjustedReason,
-    }))
-  )
-
   const [plansInitialized, setPlansInitialized] = useState(false);
   const [plans, setPlans] = useState<FundingPlanProps[]>([]);
-  const [selectedPlan, setSelectedPlan] = useState(-1);
-  const [funding, setFunding] = useState<FundingPlanType>(
-    transaction
-      ? {
-        planId: -1,
-        categories: getPlanCategories(transaction.categories),
-      }
-      : { planId: -1, categories: [] },
-  );
-  const [total, setTotal] = useState<number>(
-    transaction
-      ? getTotal(funding.categories)
-      : 0,
-  );
-  const [availableFunds, setAvailableFunds] = useState(fundingPoolCat.balance);
-  const [catFundingInfo, setCatFundingInfo] = useState<FundingInfoType[]>([]);
-
-  const getFundingInfo = async (date: DateTime) => {
-    const newDate = date
-      .set({
-        day: 1, hour: 0, minute: 0, second: 0, millisecond: 0,
-      }); // .minus({ days: 1 });
-
-    const response = await Http.get<FundingInfoProps[]>(`/api/v1/categories?date=${newDate.toISODate()}`);
-
-    if (response.ok) {
-      const body = await response.body();
-
-      setCatFundingInfo(body.map((c) => ({
-        categoryId: c.id,
-        initialAmount: c.balance,
-        previousFunding: c.previousFunding,
-        previousExpenses: c.previousSum,
-        previousCatTransfers: c.previousCatTransfers,
-      })));
-    }
-  };
-
-  useEffect(() => {
-    const funded = getTotal(funding.categories);
-    setAvailableFunds(fundingPoolCat.balance - funded);
-    setTotal(funded);
-  }, [fundingPoolCat, funding, getTotal]);
+  const [selectedPlanId, setSelectedPlanId] = useState(-1);
 
   if (!plansInitialized) {
     setPlansInitialized(true);
@@ -133,46 +55,27 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
           setPlans(body);
         }
       })();
-
-      (async () => {
-        // Get the date of the first day of the month.
-        const date = DateTime.now().set({
-          day: 1, hour: 0, minute: 0, second: 0, millisecond: 0,
-        })
-
-        getFundingInfo(date)
-      })();
-    }
-    else {
-      (async () => {
-        getFundingInfo(transaction.date)
-      })()
     }
   }
 
+  // If there is only one plan then automatically select it.
+  React.useEffect(() => {
+    if (plans.length === 1) {
+      setSelectedPlanId(plans[0].id)
+    }
+  }, [plans]);
+
   const handlePlanChange = async (
     event: React.ChangeEvent<HTMLSelectElement>,
-    resetForm: (nextState?: Partial<FormikState<ValueType>> | undefined) => void,
-    values: ValueType,
+    // resetForm: (nextState?: Partial<FormikState<ValueType>> | undefined) => void,
+    // values: ValueType,
   ) => {
     const { value } = event.target;
     const planId = parseInt(value, 10)
-    setSelectedPlan(planId);
-    const response = await Http.get<ProposedFundingCateggoryProps[]>(`/api/v1/funding-plans/${planId}/proposed`);
-
-    if (response.ok) {
-      const body = await response.body();
-
-      const newPlan = {
-        planId,
-        categories: getPlanCategories(body),
-      };
-      setFunding(newPlan);
-      resetForm({ values: { ...values, funding: newPlan } });
-    }
+    setSelectedPlanId(planId);
   };
 
-  const populatePlans = () => {
+  const renderPlans = () => {
     const planOptions = [(<option key={-1} value={-1}>None</option>)];
 
     plans.forEach(({ id, name }) => {
@@ -182,13 +85,27 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
     return planOptions;
   };
 
-  const handleFundingChange = (newFunding: FundingPlanType) => {
-    setFunding(newFunding);
+  const getCategoriesSum = (categories: CategoriesValueType) => {
+    const v = Object.keys(categories).reduce((sum, k) => {
+      const value = categories[k];
+      const newValue = typeof value === 'string' ? parseFloat(value) : value;
+      return sum + newValue;
+    }, 0)
 
-    const sum = getTotal(newFunding.categories);
+    return v;
+  }
 
-    setTotal(sum);
-  };
+  const getTransactionCategoryId = (categoryId: number) => {
+    if (transaction) {
+      const ct = transaction.categories.find((c) => c.categoryId === categoryId);
+
+      if (ct !== undefined) {
+        return ct.id
+      }
+    }
+
+    return undefined;
+  }
 
   const handleSubmit = async (values: ValueType) => {
     type Request = {
@@ -196,19 +113,24 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
       categories: CategoryFundingProps[],
     }
 
+    const categories = Object.keys(values.categories).map((k) => {
+      const value = values.categories[k];
+      const amount = typeof value === 'string' ? parseFloat(value) : value;
+      const categoryId = parseInt(k, 10);
+      return {
+        id: getTransactionCategoryId(categoryId),
+        categoryId,
+        amount,
+      }
+    })
+      .filter((c) => c.amount !== 0);
+
     const request: Request = {
       date: values.date,
-      categories: values.funding.categories.filter((item) => (
-        item.amount !== 0
-      ))
-        .map((item) => ({
-          id: item.id,
-          categoryId: item.categoryId,
-          amount: item.amount,
-        })),
+      categories,
     };
 
-    const sum = getTotal(funding.categories);
+    const sum = getCategoriesSum(values.categories);
 
     // Check for an existing funding pool category in the list of categories.
     // One should be found if this is a transaction we are editing. Otherwise, 
@@ -254,14 +176,17 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
     // Verify that there is at least one non-zero funding item.
     let count = 0;
 
-    values.funding.categories.forEach((item) => {
-      if (item.amount !== 0) {
+    Object.keys(values.categories).forEach((k) => {
+      const value = values.categories[k];
+      const newValue = typeof value === 'string' ? parseFloat(value) : value;
+
+      if (newValue !== 0) {
         count += 1;
       }
     });
 
-    if (count === 0 && errors.funding) {
-      errors.funding.categories = 'At least one non-zero funding item must be entered.';
+    if (count === 0) { //  && errors.funding) {
+      console.log('At least one non-zero funding item must be entered.');
     }
 
     return errors;
@@ -280,16 +205,37 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
     }
   }
 
+  const initialFundingDate = () => (
+    (transaction
+      ? transaction.date
+      : DateTime.now().set({
+        day: 1, hour: 0, minute: 0, second: 0, millisecond: 0,
+      })
+    ).toISODate()
+  );
+
+  const initialFunding = (): CategoriesValueType => {
+    if (transaction) {
+      const obj: CategoriesValueType = {}
+
+      transaction.categories.forEach((c) => {
+        if (c.categoryId !== categoryTree.fundingPoolCat?.id) {
+          obj[c.categoryId] = c.amount
+        }
+      })
+
+      return obj;
+    }
+
+    return {};
+  }
+
   return (
     <FormModal<ValueType>
       setShow={setShow}
       initialValues={{
-        date: transaction
-          ? transaction.date.toISODate()
-          : DateTime.now().set({
-            day: 1, hour: 0, minute: 0, second: 0, millisecond: 0,
-          }).toISODate(),
-        funding,
+        date: initialFundingDate(),
+        categories: initialFunding(),
       }}
       validate={handleValidate}
       onSubmit={handleSubmit}
@@ -300,27 +246,20 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
       <div className="fund-container">
         <div className="funding-header">
           {
-            !transaction
+            !transaction && plans.length > 1
               ? (
                 <label>
                   Plan:
                   <Field name="plans">
-                    {({
-                      form: {
-                        resetForm,
-                        values,
-                      },
-                    }: FieldProps<ValueType>) => (
-                      <select
-                        className="form-control"
-                        value={selectedPlan}
-                        onChange={(event) => (
-                          handlePlanChange(event, resetForm, values)
-                        )}
-                      >
-                        {populatePlans()}
-                      </select>
-                    )}
+                    <select
+                      className="form-control"
+                      value={selectedPlanId}
+                      onChange={(event) => (
+                        handlePlanChange(event)
+                      )}
+                    >
+                      {renderPlans()}
+                    </select>
                   </Field>
                 </label>
               )
@@ -328,41 +267,34 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
           }
           <label>
             Date:
-            <Field className="form-control" type="date" name="date" />
+            <Field name="date" type="date" className="form-control" />
           </label>
           <label>
             Available Funds:
-            <Amount className="form-control" amount={availableFunds} />
+            <Field>
+              {
+                ({ form: { values } }: FieldProps<FundingType[]>) => (
+                  <Amount
+                    className="form-control"
+                    amount={fundingPoolCat.balance - getCategoriesSum(values.categories)}
+                  />
+                )
+              }
+            </Field>
           </label>
         </div>
         <FormError name="date" />
         <div className="cat-fund-table">
-          <Field name="funding">
+          <Field>
             {({
-              field: {
-                name,
-                value,
-              },
               form: {
                 values,
-                setFieldValue,
               },
-            }: FieldProps<FundingPlanType>) => (
+            }: FieldProps<FundingType[]>) => (
               <Funding
-                key={value.planId}
-                groups={categoryTree.nodes}
-                plan={value.categories}
-                catFundingInfo={catFundingInfo}
+                planId={selectedPlanId}
                 date={DateTime.fromISO(values.date)}
-                systemGroupId={categoryTree.systemIds.systemGroupId || 0}
-                onChange={(newFunding: FundingType[]) => {
-                  const newPlan = {
-                    planId: value.planId,
-                    categories: newFunding,
-                  };
-                  handleFundingChange(newPlan);
-                  setFieldValue(name, newPlan, false);
-                }}
+                // onChange={handleFundingChange}
               />
             )}
           </Field>
@@ -372,7 +304,16 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
           <div className={styles.fundListCatName} />
           <div className={styles.labeledAmount}>
             Total
-            <Amount style={{ minWidth: '6rem' }} amount={total} />
+            <Field>
+              {
+                ({ form: { values } }: FieldProps<FundingType[]>) => (
+                  <Amount
+                    style={{ minWidth: '6rem' }}
+                    amount={getCategoriesSum(values.categories)}
+                  />
+                )
+              }
+            </Field>
           </div>
           <div className={`dollar-amount ${styles.fundListAmt}`} />
         </div>

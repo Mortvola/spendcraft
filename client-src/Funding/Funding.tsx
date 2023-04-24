@@ -1,98 +1,81 @@
 import React, { ReactNode, useState } from 'react';
 import { DateTime } from 'luxon';
+import Http from '@mortvola/http';
+import { useFormikContext } from 'formik';
 import FundingItem from './FundingItem';
 import { isGroup } from '../State/Group';
 import { isCategory } from '../State/Category';
-import { TreeNodeInterface, CategoryInterface } from '../State/State';
+import { CategoryInterface } from '../State/State';
 import styles from './Funding.module.css';
-import { FundingInfoType, FundingType } from './Types';
+import { FundingInfoType, ValueType } from './Types';
+import { FundingInfoProps, ProposedFundingCateggoryProps } from '../../common/ResponseTypes';
+import { useStores } from '../State/mobxStore';
 
 type PropsType = {
-  groups: TreeNodeInterface[],
-  plan: FundingType[],
-  catFundingInfo: FundingInfoType[],
+  planId: number,
   date: DateTime,
-  onChange: ((p: FundingType[]) => void),
-  systemGroupId: number,
 }
 
 const Funding: React.FC<PropsType> = ({
-  groups,
-  plan,
-  catFundingInfo,
+  planId,
   date,
-  onChange,
-  systemGroupId,
 }) => {
-  const [funding, setFunding] = useState<FundingType[]>(plan);
+  const { categoryTree } = useStores();
+  const { setFieldValue } = useFormikContext<ValueType>();
+  const [loadedPlanId, setLoadedPlanId] = React.useState<number>(-1);
+  const [catFundingInfo, setCatFundingInfo] = useState<FundingInfoType[]>([]);
 
-  const handleDeltaChange = (amount: number, categoryId: number) => {
-    const index = funding.findIndex((c) => c.categoryId === categoryId);
-    let newFunding: FundingType[] = [];
+  React.useEffect(() => {
+    (async () => {
+      if (planId !== -1 && planId !== loadedPlanId) {
+        const response = await Http.get<ProposedFundingCateggoryProps[]>(`/api/v1/funding-plans/${planId}/proposed`);
 
-    if (index !== -1) {
-      newFunding = [
-        ...funding.slice(0, index),
-        { ...funding[index], categoryId, amount },
-        ...funding.slice(index + 1),
-      ];
-    }
-    else {
-      // Find the category in the group/category tree
-      let category: CategoryInterface | undefined;
-      const group = groups.find((g) => {
-        if (isGroup(g)) {
-          category = g.categories.find((c) => c.id === categoryId);
+        if (response.ok) {
+          const body = await response.body();
+
+          body.forEach((cat) => {
+            setFieldValue(`categories.${cat.categoryId}`, cat.amount)
+          })
+
+          setLoadedPlanId(planId);
         }
-        else {
-          if (!isCategory(g)) {
-            throw new Error('group is not a category');
-          }
+      }
+    })();
+  }, [loadedPlanId, planId, setFieldValue]);
 
-          category = g;
-        }
-
-        return category !== undefined;
+  React.useEffect(() => {
+    const newDate = date
+      .set({
+        day: 1, hour: 0, minute: 0, second: 0, millisecond: 0,
       });
 
-      if (!category) {
-        throw new Error('category is undefined');
+    (async () => {
+      const response = await Http.get<FundingInfoProps[]>(`/api/v1/categories?date=${newDate.toISODate()}`);
+
+      if (response.ok) {
+        const body = await response.body();
+
+        setCatFundingInfo(body.map((c) => ({
+          categoryId: c.id,
+          initialAmount: c.balance,
+          previousFunding: c.previousFunding,
+          previousExpenses: c.previousSum,
+          previousCatTransfers: c.previousCatTransfers,
+        })));
       }
-
-      if (!group) {
-        throw new Error('group is undefined');
-      }
-
-      newFunding = [
-        ...funding.slice(),
-        {
-          categoryId,
-          amount,
-        },
-      ];
-    }
-
-    setFunding(newFunding);
-
-    if (onChange) {
-      onChange(newFunding);
-    }
-  };
+    })();
+  }, [date]);
 
   const renderCategory = (category: CategoryInterface) => {
-    const fundingItem = funding.find((c) => c.categoryId === category.id);
+    // const fundingItem = funding.find((c) => c.categoryId === category.id);
     const fundingInfo = catFundingInfo.find((c) => c.categoryId === category.id)
 
     return (
       <FundingItem
         key={`c:${category.id}`}
         fundingInfo={fundingInfo}
-        name={category.name}
-        funding={fundingItem?.amount ?? 0}
+        category={category}
         date={date}
-        onDeltaChange={(newAmount) => (
-          handleDeltaChange(newAmount, category.id)
-        )}
       />
     );
   }
@@ -104,9 +87,9 @@ const Funding: React.FC<PropsType> = ({
   );
 
   const populateGroups = (): ReactNode => (
-    groups.map((node) => {
+    categoryTree.nodes.map((node) => {
       if (isGroup(node)) {
-        if (node.id !== systemGroupId) {
+        if (node.id !== categoryTree.systemIds.systemGroupId) {
           return (
             <div key={`g:${node.id}`} className={styles.fundListGroup}>
               {node.name}

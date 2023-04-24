@@ -1,40 +1,54 @@
 import React from 'react';
 import { DateTime } from 'luxon';
+import { Field, FieldProps, useField } from 'formik';
 import AmountInput from '../AmountInput';
 import Amount from '../Amount';
 import styles from './Funding.module.css'
 import { FundingInfoType } from './Types';
 import VerticalTitled from './VerticalTitled';
+import { CategoryInterface } from '../State/State';
 
 type PropsType = {
   fundingInfo?: FundingInfoType,
-  name: string,
-  funding: number,
+  category: CategoryInterface,
   date: DateTime,
-  onDeltaChange: ((amount: number, delta: number) => void),
+  onDeltaChange?: (amount: number, delta: number) => void,
 }
 
 const FundingItem: React.FC<PropsType> = ({
   fundingInfo,
-  name,
-  funding,
+  category,
   date,
   onDeltaChange,
 }) => {
-  const balance = (fundingInfo?.initialAmount ?? 0) + funding;
+  const name = `categories.${category.id}`;
+  const [field] = useField(name);
+  const balance = (fundingInfo?.initialAmount ?? 0) + (
+    typeof field.value === 'string'
+      ? parseFloat(field.value)
+      : field.value
+  );
 
   const previousMonthName = date.minus({ months: 1 }).monthLong;
 
   return (
     <div className={styles.fundListItem}>
-      <div className={styles.fundListCatName}>{name}</div>
+      <div className={styles.fundListCatName}>{category.name}</div>
       <div className={styles.valuesWrapper}>
         <div className={styles.fundValues}>
           <VerticalTitled title="Current">
             <Amount amount={fundingInfo?.initialAmount ?? 0} />
           </VerticalTitled>
           <VerticalTitled title="Funding" underscored={false}>
-            <AmountInput value={funding} onDeltaChange={onDeltaChange} />
+            <Field
+              name={name}
+            >
+              {
+                ({ field: fieldProps }: FieldProps) => (
+                  <AmountInput onDeltaChange={onDeltaChange} {...fieldProps} />
+                )
+              }
+            </Field>
           </VerticalTitled>
           <VerticalTitled title="Balance">
             <Amount amount={balance} />

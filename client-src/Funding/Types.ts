@@ -16,3 +16,11 @@ export type FundingPlanType = {
   planId: number;
   categories: FundingType[]
 }
+
+export type CategoriesValueType = Record<string, number | string>;
+
+export type ValueType = {
+  date: string,
+  categories: CategoriesValueType,
+}
+

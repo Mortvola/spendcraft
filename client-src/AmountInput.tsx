@@ -45,7 +45,19 @@ const AmountInput: React.FC<PropsType> = ({
   const [previousAmount, setPreviousAmount] = useState('0');
   const [focus, setFocus] = useState<boolean>(false);
 
+  // React.useEffect(() => {
+  //   console.log(`mounted ${name} ${value}, ${inputAmount}`);
+
+  //   return () => console.log(`unmounted ${name} ${value} ${inputAmount}`)
+  // }, [name, value, inputAmount])
+
+  // const setInputAmount = (v: string) => {
+  //   console.log(`set input value: ${v}`)
+  //   setInputAmount2(v);
+  // }
+
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log(`new value: ${event.target.value}`)
     setInputAmount(event.target.value);
 
     if (onChange) {
@@ -70,6 +82,7 @@ const AmountInput: React.FC<PropsType> = ({
   };
 
   const handleFocus = (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log(event.target.value)
     setInitialValue(parseFloat(event.target.value).toFixed(2));
     setFocus(true);
   };
@@ -128,8 +141,14 @@ const AmountInput: React.FC<PropsType> = ({
   };
 
   let inputValue = inputAmount;
+  if (onChange !== undefined) {
+    inputValue = typeof value === 'string' ? value : value.toFixed(2);
+  }
+
+  console.log(`inputAmount: ${inputAmount} ${value}`);
+
   if (!focus) {
-    let v = value;
+    let v: string | number = inputValue;
     if (typeof v === 'string') {
       v = (parseFloat(v) * 100.0) / 100.0;
     }
@@ -142,6 +161,8 @@ const AmountInput: React.FC<PropsType> = ({
 
     inputValue = v.toFixed(2);
   }
+
+  console.log(`inputValue: ${inputValue} ${value}`);
 
   return (
     <>
