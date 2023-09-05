@@ -62,6 +62,7 @@ const AccountsToolbar: React.FC<PropsType> = observer(({
         headers: new Headers({
           Accept: 'application/json',
           'Content-Type': 'text/plain',
+          Authorization: `Bearer ${Http.accessToken}`,
         }),
         body: event.target.files[0],
       });
