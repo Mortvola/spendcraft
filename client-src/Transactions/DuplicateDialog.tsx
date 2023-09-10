@@ -22,7 +22,7 @@ const TransactionFields: React.FC<TransationPropsType> = ({ name, date, amount }
       <input readOnly value={name} />
       <label style={{ display: 'flex', flexDirection: 'column' }}>
         Date:
-        <input type="date" readOnly value={date?.toISODate()} />
+        <input type="date" readOnly value={date?.toISODate() ?? ''} />
       </label>
       <label style={{ display: 'flex', flexDirection: 'column' }}>
         Amount:

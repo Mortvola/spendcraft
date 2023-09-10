@@ -79,7 +79,7 @@ const BalanceDialog: React.FC<PropsType & ModalProps> = ({
   return (
     <FormModal<FormValues>
       initialValues={{
-        date: balance ? balance.date.toISODate() : '',
+        date: balance ? (balance.date.toISODate() ?? '') : '',
         amount: balance ? balance.balance : 0,
       }}
       setShow={setShow}

@@ -88,7 +88,7 @@ const FundingHistory: React.FC = () => {
         </div>,
       );
 
-      [month, year] = subtractMonth(month, year);
+      [month, year] = subtractMonth(month as MonthNumbers, year);
     }
 
     return elements;
@@ -107,7 +107,7 @@ const FundingHistory: React.FC = () => {
         // eslint-disable-next-line no-loop-func
         const entry = history.find((h) => h.year === year && h.month === month)
 
-        const [prevMonth, prevYear] = subtractMonth(month, year);
+        const [prevMonth, prevYear] = subtractMonth(month as MonthNumbers, year);
         const prevEntry = history.find((h) => h.year === prevYear && h.month === prevMonth);
 
         if (entry) {
@@ -129,7 +129,7 @@ const FundingHistory: React.FC = () => {
           elements.push(<div key={i} className={className} />)
         }
 
-        [month, year] = subtractMonth(month, year);
+        [month, year] = subtractMonth(month as MonthNumbers, year);
       }
 
       return elements;

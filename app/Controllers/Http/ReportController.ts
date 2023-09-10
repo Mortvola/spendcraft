@@ -380,7 +380,7 @@ class ReportController {
       .join('transactions AS t', 't.id', 'tc.transaction_id')
       .join('categories AS c', 'c.id', 'tc.category_id')
       .where('t.application_id', budget.id)
-      .whereBetween('t.date', [startDate.toISODate(), endDate.toISODate()])
+      .whereBetween('t.date', [startDate.toISODate() ?? '', endDate.toISODate() ?? ''])
       .andWhere('tc.category_id', '!=', acctTransfer.id)
       .andWhere('t.type', '=', TransactionType.FUNDING_TRANSACTION)
       .andWhere('c.monthly_expenses', true);
@@ -397,7 +397,7 @@ class ReportController {
       .join('transactions AS t', 't.id', 'tc.transaction_id')
       .join('categories AS c', 'c.id', 'tc.category_id')
       .where('t.application_id', budget.id)
-      .whereBetween('t.date', [startDate.toISODate(), endDate.toISODate()])
+      .whereBetween('t.date', [startDate.toISODate() ?? '', endDate.toISODate() ?? ''])
       .andWhere('tc.category_id', '!=', acctTransfer.id)
       .andWhereNotIn('t.type', [
         TransactionType.FUNDING_TRANSACTION,

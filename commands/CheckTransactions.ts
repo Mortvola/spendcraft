@@ -292,7 +292,7 @@ export default class CheckTransactions extends BaseCommand {
       else if (acct.plaidAccountId !== plaidTran.account_id) {
         const correctAcct = await Account.findBy('plaidAccountId', plaidTran.account_id);
         accountMismatchTransactions.push({
-          date: at.transaction.date.toISODate(),
+          date: at.transaction.date.toISODate() ?? '',
           name: at.name,
           amount: at.amount,
           plaidId: at.providerTransactionId,
@@ -373,7 +373,7 @@ export default class CheckTransactions extends BaseCommand {
 
         // eslint-disable-next-line no-await-in-loop
         response = await plaidClient.getTransactions(
-          inst.accessToken, acct.startDate.toISODate(), endDate.toISODate(), options,
+          inst.accessToken, acct.startDate.toISODate() ?? '', endDate.toISODate() ?? '', options,
         );
 
         // if (response.transactions.length > 0) {

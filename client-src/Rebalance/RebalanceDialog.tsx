@@ -62,7 +62,7 @@ const RebalanceDialog: React.FC<PropsType & ModalProps> = ({
   }, [transaction]);
 
   useEffect(() => {
-    fetchCategoryBalances(date);
+    fetchCategoryBalances(date ?? '');
   }, [date, fetchCategoryBalances]);
 
   const handleDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -135,7 +135,7 @@ const RebalanceDialog: React.FC<PropsType & ModalProps> = ({
           transaction
             ? toJS(transaction.categories)
             : [],
-        date,
+        date: date ?? '',
       }}
       title="Rebalance Categories"
       formId="rebalanceForm"

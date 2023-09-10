@@ -57,15 +57,15 @@ class CategoryController {
         .withAggregate('transactionCategory', (query) => {
           query.sum('amount').as('sum')
             .whereHas('transaction', (transQuery) => {
-              transQuery.where('date', '>=', firstDayOfMonth.toISODate())
+              transQuery.where('date', '>=', firstDayOfMonth.toISODate() ?? '')
             })
         })
         // Get the sum of the transactions (minus funding and category transfers) from the prrevious month
         .withAggregate('transactionCategory', (query) => {
           query.sum('amount').as('previousSum')
             .whereHas('transaction', (transQuery) => {
-              transQuery.where('date', '<', firstDayOfMonth.toISODate())
-                .andWhere('date', '>=', firstDayOfPreviousMonth.toISODate())
+              transQuery.where('date', '<', firstDayOfMonth.toISODate() ?? '')
+                .andWhere('date', '>=', firstDayOfPreviousMonth.toISODate() ?? '')
                 .andWhereNotIn('type', [TransactionType.FUNDING_TRANSACTION, TransactionType.REBALANCE_TRANSACTION])
             })
         })
@@ -73,8 +73,8 @@ class CategoryController {
         .withAggregate('transactionCategory', (query) => {
           query.sum('amount').as('previousFunding')
             .whereHas('transaction', (transQuery) => {
-              transQuery.where('date', '<', firstDayOfMonth.toISODate())
-                .andWhere('date', '>=', firstDayOfPreviousMonth.toISODate())
+              transQuery.where('date', '<', firstDayOfMonth.toISODate() ?? '')
+                .andWhere('date', '>=', firstDayOfPreviousMonth.toISODate() ?? '')
                 .andWhere('type', TransactionType.FUNDING_TRANSACTION)
             })
         })
@@ -82,8 +82,8 @@ class CategoryController {
         .withAggregate('transactionCategory', (query) => {
           query.sum('amount').as('previousCatTransfers')
             .whereHas('transaction', (transQuery) => {
-              transQuery.where('date', '<', firstDayOfMonth.toISODate())
-                .andWhere('date', '>=', firstDayOfPreviousMonth.toISODate())
+              transQuery.where('date', '<', firstDayOfMonth.toISODate() ?? '')
+                .andWhere('date', '>=', firstDayOfPreviousMonth.toISODate() ?? '')
                 .andWhere('type', TransactionType.REBALANCE_TRANSACTION)
             })
         })

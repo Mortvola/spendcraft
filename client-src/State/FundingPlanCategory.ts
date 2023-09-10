@@ -46,7 +46,13 @@ class FundingPlanCategory {
 
   static sanitizeGoalDate(goalDate: string | null): string {
     if (goalDate === '' || goalDate === null) {
-      return DateTime.now().startOf('month').plus({ months: 1 }).toISODate();
+      const gd = DateTime.now().startOf('month').plus({ months: 1 }).toISODate();
+
+      if (gd === null) {
+        throw new Error('gd is null')
+      }
+
+      return gd;
     }
 
     return goalDate;

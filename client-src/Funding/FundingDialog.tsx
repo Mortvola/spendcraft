@@ -234,7 +234,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
     <FormModal<ValueType>
       setShow={setShow}
       initialValues={{
-        date: initialFundingDate(),
+        date: initialFundingDate() ?? '',
         categories: initialFunding(),
       }}
       validate={handleValidate}

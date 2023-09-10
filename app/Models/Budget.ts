@@ -83,7 +83,7 @@ export default class Budget extends BaseModel {
       .join('transactions AS trans', 'trans.id', 'transcats.transaction_id')
       .join('categories AS cats', 'cats.id', 'transcats.category_id')
       .where('trans.application_id', this.id)
-      .andWhere('trans.date', '>=', endDate.toISODate())
+      .andWhere('trans.date', '>=', endDate.toISODate() ?? '')
       .groupBy('month', 'year', 'cats.id')
       .orderBy('cats.id')
       .orderBy('year', 'desc')

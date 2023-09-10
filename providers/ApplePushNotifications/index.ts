@@ -59,7 +59,7 @@ class ApplePushNotifications {
       throw new Error('push notification key is null');
     }
 
-    let age: Number | null = null;
+    let age: number | null = null;
     if (this.providerJwtTime) {
       age = DateTime.now().diff(this.providerJwtTime, 'minutes').minutes;
     }

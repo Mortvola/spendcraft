@@ -80,8 +80,8 @@ const Payee: React.FC = () => {
     <div className="payee-report window window1">
       <Formik<FormValues>
         initialValues={{
-          startDate: DateTime.now().minus({ years: 1 }).toISODate(),
-          endDate: DateTime.now().toISODate(),
+          startDate: DateTime.now().minus({ years: 1 }).toISODate() ?? '',
+          endDate: DateTime.now().toISODate() ?? '',
           inStoreFilter: true,
           onlineFilter: true,
           otherFilter: true,

@@ -201,8 +201,8 @@ class Account extends BaseModel {
 
     const transactionsResponse = await plaidClient.getTransactions(
       accessToken,
-      startDate.toISODate(),
-      DateTime.now().toISODate(),
+      startDate.toISODate() ?? '',
+      DateTime.now().toISODate() ?? '',
       {
         count: 250,
         offset: 0,

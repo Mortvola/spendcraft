@@ -1,6 +1,6 @@
 import React, { ReactElement, useState } from 'react';
 import { Button, Modal } from 'react-bootstrap';
-import { Institution } from 'plaid';
+import { Institution, ProductStatus } from 'plaid';
 import { DateTime } from 'luxon';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import Http from '@mortvola/http';
@@ -76,11 +76,10 @@ const InstitutionInfoDialog: React.FC<PropsType & ModalProps> = ({
         .map(([key, value]) => (
           <div className={styles.statusItem} key={key}>
             <div>{product(key)}</div>
-            <div>{value.status}</div>
-            <div>{percent(value.breakdown.success)}</div>
-            <div>{percent(value.breakdown.error_plaid)}</div>
-            <div>{percent(value.breakdown.error_institution)}</div>
-            <div>{DateTime.fromISO(value.last_status_change).toRelative()}</div>
+            <div>{percent((value as ProductStatus).breakdown.success)}</div>
+            <div>{percent((value as ProductStatus).breakdown.error_plaid)}</div>
+            <div>{percent((value as ProductStatus).breakdown.error_institution)}</div>
+            <div>{DateTime.fromISO((value as ProductStatus).last_status_change).toRelative()}</div>
           </div>
         ));
     }

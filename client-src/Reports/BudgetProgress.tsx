@@ -35,7 +35,18 @@ const BudgetProgress: React.FC = observer(() => {
           const body = await response.body();
 
           const date = DateTime.fromFormat(value, 'M-yyyy');
-          const newDays = new Array<[number, number[]]>(date.daysInMonth);
+
+          if (date === null || date === undefined) {
+            throw new Error('date is null')
+          }
+
+          const { daysInMonth } = date;
+
+          if (daysInMonth === undefined) {
+            throw new Error('daysInMonth is undefined')
+          }
+
+          const newDays = new Array<[number, number[]]>(daysInMonth);
 
           body.forEach((m) => {
             newDays[DateTime.fromISO(m[0]).day - 1] = [m[1], m[2]];
