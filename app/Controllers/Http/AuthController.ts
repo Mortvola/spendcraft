@@ -47,40 +47,46 @@ export default class AuthController {
 
     const trx = await Database.transaction();
 
-    const budget = await (new Budget())
-      .useTransaction(trx)
-      .save();
+    try {
+      const budget = await (new Budget())
+        .useTransaction(trx)
+        .save();
 
-    await budget.initialize();
+      await budget.initialize();
 
-    /**
+      /**
      * Create a new user
      */
-    const user = await (new User())
-      .useTransaction(trx)
-      .fill({
-        username: userDetails.username,
-        email: userDetails.email,
-        password: userDetails.password,
-        budgetId: budget.id,
-      });
-
-    user.generatePassCode();
-
-    user.save();
-
-    await trx.commit();
-
-    Mail.send((message) => {
-      message
-        .from(Env.get('MAIL_FROM_ADDRESS') as string, Env.get('MAIL_FROM_NAME') as string)
-        .to(user.email)
-        .subject('Welcome!')
-        .htmlView('emails/welcome', {
-          code: user.oneTimePassCode?.code,
-          expires: Env.get('TOKEN_EXPIRATION'),
+      const user = await (new User())
+        .useTransaction(trx)
+        .fill({
+          username: userDetails.username,
+          email: userDetails.email,
+          password: userDetails.password,
+          budgetId: budget.id,
         });
-    });
+
+      user.generatePassCode();
+
+      user.save();
+
+      await trx.commit();
+
+      Mail.send((message) => {
+        message
+          .from(Env.get('MAIL_FROM_ADDRESS') as string, Env.get('MAIL_FROM_NAME') as string)
+          .to(user.email)
+          .subject('Welcome!')
+          .htmlView('emails/welcome', {
+            code: user.oneTimePassCode?.code,
+            expires: Env.get('TOKEN_EXPIRATION'),
+          });
+      });
+    }
+    catch (error) {
+      trx.rollback();
+      throw error;
+    }
   }
 
   // eslint-disable-next-line class-methods-use-this

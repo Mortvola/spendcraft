@@ -9,6 +9,7 @@ import Plaid, {
   Products,
   TransactionsGetResponse,
   AccountsGetResponse,
+  Category,
 } from 'plaid';
 
 export {
@@ -246,6 +247,12 @@ class PlaidWrapper {
     catch (error) {
       throw new PlaidException(error);
     }
+  }
+
+  async getCategories(): Promise<Category[]> {
+    const response = await this.plaid.categoriesGet({});
+
+    return response.data.categories;
   }
 }
 

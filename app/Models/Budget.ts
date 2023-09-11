@@ -240,6 +240,316 @@ export default class Budget extends BaseModel {
         budgetId: this.id,
       })
       .save();
+
+    await this.generateBudgetCategories();
+  }
+
+  private async generateBudgetCategories(): Promise<void> {
+    const trx = this.$trx;
+
+    if (trx === undefined) {
+      throw new Error('transaction must be defined');
+    }
+
+    // Food Group
+
+    const food = await (new Group())
+      .useTransaction(trx)
+      .fill({
+        name: 'Food',
+        system: false,
+        budgetId: this.id,
+      })
+      .save();
+
+    await (new Category())
+      .useTransaction(trx)
+      .fill({
+        groupId: food.id,
+        name: 'Groceries',
+        amount: 0.0,
+      })
+      .save();
+
+    await (new Category())
+      .useTransaction(trx)
+      .fill({
+        groupId: food.id,
+        name: 'Dining Out',
+        amount: 0.0,
+      })
+      .save();
+
+    // No Group Group
+
+    const noGroup = await Group.query({ client: trx })
+      .where('budgetId', this.id)
+      .andWhere('type', 'NO GROUP')
+      .firstOrFail();
+
+    await (new Category())
+      .useTransaction(trx)
+      .fill({
+        groupId: noGroup.id,
+        name: 'Entertainment',
+        amount: 0.0,
+      })
+      .save();
+
+    await (new Category())
+      .useTransaction(trx)
+      .fill({
+        groupId: noGroup.id,
+        name: 'Miscellaneous',
+        amount: 0.0,
+      })
+      .save();
+
+    // Home Improvement Group
+
+    const homeImprovement = await (new Group())
+      .useTransaction(trx)
+      .fill({
+        name: 'Home Improvement',
+        system: false,
+        budgetId: this.id,
+      })
+      .save();
+
+    await (new Category())
+      .useTransaction(trx)
+      .fill({
+        groupId: homeImprovement.id,
+        name: 'Maintenance',
+        amount: 0.0,
+      })
+      .save();
+
+    await (new Category())
+      .useTransaction(trx)
+      .fill({
+        groupId: homeImprovement.id,
+        name: 'Furniture',
+        amount: 0.0,
+      })
+      .save();
+
+    await (new Category())
+      .useTransaction(trx)
+      .fill({
+        groupId: homeImprovement.id,
+        name: 'Other',
+        amount: 0.0,
+      })
+      .save();
+
+    // Health Care Group
+
+    const healthCare = await (new Group())
+      .useTransaction(trx)
+      .fill({
+        name: 'Health Care',
+        system: false,
+        budgetId: this.id,
+      })
+      .save();
+
+    await (new Category())
+      .useTransaction(trx)
+      .fill({
+        groupId: healthCare.id,
+        name: 'Medical',
+        amount: 0.0,
+      })
+      .save();
+
+    await (new Category())
+      .useTransaction(trx)
+      .fill({
+        groupId: healthCare.id,
+        name: 'Dental',
+        amount: 0.0,
+      })
+      .save();
+
+    await (new Category())
+      .useTransaction(trx)
+      .fill({
+        groupId: healthCare.id,
+        name: 'Vision',
+        amount: 0.0,
+      })
+      .save();
+
+    // Insurance Group
+
+    const insurance = await (new Group())
+      .useTransaction(trx)
+      .fill({
+        name: 'Insurance',
+        system: false,
+        budgetId: this.id,
+      })
+      .save();
+
+    await (new Category())
+      .useTransaction(trx)
+      .fill({
+        groupId: insurance.id,
+        name: 'Medical',
+        amount: 0.0,
+      })
+      .save();
+
+    await (new Category())
+      .useTransaction(trx)
+      .fill({
+        groupId: insurance.id,
+        name: 'Dental',
+        amount: 0.0,
+      })
+      .save();
+
+    await (new Category())
+      .useTransaction(trx)
+      .fill({
+        groupId: insurance.id,
+        name: 'Vision',
+        amount: 0.0,
+      })
+      .save();
+
+    await (new Category())
+      .useTransaction(trx)
+      .fill({
+        groupId: insurance.id,
+        name: 'House/Car',
+        amount: 0.0,
+      })
+      .save();
+
+    // Bills Group
+
+    const bills = await (new Group())
+      .useTransaction(trx)
+      .fill({
+        name: 'Bills',
+        system: false,
+        budgetId: this.id,
+      })
+      .save();
+
+    await (new Category())
+      .useTransaction(trx)
+      .fill({
+        groupId: bills.id,
+        name: 'Electric',
+        amount: 0.0,
+      })
+      .save();
+
+    await (new Category())
+      .useTransaction(trx)
+      .fill({
+        groupId: bills.id,
+        name: 'Natural Gas',
+        amount: 0.0,
+      })
+      .save();
+
+    await (new Category())
+      .useTransaction(trx)
+      .fill({
+        groupId: bills.id,
+        name: 'Garbage/Recycling',
+        amount: 0.0,
+      })
+      .save();
+
+    // Taxes Group
+
+    const taxes = await (new Group())
+      .useTransaction(trx)
+      .fill({
+        name: 'Taxes',
+        system: false,
+        budgetId: this.id,
+      })
+      .save();
+
+    await (new Category())
+      .useTransaction(trx)
+      .fill({
+        groupId: taxes.id,
+        name: 'Federal',
+        amount: 0.0,
+      })
+      .save();
+
+    await (new Category())
+      .useTransaction(trx)
+      .fill({
+        groupId: taxes.id,
+        name: 'State',
+        amount: 0.0,
+      })
+      .save();
+
+    await (new Category())
+      .useTransaction(trx)
+      .fill({
+        groupId: taxes.id,
+        name: 'Property',
+        amount: 0.0,
+      })
+      .save();
+
+    await (new Category())
+      .useTransaction(trx)
+      .fill({
+        groupId: taxes.id,
+        name: 'Preparation Fees',
+        amount: 0.0,
+      })
+      .save();
+
+    // Car Group
+
+    const car = await (new Group())
+      .useTransaction(trx)
+      .fill({
+        name: 'Car',
+        system: false,
+        budgetId: this.id,
+      })
+      .save();
+
+    await (new Category())
+      .useTransaction(trx)
+      .fill({
+        groupId: car.id,
+        name: 'Gasoline',
+        amount: 0.0,
+      })
+      .save();
+
+    await (new Category())
+      .useTransaction(trx)
+      .fill({
+        groupId: car.id,
+        name: 'Maintenance',
+        amount: 0.0,
+      })
+      .save();
+
+    await (new Category())
+      .useTransaction(trx)
+      .fill({
+        groupId: car.id,
+        name: 'Registration',
+        amount: 0.0,
+      })
+      .save();
   }
 
   // eslint-disable-next-line class-methods-use-this
