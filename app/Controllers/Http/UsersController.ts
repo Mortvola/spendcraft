@@ -175,32 +175,56 @@ export default class UsersController {
             plan.delete()
           )));
 
+          // Delete institutions
+          const institutions = await budget.related('institutions').query();
+
+          await Promise.all(institutions.map(async (institution) => {
+            const accounts = await institution.related('accounts').query();
+
+            await Promise.all(accounts.map(async (account) => {
+              const acctTransactions = await account.related('accountTransactions').query();
+
+              await Promise.all(acctTransactions.map(async (acctTransaction) => (
+                await acctTransaction.delete()
+              )))
+
+              const histories = await account.related('balanceHistory').query();
+
+              await Promise.all(histories.map(async (history) => (
+                await history.delete()
+              )))
+
+              return account.delete();
+            }));
+
+            return institution.delete()
+          }))
+
+          // Delete transactions
+          const transactions = await budget.related('transactions').query();
+
+          await Promise.all(transactions.map(async (transaction) => {
+            const transactionCats = await transaction.related('transactionCategories').query();
+
+            await Promise.all(transactionCats.map(async (transactionCat) => (
+              transactionCat.delete()
+            )));
+
+            return transaction.delete()
+          }))
+
           // Delete groups
           const groups = await budget.related('groups').query();
 
           await Promise.all(groups.map(async (group) => {
             const categories = await group.related('categories').query();
 
-            await Promise.all(categories.map(async (category) => (
+            await Promise.all(categories.map(async (category) => {
               category.delete()
-            )));
+            }));
 
             return group.delete()
           }));
-
-          // Delete institutions
-          const institutions = await budget.related('institutions').query();
-
-          await Promise.all(institutions.map(async (institution) => (
-            institution.delete()
-          )))
-
-          // Delete transactions
-          const transactions = await budget.related('transactions').query();
-
-          await Promise.all(transactions.map(async (transaction) => (
-            transaction.delete()
-          )))
 
           await budget.delete();
         }
