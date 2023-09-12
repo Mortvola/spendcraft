@@ -15,6 +15,7 @@ import { useStores } from './State/mobxStore';
 import IconButton from './IconButton';
 import styles from './UserAccount.module.css'
 import { useDeleteConfirmation } from './DeleteConfirmation';
+import { useNavigate } from 'react-router-dom';
 
 type FormValues = {
   username: string,
@@ -40,6 +41,8 @@ const MyInputGroup: React.FC<FormikProps<FormValues>> = (props: FormikProps<Form
 const UserAccount: React.FC = () => {
   const stores = useStores();
   const [initialized, setInitialized] = useState<boolean>(false);
+  const navigate = useNavigate();
+
   const [DeleteConfirmation, handleDeleteClick] = useDeleteConfirmation(
     'Delete Confirmation',
     'Delete',
@@ -58,6 +61,7 @@ const UserAccount: React.FC = () => {
 
       if (response.ok) {
         stores.refresh();
+        navigate('/');
       }
     },
   );
