@@ -85,7 +85,6 @@
   },
   "devDependencies": {
     "@adonisjs/assembler": "^5.4.1",
-    "@types/cron": "^2.0.0",
     "@types/jsonwebtoken": "^9.0.1",
     "@types/prop-types": "^15.7.4",
     "@types/react": "^18.0.9",
