@@ -40,6 +40,8 @@
     "@phc/argon2": "^1.0.9",
     "@popperjs/core": "^2.11.2",
     "@poppinss/utils": "^5.0.0",
+    "@stripe/react-stripe-js": "^2.3.0",
+    "@stripe/stripe-js": "^2.1.5",
     "acorn": "^8.7.0",
     "adonis5-jwt": "^1.1.7",
     "ajv": "^8.9.0",

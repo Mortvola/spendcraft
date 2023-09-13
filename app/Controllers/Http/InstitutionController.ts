@@ -320,6 +320,7 @@ class InstitutionController {
             balance: account.balances.current,
             tracking: account.tracking as TrackingType,
             enabled: true,
+            closed: false,
           });
 
         if (options && options.client) {
@@ -414,6 +415,7 @@ class InstitutionController {
         subtype: account.subtype,
         syncDate: DateTime.now(),
         rate: account.rate,
+        closed: false,
       });
 
       // eslint-disable-next-line no-await-in-loop
