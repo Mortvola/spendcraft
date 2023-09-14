@@ -128,7 +128,7 @@ class Group implements GroupInterface {
   }
 
   async update(name: string): Promise<null | Error[]> {
-    const response = await Http.patch(`/api/v1/groups/${this.id}`, { name });
+    const response = await Http.patch(`/api/v1/groups/${this.id}`, { name, hidden: false });
 
     const body = await response.body();
 

@@ -13,7 +13,7 @@ export interface GroupProps {
 export const isGroupProps = (r: unknown): r is GroupProps => (
   (r as GroupProps).id !== undefined
   && (r as GroupProps).name !== undefined
-  && (r as GroupProps).type !== undefined
+  // && (r as GroupProps).type !== undefined
 );
 
 export type CategoryType = 'REGULAR' | 'UNASSIGNED' | 'FUNDING POOL' | 'ACCOUNT TRANSFER' | 'LOAN';
