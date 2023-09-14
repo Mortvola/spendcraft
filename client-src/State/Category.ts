@@ -60,6 +60,7 @@ class Category extends TransactionContainer implements CategoryInterface {
     const response = await Http.patch(`/api/v1/groups/${group.id}/categories/${this.id}`, {
       name,
       monthlyExpenses,
+      hidden: false,
     });
 
     const body = await response.body();
