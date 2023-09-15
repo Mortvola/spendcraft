@@ -30,7 +30,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
   type FormValues = {
     name: string,
     groupId: string,
-    monthlyExpenses: boolean,
+    // monthlyExpenses: boolean,
   }
 
   const handleSubmit = async (values: FormValues, bag: FormikHelpers<FormValues>) => {
@@ -45,10 +45,10 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
     }
 
     if (category) {
-      errors = await category.update(values.name, selectedGroup, values.monthlyExpenses);
+      errors = await category.update(values.name, selectedGroup, false); // values.monthlyExpenses);
     }
     else {
-      errors = await selectedGroup.addCategory(values.name, values.monthlyExpenses);
+      errors = await selectedGroup.addCategory(values.name, false); // values.monthlyExpenses);
     }
 
     if (errors) {
@@ -116,7 +116,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
       initialValues={{
         name: category && category.name ? category.name : '',
         groupId: group ? group.id.toString() : '',
-        monthlyExpenses: category ? category.monthlyExpenses : false,
+        // monthlyExpenses: category ? category.monthlyExpenses : false,
       }}
       validate={handleValidate}
       onSubmit={handleSubmit}
@@ -158,7 +158,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
             <FormError name="group" />
           </label>
         </div>
-        <FormCheckbox name="monthlyExpenses" label="Used for monthly expenses" />
+        {/* <FormCheckbox name="monthlyExpenses" label="Used for monthly expenses" /> */}
       </div>
     </FormModal>
   );
