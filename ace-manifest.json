@@ -133,10 +133,10 @@
       "args": [
         {
           "type": "string",
-          "propertyName": "accessToken",
-          "name": "accessToken",
+          "propertyName": "itemId",
+          "name": "itemId",
           "required": true,
-          "description": "Access token of the item to reset"
+          "description": "Item id of the item for which to fire the webhook"
         }
       ],
       "aliases": [],
@@ -235,6 +235,26 @@
           "description": "Updates item id"
         }
       ]
+    },
+    "plaid:refresh-transactions": {
+      "settings": {
+        "loadApp": true,
+        "stayAlive": false
+      },
+      "commandPath": "./commands/PlaidRefreshTransactions",
+      "commandName": "plaid:refresh-transactions",
+      "description": "Refreshes an items transactions",
+      "args": [
+        {
+          "type": "string",
+          "propertyName": "itemId",
+          "name": "itemId",
+          "required": true,
+          "description": "Item id of the item for which to refresh the transactions"
+        }
+      ],
+      "aliases": [],
+      "flags": []
     },
     "plaid:remove-item": {
       "settings": {
@@ -640,6 +660,12 @@
           "propertyName": "compactOutput",
           "type": "boolean",
           "description": "A compact single-line output"
+        },
+        {
+          "name": "disable-locks",
+          "propertyName": "disableLocks",
+          "type": "boolean",
+          "description": "Disable locks acquired to run migrations safely"
         }
       ]
     },
@@ -683,6 +709,12 @@
           "propertyName": "compactOutput",
           "type": "boolean",
           "description": "A compact single-line output"
+        },
+        {
+          "name": "disable-locks",
+          "propertyName": "disableLocks",
+          "type": "boolean",
+          "description": "Disable locks acquired to run migrations safely"
         }
       ]
     },
@@ -733,6 +765,12 @@
           "propertyName": "dryRun",
           "type": "boolean",
           "description": "Do not run actual queries. Instead view the SQL output"
+        },
+        {
+          "name": "disable-locks",
+          "propertyName": "disableLocks",
+          "type": "boolean",
+          "description": "Disable locks acquired to run migrations safely"
         }
       ]
     },
@@ -770,6 +808,12 @@
           "propertyName": "seed",
           "type": "boolean",
           "description": "Run seeders"
+        },
+        {
+          "name": "disable-locks",
+          "propertyName": "disableLocks",
+          "type": "boolean",
+          "description": "Disable locks acquired to run migrations safely"
         }
       ]
     },
@@ -813,6 +857,12 @@
           "propertyName": "dropTypes",
           "type": "boolean",
           "description": "Drop all custom types (Postgres only)"
+        },
+        {
+          "name": "disable-locks",
+          "propertyName": "disableLocks",
+          "type": "boolean",
+          "description": "Disable locks acquired to run migrations safely"
         }
       ]
     },

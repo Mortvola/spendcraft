@@ -53,7 +53,7 @@ class CategoryController {
         .whereHas('group', (query) => {
           query.where('budgetId', budget.id)
         })
-        // Get the sum of the transations since the first of the month.
+        // Get the sum of the transactions since the first of the month.
         .withAggregate('transactionCategory', (query) => {
           query.sum('amount').as('sum')
             .whereHas('transaction', (transQuery) => {

@@ -1,38 +1,39 @@
 import { BaseCommand, args } from '@adonisjs/core/build/standalone'
 import plaidClient from '@ioc:Plaid';
+import Institution from 'App/Models/Institution'
 import Env from '@ioc:Adonis/Core/Env'
-import Institution from 'App/Models/Institution';
-import { SandboxItemFireWebhookRequestWebhookCodeEnum } from 'plaid';
 
-export default class PlaidFireWebhook extends BaseCommand {
+export default class PlaidRefreshTransactions extends BaseCommand {
   /**
    * Command name is used to run the command
    */
-  public static commandName = 'plaid:fire-webhook'
+  public static commandName = 'plaid:refresh-transactions'
 
   /**
    * Command description is displayed in the "help" output
    */
-  public static description = 'Fires an item webhook'
+  public static description = 'Refreshes an items transactions'
 
-  @args.string({ description: 'Item id of the item for which to fire the webhook' })
+  @args.string({ description: 'Item id of the item for which to refresh the transactions' })
   public itemId: string
 
   public static settings = {
     /**
      * Set the following value to true, if you want to load the application
-     * before running the command
+     * before running the command. Don't forget to call `node ace generate:manifest` 
+     * afterwards.
      */
     loadApp: true,
 
     /**
      * Set the following value to true, if you want this command to keep running until
-     * you manually decide to exit the process
+     * you manually decide to exit the process. Don't forget to call 
+     * `node ace generate:manifest` afterwards.
      */
     stayAlive: false,
   }
 
-  public async run (): Promise<void> {
+  public async run() {
     const institution = await Institution.findByOrFail('plaidItemId', this.itemId);
 
     const environmentRegEx = new RegExp(`access-${Env.get('PLAID_ENV')}.+`)
@@ -45,9 +46,8 @@ export default class PlaidFireWebhook extends BaseCommand {
       console.log(institution.accessToken);
 
       if (institution.accessToken.match(environmentRegEx)) {
-        await plaidClient.sandboxItemFireWebhook(
+        await plaidClient.refreshTransactions(
           institution.accessToken,
-          SandboxItemFireWebhookRequestWebhookCodeEnum.SyncUpdatesAvailable,
         );
       }
       else {

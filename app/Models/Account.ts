@@ -8,12 +8,15 @@ import plaidClient, { PlaidTransaction } from '@ioc:Plaid';
 import AccountTransaction from 'App/Models/AccountTransaction';
 import BalanceHistory from 'App/Models/BalanceHistory';
 import Institution from 'App/Models/Institution';
-import { AccountType, CategoryBalanceProps, TrackingType } from 'Common/ResponseTypes';
+import { AccountType, CategoryBalanceProps, TrackingType, TransactionType } from 'Common/ResponseTypes';
 import Transaction from 'App/Models/Transaction';
 import Budget from 'App/Models/Budget';
 import { Exception } from '@poppinss/utils';
 import { Location } from 'plaid';
 import { XMLParser } from 'fast-xml-parser';
+import TransactionCategory from './TransactionCategory';
+import { TransactionClientContract } from '@ioc:Adonis/Lucid/Database';
+import Category from './Category';
 
 export type AccountSyncResult = {
   categories: CategoryBalanceProps[],
@@ -231,6 +234,123 @@ class Account extends BaseModel {
     return sum;
   }
 
+  public async addTransaction(
+    plaidTransaction: PlaidTransaction,
+    budget: Budget,
+    pendingTransactions?: AccountTransaction[],
+  ): Promise<number> {
+    if (!this.$trx) {
+      throw new Error('database transaction not set');
+    }
+
+    let transactionAmount = 0;
+
+    if (plaidTransaction.amount !== null) {
+      const getLocation = (location: Location) => {
+        if (location.address !== null
+          || location.city !== null
+          || location.country !== null
+          || location.lat !== null
+          || location.lon !== null
+          || location.postal_code !== null
+          || location.region !== null
+          || location.store_number !== null
+        ) {
+          return {
+            address: plaidTransaction.location.address,
+            city: plaidTransaction.location.city,
+            region: plaidTransaction.location.region,
+            postalCode: plaidTransaction.location.postal_code,
+            country: plaidTransaction.location.country,
+            lat: plaidTransaction.location.lat,
+            lon: plaidTransaction.location.lon,
+            storeNumber: plaidTransaction.location.store_number,
+          }
+        }
+
+        return null;
+      }
+
+      // First check to see if the transaction is present. If it is then don't insert it.
+      let acctTrans = await AccountTransaction
+        .findBy('providerTransactionId', plaidTransaction.transaction_id, { client: this.$trx });
+
+      if (acctTrans) {
+        // The transaction already exists. Update it.
+
+        const transaction = await Transaction.findOrFail(acctTrans.transactionId);
+
+        // if the transaction was deleted then do nothing.
+        if (!transaction.deleted) {
+          // If the existing transaction is pending
+          // and the Plaid transaction is still pending then remove
+          // the transaction from the pending transaction array (transactions in the
+          // pending transaction array will be removed from the database).
+          if (pendingTransactions && acctTrans.pending && plaidTransaction.pending) {
+            const index = pendingTransactions.findIndex(
+              (p) => p.provider === 'PLAID' && p.providerTransactionId === plaidTransaction.transaction_id,
+            );
+
+            if (index !== -1) {
+              // Transaction is still pending and it was found in the pending transaction
+              // array so remove it so it is not deleted from the database.
+              pendingTransactions.splice(index, 1);
+            }
+          }
+
+          // todo: check to see if any of these attributes have changed
+          acctTrans.merge({
+            name: plaidTransaction.name ?? undefined,
+            amount: -plaidTransaction.amount,
+            pending: plaidTransaction.pending ?? false,
+            paymentChannel: plaidTransaction.payment_channel,
+            merchantName: plaidTransaction.merchant_name,
+            accountOwner: plaidTransaction.account_owner,
+            location: getLocation(plaidTransaction.location),
+          });
+
+          await acctTrans.save();
+
+          transaction.merge({
+            date: DateTime.fromISO(plaidTransaction.date),
+          });
+
+          await transaction.save();
+        }
+      }
+      else {
+        const transaction = await (new Transaction())
+          .useTransaction(this.$trx)
+          .fill({
+            date: DateTime.fromISO(plaidTransaction.date),
+            budgetId: budget.id,
+          })
+          .save();
+
+        acctTrans = await (new AccountTransaction())
+          .useTransaction(this.$trx)
+          .fill({
+            transactionId: transaction.id,
+            provider: 'PLAID',
+            providerTransactionId: plaidTransaction.transaction_id,
+            accountId: this.id,
+            name: plaidTransaction.name ?? undefined,
+            amount: -plaidTransaction.amount,
+            pending: plaidTransaction.pending ?? false,
+            paymentChannel: plaidTransaction.payment_channel,
+            merchantName: plaidTransaction.merchant_name,
+            accountOwner: plaidTransaction.account_owner,
+            location: getLocation(plaidTransaction.location),
+          })
+          .save();
+
+        transactionAmount = acctTrans.amount;
+      }
+    }
+
+    return transactionAmount;
+  }
+
   // eslint-disable-next-line class-methods-use-this
   public async applyTransactions(
     this: Account,
@@ -246,112 +366,9 @@ class Account extends BaseModel {
     // let pendingSum = 0;
 
     await Promise.all(plaidTransactions.map(async (plaidTransaction) => {
-      if (!this.$trx) {
-        throw new Error('database transaction not set');
-      }
+      const balanceChange = await this.addTransaction(plaidTransaction, budget, pendingTransactions);
 
-      if (plaidTransaction.amount !== null) {
-        const getLocation = (location: Location) => {
-          if (location.address !== null
-            || location.city !== null
-            || location.country !== null
-            || location.lat !== null
-            || location.lon !== null
-            || location.postal_code !== null
-            || location.region !== null
-            || location.store_number !== null
-          ) {
-            return {
-              address: plaidTransaction.location.address,
-              city: plaidTransaction.location.city,
-              region: plaidTransaction.location.region,
-              postalCode: plaidTransaction.location.postal_code,
-              country: plaidTransaction.location.country,
-              lat: plaidTransaction.location.lat,
-              lon: plaidTransaction.location.lon,
-              storeNumber: plaidTransaction.location.store_number,
-            }
-          }
-
-          return null;
-        }
-
-        // First check to see if the transaction is present. If it is then don't insert it.
-        let acctTrans = await AccountTransaction
-          .findBy('providerTransactionId', plaidTransaction.transaction_id, { client: this.$trx });
-
-        if (acctTrans) {
-          const transaction = await Transaction.findOrFail(acctTrans.transactionId);
-
-          // if the transaction was deleted then do nothing.
-          if (!transaction.deleted) {
-            // If the existing transaction is pending
-            // and the Plaid transaction is still pending then remove
-            // the transaction from the pending transaction array (transactions in the
-            // pending transaction array will be removed from the database).
-            if (pendingTransactions && acctTrans.pending && plaidTransaction.pending) {
-              const index = pendingTransactions.findIndex(
-                (p) => p.provider === 'PLAID' && p.providerTransactionId === plaidTransaction.transaction_id,
-              );
-
-              if (index !== -1) {
-                // Transaction is still pending and it was found in the pending transaction
-                // array so remove it so it is not deleted from the database.
-                pendingTransactions.splice(index, 1);
-              }
-            }
-
-            // todo: check to see if any of these attributes have changed
-            acctTrans.merge({
-              name: plaidTransaction.name ?? undefined,
-              amount: -plaidTransaction.amount,
-              pending: plaidTransaction.pending ?? false,
-              paymentChannel: plaidTransaction.payment_channel,
-              merchantName: plaidTransaction.merchant_name,
-              accountOwner: plaidTransaction.account_owner,
-              location: getLocation(plaidTransaction.location),
-            });
-
-            await acctTrans.save();
-
-            transaction.merge({
-              date: DateTime.fromISO(plaidTransaction.date),
-            });
-
-            await transaction.save();
-          }
-        }
-        else {
-          const transaction = await (new Transaction())
-            .useTransaction(this.$trx)
-            .fill({
-              date: DateTime.fromISO(plaidTransaction.date),
-              budgetId: budget.id,
-            })
-            .save();
-
-          acctTrans = await (new AccountTransaction())
-            .useTransaction(this.$trx)
-            .fill({
-              transactionId: transaction.id,
-              provider: 'PLAID',
-              providerTransactionId: plaidTransaction.transaction_id,
-              accountId: this.id,
-              name: plaidTransaction.name ?? undefined,
-              amount: -plaidTransaction.amount,
-              pending: plaidTransaction.pending ?? false,
-              paymentChannel: plaidTransaction.payment_channel,
-              merchantName: plaidTransaction.merchant_name,
-              accountOwner: plaidTransaction.account_owner,
-              location: getLocation(plaidTransaction.location),
-            })
-            .save();
-
-          if (!plaidTransaction.pending) {
-            sum += acctTrans.amount;
-          }
-        }
-      }
+      sum += balanceChange
     }));
 
     // Delete any pending transaction in the database that remain in the
@@ -546,6 +563,65 @@ class Account extends BaseModel {
     await this.updateAccountBalanceHistory(this.balance);
 
     await this.save();
+  }
+
+  public async insertStartingBalance(
+    this: Account,
+    budget: Budget,
+    startingBalance: number,
+    fundingPool: Category,
+  ): Promise<void> {
+    if (!this.$trx) {
+      throw new Error('database transaction not set');
+    }
+
+    const transaction = (new Transaction())
+      .fill({
+        date: this.startDate,
+        sortOrder: -1,
+        budgetId: budget.id,
+        type: TransactionType.STARTING_BALANCE,
+      });
+
+    transaction.useTransaction(this.$trx);
+
+    // eslint-disable-next-line no-await-in-loop
+    await transaction.save();
+
+    const transId = transaction.id;
+
+    const acctTransaction = (new AccountTransaction())
+      .fill({
+        transactionId: transId,
+        accountId: this.id,
+        name: 'Starting Balance',
+        amount: startingBalance,
+      });
+
+    acctTransaction.useTransaction(this.$trx);
+
+    // eslint-disable-next-line no-await-in-loop
+    await acctTransaction.save();
+
+    if (this.tracking === 'Transactions') {
+      // eslint-disable-next-line no-await-in-loop
+      const transactionCategory = (new TransactionCategory())
+        .fill({
+          transactionId: transId,
+          categoryId: fundingPool.id,
+          amount: startingBalance,
+        });
+
+      transactionCategory.useTransaction(this.$trx);
+
+      // eslint-disable-next-line no-await-in-loop
+      await transactionCategory.save();
+
+      fundingPool.amount += startingBalance;
+
+      // eslint-disable-next-line no-await-in-loop
+      await fundingPool.save();
+    }
   }
 }
 

@@ -16,10 +16,10 @@ export default class PlaidGetAccount extends BaseCommand {
   @args.string({ description: 'Access token of the item to retrieve' })
   public accessToken: string
 
-  @args.string({ description: 'Transation period start date (YYYY-MM-DD)' })
+  @args.string({ description: 'Transaction period start date (YYYY-MM-DD)' })
   public startDate: string
 
-  @args.string({ description: 'Transation period end date (YYYY-MM-DD)' })
+  @args.string({ description: 'Transaction period end date (YYYY-MM-DD)' })
   public endDate: string
 
   @args.spread()
@@ -42,7 +42,7 @@ export default class PlaidGetAccount extends BaseCommand {
   public async run (): Promise<void> {
     try {
       let account: TransactionsGetResponse | null = null;
-  
+
       if (this.accountIds[0] === 'all') {
         account = await plaidClient.getTransactions(
           this.accessToken,
@@ -60,10 +60,10 @@ export default class PlaidGetAccount extends BaseCommand {
           },
         );
       }
-  
-      this.logger.info(JSON.stringify(account, null, 2));    
+
+      this.logger.info(JSON.stringify(account, null, 2));
     }
-    catch(error) {
+    catch (error) {
       console.log(error);
     }
   }

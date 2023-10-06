@@ -591,7 +591,7 @@ export default class Budget extends BaseModel {
       if (gd) {
         const monthDiff = gd.diff(fundingMonth, 'months').months;
 
-        // TODO: use the planCat.amount sans any transations this month
+        // TODO: use the planCat.amount sans any transactions this month
         const goalDiff = planCat.amount - cat.amount;
 
         let monthlyAmount = 0.0;

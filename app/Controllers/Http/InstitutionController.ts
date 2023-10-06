@@ -17,7 +17,7 @@ import { DateTime } from 'luxon';
 import BalanceHistory from 'App/Models/BalanceHistory';
 import Budget from 'App/Models/Budget';
 import { Exception } from '@poppinss/utils';
-import { CountryCode, AccountType as PlaidAccountType } from 'plaid';
+import { CountryCode, AccountType as PlaidAccountType, Products } from 'plaid';
 import Env from '@ioc:Adonis/Core/Env'
 
 type OnlineAccount = {
@@ -331,19 +331,32 @@ class InstitutionController {
         await acct.save();
 
         if (acct.tracking !== 'Balances') {
-          // eslint-disable-next-line no-await-in-loop
-          const sum = await acct.addTransactions(
-            institution.accessToken, start, budget,
-          );
+          // // eslint-disable-next-line no-await-in-loop
+          // const sum = await acct.addTransactions(
+          //   institution.accessToken, start, budget,
+          // );
 
-          // eslint-disable-next-line no-await-in-loop
-          await acct.save();
+          // // eslint-disable-next-line no-await-in-loop
+          // await acct.save();
 
-          // Insert the 'starting balance' transaction
-          // eslint-disable-next-line no-await-in-loop
-          await InstitutionController.insertStartingBalance(
-            budget, acct, start, acct.balance - sum, fundingPool, options,
-          );
+          // // Insert the 'starting balance' transaction
+          // // eslint-disable-next-line no-await-in-loop
+          // await InstitutionController.insertStartingBalance(
+          //   budget, acct, start, acct.balance - sum, fundingPool, options,
+          // );
+
+          // await plaidClient.getTransactions(
+          //   institution.accessToken,
+          //   start.toISODate() ?? '',
+          //   DateTime.now().toISODate() ?? '',
+          //   {
+          //     count: 250,
+          //     offset: 0,
+          //     account_ids: [acct.plaidAccountId],
+          //   },
+          // );
+          // plaidClient.syncTransactions();
+          // institution.syncUpdate();
         }
         else {
           await acct.updateAccountBalanceHistory(acct.balance);
@@ -523,6 +536,8 @@ class InstitutionController {
 
       await trx.commit();
 
+      await institution.syncUpdate();
+
       return result;
     }
     catch (error) {
@@ -649,7 +664,7 @@ class InstitutionController {
       country_codes: [CountryCode.Us],
       language: 'en',
       webhook,
-      products: [],
+      products: [Products.Transactions],
       access_token: institution.accessToken,
       link_customization_name: 'account_select',
       update: {

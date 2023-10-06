@@ -66,7 +66,9 @@ class WebhookAcknoweldgedEvent extends WebhookEvent {
 }
 
 const itemWebhookCodes = ['ERROR', 'PENDING_EXPIRATION', 'USER_PERMISSION_REVOKED', 'WEBHOOK_UPDATE_ACKNOWLEDGED'];
-const transactionWebhookCodes = ['INITIAL_UPDATE', 'HISTORICAL_UPDATE', 'DEFAULT_UPDATE', 'TRANSACTIONS_REMOVED'];
+const transactionWebhookCodes = [
+  'INITIAL_UPDATE', 'HISTORICAL_UPDATE', 'DEFAULT_UPDATE', 'TRANSACTIONS_REMOVED', 'SYNC_UPDATES_AVAILABLE',
+];
 
 const isWebhookEvent = (r: unknown): r is WebhookEvent => (
   (r as TransactionEvent).webhook_type !== undefined
@@ -80,7 +82,7 @@ const isItemEvent = (r: unknown): r is WebhookItemEvent => (
 
 const isTransactionEvent = (r: unknown): r is TransactionEvent => (
   isWebhookEvent(r)
-  && (r as TransactionEvent).new_transactions !== undefined
+  // && (r as TransactionEvent).webhook_code === 'TRANSACTIONS'
   && transactionWebhookCodes.includes((r as TransactionEvent).webhook_code)
 );
 
@@ -166,6 +168,59 @@ class WebhookController {
     }
   }
 
+  static async syncUpdate(event: TransactionEvent) {
+    const trx = await Database.transaction();
+
+    try {
+      const institution = await Institution.findByOrFail('plaidItemId', event.item_id, { client: trx });
+
+      // const accounts = await institution.related('accounts').query().where('closed', false);
+      const budget = await Budget.findOrFail(institution.budgetId);
+
+      await institution.syncUpdate()
+
+      await trx.commit();
+
+      await applePushNotifications.sendPushNotifications(budget)
+    }
+    catch (error) {
+      Logger.error({ err: error }, `default update failed, event: ${JSON.stringify(event)}`);
+      trx.rollback();
+    }
+  }
+
+  // static async initialUpdate(event: TransactionEvent) {
+  //   const trx = await Database.transaction();
+
+  //   try {
+  //     const institution = await Institution.findByOrFail('plaidItemId', event.item_id, { client: trx });
+
+  //     const accounts = await institution.related('accounts').query().where('closed', false);
+  //     const budget = await Budget.findOrFail(institution.budgetId);
+
+  //     await Promise.all(accounts.map(async (acct) => {
+  //       if (institution.accessToken === null || institution.accessToken === '') {
+  //         throw new Exception(`access token not set for ${institution.plaidItemId}`);
+  //       }
+
+  //       return (
+  //         acct.sync(
+  //           institution.accessToken,
+  //           budget,
+  //         )
+  //       );
+  //     }));
+
+  //     await trx.commit();
+
+  //     await applePushNotifications.sendPushNotifications(budget)
+  //   }
+  //   catch (error) {
+  //     Logger.error({ err: error }, `default update failed, event: ${JSON.stringify(event)}`);
+  //     trx.rollback();
+  //   }
+  // }
+
   static async defaultUpdate(event: TransactionEvent) {
     const trx = await Database.transaction();
 
@@ -217,8 +272,14 @@ class WebhookController {
   // eslint-disable-next-line camelcase
   static processTransactionEvent(event: TransactionEvent): void {
     switch (event.webhook_code) {
+      case 'SYNC_UPDATES_AVAILABLE':
+        Logger.info(JSON.stringify(event));
+        WebhookController.syncUpdate(event);
+        break;
+
       case 'INITIAL_UPDATE':
         Logger.info(JSON.stringify(event));
+        // WebhookController.initialUpdate(event);
         break;
 
       case 'HISTORICAL_UPDATE':

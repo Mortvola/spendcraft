@@ -9,7 +9,9 @@ import Plaid, {
   Products,
   TransactionsGetResponse,
   AccountsGetResponse,
+  TransactionsSyncResponse,
   Category,
+  SandboxItemFireWebhookRequestWebhookCodeEnum,
 } from 'plaid';
 
 export {
@@ -18,6 +20,7 @@ export {
   PlaidError, Transaction as PlaidTransaction,
   TransactionsGetResponse,
   AccountsGetResponse,
+  TransactionsSyncResponse,
 };
 
 export type PlaidConfig = {
@@ -71,7 +74,7 @@ class PlaidWrapper {
       return response.data;
     }
     catch (error) {
-      // console.log(JSON.stringify(error.response.data));
+      console.log(JSON.stringify(error.response.data));
       throw new PlaidException(error);
     }
   }
@@ -160,6 +163,26 @@ class PlaidWrapper {
     }
   }
 
+  async syncTransactions(
+    accessToken: string,
+    cursor: string,
+  ): Promise<Plaid.TransactionsSyncResponse> {
+    try {
+      const param: Plaid.TransactionsSyncRequest = {
+        access_token: accessToken,
+        cursor,
+      }
+
+      const response = await this.plaid.transactionsSync(param);
+
+      return response.data
+    }
+    catch (error) {
+      console.log(JSON.stringify(error.response.data));
+      throw new PlaidException(error);
+    }
+  }
+
   async getTransactions(
     accessToken: string,
     startDate: string,
@@ -167,7 +190,7 @@ class PlaidWrapper {
     options?: Plaid.TransactionsGetRequestOptions,
   ): Promise<Plaid.TransactionsGetResponse> {
     try {
-      const param = {
+      const param: Plaid.TransactionsGetRequest = {
         access_token: accessToken,
         start_date: startDate,
         end_date: endDate,
@@ -180,6 +203,24 @@ class PlaidWrapper {
       );
 
       return response.data;
+    }
+    catch (error) {
+      console.log(JSON.stringify(error.response.data));
+      throw new PlaidException(error);
+    }
+  }
+
+  async refreshTransactions(
+    accessToken: string,
+  ): Promise<Plaid.TransactionsRefreshResponse> {
+    try {
+      const param: Plaid.TransactionsRefreshRequest = {
+        access_token: accessToken,
+      }
+
+      const response = await this.plaid.transactionsRefresh(param);
+
+      return response.data
     }
     catch (error) {
       console.log(JSON.stringify(error.response.data));
@@ -235,13 +276,14 @@ class PlaidWrapper {
     }
   }
 
-  async sandboxItemFireWebhook(accessToken: string): Promise<Plaid.SandboxItemFireWebhookResponse> {
+  async sandboxItemFireWebhook(accessToken: string, code: SandboxItemFireWebhookRequestWebhookCodeEnum): Promise<Plaid.SandboxItemFireWebhookResponse> {
     try {
       const response = await this.plaid.sandboxItemFireWebhook({
         access_token: accessToken,
-        webhook_code: Plaid.SandboxItemFireWebhookRequestWebhookCodeEnum.DefaultUpdate,
+        webhook_code: code,
       });
 
+      console.log(`Webhook fired: ${response.data.webhook_fired}, request id: ${response.data.request_id}`)
       return response.data;
     }
     catch (error) {
