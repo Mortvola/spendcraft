@@ -87,84 +87,91 @@ class Institution extends BaseModel {
         // eslint-disable-next-line no-await-in-loop
         const response = await plaidClient.syncTransactions(this.accessToken, this.cursor ?? '');
 
-        for (let i = 0; i < response.added.length; i += 1) {
-          const added: PlaidTransaction = response.added[i];
+        // If the next_cursor is null or empty then the initial data is not ready yet.
+        if ((response.next_cursor ?? '') !== '') {
+          for (let i = 0; i < response.added.length; i += 1) {
+            const added: PlaidTransaction = response.added[i];
 
-          // Find account
-          // eslint-disable-next-line no-await-in-loop
-          const acct = accounts.find((a) => a.$attributes.plaidAccountId === added.account_id)
-
-          // Only add transactions on or after the starting date.
-          if (acct && DateTime.fromISO(added.date) >= acct.startDate) {
+            // Find account
             // eslint-disable-next-line no-await-in-loop
-            const amount = await acct.addTransaction(added, budget);
+            const acct = accounts.find((a) => a.$attributes.plaidAccountId === added.account_id)
 
-            if (!added.pending) {
-              acct.$extras.addedSum = (acct.$extras.addedSum ?? 0) + amount;
+            // Only add transactions on or after the starting date.
+            if (acct && DateTime.fromISO(added.date) >= acct.startDate) {
+              // eslint-disable-next-line no-await-in-loop
+              const amount = await acct.addTransaction(added, budget);
+
+              if (!added.pending) {
+                acct.$extras.addedSum = (acct.$extras.addedSum ?? 0) + amount;
+              }
             }
           }
-        }
 
-        for (let i = 0; i < response.modified.length; i += 1) {
-          const modified: PlaidTransaction = response.modified[i];
+          for (let i = 0; i < response.modified.length; i += 1) {
+            const modified: PlaidTransaction = response.modified[i];
 
-          // Find account
-          // eslint-disable-next-line no-await-in-loop
-          const acct = accounts.find((a) => a.$attributes.plaidAccountId === modified.account_id)
-
-          if (acct) {
+            // Find account
             // eslint-disable-next-line no-await-in-loop
-            // await acct.addTransaction(modified, budget);
-          }
-        }
+            const acct = accounts.find((a) => a.$attributes.plaidAccountId === modified.account_id)
 
-        for (let i = 0; i < response.removed.length; i += 1) {
-          const removed = response.removed[i];
+            if (acct) {
+              // eslint-disable-next-line no-await-in-loop
+              // await acct.addTransaction(modified, budget);
+            }
+          }
+
+          for (let i = 0; i < response.removed.length; i += 1) {
+            const removed = response.removed[i];
+          }
         }
 
         more = response.has_more;
         this.cursor = response.next_cursor;
       }
 
-      const fundingPool = await budget.getFundingPoolCategory({ client: this.$trx });
+      // If we did not get a next_cursor then that means the data wasn't ready yet.
+      // When it is ready we should receive a webhook.
+      if ((this.cursor ?? '') !== '') {
+        const fundingPool = await budget.getFundingPoolCategory({ client: this.$trx });
 
-      // Update the balance for each account.
-      await Promise.all(accounts.map(async (acct) => {
-        acct.plaidBalance = plaidAccounts.accounts[0].balances.current;
-        if (acct.plaidBalance && (acct.type === 'credit' || acct.type === 'loan')) {
-          acct.plaidBalance = -acct.plaidBalance;
-        }
+        // Update the balance for each account.
+        await Promise.all(accounts.map(async (acct) => {
+          acct.plaidBalance = plaidAccounts.accounts[0].balances.current;
+          if (acct.plaidBalance && (acct.type === 'credit' || acct.type === 'loan')) {
+            acct.plaidBalance = -acct.plaidBalance;
+          }
 
-        // TODO: Move the sync date to the institution.
-        acct.syncDate = DateTime.now();
+          // TODO: Move the sync date to the institution.
+          acct.syncDate = DateTime.now();
 
-        // Add a starting balance record to the accounts that don't have one.
-        // Otherwise, adjust the balance.
-        if (parseInt(acct.$extras.hasStartingBalance, 10) === 0) {
-          acct.balance = acct.plaidBalance ?? 0;
+          // Add a starting balance record to the accounts that don't have one.
+          // Otherwise, adjust the balance.
+          if (parseInt(acct.$extras.hasStartingBalance, 10) === 0) {
+            acct.balance = acct.plaidBalance ?? 0;
+
+            // eslint-disable-next-line no-await-in-loop
+            await acct.insertStartingBalance(
+              budget, acct.balance - (acct.$extras.addedSum ?? 0), fundingPool,
+            );
+          }
+          else {
+            acct.balance += acct.$extras.addedSum;
+          }
+
+          if ((acct.$extras.addedSum ?? 0) !== 0 && acct.tracking === 'Transactions') {
+            const unassigned = await budget.getUnassignedCategory({ client: this.$trx });
+
+            unassigned.amount += (acct.$extras.addedSum ?? 0);
+
+            unassigned.save();
+          }
 
           // eslint-disable-next-line no-await-in-loop
-          await acct.insertStartingBalance(
-            budget, acct.balance - (acct.$extras.addedSum ?? 0), fundingPool,
-          );
-        }
-        else {
-          acct.balance += acct.$extras.addedSum;
-        }
+          await acct.save();
+        }));
 
-        if ((acct.$extras.addedSum ?? 0) !== 0 && acct.tracking === 'Transactions') {
-          const unassigned = await budget.getUnassignedCategory({ client: this.$trx });
-
-          unassigned.amount += (acct.$extras.addedSum ?? 0);
-
-          unassigned.save();
-        }
-
-        // eslint-disable-next-line no-await-in-loop
-        await acct.save();
-      }));
-
-      await this.save();
+        await this.save();
+      }
 
       // await trx.commit();
     }
