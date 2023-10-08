@@ -728,11 +728,13 @@ class InstitutionController {
   }
 
   private static async deleteAccounts(
-    accounts: Account[],
+    institution: Institution,
     budget: Budget,
     trx: TransactionClientContract,
   ): Promise<CategoryBalanceProps[]> {
     const categoryBalances: CategoryBalanceProps[] = [];
+
+    const accounts = await institution.related('accounts').query();
 
     // eslint-disable-next-line no-restricted-syntax
     for (const acct of accounts) {
@@ -830,12 +832,16 @@ class InstitutionController {
     const trx = await Database.transaction();
 
     try {
-      const accounts = await Account.query({ client: trx }).where('institutionId', request.params().instId);
+      const institution = await Institution.findOrFail(request.params().instId, { client: trx });
+
+      if (institution.accessToken) {
+        await plaidClient.removeItem(institution.accessToken);
+      }
 
       // eslint-disable-next-line no-restricted-syntax
-      const result = await InstitutionController.deleteAccounts(accounts, budget, trx);
+      const result = await InstitutionController.deleteAccounts(institution, budget, trx);
 
-      await (await Institution.findOrFail(request.params().instId, { client: trx })).delete();
+      await institution.delete();
 
       await trx.commit();
 
