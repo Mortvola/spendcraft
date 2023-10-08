@@ -91,7 +91,7 @@ class Account extends TransactionContainer implements AccountInterface {
 
       runInAction(() => {
         const { categories, accounts } = body;
-        if (categories.length > 0) {
+        if (categories && categories.length > 0) {
           this.store.categoryTree.updateBalances(categories);
         }
 
