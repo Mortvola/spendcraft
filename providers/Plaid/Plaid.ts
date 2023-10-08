@@ -92,7 +92,7 @@ class PlaidWrapper {
     }
   }
 
-  async getAccounts(accessToken: string, options?: Plaid.AccountsGetRequestOptions): Promise<Plaid.AccountsGetResponse> {
+  async getAccounts(this: PlaidWrapper, accessToken: string, options?: Plaid.AccountsGetRequestOptions): Promise<Plaid.AccountsGetResponse> {
     try {
       const param =         {
         access_token: accessToken,

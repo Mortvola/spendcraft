@@ -356,7 +356,6 @@ class InstitutionController {
           //   },
           // );
           // plaidClient.syncTransactions();
-          // institution.syncUpdate();
         }
         else {
           await acct.updateAccountBalanceHistory(acct.balance);
@@ -518,15 +517,13 @@ class InstitutionController {
     try {
       const institution = await Institution.findOrFail(request.params().instId, { client: trx });
 
-      let result: AddAccountsResponse;
-
       if (requestData.plaidAccounts) {
-        result = await InstitutionController.addOnlineAccounts(
+        await InstitutionController.addOnlineAccounts(
           budget, institution, requestData.plaidAccounts, requestData.startDate, { client: trx },
         );
       }
       else if (requestData.offlineAccounts) {
-        result = await InstitutionController.addOfflineAccounts(
+        await InstitutionController.addOfflineAccounts(
           budget, institution, requestData.offlineAccounts, requestData.startDate, { client: trx },
         );
       }
@@ -536,9 +533,42 @@ class InstitutionController {
 
       await trx.commit();
 
-      await institution.syncUpdate();
+      const trx2 = await Database.transaction();
+      institution.useTransaction(trx2);
 
-      return result;
+      try {
+        await institution.syncUpdate();
+
+        await trx2.commit();
+      }
+      catch (error) {
+        await trx2.rollback();
+        logger.error(error);
+      }
+
+      const accounts = await Promise.all((await institution.related('accounts').query()).map((a) => ({
+        id: a.id,
+        name: a.name,
+        closed: a.closed,
+        type: a.type,
+        subtype: a.subtype,
+        tracking: a.tracking,
+        syncDate: a.syncDate?.toISO() ?? null,
+        balance: a.balance,
+        plaidBalance: a.plaidBalance,
+        rate: a.rate,
+      })));
+
+      const fundingPool = await budget.getFundingPoolCategory();
+      const unassigned = await budget.getUnassignedCategory();
+
+      return {
+        accounts,
+        categories: [
+          { id: fundingPool.id, balance: fundingPool.amount },
+          { id: unassigned.id, balance: unassigned.amount },
+        ],
+      };
     }
     catch (error) {
       await trx.rollback();
@@ -605,28 +635,30 @@ class InstitutionController {
       throw new Error('user is not defined');
     }
 
-    const budget = await user.related('budget').query().firstOrFail();
+    // const budget = await user.related('budget').query().firstOrFail();
 
     const trx = await Database.transaction();
 
     try {
       const institution = await Institution.findOrFail(request.params().instId, { client: trx });
 
-      if (institution.accessToken === null || institution.accessToken === '') {
-        throw new Exception(`access token not set for ${institution.plaidItemId}`);
-      }
+      // if (institution.accessToken === null || institution.accessToken === '') {
+      //   throw new Exception(`access token not set for ${institution.plaidItemId}`);
+      // }
 
-      const account = await Account.findOrFail(request.params().acctId, { client: trx });
+      // const account = await Account.findOrFail(request.params().acctId, { client: trx });
 
-      let result: AccountSyncResult | null = null;
+      // let result: AccountSyncResult | null = null;
 
-      result = await account.sync(
-        institution.accessToken, budget,
-      );
+      // result = await account.sync(
+      //   institution.accessToken, budget,
+      // );
+
+      await institution.syncUpdate();
 
       await trx.commit();
 
-      return result;
+      return null;
     }
     catch (error) {
       await trx.rollback();

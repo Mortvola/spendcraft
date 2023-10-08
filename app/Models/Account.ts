@@ -576,6 +576,7 @@ class Account extends BaseModel {
     }
 
     const transaction = (new Transaction())
+      .useTransaction(this.$trx)
       .fill({
         date: this.startDate,
         sortOrder: -1,
@@ -583,22 +584,17 @@ class Account extends BaseModel {
         type: TransactionType.STARTING_BALANCE,
       });
 
-    transaction.useTransaction(this.$trx);
-
     // eslint-disable-next-line no-await-in-loop
     await transaction.save();
 
-    const transId = transaction.id;
-
     const acctTransaction = (new AccountTransaction())
+      .useTransaction(this.$trx)
       .fill({
-        transactionId: transId,
+        transactionId: transaction.id,
         accountId: this.id,
         name: 'Starting Balance',
         amount: startingBalance,
       });
-
-    acctTransaction.useTransaction(this.$trx);
 
     // eslint-disable-next-line no-await-in-loop
     await acctTransaction.save();
@@ -606,13 +602,12 @@ class Account extends BaseModel {
     if (this.tracking === 'Transactions') {
       // eslint-disable-next-line no-await-in-loop
       const transactionCategory = (new TransactionCategory())
+        .useTransaction(this.$trx)
         .fill({
-          transactionId: transId,
+          transactionId: transaction.id,
           categoryId: fundingPool.id,
           amount: startingBalance,
         });
-
-      transactionCategory.useTransaction(this.$trx);
 
       // eslint-disable-next-line no-await-in-loop
       await transactionCategory.save();

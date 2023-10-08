@@ -227,6 +227,13 @@ export default class UsersController {
           }));
 
           await budget.delete();
+
+          // Remove plaid items
+          await Promise.all(institutions.map(async (institution) => {
+            if (institution.accessToken) {
+              await plaidClient.removeItem(institution.accessToken);
+            }
+          }));
         }
       }
 

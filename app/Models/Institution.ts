@@ -9,8 +9,7 @@ import plaidClient, { PlaidInstitution, PlaidTransaction } from '@ioc:Plaid';
 import Account from 'App/Models/Account';
 import Logger from '@ioc:Adonis/Core/Logger'
 import Budget from 'App/Models/Budget';
-import { CountryCode, TransactionsSyncResponse } from 'plaid';
-import Database from '@ioc:Adonis/Lucid/Database';
+import { CountryCode } from 'plaid';
 import { TransactionType } from 'Common/ResponseTypes';
 import { DateTime } from 'luxon';
 
@@ -66,9 +65,10 @@ class Institution extends BaseModel {
       throw new Error('access token is null');
     }
 
-    const trx = await Database.transaction();
-
-    this.useTransaction(trx);
+    const trx = this.$trx;
+    if (trx === undefined) {
+      throw new Error('transaction not defined');
+    }
 
     try {
       const plaidAccounts = await plaidClient.getAccounts(this.accessToken);
@@ -129,9 +129,7 @@ class Institution extends BaseModel {
       const fundingPool = await budget.getFundingPoolCategory({ client: this.$trx });
 
       // Update the balance for each account.
-      for (let i = 0; i < accounts.length; i += 1) {
-        const acct = accounts[i];
-
+      await Promise.all(accounts.map(async (acct) => {
         acct.plaidBalance = plaidAccounts.accounts[0].balances.current;
         if (acct.plaidBalance && (acct.type === 'credit' || acct.type === 'loan')) {
           acct.plaidBalance = -acct.plaidBalance;
@@ -147,24 +145,33 @@ class Institution extends BaseModel {
 
           // eslint-disable-next-line no-await-in-loop
           await acct.insertStartingBalance(
-            budget, acct.balance - acct.$extras.addedSum, fundingPool,
+            budget, acct.balance - (acct.$extras.addedSum ?? 0), fundingPool,
           );
         }
         else {
           acct.balance += acct.$extras.addedSum;
         }
 
+        if ((acct.$extras.addedSum ?? 0) !== 0 && acct.tracking === 'Transactions') {
+          const unassigned = await budget.getUnassignedCategory({ client: this.$trx });
+
+          unassigned.amount += (acct.$extras.addedSum ?? 0);
+
+          unassigned.save();
+        }
+
         // eslint-disable-next-line no-await-in-loop
         await acct.save();
-      }
+      }));
 
       await this.save();
 
-      await trx.commit();
+      // await trx.commit();
     }
     catch (error) {
       Logger.error(error);
-      await trx.rollback();
+      // await trx.rollback();
+      throw error;
     }
   }
 }
