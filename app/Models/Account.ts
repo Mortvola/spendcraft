@@ -15,7 +15,6 @@ import { Exception } from '@poppinss/utils';
 import { Location } from 'plaid';
 import { XMLParser } from 'fast-xml-parser';
 import TransactionCategory from './TransactionCategory';
-import { TransactionClientContract } from '@ioc:Adonis/Lucid/Database';
 import Category from './Category';
 
 export type AccountSyncResult = {
@@ -92,78 +91,78 @@ class Account extends BaseModel {
   @belongsTo(() => Institution)
   public institution: BelongsTo<typeof Institution>;
 
-  public async sync(
-    this: Account,
-    accessToken: string,
-    budget: Budget,
-  ): Promise<AccountSyncResult | null> {
-    const result: AccountSyncResult = {
-      categories: [],
-      accounts: [],
-    };
+  // public async sync(
+  //   this: Account,
+  //   accessToken: string,
+  //   budget: Budget,
+  // ): Promise<AccountSyncResult | null> {
+  //   const result: AccountSyncResult = {
+  //     categories: [],
+  //     accounts: [],
+  //   };
 
-    const trx = this.$trx;
-    if (trx === undefined) {
-      throw new Error('transaction not defined');
-    }
+  //   const trx = this.$trx;
+  //   if (trx === undefined) {
+  //     throw new Error('transaction not defined');
+  //   }
 
-    if (this.tracking !== 'Balances') {
-      // Retrieve the past 30 days of transactions
-      // (unless the account start date is sooner)
-      let startDate: DateTime;
+  //   if (this.tracking !== 'Balances') {
+  //     // Retrieve the past 30 days of transactions
+  //     // (unless the account start date is sooner)
+  //     let startDate: DateTime;
 
-      const newest = await Transaction.query()
-        .useTransaction(trx)
-        .whereHas('accountTransaction', (query) => {
-          query.where('accountId', this.id)
-        })
-        .orderBy('date', 'desc')
-        .first();
+  //     const newest = await Transaction.query()
+  //       .useTransaction(trx)
+  //       .whereHas('accountTransaction', (query) => {
+  //         query.where('accountId', this.id)
+  //       })
+  //       .orderBy('date', 'desc')
+  //       .first();
 
-      if (newest === null) {
-        startDate = DateTime.now().minus({ days: 30 });
-      }
-      else {
-        startDate = newest.date.minus({ days: 14 });
-      }
+  //     if (newest === null) {
+  //       startDate = DateTime.now().minus({ days: 30 });
+  //     }
+  //     else {
+  //       startDate = newest.date.minus({ days: 14 });
+  //     }
 
-      startDate = DateTime.max(startDate, this.startDate);
+  //     startDate = DateTime.max(startDate, this.startDate);
 
-      const sum = await this.addTransactions(
-        accessToken,
-        startDate,
-        budget,
-      );
+  //     const sum = await this.addTransactions(
+  //       accessToken,
+  //       startDate,
+  //       budget,
+  //     );
 
-      this.balance += sum;
+  //     this.balance += sum;
 
-      await this.updateAccountBalanceHistory(this.balance);
+  //     await this.updateAccountBalanceHistory(this.balance);
 
-      const unassigned = await budget.getUnassignedCategory({ client: trx });
-      result.categories = [{ id: unassigned.id, balance: unassigned.amount }];
+  //     const unassigned = await budget.getUnassignedCategory({ client: trx });
+  //     result.categories = [{ id: unassigned.id, balance: unassigned.amount }];
 
-      result.accounts = [{
-        id: this.id,
-        balance: this.balance,
-        plaidBalance: this.plaidBalance,
-        syncDate: this.syncDate,
-      }];
-    }
-    else {
-      await this.updateBalance(accessToken);
+  //     result.accounts = [{
+  //       id: this.id,
+  //       balance: this.balance,
+  //       plaidBalance: this.plaidBalance,
+  //       syncDate: this.syncDate,
+  //     }];
+  //   }
+  //   else {
+  //     await this.updateBalance(accessToken);
 
-      result.accounts = [{
-        id: this.id,
-        balance: this.balance,
-        plaidBalance: this.plaidBalance,
-        syncDate: this.syncDate,
-      }];
-    }
+  //     result.accounts = [{
+  //       id: this.id,
+  //       balance: this.balance,
+  //       plaidBalance: this.plaidBalance,
+  //       syncDate: this.syncDate,
+  //     }];
+  //   }
 
-    await this.save();
+  //   await this.save();
 
-    return result;
-  }
+  //   return result;
+  // }
 
   public async updateBalance(
     accessToken: string,
@@ -187,52 +186,52 @@ class Account extends BaseModel {
     this.syncDate = DateTime.now();
   }
 
-  public async addTransactions(
-    this: Account,
-    accessToken: string,
-    startDate: DateTime,
-    budget: Budget,
-  ): Promise<number> {
-    // Get the current pending transactions fom the databse. If there
-    // are any remaining in this array at the end
-    // of the process of adding the plaid transactions then
-    // delete them from the database.
-    const pendingTransactions = await this.related('accountTransactions')
-      .query()
-      .where('pending', true)
-      .preload('transaction');
+  // public async addTransactions(
+  //   this: Account,
+  //   accessToken: string,
+  //   startDate: DateTime,
+  //   budget: Budget,
+  // ): Promise<number> {
+  //   // Get the current pending transactions fom the databse. If there
+  //   // are any remaining in this array at the end
+  //   // of the process of adding the plaid transactions then
+  //   // delete them from the database.
+  //   const pendingTransactions = await this.related('accountTransactions')
+  //     .query()
+  //     .where('pending', true)
+  //     .preload('transaction');
 
-    const transactionsResponse = await plaidClient.getTransactions(
-      accessToken,
-      startDate.toISODate() ?? '',
-      DateTime.now().toISODate() ?? '',
-      {
-        count: 250,
-        offset: 0,
-        account_ids: [this.plaidAccountId],
-      },
-    );
+  //   const transactionsResponse = await plaidClient.getTransactions(
+  //     accessToken,
+  //     startDate.toISODate() ?? '',
+  //     DateTime.now().toISODate() ?? '',
+  //     {
+  //       count: 250,
+  //       offset: 0,
+  //       account_ids: [this.plaidAccountId],
+  //     },
+  //   );
 
-    if (
-      transactionsResponse.accounts.length === 1
-      && transactionsResponse.accounts[0].account_id !== this.plaidAccountId
-    ) {
-      // The plaid account ID has changed. Update the account with the new ID
-      Logger.info(`Changed plaid account id from ${this.plaidAccountId} to ${transactionsResponse.accounts[0].account_id}`)
-      this.plaidAccountId = transactionsResponse.accounts[0].account_id;
-    }
+  //   if (
+  //     transactionsResponse.accounts.length === 1
+  //     && transactionsResponse.accounts[0].account_id !== this.plaidAccountId
+  //   ) {
+  //     // The plaid account ID has changed. Update the account with the new ID
+  //     Logger.info(`Changed plaid account id from ${this.plaidAccountId} to ${transactionsResponse.accounts[0].account_id}`)
+  //     this.plaidAccountId = transactionsResponse.accounts[0].account_id;
+  //   }
 
-    const sum = await this.applyTransactions(budget, transactionsResponse.transactions, pendingTransactions);
+  //   const sum = await this.applyTransactions(budget, transactionsResponse.transactions, pendingTransactions);
 
-    this.plaidBalance = transactionsResponse.accounts[0].balances.current;
-    if (this.plaidBalance && (this.type === 'credit' || this.type === 'loan')) {
-      this.plaidBalance = -this.plaidBalance;
-    }
+  //   this.plaidBalance = transactionsResponse.accounts[0].balances.current;
+  //   if (this.plaidBalance && (this.type === 'credit' || this.type === 'loan')) {
+  //     this.plaidBalance = -this.plaidBalance;
+  //   }
 
-    this.syncDate = DateTime.now();
+  //   this.syncDate = DateTime.now();
 
-    return sum;
-  }
+  //   return sum;
+  // }
 
   public async addTransaction(
     plaidTransaction: PlaidTransaction,

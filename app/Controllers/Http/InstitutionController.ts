@@ -593,24 +593,17 @@ class InstitutionController {
     const trx = await Database.transaction();
 
     try {
+      // Get the institutions that have been linked to Plaid.
       const institutions = await Institution.query({ client: trx })
         .where('budgetId', budget.id)
         .whereNotNull('accessToken')
-        .andWhere('acessToken', '!=', '');
+        .andWhere('accessToken', '!=', '');
 
       const result: AccountSyncResult[] | null = [];
 
-      await Promise.all(institutions.map(async (institution) => {
-        const accounts = await institution.related('accounts').query().where('closed', false);
-
-        return Promise.all(accounts.map(async (acct) => {
-          if (institution.accessToken === null || institution.accessToken === '') {
-            throw new Exception(`access token not set for ${institution.plaidItemId}`);
-          }
-
-          return acct.sync(institution.accessToken, budget)
-        }));
-      }));
+      await Promise.all(institutions.map(async (institution) => (
+        await institution.syncUpdate()
+      )));
 
       await trx.commit();
 
@@ -635,24 +628,10 @@ class InstitutionController {
       throw new Error('user is not defined');
     }
 
-    // const budget = await user.related('budget').query().firstOrFail();
-
     const trx = await Database.transaction();
 
     try {
       const institution = await Institution.findOrFail(request.params().instId, { client: trx });
-
-      // if (institution.accessToken === null || institution.accessToken === '') {
-      //   throw new Exception(`access token not set for ${institution.plaidItemId}`);
-      // }
-
-      // const account = await Account.findOrFail(request.params().acctId, { client: trx });
-
-      // let result: AccountSyncResult | null = null;
-
-      // result = await account.sync(
-      //   institution.accessToken, budget,
-      // );
 
       await institution.syncUpdate();
 

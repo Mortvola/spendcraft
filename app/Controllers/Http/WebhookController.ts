@@ -221,37 +221,37 @@ class WebhookController {
   //   }
   // }
 
-  static async defaultUpdate(event: TransactionEvent) {
-    const trx = await Database.transaction();
+  // static async defaultUpdate(event: TransactionEvent) {
+  //   const trx = await Database.transaction();
 
-    try {
-      const institution = await Institution.findByOrFail('plaidItemId', event.item_id, { client: trx });
+  //   try {
+  //     const institution = await Institution.findByOrFail('plaidItemId', event.item_id, { client: trx });
 
-      const accounts = await institution.related('accounts').query().where('closed', false);
-      const budget = await Budget.findOrFail(institution.budgetId);
+  //     const accounts = await institution.related('accounts').query().where('closed', false);
+  //     const budget = await Budget.findOrFail(institution.budgetId);
 
-      await Promise.all(accounts.map(async (acct) => {
-        if (institution.accessToken === null || institution.accessToken === '') {
-          throw new Exception(`access token not set for ${institution.plaidItemId}`);
-        }
+  //     await Promise.all(accounts.map(async (acct) => {
+  //       if (institution.accessToken === null || institution.accessToken === '') {
+  //         throw new Exception(`access token not set for ${institution.plaidItemId}`);
+  //       }
 
-        return (
-          acct.sync(
-            institution.accessToken,
-            budget,
-          )
-        );
-      }));
+  //       return (
+  //         acct.sync(
+  //           institution.accessToken,
+  //           budget,
+  //         )
+  //       );
+  //     }));
 
-      await trx.commit();
+  //     await trx.commit();
 
-      await applePushNotifications.sendPushNotifications(budget)
-    }
-    catch (error) {
-      Logger.error({ err: error }, `default update failed, event: ${JSON.stringify(event)}`);
-      await trx.rollback();
-    }
-  }
+  //     await applePushNotifications.sendPushNotifications(budget)
+  //   }
+  //   catch (error) {
+  //     Logger.error({ err: error }, `default update failed, event: ${JSON.stringify(event)}`);
+  //     await trx.rollback();
+  //   }
+  // }
 
   static async removeTransactions(event: TransactionEvent) {
     const trx = await Database.transaction();
@@ -279,7 +279,6 @@ class WebhookController {
 
       case 'INITIAL_UPDATE':
         Logger.info(JSON.stringify(event));
-        // WebhookController.initialUpdate(event);
         break;
 
       case 'HISTORICAL_UPDATE':
@@ -287,7 +286,7 @@ class WebhookController {
         break;
 
       case 'DEFAULT_UPDATE': {
-        WebhookController.defaultUpdate(event);
+        Logger.info(JSON.stringify(event));
 
         break;
       }

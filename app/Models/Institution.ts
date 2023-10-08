@@ -155,7 +155,7 @@ class Institution extends BaseModel {
             );
           }
           else {
-            acct.balance += acct.$extras.addedSum;
+            acct.balance += acct.$extras.addedSum ?? 0;
           }
 
           if ((acct.$extras.addedSum ?? 0) !== 0 && acct.tracking === 'Transactions') {
