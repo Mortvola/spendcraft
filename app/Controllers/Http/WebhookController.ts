@@ -162,7 +162,7 @@ class WebhookController {
         break;
 
       default:
-        Logger.warn(`unknown webhook code: ${JSON.stringify(event)}`);
+        Logger.warn(`Unknown webhook item event: ${JSON.stringify(event)}`);
 
         break;
     }
@@ -253,21 +253,21 @@ class WebhookController {
   //   }
   // }
 
-  static async removeTransactions(event: TransactionEvent) {
-    const trx = await Database.transaction();
+  // static async removeTransactions(event: TransactionEvent) {
+  //   const trx = await Database.transaction();
 
-    try {
-      const institution = await Institution.findByOrFail('plaidItemId', event.item_id, { client: trx });
+  //   try {
+  //     const institution = await Institution.findByOrFail('plaidItemId', event.item_id, { client: trx });
 
-      await institution.removeTransactions(event.removed_transactions);
+  //     await institution.removeTransactions(event.removed_transactions);
 
-      await trx.commit();
-    }
-    catch (error) {
-      Logger.error(`transactions removed failed: ${error.message}, event: ${JSON.stringify(event)}`);
-      await trx.rollback();
-    }
-  }
+  //     await trx.commit();
+  //   }
+  //   catch (error) {
+  //     Logger.error(`transactions removed failed: ${error.message}, event: ${JSON.stringify(event)}`);
+  //     await trx.rollback();
+  //   }
+  // }
 
   // eslint-disable-next-line camelcase
   static processTransactionEvent(event: TransactionEvent): void {
@@ -278,26 +278,14 @@ class WebhookController {
         break;
 
       case 'INITIAL_UPDATE':
-        Logger.info(JSON.stringify(event));
-        break;
-
       case 'HISTORICAL_UPDATE':
+      case 'DEFAULT_UPDATE':
+      case 'TRANSACTIONS_REMOVED':
         Logger.info(JSON.stringify(event));
         break;
-
-      case 'DEFAULT_UPDATE': {
-        Logger.info(JSON.stringify(event));
-
-        break;
-      }
-
-      case 'TRANSACTIONS_REMOVED': {
-        WebhookController.removeTransactions(event);
-
-        break;
-      }
 
       default:
+        Logger.warn(`Unknown webhook transaction event: ${JSON.stringify(event)}`);
         break;
     }
   }

@@ -348,44 +348,44 @@ class Account extends BaseModel {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  public async applyTransactions(
-    this: Account,
-    budget: Budget,
-    plaidTransactions: PlaidTransaction[],
-    pendingTransactions?: AccountTransaction[],
-  ): Promise<number> {
-    if (!this.$trx) {
-      throw new Error('database transaction not set');
-    }
+  // public async applyTransactions(
+  //   this: Account,
+  //   budget: Budget,
+  //   plaidTransactions: PlaidTransaction[],
+  //   pendingTransactions?: AccountTransaction[],
+  // ): Promise<number> {
+  //   if (!this.$trx) {
+  //     throw new Error('database transaction not set');
+  //   }
 
-    let sum = 0;
-    // let pendingSum = 0;
+  //   let sum = 0;
+  //   // let pendingSum = 0;
 
-    await Promise.all(plaidTransactions.map(async (plaidTransaction) => {
-      const balanceChange = await this.addTransaction(plaidTransaction, budget, pendingTransactions);
+  //   await Promise.all(plaidTransactions.map(async (plaidTransaction) => {
+  //     const balanceChange = await this.addTransaction(plaidTransaction, budget, pendingTransactions);
 
-      sum += balanceChange
-    }));
+  //     sum += balanceChange
+  //   }));
 
-    // Delete any pending transaction in the database that remain in the
-    // pending transaction array
-    if (pendingTransactions && pendingTransactions.length > 0) {
-      await Promise.all(pendingTransactions.map(async (pt): Promise<void> => {
-        await pt.delete();
-        return pt.transaction.delete();
-      }));
-    }
+  //   // Delete any pending transaction in the database that remain in the
+  //   // pending transaction array
+  //   if (pendingTransactions && pendingTransactions.length > 0) {
+  //     await Promise.all(pendingTransactions.map(async (pt): Promise<void> => {
+  //       await pt.delete();
+  //       return pt.transaction.delete();
+  //     }));
+  //   }
 
-    if (sum !== 0 && this.tracking === 'Transactions') {
-      const unassigned = await budget.getUnassignedCategory({ client: this.$trx });
+  //   if (sum !== 0 && this.tracking === 'Transactions') {
+  //     const unassigned = await budget.getUnassignedCategory({ client: this.$trx });
 
-      unassigned.amount += sum;
+  //     unassigned.amount += sum;
 
-      unassigned.save();
-    }
+  //     unassigned.save();
+  //   }
 
-    return sum;
-  }
+  //   return sum;
+  // }
 
   public async updateAccountBalanceHistory(
     this: Account,

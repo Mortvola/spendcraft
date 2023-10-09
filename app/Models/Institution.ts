@@ -12,6 +12,7 @@ import Budget from 'App/Models/Budget';
 import { CountryCode } from 'plaid';
 import { TransactionType } from 'Common/ResponseTypes';
 import { DateTime } from 'luxon';
+import AccountTransaction from './AccountTransaction';
 
 class Institution extends BaseModel {
   @column()
@@ -45,12 +46,6 @@ class Institution extends BaseModel {
 
   @belongsTo(() => Budget)
   public budget: BelongsTo<typeof Budget>;
-
-  public async removeTransactions(
-    removedTransactions: string[],
-  ): Promise<void> {
-    Logger.info(`Removing transactions from ${this.id}: ${removedTransactions}`);
-  }
 
   public async getPlaidInstition(this: Institution): Promise<PlaidInstitution> {
     const response = await plaidClient.getInstitutionById(
@@ -90,41 +85,54 @@ class Institution extends BaseModel {
         // eslint-disable-next-line no-await-in-loop
         const response = await plaidClient.syncTransactions(this.accessToken, this.cursor ?? '');
 
+        // Combine the added and modified transactions into one array
+        // so they can be handled in a single loop.
+        const transactions = [
+          ...response.added,
+          ...response.modified,
+        ]
+
         // If the next_cursor is null or empty then the initial data is not ready yet.
         if ((response.next_cursor ?? '') !== '') {
-          for (let i = 0; i < response.added.length; i += 1) {
-            const added: PlaidTransaction = response.added[i];
+          for (let i = 0; i < transactions.length; i += 1) {
+            const transaction: PlaidTransaction = transactions[i];
 
             // Find account
             // eslint-disable-next-line no-await-in-loop
-            const acct = accounts.find((a) => a.$attributes.plaidAccountId === added.account_id)
+            const acct = accounts.find((a) => a.$attributes.plaidAccountId === transaction.account_id)
 
             // Only add transactions on or after the starting date.
-            if (acct && DateTime.fromISO(added.date) >= acct.startDate) {
+            if (acct && DateTime.fromISO(transaction.date) >= acct.startDate) {
               // eslint-disable-next-line no-await-in-loop
-              const amount = await acct.addTransaction(added, budget);
+              const amount = await acct.addTransaction(transaction, budget);
 
-              if (!added.pending) {
+              if (!transaction.pending) {
                 acct.$extras.addedSum = (acct.$extras.addedSum ?? 0) + amount;
               }
             }
           }
 
-          for (let i = 0; i < response.modified.length; i += 1) {
-            const modified: PlaidTransaction = response.modified[i];
-
-            // Find account
-            // eslint-disable-next-line no-await-in-loop
-            const acct = accounts.find((a) => a.$attributes.plaidAccountId === modified.account_id)
-
-            if (acct) {
-              // eslint-disable-next-line no-await-in-loop
-              // await acct.addTransaction(modified, budget);
-            }
-          }
-
           for (let i = 0; i < response.removed.length; i += 1) {
             const removed = response.removed[i];
+
+            // eslint-disable-next-line no-await-in-loop
+            const at = await AccountTransaction.findBy('providerTransactionId', removed.transaction_id);
+
+            if (at) {
+              at.useTransaction(trx);
+
+              // eslint-disable-next-line no-await-in-loop
+              const t = await at.related('transaction').query().first();
+
+              at.delete();
+
+              if (t) {
+                t.delete();
+              }
+            }
+
+            // TODO: this code assumes the removed transactions are pending transactions.
+            // Add code to update the account balance if the transaction removed is not a pending transaction.
           }
         }
 
@@ -179,12 +187,9 @@ class Institution extends BaseModel {
 
         await this.save();
       }
-
-      // await trx.commit();
     }
     catch (error) {
       Logger.error(error);
-      // await trx.rollback();
       throw error;
     }
   }
