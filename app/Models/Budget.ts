@@ -141,6 +141,7 @@ export default class Budget extends BaseModel {
       id: i.id,
       name: i.name,
       offline: i.plaidItemId === null,
+      syncDate: i.syncDate !== null && i.syncDate !== undefined ? i.syncDate.toISO() : null,
       accounts: i.accounts.map((a) => ({
         id: a.id,
         name: a.name,
@@ -148,7 +149,6 @@ export default class Budget extends BaseModel {
         type: a.type,
         subtype: a.subtype,
         tracking: a.tracking,
-        syncDate: a.syncDate !== null ? a.syncDate.toISO() : null,
         balance: a.balance,
         plaidBalance: a.plaidBalance,
         rate: a.rate,

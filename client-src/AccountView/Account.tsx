@@ -4,7 +4,6 @@ import IconButton from '../IconButton';
 import { AccountInterface, InstitutionInterface } from '../State/State';
 import { getSubTypeName, getTypeName } from '../State/AccountTypes';
 import Amount from '../Amount';
-import { useRelinkDialog } from './RelinkDialog';
 import styles from './Account.module.css';
 import { useDeleteConfirmation } from '../DeleteConfirmation';
 
@@ -25,7 +24,6 @@ const Account: React.FC<PropsType> = observer(({
   onAccountStateChange,
   showAccountDialog,
 }) => {
-  const [RelinkDialog, showRelinkDialog] = useRelinkDialog();
   const [CloseConfirmation, handleCloseClick] = useDeleteConfirmation(
     account.closed ? 'Open Confirmation' : 'Close Confirmation',
     account.closed ? 'Open' : 'Close',
@@ -49,22 +47,9 @@ const Account: React.FC<PropsType> = observer(({
     },
   );
 
-  const refresh = async () => {
-    const result = await account.refresh(institution.id);
-
-    if (!result) {
-      showRelinkDialog();
-    }
-  };
-
   const accountSelected = () => {
     onAccountSelected(account);
   };
-
-  let syncDate: string | null = null;
-  if (account.syncDate) {
-    syncDate = `as of ${account.syncDate.toFormat('LL-dd-y T')}`;
-  }
 
   let acctClassName = styles.account;
   if (account.type === 'other') {
@@ -83,7 +68,7 @@ const Account: React.FC<PropsType> = observer(({
       <div className={styles.buttons}>
         {
           !institution.offline
-            ? <IconButton icon="sync-alt" rotate={account.refreshing} onClick={refresh} />
+            ? null
             : <IconButton icon="edit" onClick={() => showAccountDialog(account)} />
         }
         <IconButton icon={account.closed ? 'circle' : 'times-circle'} solid={false} onClick={handleCloseClick} />
@@ -103,7 +88,6 @@ const Account: React.FC<PropsType> = observer(({
               : null
           }
         </div>
-        <div style={{ marginLeft: '1rem' }}>{syncDate}</div>
         <div>{getTypeName(account.type)}</div>
         <div>{getSubTypeName(account.type, account.subtype)}</div>
         {
@@ -120,7 +104,6 @@ const Account: React.FC<PropsType> = observer(({
             : null
         }
       </div>
-      <RelinkDialog account={account} />
       <CloseConfirmation />
     </div>
   );

@@ -1,8 +1,7 @@
-import { DateTime } from 'luxon';
 import { makeObservable, observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 import {
-  AccountProps, AccountSyncResponse, AddTransactionResponse, Error,
+  AccountProps, AddTransactionResponse, Error,
   isAddTransactionResponse, TrackingType, AccountType,
 } from '../../common/ResponseTypes';
 import {
@@ -27,13 +26,9 @@ class Account extends TransactionContainer implements AccountInterface {
 
   tracking: TrackingType;
 
-  syncDate: DateTime | null;
-
   plaidBalance: number | null;
 
   rate: number | null;
-
-  refreshing = false;
 
   institution: InstitutionInterface;
 
@@ -48,7 +43,6 @@ class Account extends TransactionContainer implements AccountInterface {
     this.type = props.type;
     this.subtype = props.subtype;
     this.tracking = props.tracking;
-    this.syncDate = props.syncDate !== null ? DateTime.fromISO(props.syncDate) : null;
     this.balance = props.balance;
     this.plaidBalance = props.plaidBalance;
     this.rate = props.rate;
@@ -56,11 +50,9 @@ class Account extends TransactionContainer implements AccountInterface {
 
     makeObservable(this, {
       name: observable,
-      syncDate: observable,
       plaidBalance: observable,
       rate: observable,
       institution: observable,
-      refreshing: observable,
     });
 
     this.store = store;
@@ -77,41 +69,6 @@ class Account extends TransactionContainer implements AccountInterface {
         this.institution.closeAccount(this);
       });
     }
-  }
-
-  async refresh(institutionId: number): Promise<boolean> {
-    runInAction(() => {
-      this.refreshing = true;
-    });
-
-    const response = await Http.post<void, AccountSyncResponse>(`/api/v1/institution/${institutionId}/accounts/${this.id}/transactions/sync`);
-
-    if (response.ok) {
-      const body = await response.body();
-
-      runInAction(() => {
-        const { categories, accounts } = body;
-        if (categories && categories.length > 0) {
-          this.store.categoryTree.updateBalances(categories);
-        }
-
-        if (accounts) {
-          this.syncDate = DateTime.fromISO(accounts[0].syncDate);
-          this.balance = accounts[0].balance;
-          this.plaidBalance = accounts[0].plaidBalance;
-        }
-
-        this.refreshing = false;
-      });
-
-      return true;
-    }
-
-    runInAction(() => {
-      this.refreshing = false;
-    });
-
-    return false;
   }
 
   async getPendingTransactions(index = 0): Promise<void> {

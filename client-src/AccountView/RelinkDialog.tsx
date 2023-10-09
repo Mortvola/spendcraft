@@ -1,15 +1,15 @@
 import React from 'react';
 import { ModalBody, Button } from 'react-bootstrap';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
-import { AccountInterface } from '../State/State';
+import { InstitutionInterface } from '../State/State';
 import styles from './RelinkDialog.module.css';
 
 type PropsType = {
-  account: AccountInterface,
+  institution: InstitutionInterface,
 }
 
 const RelinkDialog: React.FC<PropsType & ModalProps> = ({
-  account,
+  institution,
   setShow,
 }) => {
   const handleNo = () => {
@@ -18,7 +18,7 @@ const RelinkDialog: React.FC<PropsType & ModalProps> = ({
 
   const handleYes = () => {
     setShow(false);
-    account.institution.relink();
+    institution.relink();
   }
 
   return (

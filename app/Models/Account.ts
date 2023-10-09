@@ -2,13 +2,14 @@
 import {
   BaseModel, hasMany, HasMany, column, belongsTo, BelongsTo,
 } from '@ioc:Adonis/Lucid/Orm';
-import Logger from '@ioc:Adonis/Core/Logger'
 import { DateTime } from 'luxon';
 import plaidClient, { PlaidTransaction } from '@ioc:Plaid';
 import AccountTransaction from 'App/Models/AccountTransaction';
 import BalanceHistory from 'App/Models/BalanceHistory';
 import Institution from 'App/Models/Institution';
-import { AccountType, CategoryBalanceProps, TrackingType, TransactionType } from 'Common/ResponseTypes';
+import {
+  AccountType, CategoryBalanceProps, TrackingType, TransactionType,
+} from 'Common/ResponseTypes';
 import Transaction from 'App/Models/Transaction';
 import Budget from 'App/Models/Budget';
 import { Exception } from '@poppinss/utils';
@@ -60,9 +61,6 @@ class Account extends BaseModel {
 
   @column()
   public type: AccountType;
-
-  @column.dateTime()
-  public syncDate: DateTime | null;
 
   @column()
   public tracking: TrackingType;
@@ -182,8 +180,6 @@ class Account extends BaseModel {
     }
 
     await this.updateAccountBalanceHistory(this.balance);
-
-    this.syncDate = DateTime.now();
   }
 
   // public async addTransactions(
@@ -217,7 +213,8 @@ class Account extends BaseModel {
   //     && transactionsResponse.accounts[0].account_id !== this.plaidAccountId
   //   ) {
   //     // The plaid account ID has changed. Update the account with the new ID
-  //     Logger.info(`Changed plaid account id from ${this.plaidAccountId} to ${transactionsResponse.accounts[0].account_id}`)
+  //     Logger.info(`Changed plaid account id from ${this.plaidAccountId}
+  // to ${transactionsResponse.accounts[0].account_id}`)
   //     this.plaidAccountId = transactionsResponse.accounts[0].account_id;
   //   }
 

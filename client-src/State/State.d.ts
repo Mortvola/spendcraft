@@ -254,7 +254,13 @@ export interface InstitutionInterface {
 
   unlinkedAccounts: UnlinkedAccountProps[] | null;
 
+  refreshing: boolean;
+
+  syncDate: DateTime | null;
+
   relink(): Promise<void>;
+
+  refresh(institutionId: number): Promise<boolean>;
 
   addOnlineAccounts(
     accounts: UnlinkedAccountProps[],
@@ -317,21 +323,15 @@ export interface AccountInterface extends TransactionContainerInterface {
 
   tracking: TrackingType;
 
-  syncDate: DateTime | null;
-
   plaidBalance: number | null;
 
   rate: number | null;
-
-  refreshing: boolean;
 
   institution: InstitutionInterface;
 
   store: StoreInterface;
 
   getPendingTransactions(): Promise<void>;
-
-  refresh(institutionId: number): Promise<boolean>;
 
   addTransaction(
     values: {

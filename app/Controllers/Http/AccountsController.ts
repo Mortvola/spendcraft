@@ -316,7 +316,6 @@ export default class AccountsController {
         // We just added a new latest balance. Update the account
         // record with the new balance.
         account.balance = latestBalance.balance;
-        account.syncDate = latestBalance.date;
 
         await account.save();
       }
@@ -384,7 +383,6 @@ export default class AccountsController {
         const account = await Account.findOrFail(balance.accountId, { client: trx });
 
         account.balance = latestBalance.balance;
-        account.syncDate = latestBalance.date;
 
         await account.save();
       }
@@ -439,11 +437,9 @@ export default class AccountsController {
 
         if (latestBalance) {
           account.balance = latestBalance.balance;
-          account.syncDate = latestBalance.date;
         }
         else {
           account.balance = 0;
-          account.syncDate = null;
         }
 
         await account.save();

@@ -34,6 +34,9 @@ class Institution extends BaseModel {
   @column()
   public cursor: string | null;
 
+  @column.dateTime()
+  public syncDate: DateTime | null;
+
   @hasMany(() => Account)
   public accounts: HasMany<typeof Account>;
 
@@ -136,39 +139,43 @@ class Institution extends BaseModel {
 
         // Update the balance for each account.
         await Promise.all(accounts.map(async (acct) => {
-          acct.plaidBalance = plaidAccounts.accounts[0].balances.current;
-          if (acct.plaidBalance && (acct.type === 'credit' || acct.type === 'loan')) {
-            acct.plaidBalance = -acct.plaidBalance;
-          }
+          const plaidAccount = plaidAccounts.accounts.find((a) => a.account_id === acct.plaidAccountId);
 
-          // TODO: Move the sync date to the institution.
-          acct.syncDate = DateTime.now();
+          // Only operator on the account if there is a corresponding plaid account.
+          if (plaidAccount) {
+            acct.plaidBalance = plaidAccount.balances.current;
+            if (acct.plaidBalance && (acct.type === 'credit' || acct.type === 'loan')) {
+              acct.plaidBalance = -acct.plaidBalance;
+            }
 
-          // Add a starting balance record to the accounts that don't have one.
-          // Otherwise, adjust the balance.
-          if (parseInt(acct.$extras.hasStartingBalance, 10) === 0) {
-            acct.balance = acct.plaidBalance ?? 0;
+            // Add a starting balance record to the accounts that don't have one.
+            // Otherwise, adjust the balance.
+            if (parseInt(acct.$extras.hasStartingBalance, 10) === 0) {
+              acct.balance = acct.plaidBalance ?? 0;
 
-            // eslint-disable-next-line no-await-in-loop
-            await acct.insertStartingBalance(
-              budget, acct.balance - (acct.$extras.addedSum ?? 0), fundingPool,
-            );
-          }
-          else {
-            acct.balance += acct.$extras.addedSum ?? 0;
-          }
+              // eslint-disable-next-line no-await-in-loop
+              await acct.insertStartingBalance(
+                budget, acct.balance - (acct.$extras.addedSum ?? 0), fundingPool,
+              );
+            }
+            else {
+              acct.balance += acct.$extras.addedSum ?? 0;
+            }
 
-          if ((acct.$extras.addedSum ?? 0) !== 0 && acct.tracking === 'Transactions') {
-            const unassigned = await budget.getUnassignedCategory({ client: this.$trx });
+            if ((acct.$extras.addedSum ?? 0) !== 0 && acct.tracking === 'Transactions') {
+              const unassigned = await budget.getUnassignedCategory({ client: this.$trx });
 
-            unassigned.amount += (acct.$extras.addedSum ?? 0);
+              unassigned.amount += (acct.$extras.addedSum ?? 0);
 
-            unassigned.save();
+              unassigned.save();
+            }
           }
 
           // eslint-disable-next-line no-await-in-loop
           await acct.save();
         }));
+
+        this.syncDate = DateTime.now();
 
         await this.save();
       }

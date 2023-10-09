@@ -119,8 +119,6 @@ export interface AccountProps {
 
   tracking: TrackingType;
 
-  syncDate: string | null;
-
   balance: number;
 
   plaidBalance: number | null;
@@ -142,6 +140,8 @@ export interface InstitutionProps {
   name: string;
 
   offline: boolean;
+
+  syncDate: string | null;
 
   accounts: AccountProps[];
 }
@@ -629,24 +629,16 @@ export const isCategoryFundingProps = (r: unknown): r is CategoryFundingProps =>
 )
 
 export interface AccountSyncProps {
-  syncDate: string;
-
   balance: number;
 
   plaidBalance: number | null;
 }
 
-export interface AccountSyncResponse {
+export interface InstitutionSyncResponse {
+  syncDate: string;
   accounts: AccountSyncProps[];
   categories: CategoryProps[];
 }
-
-export const isAccountSyncResponse = (
-  r: AccountSyncResponse | unknown,
-): r is AccountSyncResponse => (
-  (r as AccountSyncResponse).accounts !== undefined
-  && (r as AccountSyncResponse).categories !== undefined
-);
 
 export interface LinkTokenProps {
   linkToken: string;

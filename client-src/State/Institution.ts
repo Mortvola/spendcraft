@@ -1,9 +1,10 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
+import { DateTime } from 'luxon';
 import Account from './Account';
 import {
   UnlinkedAccountProps, InstitutionProps, isUnlinkedAccounts, AccountBalanceProps, Error,
-  TrackingType, isAddAccountsResponse, isDeleteAccountResponse, isLinkTokenResponse,
+  TrackingType, isAddAccountsResponse, isDeleteAccountResponse, isLinkTokenResponse, InstitutionSyncResponse,
 } from '../../common/ResponseTypes';
 import { AccountInterface, InstitutionInterface, StoreInterface } from './State';
 import Plaid from './Plaid';
@@ -21,10 +22,15 @@ class Institution implements InstitutionInterface {
 
   store: StoreInterface;
 
+  refreshing = false;
+
+  syncDate: DateTime | null;
+
   constructor(store: StoreInterface, props: InstitutionProps) {
     this.id = props.id;
     this.name = props.name;
     this.offline = props.offline;
+    this.syncDate = props.syncDate !== null ? DateTime.fromISO(props.syncDate) : null;
 
     this.accounts = [];
     if (props.accounts) {
@@ -50,6 +56,37 @@ class Institution implements InstitutionInterface {
         this.store.uiState.plaid = new Plaid(body.linkToken);
       }
     });
+  }
+
+  async refresh(institutionId: number): Promise<boolean> {
+    runInAction(() => {
+      this.refreshing = true;
+    });
+
+    const response = await Http.post<void, InstitutionSyncResponse>(`/api/v1/institution/${institutionId}/accounts/${this.id}/transactions/sync`);
+
+    if (response.ok) {
+      const body = await response.body();
+
+      runInAction(() => {
+        const { categories, syncDate } = body;
+        if (categories && categories.length > 0) {
+          this.store.categoryTree.updateBalances(categories);
+        }
+
+        this.syncDate = DateTime.fromISO(syncDate);
+
+        this.refreshing = false;
+      });
+
+      return true;
+    }
+
+    runInAction(() => {
+      this.refreshing = false;
+    });
+
+    return false;
   }
 
   insertAccount(account: Account): void {

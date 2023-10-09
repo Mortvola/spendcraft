@@ -135,6 +135,7 @@ class Accounts implements AccountsInterface {
           id: body2.id,
           name: body2.name,
           offline: false,
+          syncDate: null,
           accounts: [],
         },
       );
@@ -193,6 +194,7 @@ class Accounts implements AccountsInterface {
             id: body.id,
             name: body.name,
             offline: body.offline,
+            syncDate: null,
             accounts: body.accounts,
           });
 

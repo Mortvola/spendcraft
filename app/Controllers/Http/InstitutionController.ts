@@ -7,7 +7,7 @@ import Account, { AccountSyncResult } from 'App/Models/Account';
 import Category from 'App/Models/Category';
 import {
   AccountProps, AccountType, CategoryBalanceProps,
-  InstitutionProps, TrackingType, TransactionType, UnlinkedAccountProps,
+  InstitutionProps, InstitutionSyncResponse, TrackingType, TransactionType, UnlinkedAccountProps,
 } from 'Common/ResponseTypes';
 import { schema } from '@ioc:Adonis/Core/Validator';
 import Transaction from 'App/Models/Transaction';
@@ -112,6 +112,7 @@ class InstitutionController {
         id: inst.id,
         name: inst.name,
         offline: false,
+        syncDate: inst.syncDate?.toISODate() ?? null,
         accounts: [],
       };
     }
@@ -152,6 +153,7 @@ class InstitutionController {
         id: inst.id,
         name: inst.name,
         offline: true,
+        syncDate: inst.syncDate?.toISODate() ?? null,
         ...accounts,
       };
     }
@@ -360,7 +362,7 @@ class InstitutionController {
         else {
           await acct.updateAccountBalanceHistory(acct.balance);
 
-          acct.syncDate = DateTime.now();
+          // acct.syncDate = DateTime.now();
 
           // eslint-disable-next-line no-await-in-loop
           await acct.save();
@@ -380,7 +382,6 @@ class InstitutionController {
         type: a.type,
         subtype: a.subtype,
         tracking: a.tracking,
-        syncDate: a.syncDate?.toISO() ?? null,
         balance: a.balance,
         plaidBalance: a.plaidBalance,
         rate: a.rate,
@@ -425,7 +426,6 @@ class InstitutionController {
         enabled: true,
         type: account.type,
         subtype: account.subtype,
-        syncDate: DateTime.now(),
         rate: account.rate,
         closed: false,
       });
@@ -457,7 +457,6 @@ class InstitutionController {
         type: a.type,
         subtype: a.subtype,
         tracking: a.tracking,
-        syncDate: a.syncDate?.toISO() ?? null,
         balance: a.balance,
         plaidBalance: a.plaidBalance,
         rate: a.rate,
@@ -553,7 +552,6 @@ class InstitutionController {
         type: a.type,
         subtype: a.subtype,
         tracking: a.tracking,
-        syncDate: a.syncDate?.toISO() ?? null,
         balance: a.balance,
         plaidBalance: a.plaidBalance,
         rate: a.rate,
@@ -623,7 +621,7 @@ class InstitutionController {
       user,
     },
     logger,
-  }: HttpContextContract): Promise<Record<string, unknown> | null> {
+  }: HttpContextContract): Promise<InstitutionSyncResponse | null> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -637,7 +635,11 @@ class InstitutionController {
 
       await trx.commit();
 
-      return null;
+      return {
+        syncDate: institution.syncDate?.toISO() ?? '',
+        accounts: [],
+        categories: [],
+      };
     }
     catch (error) {
       await trx.rollback();
@@ -728,13 +730,11 @@ class InstitutionController {
   }
 
   private static async deleteAccounts(
-    institution: Institution,
+    accounts: Account[],
     budget: Budget,
     trx: TransactionClientContract,
   ): Promise<CategoryBalanceProps[]> {
     const categoryBalances: CategoryBalanceProps[] = [];
-
-    const accounts = await institution.related('accounts').query();
 
     // eslint-disable-next-line no-restricted-syntax
     for (const acct of accounts) {
@@ -834,12 +834,14 @@ class InstitutionController {
     try {
       const institution = await Institution.findOrFail(request.params().instId, { client: trx });
 
+      const accounts = await institution.related('accounts').query();
+
       if (institution.accessToken) {
         await plaidClient.removeItem(institution.accessToken);
       }
 
       // eslint-disable-next-line no-restricted-syntax
-      const result = await InstitutionController.deleteAccounts(institution, budget, trx);
+      const result = await InstitutionController.deleteAccounts(accounts, budget, trx);
 
       await institution.delete();
 

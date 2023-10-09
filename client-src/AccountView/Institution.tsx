@@ -8,6 +8,7 @@ import { AccountInterface, InstitutionInterface } from '../State/State';
 import { useOfflineAccountDialog } from './OfflineAccountDialog';
 import { useDeleteConfirmation } from '../DeleteConfirmation';
 import styles from './Institution.module.css';
+import { useRelinkDialog } from './RelinkDialog';
 
 type PropsType = {
   institution: InstitutionInterface,
@@ -24,6 +25,7 @@ const Institution: React.FC<PropsType> = observer(({
   onAccountStateChange,
   selectedAccount = null,
 }) => {
+  const [RelinkDialog, showRelinkDialog] = useRelinkDialog();
   const [OnlineAccountsDialog, showOnlineAccountsDialog] = useAccountsDialog();
   const [InstitutionInfoDialog, showInstitutionInfoDialog] = useInstitutionInfoDialog();
   const [OfflineAccountDialog, showOfflineAccountDialog] = useOfflineAccountDialog();
@@ -49,14 +51,19 @@ const Institution: React.FC<PropsType> = observer(({
     },
   );
 
-  const handleAddClick = () => {
-    if (institution.offline) {
-      showOfflineAccountDialog();
-    }
-    else {
-      showOnlineAccountsDialog();
-    }
+  let syncDate: string | null = null;
+  if (institution.syncDate) {
+    syncDate = `as of ${institution.syncDate.toFormat('LL-dd-y T')}`;
   }
+
+  // const handleAddClick = () => {
+  //   if (institution.offline) {
+  //     showOfflineAccountDialog();
+  //   }
+  //   else {
+  //     showOnlineAccountsDialog();
+  //   }
+  // }
 
   const handleEditAccount = (account: AccountInterface) => {
     if (institution.offline) {
@@ -71,14 +78,25 @@ const Institution: React.FC<PropsType> = observer(({
     setEditedAccount(null);
   }
 
+  const refresh = async () => {
+    const result = await institution.refresh(institution.id);
+
+    if (!result) {
+      showRelinkDialog();
+    }
+  };
+
   return (
     <div className={styles.institutionCard}>
       <div className={styles.institution}>
         <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div className={styles.institutionName}>{institution.name}</div>
+          <div style={{ marginLeft: '1rem' }}>{syncDate}</div>
           <div style={{ display: 'flex', alignSelf: 'flex-end' }}>
+            <IconButton icon="sync-alt" rotate={institution.refreshing} onClick={refresh} />
+            <RelinkDialog institution={institution} />
             <IconButton icon="trash-alt" onClick={handleDeleteClick} />
-            <IconButton icon="plus" onClick={handleAddClick} />
+            {/* <IconButton icon="plus" onClick={handleAddClick} /> */}
             <OnlineAccountsDialog institution={institution} />
             <OfflineAccountDialog institution={institution} account={editedAccount} onHide={handleDialogHide} />
             <DeleteConfirmation />
