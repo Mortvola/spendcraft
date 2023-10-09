@@ -39,57 +39,6 @@
         }
       ]
     },
-    "check:transactions": {
-      "settings": {
-        "loadApp": true,
-        "stayAlive": false
-      },
-      "commandPath": "./commands/CheckTransactions",
-      "commandName": "check:transactions",
-      "description": "",
-      "args": [],
-      "aliases": [],
-      "flags": [
-        {
-          "name": "item",
-          "propertyName": "item",
-          "type": "string",
-          "alias": "i",
-          "description": "Item ID of the institution to analyze"
-        },
-        {
-          "name": "dump",
-          "propertyName": "dump",
-          "type": "boolean",
-          "alias": "d",
-          "description": "Display all of the details of each plaid transaction"
-        },
-        {
-          "name": "fix-missing",
-          "propertyName": "fixMissing",
-          "type": "boolean",
-          "description": "Adds missing transactions"
-        },
-        {
-          "name": "fix-account-mismatch",
-          "propertyName": "fixAccountMismatch",
-          "type": "boolean",
-          "description": "Fixes account mismath"
-        },
-        {
-          "name": "update",
-          "propertyName": "update",
-          "type": "string",
-          "description": "Updates the specified field"
-        },
-        {
-          "name": "mark-duplicates",
-          "propertyName": "markDuplicates",
-          "type": "boolean",
-          "description": "Marks duplicates"
-        }
-      ]
-    },
     "check:webhooks": {
       "settings": {
         "loadApp": true,
@@ -157,46 +106,6 @@
           "name": "accessToken",
           "required": true,
           "description": "Access token of the item to retrieve"
-        },
-        {
-          "type": "spread",
-          "propertyName": "accountIds",
-          "name": "accountIds",
-          "required": true
-        }
-      ],
-      "aliases": [],
-      "flags": []
-    },
-    "plaid:get-account-transactions": {
-      "settings": {
-        "loadApp": true,
-        "stayAlive": false
-      },
-      "commandPath": "./commands/PlaidGetAccountTransactions",
-      "commandName": "plaid:get-account-transactions",
-      "description": "Retrieves an accounts transactions",
-      "args": [
-        {
-          "type": "string",
-          "propertyName": "accessToken",
-          "name": "accessToken",
-          "required": true,
-          "description": "Access token of the item to retrieve"
-        },
-        {
-          "type": "string",
-          "propertyName": "startDate",
-          "name": "startDate",
-          "required": true,
-          "description": "Transation period start date (YYYY-MM-DD)"
-        },
-        {
-          "type": "string",
-          "propertyName": "endDate",
-          "name": "endDate",
-          "required": true,
-          "description": "Transation period end date (YYYY-MM-DD)"
         },
         {
           "type": "spread",
