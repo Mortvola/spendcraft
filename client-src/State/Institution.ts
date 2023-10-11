@@ -3,7 +3,7 @@ import Http from '@mortvola/http';
 import { DateTime } from 'luxon';
 import Account from './Account';
 import {
-  UnlinkedAccountProps, InstitutionProps, isUnlinkedAccounts, AccountBalanceProps, Error,
+  UnlinkedAccountProps, InstitutionProps, AccountBalanceProps, Error,
   TrackingType, isAddAccountsResponse, isDeleteAccountResponse, isLinkTokenResponse, InstitutionSyncResponse,
 } from '../../common/ResponseTypes';
 import { AccountInterface, InstitutionInterface, StoreInterface } from './State';
@@ -171,19 +171,19 @@ class Institution implements InstitutionInterface {
     return null;
   }
 
-  async getUnlinkedAccounts(): Promise<void> {
-    const response = await Http.get(`/api/v1/institution/${this.id}/accounts`);
+  // async getUnlinkedAccounts(): Promise<void> {
+  //   const response = await Http.get(`/api/v1/institution/${this.id}/accounts`);
 
-    if (response.ok) {
-      const body = await response.body();
+  //   if (response.ok) {
+  //     const body = await response.body();
 
-      if (isUnlinkedAccounts(body)) {
-        runInAction(() => {
-          this.unlinkedAccounts = body;
-        });
-      }
-    }
-  }
+  //     if (isUnlinkedAccounts(body)) {
+  //       runInAction(() => {
+  //         this.unlinkedAccounts = body;
+  //       });
+  //     }
+  //   }
+  // }
 
   updateBalances(balances: AccountBalanceProps[]): void {
     this.accounts.forEach((a) => {

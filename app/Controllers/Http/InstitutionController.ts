@@ -17,19 +17,14 @@ import { DateTime } from 'luxon';
 import BalanceHistory from 'App/Models/BalanceHistory';
 import Budget from 'App/Models/Budget';
 import { Exception } from '@poppinss/utils';
-import { CountryCode, AccountType as PlaidAccountType, Products } from 'plaid';
+import {
+  CountryCode, ItemPublicTokenExchangeResponse, AccountType as PlaidAccountType, Products,
+} from 'plaid';
 import Env from '@ioc:Adonis/Core/Env'
 
 type OnlineAccount = {
-  plaidAccountId: string,
-  name: string,
-  officialName?: string | null,
+  id: string,
   mask: string,
-  type: AccountType,
-  subtype: string,
-  balances: {
-    current: number,
-  },
   tracking: string,
 };
 
@@ -64,104 +59,136 @@ class InstitutionController {
 
     const requestData = await request.validate({
       schema: schema.create({
-        institution: schema.object().members({
-          institutionId: schema.string.optional(),
-          name: schema.string(),
-        }),
-        publicToken: schema.string.optional(),
-        accounts: schema.array.optional().members(
+        publicToken: schema.string(),
+        institutionId: schema.string(),
+        startDate: schema.string(),
+        accounts: schema.array().members(
           schema.object().members({
-            name: schema.string(),
-            balance: schema.number(),
-            type: schema.enum(Object.values(PlaidAccountType)),
-            subtype: schema.string(),
+            id: schema.string(),
+            mask: schema.string(),
             tracking: schema.string(),
-            rate: schema.number.optional(),
           }),
         ),
-        startDate: schema.string.optional(),
       }),
     });
 
-    // Check to see if we already have the institution. If not, add it.
-    if (requestData.institution.institutionId) {
-      let inst = await Institution
-        .query()
-        .where({ institutionId: requestData.institution.institutionId, budgetId: budget.id })
-        .first();
+    // if (requestData.institutionId) {
+    let institution = await Institution
+      .query()
+      .where({ institutionId: requestData.institutionId, budgetId: budget.id })
+      .first();
 
-      if (!inst) {
-        if (!requestData.publicToken) {
-          throw new Error('public token is undefined');
-        }
+    if (!institution) {
+      if (!requestData.publicToken) {
+        throw new Error('public token is undefined');
+      }
 
-        const tokenResponse = await plaidClient.exchangePublicToken(requestData.publicToken);
+      const trx = await Database.transaction();
 
-        inst = await (new Institution())
+      let tokenResponse: ItemPublicTokenExchangeResponse | null = null;
+
+      try {
+        tokenResponse = await plaidClient.exchangePublicToken(requestData.publicToken);
+
+        const institutionResponse = await plaidClient.getInstitutionById(requestData.institutionId, [CountryCode.Us]);
+
+        institution = await (new Institution())
+          .useTransaction(trx)
           .fill({
-            institutionId: requestData.institution.institutionId,
+            institutionId: requestData.institutionId,
             plaidItemId: tokenResponse.item_id,
-            name: requestData.institution.name,
+            name: institutionResponse.institution.name,
             accessToken: tokenResponse.access_token,
             budgetId: budget.id,
           })
           .save();
-      }
 
-      return {
-        id: inst.id,
-        name: inst.name,
-        offline: false,
-        syncDate: inst.syncDate?.toISODate() ?? null,
-        accounts: [],
-      };
-    }
-
-    if (!requestData.startDate) {
-      throw new Error('start date is not defined');
-    }
-
-    const trx = await Database.transaction();
-
-    try {
-      const inst = await (new Institution())
-        .fill({
-          name: requestData.institution.name,
-          budgetId: budget.id,
-        })
-        .useTransaction(trx)
-        .save();
-
-      if (inst === null) {
-        throw new Error('inst is null');
-      }
-
-      let accounts: AddAccountsResponse = {
-        accounts: [],
-        categories: [],
-      };
-
-      if (requestData.accounts) {
-        accounts = await InstitutionController.addOfflineAccounts(
-          budget, inst, requestData.accounts, requestData.startDate, { client: trx },
+        const accountsResponse = await InstitutionController.addOnlineAccounts(
+          budget, institution, requestData.accounts, requestData.startDate,
         );
+
+        await trx.commit();
+
+        const trx2 = await Database.transaction();
+        institution.useTransaction(trx2);
+
+        try {
+          await institution.syncUpdate();
+
+          await trx2.commit();
+        }
+        catch (error) {
+          await trx2.rollback();
+          logger.error(error);
+        }
+
+        return {
+          id: institution.id,
+          name: institution.name,
+          offline: false,
+          syncDate: institution.syncDate?.toISODate() ?? null,
+          accounts: accountsResponse.accounts,
+        };
       }
+      catch (error) {
+        logger.error(error);
 
-      await trx.commit();
+        if (tokenResponse) {
+          await plaidClient.removeItem(tokenResponse.access_token);
+        }
 
-      return {
-        id: inst.id,
-        name: inst.name,
-        offline: true,
-        syncDate: inst.syncDate?.toISODate() ?? null,
-        ...accounts,
-      };
+        await trx.rollback();
+      }
     }
-    catch (error) {
-      await trx.rollback();
-      logger.error(error);
-      throw error;
-    }
+
+    throw new Exception('Institution already linked')
+    // }
+
+    // if (!requestData.startDate) {
+    //   throw new Error('start date is not defined');
+    // }
+
+    // const trx = await Database.transaction();
+
+    // try {
+    //   const inst = await (new Institution())
+    //     .fill({
+    //       name: '', // requestData.institution.name,
+    //       budgetId: budget.id,
+    //     })
+    //     .useTransaction(trx)
+    //     .save();
+
+    //   if (inst === null) {
+    //     throw new Error('inst is null');
+    //   }
+
+    //   let accounts: AddAccountsResponse = {
+    //     accounts: [],
+    //     categories: [],
+    //   };
+
+    //   if (requestData.accounts) {
+    //     accounts = await InstitutionController.addOfflineAccounts(
+    //       budget, inst, requestData.accounts, requestData.startDate, { client: trx },
+    //     );
+    //   }
+
+    //   await trx.commit();
+
+    //   return {
+    //     id: inst.id,
+    //     name: inst.name,
+    //     offline: true,
+    //     syncDate: inst.syncDate?.toISODate() ?? null,
+    //     ...accounts,
+    //   };
+    // }
+    // catch (error) {
+    //   await trx.rollback();
+    //   logger.error(error);
+    //   throw error;
+    // }
   }
 
   static async getUnconnectedAccounts(
@@ -289,48 +316,54 @@ class InstitutionController {
     institution: Institution,
     accounts: OnlineAccount[],
     startDate: string,
-    options?: {
-      client: TransactionClientContract,
-    },
   ): Promise<AddAccountsResponse> {
     if (!institution.accessToken) {
       throw new Error('accessToken is not defined');
     }
 
+    const trx = institution.$trx;
+    if (!trx) {
+      throw new Error('database transaction not set');
+    }
+
     const newAccounts: Account[] = [];
 
-    const fundingPool = await budget.getFundingPoolCategory(options);
+    const fundingPool = await budget.getFundingPoolCategory({ client: trx });
+
+    const plaidAccountsResponse = await plaidClient.getAccounts(institution.accessToken);
 
     // eslint-disable-next-line no-restricted-syntax
     for (const account of accounts) {
       // eslint-disable-next-line no-await-in-loop
-      let acct = await Account.findBy('plaidAccountId', account.plaidAccountId, options);
+      let acct = await institution.related('accounts').query().where('mask', account.mask).first();
 
       if (!acct) {
         const start = DateTime.fromISO(startDate);
 
-        acct = (new Account())
+        const plaidAccount = plaidAccountsResponse.accounts.find((a) => a.mask === account.mask);
+
+        if (!plaidAccount) {
+          throw new Exception(`plaid account not found with mask ${account.mask}`);
+        }
+
+        acct = await (new Account())
+          .useTransaction(trx)
           .fill({
-            plaidAccountId: account.plaidAccountId,
-            name: account.name,
-            officialName: account.officialName,
-            mask: account.mask,
-            subtype: account.subtype,
-            type: account.type,
+            plaidAccountId: plaidAccount.account_id,
+            name: plaidAccount.name,
+            officialName: plaidAccount.official_name,
+            mask: plaidAccount.mask,
+            subtype: plaidAccount.subtype ?? '',
+            type: plaidAccount.type,
             institutionId: institution.id,
             startDate: start,
-            balance: account.balances.current,
+            balance: 0,
+            plaidBalance: plaidAccount.balances.current ?? 0,
             tracking: account.tracking as TrackingType,
             enabled: true,
             closed: false,
-          });
-
-        if (options && options.client) {
-          acct.useTransaction(options.client);
-        }
-
-        // eslint-disable-next-line no-await-in-loop
-        await acct.save();
+          })
+          .save();
 
         if (acct.tracking !== 'Balances') {
           // // eslint-disable-next-line no-await-in-loop
@@ -372,7 +405,7 @@ class InstitutionController {
       }
     }
 
-    const unassigned = await budget.getUnassignedCategory(options);
+    const unassigned = await budget.getUnassignedCategory({ client: trx });
 
     return {
       accounts: newAccounts.map((a) => ({
@@ -517,9 +550,9 @@ class InstitutionController {
       const institution = await Institution.findOrFail(request.params().instId, { client: trx });
 
       if (requestData.plaidAccounts) {
-        await InstitutionController.addOnlineAccounts(
-          budget, institution, requestData.plaidAccounts, requestData.startDate, { client: trx },
-        );
+        // await InstitutionController.addOnlineAccounts(
+        //   budget, institution, requestData.plaidAccounts, requestData.startDate, { client: trx },
+        // );
       }
       else if (requestData.offlineAccounts) {
         await InstitutionController.addOfflineAccounts(

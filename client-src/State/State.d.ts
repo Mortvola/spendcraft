@@ -1,7 +1,7 @@
 import { DateTime } from 'luxon';
 import Reports from './Reports';
 import {
-  CategoryType, Error, TrackingType, AccountType, Location,
+  CategoryType, Error, TrackingType, AccountType, Location, AccountTrackingProps,
 } from '../../common/ResponseTypes'
 import LoanTransaction from './LoanTransaction';
 
@@ -131,6 +131,13 @@ export interface AccountsInterface {
     tracking: TrackingType,
     rate: number,
   ): Promise<Error[] | null>;
+
+  async addInstitution(
+    publicToken: string,
+    plaidInstitutionId: string,
+    startDate: string,
+    accounts: AccountTrackingProps[],
+  ): Promise<Institution | null>;
 
   deleteInstitution(instiution: InstitutionInterface): void;
 
@@ -277,7 +284,7 @@ export interface InstitutionInterface {
     rate: number,
   ): Promise<Error[] | null>;
 
-  getUnlinkedAccounts(): Promise<void>;
+  // getUnlinkedAccounts(): Promise<void>;
 
   deleteAccount(account: AccountInterface): void;
 

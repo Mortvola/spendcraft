@@ -85,6 +85,8 @@ class Institution extends BaseModel {
         // eslint-disable-next-line no-await-in-loop
         const response = await plaidClient.syncTransactions(this.accessToken, this.cursor ?? '');
 
+        Logger.info(`sync transactions: added: ${response.added.length}, modified: ${response.modified.length}, removed: ${response.removed.length}`);
+
         // Combine the added and modified transactions into one array
         // so they can be handled in a single loop.
         const transactions = [

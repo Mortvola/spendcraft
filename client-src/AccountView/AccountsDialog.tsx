@@ -1,33 +1,37 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Observer, observer } from 'mobx-react-lite';
-import { toJS } from 'mobx';
 import {
   Field, ErrorMessage, FormikErrors,
 } from 'formik';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import { FormModal, FormField } from '@mortvola/forms';
+import { PlaidLinkOnSuccessMetadata } from 'react-plaid-link';
 import AccountItem from './AccountItem';
-import { TrackingType, UnlinkedAccountProps } from '../../common/ResponseTypes';
-import { InstitutionInterface } from '../State/State';
+import { AccountTrackingProps, TrackingType } from '../../common/ResponseTypes';
+import { useStores } from '../State/mobxStore';
 
 type PropsType = {
-  institution: InstitutionInterface,
+  publicToken: string,
+  metadata: PlaidLinkOnSuccessMetadata,
 }
 
 const AccountsDialog: React.FC<PropsType & ModalProps> = ({
-  institution,
+  publicToken,
+  metadata,
   setShow,
 }) => {
+  const { accounts } = useStores();
+
   type ValuesType = {
-    selections: UnlinkedAccountProps[] | null,
+    tracking: TrackingType[],
     startDate: string,
   };
 
   const handleValidate = (values: ValuesType) => {
     const errors: FormikErrors<ValuesType> = {};
-    if (values.selections && !values.selections.some((s) => s.tracking !== 'None')) {
-      errors.selections = 'No tracking options selected';
+    if (!values.tracking.some((s) => s !== 'None')) {
+      errors.tracking = 'No tracking options selected';
     }
 
     if (values.startDate === '') {
@@ -38,59 +42,62 @@ const AccountsDialog: React.FC<PropsType & ModalProps> = ({
   };
 
   const handleSubmit = async (values: ValuesType) => {
-    if (!institution.unlinkedAccounts) {
-      throw new Error('unlinkedAccounts is undefined');
-    }
+    // if (!institution.unlinkedAccounts) {
+    //   throw new Error('unlinkedAccounts is undefined');
+    // }
 
-    const selectedAccounts = institution.unlinkedAccounts
+    const accountTracking: AccountTrackingProps[] = metadata.accounts // institution.unlinkedAccounts
       .map((a, i) => {
-        if (values.selections === null) {
+        if (values.tracking === null) {
           throw new Error('account selections is null');
         }
 
-        if (values.selections[i]) {
-          return ({ ...a, tracking: values.selections[i].tracking })
+        if (values.tracking[i]) {
+          return ({ id: a.id, mask: a.mask, tracking: values.tracking[i] })
         }
 
-        return ({ ...a, tracking: 'None' as TrackingType })
+        return ({ id: a.id, mask: a.mask, tracking: 'None' as TrackingType })
       })
       .filter((a) => (a.tracking !== 'None' && a.tracking !== undefined));
 
-    const errors = await institution.addOnlineAccounts(selectedAccounts, values.startDate);
+    if (metadata.institution === null) {
+      throw new Error('institution is null');
+    }
 
-    if (!errors) {
+    const response = await accounts.addInstitution(
+      publicToken, metadata.institution.institution_id, values.startDate, accountTracking,
+    );
+    // const errors = await institution.addOnlineAccounts(publicToken, selectedAccounts, values.startDate);
+
+    if (response) {
       setShow(false);
     }
   };
 
-  useEffect(() => {
-    institution.getUnlinkedAccounts();
-  }, [institution]);
+  // useEffect(() => {
+  //   institution.getUnlinkedAccounts();
+  // }, [institution]);
 
   const renderAccounts = () => (
     <>
       {
-        institution.unlinkedAccounts
-          ? (
-            institution.unlinkedAccounts.map((acct, index) => (
-              <Field
-                key={acct.plaidAccountId}
-                name={`selections[${index}].tracking`}
-                account={acct}
-                as={AccountItem}
-              />
-            ))
-          )
-          : null
+        metadata.accounts.map((acct, index) => (
+          <Field
+            key={acct.id}
+            name={`tracking[${index}]`}
+            account={acct}
+            as={AccountItem}
+          />
+        ))
       }
-      <ErrorMessage name="selections" />
+      <ErrorMessage name="tracking" />
     </>
   );
 
   return (
     <FormModal<ValuesType>
       initialValues={{
-        selections: toJS(institution.unlinkedAccounts),
+        tracking: [],
         startDate: '',
       }}
       setShow={setShow}

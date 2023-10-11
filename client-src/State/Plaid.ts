@@ -1,14 +1,7 @@
+import { PlaidLinkOnSuccessMetadata } from 'react-plaid-link';
 import { InstitutionInterface } from './State';
 
-export type PlaidMetaData = {
-  institution: {
-    name: string,
-    // eslint-disable-next-line camelcase
-    institution_id: string,
-  },
-}
-
-type PlaidCallback = (token: string, metaData: PlaidMetaData) => Promise<InstitutionInterface | null>;
+type PlaidCallback = (token: string, metaData: PlaidLinkOnSuccessMetadata) => Promise<InstitutionInterface | null>;
 
 class Plaid {
   callback: undefined | PlaidCallback;

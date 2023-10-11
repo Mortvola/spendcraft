@@ -1,9 +1,11 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
+import { PlaidAccount, PlaidLinkOnSuccessMetadata } from 'react-plaid-link';
 import Institution from './Institution';
-import Plaid, { PlaidMetaData } from './Plaid';
+import Plaid from './Plaid';
 import {
-  AccountBalanceProps, Error, isAddInstitutionResponse, isDeleteInstitutionResponse, isInstitutionProps,
+  AccountBalanceProps, AccountTrackingProps, AddInstitutionProps, AddInstitutionResponse, Error, isAddInstitutionResponse, isDeleteInstitutionResponse,
+  isInstitutionProps,
   isInstitutionsResponse, isLinkTokenResponse, TrackingType,
 } from '../../common/ResponseTypes';
 import {
@@ -104,11 +106,15 @@ class Accounts implements AccountsInterface {
         if (isLinkTokenResponse(body)) {
           this.store.uiState.plaid = new Plaid(
             body.linkToken,
-            async (publicToken, metadata: PlaidMetaData): Promise<Institution | null> => {
-              const i = metadata.institution;
+            // async (publicToken, metadata: PlaidLinkOnSuccessMetadata): Promise<Institution | null> => {
+            //   const i = metadata.institution;
 
-              return this.addInstitution(publicToken, i.name, i.institution_id);
-            },
+            //   if (i === null) {
+            //     throw new ErrorEvent('i is null');
+            //   }
+
+            //   return this.addInstitution(publicToken, i.name, i.institution_id, metadata.accounts);
+            // },
           );
         }
       });
@@ -117,26 +123,27 @@ class Accounts implements AccountsInterface {
 
   async addInstitution(
     publicToken: string,
-    name: string,
     plaidInstitutionId: string,
+    startDate: string,
+    accounts: AccountTrackingProps[],
   ): Promise<Institution | null> {
-    const response = await Http.post('/api/v1/institution', {
+    const response = await Http.post<AddInstitutionProps, AddInstitutionResponse>('/api/v1/institution', {
       publicToken,
-      institution: {
-        name,
-        institutionId: plaidInstitutionId,
-      },
+      institutionId: plaidInstitutionId,
+      startDate,
+      accounts,
     });
 
-    const body2 = await response.body();
-    if (response.ok && isInstitutionProps(body2)) {
+    if (response.ok) {
+      const body = await response.body();
       let institution = new Institution(
-        this.store, {
-          id: body2.id,
-          name: body2.name,
-          offline: false,
-          syncDate: null,
-          accounts: [],
+        this.store,
+        {
+          id: body.id,
+          name: body.name,
+          offline: body.offline,
+          syncDate: body.syncDate,
+          accounts: body.accounts,
         },
       );
 

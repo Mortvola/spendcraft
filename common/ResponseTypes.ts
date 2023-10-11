@@ -134,6 +134,19 @@ export const isAccountProps = (r: unknown): r is AccountProps => (
   && (r as AccountProps).balance !== undefined
 );
 
+export interface AccountTrackingProps {
+  id: string,
+  mask: string,
+  tracking: TrackingType,
+}
+
+export interface AddInstitutionProps {
+  publicToken: string,
+  institutionId: string,
+  startDate: string,
+  accounts: AccountTrackingProps[],
+}
+
 export interface InstitutionProps {
   id: number;
 
@@ -164,6 +177,8 @@ export interface AddInstitutionResponse {
   name: string;
 
   offline: boolean;
+
+  syncDate: string | null;
 
   accounts: AccountProps[];
 
@@ -717,10 +732,10 @@ export type UnlinkedAccountProps = {
   tracking: TrackingType,
 };
 
-export const isUnlinkedAccounts = (r: unknown): r is UnlinkedAccountProps[] => (
-  (Array.isArray(r)
-  && (r as UnlinkedAccountProps[])[0].plaidAccountId !== undefined)
-);
+// export const isUnlinkedAccounts = (r: unknown): r is UnlinkedAccountProps[] => (
+//   (Array.isArray(r)
+//   && (r as UnlinkedAccountProps[])[0].plaidAccountId !== undefined)
+// );
 
 export type AddTransactionProps = {
   date: string,

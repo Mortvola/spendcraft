@@ -1,12 +1,11 @@
 import React from 'react';
 import { runInAction } from 'mobx';
-import { usePlaidLink } from 'react-plaid-link';
+import { PlaidLinkOnSuccessMetadata, usePlaidLink } from 'react-plaid-link';
 import { useStores } from './State/mobxStore';
-import { InstitutionInterface } from './State/State';
 import Console from './Console';
 
 type PropsType = {
-  showAccountsDialog: (inst: InstitutionInterface) => void,
+  showAccountsDialog: (publicToken: string, metadata: PlaidLinkOnSuccessMetadata) => void,
 }
 
 const PlaidLinkDialog: React.FC<PropsType> = ({
@@ -34,14 +33,13 @@ const PlaidLinkDialog: React.FC<PropsType> = ({
     });
   }, [uiState]);
 
-  const onSuccess = React.useCallback(async (publicToken: unknown, metadata: unknown) => {
+  const onSuccess = React.useCallback(async (publicToken: string, metadata: PlaidLinkOnSuccessMetadata) => {
     if (uiState.plaid === null) {
       throw new Error('plaid is null');
     }
 
-    if (publicToken && uiState.plaid.callback) {
-      const institute = await uiState.plaid.callback(publicToken, metadata);
-      showAccountsDialog(institute);
+    if (publicToken) {
+      showAccountsDialog(publicToken, metadata);
     }
 
     runInAction(() => {

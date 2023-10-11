@@ -1,17 +1,20 @@
 import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
+import { PlaidLinkOnSuccessMetadata } from 'react-plaid-link';
 import { useStores } from './State/mobxStore';
 import { useAccountsDialog } from './AccountView/AccountsDialog';
-import { InstitutionInterface } from './State/State';
 import PlaidLinkDialog from './PlaidLinkDialog';
 
 const PlaidLink: React.FC = observer(() => {
   const { uiState } = useStores();
   const [AccountsDialog, showAccountsDialog] = useAccountsDialog();
-  const [institute, setInstitute] = useState<InstitutionInterface>();
+  const [institute, setInstitute] = useState<{
+    publicToken: string,
+    metadata: PlaidLinkOnSuccessMetadata,
+  }>();
 
-  const handleShowDialog = (inst: InstitutionInterface) => {
-    setInstitute(inst);
+  const handleShowDialog = (publicToken: string, metadata: PlaidLinkOnSuccessMetadata) => {
+    setInstitute({ publicToken, metadata });
     showAccountsDialog();
   };
 
@@ -20,7 +23,7 @@ const PlaidLink: React.FC = observer(() => {
   }
 
   if (institute) {
-    return <AccountsDialog institution={institute} />;
+    return <AccountsDialog publicToken={institute.publicToken} metadata={institute.metadata} />;
   }
 
   return null;

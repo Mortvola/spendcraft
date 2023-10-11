@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { UnlinkedAccountProps } from '../../common/ResponseTypes';
-import Amount from '../Amount';
+import { PlaidAccount } from 'react-plaid-link';
 
 type PropsType = {
   name: string,
-  account: UnlinkedAccountProps,
+  account: PlaidAccount,
   onChange?: ((event: React.ChangeEvent<HTMLSelectElement>) => void) | null,
 }
 
@@ -26,16 +25,16 @@ const AccountItem: React.FC<PropsType> = ({
   return (
     <div className="account-select-item">
       <div className="account-name">
-        {account.officialName ?? account.name}
+        {account.name}
       </div>
       <div className="account-type">
         <label>Type:</label>
         <div>{account.subtype}</div>
       </div>
-      <div className="account-balance">
+      {/* <div className="account-balance">
         <label>Balance:</label>
         <Amount amount={account.balances.current} />
-      </div>
+      </div> */}
       <div className="track-selection">
         <label>Account Tracking</label>
         <select name={name} value={option} onChange={handleChange}>
