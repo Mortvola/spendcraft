@@ -1,11 +1,10 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
-import { PlaidAccount, PlaidLinkOnSuccessMetadata } from 'react-plaid-link';
 import Institution from './Institution';
 import Plaid from './Plaid';
 import {
-  AccountBalanceProps, AccountTrackingProps, AddInstitutionProps, AddInstitutionResponse, Error, isAddInstitutionResponse, isDeleteInstitutionResponse,
-  isInstitutionProps,
+  AccountBalanceProps, AccountTrackingProps, AddInstitutionProps, AddInstitutionResponse,
+  Error, isAddInstitutionResponse, isDeleteInstitutionResponse,
   isInstitutionsResponse, isLinkTokenResponse, TrackingType,
 } from '../../common/ResponseTypes';
 import {
@@ -104,18 +103,7 @@ class Accounts implements AccountsInterface {
 
       runInAction(() => {
         if (isLinkTokenResponse(body)) {
-          this.store.uiState.plaid = new Plaid(
-            body.linkToken,
-            // async (publicToken, metadata: PlaidLinkOnSuccessMetadata): Promise<Institution | null> => {
-            //   const i = metadata.institution;
-
-            //   if (i === null) {
-            //     throw new ErrorEvent('i is null');
-            //   }
-
-            //   return this.addInstitution(publicToken, i.name, i.institution_id, metadata.accounts);
-            // },
-          );
+          this.store.uiState.plaid = new Plaid(body.linkToken);
         }
       });
     }

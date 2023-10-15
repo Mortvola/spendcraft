@@ -104,6 +104,7 @@ export default class UsersController {
 
     const webhook = Env.get('PLAID_WEBHOOK');
     const appName = Env.get('APP_NAME');
+    const redirect = Env.get('PLAID_OAUTH_REDIRECT');
 
     const linkTokenResponse = await plaidClient.createLinkToken({
       user: {
@@ -114,6 +115,8 @@ export default class UsersController {
       country_codes: [CountryCode.Us],
       language: 'en',
       webhook,
+      link_customization_name: 'account_select',
+      redirect_uri: redirect,
     });
 
     response.json({ linkToken: linkTokenResponse.link_token });
@@ -240,6 +243,7 @@ export default class UsersController {
       await trx.commit();
     }
     catch (error) {
+      console.log(error);
       await trx.rollback();
     }
   }

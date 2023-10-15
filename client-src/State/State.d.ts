@@ -269,6 +269,11 @@ export interface InstitutionInterface {
 
   refresh(institutionId: number): Promise<boolean>;
 
+  async update(
+    startDate: string,
+    accounts: AccountTrackingProps[],
+  ): Promise<InstitutionInterface | null>;
+
   addOnlineAccounts(
     accounts: UnlinkedAccountProps[],
     startDate: string,

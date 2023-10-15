@@ -3,9 +3,12 @@ import { runInAction } from 'mobx';
 import { PlaidLinkOnSuccessMetadata, usePlaidLink } from 'react-plaid-link';
 import { useStores } from './State/mobxStore';
 import Console from './Console';
+import { InstitutionInterface } from './State/State';
 
 type PropsType = {
-  showAccountsDialog: (publicToken: string, metadata: PlaidLinkOnSuccessMetadata) => void,
+  showAccountsDialog: (
+    publicToken: string, metadata: PlaidLinkOnSuccessMetadata, institution?: InstitutionInterface,
+  ) => void,
 }
 
 const PlaidLinkDialog: React.FC<PropsType> = ({
@@ -39,7 +42,7 @@ const PlaidLinkDialog: React.FC<PropsType> = ({
     }
 
     if (publicToken) {
-      showAccountsDialog(publicToken, metadata);
+      showAccountsDialog(publicToken, metadata, uiState.plaid.institution);
     }
 
     runInAction(() => {

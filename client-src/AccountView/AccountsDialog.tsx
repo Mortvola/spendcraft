@@ -7,18 +7,22 @@ import {
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import { FormModal, FormField } from '@mortvola/forms';
 import { PlaidLinkOnSuccessMetadata } from 'react-plaid-link';
+import { DateTime } from 'luxon';
 import AccountItem from './AccountItem';
 import { AccountTrackingProps, TrackingType } from '../../common/ResponseTypes';
 import { useStores } from '../State/mobxStore';
+import { InstitutionInterface } from '../State/State';
 
 type PropsType = {
   publicToken: string,
   metadata: PlaidLinkOnSuccessMetadata,
+  institution?: InstitutionInterface,
 }
 
 const AccountsDialog: React.FC<PropsType & ModalProps> = ({
   publicToken,
   metadata,
+  institution,
   setShow,
 }) => {
   const { accounts } = useStores();
@@ -46,7 +50,7 @@ const AccountsDialog: React.FC<PropsType & ModalProps> = ({
     //   throw new Error('unlinkedAccounts is undefined');
     // }
 
-    const accountTracking: AccountTrackingProps[] = metadata.accounts // institution.unlinkedAccounts
+    const accountTracking: AccountTrackingProps[] = metadata.accounts
       .map((a, i) => {
         if (values.tracking === null) {
           throw new Error('account selections is null');
@@ -56,18 +60,25 @@ const AccountsDialog: React.FC<PropsType & ModalProps> = ({
           return ({ id: a.id, mask: a.mask, tracking: values.tracking[i] })
         }
 
-        return ({ id: a.id, mask: a.mask, tracking: 'None' as TrackingType })
+        return ({ id: a.id, mask: a.mask, tracking: 'Transactions' as TrackingType })
       })
-      .filter((a) => (a.tracking !== 'None' && a.tracking !== undefined));
+      // .filter((a) => (a.tracking !== 'None' && a.tracking !== undefined));
 
-    if (metadata.institution === null) {
-      throw new Error('institution is null');
+    let response: unknown = null;
+
+    if (institution) {
+      response = await institution.update(
+        values.startDate, accountTracking,
+      );
     }
-
-    const response = await accounts.addInstitution(
-      publicToken, metadata.institution.institution_id, values.startDate, accountTracking,
-    );
-    // const errors = await institution.addOnlineAccounts(publicToken, selectedAccounts, values.startDate);
+    else {
+      if (metadata.institution === null) {
+        throw new Error('institution is null');
+      }
+      response = await accounts.addInstitution(
+        publicToken, metadata.institution.institution_id, values.startDate, accountTracking,
+      );
+    }
 
     if (response) {
       setShow(false);
@@ -97,8 +108,8 @@ const AccountsDialog: React.FC<PropsType & ModalProps> = ({
   return (
     <FormModal<ValuesType>
       initialValues={{
-        tracking: [],
-        startDate: '',
+        tracking: metadata.accounts.map(() => 'Transactions'),
+        startDate: DateTime.now().startOf('month').toISODate() ?? '',
       }}
       setShow={setShow}
       validate={handleValidate}

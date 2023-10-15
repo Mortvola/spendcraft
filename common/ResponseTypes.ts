@@ -147,6 +147,11 @@ export interface AddInstitutionProps {
   accounts: AccountTrackingProps[],
 }
 
+export interface UpdateInstitutionProps {
+  startDate: string,
+  accounts: AccountTrackingProps[],
+}
+
 export interface InstitutionProps {
   id: number;
 

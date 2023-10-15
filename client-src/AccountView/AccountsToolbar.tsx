@@ -33,8 +33,8 @@ const AccountsToolbar: React.FC<PropsType> = observer(({
     open || !isMobile
       ? (
         <>
-          <button type="button" onClick={addInstitution}>Add Online Account</button>
-          <button type="button" onClick={showOfflineAccountDialog}>Add Offline Account</button>
+          <button type="button" onClick={addInstitution}>Add Online Institution</button>
+          <button type="button" onClick={showOfflineAccountDialog}>Add Offline Institution</button>
           <button type="button" onClick={handleRefresh}>Sync Accounts</button>
           <OfflineAccountDialog />
         </>

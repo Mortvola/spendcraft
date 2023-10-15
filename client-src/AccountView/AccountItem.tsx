@@ -12,7 +12,7 @@ const AccountItem: React.FC<PropsType> = ({
   account,
   onChange = null,
 }) => {
-  const [option, setOption] = useState('None');
+  const [option, setOption] = useState('Transactions');
 
   const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setOption(event.target.value);
@@ -38,7 +38,6 @@ const AccountItem: React.FC<PropsType> = ({
       <div className="track-selection">
         <label>Account Tracking</label>
         <select name={name} value={option} onChange={handleChange}>
-          <option value="None">None</option>
           <option value="Transactions">Categorized Transactions</option>
           <option value="Uncategorized Transactions">Uncategorized Transactions</option>
           <option value="Balances">Balances</option>

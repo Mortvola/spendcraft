@@ -4,7 +4,8 @@ import { DateTime } from 'luxon';
 import Account from './Account';
 import {
   UnlinkedAccountProps, InstitutionProps, AccountBalanceProps, Error,
-  TrackingType, isAddAccountsResponse, isDeleteAccountResponse, isLinkTokenResponse, InstitutionSyncResponse,
+  TrackingType, isAddAccountsResponse, isDeleteAccountResponse, isLinkTokenResponse,
+  InstitutionSyncResponse, AccountTrackingProps, AddInstitutionProps, AddInstitutionResponse, UpdateInstitutionProps,
 } from '../../common/ResponseTypes';
 import { AccountInterface, InstitutionInterface, StoreInterface } from './State';
 import Plaid from './Plaid';
@@ -53,7 +54,7 @@ class Institution implements InstitutionInterface {
 
     runInAction(() => {
       if (isLinkTokenResponse(body)) {
-        this.store.uiState.plaid = new Plaid(body.linkToken);
+        this.store.uiState.plaid = new Plaid(body.linkToken, this);
       }
     });
   }
@@ -87,6 +88,58 @@ class Institution implements InstitutionInterface {
     });
 
     return false;
+  }
+
+  async update(
+    startDate: string,
+    accounts: AccountTrackingProps[],
+  ): Promise<Institution | null> {
+    const response = await Http.patch<UpdateInstitutionProps, AddInstitutionResponse>(`/api/v1/institution/${this.id}`, {
+      startDate,
+      accounts,
+    });
+
+    if (response.ok) {
+      const body = await response.body();
+      // let institution = new Institution(
+      //   this.store,
+      //   {
+      //     id: body.id,
+      //     name: body.name,
+      //     offline: body.offline,
+      //     syncDate: body.syncDate,
+      //     accounts: body.accounts,
+      //   },
+      // );
+
+      runInAction(() => {
+        body.accounts.forEach((accountResponse) => {
+          const account = this.accounts.find((a) => a.id === accountResponse.id);
+
+          if (account === undefined) {
+            // Account was not found. Add it...
+            const newAccount = new Account(this.store, this, accountResponse);
+
+            this.insertAccount(newAccount);
+          }
+        })
+        // Make sure we don't already have the institution in the list.
+        // const existingIndex = this.findIndex(
+        //   (inst) => inst.id === institution.id,
+        // );
+
+        // if (existingIndex === -1) {
+        //   this.insertInstitution(institution);
+        // }
+        // else {
+        //   institution = this.institutions[existingIndex];
+        // }
+      });
+
+      return this;
+    }
+
+    return null;
   }
 
   insertAccount(account: Account): void {

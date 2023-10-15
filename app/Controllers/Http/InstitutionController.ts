@@ -24,7 +24,7 @@ import Env from '@ioc:Adonis/Core/Env'
 
 type OnlineAccount = {
   id: string,
-  mask: string,
+  mask: string | null,
   tracking: string,
 };
 
@@ -65,7 +65,7 @@ class InstitutionController {
         accounts: schema.array().members(
           schema.object().members({
             id: schema.string(),
-            mask: schema.string(),
+            mask: schema.string.nullable(),
             tracking: schema.string(),
           }),
         ),
@@ -126,7 +126,7 @@ class InstitutionController {
           id: institution.id,
           name: institution.name,
           offline: false,
-          syncDate: institution.syncDate?.toISODate() ?? null,
+          syncDate: institution.syncDate?.toISO() ?? null,
           accounts: accountsResponse.accounts,
         };
       }
@@ -138,10 +138,15 @@ class InstitutionController {
         }
 
         await trx.rollback();
+
+        throw error;
       }
     }
 
+    // The institution already exists...
+
     throw new Exception('Institution already linked')
+
     // }
 
     // if (!requestData.startDate) {
@@ -180,7 +185,7 @@ class InstitutionController {
     //     id: inst.id,
     //     name: inst.name,
     //     offline: true,
-    //     syncDate: inst.syncDate?.toISODate() ?? null,
+    //     syncDate: inst.syncDate?.toISO() ?? null,
     //     ...accounts,
     //   };
     // }
@@ -189,6 +194,72 @@ class InstitutionController {
     //   logger.error(error);
     //   throw error;
     // }
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  public async update({
+    request,
+    auth: {
+      user,
+    },
+    logger,
+  }: HttpContextContract): Promise<InstitutionProps> {
+    if (!user) {
+      throw new Error('user is not defined');
+    }
+
+    const budget = await user.related('budget').query().firstOrFail();
+
+    const requestData = await request.validate({
+      schema: schema.create({
+        startDate: schema.string(),
+        accounts: schema.array().members(
+          schema.object().members({
+            id: schema.string(),
+            mask: schema.string.nullable(),
+            tracking: schema.string(),
+          }),
+        ),
+      }),
+    });
+
+    const trx = await Database.transaction();
+
+    try {
+      const institution = await Institution.findOrFail(request.params().instId, { client: trx });
+
+      const accountsResponse = await InstitutionController.addOnlineAccounts(
+        budget, institution, requestData.accounts, requestData.startDate,
+      );
+
+      await trx.commit();
+
+      const trx2 = await Database.transaction();
+      institution.useTransaction(trx2);
+
+      try {
+        await institution.syncUpdate();
+
+        await trx2.commit();
+      }
+      catch (error) {
+        await trx2.rollback();
+        logger.error(error);
+      }
+
+      return {
+        id: institution.id,
+        name: institution.name,
+        offline: false,
+        syncDate: institution.syncDate?.toISO() ?? null,
+        accounts: accountsResponse.accounts,
+      };
+    }
+    catch (error) {
+      logger.error(error);
+      await trx.rollback();
+      throw error;
+    }
   }
 
   static async getUnconnectedAccounts(
@@ -335,15 +406,15 @@ class InstitutionController {
     // eslint-disable-next-line no-restricted-syntax
     for (const account of accounts) {
       // eslint-disable-next-line no-await-in-loop
-      let acct = await institution.related('accounts').query().where('mask', account.mask).first();
+      let acct = await institution.related('accounts').query().where('plaidAccountId', account.id).first();
 
       if (!acct) {
         const start = DateTime.fromISO(startDate);
 
-        const plaidAccount = plaidAccountsResponse.accounts.find((a) => a.mask === account.mask);
+        const plaidAccount = plaidAccountsResponse.accounts.find((a) => a.account_id === account.id);
 
         if (!plaidAccount) {
-          throw new Exception(`plaid account not found with mask ${account.mask}`);
+          throw new Exception(`plaid account not found with account id ${account.id}`);
         }
 
         acct = await (new Account())
@@ -365,44 +436,40 @@ class InstitutionController {
           })
           .save();
 
-        if (acct.tracking !== 'Balances') {
-          // // eslint-disable-next-line no-await-in-loop
-          // const sum = await acct.addTransactions(
-          //   institution.accessToken, start, budget,
-          // );
-
-          // // eslint-disable-next-line no-await-in-loop
-          // await acct.save();
-
-          // // Insert the 'starting balance' transaction
-          // // eslint-disable-next-line no-await-in-loop
-          // await InstitutionController.insertStartingBalance(
-          //   budget, acct, start, acct.balance - sum, fundingPool, options,
-          // );
-
-          // await plaidClient.getTransactions(
-          //   institution.accessToken,
-          //   start.toISODate() ?? '',
-          //   DateTime.now().toISODate() ?? '',
-          //   {
-          //     count: 250,
-          //     offset: 0,
-          //     account_ids: [acct.plaidAccountId],
-          //   },
-          // );
-          // plaidClient.syncTransactions();
-        }
-        else {
+        if (acct.tracking === 'Balances') {
           await acct.updateAccountBalanceHistory(acct.balance);
 
           // acct.syncDate = DateTime.now();
 
           // eslint-disable-next-line no-await-in-loop
-          await acct.save();
+          // await acct.save();
+        }
+      }
+      else {
+        const plaidAccount = plaidAccountsResponse.accounts.find((a) => a.account_id === account.id);
+
+        if (plaidAccount) {
+          // Refresh the account with the information from Plaid.
+          // This may be an account that continues to be linked or it
+          // could be an account that was unlinked then relinked.
+          await acct
+            .merge({
+              plaidAccountId: plaidAccount.account_id,
+              name: plaidAccount.name,
+              officialName: plaidAccount.official_name,
+              mask: plaidAccount.mask,
+              subtype: plaidAccount.subtype ?? '',
+              type: plaidAccount.type,
+              plaidBalance: plaidAccount.balances.current ?? 0,
+            })
+            .save();
         }
 
-        newAccounts.push(acct);
+        // TODO: Do we need to handle accounts that are no longer in the list of
+        // accounts from Plaid?
       }
+
+      newAccounts.push(acct);
     }
 
     const unassigned = await budget.getUnassignedCategory({ client: trx });
@@ -701,21 +768,23 @@ class InstitutionController {
 
     const appName = Env.get('APP_NAME');
     const webhook = Env.get('PLAID_WEBHOOK');
+    const redirect = Env.get('PLAID_OAUTH_REDIRECT');
 
     const linkTokenResponse = await plaidClient.createLinkToken({
       user: {
         client_user_id: user.id.toString(),
       },
       client_name: appName,
+      products: [Products.Transactions],
       country_codes: [CountryCode.Us],
       language: 'en',
       webhook,
-      products: [Products.Transactions],
       access_token: institution.accessToken,
       link_customization_name: 'account_select',
       update: {
         account_selection_enabled: true,
       },
+      redirect_uri: redirect,
     });
 
     response.json({ linkToken: linkTokenResponse.link_token });

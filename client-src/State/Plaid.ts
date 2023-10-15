@@ -1,15 +1,12 @@
-import { PlaidLinkOnSuccessMetadata } from 'react-plaid-link';
 import { InstitutionInterface } from './State';
 
-type PlaidCallback = (token: string, metaData: PlaidLinkOnSuccessMetadata) => Promise<InstitutionInterface | null>;
-
 class Plaid {
-  callback: undefined | PlaidCallback;
+  institution: InstitutionInterface | null = null;
 
   linkToken: string;
 
-  constructor(linkToken: string, callback?: PlaidCallback) {
-    this.callback = callback;
+  constructor(linkToken: string, institution?: InstitutionInterface) {
+    this.institution = institution ?? null;
     this.linkToken = linkToken;
   }
 }

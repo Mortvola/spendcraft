@@ -34,6 +34,9 @@ Route.get('/user', 'HomeController.index');
 Route.get('/', 'HomeController.index');
 
 Route.post('/wh', 'WebhookController.post');
+Route.post('/redirect', () => {
+  console.log('redirected')
+});
 
 Route.get('/health', async ({ response }) => {
   const report = await HealthCheck.getReport();
@@ -117,6 +120,7 @@ Route.group(() => {
   
       Route.group(() => {
         Route.post('', 'InstitutionController.add');
+        Route.patch('/:instId', 'InstitutionController.update');
         Route.get('/:instId/info', 'InstitutionController.info');
         Route.get('/:instId/accounts', 'InstitutionController.get');
         Route.post('/:instId/accounts', 'InstitutionController.addAccounts');

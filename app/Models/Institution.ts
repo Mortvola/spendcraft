@@ -13,6 +13,7 @@ import { CountryCode } from 'plaid';
 import { TransactionType } from 'Common/ResponseTypes';
 import { DateTime } from 'luxon';
 import AccountTransaction from './AccountTransaction';
+import StagedTransaction from './StagedTransaction';
 
 class Institution extends BaseModel {
   @column()
@@ -103,14 +104,27 @@ class Institution extends BaseModel {
             // eslint-disable-next-line no-await-in-loop
             const acct = accounts.find((a) => a.$attributes.plaidAccountId === transaction.account_id)
 
-            // Only add transactions on or after the starting date.
-            if (acct && DateTime.fromISO(transaction.date) >= acct.startDate) {
-              // eslint-disable-next-line no-await-in-loop
-              const amount = await acct.addTransaction(transaction, budget);
+            if (acct) {
+              // Only add transactions on or after the starting date.
+              if (DateTime.fromISO(transaction.date) >= acct.startDate) {
+                // eslint-disable-next-line no-await-in-loop
+                const amount = await acct.addTransaction(transaction, budget);
 
-              if (!transaction.pending) {
-                acct.$extras.addedSum = (acct.$extras.addedSum ?? 0) + amount;
+                if (!transaction.pending) {
+                  acct.$extras.addedSum = (acct.$extras.addedSum ?? 0) + amount;
+                }
               }
+            }
+            else {
+              // The account was not found. Add the transaction to the staged
+              // transactions table
+              // eslint-disable-next-line no-await-in-loop
+              await (new StagedTransaction()).useTransaction(trx).fill({
+                institutionId: this.id,
+                plaidAccountId: transaction.account_id,
+                transaction,
+              })
+                .save();
             }
           }
 
