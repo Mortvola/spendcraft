@@ -135,8 +135,6 @@ export interface AccountsInterface {
   async addInstitution(
     publicToken: string,
     plaidInstitutionId: string,
-    startDate: string,
-    accounts: AccountTrackingProps[],
   ): Promise<Institution | null>;
 
   deleteInstitution(instiution: InstitutionInterface): void;
@@ -269,10 +267,7 @@ export interface InstitutionInterface {
 
   refresh(institutionId: number): Promise<boolean>;
 
-  async update(
-    startDate: string,
-    accounts: AccountTrackingProps[],
-  ): Promise<InstitutionInterface | null>;
+  async update(): Promise<InstitutionInterface | null>;
 
   addOnlineAccounts(
     accounts: UnlinkedAccountProps[],

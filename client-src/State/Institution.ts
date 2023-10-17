@@ -90,14 +90,8 @@ class Institution implements InstitutionInterface {
     return false;
   }
 
-  async update(
-    startDate: string,
-    accounts: AccountTrackingProps[],
-  ): Promise<Institution | null> {
-    const response = await Http.patch<UpdateInstitutionProps, AddInstitutionResponse>(`/api/v1/institution/${this.id}`, {
-      startDate,
-      accounts,
-    });
+  async update(): Promise<Institution | null> {
+    const response = await Http.post<null, AddInstitutionResponse>(`/api/v1/institution/${this.id}`);
 
     if (response.ok) {
       const body = await response.body();

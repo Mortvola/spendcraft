@@ -120,7 +120,7 @@ Route.group(() => {
   
       Route.group(() => {
         Route.post('', 'InstitutionController.add');
-        Route.patch('/:instId', 'InstitutionController.update');
+        Route.post('/:instId', 'InstitutionController.update');
         Route.get('/:instId/info', 'InstitutionController.info');
         Route.get('/:instId/accounts', 'InstitutionController.get');
         Route.post('/:instId/accounts', 'InstitutionController.addAccounts');

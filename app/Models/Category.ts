@@ -91,6 +91,7 @@ export default class Category extends BaseModel {
     if (this.type === 'UNASSIGNED') {
       const transactionQuery = budget
         .related('transactions').query()
+        .where('deleted', false)
         .where((query) => {
           query
             .doesntHave('transactionCategories')
@@ -103,6 +104,7 @@ export default class Category extends BaseModel {
             .where('pending', false)
             .andWhereHas('account', (q3) => {
               q3.where('tracking', 'Transactions')
+              q3.andWhereColumn('startDate', '<=', 'transactions.date')
             })
         })
         .preload('accountTransaction', (accountTransaction) => {
@@ -116,6 +118,7 @@ export default class Category extends BaseModel {
 
     const transactionQuery = budget
       .related('transactions').query()
+      .where('deleted', false)
       .whereHas('transactionCategories', (query) => {
         query.where('categoryId', this.id);
       })
@@ -136,7 +139,7 @@ export default class Category extends BaseModel {
 
     transactionQuery
       .preload('transactionCategories')
-      .where('deleted', false)
+      // .where('deleted', false)
       .orderBy('transactions.date', 'desc')
       .orderByRaw('COALESCE(transactions.duplicate_of_transaction_id, transactions.id) desc')
       .orderBy('transactions.id', 'desc')

@@ -6,15 +6,13 @@ import Console from './Console';
 import { InstitutionInterface } from './State/State';
 
 type PropsType = {
-  showAccountsDialog: (
-    publicToken: string, metadata: PlaidLinkOnSuccessMetadata, institution?: InstitutionInterface,
-  ) => void,
+  institution?: InstitutionInterface,
 }
 
 const PlaidLinkDialog: React.FC<PropsType> = ({
-  showAccountsDialog,
+  institution,
 }) => {
-  const { uiState } = useStores();
+  const { uiState, accounts } = useStores();
 
   const onEvent = (eventName: string) => {
     Console.log(`plaid event: ${eventName}`);
@@ -42,13 +40,24 @@ const PlaidLinkDialog: React.FC<PropsType> = ({
     }
 
     if (publicToken) {
-      showAccountsDialog(publicToken, metadata, uiState.plaid.institution);
+      if (!metadata.institution) {
+        throw new Error('metadata.institution is null');
+      }
+
+      if (institution) {
+        await institution.update();
+      }
+      else {
+        await accounts.addInstitution(
+          publicToken, metadata.institution.institution_id,
+        );
+      }
     }
 
     runInAction(() => {
       uiState.plaid = null;
     });
-  }, [showAccountsDialog, uiState]);
+  }, [accounts, institution, uiState]);
 
   const { open, ready } = usePlaidLink({
     token: uiState.plaid.linkToken,

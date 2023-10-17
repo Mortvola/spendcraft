@@ -143,8 +143,6 @@ export interface AccountTrackingProps {
 export interface AddInstitutionProps {
   publicToken: string,
   institutionId: string,
-  startDate: string,
-  accounts: AccountTrackingProps[],
 }
 
 export interface UpdateInstitutionProps {

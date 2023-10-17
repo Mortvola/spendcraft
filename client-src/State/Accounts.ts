@@ -112,14 +112,10 @@ class Accounts implements AccountsInterface {
   async addInstitution(
     publicToken: string,
     plaidInstitutionId: string,
-    startDate: string,
-    accounts: AccountTrackingProps[],
   ): Promise<Institution | null> {
     const response = await Http.post<AddInstitutionProps, AddInstitutionResponse>('/api/v1/institution', {
       publicToken,
       institutionId: plaidInstitutionId,
-      startDate,
-      accounts,
     });
 
     if (response.ok) {

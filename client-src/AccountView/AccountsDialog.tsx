@@ -67,16 +67,14 @@ const AccountsDialog: React.FC<PropsType & ModalProps> = ({
     let response: unknown = null;
 
     if (institution) {
-      response = await institution.update(
-        values.startDate, accountTracking,
-      );
+      response = await institution.update();
     }
     else {
       if (metadata.institution === null) {
         throw new Error('institution is null');
       }
       response = await accounts.addInstitution(
-        publicToken, metadata.institution.institution_id, values.startDate, accountTracking,
+        publicToken, metadata.institution.institution_id,
       );
     }
 
