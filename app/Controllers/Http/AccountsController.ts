@@ -60,6 +60,7 @@ export default class AccountsController {
         transactionCategory.preload('loanTransaction');
       })
       .where('deleted', false)
+      .andWhere('type', '!=', TransactionType.STARTING_BALANCE)
       .orderBy('transactions.date', 'desc')
       .orderByRaw('CASE WHEN transactions.type = 4 THEN 0 ELSE 1 END DESC')
       .orderByRaw('COALESCE(transactions.duplicate_of_transaction_id, transactions.id) desc')

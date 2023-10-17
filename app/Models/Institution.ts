@@ -73,14 +73,9 @@ class Institution extends BaseModel {
 
       const budget = await this.related('budget').query().firstOrFail();
 
-      let accounts = await this.related('accounts').query()
-        .withCount('accountTransactions', (query) => {
-          query.as('hasStartingBalance').whereHas('transaction', (q2) => {
-            q2.where('type', TransactionType.STARTING_BALANCE)
-          })
-        });
+      let accounts = await this.related('accounts').query();
 
-      let nextCursor = this.cursor ?? '';
+      let nextCursor = this.cursor;
 
       let more = true;
       while (more) {
@@ -96,8 +91,8 @@ class Institution extends BaseModel {
           ...response.modified,
         ];
 
-        // If the next_cursor is null or empty then the initial data is not ready yet.
-        if ((response.next_cursor ?? '') !== '') {
+        // If the next_cursor matches the cursor then no new data is available
+        if (response.next_cursor !== nextCursor) {
           for (let i = 0; i < transactions.length; i += 1) {
             const transaction: PlaidTransaction = transactions[i];
 
@@ -149,6 +144,8 @@ class Institution extends BaseModel {
             if (!transaction.pending && DateTime.fromISO(transaction.date) >= acct.startDate) {
               acct.$extras.addedSum = (acct.$extras.addedSum ?? 0) + amount;
             }
+
+            acct.$extras.modified = true;
           }
 
           for (let i = 0; i < response.removed.length; i += 1) {
@@ -180,43 +177,53 @@ class Institution extends BaseModel {
       }
 
       // If we did not get a new next_cursor then that means there was no new data.
-      if (nextCursor !== this.cursor ?? '') {
-        // const fundingPool = await budget.getFundingPoolCategory({ client: this.$trx });
+      if (nextCursor !== this.cursor) {
+        const fundingPool = await budget.getFundingPoolCategory({ client: this.$trx });
         const unassigned = await budget.getUnassignedCategory({ client: this.$trx });
 
         // Update the balance for each account.
         await Promise.all(accounts.map(async (acct) => {
-          const plaidAccount = plaidAccounts.accounts.find((a) => a.account_id === acct.plaidAccountId);
+          if (acct.$extras.modified ?? false) {
+            const plaidAccount = plaidAccounts.accounts.find((a) => a.account_id === acct.plaidAccountId);
 
-          // Only operate on the account if there is a corresponding plaid account.
-          if (plaidAccount) {
-            acct.plaidBalance = plaidAccount.balances.current;
-            if (acct.plaidBalance && (acct.type === 'credit' || acct.type === 'loan')) {
-              acct.plaidBalance = -acct.plaidBalance;
+            // Only operate on the account if there is a corresponding plaid account.
+            if (plaidAccount) {
+              acct.plaidBalance = plaidAccount.balances.current;
+              if (acct.plaidBalance && (acct.type === 'credit' || acct.type === 'loan')) {
+                acct.plaidBalance = -acct.plaidBalance;
+              }
+
+              acct.balance = acct.plaidBalance ?? 0;
+
+              if ((acct.$extras.addedSum ?? 0) !== 0 && acct.tracking === 'Transactions') {
+                unassigned.amount += (acct.$extras.addedSum ?? 0);
+              }
+
+              const sum = await acct.related('accountTransactions').query()
+                .whereHas('transaction', (q) => {
+                  q.where('date', '>=', acct.startDate.toISODate() ?? '')
+                })
+                .sum('amount')
+                .first();
+
+              //     // Add a starting balance record to the accounts that don't have one.
+              //     // Otherwise, adjust the balance.
+              //     if (parseInt(acct.$extras.hasStartingBalance, 10) === 0) {
+              //       acct.balance = acct.plaidBalance ?? 0;
+
+              // eslint-disable-next-line no-await-in-loop
+              await acct.insertStartingBalance(
+                budget, acct.balance - (sum?.$extras.sum ?? 0), fundingPool,
+              );
+
+              //     }
+              //     else {
+              //       acct.balance += acct.$extras.addedSum ?? 0;
+              //     }
+
+              // eslint-disable-next-line no-await-in-loop
+              await acct.save();
             }
-
-            acct.balance = acct.plaidBalance ?? 0;
-
-            if ((acct.$extras.addedSum ?? 0) !== 0 && acct.tracking === 'Transactions') {
-              unassigned.amount += (acct.$extras.addedSum ?? 0);
-            }
-
-            //     // Add a starting balance record to the accounts that don't have one.
-            //     // Otherwise, adjust the balance.
-            //     if (parseInt(acct.$extras.hasStartingBalance, 10) === 0) {
-            //       acct.balance = acct.plaidBalance ?? 0;
-
-            //       // eslint-disable-next-line no-await-in-loop
-            //       await acct.insertStartingBalance(
-            //         budget, acct.balance - (acct.$extras.addedSum ?? 0), fundingPool,
-            //       );
-            //     }
-            //     else {
-            //       acct.balance += acct.$extras.addedSum ?? 0;
-            //     }
-
-            // eslint-disable-next-line no-await-in-loop
-            await acct.save();
           }
         }));
 

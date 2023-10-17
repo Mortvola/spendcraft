@@ -571,47 +571,52 @@ class Account extends BaseModel {
       throw new Error('database transaction not set');
     }
 
-    const transaction = (new Transaction())
-      .useTransaction(this.$trx)
-      .fill({
-        date: this.startDate,
-        sortOrder: -1,
-        budgetId: budget.id,
-        type: TransactionType.STARTING_BALANCE,
-      });
+    const acctTrx = await this.related('accountTransactions').query()
+      .whereHas('transaction', (q) => {
+        q.where('type', TransactionType.STARTING_BALANCE)
+      })
+      .first();
 
-    // eslint-disable-next-line no-await-in-loop
-    await transaction.save();
-
-    const acctTransaction = (new AccountTransaction())
-      .useTransaction(this.$trx)
-      .fill({
-        transactionId: transaction.id,
-        accountId: this.id,
-        name: 'Starting Balance',
+    if (acctTrx) {
+      acctTrx.merge({
         amount: startingBalance,
-      });
+      })
+    }
+    else {
+      const transaction = await (new Transaction())
+        .useTransaction(this.$trx)
+        .fill({
+          date: this.startDate,
+          sortOrder: -1,
+          budgetId: budget.id,
+          type: TransactionType.STARTING_BALANCE,
+        })
+        .save();
 
-    // eslint-disable-next-line no-await-in-loop
-    await acctTransaction.save();
-
-    if (this.tracking === 'Transactions') {
-      // eslint-disable-next-line no-await-in-loop
-      const transactionCategory = (new TransactionCategory())
+      await (new AccountTransaction())
         .useTransaction(this.$trx)
         .fill({
           transactionId: transaction.id,
-          categoryId: fundingPool.id,
+          accountId: this.id,
+          name: 'Starting Balance',
           amount: startingBalance,
-        });
+        })
+        .save();
 
-      // eslint-disable-next-line no-await-in-loop
-      await transactionCategory.save();
+      if (this.tracking === 'Transactions') {
+        await (new TransactionCategory())
+          .useTransaction(this.$trx)
+          .fill({
+            transactionId: transaction.id,
+            categoryId: fundingPool.id,
+            amount: startingBalance,
+          })
+          .save();
 
-      fundingPool.amount += startingBalance;
+        fundingPool.amount += startingBalance;
 
-      // eslint-disable-next-line no-await-in-loop
-      await fundingPool.save();
+        await fundingPool.save();
+      }
     }
   }
 }
