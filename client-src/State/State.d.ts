@@ -315,6 +315,14 @@ export interface TransactionContainerInterface {
   getMoreTransactions(): Promise<void>;
 }
 
+export interface AccountSettings {
+  closed?: boolean,
+
+  startDate?: DateTime,
+
+  tracking?: TrackingType,
+}
+
 export interface AccountInterface extends TransactionContainerInterface {
   id: number;
 
@@ -331,6 +339,8 @@ export interface AccountInterface extends TransactionContainerInterface {
   tracking: TrackingType;
 
   plaidBalance: number | null;
+
+  startDate: DateTime,
 
   rate: number | null;
 
@@ -359,7 +369,7 @@ export interface AccountInterface extends TransactionContainerInterface {
 
   updateOfflineAccount(name: string): void;
 
-  setClosed(closed: boolean): void;
+  setSettings(settings: AccountSettings): void;
 }
 
 export interface BalanceInterface {

@@ -15,7 +15,6 @@ import Budget from 'App/Models/Budget';
 import { Exception } from '@poppinss/utils';
 import { Location } from 'plaid';
 import { XMLParser } from 'fast-xml-parser';
-import TransactionCategory from './TransactionCategory';
 import Category from './Category';
 
 export type AccountSyncResult = {
@@ -561,15 +560,24 @@ class Account extends BaseModel {
     await this.save();
   }
 
-  public async insertStartingBalance(
+  public async updateStartingBalance(
     this: Account,
     budget: Budget,
-    startingBalance: number,
     fundingPool: Category,
   ): Promise<void> {
     if (!this.$trx) {
       throw new Error('database transaction not set');
     }
+
+    const sum = await this.related('accountTransactions').query()
+      .whereHas('transaction', (q) => {
+        q.where('date', '>=', this.startDate.toISODate()!)
+          .andWhere('type', '!=', TransactionType.STARTING_BALANCE)
+      })
+      .sum('amount')
+      .first();
+
+    const startingBalance = this.balance - (sum?.$extras.sum ?? 0);
 
     const acctTrx = await this.related('accountTransactions').query()
       .whereHas('transaction', (q) => {
@@ -578,9 +586,30 @@ class Account extends BaseModel {
       .first();
 
     if (acctTrx) {
-      acctTrx.merge({
+      const transaction = await acctTrx.related('transaction').query().firstOrFail();
+
+      const transactionCategory = await transaction.related('transactionCategories').query().firstOrFail();
+
+      transaction.merge({
+        date: this.startDate,
+      })
+        .save();
+
+      const delta = startingBalance - acctTrx.amount;
+
+      await acctTrx.merge({
         amount: startingBalance,
       })
+        .save();
+
+      transactionCategory.merge({
+        amount: acctTrx.amount,
+      })
+        .save();
+
+      fundingPool.amount += delta;
+
+      await fundingPool.save();
     }
     else {
       const transaction = await (new Transaction())
@@ -593,30 +622,22 @@ class Account extends BaseModel {
         })
         .save();
 
-      await (new AccountTransaction())
-        .useTransaction(this.$trx)
-        .fill({
-          transactionId: transaction.id,
-          accountId: this.id,
-          name: 'Starting Balance',
-          amount: startingBalance,
-        })
-        .save();
+      await this.related('accountTransactions').create({
+        transactionId: transaction.id,
+        accountId: this.id,
+        name: 'Initial Funding',
+        amount: startingBalance,
+      });
 
-      if (this.tracking === 'Transactions') {
-        await (new TransactionCategory())
-          .useTransaction(this.$trx)
-          .fill({
-            transactionId: transaction.id,
-            categoryId: fundingPool.id,
-            amount: startingBalance,
-          })
-          .save();
+      await transaction.related('transactionCategories').create({
+        transactionId: transaction.id,
+        categoryId: fundingPool.id,
+        amount: startingBalance,
+      })
 
-        fundingPool.amount += startingBalance;
+      fundingPool.amount += startingBalance;
 
-        await fundingPool.save();
-      }
+      await fundingPool.save();
     }
   }
 }

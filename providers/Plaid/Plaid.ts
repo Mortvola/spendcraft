@@ -165,12 +165,12 @@ class PlaidWrapper {
 
   async syncTransactions(
     accessToken: string,
-    cursor: string,
+    cursor: string | null,
   ): Promise<Plaid.TransactionsSyncResponse> {
     try {
       const param: Plaid.TransactionsSyncRequest = {
         access_token: accessToken,
-        cursor,
+        cursor: cursor ?? undefined,
       }
 
       const response = await this.plaid.transactionsSync(param);

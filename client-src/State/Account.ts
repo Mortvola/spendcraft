@@ -1,5 +1,6 @@
 import { makeObservable, observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
+import { DateTime } from 'luxon';
 import {
   AccountProps, AddTransactionResponse, Error,
   isAddTransactionResponse, TrackingType, AccountType,
@@ -7,6 +8,7 @@ import {
 import {
   AccountInterface, InstitutionInterface, NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface,
   AddTransactionRequest,
+  AccountSettings,
 } from './State';
 import Transaction from './Transaction';
 import TransactionContainer from './TransactionContainer';
@@ -28,6 +30,8 @@ class Account extends TransactionContainer implements AccountInterface {
 
   plaidBalance: number | null;
 
+  startDate: DateTime;
+
   rate: number | null;
 
   institution: InstitutionInterface;
@@ -45,6 +49,7 @@ class Account extends TransactionContainer implements AccountInterface {
     this.tracking = props.tracking;
     this.balance = props.balance;
     this.plaidBalance = props.plaidBalance;
+    this.startDate = DateTime.fromISO(props.startDate);
     this.rate = props.rate;
     this.institution = institution;
 
@@ -58,15 +63,16 @@ class Account extends TransactionContainer implements AccountInterface {
     this.store = store;
   }
 
-  async setClosed(closed: boolean): Promise<void> {
-    const response = await Http.patch(`/api/v1/account/${this.id}`, {
-      closed,
-    });
+  async setSettings(settings: AccountSettings): Promise<void> {
+    const response = await Http.patch(`/api/v1/account/${this.id}`, settings);
 
     if (response.ok) {
       runInAction(() => {
-        this.closed = closed;
-        this.institution.closeAccount(this);
+        this.closed = settings.closed ?? this.closed;
+
+        if (this.closed) {
+          this.institution.closeAccount(this);
+        }
       });
     }
   }

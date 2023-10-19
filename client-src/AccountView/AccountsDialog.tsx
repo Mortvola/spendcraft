@@ -1,46 +1,38 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 import React from 'react';
-import { Observer, observer } from 'mobx-react-lite';
+import { observer } from 'mobx-react-lite';
 import {
   Field, ErrorMessage, FormikErrors,
 } from 'formik';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import { FormModal, FormField } from '@mortvola/forms';
-import { PlaidLinkOnSuccessMetadata } from 'react-plaid-link';
 import { DateTime } from 'luxon';
 import AccountItem from './AccountItem';
-import { AccountTrackingProps, TrackingType } from '../../common/ResponseTypes';
-import { useStores } from '../State/mobxStore';
-import { InstitutionInterface } from '../State/State';
+import { AccountInterface } from '../State/State';
+import { TrackingType } from '../../common/ResponseTypes';
 
 type PropsType = {
-  publicToken: string,
-  metadata: PlaidLinkOnSuccessMetadata,
-  institution?: InstitutionInterface,
+  account: AccountInterface,
 }
 
 const AccountsDialog: React.FC<PropsType & ModalProps> = ({
-  publicToken,
-  metadata,
-  institution,
+  account,
   setShow,
 }) => {
-  const { accounts } = useStores();
-
   type ValuesType = {
-    tracking: TrackingType[],
+    tracking: TrackingType,
     startDate: string,
   };
 
   const handleValidate = (values: ValuesType) => {
     const errors: FormikErrors<ValuesType> = {};
-    if (!values.tracking.some((s) => s !== 'None')) {
-      errors.tracking = 'No tracking options selected';
-    }
+    // if (!values.tracking.some((s) => s !== 'None')) {
+    //   errors.tracking = 'No tracking options selected';
+    // }
 
-    if (values.startDate === '') {
-      errors.startDate = 'Start is required';
-    }
+    // if (values.startDate === '') {
+    //   errors.startDate = 'Start is required';
+    // }
 
     return errors;
   };
@@ -50,75 +42,86 @@ const AccountsDialog: React.FC<PropsType & ModalProps> = ({
     //   throw new Error('unlinkedAccounts is undefined');
     // }
 
-    const accountTracking: AccountTrackingProps[] = metadata.accounts
-      .map((a, i) => {
-        if (values.tracking === null) {
-          throw new Error('account selections is null');
-        }
+    // const accountTracking: AccountTrackingProps[] = accounts
+    //   .map((a, i) => {
+    //     if (values.tracking === null) {
+    //       throw new Error('account selections is null');
+    //     }
 
-        if (values.tracking[i]) {
-          return ({ id: a.id, mask: a.mask, tracking: values.tracking[i] })
-        }
+    //     if (values.tracking[i]) {
+    //       return ({ id: a.id, mask: a.mask, tracking: values.tracking[i] })
+    //     }
 
-        return ({ id: a.id, mask: a.mask, tracking: 'Transactions' as TrackingType })
-      })
-      // .filter((a) => (a.tracking !== 'None' && a.tracking !== undefined));
+    //     return ({ id: a.id, mask: a.mask, tracking: 'Transactions' as TrackingType })
+    //   })
+    //   // .filter((a) => (a.tracking !== 'None' && a.tracking !== undefined));
 
-    let response: unknown = null;
+    const response: unknown = null;
 
-    if (institution) {
-      response = await institution.update();
-    }
-    else {
-      if (metadata.institution === null) {
-        throw new Error('institution is null');
-      }
-      response = await accounts.addInstitution(
-        publicToken, metadata.institution.institution_id,
-      );
-    }
+    // if (institution) {
+    //   response = await institution.update();
+    // }
+    // else {
+    //   if (metadata.institution === null) {
+    //     throw new Error('institution is null');
+    //   }
+    //   response = await accounts.addInstitution(
+    //     publicToken, metadata.institution.institution_id,
+    //   );
+    // }
 
-    if (response) {
-      setShow(false);
-    }
+    account.startDate = DateTime.fromISO(values.startDate);
+    account.tracking = values.tracking;
+
+    // if (response) {
+    account.setSettings({
+      startDate: DateTime.fromISO(values.startDate),
+      tracking: values.tracking,
+    });
+
+    setShow(false);
+    // }
   };
 
   // useEffect(() => {
   //   institution.getUnlinkedAccounts();
   // }, [institution]);
 
-  const renderAccounts = () => (
-    <>
-      {
-        metadata.accounts.map((acct, index) => (
-          <Field
-            key={acct.id}
-            name={`tracking[${index}]`}
-            account={acct}
-            as={AccountItem}
-          />
-        ))
-      }
-      <ErrorMessage name="tracking" />
-    </>
-  );
-
   return (
     <FormModal<ValuesType>
       initialValues={{
-        tracking: metadata.accounts.map(() => 'Transactions'),
-        startDate: DateTime.now().startOf('month').toISODate() ?? '',
+        tracking: account.tracking,
+        startDate: account.startDate.toISODate()!,
       }}
       setShow={setShow}
       validate={handleValidate}
       onSubmit={handleSubmit}
-      title="Accounts"
+      title="Account Settings"
       formId="UnlinkedAccounts"
     >
-      <FormField name="startDate" label="Start Date:" type="date" />
-      <Observer>
-        {renderAccounts}
-      </Observer>
+      {/* <Field
+        key={account.id}
+        name="tracking"
+        account={account}
+        as={AccountItem}
+      /> */}
+      {/* <div className="account-select-item"> */}
+      <div className="account-name">
+        {account.name}
+      </div>
+      <div style={{
+        display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: '1rem', justifyItems: 'start',
+      }}
+      >
+        <FormField name="startDate" label="Start Date:" type="date" style={{ height: '2.5rem' }} />
+        <Field
+          name="tracking"
+          label="Tracking:"
+          as={AccountItem}
+        />
+      </div>
+      {/* </div> */}
+      <ErrorMessage name="tracking" />
     </FormModal>
   );
 };

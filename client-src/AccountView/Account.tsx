@@ -42,7 +42,7 @@ const Account: React.FC<PropsType> = observer(({
       </>
     ),
     () => {
-      account.setClosed(!account.closed);
+      account.setSettings({ closed: !account.closed });
       onAccountStateChange(account);
     },
   );
@@ -66,11 +66,7 @@ const Account: React.FC<PropsType> = observer(({
   return (
     <div className={acctClassName} onClick={accountSelected}>
       <div className={styles.buttons}>
-        {
-          !institution.offline
-            ? null
-            : <IconButton icon="edit" onClick={() => showAccountDialog(account)} />
-        }
+        <IconButton icon="gear" onClick={() => showAccountDialog(account)} />
         <IconButton icon={account.closed ? 'circle' : 'times-circle'} solid={false} onClick={handleCloseClick} />
       </div>
       <div className={styles.accountInfo}>

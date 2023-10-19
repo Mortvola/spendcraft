@@ -6,8 +6,8 @@ import Institution from 'App/Models/Institution';
 import Account, { AccountSyncResult } from 'App/Models/Account';
 import Category from 'App/Models/Category';
 import {
-  AccountProps, AccountType, CategoryBalanceProps,
-  InstitutionProps, InstitutionSyncResponse, TrackingType, TransactionType, UnlinkedAccountProps,
+  AccountProps, CategoryBalanceProps,
+  InstitutionProps, InstitutionSyncResponse, UnlinkedAccountProps,
 } from 'Common/ResponseTypes';
 import { schema } from '@ioc:Adonis/Core/Validator';
 import Transaction from 'App/Models/Transaction';
@@ -18,18 +18,18 @@ import BalanceHistory from 'App/Models/BalanceHistory';
 import Budget from 'App/Models/Budget';
 import { Exception } from '@poppinss/utils';
 import {
-  CountryCode, ItemPublicTokenExchangeResponse, AccountType as PlaidAccountType, Products,
+  CountryCode, ItemPublicTokenExchangeResponse, Products,
 } from 'plaid';
 import Env from '@ioc:Adonis/Core/Env'
 
-type OfflineAccount = {
-  name: string,
-  balance: number,
-  type: AccountType,
-  subtype: string,
-  tracking: string,
-  rate?: number | null,
-};
+// type OfflineAccount = {
+//   name: string,
+//   balance: number,
+//   type: AccountType,
+//   subtype: string,
+//   tracking: string,
+//   rate?: number | null,
+// };
 
 type AddAccountsResponse = {
   accounts: AccountProps[],
@@ -225,70 +225,70 @@ class InstitutionController {
     return accounts;
   }
 
-  private static async insertStartingBalance(
-    budget: Budget,
-    acct: Account,
-    startDate: DateTime,
-    startingBalance: number,
-    fundingPool: Category,
-    options?: {
-      client: TransactionClientContract,
-    },
-  ): Promise<void> {
-    const transaction = (new Transaction())
-      .fill({
-        date: startDate,
-        sortOrder: -1,
-        budgetId: budget.id,
-        type: TransactionType.STARTING_BALANCE,
-      });
+  // private static async insertStartingBalance(
+  //   budget: Budget,
+  //   acct: Account,
+  //   startDate: DateTime,
+  //   startingBalance: number,
+  //   fundingPool: Category,
+  //   options?: {
+  //     client: TransactionClientContract,
+  //   },
+  // ): Promise<void> {
+  //   const transaction = (new Transaction())
+  //     .fill({
+  //       date: startDate,
+  //       sortOrder: -1,
+  //       budgetId: budget.id,
+  //       type: TransactionType.STARTING_BALANCE,
+  //     });
 
-    if (options && options.client) {
-      transaction.useTransaction(options.client);
-    }
+  //   if (options && options.client) {
+  //     transaction.useTransaction(options.client);
+  //   }
 
-    // eslint-disable-next-line no-await-in-loop
-    await transaction.save();
+  //   // eslint-disable-next-line no-await-in-loop
+  //   await transaction.save();
 
-    const transId = transaction.id;
+  //   const transId = transaction.id;
 
-    const acctTransaction = (new AccountTransaction())
-      .fill({
-        transactionId: transId,
-        accountId: acct.id,
-        name: 'Starting Balance',
-        amount: startingBalance,
-      });
+  //   const acctTransaction = (new AccountTransaction())
+  //     .fill({
+  //       transactionId: transId,
+  //       accountId: acct.id,
+  //       name: 'Starting Balance',
+  //       amount: startingBalance,
+  //     });
 
-    if (options && options.client) {
-      acctTransaction.useTransaction(options.client);
-    }
+  //   if (options && options.client) {
+  //     acctTransaction.useTransaction(options.client);
+  //   }
 
-    // eslint-disable-next-line no-await-in-loop
-    await acctTransaction.save();
+  //   // eslint-disable-next-line no-await-in-loop
+  //   await acctTransaction.save();
 
-    if (acct.tracking === 'Transactions') {
-      // eslint-disable-next-line no-await-in-loop
-      const transactionCategory = (new TransactionCategory())
-        .fill({
-          transactionId: transId,
-          categoryId: fundingPool.id,
-          amount: startingBalance,
-        });
+  //   if (acct.tracking === 'Transactions') {
+  //     // eslint-disable-next-line no-await-in-loop
+  //     const transactionCategory = (new TransactionCategory())
+  //       .fill({
+  //         transactionId: transId,
+  //         categoryId: fundingPool.id,
+  //         amount: startingBalance,
+  //       });
 
-      if (options && options.client) {
-        transactionCategory.useTransaction(options.client);
-      }
+  //     if (options && options.client) {
+  //       transactionCategory.useTransaction(options.client);
+  //     }
 
-      // eslint-disable-next-line no-await-in-loop
-      await transactionCategory.save();
+  //     // eslint-disable-next-line no-await-in-loop
+  //     await transactionCategory.save();
 
-      fundingPool.amount += startingBalance;
+  //     fundingPool.amount += startingBalance;
 
-      // eslint-disable-next-line no-await-in-loop
-      await fundingPool.save();
-    }
-  }
+  //     // eslint-disable-next-line no-await-in-loop
+  //     await fundingPool.save();
+  //   }
+  // }
 
   // eslint-disable-next-line class-methods-use-this
   private static async addOnlineAccounts(
@@ -352,6 +352,7 @@ class InstitutionController {
         tracking: a.tracking,
         balance: a.balance,
         plaidBalance: a.plaidBalance,
+        startDate: a.startDate.toISODate()!,
         rate: a.rate,
       })),
       categories: [
@@ -362,186 +363,187 @@ class InstitutionController {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  private static async addOfflineAccounts(
-    budget: Budget,
-    institution: Institution,
-    accounts: OfflineAccount[],
-    startDate: string,
-    options?: {
-      client: TransactionClientContract,
-    },
-  ): Promise<AddAccountsResponse> {
-    const newAccounts: Account[] = [];
+  // private static async addOfflineAccounts(
+  //   budget: Budget,
+  //   institution: Institution,
+  //   accounts: OfflineAccount[],
+  //   startDate: string,
+  //   options?: {
+  //     client: TransactionClientContract,
+  //   },
+  // ): Promise<AddAccountsResponse> {
+  //   const newAccounts: Account[] = [];
 
-    const fundingPool = await budget.getFundingPoolCategory(options);
+  //   const fundingPool = await budget.getFundingPoolCategory(options);
 
-    const start = DateTime.fromISO(startDate);
+  //   const start = DateTime.fromISO(startDate);
 
-    // eslint-disable-next-line no-restricted-syntax
-    for (const account of accounts) {
-      const acct = new Account();
+  //   // eslint-disable-next-line no-restricted-syntax
+  //   for (const account of accounts) {
+  //     const acct = new Account();
 
-      if (options && options.client) {
-        acct.useTransaction(options.client);
-      }
+  //     if (options && options.client) {
+  //       acct.useTransaction(options.client);
+  //     }
 
-      acct.fill({
-        name: account.name,
-        institutionId: institution.id,
-        startDate: start,
-        balance: account.balance,
-        tracking: account.tracking as TrackingType,
-        enabled: true,
-        type: account.type,
-        subtype: account.subtype,
-        rate: account.rate,
-        closed: false,
-      });
+  //     acct.fill({
+  //       name: account.name,
+  //       institutionId: institution.id,
+  //       startDate: start,
+  //       balance: account.balance,
+  //       tracking: account.tracking as TrackingType,
+  //       enabled: true,
+  //       type: account.type,
+  //       subtype: account.subtype,
+  //       rate: account.rate,
+  //       closed: false,
+  //     });
 
-      // eslint-disable-next-line no-await-in-loop
-      await acct.save();
+  //     // eslint-disable-next-line no-await-in-loop
+  //     await acct.save();
 
-      if (acct.tracking !== 'Balances') {
-        // eslint-disable-next-line no-await-in-loop
-        await InstitutionController.insertStartingBalance(
-          budget, acct, start, account.balance, fundingPool, options,
-        );
-      }
-      else {
-        await acct.updateAccountBalanceHistory(acct.balance);
+  //     if (acct.tracking !== 'Balances') {
+  //       // eslint-disable-next-line no-await-in-loop
+  //       await InstitutionController.insertStartingBalance(
+  //         budget, acct, start, account.balance, fundingPool, options,
+  //       );
+  //     }
+  //     else {
+  //       await acct.updateAccountBalanceHistory(acct.balance);
 
-        // eslint-disable-next-line no-await-in-loop
-        await acct.save();
-      }
+  //       // eslint-disable-next-line no-await-in-loop
+  //       await acct.save();
+  //     }
 
-      newAccounts.push(acct);
-    }
+  //     newAccounts.push(acct);
+  //   }
 
-    return {
-      accounts: newAccounts.map((a) => ({
-        id: a.id,
-        name: a.name,
-        closed: a.closed,
-        type: a.type,
-        subtype: a.subtype,
-        tracking: a.tracking,
-        balance: a.balance,
-        plaidBalance: a.plaidBalance,
-        rate: a.rate,
-      })),
-      categories: [
-        { id: fundingPool.id, balance: fundingPool.amount },
-      ],
-    }
-  }
+  //   return {
+  //     accounts: newAccounts.map((a) => ({
+  //       id: a.id,
+  //       name: a.name,
+  //       closed: a.closed,
+  //       type: a.type,
+  //       subtype: a.subtype,
+  //       tracking: a.tracking,
+  //       balance: a.balance,
+  //       plaidBalance: a.plaidBalance,
+  //       startDate: a.startDate.toISODate()!,
+  //       rate: a.rate,
+  //     })),
+  //     categories: [
+  //       { id: fundingPool.id, balance: fundingPool.amount },
+  //     ],
+  //   }
+  // }
 
   // eslint-disable-next-line class-methods-use-this
-  public async addAccounts({
-    request,
-    auth: {
-      user,
-    },
-    logger,
-  }: HttpContextContract): Promise<AddAccountsResponse | void> {
-    if (!user) {
-      throw new Error('user is not defined');
-    }
+  // public async addAccounts({
+  //   request,
+  //   auth: {
+  //     user,
+  //   },
+  //   logger,
+  // }: HttpContextContract): Promise<AddAccountsResponse | void> {
+  //   if (!user) {
+  //     throw new Error('user is not defined');
+  //   }
 
-    const budget = await user.related('budget').query().firstOrFail();
+  //   const budget = await user.related('budget').query().firstOrFail();
 
-    const requestData = await request.validate({
-      schema: schema.create({
-        plaidAccounts: schema.array.optional().members(
-          schema.object().members({
-            plaidAccountId: schema.string(),
-            name: schema.string(),
-            officialName: schema.string.optional(),
-            mask: schema.string(),
-            type: schema.enum(Object.values(PlaidAccountType)),
-            subtype: schema.string(),
-            balances: schema.object().members({
-              current: schema.number(),
-            }),
-            tracking: schema.string(),
-          }),
-        ),
-        offlineAccounts: schema.array.optional().members(
-          schema.object().members({
-            name: schema.string(),
-            balance: schema.number(),
-            type: schema.enum(Object.values(PlaidAccountType)),
-            subtype: schema.string(),
-            tracking: schema.string(),
-            rate: schema.number.optional(),
-          }),
-        ),
-        startDate: schema.string(),
-      }),
-    });
+  //   const requestData = await request.validate({
+  //     schema: schema.create({
+  //       plaidAccounts: schema.array.optional().members(
+  //         schema.object().members({
+  //           plaidAccountId: schema.string(),
+  //           name: schema.string(),
+  //           officialName: schema.string.optional(),
+  //           mask: schema.string(),
+  //           type: schema.enum(Object.values(PlaidAccountType)),
+  //           subtype: schema.string(),
+  //           balances: schema.object().members({
+  //             current: schema.number(),
+  //           }),
+  //           tracking: schema.string(),
+  //         }),
+  //       ),
+  //       offlineAccounts: schema.array.optional().members(
+  //         schema.object().members({
+  //           name: schema.string(),
+  //           balance: schema.number(),
+  //           type: schema.enum(Object.values(PlaidAccountType)),
+  //           subtype: schema.string(),
+  //           tracking: schema.string(),
+  //           rate: schema.number.optional(),
+  //         }),
+  //       ),
+  //       startDate: schema.string(),
+  //     }),
+  //   });
 
-    const trx = await Database.transaction();
+  //   const trx = await Database.transaction();
 
-    try {
-      const institution = await Institution.findOrFail(request.params().instId, { client: trx });
+  //   try {
+  //     const institution = await Institution.findOrFail(request.params().instId, { client: trx });
 
-      if (requestData.plaidAccounts) {
-        // await InstitutionController.addOnlineAccounts(
-        //   budget, institution, requestData.plaidAccounts, requestData.startDate, { client: trx },
-        // );
-      }
-      else if (requestData.offlineAccounts) {
-        await InstitutionController.addOfflineAccounts(
-          budget, institution, requestData.offlineAccounts, requestData.startDate, { client: trx },
-        );
-      }
-      else {
-        throw new Error('plaidAccounts nor offlineAccounts are defined');
-      }
+  //     if (requestData.plaidAccounts) {
+  //       // await InstitutionController.addOnlineAccounts(
+  //       //   budget, institution, requestData.plaidAccounts, requestData.startDate, { client: trx },
+  //       // );
+  //     }
+  //     else if (requestData.offlineAccounts) {
+  //       await InstitutionController.addOfflineAccounts(
+  //         budget, institution, requestData.offlineAccounts, requestData.startDate, { client: trx },
+  //       );
+  //     }
+  //     else {
+  //       throw new Error('plaidAccounts nor offlineAccounts are defined');
+  //     }
 
-      await trx.commit();
+  //     await trx.commit();
 
-      const trx2 = await Database.transaction();
-      institution.useTransaction(trx2);
+  //     const trx2 = await Database.transaction();
+  //     institution.useTransaction(trx2);
 
-      try {
-        await institution.syncUpdate();
+  //     try {
+  //       await institution.syncUpdate();
 
-        await trx2.commit();
-      }
-      catch (error) {
-        await trx2.rollback();
-        logger.error(error);
-      }
+  //       await trx2.commit();
+  //     }
+  //     catch (error) {
+  //       await trx2.rollback();
+  //       logger.error(error);
+  //     }
 
-      const accounts = await Promise.all((await institution.related('accounts').query()).map((a) => ({
-        id: a.id,
-        name: a.name,
-        closed: a.closed,
-        type: a.type,
-        subtype: a.subtype,
-        tracking: a.tracking,
-        balance: a.balance,
-        plaidBalance: a.plaidBalance,
-        rate: a.rate,
-      })));
+  //     const accounts = await Promise.all((await institution.related('accounts').query()).map((a) => ({
+  //       id: a.id,
+  //       name: a.name,
+  //       closed: a.closed,
+  //       type: a.type,
+  //       subtype: a.subtype,
+  //       tracking: a.tracking,
+  //       balance: a.balance,
+  //       plaidBalance: a.plaidBalance,
+  //       rate: a.rate,
+  //     })));
 
-      const fundingPool = await budget.getFundingPoolCategory();
-      const unassigned = await budget.getUnassignedCategory();
+  //     const fundingPool = await budget.getFundingPoolCategory();
+  //     const unassigned = await budget.getUnassignedCategory();
 
-      return {
-        accounts,
-        categories: [
-          { id: fundingPool.id, balance: fundingPool.amount },
-          { id: unassigned.id, balance: unassigned.amount },
-        ],
-      };
-    }
-    catch (error) {
-      await trx.rollback();
-      logger.error(error);
-      throw error;
-    }
-  }
+  //     return {
+  //       accounts,
+  //       categories: [
+  //         { id: fundingPool.id, balance: fundingPool.amount },
+  //         { id: unassigned.id, balance: unassigned.amount },
+  //       ],
+  //     };
+  //   }
+  //   catch (error) {
+  //     await trx.rollback();
+  //     logger.error(error);
+  //     throw error;
+  //   }
+  // }
 
   // eslint-disable-next-line class-methods-use-this
   public async syncAll({

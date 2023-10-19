@@ -10,7 +10,6 @@ import Account from 'App/Models/Account';
 import Logger from '@ioc:Adonis/Core/Logger'
 import Budget from 'App/Models/Budget';
 import { CountryCode } from 'plaid';
-import { TransactionType } from 'Common/ResponseTypes';
 import { DateTime } from 'luxon';
 import AccountTransaction from './AccountTransaction';
 
@@ -199,27 +198,10 @@ class Institution extends BaseModel {
                 unassigned.amount += (acct.$extras.addedSum ?? 0);
               }
 
-              const sum = await acct.related('accountTransactions').query()
-                .whereHas('transaction', (q) => {
-                  q.where('date', '>=', acct.startDate.toISODate() ?? '')
-                })
-                .sum('amount')
-                .first();
-
-              //     // Add a starting balance record to the accounts that don't have one.
-              //     // Otherwise, adjust the balance.
-              //     if (parseInt(acct.$extras.hasStartingBalance, 10) === 0) {
-              //       acct.balance = acct.plaidBalance ?? 0;
-
               // eslint-disable-next-line no-await-in-loop
-              await acct.insertStartingBalance(
-                budget, acct.balance - (sum?.$extras.sum ?? 0), fundingPool,
+              await acct.updateStartingBalance(
+                budget, fundingPool,
               );
-
-              //     }
-              //     else {
-              //       acct.balance += acct.$extras.addedSum ?? 0;
-              //     }
 
               // eslint-disable-next-line no-await-in-loop
               await acct.save();

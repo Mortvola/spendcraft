@@ -71,9 +71,11 @@ const Institution: React.FC<PropsType> = observer(({
       showOfflineAccountDialog();
     }
     else {
+      setEditedAccount(account);
       showOnlineAccountsDialog();
     }
   }
+
   const handleDialogHide = () => {
     setEditedAccount(null);
   }
@@ -97,7 +99,7 @@ const Institution: React.FC<PropsType> = observer(({
             <RelinkDialog institution={institution} />
             <IconButton icon="trash-alt" onClick={handleDeleteClick} />
             {/* <IconButton icon="plus" onClick={handleAddClick} /> */}
-            {/* <OnlineAccountsDialog institution={institution} accounts={[]} /> */}
+            <OnlineAccountsDialog account={editedAccount!} />
             <OfflineAccountDialog institution={institution} account={editedAccount} onHide={handleDialogHide} />
             <DeleteConfirmation />
             {

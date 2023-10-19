@@ -8,7 +8,7 @@ import Category from 'App/Models/Category';
 import Transaction from 'App/Models/Transaction';
 import TransactionCategory from 'App/Models/TransactionCategory';
 import {
-  TransactionsResponse, CategoryBalanceProps, TransactionProps, TransactionType, AccountBalanceProps,
+  TransactionsResponse, CategoryBalanceProps, TransactionProps, TransactionType, AccountBalanceProps, TrackingType,
 } from 'Common/ResponseTypes';
 import transactionFields from './transactionFields';
 
@@ -461,29 +461,60 @@ export default class AccountsController {
     auth: {
       user,
     },
+    logger,
   }: HttpContextContract): Promise<void> {
     if (!user) {
       throw new Error('user not defined');
     }
 
+    const budget = await user.related('budget').query().firstOrFail();
+
     const requestData = await request.validate({
       schema: schema.create({
         name: schema.string.optional([rules.trim()]),
         closed: schema.boolean.optional(),
+        startDate: schema.date.optional(),
+        tracking: schema.string.optional(),
       }),
     });
 
-    const account = await Account.findOrFail(request.params().acctId);
+    const trx = await Database.transaction();
 
-    if (requestData.name !== undefined) {
-      account.name = requestData.name;
+    try {
+      const account = await Account.findOrFail(request.params().acctId, { client: trx });
+
+      if (requestData.name !== undefined) {
+        account.name = requestData.name;
+      }
+
+      if (requestData.closed !== undefined) {
+        account.closed = requestData.closed;
+      }
+
+      if (requestData.startDate !== undefined) {
+        account.startDate = requestData.startDate;
+
+        const fundingPool = await budget.getFundingPoolCategory({ client: trx });
+
+        await account.updateStartingBalance(
+          budget, fundingPool,
+        );
+
+        await fundingPool.save();
+      }
+
+      if (requestData.tracking !== undefined) {
+        account.tracking = requestData.tracking as TrackingType;
+      }
+
+      await account.save();
+
+      await trx.commit();
     }
-
-    if (requestData.closed !== undefined) {
-      account.closed = requestData.closed;
+    catch (error) {
+      logger.error(error)
+      await trx.rollback();
     }
-
-    account.save();
   }
 
   // eslint-disable-next-line class-methods-use-this

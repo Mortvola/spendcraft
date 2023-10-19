@@ -151,6 +151,7 @@ export default class Budget extends BaseModel {
         tracking: a.tracking,
         balance: a.balance,
         plaidBalance: a.plaidBalance,
+        startDate: a.startDate.toISODate()!,
         rate: a.rate,
       })),
     }));
