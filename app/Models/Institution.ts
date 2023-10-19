@@ -151,18 +151,19 @@ class Institution extends BaseModel {
             const removed = response.removed[i];
 
             // eslint-disable-next-line no-await-in-loop
-            const at = await AccountTransaction.findBy('providerTransactionId', removed.transaction_id);
+            const at = await AccountTransaction
+              .findBy('providerTransactionId', removed.transaction_id, { client: trx });
 
             if (at) {
-              at.useTransaction(trx);
-
               // eslint-disable-next-line no-await-in-loop
               const t = await at.related('transaction').query().first();
 
-              at.delete();
+              // eslint-disable-next-line no-await-in-loop
+              await at.delete();
 
               if (t) {
-                t.delete();
+                // eslint-disable-next-line no-await-in-loop
+                await t.delete();
               }
             }
 
@@ -209,7 +210,8 @@ class Institution extends BaseModel {
           }
         }));
 
-        unassigned.save();
+        await fundingPool.save();
+        await unassigned.save();
 
         this.cursor = nextCursor;
         this.syncDate = DateTime.now();

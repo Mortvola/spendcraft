@@ -608,8 +608,6 @@ class Account extends BaseModel {
         .save();
 
       fundingPool.amount += delta;
-
-      await fundingPool.save();
     }
     else {
       const transaction = await (new Transaction())
@@ -636,8 +634,6 @@ class Account extends BaseModel {
       })
 
       fundingPool.amount += startingBalance;
-
-      await fundingPool.save();
     }
   }
 }
