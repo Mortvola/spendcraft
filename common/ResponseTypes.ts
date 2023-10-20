@@ -123,7 +123,7 @@ export interface AccountProps {
 
   plaidBalance: number | null;
 
-  startDate: string;
+  startDate: string | null;
 
   rate: number | null,
 }

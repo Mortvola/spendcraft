@@ -340,7 +340,7 @@ export interface AccountInterface extends TransactionContainerInterface {
 
   plaidBalance: number | null;
 
-  startDate: DateTime,
+  startDate: DateTime | null,
 
   rate: number | null;
 

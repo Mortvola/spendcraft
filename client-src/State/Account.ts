@@ -30,7 +30,7 @@ class Account extends TransactionContainer implements AccountInterface {
 
   plaidBalance: number | null;
 
-  startDate: DateTime;
+  startDate: DateTime | null;
 
   rate: number | null;
 
@@ -49,7 +49,7 @@ class Account extends TransactionContainer implements AccountInterface {
     this.tracking = props.tracking;
     this.balance = props.balance;
     this.plaidBalance = props.plaidBalance;
-    this.startDate = DateTime.fromISO(props.startDate);
+    this.startDate = props.startDate ? DateTime.fromISO(props.startDate) : null;
     this.rate = props.rate;
     this.institution = institution;
 
