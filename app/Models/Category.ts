@@ -122,6 +122,17 @@ export default class Category extends BaseModel {
       .whereHas('transactionCategories', (query) => {
         query.where('categoryId', this.id);
       })
+      .where((q) => {
+        q.whereHas('accountTransaction', (q2) => {
+          q2
+            .where('pending', false)
+            .andWhereHas('account', (q3) => {
+              q3.where('tracking', 'Transactions')
+              q3.andWhereColumn('startDate', '<=', 'transactions.date')
+            })
+        })
+          .orDoesntHave('accountTransaction')
+      })
       .preload('accountTransaction', (accountTransaction) => {
         accountTransaction.preload('account', (account) => {
           account.preload('institution');
