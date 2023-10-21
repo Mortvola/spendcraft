@@ -32,11 +32,6 @@ type Key = {
 
 const keyCache = new Map<string, { cacheTime: DateTime, key: Key}>();
 
-interface PlaidWebhookError extends Plaid.PlaidError {
-  // eslint-disable-next-line camelcase
-  request_id: string;
-}
-
 class WebhookEvent {
   // eslint-disable-next-line camelcase
   webhook_type: string;
@@ -47,7 +42,7 @@ class WebhookEvent {
   // eslint-disable-next-line camelcase
   item_id: string;
 
-  error: PlaidWebhookError;
+  error: Plaid.PlaidError;
 }
 
 class WebhookItemEvent extends WebhookEvent {
@@ -59,11 +54,6 @@ class TransactionEvent extends WebhookEvent {
 
   // eslint-disable-next-line camelcase
   new_transactions: number;
-}
-
-class WebhookAcknoweldgedEvent extends WebhookEvent {
-  // eslint-disable-next-line camelcase
-  new_webhook_url: string;
 }
 
 const itemWebhookCodes = ['ERROR', 'PENDING_EXPIRATION', 'USER_PERMISSION_REVOKED', 'WEBHOOK_UPDATE_ACKNOWLEDGED'];
@@ -123,7 +113,7 @@ class WebhookController {
   static async processItemEvent(event: WebhookItemEvent): Promise<void> {
     switch (event.webhook_code) {
       case 'WEBHOOK_UPDATE_ACKNOWLEDGED': {
-        const webhookUpdated = event as WebhookAcknoweldgedEvent;
+        const webhookUpdated = event as Plaid.WebhookUpdateAcknowledgedWebhook;
         Logger.info(`webhook update acknowledged for ${webhookUpdated.item_id}`);
         if (webhookUpdated.error) {
           Logger.error(`\terror: ${webhookUpdated.error.error_message}`);
@@ -169,7 +159,7 @@ class WebhookController {
     }
   }
 
-  static async syncUpdate(event: TransactionEvent) {
+  static async syncUpdate(event: Plaid.SyncUpdatesAvailableWebhook) {
     const trx = await Database.transaction();
 
     try {
@@ -275,7 +265,7 @@ class WebhookController {
     switch (event.webhook_code) {
       case 'SYNC_UPDATES_AVAILABLE':
         Logger.info(JSON.stringify(event));
-        WebhookController.syncUpdate(event);
+        WebhookController.syncUpdate((event as unknown) as Plaid.SyncUpdatesAvailableWebhook);
         break;
 
       case 'INITIAL_UPDATE':
