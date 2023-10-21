@@ -1,27 +1,5 @@
 import PlaidException from './PlaidException';
-import Plaid, {
-  Institution, PlaidError,
-  Transaction,
-  PlaidApi,
-  PlaidEnvironments,
-  Configuration,
-  CountryCode,
-  Products,
-  TransactionsGetResponse,
-  AccountsGetResponse,
-  TransactionsSyncResponse,
-  Category,
-  SandboxItemFireWebhookRequestWebhookCodeEnum,
-} from 'plaid';
-
-export {
-  CountryCode, Products,
-  Institution as PlaidInstitution,
-  PlaidError, Transaction as PlaidTransaction,
-  TransactionsGetResponse,
-  AccountsGetResponse,
-  TransactionsSyncResponse,
-};
+import * as Plaid from 'plaid';
 
 export type PlaidConfig = {
   clientId: string,
@@ -32,7 +10,7 @@ export type PlaidConfig = {
 }
 
 class PlaidWrapper {
-  plaid: PlaidApi;
+  plaid: Plaid.PlaidApi;
 
   constructor (config: PlaidConfig) {
     let secret = '';
@@ -47,8 +25,8 @@ class PlaidWrapper {
       secret = config.productionSecret;
     }
 
-    const clientConfig: Configuration = new Configuration({
-      basePath: PlaidEnvironments[env],
+    const clientConfig: Plaid.Configuration = new Plaid.Configuration({
+      basePath: Plaid.PlaidEnvironments[env],
       baseOptions: {
         headers: {
           'PLAID-CLIENT-ID': config.clientId,
@@ -58,7 +36,7 @@ class PlaidWrapper {
     });
 
     try {
-      this.plaid = new PlaidApi(clientConfig);
+      this.plaid = new Plaid.PlaidApi(clientConfig);
     }
     catch (error) {
       throw new PlaidException(error);
@@ -276,7 +254,7 @@ class PlaidWrapper {
     }
   }
 
-  async sandboxItemFireWebhook(accessToken: string, code: SandboxItemFireWebhookRequestWebhookCodeEnum): Promise<Plaid.SandboxItemFireWebhookResponse> {
+  async sandboxItemFireWebhook(accessToken: string, code: Plaid.SandboxItemFireWebhookRequestWebhookCodeEnum): Promise<Plaid.SandboxItemFireWebhookResponse> {
     try {
       const response = await this.plaid.sandboxItemFireWebhook({
         access_token: accessToken,
@@ -291,7 +269,7 @@ class PlaidWrapper {
     }
   }
 
-  async getCategories(): Promise<Category[]> {
+  async getCategories(): Promise<Plaid.Category[]> {
     const response = await this.plaid.categoriesGet({});
 
     return response.data.categories;

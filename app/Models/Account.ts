@@ -3,7 +3,8 @@ import {
   BaseModel, hasMany, HasMany, column, belongsTo, BelongsTo,
 } from '@ioc:Adonis/Lucid/Orm';
 import { DateTime } from 'luxon';
-import plaidClient, { PlaidTransaction } from '@ioc:Plaid';
+import plaidClient from '@ioc:Plaid';
+import * as Plaid from 'plaid';
 import AccountTransaction from 'App/Models/AccountTransaction';
 import BalanceHistory from 'App/Models/BalanceHistory';
 import Institution from 'App/Models/Institution';
@@ -13,7 +14,6 @@ import {
 import Transaction from 'App/Models/Transaction';
 import Budget from 'App/Models/Budget';
 import { Exception } from '@poppinss/utils';
-import { Location } from 'plaid';
 import { XMLParser } from 'fast-xml-parser';
 import Category from './Category';
 
@@ -230,7 +230,7 @@ class Account extends BaseModel {
   // }
 
   public async addTransaction(
-    plaidTransaction: PlaidTransaction,
+    plaidTransaction: Plaid.Transaction,
     budget: Budget,
     pendingTransactions?: AccountTransaction[],
   ): Promise<number> {
@@ -241,7 +241,7 @@ class Account extends BaseModel {
     let transactionAmount = 0;
 
     if (plaidTransaction.amount !== null) {
-      const getLocation = (location: Location) => {
+      const getLocation = (location: Plaid.Location) => {
         if (location.address !== null
           || location.city !== null
           || location.country !== null

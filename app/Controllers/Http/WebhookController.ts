@@ -3,7 +3,8 @@ import compare from 'secure-compare';
 import { sha256 } from 'js-sha256';
 import { decodeProtectedHeader, importJWK, jwtVerify } from 'jose';
 import { DateTime } from 'luxon';
-import plaidClient, { PlaidError } from '@ioc:Plaid';
+import plaidClient from '@ioc:Plaid';
+import * as Plaid from 'plaid';
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import { RequestContract } from '@ioc:Adonis/Core/Request';
 import Database from '@ioc:Adonis/Lucid/Database';
@@ -31,7 +32,7 @@ type Key = {
 
 const keyCache = new Map<string, { cacheTime: DateTime, key: Key}>();
 
-interface PlaidWebhookError extends PlaidError {
+interface PlaidWebhookError extends Plaid.PlaidError {
   // eslint-disable-next-line camelcase
   request_id: string;
 }

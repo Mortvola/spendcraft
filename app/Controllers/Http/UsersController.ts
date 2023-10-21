@@ -4,7 +4,7 @@ import { InstitutionProps } from 'Common/ResponseTypes';
 import Env from '@ioc:Adonis/Core/Env'
 import { rules, schema } from '@ioc:Adonis/Core/Validator';
 import User from 'App/Models/User';
-import { CountryCode, Products } from 'plaid';
+import * as Plaid from 'plaid';
 import Database from '@ioc:Adonis/Lucid/Database';
 
 export default class UsersController {
@@ -111,8 +111,8 @@ export default class UsersController {
         client_user_id: user.id.toString(),
       },
       client_name: appName,
-      products: [Products.Transactions],
-      country_codes: [CountryCode.Us],
+      products: [Plaid.Products.Transactions],
+      country_codes: [Plaid.CountryCode.Us],
       language: 'en',
       webhook,
       link_customization_name: 'account_select',

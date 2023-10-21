@@ -5,11 +5,11 @@ import {
   belongsTo,
   BelongsTo,
 } from '@ioc:Adonis/Lucid/Orm';
-import plaidClient, { PlaidInstitution, PlaidTransaction } from '@ioc:Plaid';
+import plaidClient from '@ioc:Plaid';
+import * as Plaid from 'plaid';
 import Account from 'App/Models/Account';
 import Logger from '@ioc:Adonis/Core/Logger'
 import Budget from 'App/Models/Budget';
-import { CountryCode } from 'plaid';
 import { DateTime } from 'luxon';
 import AccountTransaction from './AccountTransaction';
 
@@ -46,9 +46,9 @@ class Institution extends BaseModel {
   @belongsTo(() => Budget)
   public budget: BelongsTo<typeof Budget>;
 
-  public async getPlaidInstition(this: Institution): Promise<PlaidInstitution> {
+  public async getPlaidInstition(this: Institution): Promise<Plaid.Institution> {
     const response = await plaidClient.getInstitutionById(
-      this.institutionId, [CountryCode.Us], {
+      this.institutionId, [Plaid.CountryCode.Us], {
         include_optional_metadata: true,
         include_status: true,
       },
@@ -93,7 +93,7 @@ class Institution extends BaseModel {
         // If the next_cursor matches the cursor then no new data is available
         if (response.next_cursor !== nextCursor) {
           for (let i = 0; i < transactions.length; i += 1) {
-            const transaction: PlaidTransaction = transactions[i];
+            const transaction: Plaid.Transaction = transactions[i];
 
             // Find account
             // eslint-disable-next-line no-await-in-loop

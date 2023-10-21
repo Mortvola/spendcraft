@@ -1,7 +1,7 @@
 /* eslint-disable no-await-in-loop */
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import Database, { TransactionClientContract } from '@ioc:Adonis/Lucid/Database';
-import plaidClient, { PlaidInstitution } from '@ioc:Plaid';
+import plaidClient from '@ioc:Plaid';
 import Institution from 'App/Models/Institution';
 import Account, { AccountSyncResult } from 'App/Models/Account';
 import Category from 'App/Models/Category';
@@ -17,9 +17,7 @@ import { DateTime } from 'luxon';
 import BalanceHistory from 'App/Models/BalanceHistory';
 import Budget from 'App/Models/Budget';
 import { Exception } from '@poppinss/utils';
-import {
-  CountryCode, ItemPublicTokenExchangeResponse, Products,
-} from 'plaid';
+import * as Plaid from 'plaid';
 import Env from '@ioc:Adonis/Core/Env'
 
 // type OfflineAccount = {
@@ -73,12 +71,13 @@ class InstitutionController {
 
     const trx = await Database.transaction();
 
-    let tokenResponse: ItemPublicTokenExchangeResponse | null = null;
+    let tokenResponse: Plaid.ItemPublicTokenExchangeResponse | null = null;
 
     try {
       tokenResponse = await plaidClient.exchangePublicToken(requestData.publicToken);
 
-      const institutionResponse = await plaidClient.getInstitutionById(requestData.institutionId, [CountryCode.Us]);
+      const institutionResponse = await plaidClient
+        .getInstitutionById(requestData.institutionId, [Plaid.CountryCode.Us]);
 
       institution = await (new Institution())
         .useTransaction(trx)
@@ -645,8 +644,8 @@ class InstitutionController {
         client_user_id: user.id.toString(),
       },
       client_name: appName,
-      products: [Products.Transactions],
-      country_codes: [CountryCode.Us],
+      products: [Plaid.Products.Transactions],
+      country_codes: [Plaid.CountryCode.Us],
       language: 'en',
       webhook,
       access_token: institution.accessToken,
@@ -661,7 +660,7 @@ class InstitutionController {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  public async info({ request, auth: { user } }: HttpContextContract): Promise<PlaidInstitution> {
+  public async info({ request, auth: { user } }: HttpContextContract): Promise<Plaid.Institution> {
     if (!user) {
       throw new Error('user is not defined');
     }
