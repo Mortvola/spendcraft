@@ -91,7 +91,7 @@ const AccountsDialog: React.FC<PropsType & ModalProps> = ({
     <FormModal<ValuesType>
       initialValues={{
         tracking: account.tracking,
-        startDate: account.startDate!.toISODate()!,
+        startDate: account.startDate?.toISODate() ?? '',
       }}
       setShow={setShow}
       validate={handleValidate}

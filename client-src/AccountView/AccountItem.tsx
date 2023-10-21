@@ -3,15 +3,17 @@ import React, { useState } from 'react';
 type PropsType = {
   name: string,
   label?: string,
+  value: string,
   onChange?: ((event: React.ChangeEvent<HTMLSelectElement>) => void) | null,
 }
 
 const AccountItem: React.FC<PropsType> = ({
   name,
   label,
+  value,
   onChange = null,
 }) => {
-  const [option, setOption] = useState('Transactions');
+  const [option, setOption] = useState(value);
 
   const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setOption(event.target.value);
