@@ -230,6 +230,7 @@ class Account extends BaseModel {
   // }
 
   public async addTransaction(
+    this: Account,
     plaidTransaction: Plaid.Transaction,
     budget: Budget,
     pendingTransactions?: AccountTransaction[],
@@ -322,22 +323,25 @@ class Account extends BaseModel {
           })
           .save();
 
-        acctTrans = await (new AccountTransaction())
-          .useTransaction(this.$trx)
-          .fill({
-            transactionId: transaction.id,
-            provider: 'PLAID',
-            providerTransactionId: plaidTransaction.transaction_id,
-            accountId: this.id,
-            name: plaidTransaction.name ?? undefined,
-            amount: -plaidTransaction.amount,
-            pending: plaidTransaction.pending ?? false,
-            paymentChannel: plaidTransaction.payment_channel,
-            merchantName: plaidTransaction.merchant_name,
-            accountOwner: plaidTransaction.account_owner,
-            location: getLocation(plaidTransaction.location),
-          })
-          .save();
+        acctTrans = await this.related('accountTransactions').create({
+          transactionId: transaction.id,
+          provider: 'PLAID',
+          providerTransactionId: plaidTransaction.transaction_id,
+          name: plaidTransaction.name ?? undefined,
+          amount: -plaidTransaction.amount,
+          pending: plaidTransaction.pending ?? false,
+          paymentChannel: plaidTransaction.payment_channel,
+          merchantName: plaidTransaction.merchant_name,
+          accountOwner: plaidTransaction.account_owner,
+          location: getLocation(plaidTransaction.location),
+        });
+
+        const unassigned = await budget.getUnassignedCategory({ client: this.$trx });
+
+        transaction.related('transactionCategories').create({
+          categoryId: unassigned.id,
+          amount: -plaidTransaction.amount,
+        });
 
         transactionAmount = acctTrans.amount;
       }

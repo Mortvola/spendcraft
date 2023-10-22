@@ -660,7 +660,7 @@ export default class Budget extends BaseModel {
           // })
         });
 
-      await Promise.all(categories.map(async (cat) => cat.syncBalance(this)));
+      await Promise.all(categories.map(async (cat) => cat.syncBalance()));
 
       await trx.commit();
     }

@@ -39,6 +39,18 @@
         }
       ]
     },
+    "check:unassigned": {
+      "settings": {
+        "loadApp": true,
+        "stayAlive": false
+      },
+      "commandPath": "./commands/CheckUnassigned",
+      "commandName": "check:unassigned",
+      "description": "",
+      "args": [],
+      "aliases": [],
+      "flags": []
+    },
     "check:webhooks": {
       "settings": {
         "loadApp": true,

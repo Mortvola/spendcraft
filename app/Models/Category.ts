@@ -7,7 +7,6 @@ import Group from 'App/Models/Group';
 import { CategoryType } from 'Common/ResponseTypes';
 import TransactionCategory from 'App/Models/TransactionCategory';
 import Budget from 'App/Models/Budget';
-import AccountTransaction from './AccountTransaction';
 
 type CategoryItem = {
   id: number,
@@ -89,32 +88,6 @@ export default class Category extends BaseModel {
   }
 
   private getTransactionQuery(budget: Budget) {
-    if (this.type === 'UNASSIGNED') {
-      return budget
-        .related('transactions').query()
-        .where('deleted', false)
-        .where((query) => {
-          query
-            .doesntHave('transactionCategories')
-            .orWhereHas('transactionCategories', (q) => {
-              q.where('categoryId', this.id);
-            })
-        })
-        .whereHas('accountTransaction', (q2) => {
-          q2
-            .where('pending', false)
-            .andWhereHas('account', (q3) => {
-              q3.where('tracking', 'Transactions')
-              q3.andWhereColumn('startDate', '<=', 'transactions.date')
-            })
-        })
-        .preload('accountTransaction', (accountTransaction) => {
-          accountTransaction.preload('account', (account) => {
-            account.preload('institution');
-          });
-        })
-    }
-
     return budget
       .related('transactions').query()
       .where('deleted', false)
@@ -143,70 +116,43 @@ export default class Category extends BaseModel {
   }
 
   public async transactions(budget: Budget, limit?: number, offset?: number) {
-    let transactionQuery = this.getTransactionQuery(budget);
+    const transactionQuery = this.getTransactionQuery(budget);
 
     transactionQuery
-      .preload('transactionCategories')
-      // .where('deleted', false)
       .orderBy('transactions.date', 'desc')
       .orderByRaw('COALESCE(transactions.duplicate_of_transaction_id, transactions.id) desc')
       .orderBy('transactions.id', 'desc')
 
     if (limit !== undefined) {
-      transactionQuery = transactionQuery
+      transactionQuery
         .limit(limit)
     }
 
     if (offset !== undefined) {
-      transactionQuery = transactionQuery
+      transactionQuery
         .offset(offset);
     }
 
     return transactionQuery;
   }
 
-  public async syncBalance(this: Category, budget: Budget): Promise<void> {
+  public async syncBalance(this: Category): Promise<void> {
     let sum = 0;
 
-    if (this.type === 'UNASSIGNED') {
-      const at = await AccountTransaction.query({ client: this.$trx })
-        .sum('amount')
-        .where('pending', false)
-        .whereHas('transaction', (q) => {
-          q.where('budgetId', budget.id)
-            .where('deleted', false)
-            .where((q2) => {
-              q2.doesntHave('transactionCategories')
-                .orWhereHas('transactionCategories', (q3) => {
-                  q3.where('categoryId', this.id)
-                })
+    const tc = await this.related('transactionCategory').query()
+      .sum('amount')
+      .whereHas('transaction', (q) => {
+        q.whereHas('accountTransaction', (q2) => {
+          q2.where('pending', false)
+            .whereHas('account', (q3) => {
+              q3.where('tracking', 'Transactions')
+                .whereColumn('startDate', '<=', 'transactions.date')
             })
-            .whereHas('accountTransaction', (q2) => {
-              q2.whereHas('account', (q3) => {
-                q3.where('tracking', 'Transactions')
-                  .whereColumn('startDate', '<=', 'transactions.date')
-              })
-            })
-        });
-
-      sum = at[0].$extras.sum ?? 0;
-    }
-    else {
-      const tc = await this.related('transactionCategory').query()
-        .sum('amount')
-        .whereHas('transaction', (q) => {
-          q.whereHas('accountTransaction', (q2) => {
-            q2.where('pending', false)
-              .whereHas('account', (q3) => {
-                q3.where('tracking', 'Transactions')
-                  .whereColumn('startDate', '<=', 'transactions.date')
-              })
-          })
-            .orDoesntHave('accountTransaction')
         })
+          .orDoesntHave('accountTransaction')
+      })
 
-      sum = tc[0].$extras.sum ?? 0;
-    }
+    sum = tc[0].$extras.sum ?? 0;
 
     await this.merge({
       amount: sum,
