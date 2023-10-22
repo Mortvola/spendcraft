@@ -12,7 +12,7 @@ import {
 } from '@ioc:Adonis/Lucid/Orm';
 import { InstitutionProps } from 'Common/ResponseTypes';
 import { sha256 } from 'js-sha256';
-import jwt from 'jsonwebtoken';
+import * as jwt from 'jsonwebtoken';
 import Env from '@ioc:Adonis/Core/Env';
 import Mail from '@ioc:Adonis/Addons/Mail';
 import { Exception } from '@poppinss/utils';

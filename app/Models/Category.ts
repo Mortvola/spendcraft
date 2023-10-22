@@ -7,6 +7,7 @@ import Group from 'App/Models/Group';
 import { CategoryType } from 'Common/ResponseTypes';
 import TransactionCategory from 'App/Models/TransactionCategory';
 import Budget from 'App/Models/Budget';
+import AccountTransaction from './AccountTransaction';
 
 type CategoryItem = {
   id: number,
@@ -89,7 +90,7 @@ export default class Category extends BaseModel {
 
   private getTransactionQuery(budget: Budget) {
     if (this.type === 'UNASSIGNED') {
-      const transactionQuery = budget
+      return budget
         .related('transactions').query()
         .where('deleted', false)
         .where((query) => {
@@ -112,11 +113,9 @@ export default class Category extends BaseModel {
             account.preload('institution');
           });
         })
-
-      return transactionQuery;
     }
 
-    const transactionQuery = budget
+    return budget
       .related('transactions').query()
       .where('deleted', false)
       .whereHas('transactionCategories', (query) => {
@@ -128,7 +127,7 @@ export default class Category extends BaseModel {
             .where('pending', false)
             .andWhereHas('account', (q3) => {
               q3.where('tracking', 'Transactions')
-              q3.andWhereColumn('startDate', '<=', 'transactions.date')
+                .andWhereColumn('startDate', '<=', 'transactions.date')
             })
         })
           .orDoesntHave('accountTransaction')
@@ -141,8 +140,6 @@ export default class Category extends BaseModel {
       .preload('transactionCategories', (transactionCategory) => {
         transactionCategory.preload('loanTransaction');
       })
-
-    return transactionQuery
   }
 
   public async transactions(budget: Budget, limit?: number, offset?: number) {
@@ -166,6 +163,55 @@ export default class Category extends BaseModel {
     }
 
     return transactionQuery;
+  }
+
+  public async syncBalance(this: Category, budget: Budget): Promise<void> {
+    let sum = 0;
+
+    if (this.type === 'UNASSIGNED') {
+      const at = await AccountTransaction.query({ client: this.$trx })
+        .sum('amount')
+        .where('pending', false)
+        .whereHas('transaction', (q) => {
+          q.where('budgetId', budget.id)
+            .where('deleted', false)
+            .where((q2) => {
+              q2.doesntHave('transactionCategories')
+                .orWhereHas('transactionCategories', (q3) => {
+                  q3.where('categoryId', this.id)
+                })
+            })
+            .whereHas('accountTransaction', (q2) => {
+              q2.whereHas('account', (q3) => {
+                q3.where('tracking', 'Transactions')
+                  .whereColumn('startDate', '<=', 'transactions.date')
+              })
+            })
+        });
+
+      sum = at[0].$extras.sum ?? 0;
+    }
+    else {
+      const tc = await this.related('transactionCategory').query()
+        .sum('amount')
+        .whereHas('transaction', (q) => {
+          q.whereHas('accountTransaction', (q2) => {
+            q2.where('pending', false)
+              .whereHas('account', (q3) => {
+                q3.where('tracking', 'Transactions')
+                  .whereColumn('startDate', '<=', 'transactions.date')
+              })
+          })
+            .orDoesntHave('accountTransaction')
+        })
+
+      sum = tc[0].$extras.sum ?? 0;
+    }
+
+    await this.merge({
+      amount: sum,
+    })
+      .save();
   }
 }
 

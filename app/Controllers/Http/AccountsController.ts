@@ -510,6 +510,8 @@ export default class AccountsController {
       await account.save();
 
       await trx.commit();
+
+      await budget.syncCategoryBalances();
     }
     catch (error) {
       logger.error(error)

@@ -13,6 +13,7 @@ import Institution from 'App/Models/Institution';
 import Transaction from 'App/Models/Transaction';
 import Loan from 'App/Models/Loan';
 import CategoryHistoryItem from 'App/Models/CategoryHistoryItem';
+import Logger from '@ioc:Adonis/Core/Logger';
 
 export default class Budget extends BaseModel {
   public static table = 'applications';
@@ -644,5 +645,28 @@ export default class Budget extends BaseModel {
     })
 
     return proposedCats;
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  public async syncCategoryBalances(this: Budget): Promise<void> {
+    const trx = await Database.transaction();
+
+    try {
+      const categories = await Category.query({ client: trx })
+        .whereHas('group', (q) => {
+          q.where('budgetId', this.id)
+          // q.whereHas('budget', (q2) => {
+          //   q2.where('applicationId', this.id)
+          // })
+        });
+
+      await Promise.all(categories.map(async (cat) => cat.syncBalance(this)));
+
+      await trx.commit();
+    }
+    catch (error) {
+      Logger.error(error);
+      trx.rollback();
+    }
   }
 }
