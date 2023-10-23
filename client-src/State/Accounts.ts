@@ -3,7 +3,7 @@ import Http from '@mortvola/http';
 import Institution from './Institution';
 import Plaid from './Plaid';
 import {
-  AccountBalanceProps, AccountTrackingProps, AddInstitutionProps, AddInstitutionResponse,
+  AccountBalanceProps, AddInstitutionProps, AddInstitutionResponse,
   Error, isAddInstitutionResponse, isDeleteInstitutionResponse,
   isInstitutionsResponse, isLinkTokenResponse, TrackingType,
 } from '../../common/ResponseTypes';

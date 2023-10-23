@@ -1,9 +1,8 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
 import Amount from '../../Amount';
-import { CategoryInterface, TransactionInterface } from '../../State/State';
+import { TransactionInterface } from '../../State/State';
 import useMediaQuery from '../../MediaQuery';
-import { TransactionType } from '../../../common/ResponseTypes';
 
 type PropsType = {
   transaction: TransactionInterface,

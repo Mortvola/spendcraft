@@ -9,7 +9,7 @@ import {
 } from 'formik';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import {
-  FormModal, FormError, setFormErrors, FormField, FormCheckbox,
+  FormModal, FormError, setFormErrors, FormField,
 } from '@mortvola/forms';
 import { isGroup } from '../../State/Group';
 import { useStores } from '../../State/mobxStore';

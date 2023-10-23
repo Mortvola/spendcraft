@@ -1,8 +1,8 @@
 import React from 'react';
 import { Formik, FieldArray, FormikState } from 'formik';
 import { DateTime } from 'luxon';
-import { Button, DropdownButton } from 'react-bootstrap';
-import { FormCheckbox, FormField } from '@mortvola/forms';
+import { DropdownButton } from 'react-bootstrap';
+import { FormCheckbox, FormField, SubmitButton } from '@mortvola/forms';
 import Http from '@mortvola/http';
 import Amount from '../Amount';
 import { useStores } from '../State/mobxStore';
@@ -10,7 +10,6 @@ import useSortableTable from './SortableTable';
 import { isGroup } from '../State/Group';
 import ReportControls from './ReportControls';
 import styles from './Category.module.css';
-import { SubmitButton } from '@mortvola/forms';
 
 type CategoryReport = {
   rowNumber: string,

@@ -1,7 +1,7 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
 import IconButton from '../IconButton';
-import { AccountInterface, InstitutionInterface } from '../State/State';
+import { AccountInterface } from '../State/State';
 import { getSubTypeName, getTypeName } from '../State/AccountTypes';
 import Amount from '../Amount';
 import styles from './Account.module.css';
@@ -9,7 +9,6 @@ import { useDeleteConfirmation } from '../DeleteConfirmation';
 
 type PropsType = {
   selected: boolean,
-  institution: InstitutionInterface,
   account: AccountInterface,
   onAccountSelected: (account: AccountInterface) => void,
   onAccountStateChange: (account: AccountInterface) => void,
@@ -18,7 +17,6 @@ type PropsType = {
 
 const Account: React.FC<PropsType> = observer(({
   selected,
-  institution,
   account,
   onAccountSelected,
   onAccountStateChange,

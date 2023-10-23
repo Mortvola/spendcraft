@@ -1,10 +1,6 @@
 import React from 'react';
 import { TransactionContainerInterface } from '../State/State';
 
-interface TrxContainerInterface {
-  getMoreTransactions(): void;
-}
-
 const useTrxPager = (trxContainer?: TransactionContainerInterface): (element: HTMLDivElement | null) => void => {
   const checkForNeededData = React.useCallback((element: HTMLDivElement | null) => {
     if (element !== null) {

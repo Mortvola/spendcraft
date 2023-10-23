@@ -5,7 +5,7 @@ import Account from './Account';
 import {
   UnlinkedAccountProps, InstitutionProps, AccountBalanceProps, Error,
   TrackingType, isAddAccountsResponse, isDeleteAccountResponse, isLinkTokenResponse,
-  InstitutionSyncResponse, AccountTrackingProps, AddInstitutionProps, AddInstitutionResponse, UpdateInstitutionProps,
+  InstitutionSyncResponse, AddInstitutionResponse,
 } from '../../common/ResponseTypes';
 import { AccountInterface, InstitutionInterface, StoreInterface } from './State';
 import Plaid from './Plaid';

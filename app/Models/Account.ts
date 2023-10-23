@@ -573,9 +573,15 @@ class Account extends BaseModel {
       throw new Error('database transaction not set');
     }
 
+    const startDate = this.startDate.toISODate();
+
+    if (!startDate) {
+      throw new Error('startDate is null');
+    }
+
     const sum = await this.related('accountTransactions').query()
       .whereHas('transaction', (q) => {
-        q.where('date', '>=', this.startDate.toISODate()!)
+        q.where('date', '>=', startDate)
           .andWhere('type', '!=', TransactionType.STARTING_BALANCE)
       })
       .sum('amount')

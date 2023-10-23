@@ -3,7 +3,10 @@ import Http from '@mortvola/http';
 import FundingPlan from './FundingPlan';
 import FundingPlanDetails from './FundingPlanDetails';
 import { FundingPlanInterface, PlansInterface, StoreInterface } from './State';
-import { isFundingPlansResponse, isFundingPlanProps, isFundingPlanDetailsProps, FundingPlanDetailsProps } from '../../common/ResponseTypes';
+import {
+  isFundingPlansResponse, isFundingPlanProps,
+  FundingPlanDetailsProps,
+} from '../../common/ResponseTypes';
 
 class Plans implements PlansInterface {
   list: FundingPlan[] = [];

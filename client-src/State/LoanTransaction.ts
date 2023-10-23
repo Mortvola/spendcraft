@@ -1,4 +1,3 @@
-import { DateTime } from 'luxon';
 import { LoanTransactionProps } from '../../common/ResponseTypes';
 
 class LoanTransaction {

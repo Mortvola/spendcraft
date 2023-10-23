@@ -12,7 +12,7 @@ import { AccountInterface } from '../State/State';
 import { TrackingType } from '../../common/ResponseTypes';
 
 type PropsType = {
-  account: AccountInterface,
+  account: AccountInterface | null,
 }
 
 const AccountsDialog: React.FC<PropsType & ModalProps> = ({
@@ -70,14 +70,16 @@ const AccountsDialog: React.FC<PropsType & ModalProps> = ({
     //   );
     // }
 
-    account.startDate = DateTime.fromISO(values.startDate);
-    account.tracking = values.tracking;
+    if (account) {
+      account.startDate = DateTime.fromISO(values.startDate);
+      account.tracking = values.tracking;
 
-    // if (response) {
-    account.setSettings({
-      startDate: DateTime.fromISO(values.startDate),
-      tracking: values.tracking,
-    });
+      // if (response) {
+      account.setSettings({
+        startDate: DateTime.fromISO(values.startDate),
+        tracking: values.tracking,
+      });
+    }
 
     setShow(false);
     // }
@@ -90,8 +92,8 @@ const AccountsDialog: React.FC<PropsType & ModalProps> = ({
   return (
     <FormModal<ValuesType>
       initialValues={{
-        tracking: account.tracking,
-        startDate: account.startDate?.toISODate() ?? '',
+        tracking: account?.tracking ?? 'Transactions',
+        startDate: account?.startDate?.toISODate() ?? '',
       }}
       setShow={setShow}
       validate={handleValidate}
@@ -107,7 +109,7 @@ const AccountsDialog: React.FC<PropsType & ModalProps> = ({
       /> */}
       {/* <div className="account-select-item"> */}
       <div className="account-name">
-        {account.name}
+        {account?.name}
       </div>
       <div style={{
         display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: '1rem', justifyItems: 'start',

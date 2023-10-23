@@ -1,7 +1,4 @@
 import React from 'react';
-import Register from './Transactions/Register';
-import BalanceHistory from './AccountView/BalanceHistory';
-import { TrackingType } from '../common/ResponseTypes';
 import styles from './DetailView.module.css';
 
 type PropsType = {

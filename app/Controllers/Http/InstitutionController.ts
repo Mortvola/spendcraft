@@ -341,24 +341,30 @@ class InstitutionController {
 
     const unassigned = await budget.getUnassignedCategory({ client: trx });
 
-    return {
-      accounts: newAccounts.map((a) => ({
-        id: a.id,
-        name: a.name,
-        closed: a.closed,
-        type: a.type,
-        subtype: a.subtype,
-        tracking: a.tracking,
-        balance: a.balance,
-        plaidBalance: a.plaidBalance,
-        startDate: a.startDate.toISODate()!,
-        rate: a.rate,
-      })),
+    const response = {
+      accounts: newAccounts.map((a) => {
+        const startDate = a.startDate.toISODate();
+
+        return {
+          id: a.id,
+          name: a.name,
+          closed: a.closed,
+          type: a.type,
+          subtype: a.subtype,
+          tracking: a.tracking,
+          balance: a.balance,
+          plaidBalance: a.plaidBalance,
+          startDate,
+          rate: a.rate,
+        };
+      }),
       categories: [
         { id: fundingPool.id, balance: fundingPool.amount },
         { id: unassigned.id, balance: unassigned.amount },
       ],
-    }
+    };
+
+    return response;
   }
 
   // eslint-disable-next-line class-methods-use-this

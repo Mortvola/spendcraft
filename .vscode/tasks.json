@@ -19,6 +19,13 @@
         "showReuseMessage": true,
         "clear": true
       }
+    },
+    {
+      "type": "eslint",
+      "problemMatcher": [
+        "$eslint-stylish"
+      ],
+      "label": "eslint: lint whole folder"
     }
   ]
 }

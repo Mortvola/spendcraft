@@ -6,7 +6,6 @@ import Http from '@mortvola/http';
 import {
   FormError, setFormErrors, FormField, SubmitButton,
 } from '@mortvola/forms';
-import { useNavigate } from 'react-router-dom';
 import styles from './Signin.module.css';
 import { isErrorResponse } from '../../common/ResponseTypes';
 import { Context } from './Types';
@@ -22,7 +21,7 @@ const ChangePassword: React.FC<PropsType> = ({
   onNext,
   link,
 }) => {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
 
   type FormValues = {
     password: string,

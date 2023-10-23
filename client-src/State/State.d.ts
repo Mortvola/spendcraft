@@ -1,7 +1,7 @@
 import { DateTime } from 'luxon';
 import Reports from './Reports';
 import {
-  CategoryType, Error, TrackingType, AccountType, Location, AccountTrackingProps,
+  CategoryType, Error, TrackingType, AccountType, Location,
 } from '../../common/ResponseTypes'
 import LoanTransaction from './LoanTransaction';
 
