@@ -7,14 +7,15 @@ import {
 } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import Http from '@mortvola/http';
+import { runInAction } from 'mobx';
 import { useStores } from './State/mobxStore';
 import { Views } from './State/State';
-import { runInAction } from 'mobx';
 
 const Menubar: React.FC = observer(() => {
   const store = useStores();
   const [expanded, setExpanded] = React.useState<boolean>(false);
   const navigate = useNavigate();
+  const [active, setActive] = React.useState<string>('HOME');
 
   const logout = () => {
     type LogoutRequest = {
@@ -45,6 +46,7 @@ const Menubar: React.FC = observer(() => {
   };
 
   const handleSelect = (eventKey: Views | string | null) => {
+    setActive(eventKey ?? 'HOME');
     setExpanded(false);
     switch (eventKey) {
       case 'LOGOUT':
@@ -71,11 +73,19 @@ const Menubar: React.FC = observer(() => {
       <Navbar.Brand href="/">SpendCraft</Navbar.Brand>
       <Navbar.Toggle />
       <Navbar.Collapse style={{ justifyContent: 'space-between' }}>
-        <Nav>
-          <Nav.Link as={Link} to="/home" eventKey="NOOP">Home</Nav.Link>
-          <Nav.Link as={Link} to="/plans" eventKey="NOOP">Plans</Nav.Link>
-          <Nav.Link as={Link} to="/accounts" eventKey="NOOP">Accounts</Nav.Link>
-          <Nav.Link as={Link} to="/reports" eventKey="NOOP">Reports</Nav.Link>
+        <Nav variant="underline" defaultActiveKey="HOME" activeKey={active}>
+          <Nav.Item>
+            <Nav.Link as={Link} to="/home" eventKey="HOME">Home</Nav.Link>
+          </Nav.Item>
+          <Nav.Item>
+            <Nav.Link as={Link} to="/plans" eventKey="PLANS">Plans</Nav.Link>
+          </Nav.Item>
+          <Nav.Item>
+            <Nav.Link as={Link} to="/accounts" eventKey="ACCOUNTS">Accounts</Nav.Link>
+          </Nav.Item>
+          <Nav.Item>
+            <Nav.Link as={Link} to="/reports" eventKey="REPORTS">Reports</Nav.Link>
+          </Nav.Item>
         </Nav>
         <Nav>
           <NavDropdown
@@ -84,7 +94,7 @@ const Menubar: React.FC = observer(() => {
             id="menubar-dropdown"
             align="end"
           >
-            <NavDropdown.Item as={Link} to="/user" eventKey="NOOP">Account</NavDropdown.Item>
+            <NavDropdown.Item as={Link} to="/user" eventKey="USER_ACCOUNT">Account</NavDropdown.Item>
             <NavDropdown.Item eventKey="LOGOUT">Sign Out</NavDropdown.Item>
           </NavDropdown>
         </Nav>
