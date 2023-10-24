@@ -217,6 +217,26 @@
       "aliases": [],
       "flags": []
     },
+    "plaid:search-institutions": {
+      "settings": {
+        "loadApp": true,
+        "stayAlive": false
+      },
+      "commandPath": "./commands/PlaidSearchInstitutions",
+      "commandName": "plaid:search-institutions",
+      "description": "Search for an institution by name",
+      "args": [
+        {
+          "type": "string",
+          "propertyName": "query",
+          "name": "query",
+          "required": true,
+          "description": "String to search for."
+        }
+      ],
+      "aliases": [],
+      "flags": []
+    },
     "dump:rcfile": {
       "settings": {},
       "commandPath": "@adonisjs/core/build/commands/DumpRc",

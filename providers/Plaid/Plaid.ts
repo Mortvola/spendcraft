@@ -227,6 +227,23 @@ class PlaidWrapper {
     }
   }
 
+  async searchInstitutions(
+    query: string,
+  ) {
+    try {
+      const response = await this.plaid.institutionsSearch({
+        query,
+        products: [Plaid.Products.Transactions],
+        country_codes: [Plaid.CountryCode.Us]
+      })
+
+      return response.data;
+    }
+    catch (error) {
+      throw new PlaidException(error);
+    }
+  }
+
   async updateItemWebhook(accessToken: string, webhook: string): Promise<Plaid.ItemWebhookUpdateResponse> {
     try {
       const response = await this.plaid.itemWebhookUpdate({
