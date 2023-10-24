@@ -716,25 +716,43 @@ class InstitutionController {
     // eslint-disable-next-line no-restricted-syntax
     for (const acct of accounts) {
       // eslint-disable-next-line no-await-in-loop
-      const acctTrans = await acct.related('accountTransactions').query();
+      const acctTrans = await AccountTransaction.query({ client: trx }).where('accountId', acct.id);
 
       // eslint-disable-next-line no-restricted-syntax
       for (const acctTran of acctTrans) {
         // eslint-disable-next-line no-await-in-loop
-        const transaction = await acctTran.related('transaction').query().first();
+        const transaction = await Transaction.find(acctTran.transactionId, { client: trx });
 
         if (transaction) {
           // eslint-disable-next-line no-await-in-loop
-          const transCats = await transaction.related('transactionCategories').query();
+          const transCats = await TransactionCategory
+            .query({ client: trx })
+            .where('transactionId', transaction.id);
 
-          // eslint-disable-next-line no-restricted-syntax
-          for (const tc of transCats) {
-            // Only adjust associated categories if
-            // the transactions in the account are being categorized and
-            // the transaction date is on or after the start date.
-            if (acct.tracking === 'Transactions' && transaction.date >= acct.startDate) {
+          if (transCats.length === 0) {
+            if (acct.tracking === 'Transactions') {
               // eslint-disable-next-line no-await-in-loop
-              const category = await tc.related('category').query().first();
+              const unassignedCat = await budget.getUnassignedCategory({ client: trx });
+
+              unassignedCat.amount -= acctTran.amount;
+
+              await unassignedCat.save();
+
+              const catBalance = categoryBalances.find((cb) => cb.id === unassignedCat.id);
+
+              if (catBalance) {
+                catBalance.balance = unassignedCat.amount;
+              }
+              else {
+                categoryBalances.push({ id: unassignedCat.id, balance: unassignedCat.amount })
+              }
+            }
+          }
+          else {
+            // eslint-disable-next-line no-restricted-syntax
+            for (const tc of transCats) {
+              // eslint-disable-next-line no-await-in-loop
+              const category = await Category.find(tc.categoryId, { client: trx });
 
               if (category) {
                 category.amount -= tc.amount;
@@ -751,10 +769,10 @@ class InstitutionController {
                   categoryBalances.push({ id: category.id, balance: category.amount })
                 }
               }
-            }
 
-            // eslint-disable-next-line no-await-in-loop
-            await tc.delete();
+              // eslint-disable-next-line no-await-in-loop
+              await tc.delete();
+            }
           }
 
           // eslint-disable-next-line no-await-in-loop
@@ -795,22 +813,16 @@ class InstitutionController {
 
       const accounts = await institution.related('accounts').query();
 
+      if (institution.accessToken) {
+        await plaidClient.removeItem(institution.accessToken);
+      }
+
       // eslint-disable-next-line no-restricted-syntax
       const result = await InstitutionController.deleteAccounts(accounts, budget, trx);
 
       await institution.delete();
 
       await trx.commit();
-
-      if (institution.accessToken) {
-        try {
-          await plaidClient.removeItem(institution.accessToken);
-        }
-        catch (error) {
-          // If removeItem fails don't fail. Just report the error.
-          logger.error(error);
-        }
-      }
 
       return result;
     }
