@@ -111,6 +111,7 @@ class InstitutionController {
 
       return {
         id: institution.id,
+        plaidInstitutionId: institution.institutionId,
         name: institution.name,
         offline: false,
         syncDate: institution.syncDate?.toISO() ?? null,
@@ -157,6 +158,7 @@ class InstitutionController {
 
       return {
         id: institution.id,
+        plaidInstitutionId: institution.institutionId,
         name: institution.name,
         offline: false,
         syncDate: institution.syncDate?.toISO() ?? null,
@@ -347,6 +349,7 @@ class InstitutionController {
 
         return {
           id: a.id,
+          plaidId: a.plaidAccountId,
           name: a.name,
           closed: a.closed,
           type: a.type,

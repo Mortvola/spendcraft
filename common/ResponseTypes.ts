@@ -109,6 +109,8 @@ export type AccountType = 'depository' | 'credit' | 'loan' | 'investment' | 'bro
 export interface AccountProps {
   id: number;
 
+  plaidId: string | null;
+
   name: string;
 
   closed: boolean;
@@ -155,6 +157,8 @@ export interface UpdateInstitutionProps {
 export interface InstitutionProps {
   id: number;
 
+  plaidInstitutionId: string | null;
+
   name: string;
 
   offline: boolean;
@@ -178,6 +182,8 @@ export const isInstitutionsResponse = (r: unknown): r is InstitutionProps[] => (
 
 export interface AddInstitutionResponse {
   id: number;
+
+  plaidInstitutionId: string | null;
 
   name: string;
 

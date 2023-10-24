@@ -134,7 +134,7 @@ export interface AccountsInterface {
 
   async addInstitution(
     publicToken: string,
-    plaidInstitutionId: string,
+    metadata: PlaidLinkOnSuccessMetadata,
   ): Promise<Institution | null>;
 
   deleteInstitution(instiution: InstitutionInterface): void;
@@ -326,6 +326,8 @@ export interface AccountSettings {
 export interface AccountInterface extends TransactionContainerInterface {
   id: number;
 
+  plaidId: string | null;
+
   name: string;
 
   officialName: string | null = null;
@@ -347,6 +349,8 @@ export interface AccountInterface extends TransactionContainerInterface {
   institution: InstitutionInterface;
 
   store: StoreInterface;
+
+  update(props: AccountProps);
 
   getPendingTransactions(): Promise<void>;
 

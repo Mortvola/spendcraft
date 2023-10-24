@@ -1,9 +1,11 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
+import { PlaidLinkOnSuccessMetadata } from 'react-plaid-link';
+import { DateTime } from 'luxon';
 import Institution from './Institution';
 import Plaid from './Plaid';
 import {
-  AccountBalanceProps, AddInstitutionProps, AddInstitutionResponse,
+  AccountBalanceProps, AccountType, AddInstitutionProps, AddInstitutionResponse,
   Error, isAddInstitutionResponse, isDeleteInstitutionResponse,
   isInstitutionsResponse, isLinkTokenResponse, TrackingType,
 } from '../../common/ResponseTypes';
@@ -111,41 +113,65 @@ class Accounts implements AccountsInterface {
 
   async addInstitution(
     publicToken: string,
-    plaidInstitutionId: string,
+    metadata: PlaidLinkOnSuccessMetadata,
   ): Promise<Institution | null> {
+    if (!metadata.institution) {
+      throw new Error('metadata institution is null')
+    }
+
+    runInAction(() => {
+      if (!metadata.institution) {
+        throw new Error('metadata institution is null')
+      }
+
+      const institution = new Institution(
+        this.store,
+        {
+          id: -1,
+          plaidInstitutionId: metadata.institution.institution_id,
+          name: metadata.institution.name,
+          offline: false,
+          syncDate: null,
+          accounts: metadata.accounts.map((a, index) => ({
+            id: -(index + 1),
+            plaidId: a.id,
+            name: a.name,
+            closed: false,
+            type: a.type as AccountType,
+            subtype: a.subtype,
+            tracking: 'Transactions',
+            balance: 0,
+            plaidBalance: 0,
+            startDate: DateTime.now().startOf('month').toISODate(),
+            rate: null,
+          })),
+        },
+      )
+      this.insertInstitution(institution);
+    });
+
     const response = await Http.post<AddInstitutionProps, AddInstitutionResponse>('/api/v1/institution', {
       publicToken,
-      institutionId: plaidInstitutionId,
+      institutionId: metadata.institution.institution_id,
     });
 
     if (response.ok) {
       const body = await response.body();
-      let institution = new Institution(
-        this.store,
-        {
-          id: body.id,
-          name: body.name,
-          offline: body.offline,
-          syncDate: body.syncDate,
-          accounts: body.accounts,
-        },
-      );
 
       runInAction(() => {
         // Make sure we don't already have the institution in the list.
-        const existingIndex = this.institutions.findIndex(
-          (inst) => inst.id === institution.id,
+        let institution = this.institutions.find(
+          (inst) => inst.plaidInstitutionId === body.plaidInstitutionId,
         );
 
-        if (existingIndex === -1) {
+        if (!institution) {
+          institution = new Institution(this.store, body);
           this.insertInstitution(institution);
         }
         else {
-          institution = this.institutions[existingIndex];
+          institution.update2(body);
         }
       });
-
-      return institution;
     }
 
     return null;
@@ -183,6 +209,7 @@ class Accounts implements AccountsInterface {
         runInAction(() => {
           const institution = new Institution(this.store, {
             id: body.id,
+            plaidInstitutionId: body.plaidInstitutionId,
             name: body.name,
             offline: body.offline,
             syncDate: null,

@@ -44,12 +44,14 @@ const PlaidLinkDialog: React.FC<PropsType> = ({
         throw new Error('metadata.institution is null');
       }
 
+      console.log(JSON.stringify(metadata));
+
       if (institution) {
         await institution.update();
       }
       else {
         await accounts.addInstitution(
-          publicToken, metadata.institution.institution_id,
+          publicToken, metadata,
         );
       }
     }

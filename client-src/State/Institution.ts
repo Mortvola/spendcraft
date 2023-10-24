@@ -13,6 +13,8 @@ import Plaid from './Plaid';
 class Institution implements InstitutionInterface {
   id: number;
 
+  plaidInstitutionId: string | null;
+
   name: string;
 
   offline: boolean;
@@ -29,18 +31,39 @@ class Institution implements InstitutionInterface {
 
   constructor(store: StoreInterface, props: InstitutionProps) {
     this.id = props.id;
+    this.plaidInstitutionId = props.plaidInstitutionId;
     this.name = props.name;
     this.offline = props.offline;
     this.syncDate = props.syncDate !== null ? DateTime.fromISO(props.syncDate) : null;
 
-    this.accounts = [];
-    if (props.accounts) {
-      this.accounts = props.accounts.map((acct) => new Account(store, this, acct));
-    }
+    this.accounts = props.accounts.map((acct) => new Account(store, this, acct));
 
     makeAutoObservable(this);
 
     this.store = store;
+  }
+
+  update2(props: InstitutionProps) {
+    this.id = props.id;
+    this.plaidInstitutionId = props.plaidInstitutionId;
+    this.name = props.name;
+    this.offline = props.offline;
+    this.syncDate = props.syncDate !== null ? DateTime.fromISO(props.syncDate) : null;
+
+    props.accounts.forEach((acctProps) => {
+      const acct = this.accounts.find((a) => a.plaidId === acctProps.plaidId);
+
+      if (acct) {
+        // Found account...
+        acct.update(acctProps);
+      }
+      else {
+        // Account was not found
+        const newAccount = new Account(this.store, this, acctProps);
+
+        this.insertAccount(newAccount);
+      }
+    });
   }
 
   async relink(): Promise<void> {
@@ -110,7 +133,7 @@ class Institution implements InstitutionInterface {
         body.accounts.forEach((accountResponse) => {
           const account = this.accounts.find((a) => a.id === accountResponse.id);
 
-          if (account === undefined) {
+          if (!account) {
             // Account was not found. Add it...
             const newAccount = new Account(this.store, this, accountResponse);
 

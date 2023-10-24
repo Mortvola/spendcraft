@@ -140,11 +140,13 @@ export default class Budget extends BaseModel {
 
     return result.map((i) => ({
       id: i.id,
+      plaidInstitutionId: i.institutionId,
       name: i.name,
       offline: i.plaidItemId === null,
       syncDate: i.syncDate !== null && i.syncDate !== undefined ? i.syncDate.toISO() : null,
       accounts: i.accounts.map((a) => ({
         id: a.id,
+        plaidId: a.plaidAccountId,
         name: a.name,
         closed: a.closed,
         type: a.type,

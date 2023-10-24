@@ -16,6 +16,8 @@ import TransactionContainer from './TransactionContainer';
 class Account extends TransactionContainer implements AccountInterface {
   id: number;
 
+  plaidId: string | null;
+
   name: string;
 
   officialName: string | null = null;
@@ -42,6 +44,7 @@ class Account extends TransactionContainer implements AccountInterface {
     super(store, `/api/v1/account/${props.id}/transactions`);
 
     this.id = props.id;
+    this.plaidId = props.plaidId;
     this.name = props.name;
     this.closed = props.closed;
     this.type = props.type;
@@ -61,6 +64,22 @@ class Account extends TransactionContainer implements AccountInterface {
     });
 
     this.store = store;
+  }
+
+  update(props: AccountProps) {
+    this.id = props.id;
+    this.plaidId = props.plaidId;
+    this.name = props.name;
+    this.closed = props.closed;
+    this.type = props.type;
+    this.subtype = props.subtype;
+    this.tracking = props.tracking;
+    this.balance = props.balance;
+    this.plaidBalance = props.plaidBalance;
+    this.startDate = props.startDate ? DateTime.fromISO(props.startDate) : null;
+    this.rate = props.rate;
+
+    super.url = `/api/v1/account/${props.id}/transactions`;
   }
 
   async setSettings(settings: AccountSettings): Promise<void> {
