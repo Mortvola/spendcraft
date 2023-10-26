@@ -1,12 +1,12 @@
 {
   "commands": {
-    "apn:push": {
+    "push:send": {
       "settings": {
         "loadApp": true,
         "stayAlive": false
       },
       "commandPath": "./commands/ApnPush",
-      "commandName": "apn:push",
+      "commandName": "push:send",
       "description": "",
       "args": [],
       "aliases": [],
@@ -59,6 +59,18 @@
       "commandPath": "./commands/CheckWebhooks",
       "commandName": "check:webhooks",
       "description": "Updates webhooks for each item",
+      "args": [],
+      "aliases": [],
+      "flags": []
+    },
+    "generate:web-push-keys": {
+      "settings": {
+        "loadApp": false,
+        "stayAlive": false
+      },
+      "commandPath": "./commands/GenerateWebPushKeys",
+      "commandName": "generate:web-push-keys",
+      "description": "",
       "args": [],
       "aliases": [],
       "flags": []

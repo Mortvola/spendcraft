@@ -6,6 +6,7 @@ import { rules, schema } from '@ioc:Adonis/Core/Validator';
 import User from 'App/Models/User';
 import * as Plaid from 'plaid';
 import Database from '@ioc:Adonis/Lucid/Database';
+import { Exception } from '@poppinss/utils';
 
 export default class UsersController {
   // eslint-disable-next-line class-methods-use-this
@@ -149,6 +150,33 @@ export default class UsersController {
     }
 
     response.status(204)
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  async registerWebPush({ auth: { user }, request }: HttpContextContract): Promise<void> {
+    if (!user) {
+      throw new Error('user is not defined');
+    }
+
+    // const requestData = await request.validate({
+    //   schema: schema.create({
+    //     token: schema.string([
+    //       rules.trim(),
+    //       rules.minLength(1),
+    //     ]),
+    //   }),
+    // });
+
+    const body = request.raw();
+
+    if (!body) {
+      throw new Exception('missing subscription date')
+    }
+
+    await user.related('pushSubscriptions').create({
+      subscription: JSON.parse(body),
+      type: 'web',
+    })
   }
 
   // eslint-disable-next-line class-methods-use-this

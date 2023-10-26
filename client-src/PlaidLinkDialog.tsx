@@ -44,8 +44,6 @@ const PlaidLinkDialog: React.FC<PropsType> = ({
         throw new Error('metadata.institution is null');
       }
 
-      console.log(JSON.stringify(metadata));
-
       if (institution) {
         await institution.update();
       }

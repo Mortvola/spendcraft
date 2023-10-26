@@ -18,6 +18,7 @@ import Mail from '@ioc:Adonis/Addons/Mail';
 import { Exception } from '@poppinss/utils';
 import Budget from 'App/Models/Budget';
 import ApnsToken from './ApnsToken';
+import PushSubscription from './PushSubscription';
 
 type PassCode = {
   code: string,
@@ -82,6 +83,9 @@ export default class User extends BaseModel {
 
   @hasMany(() => ApnsToken)
   public apnsTokens: HasMany<typeof ApnsToken>
+
+  @hasMany(() => PushSubscription)
+  public pushSubscriptions: HasMany<typeof PushSubscription>
 
   public async getConnectedAccounts(this: User): Promise<InstitutionProps[]> {
     const budget = await this.related('budget').query().firstOrFail();

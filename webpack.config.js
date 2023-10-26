@@ -1,16 +1,20 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const path = require('path');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 const config = (name, env) => ({
   name,
   mode: env.production ? 'production' : 'development',
   devtool: env.production ? 'source-map' : 'inline-source-map',
-  entry: `./client-src/${name.charAt(0).toUpperCase()}${name.slice(1)}.tsx`,
+  entry: {
+    app: './client-src/App.tsx',
+  },
   output: {
     path: path.resolve(__dirname, 'public'),
-    filename: `${name}.js`,
+    filename: '[name].[fullhash].js',
   },
   module: {
     rules: [
@@ -24,7 +28,7 @@ const config = (name, env) => ({
             options: {
               modules: {
                 exportLocalsConvention: 'camelCaseOnly',
-                localIdentName: '[name]-[local]-[hash:base64:5]',
+                localIdentName: '[name]-[local]-[fullhash:base64:5]',
               },
               importLoaders: 1,
             },
@@ -44,7 +48,23 @@ const config = (name, env) => ({
   },
   plugins: [
     new MiniCssExtractPlugin({
-      filename: name === 'app' ? 'main.css' : 'welcome.css',
+      filename: name === 'app' ? 'main.[fullhash].css' : 'welcome.[fullhash].css',
+    }),
+    new HtmlWebpackPlugin({
+      inject: false,
+      publicPath: '/',
+      filename: `../resources/views/${name === 'app' ? 'home' : 'welcome'}-css.edge`,
+      templateContent: (param) => (
+        `<link rel="preload" href="${param.htmlWebpackPlugin.files.css}" as="style" onload="this.onload=null;this.rel='stylesheet'">`
+      ),
+    }),
+    new HtmlWebpackPlugin({
+      inject: false,
+      publicPath: '/',
+      filename: `../resources/views/${name === 'app' ? 'home' : 'welcome'}-script.edge`,
+      templateContent: (param) => (
+        `<script src="${param.htmlWebpackPlugin.files.js[0]}"></script>`
+      ),
     }),
   ],
   resolve: {

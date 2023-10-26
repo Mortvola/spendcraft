@@ -19,6 +19,7 @@ export default Env.rules({
   PORT: Env.schema.number(),
   APP_KEY: Env.schema.string(),
   APP_NAME: Env.schema.string(),
+  APP_URL: Env.schema.string(),
   CACHE_VIEWS: Env.schema.boolean(),
   SESSION_DRIVER: Env.schema.string(),
   NODE_ENV: Env.schema.enum(['development', 'production', 'test'] as const),
@@ -35,4 +36,6 @@ export default Env.rules({
   REDIS_HOST: Env.schema.string({ format: 'host' }),
   REDIS_PORT: Env.schema.number(),
   REDIS_PASSWORD: Env.schema.string.optional(),
+  VAPID_PUBLIC_KEY: Env.schema.string(),
+  VAPID_PRIVATE_KEY: Env.schema.string(),
 });

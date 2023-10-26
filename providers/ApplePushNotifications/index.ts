@@ -4,7 +4,10 @@ import { SignJWT, importPKCS8, KeyLike } from 'jose';
 import { DateTime } from "luxon";
 import Budget from 'App/Models/Budget';
 import Logger from '@ioc:Adonis/Core/Logger';
-import ApnsToken from 'App/Models/ApnsToken';
+// import ApnsToken from 'App/Models/ApnsToken';
+import PushSubscription from 'App/Models/PushSubscription';
+import webPush from 'web-push';
+import Env from '@ioc:Adonis/Core/Env';
 
 type FetchType = (input: string | Request, init?: Partial<FetchInit> | undefined) => Promise<Response>;
 
@@ -19,6 +22,12 @@ class ApplePushNotifications {
     const { fetch, disconnectAll } = context();
 
     try {
+      webPush.setVapidDetails(
+        Env.get('APP_URL'),
+        Env.get('VAPID_PUBLIC_KEY'),
+        Env.get('VAPID_PRIVATE_KEY'),
+      );
+      
       const unassigned = await budget.getUnassignedCategory();
       const transactions = await unassigned.transactions(budget);
 
@@ -28,11 +37,16 @@ class ApplePushNotifications {
 
         if (users.length > 0) {
           await Promise.all(users.map(async (user) => {
-            const userTokens = await user.related('apnsTokens').query();
+            const subscriptions = await user.related('pushSubscriptions').query();
 
-            for (let userToken of userTokens) {
+            for (let subscription of subscriptions) {
               try {
-                await this.sendPushNotification(fetch, userToken, transactions.length);
+                if (subscription.type === 'web') {
+                  await this.sendwebPushNotification(subscription, transactions.length);
+                }
+                else {
+                  await this.sendApplePushNotification(fetch, subscription, transactions.length);
+                }
               }
               catch (error) {
                 Logger.error({ err: error }, 'Push notification failed');
@@ -83,9 +97,18 @@ class ApplePushNotifications {
       }
   }
 
-  private async sendPushNotification(
+  private async sendwebPushNotification(
+    subscription: PushSubscription,
+    unassigned: number,
+  ) {
+    const notification: webPush.PushSubscription = subscription.subscription as webPush.PushSubscription;
+
+    await webPush.sendNotification(notification, `This is a test: ${unassigned}`);
+  }
+
+  private async sendApplePushNotification(
     fetch: FetchType,
-    deviceToken: ApnsToken,
+    subscription: PushSubscription,
     unassigned: number,
   ) {
     await this.generateProviderJWT();
@@ -107,9 +130,9 @@ class ApplePushNotifications {
     }
 
     try {
-      Logger.info(`pushing notification to ${deviceToken.token}`);
+      Logger.info(`pushing notification to ${subscription.subscription}`);
 
-      const response = await fetch(`https://api.push.apple.com/3/device/${deviceToken.token}`, {
+      const response = await fetch(`https://api.push.apple.com/3/device/${subscription.subscription}`, {
         method: 'POST',
         body: JSON.stringify(notification),
         headers: {
@@ -123,14 +146,14 @@ class ApplePushNotifications {
       })
 
       if (response.ok) {
-        Logger.info(`apns success, device token: ${deviceToken.token}, apns id: ${response.headers.get('apns-id')}`);
+        Logger.info(`apns success, device token: ${subscription.subscription}, apns id: ${response.headers.get('apns-id')}`);
       }
       else {
         const body = await response.json();
 
         if (response.status === 400 && body.reason === 'BadDeviceToken') {
           // Remove the bad device token
-          await deviceToken.delete();
+          await subscription.delete();
         }
 
         Logger.error(`apns failure: ${response.status}: ${response.statusText}, body: ${JSON.stringify(body)}`)

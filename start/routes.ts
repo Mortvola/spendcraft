@@ -20,6 +20,7 @@
 
 import HealthCheck from '@ioc:Adonis/Core/HealthCheck';
 import Route from '@ioc:Adonis/Core/Route'
+import Env from '@ioc:Adonis/Core/Env';
 
 Route.get('/home', 'HomeController.index');
 Route.get('/home/:categoryId', 'HomeController.index');
@@ -41,6 +42,10 @@ Route.post('/redirect', () => {
 Route.get('/health', async ({ response }) => {
   const report = await HealthCheck.getReport();
   return response.ok(report);
+});
+
+Route.get('/vapidPublicKey', async ({ response }) => {
+  return response.ok(Env.get('VAPID_PUBLIC_KEY'));
 });
 
 Route.group(() => {
@@ -66,6 +71,7 @@ Route.group(() => {
         Route.delete('/pending-email', 'UsersController.deletePending')
         Route.get('/link-token', 'UsersController.getLinkToken');
         Route.post('/apns-token', 'UsersController.addApnsToken')
+        Route.post('/register-push/web', 'UsersController.registerWebPush')
         Route.delete('', 'UsersController.delete');
       }).prefix('/user');
   

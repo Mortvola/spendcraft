@@ -3,4 +3,8 @@
 /welcome.js
 /welcome.css
 /main.css
+/main.*.css
+/app.*.js
+/app.*.LICENSE.txt
+/service-worker.*.js
 *.css.map

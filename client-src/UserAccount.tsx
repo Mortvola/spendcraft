@@ -16,6 +16,7 @@ import { useStores } from './State/mobxStore';
 import IconButton from './IconButton';
 import styles from './UserAccount.module.css'
 import { useDeleteConfirmation } from './DeleteConfirmation';
+import PushRegistrationButton from './PushRegistrationButton';
 
 type FormValues = {
   username: string,
@@ -154,6 +155,12 @@ const UserAccount: React.FC = () => {
                       )
                       : null
                   }
+                  <PushRegistrationButton
+                    url="/api/v1/user/register-push/web"
+                    className={styles.enableNotifications}
+                  >
+                    Enable Notifications
+                  </PushRegistrationButton>
                   <Button variant="danger" className={styles.delete} onClick={handleDeleteClick}>
                     Delete Account
                   </Button>

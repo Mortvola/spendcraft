@@ -1,12 +1,11 @@
 import { BaseCommand } from '@adonisjs/core/build/standalone'
-import Budget from 'App/Models/Budget';
-import pushSubscriptions from '@ioc:ApplePushNotifications';
+import webpush from 'web-push';
 
-export default class ApnPush extends BaseCommand {
+export default class GenerateWebPushKeys extends BaseCommand {
   /**
    * Command name is used to run the command
    */
-  public static commandName = 'push:send'
+  public static commandName = 'generate:web-push-keys'
 
   /**
    * Command description is displayed in the "help" output
@@ -19,7 +18,7 @@ export default class ApnPush extends BaseCommand {
      * before running the command. Don't forget to call `node ace generate:manifest` 
      * afterwards.
      */
-    loadApp: true,
+    loadApp: false,
 
     /**
      * Set the following value to true, if you want this command to keep running until
@@ -29,12 +28,11 @@ export default class ApnPush extends BaseCommand {
     stayAlive: false,
   }
 
-  // eslint-disable-next-line class-methods-use-this
   public async run() {
-    const budgets = await Budget.all();
+    this.logger.info('Hello world!')
 
-    await Promise.all(budgets.map(async (budget) => {
-      await pushSubscriptions.sendPushNotifications(budget);
-    }));
+    const keys = webpush.generateVAPIDKeys();
+
+    console.log(keys);
   }
 }
