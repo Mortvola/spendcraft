@@ -158,9 +158,7 @@ const UserAccount: React.FC = () => {
                   <PushRegistrationButton
                     url="/api/v1/user/register-push/web"
                     className={styles.enableNotifications}
-                  >
-                    Enable Notifications
-                  </PushRegistrationButton>
+                  />
                   <Button variant="danger" className={styles.delete} onClick={handleDeleteClick}>
                     Delete Account
                   </Button>

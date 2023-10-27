@@ -4,16 +4,14 @@ import { Button } from 'react-bootstrap';
 
 type PropsType = {
   url: string,
-  children?: React.ReactNode,
   className?: string,
 }
 
 const PushRegistrationButton: React.FC<PropsType> = ({
   url,
-  children,
   className,
 }) => {
-  const [subscribed, setSubscribed] = React.useState<boolean>(false);
+  const [subscription, setSubscription] = React.useState<PushSubscription | null>(null);
   const [registration, setRegistration] = React.useState<ServiceWorkerRegistration | null>(null);
 
   const urlBase64ToUint8Array = (base64String: string): Uint8Array => {
@@ -42,19 +40,7 @@ const PushRegistrationButton: React.FC<PropsType> = ({
 
       setRegistration(reg);
 
-      console.log('service worker registered');
-      // subscriptionButton.removeAttribute('disabled');
-
-      const subscription = await reg.pushManager.getSubscription();
-
-      if (subscription) {
-        console.log('Already subscribed', subscription.endpoint);
-        setSubscribed(true);
-      }
-      else {
-        console.log('Not already subscribed');
-        setSubscribed(false);
-      }
+      setSubscription(await reg.pushManager.getSubscription());
     })();
   }, []);
 
@@ -62,35 +48,62 @@ const PushRegistrationButton: React.FC<PropsType> = ({
     const element = document.getElementById('subscribe');
 
     if (element) {
-      element.addEventListener('click', async () => {
-        if (!subscribed && registration) {
-        // Get the server's public key
-          const response = await Http.get<string>('/vapidPublicKey');
-
-          if (response.ok) {
-            const vapidPublicKey = await response.body();
-            // Chrome doesn't accept the base64-encoded (string) vapidPublicKey yet
-            // urlBase64ToUint8Array() is defined in /tools.js
-            const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
-            // Subscribe the user
-            const subscription = await registration.pushManager.subscribe({
-              userVisibleOnly: true,
-              applicationServerKey: convertedVapidKey,
-            });
-
-            console.log('Subscribed', subscription.endpoint);
-
-            await Http.post(url, subscription);
+      const listener = async () => {
+        if (registration) {
+          if (subscription) {
+            subscription.unsubscribe();
+            setSubscription(null);
+            console.log('unsubscribed')
           }
-        // setSubscribeButton();
+          else {
+          // Get the server's public key
+            const response = await Http.get<string>('/vapidPublicKey');
+
+            if (response.ok) {
+              const vapidPublicKey = await response.body();
+              // Chrome doesn't accept the base64-encoded (string) vapidPublicKey yet
+              // urlBase64ToUint8Array() is defined in /tools.js
+              const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
+
+              const sub = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: convertedVapidKey,
+              });
+
+              setSubscription(sub);
+
+              await Http.post(url, sub);
+
+              if (sub) {
+                console.log('subscribed');
+              }
+              else {
+                console.log('not subscribed');
+              }
+            }
+          }
         }
-      })
+      }
+
+      element.addEventListener('click', listener)
+
+      return () => {
+        if (element) {
+          element.removeEventListener('click', listener);
+        }
+      }
     }
-  }, [registration, subscribed]);
+
+    return undefined;
+  }, [registration, subscription, url]);
 
   return (
-    <Button className={className} id="subscribe">
-      {children}
+    <Button className={className} id="subscribe" disabled={registration === null}>
+      {
+        subscription === null
+          ? 'Enable Notifications'
+          : 'Disable Notifications'
+      }
     </Button>
   )
 }
