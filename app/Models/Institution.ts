@@ -12,6 +12,7 @@ import Logger from '@ioc:Adonis/Core/Logger'
 import Budget from 'App/Models/Budget';
 import { DateTime } from 'luxon';
 import AccountTransaction from './AccountTransaction';
+import { CategoryBalanceProps } from 'Common/ResponseTypes';
 
 class Institution extends BaseModel {
   @column()
@@ -155,15 +156,13 @@ class Institution extends BaseModel {
               .findBy('providerTransactionId', removed.transaction_id, { client: trx });
 
             if (at) {
-              // eslint-disable-next-line no-await-in-loop
-              const t = await at.related('transaction').query().first();
+              const acct = accounts.find((a) => a.$attributes.plaidAccountId === at.accountId)
 
-              // eslint-disable-next-line no-await-in-loop
-              await at.delete();
+              if (acct) {
+                const categoryBalances: CategoryBalanceProps[] = [];
 
-              if (t) {
                 // eslint-disable-next-line no-await-in-loop
-                await t.delete();
+                await acct.deleteAccountTransaction(at, categoryBalances)
               }
             }
 

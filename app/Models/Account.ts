@@ -16,6 +16,7 @@ import Budget from 'App/Models/Budget';
 import { Exception } from '@poppinss/utils';
 import { XMLParser } from 'fast-xml-parser';
 import Category from './Category';
+import TransactionCategory from './TransactionCategory';
 
 export type AccountSyncResult = {
   categories: CategoryBalanceProps[],
@@ -348,6 +349,55 @@ class Account extends BaseModel {
     }
 
     return transactionAmount;
+  }
+
+  public async deleteAccountTransaction(
+    this: Account,
+    acctTran: AccountTransaction,
+    categoryBalances: CategoryBalanceProps[],
+  ) {
+    // eslint-disable-next-line no-await-in-loop
+    const transaction = await Transaction.find(acctTran.transactionId, { client: acctTran.$trx });
+
+    if (transaction) {
+      // eslint-disable-next-line no-await-in-loop
+      const transCats = await TransactionCategory
+        .query({ client: acctTran.$trx })
+        .where('transactionId', transaction.id);
+
+      // eslint-disable-next-line no-restricted-syntax
+      for (const tc of transCats) {
+        if (!acctTran.pending && this.tracking === 'Transactions' && transaction.date >= this.startDate) {
+          // eslint-disable-next-line no-await-in-loop
+          const category = await Category.find(tc.categoryId, { client: acctTran.$trx });
+
+          if (category) {
+            category.amount -= tc.amount;
+
+            // eslint-disable-next-line no-await-in-loop
+            await category.save();
+
+            const catBalance = categoryBalances.find((cb) => cb.id === category.id);
+
+            if (catBalance) {
+              catBalance.balance = category.amount;
+            }
+            else {
+              categoryBalances.push({ id: category.id, balance: category.amount })
+            }
+          }
+        }
+
+        // eslint-disable-next-line no-await-in-loop
+        await tc.delete();
+      }
+
+      // eslint-disable-next-line no-await-in-loop
+      await acctTran.delete();
+
+      // eslint-disable-next-line no-await-in-loop
+      await transaction.delete();
+    }
   }
 
   // eslint-disable-next-line class-methods-use-this
