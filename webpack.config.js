@@ -14,7 +14,7 @@ const config = (name, env) => ({
   },
   output: {
     path: path.resolve(__dirname, 'public'),
-    filename: '[name].[fullhash].js',
+    filename: '[name].js',
   },
   module: {
     rules: [
@@ -48,7 +48,7 @@ const config = (name, env) => ({
   },
   plugins: [
     new MiniCssExtractPlugin({
-      filename: name === 'app' ? 'main.[fullhash].css' : 'welcome.[fullhash].css',
+      filename: name === 'app' ? 'main.css' : 'welcome.css',
     }),
     new HtmlWebpackPlugin({
       inject: false,
