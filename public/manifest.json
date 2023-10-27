@@ -1,0 +1,16 @@
+{
+  "name": "SpendCraft",
+  "short_name": "SpendCraft",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "logo2.png",
+      "sizes": "1024x1024",
+      "type": "image&#x2F;png"
+    }
+  ]
+}

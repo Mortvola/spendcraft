@@ -39,7 +39,11 @@ const PushRegistrationButton: React.FC<PropsType> = ({
 
         setRegistration(reg);
 
-        setSubscription(await reg.pushManager.getSubscription());
+        if (reg.pushManager) {
+          const sub = await reg.pushManager.getSubscription();
+
+          setSubscription(sub);
+        }
       }
     })();
   }, []);
@@ -98,7 +102,7 @@ const PushRegistrationButton: React.FC<PropsType> = ({
   }, [registration, subscription, url]);
 
   return (
-    <Button className={className} id="subscribe" disabled={registration === null}>
+    <Button className={className} id="subscribe" disabled={(registration?.pushManager ?? null) === null}>
       {
         subscription === null
           ? 'Enable Notifications'
