@@ -87,6 +87,10 @@ const App: React.FC = observer(() => {
   );
 });
 
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('service-worker.js');
+}
+
 const container = document.querySelector('.app');
 
 if (container) {

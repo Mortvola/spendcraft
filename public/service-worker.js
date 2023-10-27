@@ -9,9 +9,36 @@ self.addEventListener('install', (event) => {
 // Listen to `push` notification event. Define the text to be displayed
 // and show the notification.
 self.addEventListener('push', (event) => {
-  event.waitUntil(self.registration.showNotification('SpendCraft', {
-    body: 'There are unassigned transactions!!',
-  }));
+  const data = event.data.json();
+  const notification = self.registration.showNotification(data.title, {
+    body: data.body,
+    icon: '/logo2.png',
+    tag: 'new-transactions',
+  });
+
+  event.waitUntil(notification);
+});
+
+self.addEventListener('notificationclick', (event) => {
+  // This looks to see if the current is already open and
+  // focuses if it is
+  event.waitUntil(
+    clients
+      .matchAll({
+        type: 'window',
+      })
+      .then((clientList) => {
+        // eslint-disable-next-line no-restricted-syntax
+        for (const client of clientList) {
+          if ('focus' in client) {
+            return client.focus();
+          }
+        }
+        if (clients.openWindow) {
+          return clients.openWindow('/home');
+        }
+      }),
+  );
 });
 
 // Listen to  `pushsubscriptionchange` event which is fired when

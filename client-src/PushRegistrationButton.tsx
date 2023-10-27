@@ -32,15 +32,15 @@ const PushRegistrationButton: React.FC<PropsType> = ({
 
   React.useEffect(() => {
     (async () => {
-      navigator.serviceWorker.register('service-worker.js');
+      if ('serviceWorker' in navigator) {
+        // When the Service Worker is ready, enable the UI (button),
+        // and see if we already have a subscription set up.
+        const reg = await navigator.serviceWorker.ready;
 
-      // When the Service Worker is ready, enable the UI (button),
-      // and see if we already have a subscription set up.
-      const reg = await navigator.serviceWorker.ready;
+        setRegistration(reg);
 
-      setRegistration(reg);
-
-      setSubscription(await reg.pushManager.getSubscription());
+        setSubscription(await reg.pushManager.getSubscription());
+      }
     })();
   }, []);
 
