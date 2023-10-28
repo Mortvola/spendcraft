@@ -22,7 +22,7 @@ const Icon: React.FC<PropsType> = ({
     className += iconClass;
   }
   else {
-    className += `${solid ? 'fas' : 'far'}`;
+    className += `${solid ? 'fa-solid' : 'fa-regular'}`;
   }
 
   className += ` fa-${icon}`;

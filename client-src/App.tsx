@@ -27,6 +27,11 @@ import Signin from './Credentials/Signin';
 import Intro from './Intro';
 import RequireAuth from './RequireAuth';
 import RecoverPassword from './Credentials/RecoverPassword';
+import useMediaQuery from './MediaQuery';
+import styles from './App.module.css';
+import DesktopView from './DesktopView';
+import MobileView from './MobileView';
+import TabView from './TabView';
 
 const App: React.FC = observer(() => {
   const error = useContext(ServerError);
@@ -34,6 +39,7 @@ const App: React.FC = observer(() => {
   const stores = useStores();
   const location = useLocation();
   const navigate = useNavigate();
+  const { isMobile } = useMediaQuery();
 
   Http.unauthorizedHandler = () => {
     if (location.pathname !== '/signin') {
@@ -76,13 +82,24 @@ const App: React.FC = observer(() => {
     )
   }
 
+  let className = styles.layout;
+  if (isMobile) {
+    className = `${className} ${styles.mobile}`;
+  }
+
   return (
     <RequireAuth>
-      <>
-        <Menubar />
-        <Outlet />
+      <div className={className}>
+        <DesktopView>
+          <Menubar />
+          <Outlet />
+        </DesktopView>
+        <MobileView>
+          <Outlet />
+          <TabView />
+        </MobileView>
         <PlaidLink />
-      </>
+      </div>
     </RequireAuth>
   );
 });

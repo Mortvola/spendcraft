@@ -28,7 +28,7 @@ const config = (name, env) => ({
             options: {
               modules: {
                 exportLocalsConvention: 'camelCaseOnly',
-                localIdentName: '[name]-[local]-[fullhash:base64:5]',
+                localIdentName: '[name]-[local]-[hash:base64:5]',
               },
               importLoaders: 1,
             },
@@ -48,7 +48,7 @@ const config = (name, env) => ({
   },
   plugins: [
     new MiniCssExtractPlugin({
-      filename: name === 'app' ? 'main.css' : 'welcome.css',
+      filename: name === 'app' ? 'main.[fullhash].css' : 'welcome.css',
     }),
     new HtmlWebpackPlugin({
       inject: false,
