@@ -8,9 +8,13 @@
 
 .icon {
   color: rgb(172, 172, 172);
-  font-size: 0.8rem;
+  font-size: 0.7rem;
+}
+
+.icon:hover {
+  color: rgb(172, 172, 172);
 }
 
 .icon i {
-  font-size: 2rem;
+  font-size: 1.7rem;
 }

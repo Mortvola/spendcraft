@@ -21,11 +21,13 @@ const IconButton: React.FC<PropsType> = ({
   solid = true,
   onClick,
 }) => (
-  <button type="button" className={`btn btn-sm ${className ?? ''}`} onClick={onClick}>
+  <button type="button" className={`btn btn-sm ${styles.layout} ${className ?? ''}`} onClick={onClick}>
     <Icon icon={icon} rotate={rotate} iconClass={iconClass} solid={solid} />
-    {
-      caption
-    }
+    <div>
+      {
+        caption
+      }
+    </div>
   </button>
 );
 
