@@ -4,21 +4,28 @@ import styles from './IconButton.module.css';
 
 type PropsType = {
   icon: string;
+  caption?: string;
   rotate?: boolean;
-  iconColor?: string,
+  className?: string;
+  iconClass?: string,
   solid?: boolean,
   onClick?: () => void;
 }
 
 const IconButton: React.FC<PropsType> = ({
   icon,
+  caption,
   rotate = false,
-  iconColor,
+  className,
+  iconClass,
   solid = true,
   onClick,
 }) => (
-  <button type="button" className={`btn btn-sm ${styles.groupButton}`} onClick={onClick}>
-    <Icon icon={icon} rotate={rotate} style={{ color: iconColor }} solid={solid} />
+  <button type="button" className={`btn btn-sm ${className ?? ''}`} onClick={onClick}>
+    <Icon icon={icon} rotate={rotate} iconClass={iconClass} solid={solid} />
+    {
+      caption
+    }
   </button>
 );
 

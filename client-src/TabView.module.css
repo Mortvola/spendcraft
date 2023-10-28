@@ -1,0 +1,15 @@
+.layout {
+  display: flex;
+  background-color: #404040;
+  width: 100%;
+  justify-content: space-between;
+}
+
+.icon {
+  color: rgb(172, 172, 172);
+  font-size: 0.8rem;
+}
+
+.icon i {
+  font-size: 2rem;
+}

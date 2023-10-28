@@ -133,7 +133,7 @@ const UserAccount: React.FC = () => {
                               <div className="ellipsis" style={{ margin: '0 0.5rem' }}>{stores.user.pendingEmail}</div>
                               <IconButton
                                 icon="trash"
-                                iconColor="red"
+                                iconClass={styles.icon}
                                 onClick={handleDeletePending}
                               />
                             </div>
