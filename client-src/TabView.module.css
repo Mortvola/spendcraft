@@ -1,20 +1,7 @@
 .layout {
   display: flex;
-  background-color: #404040;
+  background-color: #202020;
   width: 100%;
   justify-content: space-between;
   padding-bottom: 1.5rem;
-}
-
-.icon {
-  color: rgb(172, 172, 172);
-  font-size: 0.7rem;
-}
-
-.icon:hover {
-  color: rgb(172, 172, 172);
-}
-
-.icon i {
-  font-size: 1.7rem;
 }

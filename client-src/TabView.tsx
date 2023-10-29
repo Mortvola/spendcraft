@@ -1,15 +1,35 @@
 import React from 'react';
-import IconButton from './IconButton';
 import styles from './TabView.module.css';
+import TabViewButton from './TabViewButton';
 
 const TabView: React.FC = () => (
   <div className={styles.layout}>
-    <IconButton icon="inbox" caption="Categories" className={styles.icon} iconClass="fa-solid" />
-    <IconButton icon="map" caption="Plans" className={styles.icon} iconClass="fa-solid" />
-    <IconButton icon="building-columns" caption="Accounts" className={styles.icon} iconClass="fa-solid" />
-    <IconButton icon="file" caption="Reports" className={styles.icon} iconClass="fa-solid" />
-    <IconButton icon="circle-user" caption="Account" className={styles.icon} iconClass="fa-solid" />
+    <TabViewButton
+      icon="inbox"
+      caption="Categories"
+      url="/home"
+    />
+    <TabViewButton
+      icon="map"
+      caption="Plans"
+      url="/plans"
+    />
+    <TabViewButton
+      icon="building-columns"
+      caption="Accounts"
+      url="/accounts"
+    />
+    <TabViewButton
+      icon="file"
+      caption="Reports"
+      url="/reports"
+    />
+    <TabViewButton
+      icon="circle-user"
+      caption="Account"
+      url="/user"
+    />
   </div>
-);
+)
 
 export default TabView;
