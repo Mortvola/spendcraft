@@ -4,6 +4,7 @@
   height: 100%;
   width: 100%;
   user-select: none;
+  -webkit-user-select: none;
   padding-top: 0.25rem;
   padding-left: 0.25rem;
   background-color: #fff;
