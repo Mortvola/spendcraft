@@ -11,7 +11,6 @@ import DesktopView from '../DesktopView';
 import MobileView from '../MobileView';
 
 const Home: React.FC = observer(() => {
-  const stores = useStores();
   const { categoryTree } = useStores();
   const { isMobile } = useMediaQuery();
   const [open, setOpen] = useState<boolean>(false);
@@ -49,7 +48,7 @@ const Home: React.FC = observer(() => {
           </Main>
         </DesktopView>
         <MobileView>
-          <div className={styles.categories}>
+          <div className={`${styles.categories} mobile`}>
             <div className={styles.titleWrapper} onClick={handleTitleClick}>
               <div className={`${styles.backButton} ${open ? 'open' : ''}`}>{'<'}</div>
               <div className={`${styles.title} ${open ? 'open' : ''}`}>Categories</div>

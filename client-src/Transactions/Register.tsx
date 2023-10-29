@@ -14,6 +14,7 @@ import AccountTransaction from './Transactions/AccountTransaction';
 import CategoryTransaction from './Transactions/CategoryTransaction';
 import useTrxDialog from './TrxDialog';
 import RebalanceTransaction from './Transactions/RebalanceTransaction';
+import useMediaQuery from '../MediaQuery';
 
 type PropsType = {
   type: 'category' | 'account' | 'rebalances',
@@ -24,6 +25,7 @@ const Register: React.FC<PropsType> = observer(({
 }) => {
   const store = useStores();
   const { uiState, categoryTree, rebalances } = store;
+  const { isMobile } = useMediaQuery();
 
   React.useEffect(() => {
     switch (type) {
@@ -216,7 +218,7 @@ const Register: React.FC<PropsType> = observer(({
 
   return (
     <>
-      <div className="register window window1">
+      <div className={`register window window1 ${isMobile ? 'mobile' : ''}`}>
         <div />
         { titles }
         <RegisterTransactions

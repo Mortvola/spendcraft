@@ -10,6 +10,7 @@ import Group from './Group';
 import SystemCategory from './SystemCategory';
 import Category from './Category';
 import styles from './CategoryView.module.css'
+import useMediaQuery from '../../MediaQuery';
 
 type PropsType = {
   onCategorySelected: () => void,
@@ -18,6 +19,7 @@ type PropsType = {
 const CategoryView: React.FC<PropsType> = observer(({
   onCategorySelected,
 }) => {
+  const { isMobile } = useMediaQuery();
   const navigate = useNavigate();
   const params = useParams();
   const rebalancesPath = useResolvedPath('rebalances');
@@ -74,7 +76,7 @@ const CategoryView: React.FC<PropsType> = observer(({
         <SystemCategory category={categoryTree.fundingPoolCat} onCategorySelected={handleCategorySelected} />
         <SystemCategory category={categoryTree.accountTransferCat} onCategorySelected={handleCategorySelected} />
         <div
-          className={rebalancesClassName}
+          className={`${rebalancesClassName} ${isMobile ? 'mobile' : ''}`}
           onClick={handleRebalancesClick}
         >
           Rebalances

@@ -11,6 +11,11 @@
   background-color: #fff;
 }
 
+.categories:global(.mobile) {
+  color: #fff;
+  background-color: #000;
+}
+
 .theme {
   background-color: #8e2727;
 }
@@ -53,7 +58,7 @@
   bottom: 0;
   left: 0;
   right: 0;
-  background-color: white;
+  background-color: black;
   transform: translate(100%);
   /* border-left: black thin solid; */
   transition: transform 0.3s ease;

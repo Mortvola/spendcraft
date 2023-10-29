@@ -6,7 +6,6 @@
 }
 
 .main-tray-title:global(.mobile) {
-  color: black;
   font-size: 2rem;
   font-weight: bold;
 }

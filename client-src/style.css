@@ -22,6 +22,11 @@ body {
   z-index: 4;
 }
 
+.window.mobile {
+  color: #fff;
+  background-color: #000;
+}
+
 .window::before {
   box-shadow: inset 3px 3px 5px 0px;
   position: absolute;
@@ -218,6 +223,7 @@ body {
   justify-content: space-between;
   user-select: none;
   -webkit-user-select: none;
+  cursor: pointer;
 }
 
 .cat-list-item>.cat-list-cat,
@@ -229,12 +235,11 @@ body {
   margin-left: 0px;
 }
 
-.cat-list-cat:not(.selected):hover {
-  cursor: pointer;
+.cat-list-cat:not(.selected):not(.mobile):hover {
   background-color: whitesmoke;
 }
 
-.cat-list-cat.selected {
+.cat-list-cat.selected:not(.mobile) {
   background-color: lightblue;
 }
 
@@ -569,9 +574,9 @@ body {
   justify-self: right;
 }
 
-.selected {
+/* .selected {
   background-color: lightblue;
-}
+} */
 
 .item-title {
   padding-left: 2px;
