@@ -52,7 +52,7 @@
   min-width: 1.25rem;
 }
 
-:global(.mobile).transaction {
+.transaction:global(.mobile) {
   grid-template-columns: var(--icon-width) var(--date-width) minmax(0, 1fr) var(--amount-width);
   grid-template-rows: max-content max-content;
   grid-template-areas: ". . . ." ". account account account";

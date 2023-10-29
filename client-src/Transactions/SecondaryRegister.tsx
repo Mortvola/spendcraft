@@ -21,7 +21,11 @@ const SecondaryRegister: React.FC<PropsType> = ({
       <div className={styles.pendingRegisterTitle}>
         {title}
       </div>
-      {titles}
+      {
+        isMobile
+          ? null
+          : titles
+      }
       <div className={`${transactionStyles.transactions} striped`}>
         {children}
       </div>

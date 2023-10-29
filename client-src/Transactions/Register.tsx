@@ -220,7 +220,11 @@ const Register: React.FC<PropsType> = observer(({
     <>
       <div className={`register window window1 ${isMobile ? 'mobile' : ''}`}>
         <div />
-        { titles }
+        {
+          isMobile
+            ? null
+            : titles
+        }
         <RegisterTransactions
           trxContainer={trxContainer}
         >
