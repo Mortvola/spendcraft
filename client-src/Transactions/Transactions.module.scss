@@ -45,7 +45,9 @@
 
   &:global(.mobile) {
     $icon-width: 0;
-  
+    $amount-width: 5rem;
+    $date-width: 3.5rem;
+
     grid-template-columns: $icon-width $date-width minmax(0, 1fr) $amount-width;
     grid-template-rows: max-content max-content max-content;
     grid-template-areas:
