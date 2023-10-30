@@ -3,7 +3,7 @@ import { DateTime } from 'luxon';
 import { Field, FieldProps, useField } from 'formik';
 import AmountInput from '../AmountInput';
 import Amount from '../Amount';
-import styles from './Funding.module.css'
+import styles from './Funding.module.scss'
 import { FundingInfoType } from './Types';
 import VerticalTitled from './VerticalTitled';
 import { CategoryInterface } from '../State/State';

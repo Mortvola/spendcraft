@@ -1,7 +1,7 @@
 import { observer } from 'mobx-react-lite';
 import React from 'react';
 import { PendingTransactionInterface } from '../State/State';
-import PendingTitles from './PendingTItles';
+import PendingTitles from './PendingTitles';
 import PendingTransactions from './PendingTransactions';
 import SecondaryRegister from './SecondaryRegister';
 

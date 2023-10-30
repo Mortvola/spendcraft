@@ -1,5 +1,5 @@
 import React from 'react';
-import styles from './TabView.module.css';
+import styles from './TabView.module.scss';
 import TabViewButton from './TabViewButton';
 
 const TabView: React.FC = () => (

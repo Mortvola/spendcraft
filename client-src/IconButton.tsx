@@ -1,6 +1,6 @@
 import React from 'react';
 import Icon from './Icon';
-import styles from './IconButton.module.css';
+import styles from './IconButton.module.scss';
 
 type PropsType = {
   icon: string;

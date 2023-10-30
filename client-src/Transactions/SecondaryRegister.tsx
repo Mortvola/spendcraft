@@ -1,6 +1,6 @@
 import React, { ReactElement, ReactNode } from 'react';
-import styles from './SecondaryRegister.module.css';
-import transactionStyles from './Transactions.module.css';
+import styles from './SecondaryRegister.module.scss';
+import transactionStyles from './Transactions.module.scss';
 import useMediaQuery from '../MediaQuery';
 
 type PropsType = {

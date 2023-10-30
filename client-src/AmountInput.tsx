@@ -4,7 +4,7 @@ import Popover from 'react-bootstrap/Popover';
 import PopoverHeader from 'react-bootstrap/PopoverHeader';
 import PopoverBody from 'react-bootstrap/PopoverBody';
 import parseEquation from './EquationParser';
-import styles from './AmountInput.module.css';
+import styles from './AmountInput.module.scss';
 import Console from './Console';
 
 interface PropsType {

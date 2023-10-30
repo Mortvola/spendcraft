@@ -1,6 +1,6 @@
 import React, { ReactNode } from 'react';
 import useMediaQuery from './MediaQuery'
-import styles from './Sidebar.module.css'
+import styles from './Sidebar.module.scss'
 
 type PropsType = {
   open?: boolean,

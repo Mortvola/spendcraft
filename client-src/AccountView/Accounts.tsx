@@ -6,7 +6,7 @@ import useMediaQuery from '../MediaQuery'
 import AccountView from './AccountView';
 import Main from '../Main';
 import AccountsToolbar from './AccountsToolbar';
-import styles from './Accounts.module.css';
+import styles from './Accounts.module.scss';
 
 const Accounts: React.FC = observer(() => {
   const [open, setOpen] = useState<boolean>(false);

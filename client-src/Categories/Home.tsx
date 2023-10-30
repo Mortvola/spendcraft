@@ -5,7 +5,7 @@ import useMediaQuery from '../MediaQuery'
 import CategoryView from './CategoryView/CategoryView';
 import HomeToolbar from './CategoryView/CategoryViewToolbar';
 import { useStores } from '../State/mobxStore';
-import styles from './Home.module.css';
+import styles from './Home.module.scss';
 import Main from '../Main';
 import DesktopView from '../DesktopView';
 import MobileView from '../MobileView';

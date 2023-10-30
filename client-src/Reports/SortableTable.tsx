@@ -3,7 +3,7 @@ import React, {
   ReactElement, ReactNode, useMemo, useState,
 } from 'react';
 import Icon from '../Icon';
-import styles from './SortableTable.module.css';
+import styles from './SortableTable.module.scss';
 
 type SortableTableHeaderProps = {
   className?: string,

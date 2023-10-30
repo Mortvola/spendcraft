@@ -1,6 +1,6 @@
 import React, { ReactNode } from 'react';
 import useMediaQuery from './MediaQuery'
-import styles from './Toolbar.module.css';
+import styles from './Toolbar.module.scss';
 
 type PropsType = {
   children?: ReactNode,

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import Chart from 'react-google-charts';
 import { useStores } from '../State/mobxStore';
-import styles from './BalanceHistory.module.css';
+import styles from './BalanceHistory.module.scss';
 import Balance from './Balance';
 import { useBalanceDialog } from './BalanceDialog';
 import { BalanceInterface } from '../State/State';

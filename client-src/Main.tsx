@@ -1,7 +1,7 @@
 import React, { ReactNode } from 'react';
 import MainTray from './MainTray';
 import Toolbar from './Toolbar';
-import styles from './Main.module.css';
+import styles from './Main.module.scss';
 import Sidebar from './Sidebar';
 
 type PropsType = {

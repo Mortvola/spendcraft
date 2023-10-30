@@ -1,7 +1,7 @@
 import React from 'react';
 import * as responsive from 'react-responsive';
 import { useNavigate } from 'react-router-dom';
-import styles from './Signin.module.css';
+import styles from './Signin.module.scss';
 import EnterEmailAddress from './EnterEmailAddress';
 import EnterPassCode from './EnterPassCode';
 import ChangePassword from './ChangePassword';

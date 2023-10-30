@@ -4,7 +4,7 @@ import {
   TransactionContainerInterface,
 } from '../State/State';
 import PleaseWait from '../PleaseWait';
-import styles from './Transactions.module.css';
+import styles from './Transactions.module.scss';
 import useTrxPager from './TrxPager';
 
 type PropsType = {

@@ -1,7 +1,7 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
 import useMediaQuery from '../MediaQuery';
-import styles from './Transactions.module.css'
+import styles from './Transactions.module.scss'
 import Amount from '../Amount';
 import { PendingTransactionInterface } from '../State/State';
 import Date from '../Date';

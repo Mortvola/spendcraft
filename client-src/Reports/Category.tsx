@@ -9,7 +9,7 @@ import { useStores } from '../State/mobxStore';
 import useSortableTable from './SortableTable';
 import { isGroup } from '../State/Group';
 import ReportControls from './ReportControls';
-import styles from './Category.module.css';
+import styles from './Category.module.scss';
 
 type CategoryReport = {
   rowNumber: string,

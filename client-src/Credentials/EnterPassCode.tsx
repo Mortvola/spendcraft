@@ -7,7 +7,7 @@ import {
   FormError, setFormErrors, FormField, SubmitButton,
 } from '@mortvola/forms';
 import { Button } from 'react-bootstrap';
-import styles from './Signin.module.css';
+import styles from './Signin.module.scss';
 import { isErrorResponse } from '../../common/ResponseTypes';
 import { Context } from './Types';
 

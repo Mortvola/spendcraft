@@ -1,5 +1,5 @@
 import React from 'react';
-import styles from './DetailView.module.css';
+import styles from './DetailView.module.scss';
 import useMediaQuery from './MediaQuery';
 
 type PropsType = {

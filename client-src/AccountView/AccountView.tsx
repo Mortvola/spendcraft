@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Institution from './Institution';
 import { useStores } from '../State/mobxStore';
 import { AccountInterface } from '../State/State';
-import styles from './AccountView.module.css';
+import styles from './AccountView.module.scss';
 
 type PropsType = {
   opened: boolean,

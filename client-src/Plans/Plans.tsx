@@ -6,7 +6,7 @@ import PlanList from './PlanList';
 import PlansToolbar from './PlansToolbar';
 import Main from '../Main';
 import useMediaQuery from '../MediaQuery'
-import styles from './Plans.module.css'
+import styles from './Plans.module.scss'
 import { CategoryInterface } from '../State/State';
 import { useEditCategoryDialog } from './EditCategoryDialog';
 import FundingPlanCategory from '../State/FundingPlanCategory';

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate, matchPath, useLocation } from 'react-router-dom';
 import IconButton from './IconButton';
-import styles from './TabViewButton.module.css';
+import styles from './TabViewButton.module.scss';
 
 type PropsType = {
   icon: string,

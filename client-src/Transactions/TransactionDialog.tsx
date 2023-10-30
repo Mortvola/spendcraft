@@ -15,7 +15,7 @@ import { AccountInterface, TransactionCategoryInterface, TransactionInterface } 
 import AmountInput from '../AmountInput';
 import useMediaQuery from '../MediaQuery';
 import { TransactionType } from '../../common/ResponseTypes';
-import styles from './TransactionDialog.module.css';
+import styles from './TransactionDialog.module.scss';
 import PurchaseLocation from './PurchaseLocation';
 
 function validateSplits(splits: Array<TransactionCategoryInterface>) {

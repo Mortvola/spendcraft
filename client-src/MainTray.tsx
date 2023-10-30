@@ -1,5 +1,5 @@
 import React, { ReactNode } from 'react';
-import styles from './MainTray.module.css';
+import styles from './MainTray.module.scss';
 import useMediaQuery from './MediaQuery';
 
 type PropsType = {

@@ -5,6 +5,41 @@ const path = require('path');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
+const CSSModuleLoader = {
+  loader: 'css-loader',
+  options: {
+    modules: {
+      exportLocalsConvention: 'camelCaseOnly',
+      localIdentName: '[name]-[local]-[hash:base64:5]',
+    },
+    sourceMap: true,
+    // localIdentName: '[local]__[hash:base64:5]',
+    // minimize: true,
+  },
+}
+
+const CSSLoader = {
+  loader: 'css-loader',
+  options: {
+    modules: false,
+    sourceMap: true,
+    // minimize: true,
+  },
+}
+
+// const postCSSLoader = {
+//   loader: 'postcss-loader',
+//   options: {
+//     ident: 'postcss',
+//     sourceMap: true,
+//     plugins: () => [
+//       autoprefixer({
+//         browsers: ['>1%', 'last 4 versions', 'Firefox ESR', 'not ie < 9'],
+//       }),
+//     ],
+//   },
+// }
+
 const config = (name, env) => ({
   name,
   mode: env.production ? 'production' : 'development',
@@ -20,29 +55,36 @@ const config = (name, env) => ({
     rules: [
       { test: /.tsx?$/, use: 'ts-loader', exclude: /node_modules/ },
       {
-        test: /\.css$/,
+        test: /\.module\.css$/,
         use: [
           MiniCssExtractPlugin.loader,
-          {
-            loader: 'css-loader',
-            options: {
-              modules: {
-                exportLocalsConvention: 'camelCaseOnly',
-                localIdentName: '[name]-[local]-[hash:base64:5]',
-              },
-              importLoaders: 1,
-            },
-          },
+          CSSModuleLoader,
         ],
-        include: /\.module\.css$/,
+      },
+      {
+        test: /\.module\.scss$/,
+        use: [
+          MiniCssExtractPlugin.loader,
+          CSSModuleLoader,
+          'sass-loader',
+        ],
       },
       {
         test: /\.css$/,
+        exclude: /\.module\.css$/,
         use: [
           MiniCssExtractPlugin.loader,
-          'css-loader',
+          CSSLoader,
         ],
-        exclude: /\.module\.css$/,
+      },
+      {
+        test: /\.scss$/,
+        exclude: /\.module\.scss$/,
+        use: [
+          MiniCssExtractPlugin.loader,
+          CSSLoader,
+          'sass-loader',
+        ],
       },
     ],
   },

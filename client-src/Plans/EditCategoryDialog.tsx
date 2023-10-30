@@ -7,7 +7,7 @@ import { runInAction } from 'mobx';
 import { FormField, FormRadio, FormModal } from '@mortvola/forms';
 import Http from '@mortvola/http';
 import { CategoryInterface, FundingPlanInterface } from '../State/State';
-import styles from './EditCategoryDialog.module.css';
+import styles from './EditCategoryDialog.module.scss';
 import FundingPlanCategory from '../State/FundingPlanCategory';
 import Amount from '../Amount';
 import AmountInput from '../AmountInput';

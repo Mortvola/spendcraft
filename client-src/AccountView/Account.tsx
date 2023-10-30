@@ -4,7 +4,7 @@ import IconButton from '../IconButton';
 import { AccountInterface } from '../State/State';
 import { getSubTypeName, getTypeName } from '../State/AccountTypes';
 import Amount from '../Amount';
-import styles from './Account.module.css';
+import styles from './Account.module.scss';
 import { useDeleteConfirmation } from '../DeleteConfirmation';
 
 type PropsType = {

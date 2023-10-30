@@ -4,7 +4,7 @@ import NetWorth from './NetWorth';
 import Payee from './Payee';
 import Category from './Category';
 import Main from '../Main';
-import styles from './Reports.module.css';
+import styles from './Reports.module.scss';
 import useMediaQuery from '../MediaQuery'
 import ReportList from './ReportList';
 import IncomeVsExpenses from './IncomeVsExpenses';

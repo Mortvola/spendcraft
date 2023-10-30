@@ -1,6 +1,6 @@
 import { DateTime } from 'luxon';
 import React from 'react';
-import styles from './MonthSelector.module.css';
+import styles from './MonthSelector.module.scss';
 
 type MonthPropsType = {
   month: string,

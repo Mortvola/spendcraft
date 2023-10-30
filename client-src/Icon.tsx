@@ -1,5 +1,5 @@
 import React, { CSSProperties } from 'react';
-import styles from './Icon.module.css'
+import styles from './Icon.module.scss'
 
 type PropsType = {
   icon: string,

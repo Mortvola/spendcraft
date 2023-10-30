@@ -2,7 +2,7 @@ import React from 'react';
 import useMediaQuery from '../MediaQuery';
 import { AccountInterface, CategoryInterface } from '../State/State';
 import TitleStub from './TitleStub';
-import styles from './Transactions.module.css';
+import styles from './Transactions.module.scss';
 
 type PropsType = {
   category?: CategoryInterface | null,

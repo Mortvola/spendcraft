@@ -21,7 +21,7 @@ import {
   CategoriesValueType,
   FundingType, ValueType,
 } from './Types'
-import styles from './Funding.module.css'
+import styles from './Funding.module.scss'
 
 type PropsType = {
   transaction?: Transaction;

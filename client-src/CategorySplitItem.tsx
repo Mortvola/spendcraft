@@ -3,7 +3,7 @@ import CategoryInput from './CategoryInput/CategoryInput';
 import IconButton from './IconButton';
 import AmountInput from './AmountInput';
 import { CategoryInterface, TransactionCategoryInterface } from './State/State';
-import styles from './CategorySplitItem.module.css';
+import styles from './CategorySplitItem.module.scss';
 import useMediaQuery from './MediaQuery';
 import { useStores } from './State/mobxStore';
 

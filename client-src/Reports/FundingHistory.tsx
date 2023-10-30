@@ -3,7 +3,7 @@ import { DateTime, MonthNumbers } from 'luxon';
 import React, { useEffect, useState } from 'react';
 import { GroupType } from '../../common/ResponseTypes';
 import Amount from '../Amount';
-import styles from './FundingHistory.module.css';
+import styles from './FundingHistory.module.scss';
 
 const FundingHistory: React.FC = () => {
   type FundingHistoryItem = { year: number, month: number, amount: number};

@@ -6,7 +6,7 @@ import FundingItem from './FundingItem';
 import { isGroup } from '../State/Group';
 import { isCategory } from '../State/Category';
 import { CategoryInterface } from '../State/State';
-import styles from './Funding.module.css';
+import styles from './Funding.module.scss';
 import { FundingInfoType, ValueType } from './Types';
 import { FundingInfoProps, ProposedFundingCateggoryProps } from '../../common/ResponseTypes';
 import { useStores } from '../State/mobxStore';

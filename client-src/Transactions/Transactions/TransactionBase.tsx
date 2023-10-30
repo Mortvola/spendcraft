@@ -4,7 +4,7 @@ import { useStores } from '../../State/mobxStore';
 import { TransactionInterface } from '../../State/State';
 import useMediaQuery from '../../MediaQuery';
 import { TransactionType } from '../../../common/ResponseTypes';
-import styles from '../Transactions.module.css'
+import styles from '../Transactions.module.scss'
 import Date from '../../Date';
 import Icon from '../../Icon';
 

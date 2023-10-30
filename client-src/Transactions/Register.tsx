@@ -8,7 +8,7 @@ import PendingRegister from './PendingRegister';
 import RegisterTitles from './RegisterTitles';
 import RegisterTransactions from './RegisterTransactions';
 import RebalancesTitles from './RebalancesTitles';
-import styles from './Transactions.module.css';
+import styles from './Transactions.module.scss';
 import TransactionBase from './Transactions/TransactionBase';
 import AccountTransaction from './Transactions/AccountTransaction';
 import CategoryTransaction from './Transactions/CategoryTransaction';

@@ -1,6 +1,6 @@
 import React from 'react';
 import TitleStub from './TitleStub';
-import styles from './Transactions.module.css';
+import styles from './Transactions.module.scss';
 
 const RebalancesTitles: React.FC = () => (
   <div className={`${styles.registerTitle} ${styles.rebalances} ${styles.transaction}`}>

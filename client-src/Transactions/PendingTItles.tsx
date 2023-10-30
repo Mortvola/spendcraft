@@ -1,7 +1,7 @@
 import React from 'react';
 import useMediaQuery from '../MediaQuery';
 import TitleStub from './TitleStub';
-import styles from './Transactions.module.css';
+import styles from './Transactions.module.scss';
 
 type PropsType = {
   categoryView?: boolean,

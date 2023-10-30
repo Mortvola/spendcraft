@@ -8,7 +8,7 @@ import Amount from '../Amount';
 import { useStores } from '../State/mobxStore';
 import useSortableTable from './SortableTable';
 import ReportControls from './ReportControls';
-import styles from './Payee.module.css';
+import styles from './Payee.module.scss';
 
 type PayeeReport = {
   [key: string]: string | number,

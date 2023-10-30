@@ -9,7 +9,7 @@ import { isGroup } from '../../State/Group';
 import Group from './Group';
 import SystemCategory from './SystemCategory';
 import Category from './Category';
-import styles from './CategoryView.module.css'
+import styles from './CategoryView.module.scss'
 import useMediaQuery from '../../MediaQuery';
 
 type PropsType = {

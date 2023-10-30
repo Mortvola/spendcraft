@@ -7,7 +7,7 @@ import Account from './Account';
 import { AccountInterface, InstitutionInterface } from '../State/State';
 import { useOfflineAccountDialog } from './OfflineAccountDialog';
 import { useDeleteConfirmation } from '../DeleteConfirmation';
-import styles from './Institution.module.css';
+import styles from './Institution.module.scss';
 import { useRelinkDialog } from './RelinkDialog';
 
 type PropsType = {
