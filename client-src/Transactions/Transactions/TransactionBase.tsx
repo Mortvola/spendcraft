@@ -34,13 +34,11 @@ const TransactionBase: React.FC<PropsType> = observer(({
     }
   };
 
-  let transactionClassName = `${className ?? ''} ${styles.transaction}`;
-
-  transactionClassName = addMediaClass(transactionClassName);
+  const transactionClassName = `${className ?? ''} ${styles.transaction}`;
 
   return (
-    <div className={styles.transactionWrapper}>
-      <div className={transactionClassName} onClick={handleClick}>
+    <div className={addMediaClass(styles.transactionWrapper)}>
+      <div className={addMediaClass(transactionClassName)} onClick={handleClick}>
         {
           transaction.duplicateOfTransactionId
             ? <Icon icon="arrow-right-arrow-left" iconClass="fa-solid" />

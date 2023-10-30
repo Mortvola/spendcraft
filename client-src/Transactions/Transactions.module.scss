@@ -19,8 +19,14 @@
   padding-left: 0.5rem;
   cursor: pointer;
 
+  grid-template-areas:
+    ". date name . amount running-balance . . .";
+
   &.unassigned {
     grid-template-columns: $icon-width $date-width minmax(0,1fr) $amount-width $balance-width minmax(0, 0.5fr) minmax(0, 0.5fr) max-content;
+
+    grid-template-areas:
+      ". date name amount running-balance . . .";
   }
   
   &.acct {
@@ -115,8 +121,11 @@
   display: grid;
   grid-template-rows: max-content minmax(0, 0%);
   grid-template-columns: minmax(0, 1fr);
-  grid-row-gap: 1rem;
   transition: grid-template-rows 0.5s ease-in;
+
+  &:global(.mobile) {
+    grid-row-gap: 1rem;
+  }
 }
 
 .register-title {
