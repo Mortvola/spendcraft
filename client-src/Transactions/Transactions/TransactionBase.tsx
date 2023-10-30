@@ -46,7 +46,7 @@ const TransactionBase: React.FC<PropsType> = observer(({
             ? <Icon icon="arrow-right-arrow-left" iconClass="fa-solid" />
             : <div />
         }
-        <Date className="transaction-field" date={transaction.date} />
+        <Date className={styles.transactionField} date={transaction.date} />
         { children }
       </div>
     </div>

@@ -25,11 +25,11 @@ const PendingTransactions: React.FC<PropsType> = observer(({
             pending.map((transaction) => (
               <div key={transaction.id} className={`mobile ${styles.pending} ${styles.transaction}`}>
                 <div />
-                <Date className="tranaction-field" date={transaction.date} />
-                <div className="transaction-field">{transaction.name}</div>
-                <Amount className="transaction-field currency" amount={transaction.amount} />
+                <Date className={styles.transactionField} date={transaction.date} />
+                <div className={styles.transactionField}>{transaction.name}</div>
+                <Amount className={`${styles.transactionField} currency`} amount={transaction.amount} />
                 <div
-                  className="transaction-field"
+                  className={styles.transactionField}
                   style={{ gridArea: 'account', fontSize: 'x-small' }}
                 >
                   {`${transaction.instituteName}:${transaction.accountName}`}
@@ -47,9 +47,9 @@ const PendingTransactions: React.FC<PropsType> = observer(({
           pending.map((transaction) => (
             <div key={transaction.id} className={`mobile ${styles.transaction}`}>
               <div />
-              <Date className="tranaction-field" date={transaction.date} />
-              <div className="transaction-field">{transaction.name}</div>
-              <Amount className="transaction-field currency" amount={transaction.amount} />
+              <Date className={styles.transactionField} date={transaction.date} />
+              <div className={styles.transactionField}>{transaction.name}</div>
+              <Amount className={`${styles.transactionField} currency`} amount={transaction.amount} />
             </div>
           ))
         }
@@ -64,11 +64,11 @@ const PendingTransactions: React.FC<PropsType> = observer(({
           pending.map((transaction) => (
             <div key={transaction.id} className={`${styles.pending} ${styles.transaction}`}>
               <div />
-              <Date className="tranaction-field" date={transaction.date} />
-              <div className="transaction-field">{transaction.name}</div>
-              <Amount className="transaction-field currency" amount={transaction.amount} />
-              <div className="transaction-field">{transaction.instituteName}</div>
-              <div className="transaction-field">{transaction.accountName}</div>
+              <Date className={styles.transactionField} date={transaction.date} />
+              <div className={styles.transactionField}>{transaction.name}</div>
+              <Amount className={`${styles.transactionField} currency`} amount={transaction.amount} />
+              <div className={styles.transactionField}>{transaction.instituteName}</div>
+              <div className={styles.transactionField}>{transaction.accountName}</div>
             </div>
           ))
         }
@@ -82,11 +82,11 @@ const PendingTransactions: React.FC<PropsType> = observer(({
         pending.map((transaction) => (
           <div key={transaction.id} className={`${styles.acct} ${styles.pending} ${styles.transaction}`}>
             <div />
-            <Date className="tranaction-field" date={transaction.date} />
-            <div className="transaction-field">{transaction.name}</div>
-            <Amount className="transaction-field currency" amount={transaction.amount} />
+            <Date className={styles.transactionField} date={transaction.date} />
+            <div className={styles.transactionField}>{transaction.name}</div>
+            <Amount className={`${styles.transactionField} currency`} amount={transaction.amount} />
             <div
-              className="transaction-field"
+              className={styles.transactionField}
               style={{ textTransform: 'capitalize' }}
             >
               {transaction.accountOwner?.toLocaleLowerCase()}

@@ -3,6 +3,7 @@ import { observer } from 'mobx-react-lite';
 import Amount from '../../Amount';
 import { TransactionInterface } from '../../State/State';
 import useMediaQuery from '../../MediaQuery';
+import styles from '../Transactions.module.scss';
 
 type PropsType = {
   transaction: TransactionInterface,
@@ -18,10 +19,10 @@ const Transaction: React.FC<PropsType> = observer(({
   if (isMobile) {
     return (
       <>
-        <div className="transaction-field">{transaction.name}</div>
-        <Amount className="transaction-field currency" amount={amount} />
+        <div className={styles.transactionField}>{transaction.name}</div>
+        <Amount className={`${styles.transactionField} currency`} amount={amount} />
         <div
-          className="transaction-field"
+          className={styles.transactionField}
           style={{ gridArea: 'account', fontSize: 'x-small' }}
         >
           {`${transaction.instituteName}:${transaction.accountName}`}
@@ -32,10 +33,10 @@ const Transaction: React.FC<PropsType> = observer(({
 
   return (
     <>
-      <div className="transaction-field">{transaction.name}</div>
-      <Amount className="transaction-field currency" amount={amount} />
-      <div className="transaction-field">{transaction.instituteName}</div>
-      <div className="transaction-field">{transaction.accountName}</div>
+      <div className={styles.transactionField}>{transaction.name}</div>
+      <Amount className={`${styles.transactionField} currency`} amount={amount} />
+      <div className={styles.transactionField}>{transaction.instituteName}</div>
+      <div className={styles.transactionField}>{transaction.accountName}</div>
     </>
   );
 });

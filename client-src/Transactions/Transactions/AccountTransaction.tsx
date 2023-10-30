@@ -4,6 +4,7 @@ import Amount from '../../Amount';
 import { AccountInterface, TransactionInterface } from '../../State/State';
 import useMediaQuery from '../../MediaQuery';
 import { TransactionType } from '../../../common/ResponseTypes';
+import styles from '../Transactions.module.scss';
 
 type PropsType = {
   transaction: TransactionInterface,
@@ -23,8 +24,8 @@ const AccountTransaction: React.FC<PropsType> = observer(({
   if (isMobile) {
     return (
       <>
-        <div className="transaction-field">{transaction.name}</div>
-        <Amount className="transaction-field currency" amount={amount} />
+        <div className={styles.transactionField}>{transaction.name}</div>
+        <Amount className={`${styles.transactionField} currency`} amount={amount} />
       </>
     );
   }
@@ -39,13 +40,13 @@ const AccountTransaction: React.FC<PropsType> = observer(({
 
   const loanFields = () => (
     <>
-      <Amount className="transaction-field currency" amount={transaction.amount} />
+      <Amount className={`${styles.transactionField} currency`} amount={transaction.amount} />
       {
         transaction.type !== TransactionType.STARTING_BALANCE
           ? (
             <>
-              <Amount className="transaction-field currency" amount={transaction.amount - amount} />
-              <Amount className="transaction-field currency" amount={amount} />
+              <Amount className={`${styles.transactionField} currency`} amount={transaction.amount - amount} />
+              <Amount className={`${styles.transactionField} currency`} amount={amount} />
             </>
           )
           : (
@@ -60,16 +61,16 @@ const AccountTransaction: React.FC<PropsType> = observer(({
 
   return (
     <>
-      <div className="transaction-field">{transaction.name}</div>
+      <div className={styles.transactionField}>{transaction.name}</div>
       {
         // eslint-disable-next-line no-nested-ternary
         account.type === 'loan'
           ? (
             loanFields()
           )
-          : <Amount className="transaction-field currency" amount={amount} />
+          : <Amount className={`${styles.transactionField} currency`} amount={amount} />
       }
-      <Amount className="transaction-field currency" amount={runningBalance} />
+      <Amount className={`${styles.transactionField} currency`} amount={runningBalance} />
       <input
         type="checkbox"
         checked={transaction.reconciled}
@@ -77,7 +78,7 @@ const AccountTransaction: React.FC<PropsType> = observer(({
         onClick={handleReconcileClick}
       />
       <div
-        className="transaction-field"
+        className={styles.transactionField}
         style={{ textTransform: 'capitalize' }}
       >
         {transaction.accountOwner?.toLocaleLowerCase()}

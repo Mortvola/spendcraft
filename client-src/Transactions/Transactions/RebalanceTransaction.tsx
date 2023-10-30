@@ -1,6 +1,7 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
 import Amount from '../../Amount';
+import styles from '../Transactions.module.scss';
 
 type PropsType = {
   amount: number,
@@ -9,7 +10,7 @@ type PropsType = {
 const RebalanceTransaction: React.FC<PropsType> = observer(({
   amount,
 }) => (
-  <Amount className="transaction-field currency" amount={amount} />
+  <Amount className={`${styles.transactionField} currency`} amount={amount} />
 ));
 
 export default RebalanceTransaction;

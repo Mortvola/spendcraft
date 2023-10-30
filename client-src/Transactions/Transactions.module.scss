@@ -1,18 +1,16 @@
-:root {
-  --icon-width: 16px;
-  --date-width: 100px;
-  --amount-width: 7rem;
-  --balance-width: 8rem;
-}
-
 .transactions {
   height: 100%;
   overflow-y: scroll;
 }
 
 .transaction {
+  $icon-width: 16px;
+  $date-width: 100px;
+  $amount-width: 7rem;
+  $balance-width: 8rem;
+
   display: grid;
-  grid-template-columns: var(--icon-width) var(--date-width) minmax(0,1fr) var(--amount-width) var(--amount-width) var(--balance-width) minmax(0, 1fr) minmax(0, 1fr) max-content;
+  grid-template-columns: $icon-width $date-width minmax(0,1fr) $amount-width $amount-width $balance-width minmax(0, 1fr) minmax(0, 1fr) max-content;
   grid-template-rows: max-content;
   align-items: center;
   transition: background-color 0.25s ease-out;
@@ -22,40 +20,50 @@
   cursor: pointer;
 
   &.unassigned {
-    grid-template-columns: var(--icon-width) var(--date-width) minmax(0,1fr) var(--amount-width) var(--balance-width) minmax(0, 0.5fr) minmax(0, 0.5fr) max-content;
+    grid-template-columns: $icon-width $date-width minmax(0,1fr) $amount-width $balance-width minmax(0, 0.5fr) minmax(0, 0.5fr) max-content;
   }
   
   &.acct {
-    grid-template-columns: var(--icon-width) var(--date-width) minmax(0,1fr) var(--amount-width) var(--balance-width) max-content minmax(0, 1fr);
+    grid-template-columns: $icon-width $date-width minmax(0,1fr) $amount-width $balance-width max-content minmax(0, 1fr);
   }
   
   &.loan {
-    grid-template-columns: var(--icon-width) var(--date-width) minmax(0,1fr) repeat(3, var(--amount-width)) var(--balance-width) max-content minmax(0, 2fr) max-content;
+    grid-template-columns: $icon-width $date-width minmax(0,1fr) repeat(3, $amount-width) $balance-width max-content minmax(0, 2fr) max-content;
   }
   
   &.pending {
-    grid-template-columns: var(--icon-width) var(--date-width) minmax(0, 1.8fr) var(--amount-width) minmax(0,0.8fr) minmax(0, 0.8fr);
+    grid-template-columns: $icon-width $date-width minmax(0, 1.8fr) $amount-width minmax(0,0.8fr) minmax(0, 0.8fr);
   }
   
   &.acct.pending {
-    grid-template-columns: var(--icon-width) var(--date-width) minmax(0, 1fr) var(--amount-width) minmax(0, 1fr) max-content;
+    grid-template-columns: $icon-width $date-width minmax(0, 1fr) $amount-width minmax(0, 1fr) max-content;
   }
   
   &.rebalances {
-    grid-template-columns: var(--icon-width) var(--date-width) var(--amount-width) minmax(0, 1fr) max-content;
+    grid-template-columns: $icon-width $date-width $amount-width minmax(0, 1fr) max-content;
   }
 
   &:global(.mobile) {
-    grid-template-columns: var(--icon-width) var(--date-width) minmax(0, 1fr) var(--amount-width);
-    grid-template-rows: max-content max-content;
-    grid-template-areas: ". . . ." ". account account account";
+    $icon-width: 0;
+  
+    grid-template-columns: $icon-width $date-width minmax(0, 1fr) $amount-width;
+    grid-template-rows: max-content max-content max-content;
+    grid-template-areas: ". date name amount" ". account account account";
+
+    padding-left: 0.25rem;
   }
 
-  /* For left-padding of each column in transaction */
+  /* For left-padding of each element in transaction */
   >* {
     padding-left: 5px;
     min-width: 1.25rem;
   }
+}
+
+.transaction-field {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
 }
 
 .transaction-wrapper {
