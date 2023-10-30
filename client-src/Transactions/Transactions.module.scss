@@ -48,7 +48,10 @@
   
     grid-template-columns: $icon-width $date-width minmax(0, 1fr) $amount-width;
     grid-template-rows: max-content max-content max-content;
-    grid-template-areas: ". date name amount" ". account account account";
+    grid-template-areas:
+      ". name name amount"
+      ". date account running-balance"
+      ". owner owner owner";
 
     padding-left: 0.25rem;
   }
@@ -66,10 +69,51 @@
   overflow: hidden;
 }
 
+.transaction-name {
+  grid-area: name;
+}
+
+.transaction-amount {
+  grid-area: amount;
+}
+
+.transaction-date {
+  grid-area: date;
+
+  &:global(.mobile) {
+    font-size: x-small;
+  }
+}
+
+.transaction-account {
+  grid-area: account;
+
+  &:global(.mobile) {
+    font-size: x-small;
+  }
+}
+
+.transaction-owner {
+  grid-area: owner;
+
+  &:global(.mobile) {
+    font-size: x-small;
+  }
+}
+
+.transaction-running-balance {
+  grid-area: running-balance;
+
+  &:global(.mobile) {
+    font-size: x-small;
+  }
+}
+
 .transaction-wrapper {
   display: grid;
   grid-template-rows: max-content minmax(0, 0%);
   grid-template-columns: minmax(0, 1fr);
+  grid-row-gap: 1rem;
   transition: grid-template-rows 0.5s ease-in;
 }
 

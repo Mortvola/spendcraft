@@ -24,14 +24,17 @@ const CategoryTransaction: React.FC<PropsType> = observer(({
   if (isMobile) {
     return (
       <>
-        <div className={styles.transactionField}>{transaction.name}</div>
-        <Amount className={`${styles.transactionField} currency`} amount={amount} />
-        <div
-          className={styles.transactionField}
-          style={{ gridArea: 'account', fontSize: 'x-small' }}
-        >
-          {`${transaction.instituteName}:${transaction.accountName}`}
+        <div className={`${styles.transactionField} ${styles.transactionName}`}>{transaction.name}</div>
+        <Amount className={`${styles.transactionField} ${styles.transactionAmount}`} amount={amount} />
+        <div className={`${styles.transactionField} ${styles.transactionAccount} mobile`}>
+          {
+            transaction.instituteName !== ''
+              ? `${transaction.instituteName}:${transaction.accountName}`
+              : null
+          }
         </div>
+        <Amount className={`${styles.transactionField} ${styles.transactionRunningBalance} mobile`} amount={runningBalance} />
+        <div className={`${styles.transactionField} ${styles.transactionOwner} mobile`}>{transaction.accountOwner}</div>
       </>
     );
   }

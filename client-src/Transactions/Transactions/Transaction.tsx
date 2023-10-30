@@ -25,7 +25,11 @@ const Transaction: React.FC<PropsType> = observer(({
           className={styles.transactionField}
           style={{ gridArea: 'account', fontSize: 'x-small' }}
         >
-          {`${transaction.instituteName}:${transaction.accountName}`}
+          {
+            transaction.instituteName !== ''
+              ? `${transaction.instituteName}:${transaction.accountName}`
+              : null
+          }
         </div>
       </>
     );
