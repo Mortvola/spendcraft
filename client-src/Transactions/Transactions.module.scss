@@ -20,42 +20,42 @@
   z-index: 2;
   padding-left: 0.5rem;
   cursor: pointer;
-}
 
-.unassigned.transaction {
-  grid-template-columns: var(--icon-width) var(--date-width) minmax(0,1fr) var(--amount-width) var(--balance-width) minmax(0, 0.5fr) minmax(0, 0.5fr) max-content;
-}
+  &.unassigned {
+    grid-template-columns: var(--icon-width) var(--date-width) minmax(0,1fr) var(--amount-width) var(--balance-width) minmax(0, 0.5fr) minmax(0, 0.5fr) max-content;
+  }
+  
+  &.acct {
+    grid-template-columns: var(--icon-width) var(--date-width) minmax(0,1fr) var(--amount-width) var(--balance-width) max-content minmax(0, 1fr);
+  }
+  
+  &.loan {
+    grid-template-columns: var(--icon-width) var(--date-width) minmax(0,1fr) repeat(3, var(--amount-width)) var(--balance-width) max-content minmax(0, 2fr) max-content;
+  }
+  
+  &.pending {
+    grid-template-columns: var(--icon-width) var(--date-width) minmax(0, 1.8fr) var(--amount-width) minmax(0,0.8fr) minmax(0, 0.8fr);
+  }
+  
+  &.acct.pending {
+    grid-template-columns: var(--icon-width) var(--date-width) minmax(0, 1fr) var(--amount-width) minmax(0, 1fr) max-content;
+  }
+  
+  &.rebalances {
+    grid-template-columns: var(--icon-width) var(--date-width) var(--amount-width) minmax(0, 1fr) max-content;
+  }
 
-.acct.transaction {
-  grid-template-columns: var(--icon-width) var(--date-width) minmax(0,1fr) var(--amount-width) var(--balance-width) max-content minmax(0, 1fr);
-}
+  &:global(.mobile) {
+    grid-template-columns: var(--icon-width) var(--date-width) minmax(0, 1fr) var(--amount-width);
+    grid-template-rows: max-content max-content;
+    grid-template-areas: ". . . ." ". account account account";
+  }
 
-.loan.transaction {
-  grid-template-columns: var(--icon-width) var(--date-width) minmax(0,1fr) repeat(3, var(--amount-width)) var(--balance-width) max-content minmax(0, 2fr) max-content;
-}
-
-.pending.transaction {
-  grid-template-columns: var(--icon-width) var(--date-width) minmax(0, 1.8fr) var(--amount-width) minmax(0,0.8fr) minmax(0, 0.8fr);
-}
-
-.acct.pending.transaction {
-  grid-template-columns: var(--icon-width) var(--date-width) minmax(0, 1fr) var(--amount-width) minmax(0, 1fr) max-content;
-}
-
-.rebalances.transaction {
-  grid-template-columns: var(--icon-width) var(--date-width) var(--amount-width) minmax(0, 1fr) max-content;
-}
-
-/* For left-padding of each column in transaction */
-.transaction>* {
-  padding-left: 5px;
-  min-width: 1.25rem;
-}
-
-.transaction:global(.mobile) {
-  grid-template-columns: var(--icon-width) var(--date-width) minmax(0, 1fr) var(--amount-width);
-  grid-template-rows: max-content max-content;
-  grid-template-areas: ". . . ." ". account account account";
+  /* For left-padding of each column in transaction */
+  >* {
+    padding-left: 5px;
+    min-width: 1.25rem;
+  }
 }
 
 .transaction-wrapper {
@@ -68,15 +68,15 @@
 .register-title {
   color: white;
   background-color: gray;
-}
 
-.register-title div {
-  height: 100%;
-}
+  div {
+    height: 100%;
+  }  
 
-.register-title>:not(:first-child, :last-child) {
-  border-left: solid 1px black;
-  padding-left: 4px;
+  >:not(:first-child, :last-child) {
+    border-left: solid 1px black;
+    padding-left: 4px;
+  }  
 }
 
 .title-stub {

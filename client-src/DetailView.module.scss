@@ -3,9 +3,9 @@
   color: white;
   font-size:x-large;
   display: flex;
-}
 
-.main-tray-title:global(.mobile) {
-  font-size: 2rem;
-  font-weight: bold;
+  &:global(.mobile) {
+    font-size: 2rem;
+    font-weight: bold;
+  }
 }

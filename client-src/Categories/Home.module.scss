@@ -9,11 +9,11 @@
   padding-top: 0.25rem;
   padding-left: 0.25rem;
   background-color: #fff;
-}
 
-.categories:global(.mobile) {
-  color: #fff;
-  background-color: #000;
+  &:global(.mobile) {
+    color: #fff;
+    background-color: #000;
+  }  
 }
 
 .theme {
@@ -25,11 +25,11 @@
   font-weight: bold;
   transition: font-size 0.3s;
   transition: font-weight 0.3s;
-}
 
-.title:global(.open) {
-  font-size: 1.25rem;
-  font-weight: normal;
+  &:global(.open) {
+    font-size: 1.25rem;
+    font-weight: normal;
+  }  
 }
 
 .title-wrapper {
@@ -41,10 +41,10 @@
   width: 0;
   overflow: hidden;
   transition: width 0.3s;
-}
 
-.back-button:global(.open) {
-  width: 1rem;
+  &:global(.open) {
+    width: 1rem;
+  }  
 }
 
 .wrapper {
@@ -66,8 +66,8 @@
   flex-direction: column;
   /* grid-template-columns: minmax(0,1fr);
   grid-template-rows: max-content minmax(0,1fr); */
-}
 
-.off-canvas:global(.open) {
-  transform: translate(0%);
+  &:global(.open) {
+    transform: translate(0%);
+  }  
 }

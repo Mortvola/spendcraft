@@ -1,16 +1,16 @@
 .side-bar {
   grid-area: sidebar;
   /* background-color: white; */
-}
 
-:global(.mobile).side-bar {
-  position: absolute;
-  z-index: 8;
-  height: 100%;
-  width: auto;
-  overflow: hidden;
-  padding: 1rem 1rem 1rem 0;
-  border: thin black solid;
-  transform: translate(0);
-  transition: transform 0.25s ease-out;
+  &:global(.mobile) {
+    position: absolute;
+    z-index: 8;
+    height: 100%;
+    width: auto;
+    overflow: hidden;
+    padding: 1rem 1rem 1rem 0;
+    border: thin black solid;
+    transform: translate(0);
+    transition: transform 0.25s ease-out;
+  }
 }

@@ -1,19 +1,19 @@
 .group-button {
   margin: .125rem .25rem;
- padding: .3rem .3rem;
- display: grid;
- align-items: center;
-}
+  padding: .3rem .3rem;
+  display: grid;
+  align-items: center;
 
-.group-button:hover {
- background-color: lightgray;
-}
+  &:hover {
+    background-color: lightgray;
 
-.group-button i {
- color: rgba(0, 0, 0, 0.4);
- font-size: smaller;
-}
-
-.group-button:hover i {
- color: black;
+    i {
+      color: black;
+    }
+  }
+ 
+  i {
+    color: rgba(0, 0, 0, 0.4);
+    font-size: smaller;
+  } 
 }
