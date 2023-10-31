@@ -634,6 +634,8 @@ class Account extends BaseModel {
         q.where('date', '>=', startDate)
           .andWhere('type', '!=', TransactionType.STARTING_BALANCE)
       })
+      .where('pending', false)
+      .where('deleted', false)
       .sum('amount')
       .first();
 
