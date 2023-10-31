@@ -122,7 +122,7 @@ const Register: React.FC<PropsType> = observer(({
       <MobileView>
         {
           category?.type === 'UNASSIGNED'
-            ? <TransactionTypeSelector state={state} onClick={handleTypeClick}/>
+            ? <TransactionTypeSelector state={state} onClick={handleTypeClick} />
             : null
         }
         {

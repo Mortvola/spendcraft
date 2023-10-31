@@ -31,6 +31,10 @@
   
   &.acct {
     grid-template-columns: $icon-width $date-width minmax(0,1fr) $amount-width $balance-width max-content minmax(0, 1fr);
+
+    &.pending {
+      grid-template-columns: $icon-width $date-width minmax(0, 1fr) $amount-width minmax(0, 1fr) max-content;
+    }  
   }
   
   &.loan {
@@ -39,10 +43,21 @@
   
   &.pending {
     grid-template-columns: $icon-width $date-width minmax(0, 1.8fr) $amount-width minmax(0,0.8fr) minmax(0, 0.8fr);
-  }
+
+    &:global(.mobile) {
+      $icon-width: 0;
+      $amount-width: 6rem;
+      $date-width: 3.5rem;
   
-  &.acct.pending {
-    grid-template-columns: $icon-width $date-width minmax(0, 1fr) $amount-width minmax(0, 1fr) max-content;
+      grid-template-columns: $icon-width $date-width minmax(0, 1fr) $amount-width;
+      grid-template-rows: max-content max-content max-content;
+      grid-template-areas:
+        ". name name amount"
+        ". date account account"
+        ". owner owner owner";
+  
+      padding-left: 0.25rem;  
+    }
   }
   
   &.rebalances {

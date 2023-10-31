@@ -15,7 +15,7 @@ const PendingTransactions: React.FC<PropsType> = observer(({
   pending = [],
   categoryView = false,
 }) => {
-  const { isMobile } = useMediaQuery();
+  const { isMobile, addMediaClass } = useMediaQuery();
 
   if (isMobile) {
     if (categoryView) {
@@ -23,20 +23,22 @@ const PendingTransactions: React.FC<PropsType> = observer(({
         <>
           {
             pending.map((transaction) => (
-              <div key={transaction.id} className={`mobile ${styles.pending} ${styles.transaction}`}>
-                <div />
-                <Date className={styles.transactionField} date={transaction.date} />
-                <div className={styles.transactionField}>{transaction.name}</div>
-                <Amount className={`${styles.transactionField} currency`} amount={transaction.amount} />
-                <div
-                  className={styles.transactionField}
-                  style={{ gridArea: 'account', fontSize: 'x-small' }}
-                >
-                  {
-                    transaction.instituteName !== ''
-                      ? `${transaction.instituteName}:${transaction.accountName}`
-                      : null
-                  }
+              <div key={transaction.id} className={addMediaClass(styles.transactionWrapper)}>
+                <div className={`mobile ${styles.pending} ${styles.transaction}`}>
+                  <div />
+                  <Date className={`${styles.transactionField} ${styles.transactionDate} mobile`} date={transaction.date} />
+                  <div className={`${styles.transactionField} ${styles.transactionName} mobile`}>{transaction.name}</div>
+                  <Amount className={`${styles.transactionField} ${styles.transactionAmount} mobile`} amount={transaction.amount} />
+                  <div
+                    className={`${styles.transactionField} ${styles.transactionAccount} mobile`}
+                  >
+                    {
+                      transaction.instituteName !== ''
+                        ? `${transaction.instituteName}:${transaction.accountName}`
+                        : null
+                    }
+                  </div>
+                  <div className={`${styles.transactionField} ${styles.transactionOwner} mobile`}>{transaction.accountOwner}</div>
                 </div>
               </div>
             ))

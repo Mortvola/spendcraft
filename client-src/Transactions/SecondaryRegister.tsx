@@ -18,9 +18,15 @@ const SecondaryRegister: React.FC<PropsType> = ({
 
   return (
     <div className={`${styles.pending} window ${isMobile ? 'mobile' : ''}`}>
-      <div className={styles.pendingRegisterTitle}>
-        {title}
-      </div>
+      {
+        isMobile
+          ? null
+          : (
+            <div className={styles.pendingRegisterTitle}>
+              {title}
+            </div>
+          )
+      }
       {
         isMobile
           ? null
