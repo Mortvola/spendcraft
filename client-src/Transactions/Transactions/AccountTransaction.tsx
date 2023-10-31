@@ -5,6 +5,7 @@ import { AccountInterface, TransactionInterface } from '../../State/State';
 import useMediaQuery from '../../MediaQuery';
 import { TransactionType } from '../../../common/ResponseTypes';
 import styles from '../Transactions.module.scss';
+import AccountOwner from '../AccountOwner';
 
 type PropsType = {
   transaction: TransactionInterface,
@@ -24,8 +25,10 @@ const AccountTransaction: React.FC<PropsType> = observer(({
   if (isMobile) {
     return (
       <>
-        <div className={styles.transactionField}>{transaction.name}</div>
-        <Amount className={`${styles.transactionField} currency`} amount={amount} />
+        <div className={`${styles.transactionField} ${styles.transactionName} mobile`}>{transaction.name}</div>
+        <Amount className={`${styles.transactionField} ${styles.transactionAmount} mobile`} amount={amount} />
+        <Amount className={`${styles.transactionField} ${styles.transactionRunningBalance} mobile`} amount={runningBalance} />
+        <AccountOwner owner={transaction.accountOwner} />
       </>
     );
   }
@@ -77,12 +80,7 @@ const AccountTransaction: React.FC<PropsType> = observer(({
         onChange={handleReconcileChange}
         onClick={handleReconcileClick}
       />
-      <div
-        className={styles.transactionField}
-        style={{ textTransform: 'capitalize' }}
-      >
-        {transaction.accountOwner?.toLocaleLowerCase()}
-      </div>
+      <AccountOwner owner={transaction.accountOwner} />
     </>
   );
 });

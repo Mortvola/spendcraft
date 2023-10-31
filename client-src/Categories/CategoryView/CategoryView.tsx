@@ -79,7 +79,7 @@ const CategoryView: React.FC<PropsType> = observer(({
           className={`${rebalancesClassName} ${isMobile ? 'mobile' : ''}`}
           onClick={handleRebalancesClick}
         >
-          Rebalances
+          Category Transfers
         </div>
       </div>
       <div className={styles.categories}>

@@ -34,7 +34,19 @@
 
     &.pending {
       grid-template-columns: $icon-width $date-width minmax(0, 1fr) $amount-width minmax(0, 1fr) max-content;
-    }  
+
+      &:global(.mobile) {
+        grid-template-areas:
+          ". name name amount"
+          ". date owner .";
+      }  
+    }
+
+    &:global(.mobile) {
+      grid-template-areas:
+        ". name name amount"
+        ". date owner running-balance";
+    }
   }
   
   &.loan {

@@ -7,6 +7,9 @@ import AccountView from './AccountView';
 import Main from '../Main';
 import AccountsToolbar from './AccountsToolbar';
 import styles from './Accounts.module.scss';
+import DesktopView from '../DesktopView';
+import MobileView from '../MobileView';
+import NavigationView from '../NavigationView';
 
 const Accounts: React.FC = observer(() => {
   const [open, setOpen] = useState<boolean>(false);
@@ -18,31 +21,63 @@ const Accounts: React.FC = observer(() => {
 
   const handleAccountSelected = () => {
     if (isMobile) {
-      setOpen(false);
+      setOpen(true);
     }
   }
 
+  const handleClose = () => {
+    setOpen(false);
+  }
+
   return (
-    <Main
-      open={open}
-      toolbar={<AccountsToolbar open={open} />}
-      sidebar={(
-        <div className={styles.accounts}>
-          <Tabs className="mb-3" mountOnEnter unmountOnExit>
-            <Tab eventKey="opened" title="Opened">
-              <AccountView onAccountSelected={handleAccountSelected} opened />
-            </Tab>
-            <Tab eventKey="closed" title="Closed">
-              <AccountView onAccountSelected={handleAccountSelected} opened={false} />
-            </Tab>
-          </Tabs>
-        </div>
-      )}
-      onToggleClick={handleToggleClick}
-      className={styles.theme}
-    >
-      <Outlet />
-    </Main>
+    <>
+      <DesktopView>
+        <Main
+          open={open}
+          toolbar={<AccountsToolbar open={open} />}
+          sidebar={(
+            <div className={styles.accounts}>
+              <Tabs className="mb-3" mountOnEnter unmountOnExit>
+                <Tab eventKey="opened" title="Opened">
+                  <AccountView onAccountSelected={handleAccountSelected} opened />
+                </Tab>
+                <Tab eventKey="closed" title="Closed">
+                  <AccountView onAccountSelected={handleAccountSelected} opened={false} />
+                </Tab>
+              </Tabs>
+            </div>
+          )}
+          onToggleClick={handleToggleClick}
+          className={styles.theme}
+        >
+          <Outlet />
+        </Main>
+
+      </DesktopView>
+      <MobileView>
+        <MobileView>
+          <NavigationView
+            title="Accounts"
+            open={open}
+            onClose={handleClose}
+            details={(
+              <Outlet />
+            )}
+          >
+            <div className={styles.accounts}>
+              <Tabs className="mb-3" mountOnEnter unmountOnExit>
+                <Tab eventKey="opened" title="Opened">
+                  <AccountView onAccountSelected={handleAccountSelected} opened />
+                </Tab>
+                <Tab eventKey="closed" title="Closed">
+                  <AccountView onAccountSelected={handleAccountSelected} opened={false} />
+                </Tab>
+              </Tabs>
+            </div>
+          </NavigationView>
+        </MobileView>
+      </MobileView>
+    </>
   );
 });
 

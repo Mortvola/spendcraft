@@ -7,6 +7,7 @@ import { TransactionType } from '../../../common/ResponseTypes';
 import styles from '../Transactions.module.scss';
 import DesktopView from '../../DesktopView';
 import MobileView from '../../MobileView';
+import AccountOwner from '../AccountOwner';
 
 type PropsType = {
   transaction: TransactionInterface,
@@ -60,7 +61,7 @@ const CategoryTransaction: React.FC<PropsType> = observer(({
           }
         </div>
         <Amount className={`${styles.transactionField} ${styles.transactionRunningBalance} mobile`} amount={runningBalance} />
-        <div className={`${styles.transactionField} ${styles.transactionOwner} mobile`}>{transaction.accountOwner}</div>
+        <AccountOwner owner={transaction.accountOwner} />
       </MobileView>
     </>
   );

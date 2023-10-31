@@ -20,10 +20,10 @@ const Register: React.FC<PropsType> = observer(({
 }) => {
   const store = useStores();
   const { uiState, categoryTree, rebalances } = store;
-  const [state, setState] = React.useState(false);
+  const [transactionType, setTransactionType] = React.useState(false);
 
-  const handleTypeClick = (newState: boolean) => {
-    setState(newState);
+  const handleTypeClick = (newType: boolean) => {
+    setTransactionType(newType);
   }
 
   React.useEffect(() => {
@@ -121,12 +121,12 @@ const Register: React.FC<PropsType> = observer(({
       </DesktopView>
       <MobileView>
         {
-          category?.type === 'UNASSIGNED'
-            ? <TransactionTypeSelector state={state} onClick={handleTypeClick} />
+          category?.type === 'UNASSIGNED' || account
+            ? <TransactionTypeSelector state={transactionType} onClick={handleTypeClick} />
             : null
         }
         {
-          state
+          transactionType
             ? (
               <PendingRegister categoryView={type === 'category'} pending={trxContainer.pending} />
             )

@@ -9,6 +9,7 @@ import styles from './Home.module.scss';
 import Main from '../Main';
 import DesktopView from '../DesktopView';
 import MobileView from '../MobileView';
+import NavigationView from '../NavigationView';
 
 const Home: React.FC = observer(() => {
   const { categoryTree } = useStores();
@@ -25,7 +26,7 @@ const Home: React.FC = observer(() => {
     }
   }
 
-  const handleTitleClick = () => {
+  const handleClose = () => {
     setOpen(false);
   }
 
@@ -48,21 +49,16 @@ const Home: React.FC = observer(() => {
           </Main>
         </DesktopView>
         <MobileView>
-          <div className={`${styles.categories} mobile`}>
-            <div className={styles.titleWrapper} onClick={handleTitleClick}>
-              <div className={`${styles.backButton} ${open ? 'open' : ''}`}>{'<'}</div>
-              <div className={`${styles.title} ${open ? 'open' : ''}`}>Categories</div>
-            </div>
-            <div className={styles.wrapper}>
-              <CategoryView onCategorySelected={handleCategorySelected} />
-              <div className={`${styles.offCanvas} ${open ? 'open' : ''}`}>
-                {/* <div className={styles.offCanvasTitle}>
-                  { stores.uiState.selectedCategory?.name }
-                </div> */}
-                <Outlet />
-              </div>
-            </div>
-          </div>
+          <NavigationView
+            title="Categories"
+            open={open}
+            onClose={handleClose}
+            details={(
+              <Outlet />
+            )}
+          >
+            <CategoryView onCategorySelected={handleCategorySelected} />
+          </NavigationView>
         </MobileView>
       </>
     );

@@ -5,6 +5,7 @@ import styles from './Transactions.module.scss'
 import Amount from '../Amount';
 import { PendingTransactionInterface } from '../State/State';
 import Date from '../Date';
+import AccountOwner from './AccountOwner';
 
 type PropsType = {
   pending?: PendingTransactionInterface[],
@@ -38,7 +39,7 @@ const PendingTransactions: React.FC<PropsType> = observer(({
                         : null
                     }
                   </div>
-                  <div className={`${styles.transactionField} ${styles.transactionOwner} mobile`}>{transaction.accountOwner}</div>
+                  <AccountOwner owner={transaction.accountOwner} />
                 </div>
               </div>
             ))
@@ -51,11 +52,14 @@ const PendingTransactions: React.FC<PropsType> = observer(({
       <>
         {
           pending.map((transaction) => (
-            <div key={transaction.id} className={`mobile ${styles.transaction}`}>
-              <div />
-              <Date className={styles.transactionField} date={transaction.date} />
-              <div className={styles.transactionField}>{transaction.name}</div>
-              <Amount className={`${styles.transactionField} currency`} amount={transaction.amount} />
+            <div key={transaction.id} className={addMediaClass(styles.transactionWrapper)}>
+              <div className={`mobile ${styles.transaction} ${styles.pending} ${styles.acct}`}>
+                <div />
+                <Date className={`${styles.transactionField} ${styles.transactionDate} mobile`} date={transaction.date} />
+                <div className={`${styles.transactionField} ${styles.transactionName} mobile`}>{transaction.name}</div>
+                <Amount className={`${styles.transactionField} ${styles.transactionAmount} mobile`} amount={transaction.amount} />
+                <AccountOwner owner={transaction.accountOwner} />
+              </div>
             </div>
           ))
         }
@@ -91,12 +95,7 @@ const PendingTransactions: React.FC<PropsType> = observer(({
             <Date className={styles.transactionField} date={transaction.date} />
             <div className={styles.transactionField}>{transaction.name}</div>
             <Amount className={`${styles.transactionField} currency`} amount={transaction.amount} />
-            <div
-              className={styles.transactionField}
-              style={{ textTransform: 'capitalize' }}
-            >
-              {transaction.accountOwner?.toLocaleLowerCase()}
-            </div>
+            <AccountOwner owner={transaction.accountOwner} />
           </div>
         ))
       }
