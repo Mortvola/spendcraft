@@ -19,33 +19,20 @@
   padding-left: 0.5rem;
   cursor: pointer;
 
-  grid-template-areas:
-    ". date name . amount running-balance . . .";
+  grid-template-areas: ". date name . amount running-balance institution account .";
 
   &.unassigned {
     grid-template-columns: $icon-width $date-width minmax(0,1fr) $amount-width $balance-width minmax(0, 0.5fr) minmax(0, 0.5fr) max-content;
-
-    grid-template-areas:
-      ". date name amount running-balance . . .";
+    grid-template-areas: ". date name amount running-balance institution account .";
   }
   
   &.acct {
     grid-template-columns: $icon-width $date-width minmax(0,1fr) $amount-width $balance-width max-content minmax(0, 1fr);
+    grid-template-areas: ". date name amount running-balance owner .";
 
     &.pending {
       grid-template-columns: $icon-width $date-width minmax(0, 1fr) $amount-width minmax(0, 1fr) max-content;
-
-      &:global(.mobile) {
-        grid-template-areas:
-          ". name name amount"
-          ". date owner .";
-      }  
-    }
-
-    &:global(.mobile) {
-      grid-template-areas:
-        ". name name amount"
-        ". date owner running-balance";
+      grid-template-areas: ". date name amount owner .";
     }
   }
   
@@ -55,93 +42,106 @@
   
   &.pending {
     grid-template-columns: $icon-width $date-width minmax(0, 1.8fr) $amount-width minmax(0,0.8fr) minmax(0, 0.8fr);
-
-    &:global(.mobile) {
-      $icon-width: 0;
-      $amount-width: 6rem;
-      $date-width: 3.5rem;
-  
-      grid-template-columns: $icon-width $date-width minmax(0, 1fr) $amount-width;
-      grid-template-rows: max-content max-content max-content;
-      grid-template-areas:
-        ". name name amount"
-        ". date account account"
-        ". owner owner owner";
-  
-      padding-left: 0.25rem;  
-    }
+    grid-template-areas: ". date name amount institution account .";
   }
   
   &.rebalances {
     grid-template-columns: $icon-width $date-width $amount-width minmax(0, 1fr) max-content;
   }
 
-  &:global(.mobile) {
-    $icon-width: 0;
-    $amount-width: 6rem;
-    $date-width: 3.5rem;
-
-    grid-template-columns: $icon-width $date-width minmax(0, 1fr) $amount-width;
-    grid-template-rows: max-content max-content max-content;
-    grid-template-areas:
-      ". name name amount"
-      ". date account running-balance"
-      ". owner owner owner";
-
-    padding-left: 0.25rem;
-  }
-
   /* For left-padding of each element in transaction */
   >* {
     padding-left: 5px;
     min-width: 1.25rem;
+
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
   }
+
+  .name {
+    grid-area: name;
+  }
+  
+  .amount {
+    grid-area: amount;
+  }
+  
+  .date {
+    grid-area: date;
+  }
+  
+  .account {
+    grid-area: account;
+  }
+  
+  .institution {
+    grid-area: institution;
+  }
+  
+  .owner {
+    grid-area: owner;
+    text-transform: capitalize;
+  }
+  
+  .running-balance {
+    grid-area: running-balance;
+  }  
 }
 
-.transaction-field {
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  overflow: hidden;
-}
+:global(.mobile) .transaction {
+  $icon-width: 0;
+  $amount-width: 6rem;
+  $date-width: 3.5rem;
 
-.transaction-name {
-  grid-area: name;
-}
+  grid-template-columns: $icon-width $date-width minmax(0, 1fr) $amount-width;
+  grid-template-rows: max-content max-content max-content;
+  grid-template-areas:
+    ". name name amount"
+    ". date account running-balance"
+    ". owner owner owner";
+  padding-left: 0.25rem;
 
-.transaction-amount {
-  grid-area: amount;
-}
+  &.acct {
+    grid-template-areas:
+      ". name name amount"
+      ". date owner running-balance";
 
-.transaction-date {
-  grid-area: date;
+    &.pending {
+      grid-template-areas:
+        ". name name amount"
+        ". date owner .";
+    }  
+  }
 
-  &:global(.mobile) {
+  &.pending {
+    grid-template-columns: $icon-width $date-width minmax(0, 1fr) $amount-width;
+    grid-template-rows: max-content max-content max-content;
+    grid-template-areas:
+      ". name name amount"
+      ". date account account"
+      ". owner owner owner";
+  }
+
+  .date {
     font-size: x-small;
   }
-}
-
-.transaction-account {
-  grid-area: account;
-
-  &:global(.mobile) {
+  
+  .account {
     font-size: x-small;
   }
-}
-
-.transaction-owner {
-  grid-area: owner;
-
-  &:global(.mobile) {
+  
+  .institution {
     font-size: x-small;
   }
-}
-
-.transaction-running-balance {
-  grid-area: running-balance;
-
-  &:global(.mobile) {
+  
+  .owner {
     font-size: x-small;
   }
+  
+  .running-balance {
+    font-size: x-small;
+  }  
 }
 
 .transaction-wrapper {

@@ -1,6 +1,5 @@
 import React from 'react';
 import styles from './Transactions.module.scss';
-import useMediaQuery from '../MediaQuery';
 
 type PropsType = {
   owner: string | null,
@@ -8,17 +7,10 @@ type PropsType = {
 
 const AccountOwner: React.FC<PropsType> = ({
   owner = '',
-}) => {
-  const { addMediaClass } = useMediaQuery();
-
-  return (
-    <div
-      className={addMediaClass(`${styles.transactionField} ${styles.transactionOwner}`)}
-      style={{ textTransform: 'capitalize' }}
-    >
-      {owner?.toLocaleLowerCase()}
-    </div>
-  )
-}
+}) => (
+  <div className={styles.owner}>
+    {owner?.toLocaleLowerCase()}
+  </div>
+)
 
 export default AccountOwner;

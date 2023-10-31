@@ -10,7 +10,7 @@ type PropsType = {
 const RebalanceTransaction: React.FC<PropsType> = observer(({
   amount,
 }) => (
-  <Amount className={`${styles.transactionField} currency`} amount={amount} />
+  <Amount className={`currency`} amount={amount} />
 ));
 
 export default RebalanceTransaction;

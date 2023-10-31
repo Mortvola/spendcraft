@@ -25,9 +25,9 @@ const AccountTransaction: React.FC<PropsType> = observer(({
   if (isMobile) {
     return (
       <>
-        <div className={`${styles.transactionField} ${styles.transactionName} mobile`}>{transaction.name}</div>
-        <Amount className={`${styles.transactionField} ${styles.transactionAmount} mobile`} amount={amount} />
-        <Amount className={`${styles.transactionField} ${styles.transactionRunningBalance} mobile`} amount={runningBalance} />
+        <div className={styles.name}>{transaction.name}</div>
+        <Amount className={styles.amount} amount={amount} />
+        <Amount className={styles.runningBalance} amount={runningBalance} />
         <AccountOwner owner={transaction.accountOwner} />
       </>
     );
@@ -43,13 +43,13 @@ const AccountTransaction: React.FC<PropsType> = observer(({
 
   const loanFields = () => (
     <>
-      <Amount className={`${styles.transactionField} currency`} amount={transaction.amount} />
+      <Amount className="currency" amount={transaction.amount} />
       {
         transaction.type !== TransactionType.STARTING_BALANCE
           ? (
             <>
-              <Amount className={`${styles.transactionField} currency`} amount={transaction.amount - amount} />
-              <Amount className={`${styles.transactionField} currency`} amount={amount} />
+              <Amount className="currency" amount={transaction.amount - amount} />
+              <Amount className="currency" amount={amount} />
             </>
           )
           : (
@@ -64,16 +64,16 @@ const AccountTransaction: React.FC<PropsType> = observer(({
 
   return (
     <>
-      <div className={styles.transactionField}>{transaction.name}</div>
+      <div className={styles.name}>{transaction.name}</div>
       {
         // eslint-disable-next-line no-nested-ternary
         account.type === 'loan'
           ? (
             loanFields()
           )
-          : <Amount className={`${styles.transactionField} currency`} amount={amount} />
+          : <Amount className="currency" amount={amount} />
       }
-      <Amount className={`${styles.transactionField} currency`} amount={runningBalance} />
+      <Amount className="currency" amount={runningBalance} />
       <input
         type="checkbox"
         checked={transaction.reconciled}

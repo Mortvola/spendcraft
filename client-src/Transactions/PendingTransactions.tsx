@@ -25,14 +25,12 @@ const PendingTransactions: React.FC<PropsType> = observer(({
           {
             pending.map((transaction) => (
               <div key={transaction.id} className={addMediaClass(styles.transactionWrapper)}>
-                <div className={`mobile ${styles.pending} ${styles.transaction}`}>
+                <div className={`${styles.pending} ${styles.transaction}`}>
                   <div />
-                  <Date className={`${styles.transactionField} ${styles.transactionDate} mobile`} date={transaction.date} />
-                  <div className={`${styles.transactionField} ${styles.transactionName} mobile`}>{transaction.name}</div>
-                  <Amount className={`${styles.transactionField} ${styles.transactionAmount} mobile`} amount={transaction.amount} />
-                  <div
-                    className={`${styles.transactionField} ${styles.transactionAccount} mobile`}
-                  >
+                  <Date className={styles.date} date={transaction.date} />
+                  <div className={styles.name}>{transaction.name}</div>
+                  <Amount className={styles.amount} amount={transaction.amount} />
+                  <div className={styles.account}>
                     {
                       transaction.instituteName !== ''
                         ? `${transaction.instituteName}:${transaction.accountName}`
@@ -53,11 +51,11 @@ const PendingTransactions: React.FC<PropsType> = observer(({
         {
           pending.map((transaction) => (
             <div key={transaction.id} className={addMediaClass(styles.transactionWrapper)}>
-              <div className={`mobile ${styles.transaction} ${styles.pending} ${styles.acct}`}>
+              <div className={`${styles.transaction} ${styles.pending} ${styles.acct}`}>
                 <div />
-                <Date className={`${styles.transactionField} ${styles.transactionDate} mobile`} date={transaction.date} />
-                <div className={`${styles.transactionField} ${styles.transactionName} mobile`}>{transaction.name}</div>
-                <Amount className={`${styles.transactionField} ${styles.transactionAmount} mobile`} amount={transaction.amount} />
+                <Date className={styles.date} date={transaction.date} />
+                <div className={styles.name}>{transaction.name}</div>
+                <Amount className={styles.amount} amount={transaction.amount} />
                 <AccountOwner owner={transaction.accountOwner} />
               </div>
             </div>
@@ -74,11 +72,11 @@ const PendingTransactions: React.FC<PropsType> = observer(({
           pending.map((transaction) => (
             <div key={transaction.id} className={`${styles.pending} ${styles.transaction}`}>
               <div />
-              <Date className={styles.transactionField} date={transaction.date} />
-              <div className={styles.transactionField}>{transaction.name}</div>
-              <Amount className={`${styles.transactionField} currency`} amount={transaction.amount} />
-              <div className={styles.transactionField}>{transaction.instituteName}</div>
-              <div className={styles.transactionField}>{transaction.accountName}</div>
+              <Date className={styles.date} date={transaction.date} />
+              <div className={styles.name}>{transaction.name}</div>
+              <Amount className={styles.amount} amount={transaction.amount} />
+              <div className={styles.institution}>{transaction.instituteName}</div>
+              <div className={styles.account}>{transaction.accountName}</div>
             </div>
           ))
         }
@@ -92,9 +90,9 @@ const PendingTransactions: React.FC<PropsType> = observer(({
         pending.map((transaction) => (
           <div key={transaction.id} className={`${styles.acct} ${styles.pending} ${styles.transaction}`}>
             <div />
-            <Date className={styles.transactionField} date={transaction.date} />
-            <div className={styles.transactionField}>{transaction.name}</div>
-            <Amount className={`${styles.transactionField} currency`} amount={transaction.amount} />
+            <Date className={styles.date} date={transaction.date} />
+            <div className={styles.name}>{transaction.name}</div>
+            <Amount className={styles.amount} amount={transaction.amount} />
             <AccountOwner owner={transaction.accountOwner} />
           </div>
         ))

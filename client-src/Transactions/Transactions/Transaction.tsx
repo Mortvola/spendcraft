@@ -19,10 +19,10 @@ const Transaction: React.FC<PropsType> = observer(({
   if (isMobile) {
     return (
       <>
-        <div className={styles.transactionField}>{transaction.name}</div>
-        <Amount className={`${styles.transactionField} currency`} amount={amount} />
+        <div className={styles.name}>{transaction.name}</div>
+        <Amount className={styles.amount} amount={amount} />
         <div
-          className={styles.transactionField}
+          className={styles.account}
           style={{ gridArea: 'account', fontSize: 'x-small' }}
         >
           {
@@ -37,10 +37,10 @@ const Transaction: React.FC<PropsType> = observer(({
 
   return (
     <>
-      <div className={styles.transactionField}>{transaction.name}</div>
-      <Amount className={`${styles.transactionField} currency`} amount={amount} />
-      <div className={styles.transactionField}>{transaction.instituteName}</div>
-      <div className={styles.transactionField}>{transaction.accountName}</div>
+      <div className={styles.name}>{transaction.name}</div>
+      <Amount className={styles.amount} amount={amount} />
+      <div className={styles.institution}>{transaction.instituteName}</div>
+      <div className={styles.account}>{transaction.accountName}</div>
     </>
   );
 });

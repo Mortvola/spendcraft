@@ -38,13 +38,13 @@ const TransactionBase: React.FC<PropsType> = observer(({
 
   return (
     <div className={addMediaClass(styles.transactionWrapper)}>
-      <div className={addMediaClass(transactionClassName)} onClick={handleClick}>
+      <div className={transactionClassName} onClick={handleClick}>
         {
           transaction.duplicateOfTransactionId
             ? <Icon icon="arrow-right-arrow-left" iconClass="fa-solid" />
             : <div />
         }
-        <Date className={addMediaClass(`${styles.transactionField} ${styles.transactionDate}`)} date={transaction.date} />
+        <Date className={styles.date} date={transaction.date} />
         { children }
       </div>
     </div>

@@ -2,7 +2,6 @@ import React from 'react';
 import { observer } from 'mobx-react-lite';
 import Amount from '../../Amount';
 import { CategoryInterface, TransactionInterface } from '../../State/State';
-import useMediaQuery from '../../MediaQuery';
 import { TransactionType } from '../../../common/ResponseTypes';
 import styles from '../Transactions.module.scss';
 import DesktopView from '../../DesktopView';
@@ -37,30 +36,30 @@ const CategoryTransaction: React.FC<PropsType> = observer(({
       return <div />;
     }
 
-    return <Amount className={`${styles.transactionField} currency`} amount={transaction.amount} />
+    return <Amount className={styles.amount} amount={transaction.amount} />
   }
 
   return (
     <>
       <DesktopView>
-        <div className={`${styles.transactionField} ${styles.transactionName}`}>{transaction.name}</div>
+        <div className={`${styles.name}`}>{transaction.name}</div>
         {transactionAmount()}
-        <Amount className={`${styles.transactionField} ${styles.transactionAmount}`} amount={amount} />
-        <Amount className={`${styles.transactionField} ${styles.transactionRunningBalance}`} amount={runningBalance} />
-        <div className={styles.transactionField}>{transaction.instituteName}</div>
-        <div className={styles.transactionField}>{transaction.accountName}</div>
+        <Amount className={`${styles.amount}`} amount={amount} />
+        <Amount className={`${styles.runningBalance}`} amount={runningBalance} />
+        <div className={styles.institution}>{transaction.instituteName}</div>
+        <div className={styles.account}>{transaction.accountName}</div>
       </DesktopView>
       <MobileView>
-        <div className={`${styles.transactionField} ${styles.transactionName}`}>{transaction.name}</div>
-        <Amount className={`${styles.transactionField} ${styles.transactionAmount}`} amount={amount} />
-        <div className={`${styles.transactionField} ${styles.transactionAccount} mobile`}>
+        <div className={`${styles.name}`}>{transaction.name}</div>
+        <Amount className={`${styles.amount}`} amount={amount} />
+        <div className={`${styles.account}`}>
           {
             transaction.instituteName !== ''
               ? `${transaction.instituteName}:${transaction.accountName}`
               : null
           }
         </div>
-        <Amount className={`${styles.transactionField} ${styles.transactionRunningBalance} mobile`} amount={runningBalance} />
+        <Amount className={`${styles.runningBalance}`} amount={runningBalance} />
         <AccountOwner owner={transaction.accountOwner} />
       </MobileView>
     </>
