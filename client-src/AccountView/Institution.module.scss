@@ -1,10 +1,12 @@
 html {
   --institution-background: #f7f7f7;
+  --icon-button-color: rgb(64, 64, 64);
 }
 
 @media (prefers-color-scheme: dark) {
   html {
     --institution-background: #333;
+    --icon-button-color: rgb(172, 172, 172);
   }
 }
 
@@ -37,3 +39,6 @@ html {
   border-top: thin black solid;
 }
 
+.iconButton {
+  color: var(--icon-button-color);
+}

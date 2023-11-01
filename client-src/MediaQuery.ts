@@ -7,8 +7,8 @@ type MediaQueryType = {
 }
 
 const useMediaQuery = (): MediaQueryType => {
-  const isDesktop = responsive.useMediaQuery({ query: '(min-width: 1224px)' })
-  const isMobile = responsive.useMediaQuery({ query: '(max-width: 1224px)' })
+  const isDesktop = responsive.useMediaQuery({ query: '(min-width: 800px)' })
+  const isMobile = responsive.useMediaQuery({ query: '(max-width: 800px)' })
 
   const addMediaClass = (className: string) => {
     if (isMobile) {

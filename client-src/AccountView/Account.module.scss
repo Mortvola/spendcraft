@@ -4,7 +4,7 @@ html {
 
 @media (prefers-color-scheme: dark) {
   html {
-    --account-background: #444;
+    --account-background: #242424;
   }
 }
 
@@ -13,29 +13,28 @@ html {
   grid-template-columns: max-content minmax(0, 1fr);
   align-items: center;
   background-color: var(--account-background);
-}
-
-.account:hover {
   cursor: pointer;
 }
 
-.account.selected {
-  border: 4px #ff7f29 solid;
-  padding: 0;
-}
+@media (min-width: 800px) {
+  .account.selected {
+    border: 4px #ff7f29 solid;
+    padding: 0;
+  }  
 
-.account:not(.selected):hover {
-  border: 4px #f5c4a4 solid;
-  padding: 0;
-}
+  .account:not(.selected):hover {
+    border: 4px #f5c4a4 solid;
+    padding: 0;
+  }
 
-.account.selected:not(:hover):last-child,
-.account:not(.selected):hover:last-child {
-  border-radius: 0 0 8px 8px;
-}
+  .account.selected:not(:hover):last-child,
+  .account:not(.selected):hover:last-child {
+    border-radius: 0 0 8px 8px;
+  }
 
-.account:not(.selected):hover:last-child {
-  border-radius: 0 0 8px 8px;
+  .account:not(.selected):hover:last-child {
+    border-radius: 0 0 8px 8px;
+  }
 }
 
 *>.account {
@@ -65,4 +64,8 @@ html {
 .buttons {
   display: flex;
   flex-direction: column;
+}
+
+.iconButton {
+  color: var(--icon-button-color);
 }

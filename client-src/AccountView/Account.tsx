@@ -2,7 +2,7 @@ import React from 'react';
 import { observer } from 'mobx-react-lite';
 import IconButton from '../IconButton';
 import { AccountInterface } from '../State/State';
-import { getSubTypeName, getTypeName } from '../State/AccountTypes';
+import { getSubTypeName } from '../State/AccountTypes';
 import Amount from '../Amount';
 import styles from './Account.module.scss';
 import { useDeleteConfirmation } from '../DeleteConfirmation';
@@ -57,8 +57,13 @@ const Account: React.FC<PropsType> = observer(({
   return (
     <div className={acctClassName} onClick={accountSelected}>
       <div className={styles.buttons}>
-        <IconButton icon="gear" onClick={() => showAccountDialog(account)} />
-        <IconButton icon={account.closed ? 'circle' : 'times-circle'} solid={false} onClick={handleCloseClick} />
+        <IconButton icon="gear" className={styles.iconButton} onClick={() => showAccountDialog(account)} />
+        <IconButton
+          icon={account.closed ? 'circle' : 'times-circle'}
+          className={styles.iconButton}
+          solid={false}
+          onClick={handleCloseClick}
+        />
       </div>
       <div className={styles.accountInfo}>
         <div className={styles.accountName}>{account.name}</div>

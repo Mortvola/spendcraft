@@ -1,3 +1,17 @@
+html {
+  --icon-color: black;
+}
+
+@media (prefers-color-scheme: dark) {
+  html {
+    --icon-color: white;
+  }
+}
+
+.icon {
+  color: var(--icon-color);
+}
+
 .rotate {
   animation: rotation 2s infinite linear;
 }
