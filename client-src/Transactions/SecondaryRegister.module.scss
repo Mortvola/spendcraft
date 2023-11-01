@@ -1,3 +1,5 @@
+@use "../breakpoints";
+
 .pending-register-title {
   padding-left: 0.75rem;
 }
@@ -12,7 +14,7 @@
   grid-area: window2;
 }
 
-@media (max-width: 800px) {
+@media (max-width: breakpoints.$side-by-side) {
   .pending {
     grid-template-rows: 1fr;
   }

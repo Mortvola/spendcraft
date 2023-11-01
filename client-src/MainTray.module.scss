@@ -1,3 +1,5 @@
+@use "./breakpoints";
+
 .main-tray {
   display: grid;
   grid-template-columns: minmax(0, 300px) minmax(0, 5fr);
@@ -12,7 +14,7 @@
   position: relative;
 }
 
-@media (max-width: 800px) {
+@media (max-width: breakpoints.$side-by-side) {
   .main-tray {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas: "title" "window1" "window2";

@@ -1,3 +1,5 @@
+@use "../breakpoints";
+
 html {
   --account-background: #fdfdfd;
 }
@@ -16,7 +18,7 @@ html {
   cursor: pointer;
 }
 
-@media (min-width: 800px) {
+@media (min-width: breakpoints.$side-by-side) {
   .account.selected {
     border: 4px #ff7f29 solid;
     padding: 0;

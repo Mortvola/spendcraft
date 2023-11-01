@@ -4,6 +4,7 @@ const path = require('path');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const RemovePlugin = require('remove-files-webpack-plugin');
 
 const CSSModuleLoader = {
   loader: 'css-loader',
@@ -89,6 +90,22 @@ const config = (name, env) => ({
     ],
   },
   plugins: [
+    new RemovePlugin({
+      before: {
+        test: [
+          {
+            folder: './public',
+            method: (file) => (name === 'app' ? /main\..*\.css/.test(file) : false),
+            recursive: false,
+          },
+          {
+            folder: './public',
+            method: (file) => (name === 'welcome' ? /welcome\..*\.css/.test(file) : false),
+            recursive: false,
+          },
+        ],
+      },
+    }),
     new MiniCssExtractPlugin({
       filename: name === 'app' ? 'main.[fullhash].css' : 'welcome.css',
     }),

@@ -2,7 +2,6 @@
   display: grid;
   grid-template-columns: minmax(0, 4fr) repeat(2, minmax(0, 2fr)) minmax(0, 1fr) max-content;
   grid-template-rows: max-content;
-  /* max-width: 800px; */
 }
 
 .report-item * {

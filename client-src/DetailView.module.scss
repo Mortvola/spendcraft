@@ -1,9 +1,11 @@
+@use "./breakpoints";
+
 .main-tray-title {
   grid-area: title;
   font-size:x-large;
 }
 
-@media (max-width: 800px) {
+@media (max-width: breakpoints.$side-by-side) {
   .main-tray-title {
     font-size: 2rem;
     font-weight: bold;
