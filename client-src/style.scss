@@ -2,6 +2,11 @@ html {
   --page-color: #fff;
   --text-color: black;
 
+  --category-hover-background: whitesmoke;
+  --category-hover-color: black;
+  --category-selection-background: lightblue;
+  --category-selection-color: black;
+
   --trx-small-text: 0.85rem;
 }
 
@@ -9,6 +14,11 @@ html {
   html {
     --page-color: #000;
     --text-color: white;
+
+    --category-hover-background: #222;
+    --category-hover-color: white;
+    --category-selection-background: #333;
+    --category-selection-color: white;
   }
 }
 
@@ -248,11 +258,13 @@ body {
 @media (min-width: 800px) {
   .cat-list-cat {
     &:not(.selected):hover {
-      background-color: whitesmoke;
+      background-color: var(--category-hover-background);
+      color: var(--category-hover-color);
     }
   
     &.selected {
-      background-color: lightblue;
+      background-color: var(--category-selection-background);
+      color: var(--category-selection-color);
     }
   }
 }

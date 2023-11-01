@@ -1,6 +1,6 @@
 .main-tray {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 5fr);
+  grid-template-columns: minmax(0, 300px) minmax(0, 5fr);
   grid-template-rows: max-content minmax(0, 1fr);
   padding-top: 1rem;
   padding-left: 0.75rem;
