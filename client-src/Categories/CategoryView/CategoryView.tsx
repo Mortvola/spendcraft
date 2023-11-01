@@ -76,7 +76,7 @@ const CategoryView: React.FC<PropsType> = observer(({
         <SystemCategory category={categoryTree.fundingPoolCat} onCategorySelected={handleCategorySelected} />
         <SystemCategory category={categoryTree.accountTransferCat} onCategorySelected={handleCategorySelected} />
         <div
-          className={`${rebalancesClassName} ${isMobile ? 'mobile' : ''}`}
+          className={rebalancesClassName}
           onClick={handleRebalancesClick}
         >
           Category Transfers

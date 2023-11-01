@@ -3,7 +3,6 @@ import { observer } from 'mobx-react-lite';
 import Amount from '../../Amount';
 import EditButton from './EditButton';
 import { CategoryInterface, GroupInterface } from '../../State/State';
-import useMediaQuery from '../../MediaQuery';
 
 type PropsType = {
   category: CategoryInterface,
@@ -18,8 +17,6 @@ const Category: React.FC<PropsType> = observer(({
   selected,
   onCategorySelected,
 }) => {
-  const { isMobile } = useMediaQuery();
-
   const handleClick = () => {
     onCategorySelected(category);
   };
@@ -35,7 +32,7 @@ const Category: React.FC<PropsType> = observer(({
   }
 
   return (
-    <div className={`${className} ${isMobile ? 'mobile' : ''}`} onClick={handleClick}>
+    <div className={className} onClick={handleClick}>
       <div className={barClassName}>
         {
           category.type === 'LOAN' || category.type === 'REGULAR'

@@ -82,14 +82,9 @@ const App: React.FC = observer(() => {
     )
   }
 
-  let className = styles.layout;
-  if (isMobile) {
-    className = `${className} ${styles.mobile}`;
-  }
-
   return (
     <RequireAuth>
-      <div className={className}>
+      <div className={styles.layout}>
         <DesktopView>
           <Menubar />
           <Outlet />

@@ -16,7 +16,7 @@ const NavigationView: React.FC<PropsType> = ({
   details,
   children,
 }) => (
-  <div className={`${styles.outerWrapper} mobile`}>
+  <div className={styles.outerWrapper}>
     <div className={styles.titleWrapper} onClick={onClose}>
       <div className={`${styles.backButton} ${open ? 'open' : ''}`}>{'<'}</div>
       <div className={`${styles.title} ${open ? 'open' : ''}`}>{title}</div>

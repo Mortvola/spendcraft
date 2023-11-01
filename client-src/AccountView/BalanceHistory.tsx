@@ -45,13 +45,8 @@ const BalanceHistory: React.FC = observer(() => {
     setEditedBalance(null);
   }
 
-  let className = styles.main;
-  if (isMobile) {
-    className += ' mobile';
-  }
-
   return (
-    <div className={`${className} window1`}>
+    <div className={`${styles.main} window1`}>
       <div className="chart-wrapper window ">
         <Chart
           chartType="LineChart"

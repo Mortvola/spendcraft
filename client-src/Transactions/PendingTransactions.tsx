@@ -16,7 +16,7 @@ const PendingTransactions: React.FC<PropsType> = observer(({
   pending = [],
   categoryView = false,
 }) => {
-  const { isMobile, addMediaClass } = useMediaQuery();
+  const { isMobile } = useMediaQuery();
 
   if (isMobile) {
     if (categoryView) {
@@ -24,7 +24,7 @@ const PendingTransactions: React.FC<PropsType> = observer(({
         <>
           {
             pending.map((transaction) => (
-              <div key={transaction.id} className={addMediaClass(styles.transactionWrapper)}>
+              <div key={transaction.id} className={styles.transactionWrapper}>
                 <div className={`${styles.pending} ${styles.transaction}`}>
                   <div />
                   <Date className={styles.date} date={transaction.date} />
@@ -50,7 +50,7 @@ const PendingTransactions: React.FC<PropsType> = observer(({
       <>
         {
           pending.map((transaction) => (
-            <div key={transaction.id} className={addMediaClass(styles.transactionWrapper)}>
+            <div key={transaction.id} className={styles.transactionWrapper}>
               <div className={`${styles.transaction} ${styles.pending} ${styles.acct}`}>
                 <div />
                 <Date className={styles.date} date={transaction.date} />

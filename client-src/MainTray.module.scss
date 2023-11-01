@@ -10,8 +10,10 @@
   transition: background-color 0.35s ease-in;
   z-index: 5;
   position: relative;
+}
 
-  &:global(.mobile) {
+@media (max-width: 800px) {
+  .main-tray {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas: "title" "window1" "window2";
   }

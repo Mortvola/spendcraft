@@ -10,15 +10,11 @@ type PropsType = {
 const DetailView: React.FC<PropsType> = ({
   title,
   children,
-}) => {
-  const { isMobile } = useMediaQuery();
-
-  return (
-    <>
-      <div className={`${styles.mainTrayTitle} ${isMobile ? 'mobile' : ''}`}>{title}</div>
-      {children}
-    </>
-  );
-}
+}) => (
+  <>
+    <div className={styles.mainTrayTitle}>{title}</div>
+    {children}
+  </>
+);
 
 export default DetailView;

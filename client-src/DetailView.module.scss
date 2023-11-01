@@ -3,8 +3,10 @@
   color: white;
   font-size:x-large;
   display: flex;
+}
 
-  &:global(.mobile) {
+@media (max-width: 800px) {
+  .main-tray-title {
     font-size: 2rem;
     font-weight: bold;
   }

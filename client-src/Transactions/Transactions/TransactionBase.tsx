@@ -22,7 +22,6 @@ const TransactionBase: React.FC<PropsType> = observer(({
   showTrxDialog,
 }) => {
   const { uiState } = useStores();
-  const { addMediaClass } = useMediaQuery();
 
   const handleClick: React.MouseEventHandler = () => {
     uiState.selectTransaction(transaction);
@@ -37,7 +36,7 @@ const TransactionBase: React.FC<PropsType> = observer(({
   const transactionClassName = `${className ?? ''} ${styles.transaction}`;
 
   return (
-    <div className={addMediaClass(styles.transactionWrapper)}>
+    <div className={styles.transactionWrapper}>
       <div className={transactionClassName} onClick={handleClick}>
         {
           transaction.duplicateOfTransactionId

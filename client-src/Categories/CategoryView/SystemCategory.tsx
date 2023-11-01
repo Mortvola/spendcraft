@@ -29,7 +29,7 @@ const SystemCategory: React.FC<PropsType> = observer(({
 
   if (category) {
     return (
-      <div className={`${className} ${isMobile ? 'mobile' : ''}`} onClick={handleClick}>
+      <div className={className} onClick={handleClick}>
         <div className="cat-element-bar system">
           <div className="cat-list-name">{category.name}</div>
         </div>

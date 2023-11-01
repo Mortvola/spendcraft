@@ -20,18 +20,22 @@ body {
   position: relative;
   background-color: #fff;
   z-index: 4;
+}
 
-  &::before:not(.mobile) {
-    box-shadow: inset 3px 3px 5px 0px;
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    content: "";
-    pointer-events: none;
-    z-index: 3;
-  }  
+@media (min-width: 800px) {
+  .window {
+    &::before {
+      box-shadow: inset 3px 3px 5px 0px;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      content: "";
+      pointer-events: none;
+      z-index: 3;
+    }    
+  }
 }
 
 @media (max-width: 800px) {
@@ -230,13 +234,17 @@ body {
   &.system {
     margin-left: 0px;
   }
+}
 
-  &:not(.selected):not(.mobile):hover {
-    background-color: whitesmoke;
-  }
-
-  &.selected:not(.mobile) {
-    background-color: lightblue;
+@media (min-width: 800px) {
+  .cat-list-cat {
+    &:not(.selected):hover {
+      background-color: whitesmoke;
+    }
+  
+    &.selected {
+      background-color: lightblue;
+    }
   }
 }
 

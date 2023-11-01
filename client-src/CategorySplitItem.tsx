@@ -68,13 +68,8 @@ const CategorySplitItem: React.FC<PropsType> = ({
 
   const categoryId = split ? split.categoryId : null;
 
-  let className = styles.transactionSplitItem;
-  if (isMobile) {
-    className = `mobile ${className}`;
-  }
-
   return (
-    <div className={className}>
+    <div className={styles.transactionSplitItem}>
       <div>
         <CategoryInput
           onChange={handleCategoryChange}

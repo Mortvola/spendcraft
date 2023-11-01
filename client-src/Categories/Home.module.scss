@@ -9,11 +9,13 @@
   padding-top: 0.25rem;
   padding-left: 0.25rem;
   background-color: #fff;
+}
 
-  &:global(.mobile) {
+@media (max-width: 800px) {
+  .categories {
     color: #fff;
     background-color: #000;
-  }  
+  }
 }
 
 .theme {

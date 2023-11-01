@@ -140,7 +140,7 @@ const PostedRegister: React.FC<PropsType> = observer(({
   }
 
   return (
-    <div className={`register window window1`}>
+    <div className="register window window1">
       <div />
       {
         isMobile
