@@ -1,12 +1,10 @@
 html {
-  --credit-color: #ffd6d6;
-  --saving-color: #dfd;
+  --account-background: #fdfdfd;
 }
 
 @media (prefers-color-scheme: dark) {
   html {
-    --credit-color: #5f0909;
-    --saving-color: rgb(4, 45, 4);
+    --account-background: #444;
   }
 }
 
@@ -14,7 +12,7 @@ html {
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr);
   align-items: center;
-  background-color: var(--saving-color);
+  background-color: var(--account-background);
 }
 
 .account:hover {
@@ -44,11 +42,6 @@ html {
   padding: 4px;
 }
 
-/* *>.account:not(:first-child) {
-  border-top: solid thin black;
-  padding-top: 0.25rem;
-} */
-
 .account>*:nth-child(1) {
   align-self: start;
 }
@@ -57,17 +50,9 @@ html {
   overflow: hidden;
 }
 
-.credit-account {
-  background-color: var(--credit-color);
-}
-
-.other-account {
-  background-color: var(--saving-color);
-}
-
 .account-info *:not(:first-child) {
   margin-left: 4px;
-  font-size: small;
+  font-size: 1rem;
 }
 
 .account-name {

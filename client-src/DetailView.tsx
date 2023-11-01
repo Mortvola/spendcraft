@@ -1,6 +1,5 @@
 import React from 'react';
 import styles from './DetailView.module.scss';
-import useMediaQuery from './MediaQuery';
 
 type PropsType = {
   title?: string,
@@ -12,7 +11,7 @@ const DetailView: React.FC<PropsType> = ({
   children,
 }) => (
   <>
-    <div className={styles.mainTrayTitle}>{title}</div>
+    <div className={`${styles.mainTrayTitle} ellipsis`}>{title}</div>
     {children}
   </>
 );

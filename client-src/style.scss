@@ -1,17 +1,18 @@
 html {
-  --page-color: white;
+  --page-color: #fff;
   --text-color: black;
 }
 
 @media (prefers-color-scheme: dark) {
   html {
-    --page-color: black;
+    --page-color: #000;
     --text-color: white;
   }
 }
 
 body {
-  background: var(--page-color);
+  color: var(--text-color);
+  background-color: var(--page-color);
   height: 100vh;
   width: 100vw;
 }
@@ -19,7 +20,6 @@ body {
 .app {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  /* grid-template-rows: max-content minmax(0, 1fr); */
   grid-template-rows: minmax(0, 1fr);
   height: 100%;
 }
@@ -51,18 +51,11 @@ body {
   }
 }
 
-// @media (max-width: 800px) {
-//   .window {
-//     color: #fff;
-//     background-color: #000;
-//   }
-// }
-
 .navbar {
   background-color: #228B22;
 }
 
-.app .navbar-nav .nav-link {
+.navbar-nav .nav-link {
   color: white;
 }
 
@@ -187,6 +180,7 @@ body {
   user-select: none;
   -webkit-user-select: none;
   min-height: 25%;
+  max-height: 100%;
 }
 
 @media (max-width: 800px) {

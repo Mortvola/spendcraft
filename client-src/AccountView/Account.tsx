@@ -50,13 +50,6 @@ const Account: React.FC<PropsType> = observer(({
   };
 
   let acctClassName = styles.account;
-  if (account.type === 'other') {
-    acctClassName += ` ${styles.otherAccount}`
-  }
-  else if (['loan', 'credit'].includes(account.type)) {
-    acctClassName += ` ${styles.creditAccount}`
-  }
-
   if (selected) {
     acctClassName += ` ${styles.selected}`;
   }
@@ -82,7 +75,6 @@ const Account: React.FC<PropsType> = observer(({
               : null
           }
         </div>
-        <div>{getTypeName(account.type)}</div>
         <div>{getSubTypeName(account.type, account.subtype)}</div>
         {
           account.type === 'loan'

@@ -1,10 +1,20 @@
+html {
+  --institution-background: #f7f7f7;
+}
+
+@media (prefers-color-scheme: dark) {
+  html {
+    --institution-background: #333;
+  }
+}
+
 .institution-card {
   border: thin solid black;
   border-radius: 8px;
   margin: 4px;
   margin-bottom: 8px;
   overflow: hidden;
-  box-shadow: 3px 4px 4px 0px rgba(0, 0, 0, 25%);
+  // box-shadow: 3px 4px 4px 0px rgba(0, 0, 0, 25%);
 }
 
 .institution {
@@ -12,9 +22,8 @@
   grid-template-columns: 1fr repeat(3, auto max-content);
   white-space: nowrap;
   padding-left: 4px;
-  background-color: #3F76CA;
-  color: white;
-  border-bottom: thin gray solid;
+  background-color: var(--institution-background);
+  border-bottom: thin black solid;
   border-radius: 8px 8px 0px 0px;
 }
 
