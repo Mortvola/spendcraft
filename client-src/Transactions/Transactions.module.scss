@@ -12,7 +12,7 @@
 
 .transaction {
   $icon-width: 16px;
-  $date-width: 100px;
+  $date-width: 6.25rem;
   $amount-width: 7rem;
   $balance-width: 8rem;
 
@@ -104,7 +104,7 @@
   .transaction, .transaction.unassigned {
     $icon-width: 0;
     $amount-width: 6rem;
-    $date-width: 3.5rem;
+    $date-width: 4rem;
 
     grid-template-columns: $icon-width $date-width minmax(0, 1fr) $amount-width;
     grid-template-rows: max-content max-content max-content;
@@ -139,24 +139,12 @@
       }  
     }
 
-    .date {
-      font-size: x-small;
-    }
-    
-    .account {
-      font-size: x-small;
-    }
-    
-    .institution {
-      font-size: x-small;
-    }
-    
-    .owner {
-      font-size: x-small;
-    }
-    
+    .date,
+    .account,
+    .institution,
+    .owner,
     .running-balance {
-      font-size: x-small;
+      font-size: var(--trx-small-text);
     }  
   }
 }

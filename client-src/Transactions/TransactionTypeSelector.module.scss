@@ -3,12 +3,14 @@ $border-raidus: 8px;
 html {
   --selector-inner-color: #f7f7f780;
   --selector-slider-color: #b8b8b8;
+  --selector-border-color: #aaa;
 }
 
 @media (prefers-color-scheme: dark) {
   html {
     --selector-inner-color: #4448;
     --selector-slider-color: #666;
+    --selector-border-color: #000;
   }
 }
 
@@ -23,7 +25,7 @@ html {
   position: relative;
   z-index: 0;
   cursor: pointer;
-  border: thin black solid;
+  border: thin var(--selector-border-color) solid;
   border-radius: $border-raidus;
   overflow: hidden;
 }
