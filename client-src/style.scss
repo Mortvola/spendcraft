@@ -1,5 +1,17 @@
+html {
+  --page-color: white;
+  --text-color: black;
+}
+
+@media (prefers-color-scheme: dark) {
+  html {
+    --page-color: black;
+    --text-color: white;
+  }
+}
+
 body {
-  background: #ffffff;
+  background: var(--page-color);
   height: 100vh;
   width: 100vw;
 }
@@ -18,7 +30,8 @@ body {
   border-radius: 0.5rem;
   overflow: hidden;
   position: relative;
-  background-color: #fff;
+  background-color: var(--page-color);
+  color: var(--text-color);
   z-index: 4;
 }
 
@@ -38,12 +51,12 @@ body {
   }
 }
 
-@media (max-width: 800px) {
-  .window {
-    color: #fff;
-    background-color: #000;
-  }
-}
+// @media (max-width: 800px) {
+//   .window {
+//     color: #fff;
+//     background-color: #000;
+//   }
+// }
 
 .navbar {
   background-color: #228B22;

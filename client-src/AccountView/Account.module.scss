@@ -1,8 +1,20 @@
+html {
+  --credit-color: #ffd6d6;
+  --saving-color: #dfd;
+}
+
+@media (prefers-color-scheme: dark) {
+  html {
+    --credit-color: #5f0909;
+    --saving-color: rgb(4, 45, 4);
+  }
+}
+
 .account {
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr);
   align-items: center;
-  background-color: #dfd;
+  background-color: var(--saving-color);
 }
 
 .account:hover {
@@ -46,11 +58,11 @@
 }
 
 .credit-account {
-  background-color: #ffd6d6;
+  background-color: var(--credit-color);
 }
 
 .other-account {
-  background-color: white;
+  background-color: var(--saving-color);
 }
 
 .account-info *:not(:first-child) {

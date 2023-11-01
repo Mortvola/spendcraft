@@ -8,70 +8,10 @@
   grid-template-columns: minmax(0, 1fr);
   padding-top: 0.25rem;
   padding-left: 0.25rem;
-  background-color: #fff;
-}
-
-@media (max-width: 800px) {
-  .categories {
-    color: #fff;
-    background-color: #000;
-  }
+  color: var(--text-color);
+  background-color: var(--page-color);
 }
 
 .theme {
   background-color: #8e2727;
-}
-
-.title {
-  font-size: 2rem;
-  font-weight: bold;
-  transition: font-size 0.3s;
-  transition: font-weight 0.3s;
-
-  &:global(.open) {
-    font-size: 1.25rem;
-    font-weight: normal;
-  }  
-}
-
-.title-wrapper {
-  display: flex;
-}
-
-.back-button {
-  font-size: 1.25rem;
-  width: 0;
-  overflow: hidden;
-  transition: width 0.3s;
-
-  &:global(.open) {
-    width: 1rem;
-  }  
-}
-
-.wrapper {
-  position: relative;
-  display: grid;
-  font-size: 1.25rem;
-  overflow: hidden;
-}
-
-.off-canvas {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background-color: black;
-  transform: translate(100%);
-  /* border-left: black thin solid; */
-  transition: transform 0.3s ease;
-  display: flex;
-  flex-direction: column;
-  /* grid-template-columns: minmax(0,1fr);
-  grid-template-rows: max-content minmax(0,1fr); */
-
-  &:global(.open) {
-    transform: translate(0%);
-  }  
 }
