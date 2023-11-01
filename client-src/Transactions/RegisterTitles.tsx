@@ -27,7 +27,7 @@ const RegisterTitles: React.FC<PropsType> = ({
 
   if (isMobile) {
     return (
-      <div className={`mobile ${styles.registerTitle} ${styles.transaction}`}>
+      <div className={`${styles.registerTitle} ${styles.transaction}`}>
         { commonTitles() }
         <div className="currency">Amount</div>
       </div>

@@ -21,11 +21,6 @@ body {
   background-color: #fff;
   z-index: 4;
 
-  &.mobile {
-    color: #fff;
-    background-color: #000;
-  }  
-
   &::before:not(.mobile) {
     box-shadow: inset 3px 3px 5px 0px;
     position: absolute;
@@ -37,6 +32,13 @@ body {
     pointer-events: none;
     z-index: 3;
   }  
+}
+
+@media (max-width: 800px) {
+  .window {
+    color: #fff;
+    background-color: #000;
+  }
 }
 
 .navbar {
@@ -168,10 +170,12 @@ body {
   user-select: none;
   -webkit-user-select: none;
   min-height: 25%;
+}
 
-  &.mobile {
+@media (max-width: 800px) {
+  .register {
     grid-template-rows: max-content 1fr;
-  }  
+  }
 }
 
 .trans-cat-edit {

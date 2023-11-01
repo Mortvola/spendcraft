@@ -14,7 +14,7 @@ const PendingTitles: React.FC<PropsType> = ({
 
   if (isMobile) {
     return (
-      <div className={`mobile ${styles.registerTitle} ${styles.transaction} ${styles.acct}`}>
+      <div className={`${styles.registerTitle} ${styles.transaction} ${styles.acct}`}>
         <div />
         <div>Date</div>
         <div>Name</div>

@@ -17,7 +17,7 @@ const SecondaryRegister: React.FC<PropsType> = ({
   const { isMobile } = useMediaQuery();
 
   return (
-    <div className={`${styles.pending} window ${isMobile ? 'mobile' : ''}`}>
+    <div className={`${styles.pending} window`}>
       {
         isMobile
           ? null

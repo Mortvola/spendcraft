@@ -3,6 +3,13 @@
   overflow-y: scroll;
 }
 
+.transaction-wrapper {
+  display: grid;
+  grid-template-rows: max-content minmax(0, 0%);
+  grid-template-columns: minmax(0, 1fr);
+  transition: grid-template-rows 0.5s ease-in;
+}
+
 .transaction {
   $icon-width: 16px;
   $date-width: 100px;
@@ -89,69 +96,68 @@
   }  
 }
 
-:global(.mobile) .transaction {
-  $icon-width: 0;
-  $amount-width: 6rem;
-  $date-width: 3.5rem;
-
-  grid-template-columns: $icon-width $date-width minmax(0, 1fr) $amount-width;
-  grid-template-rows: max-content max-content max-content;
-  grid-template-areas:
-    ". name name amount"
-    ". date account running-balance"
-    ". owner owner owner";
-  padding-left: 0.25rem;
-
-  &.acct {
-    grid-template-areas:
-      ". name name amount"
-      ". date owner running-balance";
-
-    &.pending {
-      grid-template-areas:
-        ". name name amount"
-        ". date owner .";
-    }  
+@media (max-width: 800px) {
+  .transaction-wrapper {
+    grid-row-gap: 1rem;
   }
 
-  &.pending {
+  .transaction, .transaction.unassigned {
+    $icon-width: 0;
+    $amount-width: 6rem;
+    $date-width: 3.5rem;
+
     grid-template-columns: $icon-width $date-width minmax(0, 1fr) $amount-width;
     grid-template-rows: max-content max-content max-content;
     grid-template-areas:
       ". name name amount"
-      ". date account account"
+      ". date account running-balance"
       ". owner owner owner";
-  }
+    padding-left: 0.25rem;
 
-  .date {
-    font-size: x-small;
-  }
-  
-  .account {
-    font-size: x-small;
-  }
-  
-  .institution {
-    font-size: x-small;
-  }
-  
-  .owner {
-    font-size: x-small;
-  }
-  
-  .running-balance {
-    font-size: x-small;
-  }  
-}
+    &.pending {
+      grid-template-columns: $icon-width $date-width minmax(0, 1fr) $amount-width;
+      grid-template-rows: max-content max-content max-content;
+      grid-template-areas:
+        ". name name amount"
+        ". date account account"
+        ". owner owner owner";
+    }
 
-.transaction-wrapper {
-  display: grid;
-  grid-template-rows: max-content minmax(0, 0%);
-  grid-template-columns: minmax(0, 1fr);
-  transition: grid-template-rows 0.5s ease-in;
+    &.acct {
+      grid-template-columns: $icon-width $date-width minmax(0, 1fr) $amount-width;
+      grid-template-rows: max-content max-content;
+      grid-template-areas:
+        ". name name amount"
+        ". date owner running-balance";
 
-  &:global(.mobile) {
-    grid-row-gap: 1rem;
+      &.pending {
+        grid-template-columns: $icon-width $date-width minmax(0, 1fr) $amount-width;
+        grid-template-rows: max-content max-content;
+        grid-template-areas:
+          ". name name amount"
+          ". date owner .";
+      }  
+    }
+
+    .date {
+      font-size: x-small;
+    }
+    
+    .account {
+      font-size: x-small;
+    }
+    
+    .institution {
+      font-size: x-small;
+    }
+    
+    .owner {
+      font-size: x-small;
+    }
+    
+    .running-balance {
+      font-size: x-small;
+    }  
   }
 }
 
