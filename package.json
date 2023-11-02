@@ -11,7 +11,8 @@
     "dev-start": "node ace serve -w",
     "dev-server-build": "node ace build",
     "dev-client-build": "webpack --config-name app",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "analyze": "webpack --json > stats.json"
   },
   "keywords": [
     "adonisjs",
@@ -80,7 +81,6 @@
     "react-router-dom": "^6.3.0",
     "reflect-metadata": "^0.1.13",
     "regenerator-runtime": "^0.14.0",
-    "remove-files-webpack-plugin": "^1.5.0",
     "secure-compare": "^3.0.1",
     "set-value": "^4.1.0",
     "source-map-support": "^0.5.21",
@@ -98,6 +98,7 @@
     "@types/regenerator-runtime": "^0.13.1",
     "@types/web-push": "^3.6.2",
     "adonis-preset-ts": "^2.1.0",
+    "compression-webpack-plugin": "^10.0.0",
     "css-loader": "^6.5.1",
     "dotenvify": "^1.0.0",
     "dpdm": "^3.8.0",
@@ -116,12 +117,14 @@
     "mini-css-extract-plugin": "^2.5.3",
     "postcss": "^8.4.5",
     "postcss-loader": "^7.0.2",
+    "remove-files-webpack-plugin": "^1.5.0",
     "sass": "^1.69.5",
     "sass-loader": "^13.3.2",
     "style-loader": "^3.3.1",
     "ts-loader": "^9.2.6",
     "typescript": "^5.2.2",
     "webpack": "^5.89.0",
+    "webpack-bundle-analyzer": "^4.9.1",
     "webpack-cli": "^5.1.4"
   },
   "autoload": {

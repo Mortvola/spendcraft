@@ -21,6 +21,7 @@
 import HealthCheck from '@ioc:Adonis/Core/HealthCheck';
 import Route from '@ioc:Adonis/Core/Route'
 import Env from '@ioc:Adonis/Core/Env';
+import Drive from '@ioc:Adonis/Core/Drive'
 
 Route.get('/home', 'HomeController.index');
 Route.get('/home/:categoryId', 'HomeController.index');
@@ -38,6 +39,34 @@ Route.post('/wh', 'WebhookController.post');
 Route.post('/redirect', () => {
   console.log('redirected')
 });
+
+// Look for a gzipped file in the public directory
+Route.get('/:file', async ({ request, response, logger }) => {
+  if (request.encoding(['gzip'])) {
+    try {
+      const filename = request.param('file');
+
+      const contents = await Drive.get(`public/${filename}.gz`)
+
+      response.header('Content-Encoding', 'gzip');
+
+      if (/.*.js$/.test(filename) || /.*js.map$/.test(filename)) {
+        response.header('Content-Type', 'application/javascript');
+      }
+      else if (/.*.css$/.test(filename)) {
+        response.header('Content-Type', 'text/css');
+      }
+      
+      return response.ok(contents);
+    }
+    catch (error) {
+      logger.error(error);
+    }
+  }
+
+  return response.notFound();
+})
+.where('file', /.*.(js|css|map)/)
 
 Route.get('/health', async ({ response }) => {
   const report = await HealthCheck.getReport();

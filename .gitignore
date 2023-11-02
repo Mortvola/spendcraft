@@ -26,3 +26,6 @@ build.zip
 /.npmrc
 home-css.edge
 home-script.edge
+
+dist/
+

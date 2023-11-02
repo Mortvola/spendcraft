@@ -27,7 +27,6 @@ import Signin from './Credentials/Signin';
 import Intro from './Intro';
 import RequireAuth from './RequireAuth';
 import RecoverPassword from './Credentials/RecoverPassword';
-import useMediaQuery from './MediaQuery';
 import styles from './App.module.scss';
 import DesktopView from './DesktopView';
 import MobileView from './MobileView';
@@ -39,7 +38,6 @@ const App: React.FC = observer(() => {
   const stores = useStores();
   const location = useLocation();
   const navigate = useNavigate();
-  const { isMobile } = useMediaQuery();
 
   Http.unauthorizedHandler = () => {
     if (location.pathname !== '/signin') {
