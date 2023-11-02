@@ -66,7 +66,7 @@ Route.get('/:file', async ({ request, response, logger }) => {
 
   return response.notFound();
 })
-.where('file', /.*.(js|css|map)/)
+.where('file', /.*.(js|css|map)$/)
 
 Route.get('/health', async ({ response }) => {
   const report = await HealthCheck.getReport();

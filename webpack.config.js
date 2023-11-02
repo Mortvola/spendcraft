@@ -59,8 +59,16 @@ const config = (name, env) => ({
     // clean: true,
   },
   optimization: {
+    runtimeChunk: 'single',
     splitChunks: {
-      chunks: 'all',
+      cacheGroups: {
+        vendors: {
+          test: /[\\/]node_modules[\\/]/,
+          name: 'vendors',
+          chunks: 'all',
+          // reuseExistingChunk: true,
+        },
+      },
     },
   },
   module: {
