@@ -38,9 +38,7 @@ const Home: React.FC = observer(() => {
             open={open}
             toolbar={<HomeToolbar open={open} />}
             sidebar={(
-              <div className={styles.categories}>
-                <CategoryView onCategorySelected={handleCategorySelected} />
-              </div>
+              <CategoryView onCategorySelected={handleCategorySelected} />
             )}
             onToggleClick={handleToggleClick}
             className={styles.theme}

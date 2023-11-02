@@ -1,5 +1,25 @@
 @use '../../breakpoints';
 
+.categories-wrapper {
+  height: 100%;
+  width: 100%;
+  user-select: none;
+  -webkit-user-select: none;
+  padding-top: 0.25rem;
+  padding-left: 0.25rem;
+  color: var(--text-color);
+  background-color: var(--page-color);
+  overflow-y: auto;
+}
+
+@media (min-width: breakpoints.$side-by-side) {
+  .categories-wrapper {
+    display: grid;
+    grid-template-rows: max-content minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .categories {
   padding-right: 0.875rem;
   overflow-y: auto;

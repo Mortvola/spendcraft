@@ -70,7 +70,7 @@ const CategoryView: React.FC<PropsType> = observer(({
   }
 
   return (
-    <>
+    <div className={styles.categoriesWrapper}>
       <div className={styles.system}>
         <SystemCategory category={categoryTree.unassignedCat} onCategorySelected={handleCategorySelected} />
         <SystemCategory category={categoryTree.fundingPoolCat} onCategorySelected={handleCategorySelected} />
@@ -114,7 +114,7 @@ const CategoryView: React.FC<PropsType> = observer(({
           );
         })}
       </div>
-    </>
+    </div>
   );
 });
 
