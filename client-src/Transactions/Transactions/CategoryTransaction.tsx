@@ -36,7 +36,7 @@ const CategoryTransaction: React.FC<PropsType> = observer(({
       return <div />;
     }
 
-    return <Amount className={styles.amount} amount={transaction.amount} />
+    return <Amount className={styles.trxAmount} amount={transaction.amount} />
   }
 
   return (

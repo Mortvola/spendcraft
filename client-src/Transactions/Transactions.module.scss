@@ -34,7 +34,7 @@
   padding-left: 0.5rem;
   cursor: pointer;
 
-  grid-template-areas: ". date name . amount running-balance institution account .";
+  grid-template-areas: ". date name trx-amount amount running-balance institution account .";
 
   &.unassigned {
     grid-template-columns: $icon-width $date-width minmax(0,1fr) $amount-width $balance-width minmax(0, 0.5fr) minmax(0, 0.5fr) max-content;
@@ -43,7 +43,7 @@
   
   &.acct {
     grid-template-columns: $icon-width $date-width minmax(0,1fr) $amount-width $balance-width max-content minmax(0, 1fr);
-    grid-template-areas: ". date name amount running-balance owner .";
+    grid-template-areas: ". date name amount running-balance . owner .";
 
     &.pending {
       grid-template-columns: $icon-width $date-width minmax(0, 1fr) $amount-width minmax(0, 1fr) max-content;
@@ -80,6 +80,10 @@
   
   .amount {
     grid-area: amount;
+  }
+
+  .trx-amount {
+    grid-area: trx-amount;
   }
   
   .date {
