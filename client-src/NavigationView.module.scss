@@ -55,8 +55,8 @@
   
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto;
-  grid-template-areas: "title" "." "window1";
+  grid-template-rows: max-content auto;
+  grid-template-areas: "title" ".";
 
   &:global(.open) {
     transform: translate(0%);

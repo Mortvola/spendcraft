@@ -49,6 +49,12 @@ body {
   z-index: 4;
 }
 
+@media (max-width: breakpoints.$side-by-side) {
+  .window {
+    margin-right: unset;
+  }
+}
+
 .navbar {
   background-color: #228B22;
 }
@@ -177,8 +183,6 @@ body {
   grid-template-rows: repeat(2, max-content) 1fr;
   user-select: none;
   -webkit-user-select: none;
-  min-height: 25%;
-  max-height: 100%;
 }
 
 @media (max-width: breakpoints.$side-by-side) {
@@ -482,10 +486,6 @@ body {
 .status-item {
   display: grid;
   grid-template-columns: 1.5fr repeat(5, minmax(0, 1fr));
-}
-
-.window1 {
-  grid-area: window1;
 }
 
 .chart-wrapper {

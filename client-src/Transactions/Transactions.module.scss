@@ -5,6 +5,12 @@
   overflow-y: scroll;
 }
 
+@media (max-width: breakpoints.$side-by-side) {
+  .transactions {
+    padding-right: 1rem;
+  }
+}
+
 .transaction-wrapper {
   display: grid;
   grid-template-rows: max-content minmax(0, 0%);
@@ -170,4 +176,20 @@
   visibility: hidden;
   padding: 0;
   min-width: 0;
+}
+
+.register-wrapper {
+  grid-area: window1;
+  display: grid;
+  grid-template-rows: auto;
+  grid-template-columns: minmax(0,1fr);
+}
+
+@media (max-width: breakpoints.$side-by-side) {
+  .register-wrapper {
+    grid-area: unset;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
 }

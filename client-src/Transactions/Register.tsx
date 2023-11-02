@@ -110,36 +110,40 @@ const Register: React.FC<PropsType> = observer(({
   return (
     <>
       <DesktopView>
-        <PostedRegister
-          type={type}
-          trxContainer={trxContainer}
-          category={category}
-          account={account}
-          transactionClassName={transactionClassName}
-        />
-        <PendingRegister categoryView={type === 'category'} pending={trxContainer.pending} />
+        <div className={styles.registerWrapper}>
+          <PostedRegister
+            type={type}
+            trxContainer={trxContainer}
+            category={category}
+            account={account}
+            transactionClassName={transactionClassName}
+          />
+          <PendingRegister categoryView={type === 'category'} pending={trxContainer.pending} />
+        </div>
       </DesktopView>
       <MobileView>
-        {
-          category?.type === 'UNASSIGNED' || account
-            ? <TransactionTypeSelector state={transactionType} onClick={handleTypeClick} />
-            : null
-        }
-        {
-          transactionType
-            ? (
-              <PendingRegister categoryView={type === 'category'} pending={trxContainer.pending} />
-            )
-            : (
-              <PostedRegister
-                type={type}
-                trxContainer={trxContainer}
-                category={category}
-                account={account}
-                transactionClassName={transactionClassName}
-              />
-            )
-        }
+        <div className={styles.registerWrapper}>
+          {
+            trxContainer.pending && trxContainer.pending.length > 0
+              ? <TransactionTypeSelector state={transactionType} onClick={handleTypeClick} />
+              : null
+          }
+          {
+            transactionType && trxContainer.pending && trxContainer.pending.length
+              ? (
+                <PendingRegister categoryView={type === 'category'} pending={trxContainer.pending} />
+              )
+              : (
+                <PostedRegister
+                  type={type}
+                  trxContainer={trxContainer}
+                  category={category}
+                  account={account}
+                  transactionClassName={transactionClassName}
+                />
+              )
+          }
+        </div>
       </MobileView>
     </>
   );
