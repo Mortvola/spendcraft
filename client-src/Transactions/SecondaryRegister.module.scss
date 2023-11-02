@@ -17,5 +17,6 @@
 @media (max-width: breakpoints.$side-by-side) {
   .pending {
     grid-template-rows: 1fr;
+    grid-area: window1;
   }
 }
