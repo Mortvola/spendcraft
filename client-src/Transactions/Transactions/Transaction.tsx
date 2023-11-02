@@ -21,10 +21,7 @@ const Transaction: React.FC<PropsType> = observer(({
       <>
         <div className={styles.name}>{transaction.name}</div>
         <Amount className={styles.amount} amount={amount} />
-        <div
-          className={styles.account}
-          style={{ gridArea: 'account', fontSize: 'x-small' }}
-        >
+        <div className={styles.account}>
           {
             transaction.instituteName !== ''
               ? `${transaction.instituteName}:${transaction.accountName}`
