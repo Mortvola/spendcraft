@@ -1,5 +1,19 @@
+@use '../../breakpoints';
+
 .categories {
-  padding-right: 14px;
+  padding-right: 0.875rem;
   overflow-y: auto;
 }
 
+.system {
+  padding-right: 0.875rem;
+  margin-bottom: 1rem;
+  padding-left: 1.975rem;
+}
+
+@media (min-width: breakpoints.$side-by-side) {
+  .system {
+    border-bottom: thin black solid;
+    padding-left: 0;
+  }
+}

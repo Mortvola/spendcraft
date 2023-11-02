@@ -71,7 +71,7 @@ const CategoryView: React.FC<PropsType> = observer(({
 
   return (
     <>
-      <div style={{ borderBottom: 'thin black solid' }}>
+      <div className={styles.system}>
         <SystemCategory category={categoryTree.unassignedCat} onCategorySelected={handleCategorySelected} />
         <SystemCategory category={categoryTree.fundingPoolCat} onCategorySelected={handleCategorySelected} />
         <SystemCategory category={categoryTree.accountTransferCat} onCategorySelected={handleCategorySelected} />
