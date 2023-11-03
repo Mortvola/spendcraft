@@ -52,6 +52,7 @@ body {
 @media (max-width: breakpoints.$side-by-side) {
   .window {
     margin-right: unset;
+    margin-bottom: unset;
   }
 }
 

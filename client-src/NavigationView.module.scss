@@ -1,7 +1,5 @@
 .outerWrapper {
   display: grid;
-  height: 100%;
-  width: 100%;
   user-select: none;
   -webkit-user-select: none;
   grid-template-rows: max-content minmax(0, 1fr);
