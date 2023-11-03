@@ -1,15 +1,27 @@
 $border-raidus: 8px;
 
-html {
+.inner {
   --selector-inner-color: #f7f7f780;
+}
+
+.slider {
   --selector-slider-color: #b8b8b8;
+}
+
+.outer {
   --selector-border-color: #aaa;
 }
 
 @media (prefers-color-scheme: dark) {
-  html {
+  .inner {
     --selector-inner-color: #4448;
+  }
+
+  .slider {
     --selector-slider-color: #666;
+  }
+
+  .outer {
     --selector-border-color: #000;
   }
 }

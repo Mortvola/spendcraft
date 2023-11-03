@@ -1,11 +1,11 @@
 @use "../breakpoints";
 
-html {
+.account {
   --account-background: #fdfdfd;
 }
 
 @media (prefers-color-scheme: dark) {
-  html {
+  .account {
     --account-background: #242424;
   }
 }

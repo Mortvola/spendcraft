@@ -1,11 +1,17 @@
-html {
+.institution {
   --institution-background: #f7f7f7;
+}
+
+.iconButton {
   --icon-button-color: rgb(64, 64, 64);
 }
 
 @media (prefers-color-scheme: dark) {
-  html {
+  .institution {
     --institution-background: #333;
+  }
+  
+  .iconButton {
     --icon-button-color: rgb(172, 172, 172);
   }
 }

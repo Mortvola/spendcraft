@@ -1,11 +1,11 @@
-html {
+.icon {
   --tabview-color: #666;
   --tabview-active-color: rgb(16, 108, 255);
   --tabview-hover-color: rgb(172, 172, 172);
 }
 
 @media (prefers-color-scheme: dark) {
-  html {
+  .icon {
     --tabview-color: rgb(172, 172, 172);
   }
 }

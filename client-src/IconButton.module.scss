@@ -1,5 +1,17 @@
 .layout {
+  --icon-button-color: #000;
+}
+
+@media (prefers-color-scheme: dark) {
+  .layout {
+    --icon-button-color: #fff;
+  }  
+}
+
+.layout {
   display: flex;
   flex-direction: column;
   align-items: center;
+
+  color: var(--icon-button-color)
 }
