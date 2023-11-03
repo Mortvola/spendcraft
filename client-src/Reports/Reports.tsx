@@ -67,7 +67,6 @@ const Reports: React.FC = observer(() => {
 
   return (
     <Main
-      open={open}
       sidebar={<ReportList reports={reports} onSelect={handleSelect} selectedValue={reportType} />}
       onToggleClick={handleToggleClick}
       className={styles.theme}

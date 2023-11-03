@@ -297,13 +297,13 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
                   name="principle"
                   label="Principle:"
                   as={AmountInput}
-                  onBlur={() => console.log('principle blur')}
+                  // onBlur={() => console.log('principle blur')}
                 />
                 <FormField
                   name="interest"
                   label="Interest:"
                   as={AmountInput}
-                  onBlur={() => console.log('interest blur')}
+                  // onBlur={() => console.log('interest blur')}
                   readOnly
                 />
               </>

@@ -2,10 +2,8 @@ import React, { ReactNode } from 'react';
 import MainTray from './MainTray';
 import Toolbar from './Toolbar';
 import styles from './Main.module.scss';
-import Sidebar from './Sidebar';
 
 type PropsType = {
-  open?: boolean,
   toolbar?: ReactNode,
   sidebar?: ReactNode,
   children?: ReactNode,
@@ -14,7 +12,6 @@ type PropsType = {
 }
 
 const Main: React.FC<PropsType> = ({
-  open = false,
   toolbar,
   sidebar,
   children,
@@ -26,9 +23,9 @@ const Main: React.FC<PropsType> = ({
       {toolbar}
     </Toolbar>
     <MainTray className={className}>
-      <Sidebar open={open} className={className}>
+      <div className={`${styles.sideBar} window ${className}`}>
         {sidebar}
-      </Sidebar>
+      </div>
       {children}
     </MainTray>
   </div>

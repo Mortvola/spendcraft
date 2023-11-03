@@ -35,7 +35,6 @@ const Home: React.FC = observer(() => {
       <>
         <DesktopView>
           <Main
-            open={open}
             toolbar={<HomeToolbar open={open} />}
             sidebar={(
               <CategoryView onCategorySelected={handleCategorySelected} />

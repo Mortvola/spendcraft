@@ -1,7 +1,6 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
 import Amount from '../../Amount';
-import styles from '../Transactions.module.scss';
 
 type PropsType = {
   amount: number,

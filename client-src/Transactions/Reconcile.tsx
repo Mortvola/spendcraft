@@ -9,7 +9,7 @@ type PropsType = {
 const Reconcile: React.FC<PropsType> = ({
   transaction,
 }) => {
-  const handleReconcileChange: React.ChangeEventHandler<HTMLInputElement> = (event) => {
+  const handleReconcileChange: React.ChangeEventHandler<HTMLInputElement> = () => {
     transaction.toggleReconciled();
   };
 

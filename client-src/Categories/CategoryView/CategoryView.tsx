@@ -10,7 +10,6 @@ import Group from './Group';
 import SystemCategory from './SystemCategory';
 import Category from './Category';
 import styles from './CategoryView.module.scss'
-import useMediaQuery from '../../MediaQuery';
 
 type PropsType = {
   onCategorySelected: () => void,
@@ -19,7 +18,6 @@ type PropsType = {
 const CategoryView: React.FC<PropsType> = observer(({
   onCategorySelected,
 }) => {
-  const { isMobile } = useMediaQuery();
   const navigate = useNavigate();
   const params = useParams();
   const rebalancesPath = useResolvedPath('rebalances');

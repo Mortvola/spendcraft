@@ -6,13 +6,11 @@ import styles from './BalanceHistory.module.scss';
 import Balance from './Balance';
 import { useBalanceDialog } from './BalanceDialog';
 import { BalanceInterface } from '../State/State';
-import useMediaQuery from '../MediaQuery';
 
 const BalanceHistory: React.FC = observer(() => {
   const { balances, uiState: { selectedAccount } } = useStores();
   const [BalanceDialog, showBalanceDialog] = useBalanceDialog();
   const [editedBalance, setEditedBalance] = useState<BalanceInterface | null>(null);
-  const { isMobile } = useMediaQuery();
 
   React.useEffect(() => {
     if (selectedAccount && selectedAccount.tracking === 'Balances') {

@@ -3,7 +3,6 @@ import { observer } from 'mobx-react-lite';
 import Amount from '../../Amount';
 import { CategoryInterface } from '../../State/State';
 import { useStores } from '../../State/mobxStore';
-import useMediaQuery from '../../MediaQuery';
 
 type PropsType = {
   category: CategoryInterface | null,
@@ -15,7 +14,6 @@ const SystemCategory: React.FC<PropsType> = observer(({
   onCategorySelected,
 }) => {
   const { uiState } = useStores();
-  const { isMobile } = useMediaQuery();
   const handleClick = () => {
     if (category) {
       onCategorySelected(category);

@@ -33,7 +33,6 @@ const Accounts: React.FC = observer(() => {
     <>
       <DesktopView>
         <Main
-          open={open}
           toolbar={<AccountsToolbar open={open} />}
           sidebar={(
             <div className={styles.accounts}>

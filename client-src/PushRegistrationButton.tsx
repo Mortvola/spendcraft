@@ -57,7 +57,6 @@ const PushRegistrationButton: React.FC<PropsType> = ({
           if (subscription) {
             subscription.unsubscribe();
             setSubscription(null);
-            console.log('unsubscribed')
           }
           else {
           // Get the server's public key
@@ -77,13 +76,6 @@ const PushRegistrationButton: React.FC<PropsType> = ({
               setSubscription(sub);
 
               await Http.post(url, sub);
-
-              if (sub) {
-                console.log('subscribed');
-              }
-              else {
-                console.log('not subscribed');
-              }
             }
           }
         }

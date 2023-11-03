@@ -51,7 +51,6 @@ const Plans: React.FC = observer(() => {
 
   return (
     <Main
-      open={open}
       toolbar={<PlansToolbar />}
       sidebar={<PlanList plans={plans.list} selected={uiState.selectedPlan} onSelect={handleSelect} />}
       onToggleClick={handleToggleClick}
