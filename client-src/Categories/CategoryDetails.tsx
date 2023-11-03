@@ -3,6 +3,7 @@ import React from 'react';
 import DetailView from '../DetailView';
 import { useStores } from '../State/mobxStore';
 import Register from '../Transactions/Register';
+import styles from '../Transactions/Transactions.module.scss';
 
 const CategoryDetails: React.FC = observer(() => {
   const {
@@ -13,10 +14,13 @@ const CategoryDetails: React.FC = observer(() => {
     return null;
   }
 
+  let className = '';
+  if (selectedCategory.type === 'UNASSIGNED') {
+    className += styles.unassigned;
+  }
+
   return (
-    <DetailView
-      title={selectedCategory.name}
-    >
+    <DetailView className={className} title={selectedCategory.name}>
       <Register type="category" />
     </DetailView>
   );

@@ -1,5 +1,6 @@
 import React, { ReactElement, ReactNode } from 'react';
 import styles from './SecondaryRegister.module.scss';
+import trxStyles from './Transactions.module.scss';
 import transactionStyles from './Transactions.module.scss';
 import useMediaQuery from '../MediaQuery';
 
@@ -17,7 +18,7 @@ const SecondaryRegister: React.FC<PropsType> = ({
   const { isMobile } = useMediaQuery();
 
   return (
-    <div className={`${styles.pending} window`}>
+    <div className={`${styles.pending} ${trxStyles.pending} window`}>
       {
         isMobile
           ? null

@@ -18,12 +18,12 @@
   transition: grid-template-rows 0.5s ease-in;
 }
 
-.transaction {
-  $icon-width: 16px;
-  $date-width: 6.25rem;
-  $amount-width: 7rem;
-  $balance-width: 8rem;
+$icon-width: 16px;
+$date-width: 6.25rem;
+$amount-width: 7rem;
+$balance-width: 8rem;
 
+.transaction {
   display: grid;
   grid-template-columns: $icon-width $date-width minmax(0,1fr) $amount-width $amount-width $balance-width minmax(0, 1.4fr) max-content;
   grid-template-rows: max-content;
@@ -36,46 +36,8 @@
 
   grid-template-areas: ". date name trx-amount amount running-balance account .";
 
-  &.unassigned {
-    grid-template-columns: $icon-width $date-width minmax(0,1fr) $amount-width $balance-width minmax(0, 0.5fr) max-content;
-    grid-template-areas: ". date name amount running-balance account .";
-  }
-  
-  &.acct {
-    grid-template-columns: $icon-width $date-width minmax(0,1fr) $amount-width $balance-width max-content minmax(0, 1fr);
-    grid-template-areas: ". date name amount running-balance reconcile owner .";
-
-    &.pending {
-      grid-template-columns: $icon-width $date-width minmax(0, 1fr) $amount-width minmax(0, 1fr) max-content;
-      grid-template-areas: ". date name amount owner .";
-
-      .reconcile {
-        display: none;
-      }
-    }
-
-    .owner,
-    .reconcile {
-      display: unset;
-    }
-
-    .account,
-    .trx-amount {
-      display: none;
-    }
-  }
-  
   &.loan {
     grid-template-columns: $icon-width $date-width minmax(0,1fr) repeat(3, $amount-width) $balance-width max-content minmax(0, 2fr) max-content;
-  }
-  
-  &.pending {
-    grid-template-columns: $icon-width $date-width minmax(0, 1.8fr) $amount-width minmax(0, 1.2fr);
-    grid-template-areas: ". date name amount account .";
-
-    .running-balance {
-      display: none;
-    }
   }
   
   &.rebalances {
@@ -132,16 +94,73 @@
   }  
 }
 
+.unassigned {
+  .transaction {
+    grid-template-columns: $icon-width $date-width minmax(0,1fr) $amount-width $balance-width minmax(0, 0.5fr) max-content;
+    grid-template-areas: ". date name amount running-balance account .";
+
+    .trx-amount {
+      display: none;
+    }
+  }
+}
+
+.pending {
+  .transaction {
+    grid-template-columns: $icon-width $date-width minmax(0, 1.8fr) $amount-width minmax(0, 1.2fr);
+    grid-template-areas: ". date name amount account .";
+
+    .running-balance,
+    .trx-amount {
+      display: none;
+    }
+  }
+}
+
+.acct {
+  .transaction {
+    grid-template-columns: $icon-width $date-width minmax(0,1fr) $amount-width $balance-width max-content minmax(0, 1fr);
+    grid-template-areas: ". date name amount running-balance reconcile owner .";
+
+    .owner,
+    .reconcile {
+      display: unset;
+    }
+  
+    .account,
+    .trx-amount {
+      display: none;
+    }  
+  }
+
+  .pending {
+    .transaction {
+      grid-template-columns: $icon-width $date-width minmax(0, 1fr) $amount-width minmax(0, 1fr) max-content;
+      grid-template-areas: ". date name amount owner .";  
+
+      .owner {
+        display: unset;
+      }
+  
+      .reconcile,
+      .running-balance {
+        display: none;
+      }  
+    }
+  }
+}
+
 @media (max-width: breakpoints.$side-by-side) {
+  $icon-width: 0;
+  $amount-width: 6rem;
+  $date-width: 4rem;
+
   .transaction-wrapper {
     grid-row-gap: 1rem;
   }
 
-  .transaction, .transaction.unassigned {
-    $icon-width: 0;
-    $amount-width: 6rem;
-    $date-width: 4rem;
-
+  .transaction,
+  .unassigned .transaction {
     grid-template-columns: $icon-width $date-width minmax(0, 1fr) $amount-width;
     grid-template-rows: max-content max-content max-content;
     grid-template-areas:
@@ -149,43 +168,6 @@
       ". date account running-balance"
       ". owner owner owner";
     padding-left: 0.25rem;
-
-    &.pending {
-      grid-template-columns: $icon-width $date-width minmax(0, 1fr) $amount-width;
-      grid-template-rows: max-content max-content max-content;
-      grid-template-areas:
-        ". name name amount"
-        ". date account account"
-        ". owner owner owner";
-
-      .running-balance {
-        display: none;
-      }
-    }
-
-    &.acct {
-      grid-template-columns: $icon-width $date-width minmax(0, 1fr) $amount-width;
-      grid-template-rows: max-content max-content;
-      grid-template-areas:
-        ". name name amount"
-        ". date owner running-balance";
-
-      &.pending {
-        grid-template-columns: $icon-width $date-width minmax(0, 1fr) $amount-width;
-        grid-template-rows: max-content max-content;
-        grid-template-areas:
-          ". name name amount"
-          ". date owner .";
-
-        .running-balance {
-          display: none;
-        }
-      }
-
-      .reconcile {
-        display: none;
-      }
-    }
 
     .date,
     .account,
@@ -202,6 +184,50 @@
     .trx-amount,
     .reconcile {
       display: none;
+    }
+  }
+
+  .pending {
+    .transaction {
+      grid-template-columns: $icon-width $date-width minmax(0, 1fr) $amount-width;
+      grid-template-rows: max-content max-content max-content;
+      grid-template-areas:
+        ". name name amount"
+        ". date account account"
+        ". owner owner owner";
+
+      .running-balance {
+        display: none;
+      }
+    }
+  }
+
+  .acct {
+    .transaction {
+      grid-template-columns: $icon-width $date-width minmax(0, 1fr) $amount-width;
+      grid-template-rows: max-content max-content;
+      grid-template-areas:
+        ". name name amount"
+        ". date owner running-balance";  
+
+      .reconcile {
+        display: none;
+      }    
+    }
+
+    .pending {
+      .transaction {
+        grid-template-columns: $icon-width $date-width minmax(0, 1fr) $amount-width;
+        grid-template-rows: max-content max-content;
+        grid-template-areas:
+          ". name name amount"
+          ". date owner .";
+
+        .running-balance,
+        .reconcile {
+          display: none;
+        }
+      }
     }
   }
 }
@@ -228,7 +254,6 @@
 }
 
 .register-wrapper {
-  grid-area: window1;
   display: grid;
   grid-template-rows: auto;
   grid-template-columns: minmax(0,1fr);

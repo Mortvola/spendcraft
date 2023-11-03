@@ -13,25 +13,20 @@ type PropsType = {
 const PendingTransactions: React.FC<PropsType> = observer(({
   pending = [],
   categoryView = false,
-}) => {
-  let className = `${styles.pending} ${styles.transaction}`;
-  if (!categoryView) {
-    className += ` ${styles.acct}`
-  }
-
-  return (
-    <>
-      {
-        pending.map((transaction) => (
-          <div key={transaction.id} className={className}>
+}) => (
+  <>
+    {
+      pending.map((transaction) => (
+        <div key={transaction.id} className={styles.transactionWrapper}>
+          <div className={styles.transaction}>
             <div />
             <Date className={styles.date} date={transaction.date} />
             <Transaction transaction={transaction} amount={transaction.amount} runningBalance={0} />
           </div>
-        ))
-      }
-    </>
-  );
-});
+        </div>
+      ))
+    }
+  </>
+));
 
 export default PendingTransactions;

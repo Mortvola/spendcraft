@@ -55,7 +55,7 @@
   
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: max-content auto;
+  grid-template-rows: minmax(0, 1fr);
   grid-template-areas: "title" ".";
 
   &:global(.open) {

@@ -71,12 +71,6 @@ const Register: React.FC<PropsType> = observer(({
       category = uiState.selectedCategory;
       trxContainer = category;
 
-      if (category) {
-        if (category.type === 'UNASSIGNED') {
-          transactionClassName = ` ${styles.unassigned}`;
-        }
-      }
-
       break;
 
     case 'account':
@@ -86,9 +80,6 @@ const Register: React.FC<PropsType> = observer(({
       if (account) {
         if (account.type === 'loan') {
           transactionClassName = ` ${styles.loan}`;
-        }
-        else {
-          transactionClassName = ` ${styles.acct}`;
         }
       }
 

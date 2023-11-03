@@ -14,7 +14,7 @@ const PendingTitles: React.FC<PropsType> = ({
 
   if (isMobile) {
     return (
-      <div className={`${styles.registerTitle} ${styles.transaction} ${styles.acct}`}>
+      <div className={`${styles.registerTitle} ${styles.transaction}`}>
         <div />
         <div>Date</div>
         <div>Name</div>
@@ -34,7 +34,7 @@ const PendingTitles: React.FC<PropsType> = ({
 
   if (!categoryView) {
     return (
-      <div className={`${styles.registerTitle} ${styles.acct} ${styles.pending} ${styles.transaction}`}>
+      <div className={`${styles.registerTitle} ${styles.transaction}`}>
         {commonTitles()}
         <div>Owner</div>
         <TitleStub />
@@ -43,7 +43,7 @@ const PendingTitles: React.FC<PropsType> = ({
   }
 
   return (
-    <div className={`${styles.registerTitle} ${styles.pending} ${styles.transaction}`}>
+    <div className={`${styles.registerTitle} ${styles.transaction}`}>
       {commonTitles()}
       <div>Account</div>
       <TitleStub />

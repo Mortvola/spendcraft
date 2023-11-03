@@ -1,7 +1,11 @@
 @use "./breakpoints";
 
+.layout {
+  display: grid;
+  grid-template-rows: max-content minmax(0, 1fr);
+}
+
 .main-tray-title {
-  grid-area: title;
   font-size:x-large;
 }
 
