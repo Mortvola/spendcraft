@@ -3,17 +3,4 @@
   padding: .3rem .3rem;
   display: grid;
   align-items: center;
-
-  &:hover {
-    background-color: lightgray;
-
-    i {
-      color: black;
-    }
-  }
- 
-  i {
-    color: rgba(0, 0, 0, 0.4);
-    font-size: smaller;
-  } 
 }

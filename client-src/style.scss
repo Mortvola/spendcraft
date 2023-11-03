@@ -4,10 +4,10 @@ html {
   --page-color: #fff;
   --text-color: black;
 
-  --category-hover-background: whitesmoke;
-  --category-hover-color: black;
-  --category-selection-background: lightblue;
-  --category-selection-color: black;
+  --hover-background: whitesmoke;
+  --hover-color: black;
+  --selection-background: lightblue;
+  --selection-color: black;
 
   --trx-small-text: 0.85rem;
 }
@@ -17,10 +17,10 @@ html {
     --page-color: #000;
     --text-color: white;
 
-    --category-hover-background: #222;
-    --category-hover-color: white;
-    --category-selection-background: #333;
-    --category-selection-color: white;
+    --hover-background: #222;
+    --hover-color: white;
+    --selection-background: #333;
+    --selection-color: white;
   }
 
   .modal-content {
@@ -70,7 +70,8 @@ body {
 
 .drop-down {
   position: fixed;
-  background-color: white;
+  color: var(--text-color);
+  background-color: var(--page-color);
   border: black thin solid;
   border-radius: 4px;
   overflow-y: auto;
@@ -253,13 +254,13 @@ body {
 @media (min-width: breakpoints.$side-by-side) {
   .cat-list-cat {
     &:not(.selected):hover {
-      background-color: var(--category-hover-background);
-      color: var(--category-hover-color);
+      background-color: var(--hover-background);
+      color: var(--hover-color);
     }
   
     &.selected {
-      background-color: var(--category-selection-background);
-      color: var(--category-selection-color);
+      background-color: var(--selection-background);
+      color: var(--selection-color);
     }
   }
 }
@@ -320,11 +321,11 @@ body {
 }
 
 .category-select-item:not(.selected):hover {
-  background-color: whitesmoke;
+  background-color: var(--hover-background);
 }
 
 .category-select-item.selected {
-  background-color: lightblue;
+  background-color: var(--selection-background);
 }
 
 .cat-fund-table {
