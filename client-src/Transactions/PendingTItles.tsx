@@ -45,7 +45,6 @@ const PendingTitles: React.FC<PropsType> = ({
   return (
     <div className={`${styles.registerTitle} ${styles.pending} ${styles.transaction}`}>
       {commonTitles()}
-      <div>Institution</div>
       <div>Account</div>
       <TitleStub />
     </div>

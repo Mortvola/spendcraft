@@ -158,7 +158,7 @@ const BudgetProgress: React.FC = observer(() => {
                       {
                         transactions.transactions.map((t) => (
                           <TransactionBase key={t.id} transaction={t}>
-                            <Transaction transaction={t} amount={t.amount} />
+                            <Transaction transaction={t} amount={t.amount} runningBalance={0} />
                           </TransactionBase>
                         ))
                       }

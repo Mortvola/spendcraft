@@ -1,14 +1,12 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
-import useMediaQuery from '../MediaQuery';
 import styles from './Transactions.module.scss'
-import Amount from '../Amount';
-import { PendingTransactionInterface } from '../State/State';
+import { BaseTransactionInterface } from '../State/State';
 import Date from '../Date';
-import AccountOwner from './AccountOwner';
+import Transaction from './Transactions/Transaction';
 
 type PropsType = {
-  pending?: PendingTransactionInterface[],
+  pending?: BaseTransactionInterface[],
   categoryView?: boolean,
 }
 
@@ -16,84 +14,19 @@ const PendingTransactions: React.FC<PropsType> = observer(({
   pending = [],
   categoryView = false,
 }) => {
-  const { isMobile } = useMediaQuery();
-
-  if (isMobile) {
-    if (categoryView) {
-      return (
-        <>
-          {
-            pending.map((transaction) => (
-              <div key={transaction.id} className={styles.transactionWrapper}>
-                <div className={`${styles.pending} ${styles.transaction}`}>
-                  <div />
-                  <Date className={styles.date} date={transaction.date} />
-                  <div className={styles.name}>{transaction.name}</div>
-                  <Amount className={styles.amount} amount={transaction.amount} />
-                  <div className={styles.account}>
-                    {
-                      transaction.instituteName !== ''
-                        ? `${transaction.instituteName}:${transaction.accountName}`
-                        : null
-                    }
-                  </div>
-                  <AccountOwner owner={transaction.accountOwner} />
-                </div>
-              </div>
-            ))
-          }
-        </>
-      )
-    }
-
-    return (
-      <>
-        {
-          pending.map((transaction) => (
-            <div key={transaction.id} className={styles.transactionWrapper}>
-              <div className={`${styles.transaction} ${styles.pending} ${styles.acct}`}>
-                <div />
-                <Date className={styles.date} date={transaction.date} />
-                <div className={styles.name}>{transaction.name}</div>
-                <Amount className={styles.amount} amount={transaction.amount} />
-                <AccountOwner owner={transaction.accountOwner} />
-              </div>
-            </div>
-          ))
-        }
-      </>
-    )
-  }
-
-  if (categoryView) {
-    return (
-      <>
-        {
-          pending.map((transaction) => (
-            <div key={transaction.id} className={`${styles.pending} ${styles.transaction}`}>
-              <div />
-              <Date className={styles.date} date={transaction.date} />
-              <div className={styles.name}>{transaction.name}</div>
-              <Amount className={styles.amount} amount={transaction.amount} />
-              <div className={styles.institution}>{transaction.instituteName}</div>
-              <div className={styles.account}>{transaction.accountName}</div>
-            </div>
-          ))
-        }
-      </>
-    )
+  let className = `${styles.pending} ${styles.transaction}`;
+  if (!categoryView) {
+    className += ` ${styles.acct}`
   }
 
   return (
     <>
       {
         pending.map((transaction) => (
-          <div key={transaction.id} className={`${styles.acct} ${styles.pending} ${styles.transaction}`}>
+          <div key={transaction.id} className={className}>
             <div />
             <Date className={styles.date} date={transaction.date} />
-            <div className={styles.name}>{transaction.name}</div>
-            <Amount className={styles.amount} amount={transaction.amount} />
-            <AccountOwner owner={transaction.accountOwner} />
+            <Transaction transaction={transaction} amount={transaction.amount} runningBalance={0} />
           </div>
         ))
       }

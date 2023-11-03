@@ -1,43 +1,75 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
 import Amount from '../../Amount';
-import { TransactionInterface } from '../../State/State';
-import useMediaQuery from '../../MediaQuery';
+import { AccountInterface, BaseTransactionInterface } from '../../State/State';
 import styles from '../Transactions.module.scss';
+import TransactionAccount from '../TransactionAccount';
+import { TransactionType } from '../../../common/ResponseTypes';
+import AccountOwner from '../AccountOwner';
+import Reconcile from '../Reconcile';
 
 type PropsType = {
-  transaction: TransactionInterface,
+  transaction: BaseTransactionInterface,
   amount: number,
+  runningBalance: number,
+  account?: AccountInterface | null,
 }
 
 const Transaction: React.FC<PropsType> = observer(({
   transaction,
   amount,
+  runningBalance,
+  account,
 }) => {
-  const { isMobile } = useMediaQuery();
+  const transactionAmount = () => {
+    if (
+      [
+        TransactionType.FUNDING_TRANSACTION,
+        TransactionType.REBALANCE_TRANSACTION,
+      ].includes(transaction.type)
+      || transaction.amount === amount
+    ) {
+      return <div className={styles.trxAmount} />;
+    }
 
-  if (isMobile) {
-    return (
-      <>
-        <div className={styles.name}>{transaction.name}</div>
-        <Amount className={styles.amount} amount={amount} />
-        <div className={styles.account}>
-          {
-            transaction.instituteName !== ''
-              ? `${transaction.instituteName}:${transaction.accountName}`
-              : null
-          }
-        </div>
-      </>
-    );
+    return <Amount className={styles.trxAmount} amount={transaction.amount} />
   }
+
+  const loanFields = () => (
+    account?.type === 'loan'
+      ? (
+        <>
+          <Amount className="currency" amount={transaction.amount} />
+          {
+            transaction.type !== TransactionType.STARTING_BALANCE
+              ? (
+                <>
+                  <Amount className="currency" amount={transaction.amount - amount} />
+                  <Amount className="currency" amount={amount} />
+                </>
+              )
+              : (
+                <>
+                  <div />
+                  <div />
+                </>
+              )
+          }
+        </>
+      )
+      : null
+  );
 
   return (
     <>
       <div className={styles.name}>{transaction.name}</div>
       <Amount className={styles.amount} amount={amount} />
-      <div className={styles.institution}>{transaction.instituteName}</div>
-      <div className={styles.account}>{transaction.accountName}</div>
+      <Amount className={styles.runningBalance} amount={runningBalance} />
+      <TransactionAccount transaction={transaction} />
+      {transactionAmount()}
+      { loanFields() }
+      <Reconcile transaction={transaction} />
+      <AccountOwner owner={transaction.accountOwner} />
     </>
   );
 });

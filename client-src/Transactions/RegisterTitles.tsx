@@ -47,7 +47,6 @@ const RegisterTitles: React.FC<PropsType> = ({
         }
         <div className="currency">Amount</div>
         <div className="currency">Balance</div>
-        <div>Institution</div>
         <div>Account</div>
         <TitleStub />
       </div>

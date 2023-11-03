@@ -25,7 +25,7 @@
   $balance-width: 8rem;
 
   display: grid;
-  grid-template-columns: $icon-width $date-width minmax(0,1fr) $amount-width $amount-width $balance-width minmax(0, 1fr) minmax(0, 1fr) max-content;
+  grid-template-columns: $icon-width $date-width minmax(0,1fr) $amount-width $amount-width $balance-width minmax(0, 1.4fr) max-content;
   grid-template-rows: max-content;
   align-items: center;
   transition: background-color 0.25s ease-out;
@@ -34,20 +34,34 @@
   padding-left: 0.5rem;
   cursor: pointer;
 
-  grid-template-areas: ". date name trx-amount amount running-balance institution account .";
+  grid-template-areas: ". date name trx-amount amount running-balance account .";
 
   &.unassigned {
-    grid-template-columns: $icon-width $date-width minmax(0,1fr) $amount-width $balance-width minmax(0, 0.5fr) minmax(0, 0.5fr) max-content;
-    grid-template-areas: ". date name amount running-balance institution account .";
+    grid-template-columns: $icon-width $date-width minmax(0,1fr) $amount-width $balance-width minmax(0, 0.5fr) max-content;
+    grid-template-areas: ". date name amount running-balance account .";
   }
   
   &.acct {
     grid-template-columns: $icon-width $date-width minmax(0,1fr) $amount-width $balance-width max-content minmax(0, 1fr);
-    grid-template-areas: ". date name amount running-balance . owner .";
+    grid-template-areas: ". date name amount running-balance reconcile owner .";
 
     &.pending {
       grid-template-columns: $icon-width $date-width minmax(0, 1fr) $amount-width minmax(0, 1fr) max-content;
       grid-template-areas: ". date name amount owner .";
+
+      .reconcile {
+        display: none;
+      }
+    }
+
+    .owner,
+    .reconcile {
+      display: unset;
+    }
+
+    .account,
+    .trx-amount {
+      display: none;
     }
   }
   
@@ -56,8 +70,12 @@
   }
   
   &.pending {
-    grid-template-columns: $icon-width $date-width minmax(0, 1.8fr) $amount-width minmax(0,0.8fr) minmax(0, 0.8fr);
-    grid-template-areas: ". date name amount institution account .";
+    grid-template-columns: $icon-width $date-width minmax(0, 1.8fr) $amount-width minmax(0, 1.2fr);
+    grid-template-areas: ". date name amount account .";
+
+    .running-balance {
+      display: none;
+    }
   }
   
   &.rebalances {
@@ -93,6 +111,11 @@
   .account {
     grid-area: account;
   }
+
+  .reconcile {
+    grid-area: reconcile;
+    display: none;
+  }
   
   .institution {
     grid-area: institution;
@@ -101,6 +124,7 @@
   .owner {
     grid-area: owner;
     text-transform: capitalize;
+    display: none;
   }
   
   .running-balance {
@@ -133,6 +157,10 @@
         ". name name amount"
         ". date account account"
         ". owner owner owner";
+
+      .running-balance {
+        display: none;
+      }
     }
 
     &.acct {
@@ -148,7 +176,15 @@
         grid-template-areas:
           ". name name amount"
           ". date owner .";
-      }  
+
+        .running-balance {
+          display: none;
+        }
+      }
+
+      .reconcile {
+        display: none;
+      }
     }
 
     .date,
@@ -157,7 +193,16 @@
     .owner,
     .running-balance {
       font-size: var(--trx-small-text);
-    }  
+    }
+
+    .owner {
+      display: unset;
+    }
+
+    .trx-amount,
+    .reconcile {
+      display: none;
+    }
   }
 }
 

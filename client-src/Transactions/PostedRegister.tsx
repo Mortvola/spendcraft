@@ -2,8 +2,6 @@ import React from 'react';
 import { observer } from 'mobx-react-lite';
 import useMediaQuery from '../MediaQuery';
 import RegisterTransactions from './RegisterTransactions';
-import AccountTransaction from './Transactions/AccountTransaction';
-import CategoryTransaction from './Transactions/CategoryTransaction';
 import {
   AccountInterface, CategoryInterface, TransactionContainerInterface, TransactionInterface,
 } from '../State/State';
@@ -13,6 +11,7 @@ import TransactionBase from './Transactions/TransactionBase';
 import RebalancesTitles from './RebalancesTitles';
 import RebalanceTransaction from './Transactions/RebalanceTransaction';
 import styles from './Transactions.module.scss';
+import Transaction from './Transactions/Transaction';
 
 type PropsType = {
   type: 'category' | 'account' | 'rebalances',
@@ -41,36 +40,6 @@ const PostedRegister: React.FC<PropsType> = observer(({
     />
   );
 
-  const renderTransactionType = (
-    transaction: TransactionInterface,
-    amount: number,
-    runningBalance: number,
-  ) => {
-    if (category) {
-      return (
-        <CategoryTransaction
-          transaction={transaction}
-          amount={amount}
-          runningBalance={runningBalance}
-          category={category}
-        />
-      );
-    }
-
-    if (account) {
-      return (
-        <AccountTransaction
-          transaction={transaction}
-          amount={amount}
-          runningBalance={runningBalance}
-          account={account}
-        />
-      )
-    }
-
-    return null;
-  };
-
   let renderTransactions = () => {
     if (trxContainer === null) {
       throw new Error('trxContainer is not set');
@@ -94,7 +63,12 @@ const PostedRegister: React.FC<PropsType> = observer(({
           showTrxDialog={showTrxDialog}
           className={transactionClassName}
         >
-          { renderTransactionType(transaction, amount, runningBalance) }
+          <Transaction
+            transaction={transaction}
+            amount={amount}
+            runningBalance={runningBalance}
+            account={account}
+          />
         </TransactionBase>
       )
 
@@ -147,9 +121,7 @@ const PostedRegister: React.FC<PropsType> = observer(({
           ? null
           : titles
       }
-      <RegisterTransactions
-        trxContainer={trxContainer}
-      >
+      <RegisterTransactions trxContainer={trxContainer}>
         { renderTransactions() }
       </RegisterTransactions>
       <TrxDialog />

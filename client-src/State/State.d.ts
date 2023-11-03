@@ -31,7 +31,7 @@ export interface GroupInterface {
   update(name: string): Promise<null | Error[]>;
 }
 
-export interface TransactionInterface {
+export interface TransactionInterface extends BaseTransactionInterface {
   id: number | null;
 
   amount: number;
@@ -90,12 +90,14 @@ export interface TransactionInterface {
   toggleReconciled(): void;
 }
 
-export interface PendingTransactionInterface {
+export interface BaseTransactionInterface {
   id: number | null;
 
   amount: number;
 
   date: DateTime;
+
+  type: TransactionType;
 
   name: string;
 
@@ -103,7 +105,11 @@ export interface PendingTransactionInterface {
 
   accountName: string;
 
+  reconciled: boolean;
+
   accountOwner: string | null;
+
+  toggleReconciled(): void;
 }
 
 export interface AccountsInterface {
@@ -306,7 +312,7 @@ export interface TransactionContainerInterface {
 
   transactions: TransactionInterface[];
 
-  pending: PendingTransactionInterface[];
+  pending: BaseTransactionInterface[];
 
   transactionsQuery: QueryManagerInterface;
 
