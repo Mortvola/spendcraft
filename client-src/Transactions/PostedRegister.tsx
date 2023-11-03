@@ -3,7 +3,7 @@ import { observer } from 'mobx-react-lite';
 import useMediaQuery from '../MediaQuery';
 import RegisterTransactions from './RegisterTransactions';
 import {
-  AccountInterface, CategoryInterface, TransactionContainerInterface, TransactionInterface,
+  AccountInterface, CategoryInterface, TransactionContainerInterface,
 } from '../State/State';
 import RegisterTitles from './RegisterTitles';
 import useTrxDialog from './TrxDialog';
