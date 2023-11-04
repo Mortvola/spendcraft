@@ -10,6 +10,7 @@
   color: var(--text-color);
   background-color: var(--page-color);
   overflow-y: auto;
+  overscroll-behavior-y: contain;
 }
 
 @media (min-width: breakpoints.$side-by-side) {

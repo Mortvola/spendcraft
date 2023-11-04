@@ -3,6 +3,7 @@
 .transactions {
   height: 100%;
   overflow-y: scroll;
+  overscroll-behavior-y: contain;
 }
 
 @media (max-width: breakpoints.$side-by-side) {
