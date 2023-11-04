@@ -122,7 +122,7 @@ if (container) {
               </Route>
               <Route path="plans" element={<Plans />} />
               <Route path="accounts" element={<Accounts />}>
-                <Route index element={<div className="register window window1" />} />
+                <Route index element={<AccountDetails />} />
                 <Route path=":accountId" element={<AccountDetails />} />
               </Route>
               <Route path="reports" element={<Reports />} />

@@ -8,7 +8,7 @@ import styles from './AccountView.module.scss';
 
 type PropsType = {
   opened: boolean,
-  onAccountSelected: () => void,
+  onAccountSelected?: () => void,
 }
 
 const AccountView: React.FC<PropsType> = observer(({
@@ -18,6 +18,14 @@ const AccountView: React.FC<PropsType> = observer(({
   const navigate = useNavigate();
   const params = useParams();
   const { accounts, uiState } = useStores();
+
+  const handleAccountSelected = (account: AccountInterface) => {
+    navigate(account.id.toString());
+
+    if (onAccountSelected) {
+      onAccountSelected();
+    }
+  };
 
   React.useEffect(() => {
     if (accounts.initialized) {
@@ -36,11 +44,6 @@ const AccountView: React.FC<PropsType> = observer(({
       }
     }
   }, [accounts, accounts.initialized, accounts.institutions, navigate, opened, params, params.accountId, uiState]);
-
-  const handleAccountSelected = (account: AccountInterface) => {
-    navigate(account.id.toString());
-    onAccountSelected();
-  };
 
   const handleAccountStateChange = (account: AccountInterface) => {
     if (uiState.selectedAccount === account) {

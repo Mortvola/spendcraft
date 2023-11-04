@@ -8,7 +8,7 @@ type PropsType = {
   sidebar?: ReactNode,
   children?: ReactNode,
   className?: string,
-  onToggleClick: () => void,
+  onToggleClick?: () => void,
 }
 
 const Main: React.FC<PropsType> = ({

@@ -10,9 +10,10 @@ import Group from './Group';
 import SystemCategory from './SystemCategory';
 import Category from './Category';
 import styles from './CategoryView.module.scss'
+import useMediaQuery from '../../MediaQuery';
 
 type PropsType = {
-  onCategorySelected: () => void,
+  onCategorySelected?: () => void,
 }
 
 const CategoryView: React.FC<PropsType> = observer(({
@@ -23,17 +24,14 @@ const CategoryView: React.FC<PropsType> = observer(({
   const rebalancesPath = useResolvedPath('rebalances');
   const rebalancesMatch = useMatch({ path: rebalancesPath.pathname, end: true });
   const { categoryTree, uiState } = useStores();
+  const { isMobile } = useMediaQuery();
 
   const handleCategorySelected = (category: CategoryInterface) => {
-    if (category === categoryTree.unassignedCat) {
-      navigate('');
-    }
-    else {
-      navigate(category.id.toString());
-    }
+    navigate(category.id.toString());
 
-    uiState.selectCategory(category);
-    onCategorySelected();
+    if (onCategorySelected) {
+      onCategorySelected();
+    }
   };
 
   const handleRebalancesClick = () => {
@@ -56,11 +54,15 @@ const CategoryView: React.FC<PropsType> = observer(({
       else if (rebalancesMatch) {
         uiState.selectCategory(null);
       }
-      else {
+      else if (!isMobile) {
         uiState.selectCategory(categoryTree.unassignedCat);
+        navigate(categoryTree.unassignedCat?.id.toString() ?? '')
+      }
+      else {
+        uiState.selectCategory(null);
       }
     }
-  }, [categoryTree, navigate, params.categoryId, rebalancesMatch, uiState]);
+  }, [categoryTree, isMobile, navigate, params.categoryId, rebalancesMatch, uiState]);
 
   let rebalancesClassName = 'cat-list-cat system';
   if (rebalancesMatch) {

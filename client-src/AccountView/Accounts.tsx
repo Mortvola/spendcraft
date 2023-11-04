@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { Tab, Tabs } from 'react-bootstrap';
-import { Outlet } from 'react-router-dom';
+import {
+  Outlet, matchPath, useLocation, useNavigate,
+} from 'react-router-dom';
 import useMediaQuery from '../MediaQuery'
 import AccountView from './AccountView';
 import Main from '../Main';
@@ -14,19 +16,22 @@ import NavigationView from '../NavigationView';
 const Accounts: React.FC = observer(() => {
   const [open, setOpen] = useState<boolean>(false);
   const { isMobile } = useMediaQuery();
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  const handleToggleClick = () => {
-    setOpen(!open);
-  }
+  React.useEffect(() => {
+    const matched = matchPath({ path: '/accounts/:accountId', caseSensitive: false, end: true }, location.pathname);
 
-  const handleAccountSelected = () => {
-    if (isMobile) {
+    if (matched) {
       setOpen(true);
     }
-  }
+    else {
+      setOpen(false);
+    }
+  }, [location.pathname]);
 
   const handleClose = () => {
-    setOpen(false);
+    navigate('/accounts')
   }
 
   return (
@@ -38,15 +43,14 @@ const Accounts: React.FC = observer(() => {
             <div className={styles.accounts}>
               <Tabs className="mb-3" mountOnEnter unmountOnExit>
                 <Tab eventKey="opened" title="Opened">
-                  <AccountView onAccountSelected={handleAccountSelected} opened />
+                  <AccountView opened />
                 </Tab>
                 <Tab eventKey="closed" title="Closed">
-                  <AccountView onAccountSelected={handleAccountSelected} opened={false} />
+                  <AccountView opened={false} />
                 </Tab>
               </Tabs>
             </div>
           )}
-          onToggleClick={handleToggleClick}
           className={styles.theme}
         >
           <Outlet />
@@ -66,10 +70,10 @@ const Accounts: React.FC = observer(() => {
             <div className={styles.accounts}>
               <Tabs className="mb-3" mountOnEnter unmountOnExit>
                 <Tab eventKey="opened" title="Opened">
-                  <AccountView onAccountSelected={handleAccountSelected} opened />
+                  <AccountView opened />
                 </Tab>
                 <Tab eventKey="closed" title="Closed">
-                  <AccountView onAccountSelected={handleAccountSelected} opened={false} />
+                  <AccountView opened={false} />
                 </Tab>
               </Tabs>
             </div>

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import { Outlet } from 'react-router-dom';
+import {
+  Outlet, matchPath, useLocation, useNavigate,
+} from 'react-router-dom';
 import useMediaQuery from '../MediaQuery'
 import CategoryView from './CategoryView/CategoryView';
 import HomeToolbar from './CategoryView/CategoryViewToolbar';
@@ -13,21 +15,23 @@ import NavigationView from '../NavigationView';
 
 const Home: React.FC = observer(() => {
   const { categoryTree } = useStores();
-  const { isMobile } = useMediaQuery();
   const [open, setOpen] = useState<boolean>(false);
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  const handleToggleClick = () => {
-    setOpen(!open);
-  }
+  React.useEffect(() => {
+    const matched = matchPath({ path: '/home/:category', caseSensitive: false, end: true }, location.pathname);
 
-  const handleCategorySelected = () => {
-    if (isMobile) {
+    if (matched) {
       setOpen(true);
     }
-  }
+    else {
+      setOpen(false);
+    }
+  }, [location.pathname]);
 
   const handleClose = () => {
-    setOpen(false);
+    navigate('/home');
   }
 
   if (categoryTree.initialized) {
@@ -37,9 +41,8 @@ const Home: React.FC = observer(() => {
           <Main
             toolbar={<HomeToolbar open={open} />}
             sidebar={(
-              <CategoryView onCategorySelected={handleCategorySelected} />
+              <CategoryView />
             )}
-            onToggleClick={handleToggleClick}
             className={styles.theme}
           >
             <Outlet />
@@ -54,7 +57,7 @@ const Home: React.FC = observer(() => {
               <Outlet />
             )}
           >
-            <CategoryView onCategorySelected={handleCategorySelected} />
+            <CategoryView />
           </NavigationView>
         </MobileView>
       </>

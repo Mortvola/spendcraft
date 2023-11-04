@@ -1,5 +1,7 @@
 import React from 'react';
-import { useNavigate, matchPath, useLocation } from 'react-router-dom';
+import {
+  matchPath, useLocation,
+} from 'react-router-dom';
 import IconButton from './IconButton';
 import styles from './TabViewButton.module.scss';
 
@@ -7,14 +9,15 @@ type PropsType = {
   icon: string,
   caption: string,
   url: string,
+  onClick: () => void,
 }
 
 const TabViewButton: React.FC<PropsType> = ({
   icon,
   caption,
   url,
+  onClick,
 }) => {
-  const navigate = useNavigate();
   const location = useLocation();
   const [match, setMatch] = React.useState<boolean>(false);
 
@@ -23,17 +26,13 @@ const TabViewButton: React.FC<PropsType> = ({
     setMatch(matched !== null);
   }, [location.pathname, url]);
 
-  const handleClick = () => {
-    navigate(url);
-  }
-
   return (
     <IconButton
       icon={icon}
       caption={caption}
       className={`${styles.icon} ${match ? 'active' : ''}`}
       iconClass="fa-solid"
-      onClick={handleClick}
+      onClick={onClick}
     />
   )
 }
