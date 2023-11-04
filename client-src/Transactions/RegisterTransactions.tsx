@@ -18,6 +18,9 @@ const RegisterTransactions: React.FC<PropsType> = observer(({
 }) => {
   const ref = React.useRef<HTMLDivElement>(null);
   const checkForNeededData = useTrxPager(trxContainer);
+  const [touchStart, setTouchStart] = React.useState<number>(0);
+  const [offset, setOffset] = React.useState<number>(0);
+  const [maxReached, setMaxReached] = React.useState<boolean>(false);
 
   const handleScroll: React.UIEventHandler<HTMLDivElement> = () => {
     checkForNeededData(ref.current);
@@ -27,6 +30,37 @@ const RegisterTransactions: React.FC<PropsType> = observer(({
     checkForNeededData(ref.current);
   }, [checkForNeededData]);
 
+  const handleTouchStart: React.EventHandler<React.TouchEvent<HTMLDivElement>> = (event) => {
+    const start = event.touches[0].clientY;
+    setTouchStart(start);
+  };
+
+  const handleTouchMove = (event: React.TouchEvent<HTMLDivElement>) => {
+    if (!maxReached) {
+      let delta = event.changedTouches[0].clientY - touchStart;
+
+      if (delta > 0) {
+        const maxPull = 200;
+        delta /= 2;
+
+        if (delta > maxPull) {
+          delta = maxPull;
+          setMaxReached(true);
+          setOffset(0);
+          trxContainer.getTransactions(0);
+        }
+        else {
+          setOffset(delta);
+        }
+      }
+    }
+  }
+
+  const handleTouchEnd: React.EventHandler<React.TouchEvent<HTMLDivElement>> = () => {
+    setOffset(0);
+    setMaxReached(false);
+  };
+
   if (
     trxContainer.transactions.length === 0 && trxContainer.transactionsQuery.fetching
   ) {
@@ -34,7 +68,15 @@ const RegisterTransactions: React.FC<PropsType> = observer(({
   }
 
   return (
-    <div ref={ref} className={`${styles.transactions} striped`} onScroll={handleScroll}>
+    <div
+      ref={ref}
+      className={`${styles.transactions} striped`}
+      style={{ transform: `translate(0px, ${offset}px)` }}
+      onScroll={handleScroll}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       {children}
     </div>
   );
