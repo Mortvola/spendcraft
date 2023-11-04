@@ -522,7 +522,6 @@ body {
 .plan {
   display: grid;
   grid-template-rows: repeat(3, minmax(0, max-content));
-  background-color: #ffffffff;
   border-radius: 0.5rem;
   overflow: clip;
   position: relative;
@@ -566,7 +565,7 @@ body {
   display: grid;
   grid-template-columns: 200px 125px 100px 1fr;
   padding-left: 14px;
-  background-color: whitesmoke;
+  background-color: var(--page-color);
   border-top: thin solid black;
   overflow: auto;
 }
@@ -622,7 +621,6 @@ body {
   width: 100%;
   user-select: none;
   -webkit-user-select: none;
-  background-color: #fff;
 }
 
 .plan-list * {
