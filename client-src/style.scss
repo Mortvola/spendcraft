@@ -12,6 +12,10 @@ html {
   --trx-small-text: 0.85rem;
 }
 
+html {
+  overscroll-behavior-y: none;
+}
+
 @media (prefers-color-scheme: dark) {
   html {
     --page-color: #000;
