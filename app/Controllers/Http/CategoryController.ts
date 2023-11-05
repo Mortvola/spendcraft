@@ -88,8 +88,6 @@ class CategoryController {
             })
         })
 
-      const t = parseFloat(categories[0].$extras.previousSum ?? 0);
-
       return categories.map((c) => ({
         id: c.id,
         name: c.name,
