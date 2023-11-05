@@ -41,7 +41,7 @@ class Account extends TransactionContainer implements AccountInterface {
   store: StoreInterface;
 
   constructor(store: StoreInterface, institution: InstitutionInterface, props: AccountProps) {
-    super(store, `/api/v1/account/${props.id}/transactions`);
+    super(store, `/api/v1/account/${props.id}/transactions`, `/api/v1/account/${props.id}/transactions/pending`);
 
     this.id = props.id;
     this.plaidId = props.plaidId;
@@ -94,14 +94,6 @@ class Account extends TransactionContainer implements AccountInterface {
         }
       });
     }
-  }
-
-  async getPendingTransactions(index = 0): Promise<void> {
-    return this.pendingQuery.fetch(
-      `/api/v1/account/${this.id}/transactions/pending`,
-      index,
-      this.pendingResponseHandler,
-    );
   }
 
   async addTransaction(

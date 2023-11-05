@@ -1,6 +1,6 @@
 import { observer } from 'mobx-react-lite';
 import React from 'react';
-import { BaseTransactionInterface } from '../State/State';
+import { BaseTransactionInterface, TransactionContainerInterface } from '../State/State';
 import PendingTitles from './PendingTitles';
 import SecondaryRegister from './SecondaryRegister';
 import Date from '../Date';
@@ -8,17 +8,20 @@ import Transaction from './Transactions/Transaction';
 import styles from './Transactions.module.scss'
 
 type PropsType = {
+  trxContainer: TransactionContainerInterface,
   categoryView: boolean,
   pending?: BaseTransactionInterface[],
 }
 
 const PendingRegister: React.FC<PropsType> = observer(({
+  trxContainer,
   categoryView,
   pending,
 }) => {
   if (pending && pending.length > 0) {
     return (
       <SecondaryRegister
+        trxContainer={trxContainer}
         title="Pending Transactions"
         titles={<PendingTitles categoryView={categoryView} />}
       >

@@ -298,7 +298,7 @@ class CategoryController {
     const cat = await Category.findOrFail(categoryId);
 
     if (cat.type === 'UNASSIGNED') {
-      pending = await budget
+      const pendingQuery = budget
         .related('transactions').query()
         .where((query) => {
           query
@@ -321,6 +321,18 @@ class CategoryController {
           });
         })
         .preload('transactionCategories');
+
+      if (request.qs().limit !== undefined) {
+        pendingQuery
+          .limit(request.qs().limit)
+      }
+
+      if (request.qs().offset !== undefined) {
+        pendingQuery
+          .offset(request.qs().offset);
+      }
+
+      pending = await pendingQuery;
     }
 
     return pending.map((p) => p.serialize(transactionFields) as TransactionProps);

@@ -95,7 +95,9 @@ const BudgetProgress: React.FC = observer(() => {
       return `${accum}&t=${t}`;
     }, '');
 
-    const container = new TransactionContainer(store, `/api/v1/transactions?${queryParams}`);
+    const container = new TransactionContainer(
+      store, `/api/v1/transactions?${queryParams}`, `/api/v1/pending?${queryParams}`,
+    );
     container.getTransactions();
     setTransactions(container);
     // const response = await Http.get<TransactionProps>(`/api/v1/transactions?${queryParams}`);

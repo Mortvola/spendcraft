@@ -109,7 +109,11 @@ const Register: React.FC<PropsType> = observer(({
             account={account}
             transactionClassName={transactionClassName}
           />
-          <PendingRegister categoryView={type === 'category'} pending={trxContainer.pending} />
+          <PendingRegister
+            trxContainer={trxContainer}
+            categoryView={type === 'category'}
+            pending={trxContainer.pending}
+          />
         </div>
       </DesktopView>
       <MobileView>
@@ -122,7 +126,11 @@ const Register: React.FC<PropsType> = observer(({
           {
             transactionType && trxContainer.pending && trxContainer.pending.length
               ? (
-                <PendingRegister categoryView={type === 'category'} pending={trxContainer.pending} />
+                <PendingRegister
+                  trxContainer={trxContainer}
+                  categoryView={type === 'category'}
+                  pending={trxContainer.pending}
+                />
               )
               : (
                 <PostedRegister

@@ -319,6 +319,10 @@ export interface TransactionContainerInterface {
   getTransactions(index?: number): Promise<void>;
 
   getMoreTransactions(): Promise<void>;
+
+  getPendingTransactions(index = 0): Promise<void>;
+
+  getMorePendingTransactions(): Promise<void>;
 }
 
 export interface AccountSettings {

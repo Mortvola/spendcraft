@@ -29,7 +29,7 @@ class Category extends TransactionContainer implements CategoryInterface {
   store: StoreInterface;
 
   constructor(props: CategoryProps, store: StoreInterface) {
-    super(store, `/api/v1/category/${props.id}/transactions`);
+    super(store, `/api/v1/category/${props.id}/transactions`, `/api/v1/category/${props.id}/transactions/pending`);
 
     this.id = props.id;
     this.name = props.name;
@@ -42,14 +42,6 @@ class Category extends TransactionContainer implements CategoryInterface {
     makeObservable(this, {
       name: observable,
     });
-  }
-
-  async getPendingTransactions(index = 0): Promise<void> {
-    return this.pendingQuery.fetch(
-      `/api/v1/category/${this.id}/transactions/pending`,
-      index,
-      this.pendingResponseHandler,
-    )
   }
 
   async update(
