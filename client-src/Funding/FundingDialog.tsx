@@ -208,9 +208,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
   const initialFundingDate = () => (
     (transaction
       ? transaction.date
-      : DateTime.now().set({
-        day: 1, hour: 0, minute: 0, second: 0, millisecond: 0,
-      })
+      : DateTime.now().startOf('month')
     ).toISODate()
   );
 

@@ -88,13 +88,15 @@ class CategoryController {
             })
         })
 
+      const t = parseFloat(categories[0].$extras.previousSum ?? 0);
+
       return categories.map((c) => ({
         id: c.id,
         name: c.name,
-        balance: (c.amount - (parseFloat(c.$extras.sum) ?? 0)) ?? 0,
-        previousSum: parseFloat(c.$extras.previousSum) ?? 0,
-        previousFunding: parseFloat(c.$extras.previousFunding) ?? 0,
-        previousCatTransfers: parseFloat(c.$extras.previousCatTransfers) ?? 0,
+        balance: (c.amount - (parseFloat(c.$extras.sum ?? 0))),
+        previousSum: parseFloat(c.$extras.previousSum ?? 0),
+        previousFunding: parseFloat(c.$extras.previousFunding ?? 0),
+        previousCatTransfers: parseFloat(c.$extras.previousCatTransfers ?? 0),
       }));
     }
 

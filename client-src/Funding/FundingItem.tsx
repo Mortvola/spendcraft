@@ -25,8 +25,8 @@ const FundingItem: React.FC<PropsType> = ({
   const [field] = useField(name);
   const balance = (fundingInfo?.initialAmount ?? 0) + (
     typeof field.value === 'string'
-      ? parseFloat(field.value)
-      : field.value
+      ? parseFloat(field.value ?? 0)
+      : (field.value ?? 0)
   );
 
   const previousMonthName = date.minus({ months: 1 }).monthLong;

@@ -44,10 +44,7 @@ const Funding: React.FC<PropsType> = ({
   }, [loadedPlanId, planId, setFieldValue]);
 
   React.useEffect(() => {
-    const newDate = date
-      .set({
-        day: 1, hour: 0, minute: 0, second: 0, millisecond: 0,
-      });
+    const newDate = date.startOf('month');
 
     (async () => {
       const response = await Http.get<FundingInfoProps[]>(`/api/v1/categories?date=${newDate.toISODate()}`);
