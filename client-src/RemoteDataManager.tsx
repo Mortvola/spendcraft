@@ -1,6 +1,6 @@
 import React from 'react';
 import styles from './RemoteDataManager.module.scss';
-import useDataPager from './Transactions/DataPager';
+import useDataPager from './DataPager';
 import PleaseWait from './PleaseWait';
 
 type PropsType = {
@@ -49,13 +49,6 @@ const RemoteDataManager: React.FC<PropsType> = ({
       }
     }
   }
-
-  // Check for data when mounting the component.
-  React.useEffect(() => {
-    if (onGetData && isDataNeeded(ref.current)) {
-      onGetData();
-    }
-  }, [isDataNeeded, onGetData]);
 
   return (
     <div
