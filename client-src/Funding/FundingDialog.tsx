@@ -41,6 +41,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
   const [plansInitialized, setPlansInitialized] = useState(false);
   const [plans, setPlans] = useState<FundingPlanProps[]>([]);
   const [selectedPlanId, setSelectedPlanId] = useState(-1);
+  const [diffOnly, setDiffOnly] = React.useState<boolean>(false);
 
   if (!plansInitialized) {
     setPlansInitialized(true);
@@ -228,6 +229,10 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
     return {};
   }
 
+  const handleCheckChange = () => {
+    setDiffOnly((prev) => (!prev));
+  }
+
   return (
     <FormModal<ValueType>
       setShow={setShow}
@@ -282,6 +287,10 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
           </label>
         </div>
         <FormError name="date" />
+        <label>
+          <input type="checkbox" checked={diffOnly} onChange={handleCheckChange} className={styles.checkbox} />
+          Show only differences in funding
+        </label>
         <div className="cat-fund-table">
           <Field>
             {({
@@ -291,7 +300,8 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
             }: FieldProps<FundingType[]>) => (
               <Funding
                 planId={selectedPlanId}
-                date={DateTime.fromISO(values.date)}
+                date={DateTime.fromISO(values.date).startOf('month').toISODate() ?? ''}
+                diffOnly={diffOnly}
                 // onChange={handleFundingChange}
               />
             )}

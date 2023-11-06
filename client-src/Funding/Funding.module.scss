@@ -55,3 +55,16 @@
   display: flex;
   justify-content: end;
 }
+
+.hide {
+  display: none;
+}
+
+.checkbox {
+  margin-right: 0.5rem;
+}
+
+label > .checkbox {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}

@@ -569,8 +569,6 @@ export default class Budget extends BaseModel {
 
     const fundingMonth = DateTime.now().startOf('month');
 
-    console.log(fundingMonth.toISODate());
-
     const proposedCats: ProposedFundingCateggoryProps[] = [];
 
     fundingCats.forEach((planCat) => {
@@ -594,9 +592,10 @@ export default class Budget extends BaseModel {
         //   day: 1, hour: 0, minute: 0, second: 0, millisecond: 0, year: DateTime.now().year,
         // });
 
-        console.log(planCat.goalDate?.toISODate());
-        console.log(goalDate.toISODate());
-        const monthDiff = goalDate.diff(fundingMonth, 'months').months;
+        let monthDiff = goalDate.diff(fundingMonth, 'months').months;
+        if (monthDiff < 0) {
+          monthDiff += 12;
+        }
 
         // TODO: use the planCat.amount sans any transactions this month
         const goalDiff = planCat.amount - cat.amount;

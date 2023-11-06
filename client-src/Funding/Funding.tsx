@@ -13,12 +13,14 @@ import { useStores } from '../State/mobxStore';
 
 type PropsType = {
   planId: number,
-  date: DateTime,
+  date: string,
+  diffOnly: boolean,
 }
 
 const Funding: React.FC<PropsType> = ({
   planId,
   date,
+  diffOnly,
 }) => {
   const { categoryTree } = useStores();
   const { setFieldValue } = useFormikContext<ValueType>();
@@ -44,10 +46,10 @@ const Funding: React.FC<PropsType> = ({
   }, [loadedPlanId, planId, setFieldValue]);
 
   React.useEffect(() => {
-    const newDate = date.startOf('month');
+    // const newDate = date.startOf('month');
 
     (async () => {
-      const response = await Http.get<FundingInfoProps[]>(`/api/v1/categories?date=${newDate.toISODate()}`);
+      const response = await Http.get<FundingInfoProps[]>(`/api/v1/categories?date=${date}`);
 
       if (response.ok) {
         const body = await response.body();
@@ -72,7 +74,8 @@ const Funding: React.FC<PropsType> = ({
         key={`c:${category.id}`}
         fundingInfo={fundingInfo}
         category={category}
-        date={date}
+        date={DateTime.fromISO(date)}
+        diffOnly={diffOnly}
       />
     );
   }

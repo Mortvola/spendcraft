@@ -13,6 +13,7 @@ type PropsType = {
   category: CategoryInterface,
   date: DateTime,
   onDeltaChange?: (amount: number, delta: number) => void,
+  diffOnly: boolean,
 }
 
 const FundingItem: React.FC<PropsType> = ({
@@ -20,6 +21,7 @@ const FundingItem: React.FC<PropsType> = ({
   category,
   date,
   onDeltaChange,
+  diffOnly,
 }) => {
   const name = `categories.${category.id}`;
   const [field] = useField(name);
@@ -31,45 +33,52 @@ const FundingItem: React.FC<PropsType> = ({
 
   const previousMonthName = date.minus({ months: 1 }).monthLong;
 
+  const hide = (current: string, previous?: number) => {
+    const value1 = parseFloat(current ?? 0).toFixed(2);
+    const value2 = (previous ?? 0).toFixed(2);
+
+    return diffOnly && !(value1 !== value2);
+  }
+
   return (
-    <div className={styles.fundListItem}>
-      <div className={styles.fundListCatName}>{category.name}</div>
-      <div className={styles.valuesWrapper}>
-        <div className={styles.fundValues}>
-          <VerticalTitled title="Current">
-            <Amount amount={fundingInfo?.initialAmount ?? 0} />
-          </VerticalTitled>
-          <VerticalTitled title="Funding" underscored={false}>
-            <Field
-              name={name}
-            >
-              {
-                ({ field: fieldProps }: FieldProps) => (
+    <Field
+      name={name}
+    >
+      {
+        ({ field: fieldProps }: FieldProps) => (
+          <div className={`${styles.fundListItem} ${hide(fieldProps.value, fundingInfo?.previousFunding) ? styles.hide : ''}`}>
+            <div className={styles.fundListCatName}>{category.name}</div>
+            <div className={styles.valuesWrapper}>
+              <div className={styles.fundValues}>
+                <VerticalTitled title="Current">
+                  <Amount amount={fundingInfo?.initialAmount ?? 0} />
+                </VerticalTitled>
+                <VerticalTitled title="Funding" underscored={false}>
                   <AmountInput onDeltaChange={onDeltaChange} {...fieldProps} />
-                )
-              }
-            </Field>
-          </VerticalTitled>
-          <VerticalTitled title="Balance">
-            <Amount amount={balance} />
-          </VerticalTitled>
-        </div>
-        <div className={styles.fundValues2}>
-          <div className={styles.labeledAmount}>
-            {`${previousMonthName} Expenses:`}
-            <Amount style={{ minWidth: '6rem' }} amount={fundingInfo?.previousExpenses ?? 0} />
+                </VerticalTitled>
+                <VerticalTitled title="Balance">
+                  <Amount amount={balance} />
+                </VerticalTitled>
+              </div>
+              <div className={styles.fundValues2}>
+                <div className={styles.labeledAmount}>
+                  {`${previousMonthName} Expenses:`}
+                  <Amount style={{ minWidth: '6rem' }} amount={fundingInfo?.previousExpenses ?? 0} />
+                </div>
+                <div className={styles.labeledAmount}>
+                  {`${previousMonthName} Funding:`}
+                  <Amount style={{ minWidth: '6rem' }} amount={fundingInfo?.previousFunding ?? 0} />
+                </div>
+                <div className={styles.labeledAmount}>
+                  {`${previousMonthName} Category Transfers:`}
+                  <Amount style={{ minWidth: '6rem' }} amount={fundingInfo?.previousCatTransfers ?? 0} />
+                </div>
+              </div>
+            </div>
           </div>
-          <div className={styles.labeledAmount}>
-            {`${previousMonthName} Funding:`}
-            <Amount style={{ minWidth: '6rem' }} amount={fundingInfo?.previousFunding ?? 0} />
-          </div>
-          <div className={styles.labeledAmount}>
-            {`${previousMonthName} Category Transfers:`}
-            <Amount style={{ minWidth: '6rem' }} amount={fundingInfo?.previousCatTransfers ?? 0} />
-          </div>
-        </div>
-      </div>
-    </div>
+        )
+      }
+    </Field>
   );
 };
 
