@@ -567,9 +567,9 @@ export default class Budget extends BaseModel {
 
     const fundingCats = await plan.related('categories').query();
 
-    const fundingMonth = DateTime.now().set({
-      day: 0, hour: 0, minute: 0, second: 0, millisecond: 0,
-    });
+    const fundingMonth = DateTime.now().startOf('month');
+
+    console.log(fundingMonth.toISODate());
 
     const proposedCats: ProposedFundingCateggoryProps[] = [];
 
@@ -582,18 +582,21 @@ export default class Budget extends BaseModel {
         adjustedReason: null,
       };
 
-      const gd = planCat.goalDate?.set({
-        day: 0, hour: 0, minute: 0, second: 0, millisecond: 0,
-      });
-
       const cat = cats.find((c) => c.id === planCat.categoryId);
 
       if (!cat) {
         throw new Error(`Category not found for ${planCat.categoryId}`);
       }
 
-      if (gd) {
-        const monthDiff = gd.diff(fundingMonth, 'months').months;
+      if (planCat.useGoal && planCat.goalDate) {
+        const goalDate = planCat.goalDate?.startOf('month').set({ year: DateTime.now().year });
+        // const goalDate = planCat.goalDate?.set({
+        //   day: 1, hour: 0, minute: 0, second: 0, millisecond: 0, year: DateTime.now().year,
+        // });
+
+        console.log(planCat.goalDate?.toISODate());
+        console.log(goalDate.toISODate());
+        const monthDiff = goalDate.diff(fundingMonth, 'months').months;
 
         // TODO: use the planCat.amount sans any transactions this month
         const goalDiff = planCat.amount - cat.amount;
@@ -616,31 +619,32 @@ export default class Budget extends BaseModel {
 
         if (monthlyAmount !== plannedAmount) {
           proposedCat.adjusted = true;
-          proposedCat.adjustedReason = `The funding amount was adjusted from a planned amount of ${plannedAmount} to ${monthlyAmount} for the goal of ${planCat.amount} due ${gd.month}-${gd.year}.`;
+          proposedCat.adjustedReason = `The funding amount was adjusted from a planned amount of ${plannedAmount} to ${monthlyAmount} for the goal of ${planCat.amount} due ${goalDate.month}-${goalDate.year}.`;
         }
       }
       else {
-        const plannedAmount = planCat.amount / planCat.recurrence;
-        let monthlyAmount = plannedAmount;
+        proposedCat.amount = planCat.amount;
+        // const plannedAmount = planCat.amount / planCat.recurrence;
+        // let monthlyAmount = plannedAmount;
 
-        // Adjust the monthly amount if this is a required amount (a bill)
-        // so that there is enough of a balance to meet its requirement
-        if (cat.amount < 0) {
-          monthlyAmount = plannedAmount - cat.amount
+        // // Adjust the monthly amount if this is a required amount (a bill)
+        // // so that there is enough of a balance to meet its requirement
+        // if (cat.amount < 0) {
+        //   monthlyAmount = plannedAmount - cat.amount
 
-          proposedCat.adjusted = true;
-          proposedCat.adjustedReason = `The funding amount was adjusted from a planned amount of ${plannedAmount} to ${monthlyAmount}.`
-        }
+        //   proposedCat.adjusted = true;
+        //   proposedCat.adjustedReason = `The funding amount was adjusted from a planned amount of ${plannedAmount} to ${monthlyAmount}.`
+        // }
 
-        proposedCat.amount = monthlyAmount;
+        // proposedCat.amount = monthlyAmount;
 
-        if (planCat.expectedToSpend !== null) {
-          proposedCat.expectedToSpend = planCat.expectedToSpend;
-        }
-        else {
-          const balance = cat.amount + monthlyAmount;
-          proposedCat.expectedToSpend = balance > 0 ? balance : 0;
-        }
+        // if (planCat.expectedToSpend !== null) {
+        //   proposedCat.expectedToSpend = planCat.expectedToSpend;
+        // }
+        // else {
+        //   const balance = cat.amount + monthlyAmount;
+        //   proposedCat.expectedToSpend = balance > 0 ? balance : 0;
+        // }
       }
 
       proposedCats.push(proposedCat)

@@ -41,7 +41,11 @@ const PlanCategory: React.FC<PropsType> = observer(({
         }
         <IconButton icon="pencil-alt" onClick={handleEditCategory} />
       </div>
-      <Amount amount={planCategory.amount * 12} />
+      {
+        planCategory.useGoal
+          ? <Amount amount={planCategory.monthlyAmount(category) * 12} />
+          : <Amount amount={planCategory.amount * 12} />
+      }
     </div>
   );
 });

@@ -88,7 +88,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
   const getCategoriesSum = (categories: CategoriesValueType) => {
     const v = Object.keys(categories).reduce((sum, k) => {
       const value = categories[k];
-      const newValue = typeof value === 'string' ? parseFloat(value) : value;
+      const newValue = typeof value === 'string' ? parseFloat(value ?? 0) : value;
       return sum + newValue;
     }, 0)
 
