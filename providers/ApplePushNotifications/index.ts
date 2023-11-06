@@ -29,7 +29,7 @@ class ApplePushNotifications {
       );
       
       const unassigned = await budget.getUnassignedCategory();
-      const transactions = await unassigned.transactions(budget);
+      const transactions = await unassigned.transactions(budget, false);
 
       if (transactions.length > 0) {
         const users = await budget.related('users').query();

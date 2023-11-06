@@ -18,14 +18,11 @@ class TransactionContainer implements TransactionContainerInterface {
 
   url: string;
 
-  pendingUrl?: string;
-
   store: StoreInterface;
 
   constructor(
     store: StoreInterface,
     url: string,
-    pendingUrl?: string,
   ) {
     makeObservable(this, {
       transactions: observable,
@@ -34,7 +31,6 @@ class TransactionContainer implements TransactionContainerInterface {
     })
 
     this.url = url;
-    this.pendingUrl = pendingUrl;
     this.store = store;
   }
 
@@ -137,12 +133,8 @@ class TransactionContainer implements TransactionContainerInterface {
   }
 
   async getPendingTransactions(index = 0): Promise<void> {
-    if (!this.pendingUrl) {
-      throw new Error('pending url not set')
-    }
-
     return this.pendingQuery.fetch(
-      this.pendingUrl,
+      `${this.url}?pending=1`,
       index,
       this.pendingResponseHandler,
     );
@@ -153,15 +145,15 @@ class TransactionContainer implements TransactionContainerInterface {
   }
 
   pendingResponseHandler = (body: unknown, idx: number, limit: number): boolean => {
-    if (isPendingTransactionsResponse(body)) {
+    if (isTransactionsResponse(body)) {
       if (idx === 0) {
-        this.setPendingTransactions(body);
+        this.setPendingTransactions(body.transactions);
       }
       else {
-        this.appendPendingTransactions(body);
+        this.appendPendingTransactions(body.transactions);
       }
 
-      return body.length < limit;
+      return body.transactions.length < limit;
     }
 
     this.clearPending();

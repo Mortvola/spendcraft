@@ -29,7 +29,7 @@ class Category extends TransactionContainer implements CategoryInterface {
   store: StoreInterface;
 
   constructor(props: CategoryProps, store: StoreInterface) {
-    super(store, `/api/v1/category/${props.id}/transactions`, `/api/v1/category/${props.id}/transactions/pending`);
+    super(store, `/api/v1/category/${props.id}/transactions`);
 
     this.id = props.id;
     this.name = props.name;

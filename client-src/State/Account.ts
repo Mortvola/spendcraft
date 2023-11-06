@@ -41,7 +41,7 @@ class Account extends TransactionContainer implements AccountInterface {
   store: StoreInterface;
 
   constructor(store: StoreInterface, institution: InstitutionInterface, props: AccountProps) {
-    super(store, `/api/v1/account/${props.id}/transactions`, `/api/v1/account/${props.id}/transactions/pending`);
+    super(store, `/api/v1/account/${props.id}/transactions`);
 
     this.id = props.id;
     this.plaidId = props.plaidId;

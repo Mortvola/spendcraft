@@ -128,14 +128,12 @@ Route.group(() => {
   
       Route.group(() => {
         Route.get('/transactions', 'CategoryController.transactions');
-        Route.get('/transactions/pending', 'CategoryController.pendingTransactions');
       }).prefix('/category/:catId');
   
       Route.get('/connected-accounts', 'UsersController.getConnectedAccounts');
   
       Route.group(() => {
         Route.get('/transactions', 'AccountsController.transactions');
-        Route.get('/transactions/pending', 'AccountsController.pendingTransactions');
         Route.post('/transactions', 'AccountsController.addTransaction');
         Route.get('/balances', 'AccountsController.balances');
         Route.post('/balances', 'AccountsController.addBalance');

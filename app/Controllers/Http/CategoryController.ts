@@ -267,75 +267,15 @@ class CategoryController {
 
     result.balance = cat.amount;
 
-    const transactions = await cat.transactions(budget, request.qs().limit, request.qs().offset);
+    const transactions = await cat.transactions(
+      budget, request.qs().pending ?? false, request.qs().limit, request.qs().offset,
+    );
 
     result.transactions = transactions.map((t) => (
       t.serialize(transactionFields) as TransactionProps
     ));
 
     return result;
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  public async pendingTransactions({
-    request,
-    auth: {
-      user,
-    },
-  }: HttpContextContract): Promise<TransactionProps[]> {
-    if (!user) {
-      throw new Error('user is not defined');
-    }
-
-    const budget = await user.related('budget').query().firstOrFail();
-
-    const { catId } = request.params();
-
-    const categoryId = parseInt(catId, 10);
-
-    let pending: Transaction[] = [];
-
-    const cat = await Category.findOrFail(categoryId);
-
-    if (cat.type === 'UNASSIGNED') {
-      const pendingQuery = budget
-        .related('transactions').query()
-        .where((query) => {
-          query
-            .doesntHave('transactionCategories')
-            .orWhereHas('transactionCategories', (q) => {
-              q.where('categoryId', cat.id);
-            })
-        })
-        .whereHas('accountTransaction', (q2) => {
-          q2.where('pending', true)
-            .andWhereHas('account', (q3) => {
-              q3.where('tracking', 'Transactions')
-            })
-        })
-        .orderBy('date', 'desc')
-        .orderBy('transactions.id', 'desc')
-        .preload('accountTransaction', (accountTransaction) => {
-          accountTransaction.preload('account', (account) => {
-            account.preload('institution');
-          });
-        })
-        .preload('transactionCategories');
-
-      if (request.qs().limit !== undefined) {
-        pendingQuery
-          .limit(request.qs().limit)
-      }
-
-      if (request.qs().offset !== undefined) {
-        pendingQuery
-          .offset(request.qs().offset);
-      }
-
-      pending = await pendingQuery;
-    }
-
-    return pending.map((p) => p.serialize(transactionFields) as TransactionProps);
   }
 
   // eslint-disable-next-line class-methods-use-this

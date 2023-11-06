@@ -195,7 +195,6 @@ body {
   grid-template-rows: repeat(2, max-content) 1fr;
   user-select: none;
   -webkit-user-select: none;
-  height: 100%;
 }
 
 @media (max-width: breakpoints.$side-by-side) {
