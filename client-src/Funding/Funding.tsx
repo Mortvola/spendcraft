@@ -6,7 +6,6 @@ import FundingItem from './FundingItem';
 import { isGroup } from '../State/Group';
 import { isCategory } from '../State/Category';
 import { CategoryInterface } from '../State/State';
-import styles from './Funding.module.scss';
 import { FundingInfoType, ValueType } from './Types';
 import { FundingInfoProps, ProposedFundingCateggoryProps } from '../../common/ResponseTypes';
 import { useStores } from '../State/mobxStore';
@@ -65,7 +64,7 @@ const Funding: React.FC<PropsType> = ({
     })();
   }, [date]);
 
-  const renderCategory = (category: CategoryInterface) => {
+  const renderCategory = (groupName: string | null, category: CategoryInterface) => {
     // const fundingItem = funding.find((c) => c.categoryId === category.id);
     const fundingInfo = catFundingInfo.find((c) => c.categoryId === category.id)
 
@@ -73,6 +72,7 @@ const Funding: React.FC<PropsType> = ({
       <FundingItem
         key={`c:${category.id}`}
         fundingInfo={fundingInfo}
+        groupName={groupName}
         category={category}
         date={DateTime.fromISO(date)}
         diffOnly={diffOnly}
@@ -80,9 +80,9 @@ const Funding: React.FC<PropsType> = ({
     );
   }
 
-  const populateCategories = (categories: CategoryInterface[]) => (
+  const populateCategories = (groupName: string | null, categories: CategoryInterface[]) => (
     categories.map((category) => (
-      renderCategory(category)
+      renderCategory(groupName, category)
     ))
   );
 
@@ -91,10 +91,10 @@ const Funding: React.FC<PropsType> = ({
       if (isGroup(node)) {
         if (node.id !== categoryTree.systemIds.systemGroupId) {
           return (
-            <div key={`g:${node.id}`} className={styles.fundListGroup}>
-              {node.name}
-              {populateCategories(node.categories)}
-            </div>
+            // <div key={`g:${node.id}`} className={styles.fundListGroup}>
+            //   {node.name}
+            populateCategories(node.name, node.categories)
+            // </div>
           );
         }
       }
@@ -103,7 +103,7 @@ const Funding: React.FC<PropsType> = ({
           throw new Error('node is not a category');
         }
 
-        return renderCategory(node);
+        return renderCategory(null, node);
       }
 
       return null;

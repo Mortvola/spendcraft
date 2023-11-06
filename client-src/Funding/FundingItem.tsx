@@ -10,6 +10,7 @@ import { CategoryInterface } from '../State/State';
 
 type PropsType = {
   fundingInfo?: FundingInfoType,
+  groupName: string | null,
   category: CategoryInterface,
   date: DateTime,
   onDeltaChange?: (amount: number, delta: number) => void,
@@ -18,6 +19,7 @@ type PropsType = {
 
 const FundingItem: React.FC<PropsType> = ({
   fundingInfo,
+  groupName,
   category,
   date,
   onDeltaChange,
@@ -40,6 +42,11 @@ const FundingItem: React.FC<PropsType> = ({
     return diffOnly && !(value1 !== value2);
   }
 
+  let title = category.name;
+  if (groupName) {
+    title = `${groupName}: ${title}`;
+  }
+
   return (
     <Field
       name={name}
@@ -47,7 +54,7 @@ const FundingItem: React.FC<PropsType> = ({
       {
         ({ field: fieldProps }: FieldProps) => (
           <div className={`${styles.fundListItem} ${hide(fieldProps.value, fundingInfo?.previousFunding) ? styles.hide : ''}`}>
-            <div className={styles.fundListCatName}>{category.name}</div>
+            <div className={styles.fundListCatName}>{title}</div>
             <div className={styles.valuesWrapper}>
               <div className={styles.fundValues}>
                 <VerticalTitled title="Current">
@@ -59,15 +66,13 @@ const FundingItem: React.FC<PropsType> = ({
                 <VerticalTitled title="Balance">
                   <Amount amount={balance} />
                 </VerticalTitled>
+                <div>{`${previousMonthName} Funding:`}</div>
+                <Amount style={{ minWidth: '6rem' }} amount={fundingInfo?.previousFunding ?? 0} />
               </div>
               <div className={styles.fundValues2}>
                 <div className={styles.labeledAmount}>
                   {`${previousMonthName} Expenses:`}
                   <Amount style={{ minWidth: '6rem' }} amount={fundingInfo?.previousExpenses ?? 0} />
-                </div>
-                <div className={styles.labeledAmount}>
-                  {`${previousMonthName} Funding:`}
-                  <Amount style={{ minWidth: '6rem' }} amount={fundingInfo?.previousFunding ?? 0} />
                 </div>
                 <div className={styles.labeledAmount}>
                   {`${previousMonthName} Category Transfers:`}
