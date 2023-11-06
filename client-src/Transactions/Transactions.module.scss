@@ -13,6 +13,15 @@
   transition: grid-template-rows 0.5s ease-in;
 }
 
+@media (min-width: breakpoints.$side-by-side) {
+  .transaction-wrapper {
+    &:hover {
+      background-color: var(--hover-background);
+      color: var(--hover-color);
+    }
+  }
+}
+
 $icon-width: 16px;
 $date-width: 6.25rem;
 $amount-width: 7rem;
@@ -86,7 +95,7 @@ $balance-width: 8rem;
   
   .running-balance {
     grid-area: running-balance;
-  }  
+  }
 }
 
 .unassigned {
