@@ -11,6 +11,9 @@ import SystemCategory from './SystemCategory';
 import Category from './Category';
 import styles from './CategoryView.module.scss'
 import useMediaQuery from '../../MediaQuery';
+import RemoteDataManager from '../../RemoteDataManager';
+import DesktopView from '../../DesktopView';
+import MobileView from '../../MobileView';
 
 type PropsType = {
   onCategorySelected?: () => void,
@@ -64,13 +67,13 @@ const CategoryView: React.FC<PropsType> = observer(({
     }
   }, [categoryTree, isMobile, navigate, params.categoryId, rebalancesMatch, uiState]);
 
-  let rebalancesClassName = 'cat-list-cat system';
-  if (rebalancesMatch) {
-    rebalancesClassName += ' selected';
-  }
+  const renderSystemCategories = () => {
+    let rebalancesClassName = 'cat-list-cat system';
+    if (rebalancesMatch) {
+      rebalancesClassName += ' selected';
+    }
 
-  return (
-    <div className={styles.categoriesWrapper}>
+    return (
       <div className={styles.system}>
         <SystemCategory category={categoryTree.unassignedCat} onCategorySelected={handleCategorySelected} />
         <SystemCategory category={categoryTree.fundingPoolCat} onCategorySelected={handleCategorySelected} />
@@ -82,8 +85,13 @@ const CategoryView: React.FC<PropsType> = observer(({
           Category Transfers
         </div>
       </div>
-      <div className={styles.categories}>
-        {categoryTree.nodes.map((group) => {
+    )
+  }
+
+  const renderCategories = () => (
+    <div className={styles.categories}>
+      {
+        categoryTree.nodes.map((group) => {
           if (isGroup(group)) {
             if (group.type === 'REGULAR') {
               return (
@@ -112,9 +120,40 @@ const CategoryView: React.FC<PropsType> = observer(({
               selected={uiState.selectedCategory === group}
             />
           );
-        })}
-      </div>
+        })
+      }
     </div>
+  )
+
+  const handleGetData = async () => (
+    categoryTree.load()
+  )
+
+  return (
+    <>
+      <DesktopView>
+        <div className={styles.categoriesWrapper}>
+          {
+            renderSystemCategories()
+          }
+          <RemoteDataManager onGetData={handleGetData}>
+            {
+              renderCategories()
+            }
+          </RemoteDataManager>
+        </div>
+      </DesktopView>
+      <MobileView>
+        <RemoteDataManager onGetData={handleGetData} className={styles.categoriesWrapper}>
+          {
+            renderSystemCategories()
+          }
+          {
+            renderCategories()
+          }
+        </RemoteDataManager>
+      </MobileView>
+    </>
   );
 });
 

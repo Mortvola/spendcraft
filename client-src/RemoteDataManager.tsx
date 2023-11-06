@@ -7,12 +7,14 @@ type PropsType = {
   onGetData?: () => Promise<void>,
   onGetMoreData?: () => Promise<void>,
   children: React.ReactNode,
+  className?: string,
 }
 
 const RemoteDataManager: React.FC<PropsType> = ({
   onGetData,
   onGetMoreData,
   children,
+  className,
 }) => {
   const ref = React.useRef<HTMLDivElement>(null);
   const isDataNeeded = useDataPager();
@@ -56,7 +58,7 @@ const RemoteDataManager: React.FC<PropsType> = ({
       className={styles.pullRefresherWrapper}
       onScroll={handleScroll}
     >
-      <div className={styles.pullRefresher}>
+      <div className={`${styles.pullRefresher} ${className ?? ''}`}>
         {
           refreshing
             ? (
