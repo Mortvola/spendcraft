@@ -2,15 +2,13 @@ import React from 'react';
 import { observer } from 'mobx-react-lite';
 import RegisterTransactions from './RegisterTransactions';
 import {
-  AccountInterface, CategoryInterface, TransactionContainerInterface,
+  AccountInterface, BaseTransactionInterface, CategoryInterface, TransactionContainerInterface, TransactionInterface,
 } from '../State/State';
 import RegisterTitles from './RegisterTitles';
 import useTrxDialog from './TrxDialog';
-import TransactionBase from './Transactions/TransactionBase';
-import RebalancesTitles from './RebalancesTitles';
-import RebalanceTransaction from './Transactions/RebalanceTransaction';
-import styles from './Transactions.module.scss';
-import Transaction from './Transactions/Transaction';
+import Transaction from './Transaction';
+import { useStores } from '../State/mobxStore';
+import { TransactionType } from '../../common/ResponseTypes';
 
 type PropsType = {
   type: 'category' | 'account' | 'rebalances',
@@ -28,12 +26,19 @@ const PostedRegister: React.FC<PropsType> = observer(({
   transactionClassName,
 }) => {
   const [TrxDialog, showTrxDialog] = useTrxDialog(account ?? undefined);
+  const { uiState } = useStores();
 
-  let titles = (
-    <RegisterTitles transactionClassName={transactionClassName} />
-  );
+  const handleClick = (transaction: BaseTransactionInterface) => {
+    uiState.selectTransaction(transaction as TransactionInterface);
+    if (
+      transaction.type !== TransactionType.STARTING_BALANCE
+      && showTrxDialog
+    ) {
+      showTrxDialog(transaction as TransactionInterface);
+    }
+  };
 
-  let renderTransactions = () => {
+  const renderTransactions = () => {
     if (trxContainer === null) {
       throw new Error('trxContainer is not set');
     }
@@ -42,7 +47,17 @@ const PostedRegister: React.FC<PropsType> = observer(({
 
     return trxContainer.transactions.map((transaction) => {
       let { amount } = transaction;
-      if (category !== null) {
+
+      if (type === 'rebalances') {
+        amount = transaction.categories.reduce((prev, c) => {
+          if (c.amount > 0) {
+            return prev + c.amount;
+          }
+
+          return prev;
+        }, 0);
+      }
+      else if (category !== null) {
         amount = transaction.getAmountForCategory(category.id);
       }
       else if (account && account.type === 'loan') {
@@ -50,19 +65,15 @@ const PostedRegister: React.FC<PropsType> = observer(({
       }
 
       const element = (
-        <TransactionBase
+        <Transaction
           key={transaction.id}
           transaction={transaction}
-          showTrxDialog={showTrxDialog}
           className={transactionClassName}
-        >
-          <Transaction
-            transaction={transaction}
-            amount={amount}
-            runningBalance={runningBalance}
-            account={account}
-          />
-        </TransactionBase>
+          amount={amount}
+          runningBalance={runningBalance}
+          account={account}
+          onClick={handleClick}
+        />
       )
 
       if (runningBalance !== undefined) {
@@ -73,43 +84,13 @@ const PostedRegister: React.FC<PropsType> = observer(({
     });
   }
 
-  if (type === 'rebalances') {
-    titles = <RebalancesTitles />;
-
-    renderTransactions = () => {
-      if (trxContainer === null) {
-        throw new Error('trxContainer is not set');
-      }
-
-      return trxContainer.transactions.map((transaction) => {
-        const amount = transaction.categories.reduce((prev, c) => {
-          if (c.amount > 0) {
-            return prev + c.amount;
-          }
-
-          return prev;
-        }, 0);
-
-        return (
-          <TransactionBase
-            key={transaction.id}
-            transaction={transaction}
-            showTrxDialog={showTrxDialog}
-            className={styles.rebalances}
-          >
-            <RebalanceTransaction
-              amount={amount}
-            />
-          </TransactionBase>
-        );
-      })
-    };
-  }
-
   return (
     <div className="register window window1">
       <div />
-      <RegisterTransactions trxContainer={trxContainer} titles={titles}>
+      <RegisterTransactions
+        trxContainer={trxContainer}
+        titles={<RegisterTitles transactionClassName={transactionClassName} />}
+      >
         { renderTransactions() }
       </RegisterTransactions>
       <TrxDialog />

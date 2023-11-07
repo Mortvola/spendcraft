@@ -37,10 +37,6 @@ $balance-width: 8rem;
     grid-template-columns: $icon-width $date-width minmax(0,1fr) repeat(3, $amount-width) $balance-width max-content minmax(0, 2fr) max-content;
   }
   
-  &.rebalances {
-    grid-template-columns: $icon-width $date-width $amount-width minmax(0, 1fr) max-content;
-  }
-
   /* For left-padding of each element in transaction */
   >* {
     padding-left: 5px;
@@ -106,18 +102,12 @@ $balance-width: 8rem;
     grid-template-columns: $icon-width $date-width minmax(0, 0.8fr) $amount-width minmax(0, 0.8fr) minmax(0, 0.5fr) max-content;
     grid-template-areas: ". date name amount account owner .";
 
-    .running-balance {
-      display: none;
-    }
-  
-    .reconcile {
-      display: none;
-    }
-  
+    .running-balance,
+    .reconcile,
     .trx-amount {
       display: none;
     }
-
+  
     .owner {
       display: unset;
     }
@@ -177,6 +167,22 @@ $balance-width: 8rem;
         display: none;
       }  
     }
+  }
+}
+
+.rebalances {
+  .transaction {
+    grid-template-columns: $icon-width $date-width $amount-width max-content;
+    grid-template-areas: ". date amount .";  
+
+    .name,
+    .trx-amount,
+    .running-balance,
+    .reconcile,
+    .account,
+    .institution {
+      display: none;
+    }  
   }
 }
 

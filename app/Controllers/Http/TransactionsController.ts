@@ -482,6 +482,8 @@ export default class TransactionsController {
       .preload('transactionCategories', (transactionCategory) => {
         transactionCategory.preload('loanTransaction');
       })
+      .limit(request.qs().limit)
+      .offset(request.qs().offset)
       .orderBy('date', 'desc')
 
     return ({

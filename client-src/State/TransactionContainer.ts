@@ -11,6 +11,8 @@ class TransactionContainer implements TransactionContainerInterface {
 
   url: string;
 
+  searchString?: string;
+
   balanceCallback: ((balance: number) => void) | null = null;
 
   store: StoreInterface;
@@ -30,6 +32,8 @@ class TransactionContainer implements TransactionContainerInterface {
   }
 
   async getTransactions(index: number, qs?: string): Promise<void> {
+    this.searchString = qs;
+
     return this.transactionsQuery.fetch(
       this.url,
       index,
@@ -39,7 +43,7 @@ class TransactionContainer implements TransactionContainerInterface {
   }
 
   getMoreTransactions(): Promise<void> {
-    return this.getTransactions(this.transactions.length);
+    return this.getTransactions(this.transactions.length, this.searchString);
   }
 
   clearTransactions(): void {

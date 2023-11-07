@@ -51,7 +51,7 @@ const Register: React.FC<PropsType> = observer(({
         break;
 
       case 'rebalances':
-        rebalances.getTransactions(0);
+        rebalances.transactions.getTransactions(0);
         break;
 
       default:
@@ -66,6 +66,8 @@ const Register: React.FC<PropsType> = observer(({
   let pendingTrxContainer: TransactionContainerInterface | null = null;
 
   let transactionClassName: string | undefined;
+
+  let className = '';
 
   switch (type) {
     case 'category':
@@ -97,7 +99,8 @@ const Register: React.FC<PropsType> = observer(({
       break;
 
     case 'rebalances':
-      trxContainer = rebalances;
+      trxContainer = rebalances.transactions;
+      className = styles.rebalances;
 
       break;
 
@@ -105,14 +108,14 @@ const Register: React.FC<PropsType> = observer(({
       throw new Error(`unkonwn type: ${type}`);
   }
 
-  if (!trxContainer || !pendingTrxContainer) {
+  if (!trxContainer) {
     return null;
   }
 
   return (
     <>
       <DesktopView>
-        <div className={styles.registerWrapper}>
+        <div className={`${styles.registerWrapper} ${className}`}>
           <PostedRegister
             type={type}
             trxContainer={trxContainer}
@@ -126,12 +129,12 @@ const Register: React.FC<PropsType> = observer(({
       <MobileView>
         <div className={styles.registerWrapper}>
           {
-            pendingTrxContainer.transactions.length > 0
+            (pendingTrxContainer?.transactions.length ?? 0) > 0
               ? <TransactionTypeSelector state={transactionType} onClick={handleTypeClick} />
               : null
           }
           {
-            transactionType && pendingTrxContainer.transactions.length
+            transactionType && pendingTrxContainer?.transactions.length
               ? (
                 <PendingRegister trxContainer={pendingTrxContainer} />
               )

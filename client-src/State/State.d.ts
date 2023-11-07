@@ -183,7 +183,9 @@ export interface CategoryInterface {
   getGroup(): GroupInterface;
 }
 
-export type RebalancesInterface = TransactionContainerInterface;
+export interface RebalancesInterface {
+  transactions: TransactionContainerInterface;
+}
 
 export interface FundingPlanInterface {
   id: number;

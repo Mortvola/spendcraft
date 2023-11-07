@@ -1,28 +1,38 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
-import Amount from '../../Amount';
-import { AccountInterface, BaseTransactionInterface } from '../../State/State';
-import styles from '../Transactions.module.scss';
-import TransactionAccount from '../TransactionAccount';
-import { TransactionType } from '../../../common/ResponseTypes';
-import AccountOwner from '../AccountOwner';
-import Reconcile from '../Reconcile';
-import Date from '../../Date';
-import Icon from '../../Icon';
+import Amount from '../Amount';
+import { AccountInterface, BaseTransactionInterface } from '../State/State';
+import styles from './Transactions.module.scss';
+import TransactionAccount from './TransactionAccount';
+import { TransactionType } from '../../common/ResponseTypes';
+import AccountOwner from './AccountOwner';
+import Reconcile from './Reconcile';
+import Date from '../Date';
+import Icon from '../Icon';
 
 type PropsType = {
   transaction: BaseTransactionInterface,
+  className?: string,
   amount: number,
   runningBalance: number,
   account?: AccountInterface | null,
+  onClick?: (transaction: BaseTransactionInterface) => void,
 }
 
 const Transaction: React.FC<PropsType> = observer(({
   transaction,
+  className,
   amount,
   runningBalance,
   account,
+  onClick,
 }) => {
+  const handleClick: React.MouseEventHandler = () => {
+    if (onClick) {
+      onClick(transaction);
+    }
+  };
+
   const transactionAmount = () => {
     if (
       [
@@ -40,7 +50,7 @@ const Transaction: React.FC<PropsType> = observer(({
   const loanFields = () => (
     account?.type === 'loan'
       ? (
-        <>
+        <div className={`${className ?? ''} ${styles.transaction}`} onClick={handleClick}>
           <Amount className="currency" amount={transaction.amount} />
           {
             transaction.type !== TransactionType.STARTING_BALANCE
@@ -57,13 +67,13 @@ const Transaction: React.FC<PropsType> = observer(({
                 </>
               )
           }
-        </>
+        </div>
       )
       : null
   );
 
   return (
-    <>
+    <div className={`${className ?? ''} ${styles.transaction}`} onClick={handleClick}>
       {
         transaction.duplicateOfTransactionId
           ? <Icon icon="arrow-right-arrow-left" iconClass="fa-solid" />
@@ -78,7 +88,7 @@ const Transaction: React.FC<PropsType> = observer(({
       { loanFields() }
       <Reconcile transaction={transaction} />
       <AccountOwner owner={transaction.accountOwner} />
-    </>
+    </div>
   );
 });
 
