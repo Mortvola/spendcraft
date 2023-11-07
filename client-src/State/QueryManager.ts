@@ -22,35 +22,41 @@ class QueryManager implements QueryManagerInterface {
     }
 
     if (!this.fetching && !this.fetchComplete) {
-      this.fetching = true;
-      const limit = 30;
-      let newUrl: string;
+      try {
+        this.fetching = true;
+        const limit = 30;
+        let newUrl: string;
 
-      if (url.includes('?')) {
-        newUrl = `${url}&offset=${index ?? 0}&limit=${limit}`;
+        if (url.includes('?')) {
+          newUrl = `${url}&offset=${index ?? 0}&limit=${limit}`;
+        }
+        else {
+          newUrl = `${url}?offset=${index ?? 0}&limit=${limit}`;
+        }
+
+        if (qs) {
+          newUrl += `&${qs}`;
+        }
+
+        const response = await Http.get(newUrl);
+
+        if (response.ok) {
+          const body = await response.body();
+
+          runInAction(() => {
+            this.fetchComplete = handleResponse(body, index, limit);
+            this.fetching = false;
+          });
+        }
+        else {
+          runInAction(() => {
+            this.fetching = false;
+          });
+        }
       }
-      else {
-        newUrl = `${url}?offset=${index ?? 0}&limit=${limit}`;
-      }
-
-      if (qs) {
-        newUrl += `&${qs}`;
-      }
-
-      const response = await Http.get(newUrl);
-
-      if (response.ok) {
-        const body = await response.body();
-
-        runInAction(() => {
-          this.fetchComplete = handleResponse(body, index, limit);
-          this.fetching = false;
-        });
-      }
-      else {
-        runInAction(() => {
-          this.fetching = false;
-        });
+      catch (error) {
+        this.fetching = false;
+        console.log(`fetch failed: ${error}`)
       }
     }
   }

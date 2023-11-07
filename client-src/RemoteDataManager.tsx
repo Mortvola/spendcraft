@@ -23,31 +23,33 @@ const RemoteDataManager: React.FC<PropsType> = ({
   const [loadingMore, setLoadingMore] = React.useState<boolean>(false);
 
   const handleScroll: React.UIEventHandler<HTMLDivElement> = () => {
-    if (!loadingMore && onGetMoreData && isDataNeeded(ref.current)) {
-      setLoadingMore(true);
-      (async () => {
-        await onGetMoreData();
-        setLoadingMore(false);
-      })()
-    }
-
     const element = ref.current;
 
-    if (onGetData && element) {
-      if (element.scrollTop < -100 && !refreshing) {
-        setRefreshing(true);
-        setFetching(true);
+    if (element) {
+      if (!loadingMore && onGetMoreData && isDataNeeded(element)) {
+        setLoadingMore(true);
         (async () => {
-          await onGetData();
-          setFetching(false);
-
-          if (element.scrollTop >= 0) {
-            setRefreshing(false);
-          }
-        })();
+          await onGetMoreData();
+          setLoadingMore(false);
+        })()
       }
-      else if (refreshing && !fetching && element.scrollTop >= 0) {
-        setRefreshing(false);
+
+      if (onGetData && element) {
+        if (element.scrollTop < -100 && !refreshing) {
+          setRefreshing(true);
+          setFetching(true);
+          (async () => {
+            await onGetData();
+            setFetching(false);
+
+            if (element.scrollTop >= 0) {
+              setRefreshing(false);
+            }
+          })();
+        }
+        else if (refreshing && !fetching && element.scrollTop >= 0) {
+          setRefreshing(false);
+        }
       }
     }
   }

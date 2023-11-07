@@ -30,10 +30,10 @@ const Register: React.FC<PropsType> = observer(({
     switch (type) {
       case 'category':
         if (uiState.selectedCategory) {
-          uiState.selectedCategory.transactions.getTransactions();
+          uiState.selectedCategory.transactions.getTransactions(0);
 
           if (uiState.selectedCategory === categoryTree.unassignedCat) {
-            uiState.selectedCategory.pendingTransactions.getTransactions();
+            uiState.selectedCategory.pendingTransactions.getTransactions(0);
           }
         }
         break;
@@ -44,8 +44,8 @@ const Register: React.FC<PropsType> = observer(({
             throw new Error(`invalid tracking type for register: ${uiState.selectedAccount.tracking}`);
           }
 
-          uiState.selectedAccount.transactions.getTransactions();
-          uiState.selectedAccount.pendingTransactions.getTransactions();
+          uiState.selectedAccount.transactions.getTransactions(0);
+          uiState.selectedAccount.pendingTransactions.getTransactions(0);
         }
 
         break;

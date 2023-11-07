@@ -316,7 +316,7 @@ export interface TransactionContainerInterface {
 
   transactionsQuery: QueryManagerInterface;
 
-  getTransactions(index?: number): Promise<void>;
+  getTransactions(index: number): Promise<void>;
 
   getMoreTransactions(): Promise<void>;
 

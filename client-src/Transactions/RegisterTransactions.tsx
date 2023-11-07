@@ -21,7 +21,7 @@ const RegisterTransactions: React.FC<PropsType> = observer(({
   const { isMobile } = useMediaQuery();
 
   const handleGetData = () => (
-    trxContainer.getTransactions()
+    trxContainer.getTransactions(0)
   )
 
   const handleGetMoreData = () => (
