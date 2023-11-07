@@ -3,9 +3,7 @@ import { observer } from 'mobx-react-lite';
 import { useStores } from '../../State/mobxStore';
 import { TransactionInterface } from '../../State/State';
 import { TransactionType } from '../../../common/ResponseTypes';
-import Date from '../../Date';
 import styles from '../Transactions.module.scss'
-import Icon from '../../Icon';
 
 type PropsType = {
   transaction: TransactionInterface,
@@ -32,19 +30,9 @@ const TransactionBase: React.FC<PropsType> = observer(({
     }
   };
 
-  const transactionClassName = `${className ?? ''} ${styles.transaction}`;
-
   return (
-    <div className={styles.transactionWrapper}>
-      <div className={transactionClassName} onClick={handleClick}>
-        {
-          transaction.duplicateOfTransactionId
-            ? <Icon icon="arrow-right-arrow-left" iconClass="fa-solid" />
-            : <div />
-        }
-        <Date className={styles.date} date={transaction.date} />
-        { children }
-      </div>
+    <div className={`${className ?? ''} ${styles.transaction}`} onClick={handleClick}>
+      { children }
     </div>
   );
 });

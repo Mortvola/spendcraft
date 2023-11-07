@@ -6,15 +6,8 @@
   }
 }
 
-.transaction-wrapper {
-  display: grid;
-  grid-template-rows: max-content minmax(0, 0%);
-  grid-template-columns: minmax(0, 1fr);
-  transition: grid-template-rows 0.5s ease-in;
-}
-
 @media (min-width: breakpoints.$side-by-side) {
-  .transaction-wrapper {
+  .transaction:not(.register-title) {
     &:hover {
       background-color: var(--hover-background);
       color: var(--hover-color);
@@ -192,8 +185,8 @@ $balance-width: 8rem;
   $amount-width: 6rem;
   $date-width: 4rem;
 
-  .transaction-wrapper {
-    grid-row-gap: 1rem;
+  .transaction {
+    margin-bottom: 1rem;
   }
 
   .transaction,

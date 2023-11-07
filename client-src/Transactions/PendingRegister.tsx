@@ -33,12 +33,10 @@ const PendingRegister: React.FC<PropsType> = observer(({
         <RegisterTransactions trxContainer={trxContainer} titles={<RegisterTitles />}>
           {
             trxContainer.transactions.map((transaction) => (
-              <div key={transaction.id} className={transactionStyles.transactionWrapper}>
-                <div className={transactionStyles.transaction}>
-                  <div />
-                  <Date className={transactionStyles.date} date={transaction.date} />
-                  <Transaction transaction={transaction} amount={transaction.amount} runningBalance={0} />
-                </div>
+              <div key={transaction.id} className={transactionStyles.transaction}>
+                <div />
+                <Date className={transactionStyles.date} date={transaction.date} />
+                <Transaction transaction={transaction} amount={transaction.amount} runningBalance={0} />
               </div>
             ))
           }

@@ -7,6 +7,8 @@ import TransactionAccount from '../TransactionAccount';
 import { TransactionType } from '../../../common/ResponseTypes';
 import AccountOwner from '../AccountOwner';
 import Reconcile from '../Reconcile';
+import Date from '../../Date';
+import Icon from '../../Icon';
 
 type PropsType = {
   transaction: BaseTransactionInterface,
@@ -62,6 +64,12 @@ const Transaction: React.FC<PropsType> = observer(({
 
   return (
     <>
+      {
+        transaction.duplicateOfTransactionId
+          ? <Icon icon="arrow-right-arrow-left" iconClass="fa-solid" />
+          : <div />
+      }
+      <Date className={styles.date} date={transaction.date} />
       <div className={styles.name}>{transaction.name}</div>
       <Amount className={styles.amount} amount={amount} />
       <Amount className={styles.runningBalance} amount={runningBalance} />

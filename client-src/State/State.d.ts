@@ -109,6 +109,8 @@ export interface BaseTransactionInterface {
 
   accountOwner: string | null;
 
+  duplicateOfTransactionId: number | null;
+
   toggleReconciled(): void;
 }
 

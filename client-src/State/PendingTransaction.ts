@@ -22,6 +22,8 @@ class PendingTransaction implements BaseTransactionInterface {
 
   reconciled = false;
 
+  duplicateOfTransactionId: number | null = null;
+
   constructor(store: StoreInterface, props: PendingTransactionProps) {
     this.id = props.id;
     this.date = DateTime.fromISO(props.date);
