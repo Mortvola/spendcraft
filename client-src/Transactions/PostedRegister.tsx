@@ -1,6 +1,5 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
-import useMediaQuery from '../MediaQuery';
 import RegisterTransactions from './RegisterTransactions';
 import {
   AccountInterface, CategoryInterface, TransactionContainerInterface,
@@ -28,16 +27,10 @@ const PostedRegister: React.FC<PropsType> = observer(({
   account,
   transactionClassName,
 }) => {
-  const { isMobile } = useMediaQuery();
-
   const [TrxDialog, showTrxDialog] = useTrxDialog(account ?? undefined);
 
   let titles = (
-    <RegisterTitles
-      category={category}
-      account={account}
-      transactionClassName={transactionClassName}
-    />
+    <RegisterTitles transactionClassName={transactionClassName} />
   );
 
   let renderTransactions = () => {
@@ -116,12 +109,7 @@ const PostedRegister: React.FC<PropsType> = observer(({
   return (
     <div className="register window window1">
       <div />
-      {
-        isMobile
-          ? null
-          : titles
-      }
-      <RegisterTransactions trxContainer={trxContainer}>
+      <RegisterTransactions trxContainer={trxContainer} titles={titles}>
         { renderTransactions() }
       </RegisterTransactions>
       <TrxDialog />

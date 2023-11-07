@@ -1,40 +1,49 @@
 import { observer } from 'mobx-react-lite';
 import React from 'react';
-import { BaseTransactionInterface, TransactionContainerInterface } from '../State/State';
-import PendingTitles from './PendingTitles';
-import SecondaryRegister from './SecondaryRegister';
+import { TransactionContainerInterface } from '../State/State';
 import Date from '../Date';
 import Transaction from './Transactions/Transaction';
-import styles from './Transactions.module.scss'
+import styles from './PendingRegister.module.scss';
+import transactionStyles from './Transactions.module.scss'
+import RegisterTransactions from './RegisterTransactions';
+import useMediaQuery from '../MediaQuery';
+import RegisterTitles from './RegisterTitles';
 
 type PropsType = {
   trxContainer: TransactionContainerInterface,
-  categoryView: boolean,
 }
 
 const PendingRegister: React.FC<PropsType> = observer(({
   trxContainer,
-  categoryView,
 }) => {
+  const { isMobile } = useMediaQuery();
+
   if (trxContainer.transactions.length > 0) {
     return (
-      <SecondaryRegister
-        trxContainer={trxContainer}
-        title="Pending Transactions"
-        titles={<PendingTitles categoryView={categoryView} />}
-      >
+      <div className={`${styles.pending} ${transactionStyles.pending} window`}>
         {
-          trxContainer.transactions.map((transaction) => (
-            <div key={transaction.id} className={styles.transactionWrapper}>
-              <div className={styles.transaction}>
-                <div />
-                <Date className={styles.date} date={transaction.date} />
-                <Transaction transaction={transaction} amount={transaction.amount} runningBalance={0} />
+          isMobile
+            ? null
+            : (
+              <div className={styles.pendingRegisterTitle}>
+                Pending Transactions
               </div>
-            </div>
-          ))
+            )
         }
-      </SecondaryRegister>
+        <RegisterTransactions trxContainer={trxContainer} titles={<RegisterTitles />}>
+          {
+            trxContainer.transactions.map((transaction) => (
+              <div key={transaction.id} className={transactionStyles.transactionWrapper}>
+                <div className={transactionStyles.transaction}>
+                  <div />
+                  <Date className={transactionStyles.date} date={transaction.date} />
+                  <Transaction transaction={transaction} amount={transaction.amount} runningBalance={0} />
+                </div>
+              </div>
+            ))
+          }
+        </RegisterTransactions>
+      </div>
     );
   }
 

@@ -200,6 +200,7 @@ body {
 @media (max-width: breakpoints.$side-by-side) {
   .register {
     grid-template-rows: max-content 1fr;
+    height: 100%;
   }
 }
 

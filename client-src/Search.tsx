@@ -19,13 +19,13 @@ const Search: React.FC = observer(() => {
 
   return (
     <div className={styles.layout}>
-      <div>
+      <div className={styles.form}>
         <input value={searchString} onChange={handleChange} />
         <button type="button" onClick={handleSearchClick}>
           Search
         </button>
       </div>
-      <div className={trxStyles.registerWrapper}>
+      <div className={`${trxStyles.registerWrapper} ${trxStyles.search}`}>
         <PostedRegister
           type="account"
           trxContainer={searcher.transactions}

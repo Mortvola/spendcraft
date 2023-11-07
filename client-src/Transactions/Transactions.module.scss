@@ -96,6 +96,39 @@ $balance-width: 8rem;
   .running-balance {
     grid-area: running-balance;
   }
+
+  .principle {
+    grid-area: principle;
+    display: none;
+  }
+
+  .interest {
+    grid-area: interest;
+    display: none;
+  }
+}
+
+.search {
+  .transaction {
+    grid-template-columns: $icon-width $date-width minmax(0, 0.8fr) $amount-width minmax(0, 0.8fr) minmax(0, 0.5fr) max-content;
+    grid-template-areas: ". date name amount account owner .";
+
+    .running-balance {
+      display: none;
+    }
+  
+    .reconcile {
+      display: none;
+    }
+  
+    .trx-amount {
+      display: none;
+    }
+
+    .owner {
+      display: unset;
+    }
+  }
 }
 
 .unassigned {
@@ -259,7 +292,7 @@ $balance-width: 8rem;
 
 .register-wrapper {
   display: grid;
-  grid-template-rows: auto;
+  grid-template-rows: repeat(auto-fit, minmax(0, 1fr));
   grid-template-columns: minmax(0,1fr);
 }
 

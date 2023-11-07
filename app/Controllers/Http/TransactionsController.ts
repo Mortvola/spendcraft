@@ -459,10 +459,17 @@ export default class TransactionsController {
   // eslint-disable-next-line class-methods-use-this
   public async search({
     request,
+    auth: {
+      user,
+    },
   }: HttpContextContract): Promise<TransactionsResponse> {
-    console.log(request.qs().name);
+    if (!user) {
+      throw new Error('user is not defined');
+    }
 
-    const results = await Transaction.query()
+    const budget = await user.related('budget').query().firstOrFail();
+
+    const results = await budget.related('transactions').query()
       .whereHas('accountTransaction', (q) => {
         q.whereLike('name', `%${request.qs().name}%`)
       })

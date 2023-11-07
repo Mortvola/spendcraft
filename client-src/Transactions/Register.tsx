@@ -70,20 +70,28 @@ const Register: React.FC<PropsType> = observer(({
   switch (type) {
     case 'category':
       category = uiState.selectedCategory;
-      trxContainer = category!.transactions;
-      pendingTrxContainer = category!.pendingTransactions
+
+      if (category === null) {
+        throw new Error('category not set');
+      }
+
+      trxContainer = category.transactions;
+      pendingTrxContainer = category.pendingTransactions
 
       break;
 
     case 'account':
       account = uiState.selectedAccount;
-      trxContainer = account!.transactions;
-      pendingTrxContainer = account!.pendingTransactions
 
-      if (account) {
-        if (account.type === 'loan') {
-          transactionClassName = ` ${styles.loan}`;
-        }
+      if (account === null) {
+        throw new Error('category not set');
+      }
+
+      trxContainer = account.transactions;
+      pendingTrxContainer = account.pendingTransactions
+
+      if (account.type === 'loan') {
+        transactionClassName = ` ${styles.loan}`;
       }
 
       break;
@@ -112,10 +120,7 @@ const Register: React.FC<PropsType> = observer(({
             account={account}
             transactionClassName={transactionClassName}
           />
-          <PendingRegister
-            trxContainer={pendingTrxContainer}
-            categoryView={type === 'category'}
-          />
+          <PendingRegister trxContainer={pendingTrxContainer} />
         </div>
       </DesktopView>
       <MobileView>
@@ -128,10 +133,7 @@ const Register: React.FC<PropsType> = observer(({
           {
             transactionType && pendingTrxContainer.transactions.length
               ? (
-                <PendingRegister
-                  trxContainer={pendingTrxContainer}
-                  categoryView={type === 'category'}
-                />
+                <PendingRegister trxContainer={pendingTrxContainer} />
               )
               : (
                 <PostedRegister
