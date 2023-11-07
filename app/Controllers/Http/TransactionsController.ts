@@ -470,6 +470,7 @@ export default class TransactionsController {
     const budget = await user.related('budget').query().firstOrFail();
 
     const results = await budget.related('transactions').query()
+      .where('deleted', false)
       .whereHas('accountTransaction', (q) => {
         q.whereLike('name', `%${request.qs().name}%`)
       })
