@@ -94,13 +94,11 @@ class TransactionContainer implements TransactionContainerInterface {
         this.balanceCallback(body.balance);
       }
 
-      if (body.transactions.length > 0) {
-        if (idx === 0) {
-          this.setTransactions(body.transactions);
-        }
-        else {
-          this.appendTransactions(body.transactions);
-        }
+      if (idx === 0) {
+        this.setTransactions(body.transactions);
+      }
+      else if (body.transactions.length > 0) {
+        this.appendTransactions(body.transactions);
       }
 
       return body.transactions.length < limit;

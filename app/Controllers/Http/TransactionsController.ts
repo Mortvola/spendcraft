@@ -472,7 +472,7 @@ export default class TransactionsController {
     const results = await budget.related('transactions').query()
       .where('deleted', false)
       .whereHas('accountTransaction', (q) => {
-        q.whereILike('name', `%${request.qs().name}%`)
+        q.whereILike('name', `%${request.qs().name.trim()}%`)
       })
       .preload('accountTransaction', (accountTransaction) => {
         accountTransaction.preload('account', (account) => {
