@@ -11,6 +11,7 @@ import {
   AccountsInterface, StoreInterface, UIStateInterface,
 } from './State';
 import Rebalances from './Rebalances';
+import Searcher from './Searcher';
 
 class Store implements StoreInterface {
   user: User;
@@ -31,6 +32,8 @@ class Store implements StoreInterface {
 
   rebalances: Rebalances;
 
+  searcher: Searcher;
+
   initialized = false;
 
   constructor() {
@@ -43,6 +46,7 @@ class Store implements StoreInterface {
     this.reports = new Reports(this);
     this.plans = new Plans(this);
     this.rebalances = new Rebalances(this);
+    this.searcher = new Searcher(this);
   }
 
   refresh() {

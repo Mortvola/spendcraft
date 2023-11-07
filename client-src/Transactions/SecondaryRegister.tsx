@@ -21,11 +21,11 @@ const SecondaryRegister: React.FC<PropsType> = ({
   const { isMobile } = useMediaQuery();
 
   const handleGetData = () => (
-    trxContainer.getPendingTransactions()
+    trxContainer.getTransactions()
   )
 
   const handleGetMoreData = () => (
-    trxContainer.getMorePendingTransactions()
+    trxContainer.getMoreTransactions()
   )
 
   return (

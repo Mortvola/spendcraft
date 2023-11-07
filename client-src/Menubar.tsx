@@ -84,6 +84,9 @@ const Menubar: React.FC = observer(() => {
             <Nav.Link as={Link} to="/accounts" eventKey="ACCOUNTS">Accounts</Nav.Link>
           </Nav.Item>
           <Nav.Item>
+            <Nav.Link as={Link} to="/search" eventKey="SEARCH">Search</Nav.Link>
+          </Nav.Item>
+          <Nav.Item>
             <Nav.Link as={Link} to="/reports" eventKey="REPORTS">Reports</Nav.Link>
           </Nav.Item>
         </Nav>

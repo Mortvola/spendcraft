@@ -1,6 +1,5 @@
 import { makeObservable, observable } from 'mobx';
-import { isPendingTransactionsResponse, isTransactionsResponse, TransactionProps } from '../../common/ResponseTypes';
-import PendingTransaction from './PendingTransaction';
+import { isTransactionsResponse, TransactionProps } from '../../common/ResponseTypes';
 import QueryManager from './QueryManager';
 import { StoreInterface, TransactionContainerInterface } from './State';
 import Transaction from './Transaction';
@@ -8,37 +7,34 @@ import Transaction from './Transaction';
 class TransactionContainer implements TransactionContainerInterface {
   transactions: Transaction[] = [];
 
-  pending: PendingTransaction[] = [];
-
-  balance = 0;
-
   transactionsQuery: QueryManager = new QueryManager();
 
-  pendingQuery: QueryManager = new QueryManager();
-
   url: string;
+
+  balanceCallback: ((balance: number) => void) | null = null;
 
   store: StoreInterface;
 
   constructor(
     store: StoreInterface,
     url: string,
+    balanceCallback?: (balance: number) => void,
   ) {
     makeObservable(this, {
       transactions: observable,
-      pending: observable,
-      balance: observable,
     })
 
     this.url = url;
+    this.balanceCallback = balanceCallback ?? null;
     this.store = store;
   }
 
-  async getTransactions(index = 0): Promise<void> {
+  async getTransactions(index: number, qs?: string): Promise<void> {
     return this.transactionsQuery.fetch(
       this.url,
       index,
       this.transactionResponseHandler,
+      qs,
     );
   }
 
@@ -48,10 +44,6 @@ class TransactionContainer implements TransactionContainerInterface {
 
   clearTransactions(): void {
     this.transactions = [];
-  }
-
-  clearPending(): void {
-    this.pending = [];
   }
 
   setTransactions(newTransactions: TransactionProps[]): void {
@@ -70,25 +62,6 @@ class TransactionContainer implements TransactionContainerInterface {
     this.transactions = [
       ...this.transactions,
       ...transactions,
-    ];
-  }
-
-  setPendingTransactions(newTransactions: TransactionProps[]): void {
-    const pending = newTransactions.map((t) => (
-      new PendingTransaction(this.store, t)
-    ));
-
-    this.pending = pending;
-  }
-
-  appendPendingTransactions(newTransactions: TransactionProps[]): void {
-    const pending = newTransactions.map((t) => (
-      new PendingTransaction(this.store, t)
-    ));
-
-    this.pending = [
-      ...this.pending,
-      ...pending,
     ];
   }
 
@@ -113,7 +86,9 @@ class TransactionContainer implements TransactionContainerInterface {
 
   transactionResponseHandler = (body: unknown, idx: number, limit: number): boolean => {
     if (isTransactionsResponse(body)) {
-      this.balance = body.balance;
+      if (this.balanceCallback) {
+        this.balanceCallback(body.balance);
+      }
 
       if (body.transactions.length > 0) {
         if (idx === 0) {
@@ -128,35 +103,6 @@ class TransactionContainer implements TransactionContainerInterface {
     }
 
     this.clearTransactions();
-
-    return false;
-  }
-
-  async getPendingTransactions(index = 0): Promise<void> {
-    return this.pendingQuery.fetch(
-      `${this.url}?pending=1`,
-      index,
-      this.pendingResponseHandler,
-    );
-  }
-
-  getMorePendingTransactions(): Promise<void> {
-    return this.getPendingTransactions(this.pending.length);
-  }
-
-  pendingResponseHandler = (body: unknown, idx: number, limit: number): boolean => {
-    if (isTransactionsResponse(body)) {
-      if (idx === 0) {
-        this.setPendingTransactions(body.transactions);
-      }
-      else {
-        this.appendPendingTransactions(body.transactions);
-      }
-
-      return body.transactions.length < limit;
-    }
-
-    this.clearPending();
 
     return false;
   }

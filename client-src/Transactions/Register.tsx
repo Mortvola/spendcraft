@@ -30,10 +30,10 @@ const Register: React.FC<PropsType> = observer(({
     switch (type) {
       case 'category':
         if (uiState.selectedCategory) {
-          uiState.selectedCategory.getTransactions();
+          uiState.selectedCategory.transactions.getTransactions();
 
           if (uiState.selectedCategory === categoryTree.unassignedCat) {
-            uiState.selectedCategory.getPendingTransactions();
+            uiState.selectedCategory.pendingTransactions.getTransactions();
           }
         }
         break;
@@ -44,14 +44,14 @@ const Register: React.FC<PropsType> = observer(({
             throw new Error(`invalid tracking type for register: ${uiState.selectedAccount.tracking}`);
           }
 
-          uiState.selectedAccount.getTransactions();
-          uiState.selectedAccount.getPendingTransactions();
+          uiState.selectedAccount.transactions.getTransactions();
+          uiState.selectedAccount.pendingTransactions.getTransactions();
         }
 
         break;
 
       case 'rebalances':
-        rebalances.getTransactions();
+        rebalances.getTransactions(0);
         break;
 
       default:
@@ -63,19 +63,22 @@ const Register: React.FC<PropsType> = observer(({
   let account: AccountInterface | null = null;
 
   let trxContainer: TransactionContainerInterface | null = null;
+  let pendingTrxContainer: TransactionContainerInterface | null = null;
 
   let transactionClassName: string | undefined;
 
   switch (type) {
     case 'category':
       category = uiState.selectedCategory;
-      trxContainer = category;
+      trxContainer = category!.transactions;
+      pendingTrxContainer = category!.pendingTransactions
 
       break;
 
     case 'account':
       account = uiState.selectedAccount;
-      trxContainer = account;
+      trxContainer = account!.transactions;
+      pendingTrxContainer = account!.pendingTransactions
 
       if (account) {
         if (account.type === 'loan') {
@@ -94,7 +97,7 @@ const Register: React.FC<PropsType> = observer(({
       throw new Error(`unkonwn type: ${type}`);
   }
 
-  if (!trxContainer) {
+  if (!trxContainer || !pendingTrxContainer) {
     return null;
   }
 
@@ -110,26 +113,24 @@ const Register: React.FC<PropsType> = observer(({
             transactionClassName={transactionClassName}
           />
           <PendingRegister
-            trxContainer={trxContainer}
+            trxContainer={pendingTrxContainer}
             categoryView={type === 'category'}
-            pending={trxContainer.pending}
           />
         </div>
       </DesktopView>
       <MobileView>
         <div className={styles.registerWrapper}>
           {
-            trxContainer.pending && trxContainer.pending.length > 0
+            pendingTrxContainer.transactions.length > 0
               ? <TransactionTypeSelector state={transactionType} onClick={handleTypeClick} />
               : null
           }
           {
-            transactionType && trxContainer.pending && trxContainer.pending.length
+            transactionType && pendingTrxContainer.transactions.length
               ? (
                 <PendingRegister
-                  trxContainer={trxContainer}
+                  trxContainer={pendingTrxContainer}
                   categoryView={type === 'category'}
-                  pending={trxContainer.pending}
                 />
               )
               : (

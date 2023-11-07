@@ -15,6 +15,7 @@ class QueryManager implements QueryManagerInterface {
     url: string,
     index: number,
     handleResponse: (body: unknown, index: number, limit: number) => boolean,
+    qs?: string,
   ): Promise<void> {
     if (index === 0) {
       this.fetchComplete = false;
@@ -30,6 +31,10 @@ class QueryManager implements QueryManagerInterface {
       }
       else {
         newUrl = `${url}?offset=${index ?? 0}&limit=${limit}`;
+      }
+
+      if (qs) {
+        newUrl += `&${qs}`;
       }
 
       const response = await Http.get(newUrl);

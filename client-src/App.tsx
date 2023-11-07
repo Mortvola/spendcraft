@@ -31,6 +31,7 @@ import styles from './App.module.scss';
 import DesktopView from './DesktopView';
 import MobileView from './MobileView';
 import TabView from './TabView';
+import Search from './Search';
 
 const App: React.FC = observer(() => {
   const error = useContext(ServerError);
@@ -125,6 +126,7 @@ if (container) {
                 <Route index element={<AccountDetails />} />
                 <Route path=":accountId" element={<AccountDetails />} />
               </Route>
+              <Route path="search" element={<Search />} />
               <Route path="reports" element={<Reports />} />
               <Route path="user" element={<UserAccount />} />
             </Route>

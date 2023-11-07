@@ -33,6 +33,7 @@ Route.get('/signup', 'HomeController.index');
 Route.get('/signin', 'HomeController.index');
 Route.get('/recover-password', 'HomeController.index');
 Route.get('/user', 'HomeController.index');
+Route.get('/search', 'HomeController.index');
 Route.get('/', 'HomeController.index');
 
 Route.post('/wh', 'WebhookController.post');
@@ -195,8 +196,11 @@ Route.group(() => {
         .prefix('/loans');
   
       Route.get('/rebalances', 'TransactionsController.getRebalances')    
+
+      Route.get('/transactions/search', 'TransactionsController.search');
     })
       .middleware(['auth']);
+
   })
   .prefix('/v1')
 })

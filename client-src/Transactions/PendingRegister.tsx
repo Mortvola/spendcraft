@@ -10,15 +10,13 @@ import styles from './Transactions.module.scss'
 type PropsType = {
   trxContainer: TransactionContainerInterface,
   categoryView: boolean,
-  pending?: BaseTransactionInterface[],
 }
 
 const PendingRegister: React.FC<PropsType> = observer(({
   trxContainer,
   categoryView,
-  pending,
 }) => {
-  if (pending && pending.length > 0) {
+  if (trxContainer.transactions.length > 0) {
     return (
       <SecondaryRegister
         trxContainer={trxContainer}
@@ -26,7 +24,7 @@ const PendingRegister: React.FC<PropsType> = observer(({
         titles={<PendingTitles categoryView={categoryView} />}
       >
         {
-          pending.map((transaction) => (
+          trxContainer.transactions.map((transaction) => (
             <div key={transaction.id} className={styles.transactionWrapper}>
               <div className={styles.transaction}>
                 <div />

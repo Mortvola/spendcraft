@@ -45,7 +45,7 @@ const PostedRegister: React.FC<PropsType> = observer(({
       throw new Error('trxContainer is not set');
     }
 
-    let runningBalance = trxContainer.balance;
+    let runningBalance = (category?.balance ?? account?.balance) ?? 0;
 
     return trxContainer.transactions.map((transaction) => {
       let { amount } = transaction;

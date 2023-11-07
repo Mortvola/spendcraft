@@ -455,4 +455,32 @@ export default class TransactionsController {
       balance: 0,
     }
   }
+
+  // eslint-disable-next-line class-methods-use-this
+  public async search({
+    request,
+  }: HttpContextContract): Promise<TransactionsResponse> {
+    console.log(request.qs().name);
+
+    const results = await Transaction.query()
+      .whereHas('accountTransaction', (q) => {
+        q.whereLike('name', `%${request.qs().name}%`)
+      })
+      .preload('accountTransaction', (accountTransaction) => {
+        accountTransaction.preload('account', (account) => {
+          account.preload('institution');
+        });
+      })
+      .preload('transactionCategories', (transactionCategory) => {
+        transactionCategory.preload('loanTransaction');
+      })
+      .orderBy('date', 'desc')
+
+    return ({
+      transactions: results.map((t) => (
+        t.serialize(transactionFields) as TransactionProps
+      )),
+      balance: 0,
+    })
+  }
 }
