@@ -76,7 +76,7 @@ const EditCategoryDialog: React.FC<PropsType & ModalProps> = ({
     }
 
     const handleSubmit = async (values: FormValues) => {
-      const response = await Http.put(`/api/v1/funding-plans/${plan.id}/item/${category.id}`, {
+      const response = await Http.put(`/api/v1/funding-plans/item/${category.id}`, {
         amount: values.useGoal === 'goal' ? values.goalAmount : values.amount,
         useGoal: values.useGoal === 'goal',
         goalDate: values.goalDate,

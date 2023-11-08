@@ -199,13 +199,6 @@ export default class UsersController {
         const budget = await user.related('budget').query().first();
 
         if (budget) {
-          // Delete funding plans
-          const fundingPlans = await budget.related('plans').query();
-
-          await Promise.all(fundingPlans.map(async (plan) => (
-            plan.delete()
-          )));
-
           // Delete institutions
           const institutions = await budget.related('institutions').query();
 

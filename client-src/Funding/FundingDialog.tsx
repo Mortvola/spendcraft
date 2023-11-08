@@ -1,6 +1,4 @@
-import React, {
-  useState,
-} from 'react';
+import React from 'react';
 import {
   Field, FieldProps,
   FormikErrors, FormikContextType,
@@ -13,8 +11,7 @@ import Amount from '../Amount';
 import { useStores } from '../State/mobxStore';
 import Transaction from '../State/Transaction';
 import {
-  FundingPlanProps, isFundingPlansResponse, TransactionType,
-  CategoryFundingProps,
+  TransactionType, CategoryFundingProps,
 } from '../../common/ResponseTypes';
 import Funding from './Funding';
 import {
@@ -38,53 +35,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
     throw new Error('funding pool is unassigned');
   }
 
-  const [plansInitialized, setPlansInitialized] = useState(false);
-  const [plans, setPlans] = useState<FundingPlanProps[]>([]);
-  const [selectedPlanId, setSelectedPlanId] = useState(-1);
   const [diffOnly, setDiffOnly] = React.useState<boolean>(false);
-
-  if (!plansInitialized) {
-    setPlansInitialized(true);
-
-    if (!transaction) {
-      (async () => {
-        const response = await Http.get('/api/v1/funding-plans');
-
-        const body = await response.body();
-
-        if (isFundingPlansResponse(body)) {
-          setPlans(body);
-        }
-      })();
-    }
-  }
-
-  // If there is only one plan then automatically select it.
-  React.useEffect(() => {
-    if (plans.length === 1) {
-      setSelectedPlanId(plans[0].id)
-    }
-  }, [plans]);
-
-  const handlePlanChange = async (
-    event: React.ChangeEvent<HTMLSelectElement>,
-    // resetForm: (nextState?: Partial<FormikState<ValueType>> | undefined) => void,
-    // values: ValueType,
-  ) => {
-    const { value } = event.target;
-    const planId = parseInt(value, 10)
-    setSelectedPlanId(planId);
-  };
-
-  const renderPlans = () => {
-    const planOptions = [(<option key={-1} value={-1}>None</option>)];
-
-    plans.forEach(({ id, name }) => {
-      planOptions.push(<option key={id} value={id}>{name}</option>);
-    });
-
-    return planOptions;
-  };
 
   const getCategoriesSum = (categories: CategoriesValueType) => {
     const v = Object.keys(categories).reduce((sum, k) => {
@@ -248,26 +199,6 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
     >
       <div className="fund-container">
         <div className="funding-header">
-          {
-            !transaction && plans.length > 1
-              ? (
-                <label>
-                  Plan:
-                  <Field name="plans">
-                    <select
-                      className="form-control"
-                      value={selectedPlanId}
-                      onChange={(event) => (
-                        handlePlanChange(event)
-                      )}
-                    >
-                      {renderPlans()}
-                    </select>
-                  </Field>
-                </label>
-              )
-              : null
-          }
           <label>
             Date:
             <Field name="date" type="date" className="form-control" />
@@ -299,7 +230,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
               },
             }: FieldProps<FundingType[]>) => (
               <Funding
-                planId={selectedPlanId}
+                planId={0}
                 date={DateTime.fromISO(values.date).startOf('month').toISODate() ?? ''}
                 diffOnly={diffOnly}
                 // onChange={handleFundingChange}

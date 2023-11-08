@@ -7,6 +7,7 @@ import Group from 'App/Models/Group';
 import { CategoryType } from 'Common/ResponseTypes';
 import TransactionCategory from 'App/Models/TransactionCategory';
 import Budget from 'App/Models/Budget';
+import { DateTime } from 'luxon';
 
 type CategoryItem = {
   id: number,
@@ -48,6 +49,20 @@ export default class Category extends BaseModel {
 
   @column()
   public hidden: boolean;
+
+  @column({
+    consume: (value: string) => parseFloat(value),
+  })
+  public fundingAmount: number;
+
+  @column()
+  public useGoal: boolean;
+
+  @column.date()
+  public goalDate: DateTime | null;
+
+  @column()
+  public recurrence: number;
 
   @hasMany(() => TransactionCategory)
   public transactionCategory: HasMany<typeof TransactionCategory>;

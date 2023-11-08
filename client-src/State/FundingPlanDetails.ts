@@ -1,4 +1,4 @@
-import { makeAutoObservable } from 'mobx';
+import { makeAutoObservable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 import { StoreInterface } from './State';
 import {
@@ -31,20 +31,28 @@ class FundingPlanDetails {
   }
 
   async updateCategoryAmount(category: FundingPlanCategory, amount: number): Promise<void> {
-    const oldAmount = category.amount;
+    // const oldAmount = category.amount;
     category.amount = amount;
 
-    const response = await Http.put(`/api/v1/funding-plans/${this.id}/item/${category.categoryId}`, {
+    const response = await Http.put(`/api/v1/funding-plans/item/${category.categoryId}`, {
       amount,
       useGoal: category.useGoal,
       goalDate: category.goalDate,
       recurrence: category.recurrence,
     });
 
-    const body = await response.body();
-
-    if (!response.ok || !isUpdateFundingCategoryResponse(body)) {
-      category.amount = oldAmount;
+    if (response.ok) {
+      const body = await response.body();
+      if (isUpdateFundingCategoryResponse(body)) {
+        runInAction(() => {
+          category.amount = amount;
+        })
+      }
+      else {
+        throw new Error('invalid response');
+      }
+    }
+    else {
       throw new Error('invalid response');
     }
   }

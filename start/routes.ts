@@ -165,11 +165,9 @@ Route.group(() => {
       }).prefix('/institution');
   
       Route.group(() => {
-        Route.get('', 'FundingPlanController.getAll');
-        Route.post('', 'FundingPlanController.add');
-        Route.get('/:planId', 'FundingPlanController.getPlan');
-        Route.get('/:planId/proposed', 'FundingPlanController.getProposed');
-        Route.put('/:planId/item/:catId', 'FundingPlanController.updateOrCreateCategory');
+        Route.get('/', 'FundingPlanController.getPlan');
+        Route.get('/proposed', 'FundingPlanController.getProposed');
+        Route.put('/item/:catId', 'FundingPlanController.updateOrCreateCategory');
       }).prefix('/funding-plans');
   
       Route.group(() => {

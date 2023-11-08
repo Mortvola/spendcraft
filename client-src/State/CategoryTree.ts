@@ -44,12 +44,13 @@ class CategoryTree implements CategoryTreeInterface {
     return 'IDLE';
   }
 
-  async getData(index: number) {
+  async getData(_id: number) {
     return this.load();
   }
 
   // eslint-disable-next-line class-methods-use-this
   async getMoreData() {
+    console.log('not implemented')
   }
 
   // eslint-disable-next-line class-methods-use-this

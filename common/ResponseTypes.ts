@@ -84,15 +84,15 @@ export const isUpdateLoanResponse = (
 );
 
 export interface UpdateFundingCategoryResponse {
-  amount: number;
-  categoryId: number;
+  id: number;
+  fundingAmount: number;
 }
 
 export const isUpdateFundingCategoryResponse = (
   r: UpdateFundingCategoryResponse | unknown,
 ): r is UpdateFundingCategoryResponse => (
-  (r as UpdateFundingCategoryResponse).amount !== undefined
-  && (r as UpdateFundingCategoryResponse).categoryId !== undefined
+  (r as UpdateFundingCategoryResponse).fundingAmount !== undefined
+  && (r as UpdateFundingCategoryResponse).id !== undefined
 );
 
 export const isCategoryProps = (

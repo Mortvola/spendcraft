@@ -8,7 +8,6 @@ import { InstitutionProps, ProposedFundingCateggoryProps, TransactionType } from
 import User from 'App/Models/User'
 import Category from 'App/Models/Category';
 import Group from 'App/Models/Group';
-import FundingPlan from 'App/Models/FundingPlan';
 import Institution from 'App/Models/Institution';
 import Transaction from 'App/Models/Transaction';
 import Loan from 'App/Models/Loan';
@@ -44,9 +43,6 @@ export default class Budget extends BaseModel {
 
   @hasMany(() => Group)
   public groups: HasMany<typeof Group>;
-
-  @hasMany(() => FundingPlan)
-  public plans: HasMany<typeof FundingPlan>;
 
   public async history(this: Budget, numberOfMonths: number): Promise<CategoryHistoryItem[]> {
     const startDate = DateTime.now().set({
@@ -235,13 +231,6 @@ export default class Budget extends BaseModel {
         type: 'NO GROUP',
         budgetId: this.id,
         system: true,
-      })
-      .save();
-
-    await (new FundingPlan()).useTransaction(this.$trx)
-      .fill({
-        name: 'Default Plan',
-        budgetId: this.id,
       })
       .save();
 
@@ -557,40 +546,29 @@ export default class Budget extends BaseModel {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  public async getProposedFunding(planId: number): Promise<ProposedFundingCateggoryProps[]> {
-    const plan = await FundingPlan.findOrFail(planId);
-
+  public async getProposedFunding(): Promise<ProposedFundingCateggoryProps[]> {
     const cats = await Category.query()
       .whereHas('group', (query) => {
         query.where('budgetId', this.id)
       });
 
-    const fundingCats = await plan.related('categories').query();
+    // const fundingCats = await plan.related('categories').query();
 
     const fundingMonth = DateTime.now().startOf('month');
 
     const proposedCats: ProposedFundingCateggoryProps[] = [];
 
-    fundingCats.forEach((planCat) => {
+    cats.forEach((cat) => {
       const proposedCat: ProposedFundingCateggoryProps = {
-        categoryId: planCat.categoryId,
+        categoryId: cat.id,
         amount: 0,
         expectedToSpend: 0,
         adjusted: false,
         adjustedReason: null,
       };
 
-      const cat = cats.find((c) => c.id === planCat.categoryId);
-
-      if (!cat) {
-        throw new Error(`Category not found for ${planCat.categoryId}`);
-      }
-
-      if (planCat.useGoal && planCat.goalDate) {
-        const goalDate = planCat.goalDate?.startOf('month').set({ year: DateTime.now().year });
-        // const goalDate = planCat.goalDate?.set({
-        //   day: 1, hour: 0, minute: 0, second: 0, millisecond: 0, year: DateTime.now().year,
-        // });
+      if (cat.useGoal && cat.goalDate) {
+        const goalDate = cat.goalDate?.startOf('month').set({ year: DateTime.now().year });
 
         let monthDiff = goalDate.diff(fundingMonth, 'months').months;
         if (monthDiff < 0) {
@@ -598,7 +576,7 @@ export default class Budget extends BaseModel {
         }
 
         // TODO: use the planCat.amount sans any transactions this month
-        const goalDiff = planCat.amount - cat.balance;
+        const goalDiff = cat.fundingAmount - cat.balance;
 
         let monthlyAmount = 0.0;
 
@@ -611,18 +589,18 @@ export default class Budget extends BaseModel {
         }
         else {
           proposedCat.amount = goalDiff;
-          proposedCat.expectedToSpend = planCat.amount;
+          proposedCat.expectedToSpend = cat.fundingAmount;
         }
 
-        const plannedAmount = planCat.amount / planCat.recurrence;
+        const plannedAmount = cat.fundingAmount / cat.recurrence;
 
         if (monthlyAmount !== plannedAmount) {
           proposedCat.adjusted = true;
-          proposedCat.adjustedReason = `The funding amount was adjusted from a planned amount of ${plannedAmount} to ${monthlyAmount} for the goal of ${planCat.amount} due ${goalDate.month}-${goalDate.year}.`;
+          proposedCat.adjustedReason = `The funding amount was adjusted from a planned amount of ${plannedAmount} to ${monthlyAmount} for the goal of ${cat.fundingAmount} due ${goalDate.month}-${goalDate.year}.`;
         }
       }
       else {
-        proposedCat.amount = planCat.amount;
+        proposedCat.amount = cat.fundingAmount;
         // const plannedAmount = planCat.amount / planCat.recurrence;
         // let monthlyAmount = plannedAmount;
 

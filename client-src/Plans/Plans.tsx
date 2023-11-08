@@ -11,7 +11,7 @@ import { useEditCategoryDialog } from './EditCategoryDialog';
 import FundingPlanCategory from '../State/FundingPlanCategory';
 
 const Plans: React.FC = observer(() => {
-  const { plans, uiState } = useStores();
+  const { plans, uiState, categoryTree } = useStores();
   const [open, setOpen] = useState<boolean>(false);
   const { isMobile } = useMediaQuery();
   const [EditCategoryDialog, showEditCategoryDialog] = useEditCategoryDialog();
@@ -26,12 +26,12 @@ const Plans: React.FC = observer(() => {
 
   useEffect(() => {
     (async () => {
-      if (!initialized) {
+      if (!initialized && categoryTree.initialized) {
         setInitialized(true);
         await plans.load();
       }
     })()
-  }, [initialized, plans, uiState.selectedPlan]);
+  }, [initialized, plans, categoryTree.initialized, uiState.selectedPlan]);
 
   useEffect(() => {
     if (uiState.selectedPlan !== null) {

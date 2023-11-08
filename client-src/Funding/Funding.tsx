@@ -29,7 +29,7 @@ const Funding: React.FC<PropsType> = ({
   React.useEffect(() => {
     (async () => {
       if (planId !== -1 && planId !== loadedPlanId) {
-        const response = await Http.get<ProposedFundingCateggoryProps[]>(`/api/v1/funding-plans/${planId}/proposed`);
+        const response = await Http.get<ProposedFundingCateggoryProps[]>('/api/v1/funding-plans/proposed');
 
         if (response.ok) {
           const body = await response.body();
