@@ -1,6 +1,5 @@
 import { makeObservable, observable } from 'mobx';
-import { isPendingTransactionsResponse, isTransactionsResponse, TransactionProps } from '../../common/ResponseTypes';
-import PendingTransaction from './PendingTransaction';
+import { isTransactionsResponse, TransactionProps } from '../../common/ResponseTypes';
 import QueryManager from './QueryManager';
 import { StoreInterface, TransactionContainerInterface } from './State';
 import Transaction from './Transaction';
@@ -8,50 +7,55 @@ import Transaction from './Transaction';
 class TransactionContainer implements TransactionContainerInterface {
   transactions: Transaction[] = [];
 
-  pending: PendingTransaction[] = [];
-
-  balance = 0;
-
   transactionsQuery: QueryManager = new QueryManager();
 
-  pendingQuery: QueryManager = new QueryManager();
-
   url: string;
+
+  searchString?: string;
+
+  balanceCallback: ((balance: number) => void) | null = null;
 
   store: StoreInterface;
 
   constructor(
     store: StoreInterface,
     url: string,
+    balanceCallback?: (balance: number) => void,
   ) {
     makeObservable(this, {
       transactions: observable,
-      pending: observable,
-      balance: observable,
     })
 
     this.url = url;
+    this.balanceCallback = balanceCallback ?? null;
     this.store = store;
   }
 
-  async getTransactions(index = 0): Promise<void> {
+  state(): 'IDLE' | 'LOADING' | 'LOADING-MORE' {
+    return this.transactionsQuery.state;
+  }
+
+  isComplete(): boolean {
+    return this.transactionsQuery.fetchComplete;
+  }
+
+  async getData(index: number, qs?: string): Promise<void> {
+    this.searchString = qs;
+
     return this.transactionsQuery.fetch(
       this.url,
       index,
       this.transactionResponseHandler,
+      qs,
     );
   }
 
-  getMoreTransactions(): Promise<void> {
-    return this.getTransactions(this.transactions.length);
+  getMoreData(): Promise<void> {
+    return this.getData(this.transactions.length, this.searchString);
   }
 
   clearTransactions(): void {
     this.transactions = [];
-  }
-
-  clearPending(): void {
-    this.pending = [];
   }
 
   setTransactions(newTransactions: TransactionProps[]): void {
@@ -70,25 +74,6 @@ class TransactionContainer implements TransactionContainerInterface {
     this.transactions = [
       ...this.transactions,
       ...transactions,
-    ];
-  }
-
-  setPendingTransactions(newTransactions: TransactionProps[]): void {
-    const pending = newTransactions.map((t) => (
-      new PendingTransaction(this.store, t)
-    ));
-
-    this.pending = pending;
-  }
-
-  appendPendingTransactions(newTransactions: TransactionProps[]): void {
-    const pending = newTransactions.map((t) => (
-      new PendingTransaction(this.store, t)
-    ));
-
-    this.pending = [
-      ...this.pending,
-      ...pending,
     ];
   }
 
@@ -113,38 +98,21 @@ class TransactionContainer implements TransactionContainerInterface {
 
   transactionResponseHandler = (body: unknown, idx: number, limit: number): boolean => {
     if (isTransactionsResponse(body)) {
-      this.balance = body.balance;
+      if (this.balanceCallback) {
+        this.balanceCallback(body.balance);
+      }
 
-      if (body.transactions.length > 0) {
-        if (idx === 0) {
-          this.setTransactions(body.transactions);
-        }
-        else {
-          this.appendTransactions(body.transactions);
-        }
+      if (idx === 0) {
+        this.setTransactions(body.transactions);
+      }
+      else if (body.transactions.length > 0) {
+        this.appendTransactions(body.transactions);
       }
 
       return body.transactions.length < limit;
     }
 
     this.clearTransactions();
-
-    return false;
-  }
-
-  pendingResponseHandler = (body: unknown, idx: number, limit: number): boolean => {
-    if (isPendingTransactionsResponse(body)) {
-      if (idx === 0) {
-        this.setPendingTransactions(body);
-      }
-      else {
-        this.appendPendingTransactions(body);
-      }
-
-      return body.length < limit;
-    }
-
-    this.clearPending();
 
     return false;
   }

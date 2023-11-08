@@ -3,10 +3,9 @@ import { observer } from 'mobx-react-lite';
 import PlanDetails from './PlanDetails';
 import { useStores } from '../State/mobxStore';
 import PlanList from './PlanList';
-import PlansToolbar from './PlansToolbar';
 import Main from '../Main';
 import useMediaQuery from '../MediaQuery'
-import styles from './Plans.module.css'
+import styles from './Plans.module.scss'
 import { CategoryInterface } from '../State/State';
 import { useEditCategoryDialog } from './EditCategoryDialog';
 import FundingPlanCategory from '../State/FundingPlanCategory';
@@ -23,10 +22,16 @@ const Plans: React.FC = observer(() => {
     category: undefined,
     planCategory: undefined,
   });
+  const [initialized, setInitialized] = React.useState<boolean>(false);
 
   useEffect(() => {
-    plans.load();
-  }, [plans]);
+    (async () => {
+      if (!initialized) {
+        setInitialized(true);
+        await plans.load();
+      }
+    })()
+  }, [initialized, plans, uiState.selectedPlan]);
 
   useEffect(() => {
     if (uiState.selectedPlan !== null) {
@@ -34,36 +39,20 @@ const Plans: React.FC = observer(() => {
     }
   }, [plans, uiState.selectedPlan]);
 
-  const handleSelect = () => {
-    if (isMobile) {
-      setOpen(false);
-    }
-  };
-
-  const handleToggleClick = () => {
-    setOpen(!open);
-  }
-
   const handleEditCategory = (cat: CategoryInterface, planCategory: FundingPlanCategory) => {
     setCategory({ category: cat, planCategory });
     showEditCategoryDialog();
   }
 
   return (
-    <Main
-      open={open}
-      toolbar={<PlansToolbar />}
-      sidebar={<PlanList plans={plans.list} selected={uiState.selectedPlan} onSelect={handleSelect} />}
-      onToggleClick={handleToggleClick}
-      className={styles.theme}
-    >
+    <div className={`${styles.layout} ${styles.theme}`}>
       <PlanDetails onEditCategory={handleEditCategory} />
       <EditCategoryDialog
         plan={uiState.selectedPlan}
         category={category.category}
         planCategory={category.planCategory}
       />
-    </Main>
+    </div>
   );
 });
 

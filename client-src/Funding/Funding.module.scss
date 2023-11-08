@@ -1,0 +1,84 @@
+.fund-list-item {
+  display: flex;
+  flex-direction: column;
+  align-items: top;
+  margin-bottom: 1rem;
+  border: thin black solid;
+  border-radius: 8px;
+  background-color: #eee;
+}
+
+@media (prefers-color-scheme: dark) {
+  .fund-list-item {
+    background-color: #666;
+  }
+}
+
+.values-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: end;
+  padding: 1rem;
+}
+
+.fund-values {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(2, max-content);
+  align-items: center;
+  column-gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.fund-values2 {
+  display: flex;
+  flex-direction: column;
+}
+
+.fund-list-cat-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  border-bottom: thin black solid;
+  padding-left: 0.5rem;
+  background-color: #ddd;
+}
+
+@media (prefers-color-scheme: dark) {
+  .fund-list-cat-name {
+    background-color: #555;
+  }
+}
+
+.fund-list-group .fund-list-item {
+  margin-left: 28px;
+}
+
+.cat-fund-title {
+  background-color: gray;
+  color: white;
+  overflow-y: scroll;
+}
+
+.fund-list-amt {
+  justify-self: right;
+  padding-right: 8px;
+}
+
+.labeled-amount {
+  display: flex;
+  justify-content: end;
+}
+
+.hide {
+  display: none;
+}
+
+.checkbox {
+  margin-right: 0.5rem;
+}
+
+label > .checkbox {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}

@@ -11,8 +11,8 @@ import Account from 'App/Models/Account';
 import Logger from '@ioc:Adonis/Core/Logger'
 import Budget from 'App/Models/Budget';
 import { DateTime } from 'luxon';
-import AccountTransaction from './AccountTransaction';
 import { CategoryBalanceProps } from 'Common/ResponseTypes';
+import AccountTransaction from './AccountTransaction';
 
 class Institution extends BaseModel {
   @column()

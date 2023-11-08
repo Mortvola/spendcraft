@@ -4,7 +4,7 @@ import AmountInput from '../AmountInput';
 import Amount from '../Amount';
 import { CategoryInterface } from '../State/State';
 import IconButton from '../IconButton';
-import styles from './PlanCategory.module.css';
+import styles from './PlanCategory.module.scss';
 import FundingPlanCategory from '../State/FundingPlanCategory';
 
 type PropsType = {
@@ -41,7 +41,11 @@ const PlanCategory: React.FC<PropsType> = observer(({
         }
         <IconButton icon="pencil-alt" onClick={handleEditCategory} />
       </div>
-      <Amount amount={planCategory.amount * 12} />
+      {
+        planCategory.useGoal
+          ? <Amount amount={planCategory.monthlyAmount(category) * 12} />
+          : <Amount amount={planCategory.amount * 12} />
+      }
     </div>
   );
 });

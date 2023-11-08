@@ -1,9 +1,9 @@
 import { DateTime } from 'luxon';
 import { makeAutoObservable } from 'mobx';
 import { PendingTransactionProps, TransactionType } from '../../common/ResponseTypes';
-import { StoreInterface, PendingTransactionInterface } from './State';
+import { StoreInterface, BaseTransactionInterface } from './State';
 
-class PendingTransaction implements PendingTransactionInterface {
+class PendingTransaction implements BaseTransactionInterface {
   id: number | null;
 
   date: DateTime;
@@ -19,6 +19,10 @@ class PendingTransaction implements PendingTransactionInterface {
   accountName: string;
 
   accountOwner: string | null = null;
+
+  reconciled = false;
+
+  duplicateOfTransactionId: number | null = null;
 
   constructor(store: StoreInterface, props: PendingTransactionProps) {
     this.id = props.id;
@@ -40,6 +44,11 @@ class PendingTransaction implements PendingTransactionInterface {
     }
 
     makeAutoObservable(this);
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  toggleReconciled(): void {
+    throw Error('not implemented')
   }
 }
 

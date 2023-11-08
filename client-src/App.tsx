@@ -18,7 +18,7 @@ import PlaidLink from './PlaidLink';
 import { StoreContext, store, useStores } from './State/mobxStore';
 import UserAccount from './UserAccount';
 import usePageViews from './Tracker';
-import './style.css';
+import './style.scss';
 import AccountDetails from './AccountView/AccountDetails';
 import CategoryDetails from './Categories/CategoryDetails';
 import Rebalances from './Categories/Rebalances';
@@ -27,11 +27,11 @@ import Signin from './Credentials/Signin';
 import Intro from './Intro';
 import RequireAuth from './RequireAuth';
 import RecoverPassword from './Credentials/RecoverPassword';
-import useMediaQuery from './MediaQuery';
-import styles from './App.module.css';
+import styles from './App.module.scss';
 import DesktopView from './DesktopView';
 import MobileView from './MobileView';
 import TabView from './TabView';
+import Search from './Search';
 
 const App: React.FC = observer(() => {
   const error = useContext(ServerError);
@@ -39,7 +39,6 @@ const App: React.FC = observer(() => {
   const stores = useStores();
   const location = useLocation();
   const navigate = useNavigate();
-  const { isMobile } = useMediaQuery();
 
   Http.unauthorizedHandler = () => {
     if (location.pathname !== '/signin') {
@@ -82,14 +81,9 @@ const App: React.FC = observer(() => {
     )
   }
 
-  let className = styles.layout;
-  if (isMobile) {
-    className = `${className} ${styles.mobile}`;
-  }
-
   return (
     <RequireAuth>
-      <div className={className}>
+      <div className={styles.layout}>
         <DesktopView>
           <Menubar />
           <Outlet />
@@ -105,7 +99,7 @@ const App: React.FC = observer(() => {
 });
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('service-worker.js');
+  navigator.serviceWorker.register('/service-worker.js');
 }
 
 const container = document.querySelector('.app');
@@ -129,9 +123,10 @@ if (container) {
               </Route>
               <Route path="plans" element={<Plans />} />
               <Route path="accounts" element={<Accounts />}>
-                <Route index element={<div className="register window window1" />} />
+                <Route index element={<AccountDetails />} />
                 <Route path=":accountId" element={<AccountDetails />} />
               </Route>
+              <Route path="search" element={<Search />} />
               <Route path="reports" element={<Reports />} />
               <Route path="user" element={<UserAccount />} />
             </Route>

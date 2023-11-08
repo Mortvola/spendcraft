@@ -9,7 +9,7 @@ import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import { FormModal, FormField, setFormErrors } from '@mortvola/forms';
 import { BalanceInterface, BalancesInterface } from '../State/State';
 import AmountInput from '../AmountInput';
-import styles from './BalanceDialog.module.css';
+import styles from './BalanceDialog.module.scss';
 
 type PropsType = {
   balance?: BalanceInterface | null,

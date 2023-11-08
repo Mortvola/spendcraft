@@ -8,7 +8,7 @@ import {
   FormError, setFormErrors, FormField, SubmitButton,
 } from '@mortvola/forms';
 import { useNavigate } from 'react-router-dom';
-import styles from './Signin.module.css';
+import styles from './Signin.module.scss';
 import { isErrorResponse } from '../../common/ResponseTypes';
 
 const Signin: React.FC = () => {

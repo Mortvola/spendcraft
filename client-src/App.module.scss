@@ -1,0 +1,15 @@
+@use "breakpoints";
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: max-content minmax(0, 1fr);
+  height: 100%;
+}
+
+@media (max-width: breakpoints.$side-by-side) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) max-content;  
+  }
+}

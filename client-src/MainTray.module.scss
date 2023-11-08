@@ -1,0 +1,22 @@
+@use "./breakpoints";
+
+.main-tray {
+  display: grid;
+  grid-template-columns: minmax(0, 300px) minmax(0, 5fr);
+  grid-template-rows: minmax(0, 1fr);
+  padding-top: 1rem;
+  padding-left: 0.75rem;
+  height: 100%;
+  width: 100%;
+  grid-template-areas: "sidebar window1";
+  transition: background-color 0.35s ease-in;
+  z-index: 5;
+  position: relative;
+}
+
+@media (max-width: breakpoints.$side-by-side) {
+  .main-tray {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "title" "window1" "window2";
+  }
+}

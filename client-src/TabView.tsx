@@ -1,15 +1,90 @@
 import React from 'react';
-import IconButton from './IconButton';
-import styles from './TabView.module.css';
+import {
+  useNavigate, useParams,
+} from 'react-router-dom';
+import styles from './TabView.module.scss';
+import TabViewButton from './TabViewButton';
+import { useStores } from './State/mobxStore';
 
-const TabView: React.FC = () => (
-  <div className={styles.layout}>
-    <IconButton icon="inbox" caption="Categories" className={styles.icon} iconClass="fa-solid" />
-    <IconButton icon="map" caption="Plans" className={styles.icon} iconClass="fa-solid" />
-    <IconButton icon="building-columns" caption="Accounts" className={styles.icon} iconClass="fa-solid" />
-    <IconButton icon="file" caption="Reports" className={styles.icon} iconClass="fa-solid" />
-    <IconButton icon="circle-user" caption="Account" className={styles.icon} iconClass="fa-solid" />
-  </div>
-);
+const TabView: React.FC = () => {
+  const { uiState } = useStores();
+  const navigate = useNavigate();
+  const params = useParams();
+
+  const handleCategoriesClick = () => {
+    if (uiState.selectedCategory !== undefined && uiState.selectedCategory !== null) {
+      if (params.categoryId === undefined || parseInt(params.categoryId, 10) !== uiState.selectedCategory.id) {
+        navigate(`/home/${uiState.selectedCategory.id}`)
+      }
+      else {
+        navigate('/home');
+      }
+    }
+    else {
+      navigate('/home');
+    }
+  }
+
+  const handleAccountClick = () => {
+    navigate('/user');
+  }
+
+  const handlePlansClick = () => {
+    navigate('/plans')
+  }
+
+  const handleOtherClick = () => {
+    console.log('not implemented');
+  }
+
+  const handleAccountsClick = () => {
+    if (uiState.selectedAccount !== undefined && uiState.selectedAccount !== null) {
+      if (params.accountId === undefined || parseInt(params.accountId, 10) !== uiState.selectedAccount.id) {
+        navigate(`/accounts/${uiState.selectedAccount.id}`)
+      }
+      else {
+        navigate('/accounts');
+      }
+    }
+    else {
+      navigate('/accounts');
+    }
+  }
+
+  return (
+    <div className={styles.layout}>
+      <TabViewButton
+        icon="inbox"
+        caption="Categories"
+        url="/home"
+        onClick={handleCategoriesClick}
+      />
+      <TabViewButton
+        icon="map"
+        caption="Plans"
+        url="/plans"
+        onClick={handlePlansClick}
+      />
+      <TabViewButton
+        icon="building-columns"
+        caption="Accounts"
+        url="/accounts"
+        onClick={handleAccountsClick}
+      />
+      <TabViewButton
+        icon="file"
+        caption="Reports"
+        url="/reports"
+        onClick={handleOtherClick}
+      />
+      <TabViewButton
+        icon="circle-user"
+        caption="Account"
+        url="/user"
+        onClick={handleAccountClick}
+      />
+    </div>
+  )
+};
 
 export default TabView;

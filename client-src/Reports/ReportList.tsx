@@ -1,5 +1,5 @@
 import React from 'react';
-import style from './ReportList.module.css';
+import style from './ReportList.module.scss';
 import ReportListItem from './ReportListItem';
 
 type ReportType = {

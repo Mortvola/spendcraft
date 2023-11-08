@@ -4,6 +4,7 @@ import DetailView from '../DetailView';
 import { useStores } from '../State/mobxStore';
 import Register from '../Transactions/Register';
 import BalanceHistory from './BalanceHistory';
+import styles from '../Transactions/Transactions.module.scss';
 
 const AccountDetails: React.FC = observer(() => {
   const {
@@ -16,6 +17,7 @@ const AccountDetails: React.FC = observer(() => {
 
   return (
     <DetailView
+      className={styles.acct}
       title={`${selectedAccount.institution.name}: ${selectedAccount.name}`}
     >
       {

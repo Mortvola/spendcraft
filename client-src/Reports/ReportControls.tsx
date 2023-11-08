@@ -1,6 +1,6 @@
 import React, { ReactNode } from 'react';
 import { Form } from 'formik';
-import styles from './ReportControls.module.css'
+import styles from './ReportControls.module.scss'
 
 type PropsType = {
   children?: ReactNode,

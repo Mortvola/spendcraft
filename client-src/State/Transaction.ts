@@ -152,11 +152,11 @@ class Transaction implements TransactionInterface {
                   ),
                 ))
             ) {
-              this.store.uiState.selectedCategory.removeTransaction(this.id);
+              this.store.uiState.selectedCategory.transactions.removeTransaction(this.id);
             }
             else if (dateChanged) {
-              this.store.uiState.selectedCategory.removeTransaction(this.id);
-              this.store.uiState.selectedCategory.insertTransaction(this);
+              this.store.uiState.selectedCategory.transactions.removeTransaction(this.id);
+              this.store.uiState.selectedCategory.transactions.insertTransaction(this);
             }
           }
 
@@ -165,8 +165,8 @@ class Transaction implements TransactionInterface {
           if (this.store.uiState.selectedAccount
             && this.store.uiState.selectedAccount.id === this.accountId
             && dateChanged) {
-            this.store.uiState.selectedAccount.removeTransaction(this.id);
-            this.store.uiState.selectedAccount.insertTransaction(this);
+            this.store.uiState.selectedAccount.transactions.removeTransaction(this.id);
+            this.store.uiState.selectedAccount.transactions.insertTransaction(this);
           }
 
           const account = this.store.accounts.findAccount(body.acctBalances[0].id);
@@ -210,7 +210,7 @@ class Transaction implements TransactionInterface {
           if (this.store.uiState.selectedCategory && !body.transaction.transactionCategories.some(
             (c) => (this.store.uiState.selectedCategory && c.categoryId === this.store.uiState.selectedCategory.id),
           )) {
-            this.store.uiState.selectedCategory.removeTransaction(this.id);
+            this.store.uiState.selectedCategory.transactions.removeTransaction(this.id);
           }
         });
 

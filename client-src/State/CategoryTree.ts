@@ -39,6 +39,24 @@ class CategoryTree implements CategoryTreeInterface {
     this.store = store;
   }
 
+  // eslint-disable-next-line class-methods-use-this
+  state(): 'IDLE' | 'LOADING' | 'LOADING-MORE' {
+    return 'IDLE';
+  }
+
+  async getData(index: number) {
+    return this.load();
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  async getMoreData() {
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  isComplete() {
+    return true;
+  }
+
   getCategoryGroup(categoryId: number): Group {
     const group = this.nodes.find((g) => {
       if (isCategory(g)) {

@@ -1,0 +1,17 @@
+@use "./breakpoints";
+
+.layout {
+  display: grid;
+  grid-template-rows: max-content minmax(0, 1fr);
+}
+
+.main-tray-title {
+  font-size:x-large;
+}
+
+@media (max-width: breakpoints.$side-by-side) {
+  .main-tray-title {
+    font-size: 2rem;
+    font-weight: bold;
+  }
+}

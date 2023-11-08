@@ -1,0 +1,313 @@
+@use "../breakpoints";
+
+@media (max-width: breakpoints.$side-by-side) {
+  .transactions {
+    padding-right: 1rem;
+  }
+}
+
+@media (min-width: breakpoints.$side-by-side) {
+  .transaction:not(.register-title) {
+    &:hover {
+      background-color: var(--hover-background);
+      color: var(--hover-color);
+    }
+  }
+}
+
+$icon-width: 16px;
+$date-width: 6.25rem;
+$amount-width: 7rem;
+$balance-width: 8rem;
+
+.transaction {
+  display: grid;
+  grid-template-columns: $icon-width $date-width minmax(0,1fr) $amount-width $amount-width $balance-width minmax(0, 1.4fr) max-content;
+  grid-template-rows: max-content;
+  align-items: center;
+  transition: background-color 0.25s ease-out;
+  position: relative;
+  // z-index: 2;
+  padding-left: 0.5rem;
+  cursor: pointer;
+
+  grid-template-areas: ". date name trx-amount amount running-balance account .";
+
+  &.loan {
+    grid-template-columns: $icon-width $date-width minmax(0,1fr) repeat(3, $amount-width) $balance-width max-content minmax(0, 2fr) max-content;
+  }
+  
+  /* For left-padding of each element in transaction */
+  >* {
+    padding-left: 5px;
+    min-width: 1.25rem;
+
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+  }
+
+  .name {
+    grid-area: name;
+  }
+  
+  .amount {
+    grid-area: amount;
+  }
+
+  .trx-amount {
+    grid-area: trx-amount;
+  }
+  
+  .date {
+    grid-area: date;
+  }
+  
+  .account {
+    grid-area: account;
+  }
+
+  .reconcile {
+    grid-area: reconcile;
+    display: none;
+  }
+  
+  .institution {
+    grid-area: institution;
+  }
+  
+  .owner {
+    grid-area: owner;
+    text-transform: capitalize;
+    display: none;
+  }
+  
+  .running-balance {
+    grid-area: running-balance;
+  }
+
+  .principle {
+    grid-area: principle;
+    display: none;
+  }
+
+  .interest {
+    grid-area: interest;
+    display: none;
+  }
+}
+
+.search {
+  .transaction {
+    grid-template-columns: $icon-width $date-width minmax(0, 0.8fr) $amount-width minmax(0, 0.8fr) minmax(0, 0.5fr) max-content;
+    grid-template-areas: ". date name amount account owner .";
+
+    .running-balance,
+    .reconcile,
+    .trx-amount {
+      display: none;
+    }
+  
+    .owner {
+      display: unset;
+    }
+  }
+}
+
+.unassigned {
+  .transaction {
+    grid-template-columns: $icon-width $date-width minmax(0,1fr) $amount-width $balance-width minmax(0, 0.5fr) max-content;
+    grid-template-areas: ". date name amount running-balance account .";
+
+    .trx-amount {
+      display: none;
+    }
+  }
+}
+
+.pending {
+  .transaction {
+    grid-template-columns: $icon-width $date-width minmax(0, 1.8fr) $amount-width minmax(0, 1.2fr);
+    grid-template-areas: ". date name amount account .";
+
+    .running-balance,
+    .trx-amount {
+      display: none;
+    }
+  }
+}
+
+.acct {
+  .transaction {
+    grid-template-columns: $icon-width $date-width minmax(0,1fr) $amount-width $balance-width max-content minmax(0, 1fr);
+    grid-template-areas: ". date name amount running-balance reconcile owner .";
+
+    .owner,
+    .reconcile {
+      display: unset;
+    }
+  
+    .account,
+    .trx-amount {
+      display: none;
+    }  
+  }
+
+  .pending {
+    .transaction {
+      grid-template-columns: $icon-width $date-width minmax(0, 1fr) $amount-width minmax(0, 1fr) max-content;
+      grid-template-areas: ". date name amount owner .";  
+
+      .owner {
+        display: unset;
+      }
+  
+      .reconcile,
+      .running-balance {
+        display: none;
+      }  
+    }
+  }
+}
+
+.rebalances {
+  .transaction {
+    grid-template-columns: $icon-width $date-width $amount-width max-content;
+    grid-template-areas: ". date amount .";  
+
+    .name,
+    .trx-amount,
+    .running-balance,
+    .reconcile,
+    .account,
+    .institution {
+      display: none;
+    }  
+  }
+}
+
+@media (max-width: breakpoints.$side-by-side) {
+  $icon-width: 0;
+  $amount-width: 6rem;
+  $date-width: 4rem;
+
+  .transaction {
+    margin-bottom: 1rem;
+  }
+
+  .transaction,
+  .unassigned .transaction {
+    grid-template-columns: $icon-width $date-width minmax(0, 1fr) $amount-width;
+    grid-template-rows: max-content max-content max-content;
+    grid-template-areas:
+      ". name name amount"
+      ". date account running-balance"
+      ". owner owner owner";
+    padding-left: 0.25rem;
+
+    .date,
+    .account,
+    .institution,
+    .owner,
+    .running-balance {
+      font-size: var(--trx-small-text);
+    }
+
+    .owner {
+      display: unset;
+    }
+
+    .trx-amount,
+    .reconcile {
+      display: none;
+    }
+  }
+
+  .pending {
+    .transaction {
+      grid-template-columns: $icon-width $date-width minmax(0, 1fr) $amount-width;
+      grid-template-rows: max-content max-content max-content;
+      grid-template-areas:
+        ". name name amount"
+        ". date account account"
+        ". owner owner owner";
+
+      .running-balance {
+        display: none;
+      }
+    }
+  }
+
+  .acct {
+    .transaction {
+      grid-template-columns: $icon-width $date-width minmax(0, 1fr) $amount-width;
+      grid-template-rows: max-content max-content;
+      grid-template-areas:
+        ". name name amount"
+        ". date owner running-balance";  
+
+      .reconcile {
+        display: none;
+      }    
+    }
+
+    .pending {
+      .transaction {
+        grid-template-columns: $icon-width $date-width minmax(0, 1fr) $amount-width;
+        grid-template-rows: max-content max-content;
+        grid-template-areas:
+          ". name name amount"
+          ". date owner .";
+
+        .running-balance,
+        .reconcile {
+          display: none;
+        }
+      }
+    }
+  }
+}
+
+.register-title {
+  color: white;
+  background-color: gray;
+
+  div {
+    height: 100%;
+  }  
+
+  >:not(:first-child, :last-child) {
+    border-left: solid 1px black;
+    padding-left: 4px;
+  }  
+}
+
+.title-stub {
+  overflow-y: scroll;
+  visibility: hidden;
+  padding: 0;
+  min-width: 0;
+}
+
+.register-wrapper {
+  display: grid;
+  grid-template-rows: repeat(auto-fit, minmax(0, 1fr));
+  grid-template-columns: minmax(0,1fr);
+}
+
+@media (max-width: breakpoints.$side-by-side) {
+  .register-wrapper {
+    grid-area: unset;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+}
+
+.no-transactions {
+  width: 100%;
+  height: max-content;
+  display: flex;
+  justify-content: center;
+  padding-top: 1rem;
+}

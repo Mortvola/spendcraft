@@ -1,9 +1,11 @@
 import { RebalancesInterface, StoreInterface } from './State';
 import TransactionContainer from './TransactionContainer';
 
-class Rebalances extends TransactionContainer implements RebalancesInterface {
+class Rebalances implements RebalancesInterface {
+  transactions: TransactionContainer;
+
   constructor(store: StoreInterface) {
-    super(store, '/api/v1/rebalances');
+    this.transactions = new TransactionContainer(store, '/api/v1/rebalances');
   }
 }
 

@@ -13,7 +13,7 @@ import {
 import Transaction from './Transaction';
 import TransactionContainer from './TransactionContainer';
 
-class Account extends TransactionContainer implements AccountInterface {
+class Account implements AccountInterface {
   id: number;
 
   plaidId: string | null;
@@ -38,10 +38,22 @@ class Account extends TransactionContainer implements AccountInterface {
 
   institution: InstitutionInterface;
 
+  balance = 0;
+
+  transactions: TransactionContainer;
+
+  pendingTransactions: TransactionContainer;
+
   store: StoreInterface;
 
   constructor(store: StoreInterface, institution: InstitutionInterface, props: AccountProps) {
-    super(store, `/api/v1/account/${props.id}/transactions`);
+    this.transactions = new TransactionContainer(
+      store, `/api/v1/account/${props.id}/transactions`, this.updateBalance,
+    );
+
+    this.pendingTransactions = new TransactionContainer(
+      store, `/api/v1/account/${props.id}/transactions?pending=1`,
+    );
 
     this.id = props.id;
     this.plaidId = props.plaidId;
@@ -61,6 +73,7 @@ class Account extends TransactionContainer implements AccountInterface {
       plaidBalance: observable,
       rate: observable,
       institution: observable,
+      balance: observable,
     });
 
     this.store = store;
@@ -79,7 +92,12 @@ class Account extends TransactionContainer implements AccountInterface {
     this.startDate = props.startDate ? DateTime.fromISO(props.startDate) : null;
     this.rate = props.rate;
 
-    super.url = `/api/v1/account/${props.id}/transactions`;
+    this.transactions.url = `/api/v1/account/${props.id}/transactions`;
+    this.pendingTransactions.url = `/api/v1/account/${props.id}/transactions?pending=1`;
+  }
+
+  updateBalance(balance: number) {
+    this.balance = balance;
   }
 
   async setSettings(settings: AccountSettings): Promise<void> {
@@ -94,14 +112,6 @@ class Account extends TransactionContainer implements AccountInterface {
         }
       });
     }
-  }
-
-  async getPendingTransactions(index = 0): Promise<void> {
-    return this.pendingQuery.fetch(
-      `/api/v1/account/${this.id}/transactions/pending`,
-      index,
-      this.pendingResponseHandler,
-    );
   }
 
   async addTransaction(
@@ -123,7 +133,7 @@ class Account extends TransactionContainer implements AccountInterface {
 
           const transaction = new Transaction(this.store, body.transaction);
 
-          this.insertTransaction(transaction);
+          this.transactions.insertTransaction(transaction);
 
           this.balance = body.acctBalances[0].balance;
         });

@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as responsive from 'react-responsive';
 import 'regenerator-runtime';
-import styles from './Intro.module.css';
+import styles from './Intro.module.scss';
 
 const Intro: React.FC = () => {
   const navigate = useNavigate();

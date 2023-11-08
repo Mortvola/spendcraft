@@ -1,0 +1,73 @@
+@use "../breakpoints";
+
+.account {
+  --account-background: #fdfdfd;
+}
+
+@media (prefers-color-scheme: dark) {
+  .account {
+    --account-background: #242424;
+  }
+}
+
+.account {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  background-color: var(--account-background);
+  cursor: pointer;
+}
+
+@media (min-width: breakpoints.$side-by-side) {
+  .account.selected {
+    border: 4px #ff7f29 solid;
+    padding: 0;
+  }  
+
+  .account:not(.selected):hover {
+    border: 4px #f5c4a4 solid;
+    padding: 0;
+  }
+
+  .account.selected:not(:hover):last-child,
+  .account:not(.selected):hover:last-child {
+    border-radius: 0 0 8px 8px;
+  }
+
+  .account:not(.selected):hover:last-child {
+    border-radius: 0 0 8px 8px;
+  }
+}
+
+*>.account {
+  padding: 4px;
+}
+
+.account>*:nth-child(1) {
+  align-self: start;
+}
+
+.account>*:nth-child(2) {
+  overflow: hidden;
+}
+
+.account-info *:not(:first-child) {
+  margin-left: 4px;
+  font-size: 1rem;
+}
+
+.account-name {
+  margin-left: 4px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.buttons {
+  display: flex;
+  flex-direction: column;
+}
+
+.iconButton {
+  color: var(--icon-button-color);
+}

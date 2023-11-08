@@ -87,7 +87,7 @@ export default class Category extends BaseModel {
     return query;
   }
 
-  private getTransactionQuery(budget: Budget) {
+  private getTransactionQuery(budget: Budget, pending: boolean) {
     return budget
       .related('transactions').query()
       .where('deleted', false)
@@ -97,7 +97,7 @@ export default class Category extends BaseModel {
       .where((q) => {
         q.whereHas('accountTransaction', (q2) => {
           q2
-            .where('pending', false)
+            .where('pending', pending)
             .andWhereHas('account', (q3) => {
               q3.where('tracking', 'Transactions')
                 .andWhereColumn('startDate', '<=', 'transactions.date')
@@ -115,8 +115,8 @@ export default class Category extends BaseModel {
       })
   }
 
-  public async transactions(budget: Budget, limit?: number, offset?: number) {
-    const transactionQuery = this.getTransactionQuery(budget);
+  public async transactions(budget: Budget, pending: boolean, limit?: number, offset?: number) {
+    const transactionQuery = this.getTransactionQuery(budget, pending);
 
     transactionQuery
       .orderBy('transactions.date', 'desc')

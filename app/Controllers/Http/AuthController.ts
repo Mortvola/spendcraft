@@ -183,8 +183,6 @@ export default class AuthController {
     try {
       const token = await auth.use('jwt').loginViaRefreshToken(payload.data.refresh);
 
-      console.log(`new refresh token: ${token.refreshToken}`);
-
       response.header('content-type', 'application/json');
       response.send({
         data: {

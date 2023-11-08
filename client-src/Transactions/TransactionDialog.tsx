@@ -15,7 +15,7 @@ import { AccountInterface, TransactionCategoryInterface, TransactionInterface } 
 import AmountInput from '../AmountInput';
 import useMediaQuery from '../MediaQuery';
 import { TransactionType } from '../../common/ResponseTypes';
-import styles from './TransactionDialog.module.css';
+import styles from './TransactionDialog.module.scss';
 import PurchaseLocation from './PurchaseLocation';
 
 function validateSplits(splits: Array<TransactionCategoryInterface>) {
@@ -297,13 +297,13 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
                   name="principle"
                   label="Principle:"
                   as={AmountInput}
-                  onBlur={() => console.log('principle blur')}
+                  // onBlur={() => console.log('principle blur')}
                 />
                 <FormField
                   name="interest"
                   label="Interest:"
                   as={AmountInput}
-                  onBlur={() => console.log('interest blur')}
+                  // onBlur={() => console.log('interest blur')}
                   readOnly
                 />
               </>

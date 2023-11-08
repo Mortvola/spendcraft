@@ -14,7 +14,7 @@ import Http from '@mortvola/http';
 import { useNavigate } from 'react-router-dom';
 import { useStores } from './State/mobxStore';
 import IconButton from './IconButton';
-import styles from './UserAccount.module.css'
+import styles from './UserAccount.module.scss'
 import { useDeleteConfirmation } from './DeleteConfirmation';
 import PushRegistrationButton from './PushRegistrationButton';
 

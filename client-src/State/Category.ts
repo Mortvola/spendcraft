@@ -10,7 +10,7 @@ import LoanTransaction from './LoanTransaction';
 import { CategoryInterface, GroupInterface, StoreInterface } from './State';
 import TransactionContainer from './TransactionContainer';
 
-class Category extends TransactionContainer implements CategoryInterface {
+class Category implements CategoryInterface {
   id: number;
 
   name: string;
@@ -21,6 +21,12 @@ class Category extends TransactionContainer implements CategoryInterface {
 
   monthlyExpenses: boolean;
 
+  balance = 0;
+
+  transactions: TransactionContainer;
+
+  pendingTransactions: TransactionContainer;
+
   loan: {
     balance: number;
     transactions: LoanTransaction[];
@@ -29,27 +35,26 @@ class Category extends TransactionContainer implements CategoryInterface {
   store: StoreInterface;
 
   constructor(props: CategoryProps, store: StoreInterface) {
-    super(store, `/api/v1/category/${props.id}/transactions`);
+    this.transactions = new TransactionContainer(
+      store, `/api/v1/category/${props.id}/transactions`, this.updateBalance,
+    );
+
+    this.pendingTransactions = new TransactionContainer(
+      store, `/api/v1/category/${props.id}/transactions?pending=1`,
+    );
 
     this.id = props.id;
     this.name = props.name;
     this.type = props.type;
-    this.groupId = props.groupId;
     this.balance = props.balance;
+    this.groupId = props.groupId;
     this.monthlyExpenses = props.monthlyExpenses;
     this.store = store;
 
     makeObservable(this, {
       name: observable,
+      balance: observable,
     });
-  }
-
-  async getPendingTransactions(index = 0): Promise<void> {
-    return this.pendingQuery.fetch(
-      `/api/v1/category/${this.id}/transactions/pending`,
-      index,
-      this.pendingResponseHandler,
-    )
   }
 
   async update(
@@ -94,6 +99,10 @@ class Category extends TransactionContainer implements CategoryInterface {
     }
 
     return null;
+  }
+
+  updateBalance(balance: number) {
+    this.balance = balance;
   }
 
   updateBalances(balances: CategoryBalanceProps[]): void {

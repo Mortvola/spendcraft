@@ -31,7 +31,7 @@ export interface GroupInterface {
   update(name: string): Promise<null | Error[]>;
 }
 
-export interface TransactionInterface {
+export interface TransactionInterface extends BaseTransactionInterface {
   id: number | null;
 
   amount: number;
@@ -90,12 +90,14 @@ export interface TransactionInterface {
   toggleReconciled(): void;
 }
 
-export interface PendingTransactionInterface {
+export interface BaseTransactionInterface {
   id: number | null;
 
   amount: number;
 
   date: DateTime;
+
+  type: TransactionType;
 
   name: string;
 
@@ -103,7 +105,13 @@ export interface PendingTransactionInterface {
 
   accountName: string;
 
+  reconciled: boolean;
+
   accountOwner: string | null;
+
+  duplicateOfTransactionId: number | null;
+
+  toggleReconciled(): void;
 }
 
 export interface AccountsInterface {
@@ -142,7 +150,7 @@ export interface AccountsInterface {
   closeAccount();
 }
 
-export interface CategoryInterface extends TransactionContainerInterface {
+export interface CategoryInterface {
   id: number;
 
   name: string;
@@ -153,18 +161,18 @@ export interface CategoryInterface extends TransactionContainerInterface {
 
   monthlyExpenses: boolean;
 
+  balance: number;
+
+  transactions: TransactionContainerInterface;
+
+  pendingTransactions: TransactionContainerInterface;
+
   loan: {
     balance: number;
     transactions: LoanTransaction[];
   };
 
   store: StoreInterface;
-
-  getPendingTransactions(index = 0): Promise<void>;
-
-  insertTransaction(transaction: Transaction): void;
-
-  removeTransaction(transactionId: number): void;
 
   update(name: string, group: GroupInterface, monthlyExpenses: boolean): Promise<null | Error[]>;
 
@@ -175,7 +183,9 @@ export interface CategoryInterface extends TransactionContainerInterface {
   getGroup(): GroupInterface;
 }
 
-export type RebalancesInterface = TransactionContainerInterface;
+export interface RebalancesInterface {
+  transactions: TransactionContainerInterface;
+}
 
 export interface FundingPlanInterface {
   id: number;
@@ -185,7 +195,7 @@ export interface FundingPlanInterface {
   async update(name: string): Promise<void>;
 }
 
-export type Views = 'HOME' | 'PLANS' | 'ACCOUNTS' | 'REPORTS' | 'USER_ACCOUNT' | 'LOGOUT';
+export type Views = 'HOME' | 'PLANS' | 'ACCOUNTS' | 'REPORTS' | 'SEARCH' | 'USER_ACCOUNT' | 'LOGOUT';
 
 export interface UIStateInterface {
   selectCategory(category: CategoryInterface | null): void;
@@ -200,7 +210,7 @@ export interface UIStateInterface {
   plaid: Plaid | null;
 }
 
-export interface CategoryTreeInterface {
+export interface CategoryTreeInterface extends RemoteDataInterface {
   systemIds: SystemIds;
 
   noGroupGroup: GroupInterface | null;
@@ -297,22 +307,24 @@ export interface InstitutionInterface {
   hasClosedAccounts(): boolean;
 }
 
-export interface QueryManagerInterface {
-  fetching: boolean;
+export interface RemoteDataInterface {
+  getData(index: number): Promise<void>;
+
+  getMoreData(): Promise<void>;
+
+  isComplete(): boolean;
+
+  state(): 'IDLE' | 'LOADING' | 'LOADING-MORE';
 }
 
-export interface TransactionContainerInterface {
-  balance: number;
-
+export interface TransactionContainerInterface extends RemoteDataInterface {
   transactions: TransactionInterface[];
-
-  pending: PendingTransactionInterface[];
 
   transactionsQuery: QueryManagerInterface;
 
-  getTransactions(index?: number): Promise<void>;
+  insertTransaction(transaction: Transaction): void;
 
-  getMoreTransactions(): Promise<void>;
+  removeTransaction(transactionId: number): void;
 }
 
 export interface AccountSettings {
@@ -323,7 +335,7 @@ export interface AccountSettings {
   tracking?: TrackingType,
 }
 
-export interface AccountInterface extends TransactionContainerInterface {
+export interface AccountInterface {
   id: number;
 
   plaidId: string | null;
@@ -348,11 +360,15 @@ export interface AccountInterface extends TransactionContainerInterface {
 
   institution: InstitutionInterface;
 
+  balance: number;
+
+  transactions: TransactionContainerInterface;
+
+  pendingTransactions: TransactionContainerInterface;
+
   store: StoreInterface;
 
   update(props: AccountProps);
-
-  getPendingTransactions(): Promise<void>;
 
   addTransaction(
     values: {
@@ -364,10 +380,6 @@ export interface AccountInterface extends TransactionContainerInterface {
       splits: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
     },
   ): Promise<Error[] | null>;
-
-  insertTransaction(transaction: Transaction): void;
-
-  removeTransaction(transactionId: number): void;
 
   delete(): void;
 

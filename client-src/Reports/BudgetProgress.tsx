@@ -9,8 +9,7 @@ import PleaseWait from '../PleaseWait';
 import { useStores } from '../State/mobxStore';
 import TransactionContainer from '../State/TransactionContainer';
 import RegisterTransactions from '../Transactions/RegisterTransactions';
-import Transaction from '../Transactions/Transactions/Transaction';
-import TransactionBase from '../Transactions/Transactions/TransactionBase';
+import Transaction from '../Transactions/Transaction';
 import MonthSelector from './MonthSelector';
 import ReportControls from './ReportControls';
 
@@ -95,8 +94,10 @@ const BudgetProgress: React.FC = observer(() => {
       return `${accum}&t=${t}`;
     }, '');
 
-    const container = new TransactionContainer(store, `/api/v1/transactions?${queryParams}`);
-    container.getTransactions();
+    const container = new TransactionContainer(
+      store, `/api/v1/transactions?${queryParams}`,
+    );
+    container.getData(0);
     setTransactions(container);
     // const response = await Http.get<TransactionProps>(`/api/v1/transactions?${queryParams}`);
 
@@ -157,9 +158,7 @@ const BudgetProgress: React.FC = observer(() => {
                     <RegisterTransactions trxContainer={transactions}>
                       {
                         transactions.transactions.map((t) => (
-                          <TransactionBase key={t.id} transaction={t}>
-                            <Transaction transaction={t} amount={t.amount} />
-                          </TransactionBase>
+                          <Transaction key={t.id} transaction={t} amount={t.amount} runningBalance={0} />
                         ))
                       }
                     </RegisterTransactions>

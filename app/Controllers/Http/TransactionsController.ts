@@ -455,4 +455,42 @@ export default class TransactionsController {
       balance: 0,
     }
   }
+
+  // eslint-disable-next-line class-methods-use-this
+  public async search({
+    request,
+    auth: {
+      user,
+    },
+  }: HttpContextContract): Promise<TransactionsResponse> {
+    if (!user) {
+      throw new Error('user is not defined');
+    }
+
+    const budget = await user.related('budget').query().firstOrFail();
+
+    const results = await budget.related('transactions').query()
+      .where('deleted', false)
+      .whereHas('accountTransaction', (q) => {
+        q.whereILike('name', `%${request.qs().name.trim()}%`)
+      })
+      .preload('accountTransaction', (accountTransaction) => {
+        accountTransaction.preload('account', (account) => {
+          account.preload('institution');
+        });
+      })
+      .preload('transactionCategories', (transactionCategory) => {
+        transactionCategory.preload('loanTransaction');
+      })
+      .limit(request.qs().limit)
+      .offset(request.qs().offset)
+      .orderBy('date', 'desc')
+
+    return ({
+      transactions: results.map((t) => (
+        t.serialize(transactionFields) as TransactionProps
+      )),
+      balance: 0,
+    })
+  }
 }

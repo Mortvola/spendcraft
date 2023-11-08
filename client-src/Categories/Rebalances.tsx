@@ -5,7 +5,7 @@ import Register from '../Transactions/Register';
 
 const Rebalances: React.FC = observer(() => (
   <DetailView
-    title="Rebalances"
+    title="Category Transfers"
   >
     <Register type="rebalances" />
   </DetailView>

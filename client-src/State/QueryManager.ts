@@ -1,9 +1,8 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
-import { QueryManagerInterface } from './State';
 
-class QueryManager implements QueryManagerInterface {
-  fetching = false;
+class QueryManager {
+  state: 'IDLE' | 'LOADING' | 'LOADING-MORE' = 'IDLE';
 
   fetchComplete = false;
 
@@ -15,37 +14,49 @@ class QueryManager implements QueryManagerInterface {
     url: string,
     index: number,
     handleResponse: (body: unknown, index: number, limit: number) => boolean,
+    qs?: string,
   ): Promise<void> {
     if (index === 0) {
       this.fetchComplete = false;
     }
 
-    if (!this.fetching && !this.fetchComplete) {
-      this.fetching = true;
-      const limit = 30;
-      let newUrl: string;
+    if (this.state === 'IDLE' && !this.fetchComplete) {
+      try {
+        this.state = index === 0 ? 'LOADING' : 'LOADING-MORE';
 
-      if (url.includes('?')) {
-        newUrl = `${url}&offset=${index ?? 0}&limit=${limit}`;
+        const limit = 30;
+        let newUrl: string;
+
+        if (url.includes('?')) {
+          newUrl = `${url}&offset=${index ?? 0}&limit=${limit}`;
+        }
+        else {
+          newUrl = `${url}?offset=${index ?? 0}&limit=${limit}`;
+        }
+
+        if (qs) {
+          newUrl += `&${qs}`;
+        }
+
+        const response = await Http.get(newUrl);
+
+        if (response.ok) {
+          const body = await response.body();
+
+          runInAction(() => {
+            this.fetchComplete = handleResponse(body, index, limit);
+            this.state = 'IDLE';
+          });
+        }
+        else {
+          runInAction(() => {
+            this.state = 'IDLE';
+          });
+        }
       }
-      else {
-        newUrl = `${url}?offset=${index ?? 0}&limit=${limit}`;
-      }
-
-      const response = await Http.get(newUrl);
-
-      if (response.ok) {
-        const body = await response.body();
-
-        runInAction(() => {
-          this.fetchComplete = handleResponse(body, index, limit);
-          this.fetching = false;
-        });
-      }
-      else {
-        runInAction(() => {
-          this.fetching = false;
-        });
+      catch (error) {
+        this.state = 'IDLE';
+        console.log(`fetch failed: ${error}`)
       }
     }
   }

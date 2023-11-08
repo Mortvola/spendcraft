@@ -1,0 +1,34 @@
+.pull-refresher-wrapper {
+  height: 100%;
+  overflow-y: scroll;
+  overscroll-behavior-y: contain;
+}
+
+.pull-refresher {
+  // Force overflow behavior by making this container 1 pixel larger in
+  // height to always enable overscroll behavior even
+  // where there are not enough transactions.
+  min-height: calc(100% + 1px);
+  position: relative;
+}
+
+$refresh-height: 64px;
+
+.refresh {
+  display: flex;
+  height: $refresh-height;
+  top: 0;
+  left: 0;
+  // position: absolute;
+  position: sticky;
+  background-color: var(--page-color);
+  z-index: 1;
+}
+
+.refresh-place-holder {
+  height: $refresh-height;
+}
+
+.load-more {
+  height: max-content;
+}

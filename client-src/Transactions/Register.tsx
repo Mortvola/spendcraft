@@ -2,18 +2,14 @@ import React from 'react';
 import { observer } from 'mobx-react-lite';
 import { useStores } from '../State/mobxStore';
 import {
-  AccountInterface, CategoryInterface, TransactionContainerInterface, TransactionInterface,
+  AccountInterface, CategoryInterface, TransactionContainerInterface,
 } from '../State/State';
 import PendingRegister from './PendingRegister';
-import RegisterTitles from './RegisterTitles';
-import RegisterTransactions from './RegisterTransactions';
-import RebalancesTitles from './RebalancesTitles';
-import styles from './Transactions.module.css';
-import TransactionBase from './Transactions/TransactionBase';
-import AccountTransaction from './Transactions/AccountTransaction';
-import CategoryTransaction from './Transactions/CategoryTransaction';
-import useTrxDialog from './TrxDialog';
-import RebalanceTransaction from './Transactions/RebalanceTransaction';
+import styles from './Transactions.module.scss';
+import DesktopView from '../DesktopView';
+import MobileView from '../MobileView';
+import PostedRegister from './PostedRegister';
+import TransactionTypeSelector from './TransactionTypeSelector';
 
 type PropsType = {
   type: 'category' | 'account' | 'rebalances',
@@ -24,15 +20,20 @@ const Register: React.FC<PropsType> = observer(({
 }) => {
   const store = useStores();
   const { uiState, categoryTree, rebalances } = store;
+  const [transactionType, setTransactionType] = React.useState(false);
+
+  const handleTypeClick = (newType: boolean) => {
+    setTransactionType(newType);
+  }
 
   React.useEffect(() => {
     switch (type) {
       case 'category':
         if (uiState.selectedCategory) {
-          uiState.selectedCategory.getTransactions();
+          uiState.selectedCategory.transactions.getData(0);
 
           if (uiState.selectedCategory === categoryTree.unassignedCat) {
-            uiState.selectedCategory.getPendingTransactions();
+            uiState.selectedCategory.pendingTransactions.getData(0);
           }
         }
         break;
@@ -43,14 +44,14 @@ const Register: React.FC<PropsType> = observer(({
             throw new Error(`invalid tracking type for register: ${uiState.selectedAccount.tracking}`);
           }
 
-          uiState.selectedAccount.getTransactions();
-          uiState.selectedAccount.getPendingTransactions();
+          uiState.selectedAccount.transactions.getData(0);
+          uiState.selectedAccount.pendingTransactions.getData(0);
         }
 
         break;
 
       case 'rebalances':
-        rebalances.getTransactions();
+        rebalances.transactions.getData(0);
         break;
 
       default:
@@ -62,152 +63,49 @@ const Register: React.FC<PropsType> = observer(({
   let account: AccountInterface | null = null;
 
   let trxContainer: TransactionContainerInterface | null = null;
+  let pendingTrxContainer: TransactionContainerInterface | null = null;
 
   let transactionClassName: string | undefined;
+
+  let className = '';
 
   switch (type) {
     case 'category':
       category = uiState.selectedCategory;
-      trxContainer = category;
 
-      if (category) {
-        if (category.type === 'UNASSIGNED') {
-          transactionClassName = ` ${styles.unassigned}`;
-        }
+      if (category === null) {
+        throw new Error('category not set');
       }
+
+      trxContainer = category.transactions;
+      pendingTrxContainer = category.pendingTransactions
 
       break;
 
     case 'account':
       account = uiState.selectedAccount;
-      trxContainer = account;
 
-      if (account) {
-        if (account.type === 'loan') {
-          transactionClassName = ` ${styles.loan}`;
-        }
-        else {
-          transactionClassName = ` ${styles.acct}`;
-        }
+      if (account === null) {
+        throw new Error('category not set');
+      }
+
+      trxContainer = account.transactions;
+      pendingTrxContainer = account.pendingTransactions
+
+      if (account.type === 'loan') {
+        transactionClassName = ` ${styles.loan}`;
       }
 
       break;
 
     case 'rebalances':
-      trxContainer = rebalances;
+      trxContainer = rebalances.transactions;
+      className = styles.rebalances;
 
       break;
 
     default:
       throw new Error(`unkonwn type: ${type}`);
-  }
-
-  const [TrxDialog, showTrxDialog] = useTrxDialog(account ?? undefined);
-
-  let titles = (
-    <RegisterTitles
-      category={category}
-      account={account}
-      transactionClassName={transactionClassName}
-    />
-  );
-
-  const renderTransactionType = (
-    transaction: TransactionInterface,
-    amount: number,
-    runningBalance: number,
-  ) => {
-    if (category) {
-      return (
-        <CategoryTransaction
-          transaction={transaction}
-          amount={amount}
-          runningBalance={runningBalance}
-          category={category}
-        />
-      );
-    }
-
-    if (account) {
-      return (
-        <AccountTransaction
-          transaction={transaction}
-          amount={amount}
-          runningBalance={runningBalance}
-          account={account}
-        />
-      )
-    }
-
-    return null;
-  };
-
-  let renderTransactions = () => {
-    if (trxContainer === null) {
-      throw new Error('trxContainer is not set');
-    }
-
-    let runningBalance = trxContainer.balance;
-
-    return trxContainer.transactions.map((transaction) => {
-      let { amount } = transaction;
-      if (category !== null) {
-        amount = transaction.getAmountForCategory(category.id);
-      }
-      else if (account && account.type === 'loan') {
-        amount = transaction.principle ?? 0;
-      }
-
-      const element = (
-        <TransactionBase
-          key={transaction.id}
-          transaction={transaction}
-          showTrxDialog={showTrxDialog}
-          className={transactionClassName}
-        >
-          { renderTransactionType(transaction, amount, runningBalance) }
-        </TransactionBase>
-      )
-
-      if (runningBalance !== undefined) {
-        runningBalance -= amount;
-      }
-
-      return element;
-    });
-  }
-
-  if (type === 'rebalances') {
-    titles = <RebalancesTitles />;
-
-    renderTransactions = () => {
-      if (trxContainer === null) {
-        throw new Error('trxContainer is not set');
-      }
-
-      return trxContainer.transactions.map((transaction) => {
-        const amount = transaction.categories.reduce((prev, c) => {
-          if (c.amount > 0) {
-            return prev + c.amount;
-          }
-
-          return prev;
-        }, 0);
-
-        return (
-          <TransactionBase
-            key={transaction.id}
-            transaction={transaction}
-            showTrxDialog={showTrxDialog}
-            className={styles.rebalances}
-          >
-            <RebalanceTransaction
-              amount={amount}
-            />
-          </TransactionBase>
-        );
-      })
-    };
   }
 
   if (!trxContainer) {
@@ -216,17 +114,42 @@ const Register: React.FC<PropsType> = observer(({
 
   return (
     <>
-      <div className="register window window1">
-        <div />
-        { titles }
-        <RegisterTransactions
-          trxContainer={trxContainer}
-        >
-          { renderTransactions() }
-        </RegisterTransactions>
-        <TrxDialog />
-      </div>
-      <PendingRegister categoryView={type === 'category'} pending={trxContainer.pending} />
+      <DesktopView>
+        <div className={`${styles.registerWrapper} ${className}`}>
+          <PostedRegister
+            type={type}
+            trxContainer={trxContainer}
+            category={category}
+            account={account}
+            transactionClassName={transactionClassName}
+          />
+          <PendingRegister trxContainer={pendingTrxContainer} />
+        </div>
+      </DesktopView>
+      <MobileView>
+        <div className={styles.registerWrapper}>
+          {
+            (pendingTrxContainer?.transactions.length ?? 0) > 0
+              ? <TransactionTypeSelector state={transactionType} onClick={handleTypeClick} />
+              : null
+          }
+          {
+            transactionType && pendingTrxContainer?.transactions.length
+              ? (
+                <PendingRegister trxContainer={pendingTrxContainer} />
+              )
+              : (
+                <PostedRegister
+                  type={type}
+                  trxContainer={trxContainer}
+                  category={category}
+                  account={account}
+                  transactionClassName={transactionClassName}
+                />
+              )
+          }
+        </div>
+      </MobileView>
     </>
   );
 });

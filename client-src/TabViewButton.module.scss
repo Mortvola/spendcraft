@@ -1,0 +1,32 @@
+.icon {
+  --tabview-color: #666;
+  --tabview-active-color: rgb(16, 108, 255);
+  --tabview-hover-color: rgb(172, 172, 172);
+}
+
+@media (prefers-color-scheme: dark) {
+  .icon {
+    --tabview-color: rgb(172, 172, 172);
+  }
+}
+
+.icon {
+  color: var(--tabview-color);
+  font-size: 0.7rem;
+
+  &:global(.active) {
+    color: var(--tabview-active-color);
+
+    &:hover {
+      color: var(--tabview-active-color);
+    }  
+  }  
+
+  &:hover {
+    color: var(--tabview-hover-color);
+  }  
+
+  i {
+    font-size: 1.7rem;
+  }  
+}

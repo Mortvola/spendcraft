@@ -1,5 +1,5 @@
 import React, { ReactNode } from 'react';
-import styles from './ReportListItem.module.css';
+import styles from './ReportListItem.module.scss';
 
 type PropsType = {
   value: string,

@@ -1,5 +1,5 @@
 import React from 'react';
-import styles from './VerticalTitled.module.css'
+import styles from './VerticalTitled.module.scss'
 
 type PropsType = {
   title: string,

@@ -7,7 +7,7 @@ import Account from './Account';
 import { AccountInterface, InstitutionInterface } from '../State/State';
 import { useOfflineAccountDialog } from './OfflineAccountDialog';
 import { useDeleteConfirmation } from '../DeleteConfirmation';
-import styles from './Institution.module.css';
+import styles from './Institution.module.scss';
 import { useRelinkDialog } from './RelinkDialog';
 
 type PropsType = {
@@ -95,9 +95,14 @@ const Institution: React.FC<PropsType> = observer(({
           <div className={styles.institutionName}>{institution.name}</div>
           <div style={{ marginLeft: '1rem' }}>{syncDate}</div>
           <div style={{ display: 'flex', alignSelf: 'flex-end' }}>
-            <IconButton icon="sync-alt" rotate={institution.refreshing} onClick={refresh} />
+            <IconButton
+              icon="sync-alt"
+              className={styles.iconButton}
+              rotate={institution.refreshing}
+              onClick={refresh}
+            />
             <RelinkDialog institution={institution} />
-            <IconButton icon="trash-alt" onClick={handleDeleteClick} />
+            <IconButton icon="trash-alt" className={styles.iconButton} onClick={handleDeleteClick} />
             {/* <IconButton icon="plus" onClick={handleAddClick} /> */}
             <OnlineAccountsDialog account={editedAccount} />
             <OfflineAccountDialog institution={institution} account={editedAccount} onHide={handleDialogHide} />
@@ -106,8 +111,8 @@ const Institution: React.FC<PropsType> = observer(({
               !institution.offline
                 ? (
                   <>
-                    <IconButton icon="link" onClick={handleRelinkClick} />
-                    <IconButton icon="info-circle" onClick={showInstitutionInfoDialog} />
+                    <IconButton icon="link" className={styles.iconButton} onClick={handleRelinkClick} />
+                    <IconButton icon="info-circle" className={styles.iconButton} onClick={showInstitutionInfoDialog} />
                     <InstitutionInfoDialog institution={institution} />
                   </>
                 )

@@ -1,0 +1,19 @@
+.layout {
+  --tabview-background-color: #fff;
+}
+
+@media (prefers-color-scheme: dark) {
+  .layout {
+    --tabview-background-color: 202020;
+  }
+}
+
+.layout {
+  display: flex;
+  background-color: var(--tabview-background-color);
+  width: 100%;
+  justify-content: space-between;
+  padding-bottom: 1.5rem;
+  padding-top: 0.35rem;
+  border-top: solid thin #000;
+}

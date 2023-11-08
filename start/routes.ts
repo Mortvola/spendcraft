@@ -21,6 +21,7 @@
 import HealthCheck from '@ioc:Adonis/Core/HealthCheck';
 import Route from '@ioc:Adonis/Core/Route'
 import Env from '@ioc:Adonis/Core/Env';
+import Drive from '@ioc:Adonis/Core/Drive'
 
 Route.get('/home', 'HomeController.index');
 Route.get('/home/:categoryId', 'HomeController.index');
@@ -32,12 +33,41 @@ Route.get('/signup', 'HomeController.index');
 Route.get('/signin', 'HomeController.index');
 Route.get('/recover-password', 'HomeController.index');
 Route.get('/user', 'HomeController.index');
+Route.get('/search', 'HomeController.index');
 Route.get('/', 'HomeController.index');
 
 Route.post('/wh', 'WebhookController.post');
 Route.post('/redirect', () => {
   console.log('redirected')
 });
+
+// Look for a gzipped file in the public directory
+Route.get('/:file', async ({ request, response, logger }) => {
+  if (request.encoding(['gzip'])) {
+    try {
+      const filename = request.param('file');
+
+      const contents = await Drive.get(`public/${filename}.gz`)
+
+      response.header('Content-Encoding', 'gzip');
+
+      if (/.*.js$/.test(filename) || /.*js.map$/.test(filename)) {
+        response.header('Content-Type', 'application/javascript');
+      }
+      else if (/.*.css$/.test(filename)) {
+        response.header('Content-Type', 'text/css');
+      }
+      
+      return response.ok(contents);
+    }
+    catch (error) {
+      logger.error(error);
+    }
+  }
+
+  return response.notFound();
+})
+.where('file', /.*.(js|css|map)$/)
 
 Route.get('/health', async ({ response }) => {
   const report = await HealthCheck.getReport();
@@ -99,14 +129,12 @@ Route.group(() => {
   
       Route.group(() => {
         Route.get('/transactions', 'CategoryController.transactions');
-        Route.get('/transactions/pending', 'CategoryController.pendingTransactions');
       }).prefix('/category/:catId');
   
       Route.get('/connected-accounts', 'UsersController.getConnectedAccounts');
   
       Route.group(() => {
         Route.get('/transactions', 'AccountsController.transactions');
-        Route.get('/transactions/pending', 'AccountsController.pendingTransactions');
         Route.post('/transactions', 'AccountsController.addTransaction');
         Route.get('/balances', 'AccountsController.balances');
         Route.post('/balances', 'AccountsController.addBalance');
@@ -168,8 +196,11 @@ Route.group(() => {
         .prefix('/loans');
   
       Route.get('/rebalances', 'TransactionsController.getRebalances')    
+
+      Route.get('/transactions/search', 'TransactionsController.search');
     })
       .middleware(['auth']);
+
   })
   .prefix('/v1')
 })

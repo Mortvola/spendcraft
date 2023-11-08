@@ -3,7 +3,7 @@ import CategoryInput from './CategoryInput/CategoryInput';
 import IconButton from './IconButton';
 import AmountInput from './AmountInput';
 import { CategoryInterface, TransactionCategoryInterface } from './State/State';
-import styles from './CategorySplitItem.module.css';
+import styles from './CategorySplitItem.module.scss';
 import useMediaQuery from './MediaQuery';
 import { useStores } from './State/mobxStore';
 
@@ -68,13 +68,8 @@ const CategorySplitItem: React.FC<PropsType> = ({
 
   const categoryId = split ? split.categoryId : null;
 
-  let className = styles.transactionSplitItem;
-  if (isMobile) {
-    className = `mobile ${className}`;
-  }
-
   return (
-    <div className={className}>
+    <div className={styles.transactionSplitItem}>
       <div>
         <CategoryInput
           onChange={handleCategoryChange}

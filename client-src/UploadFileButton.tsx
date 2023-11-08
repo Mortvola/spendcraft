@@ -1,5 +1,5 @@
 import React, { ReactElement } from 'react';
-import styles from './UploadFileButton.module.css';
+import styles from './UploadFileButton.module.scss';
 
 type PropsType = {
   onFileSelection: React.ChangeEventHandler<HTMLInputElement>,

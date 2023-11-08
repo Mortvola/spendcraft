@@ -21,7 +21,7 @@ import {
   CategoriesValueType,
   FundingType, ValueType,
 } from './Types'
-import styles from './Funding.module.css'
+import styles from './Funding.module.scss'
 
 type PropsType = {
   transaction?: Transaction;
@@ -41,6 +41,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
   const [plansInitialized, setPlansInitialized] = useState(false);
   const [plans, setPlans] = useState<FundingPlanProps[]>([]);
   const [selectedPlanId, setSelectedPlanId] = useState(-1);
+  const [diffOnly, setDiffOnly] = React.useState<boolean>(false);
 
   if (!plansInitialized) {
     setPlansInitialized(true);
@@ -88,7 +89,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
   const getCategoriesSum = (categories: CategoriesValueType) => {
     const v = Object.keys(categories).reduce((sum, k) => {
       const value = categories[k];
-      const newValue = typeof value === 'string' ? parseFloat(value) : value;
+      const newValue = typeof value === 'string' ? parseFloat(value ?? 0) : value;
       return sum + newValue;
     }, 0)
 
@@ -208,9 +209,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
   const initialFundingDate = () => (
     (transaction
       ? transaction.date
-      : DateTime.now().set({
-        day: 1, hour: 0, minute: 0, second: 0, millisecond: 0,
-      })
+      : DateTime.now().startOf('month')
     ).toISODate()
   );
 
@@ -228,6 +227,10 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
     }
 
     return {};
+  }
+
+  const handleCheckChange = () => {
+    setDiffOnly((prev) => (!prev));
   }
 
   return (
@@ -284,6 +287,10 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
           </label>
         </div>
         <FormError name="date" />
+        <label>
+          <input type="checkbox" checked={diffOnly} onChange={handleCheckChange} className={styles.checkbox} />
+          Show only differences in funding
+        </label>
         <div className="cat-fund-table">
           <Field>
             {({
@@ -293,7 +300,8 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
             }: FieldProps<FundingType[]>) => (
               <Funding
                 planId={selectedPlanId}
-                date={DateTime.fromISO(values.date)}
+                date={DateTime.fromISO(values.date).startOf('month').toISODate() ?? ''}
+                diffOnly={diffOnly}
                 // onChange={handleFundingChange}
               />
             )}

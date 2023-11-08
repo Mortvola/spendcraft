@@ -6,7 +6,7 @@ import Http from '@mortvola/http';
 import {
   FormField, FormError, setFormErrors, SubmitButton,
 } from '@mortvola/forms';
-import styles from './Signup.module.css';
+import styles from './Signup.module.scss';
 import { isErrorResponse } from '../../common/ResponseTypes';
 import { Context } from './Types';
 

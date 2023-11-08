@@ -32,6 +32,7 @@ class Plans implements PlansInterface {
           this.list = body.map((p) => (
             new FundingPlan(this.store, p)
           ));
+          [this.store.uiState.selectedPlan] = this.list;
         }
       });
     }

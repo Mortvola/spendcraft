@@ -1,27 +1,48 @@
 import { observer } from 'mobx-react-lite';
 import React from 'react';
-import { PendingTransactionInterface } from '../State/State';
-import PendingTitles from './PendingTItles';
-import PendingTransactions from './PendingTransactions';
-import SecondaryRegister from './SecondaryRegister';
+import { TransactionContainerInterface } from '../State/State';
+import Date from '../Date';
+import Transaction from './Transaction';
+import styles from './PendingRegister.module.scss';
+import transactionStyles from './Transactions.module.scss'
+import RegisterTransactions from './RegisterTransactions';
+import useMediaQuery from '../MediaQuery';
+import RegisterTitles from './RegisterTitles';
 
 type PropsType = {
-  categoryView: boolean,
-  pending?: PendingTransactionInterface[],
+  trxContainer: TransactionContainerInterface | null,
 }
 
 const PendingRegister: React.FC<PropsType> = observer(({
-  categoryView,
-  pending,
+  trxContainer,
 }) => {
-  if (pending && pending.length > 0) {
+  const { isMobile } = useMediaQuery();
+
+  if (trxContainer && trxContainer.transactions.length > 0) {
     return (
-      <SecondaryRegister
-        title="Pending Transactions"
-        titles={<PendingTitles categoryView={categoryView} />}
-      >
-        <PendingTransactions pending={pending} categoryView={categoryView} />
-      </SecondaryRegister>
+      <div className={`${styles.pending} ${transactionStyles.pending} window`}>
+        {
+          isMobile
+            ? null
+            : (
+              <div className={styles.pendingRegisterTitle}>
+                Pending Transactions
+              </div>
+            )
+        }
+        <RegisterTransactions trxContainer={trxContainer} titles={<RegisterTitles />}>
+          {
+            trxContainer.transactions.map((transaction) => (
+              <Transaction
+                key={transaction.id}
+                transaction={transaction}
+                amount={transaction.amount}
+                runningBalance={0}
+              />
+            ))
+          }
+        </RegisterTransactions>
+      </div>
     );
   }
 

@@ -3,40 +3,36 @@ import { observer } from 'mobx-react-lite';
 import {
   TransactionContainerInterface,
 } from '../State/State';
-import PleaseWait from '../PleaseWait';
-import styles from './Transactions.module.css';
-import useTrxPager from './TrxPager';
+import styles from './Transactions.module.scss';
+import RemoteDataManager from '../RemoteDataManager';
+import useMediaQuery from '../MediaQuery';
 
 type PropsType = {
   trxContainer: TransactionContainerInterface,
+  titles?: React.ReactElement,
   children?: React.ReactNode,
 }
 
 const RegisterTransactions: React.FC<PropsType> = observer(({
   trxContainer,
+  titles,
   children,
 }) => {
-  const ref = React.useRef<HTMLDivElement>(null);
-  const checkForNeededData = useTrxPager(trxContainer);
-
-  const handleScroll: React.UIEventHandler<HTMLDivElement> = () => {
-    checkForNeededData(ref.current);
-  }
-
-  React.useEffect(() => {
-    checkForNeededData(ref.current);
-  }, [checkForNeededData]);
-
-  if (
-    trxContainer.transactions.length === 0 && trxContainer.transactionsQuery.fetching
-  ) {
-    return <PleaseWait />;
-  }
+  const { isMobile } = useMediaQuery();
 
   return (
-    <div ref={ref} className={`${styles.transactions} striped`} onScroll={handleScroll}>
-      {children}
-    </div>
+    <>
+      {
+        isMobile
+          ? null
+          : titles
+      }
+      <RemoteDataManager data={trxContainer}>
+        <div className={styles.transactions}>
+          {children}
+        </div>
+      </RemoteDataManager>
+    </>
   );
 });
 

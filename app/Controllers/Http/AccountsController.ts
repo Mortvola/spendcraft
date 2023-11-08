@@ -49,7 +49,7 @@ export default class AccountsController {
       .related('transactions').query()
       .whereHas('accountTransaction', (query) => {
         query.where('account_id', accountId)
-          .andWhere('pending', false);
+          .andWhere('pending', request.qs().pending ?? false);
       })
       .preload('accountTransaction', (accountTransaction) => {
         accountTransaction.preload('account', (account) => {
@@ -71,45 +71,6 @@ export default class AccountsController {
     result.transactions = transactions.map((t) => t.serialize(transactionFields) as TransactionProps);
 
     return result;
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  public async pendingTransactions({
-    request,
-    auth: {
-      user,
-    },
-  }: HttpContextContract): Promise<TransactionProps[]> {
-    if (!user) {
-      throw new Error('user not defined');
-    }
-
-    const budget = await user.related('budget').query().firstOrFail();
-
-    const accountId = parseInt(request.params().acctId, 10);
-
-    // Determine if the account belongs to the authenticated user
-    // and get the balance
-    const pending = await budget
-      .related('transactions').query()
-      .whereHas('accountTransaction', (query) => {
-        query.where('account_id', accountId)
-          .andWhere('pending', true);
-      })
-      .preload('accountTransaction', (accountTransaction) => {
-        accountTransaction.preload('account', (account) => {
-          account.preload('institution');
-        });
-      })
-      .preload('transactionCategories', (transactionCategory) => {
-        transactionCategory.preload('loanTransaction');
-      })
-      .orderBy('transactions.date', 'desc')
-      .orderBy('transactions.id', 'desc')
-      .limit(request.qs().limit)
-      .offset(request.qs().offset);
-
-    return pending.map((p) => p.serialize(transactionFields) as TransactionProps);
   }
 
   // eslint-disable-next-line class-methods-use-this

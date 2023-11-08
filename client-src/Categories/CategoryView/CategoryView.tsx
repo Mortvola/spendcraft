@@ -9,10 +9,14 @@ import { isGroup } from '../../State/Group';
 import Group from './Group';
 import SystemCategory from './SystemCategory';
 import Category from './Category';
-import styles from './CategoryView.module.css'
+import styles from './CategoryView.module.scss'
+import useMediaQuery from '../../MediaQuery';
+import RemoteDataManager from '../../RemoteDataManager';
+import DesktopView from '../../DesktopView';
+import MobileView from '../../MobileView';
 
 type PropsType = {
-  onCategorySelected: () => void,
+  onCategorySelected?: () => void,
 }
 
 const CategoryView: React.FC<PropsType> = observer(({
@@ -23,17 +27,14 @@ const CategoryView: React.FC<PropsType> = observer(({
   const rebalancesPath = useResolvedPath('rebalances');
   const rebalancesMatch = useMatch({ path: rebalancesPath.pathname, end: true });
   const { categoryTree, uiState } = useStores();
+  const { isMobile } = useMediaQuery();
 
   const handleCategorySelected = (category: CategoryInterface) => {
-    if (category === categoryTree.unassignedCat) {
-      navigate('');
-    }
-    else {
-      navigate(category.id.toString());
-    }
+    navigate(category.id.toString());
 
-    uiState.selectCategory(category);
-    onCategorySelected();
+    if (onCategorySelected) {
+      onCategorySelected();
+    }
   };
 
   const handleRebalancesClick = () => {
@@ -56,20 +57,24 @@ const CategoryView: React.FC<PropsType> = observer(({
       else if (rebalancesMatch) {
         uiState.selectCategory(null);
       }
-      else {
+      else if (!isMobile) {
         uiState.selectCategory(categoryTree.unassignedCat);
+        navigate(categoryTree.unassignedCat?.id.toString() ?? '')
+      }
+      else {
+        uiState.selectCategory(null);
       }
     }
-  }, [categoryTree, navigate, params.categoryId, rebalancesMatch, uiState]);
+  }, [categoryTree, isMobile, navigate, params.categoryId, rebalancesMatch, uiState]);
 
-  let rebalancesClassName = 'cat-list-cat system';
-  if (rebalancesMatch) {
-    rebalancesClassName += ' selected';
-  }
+  const renderSystemCategories = () => {
+    let rebalancesClassName = 'cat-list-cat system';
+    if (rebalancesMatch) {
+      rebalancesClassName += ' selected';
+    }
 
-  return (
-    <>
-      <div style={{ borderBottom: 'thin black solid' }}>
+    return (
+      <div className={styles.system}>
         <SystemCategory category={categoryTree.unassignedCat} onCategorySelected={handleCategorySelected} />
         <SystemCategory category={categoryTree.fundingPoolCat} onCategorySelected={handleCategorySelected} />
         <SystemCategory category={categoryTree.accountTransferCat} onCategorySelected={handleCategorySelected} />
@@ -77,11 +82,16 @@ const CategoryView: React.FC<PropsType> = observer(({
           className={rebalancesClassName}
           onClick={handleRebalancesClick}
         >
-          Rebalances
+          Category Transfers
         </div>
       </div>
-      <div className={styles.categories}>
-        {categoryTree.nodes.map((group) => {
+    )
+  }
+
+  const renderCategories = () => (
+    <div className={styles.categories}>
+      {
+        categoryTree.nodes.map((group) => {
           if (isGroup(group)) {
             if (group.type === 'REGULAR') {
               return (
@@ -110,8 +120,35 @@ const CategoryView: React.FC<PropsType> = observer(({
               selected={uiState.selectedCategory === group}
             />
           );
-        })}
-      </div>
+        })
+      }
+    </div>
+  )
+
+  return (
+    <>
+      <DesktopView>
+        <div className={styles.categoriesWrapper}>
+          {
+            renderSystemCategories()
+          }
+          <RemoteDataManager data={categoryTree}>
+            {
+              renderCategories()
+            }
+          </RemoteDataManager>
+        </div>
+      </DesktopView>
+      <MobileView>
+        <RemoteDataManager data={categoryTree} className={styles.categoriesWrapper}>
+          {
+            renderSystemCategories()
+          }
+          {
+            renderCategories()
+          }
+        </RemoteDataManager>
+      </MobileView>
     </>
   );
 });

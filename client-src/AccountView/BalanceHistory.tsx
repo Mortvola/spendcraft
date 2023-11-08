@@ -2,17 +2,15 @@ import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import Chart from 'react-google-charts';
 import { useStores } from '../State/mobxStore';
-import styles from './BalanceHistory.module.css';
+import styles from './BalanceHistory.module.scss';
 import Balance from './Balance';
 import { useBalanceDialog } from './BalanceDialog';
 import { BalanceInterface } from '../State/State';
-import useMediaQuery from '../MediaQuery';
 
 const BalanceHistory: React.FC = observer(() => {
   const { balances, uiState: { selectedAccount } } = useStores();
   const [BalanceDialog, showBalanceDialog] = useBalanceDialog();
   const [editedBalance, setEditedBalance] = useState<BalanceInterface | null>(null);
-  const { isMobile } = useMediaQuery();
 
   React.useEffect(() => {
     if (selectedAccount && selectedAccount.tracking === 'Balances') {
@@ -45,13 +43,8 @@ const BalanceHistory: React.FC = observer(() => {
     setEditedBalance(null);
   }
 
-  let className = styles.main;
-  if (isMobile) {
-    className += ' mobile';
-  }
-
   return (
-    <div className={`${className} window1`}>
+    <div className={`${styles.main} window1`}>
       <div className="chart-wrapper window ">
         <Chart
           chartType="LineChart"
