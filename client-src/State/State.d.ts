@@ -210,7 +210,7 @@ export interface UIStateInterface {
   plaid: Plaid | null;
 }
 
-export interface CategoryTreeInterface {
+export interface CategoryTreeInterface extends RemoteDataInterface {
   systemIds: SystemIds;
 
   noGroupGroup: GroupInterface | null;
@@ -311,14 +311,18 @@ export interface QueryManagerInterface {
   fetching: boolean;
 }
 
-export interface TransactionContainerInterface {
+export interface RemoteDataInterface {
+  getData(index: number): Promise<void>;
+
+  getMoreData(): Promise<void>;
+
+  isComplete(): boolean;
+}
+
+export interface TransactionContainerInterface extends RemoteDataInterface {
   transactions: TransactionInterface[];
 
   transactionsQuery: QueryManagerInterface;
-
-  getTransactions(index: number): Promise<void>;
-
-  getMoreTransactions(): Promise<void>;
 
   insertTransaction(transaction: Transaction): void;
 

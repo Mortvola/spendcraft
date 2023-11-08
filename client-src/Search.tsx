@@ -1,6 +1,8 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
-import { Field, Form, Formik, FormikErrors, FormikValues } from 'formik';
+import {
+  Field, Form, Formik, FormikErrors, FormikValues,
+} from 'formik';
 import { useStores } from './State/mobxStore';
 import PostedRegister from './Transactions/PostedRegister';
 import trxStyles from './Transactions/Transactions.module.scss';
@@ -14,7 +16,7 @@ const Search: React.FC = observer(() => {
   }
 
   const handleSubmit = (values: FormikValues) => {
-    searcher.transactions.getTransactions(0, `name=${values.search}`);
+    searcher.transactions.getData(0, `name=${values.search}`);
   }
 
   const handleValidate = (values: FormikValues): FormikErrors<Values> => {

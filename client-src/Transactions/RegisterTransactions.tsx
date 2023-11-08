@@ -20,14 +20,6 @@ const RegisterTransactions: React.FC<PropsType> = observer(({
 }) => {
   const { isMobile } = useMediaQuery();
 
-  const handleGetData = () => (
-    trxContainer.getTransactions(0)
-  )
-
-  const handleGetMoreData = () => (
-    trxContainer.getMoreTransactions()
-  )
-
   return (
     <>
       {
@@ -35,7 +27,7 @@ const RegisterTransactions: React.FC<PropsType> = observer(({
           ? null
           : titles
       }
-      <RemoteDataManager onGetData={handleGetData} onGetMoreData={handleGetMoreData}>
+      <RemoteDataManager data={trxContainer}>
         <div className={styles.transactions}>
           {children}
         </div>

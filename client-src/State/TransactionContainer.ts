@@ -35,7 +35,7 @@ class TransactionContainer implements TransactionContainerInterface {
     return this.transactionsQuery.fetchComplete;
   }
 
-  async getTransactions(index: number, qs?: string): Promise<void> {
+  async getData(index: number, qs?: string): Promise<void> {
     this.searchString = qs;
 
     return this.transactionsQuery.fetch(
@@ -46,8 +46,8 @@ class TransactionContainer implements TransactionContainerInterface {
     );
   }
 
-  getMoreTransactions(): Promise<void> {
-    return this.getTransactions(this.transactions.length, this.searchString);
+  getMoreData(): Promise<void> {
+    return this.getData(this.transactions.length, this.searchString);
   }
 
   clearTransactions(): void {

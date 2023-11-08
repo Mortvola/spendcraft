@@ -125,10 +125,6 @@ const CategoryView: React.FC<PropsType> = observer(({
     </div>
   )
 
-  const handleGetData = async () => (
-    categoryTree.load()
-  )
-
   return (
     <>
       <DesktopView>
@@ -136,7 +132,7 @@ const CategoryView: React.FC<PropsType> = observer(({
           {
             renderSystemCategories()
           }
-          <RemoteDataManager onGetData={handleGetData}>
+          <RemoteDataManager data={categoryTree}>
             {
               renderCategories()
             }
@@ -144,7 +140,7 @@ const CategoryView: React.FC<PropsType> = observer(({
         </div>
       </DesktopView>
       <MobileView>
-        <RemoteDataManager onGetData={handleGetData} className={styles.categoriesWrapper}>
+        <RemoteDataManager data={categoryTree} className={styles.categoriesWrapper}>
           {
             renderSystemCategories()
           }
