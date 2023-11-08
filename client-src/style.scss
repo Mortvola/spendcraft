@@ -78,6 +78,7 @@ body {
   background-color: var(--page-color);
   border: black thin solid;
   border-radius: 4px;
+  overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior-y: contain;
   overscroll-behavior-x: none;
