@@ -33,10 +33,9 @@ export default class Category extends BaseModel {
   public name: string;
 
   @column({
-    serializeAs: 'balance',
     consume: (value: string) => parseFloat(value),
   })
-  public amount: number;
+  public balance: number;
 
   @column()
   public monthlyExpenses: boolean;
@@ -155,7 +154,7 @@ export default class Category extends BaseModel {
     sum = tc[0].$extras.sum ?? 0;
 
     await this.merge({
-      amount: sum,
+      balance: sum,
     })
       .save();
   }

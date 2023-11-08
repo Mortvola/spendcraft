@@ -362,8 +362,8 @@ class InstitutionController {
         };
       }),
       categories: [
-        { id: fundingPool.id, balance: fundingPool.amount },
-        { id: unassigned.id, balance: unassigned.amount },
+        { id: fundingPool.id, balance: fundingPool.balance },
+        { id: unassigned.id, balance: unassigned.balance },
       ],
     };
 
@@ -737,17 +737,17 @@ class InstitutionController {
               // eslint-disable-next-line no-await-in-loop
               const unassignedCat = await budget.getUnassignedCategory({ client: trx });
 
-              unassignedCat.amount -= acctTran.amount;
+              unassignedCat.balance -= acctTran.amount;
 
               await unassignedCat.save();
 
               const catBalance = categoryBalances.find((cb) => cb.id === unassignedCat.id);
 
               if (catBalance) {
-                catBalance.balance = unassignedCat.amount;
+                catBalance.balance = unassignedCat.balance;
               }
               else {
-                categoryBalances.push({ id: unassignedCat.id, balance: unassignedCat.amount })
+                categoryBalances.push({ id: unassignedCat.id, balance: unassignedCat.balance })
               }
             }
           }
@@ -758,7 +758,7 @@ class InstitutionController {
               const category = await Category.find(tc.categoryId, { client: trx });
 
               if (category) {
-                category.amount -= tc.amount;
+                category.balance -= tc.amount;
 
                 // eslint-disable-next-line no-await-in-loop
                 await category.save();
@@ -766,10 +766,10 @@ class InstitutionController {
                 const catBalance = categoryBalances.find((cb) => cb.id === category.id);
 
                 if (catBalance) {
-                  catBalance.balance = category.amount;
+                  catBalance.balance = category.balance;
                 }
                 else {
-                  categoryBalances.push({ id: category.id, balance: category.amount })
+                  categoryBalances.push({ id: category.id, balance: category.balance })
                 }
               }
 

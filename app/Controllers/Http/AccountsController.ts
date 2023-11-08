@@ -158,11 +158,11 @@ export default class AccountsController {
         if (account.tracking === 'Transactions') {
           const unassignedCat = await budget.getUnassignedCategory({ client: trx });
 
-          unassignedCat.amount += acctTransaction.amount;
+          unassignedCat.balance += acctTransaction.amount;
 
           await unassignedCat.save();
 
-          categoryBalances.push({ id: unassignedCat.id, balance: unassignedCat.amount })
+          categoryBalances.push({ id: unassignedCat.id, balance: unassignedCat.balance })
         }
       }
       else {
@@ -187,7 +187,7 @@ export default class AccountsController {
           // eslint-disable-next-line no-await-in-loop
           const category = await Category.findOrFail(split.categoryId, { client: trx });
 
-          category.amount += split.amount;
+          category.balance += split.amount;
 
           // eslint-disable-next-line no-await-in-loop
           await category.save();
@@ -195,10 +195,10 @@ export default class AccountsController {
           const balance = categoryBalances.find((b) => b.id === category.id);
 
           if (balance) {
-            balance.balance = category.amount;
+            balance.balance = category.balance;
           }
           else {
-            categoryBalances.push({ id: split.categoryId, balance: category.amount });
+            categoryBalances.push({ id: split.categoryId, balance: category.balance });
           }
         }
       }

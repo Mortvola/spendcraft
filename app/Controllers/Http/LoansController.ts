@@ -56,7 +56,7 @@ export default class LoansController {
 
       category.fill({
         name: requestData.name,
-        amount: 0,
+        balance: 0,
         type: 'LOAN',
       });
 

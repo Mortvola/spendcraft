@@ -206,7 +206,7 @@ export default class Budget extends BaseModel {
       .fill({
         name: 'Unassigned',
         type: 'UNASSIGNED',
-        amount: 0,
+        balance: 0,
         groupId: systemGroup.id,
       })
       .save();
@@ -215,7 +215,7 @@ export default class Budget extends BaseModel {
       .fill({
         name: 'Funding Pool',
         type: 'FUNDING POOL',
-        amount: 0,
+        balance: 0,
         groupId: systemGroup.id,
       })
       .save();
@@ -224,7 +224,7 @@ export default class Budget extends BaseModel {
       .fill({
         name: 'Account Transfer',
         type: 'ACCOUNT TRANSFER',
-        amount: 0,
+        balance: 0,
         groupId: systemGroup.id,
       })
       .save();
@@ -271,7 +271,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: food.id,
         name: 'Groceries',
-        amount: 0.0,
+        balance: 0.0,
       })
       .save();
 
@@ -280,7 +280,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: food.id,
         name: 'Dining Out',
-        amount: 0.0,
+        balance: 0.0,
       })
       .save();
 
@@ -296,7 +296,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: noGroup.id,
         name: 'Entertainment',
-        amount: 0.0,
+        balance: 0.0,
       })
       .save();
 
@@ -305,7 +305,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: noGroup.id,
         name: 'Miscellaneous',
-        amount: 0.0,
+        balance: 0.0,
       })
       .save();
 
@@ -325,7 +325,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: homeImprovement.id,
         name: 'Maintenance',
-        amount: 0.0,
+        balance: 0.0,
       })
       .save();
 
@@ -334,7 +334,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: homeImprovement.id,
         name: 'Furniture',
-        amount: 0.0,
+        balance: 0.0,
       })
       .save();
 
@@ -343,7 +343,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: homeImprovement.id,
         name: 'Other',
-        amount: 0.0,
+        balance: 0.0,
       })
       .save();
 
@@ -363,7 +363,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: healthCare.id,
         name: 'Medical',
-        amount: 0.0,
+        balance: 0.0,
       })
       .save();
 
@@ -372,7 +372,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: healthCare.id,
         name: 'Dental',
-        amount: 0.0,
+        balance: 0.0,
       })
       .save();
 
@@ -381,7 +381,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: healthCare.id,
         name: 'Vision',
-        amount: 0.0,
+        balance: 0.0,
       })
       .save();
 
@@ -401,7 +401,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: insurance.id,
         name: 'Medical',
-        amount: 0.0,
+        balance: 0.0,
       })
       .save();
 
@@ -410,7 +410,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: insurance.id,
         name: 'Dental',
-        amount: 0.0,
+        balance: 0.0,
       })
       .save();
 
@@ -419,7 +419,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: insurance.id,
         name: 'Vision',
-        amount: 0.0,
+        balance: 0.0,
       })
       .save();
 
@@ -428,7 +428,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: insurance.id,
         name: 'House/Car',
-        amount: 0.0,
+        balance: 0.0,
       })
       .save();
 
@@ -448,7 +448,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: bills.id,
         name: 'Electric',
-        amount: 0.0,
+        balance: 0.0,
       })
       .save();
 
@@ -457,7 +457,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: bills.id,
         name: 'Natural Gas',
-        amount: 0.0,
+        balance: 0.0,
       })
       .save();
 
@@ -466,7 +466,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: bills.id,
         name: 'Garbage/Recycling',
-        amount: 0.0,
+        balance: 0.0,
       })
       .save();
 
@@ -486,7 +486,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: taxes.id,
         name: 'Federal',
-        amount: 0.0,
+        balance: 0.0,
       })
       .save();
 
@@ -495,7 +495,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: taxes.id,
         name: 'State',
-        amount: 0.0,
+        balance: 0.0,
       })
       .save();
 
@@ -504,7 +504,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: taxes.id,
         name: 'Property',
-        amount: 0.0,
+        balance: 0.0,
       })
       .save();
 
@@ -513,7 +513,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: taxes.id,
         name: 'Preparation Fees',
-        amount: 0.0,
+        balance: 0.0,
       })
       .save();
 
@@ -533,7 +533,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: car.id,
         name: 'Gasoline',
-        amount: 0.0,
+        balance: 0.0,
       })
       .save();
 
@@ -542,7 +542,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: car.id,
         name: 'Maintenance',
-        amount: 0.0,
+        balance: 0.0,
       })
       .save();
 
@@ -551,7 +551,7 @@ export default class Budget extends BaseModel {
       .fill({
         groupId: car.id,
         name: 'Registration',
-        amount: 0.0,
+        balance: 0.0,
       })
       .save();
   }
@@ -598,7 +598,7 @@ export default class Budget extends BaseModel {
         }
 
         // TODO: use the planCat.amount sans any transactions this month
-        const goalDiff = planCat.amount - cat.amount;
+        const goalDiff = planCat.amount - cat.balance;
 
         let monthlyAmount = 0.0;
 

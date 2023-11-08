@@ -195,7 +195,7 @@ class Institution extends BaseModel {
               acct.balance = acct.plaidBalance ?? 0;
 
               if ((acct.$extras.addedSum ?? 0) !== 0 && acct.tracking === 'Transactions') {
-                unassigned.amount += (acct.$extras.addedSum ?? 0);
+                unassigned.balance += (acct.$extras.addedSum ?? 0);
               }
 
               // eslint-disable-next-line no-await-in-loop

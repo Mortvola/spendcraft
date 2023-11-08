@@ -372,7 +372,7 @@ class Account extends BaseModel {
           const category = await Category.find(tc.categoryId, { client: acctTran.$trx });
 
           if (category) {
-            category.amount -= tc.amount;
+            category.balance -= tc.amount;
 
             // eslint-disable-next-line no-await-in-loop
             await category.save();
@@ -380,10 +380,10 @@ class Account extends BaseModel {
             const catBalance = categoryBalances.find((cb) => cb.id === category.id);
 
             if (catBalance) {
-              catBalance.balance = category.amount;
+              catBalance.balance = category.balance;
             }
             else {
-              categoryBalances.push({ id: category.id, balance: category.amount })
+              categoryBalances.push({ id: category.id, balance: category.balance })
             }
           }
         }
@@ -604,7 +604,7 @@ class Account extends BaseModel {
     if (sum !== 0 && this.tracking === 'Transactions') {
       const unassigned = await budget.getUnassignedCategory({ client: this.$trx });
 
-      unassigned.amount += sum;
+      unassigned.balance += sum;
 
       unassigned.save();
     }
@@ -669,7 +669,7 @@ class Account extends BaseModel {
       })
         .save();
 
-      fundingPool.amount += delta;
+      fundingPool.balance += delta;
     }
     else {
       const transaction = await (new Transaction())
@@ -695,7 +695,7 @@ class Account extends BaseModel {
         amount: startingBalance,
       })
 
-      fundingPool.amount += startingBalance;
+      fundingPool.balance += startingBalance;
     }
   }
 }

@@ -112,7 +112,7 @@ export default class CheckBalances extends BaseCommand {
         // eslint-disable-next-line no-restricted-syntax
         for (const cat of categories) {
           const transSum = (cat.$extras.trans_sum === null ? 0 : parseFloat(cat.$extras.trans_sum));
-          if (cat.amount !== transSum) {
+          if (cat.balance !== transSum) {
             failures.push({
               category: cat,
               transSum,
@@ -135,11 +135,11 @@ export default class CheckBalances extends BaseCommand {
           // eslint-disable-next-line no-restricted-syntax
           for (const failure of app.failures) {
             const { category, transSum } = failure;
-            const difference = category.amount - transSum;
-            this.logger.info(`\t"${category.group.name}:${category.name}" (${category.id}): ${category.amount}, Transactions: ${transSum}, difference: ${difference}`);
+            const difference = category.balance - transSum;
+            this.logger.info(`\t"${category.group.name}:${category.name}" (${category.id}): ${category.balance}, Transactions: ${transSum}, difference: ${difference}`);
 
             if (this.fix) {
-              category.amount = transSum;
+              category.balance = transSum;
 
               // eslint-disable-next-line no-await-in-loop
               await category.save();

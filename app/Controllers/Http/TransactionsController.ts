@@ -136,12 +136,12 @@ export default class TransactionsController {
           // eslint-disable-next-line no-await-in-loop
           const category = await Category.findOrFail(split.categoryId, { client: trx });
 
-          category.amount -= split.amount;
+          category.balance -= split.amount;
 
           // eslint-disable-next-line no-await-in-loop
           await category.save();
 
-          result.categories.push({ id: category.id, balance: category.amount });
+          result.categories.push({ id: category.id, balance: category.balance });
         }
 
         // Delete any loan transactions that are associated with the categories being deleted.
@@ -161,11 +161,11 @@ export default class TransactionsController {
       else if (account.tracking === 'Transactions') {
         // There are no category splits. Debit the 'Unassigned' category
         if (requestData.amount !== undefined) {
-          unassigned.amount -= acctTrans.amount;
+          unassigned.balance -= acctTrans.amount;
           await unassigned.save();
         }
 
-        result.categories.push({ id: unassigned.id, balance: unassigned.amount });
+        result.categories.push({ id: unassigned.id, balance: unassigned.balance });
       }
 
       const requestedSplits = requestData.splits;
@@ -187,7 +187,7 @@ export default class TransactionsController {
           // eslint-disable-next-line no-await-in-loop
           const category = await Category.findOrFail(split.categoryId, { client: trx });
 
-          category.amount += split.amount;
+          category.balance += split.amount;
 
           // eslint-disable-next-line no-await-in-loop
           await category.save();
@@ -215,27 +215,27 @@ export default class TransactionsController {
           // If the category is already in the array then simply update the amount.
           // Otherwise, add the category and amount to the array.
           if (index !== -1) {
-            result.categories[index].balance = category.amount;
+            result.categories[index].balance = category.balance;
           }
           else {
-            result.categories.push({ id: category.id, balance: category.amount });
+            result.categories.push({ id: category.id, balance: category.balance });
           }
         }
       }
       else if (account.tracking === 'Transactions') {
         // There are no category splits. Debit the 'Unassigned' category
         if (requestData.amount !== undefined) {
-          unassigned.amount += requestData.amount;
+          unassigned.balance += requestData.amount;
           await unassigned.save();
         }
 
         const index = result.categories.findIndex((c) => c.id === unassigned.id);
 
         if (index !== -1) {
-          result.categories[index].balance = unassigned.amount;
+          result.categories[index].balance = unassigned.balance;
         }
         else {
-          result.categories.push({ id: unassigned.id, balance: unassigned.amount });
+          result.categories.push({ id: unassigned.id, balance: unassigned.balance });
         }
       }
 
@@ -355,9 +355,9 @@ export default class TransactionsController {
 
           const unassignedCat = await budget.getUnassignedCategory({ client: trx });
 
-          unassignedCat.amount -= acctTransaction.amount;
+          unassignedCat.balance -= acctTransaction.amount;
 
-          result.categories.push({ id: unassignedCat.id, balance: unassignedCat.amount });
+          result.categories.push({ id: unassignedCat.id, balance: unassignedCat.balance });
 
           await unassignedCat.save();
         }
@@ -368,15 +368,15 @@ export default class TransactionsController {
           // eslint-disable-next-line no-await-in-loop
           const category = await Category.findOrFail(trxCat.categoryId, { client: trx });
 
-          category.amount -= trxCat.amount;
+          category.balance -= trxCat.amount;
 
           const balance = result.categories.find((b) => b.id === category.id);
 
           if (balance) {
-            balance.balance = category.amount;
+            balance.balance = category.balance;
           }
           else {
-            result.categories.push({ id: category.id, balance: category.amount });
+            result.categories.push({ id: category.id, balance: category.balance });
           }
 
           if (category.type === 'LOAN') {

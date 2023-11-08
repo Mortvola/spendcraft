@@ -91,18 +91,20 @@ class CategoryController {
       return categories.map((c) => ({
         id: c.id,
         name: c.name,
-        balance: (c.amount - (parseFloat(c.$extras.sum ?? 0))),
+        balance: (c.balance - (parseFloat(c.$extras.sum ?? 0))),
         previousSum: parseFloat(c.$extras.previousSum ?? 0),
         previousFunding: parseFloat(c.$extras.previousFunding ?? 0),
         previousCatTransfers: parseFloat(c.$extras.previousCatTransfers ?? 0),
       }));
     }
 
-    return await budget.related('groups').query()
+    const result = await budget.related('groups').query()
       .preload('categories', (catQuery) => {
         catQuery.orderBy('name', 'asc')
       })
       .orderBy('name', 'asc');
+
+    return result;
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -182,7 +184,7 @@ class CategoryController {
       .fill({
         groupId: parseInt(groupId, 10),
         name: requestData.name,
-        amount: 0,
+        balance: 0,
         monthlyExpenses: requestData.monthlyExpenses,
         type: 'REGULAR',
       })
@@ -265,7 +267,7 @@ class CategoryController {
 
     const cat = await Category.findOrFail(categoryId);
 
-    result.balance = cat.amount;
+    result.balance = cat.balance;
 
     const transactions = await cat.transactions(
       budget, request.qs().pending ?? false, request.qs().limit, request.qs().offset,
@@ -391,11 +393,11 @@ class CategoryController {
             // eslint-disable-next-line no-await-in-loop
             const category = await Category.findOrFail(split.categoryId, { client: trx });
 
-            category.amount += amount;
+            category.balance += amount;
 
             category.save();
 
-            result.balances.push({ id: category.id, balance: category.amount });
+            result.balances.push({ id: category.id, balance: category.balance });
           }
         }
 
@@ -411,9 +413,9 @@ class CategoryController {
           // eslint-disable-next-line no-await-in-loop
           const category = await Category.findOrFail(td.categoryId, { client: trx });
 
-          category.amount -= td.amount;
+          category.balance -= td.amount;
 
-          result.balances.push({ id: category.id, balance: category.amount });
+          result.balances.push({ id: category.id, balance: category.balance });
 
           category.save();
         }
@@ -451,7 +453,7 @@ class CategoryController {
         const category = await Category.find(cs.categoryId, { client: trx });
 
         if (category) {
-          category.amount -= cs.amount;
+          category.balance -= cs.amount;
 
           category.save();
 
