@@ -29,7 +29,6 @@ const Plans: React.FC = observer(() => {
       if (!initialized) {
         setInitialized(true);
         await plans.load();
-        [uiState.selectedPlan] = plans.list;
       }
     })()
   }, [initialized, plans, uiState.selectedPlan]);
@@ -39,16 +38,6 @@ const Plans: React.FC = observer(() => {
       plans.loadDetails(uiState.selectedPlan);
     }
   }, [plans, uiState.selectedPlan]);
-
-  const handleSelect = () => {
-    if (isMobile) {
-      setOpen(false);
-    }
-  };
-
-  const handleToggleClick = () => {
-    setOpen(!open);
-  }
 
   const handleEditCategory = (cat: CategoryInterface, planCategory: FundingPlanCategory) => {
     setCategory({ category: cat, planCategory });

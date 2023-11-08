@@ -25,6 +25,14 @@ const TabView: React.FC = () => {
     }
   }
 
+  const handleAccountClick = () => {
+    navigate('/user');
+  }
+
+  const handlePlansClick = () => {
+    navigate('/plans')
+  }
+
   const handleOtherClick = () => {
     console.log('not implemented');
   }
@@ -55,7 +63,7 @@ const TabView: React.FC = () => {
         icon="map"
         caption="Plans"
         url="/plans"
-        onClick={handleOtherClick}
+        onClick={handlePlansClick}
       />
       <TabViewButton
         icon="building-columns"
@@ -73,7 +81,7 @@ const TabView: React.FC = () => {
         icon="circle-user"
         caption="Account"
         url="/user"
-        onClick={handleOtherClick}
+        onClick={handleAccountClick}
       />
     </div>
   )
