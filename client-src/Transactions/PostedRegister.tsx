@@ -44,7 +44,7 @@ const PostedRegister: React.FC<PropsType> = observer(({
       throw new Error('trxContainer is not set');
     }
 
-    if (trxContainer.transactions.length === 0) {
+    if (trxContainer.transactions.length === 0 && trxContainer.isComplete()) {
       return (
         <div className={styles.noTransactions}>
           <div>There are no transactions in this view</div>
