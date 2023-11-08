@@ -307,16 +307,14 @@ export interface InstitutionInterface {
   hasClosedAccounts(): boolean;
 }
 
-export interface QueryManagerInterface {
-  fetching: boolean;
-}
-
 export interface RemoteDataInterface {
   getData(index: number): Promise<void>;
 
   getMoreData(): Promise<void>;
 
   isComplete(): boolean;
+
+  state(): 'IDLE' | 'LOADING' | 'LOADING-MORE';
 }
 
 export interface TransactionContainerInterface extends RemoteDataInterface {

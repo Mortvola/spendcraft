@@ -1,4 +1,5 @@
 import React from 'react';
+import { observer } from 'mobx-react-lite';
 import styles from './RemoteDataManager.module.scss';
 import PleaseWait from './PleaseWait';
 import { RemoteDataInterface } from './State/State';
@@ -9,15 +10,15 @@ type PropsType = {
   className?: string,
 }
 
-const RemoteDataManager: React.FC<PropsType> = ({
+const RemoteDataManager: React.FC<PropsType> = observer(({
   data,
   children,
   className,
 }) => {
   const ref = React.useRef<HTMLDivElement>(null);
-  const [refreshing, setRefreshing] = React.useState<boolean>(false);
-  const [fetching, setFetching] = React.useState<boolean>(false);
-  const [loadingMore, setLoadingMore] = React.useState<boolean>(false);
+  // const [refreshing, setRefreshing] = React.useState<boolean>(false);
+  // const [fetching, setFetching] = React.useState<boolean>(false);
+  // const [loadingMore, setLoadingMore] = React.useState<boolean>(false);
 
   const isDataNeeded = (element: HTMLDivElement | null): boolean => {
     if (element !== null) {
@@ -34,30 +35,25 @@ const RemoteDataManager: React.FC<PropsType> = ({
     const element = ref.current;
 
     if (element) {
-      if (!loadingMore && !data.isComplete() && isDataNeeded(element)) {
-        setLoadingMore(true);
+      if (data.state() === 'IDLE' && !data.isComplete() && isDataNeeded(element)) {
         (async () => {
           await data.getMoreData();
-          setLoadingMore(false);
         })()
       }
 
       if (element) {
-        if (element.scrollTop < -100 && !refreshing) {
-          setRefreshing(true);
-          setFetching(true);
+        if (element.scrollTop < -100 && data.state() === 'IDLE') {
           (async () => {
             await data.getData(0);
-            setFetching(false);
 
-            if (element.scrollTop >= 0) {
-              setRefreshing(false);
-            }
+            // if (element.scrollTop >= 0) {
+            //   setRefreshing(false);
+            // }
           })();
         }
-        else if (refreshing && !fetching && element.scrollTop >= 0) {
-          setRefreshing(false);
-        }
+        // else if (refreshing && !fetching && element.scrollTop >= 0) {
+        //   setRefreshing(false);
+        // }
       }
     }
   }
@@ -70,7 +66,7 @@ const RemoteDataManager: React.FC<PropsType> = ({
     >
       <div className={`${styles.pullRefresher} ${className ?? ''}`}>
         {
-          refreshing
+          data.state() === 'LOADING'
             ? (
               <div className={styles.refresh}>
                 <PleaseWait />
@@ -80,7 +76,7 @@ const RemoteDataManager: React.FC<PropsType> = ({
         }
         {children}
         {
-          loadingMore
+          data.state() === 'LOADING-MORE'
             ? (
               <div className={styles.loadMore}>
                 <PleaseWait />
@@ -91,6 +87,6 @@ const RemoteDataManager: React.FC<PropsType> = ({
       </div>
     </div>
   )
-};
+});
 
 export default RemoteDataManager;

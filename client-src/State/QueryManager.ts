@@ -1,9 +1,8 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
-import { QueryManagerInterface } from './State';
 
-class QueryManager implements QueryManagerInterface {
-  fetching = false;
+class QueryManager {
+  state: 'IDLE' | 'LOADING' | 'LOADING-MORE' = 'IDLE';
 
   fetchComplete = false;
 
@@ -21,9 +20,10 @@ class QueryManager implements QueryManagerInterface {
       this.fetchComplete = false;
     }
 
-    if (!this.fetching && !this.fetchComplete) {
+    if (this.state === 'IDLE' && !this.fetchComplete) {
       try {
-        this.fetching = true;
+        this.state = index === 0 ? 'LOADING' : 'LOADING-MORE';
+
         const limit = 30;
         let newUrl: string;
 
@@ -45,17 +45,17 @@ class QueryManager implements QueryManagerInterface {
 
           runInAction(() => {
             this.fetchComplete = handleResponse(body, index, limit);
-            this.fetching = false;
+            this.state = 'IDLE';
           });
         }
         else {
           runInAction(() => {
-            this.fetching = false;
+            this.state = 'IDLE';
           });
         }
       }
       catch (error) {
-        this.fetching = false;
+        this.state = 'IDLE';
         console.log(`fetch failed: ${error}`)
       }
     }

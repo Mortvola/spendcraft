@@ -39,6 +39,11 @@ class CategoryTree implements CategoryTreeInterface {
     this.store = store;
   }
 
+  // eslint-disable-next-line class-methods-use-this
+  state(): 'IDLE' | 'LOADING' | 'LOADING-MORE' {
+    return 'IDLE';
+  }
+
   async getData(index: number) {
     return this.load();
   }

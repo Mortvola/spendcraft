@@ -31,6 +31,10 @@ class TransactionContainer implements TransactionContainerInterface {
     this.store = store;
   }
 
+  state(): 'IDLE' | 'LOADING' | 'LOADING-MORE' {
+    return this.transactionsQuery.state;
+  }
+
   isComplete(): boolean {
     return this.transactionsQuery.fetchComplete;
   }
