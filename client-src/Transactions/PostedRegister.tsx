@@ -9,6 +9,7 @@ import useTrxDialog from './TrxDialog';
 import Transaction from './Transaction';
 import { useStores } from '../State/mobxStore';
 import { TransactionType } from '../../common/ResponseTypes';
+import styles from './Transactions.module.scss';
 
 type PropsType = {
   type: 'category' | 'account' | 'rebalances',
@@ -41,6 +42,14 @@ const PostedRegister: React.FC<PropsType> = observer(({
   const renderTransactions = () => {
     if (trxContainer === null) {
       throw new Error('trxContainer is not set');
+    }
+
+    if (trxContainer.transactions.length === 0) {
+      return (
+        <div className={styles.noTransactions}>
+          <div>There are no transactions in this view</div>
+        </div>
+      )
     }
 
     let runningBalance = (category?.balance ?? account?.balance) ?? 0;

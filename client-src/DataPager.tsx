@@ -5,14 +5,8 @@ const useDataPager = (): (element: HTMLDivElement | null) => boolean => {
     if (element !== null) {
       const { scrollTop, scrollHeight, clientHeight } = element;
 
-      if (scrollTop >= 0) {
-      // window.requestAnimationFrame(() => {
-        const scrollBottom = scrollHeight - (scrollTop + clientHeight);
-        const pagesLeft = scrollBottom / clientHeight;
-
-        return (pagesLeft <= 0.3);
-      }
-      // })
+      // When we are a page away from the bottom then get more data.
+      return (scrollTop > scrollHeight - 2 * clientHeight);
     }
 
     return false;

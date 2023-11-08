@@ -303,3 +303,11 @@ $balance-width: 8rem;
     overflow: hidden;
   }
 }
+
+.no-transactions {
+  width: 100%;
+  height: max-content;
+  display: flex;
+  justify-content: center;
+  padding-top: 1rem;
+}

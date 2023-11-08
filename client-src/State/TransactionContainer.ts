@@ -31,6 +31,10 @@ class TransactionContainer implements TransactionContainerInterface {
     this.store = store;
   }
 
+  isComplete(): boolean {
+    return this.transactionsQuery.fetchComplete;
+  }
+
   async getTransactions(index: number, qs?: string): Promise<void> {
     this.searchString = qs;
 
