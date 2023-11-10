@@ -16,7 +16,7 @@ export const isGroupProps = (r: unknown): r is GroupProps => (
   // && (r as GroupProps).type !== undefined
 );
 
-export type CategoryType = 'REGULAR' | 'UNASSIGNED' | 'FUNDING POOL' | 'ACCOUNT TRANSFER' | 'LOAN';
+export type CategoryType = 'REGULAR' | 'UNASSIGNED' | 'FUNDING POOL' | 'ACCOUNT TRANSFER' | 'LOAN' | 'BILL';
 
 export interface CategoryProps {
   id: number;
@@ -30,6 +30,12 @@ export interface CategoryProps {
   type: CategoryType;
 
   monthlyExpenses: boolean;
+
+  fundingAmount: number;
+
+  goalDate: string | null;
+
+  recurrence: number;
 }
 
 export const isCategoryBalance = (r: unknown): r is CategoryBalanceProps => (
@@ -61,6 +67,9 @@ export const isAddCategoryResponse = (r: unknown): r is AddCategoryResponse => (
 export interface UpdateCategoryResponse {
   name: string;
   monthlyExpenses: boolean;
+  fundingAmount: number,
+  goalDate: string,
+  recurrence: number,
 }
 
 export const isUpdateCategoryResponse = (

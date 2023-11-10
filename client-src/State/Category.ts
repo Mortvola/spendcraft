@@ -1,5 +1,6 @@
 import { makeObservable, observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
+import { DateTime } from 'luxon';
 import {
   CategoryProps, isErrorResponse, Error,
   isUpdateCategoryResponse,
@@ -7,7 +8,9 @@ import {
   CategoryBalanceProps,
 } from '../../common/ResponseTypes';
 import LoanTransaction from './LoanTransaction';
-import { CategoryInterface, GroupInterface, StoreInterface } from './State';
+import {
+  CategoryInterface, CategoryParams, GroupInterface, StoreInterface,
+} from './State';
 import TransactionContainer from './TransactionContainer';
 
 class Category implements CategoryInterface {
@@ -22,6 +25,12 @@ class Category implements CategoryInterface {
   monthlyExpenses: boolean;
 
   balance = 0;
+
+  fundingAmount = 0;
+
+  goalDate: DateTime | null = null;
+
+  recurrence = 1;
 
   transactions: TransactionContainer;
 
@@ -49,6 +58,9 @@ class Category implements CategoryInterface {
     this.balance = props.balance;
     this.groupId = props.groupId;
     this.monthlyExpenses = props.monthlyExpenses;
+    this.fundingAmount = props.fundingAmount;
+    this.goalDate = props.goalDate ? DateTime.fromISO(props.goalDate) : null;
+    this.recurrence = props.recurrence;
     this.store = store;
 
     makeObservable(this, {
@@ -58,13 +70,13 @@ class Category implements CategoryInterface {
   }
 
   async update(
-    name: string,
-    group: GroupInterface,
-    monthlyExpenses: boolean,
+    params: CategoryParams,
   ): Promise<null | Error[]> {
+    const { group, goalDate, ...p } = params;
+
     const response = await Http.patch(`/api/v1/groups/${group.id}/categories/${this.id}`, {
-      name,
-      monthlyExpenses,
+      ...p,
+      goalDate: goalDate?.toISODate(),
       hidden: false,
     });
 
@@ -81,6 +93,9 @@ class Category implements CategoryInterface {
           const nameChanged = this.name !== body.name;
           this.name = body.name;
           this.monthlyExpenses = body.monthlyExpenses;
+          this.fundingAmount = body.fundingAmount;
+          this.recurrence = body.recurrence;
+          this.goalDate = DateTime.fromISO(body.goalDate);
 
           // Find the group the category is currently in
           // and possibly move it to the new group.

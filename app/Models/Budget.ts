@@ -568,11 +568,13 @@ export default class Budget extends BaseModel {
       };
 
       if (cat.useGoal && cat.goalDate) {
-        const goalDate = cat.goalDate?.startOf('month').set({ year: DateTime.now().year });
+        let goalMonth = cat.goalDate.startOf('month');
 
-        let monthDiff = goalDate.diff(fundingMonth, 'months').months;
+        let monthDiff = goalMonth.diff(fundingMonth, 'months').months;
         if (monthDiff < 0) {
-          monthDiff += 12;
+          const numPeriods = Math.ceil(-monthDiff / cat.recurrence);
+          monthDiff += numPeriods * cat.recurrence;
+          goalMonth = fundingMonth.plus({ months: monthDiff })
         }
 
         // TODO: use the planCat.amount sans any transactions this month
@@ -580,23 +582,18 @@ export default class Budget extends BaseModel {
 
         let monthlyAmount = 0.0;
 
-        if (monthDiff > 0) {
-          if (goalDiff > 0) {
-            monthlyAmount = goalDiff / (monthDiff + 1)
-          }
+        // if (monthDiff > 0) {
+        if (goalDiff > 0) {
+          monthlyAmount = goalDiff / (monthDiff + 1)
+        }
 
-          proposedCat.amount = monthlyAmount;
-        }
-        else {
-          proposedCat.amount = goalDiff;
-          proposedCat.expectedToSpend = cat.fundingAmount;
-        }
+        proposedCat.amount = monthlyAmount;
 
         const plannedAmount = cat.fundingAmount / cat.recurrence;
 
         if (monthlyAmount !== plannedAmount) {
           proposedCat.adjusted = true;
-          proposedCat.adjustedReason = `The funding amount was adjusted from a planned amount of ${plannedAmount} to ${monthlyAmount} for the goal of ${cat.fundingAmount} due ${goalDate.month}-${goalDate.year}.`;
+          proposedCat.adjustedReason = `The funding amount was adjusted from a planned amount of ${plannedAmount} to ${monthlyAmount} for the goal of ${cat.fundingAmount} due ${goalMonth.month}-${goalMonth.year}.`;
         }
       }
       else {

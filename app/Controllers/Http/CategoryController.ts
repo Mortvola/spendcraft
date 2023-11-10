@@ -15,7 +15,7 @@ import Loan from 'App/Models/Loan';
 import {
   CategoryBalanceProps,
   TransactionsResponse,
-  TransactionProps, TransactionType, FundingInfoProps,
+  TransactionProps, TransactionType, FundingInfoProps, CategoryType,
 } from 'Common/ResponseTypes';
 import Group from 'App/Models/Group';
 import { DateTime } from 'luxon';
@@ -185,8 +185,11 @@ class CategoryController {
         groupId: parseInt(groupId, 10),
         name: requestData.name,
         balance: 0,
-        monthlyExpenses: requestData.monthlyExpenses,
-        type: 'REGULAR',
+        monthlyExpenses: requestData.monthlyExpenses ?? false,
+        type: (requestData.type ?? 'REGULAR'),
+        goalDate: requestData.goalDate,
+        recurrence: requestData.recurrence,
+        useGoal: requestData.useGoal,
       })
       .save();
 
@@ -206,7 +209,11 @@ class CategoryController {
       name: requestData.name,
       monthlyExpenses: requestData.monthlyExpenses,
       groupId,
+      fundingAmount: requestData.fundingAmount,
       hidden: requestData.hidden,
+      useGoal: requestData.useGoal,
+      goalDate: requestData.goalDate,
+      recurrence: requestData.recurrence,
     });
 
     await category.save();

@@ -15,7 +15,12 @@ export default class AddCategoryValidator {
         where: { group_id: this.ctx.request.params().groupId },
       }),
     ]),
-    monthlyExpenses: schema.boolean(),
+    monthlyExpenses: schema.boolean.optional(),
+    type: schema.enum.optional(['REGULAR', 'BILL'] as const),
+    fundingAmount: schema.number.optional(),
+    goalDate: schema.date.optional(),
+    recurrence: schema.number.optional(),
+    useGoal: schema.boolean(),
   })
 
   public messages = {

@@ -20,8 +20,13 @@ export default class UpdateCategoryValidator {
         },
       }),
     ]),
-    monthlyExpenses: schema.boolean(),
+    monthlyExpenses: schema.boolean.optional(),
+    type: schema.enum.optional(['REGULAR', 'BILL'] as const),
+    goalDate: schema.date.optional(),
+    recurrence: schema.number.optional(),
+    fundingAmount: schema.number.optional(),
     hidden: schema.boolean(),
+    useGoal: schema.boolean(),
   })
 
   public messages = {

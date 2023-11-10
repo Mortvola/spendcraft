@@ -72,6 +72,7 @@ const CategorySplitItem: React.FC<PropsType> = ({
     <div className={styles.transactionSplitItem}>
       <div>
         <CategoryInput
+          className="category-input"
           onChange={handleCategoryChange}
           categoryId={categoryId === unassignedCat.id ? null : categoryId}
         />

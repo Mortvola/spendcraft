@@ -1,5 +1,6 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
+import { DateTime } from 'luxon';
 import Category, { isCategory } from './Category';
 import {
   Error, GroupProps, isErrorResponse, isGroupProps,
@@ -8,7 +9,9 @@ import {
   isAddCategoryResponse,
   GroupType,
 } from '../../common/ResponseTypes';
-import { CategoryInterface, GroupInterface, StoreInterface } from './State';
+import {
+  CategoryInterface, CategoryParams, GroupInterface, StoreInterface,
+} from './State';
 
 class Group implements GroupInterface {
   id: number;
@@ -21,7 +24,7 @@ class Group implements GroupInterface {
 
   store: StoreInterface;
 
-  constructor(props: GroupProps | Group, store: StoreInterface) {
+  constructor(props: GroupProps, store: StoreInterface) {
     this.id = props.id;
     this.name = props.name;
     this.type = props.type;
@@ -34,7 +37,7 @@ class Group implements GroupInterface {
     makeAutoObservable(this);
   }
 
-  setCategories(categories: Category[] | CategoryProps[]): void {
+  setCategories(categories: CategoryProps[]): void {
     categories.forEach((c) => {
       switch (c.type) {
         case 'UNASSIGNED':
@@ -81,11 +84,10 @@ class Group implements GroupInterface {
     return null;
   }
 
-  async addCategory(name: string, monthlyExpenses: boolean): Promise<null| Error[]> {
+  async addCategory(params: CategoryParams): Promise<null| Error[]> {
     const response = await Http.post(`/api/v1/groups/${this.id}/categories`, {
       groupId: this.id,
-      name,
-      monthlyExpenses,
+      ...params,
     });
 
     const body = await response.body();

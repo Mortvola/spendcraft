@@ -163,6 +163,12 @@ export interface CategoryInterface {
 
   balance: number;
 
+  fundingAmount: number;
+
+  goalDate: DateTime | null;
+
+  recurrence: number;
+
   transactions: TransactionContainerInterface;
 
   pendingTransactions: TransactionContainerInterface;
@@ -174,7 +180,7 @@ export interface CategoryInterface {
 
   store: StoreInterface;
 
-  update(name: string, group: GroupInterface, monthlyExpenses: boolean): Promise<null | Error[]>;
+  update(params: CategoryParams): Promise<null | Error[]>;
 
   delete (): Promise<null | Error[]>;
 
@@ -454,3 +460,14 @@ export type AddTransactionRequest = {
   amount?: number,
   splits:(TransactionCategoryInterface | NewTransactionCategoryInterface)[],
 };
+
+export type CategoryParams = {
+  type?: string,
+  name: string,
+  fundingAmount?: number,
+  goalDate?: DateTime,
+  recurrence?: number,
+  categoryId?: number,
+  group: GroupInterface,
+  useGoal: boolean,
+}

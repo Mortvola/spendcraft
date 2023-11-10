@@ -45,10 +45,18 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
     }
 
     if (category) {
-      errors = await category.update(values.name, selectedGroup, false); // values.monthlyExpenses);
+      errors = await category.update({
+        name: values.name,
+        group: selectedGroup,
+        useGoal: false,
+      });
     }
     else {
-      errors = await selectedGroup.addCategory(values.name, false); // values.monthlyExpenses);
+      errors = await selectedGroup.addCategory({
+        name: values.name,
+        group: selectedGroup,
+        useGoal: false,
+      });
     }
 
     if (errors) {

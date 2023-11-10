@@ -12,11 +12,13 @@ import { isCategory } from '../State/Category';
 type PropsType = {
   categoryId: number | null,
   onChange: (category: CategoryInterface) => void,
+  className?: string,
 }
 
 const CategoryInput: React.FC<PropsType> = ({
   categoryId = null,
   onChange,
+  className,
 }) => {
   const { categoryTree } = useStores();
   const { nodes } = categoryTree;
@@ -391,7 +393,8 @@ const CategoryInput: React.FC<PropsType> = ({
     <>
       <input
         ref={inputRef}
-        className="category-input"
+        // className={`category-input ${className ?? ''}`}
+        className={className ?? ''}
         type="text"
         placeholder="Unassigned"
         onClick={handleClick}

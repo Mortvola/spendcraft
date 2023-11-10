@@ -87,7 +87,7 @@ export default class Category extends BaseModel {
     const query = Database.query()
       .select(
         'c.id',
-        Database.raw('CAST(c.amount - sum(coalesce(tc.amount, 0)) as float) as balance'),
+        Database.raw('CAST(c.balance - sum(coalesce(tc.amount, 0)) as float) as balance'),
       )
       .from('categories as c')
       .join('groups as g', 'g.id', 'c.group_id')
