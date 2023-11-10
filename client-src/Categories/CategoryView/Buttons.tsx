@@ -31,7 +31,7 @@ const Buttons: React.FC<PropsType> = ({ group }) => {
       return (
         <>
           <IconButton icon="plus" onClick={showCategoryDialog} />
-          <CategoryDialog group={group} />
+          <CategoryDialog />
         </>
       );
     }

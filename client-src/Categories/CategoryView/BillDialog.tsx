@@ -11,8 +11,7 @@ import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import { FormModal, FormError, setFormErrors } from '@mortvola/forms';
 import { DateTime } from 'luxon';
 import { useStores } from '../../State/mobxStore';
-import { Error } from '../../../common/ResponseTypes';
-import { CategoryInterface, GroupInterface } from '../../State/State';
+import { CategoryInterface } from '../../State/State';
 import styles from './BillDialog.module.scss';
 import AmountInput from '../../AmountInput';
 import CategoryInput from '../../CategoryInput/CategoryInput';
@@ -169,7 +168,7 @@ const BillDialog: React.FC<PropsType & ModalProps> = ({
           Date Due:
           <Field
             type="date"
-            className="form-control"
+            className={`form-control ${styles.date}`}
             name="goalDate"
           />
           <FormError name="goalDate" />

@@ -16,7 +16,7 @@ export default class AddCategoryValidator {
       }),
     ]),
     monthlyExpenses: schema.boolean.optional(),
-    type: schema.enum.optional(['REGULAR', 'BILL'] as const),
+    type: schema.enum.optional(['REGULAR', 'BILL', 'GOAL'] as const),
     fundingAmount: schema.number.optional(),
     goalDate: schema.date.optional(),
     recurrence: schema.number.optional(),

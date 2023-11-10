@@ -20,8 +20,9 @@ const CategoryViewToolbar: React.FC<PropsType> = observer(({
   const [RebalanceDialog, showRebalanceDialog] = useRebalanceDialog();
   const [FundingDialog, showFundingDialog] = useFundingDialog();
   const [CategoryDialog, showCategoryDialog] = useCategoryDialog();
+  const [BillDialog, showBillDialog] = useCategoryDialog();
+  const [GoalDialog, showGoalDialog] = useCategoryDialog();
   const [GroupDialog, showGroupDialog] = useGroupDialog();
-  const [BillDialog, showBillDialog] = useBillDialog();
   const { isMobile } = useMediaQuery();
 
   const handleAddClick = (eventKey: unknown) => {
@@ -36,6 +37,7 @@ const CategoryViewToolbar: React.FC<PropsType> = observer(({
         showBillDialog();
         break;
       case 'GOAL':
+        showGoalDialog();
         break;
 
       default:
@@ -66,14 +68,15 @@ const CategoryViewToolbar: React.FC<PropsType> = observer(({
               ? (
                 <>
                   {/* <button type="button" onClick={showCategoryDialog}>Add Category</button> */}
-                  <CategoryDialog group={categoryTree.noGroupGroup} />
+                  <CategoryDialog />
                 </>
               )
               : null
           }
           {/* <button type="button" onClick={showGroupDialog}>Add Group</button> */}
           <GroupDialog />
-          <BillDialog />
+          <BillDialog type="BILL" />
+          <GoalDialog type="GOAL" />
         </>
       )
       : null

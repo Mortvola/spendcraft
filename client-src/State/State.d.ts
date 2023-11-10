@@ -165,6 +165,8 @@ export interface CategoryInterface {
 
   fundingAmount: number;
 
+  useGoal: boolean;
+
   goalDate: DateTime | null;
 
   recurrence: number;

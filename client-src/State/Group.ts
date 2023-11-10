@@ -85,9 +85,12 @@ class Group implements GroupInterface {
   }
 
   async addCategory(params: CategoryParams): Promise<null| Error[]> {
+    const { group, goalDate, ...p } = params;
+
     const response = await Http.post(`/api/v1/groups/${this.id}/categories`, {
+      ...p,
       groupId: this.id,
-      ...params,
+      goalDate: goalDate?.toISODate(),
     });
 
     const body = await response.body();

@@ -15,7 +15,7 @@ import Loan from 'App/Models/Loan';
 import {
   CategoryBalanceProps,
   TransactionsResponse,
-  TransactionProps, TransactionType, FundingInfoProps, CategoryType,
+  TransactionProps, TransactionType, FundingInfoProps,
 } from 'Common/ResponseTypes';
 import Group from 'App/Models/Group';
 import { DateTime } from 'luxon';
@@ -182,11 +182,12 @@ class CategoryController {
 
     await category
       .fill({
+        type: requestData.type,
         groupId: parseInt(groupId, 10),
         name: requestData.name,
         balance: 0,
         monthlyExpenses: requestData.monthlyExpenses ?? false,
-        type: (requestData.type ?? 'REGULAR'),
+        fundingAmount: requestData.fundingAmount,
         goalDate: requestData.goalDate,
         recurrence: requestData.recurrence,
         useGoal: requestData.useGoal,
@@ -206,6 +207,7 @@ class CategoryController {
     const category = await Category.findOrFail(catId);
 
     category.merge({
+      type: requestData.type,
       name: requestData.name,
       monthlyExpenses: requestData.monthlyExpenses,
       groupId,

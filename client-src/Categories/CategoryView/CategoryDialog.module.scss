@@ -1,0 +1,68 @@
+.wrapper {
+  display: flex;
+  column-gap: 1rem;
+}
+
+.layout {
+  display: flex;
+  // grid-template-columns: repeat(auto-fit, minmax(20%, 1fr));
+  grid-column-gap: 1rem;
+}
+
+.amount {
+  max-width: 8rem;
+  text-align: right;
+}
+
+.recurrence {
+  width: min-content;
+  display: none;
+  text-align: right;
+
+  input {
+    text-align: right;
+  }
+}
+
+.date {
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+.divider {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  border-top: gray solid thin;
+}
+
+.goalDate {
+  display: none;
+}
+
+.bill {
+  // .amount {
+  //   max-width: unset;
+  // }
+
+  .goalDate {
+    display: unset;
+  }
+
+  .recurrence {
+    display: unset;
+  }
+}
+
+.funding-title {
+  margin-bottom: 1rem;
+}
+
+.type {
+  max-width: 6rem;
+}
+
+.layout2 {
+  display: flex;
+  column-gap: 1rem;
+  margin-top: 1rem;
+}

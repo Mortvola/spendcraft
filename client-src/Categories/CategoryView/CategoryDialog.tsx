@@ -11,26 +11,38 @@ import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import {
   FormModal, FormError, setFormErrors, FormField,
 } from '@mortvola/forms';
+import { DateTime } from 'luxon';
 import { isGroup } from '../../State/Group';
 import { useStores } from '../../State/mobxStore';
-import { CategoryInterface, GroupInterface } from '../../State/State';
+import { CategoryInterface } from '../../State/State';
+import AmountInput from '../../AmountInput';
+import styles from './CategoryDialog.module.scss';
+import { CategoryType } from '../../../common/ResponseTypes';
 
 type Props = {
   category?: CategoryInterface | null,
-  group: GroupInterface,
+  type?: CategoryType,
 }
 
 const CategoryDialog: React.FC<Props & ModalProps> = ({
   setShow,
   category = null,
-  group,
+  type = 'REGULAR',
 }) => {
   const { categoryTree } = useStores();
+  const [categoryType, setCategoryType] = React.useState<CategoryType>((category?.type ?? type) ?? 'REGULAR')
 
   type FormValues = {
+    type: CategoryType,
     name: string,
+    fundingAmount: string,
+    recurrence: string,
     groupId: string,
-    // monthlyExpenses: boolean,
+    goalDate: string,
+  }
+
+  const handleCategoryTypeChange = (newType: CategoryType) => {
+    setCategoryType(newType)
   }
 
   const handleSubmit = async (values: FormValues, bag: FormikHelpers<FormValues>) => {
@@ -46,16 +58,24 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
 
     if (category) {
       errors = await category.update({
+        type: values.type,
         name: values.name,
+        fundingAmount: parseFloat(values.fundingAmount),
         group: selectedGroup,
-        useGoal: false,
+        recurrence: parseInt(values.recurrence, 10),
+        useGoal: values.type !== 'REGULAR',
+        goalDate: DateTime.fromISO(values.goalDate),
       });
     }
     else {
       errors = await selectedGroup.addCategory({
+        type: values.type,
         name: values.name,
+        fundingAmount: parseFloat(values.fundingAmount),
         group: selectedGroup,
-        useGoal: false,
+        recurrence: parseInt(values.recurrence, 10),
+        useGoal: values.type !== 'REGULAR',
+        goalDate: DateTime.fromISO(values.goalDate),
       });
     }
 
@@ -118,12 +138,20 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
     )
   }
 
+  const categoryTypeClass = () => (
+    ['BILL', 'GOAL'].includes(categoryType) ? styles.bill : ''
+  )
+
   return (
     <FormModal<FormValues>
       setShow={setShow}
       initialValues={{
+        type: categoryType,
         name: category && category.name ? category.name : '',
-        groupId: group ? group.id.toString() : '',
+        groupId: category?.groupId.toString() ?? '',
+        fundingAmount: category?.fundingAmount.toString() ?? '0',
+        recurrence: category?.recurrence.toString() ?? '1',
+        goalDate: category?.goalDate?.toISODate() ?? '',
         // monthlyExpenses: category ? category.monthlyExpenses : false,
       }}
       validate={handleValidate}
@@ -133,13 +161,9 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
       formId="catDialogForm"
     >
       <div>
-        <div
-          style={{
-            display: 'flex',
-            columnGap: '1rem',
-          }}
-        >
-          <FormField name="name" label="Category:" />
+        <div className={styles.wrapper}>
+          <FormField name="name" label="Name:" />
+
           <label style={{ marginTop: '8px' }}>
             Group:
             <Field
@@ -165,6 +189,70 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
             </Field>
             <FormError name="group" />
           </label>
+        </div>
+        <div className={styles.divider} />
+        <div className={`${categoryTypeClass()}`}>
+          <div className={styles.fundingTitle}>Funding Settings</div>
+          <div className={`${styles.layout}`}>
+            <label className={styles.type}>
+              Type:
+              <Field
+                className="form-control"
+                name="type"
+              >
+                {
+                  (fieldProps: FieldProps<CategoryType>) => (
+                    <select
+                      className="form-control"
+                      name="type"
+                      value={fieldProps.field.value}
+                      onChange={(v) => {
+                        handleCategoryTypeChange(v.target.value as CategoryType)
+                        fieldProps.form.setFieldValue(fieldProps.field.name, v.target.value);
+                      }}
+                    >
+                      <option value="REGULAR">Category</option>
+                      <option value="BILL">Bill</option>
+                      <option value="GOAL">Goal</option>
+                    </select>
+                  )
+                }
+              </Field>
+            </label>
+
+            <label className={`${styles.amount}`}>
+              Amount:
+              <Field
+                type="text"
+                className="form-control"
+                name="fundingAmount"
+                as={AmountInput}
+              />
+              <FormError name="fundingAmount" />
+            </label>
+          </div>
+
+          <div className={styles.layout2}>
+            <label className={styles.goalDate}>
+              Date Due:
+              <Field
+                type="date"
+                className={`form-control ${styles.date}`}
+                name="goalDate"
+              />
+              <FormError name="goalDate" />
+            </label>
+            <label className={styles.recurrence}>
+              Recurrence:
+              <Field
+                type="number"
+                min="1"
+                className="form-control"
+                name="recurrence"
+              />
+              <FormError name="recurrence" />
+            </label>
+          </div>
         </div>
         {/* <FormCheckbox name="monthlyExpenses" label="Used for monthly expenses" /> */}
       </div>

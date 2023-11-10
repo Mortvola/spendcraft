@@ -35,8 +35,8 @@ const Category: React.FC<PropsType> = observer(({
     <div className={className} onClick={handleClick}>
       <div className={barClassName}>
         {
-          ['REGULAR', 'LOAN', 'BILL'].includes(category.type)
-            ? <EditButton category={category} group={group} />
+          ['REGULAR', 'LOAN', 'BILL', 'GOAL'].includes(category.type)
+            ? <EditButton category={category} />
             : null
         }
         <div className="cat-list-name">{category.name}</div>

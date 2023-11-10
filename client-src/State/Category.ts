@@ -28,6 +28,8 @@ class Category implements CategoryInterface {
 
   fundingAmount = 0;
 
+  useGoal = false;
+
   goalDate: DateTime | null = null;
 
   recurrence = 1;
@@ -60,6 +62,7 @@ class Category implements CategoryInterface {
     this.monthlyExpenses = props.monthlyExpenses;
     this.fundingAmount = props.fundingAmount;
     this.goalDate = props.goalDate ? DateTime.fromISO(props.goalDate) : null;
+    this.useGoal = props.useGoal ?? false;
     this.recurrence = props.recurrence;
     this.store = store;
 
@@ -91,6 +94,7 @@ class Category implements CategoryInterface {
       runInAction(() => {
         if (isUpdateCategoryResponse(body)) {
           const nameChanged = this.name !== body.name;
+          this.type = body.type;
           this.name = body.name;
           this.monthlyExpenses = body.monthlyExpenses;
           this.fundingAmount = body.fundingAmount;
