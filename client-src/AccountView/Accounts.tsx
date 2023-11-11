@@ -15,7 +15,6 @@ import NavigationView from '../NavigationView';
 
 const Accounts: React.FC = observer(() => {
   const [open, setOpen] = useState<boolean>(false);
-  const { isMobile } = useMediaQuery();
   const location = useLocation();
   const navigate = useNavigate();
 

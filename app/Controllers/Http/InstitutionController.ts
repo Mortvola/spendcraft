@@ -190,6 +190,7 @@ class InstitutionController {
           tracking: acct.tracking,
           startDate: requestData.startDate,
           rate: 0,
+          closed: false,
         });
 
         await newAcct.updateStartingBalance(budget, fundingPool);

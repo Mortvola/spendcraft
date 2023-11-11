@@ -144,7 +144,7 @@ export default class UsersController {
       .first();
 
     if (!existingToken) {
-      user.related('apnsTokens').create({
+      await user.related('apnsTokens').create({
         token: requestData.token,
       });
     }

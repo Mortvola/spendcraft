@@ -339,7 +339,7 @@ class Account extends BaseModel {
 
         const unassigned = await budget.getUnassignedCategory({ client: this.$trx });
 
-        transaction.related('transactionCategories').create({
+        await transaction.related('transactionCategories').create({
           categoryId: unassigned.id,
           amount: -plaidTransaction.amount,
         });
@@ -455,9 +455,8 @@ class Account extends BaseModel {
     // Otherwise, update the one that was found (if the balance has
     // changed).
     if (history === null) {
-      await (await this.related('balanceHistory')
-        .create({ date: today, balance }))
-        .save();
+      await this.related('balanceHistory')
+        .create({ date: today, balance });
     }
     else if (history.balance !== balance) {
       history.balance = balance;
@@ -470,13 +469,14 @@ class Account extends BaseModel {
     data: string,
     budget: Budget,
   ): Promise<void> {
-    let sum = 0;
-
     // Grab the text after the first pair of line feeds.
     const entities = data.toString().split('\n\n');
     let ofxData = entities[1];
 
     if (ofxData) {
+      let sum = 0;
+      let balance: number | null = null;
+
       const sgml2Xml = (sgml: string) => (
         sgml
           .replace(/>\s+</g, '><') // remove whitespace inbetween tag close/open
@@ -503,6 +503,8 @@ class Account extends BaseModel {
 
       const signOn = parsed.OFX[signOnMessage];
 
+      const unassigned = await budget.getUnassignedCategory({ client: this.$trx });
+
       // eslint-disable-next-line no-restricted-syntax
       for (const message of messages) {
         if (/CREDITCARDMSGSRSV.*/.test(message)) {
@@ -511,6 +513,9 @@ class Account extends BaseModel {
           const accountFrom = statement.CCACCTFROM;
           const bankTransList = statement.BANKTRANLIST;
           const transactions = bankTransList.STMTTRN;
+          const ccStmtRs = ccStmtTrnResponse.CCSTMTRS;
+          const ledgerBalance = ccStmtRs.LEDGERBAL;
+          balance = ledgerBalance.BALAMT;
 
           // eslint-disable-next-line no-restricted-syntax
           for (const t of transactions) {
@@ -592,26 +597,38 @@ class Account extends BaseModel {
                   amount: -transactionData.amount,
                 });
 
+              // eslint-disable-next-line no-await-in-loop
+              await transaction.related('transactionCategories').create({
+                categoryId: unassigned.id,
+                amount: -transactionData.amount,
+              });
+
               sum += acctTrans.amount;
             }
           }
         }
       }
+
+      if (balance !== null) {
+        this.balance = balance;
+      }
+      else {
+        this.balance += sum;
+      }
+
+      if (sum !== 0 && this.tracking === 'Transactions') {
+        unassigned.balance += sum;
+
+        await unassigned.save();
+      }
+
+      await this.updateAccountBalanceHistory(this.balance);
+
+      await this.save();
+
+      const fundingPool = await budget.getFundingPoolCategory({ client: this.$trx });
+      await this.updateStartingBalance(budget, fundingPool);
     }
-
-    this.balance += sum;
-
-    if (sum !== 0 && this.tracking === 'Transactions') {
-      const unassigned = await budget.getUnassignedCategory({ client: this.$trx });
-
-      unassigned.balance += sum;
-
-      unassigned.save();
-    }
-
-    await this.updateAccountBalanceHistory(this.balance);
-
-    await this.save();
   }
 
   public async updateStartingBalance(
@@ -652,7 +669,7 @@ class Account extends BaseModel {
 
       const transactionCategory = await transaction.related('transactionCategories').query().firstOrFail();
 
-      transaction.merge({
+      await transaction.merge({
         date: this.startDate,
       })
         .save();
@@ -664,7 +681,7 @@ class Account extends BaseModel {
       })
         .save();
 
-      transactionCategory.merge({
+      await transactionCategory.merge({
         amount: acctTrx.amount,
       })
         .save();
