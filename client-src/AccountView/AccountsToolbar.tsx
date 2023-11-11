@@ -57,15 +57,18 @@ const AccountsToolbar: React.FC<PropsType> = observer(({
         throw new Error('account not selected or not tracking transactions')
       }
 
-      await fetch(`/api/v1/account/${uiState.selectedAccount.id}/ofx`, {
-        method: 'POST',
-        headers: new Headers({
+      await Http.fetch(
+        `/api/v1/account/${uiState.selectedAccount.id}/ofx`,
+        new Headers({
           Accept: 'application/json',
           'Content-Type': 'text/plain',
           Authorization: `Bearer ${Http.accessToken}`,
         }),
-        body: event.target.files[0],
-      });
+        {
+          method: 'POST',
+          body: event.target.files[0],
+        },
+      );
     }
   };
 

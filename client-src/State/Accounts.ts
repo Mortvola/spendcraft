@@ -171,6 +171,8 @@ class Accounts implements AccountsInterface {
         else {
           institution.update2(body);
         }
+
+        this.store.categoryTree.updateBalances(body.categories);
       });
     }
 
@@ -211,8 +213,8 @@ class Accounts implements AccountsInterface {
             id: body.id,
             plaidInstitutionId: body.plaidInstitutionId,
             name: body.name,
-            offline: body.offline,
-            syncDate: null,
+            offline: true, // body.offline,
+            syncDate: body.syncDate,
             accounts: body.accounts,
           });
 

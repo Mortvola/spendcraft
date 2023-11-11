@@ -211,11 +211,11 @@ export interface AddInstitutionResponse {
 export const isAddInstitutionResponse = (r: unknown): r is AddInstitutionResponse => (
   (r as AddInstitutionResponse).id !== undefined
   && (r as AddInstitutionResponse).name !== undefined
-  && (r as AddInstitutionResponse).offline !== undefined
+  // && (r as AddInstitutionResponse).offline !== undefined
   && (r as AddInstitutionResponse).accounts !== undefined
   && Array.isArray((r as AddInstitutionResponse).accounts)
-  && (r as AddInstitutionResponse).categories !== undefined
-  && Array.isArray((r as AddInstitutionResponse).categories)
+  // && (r as AddInstitutionResponse).categories !== undefined
+  // && Array.isArray((r as AddInstitutionResponse).categories)
 );
 
 export interface TransactionCategoryProps {

@@ -6,7 +6,7 @@ import Institution from 'App/Models/Institution';
 import Account, { AccountSyncResult } from 'App/Models/Account';
 import Category from 'App/Models/Category';
 import {
-  AccountProps, CategoryBalanceProps,
+  AccountProps, AddInstitutionResponse, CategoryBalanceProps,
   InstitutionProps, InstitutionSyncResponse, UnlinkedAccountProps,
 } from 'Common/ResponseTypes';
 import { schema } from '@ioc:Adonis/Core/Validator';
@@ -20,15 +20,6 @@ import { Exception } from '@poppinss/utils';
 import * as Plaid from 'plaid';
 import Env from '@ioc:Adonis/Core/Env'
 
-// type OfflineAccount = {
-//   name: string,
-//   balance: number,
-//   type: AccountType,
-//   subtype: string,
-//   tracking: string,
-//   rate?: number | null,
-// };
-
 type AddAccountsResponse = {
   accounts: AccountProps[],
   categories: CategoryBalanceProps[],
@@ -36,17 +27,29 @@ type AddAccountsResponse = {
 
 class InstitutionController {
   // eslint-disable-next-line class-methods-use-this
-  public async add({
-    request,
-    auth: {
-      user,
-    },
-    logger,
-  }: HttpContextContract): Promise<InstitutionProps> {
+  public async add(context: HttpContextContract): Promise<AddInstitutionResponse> {
+    const { request } = context;
+
+    const checkData = await request.validate({
+      schema: schema.create({
+        publicToken: schema.string.optional(),
+      }),
+    });
+
+    if (!checkData.publicToken) {
+      return this.addOffline(context)
+    }
+
+    const {
+      auth: {
+        user,
+      },
+      logger,
+    } = context;
+
     if (!user) {
       throw new Error('user is not defined');
     }
-
     const budget = await user.related('budget').query().firstOrFail();
 
     const requestData = await request.validate({
@@ -79,7 +82,7 @@ class InstitutionController {
       const institutionResponse = await plaidClient
         .getInstitutionById(requestData.institutionId, [Plaid.CountryCode.Us]);
 
-      institution = await (new Institution())
+      institution = await new Institution()
         .useTransaction(trx)
         .fill({
           institutionId: institutionResponse.institution.institution_id,
@@ -116,6 +119,7 @@ class InstitutionController {
         offline: false,
         syncDate: institution.syncDate?.toISO() ?? null,
         accounts: accountsResponse.accounts,
+        categories: accountsResponse.categories,
       };
     }
     catch (error) {
@@ -127,6 +131,103 @@ class InstitutionController {
 
       await trx.rollback();
 
+      throw error;
+    }
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  public async addOffline({
+    request,
+    auth: {
+      user,
+    },
+    logger,
+  }: HttpContextContract): Promise<AddInstitutionResponse> {
+    if (!user) {
+      throw new Error('user is not defined');
+    }
+
+    const requestData = await request.validate({
+      schema: schema.create({
+        institution: schema.object().members({
+          name: schema.string(),
+        }),
+        accounts: schema.array().members(
+          schema.object().members({
+            name: schema.string(),
+            balance: schema.number(),
+            type: schema.enum.optional(
+              ['depository', 'credit', 'loan', 'investment', 'brokerage', 'other'] as const,
+            ),
+            subtype: schema.string(),
+            tracking: schema.enum(
+              ['None', 'Balances', 'Transactions', 'Uncategorized Transactions'] as const,
+            ),
+          }),
+        ),
+        startDate: schema.date(),
+      }),
+    });
+
+    const trx = await Database.transaction();
+
+    try {
+      const budget = await user.useTransaction(trx).related('budget')
+        .query().firstOrFail();
+
+      const fundingPool = await budget.getFundingPoolCategory({ client: trx });
+
+      const institution = await budget.related('institutions').create({
+        name: requestData.institution.name,
+      })
+
+      const accounts = await Promise.all(requestData.accounts.map(async (acct) => {
+        const newAcct = await institution.related('accounts').create({
+          name: acct.name,
+          balance: acct.balance,
+          type: acct.type,
+          subtype: acct.subtype,
+          tracking: acct.tracking,
+          startDate: requestData.startDate,
+          rate: 0,
+        });
+
+        await newAcct.updateStartingBalance(budget, fundingPool);
+
+        return newAcct;
+      }))
+
+      await fundingPool.save();
+
+      await trx.commit()
+
+      return {
+        id: institution.id,
+        plaidInstitutionId: institution.institutionId,
+        name: institution.name,
+        offline: false,
+        syncDate: institution.syncDate?.toISO() ?? null,
+        accounts: accounts.map((acct) => ({
+          id: acct.id,
+          plaidId: null,
+          name: acct.name,
+          type: acct.type,
+          subtype: acct.subtype,
+          closed: acct.closed,
+          tracking: acct.tracking,
+          balance: acct.balance,
+          plaidBalance: null,
+          startDate: acct.startDate.toISODate(),
+          rate: acct.rate,
+        })),
+        categories: [
+          { id: fundingPool.id, balance: fundingPool.balance },
+        ],
+      };
+    }
+    catch (error) {
+      logger.error(error);
+      await trx.rollback();
       throw error;
     }
   }
