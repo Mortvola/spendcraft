@@ -15,6 +15,7 @@ import Transaction from 'App/Models/Transaction';
 import Budget from 'App/Models/Budget';
 import { Exception } from '@poppinss/utils';
 import { XMLParser } from 'fast-xml-parser';
+import Logger from '@ioc:Adonis/Core/Logger'
 import Category from './Category';
 import TransactionCategory from './TransactionCategory';
 
@@ -397,6 +398,9 @@ class Account extends BaseModel {
 
       // eslint-disable-next-line no-await-in-loop
       await transaction.delete();
+    }
+    else {
+      Logger.info(`deleteAccountTransaction: transaction not found: ${acctTran.transactionId}`)
     }
   }
 

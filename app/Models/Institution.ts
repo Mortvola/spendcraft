@@ -156,7 +156,7 @@ class Institution extends BaseModel {
               .findBy('providerTransactionId', removed.transaction_id, { client: trx });
 
             if (at) {
-              const acct = accounts.find((a) => a.$attributes.plaidAccountId === at.accountId)
+              const acct = accounts.find((a) => a.$attributes.id === at.accountId)
 
               if (acct) {
                 const categoryBalances: CategoryBalanceProps[] = [];
@@ -164,6 +164,12 @@ class Institution extends BaseModel {
                 // eslint-disable-next-line no-await-in-loop
                 await acct.deleteAccountTransaction(at, categoryBalances)
               }
+              else {
+                Logger.info(`removal: account not found: ${at.accountId}`)
+              }
+            }
+            else {
+              Logger.info(`removal: transaction not found: ${removed.transaction_id}`)
             }
 
             // TODO: this code assumes the removed transactions are pending transactions.
