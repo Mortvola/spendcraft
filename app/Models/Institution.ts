@@ -84,6 +84,21 @@ class Institution extends BaseModel {
 
         Logger.info(`sync transactions: added: ${response.added.length}, modified: ${response.modified.length}, removed: ${response.removed.length}`);
 
+        // eslint-disable-next-line no-restricted-syntax
+        for (const added of response.added) {
+          Logger.info(`Adding: ${added.name}, ${added.amount}, ${added.account_id}, ${added.transaction_id}`)
+        }
+
+        // eslint-disable-next-line no-restricted-syntax
+        for (const modified of response.modified) {
+          Logger.info(`Modifying: ${modified.name}, ${modified.amount}, ${modified.account_id}, ${modified.transaction_id}`)
+        }
+
+        // eslint-disable-next-line no-restricted-syntax
+        for (const removed of response.removed) {
+          Logger.info(`Removing: ${removed.transaction_id}`)
+        }
+
         // Combine the added and modified transactions into one array
         // so they can be handled in a single loop.
         const transactions = [
@@ -93,6 +108,34 @@ class Institution extends BaseModel {
 
         // If the next_cursor matches the cursor then no new data is available
         if (response.next_cursor !== nextCursor) {
+          for (let i = 0; i < response.removed.length; i += 1) {
+            const removed = response.removed[i];
+
+            // eslint-disable-next-line no-await-in-loop
+            const at = await AccountTransaction
+              .findBy('providerTransactionId', removed.transaction_id, { client: trx });
+
+            if (at) {
+              const acct = accounts.find((a) => a.$attributes.id === at.accountId)
+
+              if (acct) {
+                const categoryBalances: CategoryBalanceProps[] = [];
+
+                // eslint-disable-next-line no-await-in-loop
+                await acct.deleteAccountTransaction(at, categoryBalances)
+              }
+              else {
+                Logger.info(`removal: account not found: ${at.accountId}`)
+              }
+            }
+            else {
+              Logger.info(`removal: transaction not found: ${removed.transaction_id}`)
+            }
+
+            // TODO: this code assumes the removed transactions are pending transactions.
+            // Add code to update the account balance if the transaction removed is not a pending transaction.
+          }
+
           for (let i = 0; i < transactions.length; i += 1) {
             const transaction: Plaid.Transaction = transactions[i];
 
@@ -146,34 +189,6 @@ class Institution extends BaseModel {
             }
 
             acct.$extras.modified = true;
-          }
-
-          for (let i = 0; i < response.removed.length; i += 1) {
-            const removed = response.removed[i];
-
-            // eslint-disable-next-line no-await-in-loop
-            const at = await AccountTransaction
-              .findBy('providerTransactionId', removed.transaction_id, { client: trx });
-
-            if (at) {
-              const acct = accounts.find((a) => a.$attributes.id === at.accountId)
-
-              if (acct) {
-                const categoryBalances: CategoryBalanceProps[] = [];
-
-                // eslint-disable-next-line no-await-in-loop
-                await acct.deleteAccountTransaction(at, categoryBalances)
-              }
-              else {
-                Logger.info(`removal: account not found: ${at.accountId}`)
-              }
-            }
-            else {
-              Logger.info(`removal: transaction not found: ${removed.transaction_id}`)
-            }
-
-            // TODO: this code assumes the removed transactions are pending transactions.
-            // Add code to update the account balance if the transaction removed is not a pending transaction.
           }
         }
 
