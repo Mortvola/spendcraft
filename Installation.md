@@ -47,9 +47,21 @@ sudo nginx -t
 
 sudo service nginx restart
 
+### On the Mac
+
+sudo nginx -s stop; sudo nginx
+
 ## Let's Encrypt certificates
 
 ## node-gyp
 
 npm install -g node-gyp
 sudo apt install make g++ libpq-dev
+
+## App set up
+
+<setup .env file with database configuration>
+
+ln -s .env-sandbox .env
+
+node ace migration:run

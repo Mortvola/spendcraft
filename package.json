@@ -69,7 +69,7 @@
     "pg-native": "^3.0.0",
     "phc-argon2": "^1.1.3",
     "phc-bcrypt": "^1.0.7",
-    "plaid": "^17.0.0",
+    "plaid": "^23.0.0",
     "prop-types": "^15.8.1",
     "react": "^18.1.0",
     "react-bootstrap": "^2.2.2",
@@ -84,7 +84,7 @@
     "secure-compare": "^3.0.1",
     "set-value": "^4.1.0",
     "source-map-support": "^0.5.21",
-    "stripe": "^14.1.0",
+    "stripe": "^15.4.0",
     "web-push": "^3.6.6",
     "youch": "^3.2.2"
   },
