@@ -13,6 +13,7 @@ import Budget from 'App/Models/Budget';
 import { DateTime } from 'luxon';
 import { CategoryBalanceProps } from 'Common/ResponseTypes';
 import AccountTransaction from './AccountTransaction';
+import PlaidLog from './PlaidLog';
 
 class Institution extends BaseModel {
   @column()
@@ -71,6 +72,14 @@ class Institution extends BaseModel {
     try {
       const plaidAccounts = await plaidClient.getAccounts(this.accessToken);
 
+      let log = new PlaidLog().useTransaction(trx)
+        .fill({
+          request: 'getAccounts',
+          response: plaidAccounts,
+        })
+
+      await log.save()
+
       const budget = await this.related('budget').query().firstOrFail();
 
       let accounts = await this.related('accounts').query();
@@ -81,6 +90,15 @@ class Institution extends BaseModel {
       while (more) {
         // eslint-disable-next-line no-await-in-loop
         const response = await plaidClient.syncTransactions(this.accessToken, nextCursor);
+
+        log = new PlaidLog().useTransaction(trx)
+          .fill({
+            request: 'syncTransactions',
+            response,
+          })
+
+        // eslint-disable-next-line no-await-in-loop
+        await log.save()
 
         Logger.info(`sync transactions: added: ${response.added.length}, modified: ${response.modified.length}, removed: ${response.removed.length}`);
 
