@@ -650,6 +650,8 @@ class Account extends BaseModel {
       throw new Error('startDate is null');
     }
 
+    // Sum the transactions from the initial funding date to the most recent
+    // (except for deleted and pending transactions)
     const sum = await this.related('accountTransactions').query()
       .whereHas('transaction', (q) => {
         q.where('date', '>=', startDate)
@@ -660,8 +662,11 @@ class Account extends BaseModel {
       .sum('amount')
       .first();
 
+    // The initial funding is the current balance minus the sum
     const startingBalance = this.balance - (sum?.$extras.sum ?? 0);
 
+    // Get the initial funding record and update the amont
+    // or add the initial funding if one was not found.
     const acctTrx = await this.related('accountTransactions').query()
       .whereHas('transaction', (q) => {
         q.where('type', TransactionType.STARTING_BALANCE)
@@ -689,6 +694,10 @@ class Account extends BaseModel {
         amount: acctTrx.amount,
       })
         .save();
+
+      if (delta !== 0) {
+        Logger.info(`Initial funding for account ${this.id} changed by ${delta}`);
+      }
 
       fundingPool.balance += delta;
     }
