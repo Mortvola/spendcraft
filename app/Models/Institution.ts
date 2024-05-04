@@ -70,15 +70,7 @@ class Institution extends BaseModel {
     }
 
     try {
-      const plaidAccounts = await plaidClient.getAccounts(this.accessToken);
-
-      let log = new PlaidLog().useTransaction(trx)
-        .fill({
-          request: 'getAccounts',
-          response: plaidAccounts,
-        })
-
-      await log.save()
+      let plaidAccounts: Plaid.AccountBase[] = [];
 
       const budget = await this.related('budget').query().firstOrFail();
 
@@ -91,7 +83,7 @@ class Institution extends BaseModel {
         // eslint-disable-next-line no-await-in-loop
         const response = await plaidClient.syncTransactions(this.accessToken, nextCursor);
 
-        log = new PlaidLog().useTransaction(trx)
+        const log = new PlaidLog().useTransaction(trx)
           .fill({
             request: 'syncTransactions',
             response,
@@ -100,32 +92,34 @@ class Institution extends BaseModel {
         // eslint-disable-next-line no-await-in-loop
         await log.save()
 
-        Logger.info(`sync transactions: added: ${response.added.length}, modified: ${response.modified.length}, removed: ${response.removed.length}`);
-
-        // eslint-disable-next-line no-restricted-syntax
-        for (const added of response.added) {
-          Logger.info(`Adding: ${added.name}, ${added.amount}, ${added.account_id}, ${added.transaction_id}`)
-        }
-
-        // eslint-disable-next-line no-restricted-syntax
-        for (const modified of response.modified) {
-          Logger.info(`Modifying: ${modified.name}, ${modified.amount}, ${modified.account_id}, ${modified.transaction_id}`)
-        }
-
-        // eslint-disable-next-line no-restricted-syntax
-        for (const removed of response.removed) {
-          Logger.info(`Removing: ${removed.transaction_id}`)
-        }
-
-        // Combine the added and modified transactions into one array
-        // so they can be handled in a single loop.
-        const transactions = [
-          ...response.added,
-          ...response.modified,
-        ];
-
         // If the next_cursor matches the cursor then no new data is available
         if (response.next_cursor !== nextCursor) {
+          // eslint-disable-next-line no-restricted-syntax
+          for (const account of response.accounts) {
+            const index = plaidAccounts.findIndex((pa) => pa.account_id === account.account_id);
+
+            if (index !== -1) {
+              // If the account was found in the array then replace it with the
+              // new information.
+              plaidAccounts = [
+                ...plaidAccounts.slice(0, index),
+                account,
+                ...plaidAccounts.slice(index + 1),
+              ]
+            }
+            else {
+              plaidAccounts.push(account)
+            }
+          }
+
+          // Combine the added and modified transactions into one array
+          // so they can be handled in a single loop.
+          const transactions = [
+            ...response.added,
+            ...response.modified,
+          ];
+
+          // Process removed transactions
           for (let i = 0; i < response.removed.length; i += 1) {
             const removed = response.removed[i];
 
@@ -137,6 +131,8 @@ class Institution extends BaseModel {
               const acct = accounts.find((a) => a.$attributes.id === at.accountId)
 
               if (acct) {
+                // TODO: assumes removed transactions are pending transactions and therefore
+                // have not transaction categories.
                 const categoryBalances: CategoryBalanceProps[] = [];
 
                 // eslint-disable-next-line no-await-in-loop
@@ -154,6 +150,7 @@ class Institution extends BaseModel {
             // Add code to update the account balance if the transaction removed is not a pending transaction.
           }
 
+          // Process added/modified transactions
           for (let i = 0; i < transactions.length; i += 1) {
             const transaction: Plaid.Transaction = transactions[i];
 
@@ -163,7 +160,7 @@ class Institution extends BaseModel {
 
             // If the account was not found then create it and add it to the array of accounts.
             if (!acct) {
-              const plaidAccount = plaidAccounts.accounts.find((a) => a.account_id === transaction.account_id);
+              const plaidAccount = plaidAccounts.find((a) => a.account_id === transaction.account_id);
 
               if (!plaidAccount) {
                 throw new Error(`Plaid account ${transaction.account_id} not found.`)
@@ -222,7 +219,7 @@ class Institution extends BaseModel {
         // Update the balance for each account.
         await Promise.all(accounts.map(async (acct) => {
           if (acct.$extras.modified ?? false) {
-            const plaidAccount = plaidAccounts.accounts.find((a) => a.account_id === acct.plaidAccountId);
+            const plaidAccount = plaidAccounts.find((a) => a.account_id === acct.plaidAccountId);
 
             // Only operate on the account if there is a corresponding plaid account.
             if (plaidAccount) {
