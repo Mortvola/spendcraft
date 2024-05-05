@@ -6,7 +6,7 @@ import FundingItem from './FundingItem';
 import { isGroup } from '../State/Group';
 import { isCategory } from '../State/Category';
 import { CategoryInterface } from '../State/State';
-import { FundingInfoType, ValueType } from './Types';
+import { CategoriesValueType, FundingInfoType, ValueType } from './Types';
 import { FundingInfoProps, ProposedFundingCateggoryProps } from '../../common/ResponseTypes';
 import { useStores } from '../State/mobxStore';
 
@@ -14,31 +14,40 @@ type PropsType = {
   planId: number,
   date: string,
   diffOnly: boolean,
+  value?: CategoriesValueType,
 }
 
 const Funding: React.FC<PropsType> = ({
   planId,
   date,
   diffOnly,
+  value,
 }) => {
   const { categoryTree } = useStores();
   const { setFieldValue } = useFormikContext<ValueType>();
   const [loadedPlanId, setLoadedPlanId] = React.useState<number>(-1);
   const [catFundingInfo, setCatFundingInfo] = useState<FundingInfoType[]>([]);
 
+  console.log(JSON.stringify(value))
+
   React.useEffect(() => {
     (async () => {
       if (planId !== -1 && planId !== loadedPlanId) {
-        const response = await Http.get<ProposedFundingCateggoryProps[]>('/api/v1/funding-plans/proposed');
+        if (value) {
 
-        if (response.ok) {
-          const body = await response.body();
+        }
+        else {
+          const response = await Http.get<ProposedFundingCateggoryProps[]>('/api/v1/funding-plans/proposed');
 
-          body.forEach((cat) => {
-            setFieldValue(`categories.${cat.categoryId}`, cat.amount)
-          })
+          if (response.ok) {
+            const body = await response.body();
 
-          setLoadedPlanId(planId);
+            body.forEach((cat) => {
+              setFieldValue(`categories.${cat.categoryId}`, cat.amount)
+            })
+
+            setLoadedPlanId(planId);
+          }
         }
       }
     })();

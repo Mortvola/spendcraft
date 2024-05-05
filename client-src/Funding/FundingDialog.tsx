@@ -165,19 +165,17 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
   );
 
   const initialFunding = (): CategoriesValueType => {
-    if (transaction) {
-      const obj: CategoriesValueType = {}
+    const obj: CategoriesValueType = {}
 
+    if (transaction) {
       transaction.categories.forEach((c) => {
         if (c.categoryId !== categoryTree.fundingPoolCat?.id) {
           obj[c.categoryId] = c.amount
         }
       })
-
-      return obj;
     }
 
-    return {};
+    return obj;
   }
 
   const handleCheckChange = () => {
@@ -233,6 +231,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
                 planId={0}
                 date={DateTime.fromISO(values.date).startOf('month').toISODate() ?? ''}
                 diffOnly={diffOnly}
+                value={values.categories}
                 // onChange={handleFundingChange}
               />
             )}
