@@ -163,6 +163,17 @@ export default class AccountsController {
           await unassignedCat.save();
 
           categoryBalances.push({ id: unassignedCat.id, balance: unassignedCat.balance })
+
+          const trxCategory = (new TransactionCategory()).useTransaction(trx);
+
+          trxCategory.fill({
+            transactionId: transaction.id,
+            categoryId: unassignedCat.id,
+            amount: requestData.amount,
+          })
+
+          // eslint-disable-next-line no-await-in-loop
+          await trxCategory.save();
         }
       }
       else {
