@@ -14,27 +14,31 @@ type PropsType = {
   planId: number,
   date: string,
   diffOnly: boolean,
-  value?: CategoriesValueType,
+  categories: CategoriesValueType,
 }
 
 const Funding: React.FC<PropsType> = ({
   planId,
   date,
   diffOnly,
-  value,
+  categories,
 }) => {
   const { categoryTree } = useStores();
   const { setFieldValue } = useFormikContext<ValueType>();
   const [loadedPlanId, setLoadedPlanId] = React.useState<number>(-1);
   const [catFundingInfo, setCatFundingInfo] = useState<FundingInfoType[]>([]);
 
-  console.log(JSON.stringify(value))
+  // console.log(JSON.stringify(value))
 
   React.useEffect(() => {
     (async () => {
       if (planId !== -1 && planId !== loadedPlanId) {
-        if (value) {
+        if (Object.keys(categories).length > 0) {
+          Object.keys(categories).forEach((catId) => {
+            setFieldValue(`categories.${catId}`, categories[catId])
+          })
 
+          setLoadedPlanId(planId);
         }
         else {
           const response = await Http.get<ProposedFundingCateggoryProps[]>('/api/v1/funding-plans/proposed');
@@ -51,7 +55,7 @@ const Funding: React.FC<PropsType> = ({
         }
       }
     })();
-  }, [loadedPlanId, planId, setFieldValue]);
+  }, [categories, loadedPlanId, planId, setFieldValue]);
 
   React.useEffect(() => {
     // const newDate = date.startOf('month');
@@ -89,8 +93,8 @@ const Funding: React.FC<PropsType> = ({
     );
   }
 
-  const populateCategories = (groupName: string | null, categories: CategoryInterface[]) => (
-    categories.map((category) => (
+  const populateCategories = (groupName: string | null, cats: CategoryInterface[]) => (
+    cats.map((category) => (
       renderCategory(groupName, category)
     ))
   );

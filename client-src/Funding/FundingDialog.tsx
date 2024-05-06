@@ -96,7 +96,12 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
         throw new Error('fundingPoolId is null');
       }
 
+      // Determine if there is an existing funding pool category in the edited transaction (if any).
+      // If one exists then include its ID in the request.
+      const existingFundingPoolTransCat = transaction?.categories.find((c) => c.categoryId === fundingPoolCat.id)
+
       request.categories.push({
+        id: existingFundingPoolTransCat?.id,
         categoryId: fundingPoolCat.id,
         amount: -sum,
       });
@@ -231,7 +236,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
                 planId={0}
                 date={DateTime.fromISO(values.date).startOf('month').toISODate() ?? ''}
                 diffOnly={diffOnly}
-                value={values.categories}
+                categories={values.categories}
                 // onChange={handleFundingChange}
               />
             )}
