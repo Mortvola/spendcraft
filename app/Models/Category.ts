@@ -4,7 +4,7 @@ import {
 } from '@ioc:Adonis/Lucid/Orm';
 import Database from '@ioc:Adonis/Lucid/Database';
 import Group from 'App/Models/Group';
-import { CategoryType } from 'Common/ResponseTypes';
+import { CategoryType, TransactionType } from 'Common/ResponseTypes';
 import TransactionCategory from 'App/Models/TransactionCategory';
 import Budget from 'App/Models/Budget';
 import { DateTime } from 'luxon';
@@ -134,6 +134,7 @@ export default class Category extends BaseModel {
 
     transactionQuery
       .orderBy('transactions.date', 'desc')
+      .orderByRaw(`CASE WHEN transactions.type = ${TransactionType.STARTING_BALANCE} THEN 2 WHEN transactions.type = ${TransactionType.FUNDING_TRANSACTION} THEN 1 ELSE 0 END`)
       .orderByRaw('COALESCE(transactions.duplicate_of_transaction_id, transactions.id) desc')
       .orderBy('transactions.id', 'desc')
 
