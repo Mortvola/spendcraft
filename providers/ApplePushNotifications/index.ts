@@ -8,6 +8,7 @@ import Logger from '@ioc:Adonis/Core/Logger';
 import PushSubscription from 'App/Models/PushSubscription';
 import webPush from 'web-push';
 import Env from '@ioc:Adonis/Core/Env';
+import { PendingQueryFlag } from 'Common/ResponseTypes';
 
 type FetchType = (input: string | Request, init?: Partial<FetchInit> | undefined) => Promise<Response>;
 
@@ -29,7 +30,7 @@ class ApplePushNotifications {
       );
       
       const unassigned = await budget.getUnassignedCategory();
-      const transactions = await unassigned.transactions(budget, false);
+      const transactions = await unassigned.transactions(budget, PendingQueryFlag.WithPending);
 
       if (transactions.length > 0) {
         const users = await budget.related('users').query();

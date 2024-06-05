@@ -78,6 +78,8 @@ class Institution extends BaseModel {
 
       let nextCursor = this.cursor;
 
+      let unassignedSum = 0;
+
       let more = true;
       while (more) {
         // eslint-disable-next-line no-await-in-loop
@@ -128,6 +130,10 @@ class Institution extends BaseModel {
               .findBy('providerTransactionId', removed.transaction_id, { client: trx });
 
             if (at) {
+              // TODO: assumes removed transactions are pending transactions and therefore
+              // have not transaction categories.
+              unassignedSum -= at.amount;
+
               const acct = accounts.find((a) => a.$attributes.id === at.accountId)
 
               if (acct) {
@@ -203,6 +209,10 @@ class Institution extends BaseModel {
               acct.$extras.addedSum = (acct.$extras.addedSum ?? 0) + amount;
             }
 
+            if (acct.tracking === 'Transactions') {
+              unassignedSum += amount;
+            }
+
             acct.$extras.modified = true;
           }
         }
@@ -213,9 +223,6 @@ class Institution extends BaseModel {
 
       // If we did not get a new next_cursor then that means there was no new data.
       if (nextCursor !== this.cursor) {
-        // const fundingPool = await budget.getFundingPoolCategory({ client: this.$trx });
-        const unassigned = await budget.getUnassignedCategory({ client: this.$trx });
-
         // Update the balance for each account.
         await Promise.all(accounts.map(async (acct) => {
           if (acct.$extras.modified ?? false) {
@@ -232,10 +239,6 @@ class Institution extends BaseModel {
 
               if (addedSum !== 0) {
                 acct.balance += addedSum
-
-                if (acct.tracking === 'Transactions') {
-                  unassigned.balance += addedSum;
-                }
               }
 
               // eslint-disable-next-line no-await-in-loop
@@ -249,7 +252,8 @@ class Institution extends BaseModel {
           }
         }));
 
-        // await fundingPool.save();
+        const unassigned = await budget.getUnassignedCategory({ client: this.$trx });
+        unassigned.balance += unassignedSum;
         await unassigned.save();
 
         this.cursor = nextCursor;

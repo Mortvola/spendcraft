@@ -94,7 +94,7 @@ export default class CheckBalances extends BaseCommand {
           .whereHas('account', (query) => {
             query.where('tracking', 'Transactions')
           })
-          .where('pending', false)
+          // .where('pending', false)
           .sum('amount')
           .as('sum')
           .first();
@@ -164,7 +164,7 @@ export default class CheckBalances extends BaseCommand {
     }
   }
 
-  private async checkAccountBalances() {
+  async checkAccountBalances() {
     const trx = await Database.transaction();
 
     try {
@@ -293,6 +293,6 @@ export default class CheckBalances extends BaseCommand {
 
   public async run (): Promise<void> {
     await this.checkCategoryBalances();
-    await this.checkAccountBalances();
+    // await this.checkAccountBalances();
   }
 }

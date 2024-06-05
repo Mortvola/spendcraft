@@ -404,16 +404,18 @@ export default class TransactionsController {
           throw new Error('acctTransaction is null');
         }
 
-        if (account.type === 'loan') {
-          account.balance -= acctTransaction.principle ?? 0;
-        }
-        else {
-          account.balance -= acctTransaction.amount;
-        }
+        if (!acctTransaction.pending) {
+          if (account.type === 'loan') {
+            account.balance -= acctTransaction.principle ?? 0;
+          }
+          else {
+            account.balance -= acctTransaction.amount;
+          }
 
-        account.save();
+          account.save();
 
-        result.acctBalances.push({ id: account.id, balance: account.balance });
+          result.acctBalances.push({ id: account.id, balance: account.balance });
+        }
       }
 
       transaction.deleted = true;
