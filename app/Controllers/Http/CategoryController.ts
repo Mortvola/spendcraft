@@ -16,6 +16,7 @@ import {
   CategoryBalanceProps,
   TransactionsResponse,
   TransactionProps, TransactionType, FundingInfoProps,
+  PendingQueryFlag,
 } from 'Common/ResponseTypes';
 import Group from 'App/Models/Group';
 import { DateTime } from 'luxon';
@@ -278,8 +279,10 @@ class CategoryController {
 
     result.balance = cat.balance;
 
+    const pendingQueryFlag = parseInt(request.qs().pending ?? PendingQueryFlag.NoPending, 10);
+
     const transactions = await cat.transactions(
-      budget, request.qs().pending ?? false, request.qs().limit, request.qs().offset,
+      budget, pendingQueryFlag, request.qs().limit, request.qs().offset,
     );
 
     result.transactions = transactions.map((t) => (

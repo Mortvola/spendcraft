@@ -4,7 +4,7 @@ import {
 } from '@ioc:Adonis/Lucid/Orm';
 import Database from '@ioc:Adonis/Lucid/Database';
 import Group from 'App/Models/Group';
-import { CategoryType, TransactionType } from 'Common/ResponseTypes';
+import { CategoryType, PendingQueryFlag, TransactionType } from 'Common/ResponseTypes';
 import TransactionCategory from 'App/Models/TransactionCategory';
 import Budget from 'App/Models/Budget';
 import { DateTime } from 'luxon';
@@ -101,7 +101,7 @@ export default class Category extends BaseModel {
     return query;
   }
 
-  private getTransactionQuery(budget: Budget, pending: boolean) {
+  private getTransactionQuery(budget: Budget, pending: PendingQueryFlag) {
     return budget
       .related('transactions').query()
       .where('deleted', false)
@@ -110,8 +110,14 @@ export default class Category extends BaseModel {
       })
       .where((q) => {
         q.whereHas('accountTransaction', (q2) => {
+          if (pending === PendingQueryFlag.OnlyPending) {
+            q2.where('pending', true)
+          }
+          else if (pending === PendingQueryFlag.NoPending) {
+            q2.where('pending', false)
+          }
+
           q2
-            .where('pending', pending)
             .andWhereHas('account', (q3) => {
               q3.where('tracking', 'Transactions')
                 .andWhereColumn('startDate', '<=', 'transactions.date')
@@ -129,7 +135,7 @@ export default class Category extends BaseModel {
       })
   }
 
-  public async transactions(budget: Budget, pending: boolean, limit?: number, offset?: number) {
+  public async transactions(budget: Budget, pending: PendingQueryFlag, limit?: number, offset?: number) {
     const transactionQuery = this.getTransactionQuery(budget, pending);
 
     transactionQuery

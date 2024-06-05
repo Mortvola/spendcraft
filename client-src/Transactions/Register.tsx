@@ -31,10 +31,6 @@ const Register: React.FC<PropsType> = observer(({
       case 'category':
         if (uiState.selectedCategory) {
           uiState.selectedCategory.transactions.getData(0);
-
-          if (uiState.selectedCategory === categoryTree.unassignedCat) {
-            uiState.selectedCategory.pendingTransactions.getData(0);
-          }
         }
         break;
 

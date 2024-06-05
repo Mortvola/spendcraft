@@ -73,7 +73,7 @@ const Transaction: React.FC<PropsType> = observer(({
   );
 
   return (
-    <div className={`${className ?? ''} ${styles.transaction}`} onClick={handleClick}>
+    <div className={`${className ?? ''} ${styles.transaction} ${transaction.pending ? styles.pendingTrx : ''}`} onClick={handleClick}>
       {
         transaction.duplicateOfTransactionId
           ? <Icon icon="arrow-right-arrow-left" iconClass="fa-solid" />
@@ -87,6 +87,7 @@ const Transaction: React.FC<PropsType> = observer(({
       {transactionAmount()}
       { loanFields() }
       <Reconcile transaction={transaction} />
+      <div className={styles.pendingFlag}>Pending</div>
       <AccountOwner owner={transaction.accountOwner} />
     </div>
   );

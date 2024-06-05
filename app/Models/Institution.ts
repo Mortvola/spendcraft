@@ -213,7 +213,7 @@ class Institution extends BaseModel {
 
       // If we did not get a new next_cursor then that means there was no new data.
       if (nextCursor !== this.cursor) {
-        const fundingPool = await budget.getFundingPoolCategory({ client: this.$trx });
+        // const fundingPool = await budget.getFundingPoolCategory({ client: this.$trx });
         const unassigned = await budget.getUnassignedCategory({ client: this.$trx });
 
         // Update the balance for each account.
@@ -228,16 +228,20 @@ class Institution extends BaseModel {
                 acct.plaidBalance = -acct.plaidBalance;
               }
 
-              acct.balance = acct.plaidBalance ?? 0;
+              const addedSum = (acct.$extras.addedSum ?? 0);
 
-              if ((acct.$extras.addedSum ?? 0) !== 0 && acct.tracking === 'Transactions') {
-                unassigned.balance += (acct.$extras.addedSum ?? 0);
+              if (addedSum !== 0) {
+                acct.balance += addedSum
+
+                if (acct.tracking === 'Transactions') {
+                  unassigned.balance += addedSum;
+                }
               }
 
               // eslint-disable-next-line no-await-in-loop
-              await acct.updateStartingBalance(
-                budget, fundingPool,
-              );
+              // await acct.updateStartingBalance(
+              //   budget, fundingPool,
+              // );
 
               // eslint-disable-next-line no-await-in-loop
               await acct.save();
@@ -245,7 +249,7 @@ class Institution extends BaseModel {
           }
         }));
 
-        await fundingPool.save();
+        // await fundingPool.save();
         await unassigned.save();
 
         this.cursor = nextCursor;

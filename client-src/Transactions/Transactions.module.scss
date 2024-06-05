@@ -31,7 +31,17 @@ $balance-width: 8rem;
   padding-left: 0.5rem;
   cursor: pointer;
 
-  grid-template-areas: ". date name trx-amount amount running-balance account .";
+  margin-bottom: 0.25rem;
+
+  grid-template-areas:
+    ". date name trx-amount amount running-balance account ."
+    ". owner owner owner owner owner owner .";
+
+  &.pending-trx {
+    grid-template-areas:
+    ". date name trx-amount amount running-balance account ."
+    ". pending owner owner owner owner owner .";
+  }
 
   &.loan {
     grid-template-columns: $icon-width $date-width minmax(0,1fr) repeat(3, $amount-width) $balance-width max-content minmax(0, 2fr) max-content;
@@ -76,10 +86,16 @@ $balance-width: 8rem;
     grid-area: institution;
   }
   
+  .pending-flag {
+    display: none;
+    grid-area: pending;
+    font-size: var(--trx-small-text);
+  }
+
   .owner {
     grid-area: owner;
     text-transform: capitalize;
-    display: none;
+    font-size: var(--trx-small-text);
   }
   
   .running-balance {
@@ -104,7 +120,8 @@ $balance-width: 8rem;
 
     .running-balance,
     .reconcile,
-    .trx-amount {
+    .trx-amount,
+    .pending-flag {
       display: none;
     }
   
@@ -117,10 +134,33 @@ $balance-width: 8rem;
 .unassigned {
   .transaction {
     grid-template-columns: $icon-width $date-width minmax(0,1fr) $amount-width $balance-width minmax(0, 0.5fr) max-content;
-    grid-template-areas: ". date name amount running-balance account .";
+    grid-template-rows: max-content max-content;
+
+    grid-template-areas:
+      ". date name amount running-balance account ."
+      ". owner owner owner owner owner .";
+
+    .pending-flag {
+      display: none;
+    }
+
+    &.pending-trx {
+      .pending-flag {
+        display: unset;
+      }
+
+      grid-template-areas:
+      ". date name amount running-balance account ."
+      ". pending owner owner owner owner .";
+    }
 
     .trx-amount {
       display: none;
+    }
+
+    .pending-flag,
+    .owner {
+      font-size: var(--trx-small-text);
     }
   }
 }
@@ -147,6 +187,7 @@ $balance-width: 8rem;
       display: unset;
     }
   
+    .pending-flag,
     .account,
     .trx-amount {
       display: none;
@@ -162,6 +203,7 @@ $balance-width: 8rem;
         display: unset;
       }
   
+      .pending-flag,
       .reconcile,
       .running-balance {
         display: none;
@@ -180,7 +222,8 @@ $balance-width: 8rem;
     .running-balance,
     .reconcile,
     .account,
-    .institution {
+    .institution,
+    .pending-flag {
       display: none;
     }  
   }
@@ -203,6 +246,22 @@ $balance-width: 8rem;
       ". name name amount"
       ". date account running-balance"
       ". owner owner owner";
+
+    .pending-flag {
+      display: none;
+    }
+
+    &.pending-trx {
+      .pending-flag {
+        display: unset;
+      }
+
+      grid-template-areas:
+      ". name name amount"
+      ". date account running-balance"
+      ". pending owner owner";
+    }
+
     padding-left: 0.25rem;
 
     .date,
@@ -260,7 +319,8 @@ $balance-width: 8rem;
           ". date owner .";
 
         .running-balance,
-        .reconcile {
+        .reconcile,
+        .pending-flag {
           display: none;
         }
       }
@@ -279,7 +339,11 @@ $balance-width: 8rem;
   >:not(:first-child, :last-child) {
     border-left: solid 1px black;
     padding-left: 4px;
-  }  
+  }
+  
+  .owner { 
+    display: none;
+  }
 }
 
 .title-stub {

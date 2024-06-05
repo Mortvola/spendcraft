@@ -284,6 +284,8 @@ export interface TransactionProps {
 
     accountOwner: string | null;
 
+    pending: boolean;
+
     account: {
       id: number;
 
@@ -812,3 +814,9 @@ export const isDeleteAccountResponse = (r: unknown): r is CategoryBalanceProps[]
 )
 
 export type BudgetProgressReportResponse = [string, number, number[]][];
+
+export enum PendingQueryFlag {
+  NoPending = 0,
+  OnlyPending = 1,
+  WithPending = 2,
+}

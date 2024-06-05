@@ -22,6 +22,8 @@ class PendingTransaction implements BaseTransactionInterface {
 
   reconciled = false;
 
+  pending = true;
+
   duplicateOfTransactionId: number | null = null;
 
   constructor(store: StoreInterface, props: PendingTransactionProps) {

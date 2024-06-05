@@ -111,6 +111,8 @@ export interface BaseTransactionInterface {
 
   duplicateOfTransactionId: number | null;
 
+  pending: boolean;
+
   toggleReconciled(): void;
 }
 

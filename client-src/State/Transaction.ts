@@ -47,6 +47,8 @@ class Transaction implements TransactionInterface {
 
   reconciled = false;
 
+  pending = false;
+
   accountOwner: string | null = null;
 
   store: StoreInterface;
@@ -71,6 +73,7 @@ class Transaction implements TransactionInterface {
       this.location = props.accountTransaction.location;
       this.reconciled = props.accountTransaction.reconciled;
       this.accountOwner = props.accountTransaction.accountOwner;
+      this.pending = props.accountTransaction.pending;
     }
     else {
       switch (props.type) {

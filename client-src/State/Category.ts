@@ -47,7 +47,7 @@ class Category implements CategoryInterface {
 
   constructor(props: CategoryProps, store: StoreInterface) {
     this.transactions = new TransactionContainer(
-      store, `/api/v1/category/${props.id}/transactions`, this.updateBalance,
+      store, `/api/v1/category/${props.id}/transactions?pending=2`, this.updateBalance,
     );
 
     this.pendingTransactions = new TransactionContainer(
