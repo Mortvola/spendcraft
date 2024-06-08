@@ -168,14 +168,14 @@ class Institution extends BaseModel {
             // if (DateTime.fromISO(transaction.date) >= acct.startDate) {
 
             // eslint-disable-next-line no-await-in-loop
-            const amount = await acct.addTransaction(transaction, budget);
+            const [amount, unasginedAmount] = await acct.addTransaction(transaction, budget);
 
             if (!transaction.pending && DateTime.fromISO(transaction.date) >= acct.startDate) {
               acct.$extras.addedSum = (acct.$extras.addedSum ?? 0) + amount;
             }
 
             if (acct.tracking === 'Transactions') {
-              unassignedSum += amount;
+              unassignedSum += unasginedAmount;
             }
 
             acct.$extras.modified = true;

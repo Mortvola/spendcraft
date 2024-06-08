@@ -236,12 +236,13 @@ class Account extends BaseModel {
     plaidTransaction: Plaid.Transaction,
     budget: Budget,
     pendingTransactions?: AccountTransaction[],
-  ): Promise<number> {
+  ): Promise<[number, number]> {
     if (!this.$trx) {
       throw new Error('database transaction not set');
     }
 
     let transactionAmount = 0;
+    let unassignedAmount = 0;
 
     if (plaidTransaction.amount !== null) {
       const getLocation = (location: Plaid.Location) => {
@@ -363,8 +364,10 @@ class Account extends BaseModel {
 
             await transaction.related('transactionCategories').create({
               categoryId: unassigned.id,
-              amount: -plaidTransaction.amount,
+              amount: acctTrans.amount,
             });
+
+            unassignedAmount = acctTrans.amount;
           }
         }
         else {
@@ -374,15 +377,17 @@ class Account extends BaseModel {
 
           await transaction.related('transactionCategories').create({
             categoryId: unassigned.id,
-            amount: -plaidTransaction.amount,
+            amount: acctTrans.amount,
           });
+
+          unassignedAmount = acctTrans.amount;
         }
 
         transactionAmount = acctTrans.amount;
       }
     }
 
-    return transactionAmount;
+    return [transactionAmount, unassignedAmount];
   }
 
   public async deleteAccountTransaction(
