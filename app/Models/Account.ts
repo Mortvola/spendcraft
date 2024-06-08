@@ -338,12 +338,45 @@ class Account extends BaseModel {
           location: getLocation(plaidTransaction.location),
         });
 
-        const unassigned = await budget.getUnassignedCategory({ client: this.$trx });
+        if (plaidTransaction.pending_transaction_id) {
+          const pendingAcctTransaction = await AccountTransaction
+            .findBy('providerTransactionId', plaidTransaction.pending_transaction_id, { client: this.$trx });
 
-        await transaction.related('transactionCategories').create({
-          categoryId: unassigned.id,
-          amount: -plaidTransaction.amount,
-        });
+          if (pendingAcctTransaction) {
+            // Move any transaction categories from the pending transaction to the new transaction.
+
+            const pendingTrxCats = await TransactionCategory
+              .query({ client: this.$trx })
+              .where('transactionId', pendingAcctTransaction.transactionId);
+
+            for (let i = 0; i < pendingTrxCats.length; i += 1) {
+              pendingTrxCats[i].transactionId = transaction.id;
+
+              // eslint-disable-next-line no-await-in-loop
+              await pendingTrxCats[i].save();
+            }
+          }
+          else {
+            // The pending account transaction was not found. Create an unassigned transaction category
+            // for the new transaction.
+            const unassigned = await budget.getUnassignedCategory({ client: this.$trx });
+
+            await transaction.related('transactionCategories').create({
+              categoryId: unassigned.id,
+              amount: -plaidTransaction.amount,
+            });
+          }
+        }
+        else {
+          // There was nopending account transaction. Create an unassigned transaction category
+          // for the new transaction.
+          const unassigned = await budget.getUnassignedCategory({ client: this.$trx });
+
+          await transaction.related('transactionCategories').create({
+            categoryId: unassigned.id,
+            amount: -plaidTransaction.amount,
+          });
+        }
 
         transactionAmount = acctTrans.amount;
       }

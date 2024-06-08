@@ -121,41 +121,6 @@ class Institution extends BaseModel {
             ...response.modified,
           ];
 
-          // Process removed transactions
-          for (let i = 0; i < response.removed.length; i += 1) {
-            const removed = response.removed[i];
-
-            // eslint-disable-next-line no-await-in-loop
-            const at = await AccountTransaction
-              .findBy('providerTransactionId', removed.transaction_id, { client: trx });
-
-            if (at) {
-              // TODO: assumes removed transactions are pending transactions and therefore
-              // have not transaction categories.
-              unassignedSum -= at.amount;
-
-              const acct = accounts.find((a) => a.$attributes.id === at.accountId)
-
-              if (acct) {
-                // TODO: assumes removed transactions are pending transactions and therefore
-                // have not transaction categories.
-                const categoryBalances: CategoryBalanceProps[] = [];
-
-                // eslint-disable-next-line no-await-in-loop
-                await acct.deleteAccountTransaction(at, categoryBalances)
-              }
-              else {
-                Logger.info(`removal: account not found: ${at.accountId}`)
-              }
-            }
-            else {
-              Logger.info(`removal: transaction not found: ${removed.transaction_id}`)
-            }
-
-            // TODO: this code assumes the removed transactions are pending transactions.
-            // Add code to update the account balance if the transaction removed is not a pending transaction.
-          }
-
           // Process added/modified transactions
           for (let i = 0; i < transactions.length; i += 1) {
             const transaction: Plaid.Transaction = transactions[i];
@@ -214,6 +179,41 @@ class Institution extends BaseModel {
             }
 
             acct.$extras.modified = true;
+          }
+
+          // Process removed transactions
+          for (let i = 0; i < response.removed.length; i += 1) {
+            const removed = response.removed[i];
+
+            // eslint-disable-next-line no-await-in-loop
+            const at = await AccountTransaction
+              .findBy('providerTransactionId', removed.transaction_id, { client: trx });
+
+            if (at) {
+              // TODO: assumes removed transactions are pending transactions and therefore
+              // have not transaction categories.
+              // unassignedSum -= at.amount;
+
+              const acct = accounts.find((a) => a.$attributes.id === at.accountId)
+
+              if (acct) {
+                // TODO: assumes removed transactions are pending transactions and therefore
+                // have not transaction categories.
+                const categoryBalances: CategoryBalanceProps[] = [];
+
+                // eslint-disable-next-line no-await-in-loop
+                await acct.deleteAccountTransaction(at, categoryBalances)
+              }
+              else {
+                Logger.info(`removal: account not found: ${at.accountId}`)
+              }
+            }
+            else {
+              Logger.info(`removal: transaction not found: ${removed.transaction_id}`)
+            }
+
+            // TODO: this code assumes the removed transactions are pending transactions.
+            // Add code to update the account balance if the transaction removed is not a pending transaction.
           }
         }
 
