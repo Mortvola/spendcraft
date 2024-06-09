@@ -71,8 +71,6 @@ export default class TransactionsController {
       throw new Error('user is not defined');
     }
 
-    const budget = await user.related('budget').query().firstOrFail();
-
     const { trxId } = request.params();
     const requestData = await request.validate({
       schema: schema.create({
@@ -94,6 +92,11 @@ export default class TransactionsController {
     const trx = await Database.transaction();
 
     try {
+      const budget = await user.related('budget').query()
+        .useTransaction(trx)
+        .forUpdate()
+        .firstOrFail();
+
       type Result = {
         categories: CategoryBalanceProps[],
         transaction?: Record<string, unknown>,

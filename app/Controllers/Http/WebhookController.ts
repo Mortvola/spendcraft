@@ -166,11 +166,11 @@ class WebhookController {
       const institution = await Institution.findByOrFail('plaidItemId', event.item_id, { client: trx });
 
       // const accounts = await institution.related('accounts').query().where('closed', false);
-      const budget = await Budget.findOrFail(institution.budgetId);
-
       await institution.syncUpdate()
 
       await trx.commit();
+
+      const budget = await Budget.findOrFail(institution.budgetId);
 
       await applePushNotifications.sendPushNotifications(budget)
     }

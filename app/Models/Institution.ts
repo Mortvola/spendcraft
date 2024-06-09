@@ -72,7 +72,10 @@ class Institution extends BaseModel {
     try {
       let plaidAccounts: Plaid.AccountBase[] = [];
 
-      const budget = await this.related('budget').query().firstOrFail();
+      const budget = await this.related('budget')
+        .query()
+        .forUpdate()
+        .firstOrFail();
 
       let accounts = await this.related('accounts').query();
 
