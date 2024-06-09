@@ -14,6 +14,7 @@ self.addEventListener('push', (event) => {
     body: data.body,
     icon: '/logo2.png',
     tag: 'new-transactions',
+    renotify: true,
   });
 
   event.waitUntil(notification);

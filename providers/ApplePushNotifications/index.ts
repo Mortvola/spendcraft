@@ -102,12 +102,16 @@ class ApplePushNotifications {
     subscription: PushSubscription,
     unassigned: number,
   ) {
+    console.log(`send push notification for ${unassigned} transactions.`)
+    
     const notification: webPush.PushSubscription = subscription.subscription as webPush.PushSubscription;
 
-    await webPush.sendNotification(notification, JSON.stringify({
+    const result = await webPush.sendNotification(notification, JSON.stringify({
       title: 'New Transactions',
       body: `There are ${unassigned} unassigned transactions.`,
     }));
+
+    console.log(JSON.stringify(result))
   }
 
   private async sendApplePushNotification(
