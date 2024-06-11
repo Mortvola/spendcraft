@@ -249,6 +249,30 @@
       "aliases": [],
       "flags": []
     },
+    "queue:listener": {
+      "settings": {
+        "loadApp": true,
+        "stayAlive": true
+      },
+      "commandPath": "./commands/QueueListener",
+      "commandName": "queue:listener",
+      "description": "",
+      "args": [],
+      "aliases": [],
+      "flags": []
+    },
+    "queue:test": {
+      "settings": {
+        "loadApp": true,
+        "stayAlive": false
+      },
+      "commandPath": "./commands/QueueTest",
+      "commandName": "queue:test",
+      "description": "",
+      "args": [],
+      "aliases": [],
+      "flags": []
+    },
     "dump:rcfile": {
       "settings": {},
       "commandPath": "@adonisjs/core/build/commands/DumpRc",

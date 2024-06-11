@@ -9,12 +9,12 @@ import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import { RequestContract } from '@ioc:Adonis/Core/Request';
 import Database from '@ioc:Adonis/Lucid/Database';
 import Institution from 'App/Models/Institution';
-import Budget from 'App/Models/Budget';
 import Mail from '@ioc:Adonis/Addons/Mail';
 import Env from '@ioc:Adonis/Core/Env';
 import { Exception } from '@poppinss/utils';
 import Logger from '@ioc:Adonis/Core/Logger';
-import applePushNotifications from '@ioc:ApplePushNotifications';
+import { PlaidWebHookProps, QueueNamesEnum } from 'Contracts/QueueInterfaces';
+import BullMQ from '@ioc:Adonis/Addons/BullMQ'
 
 type Key = {
   alg: string;
@@ -163,16 +163,8 @@ class WebhookController {
     const trx = await Database.transaction();
 
     try {
-      const institution = await Institution.findByOrFail('plaidItemId', event.item_id, { client: trx });
-
-      // const accounts = await institution.related('accounts').query().where('closed', false);
-      await institution.syncUpdate()
-
-      await trx.commit();
-
-      const budget = await Budget.findOrFail(institution.budgetId);
-
-      await applePushNotifications.sendPushNotifications(budget)
+      const queue = BullMQ.queue<PlaidWebHookProps, PlaidWebHookProps>(QueueNamesEnum.PlaidWebHook)
+      await queue.add('sync', { itemId: event.item_id })
     }
     catch (error) {
       Logger.error({ err: error }, `default update failed, event: ${JSON.stringify(event)}`);

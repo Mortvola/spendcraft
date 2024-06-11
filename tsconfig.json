@@ -40,7 +40,8 @@
       "@adonisjs/view",
       "@adonisjs/mail",
       "@adonisjs/redis",
-      "adonis5-jwt"
+      "adonis5-jwt",
+      "adonis5-bullmq"
     ]
   }
 }
