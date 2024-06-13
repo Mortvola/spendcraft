@@ -280,6 +280,7 @@ class Account extends BaseModel {
         const transaction = await Transaction.findOrFail(acctTrans.transactionId);
 
         // if the transaction was deleted then do nothing.
+        // TODO: Even if the transaction was deleted update the information.
         if (!transaction.deleted) {
           // If the existing transaction is pending
           // and the Plaid transaction is still pending then remove
@@ -312,6 +313,7 @@ class Account extends BaseModel {
 
           transaction.merge({
             date: DateTime.fromISO(plaidTransaction.date),
+            version: transaction.version + 1,
           });
 
           await transaction.save();
@@ -345,7 +347,6 @@ class Account extends BaseModel {
 
           if (pendingAcctTransaction) {
             // Move any transaction categories from the pending transaction to the new transaction.
-
             const pendingTrxCats = await TransactionCategory
               .query({ client: this.$trx })
               .where('transactionId', pendingAcctTransaction.transactionId);
@@ -356,6 +357,15 @@ class Account extends BaseModel {
               // eslint-disable-next-line no-await-in-loop
               await pendingTrxCats[i].save();
             }
+
+            // Use the value of version from the pending transaction.
+            const pendingTransaction = await pendingAcctTransaction.related('transaction').query().firstOrFail();
+
+            transaction.merge({
+              version: pendingTransaction.version + 1,
+            })
+
+            await transaction.save();
           }
           else {
             // The pending account transaction was not found. Create an unassigned transaction category

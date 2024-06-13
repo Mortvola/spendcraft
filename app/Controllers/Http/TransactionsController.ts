@@ -9,7 +9,7 @@ import Loan from 'App/Models/Loan';
 import LoanTransaction from 'App/Models/LoanTransaction';
 import AccountTransaction from 'App/Models/AccountTransaction';
 import {
-  AccountBalanceProps, CategoryBalanceProps, TransactionProps, TransactionsResponse, TransactionType,
+  AccountBalanceProps, CategoryBalanceProps, RequestErrorCode, TransactionProps, TransactionsResponse, TransactionType,
 } from 'Common/ResponseTypes';
 import Account from 'App/Models/Account';
 import { schema, rules } from '@ioc:Adonis/Core/Validator';
@@ -62,6 +62,7 @@ export default class TransactionsController {
   // eslint-disable-next-line class-methods-use-this
   public async update({
     request,
+    response,
     auth: {
       user,
     },
@@ -79,6 +80,7 @@ export default class TransactionsController {
         principle: schema.number.optional(),
         date: schema.date.optional(),
         comment: schema.string.optional([rules.trim()]),
+        version: schema.number(),
         splits: schema.array().members(
           schema.object().members({
             categoryId: schema.number(),
@@ -97,6 +99,23 @@ export default class TransactionsController {
         .forUpdate()
         .firstOrFail();
 
+      const transaction = await Transaction.findOrFail(trxId, { client: trx });
+
+      if (transaction.version !== requestData.version) {
+        console.log(`transaction version does not match: ${requestData.version}, ${transaction.version}`)
+
+        await trx.rollback();
+
+        response.status(409);
+
+        return {
+          errors: [{
+            code: RequestErrorCode.INCORRECT_VERSION,
+            status: '409',
+          }],
+        }
+      }
+
       type Result = {
         categories: CategoryBalanceProps[],
         transaction?: Record<string, unknown>,
@@ -107,18 +126,6 @@ export default class TransactionsController {
         categories: [],
         acctBalances: [],
       };
-
-      if (requestData.date !== undefined
-        || requestData.comment !== undefined) {
-        const transaction = await Transaction.findOrFail(trxId, { client: trx });
-
-        transaction.merge({
-          date: requestData.date,
-          comment: requestData.comment,
-        });
-
-        await transaction.save();
-      }
 
       // Get the 'unassigned' category id
       const unassigned = await budget.getUnassignedCategory({ client: trx });
@@ -270,7 +277,21 @@ export default class TransactionsController {
         await account.save();
       }
 
-      const transaction = await Transaction.findOrFail(trxId, { client: trx });
+      transaction.merge({
+        version: transaction.version + 1,
+      });
+
+      if (
+        requestData.date !== undefined
+        || requestData.comment !== undefined
+      ) {
+        transaction.merge({
+          date: requestData.date,
+          comment: requestData.comment,
+        });
+      }
+
+      await transaction.save();
 
       await transaction.load('transactionCategories');
 

@@ -265,6 +265,8 @@ export interface TransactionProps {
 
   comment: string;
 
+  version: number;
+
   transactionCategories: TransactionCategoryProps[];
 
   duplicateOfTransactionId: number | null;
@@ -420,6 +422,20 @@ export interface ErrorResponse {
   errors: Error[];
 }
 
+export enum RequestErrorCode {
+  INCORRECT_VERSION = 'INCORRECT_VERSION',
+}
+
+export interface ApiError {
+  code: RequestErrorCode,
+  status: string,
+}
+
+export interface ApiResponse {
+  data?: unknown,
+  errors?: ApiError[],
+}
+
 export const isErrorResponse = (r: ErrorResponse | unknown): r is ErrorResponse => (
   (r as ErrorResponse).errors !== undefined
 );
@@ -443,6 +459,8 @@ export interface UpdateTransactionResponse {
     type: TransactionType,
 
     comment: string,
+
+    version: number,
 
     transactionCategories: TransactionCategoryProps[],
 

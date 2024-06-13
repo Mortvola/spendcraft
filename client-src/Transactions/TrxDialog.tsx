@@ -9,7 +9,7 @@ import { AccountInterface, TransactionInterface } from '../State/State';
 import { TransactionType } from '../../common/ResponseTypes';
 import { useStores } from '../State/mobxStore';
 
-const useTrxDialog = (account?: AccountInterface): [
+const useTrxDialog = (account?: AccountInterface, onReload?: () => void): [
   () => JSX.Element | null,
   (transaction: TransactionInterface) => void,
 ] => {
@@ -53,7 +53,12 @@ const useTrxDialog = (account?: AccountInterface): [
           }
 
           return (
-            <TransactionDialog transaction={editedTransaction} onHide={handleDialogHide} account={account} />
+            <TransactionDialog
+              transaction={editedTransaction}
+              onHide={handleDialogHide}
+              account={account}
+              onReload={onReload}
+            />
           );
       }
     }
@@ -68,6 +73,7 @@ const useTrxDialog = (account?: AccountInterface): [
     RebalanceDialog,
     TransactionDialog,
     DuplicateDialog,
+    onReload,
   ]);
 
   const showTrxDialog = React.useCallback((transaction: TransactionInterface) => {

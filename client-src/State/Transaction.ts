@@ -10,6 +10,8 @@ import {
   isUpdateTransactionResponse,
   CategoryTransferProps,
   Location,
+  ApiError,
+  ApiResponse,
 } from '../../common/ResponseTypes';
 import {
   NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface,
@@ -30,6 +32,8 @@ class Transaction implements TransactionInterface {
   name: string;
 
   comment = '';
+
+  version: number;
 
   categories: TransactionCategoryInterface[] = [];
 
@@ -61,6 +65,7 @@ class Transaction implements TransactionInterface {
     this.type = props.type;
     this.comment = props.comment;
     this.duplicateOfTransactionId = props.duplicateOfTransactionId;
+    this.version = props.version;
 
     if (props.accountTransaction) {
       this.name = props.accountTransaction.name;
@@ -111,15 +116,19 @@ class Transaction implements TransactionInterface {
       comment?: string,
       splits: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
     },
-  ): Promise<null> {
+  ): Promise<null | ApiError[]> {
     if (this.id === null) {
       throw new Error('transaction has a null id');
     }
 
-    const response = await Http.patch(`/api/v1/transaction/${this.id}`, values);
+    const response = await Http.patch<unknown, ApiResponse>(`/api/v1/transaction/${this.id}`, { version: this.version, ...values });
 
     if (response.ok) {
       const body = await response.body();
+
+      if (body.errors) {
+        return body.errors;
+      }
 
       if (isUpdateTransactionResponse(body)) {
         runInAction(() => {
@@ -138,6 +147,7 @@ class Transaction implements TransactionInterface {
           this.principle = body.transaction.accountTransaction.principle;
           this.name = body.transaction.accountTransaction.name;
           this.comment = body.transaction.comment;
+          this.version = body.transaction.version;
 
           // Remove the transaction from the selected category, if any, if the transaction
           // no longer has the selected category in its splits.
@@ -181,6 +191,12 @@ class Transaction implements TransactionInterface {
 
         return null;
       }
+    }
+
+    const body = await response.body();
+
+    if (body.errors) {
+      return body.errors
     }
 
     throw new Error('invalid response');

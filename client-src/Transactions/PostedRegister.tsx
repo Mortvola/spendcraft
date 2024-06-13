@@ -10,6 +10,7 @@ import Transaction from './Transaction';
 import { useStores } from '../State/mobxStore';
 import { TransactionType } from '../../common/ResponseTypes';
 import styles from './Transactions.module.scss';
+import { useNotification } from '../Notification';
 
 type PropsType = {
   type: 'category' | 'account' | 'rebalances',
@@ -26,7 +27,21 @@ const PostedRegister: React.FC<PropsType> = observer(({
   account,
   transactionClassName,
 }) => {
-  const [TrxDialog, showTrxDialog] = useTrxDialog(account ?? undefined);
+  const [Notification, showNotification] = useNotification(
+    'Changed Transaction',
+    (
+      <div>
+        The transaction was changed by the system or another user.
+      </div>
+    ),
+  );
+
+  const handleReload = () => {
+    showNotification()
+    trxContainer.getData(0)
+  }
+
+  const [TrxDialog, showTrxDialog] = useTrxDialog(account ?? undefined, handleReload);
   const { uiState } = useStores();
 
   const handleClick = (transaction: BaseTransactionInterface) => {
@@ -103,6 +118,7 @@ const PostedRegister: React.FC<PropsType> = observer(({
         { renderTransactions() }
       </RegisterTransactions>
       <TrxDialog />
+      <Notification />
     </div>
   );
 });

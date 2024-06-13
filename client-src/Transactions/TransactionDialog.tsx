@@ -14,7 +14,7 @@ import Amount from '../Amount';
 import { AccountInterface, TransactionCategoryInterface, TransactionInterface } from '../State/State';
 import AmountInput from '../AmountInput';
 import useMediaQuery from '../MediaQuery';
-import { TransactionType } from '../../common/ResponseTypes';
+import { RequestErrorCode, TransactionType } from '../../common/ResponseTypes';
 import styles from './TransactionDialog.module.scss';
 import PurchaseLocation from './PurchaseLocation';
 
@@ -33,12 +33,14 @@ function validateSplits(splits: Array<TransactionCategoryInterface>) {
 type PropsType = {
   transaction?: TransactionInterface | null,
   account?: AccountInterface | null,
+  onReload?: () => void,
 }
 
 const TransactionDialog: React.FC<PropsType & ModalProps> = ({
   setShow,
   transaction = null,
   account = null,
+  onReload,
 }) => {
   type ValueType = {
     date: string,
@@ -122,7 +124,18 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
       });
     }
 
-    if (!errors) {
+    if (errors) {
+      const error = errors.find((e) => e.code === RequestErrorCode.INCORRECT_VERSION)
+
+      if (error) {
+        setShow(false);
+
+        if (onReload) {
+          onReload();
+        }
+      }
+    }
+    else {
       setShow(false);
     }
   };

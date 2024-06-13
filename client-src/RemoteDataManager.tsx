@@ -42,6 +42,7 @@ const RemoteDataManager: React.FC<PropsType> = observer(({
       }
 
       if (element) {
+        // Handle pull to refresh
         if (element.scrollTop < -100 && data.state() === 'IDLE') {
           (async () => {
             await data.getData(0);

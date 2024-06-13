@@ -45,6 +45,9 @@ class Transaction extends BaseModel {
 
   @column()
   public duplicateOfTransactionId: number | null;
+
+  @column()
+  public version: number;
 }
 
 export default Transaction;

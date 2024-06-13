@@ -83,7 +83,7 @@ export interface TransactionInterface extends BaseTransactionInterface {
       comment?: string,
       splits: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
     },
-  ): Promise<null>;
+  ): Promise<null | ApiError[]>;
 
   async delete(): Promise<null | Error[]>;
 
