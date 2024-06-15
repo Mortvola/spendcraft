@@ -15,6 +15,7 @@ import { Exception } from '@poppinss/utils';
 import Logger from '@ioc:Adonis/Core/Logger';
 import { PlaidWebHookProps, QueueNamesEnum } from 'Contracts/QueueInterfaces';
 import BullMQ from '@ioc:Adonis/Addons/BullMQ'
+import WebhookLog from 'App/Models/WebhookLog';
 
 type Key = {
   alg: string;
@@ -87,7 +88,14 @@ class WebhookController {
 
       const body = request.body();
 
-      switch (request.body().webhook_type) {
+      // Log the request
+      new WebhookLog()
+        .fill({
+          request: body,
+        })
+        .save();
+
+      switch (body.webhook_type) {
         case 'TRANSACTIONS': {
           if (isTransactionEvent(body)) {
             WebhookController.processTransactionEvent(body);
