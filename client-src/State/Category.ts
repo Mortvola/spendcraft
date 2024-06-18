@@ -46,14 +46,6 @@ class Category implements CategoryInterface {
   store: StoreInterface;
 
   constructor(props: CategoryProps, store: StoreInterface) {
-    this.transactions = new TransactionContainer(
-      store, `/api/v1/category/${props.id}/transactions?pending=2`, this.updateBalance,
-    );
-
-    this.pendingTransactions = new TransactionContainer(
-      store, `/api/v1/category/${props.id}/transactions?pending=1`,
-    );
-
     this.id = props.id;
     this.name = props.name;
     this.type = props.type;
@@ -65,6 +57,29 @@ class Category implements CategoryInterface {
     this.useGoal = props.useGoal ?? false;
     this.recurrence = props.recurrence;
     this.store = store;
+
+    this.transactions = new TransactionContainer(
+      store,
+      `/api/v1/category/${props.id}/transactions?pending=2`,
+      (balance: number, count?: number) => {
+        this.balance = balance;
+
+        if (this.type === 'UNASSIGNED') {
+          if (navigator.setAppBadge) {
+            if (count) {
+              navigator.setAppBadge(count)
+            }
+            else {
+              navigator.clearAppBadge()
+            }
+          }
+        }
+      },
+    );
+
+    this.pendingTransactions = new TransactionContainer(
+      store, `/api/v1/category/${props.id}/transactions?pending=1`,
+    );
 
     makeObservable(this, {
       name: observable,
@@ -120,14 +135,21 @@ class Category implements CategoryInterface {
     return null;
   }
 
-  updateBalance(balance: number) {
-    this.balance = balance;
-  }
-
   updateBalances(balances: CategoryBalanceProps[]): void {
     const balance = balances.find((b) => b.id === this.id);
     if (balance) {
       this.balance = balance.balance;
+
+      if (this.type === 'UNASSIGNED') {
+        if (navigator.setAppBadge) {
+          if (balance.count) {
+            navigator.setAppBadge(balance.count)
+          }
+          else {
+            navigator.clearAppBadge()
+          }
+        }
+      }
     }
   }
 

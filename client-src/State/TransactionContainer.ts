@@ -13,14 +13,14 @@ class TransactionContainer implements TransactionContainerInterface {
 
   searchString?: string;
 
-  balanceCallback: ((balance: number) => void) | null = null;
+  balanceCallback: ((balance: number, count?: number) => void) | null = null;
 
   store: StoreInterface;
 
   constructor(
     store: StoreInterface,
     url: string,
-    balanceCallback?: (balance: number) => void,
+    balanceCallback?: (balance: number, count?: number) => void,
   ) {
     makeObservable(this, {
       transactions: observable,
@@ -99,7 +99,7 @@ class TransactionContainer implements TransactionContainerInterface {
   transactionResponseHandler = (body: unknown, idx: number, limit: number): boolean => {
     if (isTransactionsResponse(body)) {
       if (this.balanceCallback) {
-        this.balanceCallback(body.balance);
+        this.balanceCallback(body.balance, body.transactionsCount);
       }
 
       if (idx === 0) {

@@ -10,6 +10,16 @@ self.addEventListener('install', (event) => {
 // and show the notification.
 self.addEventListener('push', (event) => {
   const data = event.data.json();
+
+  if (navigator.setAppBadge) {
+    if (data.unassignedCount > 0) {
+      navigator.setAppBadge(data.unassignedCount);
+    }
+    else {
+      navigator.clearAppBadge();
+    }
+  }
+
   const notification = self.registration.showNotification(data.title, {
     body: data.body,
     icon: '/logo2.png',

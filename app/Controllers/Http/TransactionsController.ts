@@ -151,7 +151,10 @@ export default class TransactionsController {
           // eslint-disable-next-line no-await-in-loop
           await category.save();
 
-          result.categories.push({ id: category.id, balance: category.balance });
+          result.categories.push({
+            id: category.id,
+            balance: category.balance,
+          });
         }
 
         // Delete any loan transactions that are associated with the categories being deleted.
@@ -175,7 +178,10 @@ export default class TransactionsController {
           await unassigned.save();
         }
 
-        result.categories.push({ id: unassigned.id, balance: unassigned.balance });
+        result.categories.push({
+          id: unassigned.id,
+          balance: unassigned.balance,
+        });
       }
 
       const requestedSplits = requestData.splits;
@@ -228,7 +234,10 @@ export default class TransactionsController {
             result.categories[index].balance = category.balance;
           }
           else {
-            result.categories.push({ id: category.id, balance: category.balance });
+            result.categories.push({
+              id: category.id,
+              balance: category.balance,
+            });
           }
         }
       }
@@ -245,7 +254,10 @@ export default class TransactionsController {
           result.categories[index].balance = unassigned.balance;
         }
         else {
-          result.categories.push({ id: unassigned.id, balance: unassigned.balance });
+          result.categories.push({
+            id: unassigned.id,
+            balance: unassigned.balance,
+          });
         }
       }
 
@@ -309,6 +321,16 @@ export default class TransactionsController {
       }];
 
       await trx.commit();
+
+      // TODO: Change this to work within the database transaction.
+      // eslint-disable-next-line no-restricted-syntax
+      for (const cat of result.categories) {
+        // eslint-disable-next-line no-await-in-loop
+        const category = await Category.findOrFail(cat.id);
+
+        // eslint-disable-next-line no-await-in-loop
+        cat.count = await category.transactionsCount(budget);
+      }
 
       return result;
     }

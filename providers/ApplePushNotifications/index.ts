@@ -8,7 +8,6 @@ import Logger from '@ioc:Adonis/Core/Logger';
 import PushSubscription from 'App/Models/PushSubscription';
 import webPush from 'web-push';
 import Env from '@ioc:Adonis/Core/Env';
-import { PendingQueryFlag } from 'Common/ResponseTypes';
 
 type FetchType = (input: string | Request, init?: Partial<FetchInit> | undefined) => Promise<Response>;
 
@@ -30,9 +29,9 @@ class ApplePushNotifications {
       );
       
       const unassigned = await budget.getUnassignedCategory();
-      const transactions = await unassigned.transactions(budget, PendingQueryFlag.WithPending);
+      const  transactionsCount = await unassigned.transactionsCount(budget);
 
-      if (transactions.length > 0) {
+      if (transactionsCount > 0) {
         const users = await budget.related('users').query();
         // const users = await User.query().where('applicationId', budget.id)
 
@@ -43,10 +42,10 @@ class ApplePushNotifications {
             for (let subscription of subscriptions) {
               try {
                 if (subscription.type === 'web') {
-                  await this.sendwebPushNotification(subscription, transactions.length);
+                  await this.sendwebPushNotification(subscription, transactionsCount);
                 }
                 else {
-                  await this.sendApplePushNotification(fetch, subscription, transactions.length);
+                  await this.sendApplePushNotification(fetch, subscription, transactionsCount);
                 }
               }
               catch (error) {
@@ -109,6 +108,7 @@ class ApplePushNotifications {
     const result = await webPush.sendNotification(notification, JSON.stringify({
       title: 'New Transactions',
       body: `There are ${unassigned} unassigned transactions.`,
+      unassignedCount: unassigned,
     }));
 
     console.log(JSON.stringify(result))

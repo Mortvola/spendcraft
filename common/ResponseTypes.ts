@@ -49,6 +49,8 @@ export interface CategoryBalanceProps {
   id: number;
 
   balance: number;
+
+  count?: number;
 }
 
 export interface AccountBalanceProps {
@@ -394,6 +396,8 @@ export const isLoanTransactionsResponse = (r: unknown): r is LoanTransactionsRes
 
 export interface TransactionsResponse {
   transactions: TransactionProps[];
+
+  transactionsCount?: number,
 
   balance: number;
 }

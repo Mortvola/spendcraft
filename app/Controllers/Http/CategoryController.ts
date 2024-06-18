@@ -16,7 +16,6 @@ import {
   CategoryBalanceProps,
   TransactionsResponse,
   TransactionProps, TransactionType, FundingInfoProps,
-  PendingQueryFlag,
 } from 'Common/ResponseTypes';
 import Group from 'App/Models/Group';
 import { DateTime } from 'luxon';
@@ -272,6 +271,7 @@ class CategoryController {
 
     const result: TransactionsResponse = {
       transactions: [],
+      transactionsCount: 0,
       balance: 0,
     };
 
@@ -279,15 +279,14 @@ class CategoryController {
 
     result.balance = cat.balance;
 
-    const pendingQueryFlag = parseInt(request.qs().pending ?? PendingQueryFlag.NoPending, 10);
+    result.transactions = (await cat.transactions(
+      budget, request.qs().limit, request.qs().offset,
+    ))
+      .map((t) => (
+        t.serialize(transactionFields) as TransactionProps
+      ));
 
-    const transactions = await cat.transactions(
-      budget, pendingQueryFlag, request.qs().limit, request.qs().offset,
-    );
-
-    result.transactions = transactions.map((t) => (
-      t.serialize(transactionFields) as TransactionProps
-    ));
+    result.transactionsCount = await cat.transactionsCount(budget)
 
     return result;
   }

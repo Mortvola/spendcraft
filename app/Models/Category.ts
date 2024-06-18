@@ -4,7 +4,7 @@ import {
 } from '@ioc:Adonis/Lucid/Orm';
 import Database from '@ioc:Adonis/Lucid/Database';
 import Group from 'App/Models/Group';
-import { CategoryType, PendingQueryFlag, TransactionType } from 'Common/ResponseTypes';
+import { CategoryType, TransactionType } from 'Common/ResponseTypes';
 import TransactionCategory from 'App/Models/TransactionCategory';
 import Budget from 'App/Models/Budget';
 import { DateTime } from 'luxon';
@@ -101,7 +101,7 @@ export default class Category extends BaseModel {
     return query;
   }
 
-  private getTransactionQuery(budget: Budget, pending: PendingQueryFlag) {
+  private getTransactionQuery(budget: Budget) {
     return budget
       .related('transactions').query()
       .where('deleted', false)
@@ -110,13 +110,6 @@ export default class Category extends BaseModel {
       })
       .where((q) => {
         q.whereHas('accountTransaction', (q2) => {
-          if (pending === PendingQueryFlag.OnlyPending) {
-            q2.where('pending', true)
-          }
-          else if (pending === PendingQueryFlag.NoPending) {
-            q2.where('pending', false)
-          }
-
           q2
             .andWhereHas('account', (q3) => {
               q3.where('tracking', 'Transactions')
@@ -135,8 +128,8 @@ export default class Category extends BaseModel {
       })
   }
 
-  public async transactions(budget: Budget, pending: PendingQueryFlag, limit?: number, offset?: number) {
-    const transactionQuery = this.getTransactionQuery(budget, pending);
+  public async transactions(budget: Budget, limit?: number, offset?: number) {
+    const transactionQuery = this.getTransactionQuery(budget);
 
     transactionQuery
       .orderBy('transactions.date', 'desc')
@@ -155,6 +148,28 @@ export default class Category extends BaseModel {
     }
 
     return transactionQuery;
+  }
+
+  public async transactionsCount(budget: Budget): Promise<number> {
+    await budget.loadAggregate('transactions', (q) => {
+      q.count('*').as('count')
+        .where('deleted', false)
+        .whereHas('transactionCategories', (query) => {
+          query.where('categoryId', this.id);
+        })
+        .where((q4) => {
+          q4.whereHas('accountTransaction', (q2) => {
+            q2
+              .andWhereHas('account', (q3) => {
+                q3.where('tracking', 'Transactions')
+                  .andWhereColumn('startDate', '<=', 'transactions.date')
+              })
+          })
+            .orDoesntHave('accountTransaction')
+        })
+    });
+
+    return parseInt(budget.$extras.count, 10);
   }
 
   public async syncBalance(this: Category): Promise<void> {
