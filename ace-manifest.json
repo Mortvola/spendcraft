@@ -75,6 +75,26 @@
       "aliases": [],
       "flags": []
     },
+    "institution:sync": {
+      "settings": {
+        "loadApp": true,
+        "stayAlive": false
+      },
+      "commandPath": "./commands/InstitutionSync",
+      "commandName": "institution:sync",
+      "description": "",
+      "args": [
+        {
+          "type": "string",
+          "propertyName": "itemId",
+          "name": "itemId",
+          "required": true,
+          "description": "Item ID of the item to sync"
+        }
+      ],
+      "aliases": [],
+      "flags": []
+    },
     "ofx:upload": {
       "settings": {
         "loadApp": true,
@@ -269,7 +289,15 @@
       "commandPath": "./commands/QueueTest",
       "commandName": "queue:test",
       "description": "",
-      "args": [],
+      "args": [
+        {
+          "type": "string",
+          "propertyName": "itemId",
+          "name": "itemId",
+          "required": true,
+          "description": "Item id"
+        }
+      ],
       "aliases": [],
       "flags": []
     },

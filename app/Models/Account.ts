@@ -231,7 +231,116 @@ class Account extends BaseModel {
   //   return sum;
   // }
 
-  public async addTransaction(
+  private async assignUnassigned(
+    budget: Budget,
+    transaction: Transaction,
+    accountTransaction: AccountTransaction,
+  ): Promise<number> {
+    // The pending account transaction was not found. Create an unassigned transaction category
+    // for the new transaction.
+    const unassigned = await budget.getUnassignedCategory({ client: this.$trx });
+
+    await transaction.related('transactionCategories').create({
+      categoryId: unassigned.id,
+      amount: accountTransaction.amount,
+    });
+
+    return accountTransaction.amount;
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  private async autoAssign(
+    budget: Budget,
+    transaction: Transaction,
+    accountTransaction,
+  ): Promise<boolean> {
+    const autoAssignment = await budget.related('autoAssignment').query()
+      .whereRaw('position(lower(search_string) in lower(?)) != 0', [accountTransaction.name])
+      .orderByRaw('length(search_string) desc')
+      .first()
+
+    if (autoAssignment) {
+      const categories = await autoAssignment.related('autoAssignmentCategory').query();
+
+      // Multiplying by 100 and rounding to the nearest integer insures we are not
+      // working with fractional pennies.
+      let remaining = Math.round(accountTransaction.amount * 100);
+
+      // eslint-disable-next-line no-restricted-syntax
+      for (let i = 0; i < categories.length; i += 1) {
+        const cat = categories[i]
+
+        let amount = Math.round(accountTransaction.amount * (cat.amount / 100.0) * 100);
+        remaining -= amount;
+
+        // If this is the last auto assign category and there is a remaining balance
+        // then add it to transaction category about to be created.
+        if (remaining !== 0 && i === categories.length - 1) {
+          amount += remaining;
+        }
+
+        // eslint-disable-next-line no-await-in-loop
+        await transaction.related('transactionCategories').create({
+          categoryId: cat.categoryId,
+          amount: amount / 100.0,
+        });
+
+        // Update the category balance
+        // eslint-disable-next-line no-await-in-loop
+        const category = await Category.findOrFail(cat.categoryId, { client: this.$trx })
+
+        category.merge({
+          balance: category.balance + amount / 100.0,
+        })
+
+        category.save()
+      }
+
+      return true;
+    }
+
+    // Did not find an auto assignment matching entry
+    return false;
+  }
+
+  private async assignPendingCategories(
+    plaidTransaction: Plaid.Transaction,
+    transaction: Transaction,
+  ): Promise<boolean> {
+    if (plaidTransaction.pending_transaction_id) {
+      const pendingAcctTransaction = await AccountTransaction
+        .findBy('providerTransactionId', plaidTransaction.pending_transaction_id, { client: this.$trx });
+
+      if (pendingAcctTransaction) {
+        // Move any transaction categories from the pending transaction to the new transaction.
+        const pendingTrxCats = await TransactionCategory
+          .query({ client: this.$trx })
+          .where('transactionId', pendingAcctTransaction.transactionId);
+
+        for (let i = 0; i < pendingTrxCats.length; i += 1) {
+          pendingTrxCats[i].transactionId = transaction.id;
+
+          // eslint-disable-next-line no-await-in-loop
+          await pendingTrxCats[i].save();
+        }
+
+        // Use the value of version from the pending transaction.
+        const pendingTransaction = await pendingAcctTransaction.related('transaction').query().firstOrFail();
+
+        transaction.merge({
+          version: pendingTransaction.version + 1,
+        })
+
+        await transaction.save();
+
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  public async addOrUpdateTransaction(
     this: Account,
     plaidTransaction: Plaid.Transaction,
     budget: Budget,
@@ -341,56 +450,13 @@ class Account extends BaseModel {
           location: getLocation(plaidTransaction.location),
         });
 
-        if (plaidTransaction.pending_transaction_id) {
-          const pendingAcctTransaction = await AccountTransaction
-            .findBy('providerTransactionId', plaidTransaction.pending_transaction_id, { client: this.$trx });
-
-          if (pendingAcctTransaction) {
-            // Move any transaction categories from the pending transaction to the new transaction.
-            const pendingTrxCats = await TransactionCategory
-              .query({ client: this.$trx })
-              .where('transactionId', pendingAcctTransaction.transactionId);
-
-            for (let i = 0; i < pendingTrxCats.length; i += 1) {
-              pendingTrxCats[i].transactionId = transaction.id;
-
-              // eslint-disable-next-line no-await-in-loop
-              await pendingTrxCats[i].save();
-            }
-
-            // Use the value of version from the pending transaction.
-            const pendingTransaction = await pendingAcctTransaction.related('transaction').query().firstOrFail();
-
-            transaction.merge({
-              version: pendingTransaction.version + 1,
-            })
-
-            await transaction.save();
+        // If there is a matching pending transaction then take its categories
+        // Otherwise, if this is a matching auto assignment then use its categories
+        // Otherwise, assign the unassigned category.
+        if (!(await this.assignPendingCategories(plaidTransaction, transaction))) {
+          if (!(await this.autoAssign(budget, transaction, acctTrans))) {
+            unassignedAmount = await this.assignUnassigned(budget, transaction, acctTrans);
           }
-          else {
-            // The pending account transaction was not found. Create an unassigned transaction category
-            // for the new transaction.
-            const unassigned = await budget.getUnassignedCategory({ client: this.$trx });
-
-            await transaction.related('transactionCategories').create({
-              categoryId: unassigned.id,
-              amount: acctTrans.amount,
-            });
-
-            unassignedAmount = acctTrans.amount;
-          }
-        }
-        else {
-          // There was nopending account transaction. Create an unassigned transaction category
-          // for the new transaction.
-          const unassigned = await budget.getUnassignedCategory({ client: this.$trx });
-
-          await transaction.related('transactionCategories').create({
-            categoryId: unassigned.id,
-            amount: acctTrans.amount,
-          });
-
-          unassignedAmount = acctTrans.amount;
         }
 
         transactionAmount = acctTrans.amount;

@@ -175,7 +175,7 @@ class WebhookController {
       await queue.add('sync', { itemId: event.item_id })
     }
     catch (error) {
-      Logger.error({ err: error }, `default update failed, event: ${JSON.stringify(event)}`);
+      Logger.error({ err: error }, `Posting sync to queue failed, event: ${JSON.stringify(event)}`);
       trx.rollback();
     }
   }
