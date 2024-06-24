@@ -3,23 +3,27 @@ import {
   BaseModel, HasMany, column, hasMany,
 } from '@ioc:Adonis/Lucid/Orm'
 import AutoAssignmentCategory from './AutoAssignmentCategory'
+import AutoAssignmentSearchString from './AutoAssignmentSearchString'
 
 export default class AutoAssignment extends BaseModel {
   @column({ isPrimary: true })
   public id: number
 
-  @column.dateTime({ autoCreate: true })
+  @column.dateTime({ autoCreate: true, serializeAs: null })
   public createdAt: DateTime
 
-  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  @column.dateTime({ autoCreate: true, autoUpdate: true, serializeAs: null })
   public updatedAt: DateTime
 
-  @column({ columnName: 'application_id' })
+  @column({ columnName: 'application_id', serializeAs: null })
   public budgetId: number
 
   @column()
-  public searchString: string
+  public name: string
 
   @hasMany(() => AutoAssignmentCategory)
-  public autoAssignmentCategory: HasMany<typeof AutoAssignmentCategory>
+  public categories: HasMany<typeof AutoAssignmentCategory>
+
+  @hasMany(() => AutoAssignmentSearchString)
+  public searchStrings: HasMany<typeof AutoAssignmentSearchString>
 }

@@ -32,6 +32,8 @@ import DesktopView from './DesktopView';
 import MobileView from './MobileView';
 import TabView from './TabView';
 import Search from './Search';
+import AutoAssigments from './AutoAssignment/AutoAssigments';
+import AutoAssignmentDetail from './AutoAssignment/AutoAssignmentDetails';
 
 const App: React.FC = observer(() => {
   const error = useContext(ServerError);
@@ -128,6 +130,10 @@ if (container) {
               </Route>
               <Route path="search" element={<Search />} />
               <Route path="reports" element={<Reports />} />
+              <Route path="auto-assignments" element={<AutoAssigments />}>
+                <Route index element={<AutoAssignmentDetail />} />
+                <Route path=":autoAssignmentId" element={<AccountDetails />} />
+              </Route>
               <Route path="user" element={<UserAccount />} />
             </Route>
           </Routes>

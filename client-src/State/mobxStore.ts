@@ -12,6 +12,7 @@ import {
 } from './State';
 import Rebalances from './Rebalances';
 import Searcher from './Searcher';
+import AutoAssignments from './AutoAssignments';
 
 class Store implements StoreInterface {
   user: User;
@@ -34,6 +35,8 @@ class Store implements StoreInterface {
 
   searcher: Searcher;
 
+  autoAssignments: AutoAssignments;
+
   initialized = false;
 
   constructor() {
@@ -47,6 +50,7 @@ class Store implements StoreInterface {
     this.plans = new Plans(this);
     this.rebalances = new Rebalances(this);
     this.searcher = new Searcher(this);
+    this.autoAssignments = new AutoAssignments();
   }
 
   refresh() {

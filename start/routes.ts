@@ -34,6 +34,7 @@ Route.get('/signin', 'HomeController.index');
 Route.get('/recover-password', 'HomeController.index');
 Route.get('/user', 'HomeController.index');
 Route.get('/search', 'HomeController.index');
+Route.get('/auto-assignments', 'HomeController.index');
 Route.get('/', 'HomeController.index');
 
 Route.post('/wh', 'WebhookController.post');
@@ -198,6 +199,13 @@ Route.group(() => {
       Route.get('/transactions/search', 'TransactionsController.search');
     })
       .middleware(['auth']);
+
+    Route.group(() => {
+      Route.get('/:id?', 'AutoAssignmentsController.get');
+      Route.post('/', 'AutoAssignmentsController.post');
+      Route.patch('/:id', 'AutoAssignmentsController.patch');
+    })
+      .prefix('/auto-assignments')
 
   })
   .prefix('/v1')

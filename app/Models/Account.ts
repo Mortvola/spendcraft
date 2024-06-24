@@ -255,9 +255,12 @@ class Account extends BaseModel {
     accountTransaction,
   ): Promise<boolean> {
     const autoAssignment = await budget.related('autoAssignment').query()
-      .whereRaw('position(lower(search_string) in lower(?)) != 0', [accountTransaction.name])
-      .orderByRaw('length(search_string) desc')
+      .whereHas('autoAssignmentSearchString', (q) => {
+        q.whereRaw('position(lower(search_string) in lower(?)) != 0', [accountTransaction.name])
+      })
       .first()
+
+    // TODO: Use the result with the longest search string match.
 
     if (autoAssignment) {
       const categories = await autoAssignment.related('autoAssignmentCategory').query();

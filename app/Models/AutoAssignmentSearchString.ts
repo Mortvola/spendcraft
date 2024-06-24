@@ -1,7 +1,7 @@
 import { DateTime } from 'luxon'
 import { BaseModel, column } from '@ioc:Adonis/Lucid/Orm'
 
-export default class AutoAssignmentCategory extends BaseModel {
+export default class AutoAssignmentSearchString extends BaseModel {
   @column({ isPrimary: true })
   public id: number
 
@@ -15,13 +15,5 @@ export default class AutoAssignmentCategory extends BaseModel {
   public autoAssignmentId: number
 
   @column()
-  public categoryId: number
-
-  @column({
-    consume: (value: string) => parseFloat(value),
-  })
-  public amount: number
-
-  @column()
-  public percentage: boolean
+  public searchString: string
 }

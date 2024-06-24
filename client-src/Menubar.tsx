@@ -89,6 +89,9 @@ const Menubar: React.FC = observer(() => {
           <Nav.Item>
             <Nav.Link as={Link} to="/reports" eventKey="REPORTS">Reports</Nav.Link>
           </Nav.Item>
+          <Nav.Item>
+            <Nav.Link as={Link} to="/auto-assignments" eventKey="AUTO-ASSIGN">Auto Assign</Nav.Link>
+          </Nav.Item>
         </Nav>
         <Nav>
           <NavDropdown

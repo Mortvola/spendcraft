@@ -475,3 +475,24 @@ export type CategoryParams = {
   group: GroupInterface,
   useGoal: boolean,
 }
+
+export type AutoAssignmentProps = {
+  id: number;
+  name: string;
+  searchStrings: { id: number, searchString: string }[],
+}
+
+export type AutoAssignmentsResponse = AutoAssignmentProps[]
+
+export interface AutoAssignmentInterface {
+  id: number;
+
+  name: string;
+
+  searchStrings: { id: number, searchString: string}[],
+
+  update(props: {
+    name: string,
+    searchStrings: { id: number, searchString: string }[],
+  }): void;
+}

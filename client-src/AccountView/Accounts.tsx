@@ -54,30 +54,28 @@ const Accounts: React.FC = observer(() => {
         >
           <Outlet />
         </Main>
-
       </DesktopView>
+
       <MobileView>
-        <MobileView>
-          <NavigationView
-            title="Accounts"
-            open={open}
-            onClose={handleClose}
-            details={(
-              <Outlet />
-            )}
-          >
-            <div className={styles.accounts}>
-              <Tabs className="mb-3" mountOnEnter unmountOnExit>
-                <Tab eventKey="opened" title="Opened">
-                  <AccountView opened />
-                </Tab>
-                <Tab eventKey="closed" title="Closed">
-                  <AccountView opened={false} />
-                </Tab>
-              </Tabs>
-            </div>
-          </NavigationView>
-        </MobileView>
+        <NavigationView
+          title="Accounts"
+          open={open}
+          onClose={handleClose}
+          details={(
+            <Outlet />
+          )}
+        >
+          <div className={styles.accounts}>
+            <Tabs className="mb-3" mountOnEnter unmountOnExit>
+              <Tab eventKey="opened" title="Opened">
+                <AccountView opened />
+              </Tab>
+              <Tab eventKey="closed" title="Closed">
+                <AccountView opened={false} />
+              </Tab>
+            </Tabs>
+          </div>
+        </NavigationView>
       </MobileView>
     </>
   );
