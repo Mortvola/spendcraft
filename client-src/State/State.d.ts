@@ -440,6 +440,10 @@ export interface PlansInterface {
   details: FundingPlanDetails | null = null;
 }
 
+export interface AutoAssignmentsInterface {
+  remove(id: number): void;
+}
+
 export interface StoreInterface {
   user: UserInterface;
 
@@ -456,6 +460,8 @@ export interface StoreInterface {
   reports: Reports;
 
   plans: PlansInterface;
+
+  autoAssignments: AutoAssignmentsInterface;
 }
 
 export type AddTransactionRequest = {
@@ -499,4 +505,6 @@ export interface AutoAssignmentInterface {
     searchStrings: string[],
     categories: { id: number, categoryId: number, amount: number, percentage: boolean }[],
   }): Promise<void>;
+
+  async delete(): Promise<void>;
 }

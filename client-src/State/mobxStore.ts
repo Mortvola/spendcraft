@@ -50,7 +50,7 @@ class Store implements StoreInterface {
     this.plans = new Plans(this);
     this.rebalances = new Rebalances(this);
     this.searcher = new Searcher(this);
-    this.autoAssignments = new AutoAssignments();
+    this.autoAssignments = new AutoAssignments(this);
   }
 
   refresh() {

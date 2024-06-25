@@ -1,14 +1,20 @@
 import Http from '@mortvola/http';
 import { makeObservable, observable, runInAction } from 'mobx';
 import AutoAssignment from './AutoAssignment';
-import { AutoAssignmentProps, AutoAssignmentsResponse } from './State';
+import {
+  AutoAssignmentProps, AutoAssignmentsInterface, AutoAssignmentsResponse, StoreInterface,
+} from './State';
 
-class AutoAssignments {
+class AutoAssignments implements AutoAssignmentsInterface {
   autoAssignemnts: AutoAssignment[] = [];
 
   initialized = false;
 
-  constructor() {
+  store: StoreInterface;
+
+  constructor(store: StoreInterface) {
+    this.store = store;
+
     makeObservable(this, {
       autoAssignemnts: observable,
     })
@@ -25,7 +31,7 @@ class AutoAssignments {
 
     if (body) {
       runInAction(() => {
-        this.autoAssignemnts = body.map((props) => new AutoAssignment(props));
+        this.autoAssignemnts = body.map((props) => new AutoAssignment(props, this.store));
 
         this.initialized = true;
       });
@@ -52,12 +58,23 @@ class AutoAssignments {
       const body = await response.body();
 
       runInAction(() => {
-        const autoAssignment = new AutoAssignment(body)
+        const autoAssignment = new AutoAssignment(body, this.store)
 
         runInAction(() => {
           this.autoAssignemnts = this.autoAssignemnts.concat(autoAssignment)
         })
       })
+    }
+  }
+
+  remove(id: number) {
+    const index = this.autoAssignemnts.findIndex((a) => a.id === id);
+
+    if (index !== -1) {
+      this.autoAssignemnts = [
+        ...this.autoAssignemnts.slice(0, index),
+        ...this.autoAssignemnts.slice(index + 1),
+      ]
     }
   }
 }

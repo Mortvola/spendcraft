@@ -8,13 +8,23 @@ export default class AutoAssignmentsController {
   // eslint-disable-next-line class-methods-use-this
   public async get({
     request,
+    auth: {
+      user,
+    },
   }: HttpContextContract): Promise<AutoAssignment | AutoAssignment[]> {
+    if (!user) {
+      throw new Error('user is not defined');
+    }
+
     const { id } = request.params();
+
+    const budget = await user.related('budget').query()
+      .firstOrFail();
 
     let assignment: AutoAssignment
 
     if (id) {
-      assignment = await AutoAssignment.query()
+      assignment = await budget.related('autoAssignment').query()
         .where('id', id)
         .firstOrFail();
 
@@ -24,9 +34,8 @@ export default class AutoAssignmentsController {
       return assignment;
     }
 
-    const assignments = await AutoAssignment.query()
+    const assignments = await budget.related('autoAssignment').query()
       .preload('categories')
-      // .preload('searchStrings')
 
     return assignments;
   }
@@ -171,6 +180,47 @@ export default class AutoAssignmentsController {
       await trx.commit();
 
       return autoAssignment;
+    }
+    catch (error) {
+      await trx.rollback();
+      throw error;
+    }
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  public async delete({
+    request,
+    auth: {
+      user,
+    },
+  }: HttpContextContract): Promise<void> {
+    if (!user) {
+      throw new Error('user is not defined');
+    }
+
+    const { id } = request.params();
+
+    const trx = await Database.transaction();
+
+    try {
+      await user.related('budget').query()
+        .useTransaction(trx)
+        .forUpdate()
+        .firstOrFail();
+
+      const autoAssignment = await AutoAssignment.find(id);
+
+      if (autoAssignment) {
+        const categories = await autoAssignment.related('categories').query();
+
+        await Promise.all(categories.map((category) => (
+          category.delete()
+        )))
+
+        await autoAssignment?.delete();
+      }
+
+      await trx.commit();
     }
     catch (error) {
       await trx.rollback();

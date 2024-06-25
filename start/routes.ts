@@ -202,6 +202,7 @@ Route.group(() => {
         Route.get('/:id?', 'AutoAssignmentsController.get');
         Route.post('/', 'AutoAssignmentsController.post');
         Route.patch('/:id', 'AutoAssignmentsController.patch');
+        Route.delete('/:id', 'AutoAssignmentsController.delete');
       })
         .prefix('/auto-assignments')  
     })

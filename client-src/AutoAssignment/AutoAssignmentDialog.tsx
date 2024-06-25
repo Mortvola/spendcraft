@@ -76,6 +76,14 @@ const AutoAssignmentDialog: React.FC<PropsType & ModalProps> = observer(({
     setShow(false)
   }
 
+  const handleDelete = async () => {
+    if (autoAssignment) {
+      await autoAssignment.delete();
+    }
+
+    setShow(false)
+  }
+
   const initialCategories = (categories?: { id: number, categoryId: number, amount: number, percentage: boolean}[]) => {
     if (!categories || categories.length === 0) {
       return [{
@@ -99,6 +107,7 @@ const AutoAssignmentDialog: React.FC<PropsType & ModalProps> = observer(({
       setShow={setShow}
       validate={handleValidate}
       onSubmit={handleSubmit}
+      onDelete={autoAssignment ? handleDelete : undefined}
     >
       {
         (formikProps) => (
