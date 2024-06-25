@@ -61,7 +61,20 @@ class AutoAssignments implements AutoAssignmentsInterface {
         const autoAssignment = new AutoAssignment(body, this.store)
 
         runInAction(() => {
-          this.autoAssignemnts = this.autoAssignemnts.concat(autoAssignment)
+          // Find the position to insert the new assignment.
+          const index = this.autoAssignemnts.findIndex((n) => (autoAssignment.name.localeCompare(n.name) < 0));
+
+          if (index === -1) {
+            // No assignment was found that was greater lexically so at it to the end.
+            this.autoAssignemnts = this.autoAssignemnts.concat(autoAssignment)
+          }
+          else {
+            this.autoAssignemnts = [
+              ...this.autoAssignemnts.slice(0, index),
+              autoAssignment,
+              ...this.autoAssignemnts.slice(index),
+            ];
+          }
         })
       })
     }

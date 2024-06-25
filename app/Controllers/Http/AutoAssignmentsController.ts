@@ -35,6 +35,7 @@ export default class AutoAssignmentsController {
     }
 
     const assignments = await budget.related('autoAssignment').query()
+      .orderByRaw('lower(name) asc')
       .preload('categories')
 
     return assignments;
