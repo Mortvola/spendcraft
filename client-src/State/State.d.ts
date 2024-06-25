@@ -479,7 +479,8 @@ export type CategoryParams = {
 export type AutoAssignmentProps = {
   id: number;
   name: string;
-  searchStrings: { id: number, searchString: string }[],
+  searchStrings: string[],
+  categories: { id: number, categoryId: number, amount: number, percentage: boolean }[],
 }
 
 export type AutoAssignmentsResponse = AutoAssignmentProps[]
@@ -489,10 +490,13 @@ export interface AutoAssignmentInterface {
 
   name: string;
 
-  searchStrings: { id: number, searchString: string}[],
+  searchStrings: string[],
+
+  categories: { id: number, categoryId: number, amount: number, percentage: boolean }[],
 
   update(props: {
     name: string,
-    searchStrings: { id: number, searchString: string }[],
-  }): void;
+    searchStrings: string[],
+    categories: { id: number, categoryId: number, amount: number, percentage: boolean }[],
+  }): Promise<void>;
 }

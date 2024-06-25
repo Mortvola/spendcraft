@@ -197,16 +197,15 @@ Route.group(() => {
       Route.get('/rebalances', 'TransactionsController.getRebalances')    
 
       Route.get('/transactions/search', 'TransactionsController.search');
+
+      Route.group(() => {
+        Route.get('/:id?', 'AutoAssignmentsController.get');
+        Route.post('/', 'AutoAssignmentsController.post');
+        Route.patch('/:id', 'AutoAssignmentsController.patch');
+      })
+        .prefix('/auto-assignments')  
     })
       .middleware(['auth']);
-
-    Route.group(() => {
-      Route.get('/:id?', 'AutoAssignmentsController.get');
-      Route.post('/', 'AutoAssignmentsController.post');
-      Route.patch('/:id', 'AutoAssignmentsController.patch');
-    })
-      .prefix('/auto-assignments')
-
   })
   .prefix('/v1')
 })

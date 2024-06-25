@@ -73,7 +73,7 @@ const CategorySplitItem: React.FC<PropsType> = ({
       <div>
         <CategoryInput
           className="category-input"
-          onChange={handleCategoryChange}
+          onCategoryChange={handleCategoryChange}
           categoryId={categoryId === unassignedCat.id ? null : categoryId}
         />
         <AmountInput onDeltaChange={handleDeltaChange} value={split.amount} style={{ margin: '1px' }} />

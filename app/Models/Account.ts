@@ -18,6 +18,7 @@ import { XMLParser } from 'fast-xml-parser';
 import Logger from '@ioc:Adonis/Core/Logger'
 import Category from './Category';
 import TransactionCategory from './TransactionCategory';
+import Database from '@ioc:Adonis/Lucid/Database';
 
 export type AccountSyncResult = {
   categories: CategoryBalanceProps[],
@@ -252,18 +253,26 @@ class Account extends BaseModel {
   private async autoAssign(
     budget: Budget,
     transaction: Transaction,
-    accountTransaction,
+    accountTransaction: AccountTransaction,
   ): Promise<boolean> {
     const autoAssignment = await budget.related('autoAssignment').query()
-      .whereHas('autoAssignmentSearchString', (q) => {
-        q.whereRaw('position(lower(search_string) in lower(?)) != 0', [accountTransaction.name])
+      .whereIn('id', (q) => {
+        q
+          .from((sub) => {
+            sub
+              .from('auto_assignments')
+              .select('id', Database.raw('json_array_elements(search_strings) #>> \'{}\' as search_string'))
+              .as('search_strings')
+          })
+          .select('id')
+          .whereRaw('position(lower(search_string) in lower(?)) != 0', [accountTransaction.name])
       })
       .first()
 
     // TODO: Use the result with the longest search string match.
 
     if (autoAssignment) {
-      const categories = await autoAssignment.related('autoAssignmentCategory').query();
+      const categories = await autoAssignment.related('categories').query();
 
       // Multiplying by 100 and rounding to the nearest integer insures we are not
       // working with fractional pennies.

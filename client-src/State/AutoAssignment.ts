@@ -7,15 +7,16 @@ class AutoAssignment implements AutoAssignmentInterface {
 
   name: string;
 
-  searchStrings: { id: number, searchString: string }[] = [];
+  searchStrings: string[] = [];
 
-  categories: { categoryId: number, amount: number, percent: boolean }[] = []
+  categories: { id: number, categoryId: number, amount: number, percentage: boolean }[] = []
 
   constructor(props: AutoAssignmentProps) {
     this.id = props.id
     this.name = props.name
 
     this.searchStrings = props.searchStrings
+    this.categories = props.categories
 
     makeObservable(this, {
       name: observable,
@@ -24,10 +25,20 @@ class AutoAssignment implements AutoAssignmentInterface {
     })
   }
 
-  async update(props: { name: string, searchStrings: { id: number, searchString: string }[] }) {
+  async update(props: {
+    name: string,
+    searchStrings: string[],
+    categories: {
+      id: number,
+      categoryId: number,
+      amount: number,
+      percentage: boolean,
+    }[],
+  }) {
     const response = await Http.patch<unknown, AutoAssignmentProps>(`/api/v1/auto-assignments/${this.id}`, {
       name: props.name,
       searchStrings: props.searchStrings,
+      categories: props.categories,
     })
 
     if (response.ok) {
@@ -35,6 +46,8 @@ class AutoAssignment implements AutoAssignmentInterface {
 
       runInAction(() => {
         this.name = body.name;
+        this.searchStrings = body.searchStrings;
+        this.categories = body.categories;
       })
     }
   }

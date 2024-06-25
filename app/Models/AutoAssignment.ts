@@ -3,7 +3,6 @@ import {
   BaseModel, HasMany, column, hasMany,
 } from '@ioc:Adonis/Lucid/Orm'
 import AutoAssignmentCategory from './AutoAssignmentCategory'
-import AutoAssignmentSearchString from './AutoAssignmentSearchString'
 
 export default class AutoAssignment extends BaseModel {
   @column({ isPrimary: true })
@@ -21,9 +20,9 @@ export default class AutoAssignment extends BaseModel {
   @column()
   public name: string
 
+  @column({ prepare: (value: string[]) => JSON.stringify(value), serializeAs: 'searchStrings' })
+  public searchStrings: string[]
+
   @hasMany(() => AutoAssignmentCategory)
   public categories: HasMany<typeof AutoAssignmentCategory>
-
-  @hasMany(() => AutoAssignmentSearchString)
-  public searchStrings: HasMany<typeof AutoAssignmentSearchString>
 }

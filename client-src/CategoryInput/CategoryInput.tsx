@@ -10,14 +10,18 @@ import { isGroup } from '../State/Group';
 import { isCategory } from '../State/Category';
 
 type PropsType = {
-  categoryId: number | null,
-  onChange: (category: CategoryInterface) => void,
+  categoryId?: number | null,
+  value?: string,
+  name?: string,
+  onCategoryChange?: (category: CategoryInterface) => void,
   className?: string,
 }
 
 const CategoryInput: React.FC<PropsType> = ({
   categoryId = null,
-  onChange,
+  value,
+  name,
+  onCategoryChange,
   className,
 }) => {
   const { categoryTree } = useStores();
@@ -28,14 +32,24 @@ const CategoryInput: React.FC<PropsType> = ({
     { groupIndex: null, categoryIndex: null },
   );
 
-  const initialValue = (): string => (
-    categoryId === null || (categoryTree.unassignedCat && categoryId === categoryTree.unassignedCat.id)
-      ? ''
-      : (categoryTree.getCategoryName(categoryId) ?? '')
-  );
+  const initialValue = (): string => {
+    if (value !== undefined) {
+      return (
+        (categoryTree.unassignedCat && parseInt(value, 10) === categoryTree.unassignedCat.id)
+          ? ''
+          : (categoryTree.getCategoryName(parseInt(value, 10)) ?? '')
+      )
+    }
+
+    return (
+      categoryId === null || (categoryTree.unassignedCat && categoryId === categoryTree.unassignedCat.id)
+        ? ''
+        : (categoryTree.getCategoryName(categoryId) ?? '')
+    )
+  };
 
   const [open, setOpen] = useExclusiveBool(false);
-  const [value, setValue] = useState<string>(initialValue);
+  const [inputValue, setInputValue] = useState<string>(initialValue);
   const [originalValue, setOriginalValue] = useState<string>(initialValue);
   const [filter, setFilter] = useState<{ value: string, parts: string[]}>({
     value: initialValue(), parts: initialValue().toLowerCase().split(':'),
@@ -45,7 +59,7 @@ const CategoryInput: React.FC<PropsType> = ({
 
   const handleCancel = () => {
     setOpen(false);
-    setValue(originalValue);
+    setInputValue(originalValue);
     setFilter({ value: '', parts: [] });
   };
 
@@ -64,11 +78,11 @@ const CategoryInput: React.FC<PropsType> = ({
 
     setSelected({ groupIndex, categoryIndex });
     setOpen(false);
-    setValue(categoryTree.getCategoryName(category.id) ?? '');
+    setInputValue(categoryTree.getCategoryName(category.id) ?? '');
     setOriginalValue(categoryId === null ? '' : (categoryTree.getCategoryName(categoryId) ?? ''));
 
-    if (onChange) {
-      onChange(category);
+    if (onCategoryChange) {
+      onCategoryChange(category);
     }
   };
 
@@ -154,7 +168,7 @@ const CategoryInput: React.FC<PropsType> = ({
   const openDropDown = () => {
     const origValue = categoryId === null ? '' : (categoryTree.getCategoryName(categoryId) ?? '');
     setOriginalValue(origValue);
-    setFilter({ value, parts: value.toLowerCase().split(':') });
+    setFilter({ value: inputValue, parts: inputValue.toLowerCase().split(':') });
     setOpen(true);
     setFirstBestSelection(filter.parts);
   };
@@ -222,7 +236,7 @@ const CategoryInput: React.FC<PropsType> = ({
   };
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setValue(event.target.value);
+    setInputValue(event.target.value);
     const newFilter = {
       value: event.target.value,
       parts: event.target.value !== '' ? event.target.value.toLowerCase().split(':') : [],
@@ -244,20 +258,20 @@ const CategoryInput: React.FC<PropsType> = ({
       selectedGroup = nodes[selected.groupIndex];
 
       if (isCategory(selectedGroup)) {
-        setValue(categoryTree.getCategoryName(selectedGroup.id) ?? '');
-        if (onChange) {
-          onChange(selectedGroup);
+        setInputValue(categoryTree.getCategoryName(selectedGroup.id) ?? '');
+        if (onCategoryChange) {
+          onCategoryChange(selectedGroup);
         }
       }
       else if (isGroup(selectedGroup) && selectedGroup && selected.categoryIndex !== null) {
         const selectedCategory = selectedGroup.categories[selected.categoryIndex];
-        setValue(categoryTree.getCategoryName(selectedCategory.id) ?? '');
-        if (onChange) {
-          onChange(selectedCategory);
+        setInputValue(categoryTree.getCategoryName(selectedCategory.id) ?? '');
+        if (onCategoryChange) {
+          onCategoryChange(selectedCategory);
         }
       }
       else {
-        setValue('');
+        setInputValue('');
       }
     }
 
@@ -402,7 +416,8 @@ const CategoryInput: React.FC<PropsType> = ({
         onFocus={handleFocus}
         onBlur={handleBlur}
         onKeyDown={handleKeydown}
-        value={value || ''}
+        value={inputValue || ''}
+        name={name}
       />
       {renderSelector()}
     </>
