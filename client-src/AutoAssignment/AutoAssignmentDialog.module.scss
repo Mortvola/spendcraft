@@ -1,0 +1,25 @@
+.search-strings {
+  display: grid;
+  row-gap: 0.25rem;
+  margin-top: 0.5rem;
+}
+
+.search-string-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content max-content;
+  column-gap: 0.5rem;
+  align-items: center;
+}
+
+.categories-layout {
+  display: grid;
+  row-gap: 0.25rem;
+  margin-top: 0.5rem;
+}
+
+.category-layout {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) minmax(0,1fr) max-content max-content;
+  column-gap: 0.5rem;
+  align-items: center;
+}

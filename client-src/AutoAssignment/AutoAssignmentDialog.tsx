@@ -8,6 +8,8 @@ import { AutoAssignmentInterface, CategoryInterface } from '../State/State';
 import AmountInput from '../AmountInput';
 import CategoryInput from '../CategoryInput/CategoryInput';
 import { useStores } from '../State/mobxStore';
+import styles from './AutoAssignmentDialog.module.scss'
+import IconButton from '../IconButton';
 
 let tempId = -1;
 
@@ -113,7 +115,7 @@ const AutoAssignmentDialog: React.FC<PropsType & ModalProps> = observer(({
         (formikProps) => (
           <>
             <FormField name="name" label="Name" />
-            <label>
+            <label className={styles.searchStrings}>
               Search Strings
               <FieldArray
                 name="searchStrings"
@@ -121,27 +123,32 @@ const AutoAssignmentDialog: React.FC<PropsType & ModalProps> = observer(({
                 {
                   (arrayHelpers) => (
                     formikProps.values.searchStrings.map((s, i) => (
-                      <div key={i}>
-                        <FormField name={`searchStrings[${i}]`} />
-                        <Button
+                      <div key={i} className={styles.searchStringLayout}>
+                        <FormField name={`searchStrings[${i}]`} style={{ marginTop: 0 }} />
+                        <IconButton
+                          icon="plus"
                           onClick={
                             () => arrayHelpers.insert(i + 1, '')
                           }
-                        >
-                          Add
-                        </Button>
-                        {
-                          formikProps.values.searchStrings.length > 1
-                            ? <Button onClick={() => arrayHelpers.remove(i)}>Delete</Button>
-                            : null
-                        }
+                        />
+                        <IconButton
+                          icon="minus"
+                          onClick={
+                            () => {
+                              if (formikProps.values.searchStrings.length > 1) {
+                                arrayHelpers.remove(i)
+                              }
+                            }
+                          }
+                        />
                       </div>
                     ))
                   )
                 }
               </FieldArray>
             </label>
-            <label>
+
+            <label className={styles.categoriesLayout}>
               Categories
               <FieldArray
                 name="categories"
@@ -149,29 +156,32 @@ const AutoAssignmentDialog: React.FC<PropsType & ModalProps> = observer(({
                 {
                   (arrayHelpers) => (
                     formikProps.values.categories.map((c, i) => (
-                      <div key={c.id}>
+                      <div key={c.id} className={styles.categoryLayout}>
                         <FormField
                           name={`categories[${i}].categoryId`}
                           as={FormCategoryInput}
+                          style={{ marginTop: 0 }}
                         />
-                        <FormField as={AmountInput} name={`categories[${i}].amount`} />
-                        <Button
+                        <FormField as={AmountInput} name={`categories[${i}].amount`} style={{ marginTop: 0 }} />
+                        <IconButton
+                          icon="plus"
+                          onClick={() => arrayHelpers.insert(
+                            i + 1,
+                            {
+                              id: -1, categoryId: -1, amount: 0, percentage: true,
+                            },
+                          )}
+                        />
+                        <IconButton
+                          icon="minus"
                           onClick={
-                            () => arrayHelpers.insert(
-                              i + 1,
-                              {
-                                id: -1, categoryId: -1, amount: 0, percentage: true,
-                              },
-                            )
+                            () => {
+                              if (formikProps.values.categories.length > 1) {
+                                arrayHelpers.remove(i)
+                              }
+                            }
                           }
-                        >
-                          Add
-                        </Button>
-                        {
-                          formikProps.values.categories.length > 1
-                            ? <Button onClick={() => arrayHelpers.remove(i)}>Delete</Button>
-                            : null
-                        }
+                        />
                       </div>
                     ))
                   )
@@ -185,6 +195,6 @@ const AutoAssignmentDialog: React.FC<PropsType & ModalProps> = observer(({
   )
 })
 
-export const useAutoAssignmentDialog = makeUseModal<PropsType>(AutoAssignmentDialog, { size: 'lg' });
+export const useAutoAssignmentDialog = makeUseModal<PropsType>(AutoAssignmentDialog, { size: 'md' });
 
 export default AutoAssignmentDialog;
