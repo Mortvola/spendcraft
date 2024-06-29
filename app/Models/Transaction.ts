@@ -8,6 +8,7 @@ import TransactionCategory from 'App/Models/TransactionCategory';
 import AccountTransaction from 'App/Models/AccountTransaction';
 import { TransactionType } from 'Common/ResponseTypes';
 import Budget from 'App/Models/Budget';
+import TransactionLog from './TransactionLog';
 
 class Transaction extends BaseModel {
   @column()
@@ -48,6 +49,9 @@ class Transaction extends BaseModel {
 
   @column()
   public version: number;
+
+  @hasMany(() => TransactionLog)
+  public transactionLog: HasMany<typeof TransactionLog>;
 }
 
 export default Transaction;
