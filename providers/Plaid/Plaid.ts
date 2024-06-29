@@ -4,7 +4,6 @@ import * as Plaid from 'plaid';
 export type PlaidConfig = {
   clientId: string,
   sandboxSecret: string,
-  developmentSecret: string,
   productionSecret: string,
   environment: string,
 }
@@ -17,9 +16,6 @@ class PlaidWrapper {
     const env = config.environment;
     if (env === 'sandbox') {
       secret = config.sandboxSecret;
-    }
-    else if (env === 'development') {
-      secret = config.developmentSecret;
     }
     else if (env === 'production') {
       secret = config.productionSecret;
@@ -49,6 +45,8 @@ class PlaidWrapper {
         access_token: accessToken,
       });
 
+      await PlaidWrapper.log('getItem', response.data)
+
       return response.data;
     }
     catch (error) {
@@ -62,6 +60,8 @@ class PlaidWrapper {
       const response = await this.plaid.itemRemove({
         access_token: accessToken,
       });
+
+      await PlaidWrapper.log('removeItem', response.data)
 
       return response.data;
     }
@@ -77,11 +77,11 @@ class PlaidWrapper {
         options,
       };
 
-      console.log(`param = ${JSON.stringify(param)}`);
-
       const response = await this.plaid.accountsGet(
         param,
       );
+
+      await PlaidWrapper.log('getAccounts', response.data)
 
       return response.data;
     }
@@ -95,6 +95,8 @@ class PlaidWrapper {
     try {
       const response = await this.plaid.itemPublicTokenExchange({ public_token: publicToken });
 
+      await PlaidWrapper.log('exchangePublicToken', response.data)
+
       return response.data;
     }
     catch (error) {
@@ -104,8 +106,9 @@ class PlaidWrapper {
 
   async createLinkToken(options: Plaid.LinkTokenCreateRequest): Promise<Plaid.LinkTokenCreateResponse> {
     try {
-      console.log(`options: ${JSON.stringify(options)}`);
       const response = await this.plaid.linkTokenCreate(options);
+
+      await PlaidWrapper.log('createLinkToken', response.data)
 
       return response.data;
     }
@@ -117,6 +120,8 @@ class PlaidWrapper {
   async getWebhookVerificationKey(keyId: string): Promise<Plaid.WebhookVerificationKeyGetResponse> {
     try {
       const response = await this.plaid.webhookVerificationKeyGet({ key_id: keyId });
+
+      await PlaidWrapper.log('getWebhookVerificationKey', response.data)
 
       return response.data;
     }
@@ -133,6 +138,8 @@ class PlaidWrapper {
         },
         options,
       );
+
+      await PlaidWrapper.log('getBalance', response.data)
 
       return response.data;
     }
@@ -152,6 +159,8 @@ class PlaidWrapper {
       }
 
       const response = await this.plaid.transactionsSync(param);
+
+      await PlaidWrapper.log('syncTransactions', response.data)
 
       return response.data
     }
@@ -175,10 +184,11 @@ class PlaidWrapper {
         options,
       };
 
-      console.log(JSON.stringify(param));
       const response = await this.plaid.transactionsGet(
         param,
       );
+
+      await PlaidWrapper.log('getTransactions', response.data)
 
       return response.data;
     }
@@ -197,6 +207,8 @@ class PlaidWrapper {
       }
 
       const response = await this.plaid.transactionsRefresh(param);
+
+      await PlaidWrapper.log('refreshTransactions', response.data)
 
       return response.data
     }
@@ -220,6 +232,8 @@ class PlaidWrapper {
         options,
       );
 
+      await PlaidWrapper.log('getInstitutionById', response.data)
+
       return response.data;
     }
     catch (error) {
@@ -237,6 +251,8 @@ class PlaidWrapper {
         country_codes: [Plaid.CountryCode.Us]
       })
 
+      await PlaidWrapper.log('searchInstitutions', response.data)
+
       return response.data;
     }
     catch (error) {
@@ -251,6 +267,8 @@ class PlaidWrapper {
         webhook,
       });
 
+      await PlaidWrapper.log('updateItemWebhook', response.data)
+
       return response.data;
     }
     catch (error) {
@@ -263,6 +281,8 @@ class PlaidWrapper {
       const response = await this.plaid.sandboxItemResetLogin({
         access_token: accessToken,
       });
+
+      await PlaidWrapper.log('resetLogin', response.data)
 
       return response.data;
     }
@@ -278,7 +298,8 @@ class PlaidWrapper {
         webhook_code: code,
       });
 
-      console.log(`Webhook fired: ${response.data.webhook_fired}, request id: ${response.data.request_id}`)
+      await PlaidWrapper.log('sandboxItemFireWebhook', response.data)
+
       return response.data;
     }
     catch (error) {
@@ -289,7 +310,21 @@ class PlaidWrapper {
   async getCategories(): Promise<Plaid.Category[]> {
     const response = await this.plaid.categoriesGet({});
 
+    await PlaidWrapper.log('getCategories', response.data)
+
     return response.data.categories;
+  }
+
+  static async log(request: string, response: unknown) {
+    const { default: PlaidLog } = await import('App/Models/PlaidLog')
+
+    await new PlaidLog()
+      .useConnection('pgLog')
+      .fill({
+        request,
+        response,
+      })
+      .save();
   }
 }
 

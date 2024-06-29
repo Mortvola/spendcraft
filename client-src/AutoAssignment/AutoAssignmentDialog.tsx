@@ -2,7 +2,6 @@ import React from 'react';
 import { FormField, FormModal } from '@mortvola/forms';
 import { ModalProps, makeUseModal } from '@mortvola/usemodal';
 import { FieldArray, FormikErrors, useField } from 'formik';
-import { Button } from 'react-bootstrap';
 import { observer } from 'mobx-react-lite';
 import { AutoAssignmentInterface, CategoryInterface } from '../State/State';
 import AmountInput from '../AmountInput';
@@ -45,7 +44,11 @@ const AutoAssignmentDialog: React.FC<PropsType & ModalProps> = observer(({
   setShow,
   autoAssignment,
 }) => {
-  const { autoAssignments } = useStores();
+  const { autoAssignments, categoryTree: { unassignedCat } } = useStores();
+
+  if (!unassignedCat) {
+    throw new Error('Unassigned is not defined or null')
+  }
 
   type ValueType = {
     name: string,
@@ -89,7 +92,7 @@ const AutoAssignmentDialog: React.FC<PropsType & ModalProps> = observer(({
   const initialCategories = (categories?: { id: number, categoryId: number, amount: number, percentage: boolean}[]) => {
     if (!categories || categories.length === 0) {
       return [{
-        id: -1, categoryId: -1, amount: 0, percentage: true,
+        id: -1, categoryId: unassignedCat.id, amount: 0, percentage: true,
       }]
     }
     return categories.map((c) => ({
@@ -168,7 +171,7 @@ const AutoAssignmentDialog: React.FC<PropsType & ModalProps> = observer(({
                           onClick={() => arrayHelpers.insert(
                             i + 1,
                             {
-                              id: -1, categoryId: -1, amount: 0, percentage: true,
+                              id: -1, categoryId: unassignedCat.id, amount: 0, percentage: true,
                             },
                           )}
                         />

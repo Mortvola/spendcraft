@@ -13,7 +13,6 @@ import Budget from 'App/Models/Budget';
 import { DateTime } from 'luxon';
 import { CategoryBalanceProps } from 'Common/ResponseTypes';
 import AccountTransaction from './AccountTransaction';
-import PlaidLog from './PlaidLog';
 
 class Institution extends BaseModel {
   @column()
@@ -224,15 +223,6 @@ class Institution extends BaseModel {
       while (more) {
         // eslint-disable-next-line no-await-in-loop
         const response = await plaidClient.syncTransactions(this.accessToken, nextCursor);
-
-        const log = new PlaidLog().useTransaction(trx)
-          .fill({
-            request: 'syncTransactions',
-            response,
-          })
-
-        // eslint-disable-next-line no-await-in-loop
-        await log.save()
 
         // If the cursor has change then we received transaction changes.
         if (response.next_cursor !== nextCursor) {
