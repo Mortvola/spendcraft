@@ -371,6 +371,136 @@ class Account extends BaseModel {
     return false;
   }
 
+  private static getLocation(location: Plaid.Location) {
+    if (location.address !== null
+      || location.city !== null
+      || location.country !== null
+      || location.lat !== null
+      || location.lon !== null
+      || location.postal_code !== null
+      || location.region !== null
+      || location.store_number !== null
+    ) {
+      return {
+        address: location.address,
+        city: location.city,
+        region: location.region,
+        postalCode: location.postal_code,
+        country: location.country,
+        lat: location.lat,
+        lon: location.lon,
+        storeNumber: location.store_number,
+      }
+    }
+
+    return null;
+  }
+
+  private async updateTransaction(
+    this: Account,
+    acctTrans: AccountTransaction,
+    plaidTransaction: Plaid.Transaction,
+    pendingTransactions?: AccountTransaction[],
+  ) {
+    const transaction = await Transaction.findOrFail(acctTrans.transactionId, { client: this.$trx });
+
+    // if the transaction was deleted then do nothing.
+    // TODO: Even if the transaction was deleted update the information.
+    if (!transaction.deleted) {
+      // If the existing transaction is pending
+      // and the Plaid transaction is still pending then remove
+      // the transaction from the pending transaction array (transactions in the
+      // pending transaction array will be removed from the database).
+      if (pendingTransactions && acctTrans.pending && plaidTransaction.pending) {
+        const index = pendingTransactions.findIndex(
+          (p) => p.provider === 'PLAID' && p.providerTransactionId === plaidTransaction.transaction_id,
+        );
+
+        if (index !== -1) {
+          // Transaction is still pending and it was found in the pending transaction
+          // array so remove it so it is not deleted from the database.
+          pendingTransactions.splice(index, 1);
+        }
+      }
+
+      // todo: check to see if any of these attributes have changed
+      acctTrans.merge({
+        name: plaidTransaction.name ?? undefined,
+        amount: -plaidTransaction.amount,
+        pending: plaidTransaction.pending ?? false,
+        paymentChannel: plaidTransaction.payment_channel,
+        merchantName: plaidTransaction.merchant_name,
+        accountOwner: plaidTransaction.account_owner,
+        location: Account.getLocation(plaidTransaction.location),
+      });
+
+      await acctTrans.save();
+
+      transaction.merge({
+        date: DateTime.fromISO(plaidTransaction.date),
+        version: transaction.version + 1,
+      });
+
+      await transaction.save();
+
+      await transaction.related('transactionLog')
+        .create({
+          message: `SpendCraft modified a transaction for "${acctTrans.name}" from "${this.name}".`,
+          transactionId: transaction.id,
+        });
+    }
+  }
+
+  private async addTransaction(
+    this: Account,
+    budget: Budget,
+    plaidTransaction: Plaid.Transaction,
+  ): Promise<[number, number]> {
+    if (!this.$trx) {
+      throw new Error('database transaction not set');
+    }
+
+    let unassignedAmount = 0;
+
+    const transaction = await (new Transaction())
+      .useTransaction(this.$trx)
+      .fill({
+        date: DateTime.fromISO(plaidTransaction.date),
+        budgetId: budget.id,
+      })
+      .save();
+
+    const acctTrans = await this.related('accountTransactions').create({
+      transactionId: transaction.id,
+      provider: 'PLAID',
+      providerTransactionId: plaidTransaction.transaction_id,
+      name: plaidTransaction.name ?? undefined,
+      amount: -plaidTransaction.amount,
+      pending: plaidTransaction.pending ?? false,
+      paymentChannel: plaidTransaction.payment_channel,
+      merchantName: plaidTransaction.merchant_name,
+      accountOwner: plaidTransaction.account_owner,
+      location: Account.getLocation(plaidTransaction.location),
+    });
+
+    await transaction.related('transactionLog')
+      .create({
+        message: `SpendCraft added a transaction for "${acctTrans.name}" from "${this.name}".`,
+        transactionId: transaction.id,
+      });
+
+    // If there is a matching pending transaction then take its categories
+    // Otherwise, if this is a matching auto assignment then use its categories
+    // Otherwise, assign the unassigned category.
+    if (!(await this.assignPendingCategories(plaidTransaction, transaction))) {
+      if (!(await this.autoAssign(budget, transaction, acctTrans))) {
+        unassignedAmount = await this.assignUnassigned(budget, transaction, acctTrans);
+      }
+    }
+
+    return [acctTrans.amount, unassignedAmount];
+  }
+
   public async addOrUpdateTransaction(
     this: Account,
     plaidTransaction: Plaid.Transaction,
@@ -384,118 +514,18 @@ class Account extends BaseModel {
     let transactionAmount = 0;
     let unassignedAmount = 0;
 
-    const getLocation = (location: Plaid.Location) => {
-      if (location.address !== null
-        || location.city !== null
-        || location.country !== null
-        || location.lat !== null
-        || location.lon !== null
-        || location.postal_code !== null
-        || location.region !== null
-        || location.store_number !== null
-      ) {
-        return {
-          address: plaidTransaction.location.address,
-          city: plaidTransaction.location.city,
-          region: plaidTransaction.location.region,
-          postalCode: plaidTransaction.location.postal_code,
-          country: plaidTransaction.location.country,
-          lat: plaidTransaction.location.lat,
-          lon: plaidTransaction.location.lon,
-          storeNumber: plaidTransaction.location.store_number,
-        }
-      }
-
-      return null;
-    }
-
-    // First check to see if the transaction is present. If it is then don't insert it.
-    let acctTrans = await AccountTransaction
-      .findBy('providerTransactionId', plaidTransaction.transaction_id, { client: this.$trx });
+    // First check to see if the transaction is present. If it is then update it. If it is not
+    // then add it.
+    const acctTrans = await this.related('accountTransactions').query()
+      .where('providerTransactionId', plaidTransaction.transaction_id)
+      .first();
 
     if (acctTrans) {
       // The transaction already exists. Update it.
-
-      const transaction = await Transaction.findOrFail(acctTrans.transactionId);
-
-      // if the transaction was deleted then do nothing.
-      // TODO: Even if the transaction was deleted update the information.
-      if (!transaction.deleted) {
-        // If the existing transaction is pending
-        // and the Plaid transaction is still pending then remove
-        // the transaction from the pending transaction array (transactions in the
-        // pending transaction array will be removed from the database).
-        if (pendingTransactions && acctTrans.pending && plaidTransaction.pending) {
-          const index = pendingTransactions.findIndex(
-            (p) => p.provider === 'PLAID' && p.providerTransactionId === plaidTransaction.transaction_id,
-          );
-
-          if (index !== -1) {
-            // Transaction is still pending and it was found in the pending transaction
-            // array so remove it so it is not deleted from the database.
-            pendingTransactions.splice(index, 1);
-          }
-        }
-
-        // todo: check to see if any of these attributes have changed
-        acctTrans.merge({
-          name: plaidTransaction.name ?? undefined,
-          amount: -plaidTransaction.amount,
-          pending: plaidTransaction.pending ?? false,
-          paymentChannel: plaidTransaction.payment_channel,
-          merchantName: plaidTransaction.merchant_name,
-          accountOwner: plaidTransaction.account_owner,
-          location: getLocation(plaidTransaction.location),
-        });
-
-        await acctTrans.save();
-
-        transaction.merge({
-          date: DateTime.fromISO(plaidTransaction.date),
-          version: transaction.version + 1,
-        });
-
-        await transaction.save();
-      }
+      await this.updateTransaction(acctTrans, plaidTransaction, pendingTransactions);
     }
     else {
-      const transaction = await (new Transaction())
-        .useTransaction(this.$trx)
-        .fill({
-          date: DateTime.fromISO(plaidTransaction.date),
-          budgetId: budget.id,
-        })
-        .save();
-
-      acctTrans = await this.related('accountTransactions').create({
-        transactionId: transaction.id,
-        provider: 'PLAID',
-        providerTransactionId: plaidTransaction.transaction_id,
-        name: plaidTransaction.name ?? undefined,
-        amount: -plaidTransaction.amount,
-        pending: plaidTransaction.pending ?? false,
-        paymentChannel: plaidTransaction.payment_channel,
-        merchantName: plaidTransaction.merchant_name,
-        accountOwner: plaidTransaction.account_owner,
-        location: getLocation(plaidTransaction.location),
-      });
-
-      await transaction.related('transactionLog')
-        .create({
-          message: `SpendCraft added a transaction for "${acctTrans.name}". `,
-          transactionId: transaction.id,
-        });
-
-      // If there is a matching pending transaction then take its categories
-      // Otherwise, if this is a matching auto assignment then use its categories
-      // Otherwise, assign the unassigned category.
-      if (!(await this.assignPendingCategories(plaidTransaction, transaction))) {
-        if (!(await this.autoAssign(budget, transaction, acctTrans))) {
-          unassignedAmount = await this.assignUnassigned(budget, transaction, acctTrans);
-        }
-      }
-
-      transactionAmount = acctTrans.amount;
+      [transactionAmount, unassignedAmount] = await this.addTransaction(budget, plaidTransaction);
     }
 
     return [transactionAmount, unassignedAmount];

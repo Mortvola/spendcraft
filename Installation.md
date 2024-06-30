@@ -4,6 +4,15 @@ sudo apt install postgresql-<Version>
 
 See https://www.postgresql.org/download/linux/ubuntu/ if ubuntu version does not have desired version of Postgres.
 
+Make sure that postgres is pointing to the correct data files if some already exists for Spendcraft:
+
+sudo systemctl stop postgresql
+sudo systemctl status postgresql
+sudo vi /etc/postgresql/<Version>/main/postgresql.conf
+sudo systemctl start postgresql
+sudo systemctl status postgresql
+
+
 CREATE USER ubuntu;
 CREATE DATABASE spendcraft WITH OWNER ubuntu;
 GRANT ALL ON SCHEMA public TO ubuntu;
@@ -13,7 +22,7 @@ CREATE extension tablefunc;
 
 ## nvm
 
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 
 nvm list-remote --lts
 
@@ -21,7 +30,7 @@ nvm install --default <version>
 
 ## Redis
 
-sudo apt-get install redis
+sudo apt install redis
 
 sudo systemctl enable redis-server
 
@@ -65,3 +74,7 @@ sudo apt install make g++ libpq-dev
 ln -s .env-sandbox .env
 
 node ace migration:run
+
+## Unzip
+
+sudo apt install unzip
