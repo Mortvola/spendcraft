@@ -1,6 +1,7 @@
 /* eslint-disable import/no-cycle */
 import {
   BaseModel, hasMany, HasMany, column, belongsTo, BelongsTo,
+  ModelAttributes,
 } from '@ioc:Adonis/Lucid/Orm';
 import { DateTime } from 'luxon';
 import plaidClient from '@ioc:Plaid';
@@ -334,43 +335,6 @@ class Account extends BaseModel {
     return false;
   }
 
-  private async assignPendingCategories(
-    plaidTransaction: Plaid.Transaction,
-    transaction: Transaction,
-  ): Promise<boolean> {
-    if (plaidTransaction.pending_transaction_id) {
-      const pendingAcctTransaction = await AccountTransaction
-        .findBy('providerTransactionId', plaidTransaction.pending_transaction_id, { client: this.$trx });
-
-      if (pendingAcctTransaction) {
-        // Move any transaction categories from the pending transaction to the new transaction.
-        const pendingTrxCats = await TransactionCategory
-          .query({ client: this.$trx })
-          .where('transactionId', pendingAcctTransaction.transactionId);
-
-        for (let i = 0; i < pendingTrxCats.length; i += 1) {
-          pendingTrxCats[i].transactionId = transaction.id;
-
-          // eslint-disable-next-line no-await-in-loop
-          await pendingTrxCats[i].save();
-        }
-
-        // Use the value of version from the pending transaction.
-        const pendingTransaction = await pendingAcctTransaction.related('transaction').query().firstOrFail();
-
-        transaction.merge({
-          version: pendingTransaction.version + 1,
-        })
-
-        await transaction.save();
-
-        return true;
-      }
-    }
-
-    return false;
-  }
-
   private static getLocation(location: Plaid.Location) {
     if (location.address !== null
       || location.city !== null
@@ -400,31 +364,24 @@ class Account extends BaseModel {
     this: Account,
     acctTrans: AccountTransaction,
     plaidTransaction: Plaid.Transaction,
-    pendingTransactions?: AccountTransaction[],
-  ) {
-    const transaction = await Transaction.findOrFail(acctTrans.transactionId, { client: this.$trx });
+  ): Promise<number> {
+    let transactionAmount = 0;
+
+    const transaction = await acctTrans.related('transaction').query()
+      .firstOrFail()
 
     // if the transaction was deleted then do nothing.
     // TODO: Even if the transaction was deleted update the information.
     if (!transaction.deleted) {
-      // If the existing transaction is pending
-      // and the Plaid transaction is still pending then remove
-      // the transaction from the pending transaction array (transactions in the
-      // pending transaction array will be removed from the database).
-      if (pendingTransactions && acctTrans.pending && plaidTransaction.pending) {
-        const index = pendingTransactions.findIndex(
-          (p) => p.provider === 'PLAID' && p.providerTransactionId === plaidTransaction.transaction_id,
-        );
-
-        if (index !== -1) {
-          // Transaction is still pending and it was found in the pending transaction
-          // array so remove it so it is not deleted from the database.
-          pendingTransactions.splice(index, 1);
-        }
+      // If the transaction is changing from pending to not pending then
+      // return the transaction amount so the account balance can be updated correctly.
+      if (acctTrans.pending && !plaidTransaction.pending) {
+        transactionAmount = -plaidTransaction.amount;
       }
 
       // todo: check to see if any of these attributes have changed
-      acctTrans.merge({
+      const newValues: Partial<ModelAttributes<typeof acctTrans>> = {
+        providerTransactionId: plaidTransaction.transaction_id,
         name: plaidTransaction.name ?? undefined,
         amount: -plaidTransaction.amount,
         pending: plaidTransaction.pending ?? false,
@@ -432,7 +389,20 @@ class Account extends BaseModel {
         merchantName: plaidTransaction.merchant_name,
         accountOwner: plaidTransaction.account_owner,
         location: Account.getLocation(plaidTransaction.location),
-      });
+      }
+
+      // Log the changes
+      const changes = {};
+
+      Object.keys(newValues).forEach((k) => {
+        if (newValues[k] !== acctTrans[k]) {
+          changes[k] = { old: acctTrans[k], new: newValues[k] }
+        }
+      })
+
+      Logger.info(`Changes: ${JSON.stringify(changes)}`)
+
+      acctTrans.merge(newValues);
 
       await acctTrans.save();
 
@@ -449,6 +419,8 @@ class Account extends BaseModel {
           transactionId: transaction.id,
         });
     }
+
+    return transactionAmount;
   }
 
   private async addTransaction(
@@ -489,13 +461,10 @@ class Account extends BaseModel {
         transactionId: transaction.id,
       });
 
-    // If there is a matching pending transaction then take its categories
-    // Otherwise, if this is a matching auto assignment then use its categories
+    // If this is a matching auto assignment then use its categories
     // Otherwise, assign the unassigned category.
-    if (!(await this.assignPendingCategories(plaidTransaction, transaction))) {
-      if (!(await this.autoAssign(budget, transaction, acctTrans))) {
-        unassignedAmount = await this.assignUnassigned(budget, transaction, acctTrans);
-      }
+    if (!(await this.autoAssign(budget, transaction, acctTrans))) {
+      unassignedAmount = await this.assignUnassigned(budget, transaction, acctTrans);
     }
 
     return [acctTrans.amount, unassignedAmount];
@@ -505,7 +474,6 @@ class Account extends BaseModel {
     this: Account,
     plaidTransaction: Plaid.Transaction,
     budget: Budget,
-    pendingTransactions?: AccountTransaction[],
   ): Promise<[number, number]> {
     if (!this.$trx) {
       throw new Error('database transaction not set');
@@ -516,15 +484,28 @@ class Account extends BaseModel {
 
     // First check to see if the transaction is present. If it is then update it. If it is not
     // then add it.
-    const acctTrans = await this.related('accountTransactions').query()
+    let acctTrans: AccountTransaction | null = null;
+
+    // Get the corresponding account transaction, if there is one.
+    acctTrans = await this.related('accountTransactions').query()
       .where('providerTransactionId', plaidTransaction.transaction_id)
       .first();
 
+    // If a corresponding account transaction was not found but there
+    // is a pending transaction id and the corresponding transaction
+    // is found then use that.
+    if (!acctTrans && plaidTransaction.pending_transaction_id) {
+      acctTrans = await this.related('accountTransactions').query()
+        .where('providerTransactionId', plaidTransaction.pending_transaction_id)
+        .first()
+    }
+
     if (acctTrans) {
-      // The transaction already exists. Update it.
-      await this.updateTransaction(acctTrans, plaidTransaction, pendingTransactions);
+      // The account transaction exists. Update it.
+      transactionAmount = await this.updateTransaction(acctTrans, plaidTransaction);
     }
     else {
+      // Tthe acdount transaction was not found. Create it.
       [transactionAmount, unassignedAmount] = await this.addTransaction(budget, plaidTransaction);
     }
 
