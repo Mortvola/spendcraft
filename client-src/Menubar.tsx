@@ -5,17 +5,40 @@ import {
   Nav,
   NavDropdown,
 } from 'react-bootstrap';
-import { Link, useNavigate } from 'react-router-dom';
+import {
+  Link, matchPath, useLocation, useNavigate,
+} from 'react-router-dom';
 import Http from '@mortvola/http';
 import { runInAction } from 'mobx';
 import { useStores } from './State/mobxStore';
 import { Views } from './State/State';
+
+const pathKeys = [
+  { path: '/home', key: 'HOME' },
+  { path: '/plans', key: 'PLANS' },
+  { path: '/accounts', key: 'ACCOUNTS' },
+  { path: '/search', key: 'SEARCH' },
+  { path: '/reports', key: 'REPORTS' },
+  { path: '/auto-assignments', key: 'AUTO-ASSIGN' },
+  { path: '/logs', key: 'LOGS' },
+]
 
 const Menubar: React.FC = observer(() => {
   const store = useStores();
   const [expanded, setExpanded] = React.useState<boolean>(false);
   const navigate = useNavigate();
   const [active, setActive] = React.useState<string>('HOME');
+  const location = useLocation();
+
+  React.useEffect(() => {
+    const pathKey = pathKeys.find((pk) => (
+      matchPath({ path: pk.path, caseSensitive: false, end: false }, location.pathname)
+    ))
+
+    if (pathKey) {
+      setActive(pathKey.key);
+    }
+  }, [location.pathname]);
 
   const logout = () => {
     type LogoutRequest = {
@@ -91,6 +114,9 @@ const Menubar: React.FC = observer(() => {
           </Nav.Item>
           <Nav.Item>
             <Nav.Link as={Link} to="/auto-assignments" eventKey="AUTO-ASSIGN">Auto Assign</Nav.Link>
+          </Nav.Item>
+          <Nav.Item>
+            <Nav.Link as={Link} to="/logs" eventKey="LOGS">Logs</Nav.Link>
           </Nav.Item>
         </Nav>
         <Nav>

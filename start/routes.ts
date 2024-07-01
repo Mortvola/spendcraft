@@ -35,6 +35,7 @@ Route.get('/recover-password', 'HomeController.index');
 Route.get('/user', 'HomeController.index');
 Route.get('/search', 'HomeController.index');
 Route.get('/auto-assignments', 'HomeController.index');
+Route.get('/logs', 'HomeController.index');
 Route.get('/', 'HomeController.index');
 
 Route.post('/wh', 'WebhookController.post');

@@ -134,6 +134,7 @@ if (container) {
                 <Route index element={<AutoAssignmentDetail />} />
                 <Route path=":autoAssignmentId" element={<AccountDetails />} />
               </Route>
+              <Route path="logs" element={<div />} />
               <Route path="user" element={<UserAccount />} />
             </Route>
           </Routes>
