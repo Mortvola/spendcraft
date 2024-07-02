@@ -508,3 +508,20 @@ export interface AutoAssignmentInterface {
 
   async delete(): Promise<void>;
 }
+
+export type TransactionLogProps = {
+  id: number;
+  createdAt: string;
+  message: string;
+  transactionId: number;
+}
+
+export type TransactionLogsResponse = TransactionLogsProps[]
+
+export interface TransactionLogInterface {
+  id: number;
+
+  message: string;
+
+  transactionId: number;
+}

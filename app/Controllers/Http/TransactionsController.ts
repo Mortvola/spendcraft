@@ -13,6 +13,7 @@ import {
 } from 'Common/ResponseTypes';
 import Account from 'App/Models/Account';
 import { schema, rules } from '@ioc:Adonis/Core/Validator';
+import TransactionLog from 'App/Models/TransactionLog';
 import transactionFields from './transactionFields';
 
 export default class TransactionsController {
@@ -540,5 +541,22 @@ export default class TransactionsController {
       )),
       balance: 0,
     })
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  public async logs({
+    auth: {
+      user,
+    },
+  }: HttpContextContract): Promise<TransactionLog[]> {
+    if (!user) {
+      throw new Error('user is not defined');
+    }
+
+    const budget = await user.related('budget').query().firstOrFail();
+
+    const logs = await budget.related('transactionLog').query().orderBy('createdAt', 'desc');
+
+    return logs;
   }
 }

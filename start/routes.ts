@@ -205,7 +205,9 @@ Route.group(() => {
         Route.patch('/:id', 'AutoAssignmentsController.patch');
         Route.delete('/:id', 'AutoAssignmentsController.delete');
       })
-        .prefix('/auto-assignments')  
+        .prefix('/auto-assignments')
+
+      Route.get('/transaction-logs', 'TransactionsController.logs');
     })
       .middleware(['auth']);
   })

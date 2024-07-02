@@ -13,6 +13,7 @@ import {
 import Rebalances from './Rebalances';
 import Searcher from './Searcher';
 import AutoAssignments from './AutoAssignments';
+import TransactionLogs from './TransactionLogs';
 
 class Store implements StoreInterface {
   user: User;
@@ -37,6 +38,8 @@ class Store implements StoreInterface {
 
   autoAssignments: AutoAssignments;
 
+  transactionLogs: TransactionLogs;
+
   initialized = false;
 
   constructor() {
@@ -51,6 +54,7 @@ class Store implements StoreInterface {
     this.rebalances = new Rebalances(this);
     this.searcher = new Searcher(this);
     this.autoAssignments = new AutoAssignments(this);
+    this.transactionLogs = new TransactionLogs(this);
   }
 
   refresh() {
@@ -65,6 +69,8 @@ class Store implements StoreInterface {
     this.reports = new Reports(this);
     this.plans = new Plans(this);
     this.rebalances = new Rebalances(this);
+    this.autoAssignments = new AutoAssignments(this);
+    this.transactionLogs = new TransactionLogs(this);
   }
 }
 

@@ -8,8 +8,11 @@ export default class TransactionLog extends BaseModel {
   @column.dateTime({ autoCreate: true })
   public createdAt: DateTime
 
-  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  @column.dateTime({ autoCreate: true, autoUpdate: true, serializeAs: null })
   public updatedAt: DateTime
+
+  @column({ columnName: 'application_id', serializeAs: null })
+  public budgetId: number
 
   @column()
   public message: string

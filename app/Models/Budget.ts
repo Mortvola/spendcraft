@@ -14,6 +14,7 @@ import Loan from 'App/Models/Loan';
 import CategoryHistoryItem from 'App/Models/CategoryHistoryItem';
 import Logger from '@ioc:Adonis/Core/Logger';
 import AutoAssignment from './AutoAssignment';
+import TransactionLog from './TransactionLog';
 
 export default class Budget extends BaseModel {
   public static table = 'applications';
@@ -47,6 +48,9 @@ export default class Budget extends BaseModel {
 
   @hasMany(() => AutoAssignment)
   public autoAssignment: HasMany<typeof AutoAssignment>
+
+  @hasMany(() => TransactionLog)
+  public transactionLog: HasMany<typeof TransactionLog>
 
   public async history(this: Budget, numberOfMonths: number): Promise<CategoryHistoryItem[]> {
     const startDate = DateTime.now().set({

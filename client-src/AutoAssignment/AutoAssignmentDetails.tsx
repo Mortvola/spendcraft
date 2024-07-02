@@ -5,7 +5,7 @@ import { useAutoAssignmentDialog } from './AutoAssignmentDialog';
 import AutoAssignment from './AutoAssignment';
 import { AutoAssignmentInterface } from '../State/State';
 
-const AutoAssignmentDetail = observer(() => {
+const AutoAssignmentDetails = observer(() => {
   const { autoAssignments } = useStores();
   const [AutoAssignmentDialog, showDialog] = useAutoAssignmentDialog();
   const [editAutoAssignment, setEditedAutoAssignment] = React.useState<AutoAssignmentInterface | undefined>();
@@ -29,4 +29,4 @@ const AutoAssignmentDetail = observer(() => {
   )
 })
 
-export default AutoAssignmentDetail;
+export default AutoAssignmentDetails;
