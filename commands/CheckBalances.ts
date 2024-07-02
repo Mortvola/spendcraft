@@ -2,8 +2,6 @@ import { BaseCommand, flags } from '@adonisjs/core/build/standalone'
 import Database from '@ioc:Adonis/Lucid/Database';
 import Category from 'App/Models/Category';
 import Budget from 'App/Models/Budget';
-import Account from 'App/Models/Account';
-import AccountTransaction from 'App/Models/AccountTransaction';
 
 export default class CheckBalances extends BaseCommand {
   /**
@@ -14,7 +12,7 @@ export default class CheckBalances extends BaseCommand {
   /**
    * Command description is displayed in the "help" output
    */
-  public static description = 'Checks the category and account balances'
+  public static description = 'Checks the category balances'
 
   @flags.string({ alias: 'u', description: 'Name of the user to analyze' })
   public user: string
@@ -40,16 +38,20 @@ export default class CheckBalances extends BaseCommand {
     const trx = await Database.transaction();
 
     try {
-      let apps: Budget[] = [];
+      let issuesFound = 0;
+      let issuesFixed = 0;
+      let budgets: Budget[] = [];
 
       if (this.user) {
-        apps = await Budget.query({ client: trx })
+        budgets = await Budget.query({ client: trx })
           .whereHas('users', (query) => {
             query.where('username', this.user)
-          });
+          })
+          .forUpdate();
       }
       else {
-        apps = await Budget.query({ client: trx });
+        budgets = await Budget.query({ client: trx })
+          .forUpdate();
       }
 
       type Failures = {
@@ -63,49 +65,30 @@ export default class CheckBalances extends BaseCommand {
       }[] = [];
 
       // eslint-disable-next-line no-restricted-syntax
-      for (const app of apps) {
+      for (const budget of budgets) {
         // eslint-disable-next-line no-await-in-loop
         const categories = await Category
           .query({ client: trx })
           .whereHas('group', (group) => {
-            group.where('applicationId', app.id)
+            group.where('budgetId', budget.id)
           })
           .withAggregate('transactionCategory', (query) => {
             query.sum('amount').as('trans_sum')
               .whereHas('transaction', (transaction) => {
                 transaction
-                  .where('applicationId', app.id)
+                  .where('budgetId', budget.id)
                   .andWhere('deleted', false)
+                  .whereHas('accountTransaction', (q2) => {
+                    q2
+                      .andWhereHas('account', (q3) => {
+                        q3.where('tracking', 'Transactions')
+                          .andWhereColumn('startDate', '<=', 'transactions.date')
+                      })
+                  })
+                  .orDoesntHave('accountTransaction')
               });
           })
           .preload('group');
-
-        // Sum up all the transactions that do not have categories assigned
-        // and add the amount to the unassigned category.
-        // eslint-disable-next-line no-await-in-loop
-        const unassignedTrans = await AccountTransaction
-          .query({ client: trx })
-          .whereHas('transaction', (query) => {
-            query
-              .where('applicationId', app.id)
-              .andWhere('deleted', false)
-              .doesntHave('transactionCategories')
-          })
-          .whereHas('account', (query) => {
-            query.where('tracking', 'Transactions')
-          })
-          // .where('pending', false)
-          .sum('amount')
-          .as('sum')
-          .first();
-
-        if (unassignedTrans && parseFloat(unassignedTrans.$extras.sum ?? 0) !== 0) {
-          const unassignedCat = categories.find((c) => c.type === 'UNASSIGNED');
-          if (unassignedCat) {
-            unassignedCat.$extras.trans_sum = parseFloat(unassignedCat.$extras.trans_sum ?? 0)
-              + parseFloat(unassignedTrans.$extras.sum ?? 0);
-          }
-        }
 
         const failures: Failures[] = [];
 
@@ -122,7 +105,7 @@ export default class CheckBalances extends BaseCommand {
 
         if (failures.length > 0) {
           failedApps.push({
-            appId: app.id,
+            appId: budget.id,
             failures,
           });
         }
@@ -131,26 +114,32 @@ export default class CheckBalances extends BaseCommand {
       if (failedApps.length > 0) {
         // eslint-disable-next-line no-restricted-syntax
         for (const app of failedApps) {
-          this.logger.info(`${app.appId}`);
+          this.logger.info(`Budget ID: ${app.appId}`);
           // eslint-disable-next-line no-restricted-syntax
           for (const failure of app.failures) {
             const { category, transSum } = failure;
             const difference = category.balance - transSum;
-            this.logger.info(`\t"${category.group.name}:${category.name}" (${category.id}): ${category.balance}, Transactions: ${transSum}, difference: ${difference}`);
+            this.logger.info(`\t"${category.group.name}:${category.name}" (${category.id}): ${category.balance.toFixed(2)}, Transactions: ${transSum.toFixed(2)}, difference: ${difference.toFixed(2)}`);
+
+            issuesFound += 1;
 
             if (this.fix) {
               category.balance = transSum;
 
               // eslint-disable-next-line no-await-in-loop
               await category.save();
+
+              issuesFixed += 1;
             }
           }
         }
 
         if (this.fix) {
           await trx.commit();
+          this.logger.info(`${issuesFixed} category balance issues fixed`);
         }
         else {
+          this.logger.info(`${issuesFound} category balance issues found`);
           await trx.rollback();
         }
       }
@@ -160,136 +149,138 @@ export default class CheckBalances extends BaseCommand {
       }
     }
     catch (error) {
+      console.log(error)
       await trx.rollback();
     }
   }
 
-  async checkAccountBalances() {
-    const trx = await Database.transaction();
+  // privagte async checkAccountBalances() {
+  //   const trx = await Database.transaction();
 
-    try {
-      const apps = await Budget.all({ client: trx });
+  //   try {
+  //     const apps = await Budget.all({ client: trx });
 
-      type Failures = {
-        account: Account,
-        transSum: number,
-      };
+  //     type Failures = {
+  //       account: Account,
+  //       transSum: number,
+  //     };
 
-      const failedApps: {
-        appId: number,
-        failures: Failures[],
-      }[] = [];
+  //     const failedApps: {
+  //       appId: number,
+  //       failures: Failures[],
+  //     }[] = [];
 
-      // eslint-disable-next-line no-restricted-syntax
-      for (const app of apps) {
-        // eslint-disable-next-line no-await-in-loop
-        const accounts = await Account
-          .query()
-          // .has('accountTransactions')
-          .where('tracking', '!=', 'Balances')
-          .whereHas('institution', (query) => {
-            query.where('applicationId', app.id)
-          })
-          .withAggregate('accountTransactions', (query) => {
-            query.sum('amount')
-              .whereHas('transaction', (trxQuery) => {
-                trxQuery
-                  .where('deleted', false)
-                  .andWhere('type', '!=', 4);
-              })
-              .where('pending', false)
-              .as('trans_sum')
-          })
-          .withAggregate('accountTransactions', (query) => {
-            query.sum('principle')
-              .whereHas('transaction', (trxQuery) => {
-                trxQuery
-                  .where('deleted', false)
-                  .andWhere('type', '!=', 4);
-              })
-              .where('pending', false)
-              .as('principle_sum')
-          })
+  //     // eslint-disable-next-line no-restricted-syntax
+  //     for (const app of apps) {
+  //       // eslint-disable-next-line no-await-in-loop
+  //       const accounts = await Account
+  //         .query()
+  //         // .has('accountTransactions')
+  //         .where('tracking', '!=', 'Balances')
+  //         .whereHas('institution', (query) => {
+  //           query.where('budgetId', app.id)
+  //         })
+  //         .withAggregate('accountTransactions', (query) => {
+  //           query.sum('amount')
+  //             .whereHas('transaction', (trxQuery) => {
+  //               trxQuery
+  //                 .where('deleted', false)
+  //                 .andWhere('type', '!=', 4);
+  //             })
+  //             .where('pending', false)
+  //             .as('trans_sum')
+  //         })
+  //         .withAggregate('accountTransactions', (query) => {
+  //           query.sum('principle')
+  //             .whereHas('transaction', (trxQuery) => {
+  //               trxQuery
+  //                 .where('deleted', false)
+  //                 .andWhere('type', '!=', 4);
+  //             })
+  //             .where('pending', false)
+  //             .as('principle_sum')
+  //         })
 
-        const failures: Failures[] = [];
+  //       const failures: Failures[] = [];
 
-        // eslint-disable-next-line no-restricted-syntax
-        for (const account of accounts) {
-          // eslint-disable-next-line no-await-in-loop
-          const startingTrx = await account.related('accountTransactions').query()
-            .whereHas('transaction', (query2) => {
-              query2.where('type', 4)
-            })
-            .firstOrFail();
+  //       // eslint-disable-next-line no-restricted-syntax
+  //       for (const account of accounts) {
+  //         // eslint-disable-next-line no-await-in-loop
+  //         const startingTrx = await account.related('accountTransactions').query()
+  //           .whereHas('transaction', (query2) => {
+  //             query2.where('type', 4)
+  //           })
+  //           .firstOrFail();
 
-          let transSum: number;
+  //         let transSum: number;
 
-          if (account.type === 'loan') {
-            transSum = (
-              account.$extras.principle_sum === null
-                ? 0
-                : parseFloat(account.$extras.principle_sum)
-            ) + startingTrx.amount;
-          }
-          else {
-            transSum = (
-              account.$extras.trans_sum === null
-                ? 0
-                : parseFloat(account.$extras.trans_sum)
-            ) + startingTrx.amount;
-          }
+  //         if (account.type === 'loan') {
+  //           transSum = (
+  //             account.$extras.principle_sum === null
+  //               ? 0
+  //               : parseFloat(account.$extras.principle_sum)
+  //           ) + startingTrx.amount;
+  //         }
+  //         else {
+  //           transSum = (
+  //             account.$extras.trans_sum === null
+  //               ? 0
+  //               : parseFloat(account.$extras.trans_sum)
+  //           ) + startingTrx.amount;
+  //         }
 
-          if (account.balance.toFixed(2) !== transSum.toFixed(2)) {
-            failures.push({
-              account,
-              transSum,
-            })
-          }
-        }
+  //         if (account.balance.toFixed(2) !== transSum.toFixed(2)) {
+  //           failures.push({
+  //             account,
+  //             transSum,
+  //           })
+  //         }
+  //       }
 
-        if (failures.length > 0) {
-          failedApps.push({
-            appId: app.id,
-            failures,
-          });
-        }
-      }
+  //       if (failures.length > 0) {
+  //         failedApps.push({
+  //           appId: app.id,
+  //           failures,
+  //         });
+  //       }
+  //     }
 
-      if (failedApps.length > 0) {
-        // eslint-disable-next-line no-restricted-syntax
-        for (const app of failedApps) {
-          this.logger.info(`${app.appId}`);
-          // eslint-disable-next-line no-restricted-syntax
-          for (const failure of app.failures) {
-            const { account, transSum } = failure;
-            const difference = account.balance - transSum;
-            this.logger.info(`\t"${account.name}" (${account.id}): ${account.balance}, Transactions: ${transSum}, difference: ${difference}`);
+  //     if (failedApps.length > 0) {
+  //       // eslint-disable-next-line no-restricted-syntax
+  //       for (const app of failedApps) {
+  //         this.logger.info(`Budget ID: ${app.appId}`);
+  //         // eslint-disable-next-line no-restricted-syntax
+  //         for (const failure of app.failures) {
+  //           const { account, transSum } = failure;
+  //           const difference = account.balance - transSum;
+  // eslint-disable-next-line max-len
+  //           this.logger.info(`\t"${account.name}" (${account.id}): ${account.balance.toFixed(2)}, Transactions: ${transSum.toFixed(2)}, difference: ${difference.toFixed(2)}`);
 
-            if (this.fix) {
-              account.balance = transSum;
+  //           if (this.fix) {
+  //             account.balance = transSum;
 
-              // eslint-disable-next-line no-await-in-loop
-              await account.save();
-            }
-          }
-        }
+  //             // eslint-disable-next-line no-await-in-loop
+  //             await account.save();
+  //           }
+  //         }
+  //       }
 
-        if (this.fix) {
-          await trx.commit();
-        }
-        else {
-          await trx.rollback();
-        }
-      }
-      else {
-        this.logger.info('No account balance issues found');
-        await trx.rollback();
-      }
-    }
-    catch (error) {
-      await trx.rollback();
-    }
-  }
+  //       if (this.fix) {
+  //         await trx.commit();
+  //       }
+  //       else {
+  //         await trx.rollback();
+  //       }
+  //     }
+  //     else {
+  //       this.logger.info('No account balance issues found');
+  //       await trx.rollback();
+  //     }
+  //   }
+  //   catch (error) {
+  //     await trx.rollback();
+  //   }
+  // }
 
   public async run (): Promise<void> {
     await this.checkCategoryBalances();
