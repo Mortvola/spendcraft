@@ -324,6 +324,7 @@ class Account extends BaseModel {
 
       await transaction.related('transactionLog')
         .create({
+          budgetId: transaction.budgetId,
           message: `SpendCraft assigned a transaction for "${accountTransaction.name}" to ${assignedCategories.join(', ')}.`,
           transactionId: transaction.id,
         })
@@ -415,6 +416,7 @@ class Account extends BaseModel {
 
       await transaction.related('transactionLog')
         .create({
+          budgetId: transaction.budgetId,
           message: `SpendCraft modified a transaction for "${acctTrans.name}" from "${this.name}".`,
           transactionId: transaction.id,
         });
@@ -457,6 +459,7 @@ class Account extends BaseModel {
 
     await transaction.related('transactionLog')
       .create({
+        budgetId: transaction.budgetId,
         message: `SpendCraft added a transaction for "${acctTrans.name}" from "${this.name}".`,
         transactionId: transaction.id,
       });
