@@ -30,6 +30,8 @@ nvm install --default <version>
 
 ## Redis
 
+https://redis.io/docs/latest/operate/oss_and_stack/install/install-redis/install-redis-on-linux/
+
 sudo apt install redis
 
 sudo systemctl enable redis-server
