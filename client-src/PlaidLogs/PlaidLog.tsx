@@ -25,9 +25,12 @@ const PlaidLog: React.FC<PropsType> = ({
       <div className={styles.layout} onClick={handleClick}>
         <DateTime dateTime={log.createdAt} />
         <div className={styles.message}>{log.request}</div>
+        <div>{log.status}</div>
       </div>
       {
-        selected && log.request === 'syncTransactions'
+        selected
+        && ((log.status >= 200 && log.status < 300) || log.status === null)
+        && (log.request === 'syncTransactions' || log.request === '/transactions/sync')
           ? <TransactionsSync response={log.response as PlaidApi.TransactionsSyncResponse} />
           : null
       }

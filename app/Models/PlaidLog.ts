@@ -18,4 +18,7 @@ export default class PlaidLog extends BaseModel {
     prepare: (value: unknown) => JSON.stringify(value),
   })
   public response: unknown | null;
+
+  @column()
+  public status: number;
 }

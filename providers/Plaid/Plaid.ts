@@ -45,12 +45,12 @@ class PlaidWrapper {
         access_token: accessToken,
       });
 
-      await PlaidWrapper.log('getItem', response.data)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status)
 
       return response.data;
     }
     catch (error) {
-      console.log(JSON.stringify(error.response.data));
+      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status)
       throw new PlaidException(error);
     }
   }
@@ -61,11 +61,12 @@ class PlaidWrapper {
         access_token: accessToken,
       });
 
-      await PlaidWrapper.log('removeItem', response.data)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status)
 
       return response.data;
     }
     catch (error) {
+      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status)
       throw new PlaidException(error);
     }
   }
@@ -81,12 +82,12 @@ class PlaidWrapper {
         param,
       );
 
-      await PlaidWrapper.log('getAccounts', response.data)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status)
 
       return response.data;
     }
     catch (error) {
-      console.log(JSON.stringify(error.response.data));
+      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status)
       throw new PlaidException(error);
     }
   }
@@ -95,11 +96,12 @@ class PlaidWrapper {
     try {
       const response = await this.plaid.itemPublicTokenExchange({ public_token: publicToken });
 
-      await PlaidWrapper.log('exchangePublicToken', response.data)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status)
 
       return response.data;
     }
     catch (error) {
+      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status)
       throw new PlaidException(error);
     }
   }
@@ -108,11 +110,12 @@ class PlaidWrapper {
     try {
       const response = await this.plaid.linkTokenCreate(options);
 
-      await PlaidWrapper.log('createLinkToken', response.data)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status)
 
       return response.data;
     }
     catch (error) {
+      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status)
       throw new PlaidException(error);
     }
   }
@@ -121,11 +124,12 @@ class PlaidWrapper {
     try {
       const response = await this.plaid.webhookVerificationKeyGet({ key_id: keyId });
 
-      await PlaidWrapper.log('getWebhookVerificationKey', response.data)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status)
 
       return response.data;
     }
     catch (error) {
+      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status)
       throw new PlaidException(error);
     }
   }
@@ -139,11 +143,12 @@ class PlaidWrapper {
         options,
       );
 
-      await PlaidWrapper.log('getBalance', response.data)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status)
 
       return response.data;
     }
     catch (error) {
+      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status)
       throw new PlaidException(error);
     }
   }
@@ -160,12 +165,12 @@ class PlaidWrapper {
 
       const response = await this.plaid.transactionsSync(param);
 
-      await PlaidWrapper.log('syncTransactions', response.data)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status)
 
       return response.data
     }
     catch (error) {
-      console.log(JSON.stringify(error.response.data));
+      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status)
       throw new PlaidException(error);
     }
   }
@@ -188,12 +193,12 @@ class PlaidWrapper {
         param,
       );
 
-      await PlaidWrapper.log('getTransactions', response.data)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status)
 
       return response.data;
     }
     catch (error) {
-      console.log(JSON.stringify(error.response.data));
+      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status)
       throw new PlaidException(error);
     }
   }
@@ -208,12 +213,12 @@ class PlaidWrapper {
 
       const response = await this.plaid.transactionsRefresh(param);
 
-      await PlaidWrapper.log('refreshTransactions', response.data)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status)
 
       return response.data
     }
     catch (error) {
-      console.log(JSON.stringify(error.response.data));
+      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status)
       throw new PlaidException(error);
     }
   }
@@ -232,11 +237,12 @@ class PlaidWrapper {
         options,
       );
 
-      await PlaidWrapper.log('getInstitutionById', response.data)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status)
 
       return response.data;
     }
     catch (error) {
+      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status)
       throw new PlaidException(error);
     }
   }
@@ -251,11 +257,12 @@ class PlaidWrapper {
         country_codes: [Plaid.CountryCode.Us]
       })
 
-      await PlaidWrapper.log('searchInstitutions', response.data)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status)
 
       return response.data;
     }
     catch (error) {
+      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status)
       throw new PlaidException(error);
     }
   }
@@ -267,11 +274,12 @@ class PlaidWrapper {
         webhook,
       });
 
-      await PlaidWrapper.log('updateItemWebhook', response.data)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status)
 
       return response.data;
     }
     catch (error) {
+      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status)
       throw new PlaidException(error);
     }
   }
@@ -282,11 +290,12 @@ class PlaidWrapper {
         access_token: accessToken,
       });
 
-      await PlaidWrapper.log('resetLogin', response.data)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status)
 
       return response.data;
     }
     catch (error) {
+      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status)
       throw new PlaidException(error);
     }
   }
@@ -298,24 +307,31 @@ class PlaidWrapper {
         webhook_code: code,
       });
 
-      await PlaidWrapper.log('sandboxItemFireWebhook', response.data)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status)
 
       return response.data;
     }
     catch (error) {
+      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status)
       throw new PlaidException(error);
     }
   }
 
   async getCategories(): Promise<Plaid.Category[]> {
-    const response = await this.plaid.categoriesGet({});
+    try {
+      const response = await this.plaid.categoriesGet({});
 
-    await PlaidWrapper.log('getCategories', response.data)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status)
 
-    return response.data.categories;
+      return response.data.categories;
+    }
+    catch (error) {
+      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status)
+      throw new PlaidException(error);
+    }
   }
 
-  static async log(request: string, response: unknown) {
+  static async log(request: string, response: unknown, status: number) {
     const { default: PlaidLog } = await import('App/Models/PlaidLog')
 
     await new PlaidLog()
@@ -323,6 +339,7 @@ class PlaidWrapper {
       .fill({
         request,
         response,
+        status,
       })
       .save();
   }
