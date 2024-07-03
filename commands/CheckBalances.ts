@@ -20,6 +20,9 @@ export default class CheckBalances extends BaseCommand {
   @flags.boolean({ alias: 'f', description: 'Repairs the balances' })
   public fix: boolean
 
+  @flags.boolean({ alias: 'i', description: 'Interactive mode' })
+  public interactive = false;
+
   public static settings = {
     /**
      * Set the following value to true, if you want to load the application
@@ -123,7 +126,13 @@ export default class CheckBalances extends BaseCommand {
 
             issuesFound += 1;
 
-            if (this.fix) {
+            let fix = false;
+            if (this.interactive) {
+              // eslint-disable-next-line no-await-in-loop
+              fix = await this.prompt.confirm('Fix?')
+            }
+
+            if (fix || this.fix) {
               category.balance = transSum;
 
               // eslint-disable-next-line no-await-in-loop
@@ -134,7 +143,7 @@ export default class CheckBalances extends BaseCommand {
           }
         }
 
-        if (this.fix) {
+        if (this.interactive || this.fix) {
           await trx.commit();
           this.logger.info(`${issuesFixed} category balance issues fixed`);
         }
