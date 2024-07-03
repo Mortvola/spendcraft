@@ -615,6 +615,7 @@ export default class Budget extends BaseModel {
         //   monthlyAmount = plannedAmount - cat.amount
 
         //   proposedCat.adjusted = true;
+        // eslint-disable-next-line max-len
         //   proposedCat.adjustedReason = `The funding amount was adjusted from a planned amount of ${plannedAmount} to ${monthlyAmount}.`
         // }
 

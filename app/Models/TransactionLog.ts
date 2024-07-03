@@ -17,6 +17,11 @@ export default class TransactionLog extends BaseModel {
   @column()
   public message: string
 
+  @column({
+    prepare: (value: Record<string, unknown>) => JSON.stringify(value),
+  })
+  public changes: Record<string, unknown>
+
   @column()
   public transactionId: number;
 }

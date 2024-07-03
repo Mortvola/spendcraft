@@ -18,6 +18,7 @@ import { Exception } from '@poppinss/utils';
 import { XMLParser } from 'fast-xml-parser';
 import Logger from '@ioc:Adonis/Core/Logger'
 import Database from '@ioc:Adonis/Lucid/Database';
+import { getChanges } from 'App/Controllers/Http/transactionFields';
 import Category from './Category';
 import TransactionCategory from './TransactionCategory';
 
@@ -381,7 +382,7 @@ class Account extends BaseModel {
       }
 
       // todo: check to see if any of these attributes have changed
-      const newValues: Partial<ModelAttributes<typeof acctTrans>> = {
+      const accountTransactionChanges: Partial<ModelAttributes<typeof acctTrans>> = {
         providerTransactionId: plaidTransaction.transaction_id,
         name: plaidTransaction.name ?? undefined,
         amount: -plaidTransaction.amount,
@@ -393,24 +394,23 @@ class Account extends BaseModel {
       }
 
       // Log the changes
-      const changes = {};
+      let changes = {};
 
-      Object.keys(newValues).forEach((k) => {
-        if (newValues[k] !== acctTrans[k]) {
-          changes[k] = { old: acctTrans[k], new: newValues[k] }
-        }
-      })
+      changes = getChanges(acctTrans, accountTransactionChanges, changes)
 
-      Logger.info(`Changes: ${JSON.stringify(changes)}`)
-
-      acctTrans.merge(newValues);
+      acctTrans.merge(accountTransactionChanges);
 
       await acctTrans.save();
 
-      transaction.merge({
+      const transactionChanges: Partial<ModelAttributes<typeof transaction>> = {
         date: DateTime.fromISO(plaidTransaction.date),
-        version: transaction.version + 1,
-      });
+      }
+
+      changes = getChanges(transaction, transactionChanges, changes)
+
+      transactionChanges.version = transaction.version + 1;
+
+      transaction.merge(transactionChanges);
 
       await transaction.save();
 
@@ -419,6 +419,7 @@ class Account extends BaseModel {
           budgetId: transaction.budgetId,
           message: `SpendCraft modified a transaction for "${acctTrans.name}" from "${this.name}".`,
           transactionId: transaction.id,
+          changes,
         });
     }
 

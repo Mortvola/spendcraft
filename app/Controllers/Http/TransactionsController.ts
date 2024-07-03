@@ -14,7 +14,8 @@ import {
 import Account from 'App/Models/Account';
 import { schema, rules } from '@ioc:Adonis/Core/Validator';
 import TransactionLog from 'App/Models/TransactionLog';
-import transactionFields from './transactionFields';
+import { ModelAttributes } from '@ioc:Adonis/Lucid/Orm';
+import transactionFields, { getChanges } from './transactionFields';
 
 export default class TransactionsController {
   // eslint-disable-next-line class-methods-use-this
@@ -95,6 +96,8 @@ export default class TransactionsController {
     const trx = await Database.transaction();
 
     try {
+      let changes = {};
+
       const budget = await user.related('budget').query()
         .useTransaction(trx)
         .forUpdate()
@@ -102,9 +105,8 @@ export default class TransactionsController {
 
       const transaction = await Transaction.findOrFail(trxId, { client: trx });
 
+      // Only perform the update if the versions maatch
       if (transaction.version !== requestData.version) {
-        console.log(`transaction version does not match: ${requestData.version}, ${transaction.version}`)
-
         await trx.rollback();
 
         response.status(409);
@@ -272,11 +274,15 @@ export default class TransactionsController {
           account.balance -= acctTrans.amount;
         }
 
-        acctTrans.merge({
-          name: requestData.name,
-          amount: requestData.amount,
-          principle: requestData.principle,
-        });
+        const accountTransactionChanges: Partial<ModelAttributes<typeof acctTrans>> = {}
+
+        accountTransactionChanges.name = requestData.name;
+        accountTransactionChanges.amount = requestData.amount;
+        accountTransactionChanges.principle = requestData.principle;
+
+        changes = getChanges(acctTrans, accountTransactionChanges, changes);
+
+        acctTrans.merge(accountTransactionChanges);
 
         await acctTrans.save();
 
@@ -290,21 +296,26 @@ export default class TransactionsController {
         await account.save();
       }
 
-      transaction.merge({
-        version: transaction.version + 1,
-      });
+      const transactionChanges: Partial<ModelAttributes<typeof transaction>> = {}
 
-      if (
-        requestData.date !== undefined
-        || requestData.comment !== undefined
-      ) {
-        transaction.merge({
-          date: requestData.date,
-          comment: requestData.comment,
-        });
-      }
+      transactionChanges.date = requestData.date;
+      transactionChanges.comment = requestData.comment;
+
+      changes = getChanges(transaction, transactionChanges, changes);
+
+      transactionChanges.version = transaction.version + 1;
+
+      transaction.merge(transactionChanges);
 
       await transaction.save();
+
+      await transaction.related('transactionLog')
+        .create({
+          budgetId: transaction.budgetId,
+          message: `${user.username} modified a transaction for "${acctTrans.name}".`,
+          transactionId: transaction.id,
+          changes,
+        });
 
       await transaction.load('transactionCategories');
 
@@ -321,17 +332,17 @@ export default class TransactionsController {
         balance: account.balance,
       }];
 
-      await trx.commit();
-
-      // TODO: Change this to work within the database transaction.
+      // Get the transaction count for each of the categories
       // eslint-disable-next-line no-restricted-syntax
       for (const cat of result.categories) {
         // eslint-disable-next-line no-await-in-loop
-        const category = await Category.findOrFail(cat.id);
+        const category = await Category.findOrFail(cat.id, { client: trx });
 
         // eslint-disable-next-line no-await-in-loop
         cat.count = await category.transactionsCount(budget);
       }
+
+      await trx.commit();
 
       return result;
     }

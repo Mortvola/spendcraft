@@ -44,7 +44,7 @@ class AccountTransaction extends BaseModel {
   public amount: number;
 
   @column({
-    consume: (value: string) => parseFloat(value),
+    consume: (value: string) => (value !== null ? parseFloat(value) : null),
   })
   public principle: number | null;
 
