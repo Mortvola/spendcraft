@@ -532,6 +532,7 @@ export type PlaidLogProps = {
   request: string;
   response: unknown;
   status: number;
+  institutionId: string;
 }
 
 export type PlaidLogsResponse = PlaidLogProps[]
@@ -546,4 +547,6 @@ export interface PlaidLogInterface {
   response: unknown;
 
   status: number;
+
+  institutionId?: string;
 }

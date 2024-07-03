@@ -1,5 +1,6 @@
 import { BaseCommand, args } from '@adonisjs/core/build/standalone'
 import plaidClient from '@ioc:Plaid';
+import Institution from 'App/Models/Institution';
 import * as Plaid from 'plaid';
 
 export default class PlaidGetAccount extends BaseCommand {
@@ -36,11 +37,13 @@ export default class PlaidGetAccount extends BaseCommand {
   public async run (): Promise<void> {
     let account: Plaid.AccountsGetResponse | null = null;
 
+    const institution = await Institution.findByOrFail('accessToken', this.accessToken)
+
     if (this.accountIds[0] === 'all') {
-      account = await plaidClient.getAccounts(this.accessToken);
+      account = await plaidClient.getAccounts(institution);
     }
     else {
-      account = await plaidClient.getAccounts(this.accessToken, {
+      account = await plaidClient.getAccounts(institution, {
         account_ids: this.accountIds,
       });
     }

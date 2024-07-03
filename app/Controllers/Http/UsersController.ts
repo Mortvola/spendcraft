@@ -255,7 +255,7 @@ export default class UsersController {
           // Remove plaid items
           await Promise.all(institutions.map(async (institution) => {
             if (institution.accessToken) {
-              await plaidClient.removeItem(institution.accessToken);
+              await plaidClient.removeItem(institution);
             }
           }));
         }

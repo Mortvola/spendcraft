@@ -1,3 +1,4 @@
+import Institution from 'App/Models/Institution';
 import PlaidException from './PlaidException';
 import * as Plaid from 'plaid';
 
@@ -39,42 +40,62 @@ class PlaidWrapper {
     }
   }
 
-  async getItem(accessToken: string): Promise<Plaid.ItemGetResponse> {
+  async getItem(
+    institution: Institution,
+  ): Promise<Plaid.ItemGetResponse> {
+    if (!institution.accessToken) {
+      throw new Error('Institution does not have an access token')
+    }
+
     try {
       const response = await this.plaid.itemGet({
-        access_token: accessToken,
+        access_token: institution.accessToken,
       });
 
-      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution)
 
       return response.data;
     }
     catch (error) {
-      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status)
+      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status, institution)
       throw new PlaidException(error);
     }
   }
 
-  async removeItem(accessToken: string): Promise<Plaid.ItemRemoveResponse> {
+  async removeItem(
+    institution: Institution,
+  ): Promise<Plaid.ItemRemoveResponse> {
+    if (!institution.accessToken) {
+      throw new Error('Institution does not have an access token')
+    }
+
     try {
       const response = await this.plaid.itemRemove({
-        access_token: accessToken,
+        access_token: institution.accessToken,
       });
 
-      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution)
 
       return response.data;
     }
     catch (error) {
-      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status)
+      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status, institution)
       throw new PlaidException(error);
     }
   }
 
-  async getAccounts(this: PlaidWrapper, accessToken: string, options?: Plaid.AccountsGetRequestOptions): Promise<Plaid.AccountsGetResponse> {
+  async getAccounts(
+    this: PlaidWrapper,
+    institution: Institution,
+    options?: Plaid.AccountsGetRequestOptions,
+  ): Promise<Plaid.AccountsGetResponse> {
+    if (!institution.accessToken) {
+      throw new Error('Institution does not have an access token')
+    }
+
     try {
       const param =         {
-        access_token: accessToken,
+        access_token: institution.accessToken,
         options,
       };
 
@@ -82,12 +103,12 @@ class PlaidWrapper {
         param,
       );
 
-      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution)
 
       return response.data;
     }
     catch (error) {
-      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status)
+      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status, institution)
       throw new PlaidException(error);
     }
   }
@@ -134,56 +155,71 @@ class PlaidWrapper {
     }
   }
 
-  async getBalance(accessToken: string, options?: Plaid.AccountsBalanceGetRequestOptions): Promise<Plaid.AccountsGetResponse> {
+  async getBalance(
+    institution: Institution,
+    options?: Plaid.AccountsBalanceGetRequestOptions,
+  ): Promise<Plaid.AccountsGetResponse> {
+    if (!institution.accessToken) {
+      throw new Error('Institution does not have an access token')
+    }
+
     try {
       const response = await this.plaid.accountsBalanceGet(
         {
-          access_token: accessToken,
+          access_token: institution.accessToken,
         },
         options,
       );
 
-      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution)
 
       return response.data;
     }
     catch (error) {
-      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status)
+      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status, institution)
       throw new PlaidException(error);
     }
   }
 
   async syncTransactions(
-    accessToken: string,
+    institution: Institution,
     cursor: string | null,
   ): Promise<Plaid.TransactionsSyncResponse> {
+    if (!institution.accessToken) {
+      throw new Error('Institution does not have an access token')
+    }
+
     try {
       const param: Plaid.TransactionsSyncRequest = {
-        access_token: accessToken,
+        access_token: institution.accessToken,
         cursor: cursor ?? undefined,
       }
 
       const response = await this.plaid.transactionsSync(param);
 
-      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution)
 
       return response.data
     }
     catch (error) {
-      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status)
+      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status, institution)
       throw new PlaidException(error);
     }
   }
 
   async getTransactions(
-    accessToken: string,
+    institution: Institution,
     startDate: string,
     endDate: string,
     options?: Plaid.TransactionsGetRequestOptions,
   ): Promise<Plaid.TransactionsGetResponse> {
+    if (!institution.accessToken) {
+      throw new Error('Institution does not have an access token')
+    }
+
     try {
       const param: Plaid.TransactionsGetRequest = {
-        access_token: accessToken,
+        access_token: institution.accessToken,
         start_date: startDate,
         end_date: endDate,
         options,
@@ -193,32 +229,36 @@ class PlaidWrapper {
         param,
       );
 
-      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution)
 
       return response.data;
     }
     catch (error) {
-      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status)
+      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status, institution)
       throw new PlaidException(error);
     }
   }
 
   async refreshTransactions(
-    accessToken: string,
+    institution: Institution,
   ): Promise<Plaid.TransactionsRefreshResponse> {
+    if (!institution.accessToken) {
+      throw new Error('Institution does not have an access token')
+    }
+
     try {
       const param: Plaid.TransactionsRefreshRequest = {
-        access_token: accessToken,
+        access_token: institution.accessToken,
       }
 
       const response = await this.plaid.transactionsRefresh(param);
 
-      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution)
 
       return response.data
     }
     catch (error) {
-      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status)
+      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status, institution)
       throw new PlaidException(error);
     }
   }
@@ -267,52 +307,72 @@ class PlaidWrapper {
     }
   }
 
-  async updateItemWebhook(accessToken: string, webhook: string): Promise<Plaid.ItemWebhookUpdateResponse> {
+  async updateItemWebhook(
+    institution: Institution,
+    webhook: string,
+  ): Promise<Plaid.ItemWebhookUpdateResponse> {
+    if (!institution.accessToken) {
+      throw new Error('Institution does not have an access token')
+    }
+
     try {
       const response = await this.plaid.itemWebhookUpdate({
-        access_token: accessToken,
+        access_token: institution.accessToken,
         webhook,
       });
 
-      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution)
 
       return response.data;
     }
     catch (error) {
-      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status)
+      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status, institution)
       throw new PlaidException(error);
     }
   }
 
-  async resetLogin(accessToken: string): Promise<Plaid.SandboxItemResetLoginResponse> {
+  async resetLogin(
+    institution: Institution,
+  ): Promise<Plaid.SandboxItemResetLoginResponse> {
+    if (!institution.accessToken) {
+      throw new Error('Institution does not have an access token')
+    }
+
     try {
       const response = await this.plaid.sandboxItemResetLogin({
-        access_token: accessToken,
+        access_token: institution.accessToken,
       });
 
-      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution)
 
       return response.data;
     }
     catch (error) {
-      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status)
+      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status, institution)
       throw new PlaidException(error);
     }
   }
 
-  async sandboxItemFireWebhook(accessToken: string, code: Plaid.SandboxItemFireWebhookRequestWebhookCodeEnum): Promise<Plaid.SandboxItemFireWebhookResponse> {
+  async sandboxItemFireWebhook(
+    institution: Institution,
+    code: Plaid.SandboxItemFireWebhookRequestWebhookCodeEnum,
+  ): Promise<Plaid.SandboxItemFireWebhookResponse> {
+    if (!institution.accessToken) {
+      throw new Error('Institution does not have an access token')
+    }
+
     try {
       const response = await this.plaid.sandboxItemFireWebhook({
-        access_token: accessToken,
+        access_token: institution.accessToken,
         webhook_code: code,
       });
 
-      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution)
 
       return response.data;
     }
     catch (error) {
-      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status)
+      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status, institution)
       throw new PlaidException(error);
     }
   }
@@ -331,7 +391,7 @@ class PlaidWrapper {
     }
   }
 
-  static async log(request: string, response: unknown, status: number) {
+  static async log(request: string, response: unknown, status: number, institution?: Institution) {
     const { default: PlaidLog } = await import('App/Models/PlaidLog')
 
     await new PlaidLog()
@@ -340,6 +400,7 @@ class PlaidWrapper {
         request,
         response,
         status,
+        institutionId: institution?.institutionId,
       })
       .save();
   }

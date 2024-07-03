@@ -39,7 +39,9 @@ export default class PlaidGetItem extends BaseCommand {
 
     try {
       if (this.accessToken.match(environmentRegEx)) {
-        const response = await plaidClient.getItem(this.accessToken);
+        const institiution = await Institution.findByOrFail('accessToken', this.accessToken)
+
+        const response = await plaidClient.getItem(institiution);
         this.logger.info(JSON.stringify(response, null, 2));
 
         if (this.fix) {

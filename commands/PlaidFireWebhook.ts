@@ -46,7 +46,7 @@ export default class PlaidFireWebhook extends BaseCommand {
 
       if (institution.accessToken.match(environmentRegEx)) {
         await plaidClient.sandboxItemFireWebhook(
-          institution.accessToken,
+          institution,
           SandboxItemFireWebhookRequestWebhookCodeEnum.SyncUpdatesAvailable,
         );
       }

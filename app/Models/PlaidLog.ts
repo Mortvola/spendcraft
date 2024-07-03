@@ -20,5 +20,8 @@ export default class PlaidLog extends BaseModel {
   public response: unknown | null;
 
   @column()
+  public institutionId: string | null;
+
+  @column()
   public status: number;
 }

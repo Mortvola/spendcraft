@@ -12,12 +12,15 @@ class PlaidLog implements PlaidLogInterface {
 
   status: number;
 
+  institutionId?: string;
+
   constructor(props: PlaidLogProps) {
     this.id = props.id;
     this.createdAt = DateTime.fromISO(props.createdAt);
     this.request = props.request;
     this.response = props.response;
     this.status = props.status;
+    this.institutionId = props.institutionId;
   }
 }
 

@@ -31,7 +31,7 @@ class BalanceUpdater {
         await Promise.all(institutions.map(async (institution) => {
           if (institution.accessToken !== null) {
             Logger.info(`Checking accounts at ${institution.name}`);
-            const response = await plaidClient.getAccounts(institution.accessToken, {
+            const response = await plaidClient.getAccounts(institution, {
               account_ids: institution.accounts.map((a) => a.plaidAccountId),
             });
           

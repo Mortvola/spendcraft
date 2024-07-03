@@ -4,7 +4,6 @@ import {
   ModelAttributes,
 } from '@ioc:Adonis/Lucid/Orm';
 import { DateTime } from 'luxon';
-import plaidClient from '@ioc:Plaid';
 import * as Plaid from 'plaid';
 import AccountTransaction from 'App/Models/AccountTransaction';
 import BalanceHistory from 'App/Models/BalanceHistory';
@@ -14,7 +13,6 @@ import {
 } from 'Common/ResponseTypes';
 import Transaction from 'App/Models/Transaction';
 import Budget from 'App/Models/Budget';
-import { Exception } from '@poppinss/utils';
 import { XMLParser } from 'fast-xml-parser';
 import Logger from '@ioc:Adonis/Core/Logger'
 import Database from '@ioc:Adonis/Lucid/Database';
@@ -166,25 +164,25 @@ class Account extends BaseModel {
   //   return result;
   // }
 
-  public async updateBalance(
-    accessToken: string,
-  ): Promise<void> {
-    const accountsResponse = await plaidClient.getAccounts(accessToken, {
-      account_ids: [this.plaidAccountId],
-    });
+  // public async updateBalance(
+  //   accessToken: string,
+  // ): Promise<void> {
+  //   const accountsResponse = await plaidClient.getAccounts(accessToken, {
+  //     account_ids: [this.plaidAccountId],
+  //   });
 
-    if (accountsResponse.accounts[0].balances.current === null) {
-      throw new Exception('Balance is null');
-    }
+  //   if (accountsResponse.accounts[0].balances.current === null) {
+  //     throw new Exception('Balance is null');
+  //   }
 
-    this.balance = accountsResponse.accounts[0].balances.current;
-    this.plaidBalance = accountsResponse.accounts[0].balances.current;
-    if (this.plaidBalance && (this.type === 'credit' || this.type === 'loan')) {
-      this.plaidBalance = -this.plaidBalance;
-    }
+  //   this.balance = accountsResponse.accounts[0].balances.current;
+  //   this.plaidBalance = accountsResponse.accounts[0].balances.current;
+  //   if (this.plaidBalance && (this.type === 'credit' || this.type === 'loan')) {
+  //     this.plaidBalance = -this.plaidBalance;
+  //   }
 
-    await this.updateAccountBalanceHistory(this.balance);
-  }
+  //   await this.updateAccountBalanceHistory(this.balance);
+  // }
 
   // public async addTransactions(
   //   this: Account,

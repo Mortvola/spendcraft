@@ -43,11 +43,9 @@ export default class PlaidRefreshTransactions extends BaseCommand {
         throw new Error('Access token is null')
       }
 
-      console.log(institution.accessToken);
-
       if (institution.accessToken.match(environmentRegEx)) {
         await plaidClient.refreshTransactions(
-          institution.accessToken,
+          institution,
         );
       }
       else {

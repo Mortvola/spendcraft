@@ -222,7 +222,7 @@ class Institution extends BaseModel {
       let more = true;
       while (more) {
         // eslint-disable-next-line no-await-in-loop
-        const response = await plaidClient.syncTransactions(this.accessToken, nextCursor);
+        const response = await plaidClient.syncTransactions(this, nextCursor);
 
         // If the cursor has change then we received transaction changes.
         if (response.next_cursor !== nextCursor) {

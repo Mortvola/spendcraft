@@ -125,8 +125,8 @@ class InstitutionController {
     catch (error) {
       logger.error(error);
 
-      if (tokenResponse) {
-        await plaidClient.removeItem(tokenResponse.access_token);
+      if (institution) {
+        await plaidClient.removeItem(institution);
       }
 
       await trx.rollback();
@@ -280,7 +280,7 @@ class InstitutionController {
     if (institution.accessToken) {
       const existingAccts = await Account.query().where('institutionId', institution.id);
 
-      const { accounts } = await plaidClient.getAccounts(institution.accessToken);
+      const { accounts } = await plaidClient.getAccounts(institution);
 
       existingAccts.forEach((existingAcct) => {
         const index = accounts.findIndex((a) => a.account_id === existingAcct.plaidAccountId);
@@ -411,7 +411,7 @@ class InstitutionController {
 
     const fundingPool = await budget.getFundingPoolCategory({ client: trx });
 
-    const plaidAccountsResponse = await plaidClient.getAccounts(institution.accessToken);
+    const plaidAccountsResponse = await plaidClient.getAccounts(institution);
 
     // eslint-disable-next-line no-restricted-syntax
     for (const plaidAccount of plaidAccountsResponse.accounts) {
@@ -919,7 +919,7 @@ class InstitutionController {
       const accounts = await institution.related('accounts').query();
 
       if (institution.accessToken) {
-        await plaidClient.removeItem(institution.accessToken);
+        await plaidClient.removeItem(institution);
       }
 
       // eslint-disable-next-line no-restricted-syntax
