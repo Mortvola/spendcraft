@@ -525,3 +525,22 @@ export interface TransactionLogInterface {
 
   transactionId: number;
 }
+
+export type PlaidLogProps = {
+  id: number,
+  createdAt: string;
+  request: string;
+  response: unknown;
+}
+
+export type PlaidLogsResponse = PlaidLogProps[]
+
+export interface PlaidLogInterface {
+  id: number;
+
+  createdAt: DateTime,
+
+  request: string;
+
+  response: unknown;
+}

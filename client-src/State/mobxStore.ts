@@ -14,6 +14,7 @@ import Rebalances from './Rebalances';
 import Searcher from './Searcher';
 import AutoAssignments from './AutoAssignments';
 import TransactionLogs from './TransactionLogs';
+import PlaidLogs from './PlaidLogs';
 
 class Store implements StoreInterface {
   user: User;
@@ -40,6 +41,8 @@ class Store implements StoreInterface {
 
   transactionLogs: TransactionLogs;
 
+  plaidLogs: PlaidLogs;
+
   initialized = false;
 
   constructor() {
@@ -55,6 +58,7 @@ class Store implements StoreInterface {
     this.searcher = new Searcher(this);
     this.autoAssignments = new AutoAssignments(this);
     this.transactionLogs = new TransactionLogs(this);
+    this.plaidLogs = new PlaidLogs(this);
   }
 
   refresh() {
@@ -71,6 +75,7 @@ class Store implements StoreInterface {
     this.rebalances = new Rebalances(this);
     this.autoAssignments = new AutoAssignments(this);
     this.transactionLogs = new TransactionLogs(this);
+    this.plaidLogs = new PlaidLogs(this);
   }
 }
 

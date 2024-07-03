@@ -36,6 +36,7 @@ Route.get('/user', 'HomeController.index');
 Route.get('/search', 'HomeController.index');
 Route.get('/auto-assignments', 'HomeController.index');
 Route.get('/logs', 'HomeController.index');
+Route.get('/admin', 'HomeController.index');
 Route.get('/', 'HomeController.index');
 
 Route.post('/wh', 'WebhookController.post');
@@ -208,6 +209,8 @@ Route.group(() => {
         .prefix('/auto-assignments')
 
       Route.get('/transaction-logs', 'TransactionsController.logs');
+
+      Route.get('/admin/plaid-logs', 'PlaidLogsController.get')
     })
       .middleware(['auth']);
   })

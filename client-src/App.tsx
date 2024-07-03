@@ -36,6 +36,8 @@ import AutoAssigments from './AutoAssignment/AutoAssigments';
 import AutoAssignmentDetails from './AutoAssignment/AutoAssignmentDetails';
 import TransactionLogs from './TransactionLogs';
 import TransactionLogDetails from './TransactionLogDetails';
+import PlaidLogsView from './PlaidLogs/PlaidLogsView';
+import PlaidLogs from './PlaidLogs/PlaidLogs';
 
 const App: React.FC = observer(() => {
   const error = useContext(ServerError);
@@ -137,6 +139,9 @@ if (container) {
               </Route>
               <Route path="logs" element={<TransactionLogs />}>
                 <Route index element={<TransactionLogDetails />} />
+              </Route>
+              <Route path="admin" element={<PlaidLogsView />}>
+                <Route index element={<PlaidLogs />} />
               </Route>
               <Route path="user" element={<UserAccount />} />
             </Route>

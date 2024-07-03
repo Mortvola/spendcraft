@@ -13,21 +13,34 @@ import { runInAction } from 'mobx';
 import { useStores } from './State/mobxStore';
 import { Views } from './State/State';
 
+enum EventKeys {
+  HOME = 'HOME',
+  PLANS = 'PLANS',
+  ACCOUNTS = 'ACCOUNTS',
+  SEARCH = 'SEARCH',
+  REPORTS = 'REPORTS',
+  AUTO_ASSIGN = 'AUTO_ASSIGN',
+  LOGS = 'LOGS',
+  ADMIN = 'ADMIN',
+  LOGOUT = 'LOGOUT',
+}
+
 const pathKeys = [
-  { path: '/home', key: 'HOME' },
-  { path: '/plans', key: 'PLANS' },
-  { path: '/accounts', key: 'ACCOUNTS' },
-  { path: '/search', key: 'SEARCH' },
-  { path: '/reports', key: 'REPORTS' },
-  { path: '/auto-assignments', key: 'AUTO-ASSIGN' },
-  { path: '/logs', key: 'LOGS' },
+  { path: '/home', key: EventKeys.HOME },
+  { path: '/plans', key: EventKeys.PLANS },
+  { path: '/accounts', key: EventKeys.ACCOUNTS },
+  { path: '/search', key: EventKeys.SEARCH },
+  { path: '/reports', key: EventKeys.REPORTS },
+  { path: '/auto-assignments', key: EventKeys.AUTO_ASSIGN },
+  { path: '/logs', key: EventKeys.LOGS },
+  { path: '/admin', key: EventKeys.ADMIN },
 ]
 
 const Menubar: React.FC = observer(() => {
   const store = useStores();
   const [expanded, setExpanded] = React.useState<boolean>(false);
   const navigate = useNavigate();
-  const [active, setActive] = React.useState<string>('HOME');
+  const [active, setActive] = React.useState<EventKeys>(EventKeys.HOME);
   const location = useLocation();
 
   React.useEffect(() => {
@@ -68,11 +81,11 @@ const Menubar: React.FC = observer(() => {
     return null;
   };
 
-  const handleSelect = (eventKey: Views | string | null) => {
-    setActive(eventKey ?? 'HOME');
+  const handleSelect = (eventKey: string | null) => {
+    setActive((eventKey as EventKeys) ?? EventKeys.HOME);
     setExpanded(false);
     switch (eventKey) {
-      case 'LOGOUT':
+      case EventKeys.LOGOUT:
         logout();
         break;
 
@@ -98,26 +111,35 @@ const Menubar: React.FC = observer(() => {
       <Navbar.Collapse style={{ justifyContent: 'space-between' }}>
         <Nav variant="underline" defaultActiveKey="HOME" activeKey={active}>
           <Nav.Item>
-            <Nav.Link as={Link} to="/home" eventKey="HOME">Home</Nav.Link>
+            <Nav.Link as={Link} to="/home" eventKey={EventKeys.HOME}>Home</Nav.Link>
           </Nav.Item>
           <Nav.Item>
-            <Nav.Link as={Link} to="/plans" eventKey="PLANS">Plans</Nav.Link>
+            <Nav.Link as={Link} to="/plans" eventKey={EventKeys.PLANS}>Plans</Nav.Link>
           </Nav.Item>
           <Nav.Item>
-            <Nav.Link as={Link} to="/accounts" eventKey="ACCOUNTS">Accounts</Nav.Link>
+            <Nav.Link as={Link} to="/accounts" eventKey={EventKeys.ACCOUNTS}>Accounts</Nav.Link>
           </Nav.Item>
           <Nav.Item>
-            <Nav.Link as={Link} to="/search" eventKey="SEARCH">Search</Nav.Link>
+            <Nav.Link as={Link} to="/search" eventKey={EventKeys.SEARCH}>Search</Nav.Link>
           </Nav.Item>
           <Nav.Item>
-            <Nav.Link as={Link} to="/reports" eventKey="REPORTS">Reports</Nav.Link>
+            <Nav.Link as={Link} to="/reports" eventKey={EventKeys.REPORTS}>Reports</Nav.Link>
           </Nav.Item>
           <Nav.Item>
-            <Nav.Link as={Link} to="/auto-assignments" eventKey="AUTO-ASSIGN">Auto Assign</Nav.Link>
+            <Nav.Link as={Link} to="/auto-assignments" eventKey={EventKeys.AUTO_ASSIGN}>Auto Assign</Nav.Link>
           </Nav.Item>
           <Nav.Item>
-            <Nav.Link as={Link} to="/logs" eventKey="LOGS">Logs</Nav.Link>
+            <Nav.Link as={Link} to="/logs" eventKey={EventKeys.LOGS}>Logs</Nav.Link>
           </Nav.Item>
+          {
+            store.user.admin
+              ? (
+                <Nav.Item>
+                  <Nav.Link as={Link} to="/admin" eventKey={EventKeys.ADMIN}>Admin</Nav.Link>
+                </Nav.Item>
+              )
+              : null
+          }
         </Nav>
         <Nav>
           <NavDropdown
@@ -127,7 +149,7 @@ const Menubar: React.FC = observer(() => {
             align="end"
           >
             <NavDropdown.Item as={Link} to="/user" eventKey="USER_ACCOUNT">Account</NavDropdown.Item>
-            <NavDropdown.Item eventKey="LOGOUT">Sign Out</NavDropdown.Item>
+            <NavDropdown.Item eventKey={EventKeys.LOGOUT}>Sign Out</NavDropdown.Item>
           </NavDropdown>
         </Nav>
       </Navbar.Collapse>

@@ -12,6 +12,8 @@ class User implements UserInterface {
 
   authenticated = false;
 
+  admin = false;
+
   store: unknown;
 
   constructor(store: unknown) {
@@ -31,6 +33,7 @@ class User implements UserInterface {
           this.username = body.username;
           this.email = body.email;
           this.pendingEmail = body.pendingEmail ?? null;
+          this.admin = body.admin;
         }
       });
     }

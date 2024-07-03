@@ -47,6 +47,9 @@ export default class User extends BaseModel {
   @column({ serializeAs: null })
   public rememberMeToken?: string
 
+  @column()
+  public admin: boolean
+
   @column({
     prepare: (value: PassCode) => JSON.stringify(value),
     consume: (value: PassCode | null) => {
@@ -59,6 +62,7 @@ export default class User extends BaseModel {
 
       return null;
     },
+    serializeAs: null,
   })
   public oneTimePassCode: PassCode | null;
 
