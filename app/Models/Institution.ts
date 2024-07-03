@@ -11,8 +11,6 @@ import Account from 'App/Models/Account';
 import Logger from '@ioc:Adonis/Core/Logger'
 import Budget from 'App/Models/Budget';
 import { DateTime } from 'luxon';
-import { CategoryBalanceProps } from 'Common/ResponseTypes';
-import AccountTransaction from './AccountTransaction';
 
 class Institution extends BaseModel {
   @column()
@@ -155,6 +153,7 @@ class Institution extends BaseModel {
     return unassignedSum;
   }
 
+  // eslint-disable-next-line class-methods-use-this
   private async removeTransactions(
     this: Institution,
     removedTransactions: Plaid.RemovedTransaction[],
@@ -163,35 +162,25 @@ class Institution extends BaseModel {
     for (let i = 0; i < removedTransactions.length; i += 1) {
       const removed = removedTransactions[i];
 
-      // eslint-disable-next-line no-await-in-loop
-      const at = await AccountTransaction
-        .findBy('providerTransactionId', removed.transaction_id, { client: this.$trx });
+      const acct = accounts.find((a) => a.plaidAccountId === removed.account_id)
 
-      if (at) {
-        // TODO: assumes removed transactions are pending transactions and therefore
-        // have no transaction categories.
-        // unassignedSum -= at.amount;
+      if (acct) {
+        // eslint-disable-next-line no-await-in-loop
+        const at = await acct.related('accountTransactions').query()
+          .where('providerTransactionId', removed.transaction_id)
+          .first();
 
-        const acct = accounts.find((a) => a.$attributes.id === at.accountId)
-
-        if (acct) {
-          // TODO: assumes removed transactions are pending transactions and therefore
-          // have not transaction categories.
-          const categoryBalances: CategoryBalanceProps[] = [];
-
+        if (at) {
           // eslint-disable-next-line no-await-in-loop
-          await acct.deleteAccountTransaction(at, categoryBalances)
+          await acct.deleteAccountTransaction(at)
         }
         else {
-          Logger.info(`removal: account not found: ${at.accountId}`)
+          Logger.info(`removal: transaction not found: ${removed.transaction_id}`)
         }
       }
       else {
-        Logger.info(`removal: transaction not found: ${removed.transaction_id}`)
+        Logger.info(`removal: account not found: ${removed.account_id}`)
       }
-
-      // TODO: this code assumes the removed transactions are pending transactions.
-      // Add code to update the account balance if the transaction removed is not a pending transaction.
     }
   }
 

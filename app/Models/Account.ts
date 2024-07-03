@@ -18,7 +18,6 @@ import Logger from '@ioc:Adonis/Core/Logger'
 import Database from '@ioc:Adonis/Lucid/Database';
 import { getChanges } from 'App/Controllers/Http/transactionFields';
 import Category from './Category';
-import TransactionCategory from './TransactionCategory';
 
 export type AccountSyncResult = {
   categories: CategoryBalanceProps[],
@@ -517,53 +516,38 @@ class Account extends BaseModel {
   public async deleteAccountTransaction(
     this: Account,
     acctTran: AccountTransaction,
-    categoryBalances: CategoryBalanceProps[],
   ) {
     // eslint-disable-next-line no-await-in-loop
-    const transaction = await Transaction.find(acctTran.transactionId, { client: acctTran.$trx });
+    const transaction = await acctTran.related('transaction').query().firstOrFail();
 
-    if (transaction) {
-      // eslint-disable-next-line no-await-in-loop
-      const transCats = await TransactionCategory
-        .query({ client: acctTran.$trx })
-        .where('transactionId', transaction.id);
+    // eslint-disable-next-line no-await-in-loop
+    const transCats = await transaction.related('transactionCategories').query();
 
-      // eslint-disable-next-line no-restricted-syntax
-      for (const tc of transCats) {
-        if (!acctTran.pending && this.tracking === 'Transactions' && transaction.date >= this.startDate) {
-          // eslint-disable-next-line no-await-in-loop
-          const category = await Category.find(tc.categoryId, { client: acctTran.$trx });
+    // eslint-disable-next-line no-restricted-syntax
+    for (const tc of transCats) {
+      if (transaction.date >= this.startDate) {
+        // eslint-disable-next-line no-await-in-loop
+        const category = await tc.related('category').query().firstOrFail();
 
-          if (category) {
-            category.balance -= tc.amount;
-
-            // eslint-disable-next-line no-await-in-loop
-            await category.save();
-
-            const catBalance = categoryBalances.find((cb) => cb.id === category.id);
-
-            if (catBalance) {
-              catBalance.balance = category.balance;
-            }
-            else {
-              categoryBalances.push({ id: category.id, balance: category.balance })
-            }
-          }
-        }
+        category.balance -= tc.amount;
 
         // eslint-disable-next-line no-await-in-loop
-        await tc.delete();
+        await category.save();
       }
 
       // eslint-disable-next-line no-await-in-loop
-      await acctTran.delete();
+      await tc.delete();
+    }
 
-      // eslint-disable-next-line no-await-in-loop
-      await transaction.delete();
+    if (!acctTran.pending && transaction.date >= this.startDate) {
+      this.$extras.addedSum = (this.$extras.addedSum ?? 0) + acctTran.amount;
     }
-    else {
-      Logger.info(`deleteAccountTransaction: transaction not found: ${acctTran.transactionId}`)
-    }
+
+    // eslint-disable-next-line no-await-in-loop
+    await acctTran.delete();
+
+    // eslint-disable-next-line no-await-in-loop
+    await transaction.delete();
   }
 
   // eslint-disable-next-line class-methods-use-this
