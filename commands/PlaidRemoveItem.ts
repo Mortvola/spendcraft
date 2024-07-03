@@ -36,16 +36,18 @@ export default class PlaidGetItem extends BaseCommand {
 
     try {
       if (this.accessToken.match(environmentRegEx)) {
-        const institution = await Institution.findByOrFail('accessToken', this.accessToken);
+        const institution = await Institution.findBy('accessToken', this.accessToken);
 
-        this.logger.info(`Removing item for ${institution ? institution.name : 'unknown'}`);
+        this.logger.info(`Removing item for ${institution?.name ?? 'unknown'}`);
 
-        const item = await plaidClient.removeItem(institution);
+        const item = await plaidClient.removeItem(this.accessToken, institution?.institutionId);
         this.logger.info(JSON.stringify(item, null, 2));
 
-        institution.accessToken = null;
-        institution.plaidItemId = null;
-        await institution.save();
+        if (institution) {
+          institution.accessToken = null;
+          institution.plaidItemId = null;
+          await institution.save();
+        }
       }
       else {
         this.logger.error('Access token and current environment do not match');

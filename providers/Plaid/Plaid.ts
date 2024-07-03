@@ -52,34 +52,31 @@ class PlaidWrapper {
         access_token: institution.accessToken,
       });
 
-      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution.institutionId)
 
       return response.data;
     }
     catch (error) {
-      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status, institution)
+      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status, institution.institutionId)
       throw new PlaidException(error);
     }
   }
 
   async removeItem(
-    institution: Institution,
+    accessToken: string,
+    institutionId?: string,
   ): Promise<Plaid.ItemRemoveResponse> {
-    if (!institution.accessToken) {
-      throw new Error('Institution does not have an access token')
-    }
-
     try {
       const response = await this.plaid.itemRemove({
-        access_token: institution.accessToken,
+        access_token: accessToken,
       });
 
-      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institutionId)
 
       return response.data;
     }
     catch (error) {
-      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status, institution)
+      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status, institutionId)
       throw new PlaidException(error);
     }
   }
@@ -103,12 +100,12 @@ class PlaidWrapper {
         param,
       );
 
-      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution.institutionId)
 
       return response.data;
     }
     catch (error) {
-      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status, institution)
+      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status, institution.institutionId)
       throw new PlaidException(error);
     }
   }
@@ -171,12 +168,12 @@ class PlaidWrapper {
         options,
       );
 
-      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution.institutionId)
 
       return response.data;
     }
     catch (error) {
-      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status, institution)
+      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status, institution.institutionId)
       throw new PlaidException(error);
     }
   }
@@ -197,12 +194,12 @@ class PlaidWrapper {
 
       const response = await this.plaid.transactionsSync(param);
 
-      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution.institutionId)
 
       return response.data
     }
     catch (error) {
-      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status, institution)
+      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status, institution.institutionId)
       throw new PlaidException(error);
     }
   }
@@ -229,12 +226,12 @@ class PlaidWrapper {
         param,
       );
 
-      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution.institutionId)
 
       return response.data;
     }
     catch (error) {
-      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status, institution)
+      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status, institution.institutionId)
       throw new PlaidException(error);
     }
   }
@@ -253,12 +250,12 @@ class PlaidWrapper {
 
       const response = await this.plaid.transactionsRefresh(param);
 
-      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution.institutionId)
 
       return response.data
     }
     catch (error) {
-      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status, institution)
+      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status, institution.institutionId)
       throw new PlaidException(error);
     }
   }
@@ -321,12 +318,12 @@ class PlaidWrapper {
         webhook,
       });
 
-      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution.institutionId)
 
       return response.data;
     }
     catch (error) {
-      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status, institution)
+      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status, institution.institutionId)
       throw new PlaidException(error);
     }
   }
@@ -343,12 +340,12 @@ class PlaidWrapper {
         access_token: institution.accessToken,
       });
 
-      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution.institutionId)
 
       return response.data;
     }
     catch (error) {
-      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status, institution)
+      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status, institution.institutionId)
       throw new PlaidException(error);
     }
   }
@@ -367,12 +364,12 @@ class PlaidWrapper {
         webhook_code: code,
       });
 
-      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution)
+      await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution.institutionId)
 
       return response.data;
     }
     catch (error) {
-      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status, institution)
+      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status, institution.institutionId)
       throw new PlaidException(error);
     }
   }
@@ -391,7 +388,7 @@ class PlaidWrapper {
     }
   }
 
-  static async log(request: string, response: unknown, status: number, institution?: Institution) {
+  static async log(request: string, response: unknown, status: number, institutionId?: string) {
     const { default: PlaidLog } = await import('App/Models/PlaidLog')
 
     await new PlaidLog()
@@ -400,7 +397,7 @@ class PlaidWrapper {
         request,
         response,
         status,
-        institutionId: institution?.institutionId,
+        institutionId,
       })
       .save();
   }

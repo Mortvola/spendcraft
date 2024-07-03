@@ -75,11 +75,12 @@ class InstitutionController {
     const trx = await Database.transaction();
 
     let tokenResponse: Plaid.ItemPublicTokenExchangeResponse | null = null;
+    let institutionResponse: Plaid.InstitutionsGetByIdResponse | null = null;
 
     try {
       tokenResponse = await plaidClient.exchangePublicToken(requestData.publicToken);
 
-      const institutionResponse = await plaidClient
+      institutionResponse = await plaidClient
         .getInstitutionById(requestData.institutionId, [Plaid.CountryCode.Us]);
 
       institution = await new Institution()
@@ -125,8 +126,8 @@ class InstitutionController {
     catch (error) {
       logger.error(error);
 
-      if (institution) {
-        await plaidClient.removeItem(institution);
+      if (tokenResponse?.access_token) {
+        await plaidClient.removeItem(tokenResponse.access_token, institutionResponse?.institution?.institution_id);
       }
 
       await trx.rollback();
@@ -919,7 +920,7 @@ class InstitutionController {
       const accounts = await institution.related('accounts').query();
 
       if (institution.accessToken) {
-        await plaidClient.removeItem(institution);
+        await plaidClient.removeItem(institution.accessToken, institution.institutionId);
       }
 
       // eslint-disable-next-line no-restricted-syntax
