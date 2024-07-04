@@ -12,6 +12,7 @@ const CSSModuleLoader = {
   loader: 'css-loader',
   options: {
     modules: {
+      namedExport: false,
       exportLocalsConvention: 'camelCaseOnly',
       localIdentName: '[name]-[local]-[hash:base64:5]',
     },
