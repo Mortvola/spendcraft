@@ -6,28 +6,41 @@ self.addEventListener('install', (event) => {
   // );
 });
 
+const setOrClearBadge = async (data: any) => {
+  if (navigator.setAppBadge) {
+    if (data.unassignedCount > 0) {
+      await navigator.setAppBadge(data.unassignedCount);
+    }
+    else {
+      await navigator.clearAppBadge();
+    }
+  }
+}
+
 // Listen to `push` notification event. Define the text to be displayed
 // and show the notification.
 self.addEventListener('push', (event) => {
   const data = event.data.json();
 
-  if (navigator.setAppBadge) {
-    if (data.unassignedCount > 0) {
-      navigator.setAppBadge(data.unassignedCount);
-    }
-    else {
-      navigator.clearAppBadge();
-    }
-  }
+  // Show the new notifications
+  event.waitUntil(
+    setOrClearBadge(data)
+      .then(() => (
+        self.registration.getNotifications()
+      ))
+      .then((notifications) => {
+        for (let i = 0; i < notifications.length; i += 1) {
+          notifications[i].close();
+        }
 
-  const notification = self.registration.showNotification(data.title, {
-    body: data.body,
-    icon: '/logo2.png',
-    tag: 'new-transactions',
-    renotify: true,
-  });
-
-  event.waitUntil(notification);
+        return self.registration.showNotification(data.title, {
+          body: data.body,
+          icon: '/logo2.png',
+          tag: 'new-transactions',
+          renotify: true,
+        })
+      }),
+  );
 });
 
 self.addEventListener('notificationclick', (event) => {
