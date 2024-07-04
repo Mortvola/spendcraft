@@ -20,6 +20,17 @@ const PlaidLog: React.FC<PropsType> = ({
     onClick(log);
   }
 
+  const renderDetail = () => (
+    ((log.status >= 200 && log.status < 300) || log.status === null)
+    && (log.request === 'syncTransactions' || log.request === '/transactions/sync')
+      ? <TransactionsSync response={log.response as PlaidApi.TransactionsSyncResponse} />
+      : (
+        <div className={styles.responseWrapper}>
+          <div className={styles.response}>{JSON.stringify(log.response, null, 4)}</div>
+        </div>
+      )
+  )
+
   return (
     <>
       <div className={styles.layout} onClick={handleClick}>
@@ -30,9 +41,7 @@ const PlaidLog: React.FC<PropsType> = ({
       </div>
       {
         selected
-        && ((log.status >= 200 && log.status < 300) || log.status === null)
-        && (log.request === 'syncTransactions' || log.request === '/transactions/sync')
-          ? <TransactionsSync response={log.response as PlaidApi.TransactionsSyncResponse} />
+          ? renderDetail()
           : null
       }
     </>
