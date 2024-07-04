@@ -56,7 +56,7 @@
     "fast-xml-parser": "^4.0.8",
     "fetch-h2": "^3.0.2",
     "formik": "^2.2.9",
-    "jose": "^4.11.2",
+    "jose": "^5.6.3",
     "js-sha256": "^0.10.1",
     "jsonwebtoken": "^9.0.0",
     "knex": "^2.0.0",
