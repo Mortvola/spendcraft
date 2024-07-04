@@ -63,7 +63,8 @@ export default class AuthMiddleware {
    */
   public async handle(
     { auth }: HttpContextContract,
-    next: () => Promise<void>, customGuards: string[],
+    next: () => Promise<void>,
+    customGuards: string[],
   ): Promise<void> {
     /**
      * Uses the user defined guards or the default guard mentioned in

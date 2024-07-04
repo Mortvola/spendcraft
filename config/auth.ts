@@ -107,6 +107,7 @@ const authConfig: AuthConfig = {
                 model: () => import('App/Models/User'),
             },
         },
+
         jwt: {
             driver: 'jwt',
             publicKey: Env.get('JWT_PUBLIC_KEY', '').replace(/\\n/g, '\n'),

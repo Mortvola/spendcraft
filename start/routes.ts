@@ -210,9 +210,13 @@ Route.group(() => {
 
       Route.get('/transaction-logs', 'TransactionsController.logs');
 
-      Route.get('/admin/plaid-logs', 'PlaidLogsController.get')
+      Route.group(() => {
+        Route.get('/plaid-logs', 'PlaidLogsController.get')
+      })
+        .prefix('/admin')
+        .middleware('admin');
     })
-      .middleware(['auth']);
+      .middleware('auth');
   })
   .prefix('/v1')
 })
