@@ -7,5 +7,9 @@ set -e
 rm build.zip;
 zip -r build build;
 
-scp -i ~/.ssh/debertas.pem build.zip ubuntu@${SPENDCRAFT_SERVER}:
+cp ./install.sh0 install.sh
+base64 -i ./build.zip >> install.sh
+chmod u+x install.sh
+
+scp -i ~/.ssh/debertas.pem install.sh ubuntu@${SPENDCRAFT_SERVER}:
 

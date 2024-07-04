@@ -30,3 +30,4 @@ home-script.edge
 dist/
 
 runtime.js
+install.sh

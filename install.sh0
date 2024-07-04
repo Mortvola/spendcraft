@@ -1,0 +1,51 @@
+#!/bin/bash
+
+SCRIPT_END=$( awk '
+  BEGIN { err=1; } 
+  /^\w*___END_OF_SHELL_SCRIPT___\w*$/ { print NR+1; err=0; exit 0; } 
+  END { if (err==1) print "?"; }
+' "$0" )
+
+echo "Checking for embedded file..."
+
+if [ "$SCRIPT_END" == '?' ]
+then
+   echo Can\'t find embedded file
+   exit 1
+fi
+
+tail -n +$SCRIPT_END $0 | base64 -d ${SPENDCRAFT_ROOT}/build.zip
+
+cd ${SPENDCRAFT_ROOT}
+
+set -e
+
+APP=spendcraft
+APP_NEW=$APP.new
+APP_OLD=$APP.old
+
+pm2 stop prod-server
+pm2 stop queue
+
+./inst.sh
+
+./backup.sh
+
+cd $APP_NEW
+
+node ace migration:run
+
+cd ..
+rm -fr $APP_OLD
+if [ -e $APP ]; then
+        mv $APP $APP_OLD
+fi
+mv $APP_NEW $APP
+
+pm2 restart prod-server --time
+pm2 restart queue --time
+pm2 logs --nostream
+
+exit 0
+
+___END_OF_SHELL_SCRIPT___
