@@ -19,8 +19,6 @@ tail -n +$SCRIPT_END $0 | base64 -d > ${SPENDCRAFT_ROOT}/build.zip
 
 cd ${SPENDCRAFT_ROOT}
 
-set -e
-
 APP=spendcraft
 APP_NEW=$APP.new
 APP_OLD=$APP.old
@@ -28,18 +26,40 @@ APP_OLD=$APP.old
 pm2 stop prod-server
 pm2 stop queue
 
-./inst.sh
+set -e
+
+# ./inst.sh
+# APP=spendcraft
+# APP_NEW=$APP.new
+# APP_OLD=$APP.old
+
+unzip build.zip
+rm -fr $APP_NEW
+mv build $APP_NEW
+
+pushd $APP_NEW
+
+ln -s ../$APP-env .env
+ln -s ../.npmrc .npmrc
+ln -s ../PushNotificationKey.p8 .
+
+#npm -dd ci --omit dev --omit optional
+#npm -dd ci --omit dev --omit optional --foreground-scripts
+npm ci --omit dev --omit optional
+
+popd
 
 ./backup.sh
 
-cd $APP_NEW
+pushd $APP_NEW
 
 node ace migration:run
 
-cd ..
+popd
+
 rm -fr $APP_OLD
 if [ -e $APP ]; then
-        mv $APP $APP_OLD
+  mv $APP $APP_OLD
 fi
 mv $APP_NEW $APP
 
