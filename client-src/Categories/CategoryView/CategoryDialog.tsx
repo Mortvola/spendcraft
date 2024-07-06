@@ -142,6 +142,23 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
     ['BILL', 'GOAL'].includes(categoryType) ? styles.bill : ''
   )
 
+  const getGoalDate = (goalDate?: DateTime | null, recurrence = 1): string => {
+    if (goalDate) {
+      let adjustedGoal = goalDate
+      const now = DateTime.now().startOf('month');
+
+      const monthDiff = goalDate.startOf('month').diff(now, 'months').months;
+      if (monthDiff < 0) {
+        const numPeriods = Math.ceil(-monthDiff / recurrence);
+        adjustedGoal = goalDate.plus({ months: numPeriods * recurrence })
+      }
+
+      return adjustedGoal.toISODate() ?? '';
+    }
+
+    return '';
+  }
+
   return (
     <FormModal<FormValues>
       setShow={setShow}
@@ -151,7 +168,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
         groupId: category?.groupId.toString() ?? '',
         fundingAmount: category?.fundingAmount.toString() ?? '0',
         recurrence: category?.recurrence.toString() ?? '1',
-        goalDate: category?.goalDate?.toISODate() ?? '',
+        goalDate: getGoalDate(category?.goalDate, category?.recurrence),
         // monthlyExpenses: category ? category.monthlyExpenses : false,
       }}
       validate={handleValidate}

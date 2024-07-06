@@ -14,7 +14,8 @@ then
    exit 1
 fi
 
-tail -n +$SCRIPT_END $0 | base64 -d ${SPENDCRAFT_ROOT}/build.zip
+echo 'Extracting file to ' ${SPENDCRAFT_ROOT}/build.zip
+tail -n +$SCRIPT_END $0 | base64 -d > ${SPENDCRAFT_ROOT}/build.zip
 
 cd ${SPENDCRAFT_ROOT}
 

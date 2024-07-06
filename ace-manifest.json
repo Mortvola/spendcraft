@@ -19,7 +19,7 @@
       },
       "commandPath": "./commands/CheckBalances",
       "commandName": "check:balances",
-      "description": "Checks the category and account balances",
+      "description": "Checks the category balances",
       "args": [],
       "aliases": [],
       "flags": [
@@ -36,6 +36,13 @@
           "type": "boolean",
           "alias": "f",
           "description": "Repairs the balances"
+        },
+        {
+          "name": "interactive",
+          "propertyName": "interactive",
+          "type": "boolean",
+          "alias": "i",
+          "description": "Interactive mode"
         }
       ]
     },

@@ -4,7 +4,6 @@ import {
   FormikErrors, FormikContextType,
 } from 'formik';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
-import Http from '@mortvola/http';
 import { FormModal, FormError, setFormErrors } from '@mortvola/forms';
 import { DateTime } from 'luxon';
 import Amount from '../Amount';
