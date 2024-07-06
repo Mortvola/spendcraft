@@ -9,6 +9,7 @@ import {
   AccountBalanceProps,
   CategoryBalanceProps,
   AccountProps,
+  CategoryProps,
 } from '../../common/ResponseTypes'
 import LoanTransaction from './LoanTransaction';
 import SystemIds from './SystemIds';
@@ -573,4 +574,16 @@ export interface PlaidLogInterface {
   status: number;
 
   institutionId?: string;
+}
+
+export type BillsResponse = CategoryProps[]
+
+export interface BillInterface {
+  id: number;
+
+  name: string;
+
+  amount: number;
+
+  date: DateTime | null;
 }

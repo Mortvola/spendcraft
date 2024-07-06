@@ -2,7 +2,7 @@ import { DateTime } from 'luxon';
 import React from 'react';
 
 type PropsType = {
-  date: DateTime,
+  date: DateTime | null,
   className?: string,
 }
 
@@ -10,7 +10,9 @@ const Date: React.FC<PropsType> = ({
   date,
   className,
 }) => (
-  <div className={className}>{date.toFormat('LL/dd/yy')}</div>
+  date
+    ? <div className={className}>{date.toFormat('LL/dd/yy')}</div>
+    : null
 )
 
 export default Date;

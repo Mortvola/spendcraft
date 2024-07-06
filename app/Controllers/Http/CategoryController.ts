@@ -501,6 +501,50 @@ class CategoryController {
 
     return Category.balances(budget, date, id !== undefined ? parseInt(id, 10) : id);
   }
+
+  static getGoalDate(goalDate?: DateTime | null, recurrence = 1): DateTime | null {
+    if (goalDate) {
+      let adjustedGoal = goalDate
+      const now = DateTime.now().startOf('month');
+
+      const monthDiff = goalDate.startOf('month').diff(now, 'months').months;
+      if (monthDiff < 0) {
+        const numPeriods = Math.ceil(-monthDiff / recurrence);
+        adjustedGoal = goalDate.plus({ months: numPeriods * recurrence })
+      }
+
+      return adjustedGoal;
+    }
+
+    return null;
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  public async getBills({
+    auth: {
+      user,
+    },
+  }: HttpContextContract): Promise<Category[]> {
+    if (!user) {
+      throw new Error('user is not defined');
+    }
+
+    const bills = await Category.query().where('type', 'BILL');
+
+    // eslint-disable-next-line no-restricted-syntax
+    for (const b of bills) {
+      b.goalDate = CategoryController.getGoalDate(b.goalDate, b.recurrence)
+    }
+
+    bills.sort((a, b) => (a.goalDate && b.goalDate ? a.goalDate.diff(b.goalDate, 'days').days : 0))
+
+    // eslint-disable-next-line no-restricted-syntax
+    // for (const b of bills) {
+    //   console.log(`${b.name}, ${b.fundingAmount}, ${b.balance}, ${b.$extras.goalDate.toISODate()}`)
+    // }
+
+    return bills;
+  }
 }
 
 export default CategoryController;

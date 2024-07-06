@@ -1,7 +1,9 @@
 import React from 'react';
-import { useStores } from './State/Store';
+import { observer } from 'mobx-react-lite';
+import { useStores } from '../State/Store';
+import Bill from './Bill';
 
-const Overview = () => {
+const Overview = observer(() => {
   const { overview } = useStores()
 
   return (
@@ -9,11 +11,11 @@ const Overview = () => {
       <div>Overview</div>
       {
         overview.bills.map((bill) => (
-          <div key={bill.id}>{bill.name}</div>
+          <Bill key={bill.id} bill={bill} />
         ))
       }
     </div>
   )
-};
+});
 
 export default Overview;

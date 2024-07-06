@@ -38,7 +38,8 @@ import TransactionLogs from './TransactionLogs';
 import TransactionLogDetails from './TransactionLogDetails';
 import PlaidLogsView from './PlaidLogs/PlaidLogsView';
 import PlaidLogs from './PlaidLogs/PlaidLogs';
-import Overview from './Overview';
+import Overview from './Overview/Overview';
+import OverviewView from './Overview/OverviewView';
 
 const App: React.FC = observer(() => {
   const error = useContext(ServerError);
@@ -141,7 +142,9 @@ if (container) {
               <Route path="logs" element={<TransactionLogs />}>
                 <Route index element={<TransactionLogDetails />} />
               </Route>
-              <Route path="overview" element={<Overview />} />
+              <Route path="overview" element={<OverviewView />}>
+                <Route index element={<Overview />} />
+              </Route>
               <Route path="admin" element={<PlaidLogsView />}>
                 <Route index element={<PlaidLogs />} />
               </Route>
