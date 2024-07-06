@@ -756,7 +756,7 @@ export interface UserProps {
 
   pendingEmail?: string;
 
-  admin: boolean;
+  roles: string[];
 }
 
 export const isUserProps = (

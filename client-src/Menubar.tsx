@@ -132,11 +132,17 @@ const Menubar: React.FC = observer(() => {
           <Nav.Item>
             <Nav.Link as={Link} to="/logs" eventKey={EventKeys.LOGS}>Logs</Nav.Link>
           </Nav.Item>
-          <Nav.Item>
-            <Nav.Link as={Link} to="/overview" eventKey={EventKeys.OVERVIEW}>Overview</Nav.Link>
-          </Nav.Item>
           {
-            store.user.admin
+            store.user.roles.includes('DEV')
+              ? (
+                <Nav.Item>
+                  <Nav.Link as={Link} to="/overview" eventKey={EventKeys.OVERVIEW}>Overview</Nav.Link>
+                </Nav.Item>
+              )
+              : null
+          }
+          {
+            store.user.roles.includes('ADMIN')
               ? (
                 <Nav.Item>
                   <Nav.Link as={Link} to="/admin" eventKey={EventKeys.ADMIN}>Admin</Nav.Link>

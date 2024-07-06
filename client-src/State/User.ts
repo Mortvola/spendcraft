@@ -1,7 +1,7 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 import { Error, isErrorResponse, isUserProps } from '../../common/ResponseTypes';
-import { UserInterface } from './Types';
+import { StoreInterface, UserInterface } from './Types';
 
 class User implements UserInterface {
   username: string | null = null;
@@ -12,11 +12,11 @@ class User implements UserInterface {
 
   authenticated = false;
 
-  admin = false;
+  roles: string[] = [];
 
-  store: unknown;
+  store: StoreInterface;
 
-  constructor(store: unknown) {
+  constructor(store: StoreInterface) {
     makeAutoObservable(this);
 
     this.store = store;
@@ -33,7 +33,7 @@ class User implements UserInterface {
           this.username = body.username;
           this.email = body.email;
           this.pendingEmail = body.pendingEmail ?? null;
-          this.admin = body.admin;
+          this.roles = body.roles;
         }
       });
     }

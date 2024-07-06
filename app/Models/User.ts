@@ -47,8 +47,8 @@ export default class User extends BaseModel {
   @column({ serializeAs: null })
   public rememberMeToken?: string
 
-  @column()
-  public admin: boolean
+  @column({ prepare: (value: string[]) => JSON.stringify(value) })
+  public roles: string[]
 
   @column({
     prepare: (value: PassCode) => JSON.stringify(value),
