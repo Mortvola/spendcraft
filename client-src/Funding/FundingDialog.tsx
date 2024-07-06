@@ -7,7 +7,7 @@ import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import { FormModal, FormError, setFormErrors } from '@mortvola/forms';
 import { DateTime } from 'luxon';
 import Amount from '../Amount';
-import { useStores } from '../State/mobxStore';
+import { useStores } from '../State/Store';
 import Transaction from '../State/Transaction';
 import {
   TransactionType, CategoryFundingProps,

@@ -1,5 +1,5 @@
 import { DateTime } from 'luxon';
-import { TransactionLogInterface, TransactionLogProps } from './State';
+import { TransactionLogInterface, TransactionLogProps } from './Types';
 
 class TransactionLog implements TransactionLogInterface {
   id: number;

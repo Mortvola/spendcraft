@@ -4,7 +4,7 @@ import { runInAction } from 'mobx';
 import {
   BalanceProps, Error, isErrorResponse, isUpdateBalanceResponse,
 } from '../../common/ResponseTypes';
-import { BalanceInterface, BalancesInterface } from './State';
+import { BalanceInterface, BalancesInterface } from './Types';
 
 class Balance implements BalanceInterface {
   id: number;

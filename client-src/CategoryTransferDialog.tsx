@@ -9,7 +9,7 @@ import { SubmitButton } from '@mortvola/forms';
 import Http from '@mortvola/http';
 import CategorySplits from './CategorySplits';
 import Transaction from './State/Transaction';
-import { TransactionCategoryInterface } from './State/State';
+import { TransactionCategoryInterface } from './State/Types';
 
 const Header: React.FC = () => (
   <Modal.Header closeButton>

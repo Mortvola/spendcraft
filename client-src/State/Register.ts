@@ -8,7 +8,7 @@ import {
 } from '../../common/ResponseTypes';
 import {
   RegisterInterface, StoreInterface,
-} from './State';
+} from './Types';
 
 class Register implements RegisterInterface {
   store: StoreInterface;

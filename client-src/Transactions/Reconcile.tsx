@@ -1,5 +1,5 @@
 import React from 'react';
-import { BaseTransactionInterface } from '../State/State';
+import { BaseTransactionInterface } from '../State/Types';
 import styles from './Transactions.module.scss';
 
 type PropsType = {

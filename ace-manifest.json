@@ -82,6 +82,18 @@
       "aliases": [],
       "flags": []
     },
+    "goal:test": {
+      "settings": {
+        "loadApp": true,
+        "stayAlive": false
+      },
+      "commandPath": "./commands/GoalTest",
+      "commandName": "goal:test",
+      "description": "",
+      "args": [],
+      "aliases": [],
+      "flags": []
+    },
     "institution:sync": {
       "settings": {
         "loadApp": true,

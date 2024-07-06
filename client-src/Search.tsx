@@ -3,7 +3,7 @@ import { observer } from 'mobx-react-lite';
 import {
   Field, Form, Formik, FormikErrors, FormikValues,
 } from 'formik';
-import { useStores } from './State/mobxStore';
+import { useStores } from './State/Store';
 import PostedRegister from './Transactions/PostedRegister';
 import trxStyles from './Transactions/Transactions.module.scss';
 import styles from './Search.module.scss';

@@ -1,18 +1,22 @@
 import React from 'react';
 import { runInAction } from 'mobx';
 import { PlaidLinkOnSuccessMetadata, usePlaidLink } from 'react-plaid-link';
-import { useStores } from './State/mobxStore';
+import { useStores } from './State/Store';
 import Console from './Console';
-import { InstitutionInterface } from './State/State';
+import { InstitutionInterface } from './State/Types';
 
 type PropsType = {
-  institution?: InstitutionInterface,
+  institution?: InstitutionInterface | null,
 }
 
 const PlaidLinkDialog: React.FC<PropsType> = ({
   institution,
 }) => {
   const { uiState, accounts } = useStores();
+
+  if (!uiState.plaid) {
+    throw new Error('plaid is not defined')
+  }
 
   const onEvent = (eventName: string) => {
     Console.log(`plaid event: ${eventName}`);

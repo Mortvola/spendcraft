@@ -15,7 +15,7 @@ import Accounts from './AccountView/Accounts';
 import Reports from './Reports/Reports';
 import Plans from './Plans/Plans';
 import PlaidLink from './PlaidLink';
-import { StoreContext, store, useStores } from './State/mobxStore';
+import { StoreContext, store, useStores } from './State/Store';
 import UserAccount from './UserAccount';
 import usePageViews from './Tracker';
 import './style.scss';
@@ -38,6 +38,7 @@ import TransactionLogs from './TransactionLogs';
 import TransactionLogDetails from './TransactionLogDetails';
 import PlaidLogsView from './PlaidLogs/PlaidLogsView';
 import PlaidLogs from './PlaidLogs/PlaidLogs';
+import Overview from './Overview';
 
 const App: React.FC = observer(() => {
   const error = useContext(ServerError);
@@ -140,6 +141,7 @@ if (container) {
               <Route path="logs" element={<TransactionLogs />}>
                 <Route index element={<TransactionLogDetails />} />
               </Route>
+              <Route path="overview" element={<Overview />} />
               <Route path="admin" element={<PlaidLogsView />}>
                 <Route index element={<PlaidLogs />} />
               </Route>

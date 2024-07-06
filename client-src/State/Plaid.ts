@@ -1,6 +1,6 @@
-import { InstitutionInterface } from './State';
+import { PlaidInterface, InstitutionInterface } from './Types';
 
-class Plaid {
+class Plaid implements PlaidInterface {
   institution: InstitutionInterface | null = null;
 
   linkToken: string;

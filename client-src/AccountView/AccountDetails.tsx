@@ -1,7 +1,7 @@
 import { observer } from 'mobx-react-lite';
 import React from 'react';
 import DetailView from '../DetailView';
-import { useStores } from '../State/mobxStore';
+import { useStores } from '../State/Store';
 import Register from '../Transactions/Register';
 import BalanceHistory from './BalanceHistory';
 import styles from '../Transactions/Transactions.module.scss';

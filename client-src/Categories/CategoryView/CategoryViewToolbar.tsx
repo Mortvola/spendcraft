@@ -3,7 +3,7 @@ import React from 'react';
 import { Dropdown } from 'react-bootstrap';
 import { useFundingDialog } from '../../Funding/FundingDialog';
 import { useRebalanceDialog } from '../../Rebalance/RebalanceDialog';
-import { useStores } from '../../State/mobxStore';
+import { useStores } from '../../State/Store';
 import { useCategoryDialog } from './CategoryDialog';
 import { useGroupDialog } from './GroupDialog';
 import useMediaQuery from '../../MediaQuery';

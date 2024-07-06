@@ -3,8 +3,8 @@ import { observer } from 'mobx-react-lite';
 import {
   useMatch, useNavigate, useParams, useResolvedPath,
 } from 'react-router-dom';
-import { useStores } from '../../State/mobxStore';
-import { CategoryInterface } from '../../State/State';
+import { useStores } from '../../State/Store';
+import { CategoryInterface } from '../../State/Types';
 import { isGroup } from '../../State/Group';
 import Group from './Group';
 import SystemCategory from './SystemCategory';

@@ -3,7 +3,7 @@ import { makeObservable, observable, runInAction } from 'mobx';
 import AutoAssignment from './AutoAssignment';
 import {
   AutoAssignmentProps, AutoAssignmentsInterface, AutoAssignmentsResponse, StoreInterface,
-} from './State';
+} from './Types';
 
 class AutoAssignments implements AutoAssignmentsInterface {
   autoAssignemnts: AutoAssignment[] = [];

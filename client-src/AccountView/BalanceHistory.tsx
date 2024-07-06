@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import Chart from 'react-google-charts';
-import { useStores } from '../State/mobxStore';
+import { useStores } from '../State/Store';
 import styles from './BalanceHistory.module.scss';
 import Balance from './Balance';
 import { useBalanceDialog } from './BalanceDialog';
-import { BalanceInterface } from '../State/State';
+import { BalanceInterface } from '../State/Types';
 
 const BalanceHistory: React.FC = observer(() => {
   const { balances, uiState: { selectedAccount } } = useStores();

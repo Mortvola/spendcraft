@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import PlanDetails from './PlanDetails';
-import { useStores } from '../State/mobxStore';
+import { useStores } from '../State/Store';
 import PlanList from './PlanList';
 import Main from '../Main';
 import useMediaQuery from '../MediaQuery'
 import styles from './Plans.module.scss'
-import { CategoryInterface } from '../State/State';
+import { CategoryInterface } from '../State/Types';
 import { useEditCategoryDialog } from './EditCategoryDialog';
 import FundingPlanCategory from '../State/FundingPlanCategory';
 

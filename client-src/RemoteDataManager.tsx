@@ -2,7 +2,7 @@ import React from 'react';
 import { observer } from 'mobx-react-lite';
 import styles from './RemoteDataManager.module.scss';
 import PleaseWait from './PleaseWait';
-import { RemoteDataInterface } from './State/State';
+import { RemoteDataInterface } from './State/Types';
 
 type PropsType = {
   data: RemoteDataInterface,

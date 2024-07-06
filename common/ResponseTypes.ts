@@ -547,7 +547,7 @@ export const isAccountsResponse = (r: unknown): r is AccountProps[] => (
 
 export type AddAccountsResponse = {
   accounts: AccountProps[],
-  categories: unknown[],
+  categories: CategoryBalanceProps[],
 }
 
 export const isAddAccountsResponse = (r: unknown): r is AddAccountsResponse => (

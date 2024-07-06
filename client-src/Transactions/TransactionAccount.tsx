@@ -1,6 +1,6 @@
 import React from 'react';
 import styles from './Transactions.module.scss';
-import { BaseTransactionInterface } from '../State/State';
+import { BaseTransactionInterface } from '../State/Types';
 
 type PropsType = {
   transaction: BaseTransactionInterface,

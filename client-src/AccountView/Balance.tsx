@@ -1,7 +1,7 @@
 import React from 'react';
 import Amount from '../Amount';
 import Date from '../Date';
-import { BalanceInterface } from '../State/State';
+import { BalanceInterface } from '../State/Types';
 import styles from './Balance.module.scss';
 
 type PropsType = {

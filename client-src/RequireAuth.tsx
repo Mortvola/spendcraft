@@ -1,7 +1,7 @@
 import { observer } from 'mobx-react-lite';
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { useStores } from './State/mobxStore';
+import { useStores } from './State/Store';
 
 type PropsType = {
   children: React.ReactNode,

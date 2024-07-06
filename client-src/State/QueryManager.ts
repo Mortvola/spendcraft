@@ -1,8 +1,9 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
+import { QueryManagerState, QueryManagerInterface } from './Types';
 
-class QueryManager {
-  state: 'IDLE' | 'LOADING' | 'LOADING-MORE' = 'IDLE';
+class QueryManager implements QueryManagerInterface {
+  state: QueryManagerState = 'IDLE';
 
   fetchComplete = false;
 

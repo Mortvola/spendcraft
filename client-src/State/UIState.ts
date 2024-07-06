@@ -5,7 +5,7 @@ import {
   CategoryInterface,
   FundingPlanInterface,
   StoreInterface, TransactionInterface, UIStateInterface,
-} from './State';
+} from './Types';
 import Plaid from './Plaid';
 
 class UIState implements UIStateInterface {

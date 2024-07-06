@@ -1,6 +1,6 @@
 import Http from '@mortvola/http';
 import { makeObservable, observable, runInAction } from 'mobx';
-import { AutoAssignmentInterface, AutoAssignmentProps, StoreInterface } from './State';
+import { AutoAssignmentInterface, AutoAssignmentProps, StoreInterface } from './Types';
 
 class AutoAssignment implements AutoAssignmentInterface {
   id: number;

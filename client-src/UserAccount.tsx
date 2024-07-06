@@ -12,7 +12,7 @@ import {
 import { FormField, setFormErrors, SubmitButton } from '@mortvola/forms';
 import Http from '@mortvola/http';
 import { useNavigate } from 'react-router-dom';
-import { useStores } from './State/mobxStore';
+import { useStores } from './State/Store';
 import IconButton from './IconButton';
 import styles from './UserAccount.module.scss'
 import { useDeleteConfirmation } from './DeleteConfirmation';

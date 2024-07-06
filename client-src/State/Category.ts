@@ -10,7 +10,7 @@ import {
 import LoanTransaction from './LoanTransaction';
 import {
   CategoryInterface, CategoryParams, GroupInterface, StoreInterface,
-} from './State';
+} from './Types';
 import TransactionContainer from './TransactionContainer';
 
 class Category implements CategoryInterface {

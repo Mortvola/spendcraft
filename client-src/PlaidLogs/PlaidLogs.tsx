@@ -1,8 +1,8 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
-import { useStores } from '../State/mobxStore';
+import { useStores } from '../State/Store';
 import PlaidLog from './PlaidLog';
-import { PlaidLogInterface } from '../State/State';
+import { PlaidLogInterface } from '../State/Types';
 
 const PlaidLogs = observer(() => {
   const { plaidLogs } = useStores();

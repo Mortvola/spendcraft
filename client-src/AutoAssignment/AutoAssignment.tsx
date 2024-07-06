@@ -1,6 +1,6 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
-import { AutoAssignmentInterface } from '../State/State';
+import { AutoAssignmentInterface } from '../State/Types';
 
 type PropsType = {
   autoAssignment: AutoAssignmentInterface,

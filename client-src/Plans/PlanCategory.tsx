@@ -2,7 +2,7 @@ import React from 'react';
 import { observer } from 'mobx-react-lite';
 import AmountInput from '../AmountInput';
 import Amount from '../Amount';
-import { CategoryInterface } from '../State/State';
+import { CategoryInterface } from '../State/Types';
 import IconButton from '../IconButton';
 import styles from './PlanCategory.module.scss';
 import FundingPlanCategory from '../State/FundingPlanCategory';

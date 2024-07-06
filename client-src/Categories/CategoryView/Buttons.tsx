@@ -3,7 +3,7 @@ import IconButton from '../../IconButton';
 import { useCategoryDialog } from './CategoryDialog';
 import { useGroupDialog } from './GroupDialog';
 import { isGroup } from '../../State/Group';
-import { GroupInterface } from '../../State/State';
+import { GroupInterface } from '../../State/Types';
 
 type PropsType = {
   group: GroupInterface,

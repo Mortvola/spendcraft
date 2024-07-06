@@ -3,10 +3,10 @@ import { FormField, FormModal } from '@mortvola/forms';
 import { ModalProps, makeUseModal } from '@mortvola/usemodal';
 import { FieldArray, FormikErrors, useField } from 'formik';
 import { observer } from 'mobx-react-lite';
-import { AutoAssignmentInterface, CategoryInterface } from '../State/State';
+import { AutoAssignmentInterface, CategoryInterface } from '../State/Types';
 import AmountInput from '../AmountInput';
 import CategoryInput from '../CategoryInput/CategoryInput';
-import { useStores } from '../State/mobxStore';
+import { useStores } from '../State/Store';
 import styles from './AutoAssignmentDialog.module.scss'
 import IconButton from '../IconButton';
 

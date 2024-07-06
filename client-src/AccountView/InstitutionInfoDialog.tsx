@@ -5,7 +5,7 @@ import { DateTime } from 'luxon';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import Http from '@mortvola/http';
 import { SubmitButton } from '@mortvola/forms';
-import { InstitutionInterface } from '../State/State';
+import { InstitutionInterface } from '../State/Types';
 import styles from './InstitutionInfoDialog.module.scss';
 
 const Header: React.FC = () => (

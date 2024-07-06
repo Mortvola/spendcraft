@@ -11,7 +11,7 @@ import {
 } from '../../common/ResponseTypes';
 import {
   CategoryInterface, CategoryParams, GroupInterface, StoreInterface,
-} from './State';
+} from './Types';
 
 class Group implements GroupInterface {
   id: number;

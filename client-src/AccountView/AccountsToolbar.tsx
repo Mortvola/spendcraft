@@ -1,7 +1,7 @@
 import React, { ChangeEventHandler } from 'react';
 import { observer } from 'mobx-react-lite';
 import Http from '@mortvola/http';
-import { useStores } from '../State/mobxStore';
+import { useStores } from '../State/Store';
 import { useOfflineAccountDialog } from './OfflineAccountDialog';
 import useMediaQuery from '../MediaQuery';
 import { useTransactionDialog } from '../Transactions/TransactionDialog';

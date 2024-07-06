@@ -1,7 +1,7 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
 import IconButton from '../IconButton';
-import { AccountInterface } from '../State/State';
+import { AccountInterface } from '../State/Types';
 import { getSubTypeName } from '../State/AccountTypes';
 import Amount from '../Amount';
 import styles from './Account.module.scss';

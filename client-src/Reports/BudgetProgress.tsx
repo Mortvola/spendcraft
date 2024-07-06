@@ -6,7 +6,7 @@ import React, { useEffect, useState } from 'react';
 import Chart, { GoogleChartWrapper } from 'react-google-charts';
 import { BudgetProgressReportResponse } from '../../common/ResponseTypes';
 import PleaseWait from '../PleaseWait';
-import { useStores } from '../State/mobxStore';
+import { useStores } from '../State/Store';
 import TransactionContainer from '../State/TransactionContainer';
 import RegisterTransactions from '../Transactions/RegisterTransactions';
 import Transaction from '../Transactions/Transaction';

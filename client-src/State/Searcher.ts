@@ -1,4 +1,4 @@
-import { StoreInterface } from './State';
+import { StoreInterface } from './Types';
 import TransactionContainer from './TransactionContainer';
 
 class Searcher {

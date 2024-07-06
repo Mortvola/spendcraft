@@ -2,10 +2,10 @@ import React from 'react';
 import CategoryInput from './CategoryInput/CategoryInput';
 import IconButton from './IconButton';
 import AmountInput from './AmountInput';
-import { CategoryInterface, TransactionCategoryInterface } from './State/State';
+import { CategoryInterface, TransactionCategoryInterface } from './State/Types';
 import styles from './CategorySplitItem.module.scss';
 import useMediaQuery from './MediaQuery';
-import { useStores } from './State/mobxStore';
+import { useStores } from './State/Store';
 
 type PropsType = {
   split: TransactionCategoryInterface,

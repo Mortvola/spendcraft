@@ -1,9 +1,17 @@
 import { DateTime } from 'luxon';
+import { PlaidLinkOnSuccessMetadata } from 'react-plaid-link';
 import Reports from './Reports';
 import {
   CategoryType, Error, TrackingType, AccountType, Location,
+  UnlinkedAccountProps,
+  TransactionType,
+  ApiError,
+  AccountBalanceProps,
+  CategoryBalanceProps,
+  AccountProps,
 } from '../../common/ResponseTypes'
 import LoanTransaction from './LoanTransaction';
+import SystemIds from './SystemIds';
 
 export interface UserInterface {
   username: string | null;
@@ -74,7 +82,7 @@ export interface TransactionInterface extends BaseTransactionInterface {
 
   getAmountForCategory(categoryId: number): number;
 
-  async updateTransaction(
+  updateTransaction(
     values: {
       date?: string,
       name?: string,
@@ -85,7 +93,7 @@ export interface TransactionInterface extends BaseTransactionInterface {
     },
   ): Promise<null | ApiError[]>;
 
-  async delete(): Promise<null | Error[]>;
+  delete(): Promise<null | Error[]>;
 
   toggleReconciled(): void;
 }
@@ -123,15 +131,15 @@ export interface AccountsInterface {
 
   store: StoreInterface;
 
-  async load(): Promise<void>;
+  load(): Promise<void>;
 
   findAccount(id: number): AccountInterface | null;
 
-  async linkInstitution(): Promise<void>;
+  linkInstitution(): Promise<void>;
 
   updateBalances(balances: AccountBalanceProps[]): void;
 
-  async addOfflineAccount(
+  addOfflineAccount(
     institiute: string,
     account: string,
     balance: number,
@@ -142,14 +150,14 @@ export interface AccountsInterface {
     rate: number,
   ): Promise<Error[] | null>;
 
-  async addInstitution(
+  addInstitution(
     publicToken: string,
     metadata: PlaidLinkOnSuccessMetadata,
-  ): Promise<Institution | null>;
+  ): Promise<InstitutionInterface | null>;
 
   deleteInstitution(instiution: InstitutionInterface): void;
 
-  closeAccount();
+  closeAccount(): void;
 }
 
 export interface CategoryInterface {
@@ -202,7 +210,13 @@ export interface FundingPlanInterface {
 
   name: string;
 
-  async update(name: string): Promise<void>;
+  update(name: string): Promise<void>;
+}
+
+export interface PlaidInterface {
+  institution: InstitutionInterface | null;
+
+  linkToken: string;
 }
 
 export type Views = 'HOME' | 'PLANS' | 'ACCOUNTS' | 'REPORTS' | 'SEARCH' | 'USER_ACCOUNT' | 'LOGOUT';
@@ -217,7 +231,7 @@ export interface UIStateInterface {
   selectedPlan: FundingPlanInterface | null;
   selectedAccount: AccountInterface | null;
   selectedTransaction: TransactionInterface | null;
-  plaid: Plaid | null;
+  plaid: PlaidInterface | null;
 }
 
 export interface CategoryTreeInterface extends RemoteDataInterface {
@@ -233,7 +247,7 @@ export interface CategoryTreeInterface extends RemoteDataInterface {
 
   rebalances: RebalancesInterface | null;
 
-  nodes: (CategoryInterface | GroupInterface)[] = [];
+  nodes: (CategoryInterface | GroupInterface)[];
 
   insertNode(node: TreeNodeInterface): void;
 
@@ -287,7 +301,7 @@ export interface InstitutionInterface {
 
   refresh(institutionId: number): Promise<boolean>;
 
-  async update(): Promise<InstitutionInterface | null>;
+  update(): Promise<InstitutionInterface | null>;
 
   addOnlineAccounts(
     accounts: UnlinkedAccountProps[],
@@ -327,12 +341,18 @@ export interface RemoteDataInterface {
   state(): 'IDLE' | 'LOADING' | 'LOADING-MORE';
 }
 
+export type QueryManagerState = 'IDLE' | 'LOADING' | 'LOADING-MORE';
+
+export interface QueryManagerInterface {
+  state: QueryManagerState;
+}
+
 export interface TransactionContainerInterface extends RemoteDataInterface {
   transactions: TransactionInterface[];
 
   transactionsQuery: QueryManagerInterface;
 
-  insertTransaction(transaction: Transaction): void;
+  insertTransaction(transaction: TransactionInterface): void;
 
   removeTransaction(transactionId: number): void;
 }
@@ -352,7 +372,7 @@ export interface AccountInterface {
 
   name: string;
 
-  officialName: string | null = null;
+  officialName: string | null;
 
   closed: boolean;
 
@@ -378,7 +398,7 @@ export interface AccountInterface {
 
   store: StoreInterface;
 
-  update(props: AccountProps);
+  update(props: AccountProps): void;
 
   addTransaction(
     values: {
@@ -418,7 +438,7 @@ export interface BalanceInterface {
 export interface BalancesInterface {
   account: AccountInterface | null;
 
-  balances: Balance[];
+  balances: BalanceInterface[];
 
   store: StoreInterface;
 
@@ -429,15 +449,19 @@ export interface BalancesInterface {
     },
   ): Promise<Error[] | null>;
 
-  insertBalance(balance: Balance): void;
+  insertBalance(balance: BalanceInterface): void;
 
-  removeBalance(balance: BalanceInterface);
+  removeBalance(balance: BalanceInterface): void;
+}
+
+export interface FundingPlanDetailsInterface {
+  id: number;
 }
 
 export interface PlansInterface {
-  list: FundingPlan[];
+  list: FundingPlanInterface[];
 
-  details: FundingPlanDetails | null = null;
+  details: FundingPlanDetailsInterface | null;
 }
 
 export interface AutoAssignmentsInterface {
@@ -506,7 +530,7 @@ export interface AutoAssignmentInterface {
     categories: { id: number, categoryId: number, amount: number, percentage: boolean }[],
   }): Promise<void>;
 
-  async delete(): Promise<void>;
+  delete(): Promise<void>;
 }
 
 export type TransactionLogProps = {
@@ -516,7 +540,7 @@ export type TransactionLogProps = {
   transactionId: number;
 }
 
-export type TransactionLogsResponse = TransactionLogsProps[]
+export type TransactionLogsResponse = TransactionLogProps[]
 
 export interface TransactionLogInterface {
   id: number;

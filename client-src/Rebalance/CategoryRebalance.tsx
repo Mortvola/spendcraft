@@ -2,10 +2,10 @@ import React, { ReactElement, useState } from 'react';
 import CategoryRebalanceItem from './CategoryRebalanceItem';
 import {
   CategoryBalanceInterface, CategoryInterface, TransactionCategoryInterface,
-} from '../State/State';
+} from '../State/Types';
 import { isGroup } from '../State/Group';
 import { isCategory } from '../State/Category';
-import { useStores } from '../State/mobxStore';
+import { useStores } from '../State/Store';
 
 type PropsType = {
   onDeltaChange: null | ((amunt: number, delta: number, categories: unknown) => void),

@@ -7,7 +7,7 @@ import {
 } from 'formik';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import { FormModal, FormField, setFormErrors } from '@mortvola/forms';
-import { BalanceInterface, BalancesInterface } from '../State/State';
+import { BalanceInterface, BalancesInterface } from '../State/Types';
 import AmountInput from '../AmountInput';
 import styles from './BalanceDialog.module.scss';
 

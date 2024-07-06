@@ -1,7 +1,7 @@
 import { DateTime } from 'luxon';
 import { makeAutoObservable } from 'mobx';
 import { PendingTransactionProps, TransactionType } from '../../common/ResponseTypes';
-import { StoreInterface, BaseTransactionInterface } from './State';
+import { StoreInterface, BaseTransactionInterface } from './Types';
 
 class PendingTransaction implements BaseTransactionInterface {
   id: number | null;

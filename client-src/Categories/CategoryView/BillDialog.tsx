@@ -10,8 +10,8 @@ import {
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import { FormModal, FormError, setFormErrors } from '@mortvola/forms';
 import { DateTime } from 'luxon';
-import { useStores } from '../../State/mobxStore';
-import { CategoryInterface } from '../../State/State';
+import { useStores } from '../../State/Store';
+import { CategoryInterface } from '../../State/Types';
 import styles from './BillDialog.module.scss';
 import AmountInput from '../../AmountInput';
 import CategoryInput from '../../CategoryInput/CategoryInput';

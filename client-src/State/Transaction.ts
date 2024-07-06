@@ -16,7 +16,7 @@ import {
 import {
   NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface,
   TransactionInterface,
-} from './State';
+} from './Types';
 
 class Transaction implements TransactionInterface {
   id: number | null;

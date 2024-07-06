@@ -3,11 +3,11 @@ import { observer } from 'mobx-react-lite';
 import RegisterTransactions from './RegisterTransactions';
 import {
   AccountInterface, BaseTransactionInterface, CategoryInterface, TransactionContainerInterface, TransactionInterface,
-} from '../State/State';
+} from '../State/Types';
 import RegisterTitles from './RegisterTitles';
 import useTrxDialog from './TrxDialog';
 import Transaction from './Transaction';
-import { useStores } from '../State/mobxStore';
+import { useStores } from '../State/Store';
 import { TransactionType } from '../../common/ResponseTypes';
 import styles from './Transactions.module.scss';
 import { useNotification } from '../Notification';

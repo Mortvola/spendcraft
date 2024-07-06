@@ -1,9 +1,9 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
-import { useStores } from '../State/mobxStore';
+import { useStores } from '../State/Store';
 import { useAutoAssignmentDialog } from './AutoAssignmentDialog';
 import AutoAssignment from './AutoAssignment';
-import { AutoAssignmentInterface } from '../State/State';
+import { AutoAssignmentInterface } from '../State/Types';
 
 const AutoAssignmentDetails = observer(() => {
   const { autoAssignments } = useStores();

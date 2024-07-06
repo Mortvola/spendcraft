@@ -4,8 +4,8 @@ import React, {
 import ReactDOM from 'react-dom';
 import CategorySelector, { categoryFiltered } from './CategorySelector';
 import useExclusiveBool from '../ExclusiveBool';
-import { useStores } from '../State/mobxStore';
-import { TreeNodeInterface, CategoryInterface } from '../State/State';
+import { useStores } from '../State/Store';
+import { TreeNodeInterface, CategoryInterface } from '../State/Types';
 import { isGroup } from '../State/Group';
 import { isCategory } from '../State/Category';
 

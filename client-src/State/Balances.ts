@@ -5,7 +5,7 @@ import {
 } from '../../common/ResponseTypes';
 import {
   AccountInterface, BalanceInterface, BalancesInterface, StoreInterface,
-} from './State';
+} from './Types';
 import Balance from './Balance';
 
 class Balances implements BalancesInterface {

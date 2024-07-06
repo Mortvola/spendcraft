@@ -10,8 +10,7 @@ import {
 } from 'react-router-dom';
 import Http from '@mortvola/http';
 import { runInAction } from 'mobx';
-import { useStores } from './State/mobxStore';
-import { Views } from './State/State';
+import { useStores } from './State/Store';
 
 enum EventKeys {
   HOME = 'HOME',
@@ -21,6 +20,7 @@ enum EventKeys {
   REPORTS = 'REPORTS',
   AUTO_ASSIGN = 'AUTO_ASSIGN',
   LOGS = 'LOGS',
+  OVERVIEW = 'OVERVIEW',
   ADMIN = 'ADMIN',
   LOGOUT = 'LOGOUT',
 }
@@ -33,6 +33,7 @@ const pathKeys = [
   { path: '/reports', key: EventKeys.REPORTS },
   { path: '/auto-assignments', key: EventKeys.AUTO_ASSIGN },
   { path: '/logs', key: EventKeys.LOGS },
+  { path: '/overview', key: EventKeys.OVERVIEW },
   { path: '/admin', key: EventKeys.ADMIN },
 ]
 
@@ -130,6 +131,9 @@ const Menubar: React.FC = observer(() => {
           </Nav.Item>
           <Nav.Item>
             <Nav.Link as={Link} to="/logs" eventKey={EventKeys.LOGS}>Logs</Nav.Link>
+          </Nav.Item>
+          <Nav.Item>
+            <Nav.Link as={Link} to="/overview" eventKey={EventKeys.OVERVIEW}>Overview</Nav.Link>
           </Nav.Item>
           {
             store.user.admin

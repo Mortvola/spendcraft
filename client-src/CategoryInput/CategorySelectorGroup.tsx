@@ -1,5 +1,5 @@
 import React, { ReactNode } from 'react';
-import { GroupInterface } from '../State/State';
+import { GroupInterface } from '../State/Types';
 
 type PropsType = {
   group: GroupInterface,

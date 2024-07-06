@@ -1,7 +1,7 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
 import Amount from '../Amount';
-import { AccountInterface, BaseTransactionInterface } from '../State/State';
+import { AccountInterface, BaseTransactionInterface } from '../State/Types';
 import styles from './Transactions.module.scss';
 import TransactionAccount from './TransactionAccount';
 import { TransactionType } from '../../common/ResponseTypes';

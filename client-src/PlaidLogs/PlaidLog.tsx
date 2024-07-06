@@ -1,7 +1,7 @@
 import React from 'react';
 import * as PlaidApi from 'plaid';
 import DateTime from '../DateTime';
-import { PlaidLogInterface } from '../State/State';
+import { PlaidLogInterface } from '../State/Types';
 import styles from './PlaidLog.module.scss';
 import TransactionsSync from './TransactionsSync';
 

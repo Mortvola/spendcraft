@@ -1,5 +1,5 @@
 import { DateTime } from 'luxon';
-import { PlaidLogInterface, PlaidLogProps } from './State';
+import { PlaidLogInterface, PlaidLogProps } from './Types';
 
 class PlaidLog implements PlaidLogInterface {
   id: number;

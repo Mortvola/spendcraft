@@ -9,7 +9,7 @@ import {
 } from '../../common/ResponseTypes';
 import {
   CategoryInterface, CategoryTreeInterface, RebalancesInterface, StoreInterface,
-} from './State';
+} from './Types';
 import SystemIds from './SystemIds';
 
 export type TreeNode = (Category | Group);

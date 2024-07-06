@@ -4,7 +4,7 @@ import {
 } from 'react-router-dom';
 import styles from './TabView.module.scss';
 import TabViewButton from './TabViewButton';
-import { useStores } from './State/mobxStore';
+import { useStores } from './State/Store';
 
 const TabView: React.FC = () => {
   const { uiState } = useStores();

@@ -11,7 +11,7 @@ import {
 } from '../../common/ResponseTypes';
 import {
   AccountInterface, AccountsInterface, InstitutionInterface, StoreInterface,
-} from './State';
+} from './Types';
 
 class Accounts implements AccountsInterface {
   initialized = false;
@@ -266,7 +266,7 @@ class Accounts implements AccountsInterface {
     }
   }
 
-  closeAccount() {
+  closeAccount(): void {
     runInAction(() => {
       this.institutions = this.institutions.slice();
     });

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useCategoryDialog } from './CategoryDialog';
 import IconButton from '../../IconButton';
-import { CategoryInterface } from '../../State/State';
+import { CategoryInterface } from '../../State/Types';
 
 type PropsType = {
   category: CategoryInterface,

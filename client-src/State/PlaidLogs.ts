@@ -1,6 +1,6 @@
 import { makeObservable, observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
-import { PlaidLogsResponse, StoreInterface } from './State';
+import { PlaidLogsResponse, StoreInterface } from './Types';
 import PlaidLog from './PlaidLog';
 
 class PlaidLogs {

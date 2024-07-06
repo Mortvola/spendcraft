@@ -5,9 +5,9 @@ import { useFundingDialog } from '../Funding/FundingDialog';
 import { useRebalanceDialog } from '../Rebalance/RebalanceDialog';
 import { useDuplicateDialog } from './DuplicateDialog';
 import { isTransaction } from '../State/Transaction';
-import { AccountInterface, TransactionInterface } from '../State/State';
+import { AccountInterface, TransactionInterface } from '../State/Types';
 import { TransactionType } from '../../common/ResponseTypes';
-import { useStores } from '../State/mobxStore';
+import { useStores } from '../State/Store';
 
 const useTrxDialog = (account?: AccountInterface, onReload?: () => void): [
   () => JSX.Element | null,

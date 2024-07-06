@@ -2,7 +2,7 @@ import React from 'react';
 import IconButton from '../../IconButton';
 import { useGroupDialog } from './GroupDialog';
 import { isGroup } from '../../State/Group';
-import { GroupInterface } from '../../State/State';
+import { GroupInterface } from '../../State/Types';
 import styles from './GroupButton.module.scss';
 
 type PropsType = {

@@ -2,7 +2,7 @@ import React from 'react';
 import { observer } from 'mobx-react-lite';
 import {
   TransactionContainerInterface,
-} from '../State/State';
+} from '../State/Types';
 import styles from './Transactions.module.scss';
 import RemoteDataManager from '../RemoteDataManager';
 import useMediaQuery from '../MediaQuery';

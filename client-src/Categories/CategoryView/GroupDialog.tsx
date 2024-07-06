@@ -8,9 +8,9 @@ import {
 } from 'formik';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import { FormModal, FormError, setFormErrors } from '@mortvola/forms';
-import { useStores } from '../../State/mobxStore';
+import { useStores } from '../../State/Store';
 import { Error } from '../../../common/ResponseTypes';
-import { GroupInterface } from '../../State/State';
+import { GroupInterface } from '../../State/Types';
 
 type PropsType = {
   group?: GroupInterface,

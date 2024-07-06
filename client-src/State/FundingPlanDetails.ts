@@ -1,6 +1,6 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
-import { StoreInterface } from './State';
+import { FundingPlanDetailsInterface, StoreInterface } from './Types';
 import {
   FundingPlanDetailsProps,
   isUpdateFundingCategoryResponse,
@@ -8,7 +8,7 @@ import {
 import FundingPlanCategory from './FundingPlanCategory';
 import HistoryCategory from './HistoryCategory';
 
-class FundingPlanDetails {
+class FundingPlanDetails implements FundingPlanDetailsInterface {
   id: number;
 
   history: HistoryCategory[];
@@ -30,6 +30,7 @@ class FundingPlanDetails {
     this.store = store;
   }
 
+  // eslint-disable-next-line class-methods-use-this
   async updateCategoryAmount(category: FundingPlanCategory, amount: number): Promise<void> {
     // const oldAmount = category.amount;
     category.amount = amount;

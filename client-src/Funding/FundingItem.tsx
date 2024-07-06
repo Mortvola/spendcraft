@@ -6,7 +6,7 @@ import Amount from '../Amount';
 import styles from './Funding.module.scss'
 import { FundingInfoType } from './Types';
 import VerticalTitled from './VerticalTitled';
-import { CategoryInterface } from '../State/State';
+import { CategoryInterface } from '../State/Types';
 
 type PropsType = {
   fundingInfo?: FundingInfoType,

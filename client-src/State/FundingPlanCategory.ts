@@ -1,7 +1,7 @@
 import { DateTime } from 'luxon';
 import { makeAutoObservable } from 'mobx';
 import { FundingPlanCategoryProps } from '../../common/ResponseTypes';
-import { CategoryInterface } from './State';
+import { CategoryInterface } from './Types';
 
 class FundingPlanCategory {
   id?: number;

@@ -13,8 +13,8 @@ import {
 } from '@mortvola/forms';
 import { DateTime } from 'luxon';
 import { isGroup } from '../../State/Group';
-import { useStores } from '../../State/mobxStore';
-import { CategoryInterface } from '../../State/State';
+import { useStores } from '../../State/Store';
+import { CategoryInterface } from '../../State/Types';
 import AmountInput from '../../AmountInput';
 import styles from './CategoryDialog.module.scss';
 import { CategoryType } from '../../../common/ResponseTypes';

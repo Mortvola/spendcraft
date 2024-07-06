@@ -1,7 +1,7 @@
 import { makeObservable, observable } from 'mobx';
 import { isTransactionsResponse, TransactionProps } from '../../common/ResponseTypes';
 import QueryManager from './QueryManager';
-import { StoreInterface, TransactionContainerInterface } from './State';
+import { StoreInterface, TransactionContainerInterface } from './Types';
 import Transaction from './Transaction';
 
 class TransactionContainer implements TransactionContainerInterface {

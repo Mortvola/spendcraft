@@ -6,7 +6,7 @@ self.addEventListener('install', (event) => {
   // );
 });
 
-const setOrClearBadge = async (data: any) => {
+const setOrClearBadge = async (data) => {
   if (navigator.setAppBadge) {
     if (data.unassignedCount > 0) {
       await navigator.setAppBadge(data.unassignedCount);

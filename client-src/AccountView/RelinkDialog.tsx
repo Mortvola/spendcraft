@@ -1,7 +1,7 @@
 import React from 'react';
 import { ModalBody, Button } from 'react-bootstrap';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
-import { InstitutionInterface } from '../State/State';
+import { InstitutionInterface } from '../State/Types';
 import styles from './RelinkDialog.module.scss';
 
 type PropsType = {

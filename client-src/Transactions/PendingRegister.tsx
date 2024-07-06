@@ -1,6 +1,6 @@
 import { observer } from 'mobx-react-lite';
 import React from 'react';
-import { BaseTransactionInterface, TransactionContainerInterface, TransactionInterface } from '../State/State';
+import { BaseTransactionInterface, TransactionContainerInterface, TransactionInterface } from '../State/Types';
 import Transaction from './Transaction';
 import styles from './PendingRegister.module.scss';
 import transactionStyles from './Transactions.module.scss'
@@ -9,7 +9,7 @@ import useMediaQuery from '../MediaQuery';
 import RegisterTitles from './RegisterTitles';
 import { TransactionType } from '../../common/ResponseTypes';
 import useTrxDialog from './TrxDialog';
-import { useStores } from '../State/mobxStore';
+import { useStores } from '../State/Store';
 
 type PropsType = {
   trxContainer: TransactionContainerInterface | null,

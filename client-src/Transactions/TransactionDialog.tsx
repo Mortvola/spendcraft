@@ -11,10 +11,10 @@ import {
 } from '@mortvola/forms';
 import CategorySplits from '../CategorySplits';
 import Amount from '../Amount';
-import { AccountInterface, TransactionCategoryInterface, TransactionInterface } from '../State/State';
+import { AccountInterface, TransactionCategoryInterface, TransactionInterface } from '../State/Types';
 import AmountInput from '../AmountInput';
 import useMediaQuery from '../MediaQuery';
-import { RequestErrorCode, TransactionType } from '../../common/ResponseTypes';
+import { ApiError, RequestErrorCode, TransactionType } from '../../common/ResponseTypes';
 import styles from './TransactionDialog.module.scss';
 import PurchaseLocation from './PurchaseLocation';
 
@@ -125,7 +125,7 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
     }
 
     if (errors) {
-      const error = errors.find((e) => e.code === RequestErrorCode.INCORRECT_VERSION)
+      const error = errors.find((e) => (e as ApiError).code === RequestErrorCode.INCORRECT_VERSION)
 
       if (error) {
         setShow(false);

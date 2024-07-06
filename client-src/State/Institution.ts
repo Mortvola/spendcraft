@@ -7,7 +7,7 @@ import {
   TrackingType, isAddAccountsResponse, isDeleteAccountResponse, isLinkTokenResponse,
   InstitutionSyncResponse, AddInstitutionResponse,
 } from '../../common/ResponseTypes';
-import { AccountInterface, InstitutionInterface, StoreInterface } from './State';
+import { AccountInterface, InstitutionInterface, StoreInterface } from './Types';
 import Plaid from './Plaid';
 
 class Institution implements InstitutionInterface {

@@ -1,9 +1,9 @@
 import React from 'react';
 import { observer } from 'mobx-react';
 import CategorySelectorGroup from './CategorySelectorGroup';
-import { useStores } from '../State/mobxStore';
+import { useStores } from '../State/Store';
 import { isGroup } from '../State/Group';
-import { CategoryInterface, GroupInterface } from '../State/State';
+import { CategoryInterface, GroupInterface } from '../State/Types';
 import CategorySelectorCategory from './CategorySelectorCategory';
 import { isCategory } from '../State/Category';
 

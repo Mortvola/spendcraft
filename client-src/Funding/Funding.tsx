@@ -5,10 +5,10 @@ import { useFormikContext } from 'formik';
 import FundingItem from './FundingItem';
 import { isGroup } from '../State/Group';
 import { isCategory } from '../State/Category';
-import { CategoryInterface } from '../State/State';
+import { CategoryInterface } from '../State/Types';
 import { CategoriesValueType, FundingInfoType, ValueType } from './Types';
 import { FundingInfoProps, ProposedFundingCateggoryProps } from '../../common/ResponseTypes';
-import { useStores } from '../State/mobxStore';
+import { useStores } from '../State/Store';
 
 type PropsType = {
   planId: number,

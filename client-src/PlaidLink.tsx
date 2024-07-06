@@ -1,6 +1,6 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
-import { useStores } from './State/mobxStore';
+import { useStores } from './State/Store';
 import PlaidLinkDialog from './PlaidLinkDialog';
 
 const PlaidLink: React.FC = observer(() => {

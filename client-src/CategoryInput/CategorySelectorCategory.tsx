@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { CategoryInterface } from '../State/State';
+import { CategoryInterface } from '../State/Types';
 
 type PropsType = {
   category: CategoryInterface,

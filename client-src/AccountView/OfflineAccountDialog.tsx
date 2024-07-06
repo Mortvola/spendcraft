@@ -8,8 +8,8 @@ import {
 } from '@mortvola/forms';
 import { Error, TrackingType } from '../../common/ResponseTypes';
 import AmountInput from '../AmountInput';
-import { useStores } from '../State/mobxStore';
-import { AccountInterface, InstitutionInterface } from '../State/State';
+import { useStores } from '../State/Store';
+import { AccountInterface, InstitutionInterface } from '../State/Types';
 import { getSubtypes, getTypes } from '../State/AccountTypes';
 
 type PropsType = {

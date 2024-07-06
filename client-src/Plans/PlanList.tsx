@@ -1,7 +1,7 @@
 import React from 'react';
 import FundingPlan from '../State/FundingPlan';
-import { useStores } from '../State/mobxStore';
-import { FundingPlanInterface } from '../State/State';
+import { useStores } from '../State/Store';
+import { FundingPlanInterface } from '../State/Types';
 import PlanItem from './PlanItem';
 
 type PropsType = {

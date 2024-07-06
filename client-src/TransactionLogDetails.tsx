@@ -1,6 +1,6 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
-import { useStores } from './State/mobxStore';
+import { useStores } from './State/Store';
 import DateTime from './DateTime';
 import styles from './TransactionLog.module.scss';
 

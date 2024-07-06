@@ -1,4 +1,4 @@
-import { RebalancesInterface, StoreInterface } from './State';
+import { RebalancesInterface, StoreInterface } from './Types';
 import TransactionContainer from './TransactionContainer';
 
 class Rebalances implements RebalancesInterface {

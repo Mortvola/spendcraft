@@ -8,7 +8,7 @@ import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import { FormModal, FormField } from '@mortvola/forms';
 import { DateTime } from 'luxon';
 import AccountItem from './AccountItem';
-import { AccountInterface } from '../State/State';
+import { AccountInterface } from '../State/Types';
 import { TrackingType } from '../../common/ResponseTypes';
 
 type PropsType = {

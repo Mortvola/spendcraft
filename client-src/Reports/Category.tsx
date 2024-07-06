@@ -5,7 +5,7 @@ import { DropdownButton } from 'react-bootstrap';
 import { FormCheckbox, FormField, SubmitButton } from '@mortvola/forms';
 import Http from '@mortvola/http';
 import Amount from '../Amount';
-import { useStores } from '../State/mobxStore';
+import { useStores } from '../State/Store';
 import useSortableTable from './SortableTable';
 import { isGroup } from '../State/Group';
 import ReportControls from './ReportControls';

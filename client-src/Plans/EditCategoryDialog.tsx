@@ -6,13 +6,13 @@ import {
 import { runInAction } from 'mobx';
 import { FormField, FormRadio, FormModal } from '@mortvola/forms';
 import Http from '@mortvola/http';
-import { CategoryInterface, FundingPlanInterface } from '../State/State';
+import { CategoryInterface, FundingPlanInterface } from '../State/Types';
 import styles from './EditCategoryDialog.module.scss';
 import FundingPlanCategory from '../State/FundingPlanCategory';
 import Amount from '../Amount';
 import AmountInput from '../AmountInput';
 import { isFundingPlanCategoryProps } from '../../common/ResponseTypes';
-import { useStores } from '../State/mobxStore';
+import { useStores } from '../State/Store';
 
 type PropsType = {
   plan: FundingPlanInterface | null,

@@ -1,9 +1,9 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
-import { useStores } from '../State/mobxStore';
+import { useStores } from '../State/Store';
 import {
   AccountInterface, CategoryInterface, TransactionContainerInterface,
-} from '../State/State';
+} from '../State/Types';
 import PendingRegister from './PendingRegister';
 import styles from './Transactions.module.scss';
 import DesktopView from '../DesktopView';

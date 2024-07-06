@@ -15,8 +15,8 @@ import { FormModal, FormError, setFormErrors } from '@mortvola/forms';
 import CategoryRebalance from './CategoryRebalance';
 import Amount from '../Amount';
 import Transaction from '../State/Transaction';
-import { CategoryBalanceInterface, TransactionCategoryInterface } from '../State/State';
-import { useStores } from '../State/mobxStore';
+import { CategoryBalanceInterface, TransactionCategoryInterface } from '../State/Types';
+import { useStores } from '../State/Store';
 import { isCategoryTreeBalanceResponse, TransactionType } from '../../common/ResponseTypes';
 
 type PropsType = {

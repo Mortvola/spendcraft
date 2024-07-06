@@ -2,8 +2,8 @@ import React, {
   useEffect, useState,
 } from 'react';
 import CategorySplitItem from './CategorySplitItem';
-import { useStores } from './State/mobxStore';
-import { TransactionCategoryInterface } from './State/State';
+import { useStores } from './State/Store';
+import { TransactionCategoryInterface } from './State/Types';
 
 function* creatNextIdGen(): Generator<number, number> {
   let id = -1;

@@ -9,7 +9,7 @@ import {
   AccountInterface, InstitutionInterface, NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface,
   AddTransactionRequest,
   AccountSettings,
-} from './State';
+} from './Types';
 import Transaction from './Transaction';
 import TransactionContainer from './TransactionContainer';
 
@@ -79,7 +79,7 @@ class Account implements AccountInterface {
     this.store = store;
   }
 
-  update(props: AccountProps) {
+  update(props: AccountProps): void {
     this.id = props.id;
     this.plaidId = props.plaidId;
     this.name = props.name;

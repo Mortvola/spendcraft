@@ -2,8 +2,8 @@ import React from 'react';
 import { observer } from 'mobx-react-lite';
 import { useNavigate, useParams } from 'react-router-dom';
 import Institution from './Institution';
-import { useStores } from '../State/mobxStore';
-import { AccountInterface } from '../State/State';
+import { useStores } from '../State/Store';
+import { AccountInterface } from '../State/Types';
 import styles from './AccountView.module.scss';
 
 type PropsType = {

@@ -9,12 +9,13 @@ import User from './User';
 import Plans from './Plans';
 import {
   AccountsInterface, StoreInterface, UIStateInterface,
-} from './State';
+} from './Types';
 import Rebalances from './Rebalances';
 import Searcher from './Searcher';
 import AutoAssignments from './AutoAssignments';
 import TransactionLogs from './TransactionLogs';
 import PlaidLogs from './PlaidLogs';
+import Overview from './Overview';
 
 class Store implements StoreInterface {
   user: User;
@@ -43,6 +44,8 @@ class Store implements StoreInterface {
 
   plaidLogs: PlaidLogs;
 
+  overview: Overview;
+
   initialized = false;
 
   constructor() {
@@ -59,6 +62,7 @@ class Store implements StoreInterface {
     this.autoAssignments = new AutoAssignments(this);
     this.transactionLogs = new TransactionLogs(this);
     this.plaidLogs = new PlaidLogs(this);
+    this.overview = new Overview(this);
   }
 
   refresh() {
@@ -76,6 +80,7 @@ class Store implements StoreInterface {
     this.autoAssignments = new AutoAssignments(this);
     this.transactionLogs = new TransactionLogs(this);
     this.plaidLogs = new PlaidLogs(this);
+    this.overview = new Overview(this);
   }
 }
 

@@ -1,6 +1,6 @@
 import Http from '@mortvola/http';
 import { makeObservable, observable, runInAction } from 'mobx';
-import { StoreInterface, TransactionLogsResponse } from './State';
+import { StoreInterface, TransactionLogsResponse } from './Types';
 import TransactionLog from './TransactionLog';
 
 class TransactionLogs {
