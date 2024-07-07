@@ -6,6 +6,8 @@ SCRIPT_END=$( awk '
   END { if (err==1) print "?"; }
 ' "$0" )
 
+ZIP_FILE=${SPENDCRAFT_ROOT}/build.zip
+
 echo "Checking for embedded file..."
 
 if [ "$SCRIPT_END" == '?' ]
@@ -14,8 +16,12 @@ then
    exit 1
 fi
 
-echo 'Extracting file to ' ${SPENDCRAFT_ROOT}/build.zip
-tail -n +$SCRIPT_END $0 | base64 -d > ${SPENDCRAFT_ROOT}/build.zip
+if [ -e ${ZIP_FILE} ]; then
+  rm ${ZIP_FILE}
+fi
+
+echo 'Extracting file to ' ${ZIP_FILE}
+tail -n +$SCRIPT_END $0 | base64 -d > ${ZIP_FILE}
 
 cd ${SPENDCRAFT_ROOT}
 
@@ -33,7 +39,7 @@ set -e
 # APP_NEW=$APP.new
 # APP_OLD=$APP.old
 
-unzip build.zip
+unzip ${ZIP_FILE} > /dev/null
 rm -fr $APP_NEW
 mv build $APP_NEW
 
@@ -66,6 +72,11 @@ mv $APP_NEW $APP
 pm2 restart prod-server --time
 pm2 restart queue --time
 pm2 logs --nostream
+
+# Clean up
+if [ -e ${ZIP_FILE} ]; then
+  rm ${ZIP_FILE}
+fi
 
 exit 0
 

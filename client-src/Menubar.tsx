@@ -136,7 +136,7 @@ const Menubar: React.FC = observer(() => {
             store.user.roles.includes('DEV')
               ? (
                 <Nav.Item>
-                  <Nav.Link as={Link} to="/overview" eventKey={EventKeys.OVERVIEW}>Overview</Nav.Link>
+                  <Nav.Link as={Link} to="/overview" eventKey={EventKeys.OVERVIEW}>Bills</Nav.Link>
                 </Nav.Item>
               )
               : null

@@ -14,7 +14,7 @@ import {
 import { DateTime } from 'luxon';
 import { isGroup } from '../../State/Group';
 import { useStores } from '../../State/Store';
-import { CategoryInterface } from '../../State/Types';
+import { CategoryInterface, GroupInterface } from '../../State/Types';
 import AmountInput from '../../AmountInput';
 import styles from './CategoryDialog.module.scss';
 import { CategoryType } from '../../../common/ResponseTypes';
@@ -49,11 +49,13 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
     const { setErrors } = bag;
     let errors = null;
 
-    const selectedGroup = (categoryTree.nodes.find((g) => g.id === parseInt(values.groupId, 10))
+    const selectedGroup = (categoryTree.nodes.find(
+      (g) => isGroup(g) && g.id === parseInt(values.groupId, 10),
+    )
       ?? categoryTree.noGroupGroup);
 
     if (selectedGroup === null || !isGroup(selectedGroup)) {
-      throw new Error('group is not a group');
+      throw new Error(`group is not a group: ${selectedGroup}`);
     }
 
     if (category) {
