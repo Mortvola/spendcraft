@@ -4,7 +4,9 @@ import {
 } from 'react-router-dom';
 import styles from './TabView.module.scss';
 import TabViewButton from './TabViewButton';
-import { useStores } from './State/Store';
+import { useStores } from '../State/Store';
+import TabViewMenu from './TabViewMenu';
+import TabViewMenuItem from './TabViewMenuItem';
 
 const TabView: React.FC = () => {
   const { uiState } = useStores();
@@ -27,6 +29,14 @@ const TabView: React.FC = () => {
 
   const handleAccountClick = () => {
     navigate('/user');
+  }
+
+  const handleBillsClick = () => {
+    navigate('/overview');
+  }
+
+  const handleLogsClick = () => {
+    navigate('/logs');
   }
 
   const handlePlansClick = () => {
@@ -77,12 +87,14 @@ const TabView: React.FC = () => {
         url="/reports"
         onClick={handleOtherClick}
       />
-      <TabViewButton
-        icon="circle-user"
-        caption="Account"
-        url="/user"
-        onClick={handleAccountClick}
-      />
+      <TabViewMenu
+        icon="ellipsis"
+        caption="More"
+      >
+        <TabViewMenuItem onClick={handleAccountClick}>Account</TabViewMenuItem>
+        <TabViewMenuItem onClick={handleBillsClick}>Bills</TabViewMenuItem>
+        <TabViewMenuItem onClick={handleLogsClick}>Logs</TabViewMenuItem>
+      </TabViewMenu>
     </div>
   )
 };

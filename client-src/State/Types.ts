@@ -549,6 +549,8 @@ export interface TransactionLogInterface {
   message: string;
 
   transactionId: number;
+
+  date: DateTime,
 }
 
 export type PlaidLogProps = {

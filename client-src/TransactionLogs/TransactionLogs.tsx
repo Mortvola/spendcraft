@@ -3,28 +3,30 @@ import { observer } from 'mobx-react-lite';
 import { Outlet } from 'react-router-dom';
 import { useStores } from '../State/Store';
 import DesktopView from '../DesktopView';
+import styles from './TransactionLogs.module.scss';
 import MobileView from '../MobileView';
-import styles from './OverviewView.module.scss';
 import ViewTitle from '../ViewTitle';
 
-const OverviewView = observer(() => {
-  const { overview } = useStores();
+const TransactionLogs = observer(() => {
+  const { transactionLogs } = useStores();
 
   React.useEffect(() => {
-    overview.load()
+    transactionLogs.load()
   })
 
   return (
     <>
       <DesktopView>
-        <div>
+        <div className={styles.layout}>
+          {/* <AutoAssigmentsToolbar /> */}
           <Outlet />
         </div>
       </DesktopView>
 
       <MobileView>
         <div className={styles.layout}>
-          <ViewTitle>Bills</ViewTitle>
+          {/* <AutoAssigmentsToolbar /> */}
+          <ViewTitle>Transaction Logs</ViewTitle>
           <Outlet />
         </div>
       </MobileView>
@@ -32,4 +34,4 @@ const OverviewView = observer(() => {
   )
 })
 
-export default OverviewView;
+export default TransactionLogs;

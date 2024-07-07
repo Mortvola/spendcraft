@@ -2,7 +2,7 @@ import React from 'react';
 import {
   matchPath, useLocation,
 } from 'react-router-dom';
-import IconButton from './IconButton';
+import IconButton from '../IconButton';
 import styles from './TabViewButton.module.scss';
 
 type PropsType = {

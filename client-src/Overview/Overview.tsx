@@ -22,7 +22,7 @@ const Overview = observer(() => {
       </div>
 
       <div>
-        <div>Other Bills Due this Month</div>
+        <div>Other Bills Due This Month</div>
         {
           overview.bills
             .filter((bill) => bill.date?.month === DateTime.now().month && bill.recurrence !== 1)

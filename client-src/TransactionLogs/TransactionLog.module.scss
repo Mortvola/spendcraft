@@ -1,0 +1,25 @@
+@use "../breakpoints";
+
+.layout {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: 1rem;
+
+  @media (max-width: breakpoints.$side-by-side) {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: max-content max-content;
+    column-gap: unset;
+  }
+}
+
+.message {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+
+  @media (max-width: breakpoints.$side-by-side) {
+    white-space: unset;
+    text-overflow: unset;
+    overflow: unset;  
+  }
+}
