@@ -4,6 +4,8 @@ import { Outlet } from 'react-router-dom';
 import { useStores } from '../State/Store';
 import DesktopView from '../DesktopView';
 import styles from './PlaidLogsView.module.scss';
+import MobileView from '../MobileView';
+import ViewTitle from '../ViewTitle';
 
 const PlaidLogsView = observer(() => {
   const { plaidLogs } = useStores();
@@ -13,11 +15,20 @@ const PlaidLogsView = observer(() => {
   })
 
   return (
-    <DesktopView>
-      <div className={styles.layout}>
-        <Outlet />
-      </div>
-    </DesktopView>
+    <>
+      <DesktopView>
+        <div className={styles.layout}>
+          <Outlet />
+        </div>
+      </DesktopView>
+
+      <MobileView>
+        <div className={styles.layout}>
+          <ViewTitle>Plaid Logs</ViewTitle>
+          <Outlet />
+        </div>
+      </MobileView>
+    </>
   )
 })
 

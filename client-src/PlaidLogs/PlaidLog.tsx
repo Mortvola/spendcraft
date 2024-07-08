@@ -35,9 +35,11 @@ const PlaidLog: React.FC<PropsType> = ({
     <>
       <div className={styles.layout} onClick={handleClick}>
         <DateTime dateTime={log.createdAt} />
-        <div className={styles.message}>{log.request}</div>
-        <div>{log.institutionId}</div>
-        <div>{log.status}</div>
+        <div className={styles.layout2}>
+          <div className={styles.message}>{log.request}</div>
+          <div>{log.institutionId}</div>
+          <div>{log.status}</div>
+        </div>
       </div>
       {
         selected

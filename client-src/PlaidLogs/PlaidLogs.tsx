@@ -3,6 +3,7 @@ import { observer } from 'mobx-react-lite';
 import { useStores } from '../State/Store';
 import PlaidLog from './PlaidLog';
 import { PlaidLogInterface } from '../State/Types';
+import styles from './PlaidLogs.module.scss';
 
 const PlaidLogs = observer(() => {
   const { plaidLogs } = useStores();
@@ -13,12 +14,14 @@ const PlaidLogs = observer(() => {
   }
 
   return (
-    <div>
-      {
-        plaidLogs.logs.map((log) => (
-          <PlaidLog key={log.id} log={log} onClick={handleClick} selected={log === selectedLog} />
-        ))
-      }
+    <div className={styles.layout}>
+      <div className={styles.logs}>
+        {
+          plaidLogs.logs.map((log) => (
+            <PlaidLog key={log.id} log={log} onClick={handleClick} selected={log === selectedLog} />
+          ))
+        }
+      </div>
     </div>
   )
 })

@@ -9,7 +9,7 @@ import TabViewMenu from './TabViewMenu';
 import TabViewMenuItem from './TabViewMenuItem';
 
 const TabView: React.FC = () => {
-  const { uiState } = useStores();
+  const { uiState, user } = useStores();
   const navigate = useNavigate();
   const params = useParams();
 
@@ -37,6 +37,10 @@ const TabView: React.FC = () => {
 
   const handleLogsClick = () => {
     navigate('/logs');
+  }
+
+  const handlePlaidLogsClick = () => {
+    navigate('/admin');
   }
 
   const handlePlansClick = () => {
@@ -94,6 +98,13 @@ const TabView: React.FC = () => {
         <TabViewMenuItem onClick={handleAccountClick}>Account</TabViewMenuItem>
         <TabViewMenuItem onClick={handleBillsClick}>Bills</TabViewMenuItem>
         <TabViewMenuItem onClick={handleLogsClick}>Logs</TabViewMenuItem>
+        {
+          user.roles.includes('ADMIN')
+            ? (
+              <TabViewMenuItem onClick={handlePlaidLogsClick}>Plaid Logs</TabViewMenuItem>
+            )
+            : null
+        }
       </TabViewMenu>
     </div>
   )

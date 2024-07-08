@@ -1,6 +1,20 @@
+@use "../breakpoints";
+
 .layout {
   display: grid;
-  grid-template-columns: repeat(4, max-content);
+  grid-template-columns: repeat(2, max-content);
+  column-gap: 1rem;
+
+  @media (max-width: breakpoints.$side-by-side) {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: max-content max-content;
+    column-gap: unset;
+  }
+}
+
+.layout2 {
+  display: grid;
+  grid-template-columns: repeat(3, max-content);
   column-gap: 1rem;
 }
 

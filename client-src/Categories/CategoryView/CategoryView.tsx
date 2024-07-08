@@ -139,6 +139,7 @@ const CategoryView: React.FC<PropsType> = observer(({
           </RemoteDataManager>
         </div>
       </DesktopView>
+
       <MobileView>
         <RemoteDataManager data={categoryTree} className={styles.categoriesWrapper}>
           {
