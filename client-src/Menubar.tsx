@@ -7,6 +7,7 @@ import {
 } from 'react-bootstrap';
 import {
   Link, matchPath, useLocation, useNavigate,
+  useParams,
 } from 'react-router-dom';
 import Http from '@mortvola/http';
 import { runInAction } from 'mobx';
@@ -39,10 +40,12 @@ const pathKeys = [
 
 const Menubar: React.FC = observer(() => {
   const store = useStores();
+  const { uiState } = store;
   const [expanded, setExpanded] = React.useState<boolean>(false);
   const navigate = useNavigate();
   const [active, setActive] = React.useState<EventKeys>(EventKeys.HOME);
   const location = useLocation();
+  const params = useParams();
 
   React.useEffect(() => {
     const pathKey = pathKeys.find((pk) => (
@@ -86,6 +89,35 @@ const Menubar: React.FC = observer(() => {
     setActive((eventKey as EventKeys) ?? EventKeys.HOME);
     setExpanded(false);
     switch (eventKey) {
+      case EventKeys.HOME:
+        if (uiState.selectedCategory !== undefined && uiState.selectedCategory !== null) {
+          if (params.categoryId === undefined || parseInt(params.categoryId, 10) !== uiState.selectedCategory.id) {
+            navigate(`/home/${uiState.selectedCategory.id}`)
+          }
+          else {
+            navigate('/home');
+          }
+        }
+        else {
+          navigate('/home');
+        }
+        break;
+
+      case EventKeys.ACCOUNTS:
+        if (uiState.selectedAccount !== undefined && uiState.selectedAccount !== null) {
+          if (params.accountId === undefined || parseInt(params.accountId, 10) !== uiState.selectedAccount.id) {
+            navigate(`/accounts/${uiState.selectedAccount.id}`)
+          }
+          else {
+            navigate('/accounts');
+          }
+        }
+        else {
+          navigate('/accounts');
+        }
+
+        break;
+
       case EventKeys.LOGOUT:
         logout();
         break;
@@ -112,13 +144,13 @@ const Menubar: React.FC = observer(() => {
       <Navbar.Collapse style={{ justifyContent: 'space-between' }}>
         <Nav variant="underline" defaultActiveKey="HOME" activeKey={active}>
           <Nav.Item>
-            <Nav.Link as={Link} to="/home" eventKey={EventKeys.HOME}>Home</Nav.Link>
+            <Nav.Link eventKey={EventKeys.HOME}>Home</Nav.Link>
           </Nav.Item>
           <Nav.Item>
             <Nav.Link as={Link} to="/plans" eventKey={EventKeys.PLANS}>Plans</Nav.Link>
           </Nav.Item>
           <Nav.Item>
-            <Nav.Link as={Link} to="/accounts" eventKey={EventKeys.ACCOUNTS}>Accounts</Nav.Link>
+            <Nav.Link eventKey={EventKeys.ACCOUNTS}>Accounts</Nav.Link>
           </Nav.Item>
           <Nav.Item>
             <Nav.Link as={Link} to="/search" eventKey={EventKeys.SEARCH}>Search</Nav.Link>
