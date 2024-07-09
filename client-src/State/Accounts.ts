@@ -54,6 +54,8 @@ class Accounts implements AccountsInterface {
     if (body) {
       if (isInstitutionsResponse(body)) {
         runInAction(() => {
+          this.institutions = [];
+
           body.forEach((i) => {
             const institution = new Institution(this.store, i);
             this.insertInstitution(institution);

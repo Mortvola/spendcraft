@@ -28,6 +28,10 @@ const AccountView: React.FC<PropsType> = observer(({
   };
 
   React.useEffect(() => {
+    accounts.load();
+  }, [accounts])
+
+  React.useEffect(() => {
     if (accounts.initialized) {
       if (params.accountId !== undefined) {
         const acct = accounts.findAccount(parseInt(params.accountId, 10));
