@@ -361,10 +361,12 @@ class Account extends BaseModel {
 
   private async updateTransaction(
     this: Account,
+    budget: Budget,
     acctTrans: AccountTransaction,
     plaidTransaction: Plaid.Transaction,
-  ): Promise<number> {
+  ): Promise<[number, number]> {
     let transactionAmount = 0;
+    let unassignedAmount = 0;
 
     const transaction = await acctTrans.related('transaction').query()
       .firstOrFail()
@@ -411,6 +413,39 @@ class Account extends BaseModel {
 
       await transaction.save();
 
+      // If the amount changed then make sure that sum of the transaction
+      // categories matches the transaction amount.
+      if (accountTransactionChanges.amount) {
+        const trxCats = await transaction.related('transactionCategories').query();
+
+        const sum = trxCats.reduce((accum, trxCat) => (
+          accum + trxCat.amount
+        ), 0)
+
+        const delta = accountTransactionChanges.amount - sum;
+
+        if (delta !== 0) {
+          // If there is an unassigned transaction category
+          // then adjust its amount. Otherwise, add a new unassigned transaction category.
+          const unassigned = await budget.getUnassignedCategory({ client: this.$trx });
+
+          const unnassignedTrxCat = trxCats.find((tc) => tc.categoryId === unassigned.id);
+
+          if (unnassignedTrxCat) {
+            unnassignedTrxCat.amount += delta;
+            await unnassignedTrxCat.save();
+          }
+          else {
+            await transaction.related('transactionCategories').create({
+              categoryId: unassigned.id,
+              amount: delta,
+            });
+          }
+
+          unassignedAmount = delta;
+        }
+      }
+
       await transaction.related('transactionLog')
         .create({
           budgetId: transaction.budgetId,
@@ -420,7 +455,7 @@ class Account extends BaseModel {
         });
     }
 
-    return transactionAmount;
+    return [transactionAmount, unassignedAmount];
   }
 
   private async addTransaction(
@@ -434,7 +469,7 @@ class Account extends BaseModel {
 
     let unassignedAmount = 0;
 
-    const transaction = await (new Transaction())
+    const transaction = await new Transaction()
       .useTransaction(this.$trx)
       .fill({
         date: DateTime.fromISO(plaidTransaction.date),
@@ -503,7 +538,7 @@ class Account extends BaseModel {
 
     if (acctTrans) {
       // The account transaction exists. Update it.
-      transactionAmount = await this.updateTransaction(acctTrans, plaidTransaction);
+      [transactionAmount, unassignedAmount] = await this.updateTransaction(budget, acctTrans, plaidTransaction);
     }
     else {
       // Tthe acdount transaction was not found. Create it.
