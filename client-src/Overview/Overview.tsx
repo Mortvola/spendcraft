@@ -4,6 +4,7 @@ import { DateTime } from 'luxon';
 import { useStores } from '../State/Store';
 import Bill from './Bill';
 import styles from './Overview.module.scss';
+import MinorTitle from './MinorTitle';
 
 const Overview = observer(() => {
   const { overview } = useStores()
@@ -11,7 +12,7 @@ const Overview = observer(() => {
   return (
     <div className={styles.layout}>
       <div>
-        <div>Monthly Bills</div>
+        <MinorTitle>Monthly Bills</MinorTitle>
         {
           overview.bills
             .filter((bill) => bill.date?.month === DateTime.now().month && bill.recurrence === 1)
@@ -22,7 +23,7 @@ const Overview = observer(() => {
       </div>
 
       <div>
-        <div>Other Bills Due This Month</div>
+        <MinorTitle>Other Bills Due This Month</MinorTitle>
         {
           overview.bills
             .filter((bill) => bill.date?.month === DateTime.now().month && bill.recurrence !== 1)
@@ -33,7 +34,7 @@ const Overview = observer(() => {
       </div>
 
       <div>
-        <div>Upcoming Bills</div>
+        <MinorTitle>Upcoming Bills</MinorTitle>
         {
           overview.bills
             .filter((bill) => bill.date?.month !== DateTime.now().month)

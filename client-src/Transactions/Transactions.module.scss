@@ -326,6 +326,27 @@ $balance-width: 8rem;
       }
     }
   }
+
+  .search {
+    .transaction {
+      grid-template-columns: $icon-width $date-width minmax(0, 1fr) $amount-width;
+      grid-template-rows: max-content max-content;
+      grid-template-areas:
+      ". name name amount"
+      ". date account .";
+
+      .running-balance,
+      .reconcile,
+      .trx-amount,
+      .pending-flag {
+        display: none;
+      }
+    
+      .owner {
+        display: unset;
+      }
+    }
+  }  
 }
 
 .register-title {

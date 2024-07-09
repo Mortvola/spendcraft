@@ -2,13 +2,14 @@ import React from 'react';
 import {
   useNavigate, useParams,
 } from 'react-router-dom';
+import { observer } from 'mobx-react-lite';
 import styles from './TabView.module.scss';
 import TabViewButton from './TabViewButton';
 import { useStores } from '../State/Store';
 import TabViewMenu from './TabViewMenu';
 import TabViewMenuItem from './TabViewMenuItem';
 
-const TabView: React.FC = () => {
+const TabView: React.FC = observer(() => {
   const { uiState, user } = useStores();
   const navigate = useNavigate();
   const params = useParams();
@@ -45,6 +46,14 @@ const TabView: React.FC = () => {
 
   const handlePlansClick = () => {
     navigate('/plans')
+  }
+
+  const handleAutoAssignClick = () => {
+    navigate('/auto-assignments');
+  }
+
+  const handleSearchClick = () => {
+    navigate('/search')
   }
 
   const handleOtherClick = () => {
@@ -97,6 +106,8 @@ const TabView: React.FC = () => {
       >
         <TabViewMenuItem onClick={handleAccountClick}>Account</TabViewMenuItem>
         <TabViewMenuItem onClick={handleBillsClick}>Bills</TabViewMenuItem>
+        <TabViewMenuItem onClick={handleAutoAssignClick}>Auto Assign</TabViewMenuItem>
+        <TabViewMenuItem onClick={handleSearchClick}>Search</TabViewMenuItem>
         <TabViewMenuItem onClick={handleLogsClick}>Logs</TabViewMenuItem>
         {
           user.roles.includes('ADMIN')
@@ -108,6 +119,6 @@ const TabView: React.FC = () => {
       </TabViewMenu>
     </div>
   )
-};
+});
 
 export default TabView;

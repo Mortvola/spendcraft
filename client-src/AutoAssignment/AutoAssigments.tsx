@@ -4,6 +4,8 @@ import { Outlet } from 'react-router-dom';
 import { useStores } from '../State/Store';
 import DesktopView from '../DesktopView';
 import AutoAssigmentsToolbar from './AutoAssignmentsToolbar';
+import MobileView from '../MobileView';
+import ViewTitle from '../ViewTitle';
 
 const AutoAssigments = observer(() => {
   const { autoAssignments } = useStores();
@@ -13,12 +15,22 @@ const AutoAssigments = observer(() => {
   })
 
   return (
-    <DesktopView>
-      <div>
-        <AutoAssigmentsToolbar />
-        <Outlet />
-      </div>
-    </DesktopView>
+    <>
+      <DesktopView>
+        <div>
+          <AutoAssigmentsToolbar />
+          <Outlet />
+        </div>
+      </DesktopView>
+
+      <MobileView>
+        <div>
+          <AutoAssigmentsToolbar />
+          <ViewTitle>Auto Assignments</ViewTitle>
+          <Outlet />
+        </div>
+      </MobileView>
+    </>
   )
 })
 
