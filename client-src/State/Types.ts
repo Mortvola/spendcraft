@@ -300,7 +300,7 @@ export interface InstitutionInterface {
 
   relink(): Promise<void>;
 
-  refresh(institutionId: number): Promise<boolean>;
+  sync(institutionId: number): Promise<boolean>;
 
   update(): Promise<InstitutionInterface | null>;
 

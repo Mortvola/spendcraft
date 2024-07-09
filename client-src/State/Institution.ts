@@ -43,7 +43,7 @@ class Institution implements InstitutionInterface {
     this.store = store;
   }
 
-  update2(props: InstitutionProps) {
+  refresh(props: InstitutionProps) {
     this.id = props.id;
     this.plaidInstitutionId = props.plaidInstitutionId;
     this.name = props.name;
@@ -82,7 +82,7 @@ class Institution implements InstitutionInterface {
     });
   }
 
-  async refresh(institutionId: number): Promise<boolean> {
+  async sync(institutionId: number): Promise<boolean> {
     runInAction(() => {
       this.refreshing = true;
     });

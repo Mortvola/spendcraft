@@ -81,7 +81,7 @@ const Institution: React.FC<PropsType> = observer(({
   }
 
   const refresh = async () => {
-    const result = await institution.refresh(institution.id);
+    const result = await institution.sync(institution.id);
 
     if (!result) {
       showRelinkDialog();

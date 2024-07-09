@@ -54,13 +54,37 @@ class Accounts implements AccountsInterface {
     if (body) {
       if (isInstitutionsResponse(body)) {
         runInAction(() => {
-          this.institutions = [];
+          // First remove any institutions from the local list
+          // that does not appear in the response.
+          for (let i = 0; i < this.institutions.length;) {
+            const index = body.findIndex((inst) => inst.id === this.institutions[i].id)
 
+            if (index === -1) {
+              this.institutions = [
+                ...this.institutions.slice(0, i),
+                ...this.institutions.slice(i + 1),
+              ]
+            }
+            else {
+              i += 1;
+            }
+          }
+
+          // For each institution in the reponse, add it to the 
+          // local list if it does not exist and refresh it if it does.
           body.forEach((i) => {
-            const institution = new Institution(this.store, i);
-            this.insertInstitution(institution);
-          });
+            let institution = this.institutions.find(
+              (inst) => inst.plaidInstitutionId === i.plaidInstitutionId,
+            );
 
+            if (!institution) {
+              institution = new Institution(this.store, i);
+              this.insertInstitution(institution);
+            }
+            else {
+              institution.refresh(i);
+            }
+          });
           this.initialized = true;
         });
       }
@@ -171,7 +195,7 @@ class Accounts implements AccountsInterface {
           this.insertInstitution(institution);
         }
         else {
-          institution.update2(body);
+          institution.refresh(body);
         }
 
         this.store.categoryTree.updateBalances(body.categories);
