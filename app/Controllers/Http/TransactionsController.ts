@@ -4,12 +4,13 @@ import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import Database from '@ioc:Adonis/Lucid/Database';
 import Category from 'App/Models/Category';
 import Transaction from 'App/Models/Transaction';
-import TransactionCategory from 'App/Models/TransactionCategory';
 import Loan from 'App/Models/Loan';
 import LoanTransaction from 'App/Models/LoanTransaction';
 import AccountTransaction from 'App/Models/AccountTransaction';
 import {
-  AccountBalanceProps, CategoryBalanceProps, RequestErrorCode, TransactionProps, TransactionsResponse, TransactionType,
+  AccountBalanceProps, ApiResponse, CategoryBalanceProps, RequestErrorCode,
+  TransactionProps, TransactionsResponse, TransactionType,
+  UpdateTransactionResponse,
 } from 'Common/ResponseTypes';
 import Account from 'App/Models/Account';
 import { schema, rules } from '@ioc:Adonis/Core/Validator';
@@ -81,7 +82,7 @@ export default class TransactionsController {
       user,
     },
     logger,
-  }: HttpContextContract): Promise<Record<string, unknown>> {
+  }: HttpContextContract): Promise<ApiResponse<UpdateTransactionResponse>> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -131,94 +132,74 @@ export default class TransactionsController {
         }
       }
 
-      type Result = {
-        categories: CategoryBalanceProps[],
-        transaction?: Record<string, unknown>,
-        acctBalances: AccountBalanceProps[],
-      };
-
-      const result: Result = {
-        categories: [],
-        acctBalances: [],
-      };
-
-      // Get the 'unassigned' category id
-      const unassigned = await budget.getUnassignedCategory({ client: trx });
+      const categoryResults: CategoryBalanceProps[] = [];
 
       const acctTrans = await AccountTransaction.findByOrFail('transactionId', trxId, { client: trx });
-
       const account = await Account.findOrFail(acctTrans.accountId);
 
-      const splits = await TransactionCategory.query({ client: trx })
-        .preload('loanTransaction')
-        .where('transactionId', trxId);
+      if (account.tracking === 'Transactions' && requestData.splits.length === 0) {
+        throw new Error('no categories provided')
+      }
 
-      if (splits.length > 0) {
-        // There are pre-existing category splits.
-        // Credit the category balance for each one.
-        // eslint-disable-next-line no-restricted-syntax
-        for (const split of splits) {
-          // eslint-disable-next-line no-await-in-loop
-          const category = await Category.findOrFail(split.categoryId, { client: trx });
+      const changedCategories: Record<number, number> = {}
 
-          category.balance -= split.amount;
+      if (account.tracking === 'Transactions') {
+        const oldTransactionCategories = await transaction.related('transactionCategories').query()
+          .preload('loanTransaction');
 
-          // eslint-disable-next-line no-await-in-loop
-          await category.save();
-
-          result.categories.push({
-            id: category.id,
-            balance: category.balance,
-          });
-        }
-
-        // Delete any loan transactions that are associated with the categories being deleted.
-        // eslint-disable-next-line no-restricted-syntax
-        for (const split of splits) {
-          if (split.loanTransaction) {
-            split.loanTransaction.delete();
+        if (oldTransactionCategories.length > 0) {
+          // There are pre-existing category splits.
+          // Credit the category balance for each one.
+          // eslint-disable-next-line no-restricted-syntax
+          for (const transactionCategory of oldTransactionCategories) {
             // eslint-disable-next-line no-await-in-loop
-            const loan = await Loan.findByOrFail('categoryId', split.categoryId, { client: trx });
+            const category = await transactionCategory.related('category').query().firstOrFail();
+            category.balance -= transactionCategory.amount;
+
+            changedCategories[category.id] = -transactionCategory.amount;
+
             // eslint-disable-next-line no-await-in-loop
-            await loan.updateBalance();
+            await category.save();
+
+            categoryResults.push({
+              id: category.id,
+              balance: category.balance,
+            });
           }
 
-          split.delete();
+          // Delete any loan transactions that are associated with the categories being deleted.
+          // eslint-disable-next-line no-restricted-syntax
+          for (const transactionCategory of oldTransactionCategories) {
+            if (transactionCategory.loanTransaction) {
+              transactionCategory.loanTransaction.delete();
+              // eslint-disable-next-line no-await-in-loop
+              const loan = await Loan.findByOrFail('categoryId', transactionCategory.categoryId, { client: trx });
+              // eslint-disable-next-line no-await-in-loop
+              await loan.updateBalance();
+            }
+
+            transactionCategory.delete();
+          }
         }
-      }
-      else if (account.tracking === 'Transactions') {
-        // There are no category splits. Debit the 'Unassigned' category
-        if (requestData.amount !== undefined) {
-          unassigned.balance -= acctTrans.amount;
-          await unassigned.save();
-        }
 
-        result.categories.push({
-          id: unassigned.id,
-          balance: unassigned.balance,
-        });
-      }
+        const transactionCategories = requestData.splits;
 
-      const requestedSplits = requestData.splits;
-
-      if (requestedSplits.length > 0) {
         // eslint-disable-next-line no-restricted-syntax
-        for (const split of requestedSplits) {
-          const txCategory = (new TransactionCategory()).useTransaction(trx);
-
-          txCategory.fill({
-            categoryId: split.categoryId,
-            amount: split.amount,
-            comment: split.comment,
-            transactionId: trxId,
-          });
-
-          txCategory.save();
+        for (const transactionCategory of transactionCategories) {
+          // eslint-disable-next-line no-await-in-loop
+          const txCategory = await transaction.related('transactionCategories')
+            .create({
+              categoryId: transactionCategory.categoryId,
+              amount: transactionCategory.amount,
+              comment: transactionCategory.comment,
+              transactionId: trxId,
+            });
 
           // eslint-disable-next-line no-await-in-loop
-          const category = await Category.findOrFail(split.categoryId, { client: trx });
+          const category = await txCategory.related('category').query().firstOrFail();
+          category.balance += transactionCategory.amount;
 
-          category.balance += split.amount;
+          changedCategories[category.id] = (changedCategories[category.id] ?? 0) + transactionCategory.amount;
 
           // eslint-disable-next-line no-await-in-loop
           await category.save();
@@ -227,7 +208,7 @@ export default class TransactionsController {
             const loanTrx = (new LoanTransaction()).useTransaction(trx);
 
             // eslint-disable-next-line no-await-in-loop
-            const loan = await Loan.findByOrFail('categoryId', split.categoryId, { client: trx });
+            const loan = await Loan.findByOrFail('categoryId', transactionCategory.categoryId, { client: trx });
 
             loanTrx.fill({
               loanId: loan.id,
@@ -241,44 +222,26 @@ export default class TransactionsController {
           }
 
           // Determine if the category is already in the array.
-          const index = result.categories.findIndex((c) => c.id === category.id);
+          const index = categoryResults.findIndex((c) => c.id === category.id);
 
           // If the category is already in the array then simply update the amount.
           // Otherwise, add the category and amount to the array.
           if (index !== -1) {
-            result.categories[index].balance = category.balance;
+            categoryResults[index].balance = category.balance;
           }
           else {
-            result.categories.push({
+            categoryResults.push({
               id: category.id,
               balance: category.balance,
             });
           }
         }
       }
-      else if (account.tracking === 'Transactions') {
-        // There are no category splits. Debit the 'Unassigned' category
-        if (requestData.amount !== undefined) {
-          unassigned.balance += requestData.amount;
-          await unassigned.save();
-        }
-
-        const index = result.categories.findIndex((c) => c.id === unassigned.id);
-
-        if (index !== -1) {
-          result.categories[index].balance = unassigned.balance;
-        }
-        else {
-          result.categories.push({
-            id: unassigned.id,
-            balance: unassigned.balance,
-          });
-        }
-      }
 
       if (requestData.name !== undefined
         || requestData.amount !== undefined
-        || requestData.principle !== undefined) {
+        || requestData.principle !== undefined
+      ) {
         if (account.type === 'loan') {
           account.balance -= acctTrans.principle ?? 0;
         }
@@ -321,6 +284,23 @@ export default class TransactionsController {
 
       await transaction.save();
 
+      // Create budget change for synchronizations
+      await budget.related('budgetChange').create({
+        change: {
+          transactions: {
+            modified: [transaction.id],
+            deleted: [],
+          },
+          categories: {
+            modified: Object.keys(changedCategories)
+              .filter((key) => changedCategories[key] !== 0)
+              .map((key) => parseInt(key, 10)),
+            deleted: [],
+          },
+        },
+      })
+
+      // Log transaction change for users
       await transaction.related('transactionLog')
         .create({
           budgetId: transaction.budgetId,
@@ -329,6 +309,7 @@ export default class TransactionsController {
           changes,
         });
 
+      // Prepare resposne
       await transaction.load('transactionCategories');
 
       await transaction.load('accountTransaction', (accountTrx) => {
@@ -337,12 +318,14 @@ export default class TransactionsController {
         });
       });
 
-      result.transaction = transaction.serialize(transactionFields)
-
-      result.acctBalances = [{
-        id: account.id,
-        balance: account.balance,
-      }];
+      const result: UpdateTransactionResponse = {
+        transaction: transaction.serialize(transactionFields) as TransactionProps,
+        categories: categoryResults,
+        acctBalances: [{
+          id: account.id,
+          balance: account.balance,
+        }],
+      }
 
       // Get the transaction count for each of the categories
       // eslint-disable-next-line no-restricted-syntax
@@ -356,7 +339,9 @@ export default class TransactionsController {
 
       await trx.commit();
 
-      return result;
+      return {
+        data: result,
+      };
     }
     catch (error) {
       await trx.rollback();

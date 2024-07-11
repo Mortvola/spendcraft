@@ -7,16 +7,17 @@ import {
   TransactionProps,
   isUpdateCategoryTransferResponse,
   isDeleteTransactionResponse,
-  isUpdateTransactionResponse,
   CategoryTransferProps,
   Location,
   ApiError,
   ApiResponse,
+  UpdateTransactionResponse,
 } from '../../common/ResponseTypes';
 import {
   NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface,
   TransactionInterface,
 } from './Types';
+import { db } from './Database';
 
 class Transaction implements TransactionInterface {
   id: number | null;
@@ -107,6 +108,29 @@ class Transaction implements TransactionInterface {
     makeAutoObservable(this);
   }
 
+  static async updateDatabase(props: TransactionProps): Promise<void> {
+    const trx = db.transaction(['transactions'], 'readwrite');
+
+    const transactionStore = trx.objectStore('transactions');
+
+    const transaction = await transactionStore.get(props.id!);
+
+    try {
+      if (!transaction || transaction.data.version < props.version) {
+        // eslint-disable-next-line no-await-in-loop
+        await transactionStore.put({
+          id: props.id,
+          accountId: props.accountTransaction.account.id,
+          categories: props.transactionCategories.map((tc) => tc.categoryId),
+          data: props,
+        })
+      }
+    }
+    catch (error) {
+      console.log(`${error}, id = ${props.id}`)
+    }
+  }
+
   async updateTransaction(
     values: {
       date?: string,
@@ -121,7 +145,7 @@ class Transaction implements TransactionInterface {
       throw new Error('transaction has a null id');
     }
 
-    const response = await Http.patch<unknown, ApiResponse>(`/api/v1/transactions/${this.id}`, { version: this.version, ...values });
+    const response = await Http.patch<unknown, ApiResponse<UpdateTransactionResponse>>(`/api/v1/transactions/${this.id}`, { version: this.version, ...values });
 
     if (response.ok) {
       const body = await response.body();
@@ -130,24 +154,30 @@ class Transaction implements TransactionInterface {
         return body.errors;
       }
 
-      if (isUpdateTransactionResponse(body)) {
+      if (body.data) {
+        const updateTransactionResponse = body.data;
+
+        await Transaction.updateDatabase(updateTransactionResponse.transaction);
+
         runInAction(() => {
           if (this.id === null) {
             throw new Error('transaction has a null id');
           }
 
-          this.store.categoryTree.updateBalances(body.categories);
+          this.store.categoryTree.updateBalances(updateTransactionResponse.categories);
 
-          this.categories = body.transaction.transactionCategories;
+          const transactinProps = updateTransactionResponse.transaction;
 
-          const dateChanged = this.date !== DateTime.fromISO(body.transaction.date);
-          this.date = DateTime.fromISO(body.transaction.date);
+          this.categories = transactinProps.transactionCategories;
 
-          this.amount = body.transaction.accountTransaction.amount;
-          this.principle = body.transaction.accountTransaction.principle;
-          this.name = body.transaction.accountTransaction.name;
-          this.comment = body.transaction.comment;
-          this.version = body.transaction.version;
+          const dateChanged = this.date !== DateTime.fromISO(transactinProps.date);
+          this.date = DateTime.fromISO(transactinProps.date);
+
+          this.amount = transactinProps.accountTransaction.amount;
+          this.principle = transactinProps.accountTransaction.principle;
+          this.name = transactinProps.accountTransaction.name;
+          this.comment = transactinProps.comment;
+          this.version = transactinProps.version;
 
           // Remove the transaction from the selected category, if any, if the transaction
           // no longer has the selected category in its splits.
@@ -156,10 +186,10 @@ class Transaction implements TransactionInterface {
               throw new Error('category is null');
             }
 
-            if ((body.transaction.transactionCategories.length === 0
+            if ((transactinProps.transactionCategories.length === 0
                 && this.store.uiState.selectedCategory.id !== this.store.categoryTree.unassignedCat.id)
-              || (body.transaction.transactionCategories.length !== 0
-                && !body.transaction.transactionCategories.some(
+              || (transactinProps.transactionCategories.length !== 0
+                && !transactinProps.transactionCategories.some(
                   (c) => (
                     this.store.uiState.selectedCategory && c.categoryId === this.store.uiState.selectedCategory.id
                   ),
@@ -182,10 +212,10 @@ class Transaction implements TransactionInterface {
             this.store.uiState.selectedAccount.transactions.insertTransaction(this);
           }
 
-          const account = this.store.accounts.findAccount(body.acctBalances[0].id);
+          const account = this.store.accounts.findAccount(updateTransactionResponse.acctBalances[0].id);
 
           if (account) {
-            account.balance = body.acctBalances[0].balance;
+            account.balance = updateTransactionResponse.acctBalances[0].balance;
           }
         });
 

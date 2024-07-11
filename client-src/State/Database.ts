@@ -34,7 +34,7 @@ const initializeDatabase = async (): Promise<IDBPDatabase<unknown>> => {
         const transaction = await transactionStore.get(transactions[i].id!)
 
         try {
-          if (!transaction || transaction.version < transactions[i].version) {
+          if (!transaction || transaction.data.version < transactions[i].version) {
             // eslint-disable-next-line no-await-in-loop
             await transactionStore.put({
               id: transactions[i].id,
