@@ -177,12 +177,10 @@ Route.group(() => {
       Route.group(() => {
         Route.patch('/:trxId', 'TransactionsController.update');
         Route.delete('/:trxId', 'TransactionsController.delete');
-        Route.get('/:trxId', 'TransactionsController.get');
+        Route.get('/:trxId?', 'TransactionsController.get');
         Route.post('/:trxId/dedup', 'TransactionsController.dedup');
-      }).prefix('/transaction');
-  
-      Route.get('/transactions', 'TransactionsController.getMultiple')
-  
+      }).prefix('/transactions');
+    
       Route.get('/reports/:report', 'ReportController.get');
   
       Route.group(() => {

@@ -36,7 +36,7 @@ class Category implements CategoryInterface {
 
   transactions: TransactionContainer;
 
-  pendingTransactions: TransactionContainer;
+  // pendingTransactions: TransactionContainer;
 
   loan: {
     balance: number;
@@ -60,7 +60,8 @@ class Category implements CategoryInterface {
 
     this.transactions = new TransactionContainer(
       store,
-      `/api/v1/category/${props.id}/transactions?pending=2`,
+      // `/api/v1/category/${props.id}/transactions?pending=2`,
+      `local:categoryId:${props.id}`,
       (balance: number, count?: number) => {
         this.balance = balance;
 
@@ -77,9 +78,9 @@ class Category implements CategoryInterface {
       },
     );
 
-    this.pendingTransactions = new TransactionContainer(
-      store, `/api/v1/category/${props.id}/transactions?pending=1`,
-    );
+    // this.pendingTransactions = new TransactionContainer(
+    //   store, `/api/v1/category/${props.id}/transactions?pending=1`,
+    // );
 
     makeObservable(this, {
       name: observable,

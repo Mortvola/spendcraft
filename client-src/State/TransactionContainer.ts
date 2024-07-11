@@ -1,15 +1,15 @@
 import { makeObservable, observable } from 'mobx';
 import { isTransactionsResponse, TransactionProps } from '../../common/ResponseTypes';
-import QueryManager from './QueryManager';
-import { StoreInterface, TransactionContainerInterface } from './Types';
+import {
+  QueryManagerInterface, QueryManagerState, StoreInterface, TransactionContainerInterface,
+} from './Types';
 import Transaction from './Transaction';
+import LocalQueryManager from './LocalQueryManager';
 
 class TransactionContainer implements TransactionContainerInterface {
   transactions: Transaction[] = [];
 
-  transactionsQuery: QueryManager = new QueryManager();
-
-  url: string;
+  private transactionsQuery: QueryManagerInterface;
 
   searchString?: string;
 
@@ -26,12 +26,12 @@ class TransactionContainer implements TransactionContainerInterface {
       transactions: observable,
     })
 
-    this.url = url;
     this.balanceCallback = balanceCallback ?? null;
     this.store = store;
+    this.transactionsQuery = new LocalQueryManager(url);
   }
 
-  state(): 'IDLE' | 'LOADING' | 'LOADING-MORE' {
+  state(): QueryManagerState {
     return this.transactionsQuery.state;
   }
 
@@ -43,7 +43,6 @@ class TransactionContainer implements TransactionContainerInterface {
     this.searchString = qs;
 
     return this.transactionsQuery.fetch(
-      this.url,
       index,
       this.transactionResponseHandler,
       qs,

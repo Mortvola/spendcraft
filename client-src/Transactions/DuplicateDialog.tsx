@@ -43,7 +43,7 @@ const DuplicateDialog: React.FC<PropsType & ModalProps> = ({
   const [otherTransaction, setOtherTransaction] = React.useState<TransactionProps | null>(null);
   React.useEffect(() => {
     (async () => {
-      const response = await Http.get<TransactionProps>(`/api/v1/transaction/${transaction.duplicateOfTransactionId}`);
+      const response = await Http.get<TransactionProps>(`/api/v1/transactions/${transaction.duplicateOfTransactionId}`);
 
       if (response.ok) {
         const body = await response.body();

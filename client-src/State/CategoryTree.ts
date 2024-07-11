@@ -8,7 +8,7 @@ import {
   isGroupProps, isGroupsResponse,
 } from '../../common/ResponseTypes';
 import {
-  CategoryInterface, CategoryTreeInterface, RebalancesInterface, StoreInterface,
+  CategoryInterface, CategoryTreeInterface, QueryManagerState, RebalancesInterface, StoreInterface,
 } from './Types';
 import SystemIds from './SystemIds';
 
@@ -40,7 +40,7 @@ class CategoryTree implements CategoryTreeInterface {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  state(): 'IDLE' | 'LOADING' | 'LOADING-MORE' {
+  state(): QueryManagerState {
     return 'IDLE';
   }
 

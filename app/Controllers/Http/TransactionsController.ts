@@ -21,44 +21,56 @@ export default class TransactionsController {
   // eslint-disable-next-line class-methods-use-this
   public async get({
     request,
-  }: HttpContextContract): Promise<Transaction> {
+  }: HttpContextContract): Promise<Transaction | TransactionsResponse> {
     const { trxId } = request.params();
 
-    const transaction = await Transaction.query()
-      .where('id', trxId)
-      .andWhere('deleted', false)
-      .firstOrFail();
+    if (trxId) {
+      const transaction = await Transaction.query()
+        .where('id', trxId)
+        .andWhere('deleted', false)
+        .firstOrFail();
 
-    await transaction.load('accountTransaction');
+      await transaction.load('accountTransaction');
 
-    return transaction;
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  public async getMultiple({
-    request,
-  }: HttpContextContract): Promise<TransactionsResponse> {
-    let { t } = request.qs();
-
-    if (!Array.isArray(t)) {
-      t = [t];
+      return transaction;
     }
 
-    const transactions = await Transaction.query()
+    let { t } = request.qs();
+    const { since } = request.qs();
+
+    let query = Transaction.query()
       .preload('accountTransaction', (accountTransaction) => {
         accountTransaction.preload('account', (account) => {
           account.preload('institution');
         });
       })
-      .whereIn('id', t)
+      .preload('transactionCategories')
       .andWhere('deleted', false);
 
-    return {
+    if (t) {
+      if (!Array.isArray(t)) {
+        t = [t];
+      }
+
+      query = query.whereIn('id', t)
+    }
+
+    if (since) {
+      query = query.andWhere('date', '>=', since)
+    }
+
+    // console.log(query.toQuery());
+
+    const transactions = await query;
+
+    const response = {
       transactions: transactions.map((transaction) => (
         transaction.serialize(transactionFields) as TransactionProps
       )),
       balance: 0,
     };
+
+    return response;
   }
 
   // eslint-disable-next-line class-methods-use-this

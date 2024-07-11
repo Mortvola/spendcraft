@@ -48,7 +48,10 @@ class Account implements AccountInterface {
 
   constructor(store: StoreInterface, institution: InstitutionInterface, props: AccountProps) {
     this.transactions = new TransactionContainer(
-      store, `/api/v1/account/${props.id}/transactions`, this.updateBalance,
+      store,
+      // `/api/v1/account/${props.id}/transactions`,
+      `local:accountId:${props.id}`,
+      this.updateBalance,
     );
 
     this.pendingTransactions = new TransactionContainer(
@@ -92,8 +95,8 @@ class Account implements AccountInterface {
     this.startDate = props.startDate ? DateTime.fromISO(props.startDate) : null;
     this.rate = props.rate;
 
-    this.transactions.url = `/api/v1/account/${props.id}/transactions`;
-    this.pendingTransactions.url = `/api/v1/account/${props.id}/transactions?pending=1`;
+    // this.transactions.url = `/api/v1/account/${props.id}/transactions`;
+    // this.pendingTransactions.url = `/api/v1/account/${props.id}/transactions?pending=1`;
   }
 
   updateBalance(balance: number) {

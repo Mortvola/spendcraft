@@ -121,7 +121,7 @@ class Transaction implements TransactionInterface {
       throw new Error('transaction has a null id');
     }
 
-    const response = await Http.patch<unknown, ApiResponse>(`/api/v1/transaction/${this.id}`, { version: this.version, ...values });
+    const response = await Http.patch<unknown, ApiResponse>(`/api/v1/transactions/${this.id}`, { version: this.version, ...values });
 
     if (response.ok) {
       const body = await response.body();
@@ -245,7 +245,7 @@ class Transaction implements TransactionInterface {
       throw new Error('transaction has a null id');
     }
 
-    const response = await Http.delete(`/api/v1/transaction/${this.id}`);
+    const response = await Http.delete(`/api/v1/transactions/${this.id}`);
 
     if (response.ok) {
       const body = await response.body();
@@ -269,7 +269,7 @@ class Transaction implements TransactionInterface {
   }
 
   async dedup(): Promise<null | Error[]> {
-    const response = await Http.post(`/api/v1/transaction/${this.id}/dedup`);
+    const response = await Http.post(`/api/v1/transactions/${this.id}/dedup`);
 
     if (response.ok) {
       runInAction(() => {

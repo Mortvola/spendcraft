@@ -74,7 +74,7 @@ const Register: React.FC<PropsType> = observer(({
       }
 
       trxContainer = category.transactions;
-      pendingTrxContainer = category.pendingTransactions
+      // pendingTrxContainer = category.pendingTransactions
 
       break;
 

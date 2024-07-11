@@ -184,7 +184,7 @@ export interface CategoryInterface {
 
   transactions: TransactionContainerInterface;
 
-  pendingTransactions: TransactionContainerInterface;
+  // pendingTransactions: TransactionContainerInterface;
 
   loan: {
     balance: number;
@@ -235,7 +235,7 @@ export interface UIStateInterface {
   plaid: PlaidInterface | null;
 }
 
-export interface CategoryTreeInterface extends RemoteDataInterface {
+export interface CategoryTreeInterface extends PageableDataInterface {
   systemIds: SystemIds;
 
   noGroupGroup: GroupInterface | null;
@@ -332,26 +332,34 @@ export interface InstitutionInterface {
   hasClosedAccounts(): boolean;
 }
 
-export interface RemoteDataInterface {
+export type QueryManagerState = 'IDLE' | 'LOADING' | 'LOADING-MORE';
+
+export interface PageableDataInterface {
   getData(index: number): Promise<void>;
 
   getMoreData(): Promise<void>;
 
   isComplete(): boolean;
 
-  state(): 'IDLE' | 'LOADING' | 'LOADING-MORE';
+  state(): QueryManagerState;
 }
-
-export type QueryManagerState = 'IDLE' | 'LOADING' | 'LOADING-MORE';
 
 export interface QueryManagerInterface {
   state: QueryManagerState;
+
+  fetchComplete: boolean;
+
+  fetch(
+    index: number,
+    handleResponse: (body: unknown, index: number, limit: number) => boolean,
+    qs?: string,
+  ): Promise<void>;
 }
 
-export interface TransactionContainerInterface extends RemoteDataInterface {
+export interface TransactionContainerInterface extends PageableDataInterface {
   transactions: TransactionInterface[];
 
-  transactionsQuery: QueryManagerInterface;
+  // transactionsQuery: QueryManagerInterface;
 
   insertTransaction(transaction: TransactionInterface): void;
 

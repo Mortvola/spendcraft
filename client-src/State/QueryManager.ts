@@ -7,12 +7,15 @@ class QueryManager implements QueryManagerInterface {
 
   fetchComplete = false;
 
-  constructor() {
+  url: string;
+
+  constructor(url: string) {
+    this.url = url;
+
     makeAutoObservable(this);
   }
 
   async fetch(
-    url: string,
     index: number,
     handleResponse: (body: unknown, index: number, limit: number) => boolean,
     qs?: string,
@@ -28,11 +31,11 @@ class QueryManager implements QueryManagerInterface {
         const limit = 30;
         let newUrl: string;
 
-        if (url.includes('?')) {
-          newUrl = `${url}&offset=${index ?? 0}&limit=${limit}`;
+        if (this.url.includes('?')) {
+          newUrl = `${this.url}&offset=${index ?? 0}&limit=${limit}`;
         }
         else {
-          newUrl = `${url}?offset=${index ?? 0}&limit=${limit}`;
+          newUrl = `${this.url}?offset=${index ?? 0}&limit=${limit}`;
         }
 
         if (qs) {
