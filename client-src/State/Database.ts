@@ -1,10 +1,12 @@
 import { IDBPDatabase, openDB } from 'idb';
 import Http from '@mortvola/http';
-import { TransactionsResponse } from '../../common/ResponseTypes';
+import { ApiResponse, SyncResponse } from '../../common/ResponseTypes';
 
 const initializeDatabase = async (): Promise<IDBPDatabase<unknown>> => {
   const newDb = await openDB('SpendCraft', 1, {
     upgrade(db) {
+      db.createObjectStore('revision')
+
       const trxStore = db.createObjectStore('transactions', { keyPath: 'id' })
 
       trxStore.createIndex('categoryId', 'categories', { multiEntry: true })
@@ -17,45 +19,63 @@ const initializeDatabase = async (): Promise<IDBPDatabase<unknown>> => {
     },
   });
 
+  return newDb;
+}
+
+const sync = async (db: IDBPDatabase) => {
   try {
-    const response = await Http.get<TransactionsResponse>('/api/v1/transactions?since=01-04-2024');
+    const revisions = await db.getAll('revision');
+    // console.log(revisions);
+
+    let url = '/api/v1/budgets/sync?since=01-04-2024';
+    if (revisions.length !== 0) {
+      url = `/api/v1/budgets/sync?revision=${revisions[0]}&since=01-04-2024`;
+    }
+
+    const response = await Http.post<void, ApiResponse<SyncResponse>>(url);
 
     if (response) {
       const body = await response.body();
 
-      const trx = newDb.transaction(['transactions'], 'readwrite');
+      if (body.data) {
+        const { transactions: { modified: transactions }, revision } = body.data;
 
-      const transactionStore = trx.objectStore('transactions');
+        const trx = db.transaction(['transactions', 'revision'], 'readwrite');
 
-      const { transactions } = body;
+        await trx.objectStore('revision').put(revision, 0)
 
-      for (let i = 0; i < transactions.length; i += 1) {
-        // eslint-disable-next-line no-await-in-loop
-        const transaction = await transactionStore.get(transactions[i].id!)
+        const transactionStore = trx.objectStore('transactions');
 
-        try {
-          if (!transaction || transaction.data.version < transactions[i].version) {
-            // eslint-disable-next-line no-await-in-loop
-            await transactionStore.put({
-              id: transactions[i].id,
-              accountId: transactions[i].accountTransaction.account.id,
-              categories: transactions[i].transactionCategories.map((tc) => tc.categoryId),
-              data: transactions[i],
-            })
+        for (let i = 0; i < transactions.length; i += 1) {
+          // eslint-disable-next-line no-await-in-loop
+          const transaction = await transactionStore.get(transactions[i].id!)
+
+          try {
+            if (!transaction || transaction.data.version < transactions[i].version) {
+              // eslint-disable-next-line no-await-in-loop
+              await transactionStore.put({
+                id: transactions[i].id,
+                accountId: transactions[i].accountTransaction.account.id,
+                categories: transactions[i].transactionCategories.map((tc) => tc.categoryId),
+                data: transactions[i],
+              })
+            }
+          }
+          catch (error) {
+            console.log(`${error}, id = ${transactions[i].id}`)
           }
         }
-        catch (error) {
-          console.log(`${error}, id = ${transactions[i].id}`)
-        }
+
+        await trx.done
       }
     }
   }
   catch (error) {
     console.log(error);
   }
-
-  return newDb;
 }
 
 // eslint-disable-next-line import/prefer-default-export
 export const db = await initializeDatabase();
+
+await sync(db);

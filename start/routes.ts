@@ -211,6 +211,8 @@ Route.group(() => {
 
       Route.get('/bills', 'CategoryController.getBills');
 
+      Route.post('/budgets/sync', 'BudgetsController.sync');
+
       Route.group(() => {
         Route.get('/plaid-logs', 'PlaidLogsController.get')
       })

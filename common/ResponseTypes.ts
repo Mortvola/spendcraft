@@ -402,6 +402,15 @@ export interface TransactionsResponse {
   balance: number;
 }
 
+export interface SyncResponse {
+  revision: number,
+
+  transactions: {
+    modified: TransactionProps[],
+    deleted: number[],
+  }
+}
+
 export const isTransactionsResponse = (r: unknown): r is TransactionsResponse => (
   r !== undefined && r !== null
   && (r as TransactionsResponse).transactions !== undefined
