@@ -9,6 +9,7 @@ import Transaction from 'App/Models/Transaction';
 import TransactionCategory from 'App/Models/TransactionCategory';
 import {
   TransactionsResponse, CategoryBalanceProps, TransactionProps, TransactionType, AccountBalanceProps, TrackingType,
+  ApiResponse,
 } from 'Common/ResponseTypes';
 import transactionFields from './transactionFields';
 
@@ -25,7 +26,7 @@ export default class AccountsController {
     auth: {
       user,
     },
-  }: HttpContextContract): Promise<TransactionsResponse> {
+  }: HttpContextContract): Promise<ApiResponse<TransactionsResponse>> {
     if (!user) {
       throw new Error('user not defined');
     }
@@ -70,7 +71,9 @@ export default class AccountsController {
 
     result.transactions = transactions.map((t) => t.serialize(transactionFields) as TransactionProps);
 
-    return result;
+    return {
+      data: result,
+    };
   }
 
   // eslint-disable-next-line class-methods-use-this

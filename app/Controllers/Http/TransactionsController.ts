@@ -9,7 +9,9 @@ import Loan from 'App/Models/Loan';
 import LoanTransaction from 'App/Models/LoanTransaction';
 import AccountTransaction from 'App/Models/AccountTransaction';
 import {
-  AccountBalanceProps, CategoryBalanceProps, RequestErrorCode, TransactionProps, TransactionsResponse, TransactionType,
+  AccountBalanceProps, ApiResponse, CategoryBalanceProps, RequestErrorCode,
+  TransactionProps, TransactionsResponse, TransactionType,
+  UpdateTransactionResponse,
 } from 'Common/ResponseTypes';
 import Account from 'App/Models/Account';
 import { schema, rules } from '@ioc:Adonis/Core/Validator';
@@ -37,7 +39,7 @@ export default class TransactionsController {
   // eslint-disable-next-line class-methods-use-this
   public async getMultiple({
     request,
-  }: HttpContextContract): Promise<TransactionsResponse> {
+  }: HttpContextContract): Promise<ApiResponse<TransactionsResponse>> {
     let { t } = request.qs();
 
     if (!Array.isArray(t)) {
@@ -54,10 +56,12 @@ export default class TransactionsController {
       .andWhere('deleted', false);
 
     return {
-      transactions: transactions.map((transaction) => (
-        transaction.serialize(transactionFields) as TransactionProps
-      )),
-      balance: 0,
+      data: {
+        transactions: transactions.map((transaction) => (
+          transaction.serialize(transactionFields) as TransactionProps
+        )),
+        balance: 0,
+      },
     };
   }
 
@@ -69,7 +73,7 @@ export default class TransactionsController {
       user,
     },
     logger,
-  }: HttpContextContract): Promise<Record<string, unknown>> {
+  }: HttpContextContract): Promise<ApiResponse<UpdateTransactionResponse>> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -119,16 +123,7 @@ export default class TransactionsController {
         }
       }
 
-      type Result = {
-        categories: CategoryBalanceProps[],
-        transaction?: Record<string, unknown>,
-        acctBalances: AccountBalanceProps[],
-      };
-
-      const result: Result = {
-        categories: [],
-        acctBalances: [],
-      };
+      const categoriesResult: CategoryBalanceProps[] = [];
 
       // Get the 'unassigned' category id
       const unassigned = await budget.getUnassignedCategory({ client: trx });
@@ -154,7 +149,7 @@ export default class TransactionsController {
           // eslint-disable-next-line no-await-in-loop
           await category.save();
 
-          result.categories.push({
+          categoriesResult.push({
             id: category.id,
             balance: category.balance,
           });
@@ -181,7 +176,7 @@ export default class TransactionsController {
           await unassigned.save();
         }
 
-        result.categories.push({
+        categoriesResult.push({
           id: unassigned.id,
           balance: unassigned.balance,
         });
@@ -229,15 +224,15 @@ export default class TransactionsController {
           }
 
           // Determine if the category is already in the array.
-          const index = result.categories.findIndex((c) => c.id === category.id);
+          const index = categoriesResult.findIndex((c) => c.id === category.id);
 
           // If the category is already in the array then simply update the amount.
           // Otherwise, add the category and amount to the array.
           if (index !== -1) {
-            result.categories[index].balance = category.balance;
+            categoriesResult[index].balance = category.balance;
           }
           else {
-            result.categories.push({
+            categoriesResult.push({
               id: category.id,
               balance: category.balance,
             });
@@ -251,13 +246,13 @@ export default class TransactionsController {
           await unassigned.save();
         }
 
-        const index = result.categories.findIndex((c) => c.id === unassigned.id);
+        const index = categoriesResult.findIndex((c) => c.id === unassigned.id);
 
         if (index !== -1) {
-          result.categories[index].balance = unassigned.balance;
+          categoriesResult[index].balance = unassigned.balance;
         }
         else {
-          result.categories.push({
+          categoriesResult.push({
             id: unassigned.id,
             balance: unassigned.balance,
           });
@@ -325,16 +320,9 @@ export default class TransactionsController {
         });
       });
 
-      result.transaction = transaction.serialize(transactionFields)
-
-      result.acctBalances = [{
-        id: account.id,
-        balance: account.balance,
-      }];
-
       // Get the transaction count for each of the categories
       // eslint-disable-next-line no-restricted-syntax
-      for (const cat of result.categories) {
+      for (const cat of categoriesResult) {
         // eslint-disable-next-line no-await-in-loop
         const category = await Category.findOrFail(cat.id, { client: trx });
 
@@ -343,6 +331,17 @@ export default class TransactionsController {
       }
 
       await trx.commit();
+
+      const result = {
+        data: {
+          transaction: transaction.serialize(transactionFields) as TransactionProps,
+          categories: categoriesResult,
+          acctBalances: [{
+            id: account.id,
+            balance: account.balance,
+          }],
+        },
+      }
 
       return result;
     }
@@ -496,7 +495,7 @@ export default class TransactionsController {
     auth: {
       user,
     },
-  }: HttpContextContract): Promise<TransactionsResponse> {
+  }: HttpContextContract): Promise<ApiResponse<TransactionsResponse>> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -509,10 +508,12 @@ export default class TransactionsController {
       .orderBy('date', 'desc');
 
     return {
-      transactions: rebalances.map((r) => (
-        r.serialize(transactionFields) as TransactionProps
-      )),
-      balance: 0,
+      data: {
+        transactions: rebalances.map((r) => (
+          r.serialize(transactionFields) as TransactionProps
+        )),
+        balance: 0,
+      },
     }
   }
 
@@ -522,7 +523,7 @@ export default class TransactionsController {
     auth: {
       user,
     },
-  }: HttpContextContract): Promise<TransactionsResponse> {
+  }: HttpContextContract): Promise<ApiResponse<TransactionsResponse>> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -546,12 +547,14 @@ export default class TransactionsController {
       .offset(request.qs().offset)
       .orderBy('date', 'desc')
 
-    return ({
-      transactions: results.map((t) => (
-        t.serialize(transactionFields) as TransactionProps
-      )),
-      balance: 0,
-    })
+    return {
+      data: {
+        transactions: results.map((t) => (
+          t.serialize(transactionFields) as TransactionProps
+        )),
+        balance: 0,
+      },
+    };
   }
 
   // eslint-disable-next-line class-methods-use-this

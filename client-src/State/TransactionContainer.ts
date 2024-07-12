@@ -1,5 +1,5 @@
 import { makeObservable, observable } from 'mobx';
-import { isTransactionsResponse, TransactionProps } from '../../common/ResponseTypes';
+import { TransactionProps, TransactionsResponse } from '../../common/ResponseTypes';
 import QueryManager from './QueryManager';
 import { StoreInterface, TransactionContainerInterface } from './Types';
 import Transaction from './Transaction';
@@ -7,7 +7,7 @@ import Transaction from './Transaction';
 class TransactionContainer implements TransactionContainerInterface {
   transactions: Transaction[] = [];
 
-  transactionsQuery: QueryManager = new QueryManager();
+  transactionsQuery = new QueryManager<TransactionsResponse>();
 
   url: string;
 
@@ -96,25 +96,19 @@ class TransactionContainer implements TransactionContainerInterface {
     }
   }
 
-  transactionResponseHandler = (body: unknown, idx: number, limit: number): boolean => {
-    if (isTransactionsResponse(body)) {
-      if (this.balanceCallback) {
-        this.balanceCallback(body.balance, body.transactionsCount);
-      }
-
-      if (idx === 0) {
-        this.setTransactions(body.transactions);
-      }
-      else if (body.transactions.length > 0) {
-        this.appendTransactions(body.transactions);
-      }
-
-      return body.transactions.length < limit;
+  transactionResponseHandler = (body: TransactionsResponse, idx: number, limit: number): boolean => {
+    if (this.balanceCallback) {
+      this.balanceCallback(body.balance, body.transactionsCount);
     }
 
-    this.clearTransactions();
+    if (idx === 0) {
+      this.setTransactions(body.transactions);
+    }
+    else if (body.transactions.length > 0) {
+      this.appendTransactions(body.transactions);
+    }
 
-    return false;
+    return body.transactions.length < limit;
   }
 }
 

@@ -402,15 +402,6 @@ export interface TransactionsResponse {
   balance: number;
 }
 
-export const isTransactionsResponse = (r: unknown): r is TransactionsResponse => (
-  r !== undefined && r !== null
-  && (r as TransactionsResponse).transactions !== undefined
-  && (Array.isArray((r as TransactionsResponse).transactions))
-  && ((r as TransactionsResponse).transactions.length === 0
-    || isTransactionProps((r as TransactionsResponse).transactions[0]))
-  && (r as TransactionsResponse).balance !== undefined
-);
-
 export const isPendingTransactionsResponse = (r: unknown): r is TransactionProps[] => (
   r !== undefined && r !== null
   && Array.isArray(r) && (r.length === 0 || isTransactionProps((r as TransactionProps[])[0]))
@@ -435,8 +426,8 @@ export interface ApiError {
   status: string,
 }
 
-export interface ApiResponse {
-  data?: unknown,
+export interface ApiResponse<T> {
+  data?: T,
   errors?: ApiError[],
 }
 
@@ -455,41 +446,12 @@ export const isCategoryUpdateResponse = (
 );
 
 export interface UpdateTransactionResponse {
-  transaction: {
-    id: number,
-
-    date: string,
-
-    type: TransactionType,
-
-    comment: string,
-
-    version: number,
-
-    transactionCategories: TransactionCategoryProps[],
-
-    accountTransaction: {
-      amount: number,
-
-      principle: number,
-
-      name: string,
-    }
-  },
+  transaction: TransactionProps,
 
   categories: CategoryBalanceProps[];
 
   acctBalances: AccountBalanceProps[],
 }
-
-export const isUpdateTransactionResponse = (r: unknown): r is UpdateTransactionResponse => (
-  (r as UpdateTransactionResponse).transaction !== undefined
-  && (r as UpdateTransactionResponse).transaction.transactionCategories !== undefined
-  && (r as UpdateTransactionResponse).transaction.accountTransaction !== undefined
-  && (r as UpdateTransactionResponse).categories !== undefined
-  && ((r as UpdateTransactionResponse).categories.length === 0
-  || isCategoryBalance((r as UpdateTransactionResponse).categories[0]))
-);
 
 export interface UpdateCategoryTransferReponse {
   balances: CategoryBalanceProps[],

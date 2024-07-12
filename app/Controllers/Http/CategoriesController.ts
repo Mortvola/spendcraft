@@ -16,12 +16,13 @@ import {
   CategoryBalanceProps,
   TransactionsResponse,
   TransactionProps, TransactionType, FundingInfoProps,
+  ApiResponse,
 } from 'Common/ResponseTypes';
 import Group from 'App/Models/Group';
 import { DateTime } from 'luxon';
 import transactionFields from './transactionFields';
 
-class CategoryController {
+class CategoriesController {
   // eslint-disable-next-line class-methods-use-this
   public async get({
     request,
@@ -258,7 +259,7 @@ class CategoryController {
     auth: {
       user,
     },
-  }: HttpContextContract): Promise<TransactionsResponse> {
+  }: HttpContextContract): Promise<ApiResponse<TransactionsResponse>> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -273,7 +274,7 @@ class CategoryController {
       transactions: [],
       transactionsCount: 0,
       balance: 0,
-    };
+    }
 
     const cat = await Category.findOrFail(categoryId);
 
@@ -288,7 +289,9 @@ class CategoryController {
 
     result.transactionsCount = await cat.transactionsCount(budget)
 
-    return result;
+    return {
+      data: result,
+    };
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -533,7 +536,7 @@ class CategoryController {
 
     // eslint-disable-next-line no-restricted-syntax
     for (const b of bills) {
-      b.goalDate = CategoryController.getGoalDate(b.goalDate, b.recurrence)
+      b.goalDate = CategoriesController.getGoalDate(b.goalDate, b.recurrence)
     }
 
     bills.sort((a, b) => (a.goalDate && b.goalDate ? a.goalDate.diff(b.goalDate, 'days').days : 0))
@@ -547,4 +550,4 @@ class CategoryController {
   }
 }
 
-export default CategoryController;
+export default CategoriesController;

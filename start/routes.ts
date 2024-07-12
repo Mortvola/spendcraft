@@ -110,29 +110,29 @@ Route.group(() => {
       }).prefix('/user');
   
       Route.group(() => {
-        Route.get('', 'CategoryController.get');
-        Route.post('', 'CategoryController.addGroup');
-        Route.patch('/:groupId', 'CategoryController.updateGroup');
-        Route.delete('/:groupId', 'CategoryController.deleteGroup');
-        Route.post('/:groupId/categories', 'CategoryController.addCategory');
-        Route.patch('/:groupId/categories/:catId', 'CategoryController.updateCategory');
-        Route.delete('/:groupId/categories/:catId', 'CategoryController.deleteCategory');
+        Route.get('', 'CategoriesController.get');
+        Route.post('', 'CategoriesController.addGroup');
+        Route.patch('/:groupId', 'CategoriesController.updateGroup');
+        Route.delete('/:groupId', 'CategoriesController.deleteGroup');
+        Route.post('/:groupId/categories', 'CategoriesController.addCategory');
+        Route.patch('/:groupId/categories/:catId', 'CategoriesController.updateCategory');
+        Route.delete('/:groupId/categories/:catId', 'CategoriesController.deleteCategory');
       }).prefix('/groups');
 
       Route.group(() => {
-        Route.get('', 'CategoryController.get')
+        Route.get('', 'CategoriesController.get')
       }).prefix('/categories')
   
       Route.group(() => {
-        Route.post('', 'CategoryController.transfer');
-        Route.patch('/:tfrId', 'CategoryController.transfer');
-        Route.delete('/:tfrId', 'CategoryController.transferDelete');
+        Route.post('', 'CategoriesController.transfer');
+        Route.patch('/:tfrId', 'CategoriesController.transfer');
+        Route.delete('/:tfrId', 'CategoriesController.transferDelete');
       }).prefix('/category-transfer');
   
-      Route.get('/category-balances', 'CategoryController.balances');
+      Route.get('/category-balances', 'CategoriesController.balances');
   
       Route.group(() => {
-        Route.get('/transactions', 'CategoryController.transactions');
+        Route.get('/transactions', 'CategoriesController.transactions');
       }).prefix('/category/:catId');
   
       Route.get('/connected-accounts', 'UsersController.getConnectedAccounts');
@@ -211,7 +211,7 @@ Route.group(() => {
 
       Route.get('/transaction-logs', 'TransactionsController.logs');
 
-      Route.get('/bills', 'CategoryController.getBills');
+      Route.get('/bills', 'CategoriesController.getBills');
 
       Route.group(() => {
         Route.get('/plaid-logs', 'PlaidLogsController.get')

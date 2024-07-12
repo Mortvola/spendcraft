@@ -7,11 +7,11 @@ import {
   TransactionProps,
   isUpdateCategoryTransferResponse,
   isDeleteTransactionResponse,
-  isUpdateTransactionResponse,
   CategoryTransferProps,
   Location,
   ApiError,
   ApiResponse,
+  UpdateTransactionResponse,
 } from '../../common/ResponseTypes';
 import {
   NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface,
@@ -121,7 +121,10 @@ class Transaction implements TransactionInterface {
       throw new Error('transaction has a null id');
     }
 
-    const response = await Http.patch<unknown, ApiResponse>(`/api/v1/transaction/${this.id}`, { version: this.version, ...values });
+    const response = await Http.patch<unknown, ApiResponse<UpdateTransactionResponse>>(
+      `/api/v1/transaction/${this.id}`,
+      { version: this.version, ...values },
+    );
 
     if (response.ok) {
       const body = await response.body();
@@ -130,24 +133,26 @@ class Transaction implements TransactionInterface {
         return body.errors;
       }
 
-      if (isUpdateTransactionResponse(body)) {
+      const transactionUpdate = body.data;
+
+      if (transactionUpdate) {
         runInAction(() => {
           if (this.id === null) {
             throw new Error('transaction has a null id');
           }
 
-          this.store.categoryTree.updateBalances(body.categories);
+          this.store.categoryTree.updateBalances(transactionUpdate.categories);
 
-          this.categories = body.transaction.transactionCategories;
+          this.categories = transactionUpdate.transaction.transactionCategories;
 
-          const dateChanged = this.date !== DateTime.fromISO(body.transaction.date);
-          this.date = DateTime.fromISO(body.transaction.date);
+          const dateChanged = this.date !== DateTime.fromISO(transactionUpdate.transaction.date);
+          this.date = DateTime.fromISO(transactionUpdate.transaction.date);
 
-          this.amount = body.transaction.accountTransaction.amount;
-          this.principle = body.transaction.accountTransaction.principle;
-          this.name = body.transaction.accountTransaction.name;
-          this.comment = body.transaction.comment;
-          this.version = body.transaction.version;
+          this.amount = transactionUpdate.transaction.accountTransaction.amount;
+          this.principle = transactionUpdate.transaction.accountTransaction.principle;
+          this.name = transactionUpdate.transaction.accountTransaction.name;
+          this.comment = transactionUpdate.transaction.comment;
+          this.version = transactionUpdate.transaction.version;
 
           // Remove the transaction from the selected category, if any, if the transaction
           // no longer has the selected category in its splits.
@@ -156,10 +161,10 @@ class Transaction implements TransactionInterface {
               throw new Error('category is null');
             }
 
-            if ((body.transaction.transactionCategories.length === 0
+            if ((transactionUpdate.transaction.transactionCategories.length === 0
                 && this.store.uiState.selectedCategory.id !== this.store.categoryTree.unassignedCat.id)
-              || (body.transaction.transactionCategories.length !== 0
-                && !body.transaction.transactionCategories.some(
+              || (transactionUpdate.transaction.transactionCategories.length !== 0
+                && !transactionUpdate.transaction.transactionCategories.some(
                   (c) => (
                     this.store.uiState.selectedCategory && c.categoryId === this.store.uiState.selectedCategory.id
                   ),
@@ -182,10 +187,10 @@ class Transaction implements TransactionInterface {
             this.store.uiState.selectedAccount.transactions.insertTransaction(this);
           }
 
-          const account = this.store.accounts.findAccount(body.acctBalances[0].id);
+          const account = this.store.accounts.findAccount(transactionUpdate.acctBalances[0].id);
 
           if (account) {
-            account.balance = body.acctBalances[0].balance;
+            account.balance = transactionUpdate.acctBalances[0].balance;
           }
         });
 

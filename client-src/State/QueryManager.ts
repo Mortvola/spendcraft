@@ -1,8 +1,9 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 import { QueryManagerState, QueryManagerInterface } from './Types';
+import { ApiResponse } from '../../common/ResponseTypes';
 
-class QueryManager implements QueryManagerInterface {
+class QueryManager<T> implements QueryManagerInterface {
   state: QueryManagerState = 'IDLE';
 
   fetchComplete = false;
@@ -14,7 +15,7 @@ class QueryManager implements QueryManagerInterface {
   async fetch(
     url: string,
     index: number,
-    handleResponse: (body: unknown, index: number, limit: number) => boolean,
+    handleResponse: (data: T, index: number, limit: number) => boolean,
     qs?: string,
   ): Promise<void> {
     if (index === 0) {
@@ -39,14 +40,16 @@ class QueryManager implements QueryManagerInterface {
           newUrl += `&${qs}`;
         }
 
-        const response = await Http.get(newUrl);
+        const response = await Http.get<ApiResponse<T>>(newUrl);
 
         if (response.ok) {
           const body = await response.body();
 
           runInAction(() => {
-            this.fetchComplete = handleResponse(body, index, limit);
-            this.state = 'IDLE';
+            if (body.data) {
+              this.fetchComplete = handleResponse(body.data, index, limit);
+              this.state = 'IDLE';
+            }
           });
         }
         else {
