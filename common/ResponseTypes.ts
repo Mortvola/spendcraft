@@ -453,7 +453,7 @@ export interface UpdateTransactionResponse {
   acctBalances: AccountBalanceProps[],
 }
 
-export interface UpdateCategoryTransferReponse {
+export interface UpdateCategoryTransferResponse {
   balances: CategoryBalanceProps[],
 
   transaction: {
@@ -462,12 +462,12 @@ export interface UpdateCategoryTransferReponse {
 }
 
 export const isUpdateCategoryTransferResponse = (
-  r: UpdateCategoryTransferReponse | unknown,
-): r is UpdateCategoryTransferReponse => (
-  (r as UpdateCategoryTransferReponse).balances !== undefined
-  && Array.isArray((r as UpdateCategoryTransferReponse).balances)
-  && ((r as UpdateCategoryTransferReponse).balances.length === 0
-  || isCategoryBalance((r as UpdateCategoryTransferReponse).balances[0]))
+  r: UpdateCategoryTransferResponse | unknown,
+): r is UpdateCategoryTransferResponse => (
+  (r as UpdateCategoryTransferResponse).balances !== undefined
+  && Array.isArray((r as UpdateCategoryTransferResponse).balances)
+  && ((r as UpdateCategoryTransferResponse).balances.length === 0
+  || isCategoryBalance((r as UpdateCategoryTransferResponse).balances[0]))
 );
 
 export interface DeleteTransactionResponse {
@@ -484,17 +484,17 @@ export const isDeleteTransactionResponse = (
   || isCategoryBalance((r as DeleteTransactionResponse).categories[0]))
 );
 
-export interface InsertCategoryTransferReponse {
+export interface InsertCategoryTransferResponse {
   balances: CategoryBalanceProps[],
 
   transaction: TransactionProps,
 }
 
-export const isInsertCategoryTransferResponse = (r: unknown): r is InsertCategoryTransferReponse => (
-  (r as InsertCategoryTransferReponse).balances !== undefined
-  && Array.isArray((r as InsertCategoryTransferReponse).balances)
-  && ((r as InsertCategoryTransferReponse).balances.length === 0
-  || isCategoryBalance((r as InsertCategoryTransferReponse).balances[0]))
+export const isInsertCategoryTransferResponse = (r: unknown): r is InsertCategoryTransferResponse => (
+  (r as InsertCategoryTransferResponse).balances !== undefined
+  && Array.isArray((r as InsertCategoryTransferResponse).balances)
+  && ((r as InsertCategoryTransferResponse).balances.length === 0
+  || isCategoryBalance((r as InsertCategoryTransferResponse).balances[0]))
 );
 
 export const isGroupsResponse = (r: unknown): r is GroupProps[] => (
