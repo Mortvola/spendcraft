@@ -94,7 +94,8 @@ export function getChanges<T extends LucidRow>(
       if (original[k] !== null) {
         changes[k] = { old: original[k], new: updates[k] }
       }
-    } else if (typeof updates[k] === 'object') {
+    }
+    else if (typeof updates[k] === 'object') {
       if (original[k] === null) {
         changes[k] = { old: original[k], new: updates[k] }
       }
@@ -112,6 +113,23 @@ export function getChanges<T extends LucidRow>(
   })
 
   return changes;
+}
+
+export const getGoalDate = (goalDate?: DateTime | null, recurrence = 1): DateTime | null => {
+  if (goalDate) {
+    let adjustedGoal = goalDate
+    const now = DateTime.now().startOf('month');
+
+    const monthDiff = goalDate.startOf('month').diff(now, 'months').months;
+    if (monthDiff < 0) {
+      const numPeriods = Math.ceil(-monthDiff / recurrence);
+      adjustedGoal = goalDate.plus({ months: numPeriods * recurrence })
+    }
+
+    return adjustedGoal;
+  }
+
+  return null;
 }
 
 export default transactionFields;

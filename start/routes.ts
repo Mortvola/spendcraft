@@ -211,7 +211,7 @@ Route.group(() => {
 
       Route.get('/transaction-logs', 'TransactionsController.logs');
 
-      Route.get('/bills', 'CategoriesController.getBills');
+      Route.get('/bills', 'BillsController.get');
 
       Route.group(() => {
         Route.get('/plaid-logs', 'PlaidLogsController.get')

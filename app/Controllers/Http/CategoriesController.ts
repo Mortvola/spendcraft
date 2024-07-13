@@ -23,7 +23,7 @@ import {
 } from 'Common/ResponseTypes';
 import Group from 'App/Models/Group';
 import { DateTime } from 'luxon';
-import transactionFields from './transactionFields';
+import transactionFields, { getGoalDate } from './transactionFields';
 
 class CategoriesController {
   // eslint-disable-next-line class-methods-use-this
@@ -514,23 +514,6 @@ class CategoriesController {
     return Category.balances(budget, date, id !== undefined ? parseInt(id, 10) : id);
   }
 
-  static getGoalDate(goalDate?: DateTime | null, recurrence = 1): DateTime | null {
-    if (goalDate) {
-      let adjustedGoal = goalDate
-      const now = DateTime.now().startOf('month');
-
-      const monthDiff = goalDate.startOf('month').diff(now, 'months').months;
-      if (monthDiff < 0) {
-        const numPeriods = Math.ceil(-monthDiff / recurrence);
-        adjustedGoal = goalDate.plus({ months: numPeriods * recurrence })
-      }
-
-      return adjustedGoal;
-    }
-
-    return null;
-  }
-
   // eslint-disable-next-line class-methods-use-this
   public async getBills({
     auth: {
@@ -545,7 +528,7 @@ class CategoriesController {
 
     // eslint-disable-next-line no-restricted-syntax
     for (const b of bills) {
-      b.goalDate = CategoriesController.getGoalDate(b.goalDate, b.recurrence)
+      b.goalDate = getGoalDate(b.goalDate, b.recurrence)
     }
 
     bills.sort((a, b) => (a.goalDate && b.goalDate ? a.goalDate.diff(b.goalDate, 'days').days : 0))
