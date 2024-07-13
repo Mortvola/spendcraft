@@ -17,6 +17,9 @@ import {
   TransactionsResponse,
   TransactionProps, TransactionType, FundingInfoProps,
   ApiResponse,
+  CategoriesResponse,
+  CategoryProps,
+  GroupProps,
 } from 'Common/ResponseTypes';
 import Group from 'App/Models/Group';
 import { DateTime } from 'luxon';
@@ -27,7 +30,7 @@ class CategoriesController {
   public async get({
     request,
     auth: { user },
-  }: HttpContextContract): Promise<Group[] | FundingInfoProps[]> {
+  }: HttpContextContract): Promise<ApiResponse<CategoriesResponse> | FundingInfoProps[]> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -99,13 +102,19 @@ class CategoriesController {
       }));
     }
 
-    const result = await budget.related('groups').query()
-      .preload('categories', (catQuery) => {
-        catQuery.orderBy('name', 'asc')
-      })
+    const categories = await Category.query()
+      .whereHas('group', (groupQuery) => groupQuery.where('budgetId', budget.id))
       .orderBy('name', 'asc');
 
-    return result;
+    const groups = await budget.related('groups').query()
+      .orderBy('name', 'asc');
+
+    return {
+      data: {
+        categories: categories.map((category) => category.serialize() as CategoryProps),
+        groups: groups.map((group) => group.serialize() as GroupProps),
+      },
+    };
   }
 
   // eslint-disable-next-line class-methods-use-this

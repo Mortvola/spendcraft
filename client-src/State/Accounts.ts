@@ -70,7 +70,7 @@ class Accounts implements AccountsInterface {
             }
           }
 
-          // For each institution in the reponse, add it to the 
+          // For each institution in the response, add it to the 
           // local list if it does not exist and refresh it if it does.
           body.forEach((i) => {
             let institution = this.institutions.find(

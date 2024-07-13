@@ -7,7 +7,7 @@ export interface GroupProps {
 
   type: GroupType;
 
-  categories: CategoryProps[];
+  categories?: CategoryProps[];
 }
 
 export const isGroupProps = (r: unknown): r is GroupProps => (
@@ -24,6 +24,8 @@ export interface CategoryProps {
   groupId: number;
 
   balance: number;
+
+  forecastedBalance?: number;
 
   name: string;
 
@@ -805,4 +807,9 @@ export enum PendingQueryFlag {
   NoPending = 0,
   OnlyPending = 1,
   WithPending = 2,
+}
+
+export interface CategoriesResponse {
+  categories: CategoryProps[],
+  groups: GroupProps[],
 }

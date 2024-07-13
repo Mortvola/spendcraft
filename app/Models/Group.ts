@@ -4,6 +4,7 @@ import {
 } from '@ioc:Adonis/Lucid/Orm';
 import Category from 'App/Models/Category';
 import Budget from 'App/Models/Budget';
+import { GroupType } from 'Common/ResponseTypes';
 
 class Group extends BaseModel {
   @column()
@@ -13,7 +14,7 @@ class Group extends BaseModel {
   public name: string;
 
   @column()
-  public type: string;
+  public type: GroupType;
 
   @belongsTo(() => Budget)
   public budget: BelongsTo<typeof Budget>;

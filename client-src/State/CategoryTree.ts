@@ -3,9 +3,11 @@ import Http from '@mortvola/http';
 import Category, { isCategory } from './Category';
 import Group, { isGroup } from './Group';
 import {
+  ApiResponse,
+  CategoriesResponse,
   CategoryBalanceProps,
   Error, isErrorResponse,
-  isGroupProps, isGroupsResponse,
+  isGroupProps,
 } from '../../common/ResponseTypes';
 import {
   CategoryInterface, CategoryTreeInterface, RebalancesInterface, StoreInterface,
@@ -143,45 +145,52 @@ class CategoryTree implements CategoryTreeInterface {
   }
 
   async load(): Promise<void> {
-    const response = await Http.get('/api/v1/groups');
+    const response = await Http.get<ApiResponse<CategoriesResponse>>('/api/v1/groups');
 
     const body = await response.body();
 
-    if (isGroupsResponse(body)) {
-      runInAction(() => {
+    runInAction(() => {
+      if (body.data) {
+        const { categories, groups } = body.data;
+
         this.nodes = [];
-        body.forEach((g) => {
-          if (g.type !== 'REGULAR') {
+        // eslint-disable-next-line no-restricted-syntax
+        for (const g of groups) {
+          const groupCategories = categories.filter((c) => c.groupId === g.id);
+
+          if (g.type === 'SYSTEM') {
             this.systemIds.systemGroupId = g.id;
-
-            g.categories.forEach((c) => {
-              switch (c.type) {
-                case 'UNASSIGNED':
-                  this.unassignedCat = new Category(c, this.store);
-                  break;
-
-                case 'FUNDING POOL':
-                  this.fundingPoolCat = new Category(c, this.store);
-                  break;
-
-                case 'ACCOUNT TRANSFER':
-                  this.accountTransferCat = new Category(c, this.store);
-                  break;
-
-                default:
-                  break;
-              }
-            })
           }
 
+          groupCategories.forEach((c) => {
+            switch (c.type) {
+              case 'UNASSIGNED':
+                this.unassignedCat = new Category(c, this.store);
+                break;
+
+              case 'FUNDING POOL':
+                this.fundingPoolCat = new Category(c, this.store);
+                break;
+
+              case 'ACCOUNT TRANSFER':
+                this.accountTransferCat = new Category(c, this.store);
+                break;
+
+              default:
+                break;
+            }
+          })
+
           const group = new Group(g, this.store);
+          group.setCategories(groupCategories);
+
           if (group.type === 'NO GROUP') {
             this.noGroupGroup = group;
           }
           else {
             this.nodes.push(group);
           }
-        });
+        }
 
         this.nodes.sort((a, b) => a.name.localeCompare(b.name));
 
@@ -190,8 +199,8 @@ class CategoryTree implements CategoryTreeInterface {
         if (this.store.uiState.selectedCategory === null) {
           this.store.uiState.selectedCategory = this.unassignedCat;
         }
-      });
-    }
+      }
+    });
   }
 
   async addGroup(name: string): Promise<null | Error[]> {
