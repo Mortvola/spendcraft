@@ -217,7 +217,7 @@ class Transaction implements TransactionInterface {
       throw new Error('transaction has a null id');
     }
 
-    const response = await Http.patch(`/api/v1/category-transfer/${this.id}`, { ...values, type: 3 });
+    const response = await Http.patch(`/api/v1/category-transfer/${this.id}`, { ...values, type: this.type });
 
     if (response.ok) {
       const body = await response.body();

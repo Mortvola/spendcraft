@@ -304,14 +304,17 @@ class CategoriesController {
       throw new Error('user is not defined');
     }
 
-    const budget = await user.related('budget').query().firstOrFail();
-
     const { tfrId } = request.params();
     const requestData = await request.validate(UpdateCategoryTransferValidator);
 
     const trx = await Database.transaction();
 
     try {
+      const budget = await user.related('budget').query()
+        .useTransaction(trx)
+        .forUpdate()
+        .firstOrFail();
+
       const result: {
         balances: CategoryBalanceProps[],
         transaction: {
@@ -328,118 +331,115 @@ class CategoriesController {
         },
       } = { balances: [], transaction: { transactionCategories: [] } };
 
-      const { categories } = requestData;
-      if (Array.isArray(categories)) {
-        const { date, type } = requestData;
-        let transaction: Transaction;
+      const { categories, date, type } = requestData;
+      let transaction: Transaction;
 
-        if (tfrId === undefined) {
-          transaction = await new Transaction()
-            .useTransaction(trx)
-            .fill({
-              date: DateTime.fromISO(date), type, budgetId: budget.id,
-            })
-            .save()
+      if (tfrId === undefined) {
+        transaction = await budget.related('transactions')
+          .create({
+            date: DateTime.fromISO(date), type, budgetId: budget.id,
+          });
 
-          result.transaction = {
-            id: transaction.id,
-            date,
-            name: type === TransactionType.FUNDING_TRANSACTION ? 'Category Funding' : 'Category Rebalance',
-            pending: false,
-            sortOrder: 2147483647,
-            type,
-            accountName: null,
-            amount: null,
-            institutionName: null,
-            transactionCategories: [],
-          };
-        }
-        else {
-          transaction = await Transaction.findOrFail(tfrId, { client: trx });
+        result.transaction = {
+          id: transaction.id,
+          date,
+          name: type === TransactionType.FUNDING_TRANSACTION ? 'Category Funding' : 'Category Rebalance',
+          pending: false,
+          sortOrder: 2147483647,
+          type,
+          accountName: null,
+          amount: null,
+          institutionName: null,
+          transactionCategories: [],
+        };
+      }
+      else {
+        transaction = await budget.related('transactions').query()
+          .where('id', tfrId)
+          .firstOrFail();
 
-          await transaction
-            .merge({
-              date: DateTime.fromISO(date),
-            })
-            .save()
-        }
+        await transaction
+          .merge({
+            date: DateTime.fromISO(date),
+          })
+          .save()
+      }
 
-        const existingSplits: StrictValues[] = [];
+      const existingSplits: StrictValues[] = [];
 
-        // Insert the category splits
-        // eslint-disable-next-line no-restricted-syntax
-        for (const split of categories) {
-          if (split.amount !== 0) {
-            let { amount } = split;
+      // Insert the category splits
+      // eslint-disable-next-line no-restricted-syntax
+      for (const split of categories) {
+        if (split.amount !== 0) {
+          let { amount } = split;
 
-            if (split.id) {
-              existingSplits.push(split.id);
-
-              // eslint-disable-next-line no-await-in-loop
-              const existingSplit = await TransactionCategory.findOrFail(split.id, { client: trx });
-
-              amount = split.amount - existingSplit.amount;
-
-              existingSplit.amount = split.amount;
-
-              if (split.expected !== undefined) {
-                existingSplit.expected = split.expected;
-              }
-
-              existingSplit.save();
-            }
-            else {
-              const newSplit = (new TransactionCategory()).useTransaction(trx);
-
-              // eslint-disable-next-line no-await-in-loop
-              await newSplit
-                .fill({
-                  transactionId: transaction.id,
-                  categoryId: split.categoryId,
-                  amount: split.amount,
-                  expected: split.expected,
-                })
-                .save();
-
-              existingSplits.push(newSplit.id);
-
-              amount = split.amount;
-            }
+          if (split.id) {
+            existingSplits.push(split.id);
 
             // eslint-disable-next-line no-await-in-loop
-            const category = await Category.findOrFail(split.categoryId, { client: trx });
+            const existingSplit = await TransactionCategory.findOrFail(split.id, { client: trx });
 
-            category.balance += amount;
+            amount = split.amount - existingSplit.amount;
 
-            category.save();
+            existingSplit.amount = split.amount;
 
-            result.balances.push({ id: category.id, balance: category.balance });
+            if (split.expected !== undefined) {
+              existingSplit.expected = split.expected;
+            }
+
+            existingSplit.save();
           }
-        }
+          else {
+            const newSplit = (new TransactionCategory()).useTransaction(trx);
 
-        // Delete splits that are not in the array of ids
-        const query = trx
-          .from('transaction_categories')
-          .whereNotIn('id', existingSplits)
-          .andWhere('transaction_id', transaction.id);
-        const toDelete = await query.select('category_id AS categoryId', 'amount');
+            // eslint-disable-next-line no-await-in-loop
+            await newSplit
+              .fill({
+                transactionId: transaction.id,
+                categoryId: split.categoryId,
+                amount: split.amount,
+                expected: split.expected,
+              })
+              .save();
 
-        // eslint-disable-next-line no-restricted-syntax
-        for (const td of toDelete) {
+            existingSplits.push(newSplit.id);
+
+            amount = split.amount;
+          }
+
           // eslint-disable-next-line no-await-in-loop
-          const category = await Category.findOrFail(td.categoryId, { client: trx });
+          const category = await Category.findOrFail(split.categoryId, { client: trx });
 
-          category.balance -= td.amount;
-
-          result.balances.push({ id: category.id, balance: category.balance });
+          category.balance += amount;
 
           category.save();
+
+          result.balances.push({ id: category.id, balance: category.balance });
         }
-
-        await query.delete();
-
-        result.transaction.transactionCategories = await transaction.related('transactionCategories').query();
       }
+
+      // Delete splits that are not in the array of ids
+      const query = trx
+        .from('transaction_categories')
+        .whereNotIn('id', existingSplits)
+        .andWhere('transaction_id', transaction.id);
+      const toDelete = await query.select('category_id AS categoryId', 'amount');
+
+      // eslint-disable-next-line no-restricted-syntax
+      for (const td of toDelete) {
+        // eslint-disable-next-line no-await-in-loop
+        const category = await Category.findOrFail(td.categoryId, { client: trx });
+
+        category.balance -= td.amount;
+
+        result.balances.push({ id: category.id, balance: category.balance });
+
+        category.save();
+      }
+
+      await query.delete();
+
+      result.transaction.transactionCategories = await transaction.related('transactionCategories').query();
 
       await trx.commit();
 
