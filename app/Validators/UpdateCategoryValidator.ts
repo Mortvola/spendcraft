@@ -27,6 +27,13 @@ export default class UpdateCategoryValidator {
     fundingAmount: schema.number.optional(),
     hidden: schema.boolean(),
     useGoal: schema.boolean(),
+    fundingCategories: schema.array().members(
+      schema.object().members({
+        categoryId: schema.number(),
+        amount: schema.number(),
+        percentage: schema.boolean(),
+      }),
+    ),
   })
 
   public messages = {

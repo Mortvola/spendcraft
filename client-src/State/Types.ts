@@ -182,6 +182,8 @@ export interface CategoryInterface {
 
   recurrence: number;
 
+  fundingCategories: { id: number, categoryId: number, amount: number, percentage: boolean }[];
+
   transactions: TransactionContainerInterface;
 
   pendingTransactions: TransactionContainerInterface;
@@ -505,6 +507,7 @@ export type CategoryParams = {
   categoryId?: number,
   group: GroupInterface,
   useGoal: boolean,
+  fundingCategories: unknown,
 }
 
 export type AutoAssignmentProps = {

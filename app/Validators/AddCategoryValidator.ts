@@ -21,6 +21,13 @@ export default class AddCategoryValidator {
     goalDate: schema.date.optional(),
     recurrence: schema.number.optional(),
     useGoal: schema.boolean(),
+    fundingCategories: schema.array().members(
+      schema.object().members({
+        categoryId: schema.number(),
+        amount: schema.number(),
+        percentage: schema.boolean(),
+      }),
+    ),
   })
 
   public messages = {

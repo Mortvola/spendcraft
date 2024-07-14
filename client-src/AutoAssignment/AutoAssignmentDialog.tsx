@@ -92,7 +92,7 @@ const AutoAssignmentDialog: React.FC<PropsType & ModalProps> = observer(({
   const initialCategories = (categories?: { id: number, categoryId: number, amount: number, percentage: boolean}[]) => {
     if (!categories || categories.length === 0) {
       return [{
-        id: -1, categoryId: unassignedCat.id, amount: 0, percentage: true,
+        id: -1, categoryId: unassignedCat.id, amount: 100, percentage: true,
       }]
     }
     return categories.map((c) => ({
@@ -126,6 +126,7 @@ const AutoAssignmentDialog: React.FC<PropsType & ModalProps> = observer(({
                 {
                   (arrayHelpers) => (
                     formikProps.values.searchStrings.map((s, i) => (
+                      // eslint-disable-next-line react/no-array-index-key
                       <div key={i} className={styles.searchStringLayout}>
                         <FormField name={`searchStrings[${i}]`} style={{ marginTop: 0 }} />
                         <IconButton

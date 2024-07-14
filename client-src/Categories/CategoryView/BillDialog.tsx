@@ -56,6 +56,7 @@ const BillDialog: React.FC<PropsType & ModalProps> = ({
         recurrence: parseInt(values.recurrence, 10),
         group: selectedGroup,
         useGoal: true,
+        fundingCategories: [],
       });
     }
     else {
@@ -67,6 +68,7 @@ const BillDialog: React.FC<PropsType & ModalProps> = ({
         recurrence: parseInt(values.recurrence, 10),
         group: selectedGroup,
         useGoal: true,
+        fundingCategories: [],
       });
     }
 

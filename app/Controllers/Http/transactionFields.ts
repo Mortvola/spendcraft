@@ -94,7 +94,8 @@ export function getChanges<T extends LucidRow>(
       if (original[k] !== null) {
         changes[k] = { old: original[k], new: updates[k] }
       }
-    } else if (typeof updates[k] === 'object') {
+    }
+    else if (typeof updates[k] === 'object') {
       if (original[k] === null) {
         changes[k] = { old: original[k], new: updates[k] }
       }

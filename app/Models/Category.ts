@@ -23,6 +23,12 @@ type GroupItem = {
   categories: (CategoryItem | { id: number, name: string})[],
 };
 
+type FundingCategory = {
+  categoryId: number,
+  amount: number,
+  percentage: boolean,
+}
+
 export default class Category extends BaseModel {
   @column()
   public id: number;
@@ -63,6 +69,11 @@ export default class Category extends BaseModel {
 
   @column()
   public recurrence: number;
+
+  @column({
+    prepare: (value: FundingCategory[]) => JSON.stringify(value),
+  })
+  public fundingCategories: FundingCategory[];
 
   @hasMany(() => TransactionCategory)
   public transactionCategory: HasMany<typeof TransactionCategory>;

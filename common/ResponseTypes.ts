@@ -38,6 +38,8 @@ export interface CategoryProps {
   useGoal: boolean;
 
   recurrence: number;
+
+  fundingCategories: { categoryId: number, amount: number, percentage: boolean }[];
 }
 
 export const isCategoryBalance = (r: unknown): r is CategoryBalanceProps => (
@@ -75,6 +77,7 @@ export interface UpdateCategoryResponse {
   fundingAmount: number,
   goalDate: string,
   recurrence: number,
+  fundingCategories: { categoryId: number, amount: number, percentage: boolean }[],
 }
 
 export const isUpdateCategoryResponse = (

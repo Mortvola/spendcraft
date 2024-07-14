@@ -6,6 +6,8 @@ import {
   FormikContextType,
   FormikErrors,
   FieldProps,
+  FieldArray,
+  useField,
 } from 'formik';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import {
@@ -14,14 +16,33 @@ import {
 import { DateTime } from 'luxon';
 import { isGroup } from '../../State/Group';
 import { useStores } from '../../State/Store';
-import { CategoryInterface, GroupInterface } from '../../State/Types';
+import { CategoryInterface } from '../../State/Types';
 import AmountInput from '../../AmountInput';
 import styles from './CategoryDialog.module.scss';
 import { CategoryType } from '../../../common/ResponseTypes';
+import CategoryInput from '../../CategoryInput/CategoryInput';
+import IconButton from '../../IconButton';
 
 type Props = {
   category?: CategoryInterface | null,
   type?: CategoryType,
+}
+
+const FormCategoryInput = ({ name }: { name: string }) => {
+  const [field, , helpers] = useField(name);
+
+  const handleCategoryChange = (category: CategoryInterface) => {
+    helpers.setValue(category.id)
+  }
+
+  return (
+    <CategoryInput
+      name={name}
+      categoryId={parseInt(field.value, 10)}
+      className="form-control"
+      onCategoryChange={handleCategoryChange}
+    />
+  )
 }
 
 const CategoryDialog: React.FC<Props & ModalProps> = ({
@@ -30,7 +51,15 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
   type = 'REGULAR',
 }) => {
   const { categoryTree } = useStores();
+  const { unassignedCat, fundingPoolCat } = categoryTree;
+
+  if (!unassignedCat || !fundingPoolCat) {
+    throw new Error('Unassigned is not defined or null')
+  }
+
   const [categoryType, setCategoryType] = React.useState<CategoryType>((category?.type ?? type) ?? 'REGULAR')
+
+  type FundingCategory = { id: number, categoryId: number, amount: number, percentage: boolean };
 
   type FormValues = {
     type: CategoryType,
@@ -39,6 +68,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
     recurrence: string,
     groupId: string,
     goalDate: string,
+    fundingCategories: FundingCategory[],
   }
 
   const handleCategoryTypeChange = (newType: CategoryType) => {
@@ -67,6 +97,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
         recurrence: parseInt(values.recurrence, 10),
         useGoal: values.type !== 'REGULAR',
         goalDate: DateTime.fromISO(values.goalDate),
+        fundingCategories: values.fundingCategories,
       });
     }
     else {
@@ -78,6 +109,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
         recurrence: parseInt(values.recurrence, 10),
         useGoal: values.type !== 'REGULAR',
         goalDate: DateTime.fromISO(values.goalDate),
+        fundingCategories: values.fundingCategories,
       });
     }
 
@@ -161,6 +193,17 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
     return '';
   }
 
+  const initialCategories = (categories?: { id: number, categoryId: number, amount: number, percentage: boolean}[]) => {
+    if (!categories || categories.length === 0) {
+      return [{
+        id: -1, categoryId: fundingPoolCat.id, amount: 100, percentage: true,
+      }]
+    }
+    return categories.map((c) => ({
+      id: c.id, categoryId: c.categoryId, amount: c.amount, percentage: c.percentage,
+    }))
+  }
+
   return (
     <FormModal<FormValues>
       setShow={setShow}
@@ -171,6 +214,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
         fundingAmount: category?.fundingAmount.toString() ?? '0',
         recurrence: category?.recurrence.toString() ?? '1',
         goalDate: getGoalDate(category?.goalDate, category?.recurrence),
+        fundingCategories: initialCategories(category?.fundingCategories),
         // monthlyExpenses: category ? category.monthlyExpenses : false,
       }}
       validate={handleValidate}
@@ -179,102 +223,147 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
       title={title()}
       formId="catDialogForm"
     >
-      <div>
-        <div className={styles.wrapper}>
-          <FormField name="name" label="Name:" />
+      {
+        (formikProps) => (
+          <div>
+            <div className={styles.wrapper}>
+              <FormField name="name" label="Name:" />
 
-          <label style={{ marginTop: '8px' }}>
-            Group:
-            <Field
-              className="form-control"
-              name="groupId"
-            >
-              {
-                (fieldProps: FieldProps<number>) => (
-                  <select
+              <label style={{ marginTop: '8px' }}>
+                Group:
+                <Field
+                  className="form-control"
+                  name="groupId"
+                >
+                  {
+                    (fieldProps: FieldProps<number>) => (
+                      <select
+                        className="form-control"
+                        name={fieldProps.field.name}
+                        value={fieldProps.field.value}
+                        onChange={(v) => {
+                          fieldProps.form.setFieldValue(fieldProps.field.name, v.target.value);
+                        }}
+                      >
+                        {
+                          populateGroups()
+                        }
+                      </select>
+                    )
+                  }
+                </Field>
+                <FormError name="group" />
+              </label>
+            </div>
+            <div className={styles.divider} />
+            <div className={`${categoryTypeClass()}`}>
+              <div className={styles.fundingTitle}>Funding Settings</div>
+              <div className={`${styles.layout}`}>
+                <label className={styles.type}>
+                  Type:
+                  <Field
                     className="form-control"
-                    name={fieldProps.field.name}
-                    value={fieldProps.field.value}
-                    onChange={(v) => {
-                      fieldProps.form.setFieldValue(fieldProps.field.name, v.target.value);
-                    }}
+                    name="type"
                   >
                     {
-                      populateGroups()
+                      (fieldProps: FieldProps<CategoryType>) => (
+                        <select
+                          className="form-control"
+                          name="type"
+                          value={fieldProps.field.value}
+                          onChange={(v) => {
+                            handleCategoryTypeChange(v.target.value as CategoryType)
+                            fieldProps.form.setFieldValue(fieldProps.field.name, v.target.value);
+                          }}
+                        >
+                          <option value="REGULAR">Category</option>
+                          <option value="BILL">Bill</option>
+                          <option value="GOAL">Goal</option>
+                        </select>
+                      )
                     }
-                  </select>
-                )
-              }
-            </Field>
-            <FormError name="group" />
-          </label>
-        </div>
-        <div className={styles.divider} />
-        <div className={`${categoryTypeClass()}`}>
-          <div className={styles.fundingTitle}>Funding Settings</div>
-          <div className={`${styles.layout}`}>
-            <label className={styles.type}>
-              Type:
-              <Field
-                className="form-control"
-                name="type"
-              >
-                {
-                  (fieldProps: FieldProps<CategoryType>) => (
-                    <select
-                      className="form-control"
-                      name="type"
-                      value={fieldProps.field.value}
-                      onChange={(v) => {
-                        handleCategoryTypeChange(v.target.value as CategoryType)
-                        fieldProps.form.setFieldValue(fieldProps.field.name, v.target.value);
-                      }}
-                    >
-                      <option value="REGULAR">Category</option>
-                      <option value="BILL">Bill</option>
-                      <option value="GOAL">Goal</option>
-                    </select>
-                  )
-                }
-              </Field>
-            </label>
+                  </Field>
+                </label>
 
-            <label className={`${styles.amount}`}>
-              Amount:
-              <Field
-                type="text"
-                className="form-control"
-                name="fundingAmount"
-                as={AmountInput}
-              />
-              <FormError name="fundingAmount" />
-            </label>
-          </div>
+                <label className={`${styles.amount}`}>
+                  Amount:
+                  <Field
+                    type="text"
+                    className="form-control"
+                    name="fundingAmount"
+                    as={AmountInput}
+                  />
+                  <FormError name="fundingAmount" />
+                </label>
+              </div>
 
-          <div className={styles.layout2}>
-            <label className={styles.goalDate}>
-              Date Due:
-              <Field
-                type="date"
-                className={`form-control ${styles.date}`}
-                name="goalDate"
-              />
-              <FormError name="goalDate" />
-            </label>
-            <label className={styles.recurrence}>
-              Recurrence:
-              <Field
-                type="number"
-                min="1"
-                className="form-control"
-                name="recurrence"
-              />
-              <FormError name="recurrence" />
-            </label>
+              <div className={styles.layout2}>
+                <label className={styles.goalDate}>
+                  Date Due:
+                  <Field
+                    type="date"
+                    className={`form-control ${styles.date}`}
+                    name="goalDate"
+                  />
+                  <FormError name="goalDate" />
+                </label>
+                <label className={styles.recurrence}>
+                  Recurrence:
+                  <Field
+                    type="number"
+                    min="1"
+                    className="form-control"
+                    name="recurrence"
+                  />
+                  <FormError name="recurrence" />
+                </label>
+              </div>
+
+              <label className={styles.categoriesLayout}>
+                Categories Funded from:
+                <FieldArray
+                  name="fundingCategories"
+                >
+                  {
+                    (arrayHelpers) => (
+                      formikProps.values.fundingCategories.map((c, i) => (
+                        <div key={c.id} className={styles.categoryLayout}>
+                          <FormField
+                            name={`fundingCategories[${i}].categoryId`}
+                            as={FormCategoryInput}
+                            style={{ marginTop: 0 }}
+                          />
+                          <FormField as={AmountInput} name={`fundingCategories[${i}].amount`} style={{ marginTop: 0 }} />
+                          <IconButton
+                            icon="plus"
+                            onClick={() => arrayHelpers.insert(
+                              i + 1,
+                              {
+                                id: -1, categoryId: unassignedCat.id, amount: 0, percentage: true,
+                              },
+                            )}
+                          />
+                          <IconButton
+                            icon="minus"
+                            onClick={
+                              () => {
+                                if (formikProps.values.fundingCategories.length > 1) {
+                                  arrayHelpers.remove(i)
+                                }
+                              }
+                            }
+                          />
+                        </div>
+                      ))
+                    )
+                  }
+                </FieldArray>
+              </label>
+            </div>
+            {/* <FormCheckbox name="monthlyExpenses" label="Used for monthly expenses" /> */}
           </div>
-        </div>
-        {/* <FormCheckbox name="monthlyExpenses" label="Used for monthly expenses" /> */}
-      </div>
+        )
+      }
     </FormModal>
   );
 };

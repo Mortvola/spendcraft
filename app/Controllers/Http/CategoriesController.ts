@@ -192,6 +192,7 @@ class CategoriesController {
         goalDate: requestData.goalDate,
         recurrence: requestData.recurrence,
         useGoal: requestData.useGoal,
+        fundingCategories: requestData.fundingCategories,
       })
       .save();
 
@@ -217,6 +218,7 @@ class CategoriesController {
       useGoal: requestData.useGoal,
       goalDate: requestData.goalDate,
       recurrence: requestData.recurrence,
+      fundingCategories: requestData.fundingCategories,
     });
 
     await category.save();
