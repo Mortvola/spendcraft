@@ -56,9 +56,6 @@ export default class AccountsController {
           account.preload('institution');
         });
       })
-      // .preload('transactionCategories', (transactionCategory) => {
-      //   transactionCategory.preload('loanTransaction');
-      // })
       .where('deleted', false)
       .andWhere('type', '!=', TransactionType.STARTING_BALANCE)
       .orderBy('transactions.date', 'desc')
@@ -166,17 +163,6 @@ export default class AccountsController {
           await unassignedCat.save();
 
           categoryBalances.push({ id: unassignedCat.id, balance: unassignedCat.balance })
-
-          // const trxCategory = (new TransactionCategory()).useTransaction(trx);
-
-          // trxCategory.fill({
-          //   transactionId: transaction.id,
-          //   categoryId: unassignedCat.id,
-          //   amount: requestData.amount,
-          // })
-
-          // // eslint-disable-next-line no-await-in-loop
-          // await trxCategory.save();
         }
       }
       else {
@@ -186,18 +172,6 @@ export default class AccountsController {
 
         // eslint-disable-next-line no-restricted-syntax
         for (const split of categories) {
-          // const trxCategory = (new TransactionCategory()).useTransaction(trx);
-
-          // trxCategory.fill({
-          //   transactionId: transaction.id,
-          //   categoryId: split.categoryId,
-          //   amount: split.amount,
-          //   comment: split.comment,
-          // })
-
-          // // eslint-disable-next-line no-await-in-loop
-          // await trxCategory.save();
-
           // eslint-disable-next-line no-await-in-loop
           const category = await Category.findOrFail(split.categoryId, { client: trx });
 

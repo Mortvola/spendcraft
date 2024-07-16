@@ -1,16 +1,12 @@
 /* eslint-disable import/no-cycle */
 import {
   BaseModel, BelongsTo, belongsTo, column,
-  HasMany,
-  hasMany,
 } from '@ioc:Adonis/Lucid/Orm';
 import Database from '@ioc:Adonis/Lucid/Database';
 import Group from 'App/Models/Group';
 import { CategoryType, TransactionType } from 'Common/ResponseTypes';
-// import TransactionCategory from 'App/Models/TransactionCategory';
 import Budget from 'App/Models/Budget';
 import { DateTime } from 'luxon';
-import Transaction from './Transaction';
 
 type CategoryItem = {
   id: number,

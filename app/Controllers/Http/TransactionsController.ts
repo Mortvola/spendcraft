@@ -4,9 +4,6 @@ import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import Database from '@ioc:Adonis/Lucid/Database';
 import Category from 'App/Models/Category';
 import Transaction from 'App/Models/Transaction';
-// import TransactionCategory from 'App/Models/TransactionCategory';
-// import Loan from 'App/Models/Loan';
-// import LoanTransaction from 'App/Models/LoanTransaction';
 import AccountTransaction from 'App/Models/AccountTransaction';
 import {
   AccountBalanceProps, ApiResponse, CategoryBalanceProps, RequestErrorCode,
@@ -128,24 +125,23 @@ export default class TransactionsController {
       // Get the 'unassigned' category id
       const unassigned = await budget.getUnassignedCategory({ client: trx });
 
-      const acctTrans = await AccountTransaction.findByOrFail('transactionId', trxId, { client: trx });
+      const acctTrans = await transaction.related('accountTransaction').query().firstOrFail();
+      // const acctTrans = await AccountTransaction.findByOrFail('transactionId', trxId, { client: trx });
 
-      const account = await Account.findOrFail(acctTrans.accountId);
+      const account = await acctTrans.related('account').query().firstOrFail();
+      // const account = await Account.findOrFail(acctTrans.accountId);
 
-      // const splits = await TransactionCategory.query({ client: trx })
-      //   .preload('loanTransaction')
-      //   .where('transactionId', trxId);
-      const splits = transaction.categories;
+      const { categories } = transaction;
 
-      if (splits.length > 0) {
+      if (categories.length > 0) {
         // There are pre-existing category splits.
         // Credit the category balance for each one.
         // eslint-disable-next-line no-restricted-syntax
-        for (const split of splits) {
+        for (const transCategory of categories) {
           // eslint-disable-next-line no-await-in-loop
-          const category = await Category.findOrFail(split.categoryId, { client: trx });
+          const category = await Category.findOrFail(transCategory.categoryId, { client: trx });
 
-          category.balance -= split.amount;
+          category.balance -= transCategory.amount;
 
           // eslint-disable-next-line no-await-in-loop
           await category.save();
@@ -183,28 +179,17 @@ export default class TransactionsController {
         });
       }
 
-      const requestedSplits = requestData.categories;
+      const requestedCategories = requestData.categories;
 
-      if (requestedSplits.length > 0) {
-        transaction.categories = requestedSplits;
+      if (requestedCategories.length > 0) {
+        transaction.categories = requestedCategories;
 
         // eslint-disable-next-line no-restricted-syntax
-        for (const split of requestedSplits) {
-          // const txCategory = (new TransactionCategory()).useTransaction(trx);
-
-          // txCategory.fill({
-          //   categoryId: split.categoryId,
-          //   amount: split.amount,
-          //   comment: split.comment,
-          //   transactionId: trxId,
-          // });
-
-          // txCategory.save();
-
+        for (const transCategory of requestedCategories) {
           // eslint-disable-next-line no-await-in-loop
-          const category = await Category.findOrFail(split.categoryId, { client: trx });
+          const category = await Category.findOrFail(transCategory.categoryId, { client: trx });
 
-          category.balance += split.amount;
+          category.balance += transCategory.amount;
 
           // eslint-disable-next-line no-await-in-loop
           await category.save();
@@ -544,9 +529,6 @@ export default class TransactionsController {
           account.preload('institution');
         });
       })
-      // .preload('transactionCategories', (transactionCategory) => {
-      //   transactionCategory.preload('loanTransaction');
-      // })
       .limit(request.qs().limit)
       .offset(request.qs().offset)
       .orderBy('date', 'desc')

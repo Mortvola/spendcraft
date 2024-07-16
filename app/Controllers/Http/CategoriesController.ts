@@ -10,7 +10,6 @@ import UpdateCategoryValidator from 'App/Validators/UpdateCategoryValidator';
 import DeleteCategoryValidator from 'App/Validators/DeleteCategoryValidator';
 import UpdateCategoryTransferValidator from 'App/Validators/UpdateCategoryTransferValidator';
 import Transaction from 'App/Models/Transaction';
-// import TransactionCategory from 'App/Models/TransactionCategory';
 import Loan from 'App/Models/Loan';
 import {
   CategoryBalanceProps,
@@ -318,7 +317,6 @@ class CategoriesController {
       const result: {
         balances: CategoryBalanceProps[],
         transaction: {
-          // transactionCategories: unknown[],
           id?: number,
           date?: string,
           name?: string,
@@ -333,6 +331,7 @@ class CategoriesController {
 
       const { categories, date, type } = requestData;
       let transaction: Transaction;
+      const categeoryDeltas: Map<number, number> = new Map();
 
       if (tfrId === undefined) {
         transaction = await Transaction // budget.related('transactions')
@@ -353,13 +352,18 @@ class CategoriesController {
           accountName: null,
           amount: null,
           institutionName: null,
-          // transactionCategories: [],
         };
       }
       else {
         transaction = await budget.related('transactions').query()
           .where('id', tfrId)
           .firstOrFail();
+
+        // eslint-disable-next-line no-restricted-syntax
+        for (const transCategory of transaction.categories) {
+          const delta = categeoryDeltas.get(transCategory.categoryId) ?? 0;
+          categeoryDeltas.set(transCategory.categoryId, -transCategory.amount + delta)
+        }
 
         await transaction
           .merge({
@@ -373,79 +377,25 @@ class CategoriesController {
 
       // Insert the category splits
       // eslint-disable-next-line no-restricted-syntax
-      for (const split of categories) {
-        if (split.amount !== 0) {
-          // let { amount } = split;
-
-          if (split.id) {
-            // existingSplits.push(split.id);
-
-            // // eslint-disable-next-line no-await-in-loop
-            // const existingSplit = await TransactionCategory.findOrFail(split.id, { client: trx });
-
-            // amount = split.amount - existingSplit.amount;
-
-            // existingSplit.amount = split.amount;
-
-            // if (split.expected !== undefined) {
-            //   existingSplit.expected = split.expected;
-            // }
-
-            // existingSplit.save();
-          }
-          else {
-            // const newSplit = (new TransactionCategory()).useTransaction(trx);
-
-            // // eslint-disable-next-line no-await-in-loop
-            // await newSplit
-            //   .fill({
-            //     transactionId: transaction.id,
-            //     categoryId: split.categoryId,
-            //     amount: split.amount,
-            //     expected: split.expected,
-            //   })
-            //   .save();
-
-            // existingSplits.push(newSplit.id);
-
-            // amount = split.amount;
-          }
-
-          // eslint-disable-next-line no-await-in-loop
-          const category = await Category.findOrFail(split.categoryId, { client: trx });
-
-          // category.balance += amount;
-
-          category.save();
-
-          result.balances.push({ id: category.id, balance: category.balance });
-        }
+      for (const transCategory of categories) {
+        const delta = categeoryDeltas.get(transCategory.categoryId) ?? 0;
+        categeoryDeltas.set(transCategory.categoryId, transCategory.amount + delta);
       }
 
-      // Delete splits that are not in the array of ids
-      // const query = trx
-      //   .from('transaction_categories')
-      //   .whereNotIn('id', existingSplits)
-      //   .andWhere('transaction_id', transaction.id);
-      // const toDelete = await query.select('category_id AS categoryId', 'amount');
+      // eslint-disable-next-line no-restricted-syntax
+      for (const [categoryId, delta] of categeoryDeltas) {
+        // eslint-disable-next-line no-await-in-loop
+        const category = await Category.findOrFail(categoryId, { client: trx });
 
-      // // eslint-disable-next-line no-restricted-syntax
-      // for (const td of toDelete) {
-      //   // eslint-disable-next-line no-await-in-loop
-      //   const category = await Category.findOrFail(td.categoryId, { client: trx });
+        category.balance += delta;
 
-      //   category.balance -= td.amount;
+        // eslint-disable-next-line no-await-in-loop
+        await category.save();
 
-      //   result.balances.push({ id: category.id, balance: category.balance });
-
-      //   category.save();
-      // }
-
-      // await query.delete();
+        result.balances.push({ id: category.id, balance: category.balance });
+      }
 
       result.transaction = transaction.serialize(transactionFields);
-
-      // .transactionCategories = await transaction.related('transactionCategories').query();
 
       await trx.commit();
 

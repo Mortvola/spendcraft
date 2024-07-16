@@ -100,6 +100,7 @@ export function getChanges<T extends LucidRow>(
         changes[k] = { old: original[k], new: updates[k] }
       }
       else if (Array.isArray(updates[k])) {
+        // TODO: Implement handling of arrays
       }
       else {
         const objectChanges = getObjectChanges(original[k], updates[k], {})

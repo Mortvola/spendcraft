@@ -12,7 +12,6 @@ import {
 import { schema } from '@ioc:Adonis/Core/Validator';
 import Transaction from 'App/Models/Transaction';
 import AccountTransaction from 'App/Models/AccountTransaction';
-// import TransactionCategory from 'App/Models/TransactionCategory';
 import { DateTime } from 'luxon';
 import BalanceHistory from 'App/Models/BalanceHistory';
 import Budget from 'App/Models/Budget';
