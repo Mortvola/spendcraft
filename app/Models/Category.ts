@@ -115,12 +115,7 @@ export default class Category extends BaseModel {
     return budget
       .related('transactions').query()
       .where('deleted', false)
-      // .whereRaw(`categories::jsonb @@ '$[*].categoryId == ${this.id}'`)
       .whereRaw('categories::jsonb @@ (\'$[*].categoryId == \' || ?)::jsonpath', [this.id])
-      // .whereHas('transactionCategories', (query) => {
-      //   // query.where('categoryId', this.id);
-      //   query.whereRaw(`categories::jsonb @@ '$[*].categoryId == ${this.id}'`)
-      // })
       .where((q) => {
         q.whereHas('accountTransaction', (q2) => {
           q2
@@ -136,9 +131,6 @@ export default class Category extends BaseModel {
           account.preload('institution');
         });
       })
-      // .preload('transactionCategories', (transactionCategory) => {
-      //   transactionCategory.preload('loanTransaction');
-      // })
   }
 
   public async transactions(budget: Budget, limit?: number, offset?: number) {
@@ -174,9 +166,6 @@ export default class Category extends BaseModel {
       q.count('*').as('count')
         .where('deleted', false)
         .whereRaw('categories::jsonb @@ (\'$[*].categoryId == \' || ?)::jsonpath', [this.id])
-        // .whereHas('transactionCategories', (query) => {
-        //   query.where('categoryId', this.id);
-        // })
         .where((q4) => {
           q4.whereHas('accountTransaction', (q2) => {
             q2

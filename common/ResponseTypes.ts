@@ -223,22 +223,6 @@ export const isAddInstitutionResponse = (r: unknown): r is AddInstitutionRespons
   // && Array.isArray((r as AddInstitutionResponse).categories)
 );
 
-export interface TransactionCategoryProps {
-  id: number;
-
-  type: CategoryType;
-
-  categoryId: number;
-
-  amount: number;
-
-  comment?: string;
-
-  loanTransaction: null | {
-    principle: number;
-  };
-}
-
 export enum TransactionType {
   REGULAR_TRANSACTION = 0,
   TRANSFER_TRANSACTION = 1,
@@ -272,7 +256,6 @@ export interface TransactionProps {
 
   version: number;
 
-  //  transactionCategories: TransactionCategoryProps[];
   categories: { categoryId: number, amount: number, comment?: string }[];
 
   duplicateOfTransactionId: number | null;

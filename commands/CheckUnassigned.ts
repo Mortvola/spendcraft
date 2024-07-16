@@ -38,22 +38,20 @@ export default class CheckUnassigned extends BaseCommand {
       const budgets = await Budget.all({ client: trx });
 
       await Promise.all(budgets.map(async (budget) => {
-        // const unassignedCat = await budget.getUnassignedCategory();
+        const unassignedCat = await budget.getUnassignedCategory();
 
         // Find all transactions that don't have transaction categories.
         const transactions = await budget.related('transactions').query()
-          // .doesntHave('transactionCategories')
+          .whereRaw('jsonb_array_length(categories) = ?', [0])
           .has('accountTransaction')
           .preload('accountTransaction');
 
         if (transactions.length > 0) {
           // Create an unassigned transaction category for each found transaction.
-          // await Promise.all(transactions.map(async (transaction) => (
-          //   transaction.related('transactionCategories').create({
-          //     amount: transaction.accountTransaction.amount,
-          //     categoryId: unassignedCat.id,
-          //   })
-          // )));
+          await Promise.all(transactions.map(async (transaction) => {
+            transaction.categories = [{ categoryId: unassignedCat.id, amount: transaction.accountTransaction.amount }];
+            return transaction.save();
+          }));
 
           console.log(`budget: ${budget.id}, count: ${transactions.length}`);
         }

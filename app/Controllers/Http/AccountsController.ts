@@ -197,8 +197,6 @@ export default class AccountsController {
         })
       });
 
-      // await transaction.load('transactionCategories');
-
       await trx.commit();
 
       const result: AddedTransaction = {

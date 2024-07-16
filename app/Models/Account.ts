@@ -406,7 +406,6 @@ class Account extends BaseModel {
       // If the amount changed then make sure that sum of the transaction
       // categories matches the transaction amount.
       if (accountTransactionChanges.amount) {
-        // const trxCats = await transaction.related('transactionCategories').query();
         const trxCats = transaction.categories;
 
         const sum = trxCats.reduce((accum, trxCat) => (
@@ -845,8 +844,6 @@ class Account extends BaseModel {
     if (acctTrx) {
       const transaction = await acctTrx.related('transaction').query().firstOrFail();
 
-      // const transactionCategory = await transaction.related('transactionCategories').query().firstOrFail();
-
       await transaction.merge({
         date: this.startDate,
       })
@@ -887,12 +884,6 @@ class Account extends BaseModel {
         name: 'Initial Funding',
         amount: startingBalance,
       });
-
-      // await transaction.related('transactionCategories').create({
-      //   transactionId: transaction.id,
-      //   categoryId: fundingPool.id,
-      //   amount: startingBalance,
-      // })
 
       fundingPool.balance += startingBalance;
     }

@@ -301,8 +301,6 @@ export default class TransactionsController {
           changes,
         });
 
-      // await transaction.load('transactionCategories');
-
       await transaction.load('accountTransaction', (accountTrx) => {
         accountTrx.preload('account', (acct) => {
           acct.preload('institution');
@@ -391,7 +389,7 @@ export default class TransactionsController {
         account = await Account.findOrFail(acctTransaction.accountId, { client: trx });
       }
 
-      const trxCategories = transaction.categories; // await transaction.related('transactionCategories').query();
+      const trxCategories = transaction.categories;
 
       if (trxCategories.length === 0) {
         if (account && account.tracking === 'Transactions') {
@@ -492,7 +490,6 @@ export default class TransactionsController {
     const budget = await user.related('budget').query().firstOrFail();
 
     const rebalances = await budget.related('transactions').query()
-      // .preload('transactionCategories')
       .where('type', TransactionType.REBALANCE_TRANSACTION)
       .orderBy('date', 'desc');
 
