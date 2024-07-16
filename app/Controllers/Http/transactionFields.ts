@@ -4,16 +4,16 @@ import { DateTime } from 'luxon';
 const transactionFields = {
   fields: {
     pick: [
-      'id', 'date', 'createdAt', 'sortOrder', 'type', 'comment', 'transactionCategories',
+      'id', 'date', 'createdAt', 'sortOrder', 'type', 'comment', 'categories',
       'duplicateOfTransactionId', 'accountTransaction', 'version',
     ],
   },
   relations: {
-    transactionCategories: {
-      fields: {
-        pick: ['id', 'type', 'categoryId', 'amount', 'expected', 'comment'],
-      },
-    },
+    // transactionCategories: {
+    //   fields: {
+    //     pick: ['id', 'type', 'categoryId', 'amount', 'expected', 'comment'],
+    //   },
+    // },
     accountTransaction: {
       fields: {
         pick: [
@@ -98,6 +98,8 @@ export function getChanges<T extends LucidRow>(
     else if (typeof updates[k] === 'object') {
       if (original[k] === null) {
         changes[k] = { old: original[k], new: updates[k] }
+      }
+      else if (Array.isArray(updates[k])) {
       }
       else {
         const objectChanges = getObjectChanges(original[k], updates[k], {})

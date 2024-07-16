@@ -75,22 +75,19 @@ export default class CheckBalances extends BaseCommand {
           .whereHas('group', (group) => {
             group.where('budgetId', budget.id)
           })
-          .withAggregate('transactionCategory', (query) => {
-            query.sum('amount').as('trans_sum')
-              .whereHas('transaction', (transaction) => {
-                transaction
-                  .where('budgetId', budget.id)
-                  .andWhere('deleted', false)
-                  .whereHas('accountTransaction', (q2) => {
-                    q2
-                      .andWhereHas('account', (q3) => {
-                        q3.where('tracking', 'Transactions')
-                          .andWhereColumn('startDate', '<=', 'transactions.date')
-                      })
-                  })
-                  .orDoesntHave('accountTransaction')
-              });
-          })
+          .joinRaw(`join
+            (
+              select x."categoryId", sum(x.amount) as trans_sum
+              from transactions t
+              cross join lateral jsonb_to_recordset(t.categories) as x("categoryId" int, amount decimal)
+              left outer join account_transactions at on at.transaction_id = t.id
+              left outer join accounts a on a.id = at.account_id
+              where (a.start_date is null OR t.date >= a.start_date)
+              group by x."categoryId"
+            ) AS T on T."categoryId" = categories.id
+            `)
+          .select('categories.*')
+          .select('trans_sum')
           .preload('group');
 
         const failures: Failures[] = [];

@@ -1,13 +1,16 @@
 /* eslint-disable import/no-cycle */
 import {
-  BaseModel, BelongsTo, belongsTo, column, HasMany, hasMany,
+  BaseModel, BelongsTo, belongsTo, column,
+  HasMany,
+  hasMany,
 } from '@ioc:Adonis/Lucid/Orm';
 import Database from '@ioc:Adonis/Lucid/Database';
 import Group from 'App/Models/Group';
 import { CategoryType, TransactionType } from 'Common/ResponseTypes';
-import TransactionCategory from 'App/Models/TransactionCategory';
+// import TransactionCategory from 'App/Models/TransactionCategory';
 import Budget from 'App/Models/Budget';
 import { DateTime } from 'luxon';
+import Transaction from './Transaction';
 
 type CategoryItem = {
   id: number,
@@ -75,8 +78,8 @@ export default class Category extends BaseModel {
   })
   public fundingCategories: FundingCategory[];
 
-  @hasMany(() => TransactionCategory)
-  public transactionCategory: HasMany<typeof TransactionCategory>;
+  // @hasMany(() => Transaction)
+  // public transaction: HasMany<typeof Transaction>;
 
   public static async balances(
     budget: Budget,
@@ -116,9 +119,12 @@ export default class Category extends BaseModel {
     return budget
       .related('transactions').query()
       .where('deleted', false)
-      .whereHas('transactionCategories', (query) => {
-        query.where('categoryId', this.id);
-      })
+      // .whereRaw(`categories::jsonb @@ '$[*].categoryId == ${this.id}'`)
+      .whereRaw('categories::jsonb @@ (\'$[*].categoryId == \' || ?)::jsonpath', [this.id])
+      // .whereHas('transactionCategories', (query) => {
+      //   // query.where('categoryId', this.id);
+      //   query.whereRaw(`categories::jsonb @@ '$[*].categoryId == ${this.id}'`)
+      // })
       .where((q) => {
         q.whereHas('accountTransaction', (q2) => {
           q2
@@ -134,9 +140,9 @@ export default class Category extends BaseModel {
           account.preload('institution');
         });
       })
-      .preload('transactionCategories', (transactionCategory) => {
-        transactionCategory.preload('loanTransaction');
-      })
+      // .preload('transactionCategories', (transactionCategory) => {
+      //   transactionCategory.preload('loanTransaction');
+      // })
   }
 
   public async transactions(budget: Budget, limit?: number, offset?: number) {
@@ -171,9 +177,10 @@ export default class Category extends BaseModel {
     await budget.loadAggregate('transactions', (q) => {
       q.count('*').as('count')
         .where('deleted', false)
-        .whereHas('transactionCategories', (query) => {
-          query.where('categoryId', this.id);
-        })
+        .whereRaw('categories::jsonb @@ (\'$[*].categoryId == \' || ?)::jsonpath', [this.id])
+        // .whereHas('transactionCategories', (query) => {
+        //   query.where('categoryId', this.id);
+        // })
         .where((q4) => {
           q4.whereHas('accountTransaction', (q2) => {
             q2
@@ -189,28 +196,29 @@ export default class Category extends BaseModel {
     return parseInt(budget.$extras.count, 10);
   }
 
+  // eslint-disable-next-line class-methods-use-this
   public async syncBalance(this: Category): Promise<void> {
-    let sum = 0;
+    // let sum = 0;
 
-    const tc = await this.related('transactionCategory').query()
-      .sum('amount')
-      .whereHas('transaction', (q) => {
-        q.whereHas('accountTransaction', (q2) => {
-          q2.where('pending', false)
-            .whereHas('account', (q3) => {
-              q3.where('tracking', 'Transactions')
-                .whereColumn('startDate', '<=', 'transactions.date')
-            })
-        })
-          .orDoesntHave('accountTransaction')
-      })
+    // const tc = await this.related('transactionCategory').query()
+    //   .sum('amount')
+    //   .whereHas('transaction', (q) => {
+    //     q.whereHas('accountTransaction', (q2) => {
+    //       q2.where('pending', false)
+    //         .whereHas('account', (q3) => {
+    //           q3.where('tracking', 'Transactions')
+    //             .whereColumn('startDate', '<=', 'transactions.date')
+    //         })
+    //     })
+    //       .orDoesntHave('accountTransaction')
+    //   })
 
-    sum = tc[0].$extras.sum ?? 0;
+    // sum = tc[0].$extras.sum ?? 0;
 
-    await this.merge({
-      balance: sum,
-    })
-      .save();
+    // await this.merge({
+    //   balance: sum,
+    // })
+    //   .save();
   }
 }
 

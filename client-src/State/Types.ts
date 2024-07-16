@@ -90,7 +90,7 @@ export interface TransactionInterface extends BaseTransactionInterface {
       amount?: number,
       principle?: number,
       comment?: string,
-      splits: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
+      categories: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
     },
   ): Promise<null | ApiError[]>;
 
@@ -410,7 +410,7 @@ export interface AccountInterface {
       amount?: number,
       principle?: number,
       comment?: string,
-      splits: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
+      categories: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
     },
   ): Promise<Error[] | null>;
 
@@ -495,7 +495,7 @@ export type AddTransactionRequest = {
   date?: string,
   name?: string,
   amount?: number,
-  splits:(TransactionCategoryInterface | NewTransactionCategoryInterface)[],
+  categories:(TransactionCategoryInterface | NewTransactionCategoryInterface)[],
 };
 
 export type CategoryParams = {

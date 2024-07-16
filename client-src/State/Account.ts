@@ -119,7 +119,7 @@ class Account implements AccountInterface {
       date?: string,
       name?: string,
       amount?: number,
-      splits: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
+      categories: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
     },
   ): Promise<Error[] | null> {
     const response = await Http.post<AddTransactionRequest, AddTransactionResponse>(`/api/v1/account/${this.id}/transactions`, values);

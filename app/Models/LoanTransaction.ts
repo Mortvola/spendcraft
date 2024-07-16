@@ -2,7 +2,7 @@
 import {
   BaseModel, column, belongsTo, BelongsTo,
 } from '@ioc:Adonis/Lucid/Orm'
-import TransactionCategory from 'App/Models/TransactionCategory';
+// import TransactionCategory from 'App/Models/TransactionCategory';
 import Loan from 'App/Models/Loan';
 
 export default class LoanTransaction extends BaseModel {
@@ -20,11 +20,11 @@ export default class LoanTransaction extends BaseModel {
   @column()
   public transactionCategoryId: number;
 
-  @belongsTo(() => TransactionCategory, {
-    foreignKey: 'transactionCategoryId',
-    localKey: 'id',
-  })
-  public transactionCategory: BelongsTo<typeof TransactionCategory>;
+  // @belongsTo(() => TransactionCategory, {
+  //   foreignKey: 'transactionCategoryId',
+  //   localKey: 'id',
+  // })
+  // public transactionCategory: BelongsTo<typeof TransactionCategory>;
 
   @belongsTo(() => Loan)
   public loan: BelongsTo<typeof Loan>;

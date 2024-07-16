@@ -12,7 +12,7 @@ import {
 import { schema } from '@ioc:Adonis/Core/Validator';
 import Transaction from 'App/Models/Transaction';
 import AccountTransaction from 'App/Models/AccountTransaction';
-import TransactionCategory from 'App/Models/TransactionCategory';
+// import TransactionCategory from 'App/Models/TransactionCategory';
 import { DateTime } from 'luxon';
 import BalanceHistory from 'App/Models/BalanceHistory';
 import Budget from 'App/Models/Budget';
@@ -831,9 +831,10 @@ class InstitutionController {
 
         if (transaction) {
           // eslint-disable-next-line no-await-in-loop
-          const transCats = await TransactionCategory
-            .query({ client: trx })
-            .where('transactionId', transaction.id);
+          // const transCats = await TransactionCategory
+          //   .query({ client: trx })
+          //   .where('transactionId', transaction.id);
+          const transCats = transaction.categories;
 
           if (transCats.length === 0) {
             if (acct.tracking === 'Transactions') {
@@ -877,7 +878,7 @@ class InstitutionController {
               }
 
               // eslint-disable-next-line no-await-in-loop
-              await tc.delete();
+              // await tc.delete();
             }
           }
 

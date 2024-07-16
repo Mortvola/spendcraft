@@ -272,7 +272,8 @@ export interface TransactionProps {
 
   version: number;
 
-  transactionCategories: TransactionCategoryProps[];
+  //  transactionCategories: TransactionCategoryProps[];
+  categories: { categoryId: number, amount: number, comment?: string }[];
 
   duplicateOfTransactionId: number | null;
 
@@ -460,7 +461,7 @@ export interface UpdateCategoryTransferResponse {
   balances: CategoryBalanceProps[],
 
   transaction: {
-    transactionCategories: TransactionCategoryProps[],
+    categories: { categoryId: number, amount: number, comment?: string }[],
   },
 }
 

@@ -1,4 +1,4 @@
-import Database, { StrictValues } from '@ioc:Adonis/Lucid/Database';
+import Database from '@ioc:Adonis/Lucid/Database';
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import Category, { GroupItem } from 'App/Models/Category';
 import CategoryTransfer from 'App/Models/CategoryTransfer';
@@ -10,7 +10,7 @@ import UpdateCategoryValidator from 'App/Validators/UpdateCategoryValidator';
 import DeleteCategoryValidator from 'App/Validators/DeleteCategoryValidator';
 import UpdateCategoryTransferValidator from 'App/Validators/UpdateCategoryTransferValidator';
 import Transaction from 'App/Models/Transaction';
-import TransactionCategory from 'App/Models/TransactionCategory';
+// import TransactionCategory from 'App/Models/TransactionCategory';
 import Loan from 'App/Models/Loan';
 import {
   CategoryBalanceProps,
@@ -38,56 +38,56 @@ class CategoriesController {
 
     if (date) {
       // Get the first day of the month
-      const firstDayOfMonth = DateTime.fromISO(date)
-        .set({
-          day: 1, hour: 0, minute: 0, second: 0, millisecond: 0,
-        })
+      // const firstDayOfMonth = DateTime.fromISO(date)
+      //   .set({
+      //     day: 1, hour: 0, minute: 0, second: 0, millisecond: 0,
+      //   })
 
       // Get the date of the first day of the previous month.
-      const firstDayOfPreviousMonth = firstDayOfMonth
-        .minus({ days: 1 })
-        .set({
-          day: 1, hour: 0, minute: 0, second: 0, millisecond: 0,
-        })
+      // const firstDayOfPreviousMonth = firstDayOfMonth
+      //   .minus({ days: 1 })
+      //   .set({
+      //     day: 1, hour: 0, minute: 0, second: 0, millisecond: 0,
+      //   })
 
       const categories = await Category.query()
         .whereHas('group', (query) => {
           query.where('budgetId', budget.id)
         })
         // Get the sum of the transactions since the first of the month.
-        .withAggregate('transactionCategory', (query) => {
-          query.sum('amount').as('sum')
-            .whereHas('transaction', (transQuery) => {
-              transQuery.where('date', '>=', firstDayOfMonth.toISODate() ?? '')
-            })
-        })
+        // .withAggregate('transactionCategory', (query) => {
+        //   query.sum('amount').as('sum')
+        //     .whereHas('transaction', (transQuery) => {
+        //       transQuery.where('date', '>=', firstDayOfMonth.toISODate() ?? '')
+        //     })
+        // })
         // Get the sum of the transactions (minus funding and category transfers) from the prrevious month
-        .withAggregate('transactionCategory', (query) => {
-          query.sum('amount').as('previousSum')
-            .whereHas('transaction', (transQuery) => {
-              transQuery.where('date', '<', firstDayOfMonth.toISODate() ?? '')
-                .andWhere('date', '>=', firstDayOfPreviousMonth.toISODate() ?? '')
-                .andWhereNotIn('type', [TransactionType.FUNDING_TRANSACTION, TransactionType.REBALANCE_TRANSACTION])
-            })
-        })
+        // .withAggregate('transactionCategory', (query) => {
+        //   query.sum('amount').as('previousSum')
+        //     .whereHas('transaction', (transQuery) => {
+        //       transQuery.where('date', '<', firstDayOfMonth.toISODate() ?? '')
+        //         .andWhere('date', '>=', firstDayOfPreviousMonth.toISODate() ?? '')
+        //         .andWhereNotIn('type', [TransactionType.FUNDING_TRANSACTION, TransactionType.REBALANCE_TRANSACTION])
+        //     })
+        // })
         // Get the sum of the funding transactions from the previous month
-        .withAggregate('transactionCategory', (query) => {
-          query.sum('amount').as('previousFunding')
-            .whereHas('transaction', (transQuery) => {
-              transQuery.where('date', '<', firstDayOfMonth.toISODate() ?? '')
-                .andWhere('date', '>=', firstDayOfPreviousMonth.toISODate() ?? '')
-                .andWhere('type', TransactionType.FUNDING_TRANSACTION)
-            })
-        })
+        // .withAggregate('transactionCategory', (query) => {
+        //   query.sum('amount').as('previousFunding')
+        //     .whereHas('transaction', (transQuery) => {
+        //       transQuery.where('date', '<', firstDayOfMonth.toISODate() ?? '')
+        //         .andWhere('date', '>=', firstDayOfPreviousMonth.toISODate() ?? '')
+        //         .andWhere('type', TransactionType.FUNDING_TRANSACTION)
+        //     })
+        // })
         // Get the sum of the category transfers from the previous month
-        .withAggregate('transactionCategory', (query) => {
-          query.sum('amount').as('previousCatTransfers')
-            .whereHas('transaction', (transQuery) => {
-              transQuery.where('date', '<', firstDayOfMonth.toISODate() ?? '')
-                .andWhere('date', '>=', firstDayOfPreviousMonth.toISODate() ?? '')
-                .andWhere('type', TransactionType.REBALANCE_TRANSACTION)
-            })
-        })
+        // .withAggregate('transactionCategory', (query) => {
+        //   query.sum('amount').as('previousCatTransfers')
+        //     .whereHas('transaction', (transQuery) => {
+        //       transQuery.where('date', '<', firstDayOfMonth.toISODate() ?? '')
+        //         .andWhere('date', '>=', firstDayOfPreviousMonth.toISODate() ?? '')
+        //         .andWhere('type', TransactionType.REBALANCE_TRANSACTION)
+        //     })
+        // })
 
       return categories.map((c) => ({
         id: c.id,
@@ -318,7 +318,7 @@ class CategoriesController {
       const result: {
         balances: CategoryBalanceProps[],
         transaction: {
-          transactionCategories: unknown[],
+          // transactionCategories: unknown[],
           id?: number,
           date?: string,
           name?: string,
@@ -329,16 +329,19 @@ class CategoriesController {
           amount?: string | null,
           institutionName?: string | null,
         },
-      } = { balances: [], transaction: { transactionCategories: [] } };
+      } = { balances: [], transaction: {} };
 
       const { categories, date, type } = requestData;
       let transaction: Transaction;
 
       if (tfrId === undefined) {
-        transaction = await budget.related('transactions')
+        transaction = await Transaction // budget.related('transactions')
           .create({
-            date: DateTime.fromISO(date), type, budgetId: budget.id,
-          });
+            date: DateTime.fromISO(date),
+            type,
+            categories,
+            budgetId: budget.id,
+          }, { client: trx });
 
         result.transaction = {
           id: transaction.id,
@@ -350,7 +353,7 @@ class CategoriesController {
           accountName: null,
           amount: null,
           institutionName: null,
-          transactionCategories: [],
+          // transactionCategories: [],
         };
       }
       else {
@@ -361,56 +364,57 @@ class CategoriesController {
         await transaction
           .merge({
             date: DateTime.fromISO(date),
+            categories,
           })
           .save()
       }
 
-      const existingSplits: StrictValues[] = [];
+      // const existingSplits: StrictValues[] = [];
 
       // Insert the category splits
       // eslint-disable-next-line no-restricted-syntax
       for (const split of categories) {
         if (split.amount !== 0) {
-          let { amount } = split;
+          // let { amount } = split;
 
           if (split.id) {
-            existingSplits.push(split.id);
+            // existingSplits.push(split.id);
 
-            // eslint-disable-next-line no-await-in-loop
-            const existingSplit = await TransactionCategory.findOrFail(split.id, { client: trx });
+            // // eslint-disable-next-line no-await-in-loop
+            // const existingSplit = await TransactionCategory.findOrFail(split.id, { client: trx });
 
-            amount = split.amount - existingSplit.amount;
+            // amount = split.amount - existingSplit.amount;
 
-            existingSplit.amount = split.amount;
+            // existingSplit.amount = split.amount;
 
-            if (split.expected !== undefined) {
-              existingSplit.expected = split.expected;
-            }
+            // if (split.expected !== undefined) {
+            //   existingSplit.expected = split.expected;
+            // }
 
-            existingSplit.save();
+            // existingSplit.save();
           }
           else {
-            const newSplit = (new TransactionCategory()).useTransaction(trx);
+            // const newSplit = (new TransactionCategory()).useTransaction(trx);
 
-            // eslint-disable-next-line no-await-in-loop
-            await newSplit
-              .fill({
-                transactionId: transaction.id,
-                categoryId: split.categoryId,
-                amount: split.amount,
-                expected: split.expected,
-              })
-              .save();
+            // // eslint-disable-next-line no-await-in-loop
+            // await newSplit
+            //   .fill({
+            //     transactionId: transaction.id,
+            //     categoryId: split.categoryId,
+            //     amount: split.amount,
+            //     expected: split.expected,
+            //   })
+            //   .save();
 
-            existingSplits.push(newSplit.id);
+            // existingSplits.push(newSplit.id);
 
-            amount = split.amount;
+            // amount = split.amount;
           }
 
           // eslint-disable-next-line no-await-in-loop
           const category = await Category.findOrFail(split.categoryId, { client: trx });
 
-          category.balance += amount;
+          // category.balance += amount;
 
           category.save();
 
@@ -419,27 +423,29 @@ class CategoriesController {
       }
 
       // Delete splits that are not in the array of ids
-      const query = trx
-        .from('transaction_categories')
-        .whereNotIn('id', existingSplits)
-        .andWhere('transaction_id', transaction.id);
-      const toDelete = await query.select('category_id AS categoryId', 'amount');
+      // const query = trx
+      //   .from('transaction_categories')
+      //   .whereNotIn('id', existingSplits)
+      //   .andWhere('transaction_id', transaction.id);
+      // const toDelete = await query.select('category_id AS categoryId', 'amount');
 
-      // eslint-disable-next-line no-restricted-syntax
-      for (const td of toDelete) {
-        // eslint-disable-next-line no-await-in-loop
-        const category = await Category.findOrFail(td.categoryId, { client: trx });
+      // // eslint-disable-next-line no-restricted-syntax
+      // for (const td of toDelete) {
+      //   // eslint-disable-next-line no-await-in-loop
+      //   const category = await Category.findOrFail(td.categoryId, { client: trx });
 
-        category.balance -= td.amount;
+      //   category.balance -= td.amount;
 
-        result.balances.push({ id: category.id, balance: category.balance });
+      //   result.balances.push({ id: category.id, balance: category.balance });
 
-        category.save();
-      }
+      //   category.save();
+      // }
 
-      await query.delete();
+      // await query.delete();
 
-      result.transaction.transactionCategories = await transaction.related('transactionCategories').query();
+      result.transaction = transaction.serialize(transactionFields);
+
+      // .transactionCategories = await transaction.related('transactionCategories').query();
 
       await trx.commit();
 

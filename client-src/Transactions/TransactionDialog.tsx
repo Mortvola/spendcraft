@@ -106,7 +106,7 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
         amount,
         principle,
         comment: values.comment,
-        splits: values.splits,
+        categories: values.splits,
       });
     }
     else {
@@ -120,7 +120,7 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
         amount,
         principle,
         comment: values.comment,
-        splits: values.splits,
+        categories: values.splits,
       });
     }
 

@@ -6,7 +6,6 @@ import Account from 'App/Models/Account';
 import BalanceHistory from 'App/Models/BalanceHistory';
 import Category from 'App/Models/Category';
 import Transaction from 'App/Models/Transaction';
-import TransactionCategory from 'App/Models/TransactionCategory';
 import {
   TransactionsResponse, CategoryBalanceProps, TransactionProps, TransactionType, AccountBalanceProps, TrackingType,
   ApiResponse,
@@ -57,9 +56,9 @@ export default class AccountsController {
           account.preload('institution');
         });
       })
-      .preload('transactionCategories', (transactionCategory) => {
-        transactionCategory.preload('loanTransaction');
-      })
+      // .preload('transactionCategories', (transactionCategory) => {
+      //   transactionCategory.preload('loanTransaction');
+      // })
       .where('deleted', false)
       .andWhere('type', '!=', TransactionType.STARTING_BALANCE)
       .orderBy('transactions.date', 'desc')
@@ -109,7 +108,7 @@ export default class AccountsController {
         amount: schema.number(),
         principle: schema.number.optional(),
         comment: schema.string.optional(),
-        splits: schema.array().members(
+        categories: schema.array().members(
           schema.object().members({
             categoryId: schema.number(),
             amount: schema.number(),
@@ -131,6 +130,7 @@ export default class AccountsController {
         date: requestData.date,
         sortOrder: 2147483647,
         comment: requestData.comment,
+        categories: requestData.categories,
       });
 
       await transaction.related('budget').associate(budget);
@@ -153,9 +153,9 @@ export default class AccountsController {
 
       const categoryBalances: CategoryBalanceProps[] = [];
 
-      const { splits } = requestData;
+      const { categories } = requestData;
 
-      if (!splits || splits.length === 0) {
+      if (!categories || categories.length === 0) {
         // We only want to update the unassigned category balance if 
         // this account is tracking categorized transactions
         if (account.tracking === 'Transactions') {
@@ -167,16 +167,16 @@ export default class AccountsController {
 
           categoryBalances.push({ id: unassignedCat.id, balance: unassignedCat.balance })
 
-          const trxCategory = (new TransactionCategory()).useTransaction(trx);
+          // const trxCategory = (new TransactionCategory()).useTransaction(trx);
 
-          trxCategory.fill({
-            transactionId: transaction.id,
-            categoryId: unassignedCat.id,
-            amount: requestData.amount,
-          })
+          // trxCategory.fill({
+          //   transactionId: transaction.id,
+          //   categoryId: unassignedCat.id,
+          //   amount: requestData.amount,
+          // })
 
-          // eslint-disable-next-line no-await-in-loop
-          await trxCategory.save();
+          // // eslint-disable-next-line no-await-in-loop
+          // await trxCategory.save();
         }
       }
       else {
@@ -185,18 +185,18 @@ export default class AccountsController {
         }
 
         // eslint-disable-next-line no-restricted-syntax
-        for (const split of splits) {
-          const trxCategory = (new TransactionCategory()).useTransaction(trx);
+        for (const split of categories) {
+          // const trxCategory = (new TransactionCategory()).useTransaction(trx);
 
-          trxCategory.fill({
-            transactionId: transaction.id,
-            categoryId: split.categoryId,
-            amount: split.amount,
-            comment: split.comment,
-          })
+          // trxCategory.fill({
+          //   transactionId: transaction.id,
+          //   categoryId: split.categoryId,
+          //   amount: split.amount,
+          //   comment: split.comment,
+          // })
 
-          // eslint-disable-next-line no-await-in-loop
-          await trxCategory.save();
+          // // eslint-disable-next-line no-await-in-loop
+          // await trxCategory.save();
 
           // eslint-disable-next-line no-await-in-loop
           const category = await Category.findOrFail(split.categoryId, { client: trx });
@@ -223,7 +223,7 @@ export default class AccountsController {
         })
       });
 
-      await transaction.load('transactionCategories');
+      // await transaction.load('transactionCategories');
 
       await trx.commit();
 

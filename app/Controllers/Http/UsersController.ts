@@ -227,15 +227,15 @@ export default class UsersController {
           // Delete transactions
           const transactions = await budget.related('transactions').query();
 
-          await Promise.all(transactions.map(async (transaction) => {
-            const transactionCats = await transaction.related('transactionCategories').query();
+          await Promise.all(transactions.map(async (transaction) => (
+            // const transactionCats = await transaction.related('transactionCategories').query();
 
-            await Promise.all(transactionCats.map(async (transactionCat) => (
-              transactionCat.delete()
-            )));
+            // await Promise.all(transactionCats.map(async (transactionCat) => (
+            //   transactionCat.delete()
+            // )));
 
-            return transaction.delete()
-          }))
+            transaction.delete()
+          )))
 
           // Delete groups
           const groups = await budget.related('groups').query();

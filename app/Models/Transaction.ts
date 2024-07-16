@@ -4,11 +4,16 @@ import {
   belongsTo, BelongsTo, HasOne, hasOne,
 } from '@ioc:Adonis/Lucid/Orm';
 import { DateTime } from 'luxon';
-import TransactionCategory from 'App/Models/TransactionCategory';
 import AccountTransaction from 'App/Models/AccountTransaction';
 import { TransactionType } from 'Common/ResponseTypes';
 import Budget from 'App/Models/Budget';
 import TransactionLog from './TransactionLog';
+
+export type TransCategory = {
+  categoryId: number,
+  amount: number,
+  comment?: string,
+}
 
 class Transaction extends BaseModel {
   @column()
@@ -20,8 +25,8 @@ class Transaction extends BaseModel {
   @column.date()
   public date: DateTime;
 
-  @hasMany(() => TransactionCategory)
-  public transactionCategories: HasMany<typeof TransactionCategory>;
+  // @hasMany(() => TransactionCategory)
+  // public transactionCategories: HasMany<typeof TransactionCategory>;
 
   @column()
   public sortOrder: number;
@@ -46,6 +51,11 @@ class Transaction extends BaseModel {
 
   @column()
   public duplicateOfTransactionId: number | null;
+
+  @column({
+    prepare: (value: TransCategory[]) => JSON.stringify(value),
+  })
+  public categories: TransCategory[];
 
   @column()
   public version: number;

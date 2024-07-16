@@ -100,8 +100,13 @@ class Transaction implements TransactionInterface {
       this.accountName = '';
     }
 
-    if (props.transactionCategories) {
-      this.categories = props.transactionCategories;
+    if (props.categories) {
+      this.categories = props.categories.map((c, index) => ({
+        id: index,
+        categoryId: c.categoryId,
+        amount: c.amount,
+        comment: c.comment,
+      }));
     }
 
     makeAutoObservable(this);
@@ -114,7 +119,7 @@ class Transaction implements TransactionInterface {
       amount?: number,
       principle?: number,
       comment?: string,
-      splits: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
+      categories: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
     },
   ): Promise<null | ApiError[]> {
     if (this.id === null) {
@@ -143,7 +148,9 @@ class Transaction implements TransactionInterface {
 
           this.store.categoryTree.updateBalances(transactionUpdate.categories);
 
-          this.categories = transactionUpdate.transaction.transactionCategories;
+          this.categories = transactionUpdate.transaction.categories.map((c, index) => ({
+            id: index, categoryId: c.categoryId, amount: c.amount, comment: c.comment,
+          }));
 
           const dateChanged = this.date !== DateTime.fromISO(transactionUpdate.transaction.date);
           this.date = DateTime.fromISO(transactionUpdate.transaction.date);
@@ -161,10 +168,10 @@ class Transaction implements TransactionInterface {
               throw new Error('category is null');
             }
 
-            if ((transactionUpdate.transaction.transactionCategories.length === 0
+            if ((transactionUpdate.transaction.categories.length === 0
                 && this.store.uiState.selectedCategory.id !== this.store.categoryTree.unassignedCat.id)
-              || (transactionUpdate.transaction.transactionCategories.length !== 0
-                && !transactionUpdate.transaction.transactionCategories.some(
+              || (transactionUpdate.transaction.categories.length !== 0
+                && !transactionUpdate.transaction.categories.some(
                   (c) => (
                     this.store.uiState.selectedCategory && c.categoryId === this.store.uiState.selectedCategory.id
                   ),
@@ -229,9 +236,9 @@ class Transaction implements TransactionInterface {
           }
 
           this.store.categoryTree.updateBalances(body.balances);
-          this.categories = body.transaction.transactionCategories;
+          this.categories = body.transaction.categories;
 
-          if (this.store.uiState.selectedCategory && !body.transaction.transactionCategories.some(
+          if (this.store.uiState.selectedCategory && !body.transaction.categories.some(
             (c) => (this.store.uiState.selectedCategory && c.categoryId === this.store.uiState.selectedCategory.id),
           )) {
             this.store.uiState.selectedCategory.transactions.removeTransaction(this.id);
