@@ -236,16 +236,11 @@ class Account extends BaseModel {
     transaction: Transaction,
     accountTransaction: AccountTransaction,
   ): Promise<number> {
-    // The pending account transaction was not found. Create an unassigned transaction category
-    // for the new transaction.
     const unassigned = await budget.getUnassignedCategory({ client: this.$trx });
 
-    // await transaction.related('transactionCategories').create({
-    //   categoryId: unassigned.id,
-    //   amount: accountTransaction.amount,
-    // });
-
     transaction.categories = [{ categoryId: unassigned.id, amount: accountTransaction.amount }];
+
+    await transaction.save();
 
     return accountTransaction.amount;
   }
@@ -295,23 +290,14 @@ class Account extends BaseModel {
           amount += remaining;
         }
 
-        // eslint-disable-next-line no-await-in-loop
-        // await transaction.related('transactionCategories').create({
-        //   categoryId: cat.categoryId,
-        //   amount: amount / 100.0,
-        // });
-
         transaction.categories.push({ categoryId: cat.categoryId, amount: amount / 100.0 })
 
         // Update the category balance
         // eslint-disable-next-line no-await-in-loop
         const category = await Category.findOrFail(cat.categoryId, { client: this.$trx })
-
-        category.merge({
-          balance: category.balance + amount / 100.0,
-        })
-
-        category.save()
+        category.balance += amount / 100.0;
+        // eslint-disable-next-line no-await-in-loop
+        await category.save()
 
         // eslint-disable-next-line no-await-in-loop
         const group = await category.related('group').query().firstOrFail();
@@ -323,6 +309,8 @@ class Account extends BaseModel {
           assignedCategories.push(`${group.name}:${category.name}`);
         }
       }
+
+      await transaction.save();
 
       await transaction.related('transactionLog')
         .create({
@@ -436,15 +424,9 @@ class Account extends BaseModel {
 
           if (unnassignedTrxCat) {
             unnassignedTrxCat.amount += delta;
-            // await unnassignedTrxCat.save();
           }
           else {
-            // await transaction.related('transactionCategories').create({
-            //   categoryId: unassigned.id,
-            //   amount: delta,
-            // });
-
-            transaction.categories = [{ categoryId: unassigned.id, amount: delta }]
+            transaction.categories.push({ categoryId: unassigned.id, amount: delta })
           }
 
           unassignedAmount = delta;
@@ -563,18 +545,14 @@ class Account extends BaseModel {
     const transaction = await acctTran.related('transaction').query().firstOrFail();
 
     // eslint-disable-next-line no-await-in-loop
-    // const transCats = await transaction.related('transactionCategories').query();
     const transCats = transaction.categories;
 
     // eslint-disable-next-line no-restricted-syntax
     for (const tc of transCats) {
       if (transaction.date >= this.startDate) {
-        // const category = await tc.related('category').query().firstOrFail();
         // eslint-disable-next-line no-await-in-loop
-        const category = await Category.findOrFail(tc.categoryId);
-
+        const category = await Category.findOrFail(tc.categoryId, { client: transaction.$trx });
         category.balance -= tc.amount;
-
         // eslint-disable-next-line no-await-in-loop
         await category.save();
       }
@@ -881,10 +859,6 @@ class Account extends BaseModel {
       })
         .save();
 
-      // await transactionCategory.merge({
-      //   amount: acctTrx.amount,
-      // })
-      //   .save();
       transaction.categories[0].amount = acctTrx.amount
 
       await transaction.save();
