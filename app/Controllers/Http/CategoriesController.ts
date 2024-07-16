@@ -338,9 +338,13 @@ class CategoriesController {
           .create({
             date: DateTime.fromISO(date),
             type,
-            categories: categories.map((category) => (
-              { categoryId: category.categoryId, amount: category.amount, comment: category.comment }
-            )),
+            categories: categories.map((category) => ({
+              categoryId: category.categoryId,
+              amount: category.amount,
+              comment: category.comment,
+              funder: category.funder,
+              fundingCategories: category.fundingCategories,
+            })),
             budgetId: budget.id,
           }, { client: trx });
 
@@ -370,9 +374,13 @@ class CategoriesController {
         await transaction
           .merge({
             date: DateTime.fromISO(date),
-            categories: categories.map((category) => (
-              { categoryId: category.categoryId, amount: category.amount, comment: category.comment }
-            )),
+            categories: categories.map((category) => ({
+              categoryId: category.categoryId,
+              amount: category.amount,
+              comment: category.comment,
+              funder: category.funder,
+              fundingCategories: category.fundingCategories,
+            })),
           })
           .save()
       }

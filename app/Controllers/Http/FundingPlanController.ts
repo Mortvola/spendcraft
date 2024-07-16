@@ -4,7 +4,7 @@ import Category from 'App/Models/Category';
 // import FundingPlan from 'App/Models/FundingPlan';
 // import FundingPlanCategory from 'App/Models/FundingPlanCategory';
 // import CategoryHistoryItem from 'App/Models/CategoryHistoryItem';
-import { FundingPlanDetailsProps, ProposedFundingCateggoryProps } from 'Common/ResponseTypes';
+import { FundingPlanDetailsProps, ProposedFundingCategoryProps } from 'Common/ResponseTypes';
 
 class FundingPlanController {
   // eslint-disable-next-line class-methods-use-this
@@ -41,7 +41,7 @@ class FundingPlanController {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  public async getProposed({ auth: { user } }: HttpContextContract): Promise<ProposedFundingCateggoryProps[]> {
+  public async getProposed({ auth: { user } }: HttpContextContract): Promise<ProposedFundingCategoryProps[]> {
     if (!user) {
       throw new Error('user is undefined');
     }
@@ -63,7 +63,6 @@ class FundingPlanController {
         useGoal: schema.boolean.optional(),
         goalDate: schema.date.optional(),
         recurrence: schema.number(),
-        // expectedToSpend: schema.number.optional(),
       }),
     });
 
@@ -76,7 +75,6 @@ class FundingPlanController {
         useGoal: requestData.useGoal ?? false,
         goalDate: requestData.goalDate ?? null,
         recurrence: requestData.recurrence,
-        // expectedToSpend: requestData.expectedToSpend ?? null,
       },
     );
 

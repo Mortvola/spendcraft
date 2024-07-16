@@ -273,6 +273,8 @@ export interface TransactionCategoryInterface {
   categoryId: number;
   amount: number;
   comment?: string;
+  funder?: boolean;
+  fundingCategories?: { categoryId: number, amount: number, percentage: boolean }[],
 }
 
 export interface NewTransactionCategoryInterface {

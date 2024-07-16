@@ -106,6 +106,8 @@ class Transaction implements TransactionInterface {
         categoryId: c.categoryId,
         amount: c.amount,
         comment: c.comment,
+        funder: c.funder,
+        fundingCategories: c.fundingCategories,
       }));
     }
 

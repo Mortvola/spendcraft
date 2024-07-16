@@ -4,7 +4,7 @@ import {
   BaseModel, column, HasMany, hasMany, ModelAdapterOptions,
 } from '@ioc:Adonis/Lucid/Orm'
 import Database from '@ioc:Adonis/Lucid/Database';
-import { InstitutionProps, ProposedFundingCateggoryProps, TransactionType } from 'Common/ResponseTypes';
+import { InstitutionProps, ProposedFundingCategoryProps, TransactionType } from 'Common/ResponseTypes';
 import User from 'App/Models/User'
 import Category from 'App/Models/Category';
 import Group from 'App/Models/Group';
@@ -554,25 +554,23 @@ export default class Budget extends BaseModel {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  public async getProposedFunding(): Promise<ProposedFundingCateggoryProps[]> {
+  public async getProposedFunding(): Promise<ProposedFundingCategoryProps[]> {
     const cats = await Category.query()
       .whereHas('group', (query) => {
         query.where('budgetId', this.id)
       });
 
-    // const fundingCats = await plan.related('categories').query();
-
     const fundingMonth = DateTime.now().startOf('month');
 
-    const proposedCats: ProposedFundingCateggoryProps[] = [];
+    const proposedCats: ProposedFundingCategoryProps[] = [];
 
     cats.forEach((cat) => {
-      const proposedCat: ProposedFundingCateggoryProps = {
+      const proposedCat: ProposedFundingCategoryProps = {
         categoryId: cat.id,
         amount: 0,
-        expectedToSpend: 0,
         adjusted: false,
         adjustedReason: null,
+        fundingCategories: cat.fundingCategories,
       };
 
       if (cat.useGoal && cat.goalDate) {

@@ -38,24 +38,12 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
 
   const getCategoriesSum = (categories: CategoriesValueType) => {
     const v = Object.keys(categories).reduce((sum, k) => {
-      const value = categories[k];
+      const value = categories[k].amount;
       const newValue = typeof value === 'string' ? parseFloat(value ?? 0) : value;
       return sum + newValue;
     }, 0)
 
     return v;
-  }
-
-  const getTransactionCategoryId = (categoryId: number) => {
-    if (transaction) {
-      const ct = transaction.categories.find((c) => c.categoryId === categoryId);
-
-      if (ct !== undefined) {
-        return ct.id
-      }
-    }
-
-    return undefined;
   }
 
   const handleSubmit = async (values: ValueType) => {
@@ -65,13 +53,13 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
     }
 
     const categories = Object.keys(values.categories).map((k) => {
-      const value = values.categories[k];
+      const value = values.categories[k].amount;
       const amount = typeof value === 'string' ? parseFloat(value) : value;
       const categoryId = parseInt(k, 10);
       return {
-        id: getTransactionCategoryId(categoryId),
         categoryId,
         amount,
+        fundingCategories: values.categories[k].fundingCategories,
       }
     })
       .filter((c) => c.amount !== 0);
@@ -81,32 +69,25 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
       categories,
     };
 
-    const sum = getCategoriesSum(values.categories);
+    const funders: Map<number, number> = new Map();
 
-    // Check for an existing funding pool category in the list of categories.
-    // One should be found if this is a transaction we are editing. Otherwise, 
-    // it should not be found.
-    const index = request.categories.findIndex(
-      (c) => fundingPoolCat && c.categoryId === fundingPoolCat.id,
-    );
-
-    if (index === -1) {
-      if (!fundingPoolCat || fundingPoolCat.id === null) {
-        throw new Error('fundingPoolId is null');
+    // eslint-disable-next-line no-restricted-syntax
+    for (const category of categories) {
+      // eslint-disable-next-line no-restricted-syntax
+      for (const fundingCategory of category.fundingCategories) {
+        const funding = funders.get(fundingCategory.categoryId) ?? 0;
+        funders.set(fundingCategory.categoryId, funding + (fundingCategory.amount / 100.0) * category.amount)
       }
-
-      // Determine if there is an existing funding pool category in the edited transaction (if any).
-      // If one exists then include its ID in the request.
-      const existingFundingPoolTransCat = transaction?.categories.find((c) => c.categoryId === fundingPoolCat.id)
-
-      request.categories.push({
-        id: existingFundingPoolTransCat?.id,
-        categoryId: fundingPoolCat.id,
-        amount: -sum,
-      });
     }
-    else {
-      request.categories[index].amount = -sum;
+
+    // eslint-disable-next-line no-restricted-syntax
+    for (const [categoryId, amount] of funders) {
+      request.categories.push({
+        categoryId,
+        amount: -amount,
+        funder: true,
+        fundingCategories: [],
+      });
     }
 
     let errors: Error[] | null;
@@ -173,8 +154,15 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
 
     if (transaction) {
       transaction.categories.forEach((c) => {
-        if (c.categoryId !== categoryTree.fundingPoolCat?.id) {
-          obj[c.categoryId] = c.amount
+        if (!c.funder) {
+          obj[c.categoryId] = {
+            amount: c.amount,
+            fundingCategories: c.fundingCategories ?? [{
+              categoryId: categoryTree.fundingPoolCat!.id,
+              amount: 100,
+              percentage: true,
+            }],
+          }
         }
       })
     }

@@ -17,7 +17,13 @@ export type FundingPlanType = {
   categories: FundingType[]
 }
 
-export type CategoriesValueType = Record<string, number | string>;
+export type CategoriesValueType = Record<
+  string,
+  {
+    amount: number | string,
+    fundingCategories: { categoryId: number, amount: number, percentage: boolean }[],
+  }
+>;
 
 export type ValueType = {
   date: string,

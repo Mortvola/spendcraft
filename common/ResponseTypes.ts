@@ -256,7 +256,13 @@ export interface TransactionProps {
 
   version: number;
 
-  categories: { categoryId: number, amount: number, comment?: string }[];
+  categories: {
+    categoryId: number,
+    amount: number,
+    comment?: string,
+    funder?: boolean,
+    fundingCategories?: { categoryId: number, amount: number, percentage: boolean }[],
+  }[];
 
   duplicateOfTransactionId: number | null;
 
@@ -588,12 +594,16 @@ export interface FundingPlanProps {
   name: string;
 }
 
-export interface ProposedFundingCateggoryProps {
+export interface ProposedFundingCategoryProps {
   categoryId: number,
   amount: number,
-  expectedToSpend: number,
   adjusted: boolean,
   adjustedReason: string | null,
+  fundingCategories: {
+    categoryId: number,
+    amount: number,
+    percentage: boolean,
+  }[],
 }
 
 export const isFundingPlanProps = (r: unknown): r is FundingPlanProps => (
@@ -616,13 +626,10 @@ export type CategoryTransferProps = {
 }
 
 export type CategoryFundingProps = {
-  id?: number,
-  amount: number,
   categoryId: number,
-
-  expectedToSpend?: number,
-  adjusted?: boolean,
-  adjustedReason?: string | null,
+  amount: number,
+  fundingCategories: { categoryId: number, amount: number, percentage: boolean}[],
+  funder?: boolean,
 }
 
 export type FundingInfoProps = {
