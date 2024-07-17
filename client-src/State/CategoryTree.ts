@@ -3,6 +3,7 @@ import Http from '@mortvola/http';
 import Category, { isCategory } from './Category';
 import Group, { isGroup } from './Group';
 import {
+  ApiResponse,
   CategoryBalanceProps,
   Error, isErrorResponse,
   isGroupProps, isGroupsResponse,
@@ -143,14 +144,14 @@ class CategoryTree implements CategoryTreeInterface {
   }
 
   async load(): Promise<void> {
-    const response = await Http.get('/api/v1/groups');
+    const response = await Http.get<ApiResponse<unknown>>('/api/v1/groups');
 
-    const body = await response.body();
+    const { data } = await response.body();
 
-    if (isGroupsResponse(body)) {
+    if (isGroupsResponse(data)) {
       runInAction(() => {
         this.nodes = [];
-        body.forEach((g) => {
+        data.forEach((g) => {
           if (g.type !== 'REGULAR') {
             this.systemIds.systemGroupId = g.id;
 

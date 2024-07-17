@@ -4,7 +4,7 @@ import Category from 'App/Models/Category';
 // import FundingPlan from 'App/Models/FundingPlan';
 // import FundingPlanCategory from 'App/Models/FundingPlanCategory';
 // import CategoryHistoryItem from 'App/Models/CategoryHistoryItem';
-import { FundingPlanDetailsProps, ProposedFundingCategoryProps } from 'Common/ResponseTypes';
+import { ApiResponse, FundingPlanDetailsProps, ProposedFundingCategoryProps } from 'Common/ResponseTypes';
 
 class FundingPlanController {
   // eslint-disable-next-line class-methods-use-this
@@ -41,14 +41,20 @@ class FundingPlanController {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  public async getProposed({ auth: { user } }: HttpContextContract): Promise<ProposedFundingCategoryProps[]> {
+  public async getProposed({
+    auth: {
+      user,
+    },
+  }: HttpContextContract): Promise<ApiResponse<ProposedFundingCategoryProps[]>> {
     if (!user) {
       throw new Error('user is undefined');
     }
 
     const budget = await user.related('budget').query().firstOrFail();
 
-    return budget.getProposedFunding();
+    return {
+      data: await budget.getProposedFunding(),
+    }
   }
 
   // eslint-disable-next-line class-methods-use-this

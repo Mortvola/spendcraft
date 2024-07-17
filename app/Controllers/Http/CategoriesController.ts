@@ -26,7 +26,7 @@ class CategoriesController {
   public async get({
     request,
     auth: { user },
-  }: HttpContextContract): Promise<Group[] | FundingInfoProps[]> {
+  }: HttpContextContract): Promise<ApiResponse<Group[] | FundingInfoProps[]>> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -147,14 +147,16 @@ class CategoriesController {
           TransactionType.REBALANCE_TRANSACTION,
         ])
 
-      return categories.map((c) => ({
-        id: c.id,
-        name: c.name,
-        balance: (c.balance - (parseFloat(c.$extras.sum ?? 0))),
-        previousSum: parseFloat(c.$extras.previousSum ?? 0),
-        previousFunding: parseFloat(c.$extras.previousFunding ?? 0),
-        previousCatTransfers: parseFloat(c.$extras.previousCatTransfers ?? 0),
-      }));
+      return {
+        data: categories.map((c) => ({
+          id: c.id,
+          name: c.name,
+          balance: (c.balance - (parseFloat(c.$extras.sum ?? 0))),
+          previousSum: parseFloat(c.$extras.previousSum ?? 0),
+          previousFunding: parseFloat(c.$extras.previousFunding ?? 0),
+          previousCatTransfers: parseFloat(c.$extras.previousCatTransfers ?? 0),
+        })),
+      }
     }
 
     const result = await budget.related('groups').query()
@@ -163,7 +165,9 @@ class CategoriesController {
       })
       .orderBy('name', 'asc');
 
-    return result;
+    return {
+      data: result,
+    }
   }
 
   // eslint-disable-next-line class-methods-use-this
