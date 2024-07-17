@@ -92,7 +92,7 @@ export default class OfxUpload extends BaseCommand {
         throw new Error('account not found');
       }
 
-      await account.processOfx(data.toString(), budget);
+      await account.processOfx(data.toString(), budget, user);
 
       await trx.commit();
     }

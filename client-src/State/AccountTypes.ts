@@ -12,7 +12,7 @@ const subtypes: Record<string, [string, Record<string, string>]> = {
   }],
   credit: ['Credit', {
     'credit card': 'Credit Card',
-    paypal: 'Paypayl',
+    paypal: 'Paypal',
   }],
   loan: ['Loan', {
     auto: 'Auto',

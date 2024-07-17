@@ -139,6 +139,9 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
         setTouched({ [errors[0].field]: true }, false);
         setFormErrors(setErrors, errors);
       }
+      else {
+        setShow(false)
+      }
     }
   }
 

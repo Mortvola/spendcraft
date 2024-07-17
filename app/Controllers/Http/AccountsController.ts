@@ -484,7 +484,10 @@ export default class AccountsController {
     const trx = await Database.transaction();
 
     try {
-      const budget = await user.related('budget').query().useTransaction(trx).firstOrFail();
+      const budget = await user.related('budget').query()
+        .useTransaction(trx)
+        .forUpdate()
+        .firstOrFail();
 
       const account = await Account.findOrFail(acctId, { client: trx });
 
@@ -494,7 +497,7 @@ export default class AccountsController {
         throw new Exception('missing ofx data', 400);
       }
 
-      await account.processOfx(body, budget);
+      await account.processOfx(body, budget, user);
 
       await trx.commit();
     }

@@ -18,6 +18,7 @@ import Logger from '@ioc:Adonis/Core/Logger'
 import Database from '@ioc:Adonis/Lucid/Database';
 import { getChanges } from 'App/Controllers/Http/transactionFields';
 import Category from './Category';
+import User from './User';
 
 export type AccountSyncResult = {
   categories: CategoryBalanceProps[],
@@ -639,6 +640,7 @@ class Account extends BaseModel {
     this: Account,
     data: string,
     budget: Budget,
+    user: User,
   ): Promise<void> {
     // Grab the text after the first pair of line feeds.
     const entities = data.toString().split('\n\n');
@@ -682,10 +684,10 @@ class Account extends BaseModel {
           const ccStmtTrnResponse = parsed.OFX[message].CCSTMTTRNRS;
           const statement = ccStmtTrnResponse.CCSTMTRS;
           const accountFrom = statement.CCACCTFROM;
+          const ledgerBalance = statement.LEDGERBAL;
           const bankTransList = statement.BANKTRANLIST;
           const transactions = bankTransList.STMTTRN;
-          const ccStmtRs = ccStmtTrnResponse.CCSTMTRS;
-          const ledgerBalance = ccStmtRs.LEDGERBAL;
+
           balance = ledgerBalance.BALAMT;
 
           // eslint-disable-next-line no-restricted-syntax
@@ -749,7 +751,7 @@ class Account extends BaseModel {
               }
 
               // eslint-disable-next-line no-await-in-loop
-              const transaction = await (new Transaction())
+              const transaction = await new Transaction()
                 .useTransaction(this.$trx)
                 .fill({
                   date: transactionData.date,
@@ -769,13 +771,15 @@ class Account extends BaseModel {
                   amount: -transactionData.amount,
                 });
 
-              // eslint-disable-next-line no-await-in-loop
-              // await transaction.related('transactionCategories').create({
-              //   categoryId: unassigned.id,
-              //   amount: -transactionData.amount,
-              // });
-
               sum += acctTrans.amount;
+
+              // eslint-disable-next-line no-await-in-loop
+              await transaction.related('transactionLog')
+                .create({
+                  budgetId: transaction.budgetId,
+                  message: `${user.username} added a transaction for "${acctTrans.name}" from "${this.name}".`,
+                  transactionId: transaction.id,
+                });
             }
           }
         }
