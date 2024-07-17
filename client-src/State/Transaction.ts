@@ -134,13 +134,13 @@ class Transaction implements TransactionInterface {
     );
 
     if (response.ok) {
-      const body = await response.body();
+      const { data, errors } = await response.body();
 
-      if (body.errors) {
-        return body.errors;
+      if (errors) {
+        return errors;
       }
 
-      const transactionUpdate = body.data;
+      const transactionUpdate = data;
 
       if (transactionUpdate) {
         runInAction(() => {

@@ -49,9 +49,9 @@ const Signin: React.FC = () => {
     const response = await Http.post<FormValues, LoginResponse>('/api/v1/login', values);
 
     if (response.ok) {
-      const body = await response.body()
+      const { data } = await response.body()
 
-      Http.setTokens(body.data.access, body.data.refresh);
+      Http.setTokens(data.access, data.refresh);
 
       navigate('/home');
     }

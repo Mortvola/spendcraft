@@ -43,11 +43,11 @@ class QueryManager<T> implements QueryManagerInterface {
         const response = await Http.get<ApiResponse<T>>(newUrl);
 
         if (response.ok) {
-          const body = await response.body();
+          const { data } = await response.body();
 
           runInAction(() => {
-            if (body.data) {
-              this.fetchComplete = handleResponse(body.data, index, limit);
+            if (data) {
+              this.fetchComplete = handleResponse(data, index, limit);
               this.state = 'IDLE';
             }
           });

@@ -48,9 +48,9 @@ const EnterPassCode: React.FC<PropsType> = ({
     });
 
     if (response.ok) {
-      const body = await response.body();
+      const { data } = await response.body();
 
-      Http.setTokens(body.data.access, body.data.refresh);
+      Http.setTokens(data.access, data.refresh);
 
       onNext(context)
     }
