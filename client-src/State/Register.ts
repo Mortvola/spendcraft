@@ -3,6 +3,7 @@ import { DateTime } from 'luxon';
 import Http from '@mortvola/http';
 import Transaction from './Transaction';
 import {
+  ApiResponse,
   CategoryTransferProps,
   isInsertCategoryTransferResponse, TransactionType,
 } from '../../common/ResponseTypes';
@@ -26,11 +27,11 @@ class Register implements RegisterInterface {
     },
     type: TransactionType,
   ): Promise<null> {
-    const response = await Http.post('/api/v1/category-transfer', { ...values, type });
+    const response = await Http.post<unknown, ApiResponse<unknown>>('/api/v1/category-transfer', { ...values, type });
 
-    const body = await response.body();
+    const { data } = await response.body();
 
-    if (isInsertCategoryTransferResponse(body)) {
+    if (isInsertCategoryTransferResponse(data)) {
       runInAction(() => {
         // If the new transaction categories include
         // the current category then insert the transaction.
@@ -52,12 +53,12 @@ class Register implements RegisterInterface {
 
           this.store.uiState.selectedCategory.transactions.transactions = [
             ...this.store.uiState.selectedCategory.transactions.transactions.slice(0, index),
-            new Transaction(this.store, body.transaction),
+            new Transaction(this.store, data.transaction),
             ...this.store.uiState.selectedCategory.transactions.transactions.slice(index),
           ];
         }
 
-        this.store.categoryTree.updateBalances(body.balances);
+        this.store.categoryTree.updateBalances(data.balances);
 
         // if (this.store.uiState.selectedCategory !== null) {
         //   const category = body.balances.find((c) => c.id === this.store.uiState.selectedCategory.id);

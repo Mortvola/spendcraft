@@ -226,21 +226,21 @@ class Transaction implements TransactionInterface {
       throw new Error('transaction has a null id');
     }
 
-    const response = await Http.patch(`/api/v1/category-transfer/${this.id}`, { ...values, type: this.type });
+    const response = await Http.patch<unknown, ApiResponse<unknown>>(`/api/v1/category-transfer/${this.id}`, { ...values, type: this.type });
 
     if (response.ok) {
-      const body = await response.body();
+      const { data } = await response.body();
 
-      if (isUpdateCategoryTransferResponse(body)) {
+      if (isUpdateCategoryTransferResponse(data)) {
         runInAction(() => {
           if (this.id === null) {
             throw new Error('transaction has a null id');
           }
 
-          this.store.categoryTree.updateBalances(body.balances);
-          this.categories = body.transaction.categories;
+          this.store.categoryTree.updateBalances(data.balances);
+          this.categories = data.transaction.categories;
 
-          if (this.store.uiState.selectedCategory && !body.transaction.categories.some(
+          if (this.store.uiState.selectedCategory && !data.transaction.categories.some(
             (c) => (this.store.uiState.selectedCategory && c.categoryId === this.store.uiState.selectedCategory.id),
           )) {
             this.store.uiState.selectedCategory.transactions.removeTransaction(this.id);
@@ -259,19 +259,19 @@ class Transaction implements TransactionInterface {
       throw new Error('transaction has a null id');
     }
 
-    const response = await Http.delete(`/api/v1/transaction/${this.id}`);
+    const response = await Http.delete<ApiResponse<unknown>>(`/api/v1/transaction/${this.id}`);
 
     if (response.ok) {
-      const body = await response.body();
+      const { data } = await response.body();
 
-      if (isDeleteTransactionResponse(body)) {
+      if (isDeleteTransactionResponse(data)) {
         runInAction(() => {
           if (this.id === null) {
             throw new Error('transaction has a null id');
           }
 
-          this.store.categoryTree.updateBalances(body.categories);
-          this.store.accounts.updateBalances(body.acctBalances);
+          this.store.categoryTree.updateBalances(data.categories);
+          this.store.accounts.updateBalances(data.acctBalances);
           this.store.register.removeTransaction(this.id);
         });
 

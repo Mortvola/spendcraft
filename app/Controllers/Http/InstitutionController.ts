@@ -829,10 +829,6 @@ class InstitutionController {
         const transaction = await Transaction.find(acctTran.transactionId, { client: trx });
 
         if (transaction) {
-          // eslint-disable-next-line no-await-in-loop
-          // const transCats = await TransactionCategory
-          //   .query({ client: trx })
-          //   .where('transactionId', transaction.id);
           const transCats = transaction.categories;
 
           if (transCats.length === 0) {

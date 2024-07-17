@@ -1,6 +1,8 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
-import { Error, isErrorResponse, isUserProps } from '../../common/ResponseTypes';
+import {
+  ApiResponse, Error, isErrorResponse, isUserProps,
+} from '../../common/ResponseTypes';
 import { StoreInterface, UserInterface } from './Types';
 
 class User implements UserInterface {
@@ -23,17 +25,17 @@ class User implements UserInterface {
   }
 
   async load(): Promise<void> {
-    const response = await Http.get('/api/v1/user');
+    const response = await Http.get<ApiResponse<unknown>>('/api/v1/user');
 
     if (response.ok) {
-      const body = await response.body();
+      const { data } = await response.body();
 
       runInAction(() => {
-        if (isUserProps(body)) {
-          this.username = body.username;
-          this.email = body.email;
-          this.pendingEmail = body.pendingEmail ?? null;
-          this.roles = body.roles;
+        if (isUserProps(data)) {
+          this.username = data.username;
+          this.email = data.email;
+          this.pendingEmail = data.pendingEmail ?? null;
+          this.roles = data.roles;
         }
       });
     }

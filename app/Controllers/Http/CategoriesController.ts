@@ -361,7 +361,7 @@ class CategoriesController {
   // eslint-disable-next-line class-methods-use-this
   public async transfer(
     { request, auth: { user }, logger }: HttpContextContract,
-  ): Promise<{ balances: CategoryBalanceProps[] }> {
+  ): Promise<ApiResponse<{ balances: CategoryBalanceProps[] }>> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -474,7 +474,9 @@ class CategoriesController {
 
       await trx.commit();
 
-      return result;
+      return {
+        data: result,
+      }
     }
     catch (error) {
       await trx.rollback();

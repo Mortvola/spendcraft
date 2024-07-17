@@ -362,7 +362,7 @@ export default class TransactionsController {
       user,
     },
     logger,
-  }: HttpContextContract): Promise<{ categories: CategoryBalanceProps[] }> {
+  }: HttpContextContract): Promise<ApiResponse<{ categories: CategoryBalanceProps[] }>> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -468,7 +468,9 @@ export default class TransactionsController {
 
       await trx.commit();
 
-      return result;
+      return {
+        data: result,
+      }
     }
     catch (error) {
       await trx.rollback();

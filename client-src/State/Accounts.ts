@@ -6,6 +6,7 @@ import Institution from './Institution';
 import Plaid from './Plaid';
 import {
   AccountBalanceProps, AccountType, AddInstitutionProps, AddInstitutionResponse,
+  ApiResponse,
   Error, isAddInstitutionResponse, isDeleteInstitutionResponse,
   isInstitutionsResponse, isLinkTokenResponse, TrackingType,
 } from '../../common/ResponseTypes';
@@ -43,21 +44,21 @@ class Accounts implements AccountsInterface {
   }
 
   async load(): Promise<void> {
-    const response = await Http.get('/api/v1/connected-accounts');
+    const response = await Http.get<ApiResponse<unknown>>('/api/v1/connected-accounts');
 
     if (!response.ok) {
       throw new Error('invalid response');
     }
 
-    const body = await response.body();
+    const { data } = await response.body();
 
-    if (body) {
-      if (isInstitutionsResponse(body)) {
+    if (data) {
+      if (isInstitutionsResponse(data)) {
         runInAction(() => {
           // First remove any institutions from the local list
           // that does not appear in the response.
           for (let i = 0; i < this.institutions.length;) {
-            const index = body.findIndex((inst) => inst.id === this.institutions[i].id)
+            const index = data.findIndex((inst) => inst.id === this.institutions[i].id)
 
             if (index === -1) {
               this.institutions = [
@@ -72,7 +73,7 @@ class Accounts implements AccountsInterface {
 
           // For each institution in the reponse, add it to the 
           // local list if it does not exist and refresh it if it does.
-          body.forEach((i) => {
+          data.forEach((i) => {
             let institution = this.institutions.find(
               (inst) => inst.plaidInstitutionId === i.plaidInstitutionId,
             );

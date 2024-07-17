@@ -1,6 +1,6 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import plaidClient from '@ioc:Plaid';
-import { InstitutionProps } from 'Common/ResponseTypes';
+import { ApiResponse, InstitutionProps } from 'Common/ResponseTypes';
 import Env from '@ioc:Adonis/Core/Env'
 import { rules, schema } from '@ioc:Adonis/Core/Validator';
 import User from 'App/Models/User';
@@ -10,12 +10,14 @@ import { Exception } from '@poppinss/utils';
 
 export default class UsersController {
   // eslint-disable-next-line class-methods-use-this
-  public async get({ auth }: HttpContextContract): Promise<User> {
+  public async get({ auth }: HttpContextContract): Promise<ApiResponse<User>> {
     if (!auth.user) {
       throw new Error('user is not defined');
     }
 
-    return auth.user;
+    return {
+      data: auth.user,
+    }
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -89,12 +91,14 @@ export default class UsersController {
     auth: {
       user,
     },
-  }: HttpContextContract): Promise<InstitutionProps[]> {
+  }: HttpContextContract): Promise<ApiResponse<InstitutionProps[]>> {
     if (!user) {
       throw new Error('user is not defined');
     }
 
-    return user.getConnectedAccounts();
+    return {
+      data: await user.getConnectedAccounts(),
+    }
   }
 
   // eslint-disable-next-line class-methods-use-this
