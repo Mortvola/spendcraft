@@ -37,17 +37,17 @@ class CategoriesController {
 
     if (date) {
       // Get the first day of the month
-      // const firstDayOfMonth = DateTime.fromISO(date)
-      //   .set({
-      //     day: 1, hour: 0, minute: 0, second: 0, millisecond: 0,
-      //   })
+      const firstDayOfMonth = DateTime.fromISO(date)
+        .set({
+          day: 1, hour: 0, minute: 0, second: 0, millisecond: 0,
+        })
 
       // Get the date of the first day of the previous month.
-      // const firstDayOfPreviousMonth = firstDayOfMonth
-      //   .minus({ days: 1 })
-      //   .set({
-      //     day: 1, hour: 0, minute: 0, second: 0, millisecond: 0,
-      //   })
+      const firstDayOfPreviousMonth = firstDayOfMonth
+        .minus({ days: 1 })
+        .set({
+          day: 1, hour: 0, minute: 0, second: 0, millisecond: 0,
+        })
 
       const categories = await Category.query()
         .whereHas('group', (query) => {
@@ -60,6 +60,16 @@ class CategoriesController {
         //       transQuery.where('date', '>=', firstDayOfMonth.toISODate() ?? '')
         //     })
         // })
+        .joinRaw(`left outer join
+          (
+            select transCats."categoryId", sum(transCats.amount) as sum
+            from transactions t
+            cross join lateral jsonb_to_recordset(t.categories) as transCats("categoryId" int, amount decimal)
+            where t.date >= ?
+            and t.deleted = false
+            group by transCats."categoryId"
+          ) AS T1 on T1."categoryId" = categories.id
+        `, [firstDayOfMonth.toISODate() ?? ''])
         // Get the sum of the transactions (minus funding and category transfers) from the prrevious month
         // .withAggregate('transactionCategory', (query) => {
         //   query.sum('amount').as('previousSum')
@@ -69,6 +79,23 @@ class CategoriesController {
         //         .andWhereNotIn('type', [TransactionType.FUNDING_TRANSACTION, TransactionType.REBALANCE_TRANSACTION])
         //     })
         // })
+        .joinRaw(`left outer join
+          (
+            select transCats."categoryId", sum(transCats.amount) as "previousSum"
+            from transactions t
+            cross join lateral jsonb_to_recordset(t.categories) as transCats("categoryId" int, amount decimal)
+            where t.date < ?
+            and t.date >= ?
+            and t.deleted = false
+            and t.type NOT IN (?, ?)
+            group by transCats."categoryId"
+          ) AS T2 on T2."categoryId" = categories.id
+        `, [
+          firstDayOfMonth.toISODate() ?? '',
+          firstDayOfPreviousMonth.toISODate() ?? '',
+          TransactionType.FUNDING_TRANSACTION,
+          TransactionType.REBALANCE_TRANSACTION,
+        ])
         // Get the sum of the funding transactions from the previous month
         // .withAggregate('transactionCategory', (query) => {
         //   query.sum('amount').as('previousFunding')
@@ -78,6 +105,22 @@ class CategoriesController {
         //         .andWhere('type', TransactionType.FUNDING_TRANSACTION)
         //     })
         // })
+        .joinRaw(`left outer join
+          (
+            select transCats."categoryId", sum(transCats.amount) as "previousFunding"
+            from transactions t
+            cross join lateral jsonb_to_recordset(t.categories) as transCats("categoryId" int, amount decimal)
+            where t.date < ?
+            and t.date >= ?
+            and t.deleted = false
+            and t.type = ?
+            group by transCats."categoryId"
+          ) AS T3 on T3."categoryId" = categories.id
+        `, [
+          firstDayOfMonth.toISODate() ?? '',
+          firstDayOfPreviousMonth.toISODate() ?? '',
+          TransactionType.FUNDING_TRANSACTION,
+        ])
         // Get the sum of the category transfers from the previous month
         // .withAggregate('transactionCategory', (query) => {
         //   query.sum('amount').as('previousCatTransfers')
@@ -87,6 +130,22 @@ class CategoriesController {
         //         .andWhere('type', TransactionType.REBALANCE_TRANSACTION)
         //     })
         // })
+        .joinRaw(`left outer join
+          (
+            select transCats."categoryId", sum(transCats.amount) as "previousCatTransfers"
+            from transactions t
+            cross join lateral jsonb_to_recordset(t.categories) as transCats("categoryId" int, amount decimal)
+            where t.date < ?
+            and t.date >= ?
+            and t.deleted = false
+            and t.type = ?
+            group by transCats."categoryId"
+          ) AS T4 on T4."categoryId" = categories.id
+        `, [
+          firstDayOfMonth.toISODate() ?? '',
+          firstDayOfPreviousMonth.toISODate() ?? '',
+          TransactionType.REBALANCE_TRANSACTION,
+        ])
 
       return categories.map((c) => ({
         id: c.id,
