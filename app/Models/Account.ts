@@ -278,6 +278,8 @@ class Account extends BaseModel {
 
       const assignedCategories: string[] = [];
 
+      transaction.categories = [];
+
       // eslint-disable-next-line no-restricted-syntax
       for (let i = 0; i < categories.length; i += 1) {
         const cat = categories[i]
