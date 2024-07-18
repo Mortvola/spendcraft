@@ -82,3 +82,17 @@ label > .checkbox {
   margin-top: 1rem;
   margin-bottom: 1rem;
 }
+
+.categories-layout {
+  display: grid;
+  row-gap: 0.25rem;
+  margin-top: 0.5rem;
+  width: 100%;
+}
+
+.category-layout {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) 6rem max-content max-content;
+  column-gap: 0.5rem;
+  align-items: center;
+}

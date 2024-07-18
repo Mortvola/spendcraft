@@ -1,7 +1,9 @@
 import React from 'react';
 import { FormField, FormModal } from '@mortvola/forms';
 import { ModalProps, makeUseModal } from '@mortvola/usemodal';
-import { FieldArray, FormikErrors, useField } from 'formik';
+import {
+  FieldArray, FieldArrayRenderProps, FormikErrors, useField,
+} from 'formik';
 import { observer } from 'mobx-react-lite';
 import { AutoAssignmentInterface, CategoryInterface } from '../State/Types';
 import AmountInput from '../AmountInput';
@@ -124,7 +126,7 @@ const AutoAssignmentDialog: React.FC<PropsType & ModalProps> = observer(({
                 name="searchStrings"
               >
                 {
-                  (arrayHelpers) => (
+                  (arrayHelpers: FieldArrayRenderProps) => (
                     formikProps.values.searchStrings.map((s, i) => (
                       // eslint-disable-next-line react/no-array-index-key
                       <div key={i} className={styles.searchStringLayout}>

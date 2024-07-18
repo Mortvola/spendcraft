@@ -1,71 +1,25 @@
 import React, { ReactNode, useState } from 'react';
 import { DateTime } from 'luxon';
 import Http from '@mortvola/http';
-import { useFormikContext } from 'formik';
 import FundingItem from './FundingItem';
 import { isGroup } from '../State/Group';
 import { isCategory } from '../State/Category';
 import { CategoryInterface } from '../State/Types';
-import { CategoriesValueType, FundingInfoType, ValueType } from './Types';
-import { ApiResponse, FundingInfoProps, ProposedFundingCategoryProps } from '../../common/ResponseTypes';
+import { FundingInfoType } from './Types';
+import { ApiResponse, FundingInfoProps } from '../../common/ResponseTypes';
 import { useStores } from '../State/Store';
 
 type PropsType = {
-  planId: number,
   date: string,
   diffOnly: boolean,
-  categories: CategoriesValueType,
 }
 
 const Funding: React.FC<PropsType> = ({
-  planId,
   date,
   diffOnly,
-  categories,
 }) => {
   const { categoryTree } = useStores();
-  const { setFieldValue } = useFormikContext<ValueType>();
-  const [loadedPlanId, setLoadedPlanId] = React.useState<number>(-1);
   const [catFundingInfo, setCatFundingInfo] = useState<FundingInfoType[]>([]);
-
-  // console.log(JSON.stringify(value))
-
-  React.useEffect(() => {
-    (async () => {
-      if (planId !== -1 && planId !== loadedPlanId) {
-        if (Object.keys(categories).length === 0) {
-          const response = await Http.get<ApiResponse<ProposedFundingCategoryProps[]>>(
-            '/api/v1/funding-plans/proposed',
-          );
-
-          if (response.ok) {
-            const { data } = (await response.body());
-
-            if (data) {
-              data.forEach((cat) => {
-                setFieldValue(`categories.${cat.categoryId}.amount`, cat.amount)
-                if (cat.fundingCategories.length === 0) {
-                  setFieldValue(`categories.${cat.categoryId}.fundingCategories[0].categoryId`, categoryTree.fundingPoolCat!.id)
-                  setFieldValue(`categories.${cat.categoryId}.fundingCategories[0].amount`, 100.0)
-                  setFieldValue(`categories.${cat.categoryId}.fundingCategories[0].percentage`, true)
-                }
-                else {
-                // eslint-disable-next-line no-restricted-syntax
-                  for (let i = 0; i < cat.fundingCategories.length; i += 1) {
-                    setFieldValue(`categories.${cat.categoryId}.fundingCategories[${i}].categoryId`, cat.fundingCategories[i].categoryId)
-                    setFieldValue(`categories.${cat.categoryId}.fundingCategories[${i}].amount`, cat.fundingCategories[i].amount)
-                    setFieldValue(`categories.${cat.categoryId}.fundingCategories[${i}].percentage`, cat.fundingCategories[i].percentage)
-                  }
-                }
-              })
-            }
-
-            setLoadedPlanId(planId);
-          }
-        }
-      }
-    })();
-  }, [categories, categoryTree.fundingPoolCat, loadedPlanId, planId, setFieldValue]);
 
   React.useEffect(() => {
     // const newDate = date.startOf('month');
