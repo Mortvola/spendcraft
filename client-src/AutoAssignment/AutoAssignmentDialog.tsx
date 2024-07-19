@@ -11,6 +11,7 @@ import CategoryInput from '../CategoryInput/CategoryInput';
 import { useStores } from '../State/Store';
 import styles from './AutoAssignmentDialog.module.scss'
 import IconButton from '../IconButton';
+import CategorySpread from '../CategorySpread/CategorySpread';
 
 let tempId = -1;
 
@@ -154,46 +155,12 @@ const AutoAssignmentDialog: React.FC<PropsType & ModalProps> = observer(({
               </FieldArray>
             </label>
 
-            <label className={styles.categoriesLayout}>
-              Categories
-              <FieldArray
-                name="categories"
-              >
-                {
-                  (arrayHelpers) => (
-                    formikProps.values.categories.map((c, i) => (
-                      <div key={c.id} className={styles.categoryLayout}>
-                        <FormField
-                          name={`categories[${i}].categoryId`}
-                          as={FormCategoryInput}
-                          style={{ marginTop: 0 }}
-                        />
-                        <FormField as={AmountInput} name={`categories[${i}].amount`} style={{ marginTop: 0 }} />
-                        <IconButton
-                          icon="plus"
-                          onClick={() => arrayHelpers.insert(
-                            i + 1,
-                            {
-                              id: -1, categoryId: unassignedCat.id, amount: 0, percentage: true,
-                            },
-                          )}
-                        />
-                        <IconButton
-                          icon="minus"
-                          onClick={
-                            () => {
-                              if (formikProps.values.categories.length > 1) {
-                                arrayHelpers.remove(i)
-                              }
-                            }
-                          }
-                        />
-                      </div>
-                    ))
-                  )
-                }
-              </FieldArray>
-            </label>
+            <CategorySpread
+              name="categories"
+              categories={formikProps.values.categories}
+              title="Categories:"
+            />
+
           </>
         )
       }

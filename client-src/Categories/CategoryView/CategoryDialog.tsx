@@ -6,8 +6,6 @@ import {
   FormikContextType,
   FormikErrors,
   FieldProps,
-  FieldArray,
-  useField,
 } from 'formik';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import {
@@ -20,29 +18,11 @@ import { CategoryInterface } from '../../State/Types';
 import AmountInput from '../../AmountInput';
 import styles from './CategoryDialog.module.scss';
 import { CategoryType } from '../../../common/ResponseTypes';
-import CategoryInput from '../../CategoryInput/CategoryInput';
-import IconButton from '../../IconButton';
+import CategorySpread, { CategorySpreadEntry } from '../../CategorySpread/CategorySpread';
 
 type Props = {
   category?: CategoryInterface | null,
   type?: CategoryType,
-}
-
-const FormCategoryInput = ({ name }: { name: string }) => {
-  const [field, , helpers] = useField(name);
-
-  const handleCategoryChange = (category: CategoryInterface) => {
-    helpers.setValue(category.id)
-  }
-
-  return (
-    <CategoryInput
-      name={name}
-      categoryId={parseInt(field.value, 10)}
-      className="form-control"
-      onCategoryChange={handleCategoryChange}
-    />
-  )
 }
 
 const CategoryDialog: React.FC<Props & ModalProps> = ({
@@ -59,8 +39,6 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
 
   const [categoryType, setCategoryType] = React.useState<CategoryType>((category?.type ?? type) ?? 'REGULAR')
 
-  type FundingCategory = { id: number, categoryId: number, amount: number, percentage: boolean };
-
   type FormValues = {
     type: CategoryType,
     name: string,
@@ -68,7 +46,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
     recurrence: string,
     groupId: string,
     goalDate: string,
-    fundingCategories: FundingCategory[],
+    fundingCategories: CategorySpreadEntry[],
   }
 
   const handleCategoryTypeChange = (newType: CategoryType) => {
@@ -236,13 +214,13 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
                   name="groupId"
                 >
                   {
-                    (fieldProps: FieldProps<number>) => (
+                    ({ field, form }: FieldProps<number>) => (
                       <select
                         className="form-control"
-                        name={fieldProps.field.name}
-                        value={fieldProps.field.value}
+                        name={field.name}
+                        value={field.value}
                         onChange={(v) => {
-                          fieldProps.form.setFieldValue(fieldProps.field.name, v.target.value);
+                          form.setFieldValue(field.name, v.target.value);
                         }}
                       >
                         {
@@ -266,14 +244,14 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
                     name="type"
                   >
                     {
-                      (fieldProps: FieldProps<CategoryType>) => (
+                      ({ field, form }: FieldProps<CategoryType>) => (
                         <select
                           className="form-control"
                           name="type"
-                          value={fieldProps.field.value}
+                          value={field.value}
                           onChange={(v) => {
                             handleCategoryTypeChange(v.target.value as CategoryType)
-                            fieldProps.form.setFieldValue(fieldProps.field.name, v.target.value);
+                            form.setFieldValue(field.name, v.target.value);
                           }}
                         >
                           <option value="REGULAR">Category</option>
@@ -319,46 +297,12 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
                 </label>
               </div>
 
-              <label className={styles.categoriesLayout}>
-                Categories Funded from:
-                <FieldArray
-                  name="fundingCategories"
-                >
-                  {
-                    (arrayHelpers) => (
-                      formikProps.values.fundingCategories.map((c, i) => (
-                        <div key={c.id} className={styles.categoryLayout}>
-                          <FormField
-                            name={`fundingCategories[${i}].categoryId`}
-                            as={FormCategoryInput}
-                            style={{ marginTop: 0 }}
-                          />
-                          <FormField as={AmountInput} name={`fundingCategories[${i}].amount`} style={{ marginTop: 0 }} />
-                          <IconButton
-                            icon="plus"
-                            onClick={() => arrayHelpers.insert(
-                              i + 1,
-                              {
-                                id: -1, categoryId: unassignedCat.id, amount: 0, percentage: true,
-                              },
-                            )}
-                          />
-                          <IconButton
-                            icon="minus"
-                            onClick={
-                              () => {
-                                if (formikProps.values.fundingCategories.length > 1) {
-                                  arrayHelpers.remove(i)
-                                }
-                              }
-                            }
-                          />
-                        </div>
-                      ))
-                    )
-                  }
-                </FieldArray>
-              </label>
+              <CategorySpread
+                name="fundingCategories"
+                categories={formikProps.values.fundingCategories}
+                title="Categories Funded from:"
+              />
+
             </div>
             {/* <FormCheckbox name="monthlyExpenses" label="Used for monthly expenses" /> */}
           </div>

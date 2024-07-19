@@ -1,0 +1,19 @@
+.categories-layout {
+  display: grid;
+  row-gap: 0.25rem;
+  margin-top: 0.5rem;
+}
+
+.category-layout {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) 6rem repeat(3, max-content);
+  column-gap: 0.5rem;
+  align-items: center;
+}
+
+.category-percentage-toggle {
+  box-sizing: content-box;
+  width: 1rem;
+  padding-left: 6px;
+  padding-right: 6px;
+}

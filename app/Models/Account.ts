@@ -270,7 +270,9 @@ class Account extends BaseModel {
     // TODO: Use the result with the longest search string match.
 
     if (autoAssignment) {
-      const categories = await autoAssignment.related('categories').query();
+      // Order by percentage so that the fixed amounts are applied before the percentage amounts
+      const categories = await autoAssignment.related('categories').query()
+        .orderByRaw('CASE WHEN percentage THEN 1 ELSE 0 END');
 
       // Multiplying by 100 and rounding to the nearest integer insures we are not
       // working with fractional pennies.
@@ -279,12 +281,24 @@ class Account extends BaseModel {
       const assignedCategories: string[] = [];
 
       transaction.categories = [];
+      let transactionAmount = accountTransaction.amount;
 
       // eslint-disable-next-line no-restricted-syntax
       for (let i = 0; i < categories.length; i += 1) {
         const cat = categories[i]
 
-        let amount = Math.round(accountTransaction.amount * (cat.amount / 100.0) * 100);
+        let amount: number;
+
+        if (cat.percentage) {
+          amount = Math.round(transactionAmount * (cat.amount / 100.0) * 100);
+        }
+        else {
+          amount = Math.round(cat.amount * 100);
+          // Adjust the transaction amount so that any follow any percentage entries
+          // are applied against the remainder after fixed amounts are applied.
+          transactionAmount -= amount;
+        }
+
         remaining -= amount;
 
         // If this is the last auto assign category and there is a remaining balance

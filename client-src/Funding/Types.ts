@@ -1,3 +1,5 @@
+import { CategorySpreadEntry } from '../CategorySpread/CategorySpread';
+
 export type FundingType = {
   id?: number,
   amount: number,
@@ -21,7 +23,7 @@ export type CategoriesValueType = Record<
   string,
   {
     amount: number | string,
-    fundingCategories: { categoryId: number, amount: number, percentage: boolean }[],
+    fundingCategories: CategorySpreadEntry[],
   }
 >;
 

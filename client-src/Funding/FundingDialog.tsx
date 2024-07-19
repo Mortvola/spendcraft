@@ -78,10 +78,27 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
 
     // eslint-disable-next-line no-restricted-syntax
     for (const category of categories) {
+      let categoryAmount = category.amount;
+
+      // Sort the funding categories by percentage so that fixed amounts are applied before percentage amounts.
+      const sortedCategories = category.fundingCategories.slice().sort((a) => (a.percentage ? 1 : -1))
+
       // eslint-disable-next-line no-restricted-syntax
-      for (const fundingCategory of category.fundingCategories) {
+      for (const fundingCategory of sortedCategories) {
         const funding = funders.get(fundingCategory.categoryId) ?? 0;
-        funders.set(fundingCategory.categoryId, funding + (fundingCategory.amount / 100.0) * category.amount)
+        let fundingAmount: number;
+
+        if (fundingCategory.percentage) {
+          fundingAmount = (fundingCategory.amount / 100.0) * categoryAmount;
+        }
+        else {
+          fundingAmount = fundingCategory.amount;
+          categoryAmount -= fundingAmount;
+        }
+
+        if (fundingAmount !== 0) {
+          funders.set(fundingCategory.categoryId, funding + fundingAmount)
+        }
       }
     }
 

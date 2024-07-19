@@ -14,6 +14,7 @@ import { CategoryInterface } from '../State/Types';
 import CategoryInput from '../CategoryInput/CategoryInput';
 import IconButton from '../IconButton';
 import { useStores } from '../State/Store';
+import CategorySpread from '../CategorySpread/CategorySpread';
 
 const FormCategoryInput = ({ name }: { name: string }) => {
   const [field, , helpers] = useField(name);
@@ -108,46 +109,11 @@ const FundingItem: React.FC<PropsType> = ({
                 </div>
               </div>
 
-              <label className={styles.categoriesLayout}>
-                Funding Categories:
-                <FieldArray
-                  name={`categories.${category.id}.fundingCategories`}
-                >
-                  {
-                    (arrayHelpers: FieldArrayRenderProps) => (
-                      values.categories[category.id].fundingCategories.map((c, i) => (
-                        <div key={c.categoryId} className={styles.categoryLayout}>
-                          <FormField
-                            name={`${arrayHelpers.name}[${i}].categoryId`}
-                            as={FormCategoryInput}
-                            style={{ marginTop: 0 }}
-                          />
-                          <FormField as={AmountInput} name={`${arrayHelpers.name}[${i}].amount`} style={{ marginTop: 0 }} />
-                          <IconButton
-                            icon="plus"
-                            onClick={() => arrayHelpers.insert(
-                              i + 1,
-                              {
-                                id: -1, categoryId: fundingPoolCat!.id, amount: 0, percentage: true,
-                              },
-                            )}
-                          />
-                          <IconButton
-                            icon="minus"
-                            onClick={
-                              () => {
-                                if (values.categories[category.id].fundingCategories.length > 1) {
-                                  arrayHelpers.remove(i)
-                                }
-                              }
-                            }
-                          />
-                        </div>
-                      ))
-                    )
-                  }
-                </FieldArray>
-              </label>
+              <CategorySpread
+                name={`categories.${category.id}.fundingCategories`}
+                categories={values.categories[category.id].fundingCategories}
+                title="Funding Categories:"
+              />
 
             </div>
           </div>
