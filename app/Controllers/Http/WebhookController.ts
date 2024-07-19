@@ -16,6 +16,7 @@ import Logger from '@ioc:Adonis/Core/Logger';
 import { PlaidWebHookProps, QueueNamesEnum } from 'Contracts/QueueInterfaces';
 import BullMQ from '@ioc:Adonis/Addons/BullMQ'
 import WebhookLog from 'App/Models/WebhookLog';
+import Redis from '@ioc:Adonis/Addons/Redis';
 
 type Key = {
   alg: string;
@@ -31,7 +32,7 @@ type Key = {
   y: string;
 };
 
-const keyCache = new Map<string, { cacheTime: DateTime, key: Key}>();
+type KeyCacheEntry = { kid: string, cacheTime: string, key: Key };
 
 class WebhookEvent {
   // eslint-disable-next-line camelcase
@@ -282,12 +283,11 @@ class WebhookController {
   }
 
   static async verify(request: RequestContract): Promise<boolean> {
-    const signedJwtString = request.header('Plaid-Verification');
-    if (!signedJwtString) {
+    const signedJwt = request.header('Plaid-Verification');
+    if (!signedJwt) {
       throw new Exception('Plaid-Verification header is missing');
     }
 
-    const signedJwt = signedJwtString;
     const decodeTokenHeader = decodeProtectedHeader(signedJwt);
     const currentKid = decodeTokenHeader.kid;
 
@@ -295,21 +295,36 @@ class WebhookController {
       throw new Exception('kid is not defined');
     }
 
+    let keyCache: KeyCacheEntry[] = [];
+
+    const keyCacheString = await Redis.get('key-cache');
+    if (keyCacheString) {
+      keyCache = JSON.parse(keyCacheString) as KeyCacheEntry[];
+    }
+
     // If the kid is in the cache but it has been cached for more than 24 hours
     // then remove it.
-    if (keyCache.has(currentKid)) {
-      const cachedKey = keyCache.get(currentKid);
+    let index = keyCache.findIndex((entry) => entry.kid === currentKid);
+
+    if (index !== -1) {
+      const cachedKey = keyCache[index];
       if (cachedKey !== undefined
-        && cachedKey.cacheTime.plus({ hours: 24 }) <= DateTime.now()) {
-        keyCache.delete(currentKid);
+        && DateTime.fromISO(cachedKey.cacheTime).plus({ hours: 24 }) <= DateTime.now()
+      ) {
+        keyCache = [
+          ...keyCache.slice(0, index),
+          ...keyCache.slice(index + 1),
+        ];
+
+        index = -1
       }
     }
 
     // If the kid is not in the cache, retrieve it 
     // and refresh any others that are currently in the cache.
-    if (!keyCache.has(currentKid)) {
+    if (index === -1) {
       const keyIDsToUpdate: string[] = [currentKid];
-      keyCache.forEach(({ key }, kid) => {
+      keyCache.forEach(({ kid, key }) => {
         if (key.expired_at === null) {
           keyIDsToUpdate.push(kid);
         }
@@ -320,17 +335,29 @@ class WebhookController {
       await Promise.all(keyIDsToUpdate.map(async (kid) => {
         const { key } = await plaidClient.getWebhookVerificationKey(kid);
 
+        index = keyCache.findIndex((entry) => entry.kid === kid)
+
         if (key.expired_at === null) {
-          keyCache.set(kid, { cacheTime: DateTime.now(), key });
+          if (index === -1) {
+            keyCache.push({ kid, cacheTime: DateTime.now().toISO(), key })
+          }
+          else {
+            keyCache[index] = { kid, cacheTime: DateTime.now().toISO(), key }
+          }
         }
-        else {
-          // If the key has expired then remove it from the cache.
-          keyCache.delete(kid);
+        // If the key has expired then remove it from the cache.
+        else if (index !== -1) {
+          keyCache = [
+            ...keyCache.slice(0, index),
+            ...keyCache.slice(index + 1),
+          ];
         }
       }));
     }
 
-    const cachedKey = keyCache.get(currentKid);
+    Redis.set('key-cache', JSON.stringify(keyCache))
+
+    const cachedKey = keyCache.find((entry) => entry.kid === currentKid);
 
     if (!cachedKey) {
       throw new Exception('kid is not found in cache');
