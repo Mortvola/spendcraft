@@ -10,6 +10,7 @@ import {
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import {
   FormModal, FormError, setFormErrors, FormField,
+  FormCheckbox,
 } from '@mortvola/forms';
 import { DateTime } from 'luxon';
 import { isGroup } from '../../State/Group';
@@ -43,6 +44,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
     type: CategoryType,
     name: string,
     fundingAmount: string,
+    includeFundingTransfers: boolean,
     recurrence: string,
     groupId: string,
     goalDate: string,
@@ -71,6 +73,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
         type: values.type,
         name: values.name,
         fundingAmount: parseFloat(values.fundingAmount),
+        includeFundingTransfers: values.includeFundingTransfers,
         group: selectedGroup,
         recurrence: parseInt(values.recurrence, 10),
         useGoal: values.type !== 'REGULAR',
@@ -83,6 +86,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
         type: values.type,
         name: values.name,
         fundingAmount: parseFloat(values.fundingAmount),
+        includeFundingTransfers: values.includeFundingTransfers,
         group: selectedGroup,
         recurrence: parseInt(values.recurrence, 10),
         useGoal: values.type !== 'REGULAR',
@@ -190,6 +194,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
         name: category && category.name ? category.name : '',
         groupId: category?.groupId.toString() ?? '',
         fundingAmount: category?.fundingAmount.toString() ?? '0',
+        includeFundingTransfers: category?.includeFundingTransfers ?? true,
         recurrence: category?.recurrence.toString() ?? '1',
         goalDate: getGoalDate(category?.goalDate, category?.recurrence),
         fundingCategories: initialCategories(category?.fundingCategories),
@@ -274,6 +279,8 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
                   <FormError name="fundingAmount" />
                 </label>
               </div>
+
+              <FormCheckbox name="includeFundingTransfers" label="Add Funding Transfers to Funding Amount." />
 
               <div className={styles.layout2}>
                 <label className={styles.goalDate}>

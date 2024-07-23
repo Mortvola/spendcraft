@@ -44,9 +44,6 @@ export default class Category extends BaseModel {
   public balance: number;
 
   @column()
-  public monthlyExpenses: boolean;
-
-  @column()
   public type: CategoryType;
 
   @column()
@@ -59,6 +56,9 @@ export default class Category extends BaseModel {
     consume: (value: string) => parseFloat(value),
   })
   public fundingAmount: number;
+
+  @column()
+  public includeFundingTransfers: boolean;
 
   @column()
   public useGoal: boolean;
@@ -115,7 +115,8 @@ export default class Category extends BaseModel {
     return budget
       .related('transactions').query()
       .where('deleted', false)
-      .whereRaw('categories::jsonb @@ (\'$[*].categoryId == \' || ?)::jsonpath', [this.id])
+      // eslint-disable-next-line max-len
+      .whereRaw('categories::jsonb @\\? (\'$[*] \\? (@.categoryId == \' || ? || \' && @.amount != 0)\')::jsonpath', [this.id])
       .where((q) => {
         q.whereHas('accountTransaction', (q2) => {
           q2
@@ -165,7 +166,8 @@ export default class Category extends BaseModel {
     await budget.loadAggregate('transactions', (q) => {
       q.count('*').as('count')
         .where('deleted', false)
-        .whereRaw('categories::jsonb @@ (\'$[*].categoryId == \' || ?)::jsonpath', [this.id])
+        // eslint-disable-next-line max-len
+        .whereRaw('categories::jsonb @\\? (\'$[*] \\? (@.categoryId == \' || ? || \' && @.amount != 0)\')::jsonpath', [this.id])
         .where((q4) => {
           q4.whereHas('accountTransaction', (q2) => {
             q2

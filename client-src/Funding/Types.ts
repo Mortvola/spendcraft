@@ -22,8 +22,9 @@ export type FundingPlanType = {
 export type CategoriesValueType = Record<
   string,
   {
-    amount: number | string,
+    baseAmount: number,
     fundingCategories: CategorySpreadEntry[],
+    includeFundingTransfers: boolean,
   }
 >;
 

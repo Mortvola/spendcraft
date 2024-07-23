@@ -18,6 +18,8 @@ import BullMQ from '@ioc:Adonis/Addons/BullMQ'
 import WebhookLog from 'App/Models/WebhookLog';
 import Redis from '@ioc:Adonis/Addons/Redis';
 
+const redisKey = 'key-cache';
+
 type Key = {
   alg: string;
   // eslint-disable-next-line camelcase
@@ -297,7 +299,7 @@ class WebhookController {
 
     let keyCache: KeyCacheEntry[] = [];
 
-    const keyCacheString = await Redis.get('key-cache');
+    const keyCacheString = await Redis.get(redisKey);
     if (keyCacheString) {
       keyCache = JSON.parse(keyCacheString) as KeyCacheEntry[];
     }
@@ -355,7 +357,7 @@ class WebhookController {
       }));
     }
 
-    Redis.set('key-cache', JSON.stringify(keyCache))
+    Redis.set(redisKey, JSON.stringify(keyCache))
 
     const cachedKey = keyCache.find((entry) => entry.kid === currentKid);
 

@@ -249,8 +249,8 @@ class CategoriesController {
         groupId: parseInt(groupId, 10),
         name: requestData.name,
         balance: 0,
-        monthlyExpenses: requestData.monthlyExpenses ?? false,
         fundingAmount: requestData.fundingAmount,
+        includeFundingTransfers: requestData.includeFundingTransfers,
         goalDate: requestData.goalDate,
         recurrence: requestData.recurrence,
         useGoal: requestData.useGoal,
@@ -273,9 +273,9 @@ class CategoriesController {
     category.merge({
       type: requestData.type,
       name: requestData.name,
-      monthlyExpenses: requestData.monthlyExpenses,
       groupId,
       fundingAmount: requestData.fundingAmount,
+      includeFundingTransfers: requestData.includeFundingTransfers,
       hidden: requestData.hidden,
       useGoal: requestData.useGoal,
       goalDate: requestData.goalDate,
@@ -407,6 +407,8 @@ class CategoriesController {
               comment: category.comment,
               funder: category.funder,
               fundingCategories: category.fundingCategories,
+              includeFundingTransfers: category.includeFundingTransfers,
+              baseAmount: category.baseAmount,
             })),
             budgetId: budget.id,
           }, { client: trx });
@@ -443,6 +445,8 @@ class CategoriesController {
               comment: category.comment,
               funder: category.funder,
               fundingCategories: category.fundingCategories,
+              includeFundingTransfers: category.includeFundingTransfers,
+              baseAmount: category.baseAmount,
             })),
           })
           .save()

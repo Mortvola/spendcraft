@@ -108,6 +108,8 @@ class Transaction implements TransactionInterface {
         comment: c.comment,
         funder: c.funder,
         fundingCategories: c.fundingCategories,
+        includeFundingTransfers: c.includeFundingTransfers,
+        baseAmount: c.baseAmount,
       }));
     }
 

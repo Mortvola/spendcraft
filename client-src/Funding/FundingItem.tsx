@@ -1,37 +1,17 @@
 import React from 'react';
 import { DateTime } from 'luxon';
 import {
-  Field, FieldArray, FieldArrayRenderProps, FieldProps, useField,
+  Field, FieldProps, useField,
   useFormikContext,
 } from 'formik';
-import { FormField } from '@mortvola/forms';
+import { FormCheckbox } from '@mortvola/forms';
 import AmountInput from '../AmountInput';
 import Amount from '../Amount';
 import styles from './Funding.module.scss'
 import { FundingInfoType, ValueType } from './Types';
 import VerticalTitled from './VerticalTitled';
 import { CategoryInterface } from '../State/Types';
-import CategoryInput from '../CategoryInput/CategoryInput';
-import IconButton from '../IconButton';
-import { useStores } from '../State/Store';
 import CategorySpread from '../CategorySpread/CategorySpread';
-
-const FormCategoryInput = ({ name }: { name: string }) => {
-  const [field, , helpers] = useField(name);
-
-  const handleCategoryChange = (category: CategoryInterface) => {
-    helpers.setValue(category.id)
-  }
-
-  return (
-    <CategoryInput
-      name={name}
-      categoryId={parseInt(field.value, 10)}
-      className="form-control"
-      onCategoryChange={handleCategoryChange}
-    />
-  )
-}
 
 type PropsType = {
   fundingInfo?: FundingInfoType,
@@ -50,11 +30,9 @@ const FundingItem: React.FC<PropsType> = ({
   onDeltaChange,
   diffOnly,
 }) => {
-  const { categoryTree: { fundingPoolCat } } = useStores();
-
   const { values } = useFormikContext<ValueType>();
 
-  const name = `categories.${category.id}.amount`;
+  const name = `categories.${category.id}.baseAmount`;
   const [field] = useField(name);
   const balance = (fundingInfo?.initialAmount ?? 0) + (
     typeof field.value === 'string'
@@ -108,13 +86,19 @@ const FundingItem: React.FC<PropsType> = ({
                   <Amount style={{ minWidth: '6rem' }} amount={fundingInfo?.previousCatTransfers ?? 0} />
                 </div>
               </div>
+            </div>
+
+            <div className={styles.fundingWrapper}>
+              <FormCheckbox
+                name={`categories.${category.id}.includeFundingTransfers`}
+                label="Add Funding Transfers to Funding Amount."
+              />
 
               <CategorySpread
                 name={`categories.${category.id}.fundingCategories`}
                 categories={values.categories[category.id].fundingCategories}
                 title="Funding Categories:"
               />
-
             </div>
           </div>
         )

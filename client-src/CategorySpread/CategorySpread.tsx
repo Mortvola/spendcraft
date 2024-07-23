@@ -28,7 +28,13 @@ const FormCategoryInput = ({ name }: { name: string }) => {
   )
 }
 
-export type CategorySpreadEntry = { id?: number, categoryId: number, amount: number, percentage: boolean };
+export type CategorySpreadEntry = {
+  id?: number,
+  categoryId: number,
+  amount: number,
+  percentage: boolean,
+  fundedAmount?: number,
+};
 
 type PropsType = {
   name: string,

@@ -571,6 +571,7 @@ export default class Budget extends BaseModel {
         adjusted: false,
         adjustedReason: null,
         fundingCategories: cat.fundingCategories,
+        includeFundingTransfers: cat.includeFundingTransfers,
       };
 
       if (cat.useGoal && cat.goalDate) {

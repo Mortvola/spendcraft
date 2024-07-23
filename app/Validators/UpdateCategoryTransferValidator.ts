@@ -13,6 +13,7 @@ export default class UpdateCategoryTransferValidator {
         id: schema.number.optional(),
         categoryId: schema.number(),
         amount: schema.number(),
+        baseAmount: schema.number.optional(),
         comment: schema.string.optional(),
         funder: schema.boolean.optional(),
         fundingCategories: schema.array.optional().members(
@@ -22,6 +23,7 @@ export default class UpdateCategoryTransferValidator {
             percentage: schema.boolean(),
           }),
         ),
+        includeFundingTransfers: schema.boolean.optional(),
       }),
     ), // 'required|validCategory|!allZero:amount|zeroSum:amount',
     type: schema.number(),

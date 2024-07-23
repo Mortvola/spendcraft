@@ -9,7 +9,6 @@ import { DateTime } from 'luxon';
 import Http from '@mortvola/http';
 import Amount from '../Amount';
 import { useStores } from '../State/Store';
-import Transaction from '../State/Transaction';
 import {
   TransactionType, CategoryFundingProps,
   ApiResponse,
@@ -23,9 +22,11 @@ import {
 import styles from './Funding.module.scss'
 import { isGroup } from '../State/Group';
 import { isCategory } from '../State/Category';
+import { TransactionInterface } from '../State/Types';
+import { CategorySpreadEntry } from '../CategorySpread/CategorySpread';
 
 type PropsType = {
-  transaction?: Transaction;
+  transaction?: TransactionInterface;
 }
 
 const FundingDialog: React.FC<PropsType & ModalProps> = ({
@@ -43,12 +44,42 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
 
   const getCategoriesSum = (categories: CategoriesValueType) => {
     const v = Object.keys(categories).reduce((sum, k) => {
-      const value = categories[k].amount;
+      const value = categories[k].baseAmount;
       const newValue = typeof value === 'string' ? parseFloat(value ?? 0) : value;
       return sum + newValue;
     }, 0)
 
     return v;
+  }
+
+  const computeSpread = (category: { amount: number, fundingCategories: CategorySpreadEntry[]}) => {
+    let categoryAmount = category.amount;
+
+    // Sort the funding categories by percentage so that fixed amounts are applied before percentage amounts.
+    const sortedCategories = category.fundingCategories.slice().sort((a) => (a.percentage ? 1 : -1))
+
+    const funders: Map<number, number> = new Map();
+
+    // eslint-disable-next-line no-restricted-syntax
+    for (const fundingCategory of sortedCategories) {
+      const funding = funders.get(fundingCategory.categoryId) ?? 0;
+      let fundingAmount: number;
+
+      if (fundingCategory.percentage) {
+        fundingAmount = (fundingCategory.amount / 100.0) * categoryAmount;
+      }
+      else {
+        fundingAmount = fundingCategory.amount;
+        categoryAmount -= fundingAmount;
+      }
+
+      if (fundingAmount !== 0) {
+        funders.set(fundingCategory.categoryId, funding + fundingAmount)
+        fundingCategory.fundedAmount = fundingAmount;
+      }
+    }
+
+    return funders;
   }
 
   const handleSubmit = async (values: ValueType) => {
@@ -57,60 +88,83 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
       categories: CategoryFundingProps[],
     }
 
-    const categories = Object.keys(values.categories).map((k) => {
-      const value = values.categories[k].amount;
+    const categories: CategoryFundingProps[] = Object.keys(values.categories).map((k) => {
+      const value = values.categories[k].baseAmount;
       const amount = typeof value === 'string' ? parseFloat(value) : value;
       const categoryId = parseInt(k, 10);
+
+      const baseAmount = typeof values.categories[k].baseAmount === 'string'
+        ? parseFloat(values.categories[k].baseAmount)
+        : values.categories[k].baseAmount;
+
       return {
         categoryId,
         amount,
         fundingCategories: values.categories[k].fundingCategories,
+        includeFundingTransfers: values.categories[k].includeFundingTransfers,
+        baseAmount,
       }
     })
-      .filter((c) => c.amount !== 0);
-
-    const request: Request = {
-      date: values.date,
-      categories,
-    };
 
     const funders: Map<number, number> = new Map();
 
     // eslint-disable-next-line no-restricted-syntax
     for (const category of categories) {
-      let categoryAmount = category.amount;
-
-      // Sort the funding categories by percentage so that fixed amounts are applied before percentage amounts.
-      const sortedCategories = category.fundingCategories.slice().sort((a) => (a.percentage ? 1 : -1))
+      const categoryFunders = computeSpread(category);
 
       // eslint-disable-next-line no-restricted-syntax
-      for (const fundingCategory of sortedCategories) {
-        const funding = funders.get(fundingCategory.categoryId) ?? 0;
-        let fundingAmount: number;
+      for (const [categoryId, amount] of categoryFunders) {
+        const funding = funders.get(categoryId) ?? 0;
+        funders.set(categoryId, funding + amount)
+      }
+    }
 
-        if (fundingCategory.percentage) {
-          fundingAmount = (fundingCategory.amount / 100.0) * categoryAmount;
-        }
-        else {
-          fundingAmount = fundingCategory.amount;
-          categoryAmount -= fundingAmount;
+    // Adjust amounts for categories that have "include funding transfers" set to true.
+    // eslint-disable-next-line no-restricted-syntax
+    for (const category of categories) {
+      if (category.includeFundingTransfers) {
+        const previousFundingAmount = computeSpread(category);
+
+        // eslint-disable-next-line no-restricted-syntax
+        for (const [categoryId, amount] of previousFundingAmount) {
+          const funding = funders.get(categoryId) ?? 0;
+          funders.set(categoryId, funding - amount)
         }
 
-        if (fundingAmount !== 0) {
-          funders.set(fundingCategory.categoryId, funding + fundingAmount)
+        // Find funder that matches this category and add the amount.
+        // eslint-disable-next-line no-restricted-syntax
+        for (const [categoryId, amount] of funders) {
+          if (categoryId === category.categoryId) {
+            category.amount += amount;
+          }
+        }
+
+        const newFundingAmount = computeSpread(category);
+
+        // eslint-disable-next-line no-restricted-syntax
+        for (const [categoryId, amount] of newFundingAmount) {
+          const funding = funders.get(categoryId) ?? 0;
+          funders.set(categoryId, funding + amount)
         }
       }
     }
 
     // eslint-disable-next-line no-restricted-syntax
     for (const [categoryId, amount] of funders) {
-      request.categories.push({
+      categories.push({
         categoryId,
         amount: -amount,
+        baseAmount: 0,
         funder: true,
         fundingCategories: [],
+        includeFundingTransfers: false,
       });
     }
+
+    const request: Request = {
+      date: values.date,
+      categories,
+    };
 
     let errors: Error[] | null;
     if (transaction) {
@@ -181,12 +235,13 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
       transaction.categories.forEach((c) => {
         if (!c.funder) {
           obj[c.categoryId] = {
-            amount: c.amount,
+            baseAmount: c.baseAmount ?? c.amount,
             fundingCategories: c.fundingCategories ?? [{
               categoryId: categoryTree.fundingPoolCat!.id,
               amount: 100,
               percentage: true,
             }],
+            includeFundingTransfers: c.includeFundingTransfers ?? false,
           }
         }
       })
@@ -197,12 +252,13 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
             node.categories.forEach((cat) => {
               if (obj[cat.id] === undefined) {
                 obj[cat.id] = {
-                  amount: 0,
+                  baseAmount: 0,
                   fundingCategories: [{
                     categoryId: categoryTree.fundingPoolCat!.id,
                     amount: 100,
                     percentage: true,
                   }],
+                  includeFundingTransfers: false,
                 }
               }
             })
@@ -211,17 +267,16 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
         else if (isCategory(node)) {
           if (obj[node.id] === undefined) {
             obj[node.id] = {
-              amount: 0,
+              baseAmount: 0,
               fundingCategories: [{
                 categoryId: categoryTree.fundingPoolCat!.id,
                 amount: 100,
                 percentage: true,
               }],
+              includeFundingTransfers: false,
             }
           }
         }
-
-        return null;
       })
 
       return obj;
@@ -251,8 +306,9 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
 
             data.forEach((cat) => {
               obj[cat.categoryId] = {
-                amount: cat.amount,
+                baseAmount: cat.amount,
                 fundingCategories: [],
+                includeFundingTransfers: cat.includeFundingTransfers,
               }
 
               if (cat.fundingCategories.length === 0) {

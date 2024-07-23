@@ -25,6 +25,7 @@ export default class UpdateCategoryValidator {
     goalDate: schema.date.optional(),
     recurrence: schema.number.optional(),
     fundingAmount: schema.number.optional(),
+    includeFundingTransfers: schema.boolean.optional(),
     hidden: schema.boolean(),
     useGoal: schema.boolean(),
     fundingCategories: schema.array().members(

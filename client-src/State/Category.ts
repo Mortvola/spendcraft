@@ -22,11 +22,11 @@ class Category implements CategoryInterface {
 
   groupId: number;
 
-  monthlyExpenses: boolean;
-
   balance = 0;
 
   fundingAmount = 0;
+
+  includeFundingTransfers = true;
 
   useGoal = false;
 
@@ -53,8 +53,8 @@ class Category implements CategoryInterface {
     this.type = props.type;
     this.balance = props.balance;
     this.groupId = props.groupId;
-    this.monthlyExpenses = props.monthlyExpenses;
     this.fundingAmount = props.fundingAmount;
+    this.includeFundingTransfers = props.includeFundingTransfers;
     this.goalDate = props.goalDate ? DateTime.fromISO(props.goalDate) : null;
     this.useGoal = props.useGoal ?? false;
     this.recurrence = props.recurrence;
@@ -114,8 +114,8 @@ class Category implements CategoryInterface {
           const nameChanged = this.name !== body.name;
           this.type = body.type;
           this.name = body.name;
-          this.monthlyExpenses = body.monthlyExpenses;
           this.fundingAmount = body.fundingAmount;
+          this.includeFundingTransfers = body.includeFundingTransfers;
           this.recurrence = body.recurrence;
           this.goalDate = DateTime.fromISO(body.goalDate);
           this.fundingCategories = body.fundingCategories.map((c, index) => ({ id: index, ...c }));

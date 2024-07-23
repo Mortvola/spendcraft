@@ -29,9 +29,9 @@ export interface CategoryProps {
 
   type: CategoryType;
 
-  monthlyExpenses: boolean;
-
   fundingAmount: number;
+
+  includeFundingTransfers: boolean;
 
   goalDate: string | null;
 
@@ -75,6 +75,7 @@ export interface UpdateCategoryResponse {
   name: string;
   monthlyExpenses: boolean;
   fundingAmount: number,
+  includeFundingTransfers: boolean;
   goalDate: string,
   recurrence: number,
   fundingCategories: { categoryId: number, amount: number, percentage: boolean }[],
@@ -262,6 +263,8 @@ export interface TransactionProps {
     comment?: string,
     funder?: boolean,
     fundingCategories?: { categoryId: number, amount: number, percentage: boolean }[],
+    includeFundingTransfers?: boolean,
+    baseAmount?: number,
   }[];
 
   duplicateOfTransactionId: number | null;
@@ -604,6 +607,7 @@ export interface ProposedFundingCategoryProps {
     amount: number,
     percentage: boolean,
   }[],
+  includeFundingTransfers: boolean,
 }
 
 export const isFundingPlanProps = (r: unknown): r is FundingPlanProps => (
@@ -628,7 +632,9 @@ export type CategoryTransferProps = {
 export type CategoryFundingProps = {
   categoryId: number,
   amount: number,
+  baseAmount: number,
   fundingCategories: { categoryId: number, amount: number, percentage: boolean}[],
+  includeFundingTransfers: boolean,
   funder?: boolean,
 }
 

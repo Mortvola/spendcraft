@@ -10,6 +10,7 @@ import {
   CategoryBalanceProps,
   AccountProps,
   CategoryProps,
+  CategoryTransferProps,
 } from '../../common/ResponseTypes'
 import LoanTransaction from './LoanTransaction';
 import SystemIds from './SystemIds';
@@ -96,6 +97,13 @@ export interface TransactionInterface extends BaseTransactionInterface {
 
   delete(): Promise<null | Error[]>;
 
+  updateCategoryTransfer(
+    values: {
+      categories: CategoryTransferProps[];
+      date: string;
+    },
+  ): Promise<null>
+
   toggleReconciled(): void;
 }
 
@@ -170,11 +178,11 @@ export interface CategoryInterface {
 
   groupId: number;
 
-  monthlyExpenses: boolean;
-
   balance: number;
 
   fundingAmount: number;
+
+  includeFundingTransfers: boolean;
 
   useGoal: boolean;
 
@@ -275,6 +283,8 @@ export interface TransactionCategoryInterface {
   comment?: string;
   funder?: boolean;
   fundingCategories?: { categoryId: number, amount: number, percentage: boolean }[],
+  includeFundingTransfers?: boolean,
+  baseAmount?: number;
 }
 
 export interface NewTransactionCategoryInterface {
@@ -504,6 +514,7 @@ export type CategoryParams = {
   type?: string,
   name: string,
   fundingAmount?: number,
+  includeFundingTransfers?: boolean,
   goalDate?: DateTime,
   recurrence?: number,
   categoryId?: number,
