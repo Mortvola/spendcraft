@@ -129,7 +129,6 @@ if (container) {
                 <Route path=":categoryId" element={<CategoryDetails />} />
                 <Route path="rebalances" element={<Rebalances />} />
               </Route>
-              <Route path="plans" element={<Plans />} />
               <Route path="accounts" element={<Accounts />}>
                 <Route index element={<AccountDetails />} />
                 <Route path=":accountId" element={<AccountDetails />} />
@@ -142,7 +141,7 @@ if (container) {
               <Route path="logs" element={<TransactionLogs />}>
                 <Route index element={<TransactionLogDetails />} />
               </Route>
-              <Route path="overview" element={<OverviewView />}>
+              <Route path="bills" element={<OverviewView />}>
                 <Route index element={<Overview />} />
               </Route>
               <Route path="admin" element={<PlaidLogsView />}>

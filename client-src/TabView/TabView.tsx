@@ -33,7 +33,7 @@ const TabView: React.FC = observer(() => {
   }
 
   const handleBillsClick = () => {
-    navigate('/overview');
+    navigate('/bills');
   }
 
   const handleLogsClick = () => {
@@ -83,10 +83,10 @@ const TabView: React.FC = observer(() => {
         onClick={handleCategoriesClick}
       />
       <TabViewButton
-        icon="map"
-        caption="Plans"
-        url="/plans"
-        onClick={handlePlansClick}
+        icon="file-invoice-dollar"
+        caption="Bills"
+        url="/bills"
+        onClick={handleBillsClick}
       />
       <TabViewButton
         icon="building-columns"
@@ -105,7 +105,6 @@ const TabView: React.FC = observer(() => {
         caption="More"
       >
         <TabViewMenuItem onClick={handleAccountClick}>Account</TabViewMenuItem>
-        <TabViewMenuItem onClick={handleBillsClick}>Bills</TabViewMenuItem>
         <TabViewMenuItem onClick={handleAutoAssignClick}>Auto Assign</TabViewMenuItem>
         <TabViewMenuItem onClick={handleSearchClick}>Search</TabViewMenuItem>
         <TabViewMenuItem onClick={handleLogsClick}>Logs</TabViewMenuItem>

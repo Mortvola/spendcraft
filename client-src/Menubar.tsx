@@ -21,7 +21,7 @@ enum EventKeys {
   REPORTS = 'REPORTS',
   AUTO_ASSIGN = 'AUTO_ASSIGN',
   LOGS = 'LOGS',
-  OVERVIEW = 'OVERVIEW',
+  BILLS = 'BILLS',
   ADMIN = 'ADMIN',
   LOGOUT = 'LOGOUT',
 }
@@ -34,7 +34,7 @@ const pathKeys = [
   { path: '/reports', key: EventKeys.REPORTS },
   { path: '/auto-assignments', key: EventKeys.AUTO_ASSIGN },
   { path: '/logs', key: EventKeys.LOGS },
-  { path: '/overview', key: EventKeys.OVERVIEW },
+  { path: '/bills', key: EventKeys.BILLS },
   { path: '/admin', key: EventKeys.ADMIN },
 ]
 
@@ -147,7 +147,7 @@ const Menubar: React.FC = observer(() => {
             <Nav.Link eventKey={EventKeys.HOME}>Home</Nav.Link>
           </Nav.Item>
           <Nav.Item>
-            <Nav.Link as={Link} to="/plans" eventKey={EventKeys.PLANS}>Plans</Nav.Link>
+            <Nav.Link as={Link} to="/bills" eventKey={EventKeys.BILLS}>Bills</Nav.Link>
           </Nav.Item>
           <Nav.Item>
             <Nav.Link eventKey={EventKeys.ACCOUNTS}>Accounts</Nav.Link>
@@ -164,15 +164,6 @@ const Menubar: React.FC = observer(() => {
           <Nav.Item>
             <Nav.Link as={Link} to="/logs" eventKey={EventKeys.LOGS}>Logs</Nav.Link>
           </Nav.Item>
-          {
-            store.user.roles.includes('DEV')
-              ? (
-                <Nav.Item>
-                  <Nav.Link as={Link} to="/overview" eventKey={EventKeys.OVERVIEW}>Bills</Nav.Link>
-                </Nav.Item>
-              )
-              : null
-          }
           {
             store.user.roles.includes('ADMIN')
               ? (

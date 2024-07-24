@@ -37,7 +37,7 @@ Route.get('/search', 'HomeController.index');
 Route.get('/auto-assignments', 'HomeController.index');
 Route.get('/logs', 'HomeController.index');
 Route.get('/admin', 'HomeController.index');
-Route.get('/overview', 'HomeController.index');
+Route.get('/bills', 'HomeController.index');
 Route.get('/', 'HomeController.index');
 
 Route.post('/wh', 'WebhookController.post');
