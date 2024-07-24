@@ -571,7 +571,13 @@ class CategoriesController {
       throw new Error('user is not defined');
     }
 
-    const bills = await Category.query().where('type', 'BILL');
+    const budget = await user.related('budget').query().firstOrFail();
+
+    const bills = await Category.query()
+      .whereHas('group', (query) => {
+        query.where('budgetId', budget.id)
+      })
+      .where('type', 'BILL');
 
     // eslint-disable-next-line no-restricted-syntax
     for (const b of bills) {
