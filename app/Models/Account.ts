@@ -333,7 +333,6 @@ class Account extends BaseModel {
         .create({
           budgetId: transaction.budgetId,
           message: `SpendCraft assigned a transaction for "${accountTransaction.name}" to ${assignedCategories.join(', ')}.`,
-          transactionId: transaction.id,
         })
 
       return true;
@@ -455,7 +454,6 @@ class Account extends BaseModel {
         .create({
           budgetId: transaction.budgetId,
           message: `SpendCraft modified a transaction for "${acctTrans.name}" from "${this.name}".`,
-          transactionId: transaction.id,
           changes,
         });
     }
@@ -499,7 +497,6 @@ class Account extends BaseModel {
       .create({
         budgetId: transaction.budgetId,
         message: `SpendCraft added a transaction for "${acctTrans.name}" from "${this.name}".`,
-        transactionId: transaction.id,
       });
 
     // If this is a matching auto assignment then use its categories
@@ -804,7 +801,6 @@ class Account extends BaseModel {
                 .create({
                   budgetId: transaction.budgetId,
                   message: `${user.username} added a transaction for "${acctTrans.name}" from "${this.name}".`,
-                  transactionId: transaction.id,
                 });
             }
           }

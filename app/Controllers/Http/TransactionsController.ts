@@ -297,7 +297,6 @@ export default class TransactionsController {
         .create({
           budgetId: transaction.budgetId,
           message: `${user.username} modified a transaction for "${acctTrans.name}".`,
-          transactionId: transaction.id,
           changes,
         });
 
