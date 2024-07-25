@@ -60,7 +60,7 @@ export default class QueueListener extends BaseCommand {
         await applePushNotifications.sendPushNotifications(budget);
       }
       catch (error) {
-        Logger.error({ err: error }, `default update failed, item id: ${job.data.itemId}`);
+        Logger.error({ err: error }, `sync update failed, item id: ${job.data.itemId}`);
 
         await trx.rollback();
       }

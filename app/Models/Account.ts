@@ -560,32 +560,42 @@ class Account extends BaseModel {
     // eslint-disable-next-line no-await-in-loop
     const transaction = await acctTran.related('transaction').query().firstOrFail();
 
+    if (!transaction.deleted) {
     // eslint-disable-next-line no-await-in-loop
-    const transCats = transaction.categories;
+      const transCats = transaction.categories;
 
-    // eslint-disable-next-line no-restricted-syntax
-    for (const tc of transCats) {
-      if (transaction.date >= this.startDate) {
+      // eslint-disable-next-line no-restricted-syntax
+      for (const tc of transCats) {
+        if (transaction.date >= this.startDate) {
         // eslint-disable-next-line no-await-in-loop
-        const category = await Category.findOrFail(tc.categoryId, { client: transaction.$trx });
-        category.balance -= tc.amount;
-        // eslint-disable-next-line no-await-in-loop
-        await category.save();
+          const category = await Category.findOrFail(tc.categoryId, { client: transaction.$trx });
+          category.balance -= tc.amount;
+          // eslint-disable-next-line no-await-in-loop
+          await category.save();
+        }
+      }
+
+      if (!acctTran.pending && transaction.date >= this.startDate) {
+        this.$extras.addedSum = (this.$extras.addedSum ?? 0) + acctTran.amount;
       }
 
       // eslint-disable-next-line no-await-in-loop
-      // await tc.delete();
+      // await acctTran.delete();
+
+      // eslint-disable-next-line no-await-in-loop
+      // await transaction.delete();
+
+      transaction.merge({
+        deleted: true,
+      })
+
+      await transaction.save();
+
+      await transaction.related('transactionLog').create({
+        budgetId: transaction.budgetId,
+        message: `SpendCraft deleted a transaction for "${acctTran.name}" from "${this.name}".`,
+      })
     }
-
-    if (!acctTran.pending && transaction.date >= this.startDate) {
-      this.$extras.addedSum = (this.$extras.addedSum ?? 0) + acctTran.amount;
-    }
-
-    // eslint-disable-next-line no-await-in-loop
-    await acctTran.delete();
-
-    // eslint-disable-next-line no-await-in-loop
-    await transaction.delete();
   }
 
   // eslint-disable-next-line class-methods-use-this
