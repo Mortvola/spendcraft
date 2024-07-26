@@ -806,3 +806,13 @@ export enum PendingQueryFlag {
   OnlyPending = 1,
   WithPending = 2,
 }
+
+export type BillProps = {
+  id: number,
+  name: string,
+  fundingAmount: number,
+  balance: number,
+  goalDate: string,
+  recurrence: number,
+  debits: number | null,
+}

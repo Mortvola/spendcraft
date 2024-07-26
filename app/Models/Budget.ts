@@ -4,14 +4,13 @@ import {
   BaseModel, column, HasMany, hasMany, ModelAdapterOptions,
 } from '@ioc:Adonis/Lucid/Orm'
 import Database from '@ioc:Adonis/Lucid/Database';
-import { InstitutionProps, ProposedFundingCategoryProps, TransactionType } from 'Common/ResponseTypes';
+import { InstitutionProps, ProposedFundingCategoryProps } from 'Common/ResponseTypes';
 import User from 'App/Models/User'
 import Category from 'App/Models/Category';
 import Group from 'App/Models/Group';
 import Institution from 'App/Models/Institution';
 import Transaction from 'App/Models/Transaction';
 import Loan from 'App/Models/Loan';
-import CategoryHistoryItem from 'App/Models/CategoryHistoryItem';
 import Logger from '@ioc:Adonis/Core/Logger';
 import AutoAssignment from './AutoAssignment';
 import TransactionLog from './TransactionLog';
@@ -51,91 +50,6 @@ export default class Budget extends BaseModel {
 
   @hasMany(() => TransactionLog)
   public transactionLog: HasMany<typeof TransactionLog>
-
-  public async history(this: Budget, numberOfMonths: number): Promise<CategoryHistoryItem[]> {
-    const startDate = DateTime.now().set({
-      hour: 0, minute: 0, second: 0, millisecond: 0,
-    });
-    const endDate = startDate.minus({ months: numberOfMonths }).set({
-      hour: 0, minute: 0, second: 0, millisecond: 0,
-    });
-
-    const data = await Database.query()
-      .select(
-        Database.raw('CAST(EXTRACT(MONTH FROM date) AS integer) AS month'),
-        Database.raw('CAST(EXTRACT(YEAR FROM date) AS integer) AS year'),
-        'cats.id AS id',
-        Database.raw(`CAST(
-          sum(
-            CASE WHEN trans.type not in (${TransactionType.FUNDING_TRANSACTION}, ${TransactionType.REBALANCE_TRANSACTION}) THEN
-              transcats.amount
-            ELSE
-              0
-            END
-            ) AS float) AS expenses
-        `),
-        Database.raw(`CAST(
-          sum(
-            CASE WHEN trans.type = ${TransactionType.FUNDING_TRANSACTION} THEN
-              transcats.amount
-            ELSE
-              0
-            END
-            ) AS float) AS funding
-        `),
-      )
-      .from('transaction_categories AS transcats')
-      .join('transactions AS trans', 'trans.id', 'transcats.transaction_id')
-      .join('categories AS cats', 'cats.id', 'transcats.category_id')
-      .where('trans.application_id', this.id)
-      .andWhere('trans.date', '>=', endDate.toISODate() ?? '')
-      .groupBy('month', 'year', 'cats.id')
-      .orderBy('cats.id')
-      .orderBy('year', 'desc')
-      .orderBy('month', 'desc');
-
-    const history: CategoryHistoryItem[] = [];
-    let currentCategory: CategoryHistoryItem | null = null;
-
-    let month = 0;
-    let year = 0;
-
-    const decrementMonth = () => {
-      month -= 1;
-
-      if (month < 1) {
-        year -= 1;
-        month = 12;
-      }
-    }
-
-    data.forEach((category) => {
-      if (currentCategory === null || category.id !== currentCategory.id) {
-        month = startDate.month;
-        year = startDate.year;
-
-        history.push({
-          id: category.id,
-          months: [],
-        });
-        currentCategory = history[history.length - 1];
-      }
-
-      if (currentCategory === null) {
-        throw new Error('category is null');
-      }
-
-      while (month !== category.month || year !== category.year) {
-        currentCategory.months.push({ expenses: 0, funding: 0 })
-        decrementMonth();
-      }
-
-      currentCategory.months.push({ expenses: category.expenses, funding: category.funding });
-      decrementMonth();
-    });
-
-    return history;
-  }
 
   public async getConnectedAccounts(this: Budget): Promise<InstitutionProps[]> {
     const result = await this

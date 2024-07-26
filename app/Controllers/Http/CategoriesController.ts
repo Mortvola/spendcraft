@@ -16,6 +16,7 @@ import {
   TransactionsResponse,
   TransactionProps, TransactionType, FundingInfoProps,
   ApiResponse,
+  BillProps,
 } from 'Common/ResponseTypes';
 import Group from 'App/Models/Group';
 import { DateTime } from 'luxon';
@@ -566,7 +567,7 @@ class CategoriesController {
     auth: {
       user,
     },
-  }: HttpContextContract): Promise<Category[]> {
+  }: HttpContextContract): Promise<BillProps[]> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -579,9 +580,27 @@ class CategoriesController {
       })
       .where('type', 'BILL');
 
+    const firstDayOfMonth = DateTime.now()
+      .set({
+        day: 1, hour: 0, minute: 0, second: 0, millisecond: 0,
+      })
+
     // eslint-disable-next-line no-restricted-syntax
-    for (const b of bills) {
-      b.goalDate = CategoriesController.getGoalDate(b.goalDate, b.recurrence)
+    for (const bill of bills) {
+      bill.goalDate = CategoriesController.getGoalDate(bill.goalDate, bill.recurrence)
+
+      // eslint-disable-next-line no-await-in-loop
+      const debits = await budget
+        .related('transactions').query()
+        // eslint-disable-next-line max-len
+        .joinRaw('cross join lateral jsonb_to_recordset(transactions.categories) as "transCats"("categoryId" int, amount decimal)')
+        .where('transCats.categoryId', bill.id)
+        .where('deleted', false)
+        .where('date', '>=', firstDayOfMonth.toISODate())
+        .where('transCats.amount', '<', 0)
+        .sum('transCats.amount', 'debits')
+
+      bill.$extras.debits = debits[0].$extras.debits;
     }
 
     bills.sort((a, b) => (a.goalDate && b.goalDate ? a.goalDate.diff(b.goalDate, 'days').days : 0))
@@ -591,7 +610,15 @@ class CategoriesController {
     //   console.log(`${b.name}, ${b.fundingAmount}, ${b.balance}, ${b.$extras.goalDate.toISODate()}`)
     // }
 
-    return bills;
+    return bills.map<BillProps>((bill) => ({
+      id: bill.id,
+      name: bill.name,
+      fundingAmount: bill.fundingAmount,
+      balance: bill.balance,
+      goalDate: bill.goalDate?.toISODate() ?? '',
+      recurrence: bill.recurrence,
+      debits: bill.$extras.debits !== null ? parseFloat(bill.$extras.debits ?? '0.00') : null,
+    }));
   }
 }
 

@@ -83,15 +83,21 @@ export default class Category extends BaseModel {
     transactionId: number,
   ): Promise<GroupItem[]> {
     const subQuery = Database.query()
-      .select('category_id', Database.raw('sum(amount) as amount'))
-      .from('transaction_categories as tc')
-      .join('transactions as t', 't.id', 'tc.transaction_id')
-      .where('date', '>', date)
-      .groupBy('category_id');
+      .select('categoryId')
+      .select(Database.raw('sum("transCats".amount) as amount'))
+      .from('transactions')
+      // eslint-disable-next-line max-len
+      .joinRaw('cross join lateral jsonb_to_recordset(transactions.categories) as "transCats"("categoryId" int, amount decimal)')
+      .where((query) => {
+        query
+          .where('date', '>', date)
+          .where('deleted', false)
+      })
+      .groupBy('categoryId');
 
-    // Ignore he transaction identified by transactionId, if any
+    // Ignore the transaction identified by transactionId, if any
     if (transactionId !== undefined) {
-      subQuery.orWhere('t.id', transactionId);
+      subQuery.orWhere('transactions.id', transactionId);
     }
 
     const query = Database.query()
@@ -100,11 +106,13 @@ export default class Category extends BaseModel {
         Database.raw('CAST(c.balance - sum(coalesce(tc.amount, 0)) as float) as balance'),
       )
       .from('categories as c')
-      .join('groups as g', 'g.id', 'c.group_id')
-      .joinRaw(`left join (${
+      .join('groups', (groups) => {
+        groups.on('groups.id', 'c.group_id')
+          .andOnVal('groups.application_id', budget.id)
+      })
+      .joinRaw(`left outer join (${
         subQuery.toQuery()
-      }) as tc on tc.category_id = c.id`)
-      .where('g.application_id', budget.id)
+      }) as tc on tc."categoryId" = c.id`)
       .groupBy('c.id')
       .groupByRaw('coalesce(tc.amount, 0)')
 

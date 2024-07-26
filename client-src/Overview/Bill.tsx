@@ -15,6 +15,7 @@ const Bill: React.FC<PropsType> = ({
     <div>{bill.name}</div>
     <Amount amount={bill.amount} />
     <Date date={bill.date} />
+    <Amount amount={bill.debits} noValue="" />
   </div>
 )
 

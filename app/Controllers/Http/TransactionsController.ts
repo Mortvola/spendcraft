@@ -492,6 +492,7 @@ export default class TransactionsController {
 
     const rebalances = await budget.related('transactions').query()
       .where('type', TransactionType.REBALANCE_TRANSACTION)
+      .where('deleted', false)
       .orderBy('date', 'desc');
 
     return {

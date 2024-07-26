@@ -1,5 +1,5 @@
 import { DateTime } from 'luxon';
-import { CategoryProps } from '../../common/ResponseTypes';
+import { BillProps } from '../../common/ResponseTypes';
 import { BillInterface } from './Types';
 
 class Bill implements BillInterface {
@@ -13,12 +13,15 @@ class Bill implements BillInterface {
 
   recurrence: number;
 
-  constructor(props: CategoryProps) {
+  debits: number | null;
+
+  constructor(props: BillProps) {
     this.id = props.id;
     this.name = props.name;
     this.amount = props.fundingAmount;
     this.date = props.goalDate ? DateTime.fromISO(props.goalDate) : null;
     this.recurrence = props.recurrence;
+    this.debits = props.debits;
   }
 }
 
