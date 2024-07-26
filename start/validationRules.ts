@@ -11,8 +11,16 @@ import { validator } from '@ioc:Adonis/Core/Validator'
 import Database from '@ioc:Adonis/Lucid/Database';
 
 validator.rule(
-  'empty',
-  async (value, [{ table, column}], { pointer, arrayExpressionPointer, errorReporter }) => {
+  'notExists',
+  async (
+    value: number,
+    [{ table, column }]: { table: string, column: string }[],
+    {
+      pointer,
+      arrayExpressionPointer,
+      errorReporter,
+    },
+  ) => {
     /**
      * Skip validation when value is not a string. The string
      * schema rule will handle it
@@ -21,11 +29,41 @@ validator.rule(
       return
     }
 
-    const exists = await Database.query()
-      .select(Database.raw('EXISTS (SELECT 1 FROM ?? WHERE ?? = ?) AS exists', [table, column, value]));
+    const result = await Database.query()
+      .select(Database.raw('EXISTS (SELECT 1 FROM ?? WHERE ?? = ?) AS exists', [table, column, value]))
+      .first();
 
-    if (exists[0].exists) {
-      errorReporter.report(pointer, 'empty', `Rows of ${table} exists where ${column} = ${value}`, arrayExpressionPointer)
+    if (result.exists) {
+      errorReporter.report(pointer, 'notExists', `Rows of ${table} exists where ${column} = ${value}`, arrayExpressionPointer)
+    }
+  },
+  (_options) => {
+    return {
+      async: true,
+    }
+  }
+)
+
+validator.rule(
+  'transactionsExist',
+  async (
+    value: number,
+    _options: unknown[],
+    {
+      pointer,
+      arrayExpressionPointer,
+      errorReporter,
+    },
+  ) => {
+    const result = await Database.query()
+      .select(1)
+      .from('transactions')
+      .where('deleted', false)
+      .whereRaw('categories::jsonb @\\? (\'$[*] \\? (@.categoryId == \' || ? || \' && @.amount != 0)\')::jsonpath', [value])
+      .first();
+
+    if (result) {
+      errorReporter.report(pointer, 'transactionsExist', `Transactions exist for category ID ${value}`, arrayExpressionPointer)
     }
   },
   (_options) => {
@@ -37,7 +75,15 @@ validator.rule(
 
 validator.rule(
   'zeroSum',
-  async (values: Array<any>, [{ property }], { pointer, arrayExpressionPointer, errorReporter }) => {
+  async (
+    values: Record<string, number>[],
+    [{ property }]: { property: string }[],
+    {
+      pointer,
+      arrayExpressionPointer,
+      errorReporter,
+    },
+  ) => {
     /**
      * Skip validation when value is not a string. The string
      * schema rule will handle it

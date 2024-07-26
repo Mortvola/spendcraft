@@ -4,13 +4,13 @@ export default class DeleteCategoryValidator {
   public schema = schema.create({
     params: schema.object().members({
       catId: schema.number([
-        rules.empty({ table: 'transaction_categories', column: 'category_id' }),
+        rules.transactionsExist(),
       ]),
     }),
   })
 
   public messages = {
     'params.catId.required': 'A category ids must be provided',
-    'params.catId.empty': 'Before deleting, the category must not contain any transactions',
+    'params.catId.transactionsExist': 'Before deleting, the category must not contain any transactions',
   }
 }
