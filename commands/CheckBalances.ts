@@ -96,7 +96,7 @@ export default class CheckBalances extends BaseCommand {
         // eslint-disable-next-line no-restricted-syntax
         for (const cat of categories) {
           const transSum = (cat.$extras.trans_sum === null ? 0 : parseFloat(cat.$extras.trans_sum));
-          if (cat.balance !== transSum) {
+          if (Math.trunc(cat.balance * 100) !== Math.trunc(transSum * 100)) {
             failures.push({
               category: cat,
               transSum,
@@ -119,7 +119,7 @@ export default class CheckBalances extends BaseCommand {
           // eslint-disable-next-line no-restricted-syntax
           for (const failure of app.failures) {
             const { category, transSum } = failure;
-            const difference = category.balance - transSum;
+            const difference = (Math.trunc(category.balance * 100) - Math.trunc(transSum * 100)) / 100.0;
             this.logger.info(`\t"${category.group.name}:${category.name}" (${category.id}): ${category.balance.toFixed(2)}, Transactions: ${transSum.toFixed(2)}, difference: ${difference.toFixed(2)}`);
 
             issuesFound += 1;

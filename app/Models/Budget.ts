@@ -505,16 +505,16 @@ export default class Budget extends BaseModel {
 
         // if (monthDiff > 0) {
         if (goalDiff > 0) {
-          monthlyAmount = goalDiff / (monthDiff + 1)
+          monthlyAmount = Math.round((goalDiff / (monthDiff + 1)) * 100) / 100.0;
         }
 
         proposedCat.amount = monthlyAmount;
 
-        const plannedAmount = cat.fundingAmount / cat.recurrence;
+        const plannedAmount = Math.round((cat.fundingAmount / cat.recurrence) * 100) / 100.0;
 
         if (monthlyAmount !== plannedAmount) {
           proposedCat.adjusted = true;
-          proposedCat.adjustedReason = `The funding amount was adjusted from a planned amount of ${plannedAmount} to ${monthlyAmount} for the goal of ${cat.fundingAmount} due ${goalMonth.month}-${goalMonth.year}.`;
+          proposedCat.adjustedReason = `The funding amount was adjusted from a planned amount of ${plannedAmount.toFixed(2)} to ${monthlyAmount.toFixed(2)} for the goal of ${cat.fundingAmount} due ${goalMonth.month}-${goalMonth.year}.`;
         }
       }
       else {

@@ -276,7 +276,7 @@ class Account extends BaseModel {
 
       // Multiplying by 100 and rounding to the nearest integer insures we are not
       // working with fractional pennies.
-      let remaining = Math.round(accountTransaction.amount * 100);
+      let remaining = Math.trunc(accountTransaction.amount * 100);
 
       const assignedCategories: string[] = [];
 
@@ -290,10 +290,10 @@ class Account extends BaseModel {
         let amount: number;
 
         if (cat.percentage) {
-          amount = Math.round(transactionAmount * (cat.amount / 100.0) * 100);
+          amount = Math.trunc(transactionAmount * (cat.amount / 100.0) * 100);
         }
         else {
-          amount = Math.round(cat.amount * 100);
+          amount = Math.trunc(cat.amount * 100);
           // Adjust the transaction amount so that any follow any percentage entries
           // are applied against the remainder after fixed amounts are applied.
           transactionAmount -= amount;

@@ -94,11 +94,11 @@ validator.rule(
 
     let sum = 0;
     values.forEach((v) => {
-        sum += Math.round(v[property] * 100);
+        sum += Math.trunc(v[property] * 100);
     });
 
     if (sum !== 0) {
-      errorReporter.report(pointer, 'nonZeroSum', `Rows do not sum to zero`, arrayExpressionPointer)
+      errorReporter.report(pointer, 'nonZeroSum', `Rows do not sum to zero: ${sum}`, arrayExpressionPointer)
     }
   },
   (_options) => {

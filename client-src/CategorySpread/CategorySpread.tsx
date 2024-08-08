@@ -33,7 +33,7 @@ export type CategorySpreadEntry = {
   categoryId: number,
   amount: number,
   percentage: boolean,
-  fundedAmount?: number,
+  // fundedAmount?: number,
 };
 
 type PropsType = {

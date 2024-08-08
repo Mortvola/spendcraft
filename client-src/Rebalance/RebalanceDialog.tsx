@@ -85,7 +85,7 @@ const RebalanceDialog: React.FC<PropsType & ModalProps> = ({
     }
     else {
       const sum = values.categories.reduce((accumulator, currentValue) => (
-        accumulator + Math.round(currentValue.amount * 100)
+        accumulator + Math.trunc(currentValue.amount * 100)
       ), 0);
 
       if (sum !== 0) {
