@@ -236,12 +236,12 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
     }
   }
 
-  const initialFundingDate = () => (
+  const initialFundingDate = React.useCallback(() => (
     (transaction
       ? transaction.date
       : DateTime.now().startOf('month')
     ).toISODate()
-  );
+  ), [transaction]);
 
   const initialFunding = (): CategoriesValueType | undefined => {
     if (transaction) {
@@ -306,51 +306,65 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
     setDiffOnly((prev) => (!prev));
   }
 
+  const getProposed = React.useCallback(async (date: string) => {
+    let obj: CategoriesValueType | null = null;
+
+    const response = await Http.get<ApiResponse<ProposedFundingCategoryProps[]>>(
+      `/api/v1/funding-plans/proposed?date=${date}`,
+    );
+
+    if (response.ok) {
+      const { data } = (await response.body());
+
+      if (data) {
+        obj = {};
+
+        data.forEach((cat) => {
+          obj![cat.categoryId] = {
+            baseAmount: cat.amount,
+            fundingCategories: [],
+            includeFundingTransfers: cat.includeFundingTransfers,
+          }
+
+          if (cat.fundingCategories.length === 0) {
+            obj![cat.categoryId].fundingCategories.push({
+              categoryId: categoryTree.fundingPoolCat!.id,
+              amount: 100.0,
+              percentage: true,
+            });
+          }
+          else {
+            // eslint-disable-next-line no-restricted-syntax
+            for (let i = 0; i < cat.fundingCategories.length; i += 1) {
+              obj![cat.categoryId].fundingCategories.push({
+                categoryId: cat.fundingCategories[i].categoryId,
+                amount: cat.fundingCategories[i].amount,
+                percentage: cat.fundingCategories[i].percentage,
+              });
+            }
+          }
+        })
+      }
+    }
+
+    return obj;
+  }, [categoryTree.fundingPoolCat]);
+
   React.useEffect(() => {
     (async () => {
       if (!transaction) {
-        const response = await Http.get<ApiResponse<ProposedFundingCategoryProps[]>>(
-          '/api/v1/funding-plans/proposed',
-        );
+        const date = DateTime.fromISO(
+          initialFundingDate() ?? DateTime.now().toISODate(),
+        ).startOf('month').toISODate() ?? '';
 
-        if (response.ok) {
-          const { data } = (await response.body());
+        const obj = await getProposed(date)
 
-          if (data) {
-            const obj: CategoriesValueType = {};
-
-            data.forEach((cat) => {
-              obj[cat.categoryId] = {
-                baseAmount: cat.amount,
-                fundingCategories: [],
-                includeFundingTransfers: cat.includeFundingTransfers,
-              }
-
-              if (cat.fundingCategories.length === 0) {
-                obj[cat.categoryId].fundingCategories.push({
-                  categoryId: categoryTree.fundingPoolCat!.id,
-                  amount: 100.0,
-                  percentage: true,
-                });
-              }
-              else {
-                // eslint-disable-next-line no-restricted-syntax
-                for (let i = 0; i < cat.fundingCategories.length; i += 1) {
-                  obj[cat.categoryId].fundingCategories.push({
-                    categoryId: cat.fundingCategories[i].categoryId,
-                    amount: cat.fundingCategories[i].amount,
-                    percentage: cat.fundingCategories[i].percentage,
-                  });
-                }
-              }
-            })
-
-            setCategories(obj)
-          }
+        if (obj) {
+          setCategories(obj)
         }
       }
     })();
-  }, [categoryTree.fundingPoolCat, transaction]);
+  }, [getProposed, initialFundingDate, transaction]);
 
   if (!categories) {
     return null;
@@ -373,8 +387,34 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
         <div className="funding-header">
           <label>
             Date:
-            <Field name="date" type="date" className="form-control" />
+            <Field name="date">
+              {
+                ({ field, form }: FieldProps) => (
+                  <input
+                    {...field}
+                    type="date"
+                    className="form-control"
+                    onChange={(event) => {
+                      if (!transaction) {
+                        (async () => {
+                          const obj = await getProposed(event.target.value)
+
+                          if (obj) {
+                            // eslint-disable-next-line no-restricted-syntax
+                            for (const [categoryId, value] of Object.entries(obj)) {
+                              form.setFieldValue(`categories.${categoryId}.baseAmount`, value.baseAmount)
+                            }
+                          }
+                        })()
+                      }
+                      field.onChange(event)
+                    }}
+                  />
+                )
+              }
+            </Field>
           </label>
+          <FormError name="date" />
           <label>
             Available Funds:
             <Field>
@@ -389,7 +429,6 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
             </Field>
           </label>
         </div>
-        <FormError name="date" />
         <label>
           <input type="checkbox" checked={diffOnly} onChange={handleCheckChange} className={styles.checkbox} />
           Show only differences in funding

@@ -45,6 +45,7 @@ class FundingPlanController {
     auth: {
       user,
     },
+    request,
   }: HttpContextContract): Promise<ApiResponse<ProposedFundingCategoryProps[]>> {
     if (!user) {
       throw new Error('user is undefined');
@@ -52,8 +53,10 @@ class FundingPlanController {
 
     const budget = await user.related('budget').query().firstOrFail();
 
+    const { date } = request.qs();
+
     return {
-      data: await budget.getProposedFunding(),
+      data: await budget.getProposedFunding(date),
     }
   }
 

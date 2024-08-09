@@ -468,17 +468,34 @@ export default class Budget extends BaseModel {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  public async getProposedFunding(): Promise<ProposedFundingCategoryProps[]> {
+  public async getProposedFunding(date: string): Promise<ProposedFundingCategoryProps[]> {
+    // Get the first day of the month
+    const firstDayOfMonth = DateTime.fromISO(date)
+      .set({
+        day: 1, hour: 0, minute: 0, second: 0, millisecond: 0,
+      })
+
     const cats = await Category.query()
       .whereHas('group', (query) => {
         query.where('budgetId', this.id)
-      });
+      })
+      .joinRaw(`left outer join
+        (
+          select transCats."categoryId", sum(transCats.amount) as sum
+          from transactions t
+          cross join lateral jsonb_to_recordset(t.categories) as transCats("categoryId" int, amount decimal)
+          where t.date >= ?
+          and t.deleted = false
+          group by transCats."categoryId"
+        ) AS T1 on T1."categoryId" = categories.id
+      `, [firstDayOfMonth.toISODate() ?? '']);
 
     const fundingMonth = DateTime.now().startOf('month');
 
     const proposedCats: ProposedFundingCategoryProps[] = [];
 
-    cats.forEach((cat) => {
+    // eslint-disable-next-line no-restricted-syntax
+    for (const cat of cats) {
       const proposedCat: ProposedFundingCategoryProps = {
         categoryId: cat.id,
         amount: 0,
@@ -498,8 +515,10 @@ export default class Budget extends BaseModel {
           goalMonth = fundingMonth.plus({ months: monthDiff })
         }
 
+        const futureTrxSum = parseFloat(cat.$extras.sum ?? 0);
+
         // TODO: use the planCat.amount sans any transactions this month
-        const goalDiff = cat.fundingAmount - cat.balance;
+        const goalDiff = cat.fundingAmount - (cat.balance - futureTrxSum);
 
         let monthlyAmount = 0.0;
 
@@ -544,7 +563,7 @@ export default class Budget extends BaseModel {
       }
 
       proposedCats.push(proposedCat)
-    })
+    }
 
     return proposedCats;
   }
