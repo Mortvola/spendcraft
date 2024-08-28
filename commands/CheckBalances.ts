@@ -96,7 +96,7 @@ export default class CheckBalances extends BaseCommand {
         // eslint-disable-next-line no-restricted-syntax
         for (const cat of categories) {
           const transSum = (cat.$extras.trans_sum === null ? 0 : parseFloat(cat.$extras.trans_sum));
-          if (Math.trunc(cat.balance * 100) !== Math.trunc(transSum * 100)) {
+          if (Math.round(cat.balance * 100) !== Math.round(transSum * 100)) {
             failures.push({
               category: cat,
               transSum,

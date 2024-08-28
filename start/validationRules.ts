@@ -94,7 +94,7 @@ validator.rule(
 
     let sum = 0;
     values.forEach((v) => {
-        sum += Math.trunc(v[property] * 100);
+        sum += Math.round(v[property] * 100);
     });
 
     if (sum !== 0) {

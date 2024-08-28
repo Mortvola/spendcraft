@@ -74,11 +74,13 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
 
     if (values.splits.length > 0) {
       const sum = values.splits.reduce(
-        (accum: number, item: TransactionCategoryInterface) => accum + Math.trunc(item.amount * 100),
+        (accum: number, item: TransactionCategoryInterface) => (
+          accum + Math.round(item.amount * 100)
+        ),
         0,
       );
 
-      if (sum !== Math.abs(Math.trunc(values.amount * 100))) {
+      if (sum !== Math.abs(Math.round(values.amount * 100))) {
         errors.splits = 'The sum of the categories does not match the transaction amount.';
       }
     }
