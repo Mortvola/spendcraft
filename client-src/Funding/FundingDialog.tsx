@@ -53,7 +53,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
   }
 
   const computeSpread = (category: { amount: number, fundingCategories: CategorySpreadEntry[]}) => {
-    let categoryAmount = Math.trunc(category.amount * 100);
+    let categoryAmount = Math.round(category.amount * 100);
     let percentSum = 0;
 
     // Sort the funding categories by percentage so that fixed amounts are applied before percentage amounts.
@@ -69,7 +69,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
       let fundingAmount: number;
 
       if (fundingCategory.percentage) {
-        fundingAmount = Math.trunc((fundingCategory.amount / 100.0) * categoryAmount);
+        fundingAmount = Math.round((fundingCategory.amount / 100.0) * categoryAmount);
         percentSum += fundingAmount;
 
         // If we are on the last item and there is a remaing amount (due to rounding error)
@@ -79,7 +79,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
         }
       }
       else {
-        fundingAmount = Math.trunc(fundingCategory.amount * 100);
+        fundingAmount = Math.round(fundingCategory.amount * 100);
         categoryAmount -= fundingAmount;
       }
 

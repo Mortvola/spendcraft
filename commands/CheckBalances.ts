@@ -119,7 +119,7 @@ export default class CheckBalances extends BaseCommand {
           // eslint-disable-next-line no-restricted-syntax
           for (const failure of app.failures) {
             const { category, transSum } = failure;
-            const difference = (Math.trunc(category.balance * 100) - Math.trunc(transSum * 100)) / 100.0;
+            const difference = (Math.round(category.balance * 100) - Math.round(transSum * 100)) / 100.0;
             this.logger.info(`\t"${category.group.name}:${category.name}" (${category.id}): ${category.balance.toFixed(2)}, Transactions: ${transSum.toFixed(2)}, difference: ${difference.toFixed(2)}`);
 
             issuesFound += 1;
