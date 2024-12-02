@@ -69,7 +69,7 @@ if [ -e $APP ]; then
 fi
 mv $APP_NEW $APP
 
-pm2 restart prod-server --time
+pm2 restart prod-server --time --cron "0 0 * * *"
 pm2 restart queue --time
 pm2 logs --nostream
 
