@@ -23,7 +23,7 @@ const TransactionTypeSelector: React.FC<PropsType> = ({
       <div className={styles.outer}>
         <div className={`${styles.slider} ${state ? 'on' : ''}`} />
         <div className={styles.inner}>
-          <div className={styles.label} onClick={handleClick1}>Posted Trnansactions</div>
+          <div className={styles.label} onClick={handleClick1}>Posted Transactions</div>
           <div className={styles.label} onClick={handleClick2}>Pending Transactions</div>
         </div>
       </div>
