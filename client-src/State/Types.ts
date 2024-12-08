@@ -9,12 +9,12 @@ import {
   AccountBalanceProps,
   CategoryBalanceProps,
   AccountProps,
-  CategoryProps,
   CategoryTransferProps,
   BillProps,
 } from '../../common/ResponseTypes'
 import LoanTransaction from './LoanTransaction';
 import SystemIds from './SystemIds';
+import type Statement from './Statement';
 
 export interface UserInterface {
   username: string | null;
@@ -236,12 +236,14 @@ export type Views = 'HOME' | 'PLANS' | 'ACCOUNTS' | 'REPORTS' | 'SEARCH' | 'USER
 export interface UIStateInterface {
   selectCategory(category: CategoryInterface | null): void;
   selectAccount(account: AccountInterface | null): void;
+  selectStatement(statement: Statement | null): void;
   selectPlan(plan: FundingPlanInterface | null): void;
   selectTransaction(transaction: TransactionInterface | null): void;
 
   selectedCategory: CategoryInterface | null;
   selectedPlan: FundingPlanInterface | null;
   selectedAccount: AccountInterface | null;
+  selectedStatement: Statement | null;
   selectedTransaction: TransactionInterface | null;
   plaid: PlaidInterface | null;
 }
@@ -412,6 +414,8 @@ export interface AccountInterface {
 
   pendingTransactions: TransactionContainerInterface;
 
+  statements: Statement[]
+
   store: StoreInterface;
 
   update(props: AccountProps): void;
@@ -426,6 +430,15 @@ export interface AccountInterface {
       categories: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
     },
   ): Promise<Error[] | null>;
+
+  addStatement(
+    startDate: string,
+    endDate: string,
+    startingBalance: number,
+    endingBalance: number,
+  ): Promise<ApiError[] | null>;
+
+  getStatements(): Promise<void>;
 
   delete(): void;
 
@@ -510,6 +523,13 @@ export type AddTransactionRequest = {
   amount?: number,
   categories:(TransactionCategoryInterface | NewTransactionCategoryInterface)[],
 };
+
+export type AddStatementRequest = {
+  startDate: string,
+  endDate: string,
+  startingBalance: number,
+  endingBalance: number,
+}
 
 export type CategoryParams = {
   type?: string,

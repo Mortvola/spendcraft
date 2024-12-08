@@ -92,7 +92,7 @@ const AccountsToolbar: React.FC<PropsType> = observer(({
               </button>
               <UploadFileButton
                 onFileSelection={handleUploadOfx}
-                label="Upload OFX"
+                label="Import OFX"
                 disabled={uiState.selectedAccount?.tracking !== 'Transactions'}
               />
               <TransactionDialog account={uiState.selectedAccount} />

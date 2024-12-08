@@ -4,14 +4,19 @@ import { DateTime } from 'luxon';
 import {
   AccountProps, AddTransactionResponse, Error,
   isAddTransactionResponse, TrackingType, AccountType,
+  ApiError,
+  AddStatementResponse,
+  StatementsResponse,
 } from '../../common/ResponseTypes';
 import {
   AccountInterface, InstitutionInterface, NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface,
   AddTransactionRequest,
   AccountSettings,
+  AddStatementRequest,
 } from './Types';
 import Transaction from './Transaction';
 import TransactionContainer from './TransactionContainer';
+import Statement from './Statement';
 
 class Account implements AccountInterface {
   id: number;
@@ -43,6 +48,9 @@ class Account implements AccountInterface {
   transactions: TransactionContainer;
 
   pendingTransactions: TransactionContainer;
+
+  @observable
+  accessor statements: Statement[] = [];
 
   store: StoreInterface;
 
@@ -140,6 +148,38 @@ class Account implements AccountInterface {
 
         return null;
       }
+    }
+
+    throw new Error('Error response received');
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  async addStatement(
+    startDate: string,
+    endDate: string,
+    startingBalance: number,
+    endingBalance: number,
+  ): Promise<ApiError[] | null> {
+    const response = await Http.post<AddStatementRequest, AddStatementResponse>(`/api/v1/account/${this.id}/statements`, {
+      startDate, endDate, startingBalance, endingBalance,
+    });
+
+    if (response.ok) {
+      /* nothing */
+
+      return null;
+    }
+
+    throw new Error('Error response received');
+  }
+
+  async getStatements(): Promise<void> {
+    const response = await Http.get<StatementsResponse>(`/api/v1/account/${this.id}/statements`)
+
+    if (response.ok) {
+      const body = await response.body()
+
+      this.statements = body.map((props) => new Statement(props))
     }
 
     throw new Error('Error response received');

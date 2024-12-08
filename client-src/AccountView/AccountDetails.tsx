@@ -24,7 +24,6 @@ const AccountDetails: React.FC = observer(() => {
   const [selected, setSelected] = React.useState<Tab>(Tab.Statements)
 
   const handleSelect = (eventKey: string | null) => {
-    console.log(eventKey)
     if (eventKey !== null) {
       setSelected(eventKey as Tab)
     }
@@ -46,7 +45,7 @@ const AccountDetails: React.FC = observer(() => {
         return <BalanceHistory />
 
       case Tab.Statements:
-        return <StatementsView />
+        return <StatementsView account={selectedAccount} />
 
       default:
         return null

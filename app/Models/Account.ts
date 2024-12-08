@@ -19,6 +19,7 @@ import Database from '@ioc:Adonis/Lucid/Database';
 import { getChanges } from 'App/Controllers/Http/transactionFields';
 import Category from './Category';
 import User from './User';
+import Statement from './Statement';
 
 export type AccountSyncResult = {
   categories: CategoryBalanceProps[],
@@ -42,6 +43,9 @@ class Account extends BaseModel {
 
   @hasMany(() => BalanceHistory)
   public balanceHistory: HasMany<typeof BalanceHistory>;
+
+  @hasMany(() => Statement)
+  public statements: HasMany<typeof Statement>;
 
   @column()
   public institutionId: number;

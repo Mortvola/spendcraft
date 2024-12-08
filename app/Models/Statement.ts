@@ -28,7 +28,4 @@ export default class Statement extends BaseModel {
 
   @column()
   public endingBalance: number
-
-  @belongsTo(() => Account)
-  public account: BelongsTo<typeof Account>;
 }

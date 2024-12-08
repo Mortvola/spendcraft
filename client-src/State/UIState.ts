@@ -1,12 +1,13 @@
 import { makeAutoObservable, runInAction } from 'mobx';
-import Category from './Category';
-import {
+import type Category from './Category';
+import type {
   AccountInterface,
   CategoryInterface,
   FundingPlanInterface,
   StoreInterface, TransactionInterface, UIStateInterface,
 } from './Types';
-import Plaid from './Plaid';
+import type Plaid from './Plaid';
+import type Statement from './Statement';
 
 class UIState implements UIStateInterface {
   selectedCategory: CategoryInterface | null = null;
@@ -14,6 +15,8 @@ class UIState implements UIStateInterface {
   selectedPlan: FundingPlanInterface | null = null;
 
   selectedAccount: AccountInterface | null = null;
+
+  selectedStatement: Statement | null = null;
 
   selectedTransaction: TransactionInterface | null = null;
 
@@ -37,6 +40,12 @@ class UIState implements UIStateInterface {
     runInAction(() => {
       this.selectedAccount = account;
     });
+  }
+
+  selectStatement(statement: Statement | null): void {
+    runInAction(() => {
+      this.selectedStatement = statement;
+    })
   }
 
   selectPlan(plan: FundingPlanInterface | null): void {

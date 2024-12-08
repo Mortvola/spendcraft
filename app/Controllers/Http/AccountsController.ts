@@ -9,6 +9,7 @@ import Transaction from 'App/Models/Transaction';
 import {
   TransactionsResponse, CategoryBalanceProps, TransactionProps, TransactionType, AccountBalanceProps, TrackingType,
   ApiResponse,
+  AddStatementResponse,
 } from 'Common/ResponseTypes';
 import transactionFields from './transactionFields';
 
@@ -512,6 +513,84 @@ export default class AccountsController {
           message: error.message,
         }],
       })
+    }
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  public async getStatements({
+    request,
+    auth: {
+      user,
+    },
+  }: HttpContextContract) {
+    if (!user) {
+      throw new Error('user not defined');
+    }
+
+    const { acctId } = request.params();
+
+    const account = await Account.findOrFail(acctId)
+
+    const statements = await account.related('statements').query()
+
+    return statements
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  public async addStatement({
+    request,
+    auth: {
+      user,
+    },
+    logger,
+  }: HttpContextContract): Promise<AddStatementResponse | void> {
+    if (!user) {
+      throw new Error('user not defined');
+    }
+
+    const { acctId } = request.params();
+    const requestData = await request.validate({
+      schema: schema.create({
+        startDate: schema.date(),
+        endDate: schema.date(),
+        startingBalance: schema.number(),
+        endingBalance: schema.number(),
+      }),
+    });
+
+    const trx = await Database.transaction();
+
+    try {
+      await user.related('budget').query()
+        .useTransaction(trx)
+        .forUpdate()
+        .firstOrFail();
+
+      const account = await Account.findOrFail(acctId, { client: trx });
+
+      const statement = await account.related('statements').create({
+        startDate: requestData.startDate,
+        endDate: requestData.endDate,
+        startingBalance: requestData.startingBalance,
+        endingBalance: requestData.endingBalance,
+      });
+
+      await trx.commit()
+
+      return {
+        id: statement.id,
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        startDate: statement.startDate.toISODate()!,
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        endDate: statement.endDate.toISODate()!,
+        startingBalance: statement.startingBalance,
+        endingBalance: statement.endingBalance,
+      };
+    }
+    catch (error) {
+      logger.error(error)
+      await trx.rollback()
+      throw error
     }
   }
 }

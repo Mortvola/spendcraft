@@ -767,6 +767,22 @@ export const isAddTransactionResponse = (r: unknown): r is AddTransactionRespons
   && Array.isArray((r as AddTransactionResponse).categories)
 )
 
+export type AddStatementResponse = {
+  id: number,
+  startDate: string,
+  endDate: string,
+  startingBalance: number,
+  endingBalance: number,
+}
+
+export type StatementsResponse = {
+  id: number,
+  startDate: string,
+  endDate: string,
+  startingBalance: number,
+  endingBalance: number,
+}[]
+
 export interface CategoryBalanceProps2 {
   id: number,
   name: string,

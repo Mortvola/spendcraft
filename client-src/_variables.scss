@@ -1,0 +1,23 @@
+html {
+  --page-color: #fff;
+  --text-color: black;
+  
+  --hover-background: whitesmoke;
+  --hover-color: black;
+  --selection-background: lightblue;
+  --selection-color: black;
+  
+  --trx-small-text: 0.85rem;  
+}
+
+@media (prefers-color-scheme: dark) {
+  html {
+    --page-color: #000;
+    --text-color: white;
+
+    --hover-background: #222;
+    --hover-color: white;
+    --selection-background: #333;
+    --selection-color: white;
+  }
+}

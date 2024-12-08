@@ -138,14 +138,28 @@ Route.group(() => {
       Route.get('/connected-accounts', 'UsersController.getConnectedAccounts');
   
       Route.group(() => {
-        Route.get('/transactions', 'AccountsController.transactions');
-        Route.post('/transactions', 'AccountsController.addTransaction');
-        Route.get('/balances', 'AccountsController.balances');
-        Route.post('/balances', 'AccountsController.addBalance');
         Route.patch('', 'AccountsController.update');
-        Route.delete('/balances/:id', 'AccountsController.deleteBalance');
-        Route.patch('/balances/:id', 'AccountsController.updateBalance');
         Route.post('/ofx', 'AccountsController.uploadOfx');
+
+        Route.group(() => {
+          Route.get('', 'AccountsController.transactions');
+          Route.post('', 'AccountsController.addTransaction');  
+        })
+          .prefix('/transactions')
+    
+        Route.group(() => {
+          Route.get('', 'AccountsController.balances');
+          Route.post('', 'AccountsController.addBalance');
+          Route.delete('/:id', 'AccountsController.deleteBalance');
+          Route.patch('/:id', 'AccountsController.updateBalance');    
+        })
+          .prefix('/balances')
+
+        Route.group(() => {
+          Route.get('', 'AccountsController.getStatements')
+          Route.post('', 'AccountsController.addStatement')
+        })
+          .prefix('/statements')
       })
         .prefix('/account/:acctId');
   
