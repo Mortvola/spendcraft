@@ -119,7 +119,6 @@ const Register: React.FC<PropsType> = observer(({
             account={account}
             transactionClassName={transactionClassName}
           />
-          <PendingRegister trxContainer={pendingTrxContainer} />
         </div>
       </DesktopView>
       <MobileView>

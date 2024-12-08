@@ -1,0 +1,38 @@
+@use "../breakpoints";
+
+.layout {
+  display: grid;
+  grid-template-rows: max-content max-content minmax(0,1fr);
+}
+
+.main-tray-title {
+  font-size:x-large;
+}
+
+@media (max-width: breakpoints.$side-by-side) {
+  .main-tray-title {
+    font-size: 2rem;
+    font-weight: bold;
+  }
+}
+
+.menu {
+  background-color: white;
+  padding-bottom: 2px;
+
+  :global(.nav-link) {
+    padding-bottom: 2px;
+    font-size: 0.85rem;
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: pointer;
+  }
+}
+
+.content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  height: 100%;
+  width: 100%;
+}

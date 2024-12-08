@@ -5,7 +5,6 @@ import Transaction from './Transaction';
 import styles from './PendingRegister.module.scss';
 import transactionStyles from './Transactions.module.scss'
 import RegisterTransactions from './RegisterTransactions';
-import useMediaQuery from '../MediaQuery';
 import RegisterTitles from './RegisterTitles';
 import { TransactionType } from '../../common/ResponseTypes';
 import useTrxDialog from './TrxDialog';
@@ -18,7 +17,6 @@ type PropsType = {
 const PendingRegister: React.FC<PropsType> = observer(({
   trxContainer,
 }) => {
-  const { isMobile } = useMediaQuery();
   const [TrxDialog, showTrxDialog] = useTrxDialog(); // account ?? undefined);
   const { uiState } = useStores();
 
@@ -35,15 +33,6 @@ const PendingRegister: React.FC<PropsType> = observer(({
   if (trxContainer && trxContainer.transactions.length > 0) {
     return (
       <div className={`${styles.pending} ${transactionStyles.pending} window`}>
-        {
-          isMobile
-            ? null
-            : (
-              <div className={styles.pendingRegisterTitle}>
-                Pending Transactions
-              </div>
-            )
-        }
         <RegisterTransactions trxContainer={trxContainer} titles={<RegisterTitles />}>
           {
             trxContainer.transactions.map((transaction) => (

@@ -6,11 +6,10 @@
 
 .pending {
   display: grid;
-  grid-template-rows: repeat(2, max-content) 1fr;
+  grid-template-rows: max-content minmax(0, 1fr);
   user-select: none;
   -webkit-user-select: none;
-  min-height: 25%;
-  max-height: 100%;
+  height: 100%;
 }
 
 @media (max-width: breakpoints.$side-by-side) {
