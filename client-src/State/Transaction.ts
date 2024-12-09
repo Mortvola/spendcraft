@@ -49,7 +49,7 @@ class Transaction implements TransactionInterface {
 
   duplicateOfTransactionId: number | null = null;
 
-  reconciled = false;
+  statementId: number | null = null;
 
   pending = false;
 
@@ -76,9 +76,9 @@ class Transaction implements TransactionInterface {
       this.accountId = props.accountTransaction.account.id;
       this.paymentChannel = props.accountTransaction.paymentChannel;
       this.location = props.accountTransaction.location;
-      this.reconciled = props.accountTransaction.reconciled;
       this.accountOwner = props.accountTransaction.accountOwner;
       this.pending = props.accountTransaction.pending;
+      this.statementId = props.accountTransaction.statementId;
     }
     else {
       switch (props.type) {
@@ -123,7 +123,8 @@ class Transaction implements TransactionInterface {
       amount?: number,
       principle?: number,
       comment?: string,
-      categories: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
+      statementId?: number | null,
+      categories?: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
     },
   ): Promise<null | ApiError[]> {
     if (this.id === null) {
@@ -156,12 +157,18 @@ class Transaction implements TransactionInterface {
             id: index, categoryId: c.categoryId, amount: c.amount, comment: c.comment,
           }));
 
-          const dateChanged = this.date !== DateTime.fromISO(transactionUpdate.transaction.date);
-          this.date = DateTime.fromISO(transactionUpdate.transaction.date);
+          // Determine if the date has changed
+          const newDate = DateTime.fromISO(transactionUpdate.transaction.date)
+          const dateChanged = this.date.year !== newDate.year
+            || this.date.month !== newDate.month
+            || this.date.day !== newDate.day;
+          this.date = newDate;
 
           this.amount = transactionUpdate.transaction.accountTransaction.amount;
           this.principle = transactionUpdate.transaction.accountTransaction.principle;
           this.name = transactionUpdate.transaction.accountTransaction.name;
+          this.statementId = transactionUpdate.transaction.accountTransaction.statementId;
+
           this.comment = transactionUpdate.transaction.comment;
           this.version = transactionUpdate.transaction.version;
 
@@ -323,9 +330,20 @@ class Transaction implements TransactionInterface {
     return amount;
   }
 
-  toggleReconciled(): void {
+  toggleReconciled(statementId: number): void {
     runInAction(() => {
-      this.reconciled = !this.reconciled;
+      let newStatementId: number | null | undefined
+
+      if (this.statementId === null) {
+        newStatementId = statementId
+      }
+      else if (this.statementId === statementId) {
+        newStatementId = null;
+      }
+
+      if (newStatementId !== undefined) {
+        this.updateTransaction({ statementId: newStatementId })
+      }
     })
   }
 }

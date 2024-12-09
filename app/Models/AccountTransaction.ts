@@ -63,6 +63,9 @@ class AccountTransaction extends BaseModel {
   @column()
   public accountOwner: string | null;
 
+  @column()
+  public statementId: number | null;
+
   @column({
     prepare: (value: Location) => JSON.stringify(value),
   })

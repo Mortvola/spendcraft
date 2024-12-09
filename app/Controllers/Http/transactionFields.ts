@@ -12,8 +12,8 @@ const transactionFields = {
     accountTransaction: {
       fields: {
         pick: [
-          'name', 'amount', 'principle', 'paymentChannel', 'reconciled',
-          'account', 'location', 'accountOwner', 'pending',
+          'name', 'amount', 'principle', 'paymentChannel',
+          'account', 'location', 'accountOwner', 'pending', 'statementId',
         ],
       },
       relations: {

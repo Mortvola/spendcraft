@@ -280,7 +280,7 @@ export interface TransactionProps {
 
     location: Location | null,
 
-    reconciled: boolean;
+    statementId: number;
 
     accountOwner: string | null;
 

@@ -61,7 +61,7 @@ export interface TransactionInterface extends BaseTransactionInterface {
 
   accountName: string;
 
-  reconciled: boolean;
+  statementId: number | null;
 
   accountOwner: string | null;
 
@@ -92,6 +92,7 @@ export interface TransactionInterface extends BaseTransactionInterface {
       amount?: number,
       principle?: number,
       comment?: string,
+      statementId?: number | null,
       categories: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
     },
   ): Promise<null | ApiError[]>;
@@ -105,7 +106,7 @@ export interface TransactionInterface extends BaseTransactionInterface {
     },
   ): Promise<null>
 
-  toggleReconciled(): void;
+  toggleReconciled(statementId: number): void;
 }
 
 export interface BaseTransactionInterface {
@@ -123,7 +124,7 @@ export interface BaseTransactionInterface {
 
   accountName: string;
 
-  reconciled: boolean;
+  statementId: number | null;
 
   accountOwner: string | null;
 
@@ -131,7 +132,7 @@ export interface BaseTransactionInterface {
 
   pending: boolean;
 
-  toggleReconciled(): void;
+  toggleReconciled(statementId: number): void;
 }
 
 export interface AccountsInterface {

@@ -20,7 +20,7 @@ class PendingTransaction implements BaseTransactionInterface {
 
   accountOwner: string | null = null;
 
-  reconciled = false;
+  statementId: number | null = null;
 
   pending = true;
 
@@ -49,7 +49,7 @@ class PendingTransaction implements BaseTransactionInterface {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  toggleReconciled(): void {
+  toggleReconciled(statementId: number): void {
     throw Error('not implemented')
   }
 }

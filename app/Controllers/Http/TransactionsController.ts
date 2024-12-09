@@ -84,7 +84,8 @@ export default class TransactionsController {
         date: schema.date.optional(),
         comment: schema.string.optional([rules.trim()]),
         version: schema.number(),
-        categories: schema.array().members(
+        statementId: schema.number.nullableAndOptional(),
+        categories: schema.array.optional().members(
           schema.object().members({
             categoryId: schema.number(),
             amount: schema.number(),
@@ -131,125 +132,128 @@ export default class TransactionsController {
       const account = await acctTrans.related('account').query().firstOrFail();
       // const account = await Account.findOrFail(acctTrans.accountId);
 
-      const { categories } = transaction;
+      if (requestData.categories !== undefined) {
+        const { categories } = transaction;
 
-      if (categories.length > 0) {
-        // There are pre-existing category splits.
-        // Credit the category balance for each one.
-        // eslint-disable-next-line no-restricted-syntax
-        for (const transCategory of categories) {
-          // eslint-disable-next-line no-await-in-loop
-          const category = await Category.findOrFail(transCategory.categoryId, { client: trx });
+        if (categories.length > 0) {
+          // There are pre-existing category splits.
+          // Credit the category balance for each one.
+          // eslint-disable-next-line no-restricted-syntax
+          for (const transCategory of categories) {
+            // eslint-disable-next-line no-await-in-loop
+            const category = await Category.findOrFail(transCategory.categoryId, { client: trx });
 
-          category.balance -= transCategory.amount;
+            category.balance -= transCategory.amount;
 
-          // eslint-disable-next-line no-await-in-loop
-          await category.save();
+            // eslint-disable-next-line no-await-in-loop
+            await category.save();
 
-          categoriesResult.push({
-            id: category.id,
-            balance: category.balance,
-          });
-        }
-
-        // Delete any loan transactions that are associated with the categories being deleted.
-        // eslint-disable-next-line no-restricted-syntax
-        // for (const split of splits) {
-        //   if (split.loanTransaction) {
-        //     split.loanTransaction.delete();
-        //     // eslint-disable-next-line no-await-in-loop
-        //     const loan = await Loan.findByOrFail('categoryId', split.categoryId, { client: trx });
-        //     // eslint-disable-next-line no-await-in-loop
-        //     await loan.updateBalance();
-        //   }
-
-        //   split.delete();
-        // }
-      }
-      else if (account.tracking === 'Transactions') {
-        // There are no category splits. Debit the 'Unassigned' category
-        if (requestData.amount !== undefined) {
-          unassigned.balance -= acctTrans.amount;
-          await unassigned.save();
-        }
-
-        categoriesResult.push({
-          id: unassigned.id,
-          balance: unassigned.balance,
-        });
-      }
-
-      const requestedCategories = requestData.categories;
-
-      if (requestedCategories.length > 0) {
-        transaction.categories = requestedCategories;
-
-        // eslint-disable-next-line no-restricted-syntax
-        for (const transCategory of requestedCategories) {
-          // eslint-disable-next-line no-await-in-loop
-          const category = await Category.findOrFail(transCategory.categoryId, { client: trx });
-
-          category.balance += transCategory.amount;
-
-          // eslint-disable-next-line no-await-in-loop
-          await category.save();
-
-          if (category.type === 'LOAN') {
-            // const loanTrx = (new LoanTransaction()).useTransaction(trx);
-
-            // // eslint-disable-next-line no-await-in-loop
-            // const loan = await Loan.findByOrFail('categoryId', split.categoryId, { client: trx });
-
-            // loanTrx.fill({
-            //   loanId: loan.id,
-            //   principle: 0,
-            // });
-
-            // // eslint-disable-next-line no-await-in-loop
-            // await loanTrx.related('transactionCategory').associate(txCategory);
-            // // eslint-disable-next-line no-await-in-loop
-            // await loan.updateBalance();
-          }
-
-          // Determine if the category is already in the array.
-          const index = categoriesResult.findIndex((c) => c.id === category.id);
-
-          // If the category is already in the array then simply update the amount.
-          // Otherwise, add the category and amount to the array.
-          if (index !== -1) {
-            categoriesResult[index].balance = category.balance;
-          }
-          else {
             categoriesResult.push({
               id: category.id,
               balance: category.balance,
             });
           }
-        }
-      }
-      else if (account.tracking === 'Transactions') {
-        // There are no category splits. Debit the 'Unassigned' category
-        if (requestData.amount !== undefined) {
-          unassigned.balance += requestData.amount;
-          await unassigned.save();
-        }
 
-        const index = categoriesResult.findIndex((c) => c.id === unassigned.id);
+          // Delete any loan transactions that are associated with the categories being deleted.
+          // eslint-disable-next-line no-restricted-syntax
+          // for (const split of splits) {
+          //   if (split.loanTransaction) {
+          //     split.loanTransaction.delete();
+          //     // eslint-disable-next-line no-await-in-loop
+          //     const loan = await Loan.findByOrFail('categoryId', split.categoryId, { client: trx });
+          //     // eslint-disable-next-line no-await-in-loop
+          //     await loan.updateBalance();
+          //   }
 
-        if (index !== -1) {
-          categoriesResult[index].balance = unassigned.balance;
+          //   split.delete();
+          // }
         }
-        else {
+        else if (account.tracking === 'Transactions') {
+          // There are no category splits. Debit the 'Unassigned' category
+          if (requestData.amount !== undefined) {
+            unassigned.balance -= acctTrans.amount;
+            await unassigned.save();
+          }
+
           categoriesResult.push({
             id: unassigned.id,
             balance: unassigned.balance,
           });
         }
+
+        if (requestData.categories.length > 0) {
+          transaction.categories = requestData.categories;
+
+          // eslint-disable-next-line no-restricted-syntax
+          for (const transCategory of requestData.categories) {
+            // eslint-disable-next-line no-await-in-loop
+            const category = await Category.findOrFail(transCategory.categoryId, { client: trx });
+
+            category.balance += transCategory.amount;
+
+            // eslint-disable-next-line no-await-in-loop
+            await category.save();
+
+            if (category.type === 'LOAN') {
+              // const loanTrx = (new LoanTransaction()).useTransaction(trx);
+
+              // // eslint-disable-next-line no-await-in-loop
+              // const loan = await Loan.findByOrFail('categoryId', split.categoryId, { client: trx });
+
+              // loanTrx.fill({
+              //   loanId: loan.id,
+              //   principle: 0,
+              // });
+
+              // // eslint-disable-next-line no-await-in-loop
+              // await loanTrx.related('transactionCategory').associate(txCategory);
+              // // eslint-disable-next-line no-await-in-loop
+              // await loan.updateBalance();
+            }
+
+            // Determine if the category is already in the array.
+            const index = categoriesResult.findIndex((c) => c.id === category.id);
+
+            // If the category is already in the array then simply update the amount.
+            // Otherwise, add the category and amount to the array.
+            if (index !== -1) {
+              categoriesResult[index].balance = category.balance;
+            }
+            else {
+              categoriesResult.push({
+                id: category.id,
+                balance: category.balance,
+              });
+            }
+          }
+        }
+        else if (account.tracking === 'Transactions') {
+          // There are no category splits. Debit the 'Unassigned' category
+          if (requestData.amount !== undefined) {
+            unassigned.balance += requestData.amount;
+            await unassigned.save();
+          }
+
+          const index = categoriesResult.findIndex((c) => c.id === unassigned.id);
+
+          if (index !== -1) {
+            categoriesResult[index].balance = unassigned.balance;
+          }
+          else {
+            categoriesResult.push({
+              id: unassigned.id,
+              balance: unassigned.balance,
+            });
+          }
+        }
       }
 
-      if (requestData.name !== undefined
+      if (
+        requestData.name !== undefined
         || requestData.amount !== undefined
-        || requestData.principle !== undefined) {
+        || requestData.principle !== undefined
+        || requestData.statementId !== undefined
+      ) {
         if (account.type === 'loan') {
           account.balance -= acctTrans.principle ?? 0;
         }
@@ -262,8 +266,16 @@ export default class TransactionsController {
         accountTransactionChanges.name = requestData.name;
         accountTransactionChanges.amount = requestData.amount;
         accountTransactionChanges.principle = requestData.principle;
+        accountTransactionChanges.statementId = requestData.statementId;
 
         changes = getChanges(acctTrans, accountTransactionChanges, changes);
+
+        // eslint-disable-next-line no-restricted-syntax
+        for (const property of Object.getOwnPropertyNames(accountTransactionChanges)) {
+          if (accountTransactionChanges[property] === undefined) {
+            delete accountTransactionChanges[property]
+          }
+        }
 
         acctTrans.merge(accountTransactionChanges);
 
@@ -288,6 +300,13 @@ export default class TransactionsController {
       changes = getChanges(transaction, transactionChanges, changes);
 
       transactionChanges.version = transaction.version + 1;
+
+      // eslint-disable-next-line no-restricted-syntax
+      for (const property of Object.getOwnPropertyNames(transactionChanges)) {
+        if (transactionChanges[property] === undefined) {
+          delete transactionChanges[property]
+        }
+      }
 
       transaction.merge(transactionChanges);
 

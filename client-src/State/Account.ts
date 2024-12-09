@@ -179,7 +179,9 @@ class Account implements AccountInterface {
     if (response.ok) {
       const body = await response.body()
 
-      this.statements = body.map((props) => new Statement(props))
+      runInAction(() => {
+        this.statements = body.map((props) => new Statement(props))
+      })
     }
 
     throw new Error('Error response received');
