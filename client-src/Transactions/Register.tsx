@@ -13,10 +13,12 @@ import TransactionTypeSelector from './TransactionTypeSelector';
 
 type PropsType = {
   type: 'category' | 'account' | 'rebalances',
+  className?: string,
 }
 
 const Register: React.FC<PropsType> = observer(({
   type,
+  className,
 }) => {
   const store = useStores();
   const { uiState, categoryTree, rebalances } = store;
@@ -63,7 +65,7 @@ const Register: React.FC<PropsType> = observer(({
 
   let transactionClassName: string | undefined;
 
-  let className = '';
+  let addedClasses = className;
 
   switch (type) {
     case 'category':
@@ -96,7 +98,7 @@ const Register: React.FC<PropsType> = observer(({
 
     case 'rebalances':
       trxContainer = rebalances.transactions;
-      className = styles.rebalances;
+      addedClasses = `${addedClasses} ${styles.rebalances}`;
 
       break;
 
@@ -111,7 +113,7 @@ const Register: React.FC<PropsType> = observer(({
   return (
     <>
       <DesktopView>
-        <div className={`${styles.registerWrapper} ${className}`}>
+        <div className={`${styles.registerWrapper} ${addedClasses}`}>
           <PostedRegister
             type={type}
             trxContainer={trxContainer}
@@ -122,7 +124,7 @@ const Register: React.FC<PropsType> = observer(({
         </div>
       </DesktopView>
       <MobileView>
-        <div className={styles.registerWrapper}>
+        <div className={`${styles.registerWrapper} ${addedClasses}`}>
           {
             (pendingTrxContainer?.transactions.length ?? 0) > 0
               ? <TransactionTypeSelector state={transactionType} onClick={handleTypeClick} />

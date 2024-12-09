@@ -17,14 +17,30 @@ class Statement {
   @observable
   accessor endingBalance: number
 
+  @observable
+  accessor credits: number
+
+  @observable
+  accessor debits: number
+
   constructor(
-    props: { id: number, startDate: string, endDate: string, startingBalance: number, endingBalance: number},
+    props: {
+      id: number,
+      startDate: string,
+      endDate: string,
+      startingBalance: number,
+      endingBalance: number,
+      credits: number,
+      debits: number,
+    },
   ) {
     this.id = props.id
     this.startDate = DateTime.fromISO(props.startDate)
     this.endDate = DateTime.fromISO(props.endDate)
     this.startingBalance = props.startingBalance
     this.endingBalance = props.endingBalance
+    this.credits = props.credits
+    this.debits = props.debits
   }
 }
 

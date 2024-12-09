@@ -3,13 +3,30 @@
 .layout {
   display: grid;
   grid-template-columns: minmax(0, 0.15fr) minmax(0, 0.85fr);
-  grid-template-rows: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) max-content;
+  grid-template-areas: "statements register" "statements totals";
   height: 100%;
 }
 
+.statements {
+  grid-area: statements;
+}
+
 .transactions {
+  grid-area: register;
   width: 100%;
   height: 100%;
+}
+
+.totals {
+  grid-area: totals;
+  min-height: 4rem;
+
+  > label {
+    display: flex;
+    column-gap: 0.25rem;
+    margin-left: 0.25rem;
+  }
 }
 
 .items {

@@ -532,6 +532,12 @@ export default class AccountsController {
     const account = await Account.findOrFail(acctId)
 
     const statements = await account.related('statements').query()
+      .withAggregate('accountTransactions', (query) => {
+        query.where('amount', '>', 0).sum('amount').as('credits')
+      })
+      .withAggregate('accountTransactions', (query) => {
+        query.where('amount', '<', 0).sum('amount').as('debits')
+      })
 
     return statements
   }

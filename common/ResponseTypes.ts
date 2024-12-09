@@ -781,6 +781,8 @@ export type StatementsResponse = {
   endDate: string,
   startingBalance: number,
   endingBalance: number,
+  credits: number,
+  debits: number,
 }[]
 
 export interface CategoryBalanceProps2 {

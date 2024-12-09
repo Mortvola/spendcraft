@@ -1,8 +1,10 @@
 import { DateTime } from 'luxon'
 import {
-  BaseModel, BelongsTo, belongsTo, column,
+  BaseModel, column,
+  HasMany,
+  hasMany,
 } from '@ioc:Adonis/Lucid/Orm'
-import Account from './Account'
+import AccountTransaction from './AccountTransaction'
 
 export default class Statement extends BaseModel {
   @column({ isPrimary: true })
@@ -23,9 +25,23 @@ export default class Statement extends BaseModel {
   @column.date()
   public endDate: DateTime
 
-  @column()
+  @column({
+    consume: (value: string) => parseFloat(value),
+  })
   public startingBalance: number
 
-  @column()
+  @column({
+    consume: (value: string) => parseFloat(value),
+  })
   public endingBalance: number
+
+  @hasMany(() => AccountTransaction)
+  public accountTransactions: HasMany<typeof AccountTransaction>;
+
+  public serializeExtras() {
+    return {
+      debits: this.$extras.debits === null ? 0 : parseFloat(this.$extras.debits),
+      credits: this.$extras.credits === null ? 0 : parseFloat(this.$extras.credits),
+    }
+  }
 }

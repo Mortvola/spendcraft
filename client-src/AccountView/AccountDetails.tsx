@@ -21,7 +21,7 @@ const AccountDetails: React.FC = observer(() => {
     uiState: { selectedAccount },
   } = useStores();
 
-  const [selected, setSelected] = React.useState<Tab>(Tab.Statements)
+  const [selected, setSelected] = React.useState<Tab>(Tab.Transaction)
 
   const handleSelect = (eventKey: string | null) => {
     if (eventKey !== null) {

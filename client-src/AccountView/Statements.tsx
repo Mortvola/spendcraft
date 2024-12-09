@@ -6,6 +6,7 @@ import { useStatementDialog } from './StatementDialog';
 import { AccountInterface } from '../State/Types';
 import { useStores } from '../State/Store';
 import Statement from '../State/Statement';
+import Amount from '../Amount';
 
 type PropsType = {
   account: AccountInterface
@@ -29,10 +30,39 @@ const Statements: React.FC<PropsType> = observer(({
     uiState.selectStatement(statement)
   }
 
+  const renderStatement = (statement: Statement | null) => {
+    if (statement === null) {
+      return null;
+    }
+
+    return (
+      <>
+        <label>
+          Starting Balance:
+          <Amount amount={statement.startingBalance} />
+        </label>
+        <label>
+          Credits:
+          <Amount amount={statement.credits} />
+        </label>
+        <label>
+          Debits:
+          <Amount amount={statement.debits} />
+        </label>
+        <label>
+          Ending Balance:
+          <Amount
+            amount={statement.startingBalance + statement.credits + statement.debits}
+          />
+        </label>
+      </>
+    )
+  }
+
   return (
     <>
       <div className={styles.layout}>
-        <div className="window window1">
+        <div className={`${styles.statements} window window1`}>
           Statements
           <button type="button" onClick={showStatementDialog}>Add</button>
           <div className={styles.items}>
@@ -53,7 +83,12 @@ const Statements: React.FC<PropsType> = observer(({
             }
           </div>
         </div>
-        <Register type="account" />
+        <Register className={styles.transactions} type="account" />
+        <div className={`${styles.totals} window window1`}>
+          {
+            renderStatement(selectedStatement)
+          }
+        </div>
       </div>
       <StatementDialog account={account} />
     </>
