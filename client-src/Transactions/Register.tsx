@@ -4,12 +4,8 @@ import { useStores } from '../State/Store';
 import {
   AccountInterface, CategoryInterface, TransactionContainerInterface,
 } from '../State/Types';
-import PendingRegister from './PendingRegister';
 import styles from './Transactions.module.scss';
-import DesktopView from '../DesktopView';
-import MobileView from '../MobileView';
 import PostedRegister from './PostedRegister';
-import TransactionTypeSelector from './TransactionTypeSelector';
 
 type PropsType = {
   type: 'category' | 'account' | 'rebalances',
@@ -22,11 +18,6 @@ const Register: React.FC<PropsType> = observer(({
 }) => {
   const store = useStores();
   const { uiState, categoryTree, rebalances } = store;
-  const [transactionType, setTransactionType] = React.useState(false);
-
-  const handleTypeClick = (newType: boolean) => {
-    setTransactionType(newType);
-  }
 
   React.useEffect(() => {
     switch (type) {
@@ -61,7 +52,6 @@ const Register: React.FC<PropsType> = observer(({
   let account: AccountInterface | null = null;
 
   let trxContainer: TransactionContainerInterface | null = null;
-  let pendingTrxContainer: TransactionContainerInterface | null = null;
 
   let transactionClassName: string | undefined;
 
@@ -76,7 +66,6 @@ const Register: React.FC<PropsType> = observer(({
       }
 
       trxContainer = category.transactions;
-      pendingTrxContainer = category.pendingTransactions
 
       break;
 
@@ -88,7 +77,6 @@ const Register: React.FC<PropsType> = observer(({
       }
 
       trxContainer = account.transactions;
-      pendingTrxContainer = account.pendingTransactions
 
       if (account.type === 'loan') {
         transactionClassName = ` ${styles.loan}`;
@@ -111,43 +99,15 @@ const Register: React.FC<PropsType> = observer(({
   }
 
   return (
-    <>
-      <DesktopView>
-        <div className={`${styles.registerWrapper} ${addedClasses}`}>
-          <PostedRegister
-            type={type}
-            trxContainer={trxContainer}
-            category={category}
-            account={account}
-            transactionClassName={transactionClassName}
-          />
-        </div>
-      </DesktopView>
-      <MobileView>
-        <div className={`${styles.registerWrapper} ${addedClasses}`}>
-          {
-            (pendingTrxContainer?.transactions.length ?? 0) > 0
-              ? <TransactionTypeSelector state={transactionType} onClick={handleTypeClick} />
-              : null
-          }
-          {
-            transactionType && pendingTrxContainer?.transactions.length
-              ? (
-                <PendingRegister trxContainer={pendingTrxContainer} />
-              )
-              : (
-                <PostedRegister
-                  type={type}
-                  trxContainer={trxContainer}
-                  category={category}
-                  account={account}
-                  transactionClassName={transactionClassName}
-                />
-              )
-          }
-        </div>
-      </MobileView>
-    </>
+    <div className={`${styles.registerWrapper} ${addedClasses}`}>
+      <PostedRegister
+        type={type}
+        trxContainer={trxContainer}
+        category={category}
+        account={account}
+        transactionClassName={transactionClassName}
+      />
+    </div>
   );
 });
 
