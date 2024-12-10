@@ -39,6 +39,12 @@ const Statements: React.FC<PropsType> = observer(({
     return (
       <>
         <label>
+          Date Range:
+          <div>{statement.startDate.toISODate()}</div>
+          to
+          <div>{statement.endDate.toISODate()}</div>
+        </label>
+        <label>
           Starting Balance:
           <Amount amount={statement.startingBalance} />
         </label>
