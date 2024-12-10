@@ -119,16 +119,28 @@ export default class AccountsController {
     const trx = await Database.transaction();
 
     try {
+      const unassignedCat = await budget.getUnassignedCategory({ client: trx });
+
       const account = await Account.findOrFail(acctId, { client: trx });
 
       const transaction = (new Transaction()).useTransaction(trx);
 
+      // Use the unassigned category if the categories array is null.
+      const categories = requestData.categories.length !== 0
+        ? requestData.categories
+        : [{
+          categoryId: unassignedCat.id,
+          amount: requestData.amount,
+        }]
+
       transaction.fill({
+        version: 0,
         type: TransactionType.MANUAL_TRANSACTION,
         date: requestData.date,
         sortOrder: 2147483647,
         comment: requestData.comment,
-        categories: requestData.categories,
+        categories,
+        duplicateOfTransactionId: null,
       });
 
       await transaction.related('budget').associate(budget);
@@ -138,6 +150,7 @@ export default class AccountsController {
         transactionId: transaction.id,
         amount: requestData.amount,
         principle: requestData.principle,
+        statementId: null,
       });
 
       if (account.type === 'loan') {
@@ -151,14 +164,10 @@ export default class AccountsController {
 
       const categoryBalances: CategoryBalanceProps[] = [];
 
-      const { categories } = requestData;
-
       if (!categories || categories.length === 0) {
         // We only want to update the unassigned category balance if 
         // this account is tracking categorized transactions
         if (account.tracking === 'Transactions') {
-          const unassignedCat = await budget.getUnassignedCategory({ client: trx });
-
           unassignedCat.balance += acctTransaction.amount;
 
           await unassignedCat.save();
