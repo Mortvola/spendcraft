@@ -62,6 +62,18 @@ const Statements: React.FC<PropsType> = observer(({
             amount={statement.startingBalance + statement.credits + statement.debits}
           />
         </label>
+        <label>
+          Target Ending Balance:
+          <Amount
+            amount={statement.endingBalance}
+          />
+        </label>
+        <label>
+          Ending Balance Difference:
+          <Amount
+            amount={statement.startingBalance + statement.credits + statement.debits - statement.endingBalance}
+          />
+        </label>
       </>
     )
   }
