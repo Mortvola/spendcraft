@@ -131,6 +131,25 @@ $balance-width: 8rem;
   }
 }
 
+.statement {
+  .transaction {
+    grid-template-columns: $icon-width $date-width minmax(0, 0.8fr) $amount-width max-content minmax(0, 0.5fr) max-content;
+    grid-template-areas: ". date name amount reconcile owner .";
+
+    .running-balance,
+    .trx-amount,
+    .account,
+    .pending-flag {
+      display: none;
+    }
+  
+    .reconcile,
+    .owner {
+      display: unset;
+    }
+  }
+}
+
 .unassigned {
   .transaction {
     grid-template-columns: $icon-width $date-width minmax(0,1fr) $amount-width $balance-width minmax(0, 0.5fr) max-content;
@@ -179,17 +198,17 @@ $balance-width: 8rem;
 
 .acct {
   .transaction {
-    grid-template-columns: $icon-width $date-width minmax(0,1fr) $amount-width $balance-width max-content minmax(0, 1fr);
-    grid-template-areas: ". date name amount running-balance reconcile owner .";
+    grid-template-columns: $icon-width $date-width minmax(0,1fr) $amount-width $balance-width minmax(0, 1fr);
+    grid-template-areas: ". date name amount running-balance owner .";
 
-    .owner,
-    .reconcile {
+    .owner {
       display: unset;
     }
   
     .pending-flag,
     .account,
-    .trx-amount {
+    .trx-amount,
+    .reconcile {
       display: none;
     }  
   }

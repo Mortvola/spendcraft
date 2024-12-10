@@ -36,7 +36,7 @@ const AccountDetails: React.FC = observer(() => {
   const renderTab = () => {
     switch (selected) {
       case Tab.Transaction:
-        return <Register type="account" />
+        return <Register className={styles.acct} type="account" />
 
       case Tab.Pending:
         return <PendingRegister trxContainer={selectedAccount.pendingTransactions} />
@@ -53,7 +53,7 @@ const AccountDetails: React.FC = observer(() => {
   }
 
   return (
-    <div className={`${styles2.layout} ${styles.acct}`}>
+    <div className={`${styles2.layout}`}>
       <div className={`${styles2.mainTrayTitle} ellipsis`}>{`${selectedAccount.institution.name}: ${selectedAccount.name}`}</div>
       <Nav variant="underline" className={styles2.menu} onSelect={handleSelect} activeKey={selected}>
         <Nav.Link as="div" eventKey={Tab.Transaction}>Transactions</Nav.Link>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
 import styles from './Statements.module.scss'
+import trxStyles from '../Transactions/Transactions.module.scss'
 import Register from '../Transactions/Register';
 import { useStatementDialog } from './StatementDialog';
 import { AccountInterface } from '../State/Types';
@@ -83,7 +84,7 @@ const Statements: React.FC<PropsType> = observer(({
             }
           </div>
         </div>
-        <Register className={styles.transactions} type="account" />
+        <Register className={`${trxStyles.statement} ${styles.transactions}`} type="account" />
         <div className={`${styles.totals} window window1`}>
           {
             renderStatement(selectedStatement)
