@@ -224,6 +224,16 @@ export const isAddInstitutionResponse = (r: unknown): r is AddInstitutionRespons
   // && Array.isArray((r as AddInstitutionResponse).categories)
 );
 
+export type StatementProps = {
+  id: number,
+  startDate: string,
+  endDate: string,
+  startingBalance: number,
+  endingBalance: number,
+  credits: number,
+  debits: number,
+}
+
 export enum TransactionType {
   REGULAR_TRANSACTION = 0,
   TRANSFER_TRANSACTION = 1,
@@ -295,7 +305,7 @@ export interface TransactionProps {
         name: string;
       }
     }
-  }
+  },
 }
 
 export const isTransactionProps = (r: unknown): r is TransactionProps => (
@@ -447,6 +457,8 @@ export interface UpdateTransactionResponse {
   categories: CategoryBalanceProps[];
 
   acctBalances: AccountBalanceProps[],
+
+  statement?: StatementProps,
 }
 
 export interface UpdateCategoryTransferResponse {
@@ -775,15 +787,7 @@ export type AddStatementResponse = {
   endingBalance: number,
 }
 
-export type StatementsResponse = {
-  id: number,
-  startDate: string,
-  endDate: string,
-  startingBalance: number,
-  endingBalance: number,
-  credits: number,
-  debits: number,
-}[]
+export type StatementsResponse = StatementProps[]
 
 export interface CategoryBalanceProps2 {
   id: number,

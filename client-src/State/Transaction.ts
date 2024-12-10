@@ -209,6 +209,10 @@ class Transaction implements TransactionInterface {
 
           if (account) {
             account.balance = transactionUpdate.acctBalances[0].balance;
+
+            if (transactionUpdate.statement) {
+              account.updateStatement(transactionUpdate.statement)
+            }
           }
         });
 

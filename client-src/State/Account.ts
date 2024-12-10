@@ -7,6 +7,7 @@ import {
   ApiError,
   AddStatementResponse,
   StatementsResponse,
+  StatementProps,
 } from '../../common/ResponseTypes';
 import {
   AccountInterface, InstitutionInterface, NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface,
@@ -185,6 +186,17 @@ class Account implements AccountInterface {
     }
 
     throw new Error('Error response received');
+  }
+
+  updateStatement(props: StatementProps): void {
+    const statement = this.statements.find((s) => s.id === props.id)
+
+    if (statement) {
+      runInAction(() => {
+        statement.credits = props.credits
+        statement.debits = props.debits
+      })
+    }
   }
 
   delete(): void {

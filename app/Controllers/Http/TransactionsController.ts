@@ -7,6 +7,7 @@ import Transaction from 'App/Models/Transaction';
 import AccountTransaction from 'App/Models/AccountTransaction';
 import {
   AccountBalanceProps, ApiResponse, CategoryBalanceProps, RequestErrorCode,
+  StatementProps,
   TransactionProps, TransactionsResponse, TransactionType,
   UpdateTransactionResponse,
 } from 'Common/ResponseTypes';
@@ -14,6 +15,7 @@ import Account from 'App/Models/Account';
 import { schema, rules } from '@ioc:Adonis/Core/Validator';
 import TransactionLog from 'App/Models/TransactionLog';
 import { ModelAttributes } from '@ioc:Adonis/Lucid/Orm';
+import Statement from 'App/Models/Statement';
 import transactionFields, { getChanges } from './transactionFields';
 
 export default class TransactionsController {
@@ -248,6 +250,8 @@ export default class TransactionsController {
         }
       }
 
+      let changedStatementId: number | null = null
+
       if (
         requestData.name !== undefined
         || requestData.amount !== undefined
@@ -275,6 +279,15 @@ export default class TransactionsController {
           if (accountTransactionChanges[property] === undefined) {
             delete accountTransactionChanges[property]
           }
+        }
+
+        // Note the change in statement id, if any, for retrieval of the statement
+        // later.
+        if (
+          accountTransactionChanges.statementId !== undefined
+          && accountTransactionChanges.statementId !== acctTrans.statementId
+        ) {
+          changedStatementId = accountTransactionChanges.statementId ?? acctTrans.statementId
         }
 
         acctTrans.merge(accountTransactionChanges);
@@ -337,6 +350,22 @@ export default class TransactionsController {
 
       await trx.commit();
 
+      let statement: Statement | null | undefined
+
+      // If the transaction was added or removed from a statement then
+      // send the updated statement in the response.
+      if (changedStatementId !== null) {
+        statement = await account.related('statements').query()
+          .withAggregate('accountTransactions', (query) => {
+            query.where('amount', '>', 0).sum('amount').as('credits')
+          })
+          .withAggregate('accountTransactions', (query) => {
+            query.where('amount', '<', 0).sum('amount').as('debits')
+          })
+          .where('id', changedStatementId)
+          .first()
+      }
+
       const result = {
         data: {
           transaction: transaction.serialize(transactionFields) as TransactionProps,
@@ -345,6 +374,7 @@ export default class TransactionsController {
             id: account.id,
             balance: account.balance,
           }],
+          statement: statement?.serialize() as StatementProps,
         },
       }
 

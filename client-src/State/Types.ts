@@ -11,6 +11,7 @@ import {
   AccountProps,
   CategoryTransferProps,
   BillProps,
+  StatementProps,
 } from '../../common/ResponseTypes'
 import LoanTransaction from './LoanTransaction';
 import SystemIds from './SystemIds';
@@ -440,6 +441,8 @@ export interface AccountInterface {
   ): Promise<ApiError[] | null>;
 
   getStatements(): Promise<void>;
+
+  updateStatement(props: StatementProps): void;
 
   delete(): void;
 
