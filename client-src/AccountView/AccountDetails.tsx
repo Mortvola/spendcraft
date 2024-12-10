@@ -39,7 +39,11 @@ const AccountDetails: React.FC = observer(() => {
         return <Register className={styles.acct} type="account" />
 
       case Tab.Pending:
-        return <PendingRegister trxContainer={selectedAccount.pendingTransactions} />
+        return (
+          <div className={styles.acct}>
+            <PendingRegister trxContainer={selectedAccount.pendingTransactions} />
+          </div>
+        )
 
       case Tab.Balances:
         return <BalanceHistory />

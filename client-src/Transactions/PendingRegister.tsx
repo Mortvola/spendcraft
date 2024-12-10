@@ -12,10 +12,12 @@ import { useStores } from '../State/Store';
 
 type PropsType = {
   trxContainer: TransactionContainerInterface | null,
+  className?: string,
 }
 
 const PendingRegister: React.FC<PropsType> = observer(({
   trxContainer,
+  className = '',
 }) => {
   const [TrxDialog, showTrxDialog] = useTrxDialog(); // account ?? undefined);
   const { uiState } = useStores();
@@ -32,7 +34,7 @@ const PendingRegister: React.FC<PropsType> = observer(({
 
   if (trxContainer && trxContainer.transactions.length > 0) {
     return (
-      <div className={`${styles.pending} ${transactionStyles.pending} window`}>
+      <div className={`${styles.pending} ${transactionStyles.pending} ${className} window`}>
         <RegisterTransactions trxContainer={trxContainer} titles={<RegisterTitles />}>
           {
             trxContainer.transactions.map((transaction) => (
