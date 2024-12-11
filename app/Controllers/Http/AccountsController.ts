@@ -125,13 +125,16 @@ export default class AccountsController {
 
       const transaction = (new Transaction()).useTransaction(trx);
 
-      // Use the unassigned category if the categories array is null.
-      const categories = requestData.categories.length !== 0
-        ? requestData.categories
-        : [{
+      let { categories } = requestData
+
+      // Use the unassigned category if the categories array is empty.
+      if (account.tracking === 'Transactions' && categories.length === 0) {
+        categories = [{
           categoryId: unassignedCat.id,
           amount: requestData.amount,
+          comment: undefined,
         }]
+      }
 
       transaction.fill({
         version: 0,
@@ -164,40 +167,23 @@ export default class AccountsController {
 
       const categoryBalances: CategoryBalanceProps[] = [];
 
-      if (!categories || categories.length === 0) {
-        // We only want to update the unassigned category balance if 
-        // this account is tracking categorized transactions
-        if (account.tracking === 'Transactions') {
-          unassignedCat.balance += acctTransaction.amount;
+      // eslint-disable-next-line no-restricted-syntax
+      for (const split of categories) {
+        // eslint-disable-next-line no-await-in-loop
+        const category = await Category.findOrFail(split.categoryId, { client: trx });
 
-          await unassignedCat.save();
+        category.balance += split.amount;
 
-          categoryBalances.push({ id: unassignedCat.id, balance: unassignedCat.balance })
+        // eslint-disable-next-line no-await-in-loop
+        await category.save();
+
+        const balance = categoryBalances.find((b) => b.id === category.id);
+
+        if (balance) {
+          balance.balance = category.balance;
         }
-      }
-      else {
-        if (account.tracking !== 'Transactions') {
-          throw new Error('categorized transaction within an uncategorized account');
-        }
-
-        // eslint-disable-next-line no-restricted-syntax
-        for (const split of categories) {
-          // eslint-disable-next-line no-await-in-loop
-          const category = await Category.findOrFail(split.categoryId, { client: trx });
-
-          category.balance += split.amount;
-
-          // eslint-disable-next-line no-await-in-loop
-          await category.save();
-
-          const balance = categoryBalances.find((b) => b.id === category.id);
-
-          if (balance) {
-            balance.balance = category.balance;
-          }
-          else {
-            categoryBalances.push({ id: split.categoryId, balance: category.balance });
-          }
+        else {
+          categoryBalances.push({ id: split.categoryId, balance: category.balance });
         }
       }
 
