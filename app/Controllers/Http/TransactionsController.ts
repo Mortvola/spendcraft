@@ -367,9 +367,15 @@ export default class TransactionsController {
         statement = await account.related('statements').query()
           .withAggregate('accountTransactions', (query) => {
             query.where('amount', '>', 0).sum('amount').as('credits')
+              .whereHas('transaction', (query2) => {
+                query2.where('deleted', false)
+              })
           })
           .withAggregate('accountTransactions', (query) => {
             query.where('amount', '<', 0).sum('amount').as('debits')
+              .whereHas('transaction', (query2) => {
+                query2.where('deleted', false)
+              })
           })
           .where('id', changedStatementId)
           .first()
