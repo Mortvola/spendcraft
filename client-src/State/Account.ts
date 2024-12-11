@@ -166,7 +166,28 @@ class Account implements AccountInterface {
     });
 
     if (response.ok) {
-      /* nothing */
+      const props = await response.body();
+
+      runInAction(() => {
+        const statement = new Statement(props)
+
+        this.statements = [
+          ...this.statements,
+          statement,
+        ].sort((a, b) => {
+          if (a.endDate.startOf('day') > b.endDate.startOf('day')) {
+            return -1
+          }
+
+          if (a.endDate.startOf('day') > b.endDate.startOf('day')) {
+            return 1
+          }
+
+          return 0
+        })
+
+        this.store.uiState.selectStatement(statement)
+      })
 
       return null;
     }
@@ -182,6 +203,20 @@ class Account implements AccountInterface {
 
       runInAction(() => {
         this.statements = body.map((props) => new Statement(props))
+          .sort((a, b) => {
+            if (a.endDate.startOf('day') > b.endDate.startOf('day')) {
+              return -1
+            }
+
+            if (a.endDate.startOf('day') > b.endDate.startOf('day')) {
+              return 1
+            }
+
+            return 0
+          })
+
+        const statement = this.statements.find((s) => s.id === this.store.uiState.selectedStatement?.id)
+        this.store.uiState.selectStatement(statement ?? null)
       })
     }
 

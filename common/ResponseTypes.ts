@@ -234,6 +234,10 @@ export type StatementProps = {
   debits: number,
 }
 
+export type AddStatementResponse = StatementProps
+
+export type StatementsResponse = StatementProps[]
+
 export enum TransactionType {
   REGULAR_TRANSACTION = 0,
   TRANSFER_TRANSACTION = 1,
@@ -778,16 +782,6 @@ export const isAddTransactionResponse = (r: unknown): r is AddTransactionRespons
   (r as AddTransactionResponse).categories !== undefined
   && Array.isArray((r as AddTransactionResponse).categories)
 )
-
-export type AddStatementResponse = {
-  id: number,
-  startDate: string,
-  endDate: string,
-  startingBalance: number,
-  endingBalance: number,
-}
-
-export type StatementsResponse = StatementProps[]
 
 export interface CategoryBalanceProps2 {
   id: number,

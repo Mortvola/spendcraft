@@ -592,6 +592,8 @@ export default class AccountsController {
         endDate: statement.endDate.toISODate()!,
         startingBalance: statement.startingBalance,
         endingBalance: statement.endingBalance,
+        credits: 0,
+        debits: 0,
       };
     }
     catch (error) {
