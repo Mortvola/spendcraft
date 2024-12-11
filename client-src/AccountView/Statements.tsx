@@ -7,7 +7,7 @@ import { useStatementDialog } from './StatementDialog';
 import { AccountInterface } from '../State/Types';
 import { useStores } from '../State/Store';
 import Statement from '../State/Statement';
-import Amount from '../Amount';
+import StatementView from './StatementView';
 
 type PropsType = {
   account: AccountInterface
@@ -29,53 +29,6 @@ const Statements: React.FC<PropsType> = observer(({
 
   const handleStatementClick = (statement: Statement) => {
     uiState.selectStatement(statement)
-  }
-
-  const renderStatement = (statement: Statement | null) => {
-    if (statement === null) {
-      return null;
-    }
-
-    return (
-      <>
-        <label>
-          Date Range:
-          <div>{statement.startDate.toISODate()}</div>
-          to
-          <div>{statement.endDate.toISODate()}</div>
-        </label>
-        <label>
-          Starting Balance:
-          <Amount amount={statement.startingBalance} />
-        </label>
-        <label>
-          Credits:
-          <Amount amount={statement.credits} />
-        </label>
-        <label>
-          Debits:
-          <Amount amount={statement.debits} />
-        </label>
-        <label>
-          Ending Balance:
-          <Amount
-            amount={statement.startingBalance + statement.credits + statement.debits}
-          />
-        </label>
-        <label>
-          Target Ending Balance:
-          <Amount
-            amount={statement.endingBalance}
-          />
-        </label>
-        <label>
-          Ending Balance Difference:
-          <Amount
-            amount={statement.startingBalance + statement.credits + statement.debits - statement.endingBalance}
-          />
-        </label>
-      </>
-    )
   }
 
   return (
@@ -103,9 +56,11 @@ const Statements: React.FC<PropsType> = observer(({
           </div>
         </div>
         <Register className={`${trxStyles.statement} ${styles.transactions}`} type="account" />
-        <div className={`${styles.totals} window window1`}>
+        <div className={`${styles.statement} window window1`}>
           {
-            renderStatement(selectedStatement)
+            selectedStatement
+              ? <StatementView statement={selectedStatement} />
+              : null
           }
         </div>
       </div>

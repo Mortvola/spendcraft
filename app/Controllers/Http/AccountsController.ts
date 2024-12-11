@@ -10,7 +10,10 @@ import {
   TransactionsResponse, CategoryBalanceProps, TransactionProps, TransactionType, AccountBalanceProps, TrackingType,
   ApiResponse,
   AddStatementResponse,
+  StatementProps,
 } from 'Common/ResponseTypes';
+import Statement from 'App/Models/Statement';
+import AccountTransaction from 'App/Models/AccountTransaction';
 import transactionFields from './transactionFields';
 
 type AddedTransaction = {
@@ -594,6 +597,104 @@ export default class AccountsController {
         endingBalance: statement.endingBalance,
         credits: 0,
         debits: 0,
+      };
+    }
+    catch (error) {
+      logger.error(error)
+      await trx.rollback()
+      throw error
+    }
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  public async updateStatement({
+    request,
+    auth: {
+      user,
+    },
+    logger,
+  }: HttpContextContract): Promise<StatementProps | void> {
+    if (!user) {
+      throw new Error('user not defined');
+    }
+
+    const { statementId } = request.params();
+    const requestData = await request.validate({
+      schema: schema.create({
+        reconcile: schema.string.optional(),
+      }),
+    })
+
+    const trx = await Database.transaction();
+
+    try {
+      await user.related('budget').query()
+        .useTransaction(trx)
+        .forUpdate()
+        .firstOrFail();
+
+      const statement = await Statement.findOrFail(statementId, { client: trx })
+
+      if (requestData.reconcile !== undefined) {
+        if (requestData.reconcile === 'All') {
+          const startDate = statement.startDate.toISODate()!
+          const endDate = statement.endDate.toISODate()!
+
+          const transactions = await AccountTransaction.query({ client: trx })
+            .where('accountId', statement.accountId)
+            .whereNull('statementId')
+            .whereHas('transaction', (query) => {
+              query
+                .where('deleted', false)
+                .whereBetween('date', [startDate, endDate])
+            })
+
+          await Promise.all(transactions.map((transaction) => {
+            transaction.statementId = statement.id
+
+            return transaction.save()
+          }))
+        }
+        else if (requestData.reconcile === 'None') {
+          const transactions = await AccountTransaction.query({ client: trx })
+            .where('statementId', statement.id)
+
+          await Promise.all(transactions.map((transaction) => {
+            transaction.statementId = null
+
+            return transaction.save()
+          }))
+        }
+      }
+
+      const credits = await AccountTransaction.query({ client: trx })
+        .sum('amount')
+        .where('statementId', statement.id)
+        .where('amount', '>', 0)
+        .whereHas('transaction', (query2) => {
+          query2.where('deleted', false)
+        })
+
+      const debits = await AccountTransaction.query({ client: trx })
+        .sum('amount')
+        .where('statementId', statement.id)
+        .where('amount', '<', 0)
+        .whereHas('transaction', (query2) => {
+          query2.where('deleted', false)
+        })
+
+      await trx.commit()
+
+      return {
+        id: statement.id,
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        startDate: statement.startDate.toISODate()!,
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        endDate: statement.endDate.toISODate()!,
+        startingBalance: statement.startingBalance,
+        endingBalance: statement.endingBalance,
+        credits: parseFloat(credits[0].$extras.sum ?? 0),
+        debits: parseFloat(debits[0].$extras.sum ?? 0),
       };
     }
     catch (error) {

@@ -164,6 +164,11 @@ Route.group(() => {
         .prefix('/account/:acctId');
   
       Route.group(() => {
+        Route.patch('/:statementId', 'AccountsController.updateStatement')
+      })
+        .prefix('/statements')
+
+      Route.group(() => {
         Route.delete('/:id', 'AccountsController.deleteBalance');
       })
         .prefix('/balance');

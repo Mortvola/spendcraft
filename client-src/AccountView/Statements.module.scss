@@ -18,15 +18,10 @@
   height: 100%;
 }
 
-.totals {
+.statement {
   grid-area: totals;
   min-height: 4rem;
-
-  > label {
-    display: flex;
-    column-gap: 0.25rem;
-    margin-left: 0.25rem;
-  }
+  padding: 0.25rem;
 }
 
 .items {

@@ -1,0 +1,17 @@
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  grid-template-rows: minmax(0, 1fr);
+
+  label {
+    display: flex;
+    column-gap: 0.25rem;
+    margin-left: 0.25rem;
+  }
+
+  .controls {
+    display: flex;
+    flex-direction: column;
+    row-gap: 0.25rem;
+  }
+}

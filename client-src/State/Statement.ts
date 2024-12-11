@@ -1,5 +1,7 @@
+import Http from '@mortvola/http';
 import { DateTime } from 'luxon';
-import { observable } from 'mobx';
+import { observable, runInAction } from 'mobx';
+import { StatementProps } from '../../common/ResponseTypes';
 
 class Statement {
   @observable
@@ -41,6 +43,21 @@ class Statement {
     this.endingBalance = props.endingBalance
     this.credits = props.credits
     this.debits = props.debits
+  }
+
+  async reconcile(mode: 'All' | 'None') {
+    const response = await Http.patch<{ reconcile: string }, StatementProps>(`/api/v1/statements/${this.id}`, {
+      reconcile: mode,
+    })
+
+    if (response.ok) {
+      const props = await response.body()
+
+      runInAction(() => {
+        this.credits = props.credits;
+        this.debits = props.debits;
+      })
+    }
   }
 }
 
