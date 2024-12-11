@@ -134,7 +134,16 @@ export default class TransactionsController {
       const account = await acctTrans.related('account').query().firstOrFail();
       // const account = await Account.findOrFail(acctTrans.accountId);
 
+      const unassignedCat = await budget.getUnassignedCategory({ client: trx });
+
       if (requestData.categories !== undefined) {
+        if (requestData.categories.length === 0) {
+          requestData.categories = [{
+            categoryId: unassignedCat.id,
+            amount: requestData.amount ?? acctTrans.amount,
+            comment: undefined,
+          }]
+        }
         const { categories } = transaction;
 
         if (categories.length > 0) {
