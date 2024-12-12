@@ -38,6 +38,9 @@ const StatementView: React.FC<PropsType> = observer(({
       setEditEndDate(false)
       statement.update({ endDate: endDateValue })
     }
+    else if (event.code === 'Escape') {
+      setEditEndDate(false)
+    }
   }
 
   const [editEndingBalance, setEditEndingBalance] = React.useState<boolean>(false)
@@ -56,6 +59,9 @@ const StatementView: React.FC<PropsType> = observer(({
     if (event.code === 'Enter') {
       setEditEndingBalance(false)
       statement.update({ endingBalance: parseFloat(endingBalanceValue) })
+    }
+    else if (event.code === 'Escape') {
+      setEditEndingBalance(false)
     }
   }
 
