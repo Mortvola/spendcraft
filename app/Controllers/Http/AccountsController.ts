@@ -647,6 +647,7 @@ export default class AccountsController {
               query
                 .where('deleted', false)
                 .whereBetween('date', [startDate, endDate])
+                .where('type', '!=', TransactionType.STARTING_BALANCE)
             })
 
           await Promise.all(transactions.map((transaction) => {
