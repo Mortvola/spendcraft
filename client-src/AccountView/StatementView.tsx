@@ -36,7 +36,10 @@ const StatementView: React.FC<PropsType> = observer(({
   const handleEndDateKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (event) => {
     if (event.code === 'Enter') {
       setEditEndDate(false)
-      statement.update({ endDate: endDateValue })
+
+      if (endDateValue !== statement.endDate.toISODate()) {
+        statement.update({ endDate: endDateValue })
+      }
     }
     else if (event.code === 'Escape') {
       setEditEndDate(false)
@@ -58,7 +61,12 @@ const StatementView: React.FC<PropsType> = observer(({
   const handleEndingBalanceKeyDown: React.KeyboardEventHandler = (event) => {
     if (event.code === 'Enter') {
       setEditEndingBalance(false)
-      statement.update({ endingBalance: parseFloat(endingBalanceValue) })
+
+      const value = parseFloat(endingBalanceValue);
+
+      if (value !== statement.endingBalance) {
+        statement.update({ endingBalance: parseFloat(endingBalanceValue) })
+      }
     }
     else if (event.code === 'Escape') {
       setEditEndingBalance(false)
