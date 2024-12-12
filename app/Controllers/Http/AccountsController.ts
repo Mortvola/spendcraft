@@ -621,6 +621,7 @@ export default class AccountsController {
     const { statementId } = request.params();
     const requestData = await request.validate({
       schema: schema.create({
+        endDate: schema.date.optional(),
         reconcile: schema.string.optional(),
       }),
     })
@@ -666,6 +667,14 @@ export default class AccountsController {
             return transaction.save()
           }))
         }
+      }
+
+      if (requestData.endDate !== undefined) {
+        statement.merge({
+          endDate: requestData.endDate,
+        })
+
+        await statement.save();
       }
 
       const credits = await AccountTransaction.query({ client: trx })

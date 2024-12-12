@@ -3,6 +3,10 @@ import { DateTime } from 'luxon';
 import { observable, runInAction } from 'mobx';
 import { StatementProps } from '../../common/ResponseTypes';
 
+export type UpdateStatementProps = Partial<StatementProps & {
+  reconcile: 'All' | 'None'
+}>
+
 class Statement {
   @observable
   accessor id: number;
@@ -45,10 +49,8 @@ class Statement {
     this.debits = props.debits
   }
 
-  async reconcile(mode: 'All' | 'None') {
-    const response = await Http.patch<{ reconcile: string }, StatementProps>(`/api/v1/statements/${this.id}`, {
-      reconcile: mode,
-    })
+  async update(update: UpdateStatementProps) {
+    const response = await Http.patch<UpdateStatementProps, StatementProps>(`/api/v1/statements/${this.id}`, update)
 
     if (response.ok) {
       const props = await response.body()
@@ -56,6 +58,7 @@ class Statement {
       runInAction(() => {
         this.credits = props.credits;
         this.debits = props.debits;
+        this.endDate = DateTime.fromISO(props.endDate);
       })
     }
   }

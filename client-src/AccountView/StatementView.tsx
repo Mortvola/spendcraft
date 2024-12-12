@@ -1,6 +1,8 @@
 import React from 'react'
 import { Button } from 'react-bootstrap';
 import { observer } from 'mobx-react-lite';
+import { DateTime } from 'luxon';
+import { runInAction } from 'mobx';
 import Amount from '../Amount';
 import Statement from '../State/Statement';
 import styles from './StatementView.module.scss'
@@ -13,11 +15,30 @@ const StatementView: React.FC<PropsType> = observer(({
   statement,
 }) => {
   const handleReconcileAll = () => {
-    statement.reconcile('All')
+    statement.update({ reconcile: 'All' })
   }
 
   const handleUnreconcileAll = () => {
-    statement.reconcile('None')
+    statement.update({ reconcile: 'None' })
+  }
+
+  const [editEndDate, setEditEndDate] = React.useState<boolean>(false)
+  const [endDateValue, setEndDateValue] = React.useState<string>('')
+
+  const handleEditClick = () => {
+    setEditEndDate(true)
+    setEndDateValue(statement.endDate.toISODate() ?? '')
+  }
+
+  const handleEndDateChange: React.ChangeEventHandler<HTMLInputElement> = (event) => {
+    setEndDateValue(event.target.value)
+  }
+
+  const handleEndDateKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (event) => {
+    if (event.code === 'Enter') {
+      setEditEndDate(false)
+      statement.update({ endDate: endDateValue })
+    }
   }
 
   return (
@@ -27,7 +48,18 @@ const StatementView: React.FC<PropsType> = observer(({
           Date Range:
           <div>{statement.startDate.toISODate()}</div>
           to
-          <div>{statement.endDate.toISODate()}</div>
+          {
+            editEndDate
+              ? (
+                <input
+                  type="date"
+                  value={endDateValue}
+                  onChange={handleEndDateChange}
+                  onKeyDown={handleEndDateKeyDown}
+                />
+              )
+              : <div onClick={handleEditClick}>{statement.endDate.toISODate()}</div>
+          }
         </label>
         <label>
           Starting Balance:
