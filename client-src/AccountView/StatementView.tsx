@@ -62,7 +62,7 @@ const StatementView: React.FC<PropsType> = observer(({
       </div>
       <div className={styles.controls}>
         <Button onClick={handleReconcileAll}>Reconcile All</Button>
-        <Button onClick={handleUnreconcileAll}>Unreconcile All</Button>
+        <Button onClick={handleUnreconcileAll}>Reconcile None</Button>
       </div>
     </div>
   )
