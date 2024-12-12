@@ -5,6 +5,8 @@ import Amount from '../Amount';
 import Statement from '../State/Statement';
 import styles from './StatementView.module.scss'
 import AmountInput from '../AmountInput';
+import StatementDate from './StatementDate';
+import StatementAmount from './StatementAmount';
 
 type PropsType = {
   statement: Statement
@@ -21,56 +23,20 @@ const StatementView: React.FC<PropsType> = observer(({
     statement.update({ reconcile: 'None' })
   }
 
-  const [editEndDate, setEditEndDate] = React.useState<boolean>(false)
-  const [endDateValue, setEndDateValue] = React.useState<string>('')
-
-  const handleEditEndDateClick = () => {
-    setEditEndDate(true)
-    setEndDateValue(statement.endDate.toISODate() ?? '')
+  const handleStartDateUpdate = (date: string) => {
+    statement.update({ startDate: date })
   }
 
-  const handleEndDateChange: React.ChangeEventHandler<HTMLInputElement> = (event) => {
-    setEndDateValue(event.target.value)
+  const handleEndDateUpdate = (date: string) => {
+    statement.update({ endDate: date })
   }
 
-  const handleEndDateKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (event) => {
-    if (event.code === 'Enter') {
-      setEditEndDate(false)
-
-      if (endDateValue !== statement.endDate.toISODate()) {
-        statement.update({ endDate: endDateValue })
-      }
-    }
-    else if (event.code === 'Escape') {
-      setEditEndDate(false)
-    }
+  const handleStartingBalanceUpdate = (amount: number) => {
+    statement.update({ startingBalance: amount })
   }
 
-  const [editEndingBalance, setEditEndingBalance] = React.useState<boolean>(false)
-  const [endingBalanceValue, setEndingBalanceValue] = React.useState<string>('')
-
-  const handleEditEndingBalanceClick = () => {
-    setEditEndingBalance(true)
-    setEndingBalanceValue(statement.endingBalance.toString())
-  }
-
-  const handleEndingBalanceChange: React.ChangeEventHandler<HTMLInputElement> = (event) => {
-    setEndingBalanceValue(event.target.value)
-  }
-
-  const handleEndingBalanceKeyDown: React.KeyboardEventHandler = (event) => {
-    if (event.code === 'Enter') {
-      setEditEndingBalance(false)
-
-      const value = parseFloat(endingBalanceValue);
-
-      if (value !== statement.endingBalance) {
-        statement.update({ endingBalance: parseFloat(endingBalanceValue) })
-      }
-    }
-    else if (event.code === 'Escape') {
-      setEditEndingBalance(false)
-    }
+  const handleEndingBalanceUpdate = (amount: number) => {
+    statement.update({ endingBalance: amount })
   }
 
   return (
@@ -78,24 +44,13 @@ const StatementView: React.FC<PropsType> = observer(({
       <div>
         <label>
           Date Range:
-          <div>{statement.startDate.toISODate()}</div>
+          <StatementDate date={statement.startDate} onUpdate={handleStartDateUpdate} />
           to
-          {
-            editEndDate
-              ? (
-                <input
-                  type="date"
-                  value={endDateValue}
-                  onChange={handleEndDateChange}
-                  onKeyDown={handleEndDateKeyDown}
-                />
-              )
-              : <div onClick={handleEditEndDateClick}>{statement.endDate.toISODate()}</div>
-          }
+          <StatementDate date={statement.endDate} onUpdate={handleEndDateUpdate} />
         </label>
         <label>
           Starting Balance:
-          <Amount amount={statement.startingBalance} />
+          <StatementAmount amount={statement.startingBalance} onUpdate={handleStartingBalanceUpdate} />
         </label>
         <label>
           Credits:
@@ -113,22 +68,7 @@ const StatementView: React.FC<PropsType> = observer(({
         </label>
         <label>
           Target Ending Balance:
-          {
-            editEndingBalance
-              ? (
-                <AmountInput
-                  value={endingBalanceValue}
-                  onChange={handleEndingBalanceChange}
-                  onKeyDown={handleEndingBalanceKeyDown}
-                />
-              )
-              : (
-                <Amount
-                  amount={statement.endingBalance}
-                  onClick={handleEditEndingBalanceClick}
-                />
-              )
-          }
+          <StatementAmount amount={statement.endingBalance} onUpdate={handleEndingBalanceUpdate} />
         </label>
         <label>
           Ending Balance Difference:

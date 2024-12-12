@@ -621,7 +621,9 @@ export default class AccountsController {
     const { statementId } = request.params();
     const requestData = await request.validate({
       schema: schema.create({
+        startDate: schema.date.optional(),
         endDate: schema.date.optional(),
+        startingBalance: schema.number.optional(),
         endingBalance: schema.number.optional(),
         reconcile: schema.string.optional(),
       }),
@@ -670,22 +672,21 @@ export default class AccountsController {
         }
       }
 
-      if (
-        requestData.endDate !== undefined
-        || requestData.endingBalance !== undefined
-      ) {
-        const changes = {
-          endDate: requestData.endDate,
-          endingBalance: requestData.endingBalance,
-        }
+      const changes = {
+        startDate: requestData.startDate,
+        endDate: requestData.endDate,
+        startingBalance: requestData.startingBalance,
+        endingBalance: requestData.endingBalance,
+      }
 
-        // eslint-disable-next-line no-restricted-syntax
-        for (const property of Object.getOwnPropertyNames(changes)) {
-          if (changes[property] === undefined) {
-            delete changes[property]
-          }
+      // eslint-disable-next-line no-restricted-syntax
+      for (const property of Object.getOwnPropertyNames(changes)) {
+        if (changes[property] === undefined) {
+          delete changes[property]
         }
+      }
 
+      if (Object.getOwnPropertyNames(changes).length > 0) {
         statement.merge(changes)
 
         await statement.save();
