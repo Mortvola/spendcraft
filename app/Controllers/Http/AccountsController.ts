@@ -622,6 +622,7 @@ export default class AccountsController {
     const requestData = await request.validate({
       schema: schema.create({
         endDate: schema.date.optional(),
+        endingBalance: schema.number.optional(),
         reconcile: schema.string.optional(),
       }),
     })
@@ -669,10 +670,23 @@ export default class AccountsController {
         }
       }
 
-      if (requestData.endDate !== undefined) {
-        statement.merge({
+      if (
+        requestData.endDate !== undefined
+        || requestData.endingBalance !== undefined
+      ) {
+        const changes = {
           endDate: requestData.endDate,
-        })
+          endingBalance: requestData.endingBalance,
+        }
+
+        // eslint-disable-next-line no-restricted-syntax
+        for (const property of Object.getOwnPropertyNames(changes)) {
+          if (changes[property] === undefined) {
+            delete changes[property]
+          }
+        }
+
+        statement.merge(changes)
 
         await statement.save();
       }

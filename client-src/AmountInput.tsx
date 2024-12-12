@@ -13,6 +13,7 @@ interface PropsType {
   onDeltaChange?: (amount: number, delta: number) => void;
   onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onBlur?: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onKeyDown?: (event: React.KeyboardEvent<HTMLInputElement>) => void;
   className?: string;
   style?: React.CSSProperties,
   name?: string;
@@ -25,6 +26,7 @@ const AmountInput: React.FC<PropsType> = ({
   onDeltaChange,
   onChange,
   onBlur,
+  onKeyDown,
   className = '',
   style,
   name,
@@ -111,6 +113,9 @@ const AmountInput: React.FC<PropsType> = ({
       setShowPopover(!showPopover);
       event.stopPropagation();
       event.preventDefault();
+    }
+    else if (onKeyDown) {
+      onKeyDown(event);
     }
   };
 

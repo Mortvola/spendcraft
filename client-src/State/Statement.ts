@@ -58,7 +58,10 @@ class Statement {
       runInAction(() => {
         this.credits = props.credits;
         this.debits = props.debits;
+        this.startDate = DateTime.fromISO(props.startDate);
         this.endDate = DateTime.fromISO(props.endDate);
+        this.startingBalance = props.startingBalance
+        this.endingBalance = props.endingBalance;
       })
     }
   }

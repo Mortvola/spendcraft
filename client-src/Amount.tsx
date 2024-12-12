@@ -6,6 +6,7 @@ interface PropsType {
   amount?: number | string | null,
   className?: string,
   style?: CSSProperties,
+  onClick?: () => void,
 }
 
 const Amount: React.FC<PropsType> = ({
@@ -14,6 +15,7 @@ const Amount: React.FC<PropsType> = ({
   amount = null,
   className = '',
   style,
+  onClick,
 }) => {
   let displayedAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
   if (displayedAmount === null) {
@@ -38,7 +40,11 @@ const Amount: React.FC<PropsType> = ({
     }
   }
 
-  return (<div id={id} className={updatedClassName} style={style}>{amountString}</div>);
+  return (
+    <div id={id} className={updatedClassName} style={style} onClick={onClick}>
+      {amountString}
+    </div>
+  );
 }
 
 export default Amount;

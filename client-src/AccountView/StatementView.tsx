@@ -1,11 +1,10 @@
 import React from 'react'
 import { Button } from 'react-bootstrap';
 import { observer } from 'mobx-react-lite';
-import { DateTime } from 'luxon';
-import { runInAction } from 'mobx';
 import Amount from '../Amount';
 import Statement from '../State/Statement';
 import styles from './StatementView.module.scss'
+import AmountInput from '../AmountInput';
 
 type PropsType = {
   statement: Statement
@@ -25,7 +24,7 @@ const StatementView: React.FC<PropsType> = observer(({
   const [editEndDate, setEditEndDate] = React.useState<boolean>(false)
   const [endDateValue, setEndDateValue] = React.useState<string>('')
 
-  const handleEditClick = () => {
+  const handleEditEndDateClick = () => {
     setEditEndDate(true)
     setEndDateValue(statement.endDate.toISODate() ?? '')
   }
@@ -38,6 +37,25 @@ const StatementView: React.FC<PropsType> = observer(({
     if (event.code === 'Enter') {
       setEditEndDate(false)
       statement.update({ endDate: endDateValue })
+    }
+  }
+
+  const [editEndingBalance, setEditEndingBalance] = React.useState<boolean>(false)
+  const [endingBalanceValue, setEndingBalanceValue] = React.useState<string>('')
+
+  const handleEditEndingBalanceClick = () => {
+    setEditEndingBalance(true)
+    setEndingBalanceValue(statement.endingBalance.toString())
+  }
+
+  const handleEndingBalanceChange: React.ChangeEventHandler<HTMLInputElement> = (event) => {
+    setEndingBalanceValue(event.target.value)
+  }
+
+  const handleEndingBalanceKeyDown: React.KeyboardEventHandler = (event) => {
+    if (event.code === 'Enter') {
+      setEditEndingBalance(false)
+      statement.update({ endingBalance: parseFloat(endingBalanceValue) })
     }
   }
 
@@ -58,7 +76,7 @@ const StatementView: React.FC<PropsType> = observer(({
                   onKeyDown={handleEndDateKeyDown}
                 />
               )
-              : <div onClick={handleEditClick}>{statement.endDate.toISODate()}</div>
+              : <div onClick={handleEditEndDateClick}>{statement.endDate.toISODate()}</div>
           }
         </label>
         <label>
@@ -81,9 +99,22 @@ const StatementView: React.FC<PropsType> = observer(({
         </label>
         <label>
           Target Ending Balance:
-          <Amount
-            amount={statement.endingBalance}
-          />
+          {
+            editEndingBalance
+              ? (
+                <AmountInput
+                  value={endingBalanceValue}
+                  onChange={handleEndingBalanceChange}
+                  onKeyDown={handleEndingBalanceKeyDown}
+                />
+              )
+              : (
+                <Amount
+                  amount={statement.endingBalance}
+                  onClick={handleEditEndingBalanceClick}
+                />
+              )
+          }
         </label>
         <label>
           Ending Balance Difference:
