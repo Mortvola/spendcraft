@@ -10,7 +10,7 @@ import { TransactionType } from '../../common/ResponseTypes';
 import { useStores } from '../State/Store';
 
 const useTrxDialog = (account?: AccountInterface, onReload?: () => void): [
-  () => JSX.Element | null,
+  () => React.JSX.Element | null,
   (transaction: TransactionInterface) => void,
 ] => {
   const [TransactionDialog, showTransactionDialog] = useTransactionDialog();
