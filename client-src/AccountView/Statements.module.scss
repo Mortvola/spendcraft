@@ -1,4 +1,5 @@
 @use "../variables";
+@use "../breakpoints";
 
 .layout {
   display: grid;
@@ -38,5 +39,15 @@
   & >div:not(.selected):hover {
     background-color: var(--hover-background);
     color: var(--hover-color);
+  }
+}
+
+@media (max-width: breakpoints.$side-by-side) {
+  .layout {
+    grid-template-columns: minmax(0, 0.25fr) minmax(0, 0.85fr);
+  }
+
+  .items {
+    font-size: 14px;
   }
 }

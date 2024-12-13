@@ -365,6 +365,28 @@ $balance-width: 8rem;
         display: unset;
       }
     }
+  }
+
+  .statement {
+    .transaction {
+      grid-template-columns: $icon-width $date-width minmax(0, 1fr) $amount-width max-content;
+      grid-template-rows: max-content max-content;
+      grid-template-areas:
+        ". name name amount amount"
+        ". date owner owner reconcile";  
+
+      .running-balance,
+      .trx-amount,
+      .account,
+      .pending-flag {
+        display: none;
+      }
+    
+      .reconcile,
+      .owner {
+        display: unset;
+      }
+    }
   }  
 }
 
