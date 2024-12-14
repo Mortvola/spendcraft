@@ -13,11 +13,9 @@ import Menubar from './Menubar';
 import Home from './Categories/Home';
 import Accounts from './AccountView/Accounts';
 import Reports from './Reports/Reports';
-import Plans from './Plans/Plans';
 import PlaidLink from './PlaidLink';
 import { StoreContext, store, useStores } from './State/Store';
 import UserAccount from './UserAccount';
-import usePageViews from './Tracker';
 import './style.scss';
 import AccountDetails from './AccountView/AccountDetails';
 import CategoryDetails from './Categories/CategoryDetails';
@@ -43,7 +41,6 @@ import OverviewView from './Overview/OverviewView';
 
 const App: React.FC = observer(() => {
   const error = useContext(ServerError);
-  usePageViews();
   const stores = useStores();
   const location = useLocation();
   const navigate = useNavigate();
