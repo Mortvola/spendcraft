@@ -6,12 +6,18 @@ import { isGroup } from '../State/Group';
 import { CategoryInterface, GroupInterface } from '../State/Types';
 import CategorySelectorCategory from './CategorySelectorCategory';
 import { isCategory } from '../State/Category';
+import { CategoryType } from '../../common/ResponseTypes';
 
 export const categoryFiltered = (
   group: GroupInterface | null,
   category: CategoryInterface,
   filterParts: string[],
+  types?: CategoryType[],
 ): boolean => {
+  if (types !== undefined && !types.includes(category.type)) {
+    return true
+  }
+
   if (filterParts.length > 0) {
     if (filterParts.length === 1) {
       // No colon. Filter can be applied to both group and categories.
@@ -47,6 +53,7 @@ type PropsType = {
   height?: number | null,
   onSelect: (category: CategoryInterface) => void,
   filter?: string[],
+  types?: CategoryType[],
 }
 
 // eslint-disable-next-line react/display-name
@@ -58,13 +65,14 @@ const CategorySelector = observer(React.forwardRef<HTMLDivElement, PropsType>(({
   height = null,
   onSelect,
   filter = [],
+  types,
 }, forwardRef) => {
   const { categoryTree } = useStores();
 
   const filteredCategories = (group: GroupInterface) => (
     group.categories
       .filter((c) => (
-        !categoryFiltered(group, c, filter)
+        !categoryFiltered(group, c, filter, types)
       ))
       .map((c) => (
         <CategorySelectorCategory
@@ -126,7 +134,7 @@ const CategorySelector = observer(React.forwardRef<HTMLDivElement, PropsType>(({
             throw new Error('group is not a category');
           }
 
-          if (!categoryFiltered(null, g, filter)) {
+          if (!categoryFiltered(null, g, filter, types)) {
             return (
               <CategorySelectorCategory
                 key={`${g.groupId}:${g.id}`}

@@ -251,7 +251,7 @@ class CategoriesController {
         name: requestData.name,
         balance: 0,
         fundingAmount: requestData.fundingAmount,
-        includeFundingTransfers: requestData.includeFundingTransfers,
+        includeFundingTransfers: requestData.type === 'BILL' ? false : requestData.includeFundingTransfers,
         goalDate: requestData.goalDate,
         recurrence: requestData.recurrence,
         useGoal: requestData.useGoal,

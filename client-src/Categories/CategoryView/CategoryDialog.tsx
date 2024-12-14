@@ -280,7 +280,16 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
                 </label>
               </div>
 
-              <FormCheckbox name="includeFundingTransfers" label="Add Funding Transfers to Funding Amount." />
+              {
+                formikProps.values.type !== 'BILL'
+                  ? (
+                    <FormCheckbox
+                      name="includeFundingTransfers"
+                      label="Add Funding Transfers to Funding Amount."
+                    />
+                  )
+                  : null
+              }
 
               <div className={styles.layout2}>
                 <label className={styles.goalDate}>
@@ -308,6 +317,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
                 name="fundingCategories"
                 categories={formikProps.values.fundingCategories}
                 title="Categories Funded from:"
+                types={['REGULAR', 'GOAL', 'FUNDING POOL']}
               />
 
             </div>

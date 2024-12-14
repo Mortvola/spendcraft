@@ -6,7 +6,6 @@ import {
 } from 'formik';
 import { observer } from 'mobx-react-lite';
 import { AutoAssignmentInterface, CategoryInterface } from '../State/Types';
-import AmountInput from '../AmountInput';
 import CategoryInput from '../CategoryInput/CategoryInput';
 import { useStores } from '../State/Store';
 import styles from './AutoAssignmentDialog.module.scss'

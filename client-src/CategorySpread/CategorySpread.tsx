@@ -10,8 +10,9 @@ import AmountInput from '../AmountInput';
 import { CategoryInterface } from '../State/Types';
 import IconButton from '../IconButton';
 import { useStores } from '../State/Store';
+import { CategoryType } from '../../common/ResponseTypes';
 
-const FormCategoryInput = ({ name }: { name: string }) => {
+const FormCategoryInput = ({ name, types }: { name: string, types?: CategoryType[] }) => {
   const [field, , helpers] = useField(name);
 
   const handleCategoryChange = (category: CategoryInterface) => {
@@ -24,6 +25,7 @@ const FormCategoryInput = ({ name }: { name: string }) => {
       categoryId={parseInt(field.value, 10)}
       className="form-control"
       onCategoryChange={handleCategoryChange}
+      types={types}
     />
   )
 }
@@ -40,12 +42,14 @@ type PropsType = {
   name: string,
   categories: CategorySpreadEntry[],
   title: string,
+  types?: CategoryType[]
 }
 
 const CategorySpread: React.FC<PropsType> = ({
   name,
   categories,
   title,
+  types,
 }) => {
   const { categoryTree: { unassignedCat } } = useStores();
 
@@ -64,10 +68,11 @@ const CategorySpread: React.FC<PropsType> = ({
             categories.map((c, i) => (
               // eslint-disable-next-line react/no-array-index-key
               <div key={i} className={styles.categoryLayout}>
-                <FormField
+                <Field
                   name={`${name}[${i}].categoryId`}
                   as={FormCategoryInput}
                   style={{ marginTop: 0 }}
+                  types={types}
                 />
                 <FormField as={AmountInput} name={`${name}[${i}].amount`} style={{ marginTop: 0 }} />
                 <Field name={`${name}[${i}].percentage`}>

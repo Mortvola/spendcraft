@@ -8,6 +8,7 @@ import { useStores } from '../State/Store';
 import { TreeNodeInterface, CategoryInterface } from '../State/Types';
 import { isGroup } from '../State/Group';
 import { isCategory } from '../State/Category';
+import { CategoryType } from '../../common/ResponseTypes';
 
 type PropsType = {
   categoryId?: number | null,
@@ -15,6 +16,7 @@ type PropsType = {
   name?: string,
   onCategoryChange?: (category: CategoryInterface) => void,
   className?: string,
+  types?: CategoryType[],
 }
 
 const CategoryInput: React.FC<PropsType> = ({
@@ -23,6 +25,7 @@ const CategoryInput: React.FC<PropsType> = ({
   name,
   onCategoryChange,
   className,
+  types,
 }) => {
   const { categoryTree } = useStores();
   const { nodes } = categoryTree;
@@ -392,6 +395,7 @@ const CategoryInput: React.FC<PropsType> = ({
             selectedCategory={selectedCategory}
             onSelect={handleSelect}
             filter={filter.parts}
+            types={types}
           />,
           hiddenElement,
         );
