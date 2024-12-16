@@ -1,7 +1,7 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import Database from '@ioc:Adonis/Lucid/Database';
 import Budget from 'App/Models/Budget';
-import { BudgetProgressReportResponse, TransactionType } from 'Common/ResponseTypes';
+import { BudgetProgressReportResponse, CategoryType, TransactionType } from 'Common/ResponseTypes';
 import { DateTime } from 'luxon';
 
 type NetworthReportType = (string | number)[][];
@@ -357,7 +357,7 @@ class ReportController {
       )
       .from('categories AS c')
       .join('groups as g', 'g.id', 'c.group_id')
-      .where('c.type', '!=', 'FUNDING POOL')
+      .where('c.type', '!=', CategoryType.FundingPool)
       .andWhere('g.application_id', budget.id)
       .orderBy('g.name')
       .orderBy('c.name');

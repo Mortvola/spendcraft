@@ -16,6 +16,7 @@ import styles from './BillDialog.module.scss';
 import AmountInput from '../../AmountInput';
 import CategoryInput from '../../CategoryInput/CategoryInput';
 import { isGroup } from '../../State/Group';
+import { CategoryType, GroupType } from '../../../common/ResponseTypes';
 
 type PropsType = {
   category?: CategoryInterface | null,
@@ -49,7 +50,7 @@ const BillDialog: React.FC<PropsType & ModalProps> = ({
 
     if (category) {
       errors = await category.update({
-        type: 'BILL',
+        type: CategoryType.Bill,
         name: values.payee,
         fundingAmount: parseFloat(values.amount),
         goalDate: DateTime.fromISO(values.goalDate),
@@ -61,7 +62,7 @@ const BillDialog: React.FC<PropsType & ModalProps> = ({
     }
     else {
       errors = await selectedGroup.addCategory({
-        type: 'BILL',
+        type: CategoryType.Bill,
         name: values.payee,
         fundingAmount: parseFloat(values.amount),
         goalDate: DateTime.fromISO(values.goalDate),
@@ -114,7 +115,7 @@ const BillDialog: React.FC<PropsType & ModalProps> = ({
 
     return options.concat(
       categoryTree.nodes
-        .filter((g) => isGroup(g) && g.type === 'REGULAR')
+        .filter((g) => isGroup(g) && g.type === GroupType.Regular)
         .map((g) => (
           <option key={g.id} value={g.id}>{g.name}</option>
         )),

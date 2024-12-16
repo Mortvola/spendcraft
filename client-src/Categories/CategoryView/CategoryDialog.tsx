@@ -18,7 +18,7 @@ import { useStores } from '../../State/Store';
 import { CategoryInterface } from '../../State/Types';
 import AmountInput from '../../AmountInput';
 import styles from './CategoryDialog.module.scss';
-import { CategoryType } from '../../../common/ResponseTypes';
+import { CategoryType, GroupType } from '../../../common/ResponseTypes';
 import CategorySpread, { CategorySpreadEntry } from '../../CategorySpread/CategorySpread';
 
 type Props = {
@@ -29,7 +29,7 @@ type Props = {
 const CategoryDialog: React.FC<Props & ModalProps> = ({
   setShow,
   category = null,
-  type = 'REGULAR',
+  type = CategoryType.Regular,
 }) => {
   const { categoryTree } = useStores();
   const { unassignedCat, fundingPoolCat } = categoryTree;
@@ -38,7 +38,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
     throw new Error('Unassigned is not defined or null')
   }
 
-  const [categoryType, setCategoryType] = React.useState<CategoryType>((category?.type ?? type) ?? 'REGULAR')
+  const [categoryType, setCategoryType] = React.useState<CategoryType>((category?.type ?? type) ?? CategoryType.Regular)
 
   type FormValues = {
     type: CategoryType,
@@ -76,7 +76,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
         includeFundingTransfers: values.includeFundingTransfers,
         group: selectedGroup,
         recurrence: parseInt(values.recurrence, 10),
-        useGoal: values.type !== 'REGULAR',
+        useGoal: values.type !== CategoryType.Regular,
         goalDate: DateTime.fromISO(values.goalDate),
         fundingCategories: values.fundingCategories,
       });
@@ -89,7 +89,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
         includeFundingTransfers: values.includeFundingTransfers,
         group: selectedGroup,
         recurrence: parseInt(values.recurrence, 10),
-        useGoal: values.type !== 'REGULAR',
+        useGoal: values.type !== CategoryType.Regular,
         goalDate: DateTime.fromISO(values.goalDate),
         fundingCategories: values.fundingCategories,
       });
@@ -147,7 +147,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
 
     return options.concat(
       categoryTree.nodes
-        .filter((g) => isGroup(g) && g.type === 'REGULAR')
+        .filter((g) => isGroup(g) && g.type === GroupType.Regular)
         .map((g) => (
           <option key={g.id} value={g.id}>{g.name}</option>
         )),
@@ -155,7 +155,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
   }
 
   const categoryTypeClass = () => (
-    ['BILL', 'GOAL'].includes(categoryType) ? styles.bill : ''
+    [CategoryType.Bill, CategoryType.Goal].includes(categoryType) ? styles.bill : ''
   )
 
   const getGoalDate = (goalDate?: DateTime | null, recurrence = 1): string => {
@@ -281,7 +281,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
               </div>
 
               {
-                formikProps.values.type !== 'BILL'
+                formikProps.values.type !== CategoryType.Bill
                   ? (
                     <FormCheckbox
                       name="includeFundingTransfers"
@@ -314,13 +314,13 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
               </div>
 
               {
-                formikProps.values.type === 'BILL'
+                formikProps.values.type === CategoryType.Bill
                   ? (
                     <CategorySpread
                       name="fundingCategories"
                       categories={formikProps.values.fundingCategories}
                       title="Categories Funded from:"
-                      types={['REGULAR', 'GOAL', 'FUNDING POOL']}
+                      types={[CategoryType.Regular, CategoryType.Goal, CategoryType.FundingPool]}
                     />
                   )
                   : null

@@ -3,6 +3,7 @@ import { observer } from 'mobx-react-lite';
 import Amount from '../../Amount';
 import EditButton from './EditButton';
 import { CategoryInterface, GroupInterface } from '../../State/Types';
+import { CategoryType } from '../../../common/ResponseTypes';
 
 type PropsType = {
   category: CategoryInterface,
@@ -27,7 +28,7 @@ const Category: React.FC<PropsType> = observer(({
   }
 
   let barClassName = 'cat-element-bar';
-  if (category.type !== 'LOAN' && category.type !== 'REGULAR') {
+  if (category.type !== CategoryType.Loan && category.type !== CategoryType.Regular) {
     barClassName += ' system';
   }
 
@@ -35,7 +36,7 @@ const Category: React.FC<PropsType> = observer(({
     <div className={className} onClick={handleClick}>
       <div className={barClassName}>
         {
-          ['REGULAR', 'LOAN', 'BILL', 'GOAL'].includes(category.type)
+          [CategoryType.Regular, CategoryType.Loan, CategoryType.Bill, CategoryType.Goal].includes(category.type)
             ? <EditButton category={category} />
             : null
         }

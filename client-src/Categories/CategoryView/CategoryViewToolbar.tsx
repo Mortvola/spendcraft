@@ -8,6 +8,7 @@ import { useCategoryDialog } from './CategoryDialog';
 import { useGroupDialog } from './GroupDialog';
 import useMediaQuery from '../../MediaQuery';
 import { useBillDialog } from './BillDialog';
+import { CategoryType } from '../../../common/ResponseTypes';
 
 type PropsType = {
   open?: boolean,
@@ -75,8 +76,8 @@ const CategoryViewToolbar: React.FC<PropsType> = observer(({
           }
           {/* <button type="button" onClick={showGroupDialog}>Add Group</button> */}
           <GroupDialog />
-          <BillDialog type="BILL" />
-          <GoalDialog type="GOAL" />
+          <BillDialog type={CategoryType.Bill} />
+          <GoalDialog type={CategoryType.Goal} />
         </>
       )
       : null

@@ -5,7 +5,7 @@ import Database from '@ioc:Adonis/Lucid/Database';
 import Category from 'App/Models/Category';
 import Group from 'App/Models/Group';
 import Loan from 'App/Models/Loan';
-import { LoanTransactionsProps, LoanUpdateProps } from 'Common/ResponseTypes';
+import { CategoryType, LoanTransactionsProps, LoanUpdateProps } from 'Common/ResponseTypes';
 
 export default class LoansController {
   // eslint-disable-next-line class-methods-use-this
@@ -57,7 +57,7 @@ export default class LoansController {
       category.fill({
         name: requestData.name,
         balance: 0,
-        type: 'LOAN',
+        type: CategoryType.Loan,
       });
 
       await category.related('group').associate(loanGroup);

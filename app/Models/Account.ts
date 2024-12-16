@@ -9,7 +9,7 @@ import AccountTransaction from 'App/Models/AccountTransaction';
 import BalanceHistory from 'App/Models/BalanceHistory';
 import Institution from 'App/Models/Institution';
 import {
-  AccountType, CategoryBalanceProps, TrackingType, TransactionType,
+  AccountType, CategoryBalanceProps, GroupType, TrackingType, TransactionType,
 } from 'Common/ResponseTypes';
 import Transaction from 'App/Models/Transaction';
 import Budget from 'App/Models/Budget';
@@ -323,7 +323,7 @@ class Account extends BaseModel {
         // eslint-disable-next-line no-await-in-loop
         const group = await category.related('group').query().firstOrFail();
 
-        if (group.type === 'NO GROUP') {
+        if (group.type === GroupType.NoGroup) {
           assignedCategories.push(`${category.name}`);
         }
         else {

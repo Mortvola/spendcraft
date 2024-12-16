@@ -14,6 +14,7 @@ import useMediaQuery from '../../MediaQuery';
 import RemoteDataManager from '../../RemoteDataManager';
 import DesktopView from '../../DesktopView';
 import MobileView from '../../MobileView';
+import { GroupType } from '../../../common/ResponseTypes';
 
 type PropsType = {
   onCategorySelected?: () => void,
@@ -93,7 +94,7 @@ const CategoryView: React.FC<PropsType> = observer(({
       {
         categoryTree.nodes.map((group) => {
           if (isGroup(group)) {
-            if (group.type === 'REGULAR') {
+            if (group.type === GroupType.Regular) {
               return (
                 <Group
                   key={group.name}

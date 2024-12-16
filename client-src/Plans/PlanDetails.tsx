@@ -9,6 +9,7 @@ import { CategoryInterface } from '../State/Types';
 import Group, { isGroup } from '../State/Group';
 import FundingPlanCategory from '../State/FundingPlanCategory';
 import Console from '../Console';
+import { GroupType } from '../../common/ResponseTypes';
 
 type PropsType = {
   onEditCategory: (category: CategoryInterface, planCategory: FundingPlanCategory) => void,
@@ -72,7 +73,7 @@ const PlanDetails: React.FC<PropsType> = observer(({
   );
 
   const renderGroup = (group: Group) => (
-    group.type !== 'SYSTEM'
+    group.type !== GroupType.System
       ? (
         <div key={group.id} className="plan-group">
           {group.name}

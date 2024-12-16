@@ -5,7 +5,8 @@ import Group, { isGroup } from './Group';
 import {
   ApiResponse,
   CategoryBalanceProps,
-  Error, isErrorResponse,
+  CategoryType,
+  Error, GroupType, isErrorResponse,
   isGroupProps, isGroupsResponse,
 } from '../../common/ResponseTypes';
 import {
@@ -152,20 +153,20 @@ class CategoryTree implements CategoryTreeInterface {
       runInAction(() => {
         this.nodes = [];
         data.forEach((g) => {
-          if (g.type !== 'REGULAR') {
+          if (g.type !== GroupType.Regular) {
             this.systemIds.systemGroupId = g.id;
 
             g.categories.forEach((c) => {
               switch (c.type) {
-                case 'UNASSIGNED':
+                case CategoryType.Unassigned:
                   this.unassignedCat = new Category(c, this.store);
                   break;
 
-                case 'FUNDING POOL':
+                case CategoryType.FundingPool:
                   this.fundingPoolCat = new Category(c, this.store);
                   break;
 
-                case 'ACCOUNT TRANSFER':
+                case CategoryType.AccountTransfer:
                   this.accountTransferCat = new Category(c, this.store);
                   break;
 
@@ -176,7 +177,7 @@ class CategoryTree implements CategoryTreeInterface {
           }
 
           const group = new Group(g, this.store);
-          if (group.type === 'NO GROUP') {
+          if (group.type === GroupType.NoGroup) {
             this.noGroupGroup = group;
           }
           else {

@@ -4,6 +4,7 @@ import { useCategoryDialog } from './CategoryDialog';
 import { useGroupDialog } from './GroupDialog';
 import { isGroup } from '../../State/Group';
 import { GroupInterface } from '../../State/Types';
+import { GroupType } from '../../../common/ResponseTypes';
 
 type PropsType = {
   group: GroupInterface,
@@ -14,7 +15,7 @@ const Buttons: React.FC<PropsType> = ({ group }) => {
   const [CategoryDialog, showCategoryDialog] = useCategoryDialog();
 
   const renderEditButton = () => {
-    if (group.type === 'REGULAR' && isGroup(group)) {
+    if (group.type === GroupType.Regular && isGroup(group)) {
       return (
         <>
           <IconButton icon="edit" onClick={showGroupDialog} />
@@ -27,7 +28,7 @@ const Buttons: React.FC<PropsType> = ({ group }) => {
   };
 
   const renderAddCategoryButton = () => {
-    if (group.type === 'REGULAR' && isGroup(group)) {
+    if (group.type === GroupType.Regular && isGroup(group)) {
       return (
         <>
           <IconButton icon="plus" onClick={showCategoryDialog} />

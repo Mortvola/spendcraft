@@ -28,15 +28,15 @@ const FundingHistory: React.FC = () => {
       if (response.ok) {
         const body = await response.body();
         body.sort((a, b) => {
-          if (a.groupType === 'NO GROUP') {
-            if (b.groupType === 'NO GROUP') {
+          if (a.groupType === GroupType.NoGroup) {
+            if (b.groupType === GroupType.NoGroup) {
               return a.categoryName.localeCompare(b.categoryName);
             }
 
             return a.categoryName.localeCompare(b.groupName);
           }
 
-          if (b.groupType === 'NO GROUP') {
+          if (b.groupType === GroupType.NoGroup) {
             return a.groupName.localeCompare(b.categoryName);
           }
 
@@ -161,7 +161,7 @@ const FundingHistory: React.FC = () => {
         {
           data
             ? data.map((d) => {
-              if (d.groupType === 'NO GROUP') {
+              if (d.groupType === GroupType.NoGroup) {
                 currentGroup = d.groupName;
 
                 return renderRow(d, styles.indent1);

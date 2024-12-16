@@ -7,6 +7,7 @@ import {
   CategoryProps,
   isAddCategoryResponse,
   GroupType,
+  CategoryType,
 } from '../../common/ResponseTypes';
 import {
   CategoryInterface, CategoryParams, GroupInterface, StoreInterface,
@@ -39,21 +40,21 @@ class Group implements GroupInterface {
   setCategories(categories: CategoryProps[]): void {
     categories.forEach((c) => {
       switch (c.type) {
-        case 'UNASSIGNED':
+        case CategoryType.Unassigned:
           if (this.store.categoryTree.unassignedCat === null) {
             throw new Error('unassigned category is null');
           }
           this.categories.push(this.store.categoryTree.unassignedCat);
           break;
 
-        case 'ACCOUNT TRANSFER':
+        case CategoryType.AccountTransfer:
           if (this.store.categoryTree.accountTransferCat === null) {
             throw new Error('account transfer category is null');
           }
           this.categories.push(this.store.categoryTree.accountTransferCat);
           break;
 
-        case 'FUNDING POOL':
+        case CategoryType.FundingPool:
           if (this.store.categoryTree.fundingPoolCat === null) {
             throw new Error('funding category is null');
           }
@@ -62,7 +63,7 @@ class Group implements GroupInterface {
 
         default: {
           const category = new Category(c, this.store);
-          if (this.type === 'NO GROUP') {
+          if (this.type === GroupType.NoGroup) {
             this.store.categoryTree.insertNode(category);
           }
 
@@ -91,7 +92,7 @@ class Group implements GroupInterface {
     const response = await Http.post(`/api/v1/groups/${this.id}/categories`, {
       ...p,
       fundingCategories:
-      p.type === 'BILL'
+      p.type === CategoryType.Bill
         ? fundingCategories
         : [],
       groupId: this.id,
@@ -119,7 +120,7 @@ class Group implements GroupInterface {
 
   insertCategory(category: CategoryInterface): void {
     // Find the position where this new category should be inserted.
-    if (this.type === 'NO GROUP') {
+    if (this.type === GroupType.NoGroup) {
       this.store.categoryTree.insertNode(category);
     }
 
@@ -178,7 +179,7 @@ class Group implements GroupInterface {
   }
 
   removeCategory(category: CategoryInterface): void {
-    if (this.type === 'NO GROUP') {
+    if (this.type === GroupType.NoGroup) {
       this.store.categoryTree.removeNode(category);
     }
 

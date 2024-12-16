@@ -67,7 +67,7 @@ class Category implements CategoryInterface {
       (balance: number, count?: number) => {
         this.balance = balance;
 
-        if (this.type === 'UNASSIGNED') {
+        if (this.type === CategoryType.Unassigned) {
           if (navigator.setAppBadge) {
             if (count) {
               navigator.setAppBadge(count)
@@ -100,7 +100,7 @@ class Category implements CategoryInterface {
     const response = await Http.patch(`/api/v1/groups/${group.id}/categories/${this.id}`, {
       ...p,
       fundingCategories:
-        p.type === 'BILL'
+        p.type === CategoryType.Bill
           ? fundingCategories
           : [],
       goalDate: goalDate?.toISODate(),
@@ -150,7 +150,7 @@ class Category implements CategoryInterface {
     if (balance) {
       this.balance = balance.balance;
 
-      if (this.type === 'UNASSIGNED') {
+      if (this.type === CategoryType.Unassigned) {
         if (navigator.setAppBadge) {
           if (balance.count) {
             navigator.setAppBadge(balance.count)

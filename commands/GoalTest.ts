@@ -1,4 +1,5 @@
 import { BaseCommand } from '@adonisjs/core/build/standalone'
+import { CategoryType } from 'Common/ResponseTypes';
 import { DateTime } from 'luxon';
 
 export default class GoalTest extends BaseCommand {
@@ -61,7 +62,7 @@ export default class GoalTest extends BaseCommand {
   // eslint-disable-next-line class-methods-use-this
   public async run() {
     const { default: Category } = await import('App/Models/Category')
-    const bills = await Category.query().where('type', 'BILL');
+    const bills = await Category.query().where('type', CategoryType.Bill);
 
     // eslint-disable-next-line no-restricted-syntax
     for (const b of bills) {

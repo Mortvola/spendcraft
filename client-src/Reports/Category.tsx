@@ -10,6 +10,7 @@ import useSortableTable from './SortableTable';
 import { isGroup } from '../State/Group';
 import ReportControls from './ReportControls';
 import styles from './Category.module.scss';
+import { CategoryType } from '../../common/ResponseTypes';
 
 type CategoryReport = {
   rowNumber: string,
@@ -66,7 +67,7 @@ const Category: React.FC = () => {
           category: (nodes.flatMap((g) => {
             if (isGroup(g)) {
               return g.categories.filter((c) => (
-                c.type === 'REGULAR'
+                c.type === CategoryType.Regular
               ))
                 .map((c) => (
                   {
@@ -106,7 +107,7 @@ const Category: React.FC = () => {
                         return (nodes.flatMap((g) => {
                           if (isGroup(g)) {
                             return g.categories.filter((c) => (
-                              c.type === 'REGULAR'
+                              c.type === CategoryType.Regular
                             ))
                               .map((c) => {
                                 index += 1;

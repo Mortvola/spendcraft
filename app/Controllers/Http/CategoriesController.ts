@@ -17,6 +17,8 @@ import {
   TransactionProps, TransactionType, FundingInfoProps,
   ApiResponse,
   BillProps,
+  GroupType,
+  CategoryType,
 } from 'Common/ResponseTypes';
 import Group from 'App/Models/Group';
 import { DateTime } from 'luxon';
@@ -188,7 +190,7 @@ class CategoriesController {
       .fill({
         name: requestData.name,
         budgetId: user.budgetId,
-        type: 'REGULAR',
+        type: GroupType.Regular,
       })
       .save();
 
@@ -251,7 +253,7 @@ class CategoriesController {
         name: requestData.name,
         balance: 0,
         fundingAmount: requestData.fundingAmount,
-        includeFundingTransfers: requestData.type === 'BILL' ? false : requestData.includeFundingTransfers,
+        includeFundingTransfers: requestData.type === CategoryType.Bill ? false : requestData.includeFundingTransfers,
         goalDate: requestData.goalDate,
         recurrence: requestData.recurrence,
         useGoal: requestData.useGoal,
@@ -299,7 +301,7 @@ class CategoriesController {
     try {
       const category = await Category.findOrFail(catId, { client: trx });
 
-      if (category.type === 'LOAN') {
+      if (category.type === CategoryType.Loan) {
         const loan = await Loan.findBy('categoryId', catId, { client: trx });
 
         if (loan) {
@@ -578,7 +580,7 @@ class CategoriesController {
       .whereHas('group', (query) => {
         query.where('budgetId', budget.id)
       })
-      .where('type', 'BILL');
+      .where('type', CategoryType.Bill);
 
     const firstDayOfMonth = DateTime.now()
       .set({

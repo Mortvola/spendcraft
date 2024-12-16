@@ -4,7 +4,9 @@ import {
   BaseModel, column, HasMany, hasMany, ModelAdapterOptions,
 } from '@ioc:Adonis/Lucid/Orm'
 import Database from '@ioc:Adonis/Lucid/Database';
-import { InstitutionProps, ProposedFundingCategoryProps } from 'Common/ResponseTypes';
+import {
+  CategoryType, GroupType, InstitutionProps, ProposedFundingCategoryProps,
+} from 'Common/ResponseTypes';
 import User from 'App/Models/User'
 import Category from 'App/Models/Category';
 import Group from 'App/Models/Group';
@@ -80,28 +82,28 @@ export default class Budget extends BaseModel {
 
   public async getUnassignedCategory(options?: ModelAdapterOptions): Promise<Category> {
     return await Category.query(options)
-      .where('type', 'UNASSIGNED')
+      .where('type', CategoryType.Unassigned)
       .whereHas('group', (query) => query.where('budgetId', this.id))
       .firstOrFail();
   }
 
   public async getFundingPoolCategory(options?: ModelAdapterOptions): Promise<Category> {
     return await Category.query(options)
-      .where('type', 'FUNDING POOL')
+      .where('type', CategoryType.FundingPool)
       .whereHas('group', (query) => query.where('budgetId', this.id))
       .firstOrFail();
   }
 
   public async getAccountTransferCategory(options?: ModelAdapterOptions): Promise<Category> {
     return await Category.query(options)
-      .where('type', 'ACCOUNT TRANSFER')
+      .where('type', CategoryType.AccountTransfer)
       .whereHas('group', (query) => query.where('budgetId', this.id))
       .firstOrFail();
   }
 
   public async getSystemGroup(options?: ModelAdapterOptions): Promise<Group> {
     return await Group.query(options)
-      .where('type', 'SYSTEM')
+      .where('type', GroupType.System)
       .andWhere('budgetId', this.id)
       .firstOrFail();
   }
@@ -114,7 +116,7 @@ export default class Budget extends BaseModel {
     const systemGroup = await (new Group()).useTransaction(this.$trx)
       .fill({
         name: 'System',
-        type: 'SYSTEM',
+        type: GroupType.System,
         budgetId: this.id,
         system: true,
       })
@@ -123,7 +125,7 @@ export default class Budget extends BaseModel {
     await (new Category()).useTransaction(this.$trx)
       .fill({
         name: 'Unassigned',
-        type: 'UNASSIGNED',
+        type: CategoryType.Unassigned,
         balance: 0,
         groupId: systemGroup.id,
       })
@@ -132,7 +134,7 @@ export default class Budget extends BaseModel {
     await (new Category()).useTransaction(this.$trx)
       .fill({
         name: 'Funding Pool',
-        type: 'FUNDING POOL',
+        type: CategoryType.FundingPool,
         balance: 0,
         groupId: systemGroup.id,
       })
@@ -141,7 +143,7 @@ export default class Budget extends BaseModel {
     await (new Category()).useTransaction(this.$trx)
       .fill({
         name: 'Account Transfer',
-        type: 'ACCOUNT TRANSFER',
+        type: CategoryType.AccountTransfer,
         balance: 0,
         groupId: systemGroup.id,
       })
@@ -150,7 +152,7 @@ export default class Budget extends BaseModel {
     await (new Group()).useTransaction(this.$trx)
       .fill({
         name: 'NoGroup',
-        type: 'NO GROUP',
+        type: GroupType.NoGroup,
         budgetId: this.id,
         system: true,
       })
@@ -199,7 +201,7 @@ export default class Budget extends BaseModel {
 
     const noGroup = await Group.query({ client: trx })
       .where('budgetId', this.id)
-      .andWhere('type', 'NO GROUP')
+      .andWhere('type', GroupType.NoGroup)
       .firstOrFail();
 
     await (new Category())

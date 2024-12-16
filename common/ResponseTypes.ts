@@ -1,4 +1,8 @@
-export type GroupType = 'NO GROUP' | 'REGULAR' | 'SYSTEM';
+export enum GroupType {
+  NoGroup = 'NO GROUP',
+  Regular = 'REGULAR',
+  System = 'SYSTEM',
+}
 
 export interface GroupProps {
   id: number;
@@ -16,7 +20,15 @@ export const isGroupProps = (r: unknown): r is GroupProps => (
   // && (r as GroupProps).type !== undefined
 );
 
-export type CategoryType = 'REGULAR' | 'UNASSIGNED' | 'FUNDING POOL' | 'ACCOUNT TRANSFER' | 'LOAN' | 'BILL' | 'GOAL';
+export enum CategoryType {
+  Regular = 'REGULAR',
+  Unassigned = 'UNASSIGNED',
+  FundingPool = 'FUNDING POOL',
+  AccountTransfer = 'ACCOUNT TRANSFER',
+  Loan = 'LOAN',
+  Bill = 'BILL',
+  Goal = 'GOAL',
+}
 
 export interface CategoryProps {
   id: number;

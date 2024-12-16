@@ -6,6 +6,7 @@ import {
 import { isGroup } from '../State/Group';
 import { isCategory } from '../State/Category';
 import { useStores } from '../State/Store';
+import { CategoryType } from '../../common/ResponseTypes';
 
 type PropsType = {
   onDeltaChange: null | ((amunt: number, delta: number, categories: unknown) => void),
@@ -84,8 +85,8 @@ const CategoryRebalance: React.FC<PropsType> = ({
   const populateCategories = (categories: CategoryInterface[]) => (
     categories
       .filter((category) => (
-        category.type !== 'UNASSIGNED'
-        && category.type !== 'ACCOUNT TRANSFER'
+        category.type !== CategoryType.Unassigned
+        && category.type !== CategoryType.AccountTransfer
       ))
       .map((category) => (
         categoryItem(category)
@@ -100,8 +101,8 @@ const CategoryRebalance: React.FC<PropsType> = ({
         .filter((n) => (
           isGroup(n)
           || (
-            n.type !== 'UNASSIGNED'
-            && n.type !== 'ACCOUNT TRANSFER'
+            n.type !== CategoryType.Unassigned
+            && n.type !== CategoryType.AccountTransfer
           )
         ))
         .forEach((node) => {

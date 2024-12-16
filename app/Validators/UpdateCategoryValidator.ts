@@ -1,5 +1,6 @@
 import { schema, rules } from '@ioc:Adonis/Core/Validator'
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
+import { CategoryType } from 'Common/ResponseTypes';
 
 export default class UpdateCategoryValidator {
   constructor(protected ctx: HttpContextContract) {
@@ -21,7 +22,7 @@ export default class UpdateCategoryValidator {
       }),
     ]),
     monthlyExpenses: schema.boolean.optional(),
-    type: schema.enum(['REGULAR', 'BILL', 'GOAL'] as const),
+    type: schema.enum([CategoryType.Regular, CategoryType.Bill, CategoryType.Goal] as const),
     goalDate: schema.date.optional(),
     recurrence: schema.number.optional(),
     fundingAmount: schema.number.optional(),

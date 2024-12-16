@@ -6,7 +6,7 @@ import Category from 'App/Models/Category';
 import Transaction from 'App/Models/Transaction';
 import AccountTransaction from 'App/Models/AccountTransaction';
 import {
-  AccountBalanceProps, ApiResponse, CategoryBalanceProps, RequestErrorCode,
+  AccountBalanceProps, ApiResponse, CategoryBalanceProps, CategoryType, RequestErrorCode,
   StatementProps,
   TransactionProps, TransactionsResponse, TransactionType,
   UpdateTransactionResponse,
@@ -205,7 +205,7 @@ export default class TransactionsController {
             // eslint-disable-next-line no-await-in-loop
             await category.save();
 
-            if (category.type === 'LOAN') {
+            if (category.type === CategoryType.Loan) {
               // const loanTrx = (new LoanTransaction()).useTransaction(trx);
 
               // // eslint-disable-next-line no-await-in-loop
@@ -486,7 +486,7 @@ export default class TransactionsController {
             result.categories.push({ id: category.id, balance: category.balance });
           }
 
-          if (category.type === 'LOAN') {
+          if (category.type === CategoryType.Loan) {
             // // eslint-disable-next-line no-await-in-loop
             // const loanTransaction = await trxCat.related('loanTransaction').query().firstOrFail();
 

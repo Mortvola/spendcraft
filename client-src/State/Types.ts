@@ -12,6 +12,7 @@ import {
   CategoryTransferProps,
   BillProps,
   StatementProps,
+  GroupType,
 } from '../../common/ResponseTypes'
 import LoanTransaction from './LoanTransaction';
 import SystemIds from './SystemIds';
@@ -30,7 +31,7 @@ export interface GroupInterface {
 
   name: string;
 
-  type: string;
+  type: GroupType;
 
   categories: CategoryInterface[];
 
@@ -536,7 +537,7 @@ export type AddStatementRequest = {
 }
 
 export type CategoryParams = {
-  type: string,
+  type: CategoryType,
   name: string,
   fundingAmount?: number,
   includeFundingTransfers?: boolean,
