@@ -93,10 +93,16 @@ class Category implements CategoryInterface {
   async update(
     params: CategoryParams,
   ): Promise<null | Error[]> {
-    const { group, goalDate, ...p } = params;
+    const {
+      group, goalDate, fundingCategories, ...p
+    } = params;
 
     const response = await Http.patch(`/api/v1/groups/${group.id}/categories/${this.id}`, {
       ...p,
+      fundingCategories:
+        p.type === 'BILL'
+          ? fundingCategories
+          : [],
       goalDate: goalDate?.toISODate(),
       hidden: false,
     });

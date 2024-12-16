@@ -536,7 +536,7 @@ export type AddStatementRequest = {
 }
 
 export type CategoryParams = {
-  type?: string,
+  type: string,
   name: string,
   fundingAmount?: number,
   includeFundingTransfers?: boolean,

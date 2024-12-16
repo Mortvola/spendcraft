@@ -1,6 +1,5 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
-import { DateTime } from 'luxon';
 import Category, { isCategory } from './Category';
 import {
   Error, GroupProps, isErrorResponse, isGroupProps,
@@ -85,10 +84,16 @@ class Group implements GroupInterface {
   }
 
   async addCategory(params: CategoryParams): Promise<null| Error[]> {
-    const { group, goalDate, ...p } = params;
+    const {
+      group, fundingCategories, goalDate, ...p
+    } = params;
 
     const response = await Http.post(`/api/v1/groups/${this.id}/categories`, {
       ...p,
+      fundingCategories:
+      p.type === 'BILL'
+        ? fundingCategories
+        : [],
       groupId: this.id,
       goalDate: goalDate?.toISODate(),
     });

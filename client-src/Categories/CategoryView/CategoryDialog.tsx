@@ -210,9 +210,35 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
         (formikProps) => (
           <div>
             <div className={styles.wrapper}>
+              <label className={styles.type}>
+                Type:
+                <Field
+                  className="form-control"
+                  name="type"
+                >
+                  {
+                    ({ field, form }: FieldProps<CategoryType>) => (
+                      <select
+                        className="form-control"
+                        name="type"
+                        value={field.value}
+                        onChange={(v) => {
+                          handleCategoryTypeChange(v.target.value as CategoryType)
+                          form.setFieldValue(field.name, v.target.value);
+                        }}
+                      >
+                        <option value="REGULAR">Category</option>
+                        <option value="BILL">Bill</option>
+                        <option value="GOAL">Goal</option>
+                      </select>
+                    )
+                  }
+                </Field>
+              </label>
+
               <FormField name="name" label="Name:" />
 
-              <label style={{ marginTop: '8px' }}>
+              <label className={styles.group}>
                 Group:
                 <Field
                   className="form-control"
@@ -242,32 +268,6 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
             <div className={`${categoryTypeClass()}`}>
               <div className={styles.fundingTitle}>Funding Settings</div>
               <div className={`${styles.layout}`}>
-                <label className={styles.type}>
-                  Type:
-                  <Field
-                    className="form-control"
-                    name="type"
-                  >
-                    {
-                      ({ field, form }: FieldProps<CategoryType>) => (
-                        <select
-                          className="form-control"
-                          name="type"
-                          value={field.value}
-                          onChange={(v) => {
-                            handleCategoryTypeChange(v.target.value as CategoryType)
-                            form.setFieldValue(field.name, v.target.value);
-                          }}
-                        >
-                          <option value="REGULAR">Category</option>
-                          <option value="BILL">Bill</option>
-                          <option value="GOAL">Goal</option>
-                        </select>
-                      )
-                    }
-                  </Field>
-                </label>
-
                 <label className={`${styles.amount}`}>
                   Amount:
                   <Field
@@ -313,12 +313,18 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
                 </label>
               </div>
 
-              <CategorySpread
-                name="fundingCategories"
-                categories={formikProps.values.fundingCategories}
-                title="Categories Funded from:"
-                types={['REGULAR', 'GOAL', 'FUNDING POOL']}
-              />
+              {
+                formikProps.values.type === 'BILL'
+                  ? (
+                    <CategorySpread
+                      name="fundingCategories"
+                      categories={formikProps.values.fundingCategories}
+                      title="Categories Funded from:"
+                      types={['REGULAR', 'GOAL', 'FUNDING POOL']}
+                    />
+                  )
+                  : null
+              }
 
             </div>
             {/* <FormCheckbox name="monthlyExpenses" label="Used for monthly expenses" /> */}
