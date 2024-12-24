@@ -1,7 +1,7 @@
 import React, { ReactElement, useState } from 'react';
 import CategoryRebalanceItem from './CategoryRebalanceItem';
 import {
-  CategoryBalanceInterface, CategoryInterface, TransactionCategoryInterface,
+  CategoryBalanceInterface, CategoryInterface, GroupInterface, TransactionCategoryInterface,
 } from '../State/Types';
 import { isGroup } from '../State/Group';
 import { isCategory } from '../State/Category';
@@ -82,8 +82,9 @@ const CategoryRebalance: React.FC<PropsType> = ({
     )
   }
 
-  const populateCategories = (categories: CategoryInterface[]) => (
+  const populateCategories = (categories: (GroupInterface | CategoryInterface)[]) => (
     categories
+      .filter((category) => isCategory(category))
       .filter((category) => (
         category.type !== CategoryType.Unassigned
         && category.type !== CategoryType.AccountTransfer
@@ -96,8 +97,8 @@ const CategoryRebalance: React.FC<PropsType> = ({
   const populateTree = () => {
     const tree: ReactElement[] = [];
 
-    if (categoryTree.nodes) {
-      categoryTree.nodes
+    if (categoryTree.budget.children) {
+      categoryTree.budget.children
         .filter((n) => (
           isGroup(n)
           || (
@@ -107,11 +108,11 @@ const CategoryRebalance: React.FC<PropsType> = ({
         ))
         .forEach((node) => {
           if (isGroup(node)) {
-            if (node.categories.length > 0) {
+            if (node.children.length > 0) {
               tree.push((
                 <div key={node.id} className="cat-rebalance-group">
                   {node.name}
-                  {populateCategories(node.categories)}
+                  {populateCategories(node.children)}
                 </div>
               ));
             }

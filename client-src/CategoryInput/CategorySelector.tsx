@@ -10,11 +10,11 @@ import { CategoryType } from '../../common/ResponseTypes';
 
 export const categoryFiltered = (
   group: GroupInterface | null,
-  category: CategoryInterface,
+  category: GroupInterface | CategoryInterface,
   filterParts: string[],
   types?: CategoryType[],
 ): boolean => {
-  if (types !== undefined && !types.includes(category.type)) {
+  if (types !== undefined && isCategory(category) && !types.includes(category.type)) {
     return true
   }
 
@@ -70,18 +70,35 @@ const CategorySelector = observer(React.forwardRef<HTMLDivElement, PropsType>(({
   const { categoryTree } = useStores();
 
   const filteredCategories = (group: GroupInterface) => (
-    group.categories
+    group.children
       .filter((c) => (
         !categoryFiltered(group, c, filter, types)
       ))
-      .map((c) => (
-        <CategorySelectorCategory
-          key={`${group.id}:${c.id}`}
-          category={c}
-          selected={selectedCategory !== null && c.id === selectedCategory.id}
-          onSelect={onSelect}
-        />
-      ))
+      .map((c) => {
+        if (isCategory(c)) {
+          return (
+            <CategorySelectorCategory
+              key={`${group.id}:${c.id}`}
+              category={c}
+              selected={selectedCategory !== null && c.id === selectedCategory.id}
+              onSelect={onSelect}
+            />
+          )
+        }
+
+        if (isGroup(c)) {
+          return (
+            <CategorySelectorGroup
+              key={c.id}
+              group={c}
+            >
+              {filteredCategories(c)}
+            </CategorySelectorGroup>
+          );
+        }
+
+        return null
+      })
   )
 
   const style: Record<string, unknown> = {}; // { display: 'none' };
@@ -113,7 +130,43 @@ const CategorySelector = observer(React.forwardRef<HTMLDivElement, PropsType>(({
       onMouseDown={handleMouseDown}
     >
       {
-        categoryTree.nodes.map((g) => {
+        categoryTree.unassignedCat && !categoryFiltered(null, categoryTree.unassignedCat, filter, types)
+          ? (
+            <CategorySelectorCategory
+              key={`${categoryTree.budget.id}:${categoryTree.unassignedCat.id}`}
+              category={categoryTree.unassignedCat}
+              selected={selectedCategory !== null && categoryTree.unassignedCat.id === selectedCategory.id}
+              onSelect={onSelect}
+            />
+          )
+          : null
+      }
+      {
+        categoryTree.budget.fundingPoolCat && !categoryFiltered(null, categoryTree.budget.fundingPoolCat, filter, types)
+          ? (
+            <CategorySelectorCategory
+              key={`${categoryTree.budget.id}:${categoryTree.budget.fundingPoolCat.id}`}
+              category={categoryTree.budget.fundingPoolCat}
+              selected={selectedCategory !== null && categoryTree.budget.fundingPoolCat.id === selectedCategory.id}
+              onSelect={onSelect}
+            />
+          )
+          : null
+      }
+      {
+        categoryTree.accountTransferCat && !categoryFiltered(null, categoryTree.accountTransferCat, filter, types)
+          ? (
+            <CategorySelectorCategory
+              key={`${categoryTree.budget.id}:${categoryTree.accountTransferCat.id}`}
+              category={categoryTree.accountTransferCat}
+              selected={selectedCategory !== null && categoryTree.accountTransferCat.id === selectedCategory.id}
+              onSelect={onSelect}
+            />
+          )
+          : null
+      }
+      {
+        categoryTree.budget.children.map((g) => {
           if (isGroup(g)) {
             const categories = filteredCategories(g);
             if (categories.length > 0) {
@@ -137,7 +190,7 @@ const CategorySelector = observer(React.forwardRef<HTMLDivElement, PropsType>(({
           if (!categoryFiltered(null, g, filter, types)) {
             return (
               <CategorySelectorCategory
-                key={`${g.groupId}:${g.id}`}
+                key={`${g.group!.id}:${g.id}`}
                 category={g}
                 selected={selectedCategory !== null && g.id === selectedCategory.id}
                 onSelect={onSelect}

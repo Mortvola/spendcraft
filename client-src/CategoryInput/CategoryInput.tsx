@@ -1,11 +1,9 @@
-import React, {
-  useState, useRef, useEffect,
-} from 'react';
+import React from 'react';
 import ReactDOM from 'react-dom';
 import CategorySelector, { categoryFiltered } from './CategorySelector';
 import useExclusiveBool from '../ExclusiveBool';
 import { useStores } from '../State/Store';
-import { TreeNodeInterface, CategoryInterface } from '../State/Types';
+import { TreeNodeInterface, CategoryInterface, GroupInterface } from '../State/Types';
 import { isGroup } from '../State/Group';
 import { isCategory } from '../State/Category';
 import { CategoryType } from '../../common/ResponseTypes';
@@ -28,12 +26,15 @@ const CategoryInput: React.FC<PropsType> = ({
   types,
 }) => {
   const { categoryTree } = useStores();
-  const { nodes } = categoryTree;
+  const { budget } = categoryTree;
 
-  type Selection = { groupIndex: number | null, categoryIndex: number | null};
-  const [selected, setSelected] = useState<Selection>(
-    { groupIndex: null, categoryIndex: null },
-  );
+  // type Selection = { groupIndex: number | null, categoryIndex: number | null};
+  // const [selected, setSelected] = useState<Selection>(
+  //   { groupIndex: null, categoryIndex: null },
+  // );
+  const [selectedCategory, setSelectedCategory] = React.useState<CategoryInterface | null>(
+    categoryId !== null ? categoryTree.getCategory(categoryId) : null,
+  )
 
   const initialValue = (): string => {
     if (value !== undefined) {
@@ -52,13 +53,14 @@ const CategoryInput: React.FC<PropsType> = ({
   };
 
   const [open, setOpen] = useExclusiveBool(false);
-  const [inputValue, setInputValue] = useState<string>(initialValue);
-  const [originalValue, setOriginalValue] = useState<string>(initialValue);
-  const [filter, setFilter] = useState<{ value: string, parts: string[]}>({
-    value: initialValue(), parts: initialValue().toLowerCase().split(':'),
+  const [inputValue, setInputValue] = React.useState<string>(initialValue);
+  const [originalValue, setOriginalValue] = React.useState<string>(initialValue);
+  const [filter, setFilter] = React.useState<{ value: string, parts: string[]}>({
+    // value: initialValue(), parts: initialValue().toLowerCase().split(':'),
+    value: '', parts: [],
   });
-  const inputRef = useRef<HTMLInputElement | null>(null);
-  const selectorRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = React.useRef<HTMLInputElement | null>(null);
+  const selectorRef = React.useRef<HTMLDivElement | null>(null);
 
   const handleCancel = () => {
     setOpen(false);
@@ -67,19 +69,30 @@ const CategoryInput: React.FC<PropsType> = ({
   };
 
   const handleSelect = (category: CategoryInterface) => {
-    let groupIndex: number | null = nodes.findIndex((g) => g.id === category.id || g.id === category.groupId);
-    let categoryIndex: number;
+    // let groupIndex: number | null = null
+    // let categoryIndex: number;
 
-    const group = nodes[groupIndex];
-    if (isGroup(group)) {
-      categoryIndex = group.categories.findIndex((c) => c.id === category.id);
-    }
-    else {
-      categoryIndex = groupIndex;
-      groupIndex = null;
-    }
+    // if (category.id === categoryTree.unassignedCat?.id) {
+    //   categoryIndex = categoryTree.unassignedCat.id
+    // }
+    // else if (category.id === categoryTree.budget.fundingPoolCat?.id) {
+    //   categoryIndex = categoryTree.budget.fundingPoolCat.id
+    // }
+    // else {
+    //   groupIndex = budget.children
+    //     .findIndex((g) => g.id === category.id || g.id === category.group!.id);
 
-    setSelected({ groupIndex, categoryIndex });
+    //   const group = budget.children[groupIndex];
+    //   if (isGroup(group)) {
+    //     categoryIndex = group.children.findIndex((c) => c.id === category.id);
+    //   }
+    //   else {
+    //     categoryIndex = groupIndex;
+    //     groupIndex = null;
+    //   }
+    // }
+
+    setSelectedCategory(category);
     setOpen(false);
     setInputValue(categoryTree.getCategoryName(category.id) ?? '');
     setOriginalValue(categoryId === null ? '' : (categoryTree.getCategoryName(categoryId) ?? ''));
@@ -90,88 +103,94 @@ const CategoryInput: React.FC<PropsType> = ({
   };
 
   const filtered = (groupIndex: number, categoryIndex: number, filterParts: string[]): boolean => {
-    const node = nodes[groupIndex];
+    const node = budget.children[groupIndex];
     return (isGroup(node) && (
-      node.categories.length === 0
-      || categoryFiltered(node, node.categories[categoryIndex], filterParts)
+      node.children.length === 0
+      || categoryFiltered(node, node.children[categoryIndex], filterParts)
     )) || (isCategory(node) && categoryFiltered(null, node, filterParts));
   };
 
-  const traverseList = (
-    selection: Selection,
-    moveOne: (selection: Selection) => boolean,
-    filterParts: string[],
-  ): Selection | null => {
-    const newSelection: Selection = { ...selection };
+  // const traverseList = (
+  //   selection: Selection,
+  //   moveOne: (selection: Selection) => boolean,
+  //   filterParts: string[],
+  // ): Selection | null => {
+  //   const newSelection: Selection = { ...selection };
 
-    for (;;) {
-      if (moveOne(newSelection)) {
-        if (newSelection.groupIndex === null) {
-          throw new Error('group index is null');
-        }
+  //   for (;;) {
+  //     if (moveOne(newSelection)) {
+  //       if (newSelection.groupIndex === null) {
+  //         throw new Error('group index is null');
+  //       }
 
-        if (newSelection.categoryIndex === null) {
-          throw new Error('category index is null');
-        }
+  //       if (newSelection.categoryIndex === null) {
+  //         throw new Error('category index is null');
+  //       }
 
-        if (!filtered(newSelection.groupIndex, newSelection.categoryIndex, filterParts)) {
-          return newSelection;
-        }
-      }
-      else {
-        return null;
-      }
-    }
-  }
+  //       if (!filtered(newSelection.groupIndex, newSelection.categoryIndex, filterParts)) {
+  //         return newSelection;
+  //       }
+  //     }
+  //     else {
+  //       return null;
+  //     }
+  //   }
+  // }
 
-  const moveDownOne = (newSelection: Selection): boolean => {
-    if (newSelection.groupIndex === null || newSelection.categoryIndex === null) {
-      newSelection.groupIndex = 0;
-      newSelection.categoryIndex = 0;
-    }
-    else {
-      let node = nodes[newSelection.groupIndex];
-      if (isCategory(node)) {
-        if (newSelection.groupIndex < nodes.length - 1) {
-          newSelection.groupIndex += 1;
-          node = nodes[newSelection.groupIndex];
-          newSelection.categoryIndex = 0;
-        }
-        else {
-          return false;
-        }
-      }
-      else if (newSelection.categoryIndex < node.categories.length - 1) {
-        newSelection.categoryIndex += 1;
-      }
-      else if (newSelection.groupIndex < nodes.length - 1) {
-        newSelection.groupIndex += 1;
-        node = nodes[newSelection.groupIndex];
-        newSelection.categoryIndex = 0;
-      }
-      else {
-        // Could not move down
-        return false;
-      }
-    }
+  // const moveDownOne = (newSelection: Selection): boolean => {
+  //   if (selectedCategory === null) {
+  //     setSelectedCategory(categoryTree.unassignedCat)
 
-    return true;
-  }
+  //     return true
+  //   }
+
+  //   if (selectedCategory === categoryTree.unassignedCat) {
+  //     setSelectedCategory(categoryTree.budget.fundingPoolCat)
+
+  //     return true
+  //   }
+
+  //   let node = budget.children[newSelection.groupIndex];
+  //   if (isCategory(node)) {
+  //     if (newSelection.groupIndex < budget.children.length - 1) {
+  //       newSelection.groupIndex += 1;
+  //       node = budget.children[newSelection.groupIndex];
+  //       newSelection.categoryIndex = 0;
+  //     }
+  //     else {
+  //       return false;
+  //     }
+  //   }
+  //   else if (newSelection.categoryIndex < (node as GroupInterface).children.length - 1) {
+  //     newSelection.categoryIndex += 1;
+  //   }
+  //   else if (newSelection.groupIndex < budget.children.length - 1) {
+  //     newSelection.groupIndex += 1;
+  //     node = budget.children[newSelection.groupIndex];
+  //     newSelection.categoryIndex = 0;
+  //   }
+  //   else {
+  //     // Could not move down
+  //     return false;
+  //   }
+
+  //   return true;
+  // }
 
   const setFirstBestSelection = (filterParts: string[]) => {
-    const selection = traverseList({ groupIndex: null, categoryIndex: null }, moveDownOne, filterParts);
-    if (selection === null) {
-      setSelected({ groupIndex: null, categoryIndex: null })
-    }
-    else {
-      setSelected(selection);
-    }
+    // const selection = traverseList({ groupIndex: null, categoryIndex: null }, moveDownOne, filterParts);
+    // if (selection === null) {
+    //   setSelected({ groupIndex: null, categoryIndex: null })
+    // }
+    // else {
+    //   setSelected(selection);
+    // }
   };
 
   const openDropDown = () => {
     const origValue = categoryId === null ? '' : (categoryTree.getCategoryName(categoryId) ?? '');
     setOriginalValue(origValue);
-    setFilter({ value: inputValue, parts: inputValue.toLowerCase().split(':') });
+    // setFilter({ value: inputValue, parts: inputValue.toLowerCase().split(':') });
     setOpen(true);
     setFirstBestSelection(filter.parts);
   };
@@ -191,52 +210,52 @@ const CategoryInput: React.FC<PropsType> = ({
     setOpen(false);
   };
 
-  const moveUpOne = (newSelection: Selection): boolean => {
-    if (newSelection.groupIndex === null || newSelection.categoryIndex === null) {
-      newSelection.groupIndex = 0;
-      newSelection.categoryIndex = 0;
-    }
-    else {
-      let node = nodes[newSelection.groupIndex];
-      if (isCategory(node)) {
-        if (newSelection.groupIndex > 0) {
-          newSelection.groupIndex -= 1;
-          node = nodes[newSelection.groupIndex];
-          newSelection.categoryIndex = 0;
-          if (isGroup(node) && node.categories.length > 0) {
-            newSelection.categoryIndex = node.categories.length - 1;
-          }
-        }
-        else {
-          return false;
-        }
-      }
-      else if (newSelection.categoryIndex > 0) {
-        newSelection.categoryIndex -= 1;
-      }
-      else if (newSelection.groupIndex > 0) {
-        newSelection.groupIndex -= 1;
-        node = nodes[newSelection.groupIndex];
-        newSelection.categoryIndex = 0;
-        if (isGroup(node) && node.categories.length > 0) {
-          newSelection.categoryIndex = node.categories.length - 1;
-        }
-      }
-      else {
-        // Could not move up
-        return false;
-      }
-    }
+  // const moveUpOne = (newSelection: Selection): boolean => {
+  //   if (newSelection.groupIndex === null || newSelection.categoryIndex === null) {
+  //     newSelection.groupIndex = 0;
+  //     newSelection.categoryIndex = 0;
+  //   }
+  //   else {
+  //     let node = budget.children[newSelection.groupIndex];
+  //     if (isCategory(node)) {
+  //       if (newSelection.groupIndex > 0) {
+  //         newSelection.groupIndex -= 1;
+  //         node = budget.children[newSelection.groupIndex];
+  //         newSelection.categoryIndex = 0;
+  //         if (isGroup(node) && node.children.length > 0) {
+  //           newSelection.categoryIndex = node.children.length - 1;
+  //         }
+  //       }
+  //       else {
+  //         return false;
+  //       }
+  //     }
+  //     else if (newSelection.categoryIndex > 0) {
+  //       newSelection.categoryIndex -= 1;
+  //     }
+  //     else if (newSelection.groupIndex > 0) {
+  //       newSelection.groupIndex -= 1;
+  //       node = budget.children[newSelection.groupIndex];
+  //       newSelection.categoryIndex = 0;
+  //       if (isGroup(node) && node.children.length > 0) {
+  //         newSelection.categoryIndex = node.children.length - 1;
+  //       }
+  //     }
+  //     else {
+  //       // Could not move up
+  //       return false;
+  //     }
+  //   }
 
-    return true;
-  }
+  //   return true;
+  // }
 
-  const handleDown = (filterParts: string[]) => {
-    const selection = traverseList(selected, moveDownOne, filterParts);
-    if (selection !== null) {
-      setSelected(selection);
-    }
-  };
+  // const handleDown = (filterParts: string[]) => {
+  //   const selection = traverseList(selected, moveDownOne, filterParts);
+  //   if (selection !== null) {
+  //     setSelected(selection);
+  //   }
+  // };
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(event.target.value);
@@ -248,35 +267,35 @@ const CategoryInput: React.FC<PropsType> = ({
     setFirstBestSelection(newFilter.parts);
   };
 
-  const handleUp = (filterParts: string[]) => {
-    const selection = traverseList(selected, moveUpOne, filterParts);
-    if (selection !== null) {
-      setSelected(selection);
-    }
-  };
+  // const handleUp = (filterParts: string[]) => {
+  //   const selection = traverseList(selected, moveUpOne, filterParts);
+  //   if (selection !== null) {
+  //     setSelected(selection);
+  //   }
+  // };
 
   const handleEnter = () => {
-    let selectedGroup: TreeNodeInterface | null = null;
-    if (selected.groupIndex !== null) {
-      selectedGroup = nodes[selected.groupIndex];
+    // let selectedGroup: TreeNodeInterface | null = null;
+    // if (selected.groupIndex !== null) {
+    //   selectedGroup = budget.children[selected.groupIndex];
 
-      if (isCategory(selectedGroup)) {
-        setInputValue(categoryTree.getCategoryName(selectedGroup.id) ?? '');
-        if (onCategoryChange) {
-          onCategoryChange(selectedGroup);
-        }
-      }
-      else if (isGroup(selectedGroup) && selectedGroup && selected.categoryIndex !== null) {
-        const selectedCategory = selectedGroup.categories[selected.categoryIndex];
-        setInputValue(categoryTree.getCategoryName(selectedCategory.id) ?? '');
-        if (onCategoryChange) {
-          onCategoryChange(selectedCategory);
-        }
-      }
-      else {
-        setInputValue('');
-      }
-    }
+    //   if (isCategory(selectedGroup)) {
+    //     setInputValue(categoryTree.getCategoryName(selectedGroup.id) ?? '');
+    //     if (onCategoryChange) {
+    //       onCategoryChange(selectedGroup);
+    //     }
+    //   }
+    //   else if (isGroup(selectedGroup) && selectedGroup && selected.categoryIndex !== null) {
+    //     const selectedCategory = selectedGroup.children[selected.categoryIndex];
+    //     setInputValue(categoryTree.getCategoryName(selectedCategory.id) ?? '');
+    //     if (onCategoryChange && isCategory(selectedCategory)) {
+    //       onCategoryChange(selectedCategory);
+    //     }
+    //   }
+    //   else {
+    //     setInputValue('');
+    //   }
+    // }
 
     setOpen(false);
   };
@@ -291,7 +310,7 @@ const CategoryInput: React.FC<PropsType> = ({
     }
   };
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (open) {
       document.addEventListener('mousedown', handleMouseDown, false);
 
@@ -312,14 +331,14 @@ const CategoryInput: React.FC<PropsType> = ({
           handleCancel();
           break;
         }
-        case 'ArrowDown':
-          event.preventDefault();
-          handleDown(filter.parts);
-          break;
-        case 'ArrowUp':
-          event.preventDefault();
-          handleUp(filter.parts);
-          break;
+        // case 'ArrowDown':
+        //   event.preventDefault();
+        //   handleDown(filter.parts);
+        //   break;
+        // case 'ArrowUp':
+        //   event.preventDefault();
+        //   handleUp(filter.parts);
+        //   break;
         case 'Enter':
           event.preventDefault();
           handleEnter();
@@ -357,24 +376,28 @@ const CategoryInput: React.FC<PropsType> = ({
         top = input.top - height;
       }
 
-      let selectedCategory: CategoryInterface | null = null;
-      if (selected.groupIndex !== null) {
-        const selectedGroup: TreeNodeInterface = nodes[selected.groupIndex];
-        if (isGroup(selectedGroup)) {
-          if (selected.categoryIndex === null) {
-            throw new Error('category index is null');
-          }
+      // let selectedCategory: CategoryInterface | null = null;
+      // if (selected.groupIndex !== null) {
+      //   const selectedGroup: TreeNodeInterface = budget.children[selected.groupIndex];
+      //   if (isGroup(selectedGroup)) {
+      //     if (selected.categoryIndex === null) {
+      //       throw new Error('category index is null');
+      //     }
 
-          selectedCategory = selectedGroup.categories[selected.categoryIndex];
-        }
-        else {
-          if (!isCategory(selectedGroup)) {
-            throw new Error('group is not a category');
-          }
+      //     const cat = selectedGroup.children[selected.categoryIndex];
 
-          selectedCategory = selectedGroup;
-        }
-      }
+      //     if (isCategory(cat)) {
+      //       selectedCategory = cat
+      //     }
+      //   }
+      //   else {
+      //     if (!isCategory(selectedGroup)) {
+      //       throw new Error('group is not a category');
+      //     }
+
+      //     selectedCategory = selectedGroup;
+      //   }
+      // }
 
       const hiddenElement = document.querySelector('#hidden');
 

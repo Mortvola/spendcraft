@@ -14,7 +14,6 @@ type PropsType = {
 
 const Category: React.FC<PropsType> = observer(({
   category,
-  group,
   selected,
   onCategorySelected,
 }) => {

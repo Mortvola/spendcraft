@@ -5,12 +5,15 @@ import {
   FormikHelpers,
   FormikErrors,
   FormikContextType,
+  FieldProps,
 } from 'formik';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import { FormModal, FormError, setFormErrors } from '@mortvola/forms';
 import { useStores } from '../../State/Store';
-import { Error } from '../../../common/ResponseTypes';
+import { Error, GroupType } from '../../../common/ResponseTypes';
 import { GroupInterface } from '../../State/Types';
+import styles from './GroupDialog.module.scss';
+import { isGroup } from '../../State/Group';
 
 type PropsType = {
   group?: GroupInterface,
@@ -24,6 +27,7 @@ const GroupDialog: React.FC<PropsType & ModalProps> = ({
 
   interface ValueType {
     name: string,
+    parentGroupId: number | null,
   }
 
   const handleSubmit = async (values: ValueType, formikHelpers: FormikHelpers<ValueType>) => {
@@ -31,7 +35,7 @@ const GroupDialog: React.FC<PropsType & ModalProps> = ({
     let errors: Array<Error> | null = null;
 
     if (group) {
-      errors = await group.update(values.name);
+      errors = await group.update({ name: values.name, parentGroupId: values.parentGroupId ?? null });
     }
     else {
       errors = await categoryTree.addGroup(values.name);
@@ -78,11 +82,28 @@ const GroupDialog: React.FC<PropsType & ModalProps> = ({
     return 'Add Group';
   };
 
+  const populateGroups = () => {
+    const options = [];
+
+    if (categoryTree.noGroupGroup !== null) {
+      options.push(<option key="nogroup" value={categoryTree.noGroupGroup.id}>None</option>);
+    }
+
+    return options.concat(
+      categoryTree.budget.children
+        .filter((g) => isGroup(g) && g.type === GroupType.Regular && g.id !== group?.id)
+        .map((g) => (
+          <option key={g.id} value={g.id}>{g.name}</option>
+        )),
+    )
+  }
+
   return (
     <FormModal<ValueType>
       setShow={setShow}
       initialValues={{
-        name: group && group.name ? group.name : '',
+        name: group?.name ?? '',
+        parentGroupId: group?.group!.id ?? null,
       }}
       title={title()}
       formId="GroupDialogForm"
@@ -90,15 +111,43 @@ const GroupDialog: React.FC<PropsType & ModalProps> = ({
       onSubmit={handleSubmit}
       onDelete={group ? handleDelete : null}
     >
-      <label>
-        Group:
-        <Field
-          type="text"
-          className="form-control"
-          name="name"
-        />
-        <FormError name="name" />
-      </label>
+      <div className={styles.layout}>
+        <label>
+          Group:
+          <Field
+            type="text"
+            className="form-control"
+            name="name"
+          />
+          <FormError name="name" />
+        </label>
+
+        <label>
+          Parent Group:
+          <Field
+            className="form-control"
+            name="parentGroupId"
+          >
+            {
+              ({ field, form }: FieldProps<number>) => (
+                <select
+                  className="form-control"
+                  name={field.name}
+                  value={field.value}
+                  onChange={(v) => {
+                    form.setFieldValue(field.name, v.target.value);
+                  }}
+                >
+                  {
+                    populateGroups()
+                  }
+                </select>
+              )
+            }
+          </Field>
+          <FormError name="group" />
+        </label>
+      </div>
     </FormModal>
   );
 };

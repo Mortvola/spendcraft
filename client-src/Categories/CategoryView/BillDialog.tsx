@@ -41,7 +41,7 @@ const BillDialog: React.FC<PropsType & ModalProps> = ({
     const { setErrors } = formikHelpers;
     let errors = null;
 
-    const selectedGroup = (categoryTree.nodes.find((g) => g.id === parseInt(values.groupId, 10))
+    const selectedGroup = (categoryTree.budget.children.find((g) => g.id === parseInt(values.groupId, 10))
       ?? categoryTree.noGroupGroup);
 
     if (selectedGroup === null || !isGroup(selectedGroup)) {
@@ -114,7 +114,7 @@ const BillDialog: React.FC<PropsType & ModalProps> = ({
     }
 
     return options.concat(
-      categoryTree.nodes
+      categoryTree.budget.children
         .filter((g) => isGroup(g) && g.type === GroupType.Regular)
         .map((g) => (
           <option key={g.id} value={g.id}>{g.name}</option>
@@ -139,7 +139,7 @@ const BillDialog: React.FC<PropsType & ModalProps> = ({
         goalDate: category?.goalDate?.toISODate() ?? '',
         recurrence: category?.recurrence.toString() ?? '1',
         category: '',
-        groupId: category?.groupId ? category.groupId.toString() : '',
+        groupId: category?.group!.id ? category.group!.id.toString() : '',
       }}
       title={title()}
       formId="BillDialogForm"

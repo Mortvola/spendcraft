@@ -22,6 +22,7 @@ export default class UpdateGroupValidator {
         },
       }),
     ]),
+    parentGroupId: schema.number.nullableAndOptional(),
     hidden: schema.boolean(),
   })
 

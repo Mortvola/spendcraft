@@ -32,7 +32,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
   type = CategoryType.Regular,
 }) => {
   const { categoryTree } = useStores();
-  const { unassignedCat, fundingPoolCat } = categoryTree;
+  const { unassignedCat, budget: { fundingPoolCat } } = categoryTree;
 
   if (!unassignedCat || !fundingPoolCat) {
     throw new Error('Unassigned is not defined or null')
@@ -59,7 +59,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
     const { setErrors } = bag;
     let errors = null;
 
-    const selectedGroup = (categoryTree.nodes.find(
+    const selectedGroup = (categoryTree.budget.children.find(
       (g) => isGroup(g) && g.id === parseInt(values.groupId, 10),
     )
       ?? categoryTree.noGroupGroup);
@@ -146,7 +146,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
     }
 
     return options.concat(
-      categoryTree.nodes
+      categoryTree.budget.children
         .filter((g) => isGroup(g) && g.type === GroupType.Regular)
         .map((g) => (
           <option key={g.id} value={g.id}>{g.name}</option>
@@ -181,6 +181,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
         id: -1, categoryId: fundingPoolCat.id, amount: 100, percentage: true,
       }]
     }
+
     return categories.map((c) => ({
       id: c.id, categoryId: c.categoryId, amount: c.amount, percentage: c.percentage,
     }))
@@ -192,7 +193,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
       initialValues={{
         type: categoryType,
         name: category && category.name ? category.name : '',
-        groupId: category?.groupId.toString() ?? '',
+        groupId: category?.group!.id.toString() ?? '',
         fundingAmount: category?.fundingAmount.toString() ?? '0',
         includeFundingTransfers: category?.includeFundingTransfers ?? true,
         recurrence: category?.recurrence.toString() ?? '1',

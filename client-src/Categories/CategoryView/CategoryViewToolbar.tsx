@@ -7,7 +7,6 @@ import { useStores } from '../../State/Store';
 import { useCategoryDialog } from './CategoryDialog';
 import { useGroupDialog } from './GroupDialog';
 import useMediaQuery from '../../MediaQuery';
-import { useBillDialog } from './BillDialog';
 import { CategoryType } from '../../../common/ResponseTypes';
 
 type PropsType = {

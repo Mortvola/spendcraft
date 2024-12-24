@@ -16,13 +16,7 @@ import DesktopView from '../../DesktopView';
 import MobileView from '../../MobileView';
 import { GroupType } from '../../../common/ResponseTypes';
 
-type PropsType = {
-  onCategorySelected?: () => void,
-}
-
-const CategoryView: React.FC<PropsType> = observer(({
-  onCategorySelected,
-}) => {
+const CategoryView: React.FC = observer(() => {
   const navigate = useNavigate();
   const params = useParams();
   const rebalancesPath = useResolvedPath('rebalances');
@@ -32,10 +26,6 @@ const CategoryView: React.FC<PropsType> = observer(({
 
   const handleCategorySelected = (category: CategoryInterface) => {
     navigate(category.id.toString());
-
-    if (onCategorySelected) {
-      onCategorySelected();
-    }
   };
 
   const handleRebalancesClick = () => {
@@ -60,7 +50,6 @@ const CategoryView: React.FC<PropsType> = observer(({
       }
       else if (!isMobile) {
         uiState.selectCategory(categoryTree.unassignedCat);
-        navigate(categoryTree.unassignedCat?.id.toString() ?? '')
       }
       else {
         uiState.selectCategory(null);
@@ -77,7 +66,7 @@ const CategoryView: React.FC<PropsType> = observer(({
     return (
       <div className={styles.system}>
         <SystemCategory category={categoryTree.unassignedCat} onCategorySelected={handleCategorySelected} />
-        <SystemCategory category={categoryTree.fundingPoolCat} onCategorySelected={handleCategorySelected} />
+        <SystemCategory category={categoryTree.budget.fundingPoolCat} onCategorySelected={handleCategorySelected} />
         <SystemCategory category={categoryTree.accountTransferCat} onCategorySelected={handleCategorySelected} />
         <div
           className={rebalancesClassName}
@@ -92,7 +81,7 @@ const CategoryView: React.FC<PropsType> = observer(({
   const renderCategories = () => (
     <div className={styles.categories}>
       {
-        categoryTree.nodes.map((group) => {
+        categoryTree.budget.children.map((group) => {
           if (isGroup(group)) {
             if (group.type === GroupType.Regular) {
               return (

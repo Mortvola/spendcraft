@@ -21,7 +21,7 @@ type CategoryReport = {
 };
 
 const Category: React.FC = () => {
-  const { categoryTree: { nodes } } = useStores();
+  const { categoryTree: { budget } } = useStores();
   const { setData, SortableTable } = useSortableTable<CategoryReport>(['groupName', 'categoryName', 'sum', 'count']);
 
   type FormValues = {
@@ -64,9 +64,9 @@ const Category: React.FC = () => {
         initialValues={{
           startDate: DateTime.now().minus({ years: 1 }).toISODate() ?? '',
           endDate: DateTime.now().toISODate() ?? '',
-          category: (nodes.flatMap((g) => {
+          category: (budget.children.flatMap((g) => {
             if (isGroup(g)) {
-              return g.categories.filter((c) => (
+              return g.children.filter((c) => (
                 c.type === CategoryType.Regular
               ))
                 .map((c) => (
@@ -104,9 +104,9 @@ const Category: React.FC = () => {
                     {
                       () => {
                         let index = -1;
-                        return (nodes.flatMap((g) => {
+                        return (budget.children.flatMap((g) => {
                           if (isGroup(g)) {
-                            return g.categories.filter((c) => (
+                            return g.children.filter((c) => (
                               c.type === CategoryType.Regular
                             ))
                               .map((c) => {

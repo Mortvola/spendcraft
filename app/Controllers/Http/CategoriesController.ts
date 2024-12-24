@@ -29,7 +29,7 @@ class CategoriesController {
   public async get({
     request,
     auth: { user },
-  }: HttpContextContract): Promise<ApiResponse<Group[] | FundingInfoProps[]>> {
+  }: HttpContextContract): Promise<ApiResponse<{ groups: Group[], categories: Category[] } | FundingInfoProps[]>> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -162,14 +162,23 @@ class CategoriesController {
       }
     }
 
-    const result = await budget.related('groups').query()
-      .preload('categories', (catQuery) => {
-        catQuery.orderBy('name', 'asc')
+    // const result = await budget.related('groups').query()
+    //   .preload('categories', (catQuery) => {
+    //     catQuery.orderBy('name', 'asc')
+    //   })
+    //   .orderBy('name', 'asc');
+
+    const groups = await budget.related('groups').query()
+    const categories = await Category.query()
+      .whereHas('group', (q) => {
+        q.where('budgetId', budget.id)
       })
-      .orderBy('name', 'asc');
 
     return {
-      data: result,
+      data: {
+        groups,
+        categories,
+      },
     }
   }
 
@@ -216,11 +225,19 @@ class CategoriesController {
     group.merge({
       name: requestData.name,
       hidden: requestData.hidden,
+      parentGroupId: requestData.parentGroupId,
     });
 
     await group.save();
 
-    return { id: groupId, name: group.name, hidden: group.hidden };
+    return {
+      data: {
+        id: groupId,
+        name: group.name,
+        parentGroupId: group.parentGroupId,
+        hidden: group.hidden,
+      },
+    };
   }
 
   // eslint-disable-next-line class-methods-use-this

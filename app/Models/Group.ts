@@ -22,10 +22,10 @@ class Group extends BaseModel {
   public budgetId: number;
 
   @column()
-  public system: boolean;
+  public hidden: boolean;
 
   @column()
-  public hidden: boolean;
+  public parentGroupId: number | null;
 
   @hasMany(() => Category)
   public categories: HasMany<typeof Category>;

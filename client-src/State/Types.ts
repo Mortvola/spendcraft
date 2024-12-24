@@ -33,7 +33,11 @@ export interface GroupInterface {
 
   type: GroupType;
 
-  categories: CategoryInterface[];
+  children: (GroupInterface | CategoryInterface)[];
+
+  group: GroupInterface | null;
+
+  getFundingPool(): CategoryInterface;
 
   insertCategory(category: CategoryInterface): void;
 
@@ -41,7 +45,7 @@ export interface GroupInterface {
 
   delete (): Promise<null | Error[]>;
 
-  update(name: string): Promise<null | Error[]>;
+  update(value: { name: string, parentGroupId: number | null }): Promise<null | Error[]>;
 }
 
 export interface TransactionInterface extends BaseTransactionInterface {
@@ -180,7 +184,7 @@ export interface CategoryInterface {
 
   type: CategoryType;
 
-  groupId: number;
+  group: GroupInterface | null;
 
   balance: number;
 
@@ -206,6 +210,8 @@ export interface CategoryInterface {
   };
 
   store: StoreInterface;
+
+  getFundingPool(): CategoryInterface;
 
   update(params: CategoryParams): Promise<null | Error[]>;
 
@@ -251,20 +257,22 @@ export interface UIStateInterface {
   plaid: PlaidInterface | null;
 }
 
+export interface BudgetInterface extends GroupInterface {
+  fundingPoolCat: CategoryInterface | null;
+}
+
 export interface CategoryTreeInterface extends RemoteDataInterface {
+  budget: BudgetInterface;
+
   systemIds: SystemIds;
 
   noGroupGroup: GroupInterface | null;
 
   unassignedCat: CategoryInterface | null;
 
-  fundingPoolCat: CategoryInterface | null;
-
   accountTransferCat: CategoryInterface | null;
 
   rebalances: RebalancesInterface | null;
-
-  nodes: (CategoryInterface | GroupInterface)[];
 
   insertNode(node: TreeNodeInterface): void;
 

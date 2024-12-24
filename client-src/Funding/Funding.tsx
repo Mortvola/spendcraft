@@ -4,7 +4,7 @@ import Http from '@mortvola/http';
 import FundingItem from './FundingItem';
 import { isGroup } from '../State/Group';
 import { isCategory } from '../State/Category';
-import { CategoryInterface } from '../State/Types';
+import { CategoryInterface, GroupInterface } from '../State/Types';
 import { FundingInfoType } from './Types';
 import { ApiResponse, FundingInfoProps } from '../../common/ResponseTypes';
 import { useStores } from '../State/Store';
@@ -59,20 +59,22 @@ const Funding: React.FC<PropsType> = ({
     );
   }
 
-  const populateCategories = (groupName: string | null, cats: CategoryInterface[]) => (
-    cats.map((category) => (
-      renderCategory(groupName, category)
-    ))
+  const populateCategories = (groupName: string | null, cats: (GroupInterface | CategoryInterface)[]) => (
+    cats
+      .filter((category) => isCategory(category))
+      .map((category) => (
+        renderCategory(groupName, category)
+      ))
   );
 
   const populateGroups = (): ReactNode => (
-    categoryTree.nodes.map((node) => {
+    categoryTree.budget.children.map((node) => {
       if (isGroup(node)) {
         if (node.id !== categoryTree.systemIds.systemGroupId) {
           return (
             // <div key={`g:${node.id}`} className={styles.fundListGroup}>
             //   {node.name}
-            populateCategories(node.name, node.categories)
+            populateCategories(node.name, node.children)
             // </div>
           );
         }

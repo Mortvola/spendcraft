@@ -11,12 +11,12 @@ export interface GroupProps {
 
   type: GroupType;
 
-  categories: CategoryProps[];
+  parentGroupId: number | null,
 }
 
 export const isGroupProps = (r: unknown): r is GroupProps => (
-  (r as GroupProps).id !== undefined
-  && (r as GroupProps).name !== undefined
+  (r as GroupProps)?.id !== undefined
+  && (r as GroupProps)?.name !== undefined
   // && (r as GroupProps).type !== undefined
 );
 
@@ -125,13 +125,10 @@ export const isUpdateFundingCategoryResponse = (
   && (r as UpdateFundingCategoryResponse).id !== undefined
 );
 
-export const isCategoryProps = (
-  r: CategoryProps | unknown,
-): r is CategoryProps => (
-  (r as CategoryProps).id !== undefined
-  // && (r as CategoryProps).balance !== undefined
-  && (r as CategoryProps).name !== undefined
-  // && (r as CategoryProps).system !== undefined
+export const isCategoryProps = (r: unknown): r is CategoryProps => (
+  (r as CategoryProps)?.id !== undefined
+  && (r as CategoryProps)?.name !== undefined
+  && (r as CategoryProps)?.balance !== undefined
 );
 
 export type AccountType = 'depository' | 'credit' | 'loan' | 'investment' | 'brokerage' | 'other';

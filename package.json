@@ -12,7 +12,8 @@
     "dev-server-build": "node ace build",
     "dev-client-build": "webpack --config-name app",
     "lint": "eslint .",
-    "analyze": "webpack --json > stats.json"
+    "analyze": "webpack --json > stats.json",
+    "madge": "clear && madge -c ./client-src/App.tsx"
   },
   "keywords": [
     "adonisjs",

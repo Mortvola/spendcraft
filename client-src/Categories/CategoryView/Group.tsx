@@ -3,6 +3,7 @@ import { observer } from 'mobx-react-lite';
 import Buttons from './GroupButtons';
 import Category from './Category';
 import { CategoryInterface, GroupInterface } from '../../State/Types';
+import { isCategory } from '../../State/Category';
 
 type PropsType = {
   group: GroupInterface,
@@ -21,14 +22,24 @@ const Group: React.FC<PropsType> = observer(({
       <div className="group-name">{group.name}</div>
     </div>
     {
-      group.categories.map((category) => (
-        <Category
-          key={category.name}
-          category={category}
-          group={group}
-          onCategorySelected={onCategorySelected}
-          selected={selectedCategory === category}
-        />
+      group.children.map((category) => (
+        isCategory(category)
+          ? (
+            <Category
+              key={category.name}
+              category={category}
+              group={group}
+              onCategorySelected={onCategorySelected}
+              selected={selectedCategory === category}
+            />
+          )
+          : (
+            <Group
+              key={category.name}
+              group={category as GroupInterface}
+              onCategorySelected={onCategorySelected}
+            />
+          )
       ))
     }
   </div>

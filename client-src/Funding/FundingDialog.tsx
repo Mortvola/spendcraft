@@ -13,6 +13,7 @@ import {
   TransactionType, CategoryFundingProps,
   ApiResponse,
   ProposedFundingCategoryProps,
+  CategoryType,
 } from '../../common/ResponseTypes';
 import Funding from './Funding';
 import {
@@ -34,7 +35,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
   setShow,
 }) => {
   const { categoryTree, register } = useStores();
-  const { fundingPoolCat } = categoryTree;
+  const { budget: { fundingPoolCat } } = categoryTree;
 
   if (!fundingPoolCat) {
     throw new Error('funding pool is unassigned');
@@ -249,27 +250,40 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
 
       transaction.categories.forEach((c) => {
         if (!c.funder) {
-          obj[c.categoryId] = {
-            baseAmount: c.baseAmount ?? c.amount,
-            fundingCategories: c.fundingCategories ?? [{
-              categoryId: categoryTree.fundingPoolCat!.id,
+          let { fundingCategories } = c;
+
+          if (fundingCategories === undefined) {
+            const category = categoryTree.getCategory(c.categoryId)
+
+            if (!category) {
+              throw new Error(`category not found: ${c.categoryId}`)
+            }
+
+            fundingCategories = [{
+              categoryId: category.getFundingPool().id,
               amount: 100,
               percentage: true,
-            }],
+            }]
+          }
+
+          obj[c.categoryId] = {
+            baseAmount: c.baseAmount ?? c.amount,
+            fundingCategories,
             includeFundingTransfers: c.includeFundingTransfers ?? false,
           }
         }
       })
 
-      categoryTree.nodes.forEach((node) => {
+      // Add to the transaction any category that is not yet represented
+      categoryTree.budget.children.forEach((node) => {
         if (isGroup(node)) {
           if (node.id !== categoryTree.systemIds.systemGroupId) {
-            node.categories.forEach((cat) => {
+            node.children.forEach((cat) => {
               if (obj[cat.id] === undefined) {
                 obj[cat.id] = {
                   baseAmount: 0,
                   fundingCategories: [{
-                    categoryId: categoryTree.fundingPoolCat!.id,
+                    categoryId: cat.getFundingPool().id,
                     amount: 100,
                     percentage: true,
                   }],
@@ -284,7 +298,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
             obj[node.id] = {
               baseAmount: 0,
               fundingCategories: [{
-                categoryId: categoryTree.fundingPoolCat!.id,
+                categoryId: node.getFundingPool().id,
                 amount: 100,
                 percentage: true,
               }],
@@ -307,8 +321,6 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
   }
 
   const getProposed = React.useCallback(async (date: string) => {
-    let obj: CategoriesValueType | null = null;
-
     const response = await Http.get<ApiResponse<ProposedFundingCategoryProps[]>>(
       `/api/v1/funding-plans/proposed?date=${date}`,
     );
@@ -317,38 +329,46 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
       const { data } = (await response.body());
 
       if (data) {
-        obj = {};
+        const obj: CategoriesValueType = {};
 
         data.forEach((cat) => {
-          obj![cat.categoryId] = {
-            baseAmount: cat.amount,
-            fundingCategories: [],
-            includeFundingTransfers: cat.includeFundingTransfers,
-          }
+          const category = categoryTree.getCategory(cat.categoryId)
 
-          if (cat.fundingCategories.length === 0) {
-            obj![cat.categoryId].fundingCategories.push({
-              categoryId: categoryTree.fundingPoolCat!.id,
-              amount: 100.0,
-              percentage: true,
-            });
-          }
-          else {
-            // eslint-disable-next-line no-restricted-syntax
-            for (let i = 0; i < cat.fundingCategories.length; i += 1) {
-              obj![cat.categoryId].fundingCategories.push({
-                categoryId: cat.fundingCategories[i].categoryId,
-                amount: cat.fundingCategories[i].amount,
-                percentage: cat.fundingCategories[i].percentage,
+          if (category && ![CategoryType.AccountTransfer].includes(category.type)) {
+            obj[cat.categoryId] = {
+              baseAmount: cat.amount,
+              fundingCategories: [],
+              includeFundingTransfers: cat.includeFundingTransfers,
+            }
+
+            let fundingCats = cat.fundingCategories;
+
+            if (fundingCats.length === 0) {
+              const fundingPool = category.getFundingPool()
+
+              fundingCats = [{
+                categoryId: fundingPool.id,
+                amount: 100.0,
+                percentage: true,
+              }];
+            }
+
+            for (let i = 0; i < fundingCats.length; i += 1) {
+              obj[cat.categoryId].fundingCategories.push({
+                categoryId: fundingCats[i].categoryId,
+                amount: fundingCats[i].amount,
+                percentage: fundingCats[i].percentage,
               });
             }
           }
         })
+
+        return obj
       }
     }
 
-    return obj;
-  }, [categoryTree.fundingPoolCat]);
+    return null;
+  }, [categoryTree]);
 
   React.useEffect(() => {
     (async () => {

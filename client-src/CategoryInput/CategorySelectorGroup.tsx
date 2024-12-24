@@ -14,7 +14,7 @@ const CategorySelectorGroup: React.FC<PropsType> = ({
     event.stopPropagation();
   };
 
-  if (group.categories.length > 0) {
+  if (group.children.length > 0) {
     return (
       <div
         className="cat-list-item"

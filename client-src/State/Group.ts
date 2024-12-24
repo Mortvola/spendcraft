@@ -1,26 +1,32 @@
-import { makeAutoObservable, runInAction } from 'mobx';
+import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 import Category, { isCategory } from './Category';
 import {
-  Error, GroupProps, isErrorResponse, isGroupProps,
+  Error, GroupProps, isErrorResponse,
   CategoryBalanceProps,
-  CategoryProps,
   isAddCategoryResponse,
   GroupType,
   CategoryType,
+  ApiResponse,
 } from '../../common/ResponseTypes';
 import {
   CategoryInterface, CategoryParams, GroupInterface, StoreInterface,
 } from './Types';
 
 class Group implements GroupInterface {
-  id: number;
+  @observable
+  accessor id: number;
 
-  name: string;
+  @observable
+  accessor name: string;
 
-  type: GroupType;
+  @observable
+  accessor type: GroupType;
 
-  categories: CategoryInterface[] = [];
+  @observable
+  accessor children: (Group | CategoryInterface)[] = [];
+
+  group: Group | null = null;
 
   store: StoreInterface;
 
@@ -29,56 +35,35 @@ class Group implements GroupInterface {
     this.name = props.name;
     this.type = props.type;
     this.store = store;
-
-    if (props.categories && props.categories.length > 0) {
-      this.setCategories(props.categories);
-    }
-
-    makeAutoObservable(this);
   }
 
-  setCategories(categories: CategoryProps[]): void {
-    categories.forEach((c) => {
-      switch (c.type) {
-        case CategoryType.Unassigned:
-          if (this.store.categoryTree.unassignedCat === null) {
-            throw new Error('unassigned category is null');
-          }
-          this.categories.push(this.store.categoryTree.unassignedCat);
-          break;
+  getFundingPool(): Category {
+    if (this.group === null) {
+      throw new Error('gropu not set')
+    }
 
-        case CategoryType.AccountTransfer:
-          if (this.store.categoryTree.accountTransferCat === null) {
-            throw new Error('account transfer category is null');
-          }
-          this.categories.push(this.store.categoryTree.accountTransferCat);
-          break;
-
-        case CategoryType.FundingPool:
-          if (this.store.categoryTree.fundingPoolCat === null) {
-            throw new Error('funding category is null');
-          }
-          this.categories.push(this.store.categoryTree.fundingPoolCat);
-          break;
-
-        default: {
-          const category = new Category(c, this.store);
-          if (this.type === GroupType.NoGroup) {
-            this.store.categoryTree.insertNode(category);
-          }
-
-          this.categories.push(category);
-          break;
-        }
-      }
-    });
+    return this.group?.getFundingPool()
   }
 
   findCategory(categoryId: number): CategoryInterface | null {
-    const cat = this.categories.find((c) => c.id === categoryId);
+    type StackEntry = (Group | CategoryInterface);
 
-    if (cat) {
-      return cat;
+    let stack: StackEntry[] = [
+      ...this.children,
+    ]
+
+    while (stack.length > 0) {
+      const node = stack[0]
+      stack = stack.slice(1)
+
+      if (isCategory(node)) {
+        if (node.id === categoryId) {
+          return node
+        }
+      }
+      else {
+        stack.push(...(node as Group).children)
+      }
     }
 
     return null;
@@ -124,22 +109,22 @@ class Group implements GroupInterface {
       this.store.categoryTree.insertNode(category);
     }
 
-    const index = this.categories.findIndex((g) => category.name.localeCompare(g.name) < 0);
+    const index = this.children.findIndex((g) => category.name.localeCompare(g.name) < 0);
 
     if (index === -1) {
-      this.categories.push(category);
+      this.children.push(category);
     }
     else {
-      this.categories = [
-        ...this.categories.slice(0, index),
+      this.children = [
+        ...this.children.slice(0, index),
         category,
-        ...this.categories.slice(index),
+        ...this.children.slice(index),
       ];
     }
   }
 
-  async update(name: string): Promise<null | Error[]> {
-    const response = await Http.patch(`/api/v1/groups/${this.id}`, { name, hidden: false });
+  async update(value: { name: string, parentGroupId: number | null }): Promise<null | Error[]> {
+    const response = await Http.patch<unknown, ApiResponse<GroupProps>>(`/api/v1/groups/${this.id}`, { ...value, hidden: false });
 
     const body = await response.body();
 
@@ -150,8 +135,8 @@ class Group implements GroupInterface {
     }
     else {
       runInAction(() => {
-        if (isGroupProps(body)) {
-          this.name = body.name;
+        if (body.data !== undefined) {
+          this.name = body.data.name;
         }
       });
     }
@@ -183,14 +168,14 @@ class Group implements GroupInterface {
       this.store.categoryTree.removeNode(category);
     }
 
-    const index = this.categories.findIndex((c) => c.id === category.id);
+    const index = this.children.findIndex((c) => c.id === category.id);
     if (index !== -1) {
-      this.categories.splice(index, 1);
+      this.children.splice(index, 1);
     }
   }
 
   updateBalances(balances: CategoryBalanceProps[]): void {
-    this.categories.forEach((c) => {
+    this.children.forEach((c) => {
       c.updateBalances(balances);
     });
   }
@@ -200,7 +185,7 @@ export const isGroup = (r: unknown): r is Group => (
   r !== undefined && r !== null
   && (r as Group).id !== undefined
   && (r as Group).name !== undefined
-  && (r as Group).categories !== undefined
+  && (r as Group).children !== undefined
 );
 
 export const isCategoriesArray = (r: unknown): r is Category[] => (

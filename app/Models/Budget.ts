@@ -118,7 +118,6 @@ export default class Budget extends BaseModel {
         name: 'System',
         type: GroupType.System,
         budgetId: this.id,
-        system: true,
       })
       .save();
 
@@ -154,7 +153,6 @@ export default class Budget extends BaseModel {
         name: 'NoGroup',
         type: GroupType.NoGroup,
         budgetId: this.id,
-        system: true,
       })
       .save();
 
@@ -174,7 +172,6 @@ export default class Budget extends BaseModel {
       .useTransaction(trx)
       .fill({
         name: 'Food',
-        system: false,
         budgetId: this.id,
       })
       .save();
@@ -228,7 +225,6 @@ export default class Budget extends BaseModel {
       .useTransaction(trx)
       .fill({
         name: 'Home Improvement',
-        system: false,
         budgetId: this.id,
       })
       .save();
@@ -266,7 +262,6 @@ export default class Budget extends BaseModel {
       .useTransaction(trx)
       .fill({
         name: 'Health Care',
-        system: false,
         budgetId: this.id,
       })
       .save();
@@ -304,7 +299,6 @@ export default class Budget extends BaseModel {
       .useTransaction(trx)
       .fill({
         name: 'Insurance',
-        system: false,
         budgetId: this.id,
       })
       .save();
@@ -351,7 +345,6 @@ export default class Budget extends BaseModel {
       .useTransaction(trx)
       .fill({
         name: 'Bills',
-        system: false,
         budgetId: this.id,
       })
       .save();
@@ -389,7 +382,6 @@ export default class Budget extends BaseModel {
       .useTransaction(trx)
       .fill({
         name: 'Taxes',
-        system: false,
         budgetId: this.id,
       })
       .save();
@@ -436,7 +428,6 @@ export default class Budget extends BaseModel {
       .useTransaction(trx)
       .fill({
         name: 'Car',
-        system: false,
         budgetId: this.id,
       })
       .save();

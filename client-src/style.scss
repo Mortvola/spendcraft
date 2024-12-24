@@ -253,7 +253,10 @@ body {
 }
 
 .cat-list-item>.cat-list-cat,
-.cat-list-group>.cat-list-cat {
+.cat-list-group>.cat-list-cat,
+.cat-list-item>.cat-list-item,
+.cat-list-group>.cat-list-group
+ {
   margin-left: 28px;
 }
 

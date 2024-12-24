@@ -20,7 +20,7 @@ class Category implements CategoryInterface {
 
   type: CategoryType;
 
-  groupId: number;
+  group: GroupInterface | null = null;
 
   balance = 0;
 
@@ -52,7 +52,7 @@ class Category implements CategoryInterface {
     this.name = props.name;
     this.type = props.type;
     this.balance = props.balance;
-    this.groupId = props.groupId;
+    // this.groupId = props.groupId;
     this.fundingAmount = props.fundingAmount;
     this.includeFundingTransfers = props.includeFundingTransfers;
     this.goalDate = props.goalDate ? DateTime.fromISO(props.goalDate) : null;
@@ -88,6 +88,14 @@ class Category implements CategoryInterface {
       name: observable,
       balance: observable,
     });
+  }
+
+  getFundingPool(): CategoryInterface {
+    if (this.group === null) {
+      throw new Error('group not set')
+    }
+
+    return this.group.getFundingPool()
   }
 
   async update(
@@ -164,7 +172,7 @@ class Category implements CategoryInterface {
   }
 
   async delete (): Promise<null | Error[]> {
-    const response = await Http.delete(`/api/v1/groups/${this.groupId}/categories/${this.id}`);
+    const response = await Http.delete(`/api/v1/groups/${this.group!.id}/categories/${this.id}`);
 
     if (!response.ok) {
       const body = await response.body();
@@ -189,12 +197,10 @@ class Category implements CategoryInterface {
 }
 
 export const isCategory = (r: unknown): r is Category => (
-  r !== undefined && r !== null
-  && (r as Category).id !== undefined
-  && (r as Category).name !== undefined
-  && (r as Category).type !== undefined
-  && (r as Category).balance !== undefined
-  // && (r as Category).groupId !== undefined
+  (r as Category)?.id !== undefined
+  && (r as Category)?.name !== undefined
+  && (r as Category)?.type !== undefined
+  && (r as Category)?.balance !== undefined
 );
 
 export default Category;
