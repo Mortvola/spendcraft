@@ -11,7 +11,7 @@ import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import { FormModal, FormError, setFormErrors } from '@mortvola/forms';
 import { useStores } from '../../State/Store';
 import { Error, GroupType } from '../../../common/ResponseTypes';
-import { GroupInterface } from '../../State/Types';
+import { CategoryInterface, GroupInterface } from '../../State/Types';
 import styles from './GroupDialog.module.scss';
 import { isGroup } from '../../State/Group';
 
@@ -89,13 +89,25 @@ const GroupDialog: React.FC<PropsType & ModalProps> = ({
       options.push(<option key="nogroup" value={categoryTree.noGroupGroup.id}>None</option>);
     }
 
-    return options.concat(
-      categoryTree.budget.children
-        .filter((g) => isGroup(g) && g.type === GroupType.Regular && g.id !== group?.id)
-        .map((g) => (
-          <option key={g.id} value={g.id}>{g.name}</option>
-        )),
-    )
+    let stack: (GroupInterface | CategoryInterface)[] = [...categoryTree.budget.children]
+
+    while (stack.length > 0) {
+      const g = stack[0];
+      stack = stack.slice(1)
+
+      if (isGroup(g) && g.type === GroupType.Regular) {
+        if (group === undefined || g.id !== group.id) {
+          options.push(<option key={g.id} value={g.id}>{g.name}</option>)
+        }
+
+        stack = [
+          ...g.children,
+          ...stack,
+        ]
+      }
+    }
+
+    return options
   }
 
   return (

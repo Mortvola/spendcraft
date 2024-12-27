@@ -15,7 +15,7 @@ import {
 import { DateTime } from 'luxon';
 import { isGroup } from '../../State/Group';
 import { useStores } from '../../State/Store';
-import { CategoryInterface } from '../../State/Types';
+import { CategoryInterface, GroupInterface } from '../../State/Types';
 import AmountInput from '../../AmountInput';
 import styles from './CategoryDialog.module.scss';
 import { CategoryType, GroupType } from '../../../common/ResponseTypes';
@@ -145,13 +145,23 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
       options.push(<option key="nogroup" value={categoryTree.noGroupGroup.id}>No Group</option>);
     }
 
-    return options.concat(
-      categoryTree.budget.children
-        .filter((g) => isGroup(g) && g.type === GroupType.Regular)
-        .map((g) => (
-          <option key={g.id} value={g.id}>{g.name}</option>
-        )),
-    )
+    let stack: (GroupInterface | CategoryInterface)[] = [...categoryTree.budget.children]
+
+    while (stack.length > 0) {
+      const group = stack[0];
+      stack = stack.slice(1)
+
+      if (isGroup(group) && group.type === GroupType.Regular) {
+        options.push(<option key={group.id} value={group.id}>{group.name}</option>)
+
+        stack = [
+          ...group.children,
+          ...stack,
+        ]
+      }
+    }
+
+    return options;
   }
 
   const categoryTypeClass = () => (
