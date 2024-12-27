@@ -99,6 +99,9 @@ class CategoryTree implements CategoryTreeInterface {
     else if (categoryId === this.budget.fundingPoolCat?.id) {
       category = this.budget.fundingPoolCat
     }
+    else if (categoryId === this.unassignedCat?.id) {
+      category = this.unassignedCat
+    }
     else {
       this.budget.children.find((node) => {
         if (isCategory(node)) {
