@@ -43,22 +43,12 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
 
   const [diffOnly, setDiffOnly] = React.useState<boolean>(false);
 
-  const getCategoriesSum = (categories: CategoriesValueType) => {
-    const v = Object.keys(categories).reduce((sum, k) => {
-      const value = categories[k].baseAmount;
-      const newValue = typeof value === 'string' ? parseFloat(value ?? 0) : value;
-      return sum + newValue;
-    }, 0)
-
-    return v;
-  }
-
-  const computeSpread = (category: { amount: number, fundingCategories: CategorySpreadEntry[]}) => {
-    let categoryAmount = Math.round(category.amount * 100);
+  const computeSpread = (amount: number, fundingCategories: CategorySpreadEntry[]): Map<number, number> => {
+    let categoryAmount = Math.round(amount * 100);
     let percentSum = 0;
 
     // Sort the funding categories by percentage so that fixed amounts are applied before percentage amounts.
-    const sortedCategories = (category.fundingCategories ?? []).slice().sort((a) => (a.percentage ? 1 : -1))
+    const sortedCategories = (fundingCategories ?? []).slice().sort((a) => (a.percentage ? 1 : -1))
 
     const funders: Map<number, number> = new Map();
 
@@ -81,6 +71,12 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
       }
       else {
         fundingAmount = Math.round(fundingCategory.amount * 100);
+
+        // Don't take more than what is left in the category amount
+        if (categoryAmount < fundingAmount) {
+          fundingAmount = categoryAmount
+        }
+
         categoryAmount -= fundingAmount;
       }
 
@@ -93,6 +89,40 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
     return funders;
   }
 
+  const getCategoriesSum = (categories: CategoriesValueType, fundingCatId: number) => {
+    let sum = 0;
+
+    // eslint-disable-next-line no-restricted-syntax
+    for (const k of Object.keys(categories)) {
+      const categoryId = parseInt(k, 10)
+
+      if (categoryId !== fundingCatId) {
+        const cat = categories[k]
+
+        if (cat.fundingCategories.some((fc) => fc.categoryId === fundingCatId)) {
+          // At least one funding category matches the one we are looking for
+          // Get the total amount by adding the base amount to the amounts for
+          // each category that uses this category as a funding source.
+          let sum2 = typeof cat.baseAmount === 'string' ? parseFloat(cat.baseAmount) : cat.baseAmount;
+          if (cat.includeFundingTransfers) {
+            const fundingTransfers = getCategoriesSum(categories, categoryId)
+
+            sum2 += fundingTransfers
+          }
+
+          const funders = computeSpread(sum2, cat.fundingCategories)
+          const funderAmount = funders.get(fundingCatId)
+
+          if (funderAmount !== undefined) {
+            sum += funderAmount / 100.0
+          }
+        }
+      }
+    }
+
+    return sum;
+  }
+
   const handleSubmit = async (values: ValueType) => {
     type Request = {
       date: string,
@@ -102,13 +132,13 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
     const categories: CategoryFundingProps[] = Object.keys(values.categories)
       .filter((k) => parseInt(k, 10) !== fundingPoolCat.id)
       .map((k) => {
-        const value = values.categories[k].baseAmount;
-        const amount = typeof value === 'string' ? parseFloat(value) : value;
         const categoryId = parseInt(k, 10);
 
         const baseAmount = typeof values.categories[k].baseAmount === 'string'
           ? parseFloat(values.categories[k].baseAmount)
           : values.categories[k].baseAmount;
+
+        const amount = baseAmount
 
         return {
           categoryId,
@@ -123,7 +153,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
 
     // eslint-disable-next-line no-restricted-syntax
     for (const category of categories) {
-      const categoryFunders = computeSpread(category);
+      const categoryFunders = computeSpread(category.amount, category.fundingCategories);
 
       // eslint-disable-next-line no-restricted-syntax
       for (const [categoryId, amount] of categoryFunders) {
@@ -136,7 +166,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
     // eslint-disable-next-line no-restricted-syntax
     for (const category of categories) {
       if (category.includeFundingTransfers) {
-        const previousFundingAmount = computeSpread(category);
+        const previousFundingAmount = computeSpread(category.amount, category.fundingCategories);
 
         // eslint-disable-next-line no-restricted-syntax
         for (const [categoryId, amount] of previousFundingAmount) {
@@ -155,7 +185,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
 
         category.amount += sum / 100.0;
 
-        const newFundingAmount = computeSpread(category);
+        const newFundingAmount = computeSpread(category.amount, category.fundingCategories);
 
         // eslint-disable-next-line no-restricted-syntax
         for (const [categoryId, amount] of newFundingAmount) {
@@ -442,7 +472,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
                 ({ form: { values } }: FieldProps<FundingType[]>) => (
                   <Amount
                     className="form-control"
-                    amount={fundingPoolCat.balance - getCategoriesSum(values.categories)}
+                    amount={fundingPoolCat.balance - getCategoriesSum(values.categories, fundingPoolCat.id)}
                   />
                 )
               }
@@ -477,7 +507,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
                 ({ form: { values } }: FieldProps<FundingType[]>) => (
                   <Amount
                     style={{ minWidth: '6rem' }}
-                    amount={getCategoriesSum(values.categories)}
+                    amount={getCategoriesSum(values.categories, fundingPoolCat.id)}
                   />
                 )
               }

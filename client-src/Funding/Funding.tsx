@@ -59,12 +59,20 @@ const Funding: React.FC<PropsType> = ({
     );
   }
 
-  const populateCategories = (groupName: string | null, cats: (GroupInterface | CategoryInterface)[]) => (
-    cats
-      .filter((category) => isCategory(category))
-      .map((category) => (
-        renderCategory(groupName, category)
-      ))
+  const populateCategories = (groupName: string | null, nodes: (GroupInterface | CategoryInterface)[]) => (
+    nodes
+      .flatMap((node): JSX.Element | JSX.Element[] | null => {
+        if (isCategory(node)) {
+          return renderCategory(groupName, node)
+        }
+
+        if (isGroup(node)) {
+          return populateCategories(node.name, node.children)
+        }
+
+        return null;
+      })
+      .filter((item) => item !== null)
   );
 
   const populateGroups = (): ReactNode => (
