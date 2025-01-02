@@ -364,7 +364,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
         data.forEach((cat) => {
           const category = categoryTree.getCategory(cat.categoryId)
 
-          if (category && ![CategoryType.AccountTransfer].includes(category.type)) {
+          if (category && ![CategoryType.AccountTransfer, CategoryType.Unassigned].includes(category.type)) {
             obj[cat.categoryId] = {
               baseAmount: cat.amount,
               fundingCategories: [],
