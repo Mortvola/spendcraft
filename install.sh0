@@ -59,6 +59,7 @@ popd
 
 pushd $APP_NEW
 
+node ace migration:status
 node ace migration:run
 
 popd
