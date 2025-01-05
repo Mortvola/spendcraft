@@ -469,8 +469,9 @@ body {
   overflow: hidden;
 }
 
+.cat-rebalance-group .cat-rebalance-group,
 .cat-rebalance-group .cat-rebalance-item>div:first-child {
-  margin-left: 28px;
+  padding-left: 28px;
 }
 
 .scrollable-form {

@@ -63,7 +63,7 @@ const CategoryRebalance: React.FC<PropsType> = ({
     }
   };
 
-  const categoryItem = (category: CategoryInterface) => {
+  const categoryItem = (category: CategoryInterface, padding: number) => {
     let adjustment = 0;
     const catAmount = transactionCategories.find((c) => c.categoryId === category.id);
     if (catAmount) {
@@ -74,6 +74,7 @@ const CategoryRebalance: React.FC<PropsType> = ({
     return (
       <CategoryRebalanceItem
         key={category.id}
+        style={{ paddingLeft: padding }}
         category={{ name: category.name, balance: balance ? balance.balance : 0, adjustment }}
         onDeltaChange={(amount: number, delta: number) => (
           handleDeltaChange(amount, delta, category)
@@ -82,52 +83,43 @@ const CategoryRebalance: React.FC<PropsType> = ({
     )
   }
 
-  const populateCategories = (categories: (GroupInterface | CategoryInterface)[]) => (
+  const populateCategories = (categories: (GroupInterface | CategoryInterface)[], padding: number): ReactElement[] => (
     categories
-      .filter((category) => isCategory(category))
-      .filter((category) => (
-        category.type !== CategoryType.Unassigned
-        && category.type !== CategoryType.AccountTransfer
+      .filter((node) => (
+        isGroup(node)
+        || (node.type !== CategoryType.Unassigned
+        && node.type !== CategoryType.AccountTransfer)
       ))
-      .map((category) => (
-        categoryItem(category)
-      ))
+      .map((node) => {
+        if (isGroup(node)) {
+          if (node.children.length > 0) {
+            return (
+              <>
+                <div key={node.id} className="cat-rebalance-group" style={{ paddingLeft: padding }}>
+                  {node.name}
+                </div>
+                {populateCategories(node.children, padding + 28)}
+              </>
+            )
+          }
+        }
+        else {
+          return (
+            categoryItem(node as CategoryInterface, padding)
+          )
+        }
+
+        return null
+      })
+      .filter((node) => node !== null)
   );
 
   const populateTree = () => {
-    const tree: ReactElement[] = [];
-
     if (categoryTree.budget.children) {
-      categoryTree.budget.children
-        .filter((n) => (
-          isGroup(n)
-          || (
-            n.type !== CategoryType.Unassigned
-            && n.type !== CategoryType.AccountTransfer
-          )
-        ))
-        .forEach((node) => {
-          if (isGroup(node)) {
-            if (node.children.length > 0) {
-              tree.push((
-                <div key={node.id} className="cat-rebalance-group">
-                  {node.name}
-                  {populateCategories(node.children)}
-                </div>
-              ));
-            }
-          }
-          else {
-            if (!isCategory(node)) {
-              throw new Error('node is not a category');
-            }
-
-            tree.push(categoryItem(node));
-          }
-        });
+      return populateCategories(categoryTree.budget.children, 0)
     }
 
-    return tree;
+    return [];
   };
 
   return (

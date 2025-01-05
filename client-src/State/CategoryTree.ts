@@ -337,9 +337,15 @@ class CategoryTree implements CategoryTreeInterface {
 
   updateBalances(balances: CategoryBalanceProps[]): void {
     runInAction(() => {
-      this.budget.children.forEach((node) => {
-        node.updateBalances(balances);
-      });
+      if (this.unassignedCat) {
+        this.unassignedCat.updateBalances(balances)
+      }
+
+      if (this.accountTransferCat) {
+        this.accountTransferCat.updateBalances(balances)
+      }
+
+      this.budget.updateBalances(balances)
     });
   }
 }
