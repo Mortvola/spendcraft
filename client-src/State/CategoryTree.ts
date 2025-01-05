@@ -11,7 +11,7 @@ import {
   isGroupProps,
 } from '../../common/ResponseTypes';
 import {
-  CategoryInterface, CategoryTreeInterface, GroupInterface, RebalancesInterface, StoreInterface,
+  CategoryInterface, CategoryTreeInterface, RebalancesInterface, StoreInterface,
 } from './Types';
 import SystemIds from './SystemIds';
 import Budget from './Budget';
@@ -91,39 +91,15 @@ class CategoryTree implements CategoryTreeInterface {
   }
 
   getCategory(categoryId: number): CategoryInterface | null {
-    let category: CategoryInterface | null = null;
-
     if (categoryId === this.accountTransferCat?.id) {
-      category = this.accountTransferCat
-    }
-    else if (categoryId === this.budget.fundingPoolCat?.id) {
-      category = this.budget.fundingPoolCat
-    }
-    else if (categoryId === this.unassignedCat?.id) {
-      category = this.unassignedCat
-    }
-    else {
-      this.budget.children.find((node) => {
-        if (isCategory(node)) {
-          if (node.id === categoryId) {
-            category = node;
-            return true;
-          }
-        }
-        else {
-          const cat = (node as Group).findCategory(categoryId);
-
-          if (cat) {
-            category = cat;
-            return true;
-          }
-        }
-
-        return false;
-      });
+      return this.accountTransferCat
     }
 
-    return category;
+    if (categoryId === this.unassignedCat?.id) {
+      return this.unassignedCat
+    }
+
+    return this.budget.findCategory(categoryId)
   }
 
   getCategoryName(categoryId: number): string | null {
@@ -337,15 +313,14 @@ class CategoryTree implements CategoryTreeInterface {
 
   updateBalances(balances: CategoryBalanceProps[]): void {
     runInAction(() => {
-      if (this.unassignedCat) {
-        this.unassignedCat.updateBalances(balances)
-      }
+      // eslint-disable-next-line no-restricted-syntax
+      for (const catBalance of balances) {
+        const cat = this.getCategory(catBalance.id)
 
-      if (this.accountTransferCat) {
-        this.accountTransferCat.updateBalances(balances)
+        if (cat) {
+          cat.updateBalance(catBalance)
+        }
       }
-
-      this.budget.updateBalances(balances)
     });
   }
 }

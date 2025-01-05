@@ -156,16 +156,20 @@ class Category implements CategoryInterface {
   updateBalances(balances: CategoryBalanceProps[]): void {
     const balance = balances.find((b) => b.id === this.id);
     if (balance) {
-      this.balance = balance.balance;
+      this.updateBalance(balance)
+    }
+  }
 
-      if (this.type === CategoryType.Unassigned) {
-        if (navigator.setAppBadge) {
-          if (balance.count) {
-            navigator.setAppBadge(balance.count)
-          }
-          else {
-            navigator.clearAppBadge()
-          }
+  updateBalance(balance: CategoryBalanceProps) {
+    this.balance = balance.balance;
+
+    if (this.type === CategoryType.Unassigned) {
+      if (navigator.setAppBadge) {
+        if (balance.count) {
+          navigator.setAppBadge(balance.count)
+        }
+        else {
+          navigator.clearAppBadge()
         }
       }
     }

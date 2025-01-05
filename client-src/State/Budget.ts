@@ -1,6 +1,7 @@
 import { CategoryBalanceProps } from '../../common/ResponseTypes';
 import Category from './Category';
 import Group from './Group';
+import { CategoryInterface } from './Types';
 
 class Budget extends Group {
   fundingPoolCat: Category | null = null;
@@ -13,12 +14,12 @@ class Budget extends Group {
     return this.fundingPoolCat;
   }
 
-  updateBalances(balances: CategoryBalanceProps[]): void {
-    if (this.fundingPoolCat) {
-      this.fundingPoolCat.updateBalances(balances)
+  findCategory(categoryId: number): CategoryInterface | null {
+    if (categoryId === this.fundingPoolCat?.id) {
+      return this.fundingPoolCat
     }
 
-    super.updateBalances(balances)
+    return super.findCategory(categoryId);
   }
 }
 

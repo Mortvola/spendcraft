@@ -219,6 +219,8 @@ export interface CategoryInterface {
 
   updateBalances(balances: CategoryBalanceProps[]): void;
 
+  updateBalance(balance: CategoryBalanceProps): void;
+
   getGroup(): GroupInterface;
 }
 

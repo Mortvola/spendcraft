@@ -173,12 +173,6 @@ class Group implements GroupInterface {
       this.children.splice(index, 1);
     }
   }
-
-  updateBalances(balances: CategoryBalanceProps[]): void {
-    this.children.forEach((c) => {
-      c.updateBalances(balances);
-    });
-  }
 }
 
 export const isGroup = (r: unknown): r is Group => (
