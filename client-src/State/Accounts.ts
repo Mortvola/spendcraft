@@ -56,7 +56,7 @@ class Accounts implements AccountsInterface {
       if (isInstitutionsResponse(data)) {
         runInAction(() => {
           // First remove any institutions from the local list
-          // that does not appear in the response.
+          // that do not appear in the response.
           for (let i = 0; i < this.institutions.length;) {
             const index = data.findIndex((inst) => inst.id === this.institutions[i].id)
 
@@ -75,7 +75,7 @@ class Accounts implements AccountsInterface {
           // local list if it does not exist and refresh it if it does.
           data.forEach((i) => {
             let institution = this.institutions.find(
-              (inst) => inst.plaidInstitutionId === i.plaidInstitutionId,
+              (inst) => inst.id === i.id,
             );
 
             if (!institution) {
@@ -146,37 +146,6 @@ class Accounts implements AccountsInterface {
       throw new Error('metadata institution is null')
     }
 
-    runInAction(() => {
-      if (!metadata.institution) {
-        throw new Error('metadata institution is null')
-      }
-
-      const institution = new Institution(
-        this.store,
-        {
-          id: -1,
-          plaidInstitutionId: metadata.institution.institution_id,
-          name: metadata.institution.name,
-          offline: false,
-          syncDate: null,
-          accounts: metadata.accounts.map((a, index) => ({
-            id: -(index + 1),
-            plaidId: a.id,
-            name: a.name,
-            closed: false,
-            type: a.type as AccountType,
-            subtype: a.subtype,
-            tracking: 'Transactions',
-            balance: 0,
-            plaidBalance: 0,
-            startDate: DateTime.now().startOf('month').toISODate(),
-            rate: null,
-          })),
-        },
-      )
-      this.insertInstitution(institution);
-    });
-
     const response = await Http.post<AddInstitutionProps, AddInstitutionResponse>('/api/v1/institution', {
       publicToken,
       institutionId: metadata.institution.institution_id,
@@ -188,7 +157,7 @@ class Accounts implements AccountsInterface {
       runInAction(() => {
         // Make sure we don't already have the institution in the list.
         let institution = this.institutions.find(
-          (inst) => inst.plaidInstitutionId === body.plaidInstitutionId,
+          (inst) => inst.id === body.id,
         );
 
         if (!institution) {

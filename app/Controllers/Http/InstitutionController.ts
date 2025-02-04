@@ -58,15 +58,6 @@ class InstitutionController {
       }),
     });
 
-    let institution = await Institution
-      .query()
-      .where({ institutionId: requestData.institutionId, budgetId: budget.id })
-      .first();
-
-    if (institution) {
-      throw new Exception('Institution already linked')
-    }
-
     if (!requestData.publicToken) {
       throw new Error('public token is undefined');
     }
@@ -82,7 +73,7 @@ class InstitutionController {
       institutionResponse = await plaidClient
         .getInstitutionById(requestData.institutionId, [Plaid.CountryCode.Us]);
 
-      institution = await new Institution()
+      const institution = await new Institution()
         .useTransaction(trx)
         .fill({
           institutionId: institutionResponse.institution.institution_id,
