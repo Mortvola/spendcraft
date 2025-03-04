@@ -1,11 +1,10 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 import { PlaidLinkOnSuccessMetadata } from 'react-plaid-link';
-import { DateTime } from 'luxon';
 import Institution from './Institution';
 import Plaid from './Plaid';
 import {
-  AccountBalanceProps, AccountType, AddInstitutionProps, AddInstitutionResponse,
+  AccountBalanceProps, AddInstitutionProps, AddInstitutionResponse,
   ApiResponse,
   Error, isAddInstitutionResponse, isDeleteInstitutionResponse,
   isInstitutionsResponse, isLinkTokenResponse, TrackingType,

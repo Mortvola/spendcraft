@@ -39,6 +39,8 @@ export interface GroupInterface {
 
   getFundingPool(): CategoryInterface;
 
+  addCategory(params: CategoryParams): Promise<null| Error[]>;
+
   insertCategory(category: CategoryInterface): void;
 
   removeCategory(category: CategoryInterface): void;

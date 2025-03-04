@@ -59,12 +59,10 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
     const { setErrors } = bag;
     let errors = null;
 
-    const selectedGroup = (categoryTree.budget.children.find(
-      (g) => isGroup(g) && g.id === parseInt(values.groupId, 10),
-    )
-      ?? categoryTree.noGroupGroup);
+    const selectedGroup = categoryTree.getGroup(parseInt(values.groupId, 10))
+      ?? categoryTree.noGroupGroup;
 
-    if (selectedGroup === null || !isGroup(selectedGroup)) {
+    if (selectedGroup === null) {
       throw new Error(`group is not a group: ${selectedGroup}`);
     }
 

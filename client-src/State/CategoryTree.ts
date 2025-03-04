@@ -11,7 +11,7 @@ import {
   isGroupProps,
 } from '../../common/ResponseTypes';
 import {
-  CategoryInterface, CategoryTreeInterface, RebalancesInterface, StoreInterface,
+  CategoryInterface, CategoryTreeInterface, GroupInterface, RebalancesInterface, StoreInterface,
 } from './Types';
 import SystemIds from './SystemIds';
 import Budget from './Budget';
@@ -70,24 +70,18 @@ class CategoryTree implements CategoryTreeInterface {
     return true;
   }
 
-  getCategoryGroup(categoryId: number): Group {
-    const group = this.budget.children.find((g) => {
-      if (isCategory(g)) {
-        return false;
-      }
+  getCategoryGroup(categoryId: number): GroupInterface {
+    const category = this.getCategory(categoryId)
 
-      return (g as Group).findCategory(categoryId) !== null
-    }) ?? (
-      this.noGroupGroup && this.noGroupGroup.findCategory(categoryId)
-        ? this.noGroupGroup
-        : null
-    );
-
-    if (isGroup(group)) {
-      return group;
+    if (!category) {
+      throw new Error(`Category not found for id: ${categoryId}`)
     }
 
-    throw new Error('group is null');
+    if (!category.group) {
+      throw new Error(`Category ${categoryId} not assigned to group`)
+    }
+
+    return category.group
   }
 
   getCategory(categoryId: number): CategoryInterface | null {
@@ -100,6 +94,27 @@ class CategoryTree implements CategoryTreeInterface {
     }
 
     return this.budget.findCategory(categoryId)
+  }
+
+  getGroup(groupId: number): GroupInterface | Group | null {
+    type StackEntry = (Group | GroupInterface);
+
+    let stack: StackEntry[] = [
+      this.budget,
+    ]
+
+    while (stack.length > 0) {
+      const node = stack[0]
+      stack = stack.slice(1)
+
+      if (node.id === groupId) {
+        return node
+      }
+
+      stack.push(...node.children.filter((child) => isGroup(child)))
+    }
+
+    return null;
   }
 
   getCategoryName(categoryId: number): string | null {

@@ -121,6 +121,8 @@ class Group implements GroupInterface {
         ...this.children.slice(index),
       ];
     }
+
+    category.group = this;
   }
 
   async update(value: { name: string, parentGroupId: number | null }): Promise<null | Error[]> {
