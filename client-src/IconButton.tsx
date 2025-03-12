@@ -20,15 +20,25 @@ const IconButton: React.FC<PropsType> = ({
   iconClass,
   solid = true,
   onClick,
-}) => (
-  <button type="button" className={`btn btn-sm ${styles.layout} ${className ?? ''}`} onClick={onClick}>
-    <Icon icon={icon} rotate={rotate} iconClass={iconClass} solid={solid} />
-    <div>
-      {
-        caption
-      }
-    </div>
-  </button>
-);
+}) => {
+  const handleClick: React.MouseEventHandler<HTMLButtonElement> = (event) => {
+    event.stopPropagation()
+
+    if (onClick) {
+      onClick()
+    }
+  }
+
+  return (
+    <button type="button" className={`btn btn-sm ${styles.layout} ${className ?? ''}`} onClick={handleClick}>
+      <Icon icon={icon} rotate={rotate} iconClass={iconClass} solid={solid} />
+      <div>
+        {
+          caption
+        }
+      </div>
+    </button>
+  );
+}
 
 export default IconButton;

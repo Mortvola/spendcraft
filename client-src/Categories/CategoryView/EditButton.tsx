@@ -27,11 +27,15 @@ const EditButton: React.FC<PropsType> = ({
     }
   }
 
+  const handleClick: React.MouseEventHandler<HTMLDivElement> = (event) => {
+    event.stopPropagation()
+  }
+
   return (
-    <>
+    <div onClick={handleClick}>
       <IconButton icon="edit" onClick={showDialog} />
       <CategoryDialog category={category} />
-    </>
+    </div>
   );
 };
 
