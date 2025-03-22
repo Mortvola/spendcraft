@@ -1,4 +1,3 @@
-import { CategoryBalanceProps } from '../../common/ResponseTypes';
 import Category from './Category';
 import Group from './Group';
 import { CategoryInterface } from './Types';
@@ -17,6 +16,12 @@ class Budget extends Group {
   findCategory(categoryId: number): CategoryInterface | null {
     if (categoryId === this.fundingPoolCat?.id) {
       return this.fundingPoolCat
+    }
+
+    const subcategory = this.fundingPoolCat?.subcategories.find((subcat) => subcat.id === categoryId)
+
+    if (subcategory) {
+      return subcategory
     }
 
     return super.findCategory(categoryId);

@@ -294,6 +294,7 @@ class CategoriesController {
       type: requestData.type,
       name: requestData.name,
       groupId,
+      suspended: requestData.suspended,
       fundingAmount: requestData.fundingAmount,
       includeFundingTransfers: requestData.includeFundingTransfers,
       hidden: requestData.hidden,
@@ -636,6 +637,7 @@ class CategoriesController {
       balance: bill.balance,
       goalDate: bill.goalDate?.toISODate() ?? '',
       recurrence: bill.recurrence,
+      suspended: bill.suspended,
       debits: bill.$extras.debits !== null ? parseFloat(bill.$extras.debits ?? '0.00') : null,
     }));
   }

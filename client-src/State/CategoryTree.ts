@@ -1,6 +1,6 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
-import Category, { isCategory } from './Category';
+import Category from './Category';
 import Group, { isGroup } from './Group';
 import {
   ApiResponse,
@@ -32,6 +32,8 @@ class CategoryTree implements CategoryTreeInterface {
   accountTransferCat: Category | null = null;
 
   rebalances: RebalancesInterface | null = null;
+
+  subcategories: Category[] = [];
 
   store: StoreInterface;
 
@@ -206,6 +208,7 @@ class CategoryTree implements CategoryTreeInterface {
             parent: this.budget,
           }))
 
+        // Push onto the stack any categories that are in the No Group group.
         stack.push(
           ...data.categories
             .filter((c) => c.groupId === noGroup.id)
@@ -215,6 +218,7 @@ class CategoryTree implements CategoryTreeInterface {
             })),
         )
 
+        // Push onto the stack any categories that are in the System group.
         stack.push(
           ...data.categories
             .filter((c) => c.groupId === systemGroup.id)
@@ -251,6 +255,11 @@ class CategoryTree implements CategoryTreeInterface {
                 node = undefined
                 break;
 
+              case CategoryType.Bill:
+                this.subcategories.push(node)
+                node = undefined
+                break;
+
               default:
                 break;
             }
@@ -282,6 +291,25 @@ class CategoryTree implements CategoryTreeInterface {
             node.group = parent;
             parent.children.push(node)
             parent.children.sort((a, b) => a.name.localeCompare(b.name));
+          }
+        }
+
+        // Assign identified subcategories to their categories.
+        // Note: a subcategory can be assigned to multiple categories.
+        // eslint-disable-next-line no-restricted-syntax
+        for (const subcategory of this.subcategories) {
+          if (subcategory.fundingCategories.length === 0) {
+            this.budget.fundingPoolCat?.subcategories.push(subcategory);
+          }
+          else {
+            // eslint-disable-next-line no-restricted-syntax
+            for (const fundingCategory of subcategory.fundingCategories) {
+              const parentCategory = this.getCategory(fundingCategory.categoryId)
+
+              if (parentCategory) {
+                parentCategory.subcategories.push(subcategory)
+              }
+            }
           }
         }
 

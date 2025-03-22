@@ -25,6 +25,7 @@ export default class UpdateCategoryValidator {
     type: schema.enum([CategoryType.Regular, CategoryType.Bill, CategoryType.Goal] as const),
     goalDate: schema.date.optional(),
     recurrence: schema.number.optional(),
+    suspended: schema.boolean.optional(),
     fundingAmount: schema.number.optional(),
     includeFundingTransfers: schema.boolean.optional(),
     hidden: schema.boolean(),

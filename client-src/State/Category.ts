@@ -22,7 +22,11 @@ class Category implements CategoryInterface {
 
   group: GroupInterface | null = null;
 
+  subcategories: Category[] = [];
+
   balance = 0;
+
+  suspended = false;
 
   fundingAmount = 0;
 
@@ -53,6 +57,7 @@ class Category implements CategoryInterface {
     this.type = props.type;
     this.balance = props.balance;
     // this.groupId = props.groupId;
+    this.suspended = props.suspended;
     this.fundingAmount = props.fundingAmount;
     this.includeFundingTransfers = props.includeFundingTransfers;
     this.goalDate = props.goalDate ? DateTime.fromISO(props.goalDate) : null;
@@ -128,6 +133,7 @@ class Category implements CategoryInterface {
           const nameChanged = this.name !== body.name;
           this.type = body.type;
           this.name = body.name;
+          this.suspended = body.suspended;
           this.fundingAmount = body.fundingAmount;
           this.includeFundingTransfers = body.includeFundingTransfers;
           this.recurrence = body.recurrence;

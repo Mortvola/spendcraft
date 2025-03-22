@@ -81,6 +81,16 @@ const CategoryView: React.FC = observer(() => {
   const renderCategories = () => (
     <div className={styles.categories}>
       {
+        categoryTree.budget.fundingPoolCat?.subcategories.map((subcat) => (
+          <Category
+            key={`${subcat.id}`}
+            category={subcat}
+            onCategorySelected={handleCategorySelected}
+            selectedCategory={uiState.selectedCategory}
+          />
+        ))
+      }
+      {
         categoryTree.budget.children.map((group) => {
           if (isGroup(group)) {
             if (group.type === GroupType.Regular) {
@@ -105,9 +115,8 @@ const CategoryView: React.FC = observer(() => {
             <Category
               key={`${group.id}`}
               category={group}
-              group={categoryTree.noGroupGroup}
               onCategorySelected={handleCategorySelected}
-              selected={uiState.selectedCategory === group}
+              selectedCategory={uiState.selectedCategory}
             />
           );
         })

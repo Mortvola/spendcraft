@@ -51,6 +51,8 @@ export interface CategoryProps {
 
   recurrence: number;
 
+  suspended: boolean;
+
   fundingCategories: { categoryId: number, amount: number, percentage: boolean }[];
 }
 
@@ -86,6 +88,7 @@ export interface UpdateCategoryResponse {
   type: CategoryType;
   name: string;
   monthlyExpenses: boolean;
+  suspended: boolean;
   fundingAmount: number,
   includeFundingTransfers: boolean;
   goalDate: string,
@@ -839,5 +842,6 @@ export type BillProps = {
   balance: number,
   goalDate: string,
   recurrence: number,
+  suspended: boolean,
   debits: number | null,
 }

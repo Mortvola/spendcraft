@@ -43,6 +43,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
   type FormValues = {
     type: CategoryType,
     name: string,
+    suspended: boolean,
     fundingAmount: string,
     includeFundingTransfers: boolean,
     recurrence: string,
@@ -70,6 +71,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
       errors = await category.update({
         type: values.type,
         name: values.name,
+        suspended: values.suspended,
         fundingAmount: parseFloat(values.fundingAmount),
         includeFundingTransfers: values.includeFundingTransfers,
         group: selectedGroup,
@@ -83,6 +85,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
       errors = await selectedGroup.addCategory({
         type: values.type,
         name: values.name,
+        suspended: values.suspended,
         fundingAmount: parseFloat(values.fundingAmount),
         includeFundingTransfers: values.includeFundingTransfers,
         group: selectedGroup,
@@ -201,7 +204,8 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
       initialValues={{
         type: categoryType,
         name: category && category.name ? category.name : '',
-        groupId: category?.group!.id.toString() ?? '',
+        groupId: category?.group?.id.toString() ?? '',
+        suspended: category?.suspended ?? false,
         fundingAmount: category?.fundingAmount.toString() ?? '0',
         includeFundingTransfers: category?.includeFundingTransfers ?? true,
         recurrence: category?.recurrence.toString() ?? '1',
@@ -276,6 +280,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
             <div className={styles.divider} />
             <div className={`${categoryTypeClass()}`}>
               <div className={styles.fundingTitle}>Funding Settings</div>
+              <FormCheckbox name="suspended" label="Suspended" />
               <div className={`${styles.layout}`}>
                 <label className={`${styles.amount}`}>
                   Amount:

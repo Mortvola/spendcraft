@@ -74,6 +74,9 @@ export default class Category extends BaseModel {
   })
   public fundingCategories: FundingCategory[];
 
+  @column()
+  public suspended: boolean;
+
   // @hasMany(() => Transaction)
   // public transaction: HasMany<typeof Transaction>;
 

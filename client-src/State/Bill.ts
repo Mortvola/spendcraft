@@ -13,6 +13,8 @@ class Bill implements BillInterface {
 
   recurrence: number;
 
+  suspended: boolean;
+
   debits: number | null;
 
   constructor(props: BillProps) {
@@ -21,6 +23,7 @@ class Bill implements BillInterface {
     this.amount = props.fundingAmount;
     this.date = props.goalDate ? DateTime.fromISO(props.goalDate) : null;
     this.recurrence = props.recurrence;
+    this.suspended = props.suspended;
     this.debits = props.debits;
   }
 }

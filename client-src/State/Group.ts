@@ -60,6 +60,12 @@ class Group implements GroupInterface {
         if (node.id === categoryId) {
           return node
         }
+
+        const subcategory = node.subcategories.find((subcat) => subcat.id === categoryId)
+
+        if (subcategory) {
+          return subcategory
+        }
       }
       else {
         stack.push(...(node as Group).children)

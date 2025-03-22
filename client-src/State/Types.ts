@@ -188,7 +188,11 @@ export interface CategoryInterface {
 
   group: GroupInterface | null;
 
+  subcategories: CategoryInterface[];
+
   balance: number;
+
+  suspended: boolean;
 
   fundingAmount: number;
 
@@ -551,6 +555,7 @@ export type AddStatementRequest = {
 export type CategoryParams = {
   type: CategoryType,
   name: string,
+  suspended?: boolean,
   fundingAmount?: number,
   includeFundingTransfers?: boolean,
   goalDate?: DateTime,
