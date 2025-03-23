@@ -217,6 +217,8 @@ export interface CategoryInterface {
 
   store: StoreInterface;
 
+  getTotalBalance(): number;
+
   getFundingPool(): CategoryInterface;
 
   update(params: CategoryParams): Promise<null | Error[]>;

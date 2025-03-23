@@ -19,7 +19,7 @@ const Group: React.FC<PropsType> = observer(({
   level = 0,
 }) => (
   <>
-    <div className="cat-list-group" style={{ marginLeft: 28 * level }}>
+    <div className="cat-list-group" style={{ marginLeft: 25 * level }}>
       <div className="group-element-bar">
         <Buttons group={group} />
         <div className="group-name">{group.name}</div>

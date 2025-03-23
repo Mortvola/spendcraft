@@ -103,6 +103,11 @@ class Category implements CategoryInterface {
     return this.group.getFundingPool()
   }
 
+  getTotalBalance(): number {
+    const subcatSum = this.subcategories.reduce((prev, current) => prev + current.balance, 0)
+    return this.balance + subcatSum;
+  }
+
   async update(
     params: CategoryParams,
   ): Promise<null | Error[]> {
@@ -182,7 +187,11 @@ class Category implements CategoryInterface {
   }
 
   async delete (): Promise<null | Error[]> {
-    const response = await Http.delete(`/api/v1/groups/${this.group!.id}/categories/${this.id}`);
+    if (this.group === null) {
+      throw new Error('group is null')
+    }
+
+    const response = await Http.delete(`/api/v1/groups/${this.group.id}/categories/${this.id}`);
 
     if (!response.ok) {
       const body = await response.body();
