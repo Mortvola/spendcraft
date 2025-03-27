@@ -4,13 +4,17 @@ import { CategoryInterface } from '../State/Types';
 type PropsType = {
   category: CategoryInterface,
   selected?: boolean,
+  selectedCategory?: CategoryInterface,
   onSelect: (category: CategoryInterface) => void,
+  level?: number,
 }
 
 const CategorySelectorCategory: React.FC<PropsType> = ({
   category,
   selected,
+  selectedCategory,
   onSelect,
+  level = 0,
 }) => {
   const ref = useRef<HTMLDivElement | null>(null);
 
@@ -33,13 +37,27 @@ const CategorySelectorCategory: React.FC<PropsType> = ({
   }
 
   return (
-    <div
-      className={className}
-      onClick={handleClick}
-      ref={ref}
-    >
-      {category.name}
-    </div>
+    <>
+      <div
+        className={className}
+        onClick={handleClick}
+        ref={ref}
+        style={{ marginLeft: level * 24 }}
+      >
+        {category.name}
+      </div>
+      {
+        category.subcategories.map((subcat) => (
+          <CategorySelectorCategory
+            key={`${subcat.id}`}
+            category={subcat}
+            selected={selectedCategory !== null && subcat.id === selectedCategory?.id}
+            onSelect={onSelect}
+            level={level + 1}
+          />
+        ))
+      }
+    </>
   );
 };
 

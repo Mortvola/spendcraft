@@ -69,7 +69,7 @@ const CategorySelector = observer(React.forwardRef<HTMLDivElement, PropsType>(({
 }, forwardRef) => {
   const { categoryTree } = useStores();
 
-  const filteredCategories = (group: GroupInterface) => (
+  const filteredCategories = (group: GroupInterface, level: number) => (
     group.children
       .filter((c) => (
         !categoryFiltered(group, c, filter, types)
@@ -82,6 +82,7 @@ const CategorySelector = observer(React.forwardRef<HTMLDivElement, PropsType>(({
               category={c}
               selected={selectedCategory !== null && c.id === selectedCategory.id}
               onSelect={onSelect}
+              level={level}
             />
           )
         }
@@ -91,8 +92,9 @@ const CategorySelector = observer(React.forwardRef<HTMLDivElement, PropsType>(({
             <CategorySelectorGroup
               key={c.id}
               group={c}
+              level={0}
             >
-              {filteredCategories(c)}
+              {filteredCategories(c, level)}
             </CategorySelectorGroup>
           );
         }
@@ -137,6 +139,7 @@ const CategorySelector = observer(React.forwardRef<HTMLDivElement, PropsType>(({
               category={categoryTree.unassignedCat}
               selected={selectedCategory !== null && categoryTree.unassignedCat.id === selectedCategory.id}
               onSelect={onSelect}
+              level={0}
             />
           )
           : null
@@ -149,6 +152,7 @@ const CategorySelector = observer(React.forwardRef<HTMLDivElement, PropsType>(({
               category={categoryTree.budget.fundingPoolCat}
               selected={selectedCategory !== null && categoryTree.budget.fundingPoolCat.id === selectedCategory.id}
               onSelect={onSelect}
+              level={0}
             />
           )
           : null
@@ -161,6 +165,7 @@ const CategorySelector = observer(React.forwardRef<HTMLDivElement, PropsType>(({
               category={categoryTree.accountTransferCat}
               selected={selectedCategory !== null && categoryTree.accountTransferCat.id === selectedCategory.id}
               onSelect={onSelect}
+              level={0}
             />
           )
           : null
@@ -168,14 +173,15 @@ const CategorySelector = observer(React.forwardRef<HTMLDivElement, PropsType>(({
       {
         categoryTree.budget.children.map((g) => {
           if (isGroup(g)) {
-            const categories = filteredCategories(g);
+            const categories = filteredCategories(g, 1);
             if (categories.length > 0) {
               return (
                 <CategorySelectorGroup
                   key={g.id}
                   group={g}
+                  level={0}
                 >
-                  {filteredCategories(g)}
+                  {filteredCategories(g, 1)}
                 </CategorySelectorGroup>
               );
             }
@@ -188,12 +194,17 @@ const CategorySelector = observer(React.forwardRef<HTMLDivElement, PropsType>(({
           }
 
           if (!categoryFiltered(null, g, filter, types)) {
+            if (g.group === null) {
+              throw new Error('group is null')
+            }
+
             return (
               <CategorySelectorCategory
-                key={`${g.group!.id}:${g.id}`}
+                key={`${g.group.id}:${g.id}`}
                 category={g}
                 selected={selectedCategory !== null && g.id === selectedCategory.id}
                 onSelect={onSelect}
+                level={0}
               />
             );
           }

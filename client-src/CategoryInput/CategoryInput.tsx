@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import CategorySelector, { categoryFiltered } from './CategorySelector';
 import useExclusiveBool from '../ExclusiveBool';
 import { useStores } from '../State/Store';
-import { TreeNodeInterface, CategoryInterface, GroupInterface } from '../State/Types';
+import { CategoryInterface } from '../State/Types';
 import { isGroup } from '../State/Group';
 import { isCategory } from '../State/Category';
 import { CategoryType } from '../../common/ResponseTypes';
