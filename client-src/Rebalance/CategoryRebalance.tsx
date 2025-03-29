@@ -4,7 +4,6 @@ import {
   CategoryBalanceInterface, CategoryInterface, GroupInterface, TransactionCategoryInterface,
 } from '../State/Types';
 import { isGroup } from '../State/Group';
-import { isCategory } from '../State/Category';
 import { useStores } from '../State/Store';
 import { CategoryType } from '../../common/ResponseTypes';
 
@@ -63,7 +62,7 @@ const CategoryRebalance: React.FC<PropsType> = ({
     }
   };
 
-  const categoryItem = (category: CategoryInterface, padding: number) => {
+  const categoryItem = (category: CategoryInterface, padding: number): React.JSX.Element => {
     let adjustment = 0;
     const catAmount = transactionCategories.find((c) => c.categoryId === category.id);
     if (catAmount) {
@@ -72,14 +71,21 @@ const CategoryRebalance: React.FC<PropsType> = ({
     const balance = balances.find((b) => b.id === category.id);
 
     return (
-      <CategoryRebalanceItem
-        key={category.id}
-        style={{ paddingLeft: padding }}
-        category={{ name: category.name, balance: balance ? balance.balance : 0, adjustment }}
-        onDeltaChange={(amount: number, delta: number) => (
-          handleDeltaChange(amount, delta, category)
-        )}
-      />
+      <>
+        <CategoryRebalanceItem
+          key={category.id}
+          style={{ paddingLeft: padding }}
+          category={{ name: category.name, balance: balance ? balance.balance : 0, adjustment }}
+          onDeltaChange={(amount: number, delta: number) => (
+            handleDeltaChange(amount, delta, category)
+          )}
+        />
+        {
+          category.subcategories.map((subcat) => (
+            categoryItem(subcat, padding + 28)
+          ))
+        }
+      </>
     )
   }
 
@@ -116,7 +122,18 @@ const CategoryRebalance: React.FC<PropsType> = ({
 
   const populateTree = () => {
     if (categoryTree.budget.children) {
-      return populateCategories(categoryTree.budget.children, 0)
+      return (
+        <>
+          {
+            categoryTree.budget.fundingPoolCat?.subcategories.map((subcat) => (
+              categoryItem(subcat, 0)
+            ))
+          }
+          {
+            populateCategories(categoryTree.budget.children, 0)
+          }
+        </>
+      )
     }
 
     return [];

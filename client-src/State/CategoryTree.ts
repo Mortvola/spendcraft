@@ -194,6 +194,8 @@ class CategoryTree implements CategoryTreeInterface {
 
         this.noGroupGroup = new Group(noGroup, this.store)
 
+        this.subcategories = [];
+
         type StackEntry = {
           props: GroupProps | CategoryProps,
           parent: Group | null
