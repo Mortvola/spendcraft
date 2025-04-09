@@ -257,10 +257,10 @@ class CategoryTree implements CategoryTreeInterface {
                 node = undefined
                 break;
 
-              case CategoryType.Bill:
-                this.subcategories.push(node)
-                node = undefined
-                break;
+                // case CategoryType.Bill:
+                //   this.subcategories.push(node)
+                //   node = undefined
+                //   break;
 
               default:
                 break;
@@ -299,21 +299,21 @@ class CategoryTree implements CategoryTreeInterface {
         // Assign identified subcategories to their categories.
         // Note: a subcategory can be assigned to multiple categories.
         // eslint-disable-next-line no-restricted-syntax
-        for (const subcategory of this.subcategories) {
-          if (subcategory.fundingCategories.length === 0) {
-            this.budget.fundingPoolCat?.subcategories.push(subcategory);
-          }
-          else {
-            // eslint-disable-next-line no-restricted-syntax
-            for (const fundingCategory of subcategory.fundingCategories) {
-              const parentCategory = this.getCategory(fundingCategory.categoryId)
+        // for (const subcategory of this.subcategories) {
+        //   if (subcategory.fundingCategories.length === 0) {
+        //     this.budget.fundingPoolCat?.subcategories.push(subcategory);
+        //   }
+        //   else {
+        //     // eslint-disable-next-line no-restricted-syntax
+        //     for (const fundingCategory of subcategory.fundingCategories) {
+        //       const parentCategory = this.getCategory(fundingCategory.categoryId)
 
-              if (parentCategory) {
-                parentCategory.subcategories.push(subcategory)
-              }
-            }
-          }
-        }
+        //       if (parentCategory) {
+        //         parentCategory.subcategories.push(subcategory)
+        //       }
+        //     }
+        //   }
+        // }
 
         this.budget.children.sort((a, b) => a.name.localeCompare(b.name));
 
