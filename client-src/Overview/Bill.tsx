@@ -12,7 +12,7 @@ const Bill: React.FC<PropsType> = ({
   bill,
 }) => (
   <div key={bill.id} className={styles.layout}>
-    <div>{bill.name}</div>
+    <div className="ellipsis">{bill.name}</div>
     <Amount amount={bill.amount} />
     <Date date={bill.date} />
     <Amount amount={bill.debits} noValue="" />
