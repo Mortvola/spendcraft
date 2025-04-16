@@ -393,8 +393,9 @@ class CategoriesController {
     const trx = await Database.transaction();
 
     try {
+      user.useTransaction(trx);
+
       const budget = await user.related('budget').query()
-        .useTransaction(trx)
         .forUpdate()
         .firstOrFail();
 

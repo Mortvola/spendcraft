@@ -70,8 +70,9 @@ export default class AutoAssignmentsController {
     const trx = await Database.transaction();
 
     try {
+      user.useTransaction(trx)
+
       const budget = await user.related('budget').query()
-        .useTransaction(trx)
         .forUpdate()
         .firstOrFail();
 
@@ -133,8 +134,9 @@ export default class AutoAssignmentsController {
     const trx = await Database.transaction();
 
     try {
+      user.useTransaction(trx)
+
       await user.related('budget').query()
-        .useTransaction(trx)
         .forUpdate()
         .firstOrFail();
 
@@ -204,8 +206,9 @@ export default class AutoAssignmentsController {
     const trx = await Database.transaction();
 
     try {
+      user.useTransaction(trx);
+
       await user.related('budget').query()
-        .useTransaction(trx)
         .forUpdate()
         .firstOrFail();
 

@@ -57,7 +57,7 @@ export default class AuthController {
       /**
      * Create a new user
      */
-      const user = await (new User())
+      const user = (new User())
         .useTransaction(trx)
         .fill({
           username: userDetails.username,

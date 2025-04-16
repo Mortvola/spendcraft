@@ -163,7 +163,9 @@ class InstitutionController {
     const trx = await Database.transaction();
 
     try {
-      const budget = await user.useTransaction(trx).related('budget')
+      user.useTransaction(trx)
+
+      const budget = await user.related('budget')
         .query().firstOrFail();
 
       const fundingPool = await budget.getFundingPoolCategory({ client: trx });

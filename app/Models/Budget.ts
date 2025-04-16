@@ -113,7 +113,8 @@ export default class Budget extends BaseModel {
       throw new Error('transaction must be defined');
     }
 
-    const systemGroup = await (new Group()).useTransaction(this.$trx)
+    const systemGroup = await (new Group())
+      .useTransaction(this.$trx)
       .fill({
         name: 'System',
         type: GroupType.System,
@@ -121,7 +122,8 @@ export default class Budget extends BaseModel {
       })
       .save();
 
-    await (new Category()).useTransaction(this.$trx)
+    await (new Category())
+      .useTransaction(this.$trx)
       .fill({
         name: 'Unassigned',
         type: CategoryType.Unassigned,
@@ -130,7 +132,8 @@ export default class Budget extends BaseModel {
       })
       .save();
 
-    await (new Category()).useTransaction(this.$trx)
+    await (new Category())
+      .useTransaction(this.$trx)
       .fill({
         name: 'Funding Pool',
         type: CategoryType.FundingPool,
@@ -139,7 +142,8 @@ export default class Budget extends BaseModel {
       })
       .save();
 
-    await (new Category()).useTransaction(this.$trx)
+    await (new Category())
+      .useTransaction(this.$trx)
       .fill({
         name: 'Account Transfer',
         type: CategoryType.AccountTransfer,
@@ -148,7 +152,8 @@ export default class Budget extends BaseModel {
       })
       .save();
 
-    await (new Group()).useTransaction(this.$trx)
+    await (new Group())
+      .useTransaction(this.$trx)
       .fill({
         name: 'NoGroup',
         type: GroupType.NoGroup,
