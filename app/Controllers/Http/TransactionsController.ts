@@ -100,10 +100,11 @@ export default class TransactionsController {
     const trx = await Database.transaction();
 
     try {
+      user.useTransaction(trx)
+
       let changes = {};
 
       const budget = await user.related('budget').query()
-        .useTransaction(trx)
         .forUpdate()
         .firstOrFail();
 
