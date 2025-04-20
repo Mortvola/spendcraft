@@ -30,7 +30,13 @@ const AccountDetails: React.FC = observer(() => {
   }
 
   if (!selectedAccount) {
-    return null;
+    return (
+      <div className="register window window1">
+        <div className={styles2.placeholder}>
+          Select an account to view the details
+        </div>
+      </div>
+    )
   }
 
   const renderTab = () => {
