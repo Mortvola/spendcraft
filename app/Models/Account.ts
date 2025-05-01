@@ -713,7 +713,11 @@ class Account extends BaseModel {
           const accountFrom = statement.CCACCTFROM;
           const ledgerBalance = statement.LEDGERBAL;
           const bankTransList = statement.BANKTRANLIST;
-          const transactions = bankTransList.STMTTRN;
+          let transactions = bankTransList.STMTTRN;
+
+          if (!Array.isArray(transactions)) {
+            transactions = [transactions]
+          }
 
           balance = ledgerBalance.BALAMT;
 
