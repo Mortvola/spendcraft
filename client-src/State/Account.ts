@@ -57,7 +57,11 @@ class Account implements AccountInterface {
 
   constructor(store: StoreInterface, institution: InstitutionInterface, props: AccountProps) {
     this.transactions = new TransactionContainer(
-      store, `/api/v1/account/${props.id}/transactions`, this.updateBalance,
+      store,
+      `/api/v1/account/${props.id}/transactions`,
+      (balance: number) => {
+        this.balance = balance;
+      },
     );
 
     this.pendingTransactions = new TransactionContainer(
@@ -103,10 +107,6 @@ class Account implements AccountInterface {
 
     this.transactions.url = `/api/v1/account/${props.id}/transactions`;
     this.pendingTransactions.url = `/api/v1/account/${props.id}/transactions?pending=1`;
-  }
-
-  updateBalance(balance: number) {
-    this.balance = balance;
   }
 
   async setSettings(settings: AccountSettings): Promise<void> {
