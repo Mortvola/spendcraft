@@ -17,6 +17,7 @@ export default class AddGroupValidator {
         where: { application_id: this.refs.budgetId },
       }),
     ]),
+    parentGroupId: schema.number(),
   })
 
   public messages = {

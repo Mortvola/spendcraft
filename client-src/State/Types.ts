@@ -41,9 +41,9 @@ export interface GroupInterface {
 
   addCategory(params: CategoryParams): Promise<null| Error[]>;
 
-  insertCategory(category: CategoryInterface): void;
+  insertChild(child: TreeNodeInterface): void;
 
-  removeCategory(category: CategoryInterface): void;
+  removeChild(child: TreeNodeInterface): void;
 
   delete (): Promise<null | Error[]>;
 
@@ -284,7 +284,7 @@ export interface CategoryTreeInterface extends RemoteDataInterface {
 
   rebalances: RebalancesInterface | null;
 
-  insertNode(node: TreeNodeInterface): void;
+  insertNode(node: TreeNodeInterface, parentGroupId: number | null): void;
 
   updateBalances(balances: CategoryBalanceProps[]): void;
 

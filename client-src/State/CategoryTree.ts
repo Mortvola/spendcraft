@@ -8,7 +8,6 @@ import {
   CategoryProps,
   CategoryType,
   Error, GroupProps, GroupType, isCategoryProps, isErrorResponse,
-  isGroupProps,
 } from '../../common/ResponseTypes';
 import {
   CategoryInterface, CategoryTreeInterface, GroupInterface, RebalancesInterface, StoreInterface,
@@ -151,20 +150,21 @@ class CategoryTree implements CategoryTreeInterface {
     return categoryName;
   }
 
-  insertNode(node: TreeNode): void {
-    // Find the position where this new node should be inserted.
-    const index = this.budget.children.findIndex((n) => (node.name.localeCompare(n.name) < 0));
+  insertNode(node: TreeNode, parentGroupId: number | null): void {
+    let group: Group | GroupInterface | null = null;
 
-    if (index === -1) {
-      this.budget.children.push(node);
+    if (parentGroupId === null || parentGroupId === this.noGroupGroup!.id) {
+      group = this.budget
     }
     else {
-      this.budget.children = [
-        ...this.budget.children.slice(0, index),
-        node,
-        ...this.budget.children.slice(index),
-      ];
+      group = this.getGroup(parentGroupId)
+
+      if (group === null) {
+        throw new Error(`group not found for ${parentGroupId}`)
+      }
     }
+
+    group.insertChild(node)
   }
 
   async load(): Promise<void> {
@@ -326,8 +326,8 @@ class CategoryTree implements CategoryTreeInterface {
     }
   }
 
-  async addGroup(name: string): Promise<null | Error[]> {
-    const response = await Http.post('/api/v1/groups', { name });
+  async addGroup(name: string, parentGroupId: number | null): Promise<null | Error[]> {
+    const response = await Http.post<unknown, GroupProps>('/api/v1/groups', { name, parentGroupId });
 
     const body = await response.body();
 
@@ -338,10 +338,8 @@ class CategoryTree implements CategoryTreeInterface {
     }
     else {
       runInAction(() => {
-        if (isGroupProps(body)) {
-          const group = new Group(body, this.store);
-          this.insertNode(group);
-        }
+        const group = new Group(body, this.store);
+        this.insertNode(group, body.parentGroupId);
       });
     }
 

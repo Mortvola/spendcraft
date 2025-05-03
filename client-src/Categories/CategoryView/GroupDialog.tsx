@@ -34,11 +34,20 @@ const GroupDialog: React.FC<PropsType & ModalProps> = ({
     const { setErrors } = formikHelpers;
     let errors: Array<Error> | null = null;
 
+    let parentGroupId = categoryTree.noGroupGroup!.id;
+
+    if (typeof values.parentGroupId === 'string') {
+      parentGroupId = parseInt(values.parentGroupId, 10)
+    }
+    else if (values.parentGroupId !== null) {
+      parentGroupId = values.parentGroupId
+    }
+
     if (group) {
-      errors = await group.update({ name: values.name, parentGroupId: values.parentGroupId ?? null });
+      errors = await group.update({ name: values.name, parentGroupId });
     }
     else {
-      errors = await categoryTree.addGroup(values.name);
+      errors = await categoryTree.addGroup(values.name, parentGroupId);
     }
 
     if (errors) {

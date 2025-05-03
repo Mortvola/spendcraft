@@ -150,12 +150,12 @@ class Category implements CategoryInterface {
           const currentGroup = this.store.categoryTree.getCategoryGroup(this.id);
 
           if (currentGroup !== group) {
-            group.insertCategory(this);
-            currentGroup.removeCategory(this);
+            group.insertChild(this);
+            currentGroup.removeChild(this);
           }
           else if (nameChanged) {
-            group.removeCategory(this);
-            group.insertCategory(this);
+            group.removeChild(this);
+            group.insertChild(this);
           }
         }
       });
@@ -203,7 +203,7 @@ class Category implements CategoryInterface {
     else {
       runInAction(() => {
         const group = this.store.categoryTree.getCategoryGroup(this.id);
-        group.removeCategory(this);
+        group.removeChild(this);
       });
     }
 

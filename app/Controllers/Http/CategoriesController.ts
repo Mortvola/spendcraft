@@ -200,6 +200,7 @@ class CategoriesController {
         name: requestData.name,
         budgetId: user.budgetId,
         type: GroupType.Regular,
+        parentGroupId: requestData.parentGroupId,
       })
       .save();
 

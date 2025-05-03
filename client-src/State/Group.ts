@@ -3,7 +3,6 @@ import Http from '@mortvola/http';
 import Category, { isCategory } from './Category';
 import {
   Error, GroupProps, isErrorResponse,
-  CategoryBalanceProps,
   isAddCategoryResponse,
   GroupType,
   CategoryType,
@@ -12,6 +11,7 @@ import {
 import {
   CategoryInterface, CategoryParams, GroupInterface, StoreInterface,
 } from './Types';
+import { TreeNode } from './CategoryTree';
 
 class Group implements GroupInterface {
   @observable
@@ -24,7 +24,7 @@ class Group implements GroupInterface {
   accessor type: GroupType;
 
   @observable
-  accessor children: (Group | CategoryInterface)[] = [];
+  accessor children: TreeNode[] = [];
 
   group: Group | null = null;
 
@@ -46,7 +46,7 @@ class Group implements GroupInterface {
   }
 
   findCategory(categoryId: number): CategoryInterface | null {
-    type StackEntry = (Group | CategoryInterface);
+    type StackEntry = TreeNode;
 
     let stack: StackEntry[] = [
       ...this.children,
@@ -102,33 +102,29 @@ class Group implements GroupInterface {
         const category = new Category(body, this.store);
 
         // Find the position where this new category should be inserted.
-        this.insertCategory(category);
+        this.insertChild(category);
       });
     }
 
     return null;
   }
 
-  insertCategory(category: CategoryInterface): void {
+  insertChild(child: TreeNode): void {
     // Find the position where this new category should be inserted.
-    if (this.type === GroupType.NoGroup) {
-      this.store.categoryTree.insertNode(category);
-    }
-
-    const index = this.children.findIndex((g) => category.name.localeCompare(g.name) < 0);
+    const index = this.children.findIndex((g) => child.name.localeCompare(g.name) < 0);
 
     if (index === -1) {
-      this.children.push(category);
+      this.children.push(child);
     }
     else {
       this.children = [
         ...this.children.slice(0, index),
-        category,
+        child,
         ...this.children.slice(index),
       ];
     }
 
-    category.group = this;
+    child.group = this;
   }
 
   async update(value: { name: string, parentGroupId: number | null }): Promise<null | Error[]> {
@@ -144,7 +140,19 @@ class Group implements GroupInterface {
     else {
       runInAction(() => {
         if (body.data !== undefined) {
+          const nameChanged = this.name !== body.data.name;
+
           this.name = body.data.name;
+
+          // Has the parent group changed?
+          if (body.data.parentGroupId !== this.group?.id || nameChanged) {
+            // Remove group from the parent group, if it has one.
+            if (this.group) {
+              this.group.removeChild(this)
+            }
+
+            this.store.categoryTree.insertNode(this, body.data.parentGroupId);
+          }
         }
       });
     }
@@ -171,12 +179,12 @@ class Group implements GroupInterface {
     return null;
   }
 
-  removeCategory(category: CategoryInterface): void {
+  removeChild(child: TreeNode): void {
     if (this.type === GroupType.NoGroup) {
-      this.store.categoryTree.removeNode(category);
+      this.store.categoryTree.removeNode(child);
     }
 
-    const index = this.children.findIndex((c) => c.id === category.id);
+    const index = this.children.findIndex((c) => c.id === child.id);
     if (index !== -1) {
       this.children.splice(index, 1);
     }
