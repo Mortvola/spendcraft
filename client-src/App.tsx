@@ -30,7 +30,7 @@ import DesktopView from './DesktopView';
 import MobileView from './MobileView';
 import TabView from './TabView/TabView';
 import Search from './Search';
-import AutoAssigments from './AutoAssignment/AutoAssigments';
+import AutoAssigments from './AutoAssignment/AutoAssignments';
 import AutoAssignmentDetails from './AutoAssignment/AutoAssignmentDetails';
 import TransactionLogs from './TransactionLogs/TransactionLogs';
 import TransactionLogDetails from './TransactionLogs/TransactionLogDetails';

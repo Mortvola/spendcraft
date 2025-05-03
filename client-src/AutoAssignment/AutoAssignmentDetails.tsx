@@ -4,6 +4,7 @@ import { useStores } from '../State/Store';
 import { useAutoAssignmentDialog } from './AutoAssignmentDialog';
 import AutoAssignment from './AutoAssignment';
 import { AutoAssignmentInterface } from '../State/Types';
+import styles from './AutoAssignmentDetails.module.scss';
 
 const AutoAssignmentDetails = observer(() => {
   const { autoAssignments } = useStores();
@@ -17,7 +18,7 @@ const AutoAssignmentDetails = observer(() => {
 
   return (
     <>
-      <div>
+      <div className={styles.layout}>
         {
           autoAssignments.autoAssignemnts.map((a) => (
             <AutoAssignment key={a.id} autoAssignment={a} onClick={handleClick} />

@@ -6,6 +6,7 @@ import DesktopView from '../DesktopView';
 import AutoAssigmentsToolbar from './AutoAssignmentsToolbar';
 import MobileView from '../MobileView';
 import ViewTitle from '../ViewTitle';
+import styles from './AutoAssignments.module.scss';
 
 const AutoAssigments = observer(() => {
   const { autoAssignments } = useStores();
@@ -17,14 +18,14 @@ const AutoAssigments = observer(() => {
   return (
     <>
       <DesktopView>
-        <div>
+        <div className={styles.layout}>
           <AutoAssigmentsToolbar />
           <Outlet />
         </div>
       </DesktopView>
 
       <MobileView>
-        <div>
+        <div className={styles.layout}>
           <AutoAssigmentsToolbar />
           <ViewTitle>Auto Assignments</ViewTitle>
           <Outlet />
