@@ -291,8 +291,6 @@ export interface CategoryTreeInterface extends RemoteDataInterface {
   getCategory(categoryId: number): CategoryInterface | null;
 
   getCategoryGroup(categoryId: number): GroupInterface;
-
-  removeNode(node: GroupInterface | CategoryInterface): void;
 }
 
 export interface CategoryBalanceInterface {

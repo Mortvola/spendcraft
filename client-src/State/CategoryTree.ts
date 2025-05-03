@@ -346,14 +346,6 @@ class CategoryTree implements CategoryTreeInterface {
     return null;
   }
 
-  removeNode(node: TreeNode): void {
-    const index = this.budget.children.findIndex((n) => n.id === node.id);
-
-    if (index !== -1) {
-      this.budget.children.splice(index, 1);
-    }
-  }
-
   updateBalances(balances: CategoryBalanceProps[]): void {
     runInAction(() => {
       // eslint-disable-next-line no-restricted-syntax

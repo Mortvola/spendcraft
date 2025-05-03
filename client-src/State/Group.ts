@@ -172,7 +172,7 @@ class Group implements GroupInterface {
     }
     else {
       runInAction(() => {
-        this.store.categoryTree.removeNode(this);
+        this.group?.removeChild(this);
       });
     }
 
@@ -180,10 +180,6 @@ class Group implements GroupInterface {
   }
 
   removeChild(child: TreeNode): void {
-    if (this.type === GroupType.NoGroup) {
-      this.store.categoryTree.removeNode(child);
-    }
-
     const index = this.children.findIndex((c) => c.id === child.id);
     if (index !== -1) {
       this.children.splice(index, 1);
