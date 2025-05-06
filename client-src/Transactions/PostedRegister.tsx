@@ -110,7 +110,6 @@ const PostedRegister: React.FC<PropsType> = observer(({
 
   return (
     <div className="register window window1">
-      <div />
       <RegisterTransactions
         trxContainer={trxContainer}
         titles={<RegisterTitles transactionClassName={transactionClassName} />}

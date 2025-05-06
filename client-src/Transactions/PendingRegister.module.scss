@@ -9,7 +9,6 @@
   grid-template-rows: max-content minmax(0, 1fr);
   user-select: none;
   -webkit-user-select: none;
-  height: 100%;
 }
 
 @media (max-width: breakpoints.$side-by-side) {

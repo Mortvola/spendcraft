@@ -172,14 +172,14 @@ body {
 
 .register {
   display: grid;
-  grid-template-rows: repeat(2, max-content) 1fr;
+  grid-template-rows: max-content 1fr;
   user-select: none;
   -webkit-user-select: none;
 }
 
 @media (max-width: breakpoints.$side-by-side) {
   .register {
-    grid-template-rows: max-content 1fr;
+    grid-template-rows: 1fr;
     height: 100%;
   }
 }

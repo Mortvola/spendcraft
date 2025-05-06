@@ -46,7 +46,7 @@ const AccountDetails: React.FC = observer(() => {
 
       case Tab.Pending:
         return (
-          <div className={styles.acct}>
+          <div className={`${styles.registerWrapper} ${styles.acct}`}>
             <PendingRegister trxContainer={selectedAccount.pendingTransactions} />
           </div>
         )
