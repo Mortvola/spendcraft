@@ -194,6 +194,12 @@ body {
   margin-right: 14px;
 }
 
+@media (max-width: breakpoints.$side-by-side) {
+  .currency {
+    margin-right: unset;
+  }
+}
+
 .negative {
   color: red;
 }
