@@ -92,9 +92,9 @@ const CategorySelector = observer(React.forwardRef<HTMLDivElement, PropsType>(({
             <CategorySelectorGroup
               key={c.id}
               group={c}
-              level={0}
+              level={level}
             >
-              {filteredCategories(c, level)}
+              {filteredCategories(c, level + 1)}
             </CategorySelectorGroup>
           );
         }
