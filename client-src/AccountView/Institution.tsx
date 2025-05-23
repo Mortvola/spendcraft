@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
+import { Info, Link, Trash2 } from 'lucide-react';
 import IconButton from '../IconButton';
 import { useAccountsDialog } from './AccountsDialog';
 import { useInstitutionInfoDialog } from './InstitutionInfoDialog';
@@ -9,6 +10,7 @@ import { useOfflineAccountDialog } from './OfflineAccountDialog';
 import { useDeleteConfirmation } from '../DeleteConfirmation';
 import styles from './Institution.module.scss';
 import { useRelinkDialog } from './RelinkDialog';
+import LucideButton from '../LucideButton';
 
 type PropsType = {
   institution: InstitutionInterface,
@@ -102,7 +104,9 @@ const Institution: React.FC<PropsType> = observer(({
               onClick={refresh}
             />
             <RelinkDialog institution={institution} />
-            <IconButton icon="trash-alt" className={styles.iconButton} onClick={handleDeleteClick} />
+            <LucideButton className={styles.iconButton} onClick={handleDeleteClick}>
+              <Trash2 size={16} strokeWidth={2.5} />
+            </LucideButton>
             {/* <IconButton icon="plus" onClick={handleAddClick} /> */}
             <OnlineAccountsDialog account={editedAccount} />
             <OfflineAccountDialog institution={institution} account={editedAccount} onHide={handleDialogHide} />
@@ -111,8 +115,12 @@ const Institution: React.FC<PropsType> = observer(({
               !institution.offline
                 ? (
                   <>
-                    <IconButton icon="link" className={styles.iconButton} onClick={handleRelinkClick} />
-                    <IconButton icon="info-circle" className={styles.iconButton} onClick={showInstitutionInfoDialog} />
+                    <LucideButton className={styles.iconButton} onClick={handleRelinkClick}>
+                      <Link size={16} strokeWidth={2.5} />
+                    </LucideButton>
+                    <LucideButton className={styles.iconButton} onClick={showInstitutionInfoDialog}>
+                      <Info size={16} strokeWidth={2.5} />
+                    </LucideButton>
                     <InstitutionInfoDialog institution={institution} />
                   </>
                 )

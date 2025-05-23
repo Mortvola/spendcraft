@@ -1,6 +1,7 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
-import IconButton from '../IconButton';
+import { Circle, CircleX, Settings } from 'lucide-react';
+import LucideButton from '../LucideButton';
 import { AccountInterface } from '../State/Types';
 import { getSubTypeName } from '../State/AccountTypes';
 import Amount from '../Amount';
@@ -57,13 +58,19 @@ const Account: React.FC<PropsType> = observer(({
   return (
     <div className={acctClassName} onClick={accountSelected}>
       <div className={styles.buttons}>
-        <IconButton icon="gear" className={styles.iconButton} onClick={() => showAccountDialog(account)} />
-        <IconButton
-          icon={account.closed ? 'circle' : 'times-circle'}
+        <LucideButton className={styles.iconButton} onClick={() => showAccountDialog(account)}>
+          <Settings size={16} strokeWidth={2.5} />
+        </LucideButton>
+        <LucideButton
           className={styles.iconButton}
-          solid={false}
           onClick={handleCloseClick}
-        />
+        >
+          {
+            account.closed
+              ? <Circle size={16} strokeWidth={2.5} />
+              : <CircleX size={16} strokeWidth={2.5} />
+          }
+        </LucideButton>
       </div>
       <div className={styles.accountInfo}>
         <div className={styles.accountName}>{account.name}</div>
