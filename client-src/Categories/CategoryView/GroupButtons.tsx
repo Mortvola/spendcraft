@@ -1,10 +1,11 @@
 import React from 'react';
-import IconButton from '../../IconButton';
+import { SquarePen } from 'lucide-react';
 import { useGroupDialog } from './GroupDialog';
 import { isGroup } from '../../State/Group';
 import { GroupInterface } from '../../State/Types';
 import styles from './GroupButton.module.scss';
 import { GroupType } from '../../../common/ResponseTypes';
+import LucideButton from '../../LucideButton';
 
 type PropsType = {
   group: GroupInterface,
@@ -17,7 +18,9 @@ const GroupButtons: React.FC<PropsType> = ({ group }) => {
     if (group.type === GroupType.Regular && isGroup(group)) {
       return (
         <>
-          <IconButton icon="edit" onClick={showGroupDialog} className={styles.groupButton} />
+          <LucideButton onClick={showGroupDialog} className={styles.groupButton}>
+            <SquarePen size={16} strokeWidth={2.5} />
+          </LucideButton>
           <GroupDialog group={group} />
         </>
       );

@@ -1,8 +1,9 @@
 import React from 'react';
+import { SquarePen } from 'lucide-react';
 import { useCategoryDialog } from './CategoryDialog';
-import IconButton from '../../IconButton';
 import { CategoryInterface } from '../../State/Types';
 import { CategoryType } from '../../../common/ResponseTypes';
+import LucideButton from '../../LucideButton';
 
 type PropsType = {
   category: CategoryInterface,
@@ -33,7 +34,9 @@ const EditButton: React.FC<PropsType> = ({
 
   return (
     <div onClick={handleClick}>
-      <IconButton icon="edit" onClick={showDialog} />
+      <LucideButton onClick={showDialog}>
+        <SquarePen size={16} strokeWidth={2.5} />
+      </LucideButton>
       <CategoryDialog category={category} />
     </div>
   );
