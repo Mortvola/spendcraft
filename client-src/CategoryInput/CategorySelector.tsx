@@ -132,6 +132,7 @@ const CategorySelector = observer(React.forwardRef<HTMLDivElement, PropsType>(({
       onMouseDown={handleMouseDown}
     >
       {
+        // Unassigned
         categoryTree.unassignedCat && !categoryFiltered(null, categoryTree.unassignedCat, filter, types)
           ? (
             <CategorySelectorCategory
@@ -145,6 +146,7 @@ const CategorySelector = observer(React.forwardRef<HTMLDivElement, PropsType>(({
           : null
       }
       {
+        // Funding Pool
         categoryTree.budget.fundingPoolCat && !categoryFiltered(null, categoryTree.budget.fundingPoolCat, filter, types)
           ? (
             <CategorySelectorCategory
@@ -158,6 +160,7 @@ const CategorySelector = observer(React.forwardRef<HTMLDivElement, PropsType>(({
           : null
       }
       {
+        // Account Transfer
         categoryTree.accountTransferCat && !categoryFiltered(null, categoryTree.accountTransferCat, filter, types)
           ? (
             <CategorySelectorCategory
