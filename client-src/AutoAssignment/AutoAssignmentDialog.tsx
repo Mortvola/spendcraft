@@ -5,12 +5,13 @@ import {
   FieldArray, FieldArrayRenderProps, FormikErrors, useField,
 } from 'formik';
 import { observer } from 'mobx-react-lite';
+import { Minus, Plus } from 'lucide-react';
 import { AutoAssignmentInterface, CategoryInterface } from '../State/Types';
 import CategoryInput from '../CategoryInput/CategoryInput';
 import { useStores } from '../State/Store';
 import styles from './AutoAssignmentDialog.module.scss'
-import IconButton from '../IconButton';
 import CategorySpread from '../CategorySpread/CategorySpread';
+import LucideButton from '../LucideButton';
 
 let tempId = -1;
 
@@ -131,14 +132,14 @@ const AutoAssignmentDialog: React.FC<PropsType & ModalProps> = observer(({
                       // eslint-disable-next-line react/no-array-index-key
                       <div key={i} className={styles.searchStringLayout}>
                         <FormField name={`searchStrings[${i}]`} style={{ marginTop: 0 }} />
-                        <IconButton
-                          icon="plus"
+                        <LucideButton
                           onClick={
                             () => arrayHelpers.insert(i + 1, '')
                           }
-                        />
-                        <IconButton
-                          icon="minus"
+                        >
+                          <Plus size={16} strokeWidth={2.5} />
+                        </LucideButton>
+                        <LucideButton
                           onClick={
                             () => {
                               if (formikProps.values.searchStrings.length > 1) {
@@ -146,7 +147,9 @@ const AutoAssignmentDialog: React.FC<PropsType & ModalProps> = observer(({
                               }
                             }
                           }
-                        />
+                        >
+                          <Minus size={16} strokeWidth={2.5} />
+                        </LucideButton>
                       </div>
                     ))
                   )

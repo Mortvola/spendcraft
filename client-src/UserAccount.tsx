@@ -12,11 +12,12 @@ import {
 import { FormField, setFormErrors, SubmitButton } from '@mortvola/forms';
 import Http from '@mortvola/http';
 import { useNavigate } from 'react-router-dom';
+import { Trash2 } from 'lucide-react';
 import { useStores } from './State/Store';
-import IconButton from './IconButton';
 import styles from './UserAccount.module.scss'
 import { useDeleteConfirmation } from './DeleteConfirmation';
 import PushRegistrationButton from './PushRegistrationButton';
+import LucideButton from './LucideButton';
 
 type FormValues = {
   username: string,
@@ -131,11 +132,11 @@ const UserAccount: React.FC = () => {
                             <div>Pending verification:</div>
                             <div style={{ display: 'flex', whiteSpace: 'nowrap' }}>
                               <div className="ellipsis" style={{ margin: '0 0.5rem' }}>{stores.user.pendingEmail}</div>
-                              <IconButton
-                                icon="trash"
-                                iconClass={styles.icon}
+                              <LucideButton
                                 onClick={handleDeletePending}
-                              />
+                              >
+                                <Trash2 size={16} strokeWidth={2.5} />
+                              </LucideButton>
                             </div>
                           </div>
                           <button

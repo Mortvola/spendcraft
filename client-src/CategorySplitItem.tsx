@@ -1,11 +1,12 @@
 import React from 'react';
+import { Minus, Plus } from 'lucide-react';
 import CategoryInput from './CategoryInput/CategoryInput';
-import IconButton from './IconButton';
 import AmountInput from './AmountInput';
 import { CategoryInterface, TransactionCategoryInterface } from './State/Types';
 import styles from './CategorySplitItem.module.scss';
 import useMediaQuery from './MediaQuery';
 import { useStores } from './State/Store';
+import LucideButton from './LucideButton';
 
 type PropsType = {
   split: TransactionCategoryInterface,
@@ -85,8 +86,12 @@ const CategorySplitItem: React.FC<PropsType> = ({
           placeholder={isMobile ? 'Comment' : ''}
         />
       </div>
-      <IconButton icon="plus" onClick={handleAddItem} />
-      <IconButton icon="minus" onClick={handleDeleteItem} />
+      <LucideButton onClick={handleAddItem}>
+        <Plus size={16} strokeWidth={2.5} />
+      </LucideButton>
+      <LucideButton onClick={handleDeleteItem}>
+        <Minus size={16} strokeWidth={2.5} />
+      </LucideButton>
     </div>
   );
 }

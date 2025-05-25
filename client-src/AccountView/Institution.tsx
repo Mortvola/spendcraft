@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import { Info, Link, Trash2 } from 'lucide-react';
-import IconButton from '../IconButton';
+import {
+  Info, Link, RefreshCw, Trash2,
+} from 'lucide-react';
 import { useAccountsDialog } from './AccountsDialog';
 import { useInstitutionInfoDialog } from './InstitutionInfoDialog';
 import Account from './Account';
@@ -97,12 +98,13 @@ const Institution: React.FC<PropsType> = observer(({
           <div className={styles.institutionName}>{institution.name}</div>
           <div style={{ marginLeft: '1rem' }}>{syncDate}</div>
           <div style={{ display: 'flex', alignSelf: 'flex-end' }}>
-            <IconButton
-              icon="sync-alt"
+            <LucideButton
               className={styles.iconButton}
               rotate={institution.refreshing}
               onClick={refresh}
-            />
+            >
+              <RefreshCw size={16} strokeWidth={2.5} />
+            </LucideButton>
             <RelinkDialog institution={institution} />
             <LucideButton className={styles.iconButton} onClick={handleDeleteClick}>
               <Trash2 size={16} strokeWidth={2.5} />

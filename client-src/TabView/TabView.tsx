@@ -3,6 +3,10 @@ import {
   useNavigate, useParams,
 } from 'react-router-dom';
 import { observer } from 'mobx-react-lite';
+import {
+  Ellipsis,
+  File, Inbox, Landmark, Receipt,
+} from 'lucide-react';
 import styles from './TabView.module.scss';
 import TabViewButton from './TabViewButton';
 import { useStores } from '../State/Store';
@@ -77,31 +81,31 @@ const TabView: React.FC = observer(() => {
   return (
     <div className={styles.layout}>
       <TabViewButton
-        icon="inbox"
+        icon={<Inbox size={24} strokeWidth={1} />}
         caption="Categories"
         url="/home"
         onClick={handleCategoriesClick}
       />
       <TabViewButton
-        icon="file-invoice-dollar"
+        icon={<Receipt size={24} strokeWidth={1} />}
         caption="Bills"
         url="/bills"
         onClick={handleBillsClick}
       />
       <TabViewButton
-        icon="building-columns"
+        icon={<Landmark size={24} strokeWidth={1} />}
         caption="Accounts"
         url="/accounts"
         onClick={handleAccountsClick}
       />
       <TabViewButton
-        icon="file"
+        icon={<File size={24} strokeWidth={1} />}
         caption="Reports"
         url="/reports"
         onClick={handleOtherClick}
       />
       <TabViewMenu
-        icon="ellipsis"
+        icon={<Ellipsis size={24} strokeWidth={1} />}
         caption="More"
       >
         <TabViewMenuItem onClick={handleAccountClick}>Account</TabViewMenuItem>

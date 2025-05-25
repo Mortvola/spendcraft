@@ -1,11 +1,11 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import IconButton from '../IconButton';
 import styles from './TabViewButton.module.scss';
 import menuStyles from './TabViewMenu.module.scss';
+import LucideButton from '../LucideButton';
 
 type PropsType = {
-  icon: string,
+  icon: React.ReactNode,
   caption: string,
   // url: string,
   // onClick: () => void,
@@ -29,13 +29,13 @@ const TabViewMenu: React.FC<PropsType> = ({
 
   return (
     <>
-      <IconButton
-        icon={icon}
+      <LucideButton
         caption={caption}
         className={`${styles.icon}`}
-        iconClass="fa-solid"
         onClick={handleClick}
-      />
+      >
+        {icon}
+      </LucideButton>
       {
         open
           ? (

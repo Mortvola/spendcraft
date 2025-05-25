@@ -1,9 +1,10 @@
 import React from 'react';
-import styles from './IconButton.module.scss';
+import styles from './LucideButton.module.scss';
 
 type PropsType = {
   caption?: string;
   className?: string;
+  rotate?: boolean;
   onClick?: () => void;
   children: React.ReactNode;
 }
@@ -11,6 +12,7 @@ type PropsType = {
 const LucideButton: React.FC<PropsType> = ({
   caption,
   className,
+  rotate,
   onClick,
   children,
 }) => {
@@ -23,7 +25,7 @@ const LucideButton: React.FC<PropsType> = ({
   }
 
   return (
-    <button type="button" className={`btn btn-sm ${styles.layout} ${className ?? ''}`} onClick={handleClick}>
+    <button type="button" className={`btn btn-sm ${styles.layout} ${rotate ? styles.rotate : ''} ${className ?? ''}`} onClick={handleClick}>
       { children }
       <div>
         {

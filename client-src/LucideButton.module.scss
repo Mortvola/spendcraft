@@ -1,0 +1,36 @@
+.layout {
+  --icon-button-color: #000;
+  --icon-button-hover-color: #aaa;
+}
+
+@media (prefers-color-scheme: dark) {
+  .layout {
+    --icon-button-color: #fff;
+    --icon-button-hover-color: #aaa;
+  }  
+}
+
+.layout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  color: var(--icon-button-color);
+
+  &:hover {
+    color: var(--icon-button-hover-color);
+  }
+}
+
+.rotate > svg {
+  animation: rotation 2s infinite linear;
+}
+
+@keyframes rotation {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(359deg);
+  }
+}

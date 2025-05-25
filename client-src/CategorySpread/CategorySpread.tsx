@@ -4,13 +4,14 @@ import {
 } from 'formik';
 import { FormField } from '@mortvola/forms';
 import { Button } from 'react-bootstrap';
+import { Minus, Plus } from 'lucide-react';
 import styles from './CategorySpread.module.scss';
 import CategoryInput from '../CategoryInput/CategoryInput';
 import AmountInput from '../AmountInput';
 import { CategoryInterface } from '../State/Types';
-import IconButton from '../IconButton';
 import { useStores } from '../State/Store';
 import { CategoryType } from '../../common/ResponseTypes';
+import LucideButton from '../LucideButton';
 
 const FormCategoryInput = ({ name, types }: { name: string, types?: CategoryType[] }) => {
   const [field, , helpers] = useField(name);
@@ -97,17 +98,17 @@ const CategorySpread: React.FC<PropsType> = ({
                     )
                   }
                 </Field>
-                <IconButton
-                  icon="plus"
+                <LucideButton
                   onClick={() => arrayHelpers.insert(
                     i + 1,
                     {
                       id: -1, categoryId: unassignedCat.id, amount: 0, percentage: true,
                     },
                   )}
-                />
-                <IconButton
-                  icon="minus"
+                >
+                  <Plus size={16} strokeWidth={2.5} />
+                </LucideButton>
+                <LucideButton
                   onClick={
                     () => {
                       if (categories.length > 1) {
@@ -115,7 +116,9 @@ const CategorySpread: React.FC<PropsType> = ({
                       }
                     }
                   }
-                />
+                >
+                  <Minus size={16} strokeWidth={2.5} />
+                </LucideButton>
               </div>
             ))
           )

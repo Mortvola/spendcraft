@@ -2,11 +2,11 @@ import React from 'react';
 import {
   matchPath, useLocation,
 } from 'react-router-dom';
-import IconButton from '../IconButton';
 import styles from './TabViewButton.module.scss';
+import LucideButton from '../LucideButton';
 
 type PropsType = {
-  icon: string,
+  icon: React.ReactNode,
   caption: string,
   url: string,
   onClick: () => void,
@@ -27,13 +27,13 @@ const TabViewButton: React.FC<PropsType> = ({
   }, [location.pathname, url]);
 
   return (
-    <IconButton
-      icon={icon}
+    <LucideButton
       caption={caption}
       className={`${styles.icon} ${match ? 'active' : ''}`}
-      iconClass="fa-solid"
       onClick={onClick}
-    />
+    >
+      {icon}
+    </LucideButton>
   )
 }
 
