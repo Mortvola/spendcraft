@@ -13,7 +13,8 @@
     "dev-client-build": "webpack --config-name app",
     "lint": "eslint .",
     "analyze": "webpack --json > stats.json",
-    "madge": "clear && madge -c ./client-src/App.tsx"
+    "madge": "clear && madge -c ./client-src/App.tsx",
+    "knip": "clear && knip"
   },
   "keywords": [
     "adonisjs",
@@ -112,6 +113,7 @@
     "eslint-plugin-react": "^7.28.0",
     "eslint-plugin-react-hooks": "^4.3.0",
     "html-webpack-plugin": "^5.5.3",
+    "knip": "^5.58.1",
     "madge": "^6.0.0",
     "mini-css-extract-plugin": "^2.5.3",
     "postcss": "^8.4.5",
