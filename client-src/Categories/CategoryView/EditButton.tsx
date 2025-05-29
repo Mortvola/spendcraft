@@ -4,6 +4,7 @@ import { useCategoryDialog } from './CategoryDialog';
 import { CategoryInterface } from '../../State/Types';
 import { CategoryType } from '../../../common/ResponseTypes';
 import LucideButton from '../../LucideButton';
+import styles from './CategoryView.module.scss';
 
 type PropsType = {
   category: CategoryInterface,
@@ -34,7 +35,7 @@ const EditButton: React.FC<PropsType> = ({
 
   return (
     <div onClick={handleClick}>
-      <LucideButton onClick={showDialog}>
+      <LucideButton className={styles.catButton} onClick={showDialog}>
         <SquarePen size={16} strokeWidth={2.5} />
       </LucideButton>
       <CategoryDialog category={category} />
