@@ -21,9 +21,7 @@ import {
   FundingType, ValueType,
 } from './Types'
 import styles from './Funding.module.scss'
-import { isGroup } from '../State/Group';
-import { isCategory } from '../State/Category';
-import { TransactionInterface } from '../State/Types';
+import { CategoryInterface, TransactionInterface } from '../State/Types';
 import { CategorySpreadEntry } from '../CategorySpread/CategorySpread';
 
 type PropsType = {
@@ -305,35 +303,16 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
       })
 
       // Add to the transaction any category that is not yet represented
-      categoryTree.budget.children.forEach((node) => {
-        if (isGroup(node)) {
-          if (node.id !== categoryTree.systemIds.systemGroupId) {
-            node.children.forEach((cat) => {
-              if (obj[cat.id] === undefined) {
-                obj[cat.id] = {
-                  baseAmount: 0,
-                  fundingCategories: [{
-                    categoryId: cat.getFundingPool().id,
-                    amount: 100,
-                    percentage: true,
-                  }],
-                  includeFundingTransfers: false,
-                }
-              }
-            })
-          }
-        }
-        else if (isCategory(node)) {
-          if (obj[node.id] === undefined) {
-            obj[node.id] = {
-              baseAmount: 0,
-              fundingCategories: [{
-                categoryId: node.getFundingPool().id,
-                amount: 100,
-                percentage: true,
-              }],
-              includeFundingTransfers: false,
-            }
+      categoryTree.budget.forEachCatgory((node: CategoryInterface) => {
+        if (obj[node.id] === undefined) {
+          obj[node.id] = {
+            baseAmount: 0,
+            fundingCategories: [{
+              categoryId: node.getFundingPool().id,
+              amount: 100,
+              percentage: true,
+            }],
+            includeFundingTransfers: false,
           }
         }
       })

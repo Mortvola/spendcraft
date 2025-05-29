@@ -48,6 +48,8 @@ export interface GroupInterface {
   delete (): Promise<null | Error[]>;
 
   update(value: { name: string, parentGroupId: number | null }): Promise<null | Error[]>;
+
+  forEachCatgory(callback: (category: CategoryInterface) => void): void;
 }
 
 export interface TransactionInterface extends BaseTransactionInterface {

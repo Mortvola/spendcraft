@@ -11,7 +11,14 @@ import {
 import {
   CategoryInterface, CategoryParams, GroupInterface, StoreInterface,
 } from './Types';
-import { TreeNode } from './CategoryTree';
+import { type TreeNode } from './CategoryTree';
+
+export const isGroup = (r: unknown): r is Group => (
+  r !== undefined && r !== null
+  && (r as Group).id !== undefined
+  && (r as Group).name !== undefined
+  && (r as Group).children !== undefined
+);
 
 class Group implements GroupInterface {
   @observable
@@ -185,14 +192,31 @@ class Group implements GroupInterface {
       this.children.splice(index, 1);
     }
   }
-}
 
-export const isGroup = (r: unknown): r is Group => (
-  r !== undefined && r !== null
-  && (r as Group).id !== undefined
-  && (r as Group).name !== undefined
-  && (r as Group).children !== undefined
-);
+  forEachCatgory(callback: (category: CategoryInterface) => void) {
+    type StackEntry = (Group | GroupInterface);
+
+    let stack: StackEntry[] = [
+      this,
+    ]
+
+    while (stack.length > 0) {
+      const node = stack[0]
+      stack = stack.slice(1)
+
+      // eslint-disable-next-line no-restricted-syntax
+      for (const child of node.children) {
+        if (isGroup(child)) {
+          stack.push(child)
+        }
+
+        if (isCategory(child)) {
+          callback(child)
+        }
+      }
+    }
+  }
+}
 
 export const isCategoriesArray = (r: unknown): r is Category[] => (
   (Array.isArray(r))
