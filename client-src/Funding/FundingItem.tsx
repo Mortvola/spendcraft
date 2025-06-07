@@ -60,7 +60,7 @@ const FundingItem: React.FC<PropsType> = ({
     >
       {
         ({ field: fieldProps }: FieldProps<string, ValueType>) => (
-          <div className={`${styles.fundListItem} ${hide(fieldProps.value, fundingInfo?.previousFunding) ? styles.hide : ''}`}>
+          <div className={`${styles.fundListItem} ${hide(fieldProps.value, fundingInfo?.previousBaseAmount) ? styles.hide : ''}`}>
             <div className={styles.fundListCatName}>{title}</div>
             <div className={styles.valuesWrapper}>
               <div className={styles.fundValues}>
@@ -74,7 +74,7 @@ const FundingItem: React.FC<PropsType> = ({
                   <Amount amount={balance} />
                 </VerticalTitled>
                 <div>{`${previousMonthName} Funding:`}</div>
-                <Amount style={{ minWidth: '6rem' }} amount={fundingInfo?.previousFunding ?? 0} />
+                <Amount style={{ minWidth: '6rem' }} amount={fundingInfo?.previousBaseAmount ?? 0} />
               </div>
               <div className={styles.fundValues2}>
                 <div className={styles.labeledAmount}>

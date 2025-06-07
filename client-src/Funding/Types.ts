@@ -10,6 +10,7 @@ export type FundingInfoType = {
   categoryId: number,
   initialAmount: number,
   previousFunding: number,
+  previousBaseAmount: number,
   previousExpenses: number,
   previousCatTransfers: number,
 }

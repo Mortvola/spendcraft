@@ -110,9 +110,12 @@ class CategoriesController {
         // })
         .joinRaw(`left outer join
           (
-            select transCats."categoryId", sum(transCats.amount) as "previousFunding"
+            select
+              transCats."categoryId",
+              sum(transCats.amount) as "previousFunding",
+              sum(coalesce(transCats."baseAmount", 0)) as "previousBaseAmount"
             from transactions t
-            cross join lateral jsonb_to_recordset(t.categories) as transCats("categoryId" int, amount decimal)
+            cross join lateral jsonb_to_recordset(t.categories) as transCats("categoryId" int, amount decimal, "baseAmount" decimal)
             where t.date < ?
             and t.date >= ?
             and t.deleted = false
@@ -157,6 +160,7 @@ class CategoriesController {
           balance: (c.balance - (parseFloat(c.$extras.sum ?? 0))),
           previousSum: parseFloat(c.$extras.previousSum ?? 0),
           previousFunding: parseFloat(c.$extras.previousFunding ?? 0),
+          previousBaseAmount: parseFloat(c.$extras.previousBaseAmount ?? 0),
           previousCatTransfers: parseFloat(c.$extras.previousCatTransfers ?? 0),
         })),
       }

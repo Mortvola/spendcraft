@@ -672,6 +672,7 @@ export type FundingInfoProps = {
   balance: number,
   previousSum: number,
   previousFunding: number,
+  previousBaseAmount: number,
   previousCatTransfers: number,
 }
 

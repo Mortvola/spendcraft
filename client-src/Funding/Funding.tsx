@@ -35,6 +35,7 @@ const Funding: React.FC<PropsType> = ({
             categoryId: c.id,
             initialAmount: c.balance,
             previousFunding: c.previousFunding,
+            previousBaseAmount: c.previousBaseAmount,
             previousExpenses: c.previousSum,
             previousCatTransfers: c.previousCatTransfers,
           })));
