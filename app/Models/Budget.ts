@@ -488,7 +488,7 @@ export default class Budget extends BaseModel {
         ) AS T1 on T1."categoryId" = categories.id
       `, [firstDayOfMonth.toISODate() ?? '']);
 
-    const fundingMonth = DateTime.now().startOf('month');
+    const fundingMonth = firstDayOfMonth.startOf('month');
 
     const proposedCats: ProposedFundingCategoryProps[] = [];
 
@@ -504,34 +504,36 @@ export default class Budget extends BaseModel {
       };
 
       if (cat.useGoal && cat.goalDate) {
-        let goalMonth = cat.goalDate.startOf('month');
+        if (!cat.suspended) {
+          let goalMonth = cat.goalDate.startOf('month');
 
-        let monthDiff = goalMonth.diff(fundingMonth, 'months').months;
-        if (monthDiff < 0) {
-          const numPeriods = Math.ceil(-monthDiff / cat.recurrence);
-          monthDiff += numPeriods * cat.recurrence;
-          goalMonth = fundingMonth.plus({ months: monthDiff })
-        }
+          let monthDiff = goalMonth.diff(fundingMonth, 'months').months;
+          if (monthDiff < 0) {
+            const numPeriods = Math.ceil(-monthDiff / cat.recurrence);
+            monthDiff += numPeriods * cat.recurrence;
+            goalMonth = fundingMonth.plus({ months: monthDiff })
+          }
 
-        const futureTrxSum = parseFloat(cat.$extras.sum ?? 0);
+          const futureTrxSum = parseFloat(cat.$extras.sum ?? 0);
 
-        // TODO: use the planCat.amount sans any transactions this month
-        const goalDiff = cat.fundingAmount - (cat.balance - futureTrxSum);
+          // TODO: use the planCat.amount sans any transactions this month
+          const goalDiff = cat.fundingAmount - (cat.balance - futureTrxSum);
 
-        let monthlyAmount = 0.0;
+          let monthlyAmount = 0.0;
 
-        // if (monthDiff > 0) {
-        if (goalDiff > 0) {
-          monthlyAmount = Math.round((goalDiff / (monthDiff + 1)) * 100) / 100.0;
-        }
+          // if (monthDiff > 0) {
+          if (goalDiff > 0) {
+            monthlyAmount = Math.round((goalDiff / (monthDiff + 1)) * 100) / 100.0;
+          }
 
-        proposedCat.amount = monthlyAmount;
+          proposedCat.amount = monthlyAmount;
 
-        const plannedAmount = Math.round((cat.fundingAmount / cat.recurrence) * 100) / 100.0;
+          const plannedAmount = Math.round((cat.fundingAmount / cat.recurrence) * 100) / 100.0;
 
-        if (monthlyAmount !== plannedAmount) {
-          proposedCat.adjusted = true;
-          proposedCat.adjustedReason = `The funding amount was adjusted from a planned amount of ${plannedAmount.toFixed(2)} to ${monthlyAmount.toFixed(2)} for the goal of ${cat.fundingAmount} due ${goalMonth.month}-${goalMonth.year}.`;
+          if (monthlyAmount !== plannedAmount) {
+            proposedCat.adjusted = true;
+            proposedCat.adjustedReason = `The funding amount was adjusted from a planned amount of ${plannedAmount.toFixed(2)} to ${monthlyAmount.toFixed(2)} for the goal of ${cat.fundingAmount} due ${goalMonth.month}-${goalMonth.year}.`;
+          }
         }
       }
       else {
