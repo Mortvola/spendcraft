@@ -62,7 +62,7 @@ const Funding: React.FC<PropsType> = ({
 
   const populateCategories = (groupName: string | null, nodes: (GroupInterface | CategoryInterface)[]) => (
     nodes
-      .flatMap((node): JSX.Element | JSX.Element[] | null => {
+      .flatMap((node): React.JSX.Element | React.JSX.Element[] | null => {
         if (isCategory(node)) {
           return renderCategory(groupName, node)
         }
