@@ -79,7 +79,7 @@
     "react-google-charts": "^4.0.0",
     "react-plaid-link": "^4.0.1",
     "react-responsive": "^9.0.0-beta.6",
-    "react-router-dom": "^6.3.0",
+    "react-router": "^7.6.2",
     "reflect-metadata": "^0.1.13",
     "regenerator-runtime": "^0.14.0",
     "secure-compare": "^3.0.1",

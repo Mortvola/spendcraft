@@ -8,7 +8,7 @@ import {
 import {
   Link, matchPath, useLocation, useNavigate,
   useParams,
-} from 'react-router-dom';
+} from 'react-router';
 import Http from '@mortvola/http';
 import { runInAction } from 'mobx';
 import { useStores } from './State/Store';

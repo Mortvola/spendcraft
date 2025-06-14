@@ -11,7 +11,7 @@ import {
 } from 'react-bootstrap';
 import { FormField, setFormErrors, SubmitButton } from '@mortvola/forms';
 import Http from '@mortvola/http';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { Trash2 } from 'lucide-react';
 import { useStores } from './State/Store';
 import styles from './UserAccount.module.scss'

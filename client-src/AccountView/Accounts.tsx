@@ -3,7 +3,7 @@ import { observer } from 'mobx-react-lite';
 import { Tab, Tabs } from 'react-bootstrap';
 import {
   Outlet, matchPath, useLocation, useNavigate,
-} from 'react-router-dom';
+} from 'react-router';
 import useMediaQuery from '../MediaQuery'
 import AccountView from './AccountView';
 import Main from '../Main';

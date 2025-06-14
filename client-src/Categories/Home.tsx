@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import {
   Outlet, matchPath, useLocation, useNavigate,
-} from 'react-router-dom';
+} from 'react-router';
 import useMediaQuery from '../MediaQuery'
 import CategoryView from './CategoryView/CategoryView';
 import HomeToolbar from './CategoryView/CategoryViewToolbar';

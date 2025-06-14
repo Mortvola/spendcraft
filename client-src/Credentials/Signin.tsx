@@ -7,7 +7,7 @@ import Http from '@mortvola/http';
 import {
   FormError, setFormErrors, FormField, SubmitButton,
 } from '@mortvola/forms';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import styles from './Signin.module.scss';
 import { isErrorResponse } from '../../common/ResponseTypes';
 

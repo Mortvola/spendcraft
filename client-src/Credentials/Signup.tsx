@@ -1,6 +1,6 @@
 import React from 'react';
 import * as responsive from 'react-responsive';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import styles from './Signup.module.scss';
 import EnterUserInfo from './EnterUserInfo';
 import { Context } from './Types';

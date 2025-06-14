@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   matchPath, useLocation,
-} from 'react-router-dom';
+} from 'react-router';
 import styles from './TabViewButton.module.scss';
 import LucideButton from '../LucideButton';
 

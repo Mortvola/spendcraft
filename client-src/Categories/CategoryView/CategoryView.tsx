@@ -2,7 +2,7 @@ import React from 'react';
 import { observer } from 'mobx-react-lite';
 import {
   useMatch, useNavigate, useParams, useResolvedPath,
-} from 'react-router-dom';
+} from 'react-router';
 import { useStores } from '../../State/Store';
 import { CategoryInterface } from '../../State/Types';
 import { isGroup } from '../../State/Group';

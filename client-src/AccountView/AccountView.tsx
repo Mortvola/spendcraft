@@ -1,6 +1,6 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 import Institution from './Institution';
 import { useStores } from '../State/Store';
 import { AccountInterface } from '../State/Types';

@@ -1,6 +1,6 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
-import { Outlet } from 'react-router-dom';
+import { Outlet } from 'react-router';
 import { useStores } from '../State/Store';
 import DesktopView from '../DesktopView';
 import AutoAssigmentsToolbar from './AutoAssignmentsToolbar';
