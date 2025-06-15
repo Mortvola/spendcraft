@@ -16,6 +16,13 @@
     "madge": "clear && madge -c ./client-src/App.tsx",
     "knip": "clear && knip"
   },
+  "madge": {
+    "detectiveOptions": {
+      "ts": {
+        "skipTypeImports": true
+      }
+    }
+  },
   "keywords": [
     "adonisjs",
     "adonis-app"
@@ -113,7 +120,7 @@
     "eslint-plugin-react-hooks": "^4.3.0",
     "html-webpack-plugin": "^5.5.3",
     "knip": "^5.58.1",
-    "madge": "^6.0.0",
+    "madge": "^8.0.0",
     "mini-css-extract-plugin": "^2.5.3",
     "postcss": "^8.4.5",
     "postcss-loader": "^8.1.1",
