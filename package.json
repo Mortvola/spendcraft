@@ -92,6 +92,8 @@
   },
   "devDependencies": {
     "@adonisjs/assembler": "^7.8.2",
+    "@adonisjs/eslint-config": "^2.1.0",
+    "@adonisjs/prettier-config": "^1.4.5",
     "@adonisjs/tsconfig": "^1.4.1",
     "@swc/core": "^1.12.1",
     "@types/jsonwebtoken": "^9.0.1",
@@ -106,10 +108,9 @@
     "dotenvify": "^1.0.0",
     "dpdm": "^3.8.0",
     "envify": "^4.1.0",
-    "eslint": "^8.16.0",
+    "eslint": "^9.29.0",
     "eslint-config-airbnb": "^19.0.4",
     "eslint-import-resolver-typescript": "^3.5.3",
-    "eslint-plugin-adonis": "^2.1.0",
     "eslint-plugin-css-modules": "^2.11.0",
     "eslint-plugin-import": "^2.25.4",
     "eslint-plugin-jsx-a11y": "^6.5.1",
@@ -122,6 +123,7 @@
     "pino-pretty": "^13.0.0",
     "postcss": "^8.5.6",
     "postcss-loader": "^8.1.1",
+    "prettier": "^3.5.3",
     "remove-files-webpack-plugin": "^1.5.0",
     "sass": "^1.69.5",
     "sass-loader": "^16.0.5",
@@ -136,5 +138,16 @@
   "autoload": {
     "App": "./app"
   },
-  "type": "module"
+  "type": "module",
+  "eslintConfig": {
+    "extends": [
+      "@adonisjs/eslint-config/app"
+    ],
+    "rules": {
+      "@typescript-eslint/explicit-member-accessibility": "off",
+      "unicorn/filename-case": "off",
+      "@typescript-eslint/no-shadow": "off"
+    }
+  },
+  "prettier": "@adonisjs/prettier-config"
 }
