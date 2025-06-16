@@ -14,8 +14,8 @@ import Institution from '#app/Models/Institution';
 import Transaction from '#app/Models/Transaction';
 import Loan from '#app/Models/Loan';
 import logger from '@adonisjs/core/services/logger';
-import AutoAssignment from './AutoAssignment';
-import TransactionLog from './TransactionLog';
+import AutoAssignment from './AutoAssignment.js';
+import TransactionLog from './TransactionLog.js';
 import { HasMany } from "@adonisjs/lucid/types/relations";
 import { ModelAdapterOptions } from "@adonisjs/lucid/types/model";
 

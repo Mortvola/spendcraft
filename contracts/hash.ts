@@ -1,5 +1,5 @@
 import { InferListFromConfig } from '@adonisjs/core/build/config'
-import hashConfig from '../config/hash'
+import hashConfig from '../config/hash.js'
 
 declare module '@ioc:Adonis/Core/Hash' {
   // eslint-disable-next-line @typescript-eslint/no-empty-interface

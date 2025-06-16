@@ -1,5 +1,5 @@
-import ApplePushNotifications from './ApplePushNotifications';
-import Plaid from './Plaid/Plaid';
+import ApplePushNotifications from './ApplePushNotifications/index.js';
+import Plaid from './Plaid/Plaid.js';
 import { ApplicationService } from "@adonisjs/core/types";
 
 export default class AppProvider {

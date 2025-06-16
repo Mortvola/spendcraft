@@ -1,5 +1,5 @@
 import { InferMailersFromConfig } from '@adonisjs/mail/build/config'
-import mailConfig from '../config/mail'
+import mailConfig from '../config/mail.js'
 
 declare module '@ioc:Adonis/Addons/Mail' {
   // eslint-disable-next-line @typescript-eslint/no-empty-interface

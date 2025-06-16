@@ -1,5 +1,5 @@
 import { HttpContext } from '@adonisjs/core/http';
-import PlaidError from './PlaidError';
+import PlaidError from './PlaidError.js';
 import { Exception } from "@adonisjs/core/exceptions";
 
 /*

@@ -2,7 +2,7 @@ import { DateTime } from 'luxon'
 import {
   BaseModel, column, hasMany,
 } from '@adonisjs/lucid/orm'
-import AutoAssignmentCategory from './AutoAssignmentCategory'
+import AutoAssignmentCategory from './AutoAssignmentCategory.js'
 import { HasMany } from "@adonisjs/lucid/types/relations";
 
 export default class AutoAssignment extends BaseModel {

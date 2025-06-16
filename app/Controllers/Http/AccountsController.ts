@@ -14,7 +14,7 @@ import {
 } from '#common/ResponseTypes';
 import Statement from '#app/Models/Statement';
 import AccountTransaction from '#app/Models/AccountTransaction';
-import transactionFields from './transactionFields';
+import transactionFields from './transactionFields.js';
 
 type AddedTransaction = {
   categories: CategoryBalanceProps[],

@@ -15,8 +15,8 @@ import env from '#start/env';
 import mail from '@adonisjs/mail/services/main';
 import { Exception } from '@poppinss/utils';
 import Budget from '#app/Models/Budget';
-import ApnsToken from './ApnsToken';
-import PushSubscription from './PushSubscription';
+import ApnsToken from './ApnsToken.js';
+import PushSubscription from './PushSubscription.js';
 import { BelongsTo } from "@adonisjs/lucid/types/relations";
 import { HasMany } from "@adonisjs/lucid/types/relations";
 

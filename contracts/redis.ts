@@ -6,7 +6,7 @@
  */
 
 import { InferConnectionsFromConfig } from '@adonisjs/redis/build/config'
-import redisConfig from '../config/redis'
+import redisConfig from '../config/redis.js'
 
 declare module '@ioc:Adonis/Addons/Redis' {
   // eslint-disable-next-line @typescript-eslint/no-empty-interface

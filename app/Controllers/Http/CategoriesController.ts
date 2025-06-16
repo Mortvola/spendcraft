@@ -22,7 +22,7 @@ import {
 } from '#common/ResponseTypes';
 import Group from '#app/Models/Group';
 import { DateTime } from 'luxon';
-import transactionFields from './transactionFields';
+import transactionFields from './transactionFields.js';
 
 class CategoriesController {
   // eslint-disable-next-line class-methods-use-this

@@ -15,7 +15,7 @@ import Account from '#app/Models/Account';
 import { schema, rules } from '@adonisjs/validator';
 import TransactionLog from '#app/Models/TransactionLog';
 import Statement from '#app/Models/Statement';
-import transactionFields, { getChanges } from './transactionFields';
+import transactionFields, { getChanges } from './transactionFields.js';
 import { ModelAttributes } from "@adonisjs/lucid/types/model";
 
 export default class TransactionsController {

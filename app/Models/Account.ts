@@ -16,9 +16,9 @@ import { XMLParser } from 'fast-xml-parser';
 import logger from '@adonisjs/core/services/logger'
 import db from '@adonisjs/lucid/services/db';
 import { getChanges } from '#app/Controllers/Http/transactionFields';
-import Category from './Category';
-import User from './User';
-import Statement from './Statement';
+import Category from './Category.js';
+import User from './User.js';
+import Statement from './Statement.js';
 import { HasMany } from "@adonisjs/lucid/types/relations";
 import { BelongsTo } from "@adonisjs/lucid/types/relations";
 import { ModelAttributes } from "@adonisjs/lucid/types/model";
