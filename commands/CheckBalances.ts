@@ -3,6 +3,7 @@ import Category from '#app/Models/Category';
 import Budget from '#app/Models/Budget';
 import { BaseCommand } from "@adonisjs/core/ace";
 import { flags } from "@adonisjs/core/ace";
+import { CommandOptions } from "@adonisjs/core/types/ace";
 
 export default class CheckBalances extends BaseCommand {
   /**
@@ -23,20 +24,10 @@ export default class CheckBalances extends BaseCommand {
 
   @flags.boolean({ alias: 'i', description: 'Interactive mode' })
   public interactive = false;
-
-  public static settings = {
-    /**
-     * Set the following value to true, if you want to load the application
-     * before running the command
-     */
-    loadApp: true,
-
-    /**
-     * Set the following value to true, if you want this command to keep running until
-     * you manually decide to exit the process
-     */
-    stayAlive: false,
-  }
+    static options: CommandOptions = {
+          loadApp: true,
+          staysAlive: false,
+        };
 
   private async checkCategoryBalances() {
     const trx = await db.transaction();

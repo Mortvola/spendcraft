@@ -4,6 +4,7 @@ import Institution from '#app/Models/Institution';
 import { SandboxItemFireWebhookRequestWebhookCodeEnum } from 'plaid';
 import { BaseCommand } from "@adonisjs/core/ace";
 import { args } from "@adonisjs/core/ace";
+import { CommandOptions } from "@adonisjs/core/types/ace";
 
 export default class PlaidFireWebhook extends BaseCommand {
   /**
@@ -18,20 +19,10 @@ export default class PlaidFireWebhook extends BaseCommand {
 
   @args.string({ description: 'Item id of the item for which to fire the webhook' })
   public itemId: string
-
-  public static settings = {
-    /**
-     * Set the following value to true, if you want to load the application
-     * before running the command
-     */
-    loadApp: true,
-
-    /**
-     * Set the following value to true, if you want this command to keep running until
-     * you manually decide to exit the process
-     */
-    stayAlive: false,
-  }
+    static options: CommandOptions = {
+          loadApp: true,
+          staysAlive: false,
+        };
 
   public async run (): Promise<void> {
     const institution = await Institution.findByOrFail('plaidItemId', this.itemId);

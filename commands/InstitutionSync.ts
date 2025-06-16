@@ -3,6 +3,7 @@ import Institution from '#app/Models/Institution';
 import logger from '@adonisjs/core/services/logger';
 import { BaseCommand } from "@adonisjs/core/ace";
 import { args } from "@adonisjs/core/ace";
+import { CommandOptions } from "@adonisjs/core/types/ace";
 
 export default class InstitutionSync extends BaseCommand {
   /**
@@ -17,23 +18,10 @@ export default class InstitutionSync extends BaseCommand {
 
   @args.string({ description: 'Item ID of the item to sync' })
   public itemId: string
-
-  public static settings = {
-    /**
-     * Set the following value to true, if you want to load the application
-     * before running the command. Don't forget to call `node ace generate:manifest` 
-     * afterwards.
-     */
-    loadApp: true,
-
-    /**
-     * Set the following value to true, if you want this command to keep running until
-     * you manually decide to exit the process. Don't forget to call 
-     * `node ace generate:manifest` afterwards.
-     */
-    stayAlive: false,
-  }
-
+    static options: CommandOptions = {
+          loadApp: true,
+          staysAlive: false,
+        };
   // eslint-disable-next-line class-methods-use-this
   public async run() {
     const trx = await db.transaction();

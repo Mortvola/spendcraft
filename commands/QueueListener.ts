@@ -6,6 +6,7 @@ import { PlaidWebHookProps, QueueNamesEnum } from '#contracts/QueueInterfaces'
 import db from '@adonisjs/lucid/services/db';
 import logger from '@adonisjs/core/services/logger';
 import { BaseCommand } from "@adonisjs/core/ace";
+import { CommandOptions } from "@adonisjs/core/types/ace";
 
 // function delay(ms: number) {
 //   return new Promise((resolve) => {
@@ -23,23 +24,10 @@ export default class QueueListener extends BaseCommand {
    * Command description is displayed in the "help" output
    */
   public static description = ''
-
-  public static settings = {
-    /**
-     * Set the following value to true, if you want to load the application
-     * before running the command. Don't forget to call `node ace generate:manifest` 
-     * afterwards.
-     */
-    loadApp: true,
-
-    /**
-     * Set the following value to true, if you want this command to keep running until
-     * you manually decide to exit the process. Don't forget to call 
-     * `node ace generate:manifest` afterwards.
-     */
-    stayAlive: true,
-  }
-
+    static options: CommandOptions = {
+          loadApp: true,
+          staysAlive: true,
+        };
   // eslint-disable-next-line class-methods-use-this
   public async run() {
     logger.info('Starting queue listener...')

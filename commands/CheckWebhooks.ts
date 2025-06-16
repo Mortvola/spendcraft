@@ -2,6 +2,7 @@ import Institution from '#app/Models/Institution'
 import env from '#start/env'
 import plaidClient from '@ioc:Plaid';
 import { BaseCommand } from "@adonisjs/core/ace";
+import { CommandOptions } from "@adonisjs/core/types/ace";
 
 export default class CheckWebhooks extends BaseCommand {
   environmentRegEx: RegExp;
@@ -15,20 +16,10 @@ export default class CheckWebhooks extends BaseCommand {
    * Command description is displayed in the "help" output
    */
   public static description = 'Updates webhooks for each item'
-
-  public static settings = {
-    /**
-     * Set the following value to true, if you want to load the application
-     * before running the command
-     */
-    loadApp: true,
-
-    /**
-     * Set the following value to true, if you want this command to keep running until
-     * you manually decide to exit the process
-     */
-    stayAlive: false,
-  }
+    static options: CommandOptions = {
+          loadApp: true,
+          staysAlive: false,
+        };
 
   private async updateWebhook(
     institution: Institution,

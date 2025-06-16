@@ -4,6 +4,7 @@ import Institution from '#app/Models/Institution';
 import { BaseCommand } from "@adonisjs/core/ace";
 import { args } from "@adonisjs/core/ace";
 import { flags } from "@adonisjs/core/ace";
+import { CommandOptions } from "@adonisjs/core/types/ace";
 
 export default class PlaidGetItem extends BaseCommand {
   /**
@@ -21,20 +22,10 @@ export default class PlaidGetItem extends BaseCommand {
 
   @flags.boolean({ alias: 'f', description: 'Updates item id' })
   public fix: boolean
-
-  public static settings = {
-    /**
-     * Set the following value to true, if you want to load the application
-     * before running the command
-     */
-    loadApp: true,
-
-    /**
-     * Set the following value to true, if you want this command to keep running until
-     * you manually decide to exit the process
-     */
-    stayAlive: false,
-  }
+    static options: CommandOptions = {
+          loadApp: true,
+          staysAlive: false,
+        };
 
   public async run (): Promise<void> {
     const environmentRegEx = new RegExp(`access-${env.get('PLAID_ENV')}.+`)
