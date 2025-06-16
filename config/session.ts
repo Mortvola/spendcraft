@@ -7,8 +7,9 @@
 
 import env from '#start/env'
 import { SessionConfig } from '@adonisjs/session'
+import { defineConfig } from "@adonisjs/session";
 
-const sessionConfig: SessionConfig = {
+const sessionConfig = defineConfig({
   enabled: true,
 
   /*
@@ -103,6 +104,6 @@ const sessionConfig: SessionConfig = {
   |
   */
   redisConnection: 'local',
-}
+})
 
 export default sessionConfig

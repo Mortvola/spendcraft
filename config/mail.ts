@@ -6,9 +6,10 @@
  */
 
 import env from '#start/env'
-import { mailConfig } from '@adonisjs/mail/build/config'
+import { defineConfig } from '@adonisjs/mail'
+import { transports } from "@adonisjs/mail";
 
-export default mailConfig({
+export default defineConfig({
   /*
   |--------------------------------------------------------------------------
   | Default mailer
@@ -42,16 +43,15 @@ export default mailConfig({
     | Uses SMTP protocol for sending email
     |
     */
-    smtp: {
-      driver: 'smtp',
+    smtp: drivers.smtp({
       host: env.get('SMTP_HOST'),
       port: env.get('SMTP_PORT'),
-			auth: {
-				user: env.get('SMTP_USERNAME'),
-				pass: env.get('SMTP_PASSWORD'),
-				type: 'login',
-			}
-    },
+      auth: {
+        user: env.get('SMTP_USERNAME'),
+        pass: env.get('SMTP_PASSWORD'),
+        type: 'login',
+      }
+    }),
 
     /*
     |--------------------------------------------------------------------------
@@ -66,8 +66,7 @@ export default mailConfig({
     | ```
     |
     */
-    ses: {
-      driver: 'ses',
+    ses: drivers.ses({
       apiVersion: '2010-12-01',
       key: env.get('SES_ACCESS_KEY'),
       secret: env.get('SES_ACCESS_SECRET'),
@@ -75,7 +74,12 @@ export default mailConfig({
       sslEnabled: true,
       sendingRate: 10,
       maxConnections: 5,
-    },
+    }),
 
   },
 })
+
+
+declare module '@adonisjs/mail/types' {
+  export interface MailersList extends InferMailers<typeof mailConfig> { }
+}

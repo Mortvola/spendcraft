@@ -7,8 +7,9 @@
 
 import env from '#start/env'
 import { DatabaseConfig } from "@adonisjs/lucid/database";
+import { defineConfig } from "@adonisjs/lucid";
 
-const databaseConfig: DatabaseConfig = {
+const databaseConfig = defineConfig({
   /*
   |--------------------------------------------------------------------------
   | Connection
@@ -43,7 +44,7 @@ const databaseConfig: DatabaseConfig = {
         database: env.get('PG_DB_NAME'),
       },
       healthCheck: true,
-			debug: false,
+      debug: false,
     },
 
     pgLog: {
@@ -56,9 +57,9 @@ const databaseConfig: DatabaseConfig = {
         database: env.get('PG_DB_NAME'),
       },
       healthCheck: false,
-			debug: false,
+      debug: false,
     },
   },
-}
+})
 
 export default databaseConfig
