@@ -19,34 +19,34 @@
 */
 
 import HealthCheck from '@ioc:Adonis/Core/HealthCheck';
-import Route from '@ioc:Adonis/Core/Route'
-import Env from '@ioc:Adonis/Core/Env';
+import router from '@adonisjs/core/services/router'
+import env from '#start/env';
 import Drive from '@ioc:Adonis/Core/Drive'
 
-Route.get('/home', 'HomeController.index');
-Route.get('/home/:categoryId', 'HomeController.index');
-Route.get('/plans', 'HomeController.index');
-Route.get('/accounts', 'HomeController.index');
-Route.get('/accounts/:accountId', 'HomeController.index');
-Route.get('/reports', 'HomeController.index');
-Route.get('/signup', 'HomeController.index');
-Route.get('/signin', 'HomeController.index');
-Route.get('/recover-password', 'HomeController.index');
-Route.get('/user', 'HomeController.index');
-Route.get('/search', 'HomeController.index');
-Route.get('/auto-assignments', 'HomeController.index');
-Route.get('/logs', 'HomeController.index');
-Route.get('/admin', 'HomeController.index');
-Route.get('/bills', 'HomeController.index');
-Route.get('/', 'HomeController.index');
+router.get('/home', 'HomeController.index');
+router.get('/home/:categoryId', 'HomeController.index');
+router.get('/plans', 'HomeController.index');
+router.get('/accounts', 'HomeController.index');
+router.get('/accounts/:accountId', 'HomeController.index');
+router.get('/reports', 'HomeController.index');
+router.get('/signup', 'HomeController.index');
+router.get('/signin', 'HomeController.index');
+router.get('/recover-password', 'HomeController.index');
+router.get('/user', 'HomeController.index');
+router.get('/search', 'HomeController.index');
+router.get('/auto-assignments', 'HomeController.index');
+router.get('/logs', 'HomeController.index');
+router.get('/admin', 'HomeController.index');
+router.get('/bills', 'HomeController.index');
+router.get('/', 'HomeController.index');
 
-Route.post('/wh', 'WebhookController.post');
-Route.post('/redirect', () => {
+router.post('/wh', 'WebhookController.post');
+router.post('/redirect', () => {
   console.log('redirected')
 });
 
 // Look for a gzipped file in the public directory
-Route.get('/:file', async ({ request, response, logger }) => {
+router.get('/:file', async ({ request, response, logger }) => {
   if (request.encoding(['gzip'])) {
     try {
       const filename = request.param('file');
@@ -73,167 +73,167 @@ Route.get('/:file', async ({ request, response, logger }) => {
 })
 .where('file', /.*.(js|css|map)$/)
 
-Route.get('/health', async ({ response }) => {
+router.get('/health', async ({ response }) => {
   const report = await HealthCheck.getReport();
   return response.ok(report);
 });
 
-Route.get('/vapidPublicKey', async ({ response }) => {
-  return response.ok(Env.get('VAPID_PUBLIC_KEY'));
+router.get('/vapidPublicKey', async ({ response }) => {
+  return response.ok(env.get('VAPID_PUBLIC_KEY'));
 });
 
-Route.group(() => {
-  Route.group(() => {
-    Route.post('/register', 'AuthController.register');
-    Route.get('/verify-email/:token/:id', 'AuthController.verifyEmail');
-    Route.post('/login', 'AuthController.login');
-    Route.on('/email-verified').render('emailVerified');
-    Route.post('/code-request', 'AuthController.requestCode');
-    Route.post('/code-verify', 'AuthController.verifyCode');
+router.group(() => {
+  router.group(() => {
+    router.post('/register', 'AuthController.register');
+    router.get('/verify-email/:token/:id', 'AuthController.verifyEmail');
+    router.post('/login', 'AuthController.login');
+    router.on('/email-verified').render('emailVerified');
+    router.post('/code-request', 'AuthController.requestCode');
+    router.post('/code-verify', 'AuthController.verifyCode');
   
-    Route.post('/refresh', 'AuthController.refresh');
+    router.post('/refresh', 'AuthController.refresh');
   
     // Authentication required for this group of routes.
-    Route.group(() => {
-      Route.post('/password/update', 'AuthController.updatePassword').as('updatePassword');
-      Route.post('/logout', 'AuthController.logout');
+    router.group(() => {
+      router.post('/password/update', 'AuthController.updatePassword').as('updatePassword');
+      router.post('/logout', 'AuthController.logout');
   
-      Route.group(() => {
-        Route.get('', 'UsersController.get');
-        Route.patch('', 'UsersController.update');
-        Route.post('/pending-email/resend', 'UsersController.resendEmailVerification');
-        Route.delete('/pending-email', 'UsersController.deletePending')
-        Route.get('/link-token', 'UsersController.getLinkToken');
-        Route.post('/apns-token', 'UsersController.addApnsToken')
-        Route.post('/register-push/web', 'UsersController.registerWebPush')
-        Route.delete('', 'UsersController.delete');
+      router.group(() => {
+        router.get('', 'UsersController.get');
+        router.patch('', 'UsersController.update');
+        router.post('/pending-email/resend', 'UsersController.resendEmailVerification');
+        router.delete('/pending-email', 'UsersController.deletePending')
+        router.get('/link-token', 'UsersController.getLinkToken');
+        router.post('/apns-token', 'UsersController.addApnsToken')
+        router.post('/register-push/web', 'UsersController.registerWebPush')
+        router.delete('', 'UsersController.delete');
       }).prefix('/user');
   
-      Route.group(() => {
-        Route.get('', 'CategoriesController.get');
-        Route.post('', 'CategoriesController.addGroup');
-        Route.patch('/:groupId', 'CategoriesController.updateGroup');
-        Route.delete('/:groupId', 'CategoriesController.deleteGroup');
-        Route.post('/:groupId/categories', 'CategoriesController.addCategory');
-        Route.patch('/:groupId/categories/:catId', 'CategoriesController.updateCategory');
-        Route.delete('/:groupId/categories/:catId', 'CategoriesController.deleteCategory');
+      router.group(() => {
+        router.get('', 'CategoriesController.get');
+        router.post('', 'CategoriesController.addGroup');
+        router.patch('/:groupId', 'CategoriesController.updateGroup');
+        router.delete('/:groupId', 'CategoriesController.deleteGroup');
+        router.post('/:groupId/categories', 'CategoriesController.addCategory');
+        router.patch('/:groupId/categories/:catId', 'CategoriesController.updateCategory');
+        router.delete('/:groupId/categories/:catId', 'CategoriesController.deleteCategory');
       }).prefix('/groups');
 
-      Route.group(() => {
-        Route.get('', 'CategoriesController.get')
+      router.group(() => {
+        router.get('', 'CategoriesController.get')
       }).prefix('/categories')
   
-      Route.group(() => {
-        Route.post('', 'CategoriesController.transfer');
-        Route.patch('/:tfrId', 'CategoriesController.transfer');
-        Route.delete('/:tfrId', 'CategoriesController.transferDelete');
+      router.group(() => {
+        router.post('', 'CategoriesController.transfer');
+        router.patch('/:tfrId', 'CategoriesController.transfer');
+        router.delete('/:tfrId', 'CategoriesController.transferDelete');
       }).prefix('/category-transfer');
   
-      Route.get('/category-balances', 'CategoriesController.balances');
+      router.get('/category-balances', 'CategoriesController.balances');
   
-      Route.group(() => {
-        Route.get('/transactions', 'CategoriesController.transactions');
+      router.group(() => {
+        router.get('/transactions', 'CategoriesController.transactions');
       }).prefix('/category/:catId');
   
-      Route.get('/connected-accounts', 'UsersController.getConnectedAccounts');
+      router.get('/connected-accounts', 'UsersController.getConnectedAccounts');
   
-      Route.group(() => {
-        Route.patch('', 'AccountsController.update');
-        Route.post('/ofx', 'AccountsController.uploadOfx');
+      router.group(() => {
+        router.patch('', 'AccountsController.update');
+        router.post('/ofx', 'AccountsController.uploadOfx');
 
-        Route.group(() => {
-          Route.get('', 'AccountsController.transactions');
-          Route.post('', 'AccountsController.addTransaction');  
+        router.group(() => {
+          router.get('', 'AccountsController.transactions');
+          router.post('', 'AccountsController.addTransaction');  
         })
           .prefix('/transactions')
     
-        Route.group(() => {
-          Route.get('', 'AccountsController.balances');
-          Route.post('', 'AccountsController.addBalance');
-          Route.delete('/:id', 'AccountsController.deleteBalance');
-          Route.patch('/:id', 'AccountsController.updateBalance');    
+        router.group(() => {
+          router.get('', 'AccountsController.balances');
+          router.post('', 'AccountsController.addBalance');
+          router.delete('/:id', 'AccountsController.deleteBalance');
+          router.patch('/:id', 'AccountsController.updateBalance');    
         })
           .prefix('/balances')
 
-        Route.group(() => {
-          Route.get('', 'AccountsController.getStatements')
-          Route.post('', 'AccountsController.addStatement')
+        router.group(() => {
+          router.get('', 'AccountsController.getStatements')
+          router.post('', 'AccountsController.addStatement')
         })
           .prefix('/statements')
       })
         .prefix('/account/:acctId');
   
-      Route.group(() => {
-        Route.patch('/:statementId', 'AccountsController.updateStatement')
+      router.group(() => {
+        router.patch('/:statementId', 'AccountsController.updateStatement')
       })
         .prefix('/statements')
 
-      Route.group(() => {
-        Route.delete('/:id', 'AccountsController.deleteBalance');
+      router.group(() => {
+        router.delete('/:id', 'AccountsController.deleteBalance');
       })
         .prefix('/balance');
   
-      Route.post('/institutions/sync', 'InstitutionController.syncAll');
+      router.post('/institutions/sync', 'InstitutionController.syncAll');
   
-      Route.group(() => {
-        Route.post('', 'InstitutionController.add');
-        Route.post('/:instId', 'InstitutionController.update');
-        Route.get('/:instId/info', 'InstitutionController.info');
-        Route.get('/:instId/accounts', 'InstitutionController.get');
-        Route.post('/:instId/accounts', 'InstitutionController.addAccounts');
-        Route.post('/:instId/accounts/:acctId/transactions/sync', 'InstitutionController.sync');
-        Route.delete('/:instId/accounts/:acctId', 'InstitutionController.deleteAccount');
-        Route.delete('/:instId', 'InstitutionController.delete');
-        Route.get('/:instId/link-token', 'InstitutionController.linkToken');
+      router.group(() => {
+        router.post('', 'InstitutionController.add');
+        router.post('/:instId', 'InstitutionController.update');
+        router.get('/:instId/info', 'InstitutionController.info');
+        router.get('/:instId/accounts', 'InstitutionController.get');
+        router.post('/:instId/accounts', 'InstitutionController.addAccounts');
+        router.post('/:instId/accounts/:acctId/transactions/sync', 'InstitutionController.sync');
+        router.delete('/:instId/accounts/:acctId', 'InstitutionController.deleteAccount');
+        router.delete('/:instId', 'InstitutionController.delete');
+        router.get('/:instId/link-token', 'InstitutionController.linkToken');
       }).prefix('/institution');
   
-      Route.group(() => {
-        Route.get('/', 'FundingPlanController.getPlan');
-        Route.get('/proposed', 'FundingPlanController.getProposed');
-        Route.put('/item/:catId', 'FundingPlanController.updateOrCreateCategory');
+      router.group(() => {
+        router.get('/', 'FundingPlanController.getPlan');
+        router.get('/proposed', 'FundingPlanController.getProposed');
+        router.put('/item/:catId', 'FundingPlanController.updateOrCreateCategory');
       }).prefix('/funding-plans');
   
-      Route.group(() => {
-        Route.patch('/:trxId', 'TransactionsController.update');
-        Route.delete('/:trxId', 'TransactionsController.delete');
-        Route.get('/:trxId', 'TransactionsController.get');
-        Route.post('/:trxId/dedup', 'TransactionsController.dedup');
+      router.group(() => {
+        router.patch('/:trxId', 'TransactionsController.update');
+        router.delete('/:trxId', 'TransactionsController.delete');
+        router.get('/:trxId', 'TransactionsController.get');
+        router.post('/:trxId/dedup', 'TransactionsController.dedup');
       }).prefix('/transaction');
   
-      Route.get('/transactions', 'TransactionsController.getMultiple')
+      router.get('/transactions', 'TransactionsController.getMultiple')
   
-      Route.get('/reports/:report', 'ReportController.get');
+      router.get('/reports/:report', 'ReportController.get');
   
-      Route.group(() => {
-        Route.post('', 'LoansController.add');
+      router.group(() => {
+        router.post('', 'LoansController.add');
   
-        Route.group(() => {
-          Route.get('', 'LoansController.get');
-          Route.patch('', 'LoansController.update');
-          Route.get('/transactions', 'LoansController.getTransactions');  
+        router.group(() => {
+          router.get('', 'LoansController.get');
+          router.patch('', 'LoansController.update');
+          router.get('/transactions', 'LoansController.getTransactions');  
         })
           .prefix('/:catId');
       })
         .prefix('/loans');
   
-      Route.get('/rebalances', 'TransactionsController.getRebalances')    
+      router.get('/rebalances', 'TransactionsController.getRebalances')    
 
-      Route.get('/transactions/search', 'TransactionsController.search');
+      router.get('/transactions/search', 'TransactionsController.search');
 
-      Route.group(() => {
-        Route.get('/:id?', 'AutoAssignmentsController.get');
-        Route.post('/', 'AutoAssignmentsController.post');
-        Route.patch('/:id', 'AutoAssignmentsController.patch');
-        Route.delete('/:id', 'AutoAssignmentsController.delete');
+      router.group(() => {
+        router.get('/:id?', 'AutoAssignmentsController.get');
+        router.post('/', 'AutoAssignmentsController.post');
+        router.patch('/:id', 'AutoAssignmentsController.patch');
+        router.delete('/:id', 'AutoAssignmentsController.delete');
       })
         .prefix('/auto-assignments')
 
-      Route.get('/transaction-logs', 'TransactionsController.logs');
+      router.get('/transaction-logs', 'TransactionsController.logs');
 
-      Route.get('/bills', 'CategoriesController.getBills');
+      router.get('/bills', 'CategoriesController.getBills');
 
-      Route.group(() => {
-        Route.get('/plaid-logs', 'PlaidLogsController.get')
+      router.group(() => {
+        router.get('/plaid-logs', 'PlaidLogsController.get')
       })
         .prefix('/admin')
         .middleware('admin');

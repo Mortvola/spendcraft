@@ -1,16 +1,16 @@
-import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
+import { HttpContext } from '@adonisjs/core/http';
 import plaidClient from '@ioc:Plaid';
 import { ApiResponse, InstitutionProps } from '#common/ResponseTypes';
-import Env from '@ioc:Adonis/Core/Env'
-import { rules, schema } from '@ioc:Adonis/Core/Validator';
+import env from '#start/env'
+import { rules, schema } from '@adonisjs/validator';
 import User from '#app/Models/User';
 import * as Plaid from 'plaid';
-import Database from '@ioc:Adonis/Lucid/Database';
+import db from '@adonisjs/lucid/services/db';
 import { Exception } from '@poppinss/utils';
 
 export default class UsersController {
   // eslint-disable-next-line class-methods-use-this
-  public async get({ auth }: HttpContextContract): Promise<ApiResponse<User>> {
+  public async get({ auth }: HttpContext): Promise<ApiResponse<User>> {
     if (!auth.user) {
       throw new Error('user is not defined');
     }
@@ -26,7 +26,7 @@ export default class UsersController {
     auth: {
       user,
     },
-  }: HttpContextContract): Promise<User> {
+  }: HttpContext): Promise<User> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -61,7 +61,7 @@ export default class UsersController {
     auth: {
       user,
     },
-  }: HttpContextContract): Promise<void> {
+  }: HttpContext): Promise<void> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -74,7 +74,7 @@ export default class UsersController {
     auth: {
       user,
     },
-  }: HttpContextContract): Promise<User> {
+  }: HttpContext): Promise<User> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -91,7 +91,7 @@ export default class UsersController {
     auth: {
       user,
     },
-  }: HttpContextContract): Promise<ApiResponse<InstitutionProps[]>> {
+  }: HttpContext): Promise<ApiResponse<InstitutionProps[]>> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -102,14 +102,14 @@ export default class UsersController {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  async getLinkToken({ auth: { user }, response }: HttpContextContract): Promise<void> {
+  async getLinkToken({ auth: { user }, response }: HttpContext): Promise<void> {
     if (!user) {
       throw new Error('user is not defined');
     }
 
-    const webhook = Env.get('PLAID_WEBHOOK');
-    const appName = Env.get('APP_NAME');
-    const redirect = Env.get('PLAID_OAUTH_REDIRECT');
+    const webhook = env.get('PLAID_WEBHOOK');
+    const appName = env.get('APP_NAME');
+    const redirect = env.get('PLAID_OAUTH_REDIRECT');
 
     const linkTokenResponse = await plaidClient.createLinkToken({
       user: {
@@ -128,7 +128,7 @@ export default class UsersController {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  async addApnsToken({ auth: { user }, request, response }: HttpContextContract): Promise<void> {
+  async addApnsToken({ auth: { user }, request, response }: HttpContext): Promise<void> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -157,7 +157,7 @@ export default class UsersController {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  async registerWebPush({ auth: { user }, request }: HttpContextContract): Promise<void> {
+  async registerWebPush({ auth: { user }, request }: HttpContext): Promise<void> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -184,12 +184,12 @@ export default class UsersController {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  async delete({ auth: { user } }: HttpContextContract): Promise<void> {
+  async delete({ auth: { user } }: HttpContext): Promise<void> {
     if (!user) {
       throw new Error('user is not defined');
     }
 
-    const trx = await Database.transaction();
+    const trx = await db.transaction();
 
     try {
       user.useTransaction(trx);

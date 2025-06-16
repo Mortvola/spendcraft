@@ -1,4 +1,4 @@
-import { schema, rules } from '@ioc:Adonis/Core/Validator';
+import { schema, rules } from '@adonisjs/validator';
 
 export default class AddCategoryTransferValidator {
   public schema = schema.create({

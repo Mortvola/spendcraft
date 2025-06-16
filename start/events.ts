@@ -7,7 +7,7 @@
 | boot.
 |
 */
-import Event from '@ioc:Adonis/Core/Event'
-import Database from '@ioc:Adonis/Lucid/Database'
+import emitter from '@adonisjs/core/services/emitter'
+import db from '@adonisjs/lucid/services/db'
 
-Event.on('db:query', Database.prettyPrint);
+emitter.on('db:query', db.prettyPrint);

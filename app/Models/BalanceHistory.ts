@@ -1,6 +1,6 @@
 import {
   BaseModel, column,
-} from '@ioc:Adonis/Lucid/Orm';
+} from '@adonisjs/lucid/orm';
 import { DateTime } from 'luxon';
 
 class BalanceHistory extends BaseModel {

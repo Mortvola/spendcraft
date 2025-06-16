@@ -1,8 +1,8 @@
 import { driveConfig } from '@adonisjs/core/build/config'
-import Env from '@ioc:Adonis/Core/Env'
+import env from '#start/env'
 
 export default driveConfig({
-  disk: Env.get('DRIVE_DISK'),
+  disk: env.get('DRIVE_DISK'),
 
   disks: {
     local: {

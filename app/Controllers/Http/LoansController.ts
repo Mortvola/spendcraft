@@ -1,7 +1,7 @@
 // import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
-import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
-import { schema, rules } from '@ioc:Adonis/Core/Validator';
-import Database from '@ioc:Adonis/Lucid/Database';
+import { HttpContext } from '@adonisjs/core/http';
+import { schema, rules } from '@adonisjs/validator';
+import db from '@adonisjs/lucid/services/db';
 import Category from '#app/Models/Category';
 import Group from '#app/Models/Group';
 import Loan from '#app/Models/Loan';
@@ -12,7 +12,7 @@ export default class LoansController {
   public async get({
     request,
     auth: { user },
-  }: HttpContextContract): Promise<unknown> {
+  }: HttpContext): Promise<unknown> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -27,7 +27,7 @@ export default class LoansController {
     request,
     auth: { user },
     logger,
-  }: HttpContextContract): Promise<Category> {
+  }: HttpContext): Promise<Category> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -45,7 +45,7 @@ export default class LoansController {
       schema: validationSchema,
     });
 
-    const trx = await Database.transaction();
+    const trx = await db.transaction();
 
     try {
       const loanGroup = await Group.query({ client: trx })
@@ -90,7 +90,7 @@ export default class LoansController {
     request,
     auth: { user },
     logger,
-  }: HttpContextContract): Promise<LoanUpdateProps> {
+  }: HttpContext): Promise<LoanUpdateProps> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -106,7 +106,7 @@ export default class LoansController {
       schema: validationSchema,
     });
 
-    const trx = await Database.transaction();
+    const trx = await db.transaction();
 
     try {
       const loan = await Loan.findByOrFail('categoryId', request.params().catId, { client: trx });
@@ -145,7 +145,7 @@ export default class LoansController {
   public async getTransactions({
     request,
     auth: { user },
-  }: HttpContextContract): Promise<LoanTransactionsProps> {
+  }: HttpContext): Promise<LoanTransactionsProps> {
     if (!user) {
       throw new Error('user is not defined');
     }

@@ -1,5 +1,6 @@
-import { LucidRow, ModelAttributes } from '@ioc:Adonis/Lucid/Orm';
 import { DateTime } from 'luxon';
+import { LucidRow } from " @adonisjs/lucid/types/model";
+import { ModelAttributes } from "@adonisjs/lucid/types/model";
 
 const transactionFields = {
   fields: {

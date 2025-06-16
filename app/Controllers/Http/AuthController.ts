@@ -1,18 +1,18 @@
 import * as jwt from 'jsonwebtoken';
-import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
-import { schema, rules } from '@ioc:Adonis/Core/Validator';
-import Env from '@ioc:Adonis/Core/Env';
-import Logger from '@ioc:Adonis/Core/Logger';
-import Mail from '@ioc:Adonis/Addons/Mail';
+import { HttpContext } from '@adonisjs/core/http';
+import { schema, rules } from '@adonisjs/validator';
+import env from '#start/env';
+import logger from '@adonisjs/core/services/logger';
+import mail from '@adonisjs/mail/services/main';
 import User from '#app/Models/User';
-import Database from '@ioc:Adonis/Lucid/Database';
+import db from '@adonisjs/lucid/services/db';
 import Budget from '#app/Models/Budget';
 import { sha256 } from 'js-sha256';
 import { DateTime } from 'luxon';
 
 export default class AuthController {
   // eslint-disable-next-line class-methods-use-this
-  public async register({ request }: HttpContextContract) : Promise<void> {
+  public async register({ request }: HttpContext) : Promise<void> {
     /**
      * Validate user details
      */
@@ -45,7 +45,7 @@ export default class AuthController {
       },
     });
 
-    const trx = await Database.transaction();
+    const trx = await db.transaction();
 
     try {
       const budget = await (new Budget())
@@ -72,14 +72,14 @@ export default class AuthController {
 
       await trx.commit();
 
-      Mail.send((message) => {
+      mail.send((message) => {
         message
-          .from(Env.get('MAIL_FROM_ADDRESS') as string, Env.get('MAIL_FROM_NAME') as string)
+          .from(env.get('MAIL_FROM_ADDRESS') as string, env.get('MAIL_FROM_NAME') as string)
           .to(user.email)
           .subject('Welcome!')
           .htmlView('emails/welcome', {
             code: user.oneTimePassCode?.code,
-            expires: Env.get('TOKEN_EXPIRATION'),
+            expires: env.get('TOKEN_EXPIRATION'),
           });
       });
     }
@@ -90,7 +90,7 @@ export default class AuthController {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  public async verifyEmail({ params, view }: HttpContextContract) : Promise<(string | void)> {
+  public async verifyEmail({ params, view }: HttpContext) : Promise<(string | void)> {
     const user = await User.find(params.id);
 
     if (user) {
@@ -117,14 +117,14 @@ export default class AuthController {
         }
       }
 
-      Logger.error(`Invalid payload "${payload.id}" in token for user ${user.username}`);
+      logger.error(`Invalid payload "${payload.id}" in token for user ${user.username}`);
     }
 
     return undefined;
   }
 
   // eslint-disable-next-line class-methods-use-this
-  public async login({ auth, request, response }: HttpContextContract) : Promise<void> {
+  public async login({ auth, request, response }: HttpContext) : Promise<void> {
     const credentials = await request.validate({
       schema: schema.create({
         username: schema.string([rules.trim()]),
@@ -171,7 +171,7 @@ export default class AuthController {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  public async refresh({ auth, request, response }: HttpContextContract) : Promise<void> {
+  public async refresh({ auth, request, response }: HttpContext) : Promise<void> {
     const payload = await request.validate({
       schema: schema.create({
         data: schema.object().members({
@@ -202,7 +202,7 @@ export default class AuthController {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  public async logout({ auth, request }: HttpContextContract) : Promise<void> {
+  public async logout({ auth, request }: HttpContext) : Promise<void> {
     const payload = await request.validate({
       schema: schema.create({
         data: schema.object().members({
@@ -215,7 +215,7 @@ export default class AuthController {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  public async requestCode({ request, response }: HttpContextContract) : Promise<void> {
+  public async requestCode({ request, response }: HttpContext) : Promise<void> {
     const requestData = await request.validate({
       schema: schema.create({
         email: schema.string([
@@ -234,14 +234,14 @@ export default class AuthController {
 
       await user.save();
 
-      Mail.send((message) => {
+      mail.send((message) => {
         message
-          .from(Env.get('MAIL_FROM_ADDRESS') as string, Env.get('MAIL_FROM_NAME') as string)
+          .from(env.get('MAIL_FROM_ADDRESS') as string, env.get('MAIL_FROM_NAME') as string)
           .to(user.email)
           .subject('Verification Code')
           .htmlView('emails/verification-code', {
             code,
-            expires: Env.get('TOKEN_EXPIRATION'),
+            expires: env.get('TOKEN_EXPIRATION'),
           });
       });
 
@@ -250,7 +250,7 @@ export default class AuthController {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  public async verifyCode({ auth, request, response }: HttpContextContract): Promise<void> {
+  public async verifyCode({ auth, request, response }: HttpContext): Promise<void> {
     const requestData = await request.validate({
       schema: schema.create({
         email: schema.string(),
@@ -313,7 +313,7 @@ export default class AuthController {
   public async updatePassword({
     auth: { user },
     request,
-  }: HttpContextContract) : Promise<(string | void)> {
+  }: HttpContext) : Promise<(string | void)> {
     if (!user) {
       throw new Error('user is not defined');
     }

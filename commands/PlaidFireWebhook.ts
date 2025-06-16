@@ -1,8 +1,9 @@
-import { BaseCommand, args } from '@adonisjs/core/build/standalone'
 import plaidClient from '@ioc:Plaid';
-import Env from '@ioc:Adonis/Core/Env'
+import env from '#start/env'
 import Institution from '#app/Models/Institution';
 import { SandboxItemFireWebhookRequestWebhookCodeEnum } from 'plaid';
+import { BaseCommand } from "@adonisjs/core/ace";
+import { args } from "@adonisjs/core/ace";
 
 export default class PlaidFireWebhook extends BaseCommand {
   /**
@@ -35,7 +36,7 @@ export default class PlaidFireWebhook extends BaseCommand {
   public async run (): Promise<void> {
     const institution = await Institution.findByOrFail('plaidItemId', this.itemId);
 
-    const environmentRegEx = new RegExp(`access-${Env.get('PLAID_ENV')}.+`)
+    const environmentRegEx = new RegExp(`access-${env.get('PLAID_ENV')}.+`)
 
     try {
       if (institution.accessToken === null) {

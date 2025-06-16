@@ -1,6 +1,7 @@
-import { BaseCommand, args } from '@adonisjs/core/build/standalone'
 import plaidClient from '@ioc:Plaid';
 import Institution from '#app/Models/Institution';
+import { BaseCommand } from "@adonisjs/core/ace";
+import { args } from "@adonisjs/core/ace";
 
 export default class PlaidResetLogin extends BaseCommand {
   /**

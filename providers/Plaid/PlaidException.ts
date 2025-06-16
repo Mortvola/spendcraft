@@ -1,6 +1,6 @@
-import { Exception } from '@adonisjs/core/build/standalone'
-import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
+import { HttpContext } from '@adonisjs/core/http';
 import PlaidError from './PlaidError';
+import { Exception } from "@adonisjs/core/exceptions";
 
 /*
 |--------------------------------------------------------------------------
@@ -24,7 +24,7 @@ export default class PlaidException extends Exception {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  public async handle(error: this, ctx: HttpContextContract): Promise<void> {
+  public async handle(error: this, ctx: HttpContext): Promise<void> {
     ctx.response.status(error.status).send({
       message: error.message,
       code: 'PLAID_ERROR',

@@ -1,6 +1,6 @@
-import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
-import { rules, schema } from '@ioc:Adonis/Core/Validator';
-import Database from '@ioc:Adonis/Lucid/Database';
+import { HttpContext } from '@adonisjs/core/http';
+import { rules, schema } from '@adonisjs/validator';
+import db from '@adonisjs/lucid/services/db';
 import { Exception } from '@poppinss/utils';
 import Account from '#app/Models/Account';
 import BalanceHistory from '#app/Models/BalanceHistory';
@@ -29,7 +29,7 @@ export default class AccountsController {
     auth: {
       user,
     },
-  }: HttpContextContract): Promise<ApiResponse<TransactionsResponse>> {
+  }: HttpContext): Promise<ApiResponse<TransactionsResponse>> {
     if (!user) {
       throw new Error('user not defined');
     }
@@ -77,7 +77,7 @@ export default class AccountsController {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  public async balances({ request }: HttpContextContract): Promise<BalanceHistory[]> {
+  public async balances({ request }: HttpContext): Promise<BalanceHistory[]> {
     const accountId = parseInt(request.params().acctId, 10);
 
     const balances = await BalanceHistory.query()
@@ -94,7 +94,7 @@ export default class AccountsController {
       user,
     },
     logger,
-  }: HttpContextContract): Promise<AddedTransaction | void> {
+  }: HttpContext): Promise<AddedTransaction | void> {
     if (!user) {
       throw new Error('user not defined');
     }
@@ -119,7 +119,7 @@ export default class AccountsController {
       }),
     });
 
-    const trx = await Database.transaction();
+    const trx = await db.transaction();
 
     try {
       const unassignedCat = await budget.getUnassignedCategory({ client: trx });
@@ -220,7 +220,7 @@ export default class AccountsController {
       user,
     },
     logger,
-  }: HttpContextContract): Promise<BalanceHistory> {
+  }: HttpContext): Promise<BalanceHistory> {
     if (!user) {
       throw new Error('user not defined');
     }
@@ -239,7 +239,7 @@ export default class AccountsController {
       },
     });
 
-    const trx = await Database.transaction();
+    const trx = await db.transaction();
 
     try {
       const account = await Account.findOrFail(acctId, { client: trx });
@@ -285,7 +285,7 @@ export default class AccountsController {
       user,
     },
     logger,
-  }: HttpContextContract): Promise<BalanceHistory> {
+  }: HttpContext): Promise<BalanceHistory> {
     if (!user) {
       throw new Error('user not defined');
     }
@@ -306,7 +306,7 @@ export default class AccountsController {
       },
     });
 
-    const trx = await Database.transaction();
+    const trx = await db.transaction();
 
     try {
       const balance = await BalanceHistory.findOrFail(id, { client: trx });
@@ -352,14 +352,14 @@ export default class AccountsController {
       user,
     },
     logger,
-  }: HttpContextContract): Promise<void> {
+  }: HttpContext): Promise<void> {
     if (!user) {
       throw new Error('user not defined');
     }
 
     const { id } = request.params();
 
-    const trx = await Database.transaction();
+    const trx = await db.transaction();
 
     try {
       const balance = await BalanceHistory.findOrFail(id);
@@ -408,7 +408,7 @@ export default class AccountsController {
       user,
     },
     logger,
-  }: HttpContextContract): Promise<void> {
+  }: HttpContext): Promise<void> {
     if (!user) {
       throw new Error('user not defined');
     }
@@ -424,7 +424,7 @@ export default class AccountsController {
       }),
     });
 
-    const trx = await Database.transaction();
+    const trx = await db.transaction();
 
     try {
       const account = await Account.findOrFail(request.params().acctId, { client: trx });
@@ -473,14 +473,14 @@ export default class AccountsController {
       user,
     },
     logger,
-  }: HttpContextContract): Promise<void> {
+  }: HttpContext): Promise<void> {
     if (!user) {
       throw new Error('user not defined');
     }
 
     const { acctId } = request.params();
 
-    const trx = await Database.transaction();
+    const trx = await db.transaction();
 
     try {
       user.useTransaction(trx);
@@ -521,7 +521,7 @@ export default class AccountsController {
     auth: {
       user,
     },
-  }: HttpContextContract) {
+  }: HttpContext) {
     if (!user) {
       throw new Error('user not defined');
     }
@@ -556,7 +556,7 @@ export default class AccountsController {
       user,
     },
     logger,
-  }: HttpContextContract): Promise<AddStatementResponse | void> {
+  }: HttpContext): Promise<AddStatementResponse | void> {
     if (!user) {
       throw new Error('user not defined');
     }
@@ -571,7 +571,7 @@ export default class AccountsController {
       }),
     });
 
-    const trx = await Database.transaction();
+    const trx = await db.transaction();
 
     try {
       user.useTransaction(trx);
@@ -617,7 +617,7 @@ export default class AccountsController {
       user,
     },
     logger,
-  }: HttpContextContract): Promise<StatementProps | void> {
+  }: HttpContext): Promise<StatementProps | void> {
     if (!user) {
       throw new Error('user not defined');
     }
@@ -633,7 +633,7 @@ export default class AccountsController {
       }),
     })
 
-    const trx = await Database.transaction();
+    const trx = await db.transaction();
 
     try {
       user.useTransaction(trx);

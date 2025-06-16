@@ -1,7 +1,8 @@
-import { BaseCommand, args } from '@adonisjs/core/build/standalone'
-import Database from '@ioc:Adonis/Lucid/Database';
+import db from '@adonisjs/lucid/services/db';
 import Institution from '#app/Models/Institution';
-import Logger from '@ioc:Adonis/Core/Logger';
+import logger from '@adonisjs/core/services/logger';
+import { BaseCommand } from "@adonisjs/core/ace";
+import { args } from "@adonisjs/core/ace";
 
 export default class InstitutionSync extends BaseCommand {
   /**
@@ -35,7 +36,7 @@ export default class InstitutionSync extends BaseCommand {
 
   // eslint-disable-next-line class-methods-use-this
   public async run() {
-    const trx = await Database.transaction();
+    const trx = await db.transaction();
 
     try {
       const institution = await Institution.findByOrFail('plaidItemId', this.itemId, { client: trx });
@@ -45,7 +46,7 @@ export default class InstitutionSync extends BaseCommand {
       await trx.commit();
     }
     catch (error) {
-      Logger.error({ err: error }, `sync failed, item id: ${this.itemId}`);
+      logger.error({ err: error }, `sync failed, item id: ${this.itemId}`);
 
       await trx.rollback();
     }

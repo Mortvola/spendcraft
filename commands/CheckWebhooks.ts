@@ -1,7 +1,7 @@
-import { BaseCommand } from '@adonisjs/core/build/standalone'
 import Institution from '#app/Models/Institution'
-import Env from '@ioc:Adonis/Core/Env'
+import env from '#start/env'
 import plaidClient from '@ioc:Plaid';
+import { BaseCommand } from "@adonisjs/core/ace";
 
 export default class CheckWebhooks extends BaseCommand {
   environmentRegEx: RegExp;
@@ -33,7 +33,7 @@ export default class CheckWebhooks extends BaseCommand {
   private async updateWebhook(
     institution: Institution,
   ): Promise<void> {
-    const hook = Env.get('PLAID_WEBHOOK');
+    const hook = env.get('PLAID_WEBHOOK');
 
     if (hook) {
       if (institution.accessToken) {
@@ -63,7 +63,7 @@ export default class CheckWebhooks extends BaseCommand {
 
   // eslint-disable-next-line class-methods-use-this
   public async run (): Promise<void> {
-    this.environmentRegEx = new RegExp(`access-${Env.get('PLAID_ENV')}.+`)
+    this.environmentRegEx = new RegExp(`access-${env.get('PLAID_ENV')}.+`)
 
     const institutions = await Institution.all();
 

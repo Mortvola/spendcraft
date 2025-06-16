@@ -7,8 +7,8 @@
 | boot.
 |
 */
-import { validator } from '@ioc:Adonis/Core/Validator'
-import Database from '@ioc:Adonis/Lucid/Database';
+import { validator } from '@adonisjs/validator'
+import db from '@adonisjs/lucid/services/db';
 
 validator.rule(
   'notExists',
@@ -29,8 +29,8 @@ validator.rule(
       return
     }
 
-    const result = await Database.query()
-      .select(Database.raw('EXISTS (SELECT 1 FROM ?? WHERE ?? = ?) AS exists', [table, column, value]))
+    const result = await db.query()
+      .select(db.raw('EXISTS (SELECT 1 FROM ?? WHERE ?? = ?) AS exists', [table, column, value]))
       .first();
 
     if (result.exists) {
@@ -55,7 +55,7 @@ validator.rule(
       errorReporter,
     },
   ) => {
-    const result = await Database.query()
+    const result = await db.query()
       .select(1)
       .from('transactions')
       .where('deleted', false)

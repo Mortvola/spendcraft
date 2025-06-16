@@ -6,11 +6,11 @@
  */
 
 import proxyAddr from 'proxy-addr'
-import Env from '@ioc:Adonis/Core/Env'
-import { ServerConfig } from '@ioc:Adonis/Core/Server'
-import { LoggerConfig } from '@ioc:Adonis/Core/Logger'
+import env from '#start/env'
 import { ProfilerConfig } from '@ioc:Adonis/Core/Profiler'
-import { ValidatorConfig } from '@ioc:Adonis/Core/Validator'
+import { ServerConfig } from "@adonisjs/core/services/server";
+import { LoggerConfig } from "@adonisjs/core/types/logger";
+import { ValidatorConfig } from "@adonisjs/validator/types";
 
 /*
 |--------------------------------------------------------------------------
@@ -25,7 +25,7 @@ import { ValidatorConfig } from '@ioc:Adonis/Core/Validator'
 | be decrypted.
 |
 */
-export const appKey: string = Env.get('APP_KEY')
+export const appKey: string = env.get('APP_KEY')
 
 /*
 |--------------------------------------------------------------------------
@@ -147,7 +147,7 @@ export const logger: LoggerConfig = {
   | reading the `name` property from the `package.json` file.
   |
   */
-  name: Env.get('APP_NAME'),
+  name: env.get('APP_NAME'),
 
   /*
   |--------------------------------------------------------------------------
@@ -169,7 +169,7 @@ export const logger: LoggerConfig = {
   | at deployment level and not code level.
   |
   */
-  level: Env.get('LOG_LEVEL', 'info'),
+  level: env.get('LOG_LEVEL', 'info'),
 
   /*
   |--------------------------------------------------------------------------
@@ -180,7 +180,7 @@ export const logger: LoggerConfig = {
   | can have huge impact on performance.
   |
   */
-  prettyPrint: Env.get('NODE_ENV') === 'development',
+  prettyPrint: env.get('NODE_ENV') === 'development',
 }
 
 /*

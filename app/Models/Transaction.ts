@@ -1,13 +1,16 @@
 /* eslint-disable import/no-cycle */
 import {
-  BaseModel, hasMany, HasMany, column,
-  belongsTo, BelongsTo, HasOne, hasOne,
-} from '@ioc:Adonis/Lucid/Orm';
+  BaseModel, hasMany, column,
+  belongsTo, hasOne,
+} from '@adonisjs/lucid/orm';
 import { DateTime } from 'luxon';
 import AccountTransaction from '#app/Models/AccountTransaction';
 import { TransactionType } from '#common/ResponseTypes';
 import Budget from '#app/Models/Budget';
 import TransactionLog from './TransactionLog';
+import { HasMany } from "@adonisjs/lucid/types/relations";
+import { BelongsTo } from "@adonisjs/lucid/types/relations";
+import { HasOne } from "@adonisjs/lucid/types/relations";
 
 export type TransCategory = {
   categoryId: number,

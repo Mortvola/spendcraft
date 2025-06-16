@@ -1,10 +1,10 @@
 import { DateTime } from 'luxon'
 import {
   BaseModel, column,
-  HasMany,
   hasMany,
-} from '@ioc:Adonis/Lucid/Orm'
+} from '@adonisjs/lucid/orm'
 import AccountTransaction from './AccountTransaction'
+import { HasMany } from "@adonisjs/lucid/types/relations";
 
 export default class Statement extends BaseModel {
   @column({ isPrimary: true })

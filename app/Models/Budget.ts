@@ -1,9 +1,9 @@
 /* eslint-disable import/no-cycle */
 import { DateTime } from 'luxon'
 import {
-  BaseModel, column, HasMany, hasMany, ModelAdapterOptions,
-} from '@ioc:Adonis/Lucid/Orm'
-import Database from '@ioc:Adonis/Lucid/Database';
+  BaseModel, column, hasMany
+} from '@adonisjs/lucid/orm'
+import db from '@adonisjs/lucid/services/db';
 import {
   CategoryType, GroupType, InstitutionProps, ProposedFundingCategoryProps,
 } from '#common/ResponseTypes';
@@ -13,9 +13,11 @@ import Group from '#app/Models/Group';
 import Institution from '#app/Models/Institution';
 import Transaction from '#app/Models/Transaction';
 import Loan from '#app/Models/Loan';
-import Logger from '@ioc:Adonis/Core/Logger';
+import logger from '@adonisjs/core/services/logger';
 import AutoAssignment from './AutoAssignment';
 import TransactionLog from './TransactionLog';
+import { HasMany } from "@adonisjs/lucid/types/relations";
+import { ModelAdapterOptions } from "@adonisjs/lucid/types/model";
 
 export default class Budget extends BaseModel {
   public static table = 'applications';
@@ -570,7 +572,7 @@ export default class Budget extends BaseModel {
 
   // eslint-disable-next-line class-methods-use-this
   public async syncCategoryBalances(this: Budget): Promise<void> {
-    const trx = await Database.transaction();
+    const trx = await db.transaction();
 
     try {
       const categories = await Category.query({ client: trx })
@@ -586,7 +588,7 @@ export default class Budget extends BaseModel {
       await trx.commit();
     }
     catch (error) {
-      Logger.error(error);
+      logger.error(error);
       trx.rollback();
     }
   }

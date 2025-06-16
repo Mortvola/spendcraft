@@ -5,7 +5,7 @@
  * file.
  */
 
-import Env from '@ioc:Adonis/Core/Env'
+import env from '#start/env'
 import { mailConfig } from '@adonisjs/mail/build/config'
 
 export default mailConfig({
@@ -44,11 +44,11 @@ export default mailConfig({
     */
     smtp: {
       driver: 'smtp',
-      host: Env.get('SMTP_HOST'),
-      port: Env.get('SMTP_PORT'),
+      host: env.get('SMTP_HOST'),
+      port: env.get('SMTP_PORT'),
 			auth: {
-				user: Env.get('SMTP_USERNAME'),
-				pass: Env.get('SMTP_PASSWORD'),
+				user: env.get('SMTP_USERNAME'),
+				pass: env.get('SMTP_PASSWORD'),
 				type: 'login',
 			}
     },
@@ -69,9 +69,9 @@ export default mailConfig({
     ses: {
       driver: 'ses',
       apiVersion: '2010-12-01',
-      key: Env.get('SES_ACCESS_KEY'),
-      secret: Env.get('SES_ACCESS_SECRET'),
-      region: Env.get('SES_REGION'),
+      key: env.get('SES_ACCESS_KEY'),
+      secret: env.get('SES_ACCESS_SECRET'),
+      region: env.get('SES_REGION'),
       sslEnabled: true,
       sendingRate: 10,
       maxConnections: 5,

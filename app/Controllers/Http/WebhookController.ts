@@ -5,18 +5,18 @@ import { decodeProtectedHeader, importJWK, jwtVerify } from 'jose';
 import { DateTime } from 'luxon';
 import plaidClient from '@ioc:Plaid';
 import * as Plaid from 'plaid';
-import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
+import { HttpContext } from '@adonisjs/core/http';
 import { RequestContract } from '@ioc:Adonis/Core/Request';
-import Database from '@ioc:Adonis/Lucid/Database';
+import db from '@adonisjs/lucid/services/db';
 import Institution from '#app/Models/Institution';
-import Mail from '@ioc:Adonis/Addons/Mail';
-import Env from '@ioc:Adonis/Core/Env';
+import mail from '@adonisjs/mail/services/main';
+import env from '#start/env';
 import { Exception } from '@poppinss/utils';
-import Logger from '@ioc:Adonis/Core/Logger';
+import logger from '@adonisjs/core/services/logger';
 import { PlaidWebHookProps, QueueNamesEnum } from '#contracts/QueueInterfaces';
 import BullMQ from '@ioc:Adonis/Addons/BullMQ'
 import WebhookLog from '#app/Models/WebhookLog';
-import Redis from '@ioc:Adonis/Addons/Redis';
+import redis from '@adonisjs/redis/services/main';
 
 const redisKey = 'key-cache';
 
@@ -83,7 +83,7 @@ const isTransactionEvent = (r: unknown): r is TransactionEvent => (
 
 class WebhookController {
   // eslint-disable-next-line class-methods-use-this
-  public async post({ request, response }: HttpContextContract): Promise<void> {
+  public async post({ request, response }: HttpContext): Promise<void> {
     const verified = await WebhookController.verify(request);
 
     if (verified) {
@@ -113,7 +113,7 @@ class WebhookController {
           break;
 
         default:
-          Logger.warn(`Unhandled webhook type: ${body.webhook_type}`);
+          logger.warn(`Unhandled webhook type: ${body.webhook_type}`);
       }
     }
     else {
@@ -125,19 +125,19 @@ class WebhookController {
     switch (event.webhook_code) {
       case 'WEBHOOK_UPDATE_ACKNOWLEDGED': {
         const webhookUpdated = event as Plaid.WebhookUpdateAcknowledgedWebhook;
-        Logger.info(`webhook update acknowledged for ${webhookUpdated.item_id}`);
+        logger.info(`webhook update acknowledged for ${webhookUpdated.item_id}`);
         if (webhookUpdated.error) {
-          Logger.error(`\terror: ${webhookUpdated.error.error_message}`);
+          logger.error(`\terror: ${webhookUpdated.error.error_message}`);
         }
         break;
       }
 
       case 'PENDING_EXPIRATION':
-        Logger.info(JSON.stringify(event));
+        logger.info(JSON.stringify(event));
         break;
 
       case 'USER_PERMISSION_REVOKED':
-        Logger.info(JSON.stringify(event));
+        logger.info(JSON.stringify(event));
         break;
 
       case 'ERROR':
@@ -149,9 +149,9 @@ class WebhookController {
           const users = await budget.related('users').query();
 
           await Promise.all(users.map((user) => (
-            Mail.send((message) => {
+            mail.send((message) => {
               message
-                .from(Env.get('MAIL_FROM_ADDRESS') as string, Env.get('MAIL_FROM_NAME') as string)
+                .from(env.get('MAIL_FROM_ADDRESS') as string, env.get('MAIL_FROM_NAME') as string)
                 .to(user.email)
                 .subject('Action Required')
                 .htmlView('emails/item-login-required', { institution: institution.name });
@@ -159,26 +159,26 @@ class WebhookController {
           )));
         }
         else {
-          Logger.info(JSON.stringify(event));
+          logger.info(JSON.stringify(event));
         }
         break;
 
       default:
-        Logger.warn(`Unknown webhook item event: ${JSON.stringify(event)}`);
+        logger.warn(`Unknown webhook item event: ${JSON.stringify(event)}`);
 
         break;
     }
   }
 
   static async syncUpdate(event: Plaid.SyncUpdatesAvailableWebhook) {
-    const trx = await Database.transaction();
+    const trx = await db.transaction();
 
     try {
       const queue = BullMQ.queue<PlaidWebHookProps, PlaidWebHookProps>(QueueNamesEnum.PlaidWebHook)
       await queue.add('sync', { itemId: event.item_id })
     }
     catch (error) {
-      Logger.error({ err: error }, `Posting sync to queue failed, event: ${JSON.stringify(event)}`);
+      logger.error({ err: error }, `Posting sync to queue failed, event: ${JSON.stringify(event)}`);
       trx.rollback();
     }
   }
@@ -267,7 +267,7 @@ class WebhookController {
   static processTransactionEvent(event: TransactionEvent): void {
     switch (event.webhook_code) {
       case 'SYNC_UPDATES_AVAILABLE':
-        Logger.info(JSON.stringify(event));
+        logger.info(JSON.stringify(event));
         WebhookController.syncUpdate((event as unknown) as Plaid.SyncUpdatesAvailableWebhook);
         break;
 
@@ -275,11 +275,11 @@ class WebhookController {
       case 'HISTORICAL_UPDATE':
       case 'DEFAULT_UPDATE':
       case 'TRANSACTIONS_REMOVED':
-        Logger.info(JSON.stringify(event));
+        logger.info(JSON.stringify(event));
         break;
 
       default:
-        Logger.warn(`Unknown webhook transaction event: ${JSON.stringify(event)}`);
+        logger.warn(`Unknown webhook transaction event: ${JSON.stringify(event)}`);
         break;
     }
   }
@@ -299,7 +299,7 @@ class WebhookController {
 
     let keyCache: KeyCacheEntry[] = [];
 
-    const keyCacheString = await Redis.get(redisKey);
+    const keyCacheString = await redis.get(redisKey);
     if (keyCacheString) {
       keyCache = JSON.parse(keyCacheString) as KeyCacheEntry[];
     }
@@ -357,7 +357,7 @@ class WebhookController {
       }));
     }
 
-    Redis.set(redisKey, JSON.stringify(keyCache))
+    redis.set(redisKey, JSON.stringify(keyCache))
 
     const cachedKey = keyCache.find((entry) => entry.kid === currentKid);
 
@@ -381,7 +381,7 @@ class WebhookController {
       return compare(bodyHash, result.payload.request_body_sha256);
     }
     catch (error) {
-      Logger.error(`token verification failed: ${error.message}`);
+      logger.error(`token verification failed: ${error.message}`);
       return false;
     }
   }

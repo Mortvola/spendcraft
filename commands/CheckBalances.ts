@@ -1,7 +1,8 @@
-import { BaseCommand, flags } from '@adonisjs/core/build/standalone'
-import Database from '@ioc:Adonis/Lucid/Database';
+import db from '@adonisjs/lucid/services/db';
 import Category from '#app/Models/Category';
 import Budget from '#app/Models/Budget';
+import { BaseCommand } from "@adonisjs/core/ace";
+import { flags } from "@adonisjs/core/ace";
 
 export default class CheckBalances extends BaseCommand {
   /**
@@ -38,7 +39,7 @@ export default class CheckBalances extends BaseCommand {
   }
 
   private async checkCategoryBalances() {
-    const trx = await Database.transaction();
+    const trx = await db.transaction();
 
     try {
       let issuesFound = 0;

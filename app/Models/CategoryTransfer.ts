@@ -1,4 +1,4 @@
-import { BaseModel, column } from '@ioc:Adonis/Lucid/Orm';
+import { BaseModel, column } from '@adonisjs/lucid/orm';
 import CategorySplit from '#app/Models/CategorySplit';
 
 class CategoryTransfer extends BaseModel {

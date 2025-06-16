@@ -1,7 +1,7 @@
 // import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 
-import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
-import Database from '@ioc:Adonis/Lucid/Database';
+import { HttpContext } from '@adonisjs/core/http';
+import db from '@adonisjs/lucid/services/db';
 import Category from '#app/Models/Category';
 import Transaction from '#app/Models/Transaction';
 import AccountTransaction from '#app/Models/AccountTransaction';
@@ -12,17 +12,17 @@ import {
   UpdateTransactionResponse,
 } from '#common/ResponseTypes';
 import Account from '#app/Models/Account';
-import { schema, rules } from '@ioc:Adonis/Core/Validator';
+import { schema, rules } from '@adonisjs/validator';
 import TransactionLog from '#app/Models/TransactionLog';
-import { ModelAttributes } from '@ioc:Adonis/Lucid/Orm';
 import Statement from '#app/Models/Statement';
 import transactionFields, { getChanges } from './transactionFields';
+import { ModelAttributes } from "@adonisjs/lucid/types/model";
 
 export default class TransactionsController {
   // eslint-disable-next-line class-methods-use-this
   public async get({
     request,
-  }: HttpContextContract): Promise<Transaction> {
+  }: HttpContext): Promise<Transaction> {
     const { trxId } = request.params();
 
     const transaction = await Transaction.query()
@@ -38,7 +38,7 @@ export default class TransactionsController {
   // eslint-disable-next-line class-methods-use-this
   public async getMultiple({
     request,
-  }: HttpContextContract): Promise<ApiResponse<TransactionsResponse>> {
+  }: HttpContext): Promise<ApiResponse<TransactionsResponse>> {
     let { t } = request.qs();
 
     if (!Array.isArray(t)) {
@@ -72,7 +72,7 @@ export default class TransactionsController {
       user,
     },
     logger,
-  }: HttpContextContract): Promise<ApiResponse<UpdateTransactionResponse>> {
+  }: HttpContext): Promise<ApiResponse<UpdateTransactionResponse>> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -97,7 +97,7 @@ export default class TransactionsController {
       }),
     });
 
-    const trx = await Database.transaction();
+    const trx = await db.transaction();
 
     try {
       user.useTransaction(trx)
@@ -406,7 +406,7 @@ export default class TransactionsController {
   // eslint-disable-next-line class-methods-use-this
   public async dedup({
     request,
-  }: HttpContextContract): Promise<void> {
+  }: HttpContext): Promise<void> {
     const { trxId } = request.params();
 
     const transaction = await Transaction.query()
@@ -426,14 +426,14 @@ export default class TransactionsController {
       user,
     },
     logger,
-  }: HttpContextContract): Promise<ApiResponse<{ categories: CategoryBalanceProps[] }>> {
+  }: HttpContext): Promise<ApiResponse<{ categories: CategoryBalanceProps[] }>> {
     if (!user) {
       throw new Error('user is not defined');
     }
 
     const budget = await user.related('budget').query().firstOrFail();
 
-    const trx = await Database.transaction();
+    const trx = await db.transaction();
 
     try {
       const result: {
@@ -548,7 +548,7 @@ export default class TransactionsController {
     auth: {
       user,
     },
-  }: HttpContextContract): Promise<ApiResponse<TransactionsResponse>> {
+  }: HttpContext): Promise<ApiResponse<TransactionsResponse>> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -576,7 +576,7 @@ export default class TransactionsController {
     auth: {
       user,
     },
-  }: HttpContextContract): Promise<ApiResponse<TransactionsResponse>> {
+  }: HttpContext): Promise<ApiResponse<TransactionsResponse>> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -612,7 +612,7 @@ export default class TransactionsController {
     auth: {
       user,
     },
-  }: HttpContextContract): Promise<TransactionLog[]> {
+  }: HttpContext): Promise<TransactionLog[]> {
     if (!user) {
       throw new Error('user is not defined');
     }

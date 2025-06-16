@@ -6,7 +6,7 @@
  */
 
 import type { AuthConfig } from '@ioc:Adonis/Addons/Auth'
-import Env from "@ioc:Adonis/Core/Env";
+import env from "#start/env";
 
 /*
 |--------------------------------------------------------------------------
@@ -110,8 +110,8 @@ const authConfig: AuthConfig = {
 
         jwt: {
             driver: 'jwt',
-            publicKey: Env.get('JWT_PUBLIC_KEY', '').replace(/\\n/g, '\n'),
-            privateKey: Env.get('JWT_PRIVATE_KEY', '').replace(/\\n/g, '\n'),
+            publicKey: env.get('JWT_PUBLIC_KEY', '').replace(/\\n/g, '\n'),
+            privateKey: env.get('JWT_PRIVATE_KEY', '').replace(/\\n/g, '\n'),
             persistJwt: false,
             jwtDefaultExpire: '1m',
             refreshTokenDefaultExpire: '1d',

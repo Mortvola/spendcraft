@@ -1,8 +1,7 @@
 /* eslint-disable import/no-cycle */
 import {
-  BaseModel, hasMany, HasMany, column, belongsTo, BelongsTo,
-  ModelAttributes,
-} from '@ioc:Adonis/Lucid/Orm';
+  BaseModel, hasMany, column, belongsTo
+} from '@adonisjs/lucid/orm';
 import { DateTime } from 'luxon';
 import * as Plaid from 'plaid';
 import AccountTransaction from '#app/Models/AccountTransaction';
@@ -14,12 +13,15 @@ import {
 import Transaction from '#app/Models/Transaction';
 import Budget from '#app/Models/Budget';
 import { XMLParser } from 'fast-xml-parser';
-import Logger from '@ioc:Adonis/Core/Logger'
-import Database from '@ioc:Adonis/Lucid/Database';
+import logger from '@adonisjs/core/services/logger'
+import db from '@adonisjs/lucid/services/db';
 import { getChanges } from '#app/Controllers/Http/transactionFields';
 import Category from './Category';
 import User from './User';
 import Statement from './Statement';
+import { HasMany } from "@adonisjs/lucid/types/relations";
+import { BelongsTo } from "@adonisjs/lucid/types/relations";
+import { ModelAttributes } from "@adonisjs/lucid/types/model";
 
 export type AccountSyncResult = {
   categories: CategoryBalanceProps[],
@@ -263,7 +265,7 @@ class Account extends BaseModel {
           .from((sub) => {
             sub
               .from('auto_assignments')
-              .select('id', Database.raw('json_array_elements(search_strings) #>> \'{}\' as search_string'))
+              .select('id', db.raw('json_array_elements(search_strings) #>> \'{}\' as search_string'))
               .as('search_strings')
           })
           .select('id')
@@ -895,7 +897,7 @@ class Account extends BaseModel {
       await transaction.save();
 
       if (delta !== 0) {
-        Logger.info(`Initial funding for account ${this.id} changed by ${delta}`);
+        logger.info(`Initial funding for account ${this.id} changed by ${delta}`);
       }
 
       fundingPool.balance += delta;

@@ -1,6 +1,7 @@
-import { BaseCommand, args } from '@adonisjs/core/build/standalone'
 import BullMQ from '@ioc:Adonis/Addons/BullMQ'
 import { PlaidWebHookProps, QueueNamesEnum } from '#contracts/QueueInterfaces'
+import { BaseCommand } from "@adonisjs/core/ace";
+import { args } from "@adonisjs/core/ace";
 
 export default class QueueTest extends BaseCommand {
   /**

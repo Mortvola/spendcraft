@@ -1,5 +1,5 @@
-import { BaseCommand } from '@adonisjs/core/build/standalone'
 import webpush from 'web-push';
+import { BaseCommand } from "@adonisjs/core/ace";
 
 export default class GenerateWebPushKeys extends BaseCommand {
   /**

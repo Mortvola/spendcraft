@@ -1,8 +1,9 @@
-import { BaseCommand, args } from '@adonisjs/core/build/standalone'
 import Drive from '@ioc:Adonis/Core/Drive';
-import Database from '@ioc:Adonis/Lucid/Database';
+import db from '@adonisjs/lucid/services/db';
 import User from '#app/Models/User';
 import Account from '#app/Models/Account';
+import { BaseCommand } from "@adonisjs/core/ace";
+import { args } from "@adonisjs/core/ace";
 
 export default class OfxUpload extends BaseCommand {
   /**
@@ -41,7 +42,7 @@ export default class OfxUpload extends BaseCommand {
       throw new Error('file not found');
     }
 
-    const trx = await Database.transaction();
+    const trx = await db.transaction();
 
     const username = await this.prompt.ask('Enter the username', {
       validate(answer) {

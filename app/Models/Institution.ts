@@ -1,16 +1,17 @@
 /* eslint-disable import/no-cycle */
 import {
-  BaseModel, hasMany, HasMany,
+  BaseModel, hasMany,
   column,
-  belongsTo,
-  BelongsTo,
-} from '@ioc:Adonis/Lucid/Orm';
+  belongsTo
+} from '@adonisjs/lucid/orm';
 import plaidClient from '@ioc:Plaid';
 import * as Plaid from 'plaid';
 import Account from '#app/Models/Account';
-import Logger from '@ioc:Adonis/Core/Logger'
+import logger from '@adonisjs/core/services/logger'
 import Budget from '#app/Models/Budget';
 import { DateTime } from 'luxon';
+import { HasMany } from "@adonisjs/lucid/types/relations";
+import { BelongsTo } from "@adonisjs/lucid/types/relations";
 
 class Institution extends BaseModel {
   @column()
@@ -175,11 +176,11 @@ class Institution extends BaseModel {
           await acct.deleteAccountTransaction(at)
         }
         else {
-          Logger.info(`removal: transaction not found: ${removed.transaction_id}`)
+          logger.info(`removal: transaction not found: ${removed.transaction_id}`)
         }
       }
       else {
-        Logger.info(`removal: account not found: ${removed.account_id}`)
+        logger.info(`removal: account not found: ${removed.account_id}`)
       }
     }
   }
@@ -270,7 +271,7 @@ class Institution extends BaseModel {
       }
     }
     catch (error) {
-      Logger.error(error);
+      logger.error(error);
       throw error;
     }
   }

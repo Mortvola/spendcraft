@@ -1,9 +1,11 @@
 /* eslint-disable import/no-cycle */
 import {
-  BaseModel, BelongsTo, belongsTo, column, hasMany, HasMany,
-} from '@ioc:Adonis/Lucid/Orm';
+  BaseModel, belongsTo, column, hasMany
+} from '@adonisjs/lucid/orm';
 import Category from '#app/Models/Category';
 import Budget from '#app/Models/Budget';
+import { BelongsTo } from "@adonisjs/lucid/types/relations";
+import { HasMany } from "@adonisjs/lucid/types/relations";
 
 class Group extends BaseModel {
   @column()

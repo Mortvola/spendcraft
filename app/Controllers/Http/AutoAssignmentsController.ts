@@ -1,6 +1,6 @@
-import type { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
-import { rules, schema } from '@ioc:Adonis/Core/Validator';
-import Database from '@ioc:Adonis/Lucid/Database';
+import type { HttpContext } from '@adonisjs/core/http'
+import { rules, schema } from '@adonisjs/validator';
+import db from '@adonisjs/lucid/services/db';
 import AutoAssignment from '#app/Models/AutoAssignment';
 import AutoAssignmentCategory from '#app/Models/AutoAssignmentCategory';
 
@@ -11,7 +11,7 @@ export default class AutoAssignmentsController {
     auth: {
       user,
     },
-  }: HttpContextContract): Promise<AutoAssignment | AutoAssignment[]> {
+  }: HttpContext): Promise<AutoAssignment | AutoAssignment[]> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -47,7 +47,7 @@ export default class AutoAssignmentsController {
     auth: {
       user,
     },
-  }: HttpContextContract): Promise<AutoAssignment> {
+  }: HttpContext): Promise<AutoAssignment> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -67,7 +67,7 @@ export default class AutoAssignmentsController {
       }),
     });
 
-    const trx = await Database.transaction();
+    const trx = await db.transaction();
 
     try {
       user.useTransaction(trx)
@@ -110,7 +110,7 @@ export default class AutoAssignmentsController {
     auth: {
       user,
     },
-  }: HttpContextContract): Promise<AutoAssignment> {
+  }: HttpContext): Promise<AutoAssignment> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -131,7 +131,7 @@ export default class AutoAssignmentsController {
       }),
     });
 
-    const trx = await Database.transaction();
+    const trx = await db.transaction();
 
     try {
       user.useTransaction(trx)
@@ -196,14 +196,14 @@ export default class AutoAssignmentsController {
     auth: {
       user,
     },
-  }: HttpContextContract): Promise<void> {
+  }: HttpContext): Promise<void> {
     if (!user) {
       throw new Error('user is not defined');
     }
 
     const { id } = request.params();
 
-    const trx = await Database.transaction();
+    const trx = await db.transaction();
 
     try {
       user.useTransaction(trx);

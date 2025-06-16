@@ -1,24 +1,24 @@
 /* eslint-disable import/no-cycle */
 import { DateTime } from 'luxon';
-import Hash from '@ioc:Adonis/Core/Hash'
+import hash from '@adonisjs/core/services/hash'
 import {
   column,
   beforeSave,
   BaseModel,
   belongsTo,
-  BelongsTo,
-  hasMany,
-  HasMany,
-} from '@ioc:Adonis/Lucid/Orm';
+  hasMany
+} from '@adonisjs/lucid/orm';
 import { InstitutionProps } from '#common/ResponseTypes';
 import { sha256 } from 'js-sha256';
 import * as jwt from 'jsonwebtoken';
-import Env from '@ioc:Adonis/Core/Env';
-import Mail from '@ioc:Adonis/Addons/Mail';
+import env from '#start/env';
+import mail from '@adonisjs/mail/services/main';
 import { Exception } from '@poppinss/utils';
 import Budget from '#app/Models/Budget';
 import ApnsToken from './ApnsToken';
 import PushSubscription from './PushSubscription';
+import { BelongsTo } from "@adonisjs/lucid/types/relations";
+import { HasMany } from "@adonisjs/lucid/types/relations";
 
 type PassCode = {
   code: string,
@@ -75,7 +75,7 @@ export default class User extends BaseModel {
   @beforeSave()
   public static async hashPassword(user: User): Promise<void> {
     if (user.$dirty.password) {
-      user.password = await Hash.make(user.password);
+      user.password = await hash.make(user.password);
     }
   }
 
@@ -122,7 +122,7 @@ export default class User extends BaseModel {
   }
 
   public generateToken() : unknown {
-    const expiresIn = parseInt(Env.get('TOKEN_EXPIRATION') as string, 10) * 60;
+    const expiresIn = parseInt(env.get('TOKEN_EXPIRATION') as string, 10) * 60;
     return jwt.sign(
       { id: this.id, hash: sha256(this.pendingEmail ?? this.email) },
       this.generateSecret(),
@@ -137,23 +137,23 @@ export default class User extends BaseModel {
   public getEmailVerificationLink(): string {
     const token = this.generateToken();
 
-    return `${Env.get('APP_URL') as string}/api/v1/verify-email/${token}/${this.id}`;
+    return `${env.get('APP_URL') as string}/api/v1/verify-email/${token}/${this.id}`;
   }
 
   public sendEmailAddressVerification(): void {
-    Mail.send((message) => {
+    mail.send((message) => {
       if (this.pendingEmail === null) {
         throw new Exception('user\'s pending email is null');
       }
 
       message
-        .from(Env.get('MAIL_FROM_ADDRESS') as string, Env.get('MAIL_FROM_NAME') as string)
+        .from(env.get('MAIL_FROM_ADDRESS') as string, env.get('MAIL_FROM_NAME') as string)
         .to(this.pendingEmail)
         .subject('Please verify your email address.')
         .htmlView('emails/verify-email', {
           name: this.username,
           url: this.getEmailVerificationLink(),
-          expires: Env.get('TOKEN_EXPIRATION'),
+          expires: env.get('TOKEN_EXPIRATION'),
         });
     });
   }

@@ -1,9 +1,10 @@
 /* eslint-disable import/no-cycle */
 import {
-  BaseModel, BelongsTo, belongsTo, column,
-} from '@ioc:Adonis/Lucid/Orm';
+  BaseModel, belongsTo, column,
+} from '@adonisjs/lucid/orm';
 import Account from '#app/Models/Account';
 import Transaction from '#app/Models/Transaction';
+import { BelongsTo } from "@adonisjs/lucid/types/relations";
 
 type Location = {
   address: string | null,

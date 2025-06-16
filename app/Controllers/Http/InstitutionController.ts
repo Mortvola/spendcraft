@@ -1,6 +1,6 @@
 /* eslint-disable no-await-in-loop */
-import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
-import Database, { TransactionClientContract } from '@ioc:Adonis/Lucid/Database';
+import { HttpContext } from '@adonisjs/core/http';
+import db from '@adonisjs/lucid/services/db';
 import plaidClient from '@ioc:Plaid';
 import Institution from '#app/Models/Institution';
 import Account, { AccountSyncResult } from '#app/Models/Account';
@@ -9,7 +9,7 @@ import {
   AccountProps, AddInstitutionResponse, CategoryBalanceProps,
   InstitutionProps, InstitutionSyncResponse, UnlinkedAccountProps,
 } from '#common/ResponseTypes';
-import { schema } from '@ioc:Adonis/Core/Validator';
+import { schema } from '@adonisjs/validator';
 import Transaction from '#app/Models/Transaction';
 import AccountTransaction from '#app/Models/AccountTransaction';
 import { DateTime } from 'luxon';
@@ -17,7 +17,8 @@ import BalanceHistory from '#app/Models/BalanceHistory';
 import Budget from '#app/Models/Budget';
 import { Exception } from '@poppinss/utils';
 import * as Plaid from 'plaid';
-import Env from '@ioc:Adonis/Core/Env'
+import env from '#start/env'
+import { TransactionClientContract } from "@adonisjs/lucid/database";
 
 type AddAccountsResponse = {
   accounts: AccountProps[],
@@ -26,7 +27,7 @@ type AddAccountsResponse = {
 
 class InstitutionController {
   // eslint-disable-next-line class-methods-use-this
-  public async add(context: HttpContextContract): Promise<AddInstitutionResponse> {
+  public async add(context: HttpContext): Promise<AddInstitutionResponse> {
     const { request } = context;
 
     const checkData = await request.validate({
@@ -62,7 +63,7 @@ class InstitutionController {
       throw new Error('public token is undefined');
     }
 
-    const trx = await Database.transaction();
+    const trx = await db.transaction();
 
     let tokenResponse: Plaid.ItemPublicTokenExchangeResponse | null = null;
     let institutionResponse: Plaid.InstitutionsGetByIdResponse | null = null;
@@ -90,7 +91,7 @@ class InstitutionController {
 
       await trx.commit();
 
-      const trx2 = await Database.transaction();
+      const trx2 = await db.transaction();
       institution.useTransaction(trx2);
 
       try {
@@ -133,7 +134,7 @@ class InstitutionController {
       user,
     },
     logger,
-  }: HttpContextContract): Promise<AddInstitutionResponse> {
+  }: HttpContext): Promise<AddInstitutionResponse> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -160,7 +161,7 @@ class InstitutionController {
       }),
     });
 
-    const trx = await Database.transaction();
+    const trx = await db.transaction();
 
     try {
       user.useTransaction(trx)
@@ -233,14 +234,14 @@ class InstitutionController {
       user,
     },
     logger,
-  }: HttpContextContract): Promise<InstitutionProps> {
+  }: HttpContext): Promise<InstitutionProps> {
     if (!user) {
       throw new Error('user is not defined');
     }
 
     const budget = await user.related('budget').query().firstOrFail();
 
-    const trx = await Database.transaction();
+    const trx = await db.transaction();
 
     try {
       const institution = await Institution.findOrFail(request.params().instId, { client: trx });
@@ -308,7 +309,7 @@ class InstitutionController {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  async get({ request, auth: { user } }: HttpContextContract): Promise<UnlinkedAccountProps[]> {
+  async get({ request, auth: { user } }: HttpContext): Promise<UnlinkedAccountProps[]> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -654,14 +655,14 @@ class InstitutionController {
       user,
     },
     logger,
-  }: HttpContextContract): Promise<(AccountSyncResult | null)[]> {
+  }: HttpContext): Promise<(AccountSyncResult | null)[]> {
     if (!user) {
       throw new Error('user is not defined');
     }
 
     const budget = await user.related('budget').query().firstOrFail();
 
-    const trx = await Database.transaction();
+    const trx = await db.transaction();
 
     try {
       // Get the institutions that have been linked to Plaid.
@@ -694,12 +695,12 @@ class InstitutionController {
       user,
     },
     logger,
-  }: HttpContextContract): Promise<InstitutionSyncResponse | null> {
+  }: HttpContext): Promise<InstitutionSyncResponse | null> {
     if (!user) {
       throw new Error('user is not defined');
     }
 
-    const trx = await Database.transaction();
+    const trx = await db.transaction();
 
     try {
       const institution = await Institution.findOrFail(request.params().instId, { client: trx });
@@ -728,7 +729,7 @@ class InstitutionController {
     auth: {
       user,
     },
-  }: HttpContextContract): Promise<void> {
+  }: HttpContext): Promise<void> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -739,9 +740,9 @@ class InstitutionController {
       throw new Exception(`access token not set for ${institution.plaidItemId}`);
     }
 
-    const appName = Env.get('APP_NAME');
-    const webhook = Env.get('PLAID_WEBHOOK');
-    const redirect = Env.get('PLAID_OAUTH_REDIRECT');
+    const appName = env.get('APP_NAME');
+    const webhook = env.get('PLAID_WEBHOOK');
+    const redirect = env.get('PLAID_OAUTH_REDIRECT');
 
     const linkTokenResponse = await plaidClient.createLinkToken({
       user: {
@@ -764,7 +765,7 @@ class InstitutionController {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  public async info({ request, auth: { user } }: HttpContextContract): Promise<Plaid.Institution> {
+  public async info({ request, auth: { user } }: HttpContext): Promise<Plaid.Institution> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -778,7 +779,7 @@ class InstitutionController {
 
   // eslint-disable-next-line class-methods-use-this
   public async deleteAccount(
-    { request, auth: { user }, logger }: HttpContextContract,
+    { request, auth: { user }, logger }: HttpContext,
   ): Promise<CategoryBalanceProps[]> {
     if (!user) {
       throw new Error('user is not defined');
@@ -786,7 +787,7 @@ class InstitutionController {
 
     const budget = await user.related('budget').query().firstOrFail();
 
-    const trx = await Database.transaction();
+    const trx = await db.transaction();
 
     try {
       const account = await Account.findOrFail(request.params().acctId, { client: trx });
@@ -893,7 +894,7 @@ class InstitutionController {
 
   // eslint-disable-next-line class-methods-use-this
   public async delete(
-    { request, auth: { user }, logger }: HttpContextContract,
+    { request, auth: { user }, logger }: HttpContext,
   ): Promise<CategoryBalanceProps[]> {
     if (!user) {
       throw new Error('user is not defined');
@@ -901,7 +902,7 @@ class InstitutionController {
 
     const budget = await user.related('budget').query().firstOrFail();
 
-    const trx = await Database.transaction();
+    const trx = await db.transaction();
 
     try {
       const institution = await Institution.findOrFail(request.params().instId, { client: trx });

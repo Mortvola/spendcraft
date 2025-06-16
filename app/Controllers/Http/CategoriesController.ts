@@ -1,5 +1,5 @@
-import Database from '@ioc:Adonis/Lucid/Database';
-import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
+import db from '@adonisjs/lucid/services/db';
+import { HttpContext } from '@adonisjs/core/http';
 import Category, { GroupItem } from '#app/Models/Category';
 import CategoryTransfer from '#app/Models/CategoryTransfer';
 import AddGroupValidator from '#app/Validators/AddGroupValidator';
@@ -29,7 +29,7 @@ class CategoriesController {
   public async get({
     request,
     auth: { user },
-  }: HttpContextContract): Promise<ApiResponse<{ groups: Group[], categories: Category[] } | FundingInfoProps[]>> {
+  }: HttpContext): Promise<ApiResponse<{ groups: Group[], categories: Category[] } | FundingInfoProps[]>> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -192,7 +192,7 @@ class CategoriesController {
     auth: {
       user,
     },
-  }: HttpContextContract): Promise<Group> {
+  }: HttpContext): Promise<Group> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -217,7 +217,7 @@ class CategoriesController {
     auth: {
       user,
     },
-  }: HttpContextContract): Promise<Record<string, unknown>> {
+  }: HttpContext): Promise<Record<string, unknown>> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -246,7 +246,7 @@ class CategoriesController {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  public async deleteGroup({ request, auth: { user } }: HttpContextContract): Promise<void> {
+  public async deleteGroup({ request, auth: { user } }: HttpContext): Promise<void> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -262,7 +262,7 @@ class CategoriesController {
   // eslint-disable-next-line class-methods-use-this
   public async addCategory({
     request,
-  }: HttpContextContract): Promise<Category> {
+  }: HttpContext): Promise<Category> {
     const { groupId } = request.params();
     const requestData = await request.validate(AddCategoryValidator);
 
@@ -289,7 +289,7 @@ class CategoriesController {
   // eslint-disable-next-line class-methods-use-this
   public async updateCategory({
     request,
-  }: HttpContextContract): Promise<Category> {
+  }: HttpContext): Promise<Category> {
     const { groupId, catId } = request.params();
     const requestData = await request.validate(UpdateCategoryValidator);
 
@@ -315,11 +315,11 @@ class CategoriesController {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  public async deleteCategory({ request, logger }: HttpContextContract): Promise<void> {
+  public async deleteCategory({ request, logger }: HttpContext): Promise<void> {
     const { catId } = request.params();
     await request.validate(DeleteCategoryValidator);
 
-    const trx = await Database.transaction();
+    const trx = await db.transaction();
 
     try {
       const category = await Category.findOrFail(catId, { client: trx });
@@ -349,7 +349,7 @@ class CategoriesController {
     auth: {
       user,
     },
-  }: HttpContextContract): Promise<ApiResponse<TransactionsResponse>> {
+  }: HttpContext): Promise<ApiResponse<TransactionsResponse>> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -386,7 +386,7 @@ class CategoriesController {
 
   // eslint-disable-next-line class-methods-use-this
   public async transfer(
-    { request, auth: { user }, logger }: HttpContextContract,
+    { request, auth: { user }, logger }: HttpContext,
   ): Promise<ApiResponse<{ balances: CategoryBalanceProps[] }>> {
     if (!user) {
       throw new Error('user is not defined');
@@ -395,7 +395,7 @@ class CategoriesController {
     const { tfrId } = request.params();
     const requestData = await request.validate(UpdateCategoryTransferValidator);
 
-    const trx = await Database.transaction();
+    const trx = await db.transaction();
 
     try {
       user.useTransaction(trx);
@@ -517,8 +517,8 @@ class CategoriesController {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  public async transferDelete({ request, logger }: HttpContextContract): Promise<void> {
-    const trx = await Database.transaction();
+  public async transferDelete({ request, logger }: HttpContext): Promise<void> {
+    const trx = await db.transaction();
 
     try {
       const { tfrId } = request.params();
@@ -559,7 +559,7 @@ class CategoriesController {
     auth: {
       user,
     },
-  }: HttpContextContract): Promise<Array<GroupItem>> {
+  }: HttpContext): Promise<Array<GroupItem>> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -593,7 +593,7 @@ class CategoriesController {
     auth: {
       user,
     },
-  }: HttpContextContract): Promise<BillProps[]> {
+  }: HttpContext): Promise<BillProps[]> {
     if (!user) {
       throw new Error('user is not defined');
     }

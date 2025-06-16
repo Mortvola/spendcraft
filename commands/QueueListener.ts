@@ -1,11 +1,11 @@
-import { BaseCommand } from '@adonisjs/core/build/standalone'
 import BullMQ from '@ioc:Adonis/Addons/BullMQ'
 import applePushNotifications from '@ioc:ApplePushNotifications';
 import Institution from '#app/Models/Institution';
 import Budget from '#app/Models/Budget';
 import { PlaidWebHookProps, QueueNamesEnum } from '#contracts/QueueInterfaces'
-import Database from '@ioc:Adonis/Lucid/Database';
-import Logger from '@ioc:Adonis/Core/Logger';
+import db from '@adonisjs/lucid/services/db';
+import logger from '@adonisjs/core/services/logger';
+import { BaseCommand } from "@adonisjs/core/ace";
 
 // function delay(ms: number) {
 //   return new Promise((resolve) => {
@@ -42,11 +42,11 @@ export default class QueueListener extends BaseCommand {
 
   // eslint-disable-next-line class-methods-use-this
   public async run() {
-    Logger.info('Starting queue listener...')
+    logger.info('Starting queue listener...')
     BullMQ.worker<PlaidWebHookProps, PlaidWebHookProps>(QueueNamesEnum.PlaidWebHook, async (job) => {
-      Logger.info(`Syncing item ${job.data.itemId}`)
+      logger.info(`Syncing item ${job.data.itemId}`)
 
-      const trx = await Database.transaction();
+      const trx = await db.transaction();
 
       try {
         const institution = await Institution.findByOrFail('plaidItemId', job.data.itemId, { client: trx });
@@ -60,7 +60,7 @@ export default class QueueListener extends BaseCommand {
         await applePushNotifications.sendPushNotifications(budget);
       }
       catch (error) {
-        Logger.error({ err: error }, `sync update failed, item id: ${job.data.itemId}`);
+        logger.error({ err: error }, `sync update failed, item id: ${job.data.itemId}`);
 
         await trx.rollback();
       }
@@ -68,6 +68,6 @@ export default class QueueListener extends BaseCommand {
       return job.data
     })
 
-    Logger.info('queue listener started.')
+    logger.info('queue listener started.')
   }
 }

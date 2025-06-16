@@ -1,4 +1,4 @@
-import { BaseModel, SnakeCaseNamingStrategy } from "@ioc:Adonis/Lucid/Orm";
+import { BaseModel, SnakeCaseNamingStrategy } from "@adonisjs/lucid/orm";
 
 class CamelCaseNamingStrategy extends SnakeCaseNamingStrategy {
   public serializedName(_model: typeof BaseModel, propertyName: string): string {

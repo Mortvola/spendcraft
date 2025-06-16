@@ -1,12 +1,13 @@
 /* eslint-disable import/no-cycle */
 import {
-  BaseModel, BelongsTo, belongsTo, column,
-} from '@ioc:Adonis/Lucid/Orm';
-import Database from '@ioc:Adonis/Lucid/Database';
+  BaseModel, belongsTo, column,
+} from '@adonisjs/lucid/orm';
+import db from '@adonisjs/lucid/services/db';
 import Group from '#app/Models/Group';
 import { CategoryType, TransactionType } from '#common/ResponseTypes';
 import Budget from '#app/Models/Budget';
 import { DateTime } from 'luxon';
+import { BelongsTo } from "@adonisjs/lucid/types/relations";
 
 type CategoryItem = {
   id: number,
@@ -85,9 +86,9 @@ export default class Category extends BaseModel {
     date: string,
     transactionId: number,
   ): Promise<GroupItem[]> {
-    const subQuery = Database.query()
+    const subQuery = db.query()
       .select('categoryId')
-      .select(Database.raw('sum("transCats".amount) as amount'))
+      .select(db.raw('sum("transCats".amount) as amount'))
       .from('transactions')
       // eslint-disable-next-line max-len
       .joinRaw('cross join lateral jsonb_to_recordset(transactions.categories) as "transCats"("categoryId" int, amount decimal)')
@@ -103,10 +104,10 @@ export default class Category extends BaseModel {
       subQuery.orWhere('transactions.id', transactionId);
     }
 
-    const query = Database.query()
+    const query = db.query()
       .select(
         'c.id',
-        Database.raw('CAST(c.balance - sum(coalesce(tc.amount, 0)) as float) as balance'),
+        db.raw('CAST(c.balance - sum(coalesce(tc.amount, 0)) as float) as balance'),
       )
       .from('categories as c')
       .join('groups', (groups) => {

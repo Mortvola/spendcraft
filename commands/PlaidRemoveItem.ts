@@ -1,7 +1,8 @@
-import { BaseCommand, args } from '@adonisjs/core/build/standalone'
 import plaidClient from '@ioc:Plaid';
-import Env from '@ioc:Adonis/Core/Env'
+import env from '#start/env'
 import Institution from '#app/Models/Institution';
+import { BaseCommand } from "@adonisjs/core/ace";
+import { args } from "@adonisjs/core/ace";
 
 export default class PlaidGetItem extends BaseCommand {
   /**
@@ -32,7 +33,7 @@ export default class PlaidGetItem extends BaseCommand {
   }
 
   public async run (): Promise<void> {
-    const environmentRegEx = new RegExp(`access-${Env.get('PLAID_ENV')}.+`)
+    const environmentRegEx = new RegExp(`access-${env.get('PLAID_ENV')}.+`)
 
     try {
       if (this.accessToken.match(environmentRegEx)) {

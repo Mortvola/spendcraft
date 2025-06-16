@@ -1,11 +1,13 @@
 /* eslint-disable import/no-cycle */
 import {
-  BaseModel, BelongsTo, belongsTo, column, HasMany, hasMany,
-} from '@ioc:Adonis/Lucid/Orm'
+  BaseModel, belongsTo, column, hasMany,
+} from '@adonisjs/lucid/orm'
 import { DateTime } from 'luxon';
 import Category from '#app/Models/Category';
 import LoanTransaction from '#app/Models/LoanTransaction';
 import { LoanTransactionsProps } from '#common/ResponseTypes';
+import { BelongsTo } from "@adonisjs/lucid/types/relations";
+import { HasMany } from "@adonisjs/lucid/types/relations";
 
 export default class Loan extends BaseModel {
   @column({ isPrimary: true })

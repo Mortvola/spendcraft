@@ -1,5 +1,5 @@
-import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
-import Database from '@ioc:Adonis/Lucid/Database';
+import { HttpContext } from '@adonisjs/core/http';
+import db from '@adonisjs/lucid/services/db';
 import Budget from '#app/Models/Budget';
 import { BudgetProgressReportResponse, CategoryType, TransactionType } from '#common/ResponseTypes';
 import { DateTime } from 'luxon';
@@ -14,7 +14,7 @@ class ReportController {
   public async get({
     request,
     auth: { user },
-  }: HttpContextContract): Promise<NetworthReportType | PayeeReportType | BudgetProgressReportResponse> {
+  }: HttpContext): Promise<NetworthReportType | PayeeReportType | BudgetProgressReportResponse> {
     if (!user) {
       throw new Error('user not defined');
     }
@@ -77,17 +77,17 @@ class ReportController {
       return cats;
     }
 
-    const { days } = await Database.query()
-      .select(Database.raw('current_date - min(date) as days'))
+    const { days } = await db.query()
+      .select(db.raw('current_date - min(date) as days'))
       .from((query) => {
-        query.select(Database.raw('min(date) as date'))
+        query.select(db.raw('min(date) as date'))
           .from('balance_histories')
           .join('accounts', 'accounts.id', 'balance_histories.account_id')
           .join('institutions', 'institutions.id', 'accounts.institution_id')
           .where('application_id', budget.id)
           .andWhere('accounts.closed', false)
           .union((query2) => {
-            query2.select(Database.raw('min(date) as date'))
+            query2.select(db.raw('min(date) as date'))
               .from('account_transactions as at')
               .join('transactions as t', 't.id', 'at.transaction_id')
               .join('accounts as a', 'a.id', 'at.account_id')
@@ -152,12 +152,12 @@ class ReportController {
     + `where institutions.application_id = ${budget.id} `
     + 'order by name';
 
-    const categories = await Database.rawQuery(categoryQuery);
+    const categories = await db.rawQuery(categoryQuery);
 
     const crosstab = `SELECT * FROM crosstab($$${query}$$, $$${categoryQuery}$$) `
     + `AS (date TEXT ${listCategories(categories.rows)})`;
 
-    const data = await Database.rawQuery(crosstab);
+    const data = await db.rawQuery(crosstab);
 
     // Move the data into the result object
     // Also, strip the account id off of the column names
@@ -193,13 +193,13 @@ class ReportController {
     if (pc !== undefined && a !== undefined) {
       const paymentColumn = 'coalesce(payment_channel, \'unknown\')';
 
-      const query = Database.query()
+      const query = db.query()
         .select(
-          Database.raw('row_number() over (order by coalesce(at.merchant_name, at.name)) as "rowNumber"'),
-          Database.raw('coalesce(at.merchant_name, at.name) as "name"'),
-          Database.raw(`${paymentColumn} as "paymentChannel"`),
-          Database.raw('CAST(count(*) as integer) as count'),
-          Database.raw('CAST(sum(amount) as float) as sum'),
+          db.raw('row_number() over (order by coalesce(at.merchant_name, at.name)) as "rowNumber"'),
+          db.raw('coalesce(at.merchant_name, at.name) as "name"'),
+          db.raw(`${paymentColumn} as "paymentChannel"`),
+          db.raw('CAST(count(*) as integer) as count'),
+          db.raw('CAST(sum(amount) as float) as sum'),
         )
         .from('account_transactions as at')
         .join('transactions', 'transactions.id', 'at.transaction_id')
@@ -255,13 +255,13 @@ class ReportController {
     c?: string[] | string,
   ): Promise<PayeeReportType> {
     if (c !== undefined) {
-      const query = Database.query()
+      const query = db.query()
         .select(
-          Database.raw('row_number() over (order by g.name, c.name) as "rowNumber"'),
+          db.raw('row_number() over (order by g.name, c.name) as "rowNumber"'),
           'g.name as groupName',
           'c.name as categoryName',
-          Database.raw('CAST(sum(tc.amount) as float) as sum'),
-          Database.raw('CAST(count(*) as integer) as count'),
+          db.raw('CAST(sum(tc.amount) as float) as sum'),
+          db.raw('CAST(count(*) as integer) as count'),
         )
         .from('transaction_categories as tc')
         .join('categories as c', 'c.id', 'tc.category_id')
@@ -299,15 +299,15 @@ class ReportController {
   ): Promise<IncomeVsExpensesReportType> {
     const acctTransfer = await budget.getAccountTransferCategory();
 
-    const query = await Database.query()
+    const query = await db.query()
       .select(
-        Database.raw(
+        db.raw(
           'date_part(\'year\', date) || '
           + '\'-\' || lpad(cast(date_part(\'month\', date) as varchar), 2, \'0\') as month',
         ),
         // The tc.amount is for removing any amount that was an account transfer
-        Database.raw('sum(CASE WHEN at.amount >= 0 THEN at.amount - COALESCE(tc.amount, 0) ELSE 0 END) as income'),
-        Database.raw('sum(CASE WHEN at.amount < 0 THEN at.amount - COALESCE(tc.amount, 0) ELSE 0 END) as expenses'),
+        db.raw('sum(CASE WHEN at.amount >= 0 THEN at.amount - COALESCE(tc.amount, 0) ELSE 0 END) as income'),
+        db.raw('sum(CASE WHEN at.amount < 0 THEN at.amount - COALESCE(tc.amount, 0) ELSE 0 END) as expenses'),
       )
       .from('transactions as t')
       .join('account_transactions as at', 'at.transaction_id', 't.id')
@@ -333,14 +333,14 @@ class ReportController {
   private static async fundingHistory(
     budget: Budget,
   ): Promise<FundingHistoryReportType> {
-    const query = await Database.query()
+    const query = await db.query()
       .select(
         'g.id as groupId',
         'g.name as groupName',
         'g.type as groupType',
         'c.id as categoryId',
         'c.name as categoryName',
-        Database.raw(`(
+        db.raw(`(
           select json_agg(monthly_amount)
           from (
             select 
@@ -372,9 +372,9 @@ class ReportController {
   ): Promise<BudgetProgressReportResponse> {
     const acctTransfer = await budget.getAccountTransferCategory();
 
-    const fundingQuery = await Database.query()
+    const fundingQuery = await db.query()
       .select(
-        Database.raw('sum(tc.amount) AS amount'),
+        db.raw('sum(tc.amount) AS amount'),
       )
       .from('transaction_categories AS tc')
       .join('transactions AS t', 't.id', 'tc.transaction_id')
@@ -387,11 +387,11 @@ class ReportController {
 
     const fundingAmount = parseFloat(fundingQuery[0].amount);
 
-    const query = await Database.query()
+    const query = await db.query()
       .select(
-        Database.raw('to_char(t.date, \'YYYY-MM-DD\') as date'),
-        Database.raw('sum(tc.amount) AS amount'),
-        Database.raw('array_agg(t.id) as transactions'),
+        db.raw('to_char(t.date, \'YYYY-MM-DD\') as date'),
+        db.raw('sum(tc.amount) AS amount'),
+        db.raw('array_agg(t.id) as transactions'),
       )
       .from('transaction_categories AS tc')
       .join('transactions AS t', 't.id', 'tc.transaction_id')

@@ -1,7 +1,7 @@
 import { DateTime } from 'luxon'
 import {
   BaseModel, column,
-} from '@ioc:Adonis/Lucid/Orm'
+} from '@adonisjs/lucid/orm'
 
 export default class PushSubscription extends BaseModel {
   @column({ isPrimary: true })

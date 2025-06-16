@@ -1,6 +1,6 @@
-import { BaseCommand } from '@adonisjs/core/build/standalone'
 import Budget from '#app/Models/Budget';
 import pushSubscriptions from '@ioc:ApplePushNotifications';
+import { BaseCommand } from "@adonisjs/core/ace";
 
 export default class ApnPush extends BaseCommand {
   /**

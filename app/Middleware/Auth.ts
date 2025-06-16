@@ -1,4 +1,4 @@
-import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
+import { HttpContext } from '@adonisjs/core/http';
 import { AuthenticationException } from '@adonisjs/auth/build/standalone';
 
 /**
@@ -22,7 +22,7 @@ export default class AuthMiddleware {
    * of the mentioned guards and that guard will be used by the rest of the code
    * during the current request.
    */
-  protected async authenticate(auth: HttpContextContract['auth'], guards: any[]): Promise<void> {
+  protected async authenticate(auth: HttpContext['auth'], guards: any[]): Promise<void> {
     /**
      * Hold reference to the guard last attempted within the for loop. We pass
      * the reference of the guard to the "AuthenticationException", so that
@@ -62,7 +62,7 @@ export default class AuthMiddleware {
    * Handle request
    */
   public async handle(
-    { auth }: HttpContextContract,
+    { auth }: HttpContext,
     next: () => Promise<void>,
     customGuards: string[],
   ): Promise<void> {

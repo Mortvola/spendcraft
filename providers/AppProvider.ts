@@ -1,11 +1,11 @@
-import { ApplicationContract } from '@ioc:Adonis/Core/Application'
 import ApplePushNotifications from './ApplePushNotifications';
 import Plaid from './Plaid/Plaid';
+import { ApplicationService } from "@adonisjs/core/types";
 
 export default class AppProvider {
 	public static needsApplication = true
 
-  constructor (protected app: ApplicationContract) {
+  constructor (protected app: ApplicationService) {
   }
 
   public register () {

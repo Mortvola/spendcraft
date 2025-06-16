@@ -3,10 +3,10 @@ import { context, FetchInit, Request, Response } from 'fetch-h2';
 import { type CryptoKey } from 'jose';
 import { DateTime } from "luxon";
 import Budget from '#app/Models/Budget';
-import Logger from '@ioc:Adonis/Core/Logger';
+import logger from '@adonisjs/core/services/logger';
 import PushSubscription from '#app/Models/PushSubscription';
 import webPush from 'web-push';
-import Env from '@ioc:Adonis/Core/Env';
+import env from '#start/env';
 
 type FetchType = (input: string | Request, init?: Partial<FetchInit> | undefined) => Promise<Response>;
 
@@ -22,9 +22,9 @@ class ApplePushNotifications {
 
     try {
       webPush.setVapidDetails(
-        Env.get('APP_URL'),
-        Env.get('VAPID_PUBLIC_KEY'),
-        Env.get('VAPID_PRIVATE_KEY'),
+        env.get('APP_URL'),
+        env.get('VAPID_PUBLIC_KEY'),
+        env.get('VAPID_PRIVATE_KEY'),
       );
       
       const unassigned = await budget.getUnassignedCategory();
@@ -48,7 +48,7 @@ class ApplePushNotifications {
                 }
               }
               catch (error) {
-                Logger.error({ err: error }, 'Push notification failed');
+                logger.error({ err: error }, 'Push notification failed');
               }
             }
           }));
@@ -56,7 +56,7 @@ class ApplePushNotifications {
       }
     }
     catch (error) {
-      Logger.error({ err: error }, 'push notification failed');
+      logger.error({ err: error }, 'push notification failed');
     }
 
     disconnectAll();
@@ -82,7 +82,7 @@ class ApplePushNotifications {
     if (this.providerJwt === null || age == null
       || age > 30
     ) {
-      Logger.info(`Generating new provider token. Age: ${age}`);
+      logger.info(`Generating new provider token. Age: ${age}`);
 
       this.providerJwtTime = DateTime.now();
   
@@ -139,7 +139,7 @@ class ApplePushNotifications {
     }
 
     try {
-      Logger.info(`pushing notification to ${subscription.subscription}`);
+      logger.info(`pushing notification to ${subscription.subscription}`);
 
       const response = await fetch(`https://api.push.apple.com/3/device/${subscription.subscription}`, {
         method: 'POST',
@@ -155,7 +155,7 @@ class ApplePushNotifications {
       })
 
       if (response.ok) {
-        Logger.info(`apns success, device token: ${subscription.subscription}, apns id: ${response.headers.get('apns-id')}`);
+        logger.info(`apns success, device token: ${subscription.subscription}, apns id: ${response.headers.get('apns-id')}`);
       }
       else {
         const body = await response.json();
@@ -165,11 +165,11 @@ class ApplePushNotifications {
           await subscription.delete();
         }
 
-        Logger.error(`apns failure: ${response.status}: ${response.statusText}, body: ${JSON.stringify(body)}`)
+        logger.error(`apns failure: ${response.status}: ${response.statusText}, body: ${JSON.stringify(body)}`)
       }
     }
     catch (error) {
-      Logger.error({ err: error }, 'send push notification');
+      logger.error({ err: error }, 'send push notification');
     }
   }
 }
