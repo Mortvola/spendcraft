@@ -1,6 +1,6 @@
 import { BaseCommand, args } from '@adonisjs/core/build/standalone'
 import plaidClient from '@ioc:Plaid';
-import Institution from 'App/Models/Institution'
+import Institution from '#app/Models/Institution'
 import Env from '@ioc:Adonis/Core/Env'
 
 export default class PlaidRefreshTransactions extends BaseCommand {

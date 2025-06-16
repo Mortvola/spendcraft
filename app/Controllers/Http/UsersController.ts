@@ -1,9 +1,9 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import plaidClient from '@ioc:Plaid';
-import { ApiResponse, InstitutionProps } from 'Common/ResponseTypes';
+import { ApiResponse, InstitutionProps } from '#common/ResponseTypes';
 import Env from '@ioc:Adonis/Core/Env'
 import { rules, schema } from '@ioc:Adonis/Core/Validator';
-import User from 'App/Models/User';
+import User from '#app/Models/User';
 import * as Plaid from 'plaid';
 import Database from '@ioc:Adonis/Lucid/Database';
 import { Exception } from '@poppinss/utils';

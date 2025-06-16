@@ -1,6 +1,6 @@
 import { BaseCommand, args } from '@adonisjs/core/build/standalone'
 import Database from '@ioc:Adonis/Lucid/Database';
-import Institution from 'App/Models/Institution';
+import Institution from '#app/Models/Institution';
 import Logger from '@ioc:Adonis/Core/Logger';
 
 export default class InstitutionSync extends BaseCommand {

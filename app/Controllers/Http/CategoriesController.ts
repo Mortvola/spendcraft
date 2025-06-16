@@ -1,16 +1,16 @@
 import Database from '@ioc:Adonis/Lucid/Database';
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
-import Category, { GroupItem } from 'App/Models/Category';
-import CategoryTransfer from 'App/Models/CategoryTransfer';
-import AddGroupValidator from 'App/Validators/AddGroupValidator';
-import UpdateGroupValidator from 'App/Validators/UpdateGroupValidator';
-import DeleteGroupValidator from 'App/Validators/DeleteGroupValidator';
-import AddCategoryValidator from 'App/Validators/AddCategoryValidator';
-import UpdateCategoryValidator from 'App/Validators/UpdateCategoryValidator';
-import DeleteCategoryValidator from 'App/Validators/DeleteCategoryValidator';
-import UpdateCategoryTransferValidator from 'App/Validators/UpdateCategoryTransferValidator';
-import Transaction from 'App/Models/Transaction';
-import Loan from 'App/Models/Loan';
+import Category, { GroupItem } from '#app/Models/Category';
+import CategoryTransfer from '#app/Models/CategoryTransfer';
+import AddGroupValidator from '#app/Validators/AddGroupValidator';
+import UpdateGroupValidator from '#app/Validators/UpdateGroupValidator';
+import DeleteGroupValidator from '#app/Validators/DeleteGroupValidator';
+import AddCategoryValidator from '#app/Validators/AddCategoryValidator';
+import UpdateCategoryValidator from '#app/Validators/UpdateCategoryValidator';
+import DeleteCategoryValidator from '#app/Validators/DeleteCategoryValidator';
+import UpdateCategoryTransferValidator from '#app/Validators/UpdateCategoryTransferValidator';
+import Transaction from '#app/Models/Transaction';
+import Loan from '#app/Models/Loan';
 import {
   CategoryBalanceProps,
   TransactionsResponse,
@@ -19,8 +19,8 @@ import {
   BillProps,
   GroupType,
   CategoryType,
-} from 'Common/ResponseTypes';
-import Group from 'App/Models/Group';
+} from '#common/ResponseTypes';
+import Group from '#app/Models/Group';
 import { DateTime } from 'luxon';
 import transactionFields from './transactionFields';
 

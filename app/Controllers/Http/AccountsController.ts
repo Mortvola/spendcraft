@@ -2,18 +2,18 @@ import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import { rules, schema } from '@ioc:Adonis/Core/Validator';
 import Database from '@ioc:Adonis/Lucid/Database';
 import { Exception } from '@poppinss/utils';
-import Account from 'App/Models/Account';
-import BalanceHistory from 'App/Models/BalanceHistory';
-import Category from 'App/Models/Category';
-import Transaction from 'App/Models/Transaction';
+import Account from '#app/Models/Account';
+import BalanceHistory from '#app/Models/BalanceHistory';
+import Category from '#app/Models/Category';
+import Transaction from '#app/Models/Transaction';
 import {
   TransactionsResponse, CategoryBalanceProps, TransactionProps, TransactionType, AccountBalanceProps, TrackingType,
   ApiResponse,
   AddStatementResponse,
   StatementProps,
-} from 'Common/ResponseTypes';
-import Statement from 'App/Models/Statement';
-import AccountTransaction from 'App/Models/AccountTransaction';
+} from '#common/ResponseTypes';
+import Statement from '#app/Models/Statement';
+import AccountTransaction from '#app/Models/AccountTransaction';
 import transactionFields from './transactionFields';
 
 type AddedTransaction = {

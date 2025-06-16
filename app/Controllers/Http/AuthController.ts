@@ -4,9 +4,9 @@ import { schema, rules } from '@ioc:Adonis/Core/Validator';
 import Env from '@ioc:Adonis/Core/Env';
 import Logger from '@ioc:Adonis/Core/Logger';
 import Mail from '@ioc:Adonis/Addons/Mail';
-import User from 'App/Models/User';
+import User from '#app/Models/User';
 import Database from '@ioc:Adonis/Lucid/Database';
-import Budget from 'App/Models/Budget';
+import Budget from '#app/Models/Budget';
 import { sha256 } from 'js-sha256';
 import { DateTime } from 'luxon';
 

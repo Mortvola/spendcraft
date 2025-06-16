@@ -3,7 +3,7 @@ import {
   BaseModel, column, belongsTo, BelongsTo,
 } from '@ioc:Adonis/Lucid/Orm'
 // import TransactionCategory from 'App/Models/TransactionCategory';
-import Loan from 'App/Models/Loan';
+import Loan from '#app/Models/Loan';
 
 export default class LoanTransaction extends BaseModel {
   @column({ isPrimary: true })

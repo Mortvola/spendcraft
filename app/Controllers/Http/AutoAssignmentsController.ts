@@ -1,8 +1,8 @@
 import type { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import { rules, schema } from '@ioc:Adonis/Core/Validator';
 import Database from '@ioc:Adonis/Lucid/Database';
-import AutoAssignment from 'App/Models/AutoAssignment';
-import AutoAssignmentCategory from 'App/Models/AutoAssignmentCategory';
+import AutoAssignment from '#app/Models/AutoAssignment';
+import AutoAssignmentCategory from '#app/Models/AutoAssignmentCategory';
 
 export default class AutoAssignmentsController {
   // eslint-disable-next-line class-methods-use-this

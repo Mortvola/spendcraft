@@ -2,8 +2,8 @@
 import {
   BaseModel, BelongsTo, belongsTo, column,
 } from '@ioc:Adonis/Lucid/Orm';
-import Account from 'App/Models/Account';
-import Transaction from 'App/Models/Transaction';
+import Account from '#app/Models/Account';
+import Transaction from '#app/Models/Transaction';
 
 type Location = {
   address: string | null,

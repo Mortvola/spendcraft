@@ -1,4 +1,4 @@
-import Institution from 'App/Models/Institution';
+import Institution from '#app/Models/Institution';
 import PlaidException from './PlaidException';
 import * as Plaid from 'plaid';
 

@@ -6,13 +6,6 @@
     "@adonisjs/mail/commands"
   ],
   "exceptionHandlerNamespace": "App/Exceptions/Handler",
-  "aliases": {
-    "App": "app",
-    "Config": "config",
-    "Database": "database",
-    "Contracts": "contracts",
-    "Common": "common"
-  },
   "preloads": [
     "./start/routes",
     "./start/kernel",

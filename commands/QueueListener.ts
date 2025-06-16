@@ -1,9 +1,9 @@
 import { BaseCommand } from '@adonisjs/core/build/standalone'
 import BullMQ from '@ioc:Adonis/Addons/BullMQ'
 import applePushNotifications from '@ioc:ApplePushNotifications';
-import Institution from 'App/Models/Institution';
-import Budget from 'App/Models/Budget';
-import { PlaidWebHookProps, QueueNamesEnum } from 'Contracts/QueueInterfaces'
+import Institution from '#app/Models/Institution';
+import Budget from '#app/Models/Budget';
+import { PlaidWebHookProps, QueueNamesEnum } from '#contracts/QueueInterfaces'
 import Database from '@ioc:Adonis/Lucid/Database';
 import Logger from '@ioc:Adonis/Core/Logger';
 

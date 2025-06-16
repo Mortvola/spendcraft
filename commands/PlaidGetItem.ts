@@ -1,7 +1,7 @@
 import { BaseCommand, args, flags } from '@adonisjs/core/build/standalone'
 import plaidClient from '@ioc:Plaid';
 import Env from '@ioc:Adonis/Core/Env'
-import Institution from 'App/Models/Institution';
+import Institution from '#app/Models/Institution';
 
 export default class PlaidGetItem extends BaseCommand {
   /**

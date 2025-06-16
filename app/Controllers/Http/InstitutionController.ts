@@ -2,19 +2,19 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import Database, { TransactionClientContract } from '@ioc:Adonis/Lucid/Database';
 import plaidClient from '@ioc:Plaid';
-import Institution from 'App/Models/Institution';
-import Account, { AccountSyncResult } from 'App/Models/Account';
-import Category from 'App/Models/Category';
+import Institution from '#app/Models/Institution';
+import Account, { AccountSyncResult } from '#app/Models/Account';
+import Category from '#app/Models/Category';
 import {
   AccountProps, AddInstitutionResponse, CategoryBalanceProps,
   InstitutionProps, InstitutionSyncResponse, UnlinkedAccountProps,
-} from 'Common/ResponseTypes';
+} from '#common/ResponseTypes';
 import { schema } from '@ioc:Adonis/Core/Validator';
-import Transaction from 'App/Models/Transaction';
-import AccountTransaction from 'App/Models/AccountTransaction';
+import Transaction from '#app/Models/Transaction';
+import AccountTransaction from '#app/Models/AccountTransaction';
 import { DateTime } from 'luxon';
-import BalanceHistory from 'App/Models/BalanceHistory';
-import Budget from 'App/Models/Budget';
+import BalanceHistory from '#app/Models/BalanceHistory';
+import Budget from '#app/Models/Budget';
 import { Exception } from '@poppinss/utils';
 import * as Plaid from 'plaid';
 import Env from '@ioc:Adonis/Core/Env'

@@ -1,8 +1,8 @@
 import { BaseCommand, args } from '@adonisjs/core/build/standalone'
 import Drive from '@ioc:Adonis/Core/Drive';
 import Database from '@ioc:Adonis/Lucid/Database';
-import User from 'App/Models/User';
-import Account from 'App/Models/Account';
+import User from '#app/Models/User';
+import Account from '#app/Models/Account';
 
 export default class OfxUpload extends BaseCommand {
   /**

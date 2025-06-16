@@ -1,10 +1,10 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import { schema } from '@ioc:Adonis/Core/Validator';
-import Category from 'App/Models/Category';
+import Category from '#app/Models/Category';
 // import FundingPlan from 'App/Models/FundingPlan';
 // import FundingPlanCategory from 'App/Models/FundingPlanCategory';
 // import CategoryHistoryItem from 'App/Models/CategoryHistoryItem';
-import { ApiResponse, FundingPlanDetailsProps, ProposedFundingCategoryProps } from 'Common/ResponseTypes';
+import { ApiResponse, FundingPlanDetailsProps, ProposedFundingCategoryProps } from '#common/ResponseTypes';
 
 class FundingPlanController {
   // eslint-disable-next-line class-methods-use-this

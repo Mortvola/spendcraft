@@ -7,9 +7,9 @@ import {
 } from '@ioc:Adonis/Lucid/Orm';
 import plaidClient from '@ioc:Plaid';
 import * as Plaid from 'plaid';
-import Account from 'App/Models/Account';
+import Account from '#app/Models/Account';
 import Logger from '@ioc:Adonis/Core/Logger'
-import Budget from 'App/Models/Budget';
+import Budget from '#app/Models/Budget';
 import { DateTime } from 'luxon';
 
 class Institution extends BaseModel {

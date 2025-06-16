@@ -4,9 +4,9 @@ import {
   belongsTo, BelongsTo, HasOne, hasOne,
 } from '@ioc:Adonis/Lucid/Orm';
 import { DateTime } from 'luxon';
-import AccountTransaction from 'App/Models/AccountTransaction';
-import { TransactionType } from 'Common/ResponseTypes';
-import Budget from 'App/Models/Budget';
+import AccountTransaction from '#app/Models/AccountTransaction';
+import { TransactionType } from '#common/ResponseTypes';
+import Budget from '#app/Models/Budget';
 import TransactionLog from './TransactionLog';
 
 export type TransCategory = {

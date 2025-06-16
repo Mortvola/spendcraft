@@ -3,9 +3,9 @@ import {
   BaseModel, BelongsTo, belongsTo, column, HasMany, hasMany,
 } from '@ioc:Adonis/Lucid/Orm'
 import { DateTime } from 'luxon';
-import Category from 'App/Models/Category';
-import LoanTransaction from 'App/Models/LoanTransaction';
-import { LoanTransactionsProps } from 'Common/ResponseTypes';
+import Category from '#app/Models/Category';
+import LoanTransaction from '#app/Models/LoanTransaction';
+import { LoanTransactionsProps } from '#common/ResponseTypes';
 
 export default class Loan extends BaseModel {
   @column({ isPrimary: true })

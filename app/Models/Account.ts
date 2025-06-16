@@ -5,18 +5,18 @@ import {
 } from '@ioc:Adonis/Lucid/Orm';
 import { DateTime } from 'luxon';
 import * as Plaid from 'plaid';
-import AccountTransaction from 'App/Models/AccountTransaction';
-import BalanceHistory from 'App/Models/BalanceHistory';
-import Institution from 'App/Models/Institution';
+import AccountTransaction from '#app/Models/AccountTransaction';
+import BalanceHistory from '#app/Models/BalanceHistory';
+import Institution from '#app/Models/Institution';
 import {
   AccountType, CategoryBalanceProps, GroupType, TrackingType, TransactionType,
-} from 'Common/ResponseTypes';
-import Transaction from 'App/Models/Transaction';
-import Budget from 'App/Models/Budget';
+} from '#common/ResponseTypes';
+import Transaction from '#app/Models/Transaction';
+import Budget from '#app/Models/Budget';
 import { XMLParser } from 'fast-xml-parser';
 import Logger from '@ioc:Adonis/Core/Logger'
 import Database from '@ioc:Adonis/Lucid/Database';
-import { getChanges } from 'App/Controllers/Http/transactionFields';
+import { getChanges } from '#app/Controllers/Http/transactionFields';
 import Category from './Category';
 import User from './User';
 import Statement from './Statement';

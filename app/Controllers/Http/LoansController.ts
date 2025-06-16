@@ -2,10 +2,10 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import { schema, rules } from '@ioc:Adonis/Core/Validator';
 import Database from '@ioc:Adonis/Lucid/Database';
-import Category from 'App/Models/Category';
-import Group from 'App/Models/Group';
-import Loan from 'App/Models/Loan';
-import { CategoryType, LoanTransactionsProps, LoanUpdateProps } from 'Common/ResponseTypes';
+import Category from '#app/Models/Category';
+import Group from '#app/Models/Group';
+import Loan from '#app/Models/Loan';
+import { CategoryType, LoanTransactionsProps, LoanUpdateProps } from '#common/ResponseTypes';
 
 export default class LoansController {
   // eslint-disable-next-line class-methods-use-this

@@ -1,5 +1,5 @@
 import { BaseCommand } from '@adonisjs/core/build/standalone'
-import { CategoryType } from 'Common/ResponseTypes';
+import { CategoryType } from '#common/ResponseTypes';
 import { DateTime } from 'luxon';
 
 export default class GoalTest extends BaseCommand {

@@ -1,7 +1,7 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import Database from '@ioc:Adonis/Lucid/Database';
-import Budget from 'App/Models/Budget';
-import { BudgetProgressReportResponse, CategoryType, TransactionType } from 'Common/ResponseTypes';
+import Budget from '#app/Models/Budget';
+import { BudgetProgressReportResponse, CategoryType, TransactionType } from '#common/ResponseTypes';
 import { DateTime } from 'luxon';
 
 type NetworthReportType = (string | number)[][];

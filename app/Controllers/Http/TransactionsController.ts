@@ -2,20 +2,20 @@
 
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import Database from '@ioc:Adonis/Lucid/Database';
-import Category from 'App/Models/Category';
-import Transaction from 'App/Models/Transaction';
-import AccountTransaction from 'App/Models/AccountTransaction';
+import Category from '#app/Models/Category';
+import Transaction from '#app/Models/Transaction';
+import AccountTransaction from '#app/Models/AccountTransaction';
 import {
   AccountBalanceProps, ApiResponse, CategoryBalanceProps, CategoryType, RequestErrorCode,
   StatementProps,
   TransactionProps, TransactionsResponse, TransactionType,
   UpdateTransactionResponse,
-} from 'Common/ResponseTypes';
-import Account from 'App/Models/Account';
+} from '#common/ResponseTypes';
+import Account from '#app/Models/Account';
 import { schema, rules } from '@ioc:Adonis/Core/Validator';
-import TransactionLog from 'App/Models/TransactionLog';
+import TransactionLog from '#app/Models/TransactionLog';
 import { ModelAttributes } from '@ioc:Adonis/Lucid/Orm';
-import Statement from 'App/Models/Statement';
+import Statement from '#app/Models/Statement';
 import transactionFields, { getChanges } from './transactionFields';
 
 export default class TransactionsController {

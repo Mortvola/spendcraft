@@ -2,8 +2,8 @@
 import {
   BaseModel, BelongsTo, belongsTo, column, hasMany, HasMany,
 } from '@ioc:Adonis/Lucid/Orm';
-import Category from 'App/Models/Category';
-import Budget from 'App/Models/Budget';
+import Category from '#app/Models/Category';
+import Budget from '#app/Models/Budget';
 
 class Group extends BaseModel {
   @column()

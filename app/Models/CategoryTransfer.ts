@@ -1,5 +1,5 @@
 import { BaseModel, column } from '@ioc:Adonis/Lucid/Orm';
-import CategorySplit from 'App/Models/CategorySplit';
+import CategorySplit from '#app/Models/CategorySplit';
 
 class CategoryTransfer extends BaseModel {
   @column()

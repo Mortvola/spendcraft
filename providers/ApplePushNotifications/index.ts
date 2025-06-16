@@ -2,9 +2,9 @@ import fs from 'fs';
 import { context, FetchInit, Request, Response } from 'fetch-h2';
 import { type CryptoKey } from 'jose';
 import { DateTime } from "luxon";
-import Budget from 'App/Models/Budget';
+import Budget from '#app/Models/Budget';
 import Logger from '@ioc:Adonis/Core/Logger';
-import PushSubscription from 'App/Models/PushSubscription';
+import PushSubscription from '#app/Models/PushSubscription';
 import webPush from 'web-push';
 import Env from '@ioc:Adonis/Core/Env';
 

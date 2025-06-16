@@ -10,13 +10,13 @@ import {
   hasMany,
   HasMany,
 } from '@ioc:Adonis/Lucid/Orm';
-import { InstitutionProps } from 'Common/ResponseTypes';
+import { InstitutionProps } from '#common/ResponseTypes';
 import { sha256 } from 'js-sha256';
 import * as jwt from 'jsonwebtoken';
 import Env from '@ioc:Adonis/Core/Env';
 import Mail from '@ioc:Adonis/Addons/Mail';
 import { Exception } from '@poppinss/utils';
-import Budget from 'App/Models/Budget';
+import Budget from '#app/Models/Budget';
 import ApnsToken from './ApnsToken';
 import PushSubscription from './PushSubscription';
 

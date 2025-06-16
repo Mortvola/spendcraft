@@ -8,14 +8,14 @@ import * as Plaid from 'plaid';
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import { RequestContract } from '@ioc:Adonis/Core/Request';
 import Database from '@ioc:Adonis/Lucid/Database';
-import Institution from 'App/Models/Institution';
+import Institution from '#app/Models/Institution';
 import Mail from '@ioc:Adonis/Addons/Mail';
 import Env from '@ioc:Adonis/Core/Env';
 import { Exception } from '@poppinss/utils';
 import Logger from '@ioc:Adonis/Core/Logger';
-import { PlaidWebHookProps, QueueNamesEnum } from 'Contracts/QueueInterfaces';
+import { PlaidWebHookProps, QueueNamesEnum } from '#contracts/QueueInterfaces';
 import BullMQ from '@ioc:Adonis/Addons/BullMQ'
-import WebhookLog from 'App/Models/WebhookLog';
+import WebhookLog from '#app/Models/WebhookLog';
 import Redis from '@ioc:Adonis/Addons/Redis';
 
 const redisKey = 'key-cache';

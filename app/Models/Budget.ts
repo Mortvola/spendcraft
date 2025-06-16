@@ -6,13 +6,13 @@ import {
 import Database from '@ioc:Adonis/Lucid/Database';
 import {
   CategoryType, GroupType, InstitutionProps, ProposedFundingCategoryProps,
-} from 'Common/ResponseTypes';
-import User from 'App/Models/User'
-import Category from 'App/Models/Category';
-import Group from 'App/Models/Group';
-import Institution from 'App/Models/Institution';
-import Transaction from 'App/Models/Transaction';
-import Loan from 'App/Models/Loan';
+} from '#common/ResponseTypes';
+import User from '#app/Models/User'
+import Category from '#app/Models/Category';
+import Group from '#app/Models/Group';
+import Institution from '#app/Models/Institution';
+import Transaction from '#app/Models/Transaction';
+import Loan from '#app/Models/Loan';
 import Logger from '@ioc:Adonis/Core/Logger';
 import AutoAssignment from './AutoAssignment';
 import TransactionLog from './TransactionLog';

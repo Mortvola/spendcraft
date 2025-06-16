@@ -3,9 +3,9 @@ import {
   BaseModel, BelongsTo, belongsTo, column,
 } from '@ioc:Adonis/Lucid/Orm';
 import Database from '@ioc:Adonis/Lucid/Database';
-import Group from 'App/Models/Group';
-import { CategoryType, TransactionType } from 'Common/ResponseTypes';
-import Budget from 'App/Models/Budget';
+import Group from '#app/Models/Group';
+import { CategoryType, TransactionType } from '#common/ResponseTypes';
+import Budget from '#app/Models/Budget';
 import { DateTime } from 'luxon';
 
 type CategoryItem = {
