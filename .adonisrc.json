@@ -1,11 +1,9 @@
 {
   "typescript": true,
   "commands": [
-    "./commands",
-    "@adonisjs/core/build/commands",
-    "@adonisjs/repl/build/commands",
-    "@adonisjs/lucid/build/commands",
-    "@adonisjs/mail/build/commands"
+    "@adonisjs/core/commands",
+    "@adonisjs/lucid/commands",
+    "@adonisjs/mail/commands"
   ],
   "exceptionHandlerNamespace": "App/Exceptions/Handler",
   "aliases": {
@@ -39,14 +37,22 @@
   ],
   "providers": [
     "./providers/AppProvider",
-    "@adonisjs/core",
-    "@adonisjs/session",
-    "@adonisjs/view",
-    "@adonisjs/lucid",
-    "@adonisjs/auth",
-    "@adonisjs/shield",
-    "@adonisjs/mail",
-    "@adonisjs/redis",
+    "@adonisjs/core/providers/app_provider",
+    "@adonisjs/core/providers/hash_provider",
+    {
+      "file": "@adonisjs/core/providers/repl_provider",
+      "environment": [
+        "repl",
+        "test"
+      ]
+    },
+    "@adonisjs/session/session_provider",
+    "@adonisjs/core/providers/edge_provider",
+    "@adonisjs/lucid/database_provider",
+    "@adonisjs/auth/auth_provider",
+    "@adonisjs/shield/shield_provider",
+    "@adonisjs/mail/mail_provider",
+    "@adonisjs/redis/redis_provider",
     "adonis5-jwt",
     "adonis5-bullmq"
   ],
