@@ -1,10 +1,9 @@
 import fs from 'fs';
 import { context, FetchInit, Request, Response } from 'fetch-h2';
-import { SignJWT, importPKCS8, KeyLike } from 'jose';
+import { type CryptoKey } from 'jose';
 import { DateTime } from "luxon";
 import Budget from 'App/Models/Budget';
 import Logger from '@ioc:Adonis/Core/Logger';
-// import ApnsToken from 'App/Models/ApnsToken';
 import PushSubscription from 'App/Models/PushSubscription';
 import webPush from 'web-push';
 import Env from '@ioc:Adonis/Core/Env';
@@ -12,7 +11,7 @@ import Env from '@ioc:Adonis/Core/Env';
 type FetchType = (input: string | Request, init?: Partial<FetchInit> | undefined) => Promise<Response>;
 
 class ApplePushNotifications {
-  pushNotificationKey: KeyLike | null = null;
+  pushNotificationKey: CryptoKey | null = null;
   
   providerJwtTime: DateTime | null;
 
@@ -64,6 +63,8 @@ class ApplePushNotifications {
   }
 
   private async generateProviderJWT() {
+    const { SignJWT, importPKCS8 } = await import('jose')
+  
     if (this.pushNotificationKey === null) {
       const privateKey = fs.readFileSync('./PushNotificationKey.p8')
       this.pushNotificationKey = await importPKCS8(privateKey.toString(), 'ES256');
