@@ -135,5 +135,6 @@
   },
   "autoload": {
     "App": "./app"
-  }
+  },
+  "type": "module"
 }

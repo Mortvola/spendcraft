@@ -1,5 +1,5 @@
 {
-  "extends": "./node_modules/adonis-preset-ts/tsconfig.json",
+  "extends": "@adonisjs/tsconfig/tsconfig.app.json",
   "include": [
     "**/*",
     ".eslintrc.js"
@@ -32,16 +32,9 @@
       ]
     },
     "types": [
-      "@adonisjs/auth",
-      "@adonisjs/lucid",
-      "@adonisjs/shield",
-      "@adonisjs/core",
-      "@adonisjs/session",
-      "@adonisjs/view",
-      "@adonisjs/mail",
-      "@adonisjs/redis",
       "adonis5-jwt",
       "adonis5-bullmq"
-    ]
+    ],
+    "strictPropertyInitialization": false
   }
 }
