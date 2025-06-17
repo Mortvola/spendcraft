@@ -8,7 +8,7 @@ import AccountTransaction from '#app/Models/AccountTransaction';
 import BalanceHistory from '#app/Models/BalanceHistory';
 import Institution from '#app/Models/Institution';
 import {
-  AccountType, CategoryBalanceProps, GroupType, TrackingType, TransactionType,
+  type AccountType, CategoryBalanceProps, GroupType, type TrackingType, TransactionType,
 } from '#common/ResponseTypes';
 import Transaction from '#app/Models/Transaction';
 import Budget from '#app/Models/Budget';
@@ -19,8 +19,7 @@ import { getChanges } from '#app/Controllers/Http/transactionFields';
 import Category from './Category.js';
 import User from './User.js';
 import Statement from './Statement.js';
-import { HasMany } from "@adonisjs/lucid/types/relations";
-import { BelongsTo } from "@adonisjs/lucid/types/relations";
+import type { HasMany, BelongsTo } from "@adonisjs/lucid/types/relations";
 import { ModelAttributes } from "@adonisjs/lucid/types/model";
 
 export type AccountSyncResult = {

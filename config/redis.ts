@@ -6,7 +6,7 @@
  */
 
 import env from '#start/env'
-import { redisConfig } from '@adonisjs/redis/build/config'
+import { defineConfig } from '@adonisjs/redis'
 
 /*
 |--------------------------------------------------------------------------
@@ -21,7 +21,7 @@ import { redisConfig } from '@adonisjs/redis/build/config'
 |
 | Make sure to check `contracts/redis.ts` file for defining extra connections
 */
-export default redisConfig({
+const redisConfig = defineConfig({
   connection: env.get('REDIS_CONNECTION'),
 
   connections: {
@@ -41,6 +41,15 @@ export default redisConfig({
       password: env.get('REDIS_PASSWORD', ''),
       db: 0,
       keyPrefix: '',
+      retryStrategy(times) {
+        return times > 10 ? null : times * 50
+      },
     },
   },
 })
+
+export default redisConfig
+
+declare module '@adonisjs/redis/types' {
+  export interface RedisConnections extends InferConnections<typeof redisConfig> {}
+}

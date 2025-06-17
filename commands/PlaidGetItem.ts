@@ -1,4 +1,3 @@
-import plaidClient from '@ioc:Plaid';
 import env from '#start/env'
 import Institution from '#app/Models/Institution';
 import { BaseCommand } from "@adonisjs/core/ace";
@@ -33,6 +32,8 @@ export default class PlaidGetItem extends BaseCommand {
     try {
       if (this.accessToken.match(environmentRegEx)) {
         const institiution = await Institution.findByOrFail('accessToken', this.accessToken)
+
+        const plaidClient = await this.app.container.make('plaid')
 
         const response = await plaidClient.getItem(institiution);
         this.logger.info(JSON.stringify(response, null, 2));

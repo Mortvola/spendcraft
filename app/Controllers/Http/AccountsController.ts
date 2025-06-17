@@ -1,7 +1,7 @@
 import { HttpContext } from '@adonisjs/core/http';
 import { rules, schema } from '@adonisjs/validator';
 import db from '@adonisjs/lucid/services/db';
-import { Exception } from '@poppinss/utils';
+import { Exception } from '@adonisjs/core/exceptions';
 import Account from '#app/Models/Account';
 import BalanceHistory from '#app/Models/BalanceHistory';
 import Category from '#app/Models/Category';

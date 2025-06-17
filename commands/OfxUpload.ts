@@ -1,4 +1,4 @@
-import Drive from '@ioc:Adonis/Core/Drive';
+import Drive from '@adonisjs/drive/services/main';
 import db from '@adonisjs/lucid/services/db';
 import User from '#app/Models/User';
 import Account from '#app/Models/Account';

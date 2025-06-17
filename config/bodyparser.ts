@@ -5,7 +5,6 @@
  * file.
  */
 
-import { BodyParserConfig } from '@adonisjs/core/bodyparser'
 import { defineConfig } from "@adonisjs/core/bodyparser";
 
 const bodyParserConfig = defineConfig({
@@ -18,7 +17,7 @@ const bodyParserConfig = defineConfig({
   | to avoid body parsing for `GET` requests.
   |
   */
-  whitelistedMethods: ['POST', 'PUT', 'PATCH', 'DELETE'],
+  allowedMethods: ['POST', 'PUT', 'PATCH', 'DELETE'],
 
   /*
   |--------------------------------------------------------------------------
@@ -39,6 +38,7 @@ const bodyParserConfig = defineConfig({
       'application/vnd.api+json',
       'application/csp-report',
     ],
+    convertEmptyStringsToNull: false,
   },
 
   /*
@@ -73,7 +73,6 @@ const bodyParserConfig = defineConfig({
   raw: {
     encoding: 'utf-8',
     limit: '1mb',
-    queryString: {},
     types: [
       'text/*',
     ],

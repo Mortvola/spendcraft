@@ -1,5 +1,3 @@
-// import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
-
 import { HttpContext } from '@adonisjs/core/http';
 import db from '@adonisjs/lucid/services/db';
 import Category from '#app/Models/Category';

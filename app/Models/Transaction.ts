@@ -8,9 +8,7 @@ import AccountTransaction from '#app/Models/AccountTransaction';
 import { TransactionType } from '#common/ResponseTypes';
 import Budget from '#app/Models/Budget';
 import TransactionLog from './TransactionLog.js';
-import { HasMany } from "@adonisjs/lucid/types/relations";
-import { BelongsTo } from "@adonisjs/lucid/types/relations";
-import { HasOne } from "@adonisjs/lucid/types/relations";
+import type { HasMany, BelongsTo, HasOne } from "@adonisjs/lucid/types/relations";
 
 export type TransCategory = {
   categoryId: number,

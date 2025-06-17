@@ -1,4 +1,3 @@
-import plaidClient from '@ioc:Plaid';
 import Institution from '#app/Models/Institution';
 import * as Plaid from 'plaid';
 import { BaseCommand } from "@adonisjs/core/ace";
@@ -30,6 +29,8 @@ export default class PlaidGetAccount extends BaseCommand {
     let account: Plaid.AccountsGetResponse | null = null;
 
     const institution = await Institution.findByOrFail('accessToken', this.accessToken)
+
+    const plaidClient = await this.app.container.make('plaid')
 
     if (this.accountIds[0] === 'all') {
       account = await plaidClient.getAccounts(institution);

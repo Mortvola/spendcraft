@@ -3,7 +3,7 @@ import {
   BaseModel, column, hasMany,
 } from '@adonisjs/lucid/orm'
 import AutoAssignmentCategory from './AutoAssignmentCategory.js'
-import { HasMany } from "@adonisjs/lucid/types/relations";
+import type { HasMany } from "@adonisjs/lucid/types/relations";
 
 export default class AutoAssignment extends BaseModel {
   @column({ isPrimary: true })

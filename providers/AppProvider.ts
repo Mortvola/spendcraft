@@ -10,14 +10,18 @@ export default class AppProvider {
 
   public register () {
     // Register the plaid binding.
-    this.app.container.singleton('Plaid', () => {
+    this.app.container.singleton(Plaid, () => {
       return new Plaid(this.app.config.get('plaid', {}))
     });
 
+    this.app.container.alias('plaid', Plaid)
+
     // Register the Apple Push Notifications binding.
-    this.app.container.singleton('ApplePushNotifications', () => {
+    this.app.container.singleton(ApplePushNotifications, () => {
       return new ApplePushNotifications();
     })
+
+    this.app.container.alias('apn', ApplePushNotifications)
   }
 
   public async boot () {

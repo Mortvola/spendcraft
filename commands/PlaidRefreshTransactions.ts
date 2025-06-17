@@ -1,4 +1,3 @@
-import plaidClient from '@ioc:Plaid';
 import Institution from '#app/Models/Institution'
 import env from '#start/env'
 import { BaseCommand } from "@adonisjs/core/ace";
@@ -34,6 +33,8 @@ export default class PlaidRefreshTransactions extends BaseCommand {
       }
 
       if (institution.accessToken.match(environmentRegEx)) {
+        const plaidClient = await this.app.container.make('plaid')
+
         await plaidClient.refreshTransactions(
           institution,
         );

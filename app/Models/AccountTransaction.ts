@@ -4,7 +4,7 @@ import {
 } from '@adonisjs/lucid/orm';
 import Account from '#app/Models/Account';
 import Transaction from '#app/Models/Transaction';
-import { BelongsTo } from "@adonisjs/lucid/types/relations";
+import type { BelongsTo } from "@adonisjs/lucid/types/relations";
 
 type Location = {
   address: string | null,

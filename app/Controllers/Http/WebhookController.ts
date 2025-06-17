@@ -3,7 +3,6 @@ import compare from 'secure-compare';
 import { sha256 } from 'js-sha256';
 import { decodeProtectedHeader, importJWK, jwtVerify } from 'jose';
 import { DateTime } from 'luxon';
-import plaidClient from '@ioc:Plaid';
 import * as Plaid from 'plaid';
 import { HttpContext } from '@adonisjs/core/http';
 import { RequestContract } from '@ioc:Adonis/Core/Request';
@@ -11,12 +10,13 @@ import db from '@adonisjs/lucid/services/db';
 import Institution from '#app/Models/Institution';
 import mail from '@adonisjs/mail/services/main';
 import env from '#start/env';
-import { Exception } from '@poppinss/utils';
+import { Exception } from '@adonisjs/core/exceptions';
 import logger from '@adonisjs/core/services/logger';
 import { PlaidWebHookProps, QueueNamesEnum } from '#contracts/QueueInterfaces';
 import BullMQ from '@ioc:Adonis/Addons/BullMQ'
 import WebhookLog from '#app/Models/WebhookLog';
 import redis from '@adonisjs/redis/services/main';
+import app from '@adonisjs/core/services/app';
 
 const redisKey = 'key-cache';
 
@@ -335,6 +335,7 @@ class WebhookController {
       // Fetch the latest key from the verication server for
       // all kids that need to be updated.
       await Promise.all(keyIDsToUpdate.map(async (kid) => {
+        const plaidClient = await app.container.make('plaid')
         const { key } = await plaidClient.getWebhookVerificationKey(kid);
 
         index = keyCache.findIndex((entry) => entry.kid === kid)

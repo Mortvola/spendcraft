@@ -19,13 +19,13 @@
         "./common/*"
       ],
       "#controllers/*": [
-        "./app/controllers/*.js"
+        "./app/Controllers/Http/*.js"
       ],
       "#exceptions/*": [
-        "./app/exceptions/*.js"
+        "./app/Exceptions/*.js"
       ],
       "#models/*": [
-        "./app/models/*.js"
+        "./app/Models/*.js"
       ],
       "#services/*": [
         "./app/services/*.js"
@@ -37,10 +37,10 @@
         "./app/events/*.js"
       ],
       "#middleware/*": [
-        "./app/middleware/*.js"
+        "./app/Middleware/*.js"
       ],
       "#validators/*": [
-        "./app/validators/*.js"
+        "./app/Validators/*.js"
       ],
       "#start/*": [
         "./start/*.js"
@@ -59,6 +59,9 @@
       ],
       "#common/*": [
         "./common/*.js"
+      ],
+      "#providers/*": [
+        "./providers/*.js"
       ]
     },
     "types": [

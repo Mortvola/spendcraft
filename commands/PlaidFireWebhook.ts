@@ -1,4 +1,3 @@
-import plaidClient from '@ioc:Plaid';
 import env from '#start/env'
 import Institution from '#app/Models/Institution';
 import { SandboxItemFireWebhookRequestWebhookCodeEnum } from 'plaid';
@@ -37,6 +36,7 @@ export default class PlaidFireWebhook extends BaseCommand {
       console.log(institution.accessToken);
 
       if (institution.accessToken.match(environmentRegEx)) {
+        const plaidClient = await this.app.container.make('plaid')
         await plaidClient.sandboxItemFireWebhook(
           institution,
           SandboxItemFireWebhookRequestWebhookCodeEnum.SyncUpdatesAvailable,

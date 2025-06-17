@@ -1,6 +1,6 @@
 import Budget from '#app/Models/Budget';
-import pushSubscriptions from '@ioc:ApplePushNotifications';
 import { BaseCommand } from "@adonisjs/core/ace";
+import app from '@adonisjs/core/services/app';
 import { CommandOptions } from "@adonisjs/core/types/ace";
 
 export default class ApnPush extends BaseCommand {
@@ -22,6 +22,7 @@ export default class ApnPush extends BaseCommand {
     const budgets = await Budget.all();
 
     await Promise.all(budgets.map(async (budget) => {
+      const pushSubscriptions = await app.container.make('apn');
       await pushSubscriptions.sendPushNotifications(budget);
     }));
   }

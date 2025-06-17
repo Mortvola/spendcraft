@@ -1,6 +1,5 @@
 import Institution from '#app/Models/Institution'
 import env from '#start/env'
-import plaidClient from '@ioc:Plaid';
 import { BaseCommand } from "@adonisjs/core/ace";
 import { CommandOptions } from "@adonisjs/core/types/ace";
 
@@ -31,6 +30,7 @@ export default class CheckWebhooks extends BaseCommand {
         if (institution.accessToken.match(this.environmentRegEx)) {
           this.logger.info(`checking webhook for ${institution.plaidItemId}`);
           try {
+            const plaidClient = await this.app.container.make('plaid')
             const { item } = await plaidClient.getItem(institution);
 
             if (item.webhook !== hook) {

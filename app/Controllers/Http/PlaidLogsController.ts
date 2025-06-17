@@ -1,5 +1,3 @@
-// import type { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
-
 import PlaidLog from '#app/Models/PlaidLog';
 
 export default class PlaidLogsController {

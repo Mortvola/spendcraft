@@ -17,8 +17,8 @@ export default class CheckUnassigned extends BaseCommand {
         };
   // eslint-disable-next-line class-methods-use-this
   private async checkUnassigned() {
-    const { default: Database } = await import('@ioc:Adonis/Lucid/Database');
-    const { default: Budget } = await import('App/Models/Budget');
+    const { default: Database } = await import('@adonisjs/lucid/services/db');
+    const { default: Budget } = await import('#models/Budget');
 
     const trx = await Database.transaction();
 

@@ -18,10 +18,11 @@
 |
 */
 
-import HealthCheck from '@ioc:Adonis/Core/HealthCheck';
+// import HealthCheck from '@ioc:Adonis/Core/HealthCheck';
 import router from '@adonisjs/core/services/router'
 import env from '#start/env';
-import Drive from '@ioc:Adonis/Core/Drive'
+// import Drive from '@ioc:Adonis/Core/Drive'
+import { middleware } from '#start/kernel'
 
 router.get('/home', 'HomeController.index');
 router.get('/home/:categoryId', 'HomeController.index');
@@ -46,37 +47,37 @@ router.post('/redirect', () => {
 });
 
 // Look for a gzipped file in the public directory
-router.get('/:file', async ({ request, response, logger }) => {
-  if (request.encoding(['gzip'])) {
-    try {
-      const filename = request.param('file');
+// router.get('/:file', async ({ request, response, logger }) => {
+//   if (request.encoding(['gzip'])) {
+//     try {
+//       const filename = request.param('file');
 
-      const contents = await Drive.get(`public/${filename}.gz`)
+//       const contents = await Drive.get(`public/${filename}.gz`)
 
-      response.header('Content-Encoding', 'gzip');
+//       response.header('Content-Encoding', 'gzip');
 
-      if (/.*.js$/.test(filename) || /.*js.map$/.test(filename)) {
-        response.header('Content-Type', 'application/javascript');
-      }
-      else if (/.*.css$/.test(filename)) {
-        response.header('Content-Type', 'text/css');
-      }
+//       if (/.*.js$/.test(filename) || /.*js.map$/.test(filename)) {
+//         response.header('Content-Type', 'application/javascript');
+//       }
+//       else if (/.*.css$/.test(filename)) {
+//         response.header('Content-Type', 'text/css');
+//       }
       
-      return response.ok(contents);
-    }
-    catch (error) {
-      logger.error(error);
-    }
-  }
+//       return response.ok(contents);
+//     }
+//     catch (error) {
+//       logger.error(error);
+//     }
+//   }
 
-  return response.notFound();
-})
-.where('file', /.*.(js|css|map)$/)
+//   return response.notFound();
+// })
+// .where('file', /.*.(js|css|map)$/)
 
-router.get('/health', async ({ response }) => {
-  const report = await HealthCheck.getReport();
-  return response.ok(report);
-});
+// router.get('/health', async ({ response }) => {
+//   const report = await HealthCheck.getReport();
+//   return response.ok(report);
+// });
 
 router.get('/vapidPublicKey', async ({ response }) => {
   return response.ok(env.get('VAPID_PUBLIC_KEY'));
@@ -236,9 +237,9 @@ router.group(() => {
         router.get('/plaid-logs', 'PlaidLogsController.get')
       })
         .prefix('/admin')
-        .middleware('admin');
+        .use(middleware.admin());
     })
-      .middleware('auth');
+      .use(middleware.auth());
   })
   .prefix('/v1')
 })

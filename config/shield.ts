@@ -1,5 +1,4 @@
 
-import env from '#start/env'
 import { defineConfig } from '@adonisjs/shield'
 
 export default defineConfig({

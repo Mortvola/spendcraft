@@ -1,9 +1,8 @@
-import BullMQ from '@ioc:Adonis/Addons/BullMQ'
-import applePushNotifications from '@ioc:ApplePushNotifications';
-import Institution from '#app/Models/Institution';
-import Budget from '#app/Models/Budget';
-import { PlaidWebHookProps, QueueNamesEnum } from '#contracts/QueueInterfaces'
-import db from '@adonisjs/lucid/services/db';
+// import BullMQ from '@ioc:Adonis/Addons/BullMQ'
+// import Institution from '#app/Models/Institution';
+// import Budget from '#app/Models/Budget';
+// import { PlaidWebHookProps, QueueNamesEnum } from '#contracts/QueueInterfaces'
+// import db from '@adonisjs/lucid/services/db';
 import logger from '@adonisjs/core/services/logger';
 import { BaseCommand } from "@adonisjs/core/ace";
 import { CommandOptions } from "@adonisjs/core/types/ace";
@@ -31,30 +30,31 @@ export default class QueueListener extends BaseCommand {
   // eslint-disable-next-line class-methods-use-this
   public async run() {
     logger.info('Starting queue listener...')
-    BullMQ.worker<PlaidWebHookProps, PlaidWebHookProps>(QueueNamesEnum.PlaidWebHook, async (job) => {
-      logger.info(`Syncing item ${job.data.itemId}`)
+    // BullMQ.worker<PlaidWebHookProps, PlaidWebHookProps>(QueueNamesEnum.PlaidWebHook, async (job) => {
+    //   logger.info(`Syncing item ${job.data.itemId}`)
 
-      const trx = await db.transaction();
+    //   const trx = await db.transaction();
 
-      try {
-        const institution = await Institution.findByOrFail('plaidItemId', job.data.itemId, { client: trx });
+    //   try {
+    //     const institution = await Institution.findByOrFail('plaidItemId', job.data.itemId, { client: trx });
 
-        await institution.syncUpdate()
+    //     await institution.syncUpdate()
 
-        await trx.commit();
+    //     await trx.commit();
 
-        const budget = await Budget.findOrFail(institution.budgetId);
+    //     const budget = await Budget.findOrFail(institution.budgetId);
 
-        await applePushNotifications.sendPushNotifications(budget);
-      }
-      catch (error) {
-        logger.error({ err: error }, `sync update failed, item id: ${job.data.itemId}`);
+    //     const applePushNotifications = await this.app.container.make('apn')
+    //     await applePushNotifications.sendPushNotifications(budget);
+    //   }
+    //   catch (error) {
+    //     logger.error({ err: error }, `sync update failed, item id: ${job.data.itemId}`);
 
-        await trx.rollback();
-      }
+    //     await trx.rollback();
+    //   }
 
-      return job.data
-    })
+    //   return job.data
+    // })
 
     logger.info('queue listener started.')
   }

@@ -1,4 +1,3 @@
-import plaidClient from '@ioc:Plaid';
 import env from '#start/env'
 import Institution from '#app/Models/Institution';
 import { BaseCommand } from "@adonisjs/core/ace";
@@ -31,6 +30,8 @@ export default class PlaidGetItem extends BaseCommand {
         const institution = await Institution.findBy('accessToken', this.accessToken);
 
         this.logger.info(`Removing item for ${institution?.name ?? 'unknown'}`);
+
+        const plaidClient = await this.app.container.make('plaid')
 
         const item = await plaidClient.removeItem(this.accessToken, institution?.institutionId);
         this.logger.info(JSON.stringify(item, null, 2));

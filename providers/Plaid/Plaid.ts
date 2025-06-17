@@ -389,7 +389,7 @@ class PlaidWrapper {
   }
 
   static async log(request: string, response: unknown, status: number, institutionId?: string) {
-    const { default: PlaidLog } = await import('App/Models/PlaidLog')
+    const { default: PlaidLog } = await import('#models/PlaidLog')
 
     await new PlaidLog()
       .useConnection('pgLog')
@@ -400,6 +400,12 @@ class PlaidWrapper {
         institutionId,
       })
       .save();
+  }
+}
+
+declare module '@adonisjs/core/types' {
+  interface ContainerBindings {
+    plaid: PlaidWrapper
   }
 }
 

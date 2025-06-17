@@ -21,7 +21,7 @@ export default class PlaidSearchInstitutions extends BaseCommand {
         };
 
   public async run() {
-    const { default: plaidClient } = await import('@ioc:Plaid');
+    const plaidClient = await this.app.container.make('plaid')
 
     const response = await plaidClient.searchInstitutions(this.query);
 

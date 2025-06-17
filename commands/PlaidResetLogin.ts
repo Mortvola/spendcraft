@@ -1,4 +1,3 @@
-import plaidClient from '@ioc:Plaid';
 import Institution from '#app/Models/Institution';
 import { BaseCommand } from "@adonisjs/core/ace";
 import { args } from "@adonisjs/core/ace";
@@ -24,6 +23,8 @@ export default class PlaidResetLogin extends BaseCommand {
 
   public async run (): Promise<void> {
     const institution = await Institution.findByOrFail('accessToken', this.accessToken);
+
+    const plaidClient = await this.app.container.make('plaid')
 
     await plaidClient.resetLogin(institution);
   }

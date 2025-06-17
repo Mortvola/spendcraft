@@ -1,5 +1,5 @@
 import env from '#start/env'
-import { PlaidConfig } from '@ioc:Plaid';
+import type { PlaidConfig } from '#providers/Plaid/Plaid'
 
 const plaidConfig: PlaidConfig = {
     clientId: env.get('PLAID_CLIENT_ID', ''),

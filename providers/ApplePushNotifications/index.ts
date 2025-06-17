@@ -174,4 +174,10 @@ class ApplePushNotifications {
   }
 }
 
+declare module '@adonisjs/core/types' {
+  interface ContainerBindings {
+    apn: ApplePushNotifications
+  }
+}
+
 export default ApplePushNotifications;

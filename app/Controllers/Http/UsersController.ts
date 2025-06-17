@@ -1,12 +1,12 @@
 import { HttpContext } from '@adonisjs/core/http';
-import plaidClient from '@ioc:Plaid';
 import { ApiResponse, InstitutionProps } from '#common/ResponseTypes';
 import env from '#start/env'
 import { rules, schema } from '@adonisjs/validator';
 import User from '#app/Models/User';
 import * as Plaid from 'plaid';
 import db from '@adonisjs/lucid/services/db';
-import { Exception } from '@poppinss/utils';
+import { Exception } from '@adonisjs/core/exceptions';
+import app from '@adonisjs/core/services/app';
 
 export default class UsersController {
   // eslint-disable-next-line class-methods-use-this
@@ -111,6 +111,7 @@ export default class UsersController {
     const appName = env.get('APP_NAME');
     const redirect = env.get('PLAID_OAUTH_REDIRECT');
 
+    const plaidClient = await app.container.make('plaid')
     const linkTokenResponse = await plaidClient.createLinkToken({
       user: {
         client_user_id: user.id.toString(),
@@ -253,6 +254,7 @@ export default class UsersController {
           // Remove plaid items
           await Promise.all(institutions.map(async (institution) => {
             if (institution.accessToken) {
+              const plaidClient = await app.container.make('plaid')
               await plaidClient.removeItem(institution.accessToken, institution.institutionId);
             }
           }));

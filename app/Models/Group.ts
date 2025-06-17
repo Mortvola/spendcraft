@@ -4,8 +4,7 @@ import {
 } from '@adonisjs/lucid/orm';
 import Category from '#app/Models/Category';
 import Budget from '#app/Models/Budget';
-import { BelongsTo } from "@adonisjs/lucid/types/relations";
-import { HasMany } from "@adonisjs/lucid/types/relations";
+import type { BelongsTo, HasMany } from "@adonisjs/lucid/types/relations";
 
 class Group extends BaseModel {
   @column()

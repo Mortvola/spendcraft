@@ -4,7 +4,7 @@ import {
   hasMany,
 } from '@adonisjs/lucid/orm'
 import AccountTransaction from './AccountTransaction.js'
-import { HasMany } from "@adonisjs/lucid/types/relations";
+import type { HasMany } from "@adonisjs/lucid/types/relations";
 
 export default class Statement extends BaseModel {
   @column({ isPrimary: true })

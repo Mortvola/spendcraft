@@ -6,8 +6,7 @@ import { DateTime } from 'luxon';
 import Category from '#app/Models/Category';
 import LoanTransaction from '#app/Models/LoanTransaction';
 import { LoanTransactionsProps } from '#common/ResponseTypes';
-import { BelongsTo } from "@adonisjs/lucid/types/relations";
-import { HasMany } from "@adonisjs/lucid/types/relations";
+import type { BelongsTo, HasMany } from "@adonisjs/lucid/types/relations";
 
 export default class Loan extends BaseModel {
   @column({ isPrimary: true })

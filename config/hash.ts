@@ -18,7 +18,7 @@ import { drivers } from "@adonisjs/core/hash";
 | defined inside `contracts` directory.
 |
 */
-export default defineConfig({
+const hashConfig = defineConfig({
   /*
   |--------------------------------------------------------------------------
   | Default hasher
@@ -71,6 +71,7 @@ export default defineConfig({
   },
 })
 
+export default hashConfig
 
 declare module '@adonisjs/core/types' {
   export interface HashersList extends InferHashers<typeof hashConfig> { }

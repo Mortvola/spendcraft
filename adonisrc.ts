@@ -10,7 +10,11 @@ export default defineConfig({
   | will be scanned automatically from the "./commands" directory.
   |
   */
-  commands: [() => import('@adonisjs/core/commands'), () => import('@adonisjs/lucid/commands'), () => import('@adonisjs/mail/commands')],
+  commands: [
+    () => import('@adonisjs/core/commands'),
+    () => import('@adonisjs/lucid/commands'),
+    () => import('@adonisjs/mail/commands'),
+  ],
   /*
   |--------------------------------------------------------------------------
   | Preloads
@@ -23,15 +27,15 @@ export default defineConfig({
     () => import('./start/routes.js'),
     () => import('./start/kernel.js'),
     {
-      file: () => import('./start/validationRules'),
+      file: () => import('./start/validationRules.js'),
       environment: ["web"],
     },
     {
-      file: () => import('./start/namingStrategy'),
+      file: () => import('./start/namingStrategy.js'),
       environment: ["web"],
     },
     {
-      file: () => import('./start/events'),
+      file: () => import('./start/events.js'),
       environment: ["web"],
     }
   ],
@@ -55,9 +59,10 @@ export default defineConfig({
     () => import('@adonisjs/auth/auth_provider'),
     () => import('@adonisjs/shield/shield_provider'),
     () => import('@adonisjs/mail/mail_provider'),
+    () => import('@adonisjs/drive/drive_provider'),
     () => import('@adonisjs/redis/redis_provider'),
-    () => import('adonis5-jwt'),
-    () => import('adonis5-bullmq')
+    // () => import('adonis5-jwt'),
+    // () => import('adonis5-bullmq')
   ],
   metaFiles: [
     {

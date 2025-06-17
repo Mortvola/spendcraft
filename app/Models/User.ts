@@ -1,9 +1,10 @@
 /* eslint-disable import/no-cycle */
 import { DateTime } from 'luxon';
 import hash from '@adonisjs/core/services/hash'
+import { compose } from '@adonisjs/core/helpers'
 import {
   column,
-  beforeSave,
+  // beforeSave,
   BaseModel,
   belongsTo,
   hasMany
@@ -12,20 +13,25 @@ import { InstitutionProps } from '#common/ResponseTypes';
 import { sha256 } from 'js-sha256';
 import * as jwt from 'jsonwebtoken';
 import env from '#start/env';
-import mail from '@adonisjs/mail/services/main';
-import { Exception } from '@poppinss/utils';
+// import mail from '@adonisjs/mail/services/main';
 import Budget from '#app/Models/Budget';
 import ApnsToken from './ApnsToken.js';
 import PushSubscription from './PushSubscription.js';
-import { BelongsTo } from "@adonisjs/lucid/types/relations";
-import { HasMany } from "@adonisjs/lucid/types/relations";
+import type { BelongsTo, HasMany } from "@adonisjs/lucid/types/relations";
+import { DbAccessTokensProvider } from '@adonisjs/auth/access_tokens';
+import { withAuthFinder } from '@adonisjs/auth/mixins/lucid';
 
 type PassCode = {
   code: string,
   expires: DateTime,
 }
 
-export default class User extends BaseModel {
+const AuthFinder = withAuthFinder(() => hash.use('bcrypt'), {
+  uids: ['username'],
+  passwordColumnName: 'password',
+})
+
+export default class User extends compose(BaseModel, AuthFinder) {
   @column({ isPrimary: true, serializeAs: null })
   public id: number
 
@@ -72,12 +78,12 @@ export default class User extends BaseModel {
   @column.dateTime({ autoCreate: true, autoUpdate: true, serializeAs: null })
   public updatedAt: DateTime
 
-  @beforeSave()
-  public static async hashPassword(user: User): Promise<void> {
-    if (user.$dirty.password) {
-      user.password = await hash.make(user.password);
-    }
-  }
+  // @beforeSave()
+  // public static async hashPassword(user: User): Promise<void> {
+  //   if (user.$dirty.password) {
+  //     user.password = await hash.make(user.password);
+  //   }
+  // }
 
   @belongsTo(() => Budget)
   public budget: BelongsTo<typeof Budget>;
@@ -141,20 +147,22 @@ export default class User extends BaseModel {
   }
 
   public sendEmailAddressVerification(): void {
-    mail.send((message) => {
-      if (this.pendingEmail === null) {
-        throw new Exception('user\'s pending email is null');
-      }
+    // mail.send((message) => {
+    //   if (this.pendingEmail === null) {
+    //     throw new Exception('user\'s pending email is null');
+    //   }
 
-      message
-        .from(env.get('MAIL_FROM_ADDRESS') as string, env.get('MAIL_FROM_NAME') as string)
-        .to(this.pendingEmail)
-        .subject('Please verify your email address.')
-        .htmlView('emails/verify-email', {
-          name: this.username,
-          url: this.getEmailVerificationLink(),
-          expires: env.get('TOKEN_EXPIRATION'),
-        });
-    });
+    //   message
+    //     .from(env.get('MAIL_FROM_ADDRESS') as string, env.get('MAIL_FROM_NAME') as string)
+    //     .to(this.pendingEmail)
+    //     .subject('Please verify your email address.')
+    //     .htmlView('emails/verify-email', {
+    //       name: this.username,
+    //       url: this.getEmailVerificationLink(),
+    //       expires: env.get('TOKEN_EXPIRATION'),
+    //     });
+    // });
   }
+
+  static accessTokens = DbAccessTokensProvider.forModel(User)
 }

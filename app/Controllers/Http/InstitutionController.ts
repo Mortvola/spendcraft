@@ -1,7 +1,6 @@
 /* eslint-disable no-await-in-loop */
 import { HttpContext } from '@adonisjs/core/http';
 import db from '@adonisjs/lucid/services/db';
-import plaidClient from '@ioc:Plaid';
 import Institution from '#app/Models/Institution';
 import Account, { AccountSyncResult } from '#app/Models/Account';
 import Category from '#app/Models/Category';
@@ -15,10 +14,12 @@ import AccountTransaction from '#app/Models/AccountTransaction';
 import { DateTime } from 'luxon';
 import BalanceHistory from '#app/Models/BalanceHistory';
 import Budget from '#app/Models/Budget';
-import { Exception } from '@poppinss/utils';
+import { Exception } from '@adonisjs/core/exceptions';
 import * as Plaid from 'plaid';
 import env from '#start/env'
-import { TransactionClientContract } from "@adonisjs/lucid/database";
+import app from '@adonisjs/core/services/app';
+
+const plaidClient = app.container.make('plaid')
 
 type AddAccountsResponse = {
   accounts: AccountProps[],
@@ -808,19 +809,18 @@ class InstitutionController {
   private static async deleteAccounts(
     accounts: Account[],
     budget: Budget,
-    trx: TransactionClientContract,
   ): Promise<CategoryBalanceProps[]> {
     const categoryBalances: CategoryBalanceProps[] = [];
 
     // eslint-disable-next-line no-restricted-syntax
     for (const acct of accounts) {
       // eslint-disable-next-line no-await-in-loop
-      const acctTrans = await AccountTransaction.query({ client: trx }).where('accountId', acct.id);
+      const acctTrans = await AccountTransaction.query({ client: budget.$trx }).where('accountId', acct.id);
 
       // eslint-disable-next-line no-restricted-syntax
       for (const acctTran of acctTrans) {
         // eslint-disable-next-line no-await-in-loop
-        const transaction = await Transaction.find(acctTran.transactionId, { client: trx });
+        const transaction = await Transaction.find(acctTran.transactionId, { client: budget.$trx });
 
         if (transaction) {
           const transCats = transaction.categories;
@@ -828,7 +828,7 @@ class InstitutionController {
           if (transCats.length === 0) {
             if (acct.tracking === 'Transactions') {
               // eslint-disable-next-line no-await-in-loop
-              const unassignedCat = await budget.getUnassignedCategory({ client: trx });
+              const unassignedCat = await budget.getUnassignedCategory({ client: budget.$trx });
 
               unassignedCat.balance -= acctTran.amount;
 
@@ -848,7 +848,7 @@ class InstitutionController {
             // eslint-disable-next-line no-restricted-syntax
             for (const tc of transCats) {
               // eslint-disable-next-line no-await-in-loop
-              const category = await Category.find(tc.categoryId, { client: trx });
+              const category = await Category.find(tc.categoryId, { client: budget.$trx });
 
               if (category) {
                 category.balance -= tc.amount;
@@ -880,7 +880,7 @@ class InstitutionController {
       }
 
       // eslint-disable-next-line no-await-in-loop
-      const balanceHistories = await BalanceHistory.query({ client: trx }).where('accountId', acct.id);
+      const balanceHistories = await BalanceHistory.query({ client: budget.$trx }).where('accountId', acct.id);
 
       // eslint-disable-next-line no-await-in-loop
       await Promise.all(balanceHistories.map((balanceHistory) => balanceHistory.delete()));
@@ -905,6 +905,8 @@ class InstitutionController {
     const trx = await db.transaction();
 
     try {
+      budget.useTransaction(trx)
+  
       const institution = await Institution.findOrFail(request.params().instId, { client: trx });
 
       const accounts = await institution.related('accounts').query();
@@ -914,7 +916,7 @@ class InstitutionController {
       }
 
       // eslint-disable-next-line no-restricted-syntax
-      const result = await InstitutionController.deleteAccounts(accounts, budget, trx);
+      const result = await InstitutionController.deleteAccounts(accounts, budget);
 
       await institution.delete();
 

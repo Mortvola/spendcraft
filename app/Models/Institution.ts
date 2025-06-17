@@ -4,14 +4,13 @@ import {
   column,
   belongsTo
 } from '@adonisjs/lucid/orm';
-import plaidClient from '@ioc:Plaid';
 import * as Plaid from 'plaid';
 import Account from '#app/Models/Account';
 import logger from '@adonisjs/core/services/logger'
 import Budget from '#app/Models/Budget';
 import { DateTime } from 'luxon';
-import { HasMany } from "@adonisjs/lucid/types/relations";
-import { BelongsTo } from "@adonisjs/lucid/types/relations";
+import type { BelongsTo, HasMany } from "@adonisjs/lucid/types/relations";
+import app from '@adonisjs/core/services/app';
 
 class Institution extends BaseModel {
   @column()
@@ -47,6 +46,7 @@ class Institution extends BaseModel {
   public budget: BelongsTo<typeof Budget>;
 
   public async getPlaidInstition(this: Institution): Promise<Plaid.Institution> {
+    const plaidClient = await app.container.make('plaid')
     const response = await plaidClient.getInstitutionById(
       this.institutionId, [Plaid.CountryCode.Us], {
         include_optional_metadata: true,
@@ -212,6 +212,7 @@ class Institution extends BaseModel {
       let more = true;
       while (more) {
         // eslint-disable-next-line no-await-in-loop
+        const plaidClient = await app.container.make('plaid')
         const response = await plaidClient.syncTransactions(this, nextCursor);
 
         // If the cursor has change then we received transaction changes.

@@ -6,7 +6,6 @@
  */
 
 import env from '#start/env'
-import { DatabaseConfig } from "@adonisjs/lucid/database";
 import { defineConfig } from "@adonisjs/lucid";
 
 const databaseConfig = defineConfig({
@@ -20,7 +19,7 @@ const databaseConfig = defineConfig({
   | file.
   |
   */
-  connection: env.get('DB_CONNECTION'),
+  connection: env.get('DB_CONNECTION')!,
 
   connections: {
     /*
@@ -43,7 +42,7 @@ const databaseConfig = defineConfig({
         password: env.get('PG_PASSWORD', ''),
         database: env.get('PG_DB_NAME'),
       },
-      healthCheck: true,
+      // healthCheck: true,
       debug: false,
     },
 
@@ -56,7 +55,7 @@ const databaseConfig = defineConfig({
         password: env.get('PG_PASSWORD', ''),
         database: env.get('PG_DB_NAME'),
       },
-      healthCheck: false,
+      // healthCheck: false,
       debug: false,
     },
   },

@@ -7,10 +7,6 @@
 
 import proxyAddr from 'proxy-addr'
 import env from '#start/env'
-import { ProfilerConfig } from '@ioc:Adonis/Core/Profiler'
-import { ServerConfig } from "@adonisjs/core/services/server";
-import { LoggerConfig } from "@adonisjs/core/types/logger";
-import { ValidatorConfig } from "@adonisjs/validator/types";
 import { defineConfig } from "@adonisjs/core/http";
 
 /*
@@ -132,96 +128,42 @@ export const http = defineConfig({
 
 /*
 |--------------------------------------------------------------------------
-| Logger
-|--------------------------------------------------------------------------
-*/
-export const logger: LoggerConfig = {
-  /*
-  |--------------------------------------------------------------------------
-  | Application name
-  |--------------------------------------------------------------------------
-  |
-  | The name of the application you want to add to the log. It is recommended
-  | to always have app name in every log line.
-  |
-  | The `APP_NAME` environment variable is automatically set by AdonisJS by
-  | reading the `name` property from the `package.json` file.
-  |
-  */
-  name: env.get('APP_NAME'),
-
-  /*
-  |--------------------------------------------------------------------------
-  | Toggle logger
-  |--------------------------------------------------------------------------
-  |
-  | Enable or disable logger application wide
-  |
-  */
-  enabled: true,
-
-  /*
-  |--------------------------------------------------------------------------
-  | Logging level
-  |--------------------------------------------------------------------------
-  |
-  | The level from which you want the logger to flush logs. It is recommended
-  | to make use of the environment variable, so that you can define log levels
-  | at deployment level and not code level.
-  |
-  */
-  level: env.get('LOG_LEVEL', 'info'),
-
-  /*
-  |--------------------------------------------------------------------------
-  | Pretty print
-  |--------------------------------------------------------------------------
-  |
-  | It is highly advised NOT to use `prettyPrint` in production, since it
-  | can have huge impact on performance.
-  |
-  */
-  prettyPrint: env.get('NODE_ENV') === 'development',
-}
-
-/*
-|--------------------------------------------------------------------------
 | Profiler
 |--------------------------------------------------------------------------
 */
-export const profiler: ProfilerConfig = {
-  /*
-  |--------------------------------------------------------------------------
-  | Toggle profiler
-  |--------------------------------------------------------------------------
-  |
-  | Enable or disable profiler
-  |
-  */
-  enabled: true,
+// export const profiler: ProfilerConfig = {
+//   /*
+//   |--------------------------------------------------------------------------
+//   | Toggle profiler
+//   |--------------------------------------------------------------------------
+//   |
+//   | Enable or disable profiler
+//   |
+//   */
+//   enabled: true,
 
-  /*
-  |--------------------------------------------------------------------------
-  | Blacklist actions/row labels
-  |--------------------------------------------------------------------------
-  |
-  | Define an array of actions or row labels that you want to disable from
-  | getting profiled.
-  |
-  */
-  blacklist: [],
+//   /*
+//   |--------------------------------------------------------------------------
+//   | Blacklist actions/row labels
+//   |--------------------------------------------------------------------------
+//   |
+//   | Define an array of actions or row labels that you want to disable from
+//   | getting profiled.
+//   |
+//   */
+//   blacklist: [],
 
-  /*
-  |--------------------------------------------------------------------------
-  | Whitelist actions/row labels
-  |--------------------------------------------------------------------------
-  |
-  | Define an array of actions or row labels that you want to whitelist for
-  | the profiler. When whitelist is defined, then `blacklist` is ignored.
-  |
-  */
-  whitelist: [],
-}
+//   /*
+//   |--------------------------------------------------------------------------
+//   | Whitelist actions/row labels
+//   |--------------------------------------------------------------------------
+//   |
+//   | Define an array of actions or row labels that you want to whitelist for
+//   | the profiler. When whitelist is defined, then `blacklist` is ignored.
+//   |
+//   */
+//   whitelist: [],
+// }
 
 /*
 |--------------------------------------------------------------------------
@@ -232,5 +174,5 @@ export const profiler: ProfilerConfig = {
 | to the default config https://git.io/JT0WE
 |
 */
-export const validator: ValidatorConfig = {
-}
+// export const validator: ValidatorConfig = {
+// }

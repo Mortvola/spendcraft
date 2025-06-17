@@ -1,4 +1,3 @@
-// import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import { HttpContext } from '@adonisjs/core/http';
 import { schema, rules } from '@adonisjs/validator';
 import db from '@adonisjs/lucid/services/db';

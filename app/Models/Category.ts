@@ -7,7 +7,7 @@ import Group from '#app/Models/Group';
 import { CategoryType, TransactionType } from '#common/ResponseTypes';
 import Budget from '#app/Models/Budget';
 import { DateTime } from 'luxon';
-import { BelongsTo } from "@adonisjs/lucid/types/relations";
+import type { BelongsTo } from "@adonisjs/lucid/types/relations";
 
 type CategoryItem = {
   id: number,
@@ -221,4 +221,4 @@ export default class Category extends BaseModel {
   }
 }
 
-export { GroupItem, CategoryItem };
+export type { GroupItem, CategoryItem };

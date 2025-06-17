@@ -1,14 +1,22 @@
-import { driveConfig } from '@adonisjs/core/build/config'
 import env from '#start/env'
+import app from '@adonisjs/core/services/app'
+import { defineConfig, services } from '@adonisjs/drive'
 
-export default driveConfig({
-  disk: env.get('DRIVE_DISK'),
+const driveConfig = defineConfig({
+  default: env.get('DRIVE_DISK'),
 
-  disks: {
-    local: {
-      driver: 'local',
+  services: {
+    fs: services.fs({
+      location: app.makePath('storage'),
+      serveFiles: true,
+      routeBasePath: '/uploads',
       visibility: 'public',
-      root: './',
-    },
+    }),
   },
 })
+
+export default driveConfig
+
+declare module '@adonisjs/drive/types' {
+  export interface DriveDisks extends InferDriveDisks<typeof driveConfig> {}
+}

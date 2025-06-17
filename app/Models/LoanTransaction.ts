@@ -4,7 +4,7 @@ import {
 } from '@adonisjs/lucid/orm'
 // import TransactionCategory from 'App/Models/TransactionCategory';
 import Loan from '#app/Models/Loan';
-import { BelongsTo } from "@adonisjs/lucid/types/relations";
+import type { BelongsTo } from "@adonisjs/lucid/types/relations";
 
 export default class LoanTransaction extends BaseModel {
   @column({ isPrimary: true })

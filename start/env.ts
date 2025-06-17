@@ -11,7 +11,7 @@
 | and hence do not rename or move this file to a different location.
 |
 */
-import { Env } from "@adonisjs/core/env";
+import { Env } from "@adonisjs/core/env"
 
 export default await Env.create(new URL("../", import.meta.url), {
   HOST: Env.schema.string({ format: 'host' }),
@@ -20,7 +20,8 @@ export default await Env.create(new URL("../", import.meta.url), {
   APP_NAME: Env.schema.string(),
   APP_URL: Env.schema.string(),
   CACHE_VIEWS: Env.schema.boolean(),
-  SESSION_DRIVER: Env.schema.string(),
+  SESSION_DRIVER: Env.schema.enum(['cookie', 'memory'] as const),
+  HASH_DRIVER: Env.schema.enum(['argon', 'bcrypt'] as const),
   NODE_ENV: Env.schema.enum(['development', 'production', 'test'] as const),
   PG_HOST: Env.schema.string({ format: 'host' }),
   PG_PORT: Env.schema.number(),
@@ -37,5 +38,6 @@ export default await Env.create(new URL("../", import.meta.url), {
   REDIS_PASSWORD: Env.schema.string.optional(),
   VAPID_PUBLIC_KEY: Env.schema.string(),
   VAPID_PRIVATE_KEY: Env.schema.string(),
+  DRIVE_DISK: Env.schema.enum(['fs'] as const)
 })
-;
+  
