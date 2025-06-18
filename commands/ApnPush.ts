@@ -14,7 +14,7 @@ export default class ApnPush extends BaseCommand {
    */
   public static description = ''
     static options: CommandOptions = {
-          loadApp: true,
+          startApp: true,
           staysAlive: false,
         };
   // eslint-disable-next-line class-methods-use-this

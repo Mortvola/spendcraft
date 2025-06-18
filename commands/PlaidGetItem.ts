@@ -22,7 +22,7 @@ export default class PlaidGetItem extends BaseCommand {
   @flags.boolean({ alias: 'f', description: 'Updates item id' })
   public fix: boolean
     static options: CommandOptions = {
-          loadApp: true,
+          startApp: true,
           staysAlive: false,
         };
 

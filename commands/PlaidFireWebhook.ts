@@ -19,7 +19,7 @@ export default class PlaidFireWebhook extends BaseCommand {
   @args.string({ description: 'Item id of the item for which to fire the webhook' })
   public itemId: string
     static options: CommandOptions = {
-          loadApp: true,
+          startApp: true,
           staysAlive: false,
         };
 

@@ -18,7 +18,7 @@ export default class QueueTest extends BaseCommand {
   @args.string({ description: 'Item id' })
   public itemId: string
     static options: CommandOptions = {
-          loadApp: true,
+          startApp: true,
           staysAlive: false,
         };
 

@@ -19,8 +19,6 @@ import * as Plaid from 'plaid';
 import env from '#start/env'
 import app from '@adonisjs/core/services/app';
 
-const plaidClient = app.container.make('plaid')
-
 type AddAccountsResponse = {
   accounts: AccountProps[],
   categories: CategoryBalanceProps[],
@@ -68,6 +66,8 @@ class InstitutionController {
 
     let tokenResponse: Plaid.ItemPublicTokenExchangeResponse | null = null;
     let institutionResponse: Plaid.InstitutionsGetByIdResponse | null = null;
+
+    const plaidClient = await app.container.make('plaid')
 
     try {
       tokenResponse = await plaidClient.exchangePublicToken(requestData.publicToken);
@@ -275,6 +275,8 @@ class InstitutionController {
     if (institution.accessToken) {
       const existingAccts = await Account.query().where('institutionId', institution.id);
 
+      const plaidClient = await app.container.make('plaid')
+
       const { accounts } = await plaidClient.getAccounts(institution);
 
       existingAccts.forEach((existingAcct) => {
@@ -405,6 +407,8 @@ class InstitutionController {
     const newAccounts: Account[] = [];
 
     const fundingPool = await budget.getFundingPoolCategory({ client: trx });
+
+    const plaidClient = await app.container.make('plaid')
 
     const plaidAccountsResponse = await plaidClient.getAccounts(institution);
 
@@ -745,6 +749,8 @@ class InstitutionController {
     const webhook = env.get('PLAID_WEBHOOK');
     const redirect = env.get('PLAID_OAUTH_REDIRECT');
 
+    const plaidClient = await app.container.make('plaid')
+
     const linkTokenResponse = await plaidClient.createLinkToken({
       user: {
         client_user_id: user.id.toString(),
@@ -786,14 +792,15 @@ class InstitutionController {
       throw new Error('user is not defined');
     }
 
-    const budget = await user.related('budget').query().firstOrFail();
-
     const trx = await db.transaction();
+
+    const budget = await user.related('budget').query().firstOrFail();
+    budget.useTransaction(trx)
 
     try {
       const account = await Account.findOrFail(request.params().acctId, { client: trx });
 
-      const result = await InstitutionController.deleteAccounts([account], budget, trx);
+      const result = await InstitutionController.deleteAccounts([account], budget);
 
       await trx.commit();
 
@@ -912,6 +919,7 @@ class InstitutionController {
       const accounts = await institution.related('accounts').query();
 
       if (institution.accessToken) {
+        const plaidClient = await app.container.make('plaid')
         await plaidClient.removeItem(institution.accessToken, institution.institutionId);
       }
 

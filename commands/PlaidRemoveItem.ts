@@ -18,7 +18,7 @@ export default class PlaidGetItem extends BaseCommand {
   @args.string({ description: 'Access token of the item to remove' })
   public accessToken: string
     static options: CommandOptions = {
-          loadApp: true,
+          startApp: true,
           staysAlive: false,
         };
 

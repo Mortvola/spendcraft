@@ -19,7 +19,7 @@ export default class InstitutionSync extends BaseCommand {
   @args.string({ description: 'Item ID of the item to sync' })
   public itemId: string
     static options: CommandOptions = {
-          loadApp: true,
+          startApp: true,
           staysAlive: false,
         };
   // eslint-disable-next-line class-methods-use-this

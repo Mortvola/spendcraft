@@ -1,4 +1,4 @@
-import Institution from '#app/Models/Institution'
+import type Institution from '#app/Models/Institution'
 import env from '#start/env'
 import { BaseCommand } from "@adonisjs/core/ace";
 import { CommandOptions } from "@adonisjs/core/types/ace";
@@ -16,7 +16,7 @@ export default class CheckWebhooks extends BaseCommand {
    */
   public static description = 'Updates webhooks for each item'
     static options: CommandOptions = {
-          loadApp: true,
+          startApp: true,
           staysAlive: false,
         };
 
@@ -56,6 +56,8 @@ export default class CheckWebhooks extends BaseCommand {
   public async run (): Promise<void> {
     this.environmentRegEx = new RegExp(`access-${env.get('PLAID_ENV')}.+`)
 
+    const { default: Institution  } = await import('#models/Institution')
+  
     const institutions = await Institution.all();
 
     await Promise.all(institutions.map(async (i) => this.updateWebhook(i)));

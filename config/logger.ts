@@ -46,17 +46,6 @@ const loggerConfig = defineConfig({
       |
       */
       level: env.get('LOG_LEVEL', 'info'),
-
-      /*
-      |--------------------------------------------------------------------------
-      | Pretty print
-      |--------------------------------------------------------------------------
-      |
-      | It is highly advised NOT to use `prettyPrint` in production, since it
-      | can have huge impact on performance.
-      |
-      */
-      prettyPrint: env.get('NODE_ENV') === 'development',
     }
   }
 })

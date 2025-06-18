@@ -17,7 +17,7 @@ export default class PlaidResetLogin extends BaseCommand {
   @args.string({ description: 'Access token of the item to reset' })
   public accessToken: string
     static options: CommandOptions = {
-          loadApp: true,
+          startApp: true,
           staysAlive: false,
         };
 

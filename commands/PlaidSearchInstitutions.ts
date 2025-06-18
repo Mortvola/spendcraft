@@ -16,7 +16,7 @@ export default class PlaidSearchInstitutions extends BaseCommand {
   @args.string({ description: 'String to search for.' })
   public query: string
     static options: CommandOptions = {
-          loadApp: true,
+          startApp: true,
           staysAlive: false,
         };
 

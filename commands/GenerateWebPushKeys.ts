@@ -13,7 +13,7 @@ export default class GenerateWebPushKeys extends BaseCommand {
    */
   public static description = ''
     static options: CommandOptions = {
-          loadApp: false,
+          startApp: false,
           staysAlive: false,
         };
 

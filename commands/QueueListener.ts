@@ -24,7 +24,7 @@ export default class QueueListener extends BaseCommand {
    */
   public static description = ''
     static options: CommandOptions = {
-          loadApp: true,
+          startApp: true,
           staysAlive: true,
         };
   // eslint-disable-next-line class-methods-use-this

@@ -25,7 +25,7 @@ export default class CheckBalances extends BaseCommand {
   @flags.boolean({ alias: 'i', description: 'Interactive mode' })
   public interactive = false;
     static options: CommandOptions = {
-          loadApp: true,
+          startApp: true,
           staysAlive: false,
         };
 

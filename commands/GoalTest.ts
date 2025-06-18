@@ -14,7 +14,7 @@ export default class GoalTest extends BaseCommand {
    */
   public static description = ''
     static options: CommandOptions = {
-          loadApp: true,
+          startApp: true,
           staysAlive: false,
         };
 

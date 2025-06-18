@@ -21,7 +21,7 @@ export default class PlaidGetAccount extends BaseCommand {
   @args.spread()
   public accountIds: string[];
     static options: CommandOptions = {
-          loadApp: true,
+          startApp: true,
           staysAlive: false,
         };
 

@@ -20,7 +20,7 @@ export default class OfxUpload extends BaseCommand {
   @args.string({ description: 'Name of the OFX file to upload' })
   public ofx: string
     static options: CommandOptions = {
-          loadApp: true,
+          startApp: true,
           staysAlive: false,
         };
 

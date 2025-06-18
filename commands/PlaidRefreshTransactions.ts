@@ -18,7 +18,7 @@ export default class PlaidRefreshTransactions extends BaseCommand {
   @args.string({ description: 'Item id of the item for which to refresh the transactions' })
   public itemId: string
     static options: CommandOptions = {
-          loadApp: true,
+          startApp: true,
           staysAlive: false,
         };
 
