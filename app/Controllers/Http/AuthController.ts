@@ -139,9 +139,9 @@ export default class AuthController {
     });
 
     try {
-      const token = await auth.use('jwt').attempt(
-        credentials.username, credentials.password,
-      );
+      const user = await User.verifyCredentials(credentials.username, credentials.password)
+
+      const token = await auth.use('jwt').generate(user);
       response.header('content-type', 'application/json');
       response.send({
         data: {
@@ -192,12 +192,7 @@ export default class AuthController {
       });
     }
     catch (error) {
-      if (error.message === 'Invalid refresh token') {
-        response.status(400)
-      }
-      else {
-        response.status(500)
-      }
+      response.status(401)
     }
   }
 
@@ -211,7 +206,7 @@ export default class AuthController {
       }),
     });
 
-    auth.use('jwt').revoke({ refreshToken: payload.data.refresh });
+    auth.use('jwt').revoke(payload.data.refresh);
   }
 
   // eslint-disable-next-line class-methods-use-this

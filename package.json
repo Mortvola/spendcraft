@@ -43,6 +43,7 @@
     "@adonisjs/shield": "^8.2.0",
     "@adonisjs/static": "^1.1.1",
     "@adonisjs/validator": "^13.0.2",
+    "@adonisjs/vite": "^4.0.0",
     "@babel/core": "^7.18.2",
     "@babel/preset-env": "^7.18.2",
     "@babel/preset-react": "^7.17.12",
@@ -88,6 +89,7 @@
     "regenerator-runtime": "^0.14.0",
     "secure-compare": "^3.0.1",
     "set-value": "^4.1.0",
+    "uuid": "^11.1.0",
     "web-push": "^3.6.6"
   },
   "devDependencies": {
@@ -130,6 +132,7 @@
     "ts-loader": "^9.2.6",
     "ts-node": "^10.9.2",
     "typescript": "^5.2.2",
+    "vite": "^6.3.5",
     "webpack": "^5.89.0",
     "webpack-bundle-analyzer": "^4.9.1",
     "webpack-cli": "^6.0.1"

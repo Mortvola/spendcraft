@@ -1,7 +1,7 @@
 
 import { defineConfig } from '@adonisjs/shield'
 
-export default defineConfig({
+const shieldConfig = defineConfig({
   csp: {
     /*
     |--------------------------------------------------------------------------
@@ -29,8 +29,7 @@ export default defineConfig({
     | }
     |
     */
-    directives: {
-    },
+    directives: {},
 
     /*
     |--------------------------------------------------------------------------
@@ -134,3 +133,5 @@ export default defineConfig({
     enabled: true,
   },
 })
+
+export default shieldConfig

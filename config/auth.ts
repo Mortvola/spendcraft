@@ -7,8 +7,9 @@
 
 import { defineConfig } from '@adonisjs/auth';
 import env from "#start/env";
-import { tokensGuard, tokensUserProvider } from '@adonisjs/auth/access_tokens'
+import { sessionUserProvider } from '@adonisjs/auth/session';
 import { Authenticators, InferAuthEvents } from '@adonisjs/auth/types';
+import { JwtGuard } from '#app/auth/guards/JwtGuard';
 
 /*
 |--------------------------------------------------------------------------
@@ -110,11 +111,27 @@ const authConfig = defineConfig({
         //     },
         // },
 
-        jwt: tokensGuard({
-            provider: tokensUserProvider({
-                tokens: 'accessTokens',
-                model: () => import('#models/User'),
+        jwt: (ctx) => {
+          return new JwtGuard(
+            ctx,
+            sessionUserProvider({
+              model: () => import('#models/User')
             }),
+            {
+              publicKey: env.get('JWT_PUBLIC_KEY', '').replace(/\\n/g, '\n'),
+              privateKey: env.get('JWT_PRIVATE_KEY', '').replace(/\\n/g, '\n'),
+              issuer: 'spendcraft',
+              audience: 'spendcraft',
+              jwtDefaultExpire: { minutes: 1 },
+              refreshTokenDefaultExpire: { minutes: 5 },
+            },
+          )
+        },
+          // tokensGuard({
+          //   provider: tokensUserProvider({
+          //       tokens: 'accessTokens',
+          //       model: () => import('#models/User'),
+          //   }),
             // publicKey: env.get('JWT_PUBLIC_KEY', '').replace(/\\n/g, '\n'),
             // privateKey: env.get('JWT_PRIVATE_KEY', '').replace(/\\n/g, '\n'),
             // persistJwt: false,
@@ -132,7 +149,6 @@ const authConfig = defineConfig({
             //     uids: ['username'],
             //     model: () => import('#app/Models/User')
             // }
-        }),
     },
 })
 

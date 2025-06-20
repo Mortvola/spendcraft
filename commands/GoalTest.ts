@@ -50,7 +50,7 @@ export default class GoalTest extends BaseCommand {
 
   // eslint-disable-next-line class-methods-use-this
   public async run() {
-    const { default: Category } = await import('App/Models/Category')
+    const { default: Category } = await import('#models/Category')
     const bills = await Category.query().where('type', CategoryType.Bill);
 
     // eslint-disable-next-line no-restricted-syntax

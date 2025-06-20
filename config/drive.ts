@@ -7,9 +7,9 @@ const driveConfig = defineConfig({
 
   services: {
     fs: services.fs({
-      location: app.makePath('storage'),
+      location: app.makePath('public'),
       serveFiles: true,
-      routeBasePath: '/uploads',
+      routeBasePath: '/public',
       visibility: 'public',
     }),
   },

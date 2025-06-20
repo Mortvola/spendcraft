@@ -25,8 +25,8 @@ server.errorHandler(() => import('#exceptions/Handler'))
  */
 server.use([
   () => import('#middleware/container_bindings_middleware'),
-  () => import('@adonisjs/static/static_middleware')
-  // () => import('App/Middleware/SilentAuth')
+  () => import('@adonisjs/static/static_middleware'),
+  // () => import('@adonisjs/vite/vite_middleware')
 ])
 
 /**

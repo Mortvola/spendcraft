@@ -26,7 +26,7 @@ type PassCode = {
   expires: DateTime,
 }
 
-const AuthFinder = withAuthFinder(() => hash.use('bcrypt'), {
+const AuthFinder = withAuthFinder(() => hash.use(env.get('HASH_DRIVER')), {
   uids: ['username'],
   passwordColumnName: 'password',
 })
