@@ -62,7 +62,6 @@ export default defineConfig({
     () => import('@adonisjs/mail/mail_provider'),
     () => import('@adonisjs/drive/drive_provider'),
     () => import('@adonisjs/redis/redis_provider'),
-    // () => import('adonis5-jwt'),
     // () => import('adonis5-bullmq')
   ],
   metaFiles: [
