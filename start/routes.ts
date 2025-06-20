@@ -28,6 +28,13 @@ const HomeController = () => import('#controllers/HomeController')
 const AuthController = () => import('#controllers/AuthController')
 const UsersController = () => import('#controllers/UsersController')
 const CategoriesController = () => import('#controllers/CategoriesController')
+const AccountsController = () => import('#controllers/AccountsController')
+const TransactionsController = () => import('#controllers/TransactionsController')
+const InstitutionController = () => import('#controllers/InstitutionController')
+const PlaidLogsController = () => import('#controllers/PlaidLogsController')
+const AutoAssignmentsController = () => import('#controllers/AutoAssignmentsController')
+const FundingPlanController = () => import("#controllers/FundingPlanController")
+const WebhookController = () => import("#controllers/WebhookController")
 
 router.get('/home', [HomeController, 'index']);
 router.get('/home/:categoryId', [HomeController, 'index']);
@@ -46,7 +53,7 @@ router.get('/admin', [HomeController, 'index']);
 router.get('/bills', [HomeController, 'index']);
 router.get('/', [HomeController, 'index']);
 
-router.post('/wh', 'WebhookController.post');
+router.post('/wh', [WebhookController, 'post']);
 router.post('/redirect', () => {
   console.log('redirected')
 });
@@ -145,69 +152,69 @@ router.group(() => {
       router.get('/connected-accounts', [UsersController, 'getConnectedAccounts']);
   
       router.group(() => {
-        router.patch('', 'AccountsController.update');
-        router.post('/ofx', 'AccountsController.uploadOfx');
+        router.patch('', [AccountsController, 'update']);
+        router.post('/ofx', [AccountsController, 'uploadOfx']);
 
         router.group(() => {
-          router.get('', 'AccountsController.transactions');
-          router.post('', 'AccountsController.addTransaction');  
+          router.get('', [AccountsController, 'transactions']);
+          router.post('', [AccountsController, 'addTransaction']);  
         })
           .prefix('/transactions')
     
         router.group(() => {
-          router.get('', 'AccountsController.balances');
-          router.post('', 'AccountsController.addBalance');
-          router.delete('/:id', 'AccountsController.deleteBalance');
-          router.patch('/:id', 'AccountsController.updateBalance');    
+          router.get('', [AccountsController, 'balances']);
+          router.post('', [AccountsController, 'addBalance']);
+          router.delete('/:id', [AccountsController, 'deleteBalance']);
+          router.patch('/:id', [AccountsController, 'updateBalance']);    
         })
           .prefix('/balances')
 
         router.group(() => {
-          router.get('', 'AccountsController.getStatements')
-          router.post('', 'AccountsController.addStatement')
+          router.get('', [AccountsController, 'getStatements'])
+          router.post('', [AccountsController, 'addStatement'])
         })
           .prefix('/statements')
       })
         .prefix('/account/:acctId');
   
       router.group(() => {
-        router.patch('/:statementId', 'AccountsController.updateStatement')
+        router.patch('/:statementId', [AccountsController, 'updateStatement'])
       })
         .prefix('/statements')
 
       router.group(() => {
-        router.delete('/:id', 'AccountsController.deleteBalance');
+        router.delete('/:id', [AccountsController, 'deleteBalance']);
       })
         .prefix('/balance');
   
-      router.post('/institutions/sync', 'InstitutionController.syncAll');
+      router.post('/institutions/sync', [InstitutionController, 'syncAll']);
   
       router.group(() => {
-        router.post('', 'InstitutionController.add');
-        router.post('/:instId', 'InstitutionController.update');
-        router.get('/:instId/info', 'InstitutionController.info');
-        router.get('/:instId/accounts', 'InstitutionController.get');
-        router.post('/:instId/accounts', 'InstitutionController.addAccounts');
-        router.post('/:instId/accounts/:acctId/transactions/sync', 'InstitutionController.sync');
-        router.delete('/:instId/accounts/:acctId', 'InstitutionController.deleteAccount');
-        router.delete('/:instId', 'InstitutionController.delete');
-        router.get('/:instId/link-token', 'InstitutionController.linkToken');
+        router.post('', [InstitutionController, 'add']);
+        router.post('/:instId', [InstitutionController, 'update']);
+        router.get('/:instId/info', [InstitutionController, 'info']);
+        router.get('/:instId/accounts', [InstitutionController, 'get']);
+        // router.post('/:instId/accounts', [InstitutionController, 'addAccounts']);
+        router.post('/:instId/accounts/:acctId/transactions/sync', [InstitutionController, 'sync']);
+        router.delete('/:instId/accounts/:acctId', [InstitutionController, 'deleteAccount']);
+        router.delete('/:instId', [InstitutionController, 'delete']);
+        router.get('/:instId/link-token', [InstitutionController, 'linkToken']);
       }).prefix('/institution');
   
       router.group(() => {
-        router.get('/', 'FundingPlanController.getPlan');
-        router.get('/proposed', 'FundingPlanController.getProposed');
-        router.put('/item/:catId', 'FundingPlanController.updateOrCreateCategory');
+        router.get('/', [FundingPlanController, 'getPlan']);
+        router.get('/proposed', [FundingPlanController, 'getProposed']);
+        router.put('/item/:catId', [FundingPlanController, 'updateOrCreateCategory']);
       }).prefix('/funding-plans');
   
       router.group(() => {
-        router.patch('/:trxId', 'TransactionsController.update');
-        router.delete('/:trxId', 'TransactionsController.delete');
-        router.get('/:trxId', 'TransactionsController.get');
-        router.post('/:trxId/dedup', 'TransactionsController.dedup');
+        router.patch('/:trxId', [TransactionsController, 'update']);
+        router.delete('/:trxId', [TransactionsController, 'delete']);
+        router.get('/:trxId', [TransactionsController, 'get']);
+        router.post('/:trxId/dedup', [TransactionsController, 'dedup']);
       }).prefix('/transaction');
   
-      router.get('/transactions', 'TransactionsController.getMultiple')
+      router.get('/transactions', [TransactionsController, 'getMultiple'])
   
       router.get('/reports/:report', 'ReportController.get');
   
@@ -223,24 +230,24 @@ router.group(() => {
       })
         .prefix('/loans');
   
-      router.get('/rebalances', 'TransactionsController.getRebalances')    
+      router.get('/rebalances', [TransactionsController, 'getRebalances'])    
 
-      router.get('/transactions/search', 'TransactionsController.search');
+      router.get('/transactions/search', [TransactionsController, 'search']);
 
       router.group(() => {
-        router.get('/:id?', 'AutoAssignmentsController.get');
-        router.post('/', 'AutoAssignmentsController.post');
-        router.patch('/:id', 'AutoAssignmentsController.patch');
-        router.delete('/:id', 'AutoAssignmentsController.delete');
+        router.get('/:id?', [AutoAssignmentsController, 'get']);
+        router.post('/', [AutoAssignmentsController, 'post']);
+        router.patch('/:id', [AutoAssignmentsController, 'patch']);
+        router.delete('/:id', [AutoAssignmentsController, 'delete']);
       })
         .prefix('/auto-assignments')
 
-      router.get('/transaction-logs', 'TransactionsController.logs');
+      router.get('/transaction-logs', [TransactionsController, 'logs']);
 
       router.get('/bills', [CategoriesController, 'getBills']);
 
       router.group(() => {
-        router.get('/plaid-logs', 'PlaidLogsController.get')
+        router.get('/plaid-logs', [PlaidLogsController, 'get'])
       })
         .prefix('/admin')
         .use(middleware.admin());
