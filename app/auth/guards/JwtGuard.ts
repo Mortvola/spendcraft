@@ -1,12 +1,50 @@
 import { symbols, errors } from '@adonisjs/auth'
 import { AuthClientResponse, GuardContract } from '@adonisjs/auth/types'
-import { JwtUserProviderContract } from './jwt.js'
 import { SignJWT, jwtVerify, JWTPayload } from 'jose'
 import { createPrivateKey, createPublicKey } from 'crypto'
 import type { HttpContext } from '@adonisjs/core/http'
 import { DateTime, Duration } from 'luxon'
 import { v4 as uuidv4 } from 'uuid';
 import redis from '@adonisjs/redis/services/main';
+
+/**
+ * The bridge between the User provider and the
+ * Guard
+ */
+export type JwtGuardUser<RealUser> = {
+  /**
+   * Returns the unique ID of the user
+   */
+  getId(): string | number | BigInt
+
+  /**
+   * Returns the original user object
+   */
+  getOriginal(): RealUser
+}
+
+/**
+ * The interface for the UserProvider accepted by the
+ * JWT guard.
+ */
+export interface JwtUserProviderContract<RealUser> {
+  /**
+   * A property the guard implementation can use to infer
+   * the data type of the actual user (aka RealUser)
+   */
+  [symbols.PROVIDER_REAL_USER]: RealUser
+
+  /**
+   * Create a user object that acts as an adapter between
+   * the guard and real user value.
+   */
+  createUserForGuard(user: RealUser): Promise<JwtGuardUser<RealUser>>
+
+  /**
+   * Find a user by their id.
+   */
+  findById(identifier: string | number | BigInt): Promise<JwtGuardUser<RealUser> | null>
+}
 
 export type TokenDuration = {
   days?: number,
@@ -93,13 +131,14 @@ export class JwtGuard<UserProvider extends JwtUserProviderContract<unknown>>
     const refreshToken = uuidv4()
 
     // Store the user id 
-    redis.set(refreshToken, providerUser.getId().toString())
+    const redisKey = `jwt_refresh:${refreshToken}`
+    redis.set(redisKey, providerUser.getId().toString())
 
     // const expiresIn = this.#options.refreshTokenDefaultExpire
     // const milliseconds = typeof expiresIn === "string" ? string.toMs(expiresIn) : expiresIn;
     
     const expiresAt = DateTime.now().plus(Duration.fromObject(this.#options.refreshTokenDefaultExpire));
-    redis.expireat(refreshToken, expiresAt.toUnixInteger())
+    redis.expireat(redisKey, expiresAt.toUnixInteger())
 
     return {
       accessToken,
@@ -108,7 +147,8 @@ export class JwtGuard<UserProvider extends JwtUserProviderContract<unknown>>
   }
 
   async loginViaRefreshToken(refreshToken: string) {
-    const userId = await redis.get(refreshToken)
+    const redisKey = `jwt_refresh:${refreshToken}`
+    const userId = await redis.get(redisKey)
 
     if (!userId) {
       throw new errors.E_UNAUTHORIZED_ACCESS('Unauthorized access', {
@@ -124,11 +164,17 @@ export class JwtGuard<UserProvider extends JwtUserProviderContract<unknown>>
       })
     }
 
+    // Remove refresh token from store
+    redis.del(redisKey)
+
     return this.generate(user.getOriginal())
   }
 
   revoke(refreshToken: string) {
+    const redisKey = `jwt_refresh:${refreshToken}`
 
+    // Remove refresh token from store
+    redis.del(redisKey)
   }
 
   /**
