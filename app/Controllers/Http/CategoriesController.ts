@@ -2,13 +2,7 @@ import db from '@adonisjs/lucid/services/db';
 import { HttpContext } from '@adonisjs/core/http';
 import Category, { GroupItem } from '#app/Models/Category';
 import CategoryTransfer from '#app/Models/CategoryTransfer';
-import AddGroupValidator from '#app/Validators/AddGroupValidator';
-import UpdateGroupValidator from '#app/Validators/UpdateGroupValidator';
-import DeleteGroupValidator from '#app/Validators/DeleteGroupValidator';
-import AddCategoryValidator from '#app/Validators/AddCategoryValidator';
-import UpdateCategoryValidator from '#app/Validators/UpdateCategoryValidator';
-import DeleteCategoryValidator from '#app/Validators/DeleteCategoryValidator';
-import UpdateCategoryTransferValidator from '#app/Validators/UpdateCategoryTransferValidator';
+import UpdateCategoryTransferValidator from '#app/validation/Validators/UpdateCategoryTransferValidator';
 import Transaction from '#app/Models/Transaction';
 import Loan from '#app/Models/Loan';
 import {
@@ -23,6 +17,7 @@ import {
 import Group from '#app/Models/Group';
 import { DateTime } from 'luxon';
 import transactionFields from './transactionFields.js';
+import { addCategory, addGroup, deleteCategory, deleteGroup, updateCategory, updateGroup } from '#app/validation/Validators/category';
 
 class CategoriesController {
   // eslint-disable-next-line class-methods-use-this
@@ -197,7 +192,14 @@ class CategoriesController {
       throw new Error('user is not defined');
     }
 
-    const requestData = await request.validate(AddGroupValidator);
+    const requestData = await request.validateUsing(
+      addGroup,
+      {
+        meta: {
+          budgetId: user.budgetId,
+        },
+      },
+    );
 
     const group = await new Group()
       .fill({
@@ -223,7 +225,7 @@ class CategoriesController {
     }
 
     const { groupId } = request.params();
-    const requestData = await request.validate(UpdateGroupValidator);
+    const requestData = await request.validateUsing(updateGroup);
 
     const group = await Group.findOrFail(groupId);
 
@@ -252,7 +254,7 @@ class CategoriesController {
     }
 
     const { groupId } = request.params();
-    await request.validate(DeleteGroupValidator);
+    await request.validateUsing(deleteGroup);
 
     const group = await Group.findOrFail(groupId);
 
@@ -264,7 +266,7 @@ class CategoriesController {
     request,
   }: HttpContext): Promise<Category> {
     const { groupId } = request.params();
-    const requestData = await request.validate(AddCategoryValidator);
+    const requestData = await request.validateUsing(addCategory);
 
     const category = new Category();
 
@@ -276,7 +278,7 @@ class CategoriesController {
         balance: 0,
         fundingAmount: requestData.fundingAmount,
         includeFundingTransfers: requestData.type === CategoryType.Bill ? false : requestData.includeFundingTransfers,
-        goalDate: requestData.goalDate,
+        goalDate: requestData.goalDate ? DateTime.fromJSDate(requestData.goalDate) : undefined,
         recurrence: requestData.recurrence,
         useGoal: requestData.useGoal,
         fundingCategories: requestData.fundingCategories,
@@ -291,7 +293,7 @@ class CategoriesController {
     request,
   }: HttpContext): Promise<Category> {
     const { groupId, catId } = request.params();
-    const requestData = await request.validate(UpdateCategoryValidator);
+    const requestData = await request.validateUsing(updateCategory);
 
     const category = await Category.findOrFail(catId);
 
@@ -304,7 +306,7 @@ class CategoriesController {
       includeFundingTransfers: requestData.includeFundingTransfers,
       hidden: requestData.hidden,
       useGoal: requestData.useGoal,
-      goalDate: requestData.goalDate,
+      goalDate: requestData.goalDate ? DateTime.fromJSDate(requestData.goalDate) : undefined,
       recurrence: requestData.recurrence,
       fundingCategories: requestData.fundingCategories,
     });
@@ -317,7 +319,7 @@ class CategoriesController {
   // eslint-disable-next-line class-methods-use-this
   public async deleteCategory({ request, logger }: HttpContext): Promise<void> {
     const { catId } = request.params();
-    await request.validate(DeleteCategoryValidator);
+    await request.validateUsing(deleteCategory);
 
     const trx = await db.transaction();
 

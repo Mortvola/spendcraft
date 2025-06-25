@@ -40,7 +40,7 @@
         "./app/Middleware/*.js"
       ],
       "#validators/*": [
-        "./app/Validators/*.js"
+        "./validation/Validators/*.js"
       ],
       "#start/*": [
         "./start/*.js"
@@ -60,14 +60,17 @@
       "#common/*": [
         "./common/*.js"
       ],
+      "#mails/*": [
+        "./app/mails/*.js"
+      ],
       "#providers/*": [
         "./providers/*.js"
       ]
     },
     "types": [
-      "adonis5-jwt",
       "adonis5-bullmq"
     ],
-    "strictPropertyInitialization": false
+    "strictPropertyInitialization": false,
+    "module": "NodeNext"
   }
 }

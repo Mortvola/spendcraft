@@ -7,7 +7,7 @@ export default class UpdateCategoryTransferValidator {
     ]), // 'required|date'
     categories: schema.array([
       rules.minLength(1),
-      rules.zeroSum({ property: 'amount' }),
+      // rules.zeroSum({ property: 'amount' }),
     ]).members(
       schema.object().members({
         id: schema.number.optional(),

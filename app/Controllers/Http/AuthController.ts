@@ -9,6 +9,9 @@ import db from '@adonisjs/lucid/services/db';
 import Budget from '#app/Models/Budget';
 import { sha256 } from 'js-sha256';
 import { DateTime } from 'luxon';
+import { register, registerMessageProvider, updatePassword } from '#app/validation/Validators/auth';
+import VerifyEmailNotification from '#app/mails/verifyEmailNotification';
+import RequestCodeNotification from '#app/mails/requestCodeNotification';
 
 export default class AuthController {
   // eslint-disable-next-line class-methods-use-this
@@ -16,72 +19,36 @@ export default class AuthController {
     /**
      * Validate user details
      */
-    const userDetails = await request.validate({
-      schema: schema.create({
-        username: schema.string([
-          rules.trim(),
-          rules.unique({ table: 'users', column: 'username' }),
-        ]),
-        email: schema.string([
-          rules.trim(),
-          rules.normalizeEmail({ allLowercase: true }),
-          rules.email(),
-          rules.unique({ table: 'users', column: 'email' }),
-        ]),
-        password: schema.string([
-          rules.trim(),
-          rules.confirmed('passwordConfirmation'),
-          rules.password(),
-        ]),
-      }),
-      messages: {
-        'username.unique': 'An account with the requested username already exists',
-        'username.required': 'A username is required',
-        'email.email': 'A valid email address must be provided',
-        'email.required': 'An email address is required',
-        'email.unique': 'An account with the requested email address already exists',
-        'password.required': 'A password is required',
-        'passwordConfirmation.confirmed': 'The password confirmation does not match the password',
-      },
-    });
+    const userDetails = await request.validateUsing(
+      register,
+      {
+        messagesProvider: registerMessageProvider,
+      }
+    );
 
     const trx = await db.transaction();
 
     try {
-      const budget = await (new Budget())
+      const budget = await new Budget()
         .useTransaction(trx)
         .save();
 
       await budget.initialize();
 
       /**
-     * Create a new user
-     */
-      const user = (new User())
-        .useTransaction(trx)
-        .fill({
-          username: userDetails.username,
-          email: userDetails.email,
-          password: userDetails.password,
-          budgetId: budget.id,
-        });
-
-      user.generatePassCode();
-
-      user.save();
+       * Create a new user
+       */
+      const user = await budget.related('users').create({
+        username: userDetails.username,
+        email: userDetails.email,
+        password: userDetails.password,
+        budgetId: budget.id,
+        oneTimePassCode: User.generatePassCode()
+      })
 
       await trx.commit();
 
-      mail.send((message) => {
-        message
-          .from(env.get('MAIL_FROM_ADDRESS') as string, env.get('MAIL_FROM_NAME') as string)
-          .to(user.email)
-          .subject('Welcome!')
-          .htmlView('emails/welcome', {
-            code: user.oneTimePassCode?.code,
-            expires: env.get('TOKEN_EXPIRATION'),
-          });
-      });
+      mail.send(new VerifyEmailNotification(user))
     }
     catch (error) {
       trx.rollback();
@@ -225,20 +192,10 @@ export default class AuthController {
     const user = await User.findBy('email', requestData.email);
 
     if (user) {
-      const code = user.generatePassCode();
-
+      user.oneTimePassCode = User.generatePassCode();
       await user.save();
 
-      mail.send((message) => {
-        message
-          .from(env.get('MAIL_FROM_ADDRESS') as string, env.get('MAIL_FROM_NAME') as string)
-          .to(user.email)
-          .subject('Verification Code')
-          .htmlView('emails/verification-code', {
-            code,
-            expires: env.get('TOKEN_EXPIRATION'),
-          });
-      });
+      mail.send(new RequestCodeNotification(user));
 
       response.header('content-type', 'application/json');
     }
@@ -313,19 +270,12 @@ export default class AuthController {
       throw new Error('user is not defined');
     }
 
-    const requestData = await request.validate({
-      schema: schema.create({
-        password: schema.string([
-          rules.trim(),
-          rules.confirmed('passwordConfirmation'),
-          rules.password(),
-        ]),
-      }),
-      messages: {
-        'password.required': 'A password is required',
-        'passwordConfirmation.confirmed': 'The password confirmation does not match the password',
-      },
-    });
+    const requestData = await request.validateUsing(
+      updatePassword,
+      {
+        messagesProvider: registerMessageProvider,
+      }
+    )
 
     user.password = requestData.password;
     await user.save();

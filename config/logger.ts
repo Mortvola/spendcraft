@@ -1,5 +1,5 @@
 import env from '#start/env'
-import { defineConfig, targets } from '@adonisjs/core/logger'
+import { defineConfig } from '@adonisjs/core/logger'
 
 /*
 |--------------------------------------------------------------------------

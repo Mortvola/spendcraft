@@ -20,7 +20,7 @@ import Category from './Category.js';
 import User from './User.js';
 import Statement from './Statement.js';
 import type { HasMany, BelongsTo } from "@adonisjs/lucid/types/relations";
-import { ModelAttributes } from "@adonisjs/lucid/types/model";
+import { ModelObject } from "@adonisjs/lucid/types/model";
 
 export type AccountSyncResult = {
   categories: CategoryBalanceProps[],
@@ -394,7 +394,7 @@ class Account extends BaseModel {
       }
 
       // todo: check to see if any of these attributes have changed
-      const accountTransactionChanges: Partial<ModelAttributes<typeof acctTrans>> = {
+      const accountTransactionChanges: ModelObject = {
         providerTransactionId: plaidTransaction.transaction_id,
         name: plaidTransaction.name ?? undefined,
         amount: -plaidTransaction.amount,
@@ -408,17 +408,17 @@ class Account extends BaseModel {
       // Log the changes
       let changes = {};
 
-      changes = getChanges(acctTrans, accountTransactionChanges, changes)
+      changes = getChanges(acctTrans.$attributes, accountTransactionChanges, changes)
 
       acctTrans.merge(accountTransactionChanges);
 
       await acctTrans.save();
 
-      const transactionChanges: Partial<ModelAttributes<typeof transaction>> = {
+      const transactionChanges: ModelObject = {
         date: DateTime.fromISO(plaidTransaction.date),
       }
 
-      changes = getChanges(transaction, transactionChanges, changes)
+      changes = getChanges(transaction.$attributes, transactionChanges, changes)
 
       transactionChanges.version = transaction.version + 1;
 

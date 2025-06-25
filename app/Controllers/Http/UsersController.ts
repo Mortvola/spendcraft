@@ -7,6 +7,7 @@ import * as Plaid from 'plaid';
 import db from '@adonisjs/lucid/services/db';
 import { Exception } from '@adonisjs/core/exceptions';
 import app from '@adonisjs/core/services/app';
+import { update } from '#app/validation/Validators/user';
 
 export default class UsersController {
   // eslint-disable-next-line class-methods-use-this
@@ -31,21 +32,11 @@ export default class UsersController {
       throw new Error('user is not defined');
     }
 
-    const validationSchema = schema.create({
-      email: schema.string([
-        rules.trim(),
-        rules.normalizeEmail({ allLowercase: true }),
-        rules.unique({ table: 'users', column: 'email' }),
-      ]),
-    });
-
-    const requestData = await request.validate({
-      schema: validationSchema,
-      messages: {
-        'email.email': 'The email address is not valid.',
-        'email.unique': 'This email address is already in use.',
-      },
-    });
+    const requestData = await request.validateUsing(update)
+      // messages: {
+      //   'email.email': 'The email address is not valid.',
+      //   'email.unique': 'This email address is already in use.',
+      // },
 
     user.pendingEmail = requestData.email;
 

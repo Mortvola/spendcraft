@@ -14,7 +14,8 @@
     "lint": "eslint .",
     "analyze": "webpack --json > stats.json",
     "madge": "clear && madge -c ./client-src/App.tsx",
-    "knip": "clear && knip"
+    "knip": "clear && knip",
+    "test": "node --import ts-node-maintained/register/esm --enable-source-maps bin/test.ts"
   },
   "madge": {
     "detectiveOptions": {
@@ -47,11 +48,13 @@
     "@babel/core": "^7.18.2",
     "@babel/preset-env": "^7.18.2",
     "@babel/preset-react": "^7.17.12",
+    "@japa/plugin-adonisjs": "^4.0.0",
     "@mortvola/forms": "^0.16.13",
     "@mortvola/http": "^0.1.11",
     "@mortvola/usemodal": "^0.2.4",
     "@phc/argon2": "^1.0.9",
     "@popperjs/core": "^2.11.2",
+    "@vinejs/vine": "^3.0.1",
     "acorn": "^8.7.0",
     "adonis5-bullmq": "^3.2.0",
     "ajv": "^8.9.0",
@@ -86,6 +89,7 @@
     "react-router": "^7.6.2",
     "reflect-metadata": "^0.2.2",
     "regenerator-runtime": "^0.14.0",
+    "safe-compare": "^1.1.4",
     "secure-compare": "^3.0.1",
     "set-value": "^4.1.0",
     "uuid": "^11.1.0",
@@ -96,6 +100,9 @@
     "@adonisjs/eslint-config": "^2.1.0",
     "@adonisjs/prettier-config": "^1.4.5",
     "@adonisjs/tsconfig": "^1.4.1",
+    "@japa/api-client": "^3.1.0",
+    "@japa/assert": "^4.0.1",
+    "@japa/runner": "^4.2.0",
     "@swc/core": "^1.12.1",
     "@types/jsonwebtoken": "^9.0.1",
     "@types/luxon": "^3.6.2",
@@ -104,6 +111,7 @@
     "@types/react-dom": "^19.1.0",
     "@types/react-router-dom": "^5.3.3",
     "@types/regenerator-runtime": "^0.13.1",
+    "@types/safe-compare": "^1.1.2",
     "@types/web-push": "^3.6.2",
     "compression-webpack-plugin": "^11.1.0",
     "css-loader": "^7.1.2",
@@ -159,13 +167,14 @@
     "#listeners/*": "./app/listeners/*.js",
     "#events/*": "./app/events/*.js",
     "#middleware/*": "./app/Middleware/*.js",
-    "#validators/*": "./app/Validators/*.js",
+    "#validators/*": "./app/validation/Validators/*.js",
     "#start/*": "./start/*.js",
     "#config/*": "./config/*.js",
     "#app/*": "./app/*.js",
     "#database/*": "./database/*.js",
     "#contracts/*": "./contracts/*.js",
     "#common/*": "./common/*.js",
+    "#mails/*": "./app/mails/*.js",
     "#providers/*": "./providers/*.js"
   }
 }

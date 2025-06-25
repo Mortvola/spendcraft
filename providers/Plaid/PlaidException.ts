@@ -18,7 +18,7 @@ export default class PlaidException extends Exception {
   plaidError: unknown;
 
   constructor(plaidError: PlaidError) {
-    super(plaidError.response.data.error_message, plaidError.status_code, 'PLAID_ERROR');
+    super(plaidError.response.data.error_message, { code: 'PLAID_ERROR', status: plaidError.status_code});
 
     this.plaidError = plaidError.response.data;
   }

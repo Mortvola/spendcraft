@@ -14,7 +14,7 @@ import { schema, rules } from '@adonisjs/validator';
 import TransactionLog from '#app/Models/TransactionLog';
 import Statement from '#app/Models/Statement';
 import transactionFields, { getChanges } from './transactionFields.js';
-import { ModelAttributes } from "@adonisjs/lucid/types/model";
+import { ModelObject } from "@adonisjs/lucid/types/model";
 
 export default class TransactionsController {
   // eslint-disable-next-line class-methods-use-this
@@ -273,14 +273,14 @@ export default class TransactionsController {
           account.balance -= acctTrans.amount;
         }
 
-        const accountTransactionChanges: Partial<ModelAttributes<typeof acctTrans>> = {}
+        const accountTransactionChanges: ModelObject = {
+          name: requestData.name,
+          amount: requestData.amount,
+          principle: requestData.principle,
+          statementId: requestData.statementId,
+        }
 
-        accountTransactionChanges.name = requestData.name;
-        accountTransactionChanges.amount = requestData.amount;
-        accountTransactionChanges.principle = requestData.principle;
-        accountTransactionChanges.statementId = requestData.statementId;
-
-        changes = getChanges(acctTrans, accountTransactionChanges, changes);
+        changes = getChanges(acctTrans.$attributes, accountTransactionChanges, changes);
 
         // eslint-disable-next-line no-restricted-syntax
         for (const property of Object.getOwnPropertyNames(accountTransactionChanges)) {
@@ -312,13 +312,13 @@ export default class TransactionsController {
         await account.save();
       }
 
-      const transactionChanges: Partial<ModelAttributes<typeof transaction>> = {}
+      const transactionChanges: ModelObject = {
+        date: requestData.date,
+        comment: requestData.comment,
+        categories: requestData.categories,
+      }
 
-      transactionChanges.date = requestData.date;
-      transactionChanges.comment = requestData.comment;
-      transactionChanges.categories = requestData.categories;
-
-      changes = getChanges(transaction, transactionChanges, changes);
+      changes = getChanges(transaction.$attributes, transactionChanges, changes);
 
       transactionChanges.version = transaction.version + 1;
 

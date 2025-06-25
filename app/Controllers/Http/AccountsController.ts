@@ -15,6 +15,8 @@ import {
 import Statement from '#app/Models/Statement';
 import AccountTransaction from '#app/Models/AccountTransaction';
 import transactionFields from './transactionFields.js';
+import { addBalance, updateBalance } from '#app/validation/Validators/account';
+import { DateTime } from 'luxon';
 
 type AddedTransaction = {
   categories: CategoryBalanceProps[],
@@ -227,17 +229,10 @@ export default class AccountsController {
 
     const { acctId } = request.params();
 
-    const requestData = await request.validate({
-      schema: schema.create({
-        date: schema.date({}, [
-          rules.unique({ table: 'balance_histories', column: 'date', where: { account_id: acctId } }),
-        ]),
-        amount: schema.number(),
-      }),
-      messages: {
-        'date.unique': 'Only one balance per date is allowed.',
-      },
-    });
+    const requestData = await request.validateUsing(addBalance)
+      // messages: {
+      //   'date.unique': 'Only one balance per date is allowed.',
+      // },
 
     const trx = await db.transaction();
 
@@ -249,7 +244,7 @@ export default class AccountsController {
         .fill({
           accountId: parseInt(acctId, 10),
           balance: requestData.amount,
-          date: requestData.date,
+          date: DateTime.fromJSDate(requestData.date),
         });
 
       await balance.save();
@@ -292,19 +287,18 @@ export default class AccountsController {
 
     const { acctId, id } = request.params();
 
-    const requestData = await request.validate({
-      schema: schema.create({
-        date: schema.date({}, [
-          rules.unique({
-            table: 'balance_histories', column: 'date', where: { account_id: acctId }, whereNot: { id },
-          }),
-        ]),
-        amount: schema.number(),
-      }),
-      messages: {
-        'date.unique': 'Only one balance per date is allowed.',
-      },
-    });
+    const requestData = await request.validateUsing(
+      updateBalance,
+      {
+        meta: {
+          acctId,
+          id,
+        }
+      }
+      // messages: {
+      //   'date.unique': 'Only one balance per date is allowed.',
+      // },
+    );
 
     const trx = await db.transaction();
 
@@ -314,7 +308,7 @@ export default class AccountsController {
       balance
         .merge({
           balance: requestData.amount,
-          date: requestData.date,
+          date: DateTime.fromJSDate(requestData.date),
         });
 
       await balance.save();
@@ -494,7 +488,7 @@ export default class AccountsController {
       const body = request.raw();
 
       if (!body) {
-        throw new Exception('missing ofx data', 400);
+        throw new Exception('missing ofx data', { status: 400 });
       }
 
       await account.processOfx(body, budget, user);
@@ -678,7 +672,7 @@ export default class AccountsController {
         }
       }
 
-      const changes = {
+      const changes: Record<string, unknown> = {
         startDate: requestData.startDate,
         endDate: requestData.endDate,
         startingBalance: requestData.startingBalance,

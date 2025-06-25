@@ -1,11 +1,10 @@
 /* eslint-disable max-classes-per-file */
-import compare from 'secure-compare';
+import safeCompare from 'safe-compare'
 import { sha256 } from 'js-sha256';
 import { decodeProtectedHeader, importJWK, jwtVerify } from 'jose';
 import { DateTime } from 'luxon';
 import * as Plaid from 'plaid';
-import { HttpContext } from '@adonisjs/core/http';
-import { RequestContract } from '@ioc:Adonis/Core/Request';
+import { HttpContext, Request } from '@adonisjs/core/http';
 import db from '@adonisjs/lucid/services/db';
 import Institution from '#app/Models/Institution';
 import mail from '@adonisjs/mail/services/main';
@@ -17,6 +16,7 @@ import BullMQ from '@ioc:Adonis/Addons/BullMQ'
 import WebhookLog from '#app/Models/WebhookLog';
 import redis from '@adonisjs/redis/services/main';
 import app from '@adonisjs/core/services/app';
+import ItemLoginRequiredNotification from '#app/mails/itemLoginRequiredNotification';
 
 const redisKey = 'key-cache';
 
@@ -149,13 +149,7 @@ class WebhookController {
           const users = await budget.related('users').query();
 
           await Promise.all(users.map((user) => (
-            mail.send((message) => {
-              message
-                .from(env.get('MAIL_FROM_ADDRESS') as string, env.get('MAIL_FROM_NAME') as string)
-                .to(user.email)
-                .subject('Action Required')
-                .htmlView('emails/item-login-required', { institution: institution.name });
-            })
+            mail.send(new ItemLoginRequiredNotification(user, institution))
           )));
         }
         else {
@@ -284,7 +278,7 @@ class WebhookController {
     }
   }
 
-  static async verify(request: RequestContract): Promise<boolean> {
+  static async verify(request: Request): Promise<boolean> {
     const signedJwt = request.header('Plaid-Verification');
     if (!signedJwt) {
       throw new Exception('Plaid-Verification header is missing');
@@ -379,7 +373,7 @@ class WebhookController {
 
       const bodyHash = sha256(body);
 
-      return compare(bodyHash, result.payload.request_body_sha256);
+      return safeCompare(bodyHash, result.payload.request_body_sha256 as string);
     }
     catch (error) {
       logger.error(`token verification failed: ${error.message}`);

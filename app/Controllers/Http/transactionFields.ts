@@ -1,6 +1,5 @@
 import { DateTime } from 'luxon';
-import { LucidRow } from " @adonisjs/lucid/types/model";
-import { ModelAttributes } from "@adonisjs/lucid/types/model";
+import { ModelObject } from "@adonisjs/lucid/types/model";
 
 const transactionFields = {
   fields: {
@@ -75,15 +74,16 @@ function getObjectChanges(
   return changes;
 }
 
-export function getChanges<T extends LucidRow>(
+export function getChanges<T extends ModelObject>(
   original: T,
-  updates: Partial<ModelAttributes<T>>,
+  updates: T,
   changes: Record<string, unknown>,
 ): Record<string, unknown> {
   Object.keys(updates).forEach((k) => {
     if (DateTime.isDateTime(updates[k])) {
-      if (!updates[k].equals(original[k])) {
-        changes[k] = { old: original[k].toISO(), new: updates[k].toISO() }
+      const date = updates[k] as DateTime
+      if (!updates[k].equals(date)) {
+        changes[k] = { old: date.toISO(), new: updates[k].toISO() }
       }
     }
     else if (updates[k] === null) {

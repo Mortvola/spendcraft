@@ -104,7 +104,7 @@ export default class User extends compose(BaseModel, AuthFinder) {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  public generatePassCode(): string {
+  public static generatePassCode(): PassCode {
     const randomNumber = Math.trunc(Math.random() * 1099511627775);
 
     let value = Math.trunc(randomNumber)
@@ -122,9 +122,7 @@ export default class User extends compose(BaseModel, AuthFinder) {
 
     value = `${value.slice(0, 4)}-${value.slice(4)}`;
 
-    this.oneTimePassCode = { code: value, expires: DateTime.now().plus({ minutes: 5 }) };
-
-    return value;
+    return { code: value, expires: DateTime.now().plus({ minutes: 5 }) };
   }
 
   public generateToken() : unknown {

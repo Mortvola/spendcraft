@@ -28,11 +28,11 @@ export default defineConfig({
     () => import('./start/kernel.js'),
     {
       file: () => import('./start/validationRules.js'),
-      environment: ["web"],
+      environment: ["web", "test"],
     },
     {
       file: () => import('./start/namingStrategy.js'),
-      environment: ["web"],
+      environment: ["web", "test"],
     },
     {
       file: () => import('./start/events.js'),
@@ -53,6 +53,7 @@ export default defineConfig({
     () => import('@adonisjs/core/providers/app_provider'),
     () => import('@adonisjs/core/providers/hash_provider'),
     { "file": () => import('@adonisjs/core/providers/repl_provider'), "environment": ["repl", "test"] },
+    () => import('@adonisjs/core/providers/vinejs_provider'),
     () => import('@adonisjs/session/session_provider'),
     () => import('@adonisjs/core/providers/edge_provider'),
     () => import('@adonisjs/lucid/database_provider'),
@@ -74,5 +75,17 @@ export default defineConfig({
       "reloadServer": false
     }
   ],
-    assetsBundler: false
+  assetsBundler: false,
+  tests: {
+    suites: [
+      {
+        name: 'functional',
+        files: ['tests/functional/**/*.spec.(js|ts)']
+      },
+      {
+        name: 'unit',
+        files: ['tests/unit/**/*.spec.(js|ts)']
+      }
+    ]
+  }
 });

@@ -38,6 +38,8 @@ export default await Env.create(new URL("../", import.meta.url), {
   REDIS_PASSWORD: Env.schema.string.optional(),
   VAPID_PUBLIC_KEY: Env.schema.string(),
   VAPID_PRIVATE_KEY: Env.schema.string(),
-  DRIVE_DISK: Env.schema.enum(['fs'] as const)
+  DRIVE_DISK: Env.schema.enum(['fs'] as const),
+  BULLMQ_REDIS_HOST: Env.schema.string.optional(),
+  BULLMQ_REDIS_PORT: Env.schema.number.optional(),
 })
   

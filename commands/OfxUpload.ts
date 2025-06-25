@@ -1,4 +1,4 @@
-import Drive from '@adonisjs/drive/services/main';
+import drive from '@adonisjs/drive/services/main';
 import db from '@adonisjs/lucid/services/db';
 import User from '#app/Models/User';
 import Account from '#app/Models/Account';
@@ -25,7 +25,8 @@ export default class OfxUpload extends BaseCommand {
         };
 
   public async run() {
-    const data = await Drive.get(this.ofx);
+    const disk = drive.use('fs')
+    const data = await disk.get(this.ofx);
 
     if (!data) {
       throw new Error('file not found');

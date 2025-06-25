@@ -152,17 +152,19 @@ class ReportController {
     + `where institutions.application_id = ${budget.id} `
     + 'order by name';
 
-    const categories = await db.rawQuery(categoryQuery);
+    const categories: { rows: { name: string }[] } = await db.rawQuery(categoryQuery);
 
     const crosstab = `SELECT * FROM crosstab($$${query}$$, $$${categoryQuery}$$) `
     + `AS (date TEXT ${listCategories(categories.rows)})`;
 
-    const data = await db.rawQuery(crosstab);
+    const data: { rows: object[] } = await db.rawQuery(crosstab);
 
     // Move the data into the result object
     // Also, strip the account id off of the column names
-    const result: (string | number)[][] = [['date'].concat(categories.rows
-      .map((item) => item.name.replace(/\d+_/, '')))]
+    const result: (string | number)[][] = [
+      ['date'].concat(categories.rows
+        .map((item) => item.name.replace(/\d+_/, '')))
+    ]
       .concat(data.rows.map((item) => Object.values(item)));
 
     // Fill in any gaps in balances
