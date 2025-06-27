@@ -67,18 +67,5 @@ test.group('Categories', (group) => {
 
       response.assertStatus(200)
       response.assertAgainstApiSpec()
-
-      console.log(JSON.stringify(response.body()))
-
-        // response.assertBody({
-        //   data: {
-        //     categories: [
-
-        //     ],
-        //     groups: [
-
-        //     ]
-        //   }
-        // })
     })
 })
