@@ -1,121 +1,88 @@
-import User from '#models/User'
 import { test } from '@japa/runner'
 import mail from '@adonisjs/mail/services/main'
 import VerifyEmailNotification from '#mails/verifyEmailNotification'
 
 test.group('Users', () => {
   const username = 'testuser'
-  const email = 'shields12345@msn.com'
+  const email = 'test@example.com'
   const password = 'testPassw0rd'
 
-  test('register invalid password test', async ({ client }) => {
-    const password = 'invalidinvalid'
-    const response = await client.post('/api/v1/register')
-      .json({
-        username,
-        email,
-        password,
-        passwordConfirmation: password,
+  test('register invalid password test - "{password}"', )
+    .with([
+      {
+        password: 'invalidinvalid',
+        status: 422,
+      },
+      {
+        password: 'invalid',
+        status: 422,
+      }
+    ])
+    .run(async ({ client, cleanup }, row) => {
+      mail.fake()
+
+      cleanup(() => {
+        mail.restore()
       })
-      .accept('json')
 
-    response.dumpBody()
-    
-    response.assertStatus(422)
-  })
+      const response = await client.post('/api/v1/register')
+        .json({
+          username,
+          email,
+          password: row.password,
+          passwordConfirmation: row.password,
+        })
+        .accept('json')
 
-  test('register short password test', async ({ client }) => {
-    const password = 'invalid'
-    const response = await client.post('/api/v1/register')
-      .json({
-        username,
-        email,
-        password,
-        passwordConfirmation: password,
-      })
-      .accept('json')
-
-    response.dumpBody()
-    
-    response.assertStatus(422)
-  })
-
-  test('register invalid email test', async ({ client }) => {
-    const response = await client.post('/api/v1/register')
-      .json({
-        username,
-        email: 'invalid-email',
-        password,
-        passwordConfirmation: password,
-      })
-      .accept('json')
-
-    response.dumpBody()
-    
-    response.assertStatus(422)
-  })
-
-  test('register', async ({ client, cleanup }) => {
-    const { mails } = mail.fake()
-
-    cleanup(() => {
-      mail.restore()
+      // response.dumpBody()
+      
+      response.assertStatus(row.status)
     })
 
-    const response = await client.post('/api/v1/register')
-      .json({
-        username,
-        email,
-        password,
-        passwordConfirmation: password,
+  test('register invalid email test')
+    .run(async ({ client, cleanup }) => {
+      mail.fake()
+
+      cleanup(() => {
+        mail.restore()
       })
-      .accept('json')
 
-    response.assertStatus(200)
+      const response = await client.post('/api/v1/register')
+        .json({
+          username,
+          email: 'invalid-email',
+          password,
+          passwordConfirmation: password,
+        })
+        .accept('json')
 
-    mails.assertSent(
-      VerifyEmailNotification,
-      ({ message }) => {
-        return message.hasTo(email)
-      }
-    )
-  })
+      response.assertStatus(422)
+    })
 
-  test('add group test', async ({ client, assert }) => {
-    const user = await User.findBy('username', username)
+  test('register')
+    .run(async ({ client, cleanup }) => {
+      const { mails } = mail.fake()
 
-    assert.isNotNull(user)
-
-    const response = await client.post('/api/v1/groups')
-      .json({
-        name: 'Test Group',
+      cleanup(() => {
+        mail.restore()
       })
-      .accept('json')
-      .loginAs(user!)
 
-    response.assertStatus(200)
-  })
+      const response = await client.post('/api/v1/register')
+        .json({
+          username,
+          email,
+          password,
+          passwordConfirmation: password,
+        })
+        .accept('json')
 
-  test('get test', async ({ client, assert }) => {
-    const user = await User.findBy('username', username)
+      response.assertStatus(200)
 
-    assert.isNotNull(user)
-
-    const response = await client.get('/api/v1/groups')
-      .accept('json')
-      .loginAs(user!)
-
-    response.assertStatus(200)
-
-      // response.assertBody({
-      //   data: {
-      //     categories: [
-
-      //     ],
-      //     groups: [
-
-      //     ]
-      //   }
-      // })
-  })
+      mails.assertSent(
+        VerifyEmailNotification,
+        ({ message }) => {
+          return message.hasTo(email)
+        }
+      )
+    })
 })

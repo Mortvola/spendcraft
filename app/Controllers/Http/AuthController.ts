@@ -1,21 +1,19 @@
 import * as jwt from 'jsonwebtoken';
 import { HttpContext } from '@adonisjs/core/http';
 import { schema, rules } from '@adonisjs/validator';
-import env from '#start/env';
 import logger from '@adonisjs/core/services/logger';
 import mail from '@adonisjs/mail/services/main';
 import User from '#app/Models/User';
-import db from '@adonisjs/lucid/services/db';
-import Budget from '#app/Models/Budget';
 import { sha256 } from 'js-sha256';
 import { DateTime } from 'luxon';
 import { register, registerMessageProvider, updatePassword } from '#app/validation/Validators/auth';
-import VerifyEmailNotification from '#app/mails/verifyEmailNotification';
 import RequestCodeNotification from '#app/mails/requestCodeNotification';
+import { inject } from '@adonisjs/core';
+import { UserService } from '#services/userService';
 
 export default class AuthController {
-  // eslint-disable-next-line class-methods-use-this
-  public async register({ request }: HttpContext) : Promise<void> {
+  @inject()
+  public async register({ request }: HttpContext, userService: UserService) : Promise<void> {
     /**
      * Validate user details
      */
@@ -26,34 +24,7 @@ export default class AuthController {
       }
     );
 
-    const trx = await db.transaction();
-
-    try {
-      const budget = await new Budget()
-        .useTransaction(trx)
-        .save();
-
-      await budget.initialize();
-
-      /**
-       * Create a new user
-       */
-      const user = await budget.related('users').create({
-        username: userDetails.username,
-        email: userDetails.email,
-        password: userDetails.password,
-        budgetId: budget.id,
-        oneTimePassCode: User.generatePassCode()
-      })
-
-      await trx.commit();
-
-      mail.send(new VerifyEmailNotification(user))
-    }
-    catch (error) {
-      trx.rollback();
-      throw error;
-    }
+    await userService.create(userDetails)
   }
 
   // eslint-disable-next-line class-methods-use-this
