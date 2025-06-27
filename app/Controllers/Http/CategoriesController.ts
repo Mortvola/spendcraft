@@ -187,7 +187,7 @@ class CategoriesController {
     auth: {
       user,
     },
-  }: HttpContext): Promise<Group> {
+  }: HttpContext): Promise<ApiResponse<Group>> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -210,7 +210,9 @@ class CategoriesController {
       })
       .save();
 
-    return group;
+    return {
+      data: group
+    };
   }
 
   // eslint-disable-next-line class-methods-use-this

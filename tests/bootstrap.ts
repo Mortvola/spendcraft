@@ -1,4 +1,5 @@
 import { assert } from '@japa/assert'
+import { openapi } from '@japa/openapi-assertions'
 import { apiClient } from '@japa/api-client'
 import app from '@adonisjs/core/services/app'
 import type { Config } from '@japa/runner/types'
@@ -17,6 +18,9 @@ import env from '#start/env'
  */
 export const plugins: Config['plugins'] = [
   assert(),
+  openapi({
+    schemas: [app.makePath('resources/openApiSchema.yaml')]
+  }),
   apiClient({
     baseURL: `http://${env.get('HOST')}:${env.get('PORT')}`,
   }),

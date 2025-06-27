@@ -1,0 +1,34 @@
+openapi: 3.0.4
+info:
+  title: SpendCraft API
+  version: 0.1.0
+
+paths:
+  /api/v1/groups:
+    post:
+      summary: Adds a group
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: object
+                    required:
+                      - name
+                      - type
+                      - id
+                    description: The data
+                    properties:
+                      name:
+                        type: string
+                      type:
+                        type: string
+                      id:
+                        type: number
+
