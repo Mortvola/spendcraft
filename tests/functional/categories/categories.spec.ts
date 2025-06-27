@@ -38,8 +38,6 @@ test.group('Categories', (group) => {
 
       response.assertStatus(200)
       response.assertAgainstApiSpec()
-
-      console.log(JSON.stringify(response.body()))
     })
 
   test('add duplicate group')
@@ -55,6 +53,7 @@ test.group('Categories', (group) => {
         .loginAs(user!)
 
       response.assertStatus(422)
+      response.assertAgainstApiSpec()
     })
 
   test('get category tree')
@@ -67,6 +66,9 @@ test.group('Categories', (group) => {
         .loginAs(user!)
 
       response.assertStatus(200)
+      response.assertAgainstApiSpec()
+
+      console.log(JSON.stringify(response.body()))
 
         // response.assertBody({
         //   data: {

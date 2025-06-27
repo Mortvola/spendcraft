@@ -31,4 +31,63 @@ paths:
                         type: string
                       id:
                         type: number
+        "422":
+          $ref: "#/components/responses/Error"
+  
+    get:
+      summary: Gets the category tree
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: object
+                    required:
+                      - categories
+                      - groups
+                    properties:
+                      categories:
+                        type: array
+                      groups:
+                        type: array
+        "422":
+          $ref: "#/components/responses/Error"
 
+components:
+  responses:
+    Error:
+      description: Error
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - errors
+            properties:
+              errors:
+                type: array
+                description: The errors
+                items:
+                  type: object
+                  required:
+                    - code
+                    - detail
+                    - source
+                  properties:
+                    code:
+                      type: string
+                    detail:
+                      type: string
+                    source:
+                      type: object
+                      required:
+                        - pointer
+                      properties:
+                        pointer:
+                          type: string
