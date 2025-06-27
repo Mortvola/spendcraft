@@ -34,9 +34,8 @@ test.group('Users', () => {
         })
         .accept('json')
 
-      // response.dumpBody()
-      
       response.assertStatus(row.status)
+      response.assertAgainstApiSpec()
     })
 
   test('register invalid email test')
@@ -57,6 +56,7 @@ test.group('Users', () => {
         .accept('json')
 
       response.assertStatus(422)
+      response.assertAgainstApiSpec()
     })
 
   test('register')
@@ -77,6 +77,7 @@ test.group('Users', () => {
         .accept('json')
 
       response.assertStatus(200)
+      response.assertAgainstApiSpec()
 
       mails.assertSent(
         VerifyEmailNotification,

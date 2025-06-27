@@ -4,6 +4,20 @@ info:
   version: 0.1.0
 
 paths:
+  /api/v1/register:
+    post:
+      summary: Registers a user
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+        
+        "422":
+          $ref: "#/components/responses/Error"
+
   /api/v1/groups:
     post:
       summary: Adds a group
