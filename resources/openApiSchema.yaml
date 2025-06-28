@@ -32,19 +32,7 @@ paths:
                   - data
                 properties:
                   data:
-                    type: object
-                    required:
-                      - name
-                      - type
-                      - id
-                    description: The data
-                    properties:
-                      name:
-                        type: string
-                      type:
-                        type: string
-                      id:
-                        type: number
+                    $ref: "#/components/schemas/Group"
         "422":
           $ref: "#/components/responses/Error"
   
@@ -61,78 +49,39 @@ paths:
                   - data
                 properties:
                   data:
-                    type: object
-                    required:
-                      - categories
-                      - groups
-                    properties:
-                      categories:
-                        type: array
-                        items:
-                          type: object
-                          required:
-                            - id
-                            - groupId
-                            - name
-                            - balance
-                            - type
-                          properties:
-                            id:
-                              type: number
-                            groupId:
-                              type: number
-                            name:
-                              type: string
-                            balance:
-                              type: number
-                            type:
-                              type: string
-                              enum:
-                                - REGULAR
-                                - UNASSIGNED
-                                - FUNDING POOL
-                                - ACCOUNT TRANSFER
-                            hidden:
-                              type: boolean
-                            fundingAmount:
-                              type: number
-                            useGoal:
-                              type: boolean
-                            recurrence:
-                              type: number
-                            fundingCategories:
-                              type: array
-                            goalDate:
-                              type: string
-                              nullable: true
-                              pattern: '^\d{3}-\d{2}-\d{4}$'
-                            includeFundingTransfers:
-                              type: boolean
-                            suspended:
-                              type: boolean
-                      groups:
-                        type: array
-                        items: 
-                          type: object
-                          properties:
-                            id:
-                              type: number
-                            name:
-                              type: string
-                            type:
-                              type: string
-                              enum:
-                                - REGULAR
-                                - SYSTEM
-                                - NO GROUP
-                            hidden:
-                              type: boolean
-                            parentGroupId:
-                              type: number
-                              nullable: true
+                    $ref: "#/components/schemas/CategoryTree"
         "422":
           $ref: "#/components/responses/Error"
 
+  /api/v1/groups/{id}:
+    patch:
+      summary: Updates a group
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Group"
+
+        "422":
+          $ref: "#/components/responses/Error"
+
+    delete:
+      summary: Deletes a group
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                
 components:
   responses:
     Error:
@@ -165,3 +114,88 @@ components:
                       properties:
                         pointer:
                           type: string
+
+  schemas:
+    Group:
+      type: object
+      required:
+        - name
+        - type
+        - id
+      description: The data
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum:
+            - REGULAR
+            - SYSTEM
+            - NO GROUP
+        id:
+          type: number
+        hidden:
+          type: boolean
+        parentGroupId:
+          type: number
+          nullable: true
+
+    Category:
+      type: object
+      required:
+        - id
+        - groupId
+        - name
+        - balance
+        - type
+      properties:
+        id:
+          type: number
+        groupId:
+          type: number
+        name:
+          type: string
+        balance:
+          type: number
+        type:
+          type: string
+          enum:
+            - REGULAR
+            - UNASSIGNED
+            - FUNDING POOL
+            - ACCOUNT TRANSFER
+        hidden:
+          type: boolean
+        fundingAmount:
+          type: number
+        useGoal:
+          type: boolean
+        recurrence:
+          type: number
+        fundingCategories:
+          type: array
+          items:
+            type: object
+        goalDate:
+          type: string
+          nullable: true
+          pattern: '^\d{3}-\d{2}-\d{4}$'
+        includeFundingTransfers:
+          type: boolean
+        suspended:
+          type: boolean
+
+    CategoryTree:
+      type: object
+      required:
+        - categories
+        - groups
+      properties:
+        categories:
+          type: array
+          items:
+            $ref: "#/components/schemas/Category"
+        groups:
+          type: array
+          items: 
+            $ref: "#/components/schemas/Group"

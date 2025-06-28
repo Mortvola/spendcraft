@@ -24,9 +24,10 @@ test.group('Categories', (group) => {
     }
   })
 
+  let groupId: number | null = null
+
   test('add group')
     .run(async ({ client, assert }) => {
-      // const user = await useGetTestUser()
       assert.isNotNull(user)
 
       const response = await client.post('/api/v1/groups')
@@ -38,11 +39,12 @@ test.group('Categories', (group) => {
 
       response.assertStatus(200)
       response.assertAgainstApiSpec()
+
+      groupId = response.body().data.id
     })
 
   test('add duplicate group')
     .run(async ({ client, assert }) => {
-      // const user = await useGetTestUser()
       assert.isNotNull(user)
 
       const response = await client.post('/api/v1/groups')
@@ -56,9 +58,36 @@ test.group('Categories', (group) => {
       response.assertAgainstApiSpec()
     })
 
+  test('update group')
+    .run(async ({ client, assert }) => {
+      assert.isNotNull(user)
+      assert.isNotNull(groupId)
+
+      const response = await client.patch(`/api/v1/groups/${groupId}`)
+        .json({
+          name: `${testGroupName} updated`,
+        })
+        .accept('json')
+        .loginAs(user!)
+
+      response.assertStatus(200)
+      response.assertAgainstApiSpec()
+    })
+
+  test('delete group')
+    .run(async ({ client, assert }) => {
+      assert.isNotNull(user)
+      assert.isNotNull(groupId)
+
+      const response = await client.delete(`/api/v1/groups/${groupId}`)
+        .loginAs(user!)
+
+      response.assertStatus(200)
+      response.assertAgainstApiSpec()
+    })
+
   test('get category tree')
     .run(async ({ client, assert }) => {
-      // const user = await useGetTestUser()
       assert.isNotNull(user)
 
       const response = await client.get('/api/v1/groups')

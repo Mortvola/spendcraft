@@ -82,21 +82,23 @@ export const updateCategory = vine.compile(
   //   'name.required': 'The category name is required',
   // }
 
-export const updateGroup = vine.compile(
-  vine.object({
-    name: vine.string().unique({
-      table: 'groups',
-      column: 'name',
-      filter: (db, _value, field) => {
-        db.
-          where('application_id', field.meta.budgetId)
-          .andWhereNot('id', field.meta.groupId)
-      },
-    }),
-    parentGroupId: vine.number().nullable().optional(),
-    hidden: vine.boolean(),
-  })
-)
+export const updateGroup = vine
+  .withMetaData<{ budgetId: number, groupId: number | string }>()
+  .compile(
+    vine.object({
+      name: vine.string().unique({
+        table: 'groups',
+        column: 'name',
+        filter: (db, _value, field) => {
+          db.
+            where('application_id', field.meta.budgetId)
+            .andWhereNot('id', field.meta.groupId)
+        },
+      }).optional(),
+      parentGroupId: vine.number().nullable().optional(),
+      hidden: vine.boolean().optional(),
+    })
+  )
 
   // public messages = {
   //   'name.required': 'A group name must be provided',

@@ -227,7 +227,15 @@ class CategoriesController {
     }
 
     const { groupId } = request.params();
-    const requestData = await request.validateUsing(updateGroup);
+    const requestData = await request.validateUsing(
+      updateGroup,
+      {
+        meta: {
+          budgetId: user.budgetId,
+          groupId,
+        },
+      },
+    );
 
     const group = await Group.findOrFail(groupId);
 
@@ -240,12 +248,7 @@ class CategoriesController {
     await group.save();
 
     return {
-      data: {
-        id: groupId,
-        name: group.name,
-        parentGroupId: group.parentGroupId,
-        hidden: group.hidden,
-      },
+      data: group,
     };
   }
 
