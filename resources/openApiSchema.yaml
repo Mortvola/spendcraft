@@ -75,7 +75,7 @@ paths:
     delete:
       summary: Deletes a group
       responses:
-        "200":
+        "204":
           description: ok
           content:
             application/json:

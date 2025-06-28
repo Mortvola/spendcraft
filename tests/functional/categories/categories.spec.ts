@@ -82,7 +82,7 @@ test.group('Categories', (group) => {
       const response = await client.delete(`/api/v1/groups/${groupId}`)
         .loginAs(user!)
 
-      response.assertStatus(200)
+      response.assertStatus(204)
       response.assertAgainstApiSpec()
     })
 

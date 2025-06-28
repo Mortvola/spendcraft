@@ -253,7 +253,7 @@ class CategoriesController {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  public async deleteGroup({ request, auth: { user } }: HttpContext): Promise<void> {
+  public async deleteGroup({ request, response, auth: { user } }: HttpContext): Promise<void> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -264,6 +264,8 @@ class CategoriesController {
     const group = await Group.findOrFail(groupId);
 
     await group.delete();
+
+    response.status(204)
   }
 
   // eslint-disable-next-line class-methods-use-this
