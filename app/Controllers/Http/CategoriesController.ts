@@ -13,11 +13,12 @@ import {
   BillProps,
   GroupType,
   CategoryType,
+  RequestErrorCode,
 } from '#common/ResponseTypes';
 import Group from '#app/Models/Group';
 import { DateTime } from 'luxon';
 import transactionFields from './transactionFields.js';
-import { addCategory, addGroup, deleteCategory, deleteGroup, updateCategory, updateGroup } from '#app/validation/Validators/category';
+import { addCategory, addGroup, updateCategory, updateGroup } from '#app/validation/Validators/category';
 
 class CategoriesController {
   // eslint-disable-next-line class-methods-use-this
@@ -253,15 +254,28 @@ class CategoriesController {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  public async deleteGroup({ request, response, auth: { user } }: HttpContext): Promise<void> {
+  public async deleteGroup({ request, response, auth: { user } }: HttpContext): Promise<ApiResponse<void> | void> {
     if (!user) {
       throw new Error('user is not defined');
     }
 
     const { groupId } = request.params();
-    await request.validateUsing(deleteGroup);
 
     const group = await Group.findOrFail(groupId);
+
+    const categories = await group.related('categories').query()
+
+    if (categories.length > 0) {
+      response.status(409)
+
+      return {
+        errors: [{
+          code: RequestErrorCode.HAS_CHILDREN,
+          status: '409',
+          detail: 'Unable to delete the group because it contains one or more categories',
+        }]
+      }
+    }
 
     await group.delete();
 
@@ -271,15 +285,22 @@ class CategoriesController {
   // eslint-disable-next-line class-methods-use-this
   public async addCategory({
     request,
-  }: HttpContext): Promise<Category> {
+  }: HttpContext): Promise<ApiResponse<Category>> {
     const { groupId } = request.params();
-    const requestData = await request.validateUsing(addCategory);
+    const requestData = await request.validateUsing(
+      addCategory,
+      {
+        meta: {
+          groupId: parseInt(groupId, 10),
+        }
+      }
+    );
 
     const category = new Category();
 
     await category
       .fill({
-        type: requestData.type,
+        type: requestData.type ?? CategoryType.Regular,
         groupId: parseInt(groupId, 10),
         name: requestData.name,
         balance: 0,
@@ -292,7 +313,9 @@ class CategoriesController {
       })
       .save();
 
-    return category;
+    return {
+      data: category
+    };
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -324,14 +347,32 @@ class CategoriesController {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  public async deleteCategory({ request, logger }: HttpContext): Promise<void> {
+  public async deleteCategory({ request, response, logger }: HttpContext): Promise<ApiResponse<void> | void> {
     const { catId } = request.params();
-    await request.validateUsing(deleteCategory);
 
     const trx = await db.transaction();
 
     try {
       const category = await Category.findOrFail(catId, { client: trx });
+
+      const result = await db.query()
+        .select(1)
+        .from('transactions')
+        .where('deleted', false)
+        .whereRaw('categories::jsonb @\\? (\'$[*] \\? (@.categoryId == \' || ? || \' && @.amount != 0)\')::jsonpath', [category.id])
+        .first();
+
+      if (result) {
+        response.status(409)
+
+        return {
+          errors: [{
+            code: RequestErrorCode.HAS_CHILDREN,
+            status: '409',
+            detail: 'Unable to delete the category because it contains one or more transactions',
+          }]
+        }
+      }
 
       if (category.type === CategoryType.Loan) {
         const loan = await Loan.findBy('categoryId', catId, { client: trx });
@@ -344,6 +385,8 @@ class CategoriesController {
       await category.delete();
 
       await trx.commit();
+
+      response.status(204)
     }
     catch (error) {
       await trx.rollback();

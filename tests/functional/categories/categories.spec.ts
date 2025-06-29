@@ -25,6 +25,7 @@ test.group('Categories', (group) => {
   })
 
   let groupId: number | null = null
+  let categoryId: number | null = null
 
   test('add group')
     .run(async ({ client, assert }) => {
@@ -74,12 +75,63 @@ test.group('Categories', (group) => {
       response.assertAgainstApiSpec()
     })
 
+  test('add category')
+    .run(async ({ client, assert }) => {
+      assert.isNotNull(user)
+      assert.isNotNull(groupId)
+
+      const response = await client.post(`/api/v1/groups/${groupId}/categories`)
+        .json({
+          name: 'Test Category',
+          useGoal: false,
+          fundingCategories: [],
+        })
+        .accept('json')
+        .loginAs(user!)
+
+      response.assertStatus(200)
+      response.assertAgainstApiSpec()
+
+      categoryId = response.body().data.id
+    })
+
+  test('delete group failure')
+    .run(async ({ client, assert }) => {
+      assert.isNotNull(user)
+      assert.isNotNull(groupId)
+
+      // This request should fail since the group contains a category
+      const response = await client.delete(`/api/v1/groups/${groupId}`)
+        .accept('json')
+        .loginAs(user!)
+
+      response.assertStatus(409)
+      response.assertAgainstApiSpec()
+    })
+
+  test('delete category')
+    .run(async ({ client, assert }) => {
+      assert.isNotNull(user)
+      assert.isNotNull(groupId)
+      assert.isNotNull(categoryId)
+
+      const response = await client.delete(`/api/v1/groups/${groupId}/categories/${categoryId}`)
+        .accept('json')
+        .loginAs(user!)
+
+      response.assertStatus(204)
+      response.assertAgainstApiSpec()
+
+      categoryId = null;
+    })
+
   test('delete group')
     .run(async ({ client, assert }) => {
       assert.isNotNull(user)
       assert.isNotNull(groupId)
 
       const response = await client.delete(`/api/v1/groups/${groupId}`)
+        .accept('json')
         .loginAs(user!)
 
       response.assertStatus(204)

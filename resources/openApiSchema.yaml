@@ -76,12 +76,44 @@ paths:
       summary: Deletes a group
       responses:
         "204":
-          description: ok
+          description: OK
           content:
             application/json:
               schema:
                 type: object
+
+        "409":
+          description: Conflict
+          $ref: "#/components/responses/Error"
+
                 
+  /api/v1/groups/{id}/categories:
+    post:
+      summary: Add category
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Category"
+
+  /api/v1/groups/{groupId}/categories/{catId}:
+    delete:
+      summary: Delete category
+      responses:
+        "204":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+
 components:
   responses:
     Error:
@@ -101,7 +133,6 @@ components:
                   required:
                     - code
                     - detail
-                    - source
                   properties:
                     code:
                       type: string

@@ -441,11 +441,16 @@ export interface ErrorResponse {
 
 export enum RequestErrorCode {
   INCORRECT_VERSION = 'INCORRECT_VERSION',
+  HAS_CHILDREN = 'HAS_CHILDREN',
 }
 
 export interface ApiError {
   code: RequestErrorCode,
   status: string,
+  detail: string,
+  source?: {
+    pointer: string,
+  },
 }
 
 export interface ApiResponse<T> {

@@ -1,29 +1,31 @@
 import { CategoryType } from '#common/ResponseTypes'
 import vine from '@vinejs/vine'
 
-export const addCategory = vine.compile(
-  vine.object({
-    name: vine.string().unique({
-        table: 'categories',
-        column: 'name',
-        filter: (db, _value, field) => { db.where('group_id', field.meta.groupId) },
-      }),
-    monthlyExpenses: vine.boolean().optional(),
-    type: vine.enum([CategoryType.Regular, CategoryType.Bill, CategoryType.Goal]).optional(),
-    fundingAmount: vine.number().optional(),
-    includeFundingTransfers: vine.boolean().optional(),
-    goalDate: vine.date().optional(),
-    recurrence: vine.number().optional(),
-    useGoal: vine.boolean(),
-    fundingCategories: vine.array(
-      vine.object({
-        categoryId: vine.number(),
-        amount: vine.number(),
-        percentage: vine.boolean(),
-      }),
-    ),
-  })
-)
+export const addCategory = vine
+  .withMetaData<{ groupId: number }>()
+  .compile(
+    vine.object({
+      name: vine.string().unique({
+          table: 'categories',
+          column: 'name',
+          filter: (db, _value, field) => { db.where('group_id', field.meta.groupId) },
+        }),
+      monthlyExpenses: vine.boolean().optional(),
+      type: vine.enum([CategoryType.Regular, CategoryType.Bill, CategoryType.Goal]).optional(),
+      fundingAmount: vine.number().optional(),
+      includeFundingTransfers: vine.boolean().optional(),
+      goalDate: vine.date().optional(),
+      recurrence: vine.number().optional(),
+      useGoal: vine.boolean(),
+      fundingCategories: vine.array(
+        vine.object({
+          categoryId: vine.number(),
+          amount: vine.number(),
+          percentage: vine.boolean(),
+        }),
+      ),
+    })
+  )
 
   // public messages = {
   //   'name.required': 'A category name must be provided',
@@ -103,29 +105,4 @@ export const updateGroup = vine
   // public messages = {
   //   'name.required': 'A group name must be provided',
   //   'name.unique': 'The group name must be unique',
-  // }
-
-export const deleteCategory = vine.compile(
-  vine.object({
-    params: vine.object({
-      catId: vine.number().transactionsExist(),
-    }),
-  })
-)
-
-  // public messages = {
-  //   'params.catId.required': 'A category ids must be provided',
-  //   'params.catId.transactionsExist': 'Before deleting, the category must not contain any transactions',
-  // }
-
-export const deleteGroup = vine.compile(
-  vine.object({
-    params: vine.object({
-      groupId: vine.number().notExists({ table: 'categories', column: 'group_id' }),
-    }),
-  })
-)
-
-  // public messages = {
-  //   'params.groupId.notExists': 'Before deleting, the group must not contain any categories',
   // }
