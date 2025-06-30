@@ -104,6 +104,21 @@ paths:
                     $ref: "#/components/schemas/Category"
 
   /api/v1/groups/{groupId}/categories/{catId}:
+    patch:
+      summary: Update category
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Category"
+
     delete:
       summary: Delete category
       responses:

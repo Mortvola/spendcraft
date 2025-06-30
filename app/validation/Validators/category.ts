@@ -50,33 +50,35 @@ export const addGroup = vine
   //   'name.unique': 'The group name must be unique',
   // }
 
-export const updateCategory = vine.compile(
-  vine.object({
-    name: vine.string().unique({
-      table: 'categories',
-      column: 'name',
-      filter: (db, _value, field) => {
-        db.where('group_id', field.meta.groupId)
-          .andWhereNot('id', field.meta.catId)
-      }
-    }),
-    monthlyExpenses: vine.boolean().optional(),
-    type: vine.enum([CategoryType.Regular, CategoryType.Bill, CategoryType.Goal] as const),
-    goalDate: vine.date().optional(),
-    recurrence: vine.number().optional(),
-    suspended: vine.boolean().optional(),
-    fundingAmount: vine.number().optional(),
-    includeFundingTransfers: vine.boolean().optional(),
-    hidden: vine.boolean(),
-    useGoal: vine.boolean(),
-    fundingCategories: vine.array(
-      vine.object({
-        categoryId: vine.number(),
-        amount: vine.number(),
-        percentage: vine.boolean(),
+export const updateCategory = vine
+  .withMetaData<{ groupId: number, catId: number }>()
+  .compile(
+    vine.object({
+      name: vine.string().unique({
+        table: 'categories',
+        column: 'name',
+        filter: (db, _value, field) => {
+          db.where('group_id', field.meta.groupId)
+            .andWhereNot('id', field.meta.catId)
+        }
       }),
-    ),
-  })
+      monthlyExpenses: vine.boolean().optional(),
+      type: vine.enum([CategoryType.Regular, CategoryType.Bill, CategoryType.Goal] as const).optional(),
+      goalDate: vine.date().optional(),
+      recurrence: vine.number().optional(),
+      suspended: vine.boolean().optional(),
+      fundingAmount: vine.number().optional(),
+      includeFundingTransfers: vine.boolean().optional(),
+      hidden: vine.boolean().optional(),
+      useGoal: vine.boolean().optional(),
+      fundingCategories: vine.array(
+        vine.object({
+          categoryId: vine.number(),
+          amount: vine.number(),
+          percentage: vine.boolean(),
+        }),
+      ).optional(),
+    })
 )
 
   // public messages = {

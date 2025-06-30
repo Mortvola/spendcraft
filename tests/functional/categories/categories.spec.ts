@@ -109,6 +109,22 @@ test.group('Categories', (group) => {
       response.assertAgainstApiSpec()
     })
 
+  test('update category')
+    .run(async ({ client, assert }) => {
+      assert.isNotNull(user)
+      assert.isNotNull(categoryId)
+
+      const response = await client.patch(`/api/v1/groups/${groupId}/categories/${categoryId}`)
+        .json({
+          name: 'Test Category Updated'
+        })
+        .accept('json')
+        .loginAs(user!)
+
+      response.assertStatus(200)
+      response.assertAgainstApiSpec()
+    })
+
   test('delete category')
     .run(async ({ client, assert }) => {
       assert.isNotNull(user)

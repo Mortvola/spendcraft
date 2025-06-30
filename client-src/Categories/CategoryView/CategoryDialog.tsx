@@ -61,7 +61,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
     let errors = null;
 
     const selectedGroup = categoryTree.getGroup(parseInt(values.groupId, 10))
-      ?? categoryTree.noGroupGroup;
+      ?? categoryTree.budget;
 
     if (selectedGroup === null) {
       throw new Error(`group is not a group: ${selectedGroup}`);
@@ -142,9 +142,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
   const populateGroups = () => {
     const options = [];
 
-    if (categoryTree.noGroupGroup !== null) {
-      options.push(<option key="nogroup" value={categoryTree.noGroupGroup.id}>No Group</option>);
-    }
+    options.push(<option key="nogroup" value={categoryTree.budget.id}>No Group</option>);
 
     let stack: (GroupInterface | CategoryInterface)[] = [...categoryTree.budget.children]
 

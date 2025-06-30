@@ -107,8 +107,8 @@ const CategoryView: React.FC = observer(() => {
             return null;
           }
 
-          if (categoryTree.noGroupGroup === null) {
-            throw new Error('no group is null');
+          if (categoryTree.budget === null) {
+            throw new Error('budget is null');
           }
 
           return (

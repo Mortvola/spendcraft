@@ -278,8 +278,6 @@ export interface CategoryTreeInterface extends RemoteDataInterface {
 
   systemIds: SystemIds;
 
-  noGroupGroup: GroupInterface | null;
-
   unassignedCat: CategoryInterface | null;
 
   accountTransferCat: CategoryInterface | null;

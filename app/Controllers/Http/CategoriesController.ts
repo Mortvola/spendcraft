@@ -19,6 +19,17 @@ import Group from '#app/Models/Group';
 import { DateTime } from 'luxon';
 import transactionFields from './transactionFields.js';
 import { addCategory, addGroup, updateCategory, updateGroup } from '#app/validation/Validators/category';
+import { LucidRow, ModelAttributes } from '@adonisjs/lucid/types/model';
+
+function removeUndefined<M extends LucidRow, T extends Partial<ModelAttributes<M>>>(obj: T) {
+  for (const key in obj) {
+    if (obj[key] === undefined) {
+      delete obj[key]
+    }
+  }
+
+  return obj
+}
 
 class CategoriesController {
   // eslint-disable-next-line class-methods-use-this
@@ -240,11 +251,11 @@ class CategoriesController {
 
     const group = await Group.findOrFail(groupId);
 
-    group.merge({
+    group.merge(removeUndefined({
       name: requestData.name,
       hidden: requestData.hidden,
       parentGroupId: requestData.parentGroupId,
-    });
+    }));
 
     await group.save();
 
@@ -321,13 +332,24 @@ class CategoriesController {
   // eslint-disable-next-line class-methods-use-this
   public async updateCategory({
     request,
-  }: HttpContext): Promise<Category> {
-    const { groupId, catId } = request.params();
-    const requestData = await request.validateUsing(updateCategory);
+  }: HttpContext): Promise<ApiResponse<Category>> {
+    let { groupId, catId } = request.params();
+    groupId = parseInt(groupId, 10)
+    catId = parseInt(catId, 10)
+
+    const requestData = await request.validateUsing(
+      updateCategory,
+      {
+        meta: {
+          groupId,
+          catId,
+        }
+      }
+    );
 
     const category = await Category.findOrFail(catId);
 
-    category.merge({
+    category.merge(removeUndefined({
       type: requestData.type,
       name: requestData.name,
       groupId,
@@ -336,14 +358,16 @@ class CategoriesController {
       includeFundingTransfers: requestData.includeFundingTransfers,
       hidden: requestData.hidden,
       useGoal: requestData.useGoal,
-      goalDate: requestData.goalDate ? DateTime.fromJSDate(requestData.goalDate) : undefined,
+      goalDate: requestData.goalDate !== undefined ? DateTime.fromJSDate(requestData.goalDate) : undefined,
       recurrence: requestData.recurrence,
       fundingCategories: requestData.fundingCategories,
-    });
+    }));
 
     await category.save();
 
-    return category;
+    return {
+      data: category
+    };
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -516,7 +540,7 @@ class CategoriesController {
         }
 
         await transaction
-          .merge({
+          .merge(removeUndefined({
             date: DateTime.fromISO(date),
             categories: categories.map((category) => ({
               categoryId: category.categoryId,
@@ -527,7 +551,7 @@ class CategoriesController {
               includeFundingTransfers: category.includeFundingTransfers,
               baseAmount: category.baseAmount,
             })),
-          })
+          }))
           .save()
       }
 

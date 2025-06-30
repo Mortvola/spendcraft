@@ -34,7 +34,7 @@ const GroupDialog: React.FC<PropsType & ModalProps> = ({
     const { setErrors } = formikHelpers;
     let errors: Array<Error> | null = null;
 
-    let parentGroupId = categoryTree.noGroupGroup!.id;
+    let parentGroupId = categoryTree.budget.id;
 
     if (typeof values.parentGroupId === 'string') {
       parentGroupId = parseInt(values.parentGroupId, 10)
@@ -94,9 +94,7 @@ const GroupDialog: React.FC<PropsType & ModalProps> = ({
   const populateGroups = () => {
     const options = [];
 
-    if (categoryTree.noGroupGroup !== null) {
-      options.push(<option key="nogroup" value={categoryTree.noGroupGroup.id}>None</option>);
-    }
+    options.push(<option key="nogroup" value={categoryTree.budget.id}>None</option>);
 
     let stack: (GroupInterface | CategoryInterface)[] = [...categoryTree.budget.children]
 

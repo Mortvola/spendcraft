@@ -42,7 +42,7 @@ const BillDialog: React.FC<PropsType & ModalProps> = ({
     let errors = null;
 
     const selectedGroup = (categoryTree.budget.children.find((g) => g.id === parseInt(values.groupId, 10))
-      ?? categoryTree.noGroupGroup);
+      ?? categoryTree.budget);
 
     if (selectedGroup === null || !isGroup(selectedGroup)) {
       throw new Error('group is not a group');
@@ -109,9 +109,7 @@ const BillDialog: React.FC<PropsType & ModalProps> = ({
   const populateGroups = () => {
     const options = [];
 
-    if (categoryTree.noGroupGroup !== null) {
-      options.push(<option key="nogroup" value={categoryTree.noGroupGroup.id}>No Group</option>);
-    }
+    options.push(<option key="nogroup" value={categoryTree.budget.id}>No Group</option>);
 
     return options.concat(
       categoryTree.budget.children

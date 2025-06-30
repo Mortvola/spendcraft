@@ -6,6 +6,8 @@ import {
   isUpdateCategoryResponse,
   CategoryType,
   CategoryBalanceProps,
+  ApiResponse,
+  UpdateCategoryResponse,
 } from '../../common/ResponseTypes';
 import LoanTransaction from './LoanTransaction';
 import {
@@ -56,7 +58,6 @@ class Category implements CategoryInterface {
     this.name = props.name;
     this.type = props.type;
     this.balance = props.balance;
-    // this.groupId = props.groupId;
     this.suspended = props.suspended;
     this.fundingAmount = props.fundingAmount;
     this.includeFundingTransfers = props.includeFundingTransfers;
@@ -115,7 +116,7 @@ class Category implements CategoryInterface {
       group, goalDate, fundingCategories, ...p
     } = params;
 
-    const response = await Http.patch(`/api/v1/groups/${group.id}/categories/${this.id}`, {
+    const response = await Http.patch<unknown, ApiResponse<UpdateCategoryResponse>>(`/api/v1/groups/${group.id}/categories/${this.id}`, {
       ...p,
       fundingCategories:
         p.type === CategoryType.Bill
@@ -134,16 +135,16 @@ class Category implements CategoryInterface {
     }
     else {
       runInAction(() => {
-        if (isUpdateCategoryResponse(body)) {
-          const nameChanged = this.name !== body.name;
-          this.type = body.type;
-          this.name = body.name;
-          this.suspended = body.suspended;
-          this.fundingAmount = body.fundingAmount;
-          this.includeFundingTransfers = body.includeFundingTransfers;
-          this.recurrence = body.recurrence;
-          this.goalDate = DateTime.fromISO(body.goalDate);
-          this.fundingCategories = body.fundingCategories.map((c, index) => ({ id: index, ...c }));
+        if (body.data) {
+          const nameChanged = this.name !== body.data.name;
+          this.type = body.data.type;
+          this.name = body.data.name;
+          this.suspended = body.data.suspended;
+          this.fundingAmount = body.data.fundingAmount;
+          this.includeFundingTransfers = body.data.includeFundingTransfers;
+          this.recurrence = body.data.recurrence;
+          this.goalDate = DateTime.fromISO(body.data.goalDate);
+          this.fundingCategories = body.data.fundingCategories.map((c, index) => ({ id: index, ...c }));
 
           // Find the group the category is currently in
           // and possibly move it to the new group.

@@ -24,8 +24,6 @@ class CategoryTree implements CategoryTreeInterface {
 
   systemIds = new SystemIds();
 
-  noGroupGroup: Group | null = null;
-
   unassignedCat: Category | null = null;
 
   accountTransferCat: Category | null = null;
@@ -153,7 +151,7 @@ class CategoryTree implements CategoryTreeInterface {
   insertNode(node: TreeNode, parentGroupId: number | null): void {
     let group: Group | GroupInterface | null = null;
 
-    if (parentGroupId === null || parentGroupId === this.noGroupGroup!.id) {
+    if (parentGroupId === null || parentGroupId === this.budget!.id) {
       group = this.budget
     }
     else {
@@ -190,9 +188,7 @@ class CategoryTree implements CategoryTreeInterface {
 
         this.systemIds.systemGroupId = systemGroup.id;
 
-        this.budget = new Budget(systemGroup, this.store)
-
-        this.noGroupGroup = new Group(noGroup, this.store)
+        this.budget = new Budget(noGroup, this.store)
 
         this.subcategories = [];
 
@@ -327,7 +323,7 @@ class CategoryTree implements CategoryTreeInterface {
   }
 
   async addGroup(name: string, parentGroupId: number | null): Promise<null | Error[]> {
-    const response = await Http.post<unknown, GroupProps>('/api/v1/groups', { name, parentGroupId });
+    const response = await Http.post<unknown, ApiResponse<GroupProps>>('/api/v1/groups', { name, parentGroupId });
 
     const body = await response.body();
 
@@ -338,8 +334,10 @@ class CategoryTree implements CategoryTreeInterface {
     }
     else {
       runInAction(() => {
-        const group = new Group(body, this.store);
-        this.insertNode(group, body.parentGroupId);
+        if (body.data) {
+          const group = new Group(body.data, this.store);
+          this.insertNode(group, body.data.parentGroupId);
+        }
       });
     }
 

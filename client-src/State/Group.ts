@@ -7,6 +7,7 @@ import {
   GroupType,
   CategoryType,
   ApiResponse,
+  CategoryProps,
 } from '../../common/ResponseTypes';
 import {
   CategoryInterface, CategoryParams, GroupInterface, StoreInterface,
@@ -87,7 +88,7 @@ class Group implements GroupInterface {
       group, fundingCategories, goalDate, ...p
     } = params;
 
-    const response = await Http.post(`/api/v1/groups/${this.id}/categories`, {
+    const response = await Http.post<unknown, ApiResponse<CategoryProps>>(`/api/v1/groups/${this.id}/categories`, {
       ...p,
       fundingCategories:
       p.type === CategoryType.Bill
@@ -104,12 +105,14 @@ class Group implements GroupInterface {
         return body.errors;
       }
     }
-    else if (isAddCategoryResponse(body)) {
+    else {
       runInAction(() => {
-        const category = new Category(body, this.store);
+        if (isAddCategoryResponse(body.data)) {
+          const category = new Category(body.data, this.store);
 
-        // Find the position where this new category should be inserted.
-        this.insertChild(category);
+          // Find the position where this new category should be inserted.
+          this.insertChild(category);
+        }
       });
     }
 

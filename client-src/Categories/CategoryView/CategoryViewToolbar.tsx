@@ -64,7 +64,7 @@ const CategoryViewToolbar: React.FC<PropsType> = observer(({
             </Dropdown.Menu>
           </Dropdown>
           {
-            categoryTree.noGroupGroup !== null
+            categoryTree.budget !== null
               ? (
                 <>
                   {/* <button type="button" onClick={showCategoryDialog}>Add Category</button> */}
