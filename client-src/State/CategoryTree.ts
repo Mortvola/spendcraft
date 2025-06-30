@@ -328,8 +328,12 @@ class CategoryTree implements CategoryTreeInterface {
     const body = await response.body();
 
     if (!response.ok) {
-      if (isErrorResponse(body)) {
-        return body.errors;
+      if (body.errors) {
+        return body.errors.map((error) => ({
+          field: error.source?.pointer ?? '',
+          message: error.detail,
+          rule: error.code,
+        }));
       }
     }
     else {
