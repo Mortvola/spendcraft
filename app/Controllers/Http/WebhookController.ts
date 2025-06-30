@@ -8,11 +8,9 @@ import { HttpContext, Request } from '@adonisjs/core/http';
 import db from '@adonisjs/lucid/services/db';
 import Institution from '#app/Models/Institution';
 import mail from '@adonisjs/mail/services/main';
-import env from '#start/env';
 import { Exception } from '@adonisjs/core/exceptions';
 import logger from '@adonisjs/core/services/logger';
 import { PlaidWebHookProps, QueueNamesEnum } from '#contracts/QueueInterfaces';
-import BullMQ from '@ioc:Adonis/Addons/BullMQ'
 import WebhookLog from '#app/Models/WebhookLog';
 import redis from '@adonisjs/redis/services/main';
 import app from '@adonisjs/core/services/app';
@@ -168,7 +166,8 @@ class WebhookController {
     const trx = await db.transaction();
 
     try {
-      const queue = BullMQ.queue<PlaidWebHookProps, PlaidWebHookProps>(QueueNamesEnum.PlaidWebHook)
+      const bullmq = await app.container.make('bullmq')
+      const queue = bullmq.queue<PlaidWebHookProps, PlaidWebHookProps>(QueueNamesEnum.PlaidWebHook)
       await queue.add('sync', { itemId: event.item_id })
     }
     catch (error) {

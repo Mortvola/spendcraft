@@ -1,8 +1,9 @@
-// import BullMQ from '@ioc:Adonis/Addons/BullMQ'
-// import { PlaidWebHookProps, QueueNamesEnum } from '#contracts/QueueInterfaces'
+import { PlaidWebHookProps, QueueNamesEnum } from '#contracts/QueueInterfaces'
 import { BaseCommand } from "@adonisjs/core/ace";
 import { args } from "@adonisjs/core/ace";
+import app from "@adonisjs/core/services/app";
 import { CommandOptions } from "@adonisjs/core/types/ace";
+
 
 export default class QueueTest extends BaseCommand {
   /**
@@ -17,13 +18,17 @@ export default class QueueTest extends BaseCommand {
 
   @args.string({ description: 'Item id' })
   public itemId: string
-    static options: CommandOptions = {
-          startApp: true,
-          staysAlive: false,
-        };
+
+  static options: CommandOptions = {
+    startApp: true,
+  };
 
   public async run() {
-    // const queue = BullMQ.queue<PlaidWebHookProps, PlaidWebHookProps>(QueueNamesEnum.PlaidWebHook)
-    // await queue.add('sync', { itemId: this.itemId })
+    const bullmq = await app.container.make('bullmq')
+
+    const queue = bullmq.queue<PlaidWebHookProps, PlaidWebHookProps>(QueueNamesEnum.PlaidWebHook)
+    await queue.add('sync', { itemId: this.itemId })
+
+    this.logger.info('test queued')
   }
 }

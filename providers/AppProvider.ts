@@ -1,4 +1,5 @@
 import ApplePushNotifications from './ApplePushNotifications/index.js';
+import { BullMQ } from './BullMQ.js';
 import Plaid from './Plaid/Plaid.js';
 import { ApplicationService } from "@adonisjs/core/types";
 
@@ -22,6 +23,13 @@ export default class AppProvider {
     })
 
     this.app.container.alias('apn', ApplePushNotifications)
+
+    // Register BullMQ provider
+    this.app.container.singleton(BullMQ, () => {
+      return new BullMQ(this.app.config.get('bullmq', {}))
+    })
+
+    this.app.container.alias('bullmq', BullMQ)
   }
 
   public async boot () {

@@ -16,7 +16,7 @@ export default class CheckEmail extends BaseCommand {
 
   async run() {
     try {
-      mail.send(new TestNotification(this.email));
+      await mail.send(new TestNotification(this.email));
 
       this.logger.info('Email send completed')
     }
