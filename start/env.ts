@@ -41,5 +41,7 @@ export default await Env.create(new URL("../", import.meta.url), {
   DRIVE_DISK: Env.schema.enum(['fs'] as const),
   BULLMQ_REDIS_HOST: Env.schema.string.optional(),
   BULLMQ_REDIS_PORT: Env.schema.number.optional(),
+  ACCESS_TOKEN_EXPIRE: Env.schema.number(),
+  REFRESH_TOKEN_EXPIRE: Env.schema.number(),
 })
   

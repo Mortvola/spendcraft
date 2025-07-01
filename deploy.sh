@@ -4,7 +4,7 @@ set -e
 
 ./build.sh
 
-rm build.zip;
+rm -f build.zip;
 zip -r build build > /dev/null;
 
 cp ./install.sh0 install.sh

@@ -122,8 +122,8 @@ const authConfig = defineConfig({
               privateKey: env.get('JWT_PRIVATE_KEY', '').replace(/\\n/g, '\n'),
               issuer: 'spendcraft',
               audience: 'spendcraft',
-              jwtDefaultExpire: { minutes: 1 },
-              refreshTokenDefaultExpire: { minutes: 5 },
+              jwtDefaultExpire: { minutes: env.get('ACCESS_TOKEN_EXPIRE') },
+              refreshTokenDefaultExpire: { minutes: env.get('REFRESH_TOKEN_EXPIRE') },
             },
           )
         },
