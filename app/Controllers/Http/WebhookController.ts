@@ -16,22 +16,6 @@ import redis from '@adonisjs/redis/services/main';
 import app from '@adonisjs/core/services/app';
 import ItemLoginRequiredNotification from '#app/mails/itemLoginRequiredNotification';
 
-type Key = {
-  alg: string;
-  // eslint-disable-next-line camelcase
-  created_at: number;
-  crv: string;
-  // eslint-disable-next-line camelcase
-  expired_at: null | number;
-  kid: string;
-  kty: string;
-  use: string;
-  x: string;
-  y: string;
-};
-
-type KeyCacheEntry = { kid: string, cacheTime: string, key: Key };
-
 class WebhookEvent {
   // eslint-disable-next-line camelcase
   webhook_type: string;

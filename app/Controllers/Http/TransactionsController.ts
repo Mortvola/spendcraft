@@ -118,6 +118,7 @@ export default class TransactionsController {
           errors: [{
             code: RequestErrorCode.INCORRECT_VERSION,
             status: '409',
+            detail: 'The version of the transaction does not match the version stored in the database.'
           }],
         }
       }

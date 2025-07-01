@@ -6,7 +6,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node ace serve",
-    "server-build": "node ace build --production",
+    "server-build": "node ace build",
     "client-build": "webpack --config-name app --env production",
     "dev-start": "node ace serve -w",
     "dev-server-build": "node ace build",

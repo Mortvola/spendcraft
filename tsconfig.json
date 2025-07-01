@@ -67,9 +67,6 @@
         "./providers/*.js"
       ]
     },
-    "types": [
-      "adonis5-bullmq"
-    ],
     "strictPropertyInitialization": false,
     "module": "NodeNext"
   }
