@@ -7,7 +7,7 @@ test.group('Users', () => {
   const email = 'test@example.com'
   const password = 'testPassw0rd'
 
-  test('register invalid password test - "{password}"', )
+  test('register invalid password test - "{password}"')
     .with([
       {
         password: 'invalidinvalid',

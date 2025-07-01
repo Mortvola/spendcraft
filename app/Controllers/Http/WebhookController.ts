@@ -16,8 +16,6 @@ import redis from '@adonisjs/redis/services/main';
 import app from '@adonisjs/core/services/app';
 import ItemLoginRequiredNotification from '#app/mails/itemLoginRequiredNotification';
 
-const redisKey = 'key-cache';
-
 type Key = {
   alg: string;
   // eslint-disable-next-line camelcase
@@ -283,87 +281,33 @@ class WebhookController {
       throw new Exception('Plaid-Verification header is missing');
     }
 
-    const decodeTokenHeader = decodeProtectedHeader(signedJwt);
-    const currentKid = decodeTokenHeader.kid;
+    const { kid: currentKid } = decodeProtectedHeader(signedJwt);
 
     if (!currentKid) {
       throw new Exception('kid is not defined');
     }
 
-    let keyCache: KeyCacheEntry[] = [];
+    const redisKey = `plaid_wh_key:${currentKid}`
+    let keyString = await redis.get(redisKey);
 
-    const keyCacheString = await redis.get(redisKey);
-    if (keyCacheString) {
-      keyCache = JSON.parse(keyCacheString) as KeyCacheEntry[];
+    if (!keyString) {
+      // The key was not found in the cache. Retrieve it from the server.
+      const plaidClient = await app.container.make('plaid')
+      const { key: publicKey } = await plaidClient.getWebhookVerificationKey(currentKid);
+
+      keyString = JSON.stringify(publicKey)
+      redis.set(redisKey, keyString)
+      redis.expireat(redisKey, DateTime.now().plus({ hours: 24 }).toUnixInteger())
     }
 
-    // If the kid is in the cache but it has been cached for more than 24 hours
-    // then remove it.
-    let index = keyCache.findIndex((entry) => entry.kid === currentKid);
-
-    if (index !== -1) {
-      const cachedKey = keyCache[index];
-      if (cachedKey !== undefined
-        && DateTime.fromISO(cachedKey.cacheTime).plus({ hours: 24 }) <= DateTime.now()
-      ) {
-        keyCache = [
-          ...keyCache.slice(0, index),
-          ...keyCache.slice(index + 1),
-        ];
-
-        index = -1
-      }
+    if (!keyString) {
+      throw new Exception('key is not found in cache or received from the server');
     }
-
-    // If the kid is not in the cache, retrieve it 
-    // and refresh any others that are currently in the cache.
-    if (index === -1) {
-      const keyIDsToUpdate: string[] = [currentKid];
-      keyCache.forEach(({ kid, key }) => {
-        if (key.expired_at === null) {
-          keyIDsToUpdate.push(kid);
-        }
-      });
-
-      // Fetch the latest key from the verication server for
-      // all kids that need to be updated.
-      await Promise.all(keyIDsToUpdate.map(async (kid) => {
-        const plaidClient = await app.container.make('plaid')
-        const { key } = await plaidClient.getWebhookVerificationKey(kid);
-
-        index = keyCache.findIndex((entry) => entry.kid === kid)
-
-        if (key.expired_at === null) {
-          if (index === -1) {
-            keyCache.push({ kid, cacheTime: DateTime.now().toISO(), key })
-          }
-          else {
-            keyCache[index] = { kid, cacheTime: DateTime.now().toISO(), key }
-          }
-        }
-        // If the key has expired then remove it from the cache.
-        else if (index !== -1) {
-          keyCache = [
-            ...keyCache.slice(0, index),
-            ...keyCache.slice(index + 1),
-          ];
-        }
-      }));
-    }
-
-    redis.set(redisKey, JSON.stringify(keyCache))
-
-    const cachedKey = keyCache.find((entry) => entry.kid === currentKid);
-
-    if (!cachedKey) {
-      throw new Exception('kid is not found in cache');
-    }
-
-    const { key } = cachedKey;
 
     try {
-      const pk = await importJWK(key)
-      const result = await jwtVerify(signedJwt, pk, { maxTokenAge: '5 min' });
+      const key = JSON.parse(keyString)
+      const publicKey = await importJWK(key)
+      const result = await jwtVerify(signedJwt, publicKey, { maxTokenAge: '5 min' });
 
       const body = request.raw();
       if (body === null) {

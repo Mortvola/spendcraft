@@ -1,6 +1,7 @@
 import Institution from '#app/Models/Institution';
 import PlaidException from './PlaidException.js';
 import * as Plaid from 'plaid';
+export { type WebhookVerificationKeyGetResponse } from 'plaid';
 
 export type PlaidConfig = {
   clientId: string,
