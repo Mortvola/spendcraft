@@ -204,11 +204,14 @@ class CategoriesController {
       throw new Error('user is not defined');
     }
 
+    const noGroup = await Group.findByOrFail('type', GroupType.NoGroup)
+
     const requestData = await request.validateUsing(
       addGroup,
       {
         meta: {
           budgetId: user.budgetId,
+          noGroupId: noGroup.id,
         },
       },
     );
@@ -239,17 +242,21 @@ class CategoriesController {
     }
 
     const { groupId } = request.params();
+
+    const group = await Group.findOrFail(groupId);
+
+    const noGroup = await Group.findByOrFail('type', GroupType.NoGroup)
+
     const requestData = await request.validateUsing(
       updateGroup,
       {
         meta: {
           budgetId: user.budgetId,
           groupId,
+          noGroupId: noGroup.id,
         },
       },
     );
-
-    const group = await Group.findOrFail(groupId);
 
     group.merge(removeUndefined({
       name: requestData.name,

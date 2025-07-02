@@ -33,13 +33,17 @@ export const addCategory = vine
   // }
 
 export const addGroup = vine
-  .withMetaData<{ budgetId: number }>()
+  .withMetaData<{ budgetId: number, noGroupId: number }>()
   .compile(
     vine.object({
       name: vine.string().unique({
           table: 'groups',
           column: 'name',
-          filter: (db, _value, field) => { db.where('application_id', field.meta.budgetId) },
+          filter: (db, _value, field) => {
+            db
+              .where('application_id', field.meta.budgetId)
+              .andWhereRaw('COALESCE(parent_group_id, ??) = ?', [field.meta.noGroupId, field.data.parentGroupId])
+          },
         }),
       parentGroupId: vine.number().nullable().optional(),
     })
@@ -87,15 +91,16 @@ export const updateCategory = vine
   // }
 
 export const updateGroup = vine
-  .withMetaData<{ budgetId: number, groupId: number | string }>()
+  .withMetaData<{ budgetId: number, groupId: number | string, noGroupId: number }>()
   .compile(
     vine.object({
       name: vine.string().unique({
         table: 'groups',
         column: 'name',
         filter: (db, _value, field) => {
-          db.
-            where('application_id', field.meta.budgetId)
+          db
+            .where('application_id', field.meta.budgetId)
+            .andWhereRaw(`COALESCE(parent_group_id, ??) = ?`, [field.meta.noGroupId, field.data.parentGroupId])
             .andWhereNot('id', field.meta.groupId)
         },
       }).optional(),
