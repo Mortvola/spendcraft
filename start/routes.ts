@@ -35,6 +35,8 @@ const PlaidLogsController = () => import('#controllers/PlaidLogsController')
 const AutoAssignmentsController = () => import('#controllers/AutoAssignmentsController')
 const FundingPlanController = () => import("#controllers/FundingPlanController")
 const WebhookController = () => import("#controllers/WebhookController")
+const ReportController = () => import("#controllers/ReportController")
+const LoansController = () => import("#controllers/LoansController")
 
 router.get('/home', [HomeController, 'index']);
 router.get('/home/:categoryId', [HomeController, 'index']);
@@ -216,15 +218,15 @@ router.group(() => {
   
       router.get('/transactions', [TransactionsController, 'getMultiple'])
   
-      router.get('/reports/:report', 'ReportController.get');
+      router.get('/reports/:report', [ReportController, 'get']);
   
       router.group(() => {
-        router.post('', 'LoansController.add');
+        router.post('', [LoansController, 'add']);
   
         router.group(() => {
-          router.get('', 'LoansController.get');
-          router.patch('', 'LoansController.update');
-          router.get('/transactions', 'LoansController.getTransactions');  
+          router.get('', [LoansController, 'get']);
+          router.patch('', [LoansController, 'update']);
+          router.get('/transactions', [LoansController, 'getTransactions']);  
         })
           .prefix('/:catId');
       })

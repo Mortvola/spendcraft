@@ -12,11 +12,6 @@
 import 'reflect-metadata'
 import { Ignitor, prettyPrintError } from '@adonisjs/core'
 
-// Enable edge migration. Remove when edge code has been migrated.
-import edge from 'edge.js'
-import { migrate } from 'edge.js/plugins/migrate'
-edge.use(migrate)
-
 /**
  * URL to the application root. AdonisJS need it to resolve
  * paths to file and directories for scaffolding commands

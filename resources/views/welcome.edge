@@ -1,17 +1,16 @@
-@layout('layouts/app')
+@layout.app()
+    @slot('title')
+        @super
+        @!component('seo')
+    @@endslot
 
-@section('title')
-	@super
-    @!component('seo')
-@endsection
+    @slot('header')
+        <link rel="stylesheet" href="welcome.css">
+        @!component('globalsitetag')
+    @endslot
 
-@section('header')
-	@super
-    <link rel="stylesheet" href="welcome.css">
-  @!component('globalsitetag')
-@endsection
-
-@section('content')
-    <div class="app" />
-    <script src="/welcome.js"></script>
-@endsection
+    @slot('content')
+        <div class="app" />
+        <script src="/welcome.js"></script>
+    @endslot
+@end

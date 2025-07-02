@@ -1,7 +1,4 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 const path = require('path');
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const RemovePlugin = require('remove-files-webpack-plugin');
@@ -143,7 +140,7 @@ const config = (name, env) => ({
     new HtmlWebpackPlugin({
       inject: false,
       publicPath: '/',
-      filename: '../resources/views/home-css.edge',
+      filename: '../resources/views/components/home-css.edge',
       templateContent: (param) => {
         let output = '';
         // eslint-disable-next-line no-restricted-syntax
@@ -157,7 +154,7 @@ const config = (name, env) => ({
     new HtmlWebpackPlugin({
       inject: false,
       publicPath: '/',
-      filename: '../resources/views/home-script.edge',
+      filename: '../resources/views/components/home-script.edge',
       templateContent: (param) => {
         let output = '';
 

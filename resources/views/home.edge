@@ -1,14 +1,13 @@
-@layout('layouts/app')
+@layout.app()
+  @slot('header')
+    @!component('components/home-css')
+    @!component('components/globalsitetag')
+  @endslot
 
-@section('header')
-	@super
-  @!component('home-css')
-  @!component('globalsitetag')
-@endsection
-
-@section('content')
-    <div id="hidden">
-    </div>
-    <div class="app" data-props="{{ JSON.stringify(props) }}" />
-    @!component('home-script')
-@endsection
+  @slot('content')
+      <div id="hidden">
+      </div>
+      <div class="app" data-props="{{ JSON.stringify(props) }}" />
+      @!component('components/home-script')
+  @endslot
+@end

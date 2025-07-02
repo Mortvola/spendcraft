@@ -3,11 +3,11 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, user-scalable=no">
-    @section('title')
     <title>SpendCraft</title>
-    @endsection
+    @if ($slots.title)
+      {{{ await $slots.title() }}}
+    @endif
 
-    @section('header')
     <!-- Scripts -->
 
     <!-- Fonts -->
@@ -24,10 +24,13 @@
 	  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.1/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
     <script src="https://kit.fontawesome.com/6a6eb713de.js" crossorigin="anonymous"></script>
     <link rel="manifest" href="/manifest.json">
-    @endsection
+    @if ($slots.header)
+      {{{ await $slots.header() }}}
+    @endif
 </head>
 <body>
-    @section('content')
-    @endsection
+  @if ($slots.content)
+    {{{ await $slots.content() }}}
+  @endif
 </body>
 </html>

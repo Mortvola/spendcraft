@@ -10,7 +10,7 @@
     "client-build"
   ],
   "compilerOptions": {
-    "outDir": "build",
+    "outDir": "./build",
     "rootDir": "./",
     "sourceMap": true,
     "paths": {
