@@ -1,4 +1,3 @@
-/* eslint-disable import/no-cycle */
 import { DateTime } from 'luxon';
 import hash from '@adonisjs/core/services/hash'
 import { compose } from '@adonisjs/core/helpers'

@@ -1,4 +1,4 @@
-import { defineConfig } from "@adonisjs/core/app";
+import { defineConfig } from '@adonisjs/core/app'
 
 export default defineConfig({
   /*
@@ -28,16 +28,16 @@ export default defineConfig({
     () => import('./start/kernel.js'),
     {
       file: () => import('./start/validationRules.js'),
-      environment: ["web", "test"],
+      environment: ['web', 'test'],
     },
     {
       file: () => import('./start/namingStrategy.js'),
-      environment: ["web", "test"],
+      environment: ['web', 'test'],
     },
     {
       file: () => import('./start/events.js'),
-      environment: ["web"],
-    }
+      environment: ['web'],
+    },
   ],
   /*
   |--------------------------------------------------------------------------
@@ -52,7 +52,7 @@ export default defineConfig({
     () => import('./providers/AppProvider.js'),
     () => import('@adonisjs/core/providers/app_provider'),
     () => import('@adonisjs/core/providers/hash_provider'),
-    { "file": () => import('@adonisjs/core/providers/repl_provider'), "environment": ["repl", "test"] },
+    { file: () => import('@adonisjs/core/providers/repl_provider'), environment: ['repl', 'test'] },
     () => import('@adonisjs/core/providers/vinejs_provider'),
     () => import('@adonisjs/session/session_provider'),
     () => import('@adonisjs/core/providers/edge_provider'),
@@ -67,25 +67,25 @@ export default defineConfig({
   ],
   metaFiles: [
     {
-      "pattern": "public/**",
-      "reloadServer": false
+      pattern: 'public/**',
+      reloadServer: false,
     },
     {
-      "pattern": "resources/views/**/*.edge",
-      "reloadServer": false
-    }
+      pattern: 'resources/views/**/*.edge',
+      reloadServer: false,
+    },
   ],
   assetsBundler: false,
   tests: {
     suites: [
       {
         name: 'functional',
-        files: ['tests/functional/**/*.spec.(js|ts)']
+        files: ['tests/functional/**/*.spec.(js|ts)'],
       },
       {
         name: 'unit',
-        files: ['tests/unit/**/*.spec.(js|ts)']
-      }
-    ]
-  }
-});
+        files: ['tests/unit/**/*.spec.(js|ts)'],
+      },
+    ],
+  },
+})

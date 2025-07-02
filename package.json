@@ -120,7 +120,6 @@
     "dpdm": "^3.8.0",
     "envify": "^4.1.0",
     "eslint": "^9.29.0",
-    "eslint-import-resolver-typescript": "^3.5.3",
     "eslint-plugin-css-modules": "^2.11.0",
     "eslint-plugin-import": "^2.25.4",
     "eslint-plugin-jsx-a11y": "^6.5.1",
