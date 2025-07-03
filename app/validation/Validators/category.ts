@@ -42,7 +42,7 @@ export const addGroup = vine
           filter: (db, _value, field) => {
             db
               .where('application_id', field.meta.budgetId)
-              .andWhereRaw('COALESCE(parent_group_id, ??) = ?', [field.meta.noGroupId, field.data.parentGroupId])
+              .andWhereRaw('COALESCE(parent_group_id, ??) = ?', [field.meta.noGroupId, field.data.parentGroupId ?? field.meta.noGroupId])
           },
         }),
       parentGroupId: vine.number().nullable().optional(),
@@ -100,7 +100,7 @@ export const updateGroup = vine
         filter: (db, _value, field) => {
           db
             .where('application_id', field.meta.budgetId)
-            .andWhereRaw(`COALESCE(parent_group_id, ??) = ?`, [field.meta.noGroupId, field.data.parentGroupId])
+            .andWhereRaw(`COALESCE(parent_group_id, ??) = ?`, [field.meta.noGroupId, field.data.parentGroupId ?? field.meta.noGroupId])
             .andWhereNot('id', field.meta.groupId)
         },
       }).optional(),
