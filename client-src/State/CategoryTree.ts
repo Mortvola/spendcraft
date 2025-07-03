@@ -139,7 +139,7 @@ class CategoryTree implements CategoryTreeInterface {
 
       let { group } = category;
 
-      while (group && group.type !== GroupType.System) {
+      while (group && group.type !== GroupType.NoGroup) {
         categoryName = `${group.name}:${categoryName}`
         group = group.group;
       }
