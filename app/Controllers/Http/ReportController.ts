@@ -130,27 +130,28 @@ class ReportController {
       select
         date,
         id || '_' || name as name,
-        sum(balance) over (partition by id order by id, date asc rows between unbounded preceding and current row) as balance
+        balance - COALESCE(sum(trans_sum) over (partition by id order by id, date desc rows between unbounded preceding and 1 preceding), 0) as balance
       from (
-        select a.id, a.name, ${date} as date, sum(at.amount) as balance
+        select a.id, a.name, ${date} as date, sum(at.amount) as trans_sum, a.balance
         from account_transactions at
         join transactions t on t.id = at.transaction_id
         join accounts a on a.id = at.account_id
         join institutions i on i.id = a.institution_id
         where
           a.tracking != 'Balances'
-          and t.type in (${[TransactionType.STARTING_BALANCE, TransactionType.REGULAR_TRANSACTION, TransactionType.MANUAL_TRANSACTION]}
-          )
+          and t.type in (${[TransactionType.REGULAR_TRANSACTION, TransactionType.MANUAL_TRANSACTION]})
           and i.application_id = ${budget.id}
+          and at.pending = false
+          and t.deleted = false
         group by i.application_id, t.type, ${date}, a.id
       ) as daily
       order by date`;
 
     const categoryQuery = 'select accounts.id || \'_\' || accounts.name AS name '
-    + 'from accounts '
-    + 'join institutions ON institutions.id = accounts.institution_id '
-    + `where institutions.application_id = ${budget.id} `
-    + 'order by name';
+      + 'from accounts '
+      + 'join institutions ON institutions.id = accounts.institution_id '
+      + `where institutions.application_id = ${budget.id} `
+      + 'order by name';
 
     const categories: { rows: { name: string }[] } = await db.rawQuery(categoryQuery);
 
