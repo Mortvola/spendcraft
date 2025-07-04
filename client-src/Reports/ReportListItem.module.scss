@@ -5,5 +5,6 @@
 
 .report-list-item:not(:global(.selected)):hover {
   cursor: pointer;
-  background-color: whitesmoke;
+  background-color: var(--hover-background);
+  color: var(--hover-color);
 }
