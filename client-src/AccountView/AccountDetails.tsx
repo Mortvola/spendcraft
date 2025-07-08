@@ -65,17 +65,32 @@ const AccountDetails: React.FC = observer(() => {
   return (
     <div className={`${styles2.layout}`}>
       <div className={`${styles2.mainTrayTitle} ellipsis`}>{`${selectedAccount.institution.name}: ${selectedAccount.name}`}</div>
-      <Nav variant="underline" className={styles2.menu} onSelect={handleSelect} activeKey={selected}>
-        <Nav.Link as="div" eventKey={Tab.Transaction}>Transactions</Nav.Link>
-        <Nav.Link as="div" eventKey={Tab.Pending}>Pending</Nav.Link>
-        <Nav.Link as="div" eventKey={Tab.Balances}>Balances</Nav.Link>
-        <Nav.Link as="div" eventKey={Tab.Statements}>Statements</Nav.Link>
-      </Nav>
-      <div className={styles2.content}>
-        {
-          renderTab()
-        }
-      </div>
+      {
+        selectedAccount.tracking === 'Balances'
+          ? (
+            <>
+              <div />
+              <div className={styles2.content}>
+                <BalanceHistory />
+              </div>
+            </>
+          )
+          : (
+            <>
+              <Nav variant="underline" className={styles2.menu} onSelect={handleSelect} activeKey={selected}>
+                <Nav.Link as="div" eventKey={Tab.Transaction}>Transactions</Nav.Link>
+                <Nav.Link as="div" eventKey={Tab.Pending}>Pending</Nav.Link>
+                <Nav.Link as="div" eventKey={Tab.Balances}>Balances</Nav.Link>
+                <Nav.Link as="div" eventKey={Tab.Statements}>Statements</Nav.Link>
+              </Nav>
+              <div className={styles2.content}>
+                {
+                  renderTab()
+                }
+              </div>
+            </>
+          )
+      }
     </div>
   );
 });
