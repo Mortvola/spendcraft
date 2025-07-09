@@ -19,8 +19,6 @@ class Institution implements InstitutionInterface {
 
   name: string;
 
-  offline: boolean;
-
   unlinkedAccounts: UnlinkedAccountProps[] | null = null;
 
   accounts: AccountInterface[];
@@ -35,7 +33,6 @@ class Institution implements InstitutionInterface {
     this.id = props.id;
     this.plaidInstitutionId = props.plaidInstitutionId;
     this.name = props.name;
-    this.offline = props.offline;
     this.syncDate = props.syncDate !== null ? DateTime.fromISO(props.syncDate) : null;
 
     this.accounts = props.accounts.map((acct) => new Account(store, this, acct));
@@ -49,7 +46,6 @@ class Institution implements InstitutionInterface {
     this.id = props.id;
     this.plaidInstitutionId = props.plaidInstitutionId;
     this.name = props.name;
-    this.offline = props.offline;
     this.syncDate = props.syncDate !== null ? DateTime.fromISO(props.syncDate) : null;
 
     props.accounts.forEach((acctProps) => {

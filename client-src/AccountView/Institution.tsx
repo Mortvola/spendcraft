@@ -60,7 +60,7 @@ const Institution: React.FC<PropsType> = observer(({
   }
 
   const handleEditAccount = (account: AccountInterface) => {
-    if (institution.offline) {
+    if (institution.plaidInstitutionId === null) {
       setEditedAccount(account);
       showOfflineAccountDialog();
     }
@@ -101,7 +101,7 @@ const Institution: React.FC<PropsType> = observer(({
               <Trash2 size={16} strokeWidth={2.5} />
             </LucideButton>
             {
-              institution.offline
+              institution.plaidInstitutionId === null
                 ? (
                     <LucideButton onClick={showOfflineAccountDialog}>
                       <Plus size={16} strokeWidth={2.5} />
@@ -113,7 +113,7 @@ const Institution: React.FC<PropsType> = observer(({
             <OfflineAccountDialog institution={institution} account={editedAccount} onHide={handleDialogHide} />
             <DeleteConfirmation />
             {
-              !institution.offline
+              !institution.plaidInstitutionId === null
                 ? (
                   <>
                     <LucideButton className={styles.iconButton} onClick={handleRelinkClick}>

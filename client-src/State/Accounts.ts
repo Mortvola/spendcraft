@@ -145,7 +145,7 @@ class Accounts implements AccountsInterface {
       throw new Error('metadata institution is null')
     }
 
-    const response = await Http.post<AddInstitutionProps, AddInstitutionResponse>('/api/v1/institution', {
+    const response = await Http.post<AddInstitutionProps, ApiResponse<AddInstitutionResponse>>('/api/v1/institution', {
       publicToken,
       institutionId: metadata.institution.institution_id,
     });
@@ -154,20 +154,22 @@ class Accounts implements AccountsInterface {
       const body = await response.body();
 
       runInAction(() => {
-        // Make sure we don't already have the institution in the list.
-        let institution = this.institutions.find(
-          (inst) => inst.id === body.id,
-        );
+        if (body.data) {
+          // Make sure we don't already have the institution in the list.
+          let institution = this.institutions.find(
+            (inst) => inst.id === body.data!.id,
+          );
 
-        if (!institution) {
-          institution = new Institution(this.store, body);
-          this.insertInstitution(institution);
-        }
-        else {
-          institution.refresh(body);
-        }
+          if (!institution) {
+            institution = new Institution(this.store, body.data);
+            this.insertInstitution(institution);
+          }
+          else {
+            institution.refresh(body.data);
+          }
 
-        this.store.categoryTree.updateBalances(body.categories);
+          this.store.categoryTree.updateBalances(body.data.categories);
+        }
       });
     }
 
@@ -184,7 +186,7 @@ class Accounts implements AccountsInterface {
     tracking: TrackingType,
     rate: number,
   ): Promise<Error[] | null> {
-    const response = await Http.post('/api/v1/institution', {
+    const response = await Http.post<unknown, ApiResponse<AddInstitutionResponse>>('/api/v1/institution', {
       institution: {
         name: instituteName,
       },
@@ -202,15 +204,14 @@ class Accounts implements AccountsInterface {
     if (response.ok) {
       const body = await response.body();
 
-      if (isAddInstitutionResponse(body)) {
-        runInAction(() => {
+      runInAction(() => {
+        if (body.data) {
           const institution = new Institution(this.store, {
-            id: body.id,
-            plaidInstitutionId: body.plaidInstitutionId,
-            name: body.name,
-            offline: true, // body.offline,
-            syncDate: body.syncDate,
-            accounts: body.accounts,
+            id: body.data.id,
+            plaidInstitutionId: body.data.plaidInstitutionId,
+            name: body.data.name,
+            syncDate: body.data.syncDate,
+            accounts: body.data.accounts,
           });
 
           // Make sure we don't already have the institution in the list.
@@ -222,9 +223,9 @@ class Accounts implements AccountsInterface {
             this.insertInstitution(institution);
           }
 
-          this.store.categoryTree.updateBalances(body.categories);
-        });
-      }
+          this.store.categoryTree.updateBalances(body.data.categories);
+        }
+      });
     }
 
     return null;

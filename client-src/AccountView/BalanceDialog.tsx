@@ -10,6 +10,7 @@ import { FormModal, FormField, setFormErrors } from '@mortvola/forms';
 import { BalanceInterface, BalancesInterface } from '../State/Types';
 import AmountInput from '../AmountInput';
 import styles from './BalanceDialog.module.scss';
+import { ApiError } from '../../common/ResponseTypes';
 
 type PropsType = {
   balance?: BalanceInterface | null,
@@ -35,7 +36,7 @@ const BalanceDialog: React.FC<PropsType & ModalProps> = ({
   const handleSubmit = async (values: FormValues, { setErrors }: FormikHelpers<FormValues>) => {
     const amount = typeof values.amount === 'string' ? parseFloat(values.amount) : values.amount;
 
-    let errors;
+    let errors: ApiError[] | null = null;
     if (balance) {
       errors = await balance.update({
         date: values.date,
@@ -54,7 +55,12 @@ const BalanceDialog: React.FC<PropsType & ModalProps> = ({
     }
 
     if (errors) {
-      setFormErrors(setErrors, errors);
+      setFormErrors(
+        setErrors,
+        errors
+          .filter((error) => error.source)
+          .map((error) => ({ field: error.source!.pointer, message: error.detail })),
+      );
     }
     else {
       setShow(false);

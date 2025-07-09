@@ -191,8 +191,6 @@ export interface InstitutionProps {
 
   name: string;
 
-  offline: boolean;
-
   syncDate: string | null;
 
   accounts: AccountProps[];
@@ -216,8 +214,6 @@ export interface AddInstitutionResponse {
   plaidInstitutionId: string | null;
 
   name: string;
-
-  offline: boolean;
 
   syncDate: string | null;
 

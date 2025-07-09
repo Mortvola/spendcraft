@@ -2,6 +2,9 @@ import { makeAutoObservable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 import {
   isAddBalanceResponse, isBalancesResponse, Error, isErrorResponse,
+  AddBalanceResponse,
+  ApiResponse,
+  ApiError,
 } from '../../common/ResponseTypes';
 import {
   AccountInterface, BalanceInterface, BalancesInterface, StoreInterface,
@@ -68,33 +71,36 @@ class Balances implements BalancesInterface {
       date: string,
       amount: number,
     },
-  ): Promise<Error[] | null> {
+  ): Promise<ApiError[] | null> {
     if (this.account === null) {
       throw new Error('account is null');
     }
 
-    const response = await Http.post(`/api/v1/account/${this.account.id}/balances`, values);
+    const response = await Http.post<unknown, ApiResponse<AddBalanceResponse>>(
+      `/api/v1/account/${this.account.id}/balances`,
+      values,
+    );
 
     const body = await response.body();
 
     if (response.ok) {
-      if (isAddBalanceResponse(body)) {
-        runInAction(() => {
+      runInAction(() => {
+        if (body.data) {
           if (this.account === null) {
             throw new Error('account is null');
           }
 
-          const balance = new Balance(this, body);
+          const balance = new Balance(this, body.data);
 
           this.insertBalance(balance);
 
-          this.account.balance = body.accountBalance;
-        });
+          this.account.balance = body.data.accountBalance;
+        }
+      });
 
-        return null;
-      }
+      return null;
     }
-    else if (isErrorResponse(body)) {
+    else if (isErrorResponse(body.errors)) {
       return body.errors;
     }
 

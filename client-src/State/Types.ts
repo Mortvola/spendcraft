@@ -322,9 +322,9 @@ export interface RegisterInterface {
 export interface InstitutionInterface {
   id: number;
 
-  name: string;
+  plaidInstitutionId: string | null;
 
-  offline: boolean;
+  name: string;
 
   accounts: AccountInterface[];
 
@@ -480,7 +480,7 @@ export interface BalanceInterface {
       date: string,
       amount: number,
     },
-  ): Promise<Error[] | null>;
+  ): Promise<ApiError[] | null>;
 
   delete(): Promise<null | Error[]>;
 }
@@ -497,7 +497,7 @@ export interface BalancesInterface {
       date: string,
       amount: number,
     },
-  ): Promise<Error[] | null>;
+  ): Promise<ApiError[] | null>;
 
   insertBalance(balance: BalanceInterface): void;
 

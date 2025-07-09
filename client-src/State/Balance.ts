@@ -2,7 +2,10 @@ import Http from '@mortvola/http';
 import { DateTime } from 'luxon';
 import { runInAction } from 'mobx';
 import {
+  ApiError,
+  ApiResponse,
   BalanceProps, Error, isErrorResponse, isUpdateBalanceResponse,
+  UpdateBalanceResponse,
 } from '../../common/ResponseTypes';
 import { BalanceInterface, BalancesInterface } from './Types';
 
@@ -45,33 +48,36 @@ class Balance implements BalanceInterface {
       date: string,
       amount: number,
     },
-  ): Promise<Error[] | null> {
+  ): Promise<ApiError[] | null> {
     if (this.balances.account === null) {
       throw new Error('account is null');
     }
 
-    const response = await Http.patch(`/api/v1/account/${this.balances.account.id}/balances/${this.id}`, values);
+    const response = await Http.patch<unknown, ApiResponse<UpdateBalanceResponse>>(
+      `/api/v1/account/${this.balances.account.id}/balances/${this.id}`,
+      values,
+    );
 
     const body = await response.body();
 
     if (response.ok) {
-      if (isUpdateBalanceResponse(body)) {
-        runInAction(() => {
+      runInAction(() => {
+        if (body.data) {
           const prevDate = this.date;
 
-          this.date = DateTime.fromISO(body.date);
-          this.balance = body.balance;
+          this.date = DateTime.fromISO(body.data.date);
+          this.balance = body.data.balance;
 
           if (prevDate !== this.date) {
             this.balances.removeBalance(this);
             this.balances.insertBalance(this);
           }
-        });
+        }
+      });
 
-        return null;
-      }
+      return null;
     }
-    else if (isErrorResponse(body)) {
+    else if (body.errors) {
       return body.errors;
     }
 

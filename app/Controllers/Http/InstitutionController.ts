@@ -21,7 +21,7 @@ import app from '@adonisjs/core/services/app';
 
 class InstitutionController {
   // eslint-disable-next-line class-methods-use-this
-  public async add(context: HttpContext): Promise<AddInstitutionResponse> {
+  public async add(context: HttpContext): Promise<ApiResponse<AddInstitutionResponse>> {
     const { request } = context;
 
     const checkData = await request.validate({
@@ -101,13 +101,14 @@ class InstitutionController {
       }
 
       return {
-        id: institution.id,
-        plaidInstitutionId: institution.institutionId,
-        name: institution.name,
-        offline: false,
-        syncDate: institution.syncDate?.toISO() ?? null,
-        accounts: accountsResponse.accounts,
-        categories: accountsResponse.categories,
+        data: {
+          id: institution.id,
+          plaidInstitutionId: institution.institutionId,
+          name: institution.name,
+          syncDate: institution.syncDate?.toISO() ?? null,
+          accounts: accountsResponse.accounts,
+          categories: accountsResponse.categories,
+        }
       };
     }
     catch (error) {
@@ -130,7 +131,7 @@ class InstitutionController {
       user,
     },
     logger,
-  }: HttpContext): Promise<AddInstitutionResponse> {
+  }: HttpContext): Promise<ApiResponse<AddInstitutionResponse>> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -169,6 +170,7 @@ class InstitutionController {
 
       const institution = await budget.related('institutions').create({
         name: requestData.institution.name,
+        institutionId: null,
       })
 
       const accounts = await Promise.all(requestData.accounts.map(async (acct) => {
@@ -193,27 +195,28 @@ class InstitutionController {
       await trx.commit()
 
       return {
-        id: institution.id,
-        plaidInstitutionId: institution.institutionId,
-        name: institution.name,
-        offline: false,
-        syncDate: institution.syncDate?.toISO() ?? null,
-        accounts: accounts.map((acct) => ({
-          id: acct.id,
-          plaidId: null,
-          name: acct.name,
-          type: acct.type,
-          subtype: acct.subtype,
-          closed: acct.closed,
-          tracking: acct.tracking,
-          balance: acct.balance,
-          plaidBalance: null,
-          startDate: acct.startDate.toISODate(),
-          rate: acct.rate,
-        })),
-        categories: [
-          { id: fundingPool.id, balance: fundingPool.balance },
-        ],
+        data: {
+          id: institution.id,
+          plaidInstitutionId: institution.institutionId,
+          name: institution.name,
+          syncDate: institution.syncDate?.toISO() ?? null,
+          accounts: accounts.map((acct) => ({
+            id: acct.id,
+            plaidId: null,
+            name: acct.name,
+            type: acct.type,
+            subtype: acct.subtype,
+            closed: acct.closed,
+            tracking: acct.tracking,
+            balance: acct.balance,
+            plaidBalance: null,
+            startDate: acct.startDate.toISODate(),
+            rate: acct.rate,
+          })),
+          categories: [
+            { id: fundingPool.id, balance: fundingPool.balance },
+          ],
+        }
       };
     }
     catch (error) {
@@ -252,7 +255,6 @@ class InstitutionController {
         id: institution.id,
         plaidInstitutionId: institution.institutionId,
         name: institution.name,
-        offline: false,
         syncDate: institution.syncDate?.toISO() ?? null,
         accounts: accountsResponse.accounts,
       };
@@ -831,6 +833,11 @@ class InstitutionController {
 
       if (institution.accessToken) {
         const plaidClient = await app.container.make('plaid')
+
+        if (institution.institutionId === null) {
+          throw new Error('institutionId is null')
+        }
+      
         await plaidClient.removeItem(institution.accessToken, institution.institutionId);
       }
 

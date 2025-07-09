@@ -17,7 +17,7 @@ class Institution extends BaseModel {
   public id: number;
 
   @column()
-  public institutionId: string;
+  public institutionId: string | null;
 
   @column()
   public name: string;
@@ -47,6 +47,11 @@ class Institution extends BaseModel {
 
   public async getPlaidInstition(this: Institution): Promise<Plaid.Institution> {
     const plaidClient = await app.container.make('plaid')
+
+    if (this.institutionId === null) {
+      throw new Error('institutionId is null')
+    }
+
     const response = await plaidClient.getInstitutionById(
       this.institutionId, [Plaid.CountryCode.Us], {
         include_optional_metadata: true,

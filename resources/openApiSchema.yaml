@@ -56,6 +56,12 @@ paths:
   /api/v1/groups/{id}:
     patch:
       summary: Updates a group
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
       responses:
         "200":
           description: OK
@@ -74,6 +80,12 @@ paths:
 
     delete:
       summary: Deletes a group
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
       responses:
         "204":
           description: OK
@@ -90,6 +102,12 @@ paths:
   /api/v1/groups/{id}/categories:
     post:
       summary: Add category
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
       responses:
         "200":
           description: OK
@@ -106,6 +124,17 @@ paths:
   /api/v1/groups/{groupId}/categories/{catId}:
     patch:
       summary: Update category
+      parameters:
+        - in: path
+          name: groupId
+          schema:
+            type: integer
+          required: true
+        - in: path
+          name: catId
+          schema:
+            type: integer
+          required: true
       responses:
         "200":
           description: OK
@@ -121,6 +150,17 @@ paths:
 
     delete:
       summary: Delete category
+      parameters:
+        - in: path
+          name: groupId
+          schema:
+            type: integer
+          required: true
+        - in: path
+          name: catId
+          schema:
+            type: integer
+          required: true
       responses:
         "204":
           description: OK
@@ -128,6 +168,49 @@ paths:
             application/json:
               schema:
                 type: object
+
+  /api/v1/institution:
+    post:
+      summary: 'Add institution'
+      responses:
+        "200":
+          $ref: "#/components/responses/AddAccountsResponse"
+
+  /api/v1/account/{accountId}/balances:
+    post:
+      summary: 'Add balance'
+      parameters:
+        - in: path
+          name: accountId
+          schema:
+            type: integer
+          required: true
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: object
+                    required:
+                      - id
+                      - accountId
+                      - balance
+                      - date
+                    properties:
+                      id:
+                        type: integer
+                      accountId:
+                        type: integer
+                      balance:
+                        type: number
+                      date:
+                        type: string
 
 components:
   responses:
@@ -160,6 +243,52 @@ components:
                       properties:
                         pointer:
                           type: string
+
+    AddAccountsResponse:
+      description: Add accounts response
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - data
+            properties:
+              data:
+                type: object
+                required:
+                  - id
+                  - plaidInstitutionId
+                  - name
+                  - offline
+                  - syncDate
+                  - accounts
+                  - categories
+                properties:
+                  id:
+                    type: integer
+                  plaidInstitutionId:
+                    type: string
+                    nullable: true
+                  name: 
+                    type: string
+                  offline:
+                    type: boolean
+                  syncDate:
+                    type: string
+                    nullable: true
+                  Accounts:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Account"
+                  categories:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: number
+                        balance:
+                          type: number
 
   schemas:
     Group:
@@ -245,3 +374,40 @@ components:
           type: array
           items: 
             $ref: "#/components/schemas/Group"
+
+    Account:
+      type: object
+      required:
+        - id
+        - plaidId
+        - name
+        - type
+        - subtype
+        - closed
+        - tracking
+        - balance
+      properties:
+        id:
+          type: number
+        plaidId:
+          type: number
+        name:
+          type: string
+        type:
+          type: string
+        subtype:
+          type: string
+        closed:
+          type: boolean
+        tracking:
+          type: string
+        balance:
+          type: number
+        plaidBalance:
+          type: number
+        startDate:
+          type: string
+        rate:
+          type: number
+
+
