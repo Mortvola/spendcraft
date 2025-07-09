@@ -536,15 +536,20 @@ export const isAccountsResponse = (r: unknown): r is AccountProps[] => (
   && ((r as AccountProps[]).length === 0 || isAccountProps((r as AccountProps[])[0]))
 );
 
-export type AddAccountsResponse = {
+export type AddOnlineAccountsResponse = {
   accounts: AccountProps[],
   categories: CategoryBalanceProps[],
 }
 
-export const isAddAccountsResponse = (r: unknown): r is AddAccountsResponse => (
-  (r as AddAccountsResponse).accounts !== undefined
-  && ((r as AddAccountsResponse).accounts.length === 0 || isAccountProps((r as AddAccountsResponse).accounts[0]))
+export const isAddOnlineAccountsResponse = (r: unknown): r is AddOnlineAccountsResponse => (
+  (r as AddOnlineAccountsResponse).accounts !== undefined
+  && ((r as AddOnlineAccountsResponse).accounts.length === 0 || isAccountProps((r as AddOnlineAccountsResponse).accounts[0]))
 );
+
+export type AddOfflineAccountResponse = {
+  account: AccountProps,
+  categories: CategoryBalanceProps[],
+}
 
 export interface FundingPlanCategoryProps {
   id?: number;

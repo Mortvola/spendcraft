@@ -4,8 +4,10 @@ import { DateTime } from 'luxon';
 import Account from './Account';
 import {
   UnlinkedAccountProps, InstitutionProps, AccountBalanceProps, Error,
-  TrackingType, isAddAccountsResponse, isDeleteAccountResponse, isLinkTokenResponse,
+  TrackingType, isAddOnlineAccountsResponse, isDeleteAccountResponse, isLinkTokenResponse,
   InstitutionSyncResponse, AddInstitutionResponse,
+  AddOfflineAccountResponse,
+  ApiResponse,
 } from '../../common/ResponseTypes';
 import { AccountInterface, InstitutionInterface, StoreInterface } from './Types';
 import Plaid from './Plaid';
@@ -51,7 +53,7 @@ class Institution implements InstitutionInterface {
     this.syncDate = props.syncDate !== null ? DateTime.fromISO(props.syncDate) : null;
 
     props.accounts.forEach((acctProps) => {
-      const acct = this.accounts.find((a) => a.plaidId === acctProps.plaidId);
+      const acct = this.accounts.find((a) => a.id === acctProps.id);
 
       if (acct) {
         // Found account...
@@ -192,7 +194,7 @@ class Institution implements InstitutionInterface {
       const body = await response.body();
 
       runInAction(() => {
-        if (isAddAccountsResponse(body)) {
+        if (isAddOnlineAccountsResponse(body)) {
           body.accounts.forEach((a) => {
             this.insertAccount(new Account(this.store, this, a));
           });
@@ -213,29 +215,25 @@ class Institution implements InstitutionInterface {
     tracking: TrackingType,
     rate: number,
   ): Promise<Error[] | null> {
-    const response = await Http.post(`/api/v1/institution/${this.id}/accounts`, {
-      offlineAccounts: [{
-        name: accountName,
-        balance,
-        type,
-        subtype,
-        tracking,
-        rate,
-      }],
+    const response = await Http.post<unknown, ApiResponse<AddOfflineAccountResponse>>(`/api/v1/institution/${this.id}/accounts`, {
+      name: accountName,
+      balance,
+      type,
+      subtype,
+      tracking,
+      rate,
       startDate,
     });
 
     if (response.ok) {
       const body = await response.body();
 
-      if (isAddAccountsResponse(body)) {
-        runInAction(() => {
-          body.accounts.forEach((acct) => {
-            this.insertAccount(new Account(this.store, this, acct));
-          })
-          this.store.categoryTree.updateBalances(body.categories);
-        });
-      }
+      runInAction(() => {
+        if (body.data) {
+          this.insertAccount(new Account(this.store, this, body.data.account));
+          this.store.categoryTree.updateBalances(body.data.categories);
+        }
+      });
     }
 
     return null;

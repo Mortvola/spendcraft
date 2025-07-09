@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import {
-  Info, Link, RefreshCw, Trash2,
+  Info, Link, Plus, RefreshCw, Trash2,
 } from 'lucide-react';
 import { useAccountsDialog } from './AccountsDialog';
 import { useInstitutionInfoDialog } from './InstitutionInfoDialog';
@@ -59,15 +59,6 @@ const Institution: React.FC<PropsType> = observer(({
     syncDate = `as of ${institution.syncDate.toFormat('LL-dd-y T')}`;
   }
 
-  // const handleAddClick = () => {
-  //   if (institution.offline) {
-  //     showOfflineAccountDialog();
-  //   }
-  //   else {
-  //     showOnlineAccountsDialog();
-  //   }
-  // }
-
   const handleEditAccount = (account: AccountInterface) => {
     if (institution.offline) {
       setEditedAccount(account);
@@ -109,7 +100,15 @@ const Institution: React.FC<PropsType> = observer(({
             <LucideButton className={styles.iconButton} onClick={handleDeleteClick}>
               <Trash2 size={16} strokeWidth={2.5} />
             </LucideButton>
-            {/* <IconButton icon="plus" onClick={handleAddClick} /> */}
+            {
+              institution.offline
+                ? (
+                    <LucideButton onClick={showOfflineAccountDialog}>
+                      <Plus size={16} strokeWidth={2.5} />
+                    </LucideButton>
+                )
+                : null
+            }
             <OnlineAccountsDialog account={editedAccount} />
             <OfflineAccountDialog institution={institution} account={editedAccount} onHide={handleDialogHide} />
             <DeleteConfirmation />

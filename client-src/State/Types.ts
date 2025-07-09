@@ -463,7 +463,7 @@ export interface AccountInterface {
 
   delete(): void;
 
-  updateOfflineAccount(name: string): void;
+  updateOfflineAccount(name: string): Promise<void>;
 
   setSettings(settings: AccountSettings): void;
 }

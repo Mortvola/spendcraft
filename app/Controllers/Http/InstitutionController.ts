@@ -5,8 +5,8 @@ import Institution from '#app/Models/Institution';
 import Account, { AccountSyncResult } from '#app/Models/Account';
 import Category from '#app/Models/Category';
 import {
-  AccountProps, AddInstitutionResponse, CategoryBalanceProps,
-  InstitutionProps, InstitutionSyncResponse, UnlinkedAccountProps,
+  AddInstitutionResponse, AddOfflineAccountResponse, AddOnlineAccountsResponse, ApiResponse, CategoryBalanceProps,
+  InstitutionProps, InstitutionSyncResponse, TrackingType, UnlinkedAccountProps,
 } from '#common/ResponseTypes';
 import { schema } from '@adonisjs/validator';
 import Transaction from '#app/Models/Transaction';
@@ -18,11 +18,6 @@ import { Exception } from '@adonisjs/core/exceptions';
 import * as Plaid from 'plaid';
 import env from '#start/env'
 import app from '@adonisjs/core/services/app';
-
-type AddAccountsResponse = {
-  accounts: AccountProps[],
-  categories: CategoryBalanceProps[],
-}
 
 class InstitutionController {
   // eslint-disable-next-line class-methods-use-this
@@ -394,7 +389,7 @@ class InstitutionController {
   private static async addOnlineAccounts(
     budget: Budget,
     institution: Institution,
-  ): Promise<AddAccountsResponse> {
+  ): Promise<AddOnlineAccountsResponse> {
     if (!institution.accessToken) {
       throw new Error('accessToken is not defined');
     }
@@ -472,187 +467,103 @@ class InstitutionController {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  // private static async addOfflineAccounts(
-  //   budget: Budget,
-  //   institution: Institution,
-  //   accounts: OfflineAccount[],
-  //   startDate: string,
-  //   options?: {
-  //     client: TransactionClientContract,
-  //   },
-  // ): Promise<AddAccountsResponse> {
-  //   const newAccounts: Account[] = [];
+  public async addOfflineAccount({
+    request,
+    auth: {
+      user,
+    },
+    logger,
+  }: HttpContext): Promise<ApiResponse<AddOfflineAccountResponse> | void> {
+    if (!user) {
+      throw new Error('user is not defined');
+    }
 
-  //   const fundingPool = await budget.getFundingPoolCategory(options);
+    const budget = await user.related('budget').query().firstOrFail();
 
-  //   const start = DateTime.fromISO(startDate);
+    const requestData = await request.validate({
+      schema: schema.create({
+        name: schema.string(),
+        balance: schema.number(),
+        type: schema.enum(['depository', 'credit', 'loan', 'investment', 'brokerage', 'other'] as const),
+        subtype: schema.string(),
+        tracking: schema.string(),
+        rate: schema.number.optional(),
+        startDate: schema.string(),
+      }),
+    });
 
-  //   // eslint-disable-next-line no-restricted-syntax
-  //   for (const account of accounts) {
-  //     const acct = new Account();
+    const trx = await db.transaction();
 
-  //     if (options && options.client) {
-  //       acct.useTransaction(options.client);
-  //     }
+    try {
+      const institution = await Institution.findOrFail(request.params().instId, { client: trx });
 
-  //     acct.fill({
-  //       name: account.name,
-  //       institutionId: institution.id,
-  //       startDate: start,
-  //       balance: account.balance,
-  //       tracking: account.tracking as TrackingType,
-  //       enabled: true,
-  //       type: account.type,
-  //       subtype: account.subtype,
-  //       rate: account.rate,
-  //       closed: false,
-  //     });
+      const fundingPool = await budget.getFundingPoolCategory({ client: trx });
 
-  //     // eslint-disable-next-line no-await-in-loop
-  //     await acct.save();
+      const start = DateTime.fromISO(requestData.startDate);
 
-  //     if (acct.tracking !== 'Balances') {
-  //       // eslint-disable-next-line no-await-in-loop
-  //       await InstitutionController.insertStartingBalance(
-  //         budget, acct, start, account.balance, fundingPool, options,
-  //       );
-  //     }
-  //     else {
-  //       await acct.updateAccountBalanceHistory(acct.balance);
+      const acct = new Account();
 
-  //       // eslint-disable-next-line no-await-in-loop
-  //       await acct.save();
-  //     }
+      acct.useTransaction(trx);
 
-  //     newAccounts.push(acct);
-  //   }
+      acct.fill({
+        name: requestData.name,
+        institutionId: institution.id,
+        startDate: start,
+        balance: requestData.balance,
+        tracking: requestData.tracking as TrackingType,
+        enabled: true,
+        type: requestData.type,
+        subtype: requestData.subtype,
+        rate: requestData.rate,
+        closed: false,
+      });
 
-  //   return {
-  //     accounts: newAccounts.map((a) => ({
-  //       id: a.id,
-  //       name: a.name,
-  //       closed: a.closed,
-  //       type: a.type,
-  //       subtype: a.subtype,
-  //       tracking: a.tracking,
-  //       balance: a.balance,
-  //       plaidBalance: a.plaidBalance,
-  //       startDate: a.startDate.toISODate()!,
-  //       rate: a.rate,
-  //     })),
-  //     categories: [
-  //       { id: fundingPool.id, balance: fundingPool.amount },
-  //     ],
-  //   }
-  // }
+      await acct.save();
 
-  // eslint-disable-next-line class-methods-use-this
-  // public async addAccounts({
-  //   request,
-  //   auth: {
-  //     user,
-  //   },
-  //   logger,
-  // }: HttpContextContract): Promise<AddAccountsResponse | void> {
-  //   if (!user) {
-  //     throw new Error('user is not defined');
-  //   }
+      if (acct.tracking !== 'Balances') {
+        // eslint-disable-next-line no-await-in-loop
+        // await InstitutionController.insertStartingBalance(
+        //   budget, acct, start, account.balance, fundingPool, options,
+        // );
+      }
+      else {
+        await acct.updateAccountBalanceHistory(acct.balance);
 
-  //   const budget = await user.related('budget').query().firstOrFail();
+        await acct.save();
+      }
 
-  //   const requestData = await request.validate({
-  //     schema: schema.create({
-  //       plaidAccounts: schema.array.optional().members(
-  //         schema.object().members({
-  //           plaidAccountId: schema.string(),
-  //           name: schema.string(),
-  //           officialName: schema.string.optional(),
-  //           mask: schema.string(),
-  //           type: schema.enum(Object.values(PlaidAccountType)),
-  //           subtype: schema.string(),
-  //           balances: schema.object().members({
-  //             current: schema.number(),
-  //           }),
-  //           tracking: schema.string(),
-  //         }),
-  //       ),
-  //       offlineAccounts: schema.array.optional().members(
-  //         schema.object().members({
-  //           name: schema.string(),
-  //           balance: schema.number(),
-  //           type: schema.enum(Object.values(PlaidAccountType)),
-  //           subtype: schema.string(),
-  //           tracking: schema.string(),
-  //           rate: schema.number.optional(),
-  //         }),
-  //       ),
-  //       startDate: schema.string(),
-  //     }),
-  //   });
+      const unassigned = await budget.getUnassignedCategory();
 
-  //   const trx = await Database.transaction();
+      await trx.commit();
 
-  //   try {
-  //     const institution = await Institution.findOrFail(request.params().instId, { client: trx });
-
-  //     if (requestData.plaidAccounts) {
-  //       // await InstitutionController.addOnlineAccounts(
-  //       //   budget, institution, requestData.plaidAccounts, requestData.startDate, { client: trx },
-  //       // );
-  //     }
-  //     else if (requestData.offlineAccounts) {
-  //       await InstitutionController.addOfflineAccounts(
-  //         budget, institution, requestData.offlineAccounts, requestData.startDate, { client: trx },
-  //       );
-  //     }
-  //     else {
-  //       throw new Error('plaidAccounts nor offlineAccounts are defined');
-  //     }
-
-  //     await trx.commit();
-
-  //     const trx2 = await Database.transaction();
-  //     institution.useTransaction(trx2);
-
-  //     try {
-  //       await institution.syncUpdate();
-
-  //       await trx2.commit();
-  //     }
-  //     catch (error) {
-  //       await trx2.rollback();
-  //       logger.error(error);
-  //     }
-
-  //     const accounts = await Promise.all((await institution.related('accounts').query()).map((a) => ({
-  //       id: a.id,
-  //       name: a.name,
-  //       closed: a.closed,
-  //       type: a.type,
-  //       subtype: a.subtype,
-  //       tracking: a.tracking,
-  //       balance: a.balance,
-  //       plaidBalance: a.plaidBalance,
-  //       rate: a.rate,
-  //     })));
-
-  //     const fundingPool = await budget.getFundingPoolCategory();
-  //     const unassigned = await budget.getUnassignedCategory();
-
-  //     return {
-  //       accounts,
-  //       categories: [
-  //         { id: fundingPool.id, balance: fundingPool.amount },
-  //         { id: unassigned.id, balance: unassigned.amount },
-  //       ],
-  //     };
-  //   }
-  //   catch (error) {
-  //     await trx.rollback();
-  //     logger.error(error);
-  //     throw error;
-  //   }
-  // }
+      return {
+        data: {
+          account: {
+            id: acct.id,
+            name: acct.name,
+            closed: acct.closed,
+            type: acct.type,
+            subtype: acct.subtype,
+            tracking: acct.tracking,
+            balance: acct.balance,
+            plaidBalance: acct.plaidBalance,
+            startDate: acct.startDate.toISODate()!,
+            rate: acct.rate,
+            plaidId: null,
+          },
+          categories: [
+            { id: fundingPool.id, balance: fundingPool.balance },
+            { id: unassigned.id, balance: unassigned.balance },
+          ],
+        }
+      }
+    }
+    catch (error) {
+      await trx.rollback();
+      logger.error(error);
+      throw error;
+    }
+  }
 
   // eslint-disable-next-line class-methods-use-this
   public async syncAll({

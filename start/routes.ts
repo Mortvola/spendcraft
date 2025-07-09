@@ -196,7 +196,7 @@ router.group(() => {
         router.post('/:instId', [InstitutionController, 'update']);
         router.get('/:instId/info', [InstitutionController, 'info']);
         router.get('/:instId/accounts', [InstitutionController, 'get']);
-        // router.post('/:instId/accounts', [InstitutionController, 'addAccounts']);
+        router.post('/:instId/accounts', [InstitutionController, 'addOfflineAccount']);
         router.post('/:instId/accounts/:acctId/transactions/sync', [InstitutionController, 'sync']);
         router.delete('/:instId/accounts/:acctId', [InstitutionController, 'deleteAccount']);
         router.delete('/:instId', [InstitutionController, 'delete']);
