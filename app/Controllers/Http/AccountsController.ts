@@ -11,6 +11,7 @@ import {
   ApiResponse,
   AddStatementResponse,
   StatementProps,
+  AddBalanceResponse,
 } from '#common/ResponseTypes';
 import Statement from '#app/Models/Statement';
 import AccountTransaction from '#app/Models/AccountTransaction';
@@ -222,7 +223,7 @@ export default class AccountsController {
       user,
     },
     logger,
-  }: HttpContext): Promise<ApiResponse<BalanceHistory>> {
+  }: HttpContext): Promise<ApiResponse<AddBalanceResponse>> {
     if (!user) {
       throw new Error('user not defined');
     }
@@ -252,6 +253,7 @@ export default class AccountsController {
       const latestBalance = await BalanceHistory.query({ client: trx })
         .where('accountId', account.id)
         .orderBy('date', 'desc')
+        .orderBy('id', 'asc')
         .firstOrFail();
 
       if (balance.id === latestBalance.id) {
@@ -265,7 +267,12 @@ export default class AccountsController {
       await trx.commit();
 
       return {
-        data: balance,
+        data: {
+          id: balance.id,
+          balance: balance.balance,
+          date: balance.date.toISODate()!,
+          accountBalance: account.balance,
+        }
       }
     }
     catch (error) {

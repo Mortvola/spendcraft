@@ -643,12 +643,16 @@ class Account extends BaseModel {
   public async updateAccountBalanceHistory(
     this: Account,
     balance: number,
+    date?: DateTime,
   ): Promise<void> {
-    const today = DateTime.utc();
+    let balanceDate = date;
+    if (!balanceDate) {
+      balanceDate = DateTime.utc()
+    }
 
     const history = await this.related('balanceHistory')
       .query()
-      .where('date', today.toFormat('yyyy-MM-dd'))
+      .where('date', balanceDate.toFormat('yyyy-MM-dd'))
       .first();
 
     // If the history record was not found then create one.
@@ -656,7 +660,7 @@ class Account extends BaseModel {
     // changed).
     if (history === null) {
       await this.related('balanceHistory')
-        .create({ date: today, balance });
+        .create({ date: balanceDate, balance });
     }
     else if (history.balance !== balance) {
       history.balance = balance;
@@ -868,7 +872,7 @@ class Account extends BaseModel {
     // The initial funding is the current balance minus the sum
     const startingBalance = this.balance - (sum?.$extras.sum ?? 0);
 
-    // Get the initial funding record and update the amont
+    // Get the initial funding record and update the amount
     // or add the initial funding if one was not found.
     const acctTrx = await this.related('accountTransactions').query()
       .whereHas('transaction', (q) => {

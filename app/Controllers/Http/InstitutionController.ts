@@ -185,8 +185,17 @@ class InstitutionController {
           closed: false,
         });
 
-        await newAcct.updateStartingBalance(budget, fundingPool);
+        switch (newAcct.tracking) {
+          case 'Balances':
+            await newAcct.updateAccountBalanceHistory(newAcct.balance, newAcct.startDate);
+            await newAcct.save();
+            break
 
+          case 'Transactions':
+            await newAcct.updateStartingBalance(budget, fundingPool);
+            break;
+        }
+  
         return newAcct;
       }))
 
@@ -522,16 +531,15 @@ class InstitutionController {
 
       await acct.save();
 
-      if (acct.tracking !== 'Balances') {
+      if (acct.tracking === 'Balances') {
+        await acct.updateAccountBalanceHistory(acct.balance, start);
+        await acct.save();
+      }
+      else {
         // eslint-disable-next-line no-await-in-loop
         // await InstitutionController.insertStartingBalance(
         //   budget, acct, start, account.balance, fundingPool, options,
         // );
-      }
-      else {
-        await acct.updateAccountBalanceHistory(acct.balance);
-
-        await acct.save();
       }
 
       const unassigned = await budget.getUnassignedCategory();
