@@ -27,13 +27,17 @@ export default class PlaidGetItem extends BaseCommand {
 
     try {
       if (this.accessToken.match(environmentRegEx)) {
-        const institution = await Institution.findBy('accessToken', this.accessToken);
+        const institution = await Institution.findByOrFail('accessToken', this.accessToken);
 
-        this.logger.info(`Removing item for ${institution?.name ?? 'unknown'}`);
+        this.logger.info(`Removing item for ${institution.name ?? 'unknown'}`);
 
         const plaidClient = await this.app.container.make('plaid')
 
-        const item = await plaidClient.removeItem(this.accessToken, institution?.institutionId);
+        if (!institution.institutionId) {
+          throw new Error('institutionId is null')
+        }
+    
+        const item = await plaidClient.removeItem(this.accessToken, institution.institutionId);
         this.logger.info(JSON.stringify(item, null, 2));
 
         if (institution) {

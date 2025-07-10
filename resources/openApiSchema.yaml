@@ -95,7 +95,6 @@ paths:
                 type: object
 
         "409":
-          description: Conflict
           $ref: "#/components/responses/Error"
 
                 
@@ -176,6 +175,19 @@ paths:
         "200":
           $ref: "#/components/responses/AddAccountsResponse"
 
+  /api/v1/institution/{accountId}/accounts:
+    post:
+      summary: 'Add acccount to institution'
+      parameters:
+        - in: path
+          name: accountId
+          schema:
+            type: integer
+          required: true
+      responses:
+        "200":
+          $ref: "#/components/responses/AddOfflineAccountsResponse"
+
   /api/v1/account/{accountId}/balances:
     post:
       summary: 'Add balance'
@@ -199,18 +211,19 @@ paths:
                     type: object
                     required:
                       - id
-                      - accountId
                       - balance
                       - date
+                      - accountBalance
                     properties:
                       id:
-                        type: integer
-                      accountId:
                         type: integer
                       balance:
                         type: number
                       date:
                         type: string
+                        format: date
+                      accountBalance:
+                        type: number
 
 components:
   responses:
@@ -259,7 +272,6 @@ components:
                   - id
                   - plaidInstitutionId
                   - name
-                  - offline
                   - syncDate
                   - accounts
                   - categories
@@ -271,11 +283,10 @@ components:
                     nullable: true
                   name: 
                     type: string
-                  offline:
-                    type: boolean
                   syncDate:
                     type: string
                     nullable: true
+                    format: date-time
                   Accounts:
                     type: array
                     items:
@@ -283,12 +294,29 @@ components:
                   categories:
                     type: array
                     items:
-                      type: object
-                      properties:
-                        id:
-                          type: number
-                        balance:
-                          type: number
+                      $ref: "#/components/schemas/CategoryBalance"
+
+    AddOfflineAccountsResponse:
+      description: Add accounts response
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - data
+            properties:
+              data:
+                type: object
+                required:
+                  - account
+                  - categories
+                properties:
+                  account:
+                    $ref: "#/components/schemas/Account"
+                  categories:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CategoryBalance"
 
   schemas:
     Group:
@@ -308,11 +336,11 @@ components:
             - SYSTEM
             - NO GROUP
         id:
-          type: number
+          type: integer
         hidden:
           type: boolean
         parentGroupId:
-          type: number
+          type: integer
           nullable: true
 
     Category:
@@ -325,9 +353,9 @@ components:
         - type
       properties:
         id:
-          type: number
+          type: integer
         groupId:
-          type: number
+          type: integer
         name:
           type: string
         balance:
@@ -354,7 +382,7 @@ components:
         goalDate:
           type: string
           nullable: true
-          pattern: '^\d{3}-\d{2}-\d{4}$'
+          format: date
         includeFundingTransfers:
           type: boolean
         suspended:
@@ -375,6 +403,17 @@ components:
           items: 
             $ref: "#/components/schemas/Group"
 
+    CategoryBalance:
+      type: object
+      required:
+        - id
+        - balance
+      properties:
+        id:
+          type: integer
+        balance:
+          type: number
+
     Account:
       type: object
       required:
@@ -388,25 +427,38 @@ components:
         - balance
       properties:
         id:
-          type: number
+          type: integer
         plaidId:
-          type: number
+          type: string
+          nullable: true
         name:
           type: string
         type:
           type: string
+          enum:
+            - depository
+            - credit
+            - loan
+            - investment
+            - other
         subtype:
           type: string
         closed:
           type: boolean
         tracking:
           type: string
+          enum:
+            - None
+            - Balances
+            - Transactions
+            - Uncategorized Transactions
         balance:
           type: number
         plaidBalance:
           type: number
         startDate:
           type: string
+          format: date
         rate:
           type: number
 

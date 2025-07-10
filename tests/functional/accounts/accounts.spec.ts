@@ -55,18 +55,40 @@ test.group('Accounts', (group) => {
     })
 
   test('add balance item')
-    .run(async ({ client }) => {
-        const response = await client.post(`/api/v1/account/${accountId}/balances`)
-          .json({
-            date: '2025-02-01',
-            amount: 150.10,
-          })
-          .accept('json')
-          .loginAs(user!)
+    .run(async ({ client, assert }) => {
+      assert.isNotNull(accountId)
 
-        console.log(JSON.stringify(response.body()))
-        response.assertStatus(200)
-        response.assertAgainstApiSpec()
+      const response = await client.post(`/api/v1/account/${accountId}/balances`)
+        .json({
+          date: '2025-02-01',
+          amount: 150.10,
+        })
+        .accept('json')
+        .loginAs(user!)
+
+      console.log(JSON.stringify(response.body()))
+      response.assertStatus(200)
+      response.assertAgainstApiSpec()
+    })
+
+  test('add offline account')
+    .run(async ({ client, assert }) => {
+      assert.isNotNull(institutionId)
+
+      const response = await client.post(`/api/v1/institution/${institutionId}/accounts`)
+        .json({
+          name: 'Test Account 2',
+          balance: 0,
+          type: 'investment',
+          subtype: 'IRA',
+          tracking: 'Balances',
+          startDate: '2025-01-01',
+        })
+        .accept('json')
+        .loginAs(user!)
+
+      response.assertStatus(200)
+      response.assertAgainstApiSpec()
     })
 })
 

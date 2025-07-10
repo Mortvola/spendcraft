@@ -116,6 +116,10 @@ class Institution extends BaseModel {
           throw new Error(`Plaid account ${transaction.account_id} not found.`)
         }
 
+        if (plaidAccount.type === 'brokerage') {
+          throw new Error('brokerage account type is not supported.')
+        }
+
         // eslint-disable-next-line no-await-in-loop
         acct = await this.related('accounts').firstOrCreate(
           { plaidAccountId: plaidAccount.account_id },

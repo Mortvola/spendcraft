@@ -53,6 +53,10 @@ class PlaidWrapper {
         access_token: institution.accessToken,
       });
 
+      if (!institution.institutionId) {
+        throw new Error('institutionId is null')
+      }
+
       await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution.institutionId)
 
       return response.data;
@@ -389,7 +393,7 @@ class PlaidWrapper {
     }
   }
 
-  static async log(request: string, response: unknown, status: number, institutionId?: string) {
+  static async log(request: string, response: unknown, status: number, institutionId?: string | null) {
     const { default: PlaidLog } = await import('#models/PlaidLog')
 
     await new PlaidLog()

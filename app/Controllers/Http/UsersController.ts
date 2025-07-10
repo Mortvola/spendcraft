@@ -245,6 +245,10 @@ export default class UsersController {
           // Remove plaid items
           await Promise.all(institutions.map(async (institution) => {
             if (institution.accessToken) {
+              if (!institution.institutionId) {
+                throw new Error('institutionId is null')
+              }
+              
               const plaidClient = await app.container.make('plaid')
               await plaidClient.removeItem(institution.accessToken, institution.institutionId);
             }

@@ -52,7 +52,7 @@ class Account extends BaseModel {
   public institutionId: number;
 
   @column()
-  public plaidAccountId: string;
+  public plaidAccountId: string | null;
 
   @column()
   public name: string;

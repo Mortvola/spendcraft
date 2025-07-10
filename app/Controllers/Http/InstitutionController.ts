@@ -146,7 +146,7 @@ class InstitutionController {
             name: schema.string(),
             balance: schema.number(),
             type: schema.enum.optional(
-              ['depository', 'credit', 'loan', 'investment', 'brokerage', 'other'] as const,
+              ['depository', 'credit', 'loan', 'investment', 'other'] as const,
             ),
             subtype: schema.string(),
             tracking: schema.enum(
@@ -425,6 +425,10 @@ class InstitutionController {
         balance = -balance;
       }
 
+      if (plaidAccount.type === 'brokerage') {
+        throw new Error('brokerage account type not supported')
+      }
+
       const acct = await Account.firstOrCreate(
         { plaidAccountId: plaidAccount.account_id },
         {
@@ -495,7 +499,7 @@ class InstitutionController {
       schema: schema.create({
         name: schema.string(),
         balance: schema.number(),
-        type: schema.enum(['depository', 'credit', 'loan', 'investment', 'brokerage', 'other'] as const),
+        type: schema.enum(['depository', 'credit', 'loan', 'investment', 'other'] as const),
         subtype: schema.string(),
         tracking: schema.string(),
         rate: schema.number.optional(),
@@ -527,6 +531,7 @@ class InstitutionController {
         subtype: requestData.subtype,
         rate: requestData.rate,
         closed: false,
+        plaidAccountId: null,
       });
 
       await acct.save();
@@ -559,7 +564,7 @@ class InstitutionController {
             plaidBalance: acct.plaidBalance,
             startDate: acct.startDate.toISODate()!,
             rate: acct.rate,
-            plaidId: null,
+            plaidId: acct.plaidAccountId,
           },
           categories: [
             { id: fundingPool.id, balance: fundingPool.balance },

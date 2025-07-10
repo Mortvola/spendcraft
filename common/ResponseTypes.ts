@@ -134,7 +134,7 @@ export const isCategoryProps = (r: unknown): r is CategoryProps => (
   && (r as CategoryProps)?.balance !== undefined
 );
 
-export type AccountType = 'depository' | 'credit' | 'loan' | 'investment' | 'brokerage' | 'other';
+export type AccountType = 'depository' | 'credit' | 'loan' | 'investment' | 'other';
 
 export interface AccountProps {
   id: number;
