@@ -289,7 +289,7 @@ export default class AccountsController {
       user,
     },
     logger,
-  }: HttpContext): Promise<BalanceHistory> {
+  }: HttpContext): Promise<ApiResponse<BalanceHistory>> {
     if (!user) {
       throw new Error('user not defined');
     }
@@ -339,7 +339,9 @@ export default class AccountsController {
 
       await trx.commit();
 
-      return balance;
+      return {
+        data: balance,
+      }
     }
     catch (error) {
       await trx.rollback();

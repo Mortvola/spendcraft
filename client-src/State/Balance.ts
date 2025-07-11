@@ -1,6 +1,6 @@
 import Http from '@mortvola/http';
 import { DateTime } from 'luxon';
-import { runInAction } from 'mobx';
+import { makeObservable, observable, runInAction } from 'mobx';
 import {
   ApiError,
   ApiResponse,
@@ -23,6 +23,11 @@ class Balance implements BalanceInterface {
     this.id = props.id;
     this.date = DateTime.fromISO(props.date);
     this.balance = props.balance;
+
+    makeObservable(this, {
+      balance: observable,
+      date: observable,
+    })
   }
 
   async delete(): Promise<null | Error[]> {

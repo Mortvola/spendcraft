@@ -3,13 +3,14 @@ import Amount from '../Amount';
 import Date from '../Date';
 import { BalanceInterface } from '../State/Types';
 import styles from './Balance.module.scss';
+import { observer } from 'mobx-react-lite';
 
 type PropsType = {
   balance: BalanceInterface,
   showBalanceDialog: (balance: BalanceInterface) => void,
 }
 
-const Balance: React.FC<PropsType> = ({
+const Balance: React.FC<PropsType> = observer(({
   balance,
   showBalanceDialog,
 }) => {
@@ -23,6 +24,6 @@ const Balance: React.FC<PropsType> = ({
       <Amount amount={balance.balance} />
     </div>
   )
-}
+})
 
 export default Balance;
