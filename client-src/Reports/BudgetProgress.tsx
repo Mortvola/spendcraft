@@ -106,11 +106,13 @@ const BudgetProgress: React.FC = observer(() => {
     // }
   }, [store]);
 
-  const selectCallback = React.useCallback(({ chartWrapper }: { chartWrapper: GoogleChartWrapper}) => {
-    const selection = chartWrapper.getChart().getSelection();
-    if (selection.length > 0) {
-      const transactionIds = days[selection[0].row][1];
-      fetchTransactions(transactionIds);
+  const selectCallback = React.useCallback(({ chartWrapper }: { chartWrapper: GoogleChartWrapper | null}) => {
+    if (chartWrapper) {
+      const selection = chartWrapper.getChart().getSelection();
+      if (selection.length > 0) {
+        const transactionIds = days[selection[0].row][1];
+        fetchTransactions(transactionIds);
+      }
     }
   }, [days, fetchTransactions]);
 
