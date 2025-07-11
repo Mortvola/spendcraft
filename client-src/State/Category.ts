@@ -1,4 +1,4 @@
-import { makeObservable, observable, runInAction } from 'mobx';
+import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 import { DateTime } from 'luxon';
 import {
@@ -18,7 +18,8 @@ import TransactionContainer from './TransactionContainer';
 class Category implements CategoryInterface {
   id: number;
 
-  name: string;
+  @observable
+  accessor name: string;
 
   type: CategoryType;
 
@@ -26,7 +27,8 @@ class Category implements CategoryInterface {
 
   subcategories: Category[] = [];
 
-  balance = 0;
+  @observable
+  accessor balance = 0;
 
   suspended = false;
 
@@ -89,11 +91,6 @@ class Category implements CategoryInterface {
     this.pendingTransactions = new TransactionContainer(
       store, `/api/v1/category/${props.id}/transactions?pending=1`,
     );
-
-    makeObservable(this, {
-      name: observable,
-      balance: observable,
-    });
   }
 
   getFundingPool(): CategoryInterface {

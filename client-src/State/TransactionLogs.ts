@@ -1,10 +1,11 @@
 import Http from '@mortvola/http';
-import { makeObservable, observable, runInAction } from 'mobx';
+import { observable, runInAction } from 'mobx';
 import { StoreInterface, TransactionLogsResponse } from './Types';
 import TransactionLog from './TransactionLog';
 
 class TransactionLogs {
-  logs: TransactionLog[] = [];
+  @observable
+  accessor logs: TransactionLog[] = [];
 
   store: StoreInterface;
 
@@ -12,10 +13,6 @@ class TransactionLogs {
 
   constructor(store: StoreInterface) {
     this.store = store;
-
-    makeObservable(this, {
-      logs: observable,
-    })
   }
 
   async load() {

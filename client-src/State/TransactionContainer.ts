@@ -1,11 +1,12 @@
-import { makeObservable, observable } from 'mobx';
+import { observable } from 'mobx';
 import { TransactionProps, TransactionsResponse } from '../../common/ResponseTypes';
 import QueryManager from './QueryManager';
 import { StoreInterface, TransactionContainerInterface } from './Types';
 import Transaction from './Transaction';
 
 class TransactionContainer implements TransactionContainerInterface {
-  transactions: Transaction[] = [];
+  @observable
+  accessor transactions: Transaction[] = [];
 
   transactionsQuery = new QueryManager<TransactionsResponse>();
 
@@ -22,10 +23,6 @@ class TransactionContainer implements TransactionContainerInterface {
     url: string,
     balanceCallback?: (balance: number, count?: number) => void,
   ) {
-    makeObservable(this, {
-      transactions: observable,
-    })
-
     this.url = url;
     this.balanceCallback = balanceCallback ?? null;
     this.store = store;

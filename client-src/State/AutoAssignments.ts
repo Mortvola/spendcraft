@@ -1,12 +1,13 @@
 import Http from '@mortvola/http';
-import { makeObservable, observable, runInAction } from 'mobx';
+import { observable, runInAction } from 'mobx';
 import AutoAssignment from './AutoAssignment';
 import {
   AutoAssignmentProps, AutoAssignmentsInterface, AutoAssignmentsResponse, StoreInterface,
 } from './Types';
 
 class AutoAssignments implements AutoAssignmentsInterface {
-  autoAssignemnts: AutoAssignment[] = [];
+  @observable
+  accessor autoAssignemnts: AutoAssignment[] = [];
 
   initialized = false;
 
@@ -14,10 +15,6 @@ class AutoAssignments implements AutoAssignmentsInterface {
 
   constructor(store: StoreInterface) {
     this.store = store;
-
-    makeObservable(this, {
-      autoAssignemnts: observable,
-    })
   }
 
   async load(): Promise<void> {

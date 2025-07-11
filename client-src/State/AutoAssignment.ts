@@ -1,15 +1,18 @@
 import Http from '@mortvola/http';
-import { makeObservable, observable, runInAction } from 'mobx';
+import { observable, runInAction } from 'mobx';
 import { AutoAssignmentInterface, AutoAssignmentProps, StoreInterface } from './Types';
 
 class AutoAssignment implements AutoAssignmentInterface {
   id: number;
 
-  name: string;
+  @observable
+  accessor name: string;
 
-  searchStrings: string[] = [];
+  @observable
+  accessor searchStrings: string[] = [];
 
-  categories: { id: number, categoryId: number, amount: number, percentage: boolean }[] = []
+  @observable
+  accessor categories: { id: number, categoryId: number, amount: number, percentage: boolean }[] = []
 
   store: StoreInterface;
 
@@ -21,12 +24,6 @@ class AutoAssignment implements AutoAssignmentInterface {
     this.categories = props.categories
 
     this.store = store;
-
-    makeObservable(this, {
-      name: observable,
-      searchStrings: observable,
-      categories: observable,
-    })
   }
 
   async update(props: {

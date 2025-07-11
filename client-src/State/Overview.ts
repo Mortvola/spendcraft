@@ -1,10 +1,11 @@
-import { makeObservable, observable, runInAction } from 'mobx';
+import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 import { BillsResponse, StoreInterface } from './Types';
 import Bill from './Bill';
 
 class Overview {
-  bills: Bill[] = [];
+  @observable
+  accessor bills: Bill[] = [];
 
   store: StoreInterface;
 
@@ -12,10 +13,6 @@ class Overview {
 
   constructor(store: StoreInterface) {
     this.store = store;
-
-    makeObservable(this, {
-      bills: observable,
-    })
   }
 
   async load() {

@@ -1,10 +1,11 @@
-import { makeObservable, observable, runInAction } from 'mobx';
+import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 import { PlaidLogsResponse, StoreInterface } from './Types';
 import PlaidLog from './PlaidLog';
 
 class PlaidLogs {
-  logs: PlaidLog[] = [];
+  @observable
+  accessor logs: PlaidLog[] = [];
 
   store: StoreInterface;
 
@@ -12,10 +13,6 @@ class PlaidLogs {
 
   constructor(store: StoreInterface) {
     this.store = store;
-
-    makeObservable(this, {
-      logs: observable,
-    })
   }
 
   async load() {

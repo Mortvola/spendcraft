@@ -1,4 +1,4 @@
-import { makeObservable, observable, runInAction } from 'mobx';
+import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 import { DateTime } from 'luxon';
 import {
@@ -24,7 +24,8 @@ class Account implements AccountInterface {
 
   plaidId: string | null;
 
-  name: string;
+  @observable
+  accessor name: string;
 
   officialName: string | null = null;
 
@@ -36,15 +37,19 @@ class Account implements AccountInterface {
 
   tracking: TrackingType;
 
-  plaidBalance: number | null;
+  @observable
+  accessor plaidBalance: number | null;
 
   startDate: DateTime | null;
 
-  rate: number | null;
+  @observable
+  accessor rate: number | null;
 
-  institution: InstitutionInterface;
+  @observable
+  accessor institution: InstitutionInterface;
 
-  balance = 0;
+  @observable
+  accessor balance = 0;
 
   transactions: TransactionContainer;
 
@@ -80,14 +85,6 @@ class Account implements AccountInterface {
     this.startDate = props.startDate ? DateTime.fromISO(props.startDate) : null;
     this.rate = props.rate;
     this.institution = institution;
-
-    makeObservable(this, {
-      name: observable,
-      plaidBalance: observable,
-      rate: observable,
-      institution: observable,
-      balance: observable,
-    });
 
     this.store = store;
   }
