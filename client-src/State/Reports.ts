@@ -1,4 +1,4 @@
-import { makeAutoObservable, runInAction } from 'mobx';
+import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 
 export const isNetworthReport = (r: unknown): r is number[][] => (
@@ -17,16 +17,16 @@ export const isPayeeReport = (r: unknown): r is Record<string, string>[] => (
 )
 
 class Reports {
-  reportType: string | null = null;
+  @observable
+  accessor reportType: string | null = null;
 
-  data: number[][] | Record<string, string>[] | null = null;
+  @observable
+  accessor data: number[][] | Record<string, string>[] | null = null;
 
   store: unknown;
 
   constructor(store: unknown) {
     this.data = null;
-
-    makeAutoObservable(this);
 
     this.store = store;
   }

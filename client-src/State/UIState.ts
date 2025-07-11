@@ -1,4 +1,4 @@
-import { makeAutoObservable, runInAction } from 'mobx';
+import { observable, runInAction } from 'mobx';
 import type Category from './Category';
 import type {
   AccountInterface,
@@ -10,23 +10,27 @@ import type Plaid from './Plaid';
 import type Statement from './Statement';
 
 class UIState implements UIStateInterface {
-  selectedCategory: CategoryInterface | null = null;
+  @observable
+  accessor selectedCategory: CategoryInterface | null = null;
 
-  selectedPlan: FundingPlanInterface | null = null;
+  @observable
+  accessor selectedPlan: FundingPlanInterface | null = null;
 
-  selectedAccount: AccountInterface | null = null;
+  @observable
+  accessor selectedAccount: AccountInterface | null = null;
 
-  selectedStatement: Statement | null = null;
+  @observable
+  accessor selectedStatement: Statement | null = null;
 
-  selectedTransaction: TransactionInterface | null = null;
+  @observable
+  accessor selectedTransaction: TransactionInterface | null = null;
 
-  plaid: Plaid | null = null;
+  @observable
+  accessor plaid: Plaid | null = null;
 
   store: StoreInterface;
 
   constructor(store: StoreInterface) {
-    makeAutoObservable(this);
-
     this.store = store;
   }
 

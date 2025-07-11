@@ -1,4 +1,4 @@
-import { makeAutoObservable, runInAction } from 'mobx';
+import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 import { FundingPlanDetailsInterface, StoreInterface } from './Types';
 import {
@@ -9,11 +9,14 @@ import FundingPlanCategory from './FundingPlanCategory';
 import HistoryCategory from './HistoryCategory';
 
 class FundingPlanDetails implements FundingPlanDetailsInterface {
-  id: number;
+  @observable
+  accessor id: number;
 
-  history: HistoryCategory[];
+  @observable
+  accessor history: HistoryCategory[];
 
-  categories: FundingPlanCategory[];
+  @observable
+  accessor categories: FundingPlanCategory[];
 
   store: StoreInterface;
 
@@ -24,8 +27,6 @@ class FundingPlanDetails implements FundingPlanDetailsInterface {
     this.categories = props.categories.map((c) => (
       new FundingPlanCategory(c)
     ));
-
-    makeAutoObservable(this);
 
     this.store = store;
   }

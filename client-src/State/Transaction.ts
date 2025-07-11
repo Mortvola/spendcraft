@@ -1,5 +1,5 @@
 import { DateTime } from 'luxon';
-import { makeAutoObservable, runInAction } from 'mobx';
+import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 import {
   Error,
@@ -19,41 +19,59 @@ import {
 } from './Types';
 
 class Transaction implements TransactionInterface {
-  id: number | null;
+  @observable
+  accessor id: number | null;
 
-  amount: number;
+  @observable
+  accessor amount: number;
 
-  principle: number | null;
+  @observable
+  accessor principle: number | null;
 
-  date: DateTime;
+  @observable
+  accessor date: DateTime;
 
-  type: TransactionType;
+  @observable
+  accessor type: TransactionType;
 
-  name: string;
+  @observable
+  accessor name: string;
 
-  comment = '';
+  @observable
+  accessor comment = '';
 
-  version: number;
+  @observable
+  accessor version: number;
 
-  categories: TransactionCategoryInterface[] = [];
+  @observable
+  accessor categories: TransactionCategoryInterface[] = [];
 
-  instituteName: string;
+  @observable
+  accessor instituteName: string;
 
-  accountName: string;
+  @observable
+  accessor accountName: string;
 
-  accountId: number | null = null;
+  @observable
+  accessor accountId: number | null = null;
 
-  paymentChannel: string | null = null;
+  @observable
+  accessor paymentChannel: string | null = null;
 
-  location: Location | null = null;
+  @observable
+  accessor location: Location | null = null;
 
-  duplicateOfTransactionId: number | null = null;
+  @observable
+  accessor duplicateOfTransactionId: number | null = null;
 
-  statementId: number | null = null;
+  @observable
+  accessor statementId: number | null = null;
 
-  pending = false;
+  @observable
+  accessor pending = false;
 
-  accountOwner: string | null = null;
+  @observable
+  accessor accountOwner: string | null = null;
 
   store: StoreInterface;
 
@@ -112,8 +130,6 @@ class Transaction implements TransactionInterface {
         baseAmount: c.baseAmount,
       }));
     }
-
-    makeAutoObservable(this);
   }
 
   async updateTransaction(

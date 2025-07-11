@@ -1,20 +1,26 @@
 import { DateTime } from 'luxon';
-import { makeAutoObservable } from 'mobx';
+import { observable } from 'mobx';
 import { FundingPlanCategoryProps } from '../../common/ResponseTypes';
 import { CategoryInterface } from './Types';
 
 class FundingPlanCategory {
-  id?: number;
+  @observable
+  accessor id: number | undefined;
 
-  amount: number;
+  @observable
+  accessor amount: number;
 
-  categoryId: number;
+  @observable
+  accessor categoryId: number;
 
-  useGoal: boolean;
+  @observable
+  accessor useGoal: boolean;
 
-  goalDate: DateTime = DateTime.now();
+  @observable
+  accessor goalDate: DateTime = DateTime.now();
 
-  recurrence: number;
+  @observable
+  accessor recurrence: number;
 
   constructor(props: FundingPlanCategoryProps) {
     this.id = props.id;
@@ -30,8 +36,6 @@ class FundingPlanCategory {
     }
 
     this.recurrence = props.recurrence;
-
-    makeAutoObservable(this);
   }
 
   static computeMonthlyAmount(category: CategoryInterface, goalAmount: number, monthsToGoal: number): number {

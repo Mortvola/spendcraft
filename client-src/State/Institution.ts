@@ -1,4 +1,4 @@
-import { makeAutoObservable, runInAction } from 'mobx';
+import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 import { DateTime } from 'luxon';
 import Account from './Account';
@@ -13,21 +13,28 @@ import { AccountInterface, InstitutionInterface, StoreInterface } from './Types'
 import Plaid from './Plaid';
 
 class Institution implements InstitutionInterface {
-  id: number;
+  @observable
+  accessor id: number;
 
-  plaidInstitutionId: string | null;
+  @observable
+  accessor plaidInstitutionId: string | null;
 
-  name: string;
+  @observable
+  accessor name: string;
 
-  unlinkedAccounts: UnlinkedAccountProps[] | null = null;
+  @observable
+  accessor unlinkedAccounts: UnlinkedAccountProps[] | null = null;
 
-  accounts: AccountInterface[];
+  @observable
+  accessor accounts: AccountInterface[];
 
   store: StoreInterface;
 
-  refreshing = false;
+  @observable
+  accessor refreshing = false;
 
-  syncDate: DateTime | null;
+  @observable
+  accessor syncDate: DateTime | null;
 
   constructor(store: StoreInterface, props: InstitutionProps) {
     this.id = props.id;
@@ -36,8 +43,6 @@ class Institution implements InstitutionInterface {
     this.syncDate = props.syncDate !== null ? DateTime.fromISO(props.syncDate) : null;
 
     this.accounts = props.accounts.map((acct) => new Account(store, this, acct));
-
-    makeAutoObservable(this);
 
     this.store = store;
   }

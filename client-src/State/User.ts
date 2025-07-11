@@ -1,4 +1,4 @@
-import { makeAutoObservable, runInAction } from 'mobx';
+import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 import {
   ApiResponse, Error, isErrorResponse, isUserProps,
@@ -6,21 +6,24 @@ import {
 import { StoreInterface, UserInterface } from './Types';
 
 class User implements UserInterface {
-  username: string | null = null;
+  @observable
+  accessor username: string | null = null;
 
-  email: string | null = null;
+  @observable
+  accessor email: string | null = null;
 
-  pendingEmail: string | null = null;
+  @observable
+  accessor pendingEmail: string | null = null;
 
-  authenticated = false;
+  @observable
+  accessor authenticated = false;
 
-  roles: string[] = [];
+  @observable
+  accessor roles: string[] = [];
 
   store: StoreInterface;
 
   constructor(store: StoreInterface) {
-    makeAutoObservable(this);
-
     this.store = store;
   }
 

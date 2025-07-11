@@ -1,4 +1,4 @@
-import { makeAutoObservable, runInAction } from 'mobx';
+import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 import {
   isAddBalanceResponse, isBalancesResponse, Error, isErrorResponse,
@@ -12,15 +12,15 @@ import {
 import Balance from './Balance';
 
 class Balances implements BalancesInterface {
-  account: AccountInterface| null = null;
+  @observable
+  accessor account: AccountInterface| null = null;
 
-  balances: Balance[] = [];
+  @observable
+  accessor balances: Balance[] = [];
 
   store: StoreInterface;
 
   constructor(store: StoreInterface) {
-    makeAutoObservable(this);
-
     this.store = store;
   }
 

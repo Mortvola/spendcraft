@@ -1,19 +1,19 @@
-import { makeAutoObservable } from 'mobx';
+import { observable } from 'mobx';
 import { FundingPlanProps } from '../../common/ResponseTypes';
 import { StoreInterface } from './Types';
 
 class FundingPlan {
-  id: number;
+  @observable
+  accessor id: number;
 
-  name: string;
+  @observable
+  accessor name: string;
 
   store: StoreInterface;
 
   constructor(store: StoreInterface, props: FundingPlanProps) {
     this.id = props.id;
     this.name = props.name;
-
-    makeAutoObservable(this);
 
     this.store = store;
   }

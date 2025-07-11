@@ -1,16 +1,14 @@
-import { makeAutoObservable, runInAction } from 'mobx';
+import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 import { QueryManagerState, QueryManagerInterface } from './Types';
 import { ApiResponse } from '../../common/ResponseTypes';
 
 class QueryManager<T> implements QueryManagerInterface {
-  state: QueryManagerState = 'IDLE';
+  @observable
+  accessor state: QueryManagerState = 'IDLE';
 
-  fetchComplete = false;
-
-  constructor() {
-    makeAutoObservable(this);
-  }
+  @observable
+  accessor fetchComplete = false;
 
   async fetch(
     url: string,

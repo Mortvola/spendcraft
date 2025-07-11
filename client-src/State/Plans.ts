@@ -1,4 +1,4 @@
-import { makeAutoObservable, runInAction } from 'mobx';
+import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 import FundingPlan from './FundingPlan';
 import FundingPlanDetails from './FundingPlanDetails';
@@ -8,15 +8,15 @@ import {
 } from '../../common/ResponseTypes';
 
 class Plans implements PlansInterface {
-  list: FundingPlan[] = [];
+  @observable
+  accessor list: FundingPlan[] = [];
 
-  details: FundingPlanDetails | null = null;
+  @observable
+  accessor details: FundingPlanDetails | null = null;
 
   store: StoreInterface;
 
   constructor(store: StoreInterface) {
-    makeAutoObservable(this);
-
     this.store = store;
   }
 

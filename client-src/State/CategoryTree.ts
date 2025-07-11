@@ -1,4 +1,4 @@
-import { makeAutoObservable, runInAction } from 'mobx';
+import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 import Category from './Category';
 import Group, { isGroup } from './Group';
@@ -18,19 +18,26 @@ import Budget from './Budget';
 export type TreeNode = (Category | Group);
 
 class CategoryTree implements CategoryTreeInterface {
-  initialized = false;
+  @observable
+  accessor initialized = false;
 
-  budget: Budget;
+  @observable
+  accessor budget: Budget;
 
-  systemIds = new SystemIds();
+  @observable
+  accessor systemIds = new SystemIds();
 
-  unassignedCat: Category | null = null;
+  @observable
+  accessor unassignedCat: Category | null = null;
 
-  accountTransferCat: Category | null = null;
+  @observable
+  accessor accountTransferCat: Category | null = null;
 
-  rebalances: RebalancesInterface | null = null;
+  @observable
+  accessor rebalances: RebalancesInterface | null = null;
 
-  subcategories: Category[] = [];
+  @observable
+  accessor subcategories: Category[] = [];
 
   store: StoreInterface;
 
@@ -44,8 +51,6 @@ class CategoryTree implements CategoryTreeInterface {
       },
       store,
     )
-
-    makeAutoObservable(this);
 
     this.store = store;
   }

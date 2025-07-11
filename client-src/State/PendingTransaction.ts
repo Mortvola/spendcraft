@@ -1,30 +1,41 @@
 import { DateTime } from 'luxon';
-import { makeAutoObservable } from 'mobx';
+import { observable } from 'mobx';
 import { PendingTransactionProps, TransactionType } from '../../common/ResponseTypes';
 import { StoreInterface, BaseTransactionInterface } from './Types';
 
 class PendingTransaction implements BaseTransactionInterface {
-  id: number | null;
+  @observable
+  accessor id: number | null;
 
-  date: DateTime;
+  @observable
+  accessor date: DateTime;
 
-  name: string;
+  @observable
+  accessor name: string;
 
-  type = TransactionType.REGULAR_TRANSACTION;
+  @observable
+  accessor type = TransactionType.REGULAR_TRANSACTION;
 
-  amount: number;
+  @observable
+  accessor amount: number;
 
-  instituteName: string;
+  @observable
+  accessor instituteName: string;
 
-  accountName: string;
+  @observable
+  accessor accountName: string;
 
-  accountOwner: string | null = null;
+  @observable
+  accessor accountOwner: string | null = null;
 
-  statementId: number | null = null;
+  @observable
+  accessor statementId: number | null = null;
 
-  pending = true;
+  @observable
+  accessor pending = true;
 
-  duplicateOfTransactionId: number | null = null;
+  @observable
+  accessor duplicateOfTransactionId: number | null = null;
 
   constructor(store: StoreInterface, props: PendingTransactionProps) {
     this.id = props.id;
@@ -44,8 +55,6 @@ class PendingTransaction implements BaseTransactionInterface {
       this.instituteName = '';
       this.accountName = '';
     }
-
-    makeAutoObservable(this);
   }
 
   // eslint-disable-next-line class-methods-use-this

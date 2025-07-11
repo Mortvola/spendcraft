@@ -1,4 +1,4 @@
-import { makeAutoObservable, runInAction } from 'mobx';
+import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 import { PlaidLinkOnSuccessMetadata } from 'react-plaid-link';
 import Institution from './Institution';
@@ -14,15 +14,15 @@ import {
 } from './Types';
 
 class Accounts implements AccountsInterface {
-  initialized = false;
+  @observable
+  accessor initialized = false;
 
-  institutions: Institution[] = [];
+  @observable
+  accessor institutions: Institution[] = [];
 
   store: StoreInterface;
 
   constructor(store: StoreInterface) {
-    makeAutoObservable(this);
-
     this.store = store;
   }
 

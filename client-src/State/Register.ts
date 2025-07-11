@@ -1,4 +1,4 @@
-import { makeAutoObservable, runInAction } from 'mobx';
+import { runInAction } from 'mobx';
 import { DateTime } from 'luxon';
 import Http from '@mortvola/http';
 import Transaction from './Transaction';
@@ -15,8 +15,6 @@ class Register implements RegisterInterface {
   store: StoreInterface;
 
   constructor(store: StoreInterface) {
-    makeAutoObservable(this);
-
     this.store = store;
   }
 
