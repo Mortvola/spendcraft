@@ -4,7 +4,7 @@ import { observable, runInAction } from 'mobx';
 import {
   ApiError,
   ApiResponse,
-  BalanceProps, Error, isErrorResponse, isUpdateBalanceResponse,
+  BalanceProps, ErrorProps, isErrorResponse, isUpdateBalanceResponse,
   UpdateBalanceResponse,
 } from '../../common/ResponseTypes';
 import { BalanceInterface, BalancesInterface } from './Types';
@@ -27,7 +27,7 @@ class Balance implements BalanceInterface {
     this.balance = props.balance;
   }
 
-  async delete(): Promise<null | Error[]> {
+  async delete(): Promise<null | ErrorProps[]> {
     if (this.id === null) {
       throw new Error('balance has a null id');
     }

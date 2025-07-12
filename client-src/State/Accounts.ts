@@ -6,7 +6,7 @@ import Plaid from './Plaid';
 import {
   AccountBalanceProps, AddInstitutionProps, AddInstitutionResponse,
   ApiResponse,
-  Error, isAddInstitutionResponse, isDeleteInstitutionResponse,
+  ErrorProps, isAddInstitutionResponse, isDeleteInstitutionResponse,
   isInstitutionsResponse, isLinkTokenResponse, TrackingType,
 } from '../../common/ResponseTypes';
 import {
@@ -185,7 +185,7 @@ class Accounts implements AccountsInterface {
     subtype: string,
     tracking: TrackingType,
     rate: number,
-  ): Promise<Error[] | null> {
+  ): Promise<ErrorProps[] | null> {
     const response = await Http.post<unknown, ApiResponse<AddInstitutionResponse>>('/api/v1/institution', {
       institution: {
         name: instituteName,

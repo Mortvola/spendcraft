@@ -2,7 +2,7 @@ import { DateTime } from 'luxon';
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 import {
-  Error,
+  ErrorProps,
   TransactionType,
   TransactionProps,
   isUpdateCategoryTransferResponse,
@@ -283,7 +283,7 @@ class Transaction implements TransactionInterface {
     throw new Error('invalid response');
   }
 
-  async delete(): Promise<null | Error[]> {
+  async delete(): Promise<null | ErrorProps[]> {
     if (this.id === null) {
       throw new Error('transaction has a null id');
     }
@@ -311,7 +311,7 @@ class Transaction implements TransactionInterface {
     throw new Error('invalid response');
   }
 
-  async dedup(): Promise<null | Error[]> {
+  async dedup(): Promise<null | ErrorProps[]> {
     const response = await Http.post(`/api/v1/transaction/${this.id}/dedup`);
 
     if (response.ok) {

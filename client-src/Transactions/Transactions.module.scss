@@ -275,13 +275,17 @@ $balance-width: 8rem;
         display: unset;
       }
 
-      grid-template-areas:
-      ". name name amount"
-      ". date account running-balance"
-      ". pending owner owner";
+      & {
+        grid-template-areas:
+          ". name name amount"
+          ". date account running-balance"
+          ". pending owner owner";
+      }
     }
 
-    padding-left: 0.25rem;
+    & {
+      padding-left: 0.25rem;
+    }
 
     .date,
     .account,

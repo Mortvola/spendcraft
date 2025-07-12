@@ -2,7 +2,7 @@ import { DateTime } from 'luxon';
 import { PlaidLinkOnSuccessMetadata } from 'react-plaid-link';
 import Reports from './Reports';
 import {
-  CategoryType, Error, TrackingType, AccountType, Location,
+  CategoryType, ErrorProps, TrackingType, AccountType, Location,
   UnlinkedAccountProps,
   TransactionType,
   ApiError,
@@ -39,15 +39,15 @@ export interface GroupInterface {
 
   getFundingPool(): CategoryInterface;
 
-  addCategory(params: CategoryParams): Promise<null| Error[]>;
+  addCategory(params: CategoryParams): Promise<null| ErrorProps[]>;
 
   insertChild(child: TreeNodeInterface): void;
 
   removeChild(child: TreeNodeInterface): void;
 
-  delete (): Promise<null | Error[]>;
+  delete (): Promise<null | ErrorProps[]>;
 
-  update(value: { name: string, parentGroupId: number | null }): Promise<null | Error[]>;
+  update(value: { name: string, parentGroupId: number | null }): Promise<null | ErrorProps[]>;
 
   forEachCatgory(callback: (category: CategoryInterface) => void): void;
 }
@@ -107,7 +107,7 @@ export interface TransactionInterface extends BaseTransactionInterface {
     },
   ): Promise<null | ApiError[]>;
 
-  delete(): Promise<null | Error[]>;
+  delete(): Promise<null | ErrorProps[]>;
 
   updateCategoryTransfer(
     values: {
@@ -169,7 +169,7 @@ export interface AccountsInterface {
     subtype: string,
     tracking: TrackingType,
     rate: number,
-  ): Promise<Error[] | null>;
+  ): Promise<ErrorProps[] | null>;
 
   addInstitution(
     publicToken: string,
@@ -223,9 +223,9 @@ export interface CategoryInterface {
 
   getFundingPool(): CategoryInterface;
 
-  update(params: CategoryParams): Promise<null | Error[]>;
+  update(params: CategoryParams): Promise<null | ErrorProps[]>;
 
-  delete (): Promise<null | Error[]>;
+  delete (): Promise<null | ErrorProps[]>;
 
   updateBalances(balances: CategoryBalanceProps[]): void;
 
@@ -353,7 +353,7 @@ export interface InstitutionInterface {
     subtype: string,
     tracking: TrackingType,
     rate: number,
-  ): Promise<Error[] | null>;
+  ): Promise<ErrorProps[] | null>;
 
   // getUnlinkedAccounts(): Promise<void>;
 
@@ -448,7 +448,7 @@ export interface AccountInterface {
       comment?: string,
       categories: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
     },
-  ): Promise<Error[] | null>;
+  ): Promise<ErrorProps[] | null>;
 
   addStatement(
     startDate: string,
@@ -482,7 +482,7 @@ export interface BalanceInterface {
     },
   ): Promise<ApiError[] | null>;
 
-  delete(): Promise<null | Error[]>;
+  delete(): Promise<null | ErrorProps[]>;
 }
 
 export interface BalancesInterface {

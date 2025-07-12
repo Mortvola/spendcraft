@@ -2,7 +2,7 @@ import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 import Category, { isCategory } from './Category';
 import {
-  Error, GroupProps, isErrorResponse,
+  ErrorProps, GroupProps, isErrorResponse,
   isAddCategoryResponse,
   GroupType,
   CategoryType,
@@ -83,7 +83,7 @@ class Group implements GroupInterface {
     return null;
   }
 
-  async addCategory(params: CategoryParams): Promise<null| Error[]> {
+  async addCategory(params: CategoryParams): Promise<null| ErrorProps[]> {
     const {
       group, fundingCategories, goalDate, ...p
     } = params;
@@ -141,7 +141,7 @@ class Group implements GroupInterface {
     child.group = this;
   }
 
-  async update(value: { name: string, parentGroupId: number | null }): Promise<null | Error[]> {
+  async update(value: { name: string, parentGroupId: number | null }): Promise<null | ErrorProps[]> {
     const response = await Http.patch<unknown, ApiResponse<GroupProps>>(`/api/v1/groups/${this.id}`, { ...value, hidden: false });
 
     const body = await response.body();
@@ -178,7 +178,7 @@ class Group implements GroupInterface {
     return null;
   }
 
-  async delete (): Promise<null | Error[]> {
+  async delete (): Promise<null | ErrorProps[]> {
     const response = await Http.delete(`/api/v1/groups/${this.id}`);
 
     if (!response.ok) {

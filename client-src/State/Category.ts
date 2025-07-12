@@ -2,7 +2,7 @@ import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 import { DateTime } from 'luxon';
 import {
-  CategoryProps, isErrorResponse, Error,
+  CategoryProps, isErrorResponse, ErrorProps,
   isUpdateCategoryResponse,
   CategoryType,
   CategoryBalanceProps,
@@ -108,7 +108,7 @@ class Category implements CategoryInterface {
 
   async update(
     params: CategoryParams,
-  ): Promise<null | Error[]> {
+  ): Promise<null | ErrorProps[]> {
     const {
       group, goalDate, fundingCategories, ...p
     } = params;
@@ -188,7 +188,7 @@ class Category implements CategoryInterface {
     }
   }
 
-  async delete (): Promise<null | Error[]> {
+  async delete (): Promise<null | ErrorProps[]> {
     if (this.group === null) {
       throw new Error('group is null')
     }

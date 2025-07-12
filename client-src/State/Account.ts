@@ -2,7 +2,7 @@ import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 import { DateTime } from 'luxon';
 import {
-  AccountProps, AddTransactionResponse, Error,
+  AccountProps, AddTransactionResponse, ErrorProps,
   isAddTransactionResponse, TrackingType, AccountType,
   ApiError,
   AddStatementResponse,
@@ -127,7 +127,7 @@ class Account implements AccountInterface {
       amount?: number,
       categories: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
     },
-  ): Promise<Error[] | null> {
+  ): Promise<ErrorProps[] | null> {
     const response = await Http.post<AddTransactionRequest, AddTransactionResponse>(`/api/v1/account/${this.id}/transactions`, values);
 
     if (response.ok) {

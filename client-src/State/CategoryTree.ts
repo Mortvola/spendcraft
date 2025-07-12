@@ -7,7 +7,7 @@ import {
   CategoryBalanceProps,
   CategoryProps,
   CategoryType,
-  Error, GroupProps, GroupType, isCategoryProps, isErrorResponse,
+  ErrorProps, GroupProps, GroupType, isCategoryProps, isErrorResponse,
 } from '../../common/ResponseTypes';
 import {
   CategoryInterface, CategoryTreeInterface, GroupInterface, RebalancesInterface, StoreInterface,
@@ -327,7 +327,7 @@ class CategoryTree implements CategoryTreeInterface {
     }
   }
 
-  async addGroup(name: string, parentGroupId: number | null): Promise<null | Error[]> {
+  async addGroup(name: string, parentGroupId: number | null): Promise<null | ErrorProps[]> {
     const response = await Http.post<unknown, ApiResponse<GroupProps>>('/api/v1/groups', { name, parentGroupId });
 
     const body = await response.body();

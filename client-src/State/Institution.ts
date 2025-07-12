@@ -3,7 +3,7 @@ import Http from '@mortvola/http';
 import { DateTime } from 'luxon';
 import Account from './Account';
 import {
-  UnlinkedAccountProps, InstitutionProps, AccountBalanceProps, Error,
+  UnlinkedAccountProps, InstitutionProps, AccountBalanceProps, ErrorProps,
   TrackingType, isAddOnlineAccountsResponse, isDeleteAccountResponse, isLinkTokenResponse,
   InstitutionSyncResponse, AddInstitutionResponse,
   AddOfflineAccountResponse,
@@ -215,7 +215,7 @@ class Institution implements InstitutionInterface {
     subtype: string,
     tracking: TrackingType,
     rate: number,
-  ): Promise<Error[] | null> {
+  ): Promise<ErrorProps[] | null> {
     const response = await Http.post<unknown, ApiResponse<AddOfflineAccountResponse>>(`/api/v1/institution/${this.id}/accounts`, {
       name: accountName,
       balance,

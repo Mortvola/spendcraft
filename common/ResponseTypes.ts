@@ -425,14 +425,14 @@ export const isPendingTransactionsResponse = (r: unknown): r is TransactionProps
   && Array.isArray(r) && (r.length === 0 || isTransactionProps((r as TransactionProps[])[0]))
 )
 
-export interface Error {
+export interface ErrorProps {
   field: string;
   message: string;
   rule: string;
 }
 
 export interface ErrorResponse {
-  errors: Error[];
+  errors: ErrorProps[];
 }
 
 export enum RequestErrorCode {

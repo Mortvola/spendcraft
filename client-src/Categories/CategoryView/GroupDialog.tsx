@@ -10,7 +10,7 @@ import {
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import { FormModal, FormError, setFormErrors } from '@mortvola/forms';
 import { useStores } from '../../State/Store';
-import { Error, GroupType } from '../../../common/ResponseTypes';
+import { ErrorProps, GroupType } from '../../../common/ResponseTypes';
 import { CategoryInterface, GroupInterface } from '../../State/Types';
 import styles from './GroupDialog.module.scss';
 import { isGroup } from '../../State/Group';
@@ -32,7 +32,7 @@ const GroupDialog: React.FC<PropsType & ModalProps> = ({
 
   const handleSubmit = async (values: ValueType, formikHelpers: FormikHelpers<ValueType>) => {
     const { setErrors } = formikHelpers;
-    let errors: Array<Error> | null = null;
+    let errors: Array<ErrorProps> | null = null;
 
     let parentGroupId = categoryTree.budget.id;
 

@@ -6,7 +6,7 @@ import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import {
   FormField, FormModal, FormTextField, setFormErrors,
 } from '@mortvola/forms';
-import { Error, TrackingType } from '../../common/ResponseTypes';
+import { ErrorProps, TrackingType } from '../../common/ResponseTypes';
 import AmountInput from '../AmountInput';
 import { useStores } from '../State/Store';
 import { AccountInterface, InstitutionInterface } from '../State/Types';
@@ -74,7 +74,7 @@ const OfflineAccountDialog: React.FC<PropsType & ModalProps> = ({
   const handleSubmit = async (values: ValuesType, bag: FormikHelpers<ValuesType>) => {
     const { setErrors } = bag;
 
-    let errors: Error[] | null = null;
+    let errors: ErrorProps[] | null = null;
 
     if (institution) {
       if (account) {

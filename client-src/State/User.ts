@@ -1,7 +1,7 @@
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 import {
-  ApiResponse, Error, isErrorResponse, isUserProps,
+  ApiResponse, ErrorProps, isErrorResponse, isUserProps,
 } from '../../common/ResponseTypes';
 import { StoreInterface, UserInterface } from './Types';
 
@@ -44,7 +44,7 @@ class User implements UserInterface {
     }
   }
 
-  async update(email: string): Promise<Error[] | null> {
+  async update(email: string): Promise<ErrorProps[] | null> {
     const response = await Http.patch('/api/v1/user', { email });
 
     const body = await response.body();
@@ -69,7 +69,7 @@ class User implements UserInterface {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  async resendVerificationLink(): Promise<Error[] | null> {
+  async resendVerificationLink(): Promise<ErrorProps[] | null> {
     const response = await Http.post('/api/v1/user/pending-email/resend');
 
     const body = await response.body();
@@ -85,7 +85,7 @@ class User implements UserInterface {
     throw new Error('invalid response');
   }
 
-  async deletePendingEmail(): Promise<Error[] | null> {
+  async deletePendingEmail(): Promise<ErrorProps[] | null> {
     const response = await Http.delete('/api/v1/user/pending-email');
 
     const body = await response.body();

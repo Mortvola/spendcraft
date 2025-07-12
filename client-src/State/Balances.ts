@@ -1,7 +1,7 @@
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 import {
-  isAddBalanceResponse, isBalancesResponse, Error, isErrorResponse,
+  isAddBalanceResponse, isBalancesResponse, ErrorProps, isErrorResponse,
   AddBalanceResponse,
   ApiResponse,
   ApiError,
