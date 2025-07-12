@@ -9,3 +9,5 @@
 /service-worker.*.js
 *.css.map
 /*.gz
+/assets
+

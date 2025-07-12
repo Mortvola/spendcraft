@@ -63,7 +63,7 @@ export default defineConfig({
     () => import('@adonisjs/mail/mail_provider'),
     () => import('@adonisjs/drive/drive_provider'),
     () => import('@adonisjs/redis/redis_provider'),
-    // () => import('adonis5-bullmq')
+    () => import('@adonisjs/vite/vite_provider')
   ],
   metaFiles: [
     {
@@ -75,7 +75,12 @@ export default defineConfig({
       reloadServer: false,
     },
   ],
+
   assetsBundler: false,
+  hooks: {
+    onBuildStarting: [() => import('@adonisjs/vite/build_hook')],
+  },
+
   tests: {
     suites: [
       {

@@ -1,13 +1,12 @@
 @layout.app()
   @slot('header')
-    @!component('components/home-css')
-    @!component('components/globalsitetag')
+    @viteReactRefresh()
+    @vite(['client-src/App.tsx'])
   @endslot
 
   @slot('content')
       <div id="hidden">
       </div>
       <div class="app" data-props="{{ JSON.stringify(props) }}" />
-      @!component('components/home-script')
   @endslot
 @end

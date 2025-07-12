@@ -6,7 +6,7 @@ import Plaid from './Plaid';
 import {
   AccountBalanceProps, AddInstitutionProps, AddInstitutionResponse,
   ApiResponse,
-  ErrorProps, isAddInstitutionResponse, isDeleteInstitutionResponse,
+  ErrorProps, isDeleteInstitutionResponse,
   isInstitutionsResponse, isLinkTokenResponse, TrackingType,
 } from '../../common/ResponseTypes';
 import {

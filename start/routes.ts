@@ -61,33 +61,33 @@ router.post('/redirect', () => {
 });
 
 // Look for a gzipped file in the public directory
-router.get('/:file', async ({ request, response, logger }) => {
-  if (request.encoding(['gzip'])) {
-    try {
-      const filename = request.param('file');
+// router.get('/:file', async ({ request, response, logger }) => {
+//   if (request.encoding(['gzip'])) {
+//     try {
+//       const filename = request.param('file');
 
-      const disk = drive.use('fs')
-      const contents = await disk.getBytes(`./${filename}.gz`)
+//       const disk = drive.use('fs')
+//       const contents = await disk.getBytes(`./${filename}.gz`)
 
-      response.header('Content-Encoding', 'gzip');
+//       response.header('Content-Encoding', 'gzip');
 
-      if (/.*.js$/.test(filename) || /.*js.map$/.test(filename)) {
-        response.header('Content-Type', 'application/javascript');
-      }
-      else if (/.*.css$/.test(filename)) {
-        response.header('Content-Type', 'text/css');
-      }
+//       if (/.*.js$/.test(filename) || /.*js.map$/.test(filename)) {
+//         response.header('Content-Type', 'application/javascript');
+//       }
+//       else if (/.*.css$/.test(filename)) {
+//         response.header('Content-Type', 'text/css');
+//       }
       
-      return response.ok(contents);
-    }
-    catch (error) {
-      logger.error(error);
-    }
-  }
+//       return response.ok(contents);
+//     }
+//     catch (error) {
+//       logger.error(error);
+//     }
+//   }
 
-  return response.notFound();
-})
-.where('file', /.*.(js|css|map)$/)
+//   return response.notFound();
+// })
+// .where('file', /.*.(js|css|map)$/)
 
 // router.get('/health', async ({ response }) => {
 //   const report = await HealthCheck.getReport();
