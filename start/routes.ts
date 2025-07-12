@@ -21,7 +21,7 @@
 // import HealthCheck from '@ioc:Adonis/Core/HealthCheck';
 import router from '@adonisjs/core/services/router'
 import env from '#start/env';
-import drive from '@adonisjs/drive/services/main'
+// import drive from '@adonisjs/drive/services/main'
 import { middleware } from '#start/kernel'
 
 const HomeController = () => import('#controllers/HomeController')

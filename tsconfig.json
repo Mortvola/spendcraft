@@ -7,7 +7,6 @@
     "node_modules",
     "build",
     "client-src",
-    "client-build"
   ],
   "compilerOptions": {
     "outDir": "./build",

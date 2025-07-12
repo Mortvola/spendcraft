@@ -39,6 +39,7 @@ export default defineConfig({
       environment: ['web'],
     },
   ],
+
   /*
   |--------------------------------------------------------------------------
   | Service providers
@@ -65,6 +66,7 @@ export default defineConfig({
     () => import('@adonisjs/redis/redis_provider'),
     () => import('@adonisjs/vite/vite_provider')
   ],
+
   metaFiles: [
     {
       pattern: 'public/**',
