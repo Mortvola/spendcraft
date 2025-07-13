@@ -8,7 +8,7 @@ import Amount from '../Amount';
 import styles from './Account.module.scss';
 import { useDeleteConfirmation } from '../DeleteConfirmation';
 
-type PropsType = {
+interface PropsType {
   selected: boolean,
   account: AccountInterface,
   onAccountSelected: (account: AccountInterface) => void,

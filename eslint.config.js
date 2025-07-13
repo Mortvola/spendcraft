@@ -1,11 +1,14 @@
 import tseslint from 'typescript-eslint'
-import { GLOBAL_IGNORE_LIST } from '@adonisjs/eslint-config'
+import eslint from '@eslint/js'
 
-
-function configApp(...configBlocksToMerge) {
-    return tseslint.config(
-        { ignores: GLOBAL_IGNORE_LIST },
-    )
-}
-
-export default configApp()
+export default tseslint.config(
+  eslint.configs.recommended,
+  tseslint.configs.strict,
+//   tseslint.configs.recommended,
+  tseslint.configs.stylistic,
+  {
+    rules: {
+      "@typescript-eslint/consistent-type-definitions": "warn",
+    }
+  }
+)

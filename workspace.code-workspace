@@ -6,6 +6,6 @@
   ],
 	"settings": {
 		"editor.tabSize": 2,
-		"eslint.alwaysShowStatus": true
+		"typescript.tsdk": "node_modules/typescript/lib",
 	}
 }

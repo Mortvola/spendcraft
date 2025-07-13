@@ -27,8 +27,7 @@ export default class AuthController {
     await userService.create(userDetails)
   }
 
-  // eslint-disable-next-line class-methods-use-this
-  public async verifyEmail({ params, view }: HttpContext) : Promise<(string | void)> {
+  public async verifyEmail({ params, view }: HttpContext) : Promise<(string | undefined)> {
     const user = await User.find(params.id);
 
     if (user) {
@@ -61,7 +60,6 @@ export default class AuthController {
     return undefined;
   }
 
-  // eslint-disable-next-line class-methods-use-this
   public async login({ auth, request, response }: HttpContext) : Promise<void> {
     const credentials = await request.validate({
       schema: schema.create({
@@ -108,7 +106,6 @@ export default class AuthController {
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
   public async refresh({ auth, request, response }: HttpContext) : Promise<void> {
     const payload = await request.validate({
       schema: schema.create({
@@ -129,12 +126,12 @@ export default class AuthController {
         },
       });
     }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     catch (error) {
       response.status(401)
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
   public async logout({ auth, request }: HttpContext) : Promise<void> {
     const payload = await request.validate({
       schema: schema.create({
@@ -147,7 +144,6 @@ export default class AuthController {
     auth.use('jwt').revoke(payload.data.refresh);
   }
 
-  // eslint-disable-next-line class-methods-use-this
   public async requestCode({ request, response }: HttpContext) : Promise<void> {
     const requestData = await request.validate({
       schema: schema.create({
@@ -172,7 +168,6 @@ export default class AuthController {
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
   public async verifyCode({ auth, request, response }: HttpContext): Promise<void> {
     const requestData = await request.validate({
       schema: schema.create({
@@ -232,11 +227,10 @@ export default class AuthController {
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
   public async updatePassword({
     auth: { user },
     request,
-  }: HttpContext) : Promise<(string | void)> {
+  }: HttpContext) : Promise<(string | undefined)> {
     if (!user) {
       throw new Error('user is not defined');
     }

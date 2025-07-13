@@ -19,14 +19,13 @@ import transactionFields from './transactionFields.js';
 import { addBalance, updateBalance } from '#app/validation/Validators/account';
 import { DateTime } from 'luxon';
 
-type AddedTransaction = {
+interface AddedTransaction {
   categories: CategoryBalanceProps[],
   transaction: Record<string, unknown>,
   acctBalances: AccountBalanceProps[],
 };
 
 export default class AccountsController {
-  // eslint-disable-next-line class-methods-use-this
   public async transactions({
     request,
     auth: {
@@ -79,7 +78,6 @@ export default class AccountsController {
     };
   }
 
-  // eslint-disable-next-line class-methods-use-this
   public async balances({ request }: HttpContext): Promise<BalanceHistory[]> {
     const accountId = parseInt(request.params().acctId, 10);
 
@@ -90,14 +88,13 @@ export default class AccountsController {
     return balances;
   }
 
-  // eslint-disable-next-line class-methods-use-this
   public async addTransaction({
     request,
     auth: {
       user,
     },
     logger,
-  }: HttpContext): Promise<AddedTransaction | void> {
+  }: HttpContext): Promise<AddedTransaction | undefined> {
     if (!user) {
       throw new Error('user not defined');
     }
@@ -173,14 +170,11 @@ export default class AccountsController {
 
       const categoryBalances: CategoryBalanceProps[] = [];
 
-      // eslint-disable-next-line no-restricted-syntax
       for (const split of categories) {
-        // eslint-disable-next-line no-await-in-loop
         const category = await Category.findOrFail(split.categoryId, { client: trx });
 
         category.balance += split.amount;
 
-        // eslint-disable-next-line no-await-in-loop
         await category.save();
 
         const balance = categoryBalances.find((b) => b.id === category.id);
@@ -216,7 +210,6 @@ export default class AccountsController {
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
   public async addBalance({
     request,
     auth: {
@@ -266,11 +259,17 @@ export default class AccountsController {
 
       await trx.commit();
 
+      const date = balance.date.toISODate()
+
+      if (!date) {
+        throw new Error('date is null')
+      }
+
       return {
         data: {
           id: balance.id,
           balance: balance.balance,
-          date: balance.date.toISODate()!,
+          date,
           accountBalance: account.balance,
         }
       }
@@ -282,7 +281,6 @@ export default class AccountsController {
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
   public async updateBalance({
     request,
     auth: {
@@ -350,7 +348,6 @@ export default class AccountsController {
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
   public async deleteBalance({
     request,
     auth: {
@@ -406,7 +403,6 @@ export default class AccountsController {
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
   public async update({
     request,
     auth: {
@@ -470,7 +466,6 @@ export default class AccountsController {
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
   public async uploadOfx({
     request,
     response,
@@ -520,7 +515,6 @@ export default class AccountsController {
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
   public async getStatements({
     request,
     auth: {
@@ -554,14 +548,13 @@ export default class AccountsController {
     return statements
   }
 
-  // eslint-disable-next-line class-methods-use-this
   public async addStatement({
     request,
     auth: {
       user,
     },
     logger,
-  }: HttpContext): Promise<AddStatementResponse | void> {
+  }: HttpContext): Promise<AddStatementResponse | undefined> {
     if (!user) {
       throw new Error('user not defined');
     }
@@ -615,14 +608,13 @@ export default class AccountsController {
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
   public async updateStatement({
     request,
     auth: {
       user,
     },
     logger,
-  }: HttpContext): Promise<StatementProps | void> {
+  }: HttpContext): Promise<StatementProps | undefined> {
     if (!user) {
       throw new Error('user not defined');
     }
@@ -651,7 +643,9 @@ export default class AccountsController {
 
       if (requestData.reconcile !== undefined) {
         if (requestData.reconcile === 'All') {
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           const startDate = statement.startDate.toISODate()!
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           const endDate = statement.endDate.toISODate()!
 
           const transactions = await AccountTransaction.query({ client: trx })
@@ -690,13 +684,13 @@ export default class AccountsController {
         endingBalance: requestData.endingBalance,
       }
 
-      // eslint-disable-next-line no-restricted-syntax
       for (const property of Object.getOwnPropertyNames(changes)) {
         if (changes[property] === undefined) {
+          // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
           delete changes[property]
         }
       }
-
+      
       if (Object.getOwnPropertyNames(changes).length > 0) {
         statement.merge(changes)
 

@@ -3,7 +3,7 @@ import { observer } from 'mobx-react-lite';
 import { AutoAssignmentInterface } from '../State/Types';
 import styles from './AutoAssignment.module.scss';
 
-type PropsType = {
+interface PropsType {
   autoAssignment: AutoAssignmentInterface,
   onClick: (autoAssignment: AutoAssignmentInterface) => void,
 }
