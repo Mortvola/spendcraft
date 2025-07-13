@@ -8,7 +8,7 @@ import AmountInput from '../AmountInput';
 import StatementDate from './StatementDate';
 import StatementAmount from './StatementAmount';
 
-type PropsType = {
+interface PropsType {
   statement: Statement
 }
 

@@ -57,7 +57,7 @@ class PendingTransaction implements BaseTransactionInterface {
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   toggleReconciled(statementId: number): void {
     throw Error('not implemented')
   }

@@ -1,7 +1,7 @@
 import React, { ReactElement, ReactNode, useState } from 'react';
 import { Modal, Button } from 'react-bootstrap';
 
-type PropsType = {
+interface PropsType {
   title: string,
   buttonTitle: string,
   onConfirm: () => void;
@@ -35,7 +35,7 @@ const Confirmation: React.FC<PropsType & ConfirmProps> = ({
 type HandleDeleteClick = (() => void);
 type OnDelete = (() => void);
 
-type ConfirmProps = {
+interface ConfirmProps {
   show: boolean;
   onHide: () => void;
 }

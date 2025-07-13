@@ -1,7 +1,7 @@
 import * as luxon from 'luxon';
 import React from 'react';
 
-type PropsType = {
+interface PropsType {
   dateTime: luxon.DateTime,
   className?: string,
 }

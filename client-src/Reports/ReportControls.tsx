@@ -2,7 +2,7 @@ import React, { ReactNode } from 'react';
 import { Form } from 'formik';
 import styles from './ReportControls.module.scss'
 
-type PropsType = {
+interface PropsType {
   children?: ReactNode,
 }
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import styles from './MinorTitle.module.scss';
 
-type PropsType = {
+interface PropsType {
   children: React.ReactNode,
 }
 

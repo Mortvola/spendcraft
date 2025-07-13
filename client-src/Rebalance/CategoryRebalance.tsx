@@ -7,7 +7,7 @@ import { isGroup } from '../State/Group';
 import { useStores } from '../State/Store';
 import { CategoryType } from '../../common/ResponseTypes';
 
-type PropsType = {
+interface PropsType {
   onDeltaChange: null | ((amunt: number, delta: number, categories: unknown) => void),
   balances: CategoryBalanceInterface[],
   trxCategories: TransactionCategoryInterface[],

@@ -14,7 +14,7 @@ const Header: React.FC = () => (
   </Modal.Header>
 );
 
-type FooterProps = {
+interface FooterProps {
   setShow: (show: boolean) => void,
   isSubmitting: boolean,
 }
@@ -32,7 +32,7 @@ const Footer: React.FC<FooterProps> = ({ setShow, isSubmitting }) => (
   </Modal.Footer>
 );
 
-type PropsType = {
+interface PropsType {
   institution: InstitutionInterface,
 }
 

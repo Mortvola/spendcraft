@@ -5,29 +5,29 @@ import React, {
 import Icon from '../Icon';
 import styles from './SortableTable.module.scss';
 
-type SortableTableHeaderProps = {
+interface SortableTableHeaderProps {
   className?: string,
   children?: ReactNode,
 }
 
-type SortableColumnProps = {
+interface SortableColumnProps {
   column: string,
   className?: string,
   style?: CSSProperties,
   children?: ReactNode,
 }
 
-type SortableTableProps = {
+interface SortableTableProps {
   children: ReactNode,
 }
 
-type SortableBodyProps<T>= {
+interface SortableBodyProps<T> {
   className?: string,
   style?: CSSProperties,
   children: (r: T) => ReactElement,
 }
 
-type UseSortableTableType<T> = {
+interface UseSortableTableType<T> {
   setData: (data: (T & Record<string, unknown>)[]) => void,
   SortableTable: {
     (props: SortableTableProps): ReactElement,
@@ -40,7 +40,7 @@ type UseSortableTableType<T> = {
 export default function useSortableTable<T>(keyPrecedence?: string[] | undefined): UseSortableTableType<T> {
   type Direction = 'ascending' | 'descending';
 
-  type SortConfig = {
+  interface SortConfig {
     column: string,
     direction: Direction,
   }

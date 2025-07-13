@@ -6,7 +6,7 @@ enum TokenType {
   END,
 }
 
-type Token = {
+interface Token {
   type: TokenType;
   value: string | number | null;
 }
@@ -112,8 +112,8 @@ class Tokenizer {
 }
 
 const parseEquation = (equation: string): number => {
-  const stack: Array<string> = [];
-  const output: Array<number> = [];
+  const stack: string[] = [];
+  const output: number[] = [];
 
   const applyOperator = (operator: string) => {
     if (typeof operator !== 'string') {

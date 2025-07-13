@@ -9,7 +9,7 @@ import { useStores } from '../State/Store';
 import Statement from '../State/Statement';
 import StatementView from './StatementView';
 
-type PropsType = {
+interface PropsType {
   account: AccountInterface
 }
 

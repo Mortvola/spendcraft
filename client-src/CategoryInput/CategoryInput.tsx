@@ -8,7 +8,7 @@ import { isGroup } from '../State/Group';
 import { isCategory } from '../State/Category';
 import { CategoryType } from '../../common/ResponseTypes';
 
-type PropsType = {
+interface PropsType {
   categoryId?: number | null,
   value?: string,
   name?: string,

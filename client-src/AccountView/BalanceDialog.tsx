@@ -12,7 +12,7 @@ import AmountInput from '../AmountInput';
 import styles from './BalanceDialog.module.scss';
 import { ApiError } from '../../common/ResponseTypes';
 
-type PropsType = {
+interface PropsType {
   balance?: BalanceInterface | null,
   balances?: BalancesInterface | null,
 }
@@ -22,7 +22,7 @@ const BalanceDialog: React.FC<PropsType & ModalProps> = ({
   balance = null,
   balances = null,
 }) => {
-  type FormValues = {
+  interface FormValues {
     date: string,
     amount: number,
   }

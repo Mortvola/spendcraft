@@ -3,7 +3,7 @@ import MainTray from './MainTray';
 import Toolbar from './Toolbar';
 import styles from './Main.module.scss';
 
-type PropsType = {
+interface PropsType {
   toolbar?: ReactNode,
   sidebar?: ReactNode,
   children?: ReactNode,

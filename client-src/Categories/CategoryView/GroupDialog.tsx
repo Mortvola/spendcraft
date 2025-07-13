@@ -15,7 +15,7 @@ import { CategoryInterface, GroupInterface } from '../../State/Types';
 import styles from './GroupDialog.module.scss';
 import { isGroup } from '../../State/Group';
 
-type PropsType = {
+interface PropsType {
   group?: GroupInterface,
 }
 
@@ -32,7 +32,7 @@ const GroupDialog: React.FC<PropsType & ModalProps> = ({
 
   const handleSubmit = async (values: ValueType, formikHelpers: FormikHelpers<ValueType>) => {
     const { setErrors } = formikHelpers;
-    let errors: Array<ErrorProps> | null = null;
+    let errors: ErrorProps[] | null = null;
 
     let parentGroupId = categoryTree.budget.id;
 

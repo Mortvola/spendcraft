@@ -2,7 +2,7 @@ import React from 'react';
 import Icon from './Icon';
 import styles from './IconButton.module.scss';
 
-type PropsType = {
+interface PropsType {
   icon: string;
   caption?: string;
   rotate?: boolean;

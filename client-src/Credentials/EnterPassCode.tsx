@@ -11,7 +11,7 @@ import styles from './Signin.module.scss';
 import { isErrorResponse } from '../../common/ResponseTypes';
 import { Context } from './Types';
 
-type PropsType = {
+interface PropsType {
   context: Context,
   onNext: (context: Context) => void,
   link?: React.ReactNode,
@@ -24,16 +24,16 @@ const EnterPassCode: React.FC<PropsType> = ({
 }) => {
   const [resendStatus, setResendStatus] = React.useState<string>('')
 
-  type FormValues = {
+  interface FormValues {
     code: string,
-  };
+  }
 
-  type VerifyCodeRequest = {
+  interface VerifyCodeRequest {
     email: string,
     code: string,
   }
 
-  type VerifyCodeResponse = {
+  interface VerifyCodeResponse {
     data: {
       access: string,
       refresh: string,

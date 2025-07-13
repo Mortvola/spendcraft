@@ -18,7 +18,7 @@ import CategoryInput from '../../CategoryInput/CategoryInput';
 import { isGroup } from '../../State/Group';
 import { CategoryType, GroupType } from '../../../common/ResponseTypes';
 
-type PropsType = {
+interface PropsType {
   category?: CategoryInterface | null,
 }
 

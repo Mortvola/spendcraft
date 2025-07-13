@@ -5,7 +5,7 @@ import EditButton from './EditButton';
 import { CategoryInterface } from '../../State/Types';
 import { CategoryType } from '../../../common/ResponseTypes';
 
-type PropsType = {
+interface PropsType {
   category: CategoryInterface,
   selectedCategory: CategoryInterface | null,
   onCategorySelected: ((category: CategoryInterface) => void),

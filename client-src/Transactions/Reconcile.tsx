@@ -4,7 +4,7 @@ import { BaseTransactionInterface } from '../State/Types';
 import styles from './Transactions.module.scss';
 import { useStores } from '../State/Store';
 
-type PropsType = {
+interface PropsType {
   transaction: BaseTransactionInterface,
 }
 

@@ -3,7 +3,7 @@ import * as PlaidApi from 'plaid';
 import styles from './TransactionsSync.module.scss';
 import Transaction from './Transaction';
 
-type PropsType = {
+interface PropsType {
   response: PlaidApi.TransactionsSyncResponse,
 }
 

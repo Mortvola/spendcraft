@@ -3,7 +3,7 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router';
 import { useStores } from './State/Store';
 
-type PropsType = {
+interface PropsType {
   children: React.ReactNode,
 }
 

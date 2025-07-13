@@ -9,7 +9,7 @@ import { useGroupDialog } from './GroupDialog';
 import useMediaQuery from '../../MediaQuery';
 import { CategoryType } from '../../../common/ResponseTypes';
 
-type PropsType = {
+interface PropsType {
   open?: boolean,
 }
 

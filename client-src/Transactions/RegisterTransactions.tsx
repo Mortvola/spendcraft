@@ -7,7 +7,7 @@ import styles from './Transactions.module.scss';
 import RemoteDataManager from '../RemoteDataManager';
 import useMediaQuery from '../MediaQuery';
 
-type PropsType = {
+interface PropsType {
   trxContainer: TransactionContainerInterface,
   titles?: React.ReactElement,
   children?: React.ReactNode,

@@ -538,21 +538,21 @@ export interface StoreInterface {
   autoAssignments: AutoAssignmentsInterface;
 }
 
-export type AddTransactionRequest = {
+export interface AddTransactionRequest {
   date?: string,
   name?: string,
   amount?: number,
   categories:(TransactionCategoryInterface | NewTransactionCategoryInterface)[],
-};
+}
 
-export type AddStatementRequest = {
+export interface AddStatementRequest {
   startDate: string,
   endDate: string,
   startingBalance: number,
   endingBalance: number,
 }
 
-export type CategoryParams = {
+export interface CategoryParams {
   type: CategoryType,
   name: string,
   suspended?: boolean,
@@ -566,7 +566,7 @@ export type CategoryParams = {
   fundingCategories: unknown,
 }
 
-export type AutoAssignmentProps = {
+export interface AutoAssignmentProps {
   id: number;
   name: string;
   searchStrings: string[],
@@ -593,7 +593,7 @@ export interface AutoAssignmentInterface {
   delete(): Promise<void>;
 }
 
-export type TransactionLogProps = {
+export interface TransactionLogProps {
   id: number;
   createdAt: string;
   message: string;
@@ -612,7 +612,7 @@ export interface TransactionLogInterface {
   date: DateTime,
 }
 
-export type PlaidLogProps = {
+export interface PlaidLogProps {
   id: number,
   createdAt: string;
   request: string;

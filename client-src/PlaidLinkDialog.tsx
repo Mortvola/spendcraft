@@ -5,7 +5,7 @@ import { useStores } from './State/Store';
 import Console from './Console';
 import { InstitutionInterface } from './State/Types';
 
-type PropsType = {
+interface PropsType {
   institution?: InstitutionInterface | null,
 }
 

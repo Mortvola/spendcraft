@@ -8,7 +8,7 @@ import { useTransactionDialog } from '../Transactions/TransactionDialog';
 import { useBalanceDialog } from './BalanceDialog';
 import UploadFileButton from '../UploadFileButton';
 
-type PropsType = {
+interface PropsType {
   open?: boolean,
 }
 

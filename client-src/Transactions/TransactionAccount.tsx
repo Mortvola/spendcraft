@@ -2,7 +2,7 @@ import React from 'react';
 import styles from './Transactions.module.scss';
 import { BaseTransactionInterface } from '../State/Types';
 
-type PropsType = {
+interface PropsType {
   transaction: BaseTransactionInterface,
 }
 

@@ -1,7 +1,7 @@
 import React, { ReactNode } from 'react';
 import styles from './ReportListItem.module.scss';
 
-type PropsType = {
+interface PropsType {
   value: string,
   onSelect: (value: string) => void,
   selected?: boolean,

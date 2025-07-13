@@ -2,7 +2,7 @@ import React, { ReactNode } from 'react';
 import useMediaQuery from './MediaQuery'
 import styles from './Toolbar.module.scss';
 
-type PropsType = {
+interface PropsType {
   children?: ReactNode,
   onToggleClick?: () => void,
 }

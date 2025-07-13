@@ -1,7 +1,7 @@
 import React from 'react';
 import useMediaQuery from './MediaQuery';
 
-type PropsType = {
+interface PropsType {
   children?: React.ReactNode,
 }
 

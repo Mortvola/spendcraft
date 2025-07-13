@@ -3,7 +3,7 @@ import { BaseTransactionInterface, TransactionLogInterface } from '../State/Type
 import DateTime from '../DateTime';
 import styles from './TransactionLog.module.scss';
 
-type PropsType = {
+interface PropsType {
   log: TransactionLogInterface,
   onClick?: (transactionId: number) => void,
 }

@@ -2,7 +2,7 @@ import { DateTime } from 'luxon';
 import React from 'react';
 import styles from './MonthSelector.module.scss';
 
-type MonthPropsType = {
+interface MonthPropsType {
   month: string,
   monthId: number,
   onClick: (monthId: number) => void,
@@ -18,7 +18,7 @@ const Month: React.FC<MonthPropsType> = ({ month, monthId, onClick }) => {
   return <div onClick={handleClick}>{month}</div>;
 };
 
-type DropDownPropsType = {
+interface DropDownPropsType {
   initialValue?: string,
   onSelect: (value: string) => void,
 }
@@ -84,7 +84,7 @@ const DropDown: React.FC<DropDownPropsType> = ({ initialValue, onSelect }) => {
   );
 };
 
-type PropsType = {
+interface PropsType {
   value?: string,
   onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void,
 }

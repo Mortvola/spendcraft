@@ -7,7 +7,7 @@ import styles from './CategoryView.module.scss';
 import { GroupType } from '../../../common/ResponseTypes';
 import LucideButton from '../../LucideButton';
 
-type PropsType = {
+interface PropsType {
   group: GroupInterface,
 }
 

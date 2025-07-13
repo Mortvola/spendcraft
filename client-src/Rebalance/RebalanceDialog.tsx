@@ -19,7 +19,7 @@ import { CategoryBalanceInterface, TransactionCategoryInterface } from '../State
 import { useStores } from '../State/Store';
 import { isCategoryTreeBalanceResponse, TransactionType } from '../../common/ResponseTypes';
 
-type PropsType = {
+interface PropsType {
   transaction?: Transaction,
 }
 
@@ -32,7 +32,7 @@ const RebalanceDialog: React.FC<PropsType & ModalProps> = ({
   const [unassigned, setUnassigned] = useState(0);
   const [date, setDate] = useState(transaction ? transaction.date.toISODate() : DateTime.now().toISODate());
 
-  type ValueType = {
+  interface ValueType {
     categories: TransactionCategoryInterface[]
     date: string,
   }

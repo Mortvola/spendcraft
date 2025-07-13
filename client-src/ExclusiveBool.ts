@@ -6,7 +6,7 @@ interface BoolState {
   listener: (state: boolean) => void;
 }
 
-const states: Array<BoolState> = [];
+const states: BoolState[] = [];
 let counter = 0;
 let currentTrue: number | null = null;
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import styles from './VerticalTitled.module.scss'
 
-type PropsType = {
+interface PropsType {
   title: string,
   underscored?: boolean,
   children: React.ReactNode,

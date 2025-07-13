@@ -1,7 +1,7 @@
 import React from 'react';
 import styles from './NavigationView.module.scss';
 
-type PropsType = {
+interface PropsType {
   title: string,
   open: boolean,
   onClose: () => void,

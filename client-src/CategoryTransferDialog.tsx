@@ -17,7 +17,7 @@ const Header: React.FC = () => (
   </Modal.Header>
 );
 
-type FooterPropsType = {
+interface FooterPropsType {
   setShow: (show: boolean) => void,
   isSubmitting: boolean,
 }
@@ -35,7 +35,7 @@ const Footer: React.FC<FooterPropsType> = ({ setShow, isSubmitting }) => (
   </Modal.Footer>
 );
 
-type PropsType = {
+interface PropsType {
   transaction?: Transaction | null,
 }
 
@@ -100,9 +100,9 @@ const CategoryTransferDialog: React.FC<PropsType & ModalProps> = ({
   // $('#catTransferForm').submit((event) => {
   //     event.preventDefault();
 
-  type ValueType = {
-    fromCategories: Array<TransactionCategoryInterface | { id: number, amount: number }>,
-    toCategories: Array<TransactionCategoryInterface | { id: number, amount: number }>,
+  interface ValueType {
+    fromCategories: (TransactionCategoryInterface | { id: number, amount: number })[],
+    toCategories: (TransactionCategoryInterface | { id: number, amount: number })[],
     date: string | null,
   }
 
@@ -215,7 +215,7 @@ const CategoryTransferDialog: React.FC<PropsType & ModalProps> = ({
                     form: {
                       setFieldValue,
                     },
-                  }: FieldProps<Array<TransactionCategoryInterface>>) => (
+                  }: FieldProps<TransactionCategoryInterface[]>) => (
                     <CategorySplits
                       splits={value.map((s) => (
                         { ...s, ...{ amount: s.amount * -1 } }
@@ -256,7 +256,7 @@ const CategoryTransferDialog: React.FC<PropsType & ModalProps> = ({
                   form: {
                     setFieldValue,
                   },
-                }: FieldProps<Array<TransactionCategoryInterface>>) => (
+                }: FieldProps<TransactionCategoryInterface[]>) => (
                   <CategorySplits
                     splits={value}
                     total={0}

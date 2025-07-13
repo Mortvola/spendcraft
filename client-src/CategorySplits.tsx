@@ -16,7 +16,7 @@ function* creatNextIdGen(): Generator<number, number> {
 const nextIdGen = creatNextIdGen();
 const nextId = (): number => nextIdGen.next().value;
 
-type PropsType = {
+interface PropsType {
   splits: TransactionCategoryInterface[],
   onChange: (
     splits: TransactionCategoryInterface[]

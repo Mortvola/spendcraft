@@ -2,7 +2,7 @@ import React from 'react';
 import AmountInput from '../AmountInput';
 import Amount from '../Amount';
 
-type PropsType = {
+interface PropsType {
   amount: number,
   onUpdate: (amount: number) => void
 }

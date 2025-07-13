@@ -1,6 +1,6 @@
 import * as responsive from 'react-responsive';
 
-type MediaQueryType = {
+interface MediaQueryType {
   isDesktop: boolean,
   isMobile: boolean,
   addMediaClass: (className: string) => string;

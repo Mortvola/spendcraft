@@ -11,7 +11,7 @@ import AccountItem from './AccountItem';
 import { AccountInterface } from '../State/Types';
 import { TrackingType } from '../../common/ResponseTypes';
 
-type PropsType = {
+interface PropsType {
   account: AccountInterface | null,
 }
 
@@ -19,10 +19,10 @@ const AccountsDialog: React.FC<PropsType & ModalProps> = ({
   account,
   setShow,
 }) => {
-  type ValuesType = {
+  interface ValuesType {
     tracking: TrackingType,
     startDate: string,
-  };
+  }
 
   const handleValidate = (values: ValuesType) => {
     const errors: FormikErrors<ValuesType> = {};

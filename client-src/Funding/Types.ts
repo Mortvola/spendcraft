@@ -1,12 +1,12 @@
 import { CategorySpreadEntry } from '../CategorySpread/CategorySpread';
 
-export type FundingType = {
+export interface FundingType {
   id?: number,
   amount: number,
   categoryId: number,
 }
 
-export type FundingInfoType = {
+export interface FundingInfoType {
   categoryId: number,
   initialAmount: number,
   previousFunding: number,
@@ -15,7 +15,7 @@ export type FundingInfoType = {
   previousCatTransfers: number,
 }
 
-export type FundingPlanType = {
+export interface FundingPlanType {
   planId: number;
   categories: FundingType[]
 }
@@ -29,7 +29,7 @@ export type CategoriesValueType = Record<
   }
 >;
 
-export type ValueType = {
+export interface ValueType {
   date: string,
   categories: CategoriesValueType,
 }

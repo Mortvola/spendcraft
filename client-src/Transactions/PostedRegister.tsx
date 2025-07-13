@@ -12,7 +12,7 @@ import { TransactionType } from '../../common/ResponseTypes';
 import styles from './Transactions.module.scss';
 import { useNotification } from '../Notification';
 
-type PropsType = {
+interface PropsType {
   type: 'category' | 'account' | 'rebalances',
   trxContainer: TransactionContainerInterface,
   category: CategoryInterface | null,

@@ -2,7 +2,7 @@ import React from 'react';
 import TitleStub from './TitleStub';
 import styles from './Transactions.module.scss';
 
-type PropsType = {
+interface PropsType {
   transactionClassName?: string,
 }
 

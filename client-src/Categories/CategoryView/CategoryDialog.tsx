@@ -21,7 +21,7 @@ import styles from './CategoryDialog.module.scss';
 import { CategoryType, GroupType } from '../../../common/ResponseTypes';
 import CategorySpread, { CategorySpreadEntry } from '../../CategorySpread/CategorySpread';
 
-type Props = {
+interface Props {
   category?: CategoryInterface | null,
   type?: CategoryType,
 }
@@ -40,7 +40,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
 
   const [categoryType, setCategoryType] = React.useState<CategoryType>((category?.type ?? type) ?? CategoryType.Regular)
 
-  type FormValues = {
+  interface FormValues {
     type: CategoryType,
     name: string,
     suspended: boolean,

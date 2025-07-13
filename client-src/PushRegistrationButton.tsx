@@ -2,7 +2,7 @@ import Http from '@mortvola/http';
 import React from 'react';
 import { Button } from 'react-bootstrap';
 
-type PropsType = {
+interface PropsType {
   url: string,
   className?: string,
 }

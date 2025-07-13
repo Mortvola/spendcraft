@@ -10,7 +10,7 @@ import Reconcile from './Reconcile';
 import Date from '../Date';
 import Icon from '../Icon';
 
-type PropsType = {
+interface PropsType {
   transaction: BaseTransactionInterface,
   className?: string,
   amount: number,

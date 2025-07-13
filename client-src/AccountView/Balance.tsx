@@ -5,7 +5,7 @@ import { BalanceInterface } from '../State/Types';
 import styles from './Balance.module.scss';
 import { observer } from 'mobx-react-lite';
 
-type PropsType = {
+interface PropsType {
   balance: BalanceInterface,
   showBalanceDialog: (balance: BalanceInterface) => void,
 }

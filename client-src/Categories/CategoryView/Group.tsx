@@ -5,7 +5,7 @@ import Category from './Category';
 import { CategoryInterface, GroupInterface } from '../../State/Types';
 import { isCategory } from '../../State/Category';
 
-type PropsType = {
+interface PropsType {
   group: GroupInterface,
   onCategorySelected: ((category: CategoryInterface) => void),
   selectedCategory?: CategoryInterface | null,

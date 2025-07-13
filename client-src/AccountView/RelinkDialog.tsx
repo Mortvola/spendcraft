@@ -4,7 +4,7 @@ import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import { InstitutionInterface } from '../State/Types';
 import styles from './RelinkDialog.module.scss';
 
-type PropsType = {
+interface PropsType {
   institution: InstitutionInterface,
 }
 

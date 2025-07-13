@@ -17,10 +17,10 @@ const Signin: React.FC = () => {
   const medium = responsive.useMediaQuery({ query: '(max-width: 1224px)' });
   const navigate = useNavigate();
 
-  type FormValues = {
+  interface FormValues {
     username: string,
     password: string,
-  };
+  }
 
   const addSizeClass = (className: string): string => {
     if (tiny && styles.tiny) {
@@ -39,12 +39,12 @@ const Signin: React.FC = () => {
   }
 
   const handleSubmit = async (values: FormValues, { setErrors }: FormikHelpers<FormValues>) => {
-    type LoginResponse = {
+    interface LoginResponse {
       data: {
         access: string,
         refresh: string,
       },
-    };
+    }
 
     const response = await Http.post<FormValues, LoginResponse>('/api/v1/login', values);
 

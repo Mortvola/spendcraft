@@ -10,7 +10,7 @@ import styles from './Signin.module.scss';
 import { isErrorResponse } from '../../common/ResponseTypes';
 import { Context } from './Types';
 
-type PropsType = {
+interface PropsType {
   context: Context,
   onNext: (context: Context) => void,
   link: React.ReactNode,
@@ -23,12 +23,12 @@ const ChangePassword: React.FC<PropsType> = ({
 }) => {
   // const navigate = useNavigate();
 
-  type FormValues = {
+  interface FormValues {
     password: string,
     passwordConfirmation: string,
-  };
+  }
 
-  type UpdatePasswordRequest = {
+  interface UpdatePasswordRequest {
     password: string,
     passwordConfirmation: string,
   }

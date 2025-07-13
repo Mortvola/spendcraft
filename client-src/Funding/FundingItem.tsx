@@ -13,7 +13,7 @@ import VerticalTitled from './VerticalTitled';
 import { CategoryInterface } from '../State/Types';
 import CategorySpread from '../CategorySpread/CategorySpread';
 
-type PropsType = {
+interface PropsType {
   fundingInfo?: FundingInfoType,
   groupName: string | null,
   category: CategoryInterface,

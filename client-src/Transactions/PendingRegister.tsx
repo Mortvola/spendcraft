@@ -10,7 +10,7 @@ import { TransactionType } from '../../common/ResponseTypes';
 import useTrxDialog from './TrxDialog';
 import { useStores } from '../State/Store';
 
-type PropsType = {
+interface PropsType {
   trxContainer: TransactionContainerInterface | null,
   className?: string,
 }

@@ -19,10 +19,10 @@ import { useDeleteConfirmation } from './DeleteConfirmation';
 import PushRegistrationButton from './PushRegistrationButton';
 import LucideButton from './LucideButton';
 
-type FormValues = {
+interface FormValues {
   username: string,
   email: string,
-};
+}
 
 const MyInputGroup: React.FC<FormikProps<FormValues>> = (props: FormikProps<FormValues>) => {
   const { user } = useStores();

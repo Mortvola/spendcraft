@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-type PropsType = {
+interface PropsType {
   name: string,
   label?: string,
   value: string,

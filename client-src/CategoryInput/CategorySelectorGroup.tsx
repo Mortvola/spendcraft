@@ -1,7 +1,7 @@
 import React, { ReactNode } from 'react';
 import { GroupInterface } from '../State/Types';
 
-type PropsType = {
+interface PropsType {
   group: GroupInterface,
   children?: ReactNode,
   level?: number,

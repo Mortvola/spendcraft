@@ -2,7 +2,7 @@ import React from 'react';
 import AmountInput from '../AmountInput';
 import Amount from '../Amount';
 
-type PropsType = {
+interface PropsType {
   category: { name: string, balance: number, adjustment: number },
   onDeltaChange?: ((amunt: number, delta: number) => void),
   style?: React.CSSProperties

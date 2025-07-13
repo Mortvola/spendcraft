@@ -55,7 +55,7 @@ class CategoryTree implements CategoryTreeInterface {
     this.store = store;
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   state(): 'IDLE' | 'LOADING' | 'LOADING-MORE' {
     return 'IDLE';
   }
@@ -64,12 +64,12 @@ class CategoryTree implements CategoryTreeInterface {
     return this.load();
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   async getMoreData() {
     console.log('not implemented')
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   isComplete() {
     return true;
   }
@@ -197,7 +197,7 @@ class CategoryTree implements CategoryTreeInterface {
 
         this.subcategories = [];
 
-        type StackEntry = {
+        interface StackEntry {
           props: GroupProps | CategoryProps,
           parent: Group | null
         }
@@ -299,7 +299,7 @@ class CategoryTree implements CategoryTreeInterface {
 
         // Assign identified subcategories to their categories.
         // Note: a subcategory can be assigned to multiple categories.
-        // eslint-disable-next-line no-restricted-syntax
+         
         // for (const subcategory of this.subcategories) {
         //   if (subcategory.fundingCategories.length === 0) {
         //     this.budget.fundingPoolCat?.subcategories.push(subcategory);
@@ -355,7 +355,7 @@ class CategoryTree implements CategoryTreeInterface {
 
   updateBalances(balances: CategoryBalanceProps[]): void {
     runInAction(() => {
-      // eslint-disable-next-line no-restricted-syntax
+       
       for (const catBalance of balances) {
         const cat = this.getCategory(catBalance.id)
 

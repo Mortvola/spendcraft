@@ -31,7 +31,7 @@ interface StatementInterface {
   ): Promise<ApiError[] | null>
 }
 
-type PropsType = {
+interface PropsType {
   statement?: StatementInterface | null,
   account?: AccountInterface | null,
   onReload?: () => void,
@@ -43,7 +43,7 @@ const StatementDialog: React.FC<PropsType & ModalProps> = ({
   account = null,
   onReload,
 }) => {
-  type ValueType = {
+  interface ValueType {
     startDate: string,
     endDate: string,
     startingBalance: number,

@@ -13,7 +13,7 @@ import styles from './Institution.module.scss';
 import { useRelinkDialog } from './RelinkDialog';
 import LucideButton from '../LucideButton';
 
-type PropsType = {
+interface PropsType {
   institution: InstitutionInterface,
   opened: boolean,
   onAccountSelected: (account: AccountInterface) => void,

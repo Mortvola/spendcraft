@@ -12,19 +12,19 @@ import ReportControls from './ReportControls';
 import styles from './Category.module.scss';
 import { CategoryType } from '../../common/ResponseTypes';
 
-type CategoryReport = {
+interface CategoryReport {
   rowNumber: string,
   groupName: string,
   categoryName: string,
   sum: number,
   count: number,
-};
+}
 
 const Category: React.FC = () => {
   const { categoryTree: { budget } } = useStores();
   const { setData, SortableTable } = useSortableTable<CategoryReport>(['groupName', 'categoryName', 'sum', 'count']);
 
-  type FormValues = {
+  interface FormValues {
     startDate: string,
     endDate: string,
     category: { id: number, value: boolean}[],

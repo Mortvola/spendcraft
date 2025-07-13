@@ -12,12 +12,12 @@ import { useStores } from '../State/Store';
 import { AccountInterface, InstitutionInterface } from '../State/Types';
 import { getSubtypes, getTypes } from '../State/AccountTypes';
 
-type PropsType = {
+interface PropsType {
   institution?: InstitutionInterface,
   account?: AccountInterface | null,
 }
 
-type ValuesType = {
+interface ValuesType {
   institute: string,
   account: string,
   balance: string,
@@ -26,7 +26,7 @@ type ValuesType = {
   subtype: string,
   tracking: TrackingType,
   rate: string,
-};
+}
 
 const APRField = () => {
   const { values } = useFormikContext<ValuesType>();

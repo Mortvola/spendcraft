@@ -31,15 +31,15 @@ const FormCategoryInput = ({ name, types }: { name: string, types?: CategoryType
   )
 }
 
-export type CategorySpreadEntry = {
+export interface CategorySpreadEntry {
   id?: number,
   categoryId: number,
   amount: number,
   percentage: boolean,
   // fundedAmount?: number,
-};
+}
 
-type PropsType = {
+interface PropsType {
   name: string,
   categories: CategorySpreadEntry[],
   title: string,

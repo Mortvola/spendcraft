@@ -1,7 +1,7 @@
 import React, { ReactNode } from 'react';
 import styles from './MainTray.module.scss';
 
-type PropsType = {
+interface PropsType {
   className?: string,
   children?: ReactNode,
 }

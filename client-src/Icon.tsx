@@ -1,7 +1,7 @@
 import React, { CSSProperties } from 'react';
 import styles from './Icon.module.scss'
 
-type PropsType = {
+interface PropsType {
   icon: string,
   iconClass?: string,
   rotate?: boolean,

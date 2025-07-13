@@ -79,7 +79,7 @@ const subtypes: Record<string, [string, Record<string, string>]> = {
   }],
 }
 
-type SubType = {
+interface SubType {
   key: string,
   name: string,
 }
@@ -97,7 +97,7 @@ export const getSubtypes = (acctType: string): SubType[] => {
   return [];
 }
 
-type Type = {
+interface Type {
   key: string,
   name: string,
 }

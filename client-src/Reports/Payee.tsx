@@ -10,20 +10,20 @@ import useSortableTable from './SortableTable';
 import ReportControls from './ReportControls';
 import styles from './Payee.module.scss';
 
-type PayeeReport = {
+interface PayeeReport {
   [key: string]: string | number,
   rowNumber: string,
   name: string,
   sum: number,
   paymentChannel: string,
   count: number,
-};
+}
 
 const Payee: React.FC = () => {
   const { accounts } = useStores();
   const { setData, SortableTable } = useSortableTable<PayeeReport>(['name', 'paymentChannel', 'sum', 'count']);
 
-  type FormValues = {
+  interface FormValues {
     startDate: string,
     endDate: string,
     inStoreFilter: boolean,

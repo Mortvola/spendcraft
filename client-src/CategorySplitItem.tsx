@@ -8,7 +8,7 @@ import useMediaQuery from './MediaQuery';
 import { useStores } from './State/Store';
 import LucideButton from './LucideButton';
 
-type PropsType = {
+interface PropsType {
   split: TransactionCategoryInterface,
   onCategoryChange: (id: number, categoryId: number) => void,
   onDeltaChange: (id: number, amount: number, delta: number) => void,

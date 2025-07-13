@@ -1,7 +1,7 @@
 import React, { ReactElement, ReactNode, useState } from 'react';
 import { Modal, Button } from 'react-bootstrap';
 
-type PropsType = {
+interface PropsType {
   title: string,
   onNotified: () => void;
   children: ReactNode;
@@ -32,7 +32,7 @@ const Notification: React.FC<PropsType & ConfirmProps> = ({
 type ShowNotification = (() => void);
 type OnNotified = (() => void);
 
-type ConfirmProps = {
+interface ConfirmProps {
   show: boolean;
   onHide: () => void;
 }

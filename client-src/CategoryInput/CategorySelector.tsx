@@ -45,7 +45,7 @@ export const categoryFiltered = (
   return false;
 };
 
-type PropsType = {
+interface PropsType {
   selectedCategory?: CategoryInterface | null,
   left?: number | null,
   top?: number | null,

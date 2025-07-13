@@ -7,7 +7,7 @@ import {
 import styles from './Transactions.module.scss';
 import PostedRegister from './PostedRegister';
 
-type PropsType = {
+interface PropsType {
   type: 'category' | 'account' | 'rebalances',
   className?: string,
 }

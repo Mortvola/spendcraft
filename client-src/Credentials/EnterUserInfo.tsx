@@ -10,7 +10,7 @@ import styles from './Signup.module.scss';
 import { isErrorResponse } from '../../common/ResponseTypes';
 import { Context } from './Types';
 
-type PropsType = {
+interface PropsType {
   context: Context,
   onNext: (context: Context) => void,
 }
@@ -19,13 +19,13 @@ const EnterUserInfo: React.FC<PropsType> = ({
   context,
   onNext,
 }) => {
-  type FormValues = {
+  interface FormValues {
     username: string,
     email: string,
     password: string,
-    // eslint-disable-next-line camelcase
+     
     passwordConfirmation: string,
-  };
+  }
 
   const handleSubmit = async (values: FormValues, { setErrors }: FormikHelpers<FormValues>) => {
     const response = await Http.post('/api/v1/register', values);

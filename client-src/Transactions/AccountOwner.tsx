@@ -1,7 +1,7 @@
 import React from 'react';
 import styles from './Transactions.module.scss';
 
-type PropsType = {
+interface PropsType {
   owner: string | null,
 }
 

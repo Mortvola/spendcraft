@@ -1,9 +1,9 @@
 import React from 'react';
 import { Location } from '../../common/ResponseTypes';
 
-type PropsType = {
+interface PropsType {
   location: Location,
-};
+}
 
 const PurchaseLocation: React.FC<PropsType> = ({ location }) => (
   <div>

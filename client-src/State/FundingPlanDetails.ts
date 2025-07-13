@@ -31,7 +31,7 @@ class FundingPlanDetails implements FundingPlanDetailsInterface {
     this.store = store;
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   async updateCategoryAmount(category: FundingPlanCategory, amount: number): Promise<void> {
     // const oldAmount = category.amount;
     category.amount = amount;

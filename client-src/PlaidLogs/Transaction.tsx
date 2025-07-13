@@ -2,7 +2,7 @@ import React from 'react';
 import * as PlaidApi from 'plaid';
 import styles from './Transaction.module.scss';
 
-type PropsType = {
+interface PropsType {
   transaction: PlaidApi.Transaction,
 }
 

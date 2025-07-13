@@ -6,15 +6,15 @@ import Amount from '../Amount';
 import styles from './FundingHistory.module.scss';
 
 const FundingHistory: React.FC = () => {
-  type FundingHistoryItem = { year: number, month: number, amount: number};
-  type FundingHistoryCategory = {
+  interface FundingHistoryItem { year: number, month: number, amount: number}
+  interface FundingHistoryCategory {
     groupId: number,
     groupName: string,
     groupType: GroupType,
     categoryId: number,
     categoryName: string,
     history: FundingHistoryItem[] | null,
-  };
+  }
   type FundingHistoryResponse = FundingHistoryCategory[];
 
   const [data, setData] = useState<FundingHistoryCategory[] | null>(null);
@@ -104,7 +104,7 @@ const FundingHistory: React.FC = () => {
       const elements: React.ReactElement[] = [];
 
       for (let i = 0; i < maxDisplayedMonths; i += 1) {
-        // eslint-disable-next-line no-loop-func
+         
         const entry = history.find((h) => h.year === year && h.month === month)
 
         const [prevMonth, prevYear] = subtractMonth(month as MonthNumbers, year);

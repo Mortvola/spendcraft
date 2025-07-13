@@ -4,7 +4,7 @@ import styles from './RemoteDataManager.module.scss';
 import PleaseWait from './PleaseWait';
 import { RemoteDataInterface } from './State/Types';
 
-type PropsType = {
+interface PropsType {
   data: RemoteDataInterface,
   children: React.ReactNode,
   className?: string,

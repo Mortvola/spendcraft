@@ -6,7 +6,7 @@ import { useStores } from '../State/Store';
 import { AccountInterface } from '../State/Types';
 import styles from './AccountView.module.scss';
 
-type PropsType = {
+interface PropsType {
   opened: boolean,
   onAccountSelected?: () => void,
 }

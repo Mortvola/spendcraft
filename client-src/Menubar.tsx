@@ -58,7 +58,7 @@ const Menubar: React.FC = observer(() => {
   }, [location.pathname]);
 
   const logout = () => {
-    type LogoutRequest = {
+    interface LogoutRequest {
       data: {
         refresh: string | null,
       }

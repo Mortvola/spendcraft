@@ -1,7 +1,7 @@
 import React from 'react';
 import styles from './DetailView.module.scss';
 
-type PropsType = {
+interface PropsType {
   className?: string,
   title?: string,
   children?: React.ReactNode,

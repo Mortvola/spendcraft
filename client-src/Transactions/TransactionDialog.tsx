@@ -18,7 +18,7 @@ import { ApiError, RequestErrorCode, TransactionType } from '../../common/Respon
 import styles from './TransactionDialog.module.scss';
 import PurchaseLocation from './PurchaseLocation';
 
-function validateSplits(splits: Array<TransactionCategoryInterface>) {
+function validateSplits(splits: TransactionCategoryInterface[]) {
   let error;
 
   if (splits !== undefined) {
@@ -30,7 +30,7 @@ function validateSplits(splits: Array<TransactionCategoryInterface>) {
   return error;
 }
 
-type PropsType = {
+interface PropsType {
   transaction?: TransactionInterface | null,
   account?: AccountInterface | null,
   onReload?: () => void,
@@ -42,7 +42,7 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
   account = null,
   onReload,
 }) => {
-  type ValueType = {
+  interface ValueType {
     date: string,
     name: string,
     amount: number,

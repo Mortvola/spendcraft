@@ -215,7 +215,7 @@ class Group implements GroupInterface {
       const node = stack[0]
       stack = stack.slice(1)
 
-      // eslint-disable-next-line no-restricted-syntax
+       
       for (const child of node.children) {
         if (isGroup(child)) {
           stack.push(child)

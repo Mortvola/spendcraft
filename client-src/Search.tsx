@@ -11,7 +11,7 @@ import styles from './Search.module.scss';
 const Search: React.FC = observer(() => {
   const { searcher } = useStores();
 
-  type Values = {
+  interface Values {
     search: ''
   }
 

@@ -9,7 +9,7 @@ import { FundingInfoType } from './Types';
 import { ApiResponse, FundingInfoProps } from '../../common/ResponseTypes';
 import { useStores } from '../State/Store';
 
-type PropsType = {
+interface PropsType {
   date: string,
   diffOnly: boolean,
 }

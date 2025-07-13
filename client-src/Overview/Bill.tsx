@@ -4,7 +4,7 @@ import Date from '../Date';
 import { BillInterface } from '../State/Types';
 import styles from './Bill.module.scss';
 
-type PropsType = {
+interface PropsType {
   bill: BillInterface,
 }
 

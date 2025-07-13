@@ -4,7 +4,7 @@ import Amount from '../../Amount';
 import { CategoryInterface } from '../../State/Types';
 import { useStores } from '../../State/Store';
 
-type PropsType = {
+interface PropsType {
   category: CategoryInterface | null,
   onCategorySelected: (category: CategoryInterface) => void,
 }

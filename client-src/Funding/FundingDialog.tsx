@@ -24,7 +24,7 @@ import styles from './Funding.module.scss'
 import { CategoryInterface, TransactionInterface } from '../State/Types';
 import { CategorySpreadEntry } from '../CategorySpread/CategorySpread';
 
-type PropsType = {
+interface PropsType {
   transaction?: TransactionInterface;
 }
 
@@ -48,9 +48,9 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
     // Sort the funding categories by percentage so that fixed amounts are applied before percentage amounts.
     const sortedCategories = (fundingCategories ?? []).slice().sort((a) => (a.percentage ? 1 : -1))
 
-    const funders: Map<number, number> = new Map();
+    const funders = new Map<number, number>();
 
-    // eslint-disable-next-line no-restricted-syntax
+     
     // for (const fundingCategory of sortedCategories) {
     for (let i = 0; i < sortedCategories.length; i += 1) {
       const fundingCategory = sortedCategories[i];
@@ -90,7 +90,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
   const getCategoriesSum = (categories: CategoriesValueType, fundingCatId: number) => {
     let sum = 0;
 
-    // eslint-disable-next-line no-restricted-syntax
+     
     for (const k of Object.keys(categories)) {
       const categoryId = parseInt(k, 10)
 
@@ -122,7 +122,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
   }
 
   const handleSubmit = async (values: ValueType) => {
-    type Request = {
+    interface Request {
       date: string,
       categories: CategoryFundingProps[],
     }
@@ -147,13 +147,13 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
         }
       })
 
-    const funders: Map<number, number> = new Map();
+    const funders = new Map<number, number>();
 
-    // eslint-disable-next-line no-restricted-syntax
+     
     for (const category of categories) {
       const categoryFunders = computeSpread(category.amount, category.fundingCategories);
 
-      // eslint-disable-next-line no-restricted-syntax
+       
       for (const [categoryId, amount] of categoryFunders) {
         const funding = funders.get(categoryId) ?? 0;
         funders.set(categoryId, funding + amount)
@@ -161,12 +161,12 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
     }
 
     // Adjust amounts for categories that have "include funding transfers" set to true.
-    // eslint-disable-next-line no-restricted-syntax
+     
     for (const category of categories) {
       if (category.includeFundingTransfers) {
         const previousFundingAmount = computeSpread(category.amount, category.fundingCategories);
 
-        // eslint-disable-next-line no-restricted-syntax
+         
         for (const [categoryId, amount] of previousFundingAmount) {
           const funding = funders.get(categoryId) ?? 0;
           funders.set(categoryId, funding - amount)
@@ -174,7 +174,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
 
         // Find funder that matches this category and add the amount.
         let sum = 0;
-        // eslint-disable-next-line no-restricted-syntax
+         
         for (const [categoryId, amount] of funders) {
           if (categoryId === category.categoryId) {
             sum += amount;
@@ -185,7 +185,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
 
         const newFundingAmount = computeSpread(category.amount, category.fundingCategories);
 
-        // eslint-disable-next-line no-restricted-syntax
+         
         for (const [categoryId, amount] of newFundingAmount) {
           const funding = funders.get(categoryId) ?? 0;
           funders.set(categoryId, funding + amount)
@@ -193,7 +193,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
       }
     }
 
-    // eslint-disable-next-line no-restricted-syntax
+     
     for (const [categoryId, amount] of funders) {
       categories.push({
         categoryId,
@@ -429,7 +429,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
                           const obj = await getProposed(event.target.value)
 
                           if (obj) {
-                            // eslint-disable-next-line no-restricted-syntax
+                             
                             for (const [categoryId, value] of Object.entries(obj)) {
                               form.setFieldValue(`categories.${categoryId}.baseAmount`, value.baseAmount)
                             }

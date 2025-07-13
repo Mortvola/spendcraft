@@ -39,7 +39,7 @@ const FormCategoryInput = ({ name }: { name: string }) => {
   )
 }
 
-type PropsType = {
+interface PropsType {
   autoAssignment?: AutoAssignmentInterface
 }
 
@@ -53,7 +53,7 @@ const AutoAssignmentDialog: React.FC<PropsType & ModalProps> = observer(({
     throw new Error('Unassigned is not defined or null')
   }
 
-  type ValueType = {
+  interface ValueType {
     name: string,
     searchStrings: string[],
     categories: { id: number, categoryId: number, amount: number, percentage: boolean }[],

@@ -151,7 +151,7 @@ class Account implements AccountInterface {
     throw new Error('Error response received');
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   async addStatement(
     startDate: string,
     endDate: string,

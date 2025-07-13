@@ -1,7 +1,7 @@
 import React from 'react';
 import styles from './LucideButton.module.scss';
 
-type PropsType = {
+interface PropsType {
   caption?: string;
   className?: string;
   rotate?: boolean;

@@ -1,6 +1,6 @@
 import React from 'react';
 
-type PropsType = {
+interface PropsType {
   onClick?: () => void,
   children: React.ReactNode
 }

@@ -10,7 +10,7 @@ import Transaction from '../State/Transaction';
 import Amount from '../Amount';
 import { TransactionProps } from '../../common/ResponseTypes';
 
-type TransationPropsType = {
+interface TransationPropsType {
   name?: string,
   date?: DateTime,
   amount?: number,
@@ -32,7 +32,7 @@ const TransactionFields: React.FC<TransationPropsType> = ({ name, date, amount }
   </div>
 )
 
-type PropsType = {
+interface PropsType {
   transaction: Transaction,
 }
 

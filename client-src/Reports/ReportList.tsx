@@ -2,12 +2,12 @@ import React from 'react';
 import style from './ReportList.module.scss';
 import ReportListItem from './ReportListItem';
 
-type ReportType = {
+interface ReportType {
   name: string,
   value: string,
 }
 
-type PropsType = {
+interface PropsType {
   reports: ReportType[],
   onSelect: (value: string) => void,
   selectedValue?: string | null,

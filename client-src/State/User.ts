@@ -68,7 +68,7 @@ class User implements UserInterface {
     throw new Error('invalid response');
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   async resendVerificationLink(): Promise<ErrorProps[] | null> {
     const response = await Http.post('/api/v1/user/pending-email/resend');
 

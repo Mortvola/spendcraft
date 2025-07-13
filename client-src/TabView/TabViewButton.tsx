@@ -5,7 +5,7 @@ import {
 import styles from './TabViewButton.module.scss';
 import LucideButton from '../LucideButton';
 
-type PropsType = {
+interface PropsType {
   icon: React.ReactNode,
   caption: string,
   url: string,

@@ -1,7 +1,7 @@
 import { DateTime } from 'luxon';
 import React from 'react';
 
-type PropsType = {
+interface PropsType {
   date: DateTime,
   onUpdate: (date: string) => void,
 }

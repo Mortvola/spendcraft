@@ -1,7 +1,7 @@
 import React, { ReactElement } from 'react';
 import styles from './UploadFileButton.module.scss';
 
-type PropsType = {
+interface PropsType {
   onFileSelection: React.ChangeEventHandler<HTMLInputElement>,
   multiple?: boolean,
   accept?: string,

@@ -5,7 +5,7 @@ import { PlaidLogInterface } from '../State/Types';
 import styles from './PlaidLog.module.scss';
 import TransactionsSync from './TransactionsSync';
 
-type PropsType = {
+interface PropsType {
   log: PlaidLogInterface,
   onClick: (log: PlaidLogInterface) => void,
   selected: boolean,

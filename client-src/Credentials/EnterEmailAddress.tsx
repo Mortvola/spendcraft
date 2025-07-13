@@ -10,7 +10,7 @@ import styles from './Signin.module.scss';
 import { isErrorResponse } from '../../common/ResponseTypes';
 import { Context } from './Types';
 
-type PropsType = {
+interface PropsType {
   context: Context,
   onNext: (context: Context) => void,
   link: React.ReactNode,
@@ -21,9 +21,9 @@ const EnterEmailAddress: React.FC<PropsType> = ({
   onNext,
   link,
 }) => {
-  type FormValues = {
+  interface FormValues {
     email: string,
-  };
+  }
 
   const handleSubmit = async (values: FormValues, { setErrors }: FormikHelpers<FormValues>) => {
     const response = await Http.post('/api/v1/code-request', values);

@@ -6,7 +6,7 @@ import { CategoryType } from '../../../common/ResponseTypes';
 import LucideButton from '../../LucideButton';
 import styles from './CategoryView.module.scss';
 
-type PropsType = {
+interface PropsType {
   category: CategoryInterface,
 }
 
