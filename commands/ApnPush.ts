@@ -17,7 +17,7 @@ export default class ApnPush extends BaseCommand {
           startApp: true,
           staysAlive: false,
         };
-  // eslint-disable-next-line class-methods-use-this
+   
   public async run() {
     const budgets = await Budget.all();
 

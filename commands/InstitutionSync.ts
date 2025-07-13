@@ -22,7 +22,7 @@ export default class InstitutionSync extends BaseCommand {
           startApp: true,
           staysAlive: false,
         };
-  // eslint-disable-next-line class-methods-use-this
+   
   public async run() {
     const trx = await db.transaction();
 

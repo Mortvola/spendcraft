@@ -3,7 +3,7 @@ import PlaidException from './PlaidException.js';
 import * as Plaid from 'plaid';
 export { type WebhookVerificationKeyGetResponse } from 'plaid';
 
-export type PlaidConfig = {
+export interface PlaidConfig {
   clientId: string,
   sandboxSecret: string,
   productionSecret: string,

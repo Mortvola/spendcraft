@@ -38,7 +38,7 @@ class ApplePushNotifications {
           await Promise.all(users.map(async (user) => {
             const subscriptions = await user.related('pushSubscriptions').query();
 
-            for (let subscription of subscriptions) {
+            for (const subscription of subscriptions) {
               try {
                 if (subscription.type === 'web') {
                   await this.sendwebPushNotification(subscription, transactionsCount);

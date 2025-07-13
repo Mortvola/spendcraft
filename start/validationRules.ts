@@ -40,7 +40,7 @@ async function unique(
     return
   }
 
-  let query = db
+  const query = db
     .from(options.table)
     .select(options.column)
     .where(options.column, value)

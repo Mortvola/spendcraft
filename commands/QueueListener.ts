@@ -22,7 +22,7 @@ export default class QueueListener extends BaseCommand {
         staysAlive: true,
       };
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async run() {
     logger.info('Starting queue listener...')
 

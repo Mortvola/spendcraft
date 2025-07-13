@@ -19,7 +19,7 @@ const databaseConfig = defineConfig({
   | file.
   |
   */
-  connection: env.get('DB_CONNECTION')!,
+  connection: env.get('DB_CONNECTION') ?? 'pg',
 
   connections: {
     /*

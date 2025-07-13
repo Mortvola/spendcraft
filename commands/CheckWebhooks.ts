@@ -52,7 +52,7 @@ export default class CheckWebhooks extends BaseCommand {
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async run (): Promise<void> {
     this.environmentRegEx = new RegExp(`access-${env.get('PLAID_ENV')}.+`)
 

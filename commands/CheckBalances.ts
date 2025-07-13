@@ -49,19 +49,19 @@ export default class CheckBalances extends BaseCommand {
           .forUpdate();
       }
 
-      type Failures = {
+      interface Failures {
         category: Category,
         transSum: number,
-      };
+      }
 
       const failedApps: {
         appId: number,
         failures: Failures[],
       }[] = [];
 
-      // eslint-disable-next-line no-restricted-syntax
+       
       for (const budget of budgets) {
-        // eslint-disable-next-line no-await-in-loop
+         
         const categories = await Category
           .query({ client: trx })
           .whereHas('group', (group) => {
@@ -85,7 +85,7 @@ export default class CheckBalances extends BaseCommand {
 
         const failures: Failures[] = [];
 
-        // eslint-disable-next-line no-restricted-syntax
+         
         for (const cat of categories) {
           const transSum = (cat.$extras.trans_sum === null ? 0 : parseFloat(cat.$extras.trans_sum));
           if (Math.round(cat.balance * 100) !== Math.round(transSum * 100)) {
@@ -105,10 +105,10 @@ export default class CheckBalances extends BaseCommand {
       }
 
       if (failedApps.length > 0) {
-        // eslint-disable-next-line no-restricted-syntax
+         
         for (const app of failedApps) {
           this.logger.info(`Budget ID: ${app.appId}`);
-          // eslint-disable-next-line no-restricted-syntax
+           
           for (const failure of app.failures) {
             const { category, transSum } = failure;
             const difference = (Math.round(category.balance * 100) - Math.round(transSum * 100)) / 100.0;
@@ -118,14 +118,14 @@ export default class CheckBalances extends BaseCommand {
 
             let fix = false;
             if (this.interactive) {
-              // eslint-disable-next-line no-await-in-loop
+               
               fix = await this.prompt.confirm('Fix?')
             }
 
             if (fix || this.fix) {
               category.balance = transSum;
 
-              // eslint-disable-next-line no-await-in-loop
+               
               await category.save();
 
               issuesFixed += 1;
@@ -252,7 +252,7 @@ export default class CheckBalances extends BaseCommand {
   //         for (const failure of app.failures) {
   //           const { account, transSum } = failure;
   //           const difference = account.balance - transSum;
-  // eslint-disable-next-line max-len
+   
   //           this.logger.info(`\t"${account.name}" (${account.id}): ${account.balance.toFixed(2)}, Transactions: ${transSum.toFixed(2)}, difference: ${difference.toFixed(2)}`);
 
   //           if (this.fix) {

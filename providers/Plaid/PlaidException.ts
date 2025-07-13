@@ -23,7 +23,6 @@ export default class PlaidException extends Exception {
     this.plaidError = plaidError.response.data;
   }
 
-  // eslint-disable-next-line class-methods-use-this
   public async handle(error: this, ctx: HttpContext): Promise<void> {
     ctx.response.status(error.status).send({
       message: error.message,

@@ -232,7 +232,7 @@ export const isAddInstitutionResponse = (r: unknown): r is AddInstitutionRespons
   // && Array.isArray((r as AddInstitutionResponse).categories)
 );
 
-export type StatementProps = {
+export interface StatementProps {
   id: number,
   startDate: string,
   endDate: string,
@@ -255,7 +255,7 @@ export enum TransactionType {
   MANUAL_TRANSACTION = 5,
 }
 
-export type Location = {
+export interface Location {
   address: string | null,
   city: string | null,
   region: string | null,
@@ -264,7 +264,7 @@ export type Location = {
   lat: number | null,
   lon: number | null,
   storeNumber: string | null,
-};
+}
 
 export interface TransactionProps {
   id: number | null;
@@ -345,7 +345,7 @@ export interface PendingTransactionProps {
   }
 }
 
-export type LoanTransactionProps = {
+export interface LoanTransactionProps {
   id: number;
 
   principle: number;
@@ -369,10 +369,10 @@ export type LoanTransactionProps = {
   }
 }
 
-export type LoanTransactionsProps = {
+export interface LoanTransactionsProps {
   balance: number,
   transactions: LoanTransactionProps[],
-};
+}
 
 export interface CategoryLoanResponse {
   balance: number;
@@ -532,7 +532,7 @@ export const isAccountsResponse = (r: unknown): r is AccountProps[] => (
   && ((r as AccountProps[]).length === 0 || isAccountProps((r as AccountProps[])[0]))
 );
 
-export type AddOnlineAccountsResponse = {
+export interface AddOnlineAccountsResponse {
   accounts: AccountProps[],
   categories: CategoryBalanceProps[],
 }
@@ -542,7 +542,7 @@ export const isAddOnlineAccountsResponse = (r: unknown): r is AddOnlineAccountsR
   && ((r as AddOnlineAccountsResponse).accounts.length === 0 || isAccountProps((r as AddOnlineAccountsResponse).accounts[0]))
 );
 
-export type AddOfflineAccountResponse = {
+export interface AddOfflineAccountResponse {
   account: AccountProps,
   categories: CategoryBalanceProps[],
 }
@@ -657,13 +657,13 @@ export const isFundingPlansResponse = (
   || isFundingPlanProps((r as FundingPlanProps[])[0]))
 );
 
-export type CategoryTransferProps = {
+export interface CategoryTransferProps {
   id?: number,
   amount: number,
   categoryId: number,
 }
 
-export type CategoryFundingProps = {
+export interface CategoryFundingProps {
   categoryId: number,
   amount: number,
   baseAmount: number,
@@ -672,7 +672,7 @@ export type CategoryFundingProps = {
   funder?: boolean,
 }
 
-export type FundingInfoProps = {
+export interface FundingInfoProps {
   id: number,
   name: string,
   balance: number,
@@ -724,7 +724,7 @@ export const isBalancesResponse = (r: unknown): r is BalanceProps[] => (
   || isBalanceProps((r as BalanceProps[])[0])
 );
 
-export type AddBalanceResponse = {
+export interface AddBalanceResponse {
   id: number,
   balance: number,
   date: string,
@@ -735,7 +735,7 @@ export const isAddBalanceResponse = (r: unknown): r is AddBalanceResponse => (
   (r as AddBalanceResponse).balance !== undefined
 )
 
-export type UpdateBalanceResponse = {
+export interface UpdateBalanceResponse {
   balance: number,
   date: string,
   accountBalance: number,
@@ -765,7 +765,7 @@ export const isUserProps = (
 
 export type TrackingType = 'None' | 'Balances' | 'Transactions' | 'Uncategorized Transactions';
 
-export type UnlinkedAccountProps = {
+export interface UnlinkedAccountProps {
   plaidAccountId: string,
   name: string,
   officialName: string | null,
@@ -776,22 +776,22 @@ export type UnlinkedAccountProps = {
     current: number | null,
   },
   tracking: TrackingType,
-};
+}
 
 // export const isUnlinkedAccounts = (r: unknown): r is UnlinkedAccountProps[] => (
 //   (Array.isArray(r)
 //   && (r as UnlinkedAccountProps[])[0].plaidAccountId !== undefined)
 // );
 
-export type AddTransactionProps = {
+export interface AddTransactionProps {
   date: string,
 
   name: string,
 
   amount: number,
-};
+}
 
-export type AddTransactionResponse = {
+export interface AddTransactionResponse {
   categories: CategoryBalanceProps[],
   transaction: TransactionProps,
   acctBalances: AccountBalanceProps[],
@@ -842,7 +842,7 @@ export enum PendingQueryFlag {
   WithPending = 2,
 }
 
-export type BillProps = {
+export interface BillProps {
   id: number,
   name: string,
   fundingAmount: number,

@@ -15,7 +15,7 @@ export default class CheckUnassigned extends BaseCommand {
           startApp: true,
           staysAlive: false,
         };
-  // eslint-disable-next-line class-methods-use-this
+   
   private async checkUnassigned() {
     const { default: Database } = await import('@adonisjs/lucid/services/db');
     const { default: Budget } = await import('#models/Budget');
