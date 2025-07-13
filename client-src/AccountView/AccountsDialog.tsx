@@ -1,4 +1,3 @@
-/* eslint-disable jsx-a11y/label-has-associated-control */
 import React from 'react';
 import { observer } from 'mobx-react-lite';
 import {
@@ -24,7 +23,7 @@ const AccountsDialog: React.FC<PropsType & ModalProps> = ({
     startDate: string,
   }
 
-  const handleValidate = (values: ValuesType) => {
+  const handleValidate = (_values: ValuesType) => {
     const errors: FormikErrors<ValuesType> = {};
     // if (!values.tracking.some((s) => s !== 'None')) {
     //   errors.tracking = 'No tracking options selected';
@@ -56,7 +55,7 @@ const AccountsDialog: React.FC<PropsType & ModalProps> = ({
     //   })
     //   // .filter((a) => (a.tracking !== 'None' && a.tracking !== undefined));
 
-    const response: unknown = null;
+    // const response: unknown = null;
 
     // if (institution) {
     //   response = await institution.update();

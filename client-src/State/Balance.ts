@@ -4,7 +4,7 @@ import { observable, runInAction } from 'mobx';
 import {
   ApiError,
   ApiResponse,
-  BalanceProps, ErrorProps, isErrorResponse, isUpdateBalanceResponse,
+  BalanceProps, ErrorProps,
   UpdateBalanceResponse,
 } from '../../common/ResponseTypes';
 import { BalanceInterface, BalancesInterface } from './Types';

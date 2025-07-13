@@ -71,7 +71,7 @@ const Menubar: React.FC = observer(() => {
         },
       };
 
-      const response = await Http.post<LogoutRequest, void>('/api/v1/logout', payload);
+      const response = await Http.post<LogoutRequest, undefined>('/api/v1/logout', payload);
 
       if (response.ok) {
         runInAction(() => {

@@ -7,7 +7,7 @@ import {
   CategoryBalanceProps,
   CategoryProps,
   CategoryType,
-  ErrorProps, GroupProps, GroupType, isCategoryProps, isErrorResponse,
+  ErrorProps, GroupProps, GroupType, isCategoryProps,
 } from '../../common/ResponseTypes';
 import {
   CategoryInterface, CategoryTreeInterface, GroupInterface, RebalancesInterface, StoreInterface,
@@ -156,7 +156,7 @@ class CategoryTree implements CategoryTreeInterface {
   insertNode(node: TreeNode, parentGroupId: number | null): void {
     let group: Group | GroupInterface | null = null;
 
-    if (parentGroupId === null || parentGroupId === this.budget!.id) {
+    if (parentGroupId === null || parentGroupId === this.budget?.id) {
       group = this.budget
     }
     else {
@@ -272,13 +272,13 @@ class CategoryTree implements CategoryTreeInterface {
 
             stack.push(
               ...data.groups
-                .filter((g) => g.parentGroupId === node!.id)
+                .filter((g) => g.parentGroupId === node?.id)
                 .map((g) => ({
                   props: g,
                   parent: node as Group,
                 })),
               ...data.categories
-                .filter((c) => c.groupId === node!.id)
+                .filter((c) => c.groupId === node?.id)
                 .map((c) => ({
                   props: c,
                   parent: node as Group,

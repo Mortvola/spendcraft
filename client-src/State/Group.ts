@@ -85,6 +85,7 @@ class Group implements GroupInterface {
 
   async addCategory(params: CategoryParams): Promise<null| ErrorProps[]> {
     const {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       group, fundingCategories, goalDate, ...p
     } = params;
 

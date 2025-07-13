@@ -15,17 +15,14 @@ const Signup: React.FC = () => {
 
   const addSizeClass = (className: string): string => {
     if (tiny) {
-      // eslint-disable-next-line css-modules/no-undef-class
       return `${styles.tiny} ${className}`;
     }
 
     if (small) {
-      // eslint-disable-next-line css-modules/no-undef-class
       return `${styles.small} ${className}`;
     }
 
     if (medium) {
-      // eslint-disable-next-line css-modules/no-undef-class
       return `${styles.medium} ${className}`
     }
 

@@ -90,7 +90,7 @@ class Institution implements InstitutionInterface {
       this.refreshing = true;
     });
 
-    const response = await Http.post<void, InstitutionSyncResponse>(`/api/v1/institution/${institutionId}/accounts/${this.id}/transactions/sync`);
+    const response = await Http.post<undefined, InstitutionSyncResponse>(`/api/v1/institution/${institutionId}/accounts/${this.id}/transactions/sync`);
 
     if (response.ok) {
       const body = await response.body();
@@ -290,7 +290,7 @@ class Institution implements InstitutionInterface {
     }
   }
 
-  closeAccount(account: AccountInterface) {
+  closeAccount(_account: AccountInterface) {
     runInAction(() => {
       this.accounts = this.accounts.slice();
       this.store.accounts.closeAccount();

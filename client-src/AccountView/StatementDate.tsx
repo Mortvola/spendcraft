@@ -36,7 +36,6 @@ const StatementDate: React.FC<PropsType> = ({
   }
 
   return (
-    // eslint-disable-next-line react/jsx-no-useless-fragment
     <>
       {
         editDate

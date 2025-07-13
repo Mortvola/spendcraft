@@ -20,7 +20,7 @@ const TabViewMenu: React.FC<PropsType> = ({
   const [open, setOpen] = React.useState<boolean>(false);
 
   const handleClick = () => {
-    setOpen((prev) => !open)
+    setOpen((_prev) => !open)
   }
 
   const handleWrapperClick = () => {

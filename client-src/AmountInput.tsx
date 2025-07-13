@@ -5,7 +5,7 @@ import PopoverHeader from 'react-bootstrap/PopoverHeader';
 import PopoverBody from 'react-bootstrap/PopoverBody';
 import parseEquation from './EquationParser';
 import styles from './AmountInput.module.scss';
-import Console from './Console';
+import * as Console from './Console';
 
 interface PropsType {
   id?: string,

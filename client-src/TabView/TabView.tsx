@@ -48,9 +48,9 @@ const TabView: React.FC = observer(() => {
     navigate('/admin');
   }
 
-  const handlePlansClick = () => {
-    navigate('/plans')
-  }
+  // const handlePlansClick = () => {
+  //   navigate('/plans')
+  // }
 
   const handleAutoAssignClick = () => {
     navigate('/auto-assignments');

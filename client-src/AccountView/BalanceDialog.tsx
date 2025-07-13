@@ -1,4 +1,3 @@
-/* eslint-disable jsx-a11y/label-has-associated-control */
 import React from 'react';
 import {
   FormikErrors,
@@ -59,7 +58,7 @@ const BalanceDialog: React.FC<PropsType & ModalProps> = ({
         setErrors,
         errors
           .filter((error) => error.source)
-          .map((error) => ({ field: error.source!.pointer, message: error.detail })),
+          .map((error) => ({ field: error.source?.pointer ?? '', message: error.detail })),
       );
     }
     else {

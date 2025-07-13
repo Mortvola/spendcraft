@@ -7,7 +7,7 @@ import {
   FormError, setFormErrors, FormField, SubmitButton,
 } from '@mortvola/forms';
 import styles from './Signin.module.scss';
-import { isErrorResponse } from '../../common/ResponseTypes';
+import { ApiResponse, isErrorResponse } from '../../common/ResponseTypes';
 import { Context } from './Types';
 
 interface PropsType {
@@ -34,7 +34,7 @@ const ChangePassword: React.FC<PropsType> = ({
   }
 
   const handleSubmit = async (values: FormValues, { setErrors }: FormikHelpers<FormValues>) => {
-    const response = await Http.post<UpdatePasswordRequest, void>('/api/v1/password/update', {
+    const response = await Http.post<UpdatePasswordRequest, ApiResponse<undefined>>('/api/v1/password/update', {
       password: values.password,
       passwordConfirmation: values.passwordConfirmation,
     });

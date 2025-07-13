@@ -1,8 +1,6 @@
-class Console {
-  static log(message: unknown): void {
+export function log(message: unknown): void {
      
-    console.log(message);
-  }
+  console.log(message);
 }
 
 export default Console;

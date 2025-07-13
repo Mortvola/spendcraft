@@ -4,8 +4,6 @@ import { useStores } from '../State/Store';
 import styles from './TransactionLogDetails.module.scss';
 import TransactionLog from './TransactionLog';
 import useTrxDialog from '../Transactions/TrxDialog';
-import { BaseTransactionInterface, TransactionInterface } from '../State/Types';
-import { TransactionType } from '../../common/ResponseTypes';
 
 const TransactionLogDetails = observer(() => {
   const { transactionLogs } = useStores();
@@ -15,10 +13,10 @@ const TransactionLogDetails = observer(() => {
     // trxContainer.getData(0)
   }
 
-  const [TrxDialog, showTrxDialog] = useTrxDialog(undefined, handleReload);
-  const { uiState } = useStores();
+  const [TrxDialog] = useTrxDialog(undefined, handleReload);
+  // const { uiState } = useStores();
 
-  const handleClick = (transactionId: number) => {
+  const handleClick = (_transactionId: number) => {
     // uiState.selectTransaction(transaction as TransactionInterface);
     // if (
     //   transaction.type !== TransactionType.STARTING_BALANCE

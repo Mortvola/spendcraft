@@ -362,11 +362,11 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
               }];
             }
 
-            for (let i = 0; i < fundingCats.length; i += 1) {
+            for (const fundingCat of fundingCats) {
               obj[cat.categoryId].fundingCategories.push({
-                categoryId: fundingCats[i].categoryId,
-                amount: fundingCats[i].amount,
-                percentage: fundingCats[i].percentage,
+                categoryId: fundingCat.categoryId,
+                amount: fundingCat.amount,
+                percentage: fundingCat.percentage,
               });
             }
           }

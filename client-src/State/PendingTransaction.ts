@@ -58,7 +58,7 @@ class PendingTransaction implements BaseTransactionInterface {
   }
 
    
-  toggleReconciled(statementId: number): void {
+  toggleReconciled(_statementId: number): void {
     throw Error('not implemented')
   }
 }

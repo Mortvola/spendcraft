@@ -3,7 +3,6 @@ import Http from '@mortvola/http';
 import { DateTime } from 'luxon';
 import {
   CategoryProps, isErrorResponse, ErrorProps,
-  isUpdateCategoryResponse,
   CategoryType,
   CategoryBalanceProps,
   ApiResponse,

@@ -67,7 +67,6 @@ const CategorySpread: React.FC<PropsType> = ({
         {
           (arrayHelpers) => (
             categories.map((c, i) => (
-              // eslint-disable-next-line react/no-array-index-key
               <div key={i} className={styles.categoryLayout}>
                 <Field
                   name={`${name}[${i}].categoryId`}

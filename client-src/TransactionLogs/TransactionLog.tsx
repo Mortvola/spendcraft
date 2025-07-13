@@ -1,5 +1,5 @@
 import React from 'react';
-import { BaseTransactionInterface, TransactionLogInterface } from '../State/Types';
+import { TransactionLogInterface } from '../State/Types';
 import DateTime from '../DateTime';
 import styles from './TransactionLog.module.scss';
 

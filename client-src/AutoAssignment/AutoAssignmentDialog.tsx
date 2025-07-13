@@ -2,42 +2,41 @@ import React from 'react';
 import { FormField, FormModal } from '@mortvola/forms';
 import { ModalProps, makeUseModal } from '@mortvola/usemodal';
 import {
-  FieldArray, FieldArrayRenderProps, FormikErrors, useField,
+  FieldArray, FieldArrayRenderProps, FormikErrors,
 } from 'formik';
 import { observer } from 'mobx-react-lite';
 import { Minus, Plus } from 'lucide-react';
-import { AutoAssignmentInterface, CategoryInterface } from '../State/Types';
-import CategoryInput from '../CategoryInput/CategoryInput';
+import { AutoAssignmentInterface } from '../State/Types';
 import { useStores } from '../State/Store';
 import styles from './AutoAssignmentDialog.module.scss'
 import CategorySpread from '../CategorySpread/CategorySpread';
 import LucideButton from '../LucideButton';
 
-let tempId = -1;
+// let tempId = -1;
 
-const nextTempid = () => {
-  const id = tempId;
-  tempId -= 1;
+// const nextTempid = () => {
+//   const id = tempId;
+//   tempId -= 1;
 
-  return id;
-}
+//   return id;
+// }
 
-const FormCategoryInput = ({ name }: { name: string }) => {
-  const [field, , helpers] = useField(name);
+// const FormCategoryInput = ({ name }: { name: string }) => {
+//   const [field, , helpers] = useField(name);
 
-  const handleCategoryChange = (category: CategoryInterface) => {
-    helpers.setValue(category.id)
-  }
+//   const handleCategoryChange = (category: CategoryInterface) => {
+//     helpers.setValue(category.id)
+//   }
 
-  return (
-    <CategoryInput
-      name={name}
-      categoryId={parseInt(field.value, 10)}
-      className="form-control"
-      onCategoryChange={handleCategoryChange}
-    />
-  )
-}
+//   return (
+//     <CategoryInput
+//       name={name}
+//       categoryId={parseInt(field.value, 10)}
+//       className="form-control"
+//       onCategoryChange={handleCategoryChange}
+//     />
+//   )
+// }
 
 interface PropsType {
   autoAssignment?: AutoAssignmentInterface
@@ -59,7 +58,7 @@ const AutoAssignmentDialog: React.FC<PropsType & ModalProps> = observer(({
     categories: { id: number, categoryId: number, amount: number, percentage: boolean }[],
   }
 
-  const handleValidate = (values: ValueType) => {
+  const handleValidate = (_values: ValueType) => {
     const errors: FormikErrors<ValueType> = {};
 
     return errors;
@@ -129,7 +128,6 @@ const AutoAssignmentDialog: React.FC<PropsType & ModalProps> = observer(({
                 {
                   (arrayHelpers: FieldArrayRenderProps) => (
                     formikProps.values.searchStrings.map((s, i) => (
-                      // eslint-disable-next-line react/no-array-index-key
                       <div key={i} className={styles.searchStringLayout}>
                         <FormField name={`searchStrings[${i}]`} style={{ marginTop: 0 }} />
                         <LucideButton

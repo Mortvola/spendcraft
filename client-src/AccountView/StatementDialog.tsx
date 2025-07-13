@@ -1,4 +1,3 @@
-/* eslint-disable jsx-a11y/label-has-associated-control */
 import React from 'react';
 import {
   FormikErrors,
@@ -50,7 +49,7 @@ const StatementDialog: React.FC<PropsType & ModalProps> = ({
     endingBalance: number,
   }
 
-  const handleValidate = (values: ValueType) => {
+  const handleValidate = (_values: ValueType) => {
     const errors: FormikErrors<ValueType> = {};
 
     return errors;
@@ -95,7 +94,7 @@ const StatementDialog: React.FC<PropsType & ModalProps> = ({
     }
   };
 
-  const handleDelete = async (bag: FormikContextType<ValueType>) => {
+  const handleDelete = async (_bag: FormikContextType<ValueType>) => {
     // const { setTouched, setErrors } = bag;
 
     if (statement) {

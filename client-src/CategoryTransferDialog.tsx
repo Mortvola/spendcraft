@@ -1,4 +1,3 @@
-/* eslint-disable jsx-a11y/label-has-associated-control */
 import React from 'react';
 import { Modal, Button } from 'react-bootstrap';
 import {
@@ -127,6 +126,7 @@ const CategoryTransferDialog: React.FC<PropsType & ModalProps> = ({
         throw new Error('missing id');
       }
       if (s.id < 0) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { id, ...newSplit } = s;
 
         return newSplit;

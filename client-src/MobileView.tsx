@@ -12,7 +12,6 @@ const MobileView: React.FC<PropsType> = ({
 
   return isMobile
     ? (
-      // eslint-disable-next-line react/jsx-no-useless-fragment
       <>
         {children}
       </>

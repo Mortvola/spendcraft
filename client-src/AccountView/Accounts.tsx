@@ -4,7 +4,6 @@ import { Tab, Tabs } from 'react-bootstrap';
 import {
   Outlet, matchPath, useLocation, useNavigate,
 } from 'react-router';
-import useMediaQuery from '../MediaQuery'
 import AccountView from './AccountView';
 import Main from '../Main';
 import AccountsToolbar from './AccountsToolbar';

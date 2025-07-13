@@ -1,4 +1,3 @@
-/* eslint-disable jsx-a11y/label-has-associated-control */
 import React from 'react';
 import {
   Field,
@@ -91,7 +90,7 @@ const BillDialog: React.FC<PropsType & ModalProps> = ({
     return errors;
   };
 
-  const handleDelete = async (bag: FormikContextType<ValueType>) => {
+  const handleDelete = async (_bag: FormikContextType<ValueType>) => {
     // const { setErrors } = bag;
 
     // if (group) {
@@ -137,7 +136,7 @@ const BillDialog: React.FC<PropsType & ModalProps> = ({
         goalDate: category?.goalDate?.toISODate() ?? '',
         recurrence: category?.recurrence.toString() ?? '1',
         category: '',
-        groupId: category?.group!.id ? category.group!.id.toString() : '',
+        groupId: category?.group?.id ? category.group?.id.toString() : '',
       }}
       title={title()}
       formId="BillDialogForm"

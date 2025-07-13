@@ -13,7 +13,6 @@ const DesktopView: React.FC<PropsType> = ({
   return isMobile
     ? null
     : (
-      // eslint-disable-next-line react/jsx-no-useless-fragment
       <>
         {children}
       </>

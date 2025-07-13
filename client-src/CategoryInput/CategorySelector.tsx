@@ -56,7 +56,6 @@ interface PropsType {
   types?: CategoryType[],
 }
 
-// eslint-disable-next-line react/display-name
 const CategorySelector = observer(React.forwardRef<HTMLDivElement, PropsType>(({
   selectedCategory = null,
   left = null,

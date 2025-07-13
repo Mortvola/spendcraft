@@ -16,7 +16,6 @@ const RequireAuth: React.FC<PropsType> = observer(({ children }) => {
   }
 
   return (
-    // eslint-disable-next-line react/jsx-no-useless-fragment
     <>
       {children}
     </>

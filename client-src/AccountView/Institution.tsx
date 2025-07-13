@@ -113,7 +113,7 @@ const Institution: React.FC<PropsType> = observer(({
             <OfflineAccountDialog institution={institution} account={editedAccount} onHide={handleDialogHide} />
             <DeleteConfirmation />
             {
-              !institution.plaidInstitutionId === null
+              institution.plaidInstitutionId !== null
                 ? (
                   <>
                     <LucideButton className={styles.iconButton} onClick={handleRelinkClick}>

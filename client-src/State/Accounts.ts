@@ -157,7 +157,7 @@ class Accounts implements AccountsInterface {
         if (body.data) {
           // Make sure we don't already have the institution in the list.
           let institution = this.institutions.find(
-            (inst) => inst.id === body.data!.id,
+            (inst) => inst.id === body.data?.id,
           );
 
           if (!institution) {

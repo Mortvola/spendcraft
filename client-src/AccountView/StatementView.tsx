@@ -4,7 +4,6 @@ import { observer } from 'mobx-react-lite';
 import Amount from '../Amount';
 import Statement from '../State/Statement';
 import styles from './StatementView.module.scss'
-import AmountInput from '../AmountInput';
 import StatementDate from './StatementDate';
 import StatementAmount from './StatementAmount';
 

@@ -1,4 +1,3 @@
-/* eslint-disable jsx-a11y/label-has-associated-control */
 import React from 'react';
 import {
   Field,
@@ -122,7 +121,7 @@ const GroupDialog: React.FC<PropsType & ModalProps> = ({
       setShow={setShow}
       initialValues={{
         name: group?.name ?? '',
-        parentGroupId: group?.group!.id ?? null,
+        parentGroupId: group?.group?.id ?? null,
       }}
       title={title()}
       formId="GroupDialogForm"

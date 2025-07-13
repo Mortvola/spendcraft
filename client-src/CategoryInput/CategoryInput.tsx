@@ -1,11 +1,9 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import CategorySelector, { categoryFiltered } from './CategorySelector';
+import CategorySelector from './CategorySelector';
 import useExclusiveBool from '../ExclusiveBool';
 import { useStores } from '../State/Store';
 import { CategoryInterface } from '../State/Types';
-import { isGroup } from '../State/Group';
-import { isCategory } from '../State/Category';
 import { CategoryType } from '../../common/ResponseTypes';
 
 interface PropsType {
@@ -26,7 +24,7 @@ const CategoryInput: React.FC<PropsType> = ({
   types,
 }) => {
   const { categoryTree } = useStores();
-  const { budget } = categoryTree;
+  // const { budget } = categoryTree;
 
   // type Selection = { groupIndex: number | null, categoryIndex: number | null};
   // const [selected, setSelected] = useState<Selection>(
@@ -102,13 +100,13 @@ const CategoryInput: React.FC<PropsType> = ({
     }
   };
 
-  const filtered = (groupIndex: number, categoryIndex: number, filterParts: string[]): boolean => {
-    const node = budget.children[groupIndex];
-    return (isGroup(node) && (
-      node.children.length === 0
-      || categoryFiltered(node, node.children[categoryIndex], filterParts)
-    )) || (isCategory(node) && categoryFiltered(null, node, filterParts));
-  };
+  // const filtered = (groupIndex: number, categoryIndex: number, filterParts: string[]): boolean => {
+  //   const node = budget.children[groupIndex];
+  //   return (isGroup(node) && (
+  //     node.children.length === 0
+  //     || categoryFiltered(node, node.children[categoryIndex], filterParts)
+  //   )) || (isCategory(node) && categoryFiltered(null, node, filterParts));
+  // };
 
   // const traverseList = (
   //   selection: Selection,
@@ -177,7 +175,7 @@ const CategoryInput: React.FC<PropsType> = ({
   //   return true;
   // }
 
-  const setFirstBestSelection = (filterParts: string[]) => {
+  const setFirstBestSelection = (_filterParts: string[]) => {
     // const selection = traverseList({ groupIndex: null, categoryIndex: null }, moveDownOne, filterParts);
     // if (selection === null) {
     //   setSelected({ groupIndex: null, categoryIndex: null })

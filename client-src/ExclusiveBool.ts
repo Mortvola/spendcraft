@@ -60,6 +60,7 @@ const useExclusiveBool = (initialState: boolean): [boolean, (state: boolean) => 
 
     // Remove from state object when unmounting
     return () => {
+      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
       delete states[id];
       if (id === currentTrue) {
         currentTrue = null;
