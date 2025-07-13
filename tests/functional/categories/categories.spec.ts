@@ -36,6 +36,7 @@ test.group('Categories', (group) => {
           name: testGroupName,
         })
         .accept('json')
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         .loginAs(user!)
 
       response.assertStatus(200)
@@ -53,6 +54,7 @@ test.group('Categories', (group) => {
           name: testGroupName,
         })
         .accept('json')
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         .loginAs(user!)
 
       response.assertStatus(422)
@@ -69,6 +71,7 @@ test.group('Categories', (group) => {
           name: `${testGroupName} updated`,
         })
         .accept('json')
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         .loginAs(user!)
 
       response.assertStatus(200)
@@ -87,6 +90,7 @@ test.group('Categories', (group) => {
           fundingCategories: [],
         })
         .accept('json')
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         .loginAs(user!)
 
       response.assertStatus(200)
@@ -103,6 +107,7 @@ test.group('Categories', (group) => {
       // This request should fail since the group contains a category
       const response = await client.delete(`/api/v1/groups/${groupId}`)
         .accept('json')
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         .loginAs(user!)
 
       response.assertStatus(409)
@@ -119,6 +124,7 @@ test.group('Categories', (group) => {
           name: 'Test Category Updated'
         })
         .accept('json')
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         .loginAs(user!)
 
       response.assertStatus(200)
@@ -133,6 +139,7 @@ test.group('Categories', (group) => {
 
       const response = await client.delete(`/api/v1/groups/${groupId}/categories/${categoryId}`)
         .accept('json')
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         .loginAs(user!)
 
       response.assertStatus(204)
@@ -148,6 +155,7 @@ test.group('Categories', (group) => {
 
       const response = await client.delete(`/api/v1/groups/${groupId}`)
         .accept('json')
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         .loginAs(user!)
 
       response.assertStatus(204)
@@ -160,6 +168,7 @@ test.group('Categories', (group) => {
 
       const response = await client.get('/api/v1/groups')
         .accept('json')
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         .loginAs(user!)
 
       response.assertStatus(200)

@@ -45,6 +45,7 @@ test.group('Accounts', (group) => {
             startDate: '2025-01-01',
           })
           .accept('json')
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           .loginAs(user!)
 
         response.assertStatus(200)
@@ -64,6 +65,7 @@ test.group('Accounts', (group) => {
           amount: 150.10,
         })
         .accept('json')
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         .loginAs(user!)
 
       console.log(JSON.stringify(response.body()))
@@ -85,6 +87,7 @@ test.group('Accounts', (group) => {
           startDate: '2025-01-01',
         })
         .accept('json')
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         .loginAs(user!)
 
       response.assertStatus(200)

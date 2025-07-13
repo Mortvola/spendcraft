@@ -2,7 +2,7 @@ import React from 'react';
 import { runInAction } from 'mobx';
 import { PlaidLinkOnSuccessMetadata, usePlaidLink } from 'react-plaid-link';
 import { useStores } from './State/Store';
-import Console from './Console';
+import * as Console from './Console';
 import { InstitutionInterface } from './State/Types';
 
 interface PropsType {

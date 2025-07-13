@@ -3,7 +3,12 @@ import eslint from '@eslint/js'
 
 export default tseslint.config(
   {
-    ignores: ["./database/old-migrations/"],
+    ignores: [
+      "./database/old-migrations/",
+      "./build",
+      "public/assets",
+      "public/service-worker.js"
+    ],
   },
   eslint.configs.recommended,
   tseslint.configs.strict,
