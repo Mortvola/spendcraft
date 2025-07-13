@@ -1,4 +1,3 @@
-/* eslint-disable import/no-cycle */
 import {
   BaseModel, belongsTo, column,
 } from '@adonisjs/lucid/orm';
@@ -9,21 +8,21 @@ import Budget from '#app/Models/Budget';
 import { DateTime } from 'luxon';
 import type { BelongsTo } from "@adonisjs/lucid/types/relations";
 
-type CategoryItem = {
+interface CategoryItem {
   id: number,
   name: string,
   type: CategoryType,
   balance: number,
-};
+}
 
-type GroupItem = {
+interface GroupItem {
   id: number,
   name: string,
   system: boolean,
   categories: (CategoryItem | { id: number, name: string})[],
-};
+}
 
-type FundingCategory = {
+interface FundingCategory {
   categoryId: number,
   amount: number,
   percentage: boolean,
@@ -90,7 +89,7 @@ export default class Category extends BaseModel {
       .select('categoryId')
       .select(db.raw('sum("transCats".amount) as amount'))
       .from('transactions')
-      // eslint-disable-next-line max-len
+       
       .joinRaw('cross join lateral jsonb_to_recordset(transactions.categories) as "transCats"("categoryId" int, amount decimal)')
       .where((query) => {
         query
@@ -127,7 +126,7 @@ export default class Category extends BaseModel {
     return budget
       .related('transactions').query()
       .where('deleted', false)
-      // eslint-disable-next-line max-len
+       
       .whereRaw('categories::jsonb @\\? (\'$[*] \\? (@.categoryId == \' || ? || \' && @.amount != 0)\')::jsonpath', [this.id])
       .where((q) => {
         q.whereHas('accountTransaction', (q2) => {
@@ -178,7 +177,7 @@ export default class Category extends BaseModel {
     await budget.loadAggregate('transactions', (q) => {
       q.count('*').as('count')
         .where('deleted', false)
-        // eslint-disable-next-line max-len
+         
         .whereRaw('categories::jsonb @\\? (\'$[*] \\? (@.categoryId == \' || ? || \' && @.amount != 0)\')::jsonpath', [this.id])
         .where((q4) => {
           q4.whereHas('accountTransaction', (q2) => {
@@ -195,7 +194,7 @@ export default class Category extends BaseModel {
     return parseInt(budget.$extras.count, 10);
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async syncBalance(this: Category): Promise<void> {
     // let sum = 0;
 

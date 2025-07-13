@@ -5,7 +5,7 @@ import AutoAssignment from '#app/Models/AutoAssignment';
 import AutoAssignmentCategory from '#app/Models/AutoAssignmentCategory';
 
 export default class AutoAssignmentsController {
-  // eslint-disable-next-line class-methods-use-this
+   
   public async get({
     request,
     auth: {
@@ -41,7 +41,7 @@ export default class AutoAssignmentsController {
     return assignments;
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async post({
     request,
     auth: {
@@ -82,9 +82,9 @@ export default class AutoAssignmentsController {
           searchStrings: requestData.searchStrings,
         })
 
-      // eslint-disable-next-line no-restricted-syntax
+       
       for (const category of requestData.categories) {
-        // eslint-disable-next-line no-await-in-loop
+         
         await autoAssignment.related('categories').create({
           categoryId: category.categoryId,
           amount: category.amount,
@@ -104,7 +104,7 @@ export default class AutoAssignmentsController {
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async patch({
     request,
     auth: {
@@ -148,13 +148,13 @@ export default class AutoAssignmentsController {
       })
         .save();
 
-      // eslint-disable-next-line no-restricted-syntax
+       
       for (const category of requestData.categories) {
         if (category.id >= 0) {
-          // eslint-disable-next-line no-await-in-loop
+           
           const autoAssignCategory = await AutoAssignmentCategory.findOrFail(category.id, { client: trx })
 
-          // eslint-disable-next-line no-await-in-loop
+           
           await autoAssignCategory.merge({
             categoryId: category.categoryId,
             amount: category.amount,
@@ -163,7 +163,7 @@ export default class AutoAssignmentsController {
             .save()
         }
         else {
-          // eslint-disable-next-line no-await-in-loop
+           
           const newAutoAssignCat = await autoAssignment.related('categories').create({
             categoryId: category.categoryId,
             amount: category.amount,
@@ -190,7 +190,7 @@ export default class AutoAssignmentsController {
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async delete({
     request,
     auth: {

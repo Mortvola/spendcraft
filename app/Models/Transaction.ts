@@ -1,4 +1,3 @@
-/* eslint-disable import/no-cycle */
 import {
   BaseModel, hasMany, column,
   belongsTo, hasOne,
@@ -10,7 +9,7 @@ import Budget from '#app/Models/Budget';
 import TransactionLog from './TransactionLog.js';
 import type { HasMany, BelongsTo, HasOne } from "@adonisjs/lucid/types/relations";
 
-export type TransCategory = {
+export interface TransCategory {
   categoryId: number,
   amount: number,
   comment?: string,

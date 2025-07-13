@@ -4,7 +4,7 @@ import User from "#models/User";
 import db from "@adonisjs/lucid/services/db";
 import mail from '@adonisjs/mail/services/main';
 
-export type UserDetails = {
+export interface UserDetails {
   username: string,
   email: string,
   password: string,

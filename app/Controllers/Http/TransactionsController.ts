@@ -17,7 +17,7 @@ import transactionFields, { getChanges } from './transactionFields.js';
 import { ModelObject } from "@adonisjs/lucid/types/model";
 
 export default class TransactionsController {
-  // eslint-disable-next-line class-methods-use-this
+   
   public async get({
     request,
   }: HttpContext): Promise<Transaction> {
@@ -33,7 +33,7 @@ export default class TransactionsController {
     return transaction;
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async getMultiple({
     request,
   }: HttpContext): Promise<ApiResponse<TransactionsResponse>> {
@@ -62,7 +62,7 @@ export default class TransactionsController {
     };
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async update({
     request,
     response,
@@ -149,14 +149,14 @@ export default class TransactionsController {
         if (categories.length > 0) {
           // There are pre-existing category splits.
           // Credit the category balance for each one.
-          // eslint-disable-next-line no-restricted-syntax
+           
           for (const transCategory of categories) {
-            // eslint-disable-next-line no-await-in-loop
+             
             const category = await Category.findOrFail(transCategory.categoryId, { client: trx });
 
             category.balance -= transCategory.amount;
 
-            // eslint-disable-next-line no-await-in-loop
+             
             await category.save();
 
             categoriesResult.push({
@@ -166,7 +166,7 @@ export default class TransactionsController {
           }
 
           // Delete any loan transactions that are associated with the categories being deleted.
-          // eslint-disable-next-line no-restricted-syntax
+           
           // for (const split of splits) {
           //   if (split.loanTransaction) {
           //     split.loanTransaction.delete();
@@ -195,14 +195,14 @@ export default class TransactionsController {
         if (requestData.categories.length > 0) {
           transaction.categories = requestData.categories;
 
-          // eslint-disable-next-line no-restricted-syntax
+           
           for (const transCategory of requestData.categories) {
-            // eslint-disable-next-line no-await-in-loop
+             
             const category = await Category.findOrFail(transCategory.categoryId, { client: trx });
 
             category.balance += transCategory.amount;
 
-            // eslint-disable-next-line no-await-in-loop
+             
             await category.save();
 
             if (category.type === CategoryType.Loan) {
@@ -283,7 +283,7 @@ export default class TransactionsController {
 
         changes = getChanges(acctTrans.$attributes, accountTransactionChanges, changes);
 
-        // eslint-disable-next-line no-restricted-syntax
+         
         for (const property of Object.getOwnPropertyNames(accountTransactionChanges)) {
           if (accountTransactionChanges[property] === undefined) {
             delete accountTransactionChanges[property]
@@ -323,7 +323,7 @@ export default class TransactionsController {
 
       transactionChanges.version = transaction.version + 1;
 
-      // eslint-disable-next-line no-restricted-syntax
+       
       for (const property of Object.getOwnPropertyNames(transactionChanges)) {
         if (transactionChanges[property] === undefined) {
           delete transactionChanges[property]
@@ -348,12 +348,12 @@ export default class TransactionsController {
       });
 
       // Get the transaction count for each of the categories
-      // eslint-disable-next-line no-restricted-syntax
+       
       for (const cat of categoriesResult) {
-        // eslint-disable-next-line no-await-in-loop
+         
         const category = await Category.findOrFail(cat.id, { client: trx });
 
-        // eslint-disable-next-line no-await-in-loop
+         
         cat.count = await category.transactionsCount(budget);
       }
 
@@ -402,7 +402,7 @@ export default class TransactionsController {
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async dedup({
     request,
   }: HttpContext): Promise<void> {
@@ -418,7 +418,7 @@ export default class TransactionsController {
     await transaction.save();
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async delete({
     request,
     auth: {
@@ -470,9 +470,9 @@ export default class TransactionsController {
         }
       }
       else {
-        // eslint-disable-next-line no-restricted-syntax
+         
         for (const trxCat of trxCategories) {
-          // eslint-disable-next-line no-await-in-loop
+           
           const category = await Category.findOrFail(trxCat.categoryId, { client: trx });
 
           category.balance -= trxCat.amount;
@@ -501,7 +501,7 @@ export default class TransactionsController {
 
           category.save();
 
-          // eslint-disable-next-line no-await-in-loop
+           
           // await trxCat.delete();
         }
       }
@@ -542,7 +542,7 @@ export default class TransactionsController {
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async getRebalances({
     auth: {
       user,
@@ -569,7 +569,7 @@ export default class TransactionsController {
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async search({
     request,
     auth: {
@@ -606,7 +606,7 @@ export default class TransactionsController {
     };
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async logs({
     auth: {
       user,

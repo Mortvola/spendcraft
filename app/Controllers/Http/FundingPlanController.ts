@@ -7,7 +7,7 @@ import Category from '#app/Models/Category';
 import { ApiResponse, FundingPlanDetailsProps, ProposedFundingCategoryProps } from '#common/ResponseTypes';
 
 class FundingPlanController {
-  // eslint-disable-next-line class-methods-use-this
+   
   public async getPlan({ auth: { user } }: HttpContext): Promise<FundingPlanDetailsProps> {
     if (!user) {
       throw new Error('user is undefined');
@@ -40,7 +40,7 @@ class FundingPlanController {
     };
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async getProposed({
     auth: {
       user,
@@ -60,7 +60,7 @@ class FundingPlanController {
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async updateOrCreateCategory({
     request,
   }: HttpContext): Promise<Category> {

@@ -10,7 +10,7 @@ type IncomeVsExpensesReportType = [string, number, number, number][];
 type FundingHistoryReportType = [string, number, number, number][];
 
 class ReportController {
-  // eslint-disable-next-line class-methods-use-this
+   
   public async get({
     request,
     auth: { user },

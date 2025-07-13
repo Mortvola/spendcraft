@@ -7,7 +7,7 @@ import Loan from '#app/Models/Loan';
 import { CategoryType, LoanTransactionsProps, LoanUpdateProps } from '#common/ResponseTypes';
 
 export default class LoansController {
-  // eslint-disable-next-line class-methods-use-this
+   
   public async get({
     request,
     auth: { user },
@@ -21,7 +21,7 @@ export default class LoansController {
     return loan;
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async add({
     request,
     auth: { user },
@@ -84,7 +84,7 @@ export default class LoansController {
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async update({
     request,
     auth: { user },
@@ -140,7 +140,7 @@ export default class LoansController {
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async getTransactions({
     request,
     auth: { user },

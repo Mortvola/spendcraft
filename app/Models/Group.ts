@@ -1,4 +1,3 @@
-/* eslint-disable import/no-cycle */
 import {
   BaseModel, belongsTo, column, hasMany
 } from '@adonisjs/lucid/orm';

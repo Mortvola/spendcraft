@@ -1,4 +1,4 @@
-/* eslint-disable no-await-in-loop */
+ 
 import { HttpContext } from '@adonisjs/core/http';
 import db from '@adonisjs/lucid/services/db';
 import Institution from '#app/Models/Institution';
@@ -20,7 +20,7 @@ import env from '#start/env'
 import app from '@adonisjs/core/services/app';
 
 class InstitutionController {
-  // eslint-disable-next-line class-methods-use-this
+   
   public async add(context: HttpContext): Promise<ApiResponse<AddInstitutionResponse>> {
     const { request } = context;
 
@@ -124,7 +124,7 @@ class InstitutionController {
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async addOffline({
     request,
     auth: {
@@ -235,7 +235,7 @@ class InstitutionController {
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async update({
     request,
     auth: {
@@ -317,7 +317,7 @@ class InstitutionController {
     return [];
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   async get({ request, auth: { user } }: HttpContext): Promise<UnlinkedAccountProps[]> {
     if (!user) {
       throw new Error('user is not defined');
@@ -396,7 +396,7 @@ class InstitutionController {
   //   }
   // }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   private static async addOnlineAccounts(
     budget: Budget,
     institution: Institution,
@@ -418,7 +418,7 @@ class InstitutionController {
 
     const plaidAccountsResponse = await plaidClient.getAccounts(institution);
 
-    // eslint-disable-next-line no-restricted-syntax
+     
     for (const plaidAccount of plaidAccountsResponse.accounts) {
       let balance = plaidAccount.balances.current ?? 0;
       if (balance && (plaidAccount.type === 'credit' || plaidAccount.type === 'loan')) {
@@ -481,14 +481,14 @@ class InstitutionController {
     return response;
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async addOfflineAccount({
     request,
     auth: {
       user,
     },
     logger,
-  }: HttpContext): Promise<ApiResponse<AddOfflineAccountResponse> | void> {
+  }: HttpContext): Promise<ApiResponse<AddOfflineAccountResponse> | undefined> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -541,7 +541,7 @@ class InstitutionController {
         await acct.save();
       }
       else {
-        // eslint-disable-next-line no-await-in-loop
+         
         // await InstitutionController.insertStartingBalance(
         //   budget, acct, start, account.balance, fundingPool, options,
         // );
@@ -550,6 +550,12 @@ class InstitutionController {
       const unassigned = await budget.getUnassignedCategory();
 
       await trx.commit();
+
+      const startDate = acct.startDate.toISODate()
+
+      if (!startDate) {
+        throw new Error('startDate is null')
+      }
 
       return {
         data: {
@@ -562,7 +568,7 @@ class InstitutionController {
             tracking: acct.tracking,
             balance: acct.balance,
             plaidBalance: acct.plaidBalance,
-            startDate: acct.startDate.toISODate()!,
+            startDate,
             rate: acct.rate,
             plaidId: acct.plaidAccountId,
           },
@@ -580,7 +586,7 @@ class InstitutionController {
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async syncAll({
     auth: {
       user,
@@ -619,7 +625,7 @@ class InstitutionController {
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async sync({
     request,
     auth: {
@@ -653,7 +659,7 @@ class InstitutionController {
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async linkToken({
     request,
     response,
@@ -697,7 +703,7 @@ class InstitutionController {
     response.json({ linkToken: linkTokenResponse.link_token });
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async info({ request, auth: { user } }: HttpContext): Promise<Plaid.Institution> {
     if (!user) {
       throw new Error('user is not defined');
@@ -710,7 +716,7 @@ class InstitutionController {
     return plaidInstitution;
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async deleteAccount(
     { request, auth: { user }, logger }: HttpContext,
   ): Promise<CategoryBalanceProps[]> {
@@ -745,14 +751,14 @@ class InstitutionController {
   ): Promise<CategoryBalanceProps[]> {
     const categoryBalances: CategoryBalanceProps[] = [];
 
-    // eslint-disable-next-line no-restricted-syntax
+     
     for (const acct of accounts) {
-      // eslint-disable-next-line no-await-in-loop
+       
       const acctTrans = await AccountTransaction.query({ client: budget.$trx }).where('accountId', acct.id);
 
-      // eslint-disable-next-line no-restricted-syntax
+       
       for (const acctTran of acctTrans) {
-        // eslint-disable-next-line no-await-in-loop
+         
         const transaction = await Transaction.find(acctTran.transactionId, { client: budget.$trx });
 
         if (transaction) {
@@ -760,7 +766,7 @@ class InstitutionController {
 
           if (transCats.length === 0) {
             if (acct.tracking === 'Transactions') {
-              // eslint-disable-next-line no-await-in-loop
+               
               const unassignedCat = await budget.getUnassignedCategory({ client: budget.$trx });
 
               unassignedCat.balance -= acctTran.amount;
@@ -778,15 +784,15 @@ class InstitutionController {
             }
           }
           else {
-            // eslint-disable-next-line no-restricted-syntax
+             
             for (const tc of transCats) {
-              // eslint-disable-next-line no-await-in-loop
+               
               const category = await Category.find(tc.categoryId, { client: budget.$trx });
 
               if (category) {
                 category.balance -= tc.amount;
 
-                // eslint-disable-next-line no-await-in-loop
+                 
                 await category.save();
 
                 const catBalance = categoryBalances.find((cb) => cb.id === category.id);
@@ -799,33 +805,33 @@ class InstitutionController {
                 }
               }
 
-              // eslint-disable-next-line no-await-in-loop
+               
               // await tc.delete();
             }
           }
 
-          // eslint-disable-next-line no-await-in-loop
+           
           await acctTran.delete();
 
-          // eslint-disable-next-line no-await-in-loop
+           
           await transaction.delete();
         }
       }
 
-      // eslint-disable-next-line no-await-in-loop
+       
       const balanceHistories = await BalanceHistory.query({ client: budget.$trx }).where('accountId', acct.id);
 
-      // eslint-disable-next-line no-await-in-loop
+       
       await Promise.all(balanceHistories.map((balanceHistory) => balanceHistory.delete()));
 
-      // eslint-disable-next-line no-await-in-loop
+       
       await acct.delete();
     }
 
     return categoryBalances;
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async delete(
     { request, auth: { user }, logger }: HttpContext,
   ): Promise<CategoryBalanceProps[]> {
@@ -854,7 +860,7 @@ class InstitutionController {
         await plaidClient.removeItem(institution.accessToken, institution.institutionId);
       }
 
-      // eslint-disable-next-line no-restricted-syntax
+       
       const result = await InstitutionController.deleteAccounts(accounts, budget);
 
       await institution.delete();

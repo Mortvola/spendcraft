@@ -20,7 +20,7 @@ import type { BelongsTo, HasMany } from "@adonisjs/lucid/types/relations";
 import { DbAccessTokensProvider } from '@adonisjs/auth/access_tokens';
 import { withAuthFinder } from '@adonisjs/auth/mixins/lucid';
 
-type PassCode = {
+interface PassCode {
   code: string,
   expires: DateTime,
 }
@@ -102,7 +102,7 @@ export default class User extends compose(BaseModel, AuthFinder) {
     return budget.getConnectedAccounts();
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public static generatePassCode(): PassCode {
     const randomNumber = Math.trunc(Math.random() * 1099511627775);
 

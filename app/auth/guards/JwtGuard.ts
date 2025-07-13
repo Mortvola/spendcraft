@@ -11,10 +11,11 @@ import redis from '@adonisjs/redis/services/main';
  * The bridge between the User provider and the
  * Guard
  */
-export type JwtGuardUser<RealUser> = {
+export interface JwtGuardUser<RealUser> {
   /**
    * Returns the unique ID of the user
    */
+  // eslint-disable-next-line @typescript-eslint/no-wrapper-object-types
   getId(): string | number | BigInt
 
   /**
@@ -43,16 +44,17 @@ export interface JwtUserProviderContract<RealUser> {
   /**
    * Find a user by their id.
    */
+  // eslint-disable-next-line @typescript-eslint/no-wrapper-object-types
   findById(identifier: string | number | BigInt): Promise<JwtGuardUser<RealUser> | null>
 }
 
-export type TokenDuration = {
+export interface TokenDuration {
   days?: number,
   hours?: number,
   minutes?: number,
 }
 
-export type JwtGuardOptions = {
+export interface JwtGuardOptions {
   publicKey: string
   privateKey: string
   issuer: string
@@ -61,8 +63,10 @@ export type JwtGuardOptions = {
   refreshTokenDefaultExpire: TokenDuration
 }
 
+// eslint-disable-next-line @typescript-eslint/consistent-type-definitions
 type JWTCustomPayloadData = {
-  [key: string]: any
+  userId: number,
+  [key: string]: unknown
 }
 
 type JWTCustomPayload = JWTPayload & {
@@ -76,24 +80,24 @@ export class JwtGuard<UserProvider extends JwtUserProviderContract<unknown>>
    * A list of events and their types emitted by
    * the guard.
    */
-  declare [symbols.GUARD_KNOWN_EVENTS]: {}
+  declare [symbols.GUARD_KNOWN_EVENTS]: object
 
   /**
    * A unique name for the guard driver
    */
-  driverName: 'jwt' = 'jwt'
+  driverName = 'jwt'
 
   /**
    * A flag to know if the authentication was an attempt
    * during the current HTTP request
    */
-  authenticationAttempted: boolean = false
+  authenticationAttempted = false
 
   /**
    * A boolean to know if the current request has
    * been authenticated
    */
-  isAuthenticated: boolean = false
+  isAuthenticated = false
 
   /**
    * Reference to the currently authenticated user
@@ -250,6 +254,7 @@ export class JwtGuard<UserProvider extends JwtUserProviderContract<unknown>>
     try {
       await this.authenticate()
       return true
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch(error) {
       return false
     }

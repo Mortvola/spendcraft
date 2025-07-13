@@ -1,4 +1,3 @@
-/* eslint-disable import/no-cycle */
 import {
   BaseModel, belongsTo, column,
 } from '@adonisjs/lucid/orm';
@@ -6,7 +5,7 @@ import Account from '#app/Models/Account';
 import Transaction from '#app/Models/Transaction';
 import type { BelongsTo } from "@adonisjs/lucid/types/relations";
 
-type Location = {
+interface Location {
   address: string | null,
   city: string | null,
   region: string | null,
@@ -15,7 +14,7 @@ type Location = {
   lat: number | null,
   lon: number | null,
   storeNumber: string | null,
-};
+}
 
 class AccountTransaction extends BaseModel {
   @column({ serializeAs: null })
@@ -72,9 +71,7 @@ class AccountTransaction extends BaseModel {
   })
   public location: Location | null;
 
-  public static get Serializer(): string {
-    return 'App/Serializer';
-  }
+  public static readonly Serializer = 'App/Serializer';
 }
 
 export default AccountTransaction;

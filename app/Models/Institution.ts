@@ -1,4 +1,3 @@
-/* eslint-disable import/no-cycle */
 import {
   BaseModel, hasMany,
   column,
@@ -80,12 +79,12 @@ class Institution extends BaseModel {
             acct.balance += addedSum
           }
 
-          // eslint-disable-next-line no-await-in-loop
+           
           // await acct.updateStartingBalance(
           //   budget, fundingPool,
           // );
 
-          // eslint-disable-next-line no-await-in-loop
+           
           await acct.save();
         }
       }
@@ -101,11 +100,12 @@ class Institution extends BaseModel {
   ) {
     let unassignedSum = 0;
 
-    for (let i = 0; i < transactions.length; i += 1) {
-      const transaction: Plaid.Transaction = transactions[i];
+    // for (let i = 0; i < transactions.length; i += 1) {
+    //   const transaction: Plaid.Transaction = transactions[i];
+    for (const transaction of transactions) {
 
       // Find account
-      // eslint-disable-next-line no-await-in-loop
+       
       let acct = accounts.find((a) => a.$attributes.plaidAccountId === transaction.account_id)
 
       // If the account was not found then create it and add it to the array of accounts.
@@ -120,7 +120,7 @@ class Institution extends BaseModel {
           throw new Error('brokerage account type is not supported.')
         }
 
-        // eslint-disable-next-line no-await-in-loop
+         
         acct = await this.related('accounts').firstOrCreate(
           { plaidAccountId: plaidAccount.account_id },
           {
@@ -146,7 +146,7 @@ class Institution extends BaseModel {
       // Only add transactions on or after the starting date.
       // if (DateTime.fromISO(transaction.date) >= acct.startDate) {
 
-      // eslint-disable-next-line no-await-in-loop
+       
       const [amount, unasginedAmount] = await acct.addOrUpdateTransaction(transaction, budget);
 
       if (!transaction.pending && DateTime.fromISO(transaction.date) >= acct.startDate) {
@@ -163,25 +163,25 @@ class Institution extends BaseModel {
     return unassignedSum;
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   private async removeTransactions(
     this: Institution,
     removedTransactions: Plaid.RemovedTransaction[],
     accounts: Account[],
   ) {
-    for (let i = 0; i < removedTransactions.length; i += 1) {
-      const removed = removedTransactions[i];
-
+    // for (let i = 0; i < removedTransactions.length; i += 1) {
+    //   const removed = removedTransactions[i];
+    for (const removed of removedTransactions) {
       const acct = accounts.find((a) => a.plaidAccountId === removed.account_id)
 
       if (acct) {
-        // eslint-disable-next-line no-await-in-loop
+         
         const at = await acct.related('accountTransactions').query()
           .where('providerTransactionId', removed.transaction_id)
           .first();
 
         if (at) {
-          // eslint-disable-next-line no-await-in-loop
+           
           await acct.deleteAccountTransaction(at)
         }
         else {
@@ -220,14 +220,14 @@ class Institution extends BaseModel {
 
       let more = true;
       while (more) {
-        // eslint-disable-next-line no-await-in-loop
+         
         const plaidClient = await app.container.make('plaid')
         const response = await plaidClient.syncTransactions(this, nextCursor);
 
         // If the cursor has change then we received transaction changes.
         if (response.next_cursor !== nextCursor) {
           // Collect the Plaid accounts from the response so we can process them later.
-          // eslint-disable-next-line no-restricted-syntax
+           
           for (const plaidAccount of response.accounts) {
             const index = plaidAccounts.findIndex((pa) => pa.account_id === plaidAccount.account_id);
 
@@ -253,11 +253,11 @@ class Institution extends BaseModel {
           ];
 
           // Process added/modified transactions
-          // eslint-disable-next-line no-await-in-loop
+           
           unassignedSum += await this.addOrUpdateTransactions(budget, transactions, accounts, plaidAccounts);
 
           // Process removed transactions
-          // eslint-disable-next-line no-await-in-loop
+           
           await this.removeTransactions(response.removed, accounts);
         }
 

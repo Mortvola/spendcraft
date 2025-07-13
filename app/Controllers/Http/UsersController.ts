@@ -10,7 +10,7 @@ import app from '@adonisjs/core/services/app';
 import { update } from '#app/validation/Validators/user';
 
 export default class UsersController {
-  // eslint-disable-next-line class-methods-use-this
+   
   public async get({ auth }: HttpContext): Promise<ApiResponse<User>> {
     if (!auth.user) {
       throw new Error('user is not defined');
@@ -21,7 +21,7 @@ export default class UsersController {
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async update({
     request,
     auth: {
@@ -47,7 +47,7 @@ export default class UsersController {
     return user;
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async resendEmailVerification({
     auth: {
       user,
@@ -60,7 +60,7 @@ export default class UsersController {
     user.sendEmailAddressVerification();
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async deletePending({
     auth: {
       user,
@@ -77,7 +77,7 @@ export default class UsersController {
     return user;
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async getConnectedAccounts({
     auth: {
       user,
@@ -92,7 +92,7 @@ export default class UsersController {
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   async getLinkToken({ auth: { user }, response }: HttpContext): Promise<void> {
     if (!user) {
       throw new Error('user is not defined');
@@ -119,7 +119,7 @@ export default class UsersController {
     response.json({ linkToken: linkTokenResponse.link_token });
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   async addApnsToken({ auth: { user }, request, response }: HttpContext): Promise<void> {
     if (!user) {
       throw new Error('user is not defined');
@@ -148,7 +148,7 @@ export default class UsersController {
     response.status(204)
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   async registerWebPush({ auth: { user }, request }: HttpContext): Promise<void> {
     if (!user) {
       throw new Error('user is not defined');
@@ -175,7 +175,7 @@ export default class UsersController {
     })
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   async delete({ auth: { user } }: HttpContext): Promise<void> {
     if (!user) {
       throw new Error('user is not defined');

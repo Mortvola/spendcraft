@@ -1,4 +1,3 @@
-/* eslint-disable import/no-cycle */
 import { DateTime } from 'luxon'
 import {
   BaseModel, column, hasMany
@@ -467,7 +466,7 @@ export default class Budget extends BaseModel {
       .save();
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async getProposedFunding(date: string): Promise<ProposedFundingCategoryProps[]> {
     // Get the first day of the month
     const firstDayOfMonth = DateTime.fromISO(date)
@@ -494,7 +493,7 @@ export default class Budget extends BaseModel {
 
     const proposedCats: ProposedFundingCategoryProps[] = [];
 
-    // eslint-disable-next-line no-restricted-syntax
+     
     for (const cat of cats) {
       const proposedCat: ProposedFundingCategoryProps = {
         categoryId: cat.id,
@@ -549,7 +548,7 @@ export default class Budget extends BaseModel {
         //   monthlyAmount = plannedAmount - cat.amount
 
         //   proposedCat.adjusted = true;
-        // eslint-disable-next-line max-len
+         
         //   proposedCat.adjustedReason = `The funding amount was adjusted from a planned amount of ${plannedAmount} to ${monthlyAmount}.`
         // }
 
@@ -570,7 +569,7 @@ export default class Budget extends BaseModel {
     return proposedCats;
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async syncCategoryBalances(this: Budget): Promise<void> {
     const trx = await db.transaction();
 

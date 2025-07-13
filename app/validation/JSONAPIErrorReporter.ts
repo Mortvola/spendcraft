@@ -9,13 +9,13 @@ export class JSONAPIErrorReporter implements ErrorReporterContract {
    * A flag to know if one or more errors have been
    * reported
    */
-  hasErrors: boolean = false
+  hasErrors = false
 
   /**
    * A collection of errors. Feel free to give accurate types
    * to this property
    */
-  errors: any[] = []
+  errors: unknown[] = []
 
   /**
    * VineJS call the report method
@@ -24,7 +24,7 @@ export class JSONAPIErrorReporter implements ErrorReporterContract {
     message: string,
     rule: string,
     field: FieldContext,
-    meta?: any
+    meta?: unknown
   ) {
     this.hasErrors = true
 

@@ -32,7 +32,7 @@ function removeUndefined<M extends LucidRow, T extends Partial<ModelAttributes<M
 }
 
 class CategoriesController {
-  // eslint-disable-next-line class-methods-use-this
+   
   public async get({
     request,
     auth: { user },
@@ -193,7 +193,7 @@ class CategoriesController {
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async addGroup({
     request,
     auth: {
@@ -230,7 +230,7 @@ class CategoriesController {
     };
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async updateGroup({
     request,
     auth: {
@@ -271,7 +271,7 @@ class CategoriesController {
     };
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async deleteGroup({ request, response, auth: { user } }: HttpContext): Promise<ApiResponse<void> | void> {
     if (!user) {
       throw new Error('user is not defined');
@@ -300,7 +300,7 @@ class CategoriesController {
     response.status(204)
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async addCategory({
     request,
   }: HttpContext): Promise<ApiResponse<Category>> {
@@ -336,7 +336,7 @@ class CategoriesController {
     };
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async updateCategory({
     request,
   }: HttpContext): Promise<ApiResponse<Category>> {
@@ -377,7 +377,7 @@ class CategoriesController {
     };
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async deleteCategory({ request, response, logger }: HttpContext): Promise<ApiResponse<void> | void> {
     const { catId } = request.params();
 
@@ -426,7 +426,7 @@ class CategoriesController {
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async transactions({
     request,
     auth: {
@@ -467,7 +467,7 @@ class CategoriesController {
     };
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async transfer(
     { request, auth: { user }, logger }: HttpContext,
   ): Promise<ApiResponse<{ balances: CategoryBalanceProps[] }>> {
@@ -504,7 +504,7 @@ class CategoriesController {
 
       const { categories, date, type } = requestData;
       let transaction: Transaction;
-      const categeoryDeltas: Map<number, number> = new Map();
+      const categeoryDeltas = new Map<number, number>();
 
       if (tfrId === undefined) {
         transaction = await Transaction // budget.related('transactions')
@@ -540,7 +540,7 @@ class CategoriesController {
           .where('id', tfrId)
           .firstOrFail();
 
-        // eslint-disable-next-line no-restricted-syntax
+         
         for (const transCategory of transaction.categories) {
           const delta = categeoryDeltas.get(transCategory.categoryId) ?? 0;
           categeoryDeltas.set(transCategory.categoryId, -transCategory.amount + delta)
@@ -565,20 +565,20 @@ class CategoriesController {
       // const existingSplits: StrictValues[] = [];
 
       // Insert the category splits
-      // eslint-disable-next-line no-restricted-syntax
+       
       for (const transCategory of categories) {
         const delta = categeoryDeltas.get(transCategory.categoryId) ?? 0;
         categeoryDeltas.set(transCategory.categoryId, transCategory.amount + delta);
       }
 
-      // eslint-disable-next-line no-restricted-syntax
+       
       for (const [categoryId, delta] of categeoryDeltas) {
-        // eslint-disable-next-line no-await-in-loop
+         
         const category = await Category.findOrFail(categoryId, { client: trx });
 
         category.balance += delta;
 
-        // eslint-disable-next-line no-await-in-loop
+         
         await category.save();
 
         result.balances.push({ id: category.id, balance: category.balance });
@@ -599,7 +599,7 @@ class CategoriesController {
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async transferDelete({ request, logger }: HttpContext): Promise<void> {
     const trx = await db.transaction();
 
@@ -610,9 +610,9 @@ class CategoriesController {
 
       const categorySplits = await categoryTransfer.splits(trx);
 
-      // eslint-disable-next-line no-restricted-syntax
+       
       for (const cs of categorySplits) {
-        // eslint-disable-next-line no-await-in-loop
+         
         const category = await Category.find(cs.categoryId, { client: trx });
 
         if (category) {
@@ -620,7 +620,7 @@ class CategoriesController {
 
           category.save();
 
-          // eslint-disable-next-line no-await-in-loop
+           
           await cs.delete();
         }
       }
@@ -636,13 +636,13 @@ class CategoriesController {
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async balances({
     request,
     auth: {
       user,
     },
-  }: HttpContext): Promise<Array<GroupItem>> {
+  }: HttpContext): Promise<GroupItem[]> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -671,7 +671,7 @@ class CategoriesController {
     return null;
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async getBills({
     auth: {
       user,
@@ -694,14 +694,14 @@ class CategoriesController {
         day: 1, hour: 0, minute: 0, second: 0, millisecond: 0,
       })
 
-    // eslint-disable-next-line no-restricted-syntax
+     
     for (const bill of bills) {
       bill.goalDate = CategoriesController.getGoalDate(bill.goalDate, bill.recurrence)
 
-      // eslint-disable-next-line no-await-in-loop
+       
       const debits = await budget
         .related('transactions').query()
-        // eslint-disable-next-line max-len
+         
         .joinRaw('cross join lateral jsonb_to_recordset(transactions.categories) as "transCats"("categoryId" int, amount decimal)')
         .where('transCats.categoryId', bill.id)
         .where('deleted', false)
@@ -714,7 +714,7 @@ class CategoriesController {
 
     bills.sort((a, b) => (a.goalDate && b.goalDate ? a.goalDate.diff(b.goalDate, 'days').days : 0))
 
-    // eslint-disable-next-line no-restricted-syntax
+     
     // for (const b of bills) {
     //   console.log(`${b.name}, ${b.fundingAmount}, ${b.balance}, ${b.$extras.goalDate.toISODate()}`)
     // }

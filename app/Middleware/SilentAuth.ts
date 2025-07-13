@@ -10,8 +10,8 @@ export default class SilentAuthMiddleware {
   /**
    * Handle request
    */
-  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-  // eslint-disable-next-line class-methods-use-this
+   
+   
   public async handle({ auth }: HttpContext, next: () => Promise<void>): Promise<void> {
     /**
      * Check if user is logged-in or not. If yes, then `ctx.auth.user` will be

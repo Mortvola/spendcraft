@@ -1,4 +1,4 @@
-/* eslint-disable max-classes-per-file */
+ 
 import safeCompare from 'safe-compare'
 import { sha256 } from 'js-sha256';
 import { decodeProtectedHeader, importJWK, jwtVerify } from 'jose';
@@ -17,13 +17,13 @@ import app from '@adonisjs/core/services/app';
 import ItemLoginRequiredNotification from '#app/mails/itemLoginRequiredNotification';
 
 class WebhookEvent {
-  // eslint-disable-next-line camelcase
+   
   webhook_type: string;
 
-  // eslint-disable-next-line camelcase
+   
   webhook_code: string;
 
-  // eslint-disable-next-line camelcase
+   
   item_id: string;
 
   error: Plaid.PlaidError;
@@ -33,10 +33,10 @@ class WebhookItemEvent extends WebhookEvent {
 }
 
 class TransactionEvent extends WebhookEvent {
-  // eslint-disable-next-line camelcase
+   
   removed_transactions: string[];
 
-  // eslint-disable-next-line camelcase
+   
   new_transactions: number;
 }
 
@@ -62,7 +62,7 @@ const isTransactionEvent = (r: unknown): r is TransactionEvent => (
 );
 
 class WebhookController {
-  // eslint-disable-next-line class-methods-use-this
+   
   public async post({ request, response }: HttpContext): Promise<void> {
     const verified = await WebhookController.verify(request);
 
@@ -238,7 +238,7 @@ class WebhookController {
   //   }
   // }
 
-  // eslint-disable-next-line camelcase
+   
   static processTransactionEvent(event: TransactionEvent): void {
     switch (event.webhook_code) {
       case 'SYNC_UPDATES_AVAILABLE':

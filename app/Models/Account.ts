@@ -1,4 +1,3 @@
-/* eslint-disable import/no-cycle */
 import {
   BaseModel, hasMany, column, belongsTo
 } from '@adonisjs/lucid/orm';
@@ -22,7 +21,7 @@ import Statement from './Statement.js';
 import type { HasMany, BelongsTo } from "@adonisjs/lucid/types/relations";
 import { ModelObject } from "@adonisjs/lucid/types/model";
 
-export type AccountSyncResult = {
+export interface AccountSyncResult {
   categories: CategoryBalanceProps[],
   accounts: {
     id: number,
@@ -30,7 +29,7 @@ export type AccountSyncResult = {
     plaidBalance: number | null,
     syncDate: DateTime | null,
   }[],
-};
+}
 
 class Account extends BaseModel {
   @column()
@@ -251,7 +250,7 @@ class Account extends BaseModel {
     return accountTransaction.amount;
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   private async autoAssign(
     this: Account,
     budget: Budget,
@@ -288,7 +287,7 @@ class Account extends BaseModel {
       transaction.categories = [];
       let transactionAmount = accountTransaction.amount;
 
-      // eslint-disable-next-line no-restricted-syntax
+       
       for (let i = 0; i < categories.length; i += 1) {
         const cat = categories[i]
 
@@ -315,13 +314,13 @@ class Account extends BaseModel {
         transaction.categories.push({ categoryId: cat.categoryId, amount: amount / 100.0 })
 
         // Update the category balance
-        // eslint-disable-next-line no-await-in-loop
+         
         const category = await Category.findOrFail(cat.categoryId, { client: this.$trx })
         category.balance += amount / 100.0;
-        // eslint-disable-next-line no-await-in-loop
+         
         await category.save()
 
-        // eslint-disable-next-line no-await-in-loop
+         
         const group = await category.related('group').query().firstOrFail();
 
         if (group.type === GroupType.NoGroup) {
@@ -559,20 +558,20 @@ class Account extends BaseModel {
     this: Account,
     acctTran: AccountTransaction,
   ) {
-    // eslint-disable-next-line no-await-in-loop
+     
     const transaction = await acctTran.related('transaction').query().firstOrFail();
 
     if (!transaction.deleted) {
-    // eslint-disable-next-line no-await-in-loop
+     
       const transCats = transaction.categories;
 
-      // eslint-disable-next-line no-restricted-syntax
+       
       for (const tc of transCats) {
         if (transaction.date >= this.startDate) {
-        // eslint-disable-next-line no-await-in-loop
+         
           const category = await Category.findOrFail(tc.categoryId, { client: transaction.$trx });
           category.balance -= tc.amount;
-          // eslint-disable-next-line no-await-in-loop
+           
           await category.save();
         }
       }
@@ -581,10 +580,10 @@ class Account extends BaseModel {
         this.$extras.addedSum = (this.$extras.addedSum ?? 0) + acctTran.amount;
       }
 
-      // eslint-disable-next-line no-await-in-loop
+       
       // await acctTran.delete();
 
-      // eslint-disable-next-line no-await-in-loop
+       
       // await transaction.delete();
 
       transaction.merge({
@@ -600,7 +599,7 @@ class Account extends BaseModel {
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   // public async applyTransactions(
   //   this: Account,
   //   budget: Budget,
@@ -710,7 +709,7 @@ class Account extends BaseModel {
 
       const unassigned = await budget.getUnassignedCategory({ client: this.$trx });
 
-      // eslint-disable-next-line no-restricted-syntax
+       
       for (const message of messages) {
         if (/CREDITCARDMSGSRSV.*/.test(message)) {
           const ccStmtTrnResponse = parsed.OFX[message].CCSTMTTRNRS;
@@ -726,7 +725,7 @@ class Account extends BaseModel {
 
           balance = ledgerBalance.BALAMT;
 
-          // eslint-disable-next-line no-restricted-syntax
+           
           for (const t of transactions) {
             const transactionData: {
               date: DateTime,
@@ -741,13 +740,13 @@ class Account extends BaseModel {
             }
 
             // First check to see if the transaction is present. If it is then don't insert it.
-            // eslint-disable-next-line no-await-in-loop
+             
             let acctTrans = await this.related('accountTransactions').query()
               .where('providerTransactionId', transactionData.transactionId)
               .first();
 
             if (acctTrans) {
-              // eslint-disable-next-line no-await-in-loop
+               
               const transaction = await acctTrans.related('transaction').query().firstOrFail();
 
               // The amount to add to the balance is the difference between
@@ -760,7 +759,7 @@ class Account extends BaseModel {
                 amount = -transactionData.amount;
               }
 
-              // eslint-disable-next-line no-await-in-loop
+               
               await transaction
                 .merge({
                   deleted: false,
@@ -768,7 +767,7 @@ class Account extends BaseModel {
                 })
                 .save();
 
-              // eslint-disable-next-line no-await-in-loop
+               
               await acctTrans
                 .merge({
                   transactionId: transaction.id,
@@ -786,7 +785,7 @@ class Account extends BaseModel {
                 throw new Error('database transaction not set');
               }
 
-              // eslint-disable-next-line no-await-in-loop
+               
               const transaction = await new Transaction()
                 .useTransaction(this.$trx)
                 .fill({
@@ -796,7 +795,7 @@ class Account extends BaseModel {
                 })
                 .save();
 
-              // eslint-disable-next-line no-await-in-loop
+               
               acctTrans = await this.related('accountTransactions')
                 .create({
                   transactionId: transaction.id,
@@ -809,7 +808,7 @@ class Account extends BaseModel {
 
               sum += acctTrans.amount;
 
-              // eslint-disable-next-line no-await-in-loop
+               
               await transaction.related('transactionLog')
                 .create({
                   budgetId: transaction.budgetId,

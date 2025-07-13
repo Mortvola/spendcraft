@@ -1,4 +1,3 @@
-/* eslint-disable import/no-cycle */
 import {
   BaseModel, belongsTo, column, hasMany,
 } from '@adonisjs/lucid/orm'
@@ -46,7 +45,7 @@ export default class Loan extends BaseModel {
   @column({ serializeAs: null })
   public categoryId: number;
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async updateBalance(this: Loan): Promise<void> {
     // Iterate through all of the loan transactions and update the
     // principle and interest on each transaction as well as the final balance
@@ -99,7 +98,7 @@ export default class Loan extends BaseModel {
     // await this.save();
   }
 
-  // eslint-disable-next-line class-methods-use-this
+   
   public async getProps(this: Loan): Promise<LoanTransactionsProps> {
     const result: LoanTransactionsProps = {
       balance: 0,
