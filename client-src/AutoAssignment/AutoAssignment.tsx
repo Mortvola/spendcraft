@@ -1,6 +1,7 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
 import { AutoAssignmentInterface } from '../State/Types';
+import styles from './AutoAssignment.module.scss';
 
 type PropsType = {
   autoAssignment: AutoAssignmentInterface,
@@ -16,7 +17,7 @@ const AutoAssignment: React.FC<PropsType> = observer(({
   }
 
   return (
-    <div onClick={handleClick}>{autoAssignment.name}</div>
+    <div className={styles.layout} onClick={handleClick}>{autoAssignment.name}</div>
   )
 })
 
