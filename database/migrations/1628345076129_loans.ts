@@ -11,6 +11,7 @@ export default class Loans extends BaseSchema {
 
   public async down () {
     this.schema.table(this.tableName, (_table) => {
+      //
     })
   }
 }

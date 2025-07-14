@@ -24,6 +24,7 @@ import { LucidRow, ModelAttributes } from '@adonisjs/lucid/types/model';
 function removeUndefined<M extends LucidRow, T extends Partial<ModelAttributes<M>>>(obj: T) {
   for (const key in obj) {
     if (obj[key] === undefined) {
+      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
       delete obj[key]
     }
   }

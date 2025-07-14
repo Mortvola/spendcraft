@@ -33,7 +33,7 @@ export default class extends BaseSchema {
       }
       catch (error) {
         console.log(error);
-        trx.rollback
+        trx.rollback()
       }
     })
   }

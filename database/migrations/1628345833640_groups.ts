@@ -11,6 +11,7 @@ export default class Groups extends BaseSchema {
 
   public async down () {
     this.schema.table(this.tableName, (_table) => {
+      //
     })
   }
 }

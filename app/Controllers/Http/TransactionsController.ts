@@ -283,9 +283,9 @@ export default class TransactionsController {
 
         changes = getChanges(acctTrans.$attributes, accountTransactionChanges, changes);
 
-         
         for (const property of Object.getOwnPropertyNames(accountTransactionChanges)) {
           if (accountTransactionChanges[property] === undefined) {
+            // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
             delete accountTransactionChanges[property]
           }
         }
@@ -326,6 +326,7 @@ export default class TransactionsController {
        
       for (const property of Object.getOwnPropertyNames(transactionChanges)) {
         if (transactionChanges[property] === undefined) {
+          // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
           delete transactionChanges[property]
         }
       }
