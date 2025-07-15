@@ -2,7 +2,6 @@ import { observer } from 'mobx-react-lite';
 import React from 'react';
 import { BaseTransactionInterface, TransactionContainerInterface, TransactionInterface } from '../State/Types';
 import Transaction from './Transaction';
-import styles from './PendingRegister.module.scss';
 import transactionStyles from './Transactions.module.scss'
 import RegisterTransactions from './RegisterTransactions';
 import RegisterTitles from './RegisterTitles';
@@ -34,7 +33,7 @@ const PendingRegister: React.FC<PropsType> = observer(({
 
   if (trxContainer && trxContainer.transactions.length > 0) {
     return (
-      <div className={`${styles.pending} ${transactionStyles.pending} ${className} window`}>
+      <div className={`register ${transactionStyles.pending} ${className} window`}>
         <RegisterTransactions trxContainer={trxContainer} titles={<RegisterTitles />}>
           {
             trxContainer.transactions.map((transaction) => (

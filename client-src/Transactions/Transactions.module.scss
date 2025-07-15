@@ -248,13 +248,17 @@ $balance-width: 8rem;
   }
 }
 
-@media (max-width: breakpoints.$side-by-side) {
+@container transactions (width < #{breakpoints.$detail-view-min-width}) {
   $icon-width: 0;
   $amount-width: 6rem;
   $date-width: 4rem;
 
   .transaction {
     margin-bottom: 1rem;
+  }
+
+  .register-title {
+    display: none;
   }
 
   .transaction,

@@ -175,6 +175,9 @@ body {
   grid-template-rows: max-content 1fr;
   user-select: none;
   -webkit-user-select: none;
+
+  container-name: transactions;
+  container-type: inline-size;
 }
 
 @media (max-width: breakpoints.$side-by-side) {
