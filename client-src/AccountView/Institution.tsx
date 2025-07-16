@@ -140,20 +140,21 @@ const Institution: React.FC<PropsType> = observer(({
                 : false;
 
               return (
-                <div key={account.id}>
+                <>
                   {
                     index !== 0
-                      ? <div className={styles.separator} />
+                      ? <div key={`${account.id}-sep`} className={styles.separator} />
                       : null
                   }
                   <Account
+                    key={account.id}
                     account={account}
                     onAccountSelected={onAccountSelected}
                     onAccountStateChange={onAccountStateChange}
                     selected={selected}
                     showAccountDialog={handleEditAccount}
                   />
-                </div>
+                </>
               );
             })
         }

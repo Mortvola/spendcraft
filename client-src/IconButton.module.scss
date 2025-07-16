@@ -17,7 +17,9 @@
 
   color: var(--icon-button-color);
 
-  &:hover {
-    color: var(--icon-button-hover-color);
+  @media (hover: hover) {
+    &:hover {
+      color: var(--icon-button-hover-color);
+    }
   }
 }

@@ -24,16 +24,15 @@
     padding: 0;
   }  
 
-  .account:not(.selected):hover {
-    border: 4px #f5c4a4 solid;
-    padding: 0;
+  @media (hover: hover) {
+    .account:not(.selected):hover {
+      border: 4px #f5c4a4 solid;
+      padding: 0;
+    }
   }
 
   .account.selected:not(:hover):last-child,
-  .account:not(.selected):hover:last-child {
-    border-radius: 0 0 8px 8px;
-  }
-
+  .account.selected:hover:last-child,
   .account:not(.selected):hover:last-child {
     border-radius: 0 0 8px 8px;
   }

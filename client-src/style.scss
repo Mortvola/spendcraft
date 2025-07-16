@@ -156,9 +156,11 @@ body {
   color: rgba(255, 255, 255, 0.7);
 }
 
-.add-group:hover {
-  color: white;
-  cursor: pointer;
+@media (hover: hover) {
+  .add-group:hover {
+    color: white;
+    cursor: pointer;
+  }
 }
 
 .add-acct {
@@ -166,8 +168,10 @@ body {
   color: rgba(255, 255, 255, 0.7);
 }
 
-.add-acct:hover {
-  color: white;
+@media (hover: hover) {
+  .add-acct:hover {
+    color: white;
+  }
 }
 
 .register {
@@ -247,13 +251,17 @@ body {
   }
 }
 
-@media (min-width: breakpoints.$side-by-side) {
+@media (hover: hover) {
   .cat-list-cat {
     &:not(.selected):hover {
       background-color: var(--hover-background);
       color: var(--hover-color);
     }
-  
+  }
+}
+
+@media (min-width: breakpoints.$side-by-side) {
+  .cat-list-cat {
     &.selected {
       background-color: var(--selection-background);
       color: var(--selection-color);

@@ -36,8 +36,10 @@
   -webkit-user-select: none;
 }
 
-.months > div:hover {
-  background-color: whitesmoke;
+@media (hover: hover) {
+  .months > div:hover {
+    background-color: whitesmoke;
+  }
 }
 
 .year {

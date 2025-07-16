@@ -3,8 +3,10 @@
   padding-right: 0.5rem;
 }
 
-.report-list-item:not(:global(.selected)):hover {
-  cursor: pointer;
-  background-color: var(--hover-background);
-  color: var(--hover-color);
+@media (hover: hover) {
+  .report-list-item:not(:global(.selected)):hover {
+    cursor: pointer;
+    background-color: var(--hover-background);
+    color: var(--hover-color);
+  }
 }

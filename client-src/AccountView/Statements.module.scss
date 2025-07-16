@@ -36,9 +36,11 @@
     background-color: var(--selection-background);
   }
 
-  & >div:not(.selected):hover {
-    background-color: var(--hover-background);
-    color: var(--hover-color);
+  @media (hover: hover) {
+    & >div:not(.selected):hover {
+      background-color: var(--hover-background);
+      color: var(--hover-color);
+    }
   }
 }
 

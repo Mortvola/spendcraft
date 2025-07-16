@@ -17,14 +17,18 @@
   &:global(.active) {
     color: var(--tabview-active-color);
 
-    &:hover {
-      color: var(--tabview-active-color);
-    }  
+    @media (hover: hover) {
+      &:hover {
+        color: var(--tabview-active-color);
+      }  
+    }
   }  
 
-  &:hover {
-    color: var(--tabview-hover-color);
-  }  
+  @media (hover: hover) {
+    &:hover {
+      color: var(--tabview-hover-color);
+    }  
+  }
 
   i {
     font-size: 1.7rem;
