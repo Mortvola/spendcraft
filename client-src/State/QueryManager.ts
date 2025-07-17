@@ -17,12 +17,16 @@ class QueryManager<T> implements QueryManagerInterface {
     qs?: string,
   ): Promise<void> {
     if (index === 0) {
-      this.fetchComplete = false;
+      runInAction(() => {
+        this.fetchComplete = false;
+      })
     }
 
     if (this.state === 'IDLE' && !this.fetchComplete) {
       try {
-        this.state = index === 0 ? 'LOADING' : 'LOADING-MORE';
+        runInAction(() => {
+          this.state = index === 0 ? 'LOADING' : 'LOADING-MORE';
+        })
 
         const limit = 30;
         let newUrl: string;
@@ -57,7 +61,9 @@ class QueryManager<T> implements QueryManagerInterface {
         }
       }
       catch (error) {
-        this.state = 'IDLE';
+        runInAction(() => {
+          this.state = 'IDLE';
+        })
         console.log(`fetch failed: ${error}`)
       }
     }

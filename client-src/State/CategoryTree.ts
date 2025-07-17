@@ -175,155 +175,157 @@ class CategoryTree implements CategoryTreeInterface {
       '/api/v1/groups',
     );
 
-    const { data } = await response.body();
+    if (response.ok) {
+      const { data } = await response.body();
 
-    if (data) {
-      runInAction(() => {
-        // Find the 'No Group' group first
-        const noGroup = data.groups.find((g) => g.type === GroupType.NoGroup)
-        const systemGroup = data.groups.find((g) => g.type === GroupType.System)
+      if (data) {
+        runInAction(() => {
+          // Find the 'No Group' group first
+          const noGroup = data.groups.find((g) => g.type === GroupType.NoGroup)
+          const systemGroup = data.groups.find((g) => g.type === GroupType.System)
 
-        if (noGroup === undefined) {
-          throw new Error('No Group group not found')
-        }
+          if (noGroup === undefined) {
+            throw new Error('No Group group not found')
+          }
 
-        if (systemGroup === undefined) {
-          throw new Error('System group not found')
-        }
+          if (systemGroup === undefined) {
+            throw new Error('System group not found')
+          }
 
-        this.systemIds.systemGroupId = systemGroup.id;
+          this.systemIds.systemGroupId = systemGroup.id;
 
-        this.budget = new Budget(noGroup, this.store)
+          this.budget = new Budget(noGroup, this.store)
 
-        this.subcategories = [];
+          this.subcategories = [];
 
-        interface StackEntry {
-          props: GroupProps | CategoryProps,
-          parent: Group | null
-        }
+          interface StackEntry {
+            props: GroupProps | CategoryProps,
+            parent: Group | null
+          }
 
-        let stack: StackEntry[] = data.groups
-          .filter((g) => (
-            (g.parentGroupId === null || g.parentGroupId === noGroup.id) && g.type !== GroupType.NoGroup
-          ))
-          .map((g) => ({
-            props: g,
-            parent: this.budget,
-          }))
-
-        // Push onto the stack any categories that are in the No Group group.
-        stack.push(
-          ...data.categories
-            .filter((c) => c.groupId === noGroup.id)
-            .map((c) => ({
-              props: c,
+          let stack: StackEntry[] = data.groups
+            .filter((g) => (
+              (g.parentGroupId === null || g.parentGroupId === noGroup.id) && g.type !== GroupType.NoGroup
+            ))
+            .map((g) => ({
+              props: g,
               parent: this.budget,
-            })),
-        )
+            }))
 
-        // Push onto the stack any categories that are in the System group.
-        stack.push(
-          ...data.categories
-            .filter((c) => c.groupId === systemGroup.id)
-            .map((c) => ({
-              props: c,
-              parent: this.budget,
-            })),
-        )
+          // Push onto the stack any categories that are in the No Group group.
+          stack.push(
+            ...data.categories
+              .filter((c) => c.groupId === noGroup.id)
+              .map((c) => ({
+                props: c,
+                parent: this.budget,
+              })),
+          )
 
-        while (stack.length > 0) {
-          const { props, parent } = stack[0]
-          stack = stack.slice(1);
+          // Push onto the stack any categories that are in the System group.
+          stack.push(
+            ...data.categories
+              .filter((c) => c.groupId === systemGroup.id)
+              .map((c) => ({
+                props: c,
+                parent: this.budget,
+              })),
+          )
 
-          let node: Group | Category | undefined
+          while (stack.length > 0) {
+            const { props, parent } = stack[0]
+            stack = stack.slice(1);
 
-          if (isCategoryProps(props)) {
-            node = new Category(props, this.store)
+            let node: Group | Category | undefined
 
-            switch (props.type) {
-              case CategoryType.Unassigned:
-                this.unassignedCat = node;
-                node = undefined
-                break;
+            if (isCategoryProps(props)) {
+              node = new Category(props, this.store)
 
-              case CategoryType.FundingPool:
-                this.budget.fundingPoolCat = node;
-                this.budget.fundingPoolCat.group = this.budget;
+              switch (props.type) {
+                case CategoryType.Unassigned:
+                  this.unassignedCat = node;
+                  node = undefined
+                  break;
 
-                node = undefined
-                break;
+                case CategoryType.FundingPool:
+                  this.budget.fundingPoolCat = node;
+                  this.budget.fundingPoolCat.group = this.budget;
 
-              case CategoryType.AccountTransfer:
-                this.accountTransferCat = node;
-                node = undefined
-                break;
+                  node = undefined
+                  break;
 
-                // case CategoryType.Bill:
-                //   this.subcategories.push(node)
-                //   node = undefined
-                //   break;
+                case CategoryType.AccountTransfer:
+                  this.accountTransferCat = node;
+                  node = undefined
+                  break;
 
-              default:
-                break;
+                  // case CategoryType.Bill:
+                  //   this.subcategories.push(node)
+                  //   node = undefined
+                  //   break;
+
+                default:
+                  break;
+              }
             }
-          }
-          else if (props.type !== GroupType.System) {
-            node = new Group(props, this.store);
+            else if (props.type !== GroupType.System) {
+              node = new Group(props, this.store);
 
-            stack.push(
-              ...data.groups
-                .filter((g) => g.parentGroupId === node?.id)
-                .map((g) => ({
-                  props: g,
-                  parent: node as Group,
-                })),
-              ...data.categories
-                .filter((c) => c.groupId === node?.id)
-                .map((c) => ({
-                  props: c,
-                  parent: node as Group,
-                })),
-            )
-          }
-
-          if (node) {
-            if (!parent) {
-              throw new Error('parent not set')
+              stack.push(
+                ...data.groups
+                  .filter((g) => g.parentGroupId === node?.id)
+                  .map((g) => ({
+                    props: g,
+                    parent: node as Group,
+                  })),
+                ...data.categories
+                  .filter((c) => c.groupId === node?.id)
+                  .map((c) => ({
+                    props: c,
+                    parent: node as Group,
+                  })),
+              )
             }
 
-            node.group = parent;
-            parent.children.push(node)
-            parent.children.sort((a, b) => a.name.localeCompare(b.name));
+            if (node) {
+              if (!parent) {
+                throw new Error('parent not set')
+              }
+
+              node.group = parent;
+              parent.children.push(node)
+              parent.children.sort((a, b) => a.name.localeCompare(b.name));
+            }
           }
-        }
 
-        // Assign identified subcategories to their categories.
-        // Note: a subcategory can be assigned to multiple categories.
-         
-        // for (const subcategory of this.subcategories) {
-        //   if (subcategory.fundingCategories.length === 0) {
-        //     this.budget.fundingPoolCat?.subcategories.push(subcategory);
-        //   }
-        //   else {
-        //     // eslint-disable-next-line no-restricted-syntax
-        //     for (const fundingCategory of subcategory.fundingCategories) {
-        //       const parentCategory = this.getCategory(fundingCategory.categoryId)
+          // Assign identified subcategories to their categories.
+          // Note: a subcategory can be assigned to multiple categories.
+          
+          // for (const subcategory of this.subcategories) {
+          //   if (subcategory.fundingCategories.length === 0) {
+          //     this.budget.fundingPoolCat?.subcategories.push(subcategory);
+          //   }
+          //   else {
+          //     // eslint-disable-next-line no-restricted-syntax
+          //     for (const fundingCategory of subcategory.fundingCategories) {
+          //       const parentCategory = this.getCategory(fundingCategory.categoryId)
 
-        //       if (parentCategory) {
-        //         parentCategory.subcategories.push(subcategory)
-        //       }
-        //     }
-        //   }
-        // }
+          //       if (parentCategory) {
+          //         parentCategory.subcategories.push(subcategory)
+          //       }
+          //     }
+          //   }
+          // }
 
-        this.budget.children.sort((a, b) => a.name.localeCompare(b.name));
+          this.budget.children.sort((a, b) => a.name.localeCompare(b.name));
 
-        this.initialized = true;
+          this.initialized = true;
 
-        if (this.store.uiState.selectedCategory === null) {
-          this.store.uiState.selectedCategory = this.unassignedCat;
-        }
-      });
+          if (this.store.uiState.selectedCategory === null) {
+            this.store.uiState.selectedCategory = this.unassignedCat;
+          }
+        });
+      }
     }
   }
 

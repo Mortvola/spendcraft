@@ -140,21 +140,20 @@ const Institution: React.FC<PropsType> = observer(({
                 : false;
 
               return (
-                <>
+                <React.Fragment key={account.id}>
                   {
                     index !== 0
-                      ? <div key={`${account.id}-sep`} className={styles.separator} />
+                      ? <div className={styles.separator} />
                       : null
                   }
                   <Account
-                    key={account.id}
                     account={account}
                     onAccountSelected={onAccountSelected}
                     onAccountStateChange={onAccountStateChange}
                     selected={selected}
                     showAccountDialog={handleEditAccount}
                   />
-                </>
+                </React.Fragment>
               );
             })
         }

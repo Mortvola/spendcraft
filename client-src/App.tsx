@@ -3,7 +3,8 @@ import { createRoot } from 'react-dom/client';
 import { observer } from 'mobx-react-lite';
 import 'regenerator-runtime';
 import {
-  BrowserRouter, Routes, Route, Outlet, useLocation, useNavigate,
+  BrowserRouter, Routes, Route, Outlet,
+  // useLocation, useNavigate,
 } from 'react-router';
 import Http, { ServerError, serverError } from '@mortvola/http';
 import '@mortvola/usemodal/dist/main.css';
@@ -42,29 +43,14 @@ import OverviewView from './Overview/OverviewView';
 const App: React.FC = observer(() => {
   const error = useContext(ServerError);
   const stores = useStores();
-  const location = useLocation();
-  const navigate = useNavigate();
 
   Http.unauthorizedHandler = () => {
-    if (location.pathname !== '/signin') {
-      stores.refresh();
-      navigate('/signin');
+    if (stores.user.authenticated) {
+      runInAction(() => [
+        stores.user.authenticated = false
+      ])
     }
   };
-
-  if (Http.refreshToken) {
-    runInAction(() => {
-      stores.user.authenticated = true;
-
-      if (!stores.initialized) {
-        stores.user.load();
-        stores.categoryTree.load();
-        stores.accounts.load();
-
-        stores.initialized = true
-      }
-    });
-  }
 
   if (error.message) {
     return (

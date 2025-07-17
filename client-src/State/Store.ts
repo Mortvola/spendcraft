@@ -46,7 +46,7 @@ class Store implements StoreInterface {
 
   overview: Overview;
 
-  initialized = false;
+  // initialized = false;
 
   constructor() {
     this.user = new User(this);
@@ -66,7 +66,7 @@ class Store implements StoreInterface {
   }
 
   refresh() {
-    this.initialized = false;
+    // this.initialized = false;
 
     this.user = new User(this);
     this.categoryTree = new CategoryTree(this);

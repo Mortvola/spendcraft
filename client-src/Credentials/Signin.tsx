@@ -7,15 +7,19 @@ import Http from '@mortvola/http';
 import {
   FormError, setFormErrors, FormField, SubmitButton,
 } from '@mortvola/forms';
-import { useNavigate } from 'react-router';
+import { useNavigate, useLocation } from 'react-router';
 import styles from './Signin.module.scss';
 import { isErrorResponse } from '../../common/ResponseTypes';
+import { runInAction } from 'mobx';
+import { useStores } from '../State/Store';
 
 const Signin: React.FC = () => {
+  const { user, categoryTree } = useStores()
   const tiny = responsive.useMediaQuery({ query: '(max-width: 350px)' });
   const small = responsive.useMediaQuery({ query: '(max-width: 600px)' });
   const medium = responsive.useMediaQuery({ query: '(max-width: 1224px)' });
   const navigate = useNavigate();
+  const location = useLocation();
 
   interface FormValues {
     username: string,
@@ -53,7 +57,15 @@ const Signin: React.FC = () => {
 
       Http.setTokens(data.access, data.refresh);
 
-      navigate('/home');
+      runInAction(() => {
+        user.authenticated = true;
+        user.load()
+        categoryTree.load()
+      })
+
+      if (location.pathname === '/signin') {
+        navigate('/home');
+      }
     }
     else {
       const body = await response.body();

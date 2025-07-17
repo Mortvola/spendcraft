@@ -1,7 +1,7 @@
 import { observer } from 'mobx-react-lite';
 import React from 'react';
-import { Navigate, useLocation } from 'react-router';
 import { useStores } from './State/Store';
+import Signin from './Credentials/Signin';
 
 interface PropsType {
   children: React.ReactNode,
@@ -9,10 +9,11 @@ interface PropsType {
 
 const RequireAuth: React.FC<PropsType> = observer(({ children }) => {
   const store = useStores();
-  const location = useLocation();
 
   if (!store.user.authenticated) {
-    return <Navigate to="/signin" state={{ from: location }} replace />;
+    return (
+      <Signin />
+    )
   }
 
   return (
