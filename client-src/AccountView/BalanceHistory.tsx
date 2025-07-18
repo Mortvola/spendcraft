@@ -54,7 +54,7 @@ const BalanceHistory: React.FC = observer(() => {
   }
 
   return (
-    <div className={`${styles.main} window1`}>
+    <div className={`${styles.main} ${selectedAccount?.tracking === 'Balances' ? styles.history : ''} window1`}>
       <div className="chart-wrapper window ">
         <Chart
           chartType="LineChart"
@@ -69,16 +69,21 @@ const BalanceHistory: React.FC = observer(() => {
           }}
         />
       </div>
-      <div className="window">
-        <div className={styles.list}>
-          {
-            balances.balances.map((b) => (
-              <Balance key={b.id} balance={b} showBalanceDialog={showDialog} />
-            ))
-          }
-        </div>
-      </div>
-      <BalanceDialog balance={editedBalance} onHide={handleHideDialog} />
+      {
+        selectedAccount?.tracking === 'Balances'
+          ? (
+            <>
+              <div className="window">
+                <div className={styles.list}>
+                  {balances.balances.map((b) => (
+                    <Balance key={b.id} balance={b} showBalanceDialog={showDialog} />
+                  ))}
+                </div>
+              </div><BalanceDialog balance={editedBalance} onHide={handleHideDialog} />
+            </>
+          )
+          : null
+      }
     </div>
   );
 });
