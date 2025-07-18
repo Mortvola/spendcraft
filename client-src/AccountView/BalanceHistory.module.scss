@@ -8,18 +8,15 @@
   &.history {
     grid-template-columns: minmax(0,3fr) minmax(0,1fr);
   }
-}
 
-@media (max-width: breakpoints.$side-by-side) {
-  .main {
-    grid-template-columns: minmax(0,1fr);
-    grid-template-rows: minmax(0,1fr);
-
+  @container account-details (width < #{breakpoints.$account-detail-min-width}) {
     &.history {
+      grid-template-columns: minmax(0,1fr);
       grid-template-rows: minmax(0,3fr) minmax(0,1fr);
     }
   }
 }
+
 
 /* .main :global(.window) {
   padding: 1rem;

@@ -35,6 +35,9 @@
   grid-template-rows: minmax(0, 1fr);
   height: 100%;
   width: 100%;
+
+  container-name: account-details;
+  container-type: inline-size;
 }
 
 .placeholder {
