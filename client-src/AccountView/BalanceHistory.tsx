@@ -6,6 +6,7 @@ import styles from './BalanceHistory.module.scss';
 import Balance from './Balance';
 import { useBalanceDialog } from './BalanceDialog';
 import { BalanceInterface } from '../State/Types';
+import { DateTime } from 'luxon';
 
 const BalanceHistory: React.FC = observer(() => {
   const { balances, uiState: { selectedAccount } } = useStores();
@@ -13,24 +14,33 @@ const BalanceHistory: React.FC = observer(() => {
   const [editedBalance, setEditedBalance] = useState<BalanceInterface | null>(null);
 
   React.useEffect(() => {
-    if (selectedAccount && selectedAccount.tracking === 'Balances') {
+    if (selectedAccount) { //&& selectedAccount.tracking === 'Balances') {
       balances.load(selectedAccount);
     }
   }, [balances, selectedAccount]);
 
-  const data = balances.balances.slice()
-    .sort((a, b) => {
-      if (a.date > b.date) {
-        return 1;
+  let data: [string | null, string | number][] = [];
+
+  const t: { balance: number, date: DateTime }[] = []
+  const b = balances.balances
+
+  if (b.length > 0) {
+    t.push({ balance: b[0].balance, date: b[0].date })
+
+    let d = t[0].date.minus({ days: 1 })
+    for (let i = 1; i < b.length; i += 1) {
+      while (d.toSeconds() > b[i].date.toSeconds()) {
+        t.push({ balance: b[i].balance, date: d })
+        d = d.minus({ day : 1 })
       }
 
-      if (a.date < b.date) {
-        return -1
-      }
+      t.push({ balance: b[i].balance, date: b[i].date })
+      d = b[i].date.minus({ days: 1})
+    }
 
-      return 0
-    })
-    .map((b) => [b.date.toISODate(), b.balance]);
+    data = t.reverse()
+      .map((b) => [b.date.toISODate(), b.balance]);
+  }
 
   data.splice(0, 0, ['date', 'balance']);
 

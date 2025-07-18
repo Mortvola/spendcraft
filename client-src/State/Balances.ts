@@ -28,19 +28,17 @@ class Balances implements BalancesInterface {
     if (account !== this.account) {
       const response = await Http.get(`/api/v1/account/${account.id}/balances`);
 
-      if (!response.ok) {
-        throw new Error('invalid response');
-      }
+        if (response.ok) {
+          const body = await response.body();
 
-      const body = await response.body();
+          if (isBalancesResponse(body)) {
+            runInAction(() => {
+              this.balances = body.map((b) => new Balance(this, b));
+            });
+          }
 
-      if (isBalancesResponse(body)) {
-        runInAction(() => {
-          this.balances = body.map((b) => new Balance(this, b));
-        });
-      }
-
-      this.account = account;
+          this.account = account;
+        }
     }
   }
 

@@ -78,12 +78,63 @@ export default class AccountsController {
     };
   }
 
-  public async balances({ request }: HttpContext): Promise<BalanceHistory[]> {
+  public async balances({ request }: HttpContext): Promise<BalanceHistory[] | { date: string, balance: number}[]> {
     const accountId = parseInt(request.params().acctId, 10);
 
-    const balances = await BalanceHistory.query()
-      .where('accountId', accountId)
-      .orderBy('date', 'desc');
+    const account = await Account.findOrFail(accountId)
+
+    let balances: BalanceHistory[] | { date: string, balance : number}[] = [];
+
+    if (account.tracking === 'Balances') {
+      balances = await BalanceHistory.query()
+        .where('accountId', accountId)
+        .orderBy('date', 'desc');
+    }
+    else {
+      // Currently hard coded number of days to display.
+      // TODO: send this as a query parameter.
+      const daysToDisplay = 90
+
+      // Find the most recent transaction so we know where the window starts.
+      const mostRecentTransaction = await Transaction.query()
+        .whereHas('accountTransaction', (query) => {
+          query
+            .where('account_id', account.id)
+        })
+        .orderBy('date', 'desc')
+        .first()
+
+      const date = mostRecentTransaction?.date ?? DateTime.now()
+
+      const startDate = date.minus({ days: daysToDisplay })
+
+      const query = `
+        select
+          to_char(date, 'YYYY-MM-DD') as date,
+          balance - COALESCE(sum(trans_sum) over (partition by id order by id, date desc rows between unbounded preceding and 1 preceding), 0) as balance
+        from (
+          select a.id, a.name, cast(date_trunc('day', date) as date) as date, sum(at.amount) as trans_sum, a.balance
+          from account_transactions at
+          join transactions t on t.id = at.transaction_id
+          join accounts a on a.id = at.account_id
+          where
+            a.id = ${account.id}
+            and t.date >= '${startDate.toISODate()}'
+            and t.type in (0, 1, 5)
+            and at.pending = false
+            and t.deleted = false
+          group by t.type, cast(date_trunc('day', date) as date), a.id
+        ) as daily
+        order by date desc
+      `
+
+      const results = await db.rawQuery(query) as { rows: { date: string, balance: string}[] }
+
+      balances = results.rows.map((result) => ({
+        date: result.date,
+        balance: parseFloat(result.balance),
+      }))
+    }
 
     return balances;
   }
