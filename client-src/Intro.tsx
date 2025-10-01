@@ -11,7 +11,7 @@ const Intro: React.FC = () => {
   const medium = responsive.useMediaQuery({ query: '(max-width: 1224px)' });
 
   const handleSignupClick = () => {
-    navigate('/signup');
+    // navigate('/signup');
   }
 
   const handleSigninClick = () => {

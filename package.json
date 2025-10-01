@@ -3,7 +3,6 @@
   "version": "4.1.0",
   "adonis-version": "4.1.0",
   "description": "The fullstack application boilerplate for Adonisjs",
-  "main": "index.js",
   "scripts": {
     "start": "node ace serve",
     "server-build": "NODE_ENV=production node ace build",
