@@ -327,8 +327,10 @@ body {
   color: red;
 }
 
-.category-select-item:not(.selected):hover {
-  background-color: var(--hover-background);
+@media (hover: hover) {
+  .category-select-item:not(.selected):hover {
+    background-color: var(--hover-background);
+  }
 }
 
 .category-select-item.selected {
