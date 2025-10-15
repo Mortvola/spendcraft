@@ -193,6 +193,7 @@ router.group(() => {
   
       router.group(() => {
         router.post('', [InstitutionController, 'add']);
+        router.patch('/:instId', [InstitutionController, 'updateOffline']);
         router.post('/:instId', [InstitutionController, 'update']);
         router.get('/:instId/info', [InstitutionController, 'info']);
         router.get('/:instId/accounts', [InstitutionController, 'get']);

@@ -162,6 +162,19 @@ class Institution implements InstitutionInterface {
     return null;
   }
 
+  async updateOfflineInstitution (name: string): Promise<void> {
+    const response = await Http.patch(`/api/v1/institution/${this.id}`, {
+      name,
+    });
+
+    if (response.ok) {
+      runInAction(() => {
+        this.name = name;
+      });
+    }
+  }
+
+
   insertAccount(account: Account): void {
     const index = this.accounts.findIndex(
       (acct) => account.name.localeCompare(acct.name) < 0,

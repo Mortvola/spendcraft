@@ -18,6 +18,7 @@ import { Exception } from '@adonisjs/core/exceptions';
 import * as Plaid from 'plaid';
 import env from '#start/env'
 import app from '@adonisjs/core/services/app';
+import { update } from '#validators/institution';
 
 class InstitutionController {
    
@@ -267,6 +268,43 @@ class InstitutionController {
         syncDate: institution.syncDate?.toISO() ?? null,
         accounts: accountsResponse.accounts,
       };
+    }
+    catch (error) {
+      logger.error(error);
+      await trx.rollback();
+      throw error;
+    }
+  }
+
+  public async updateOffline({
+    request,
+    auth: {
+      user,
+    },
+    logger,
+  }: HttpContext): Promise<{ name: string }> {
+    if (!user) {
+      throw new Error('user is not defined');
+    }
+
+    const requestData = await request.validateUsing(update)
+
+    const trx = await db.transaction();
+
+    try {
+      const institution = await Institution.findOrFail(request.params().instId, { client: trx });
+
+      institution.merge({
+        name: requestData.name,
+      })
+
+      await institution.save();
+
+      await trx.commit();
+    
+      return {
+        name: institution.name,
+      }
     }
     catch (error) {
       logger.error(error);

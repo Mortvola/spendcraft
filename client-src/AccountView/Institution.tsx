@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import {
-  Info, Link, Plus, RefreshCw, Trash2,
+  Info, Link, Plus, RefreshCw, Settings, Trash2,
 } from 'lucide-react';
 import { useAccountsDialog } from './AccountsDialog';
 import { useInstitutionInfoDialog } from './InstitutionInfoDialog';
@@ -12,6 +12,7 @@ import { useDeleteConfirmation } from '../DeleteConfirmation';
 import styles from './Institution.module.scss';
 import { useRelinkDialog } from './RelinkDialog';
 import LucideButton from '../LucideButton';
+import { useOfflineInstitutionDialog } from './OfflineInstitutionDialog';
 
 interface PropsType {
   institution: InstitutionInterface,
@@ -32,6 +33,7 @@ const Institution: React.FC<PropsType> = observer(({
   const [OnlineAccountsDialog, showOnlineAccountsDialog] = useAccountsDialog();
   const [InstitutionInfoDialog, showInstitutionInfoDialog] = useInstitutionInfoDialog();
   const [OfflineAccountDialog, showOfflineAccountDialog] = useOfflineAccountDialog();
+  const [OfflineInstitutionDialog, showOfflineInstitutionDialog] = useOfflineInstitutionDialog();
   const handleRelinkClick = () => {
     institution.relink();
   };
@@ -60,12 +62,12 @@ const Institution: React.FC<PropsType> = observer(({
   }
 
   const handleEditAccount = (account: AccountInterface) => {
+    setEditedAccount(account);
+
     if (institution.plaidInstitutionId === null) {
-      setEditedAccount(account);
       showOfflineAccountDialog();
     }
     else {
-      setEditedAccount(account);
       showOnlineAccountsDialog();
     }
   }
@@ -89,6 +91,15 @@ const Institution: React.FC<PropsType> = observer(({
           <div className={styles.institutionName}>{institution.name}</div>
           <div style={{ marginLeft: '1rem' }}>{syncDate}</div>
           <div style={{ display: 'flex', alignSelf: 'flex-end' }}>
+            {
+              institution.plaidInstitutionId === null
+                ? (
+                  <LucideButton onClick={showOfflineInstitutionDialog}>
+                    <Settings size={16} strokeWidth={2.5} />
+                  </LucideButton>
+                )
+                : null
+            }
             <LucideButton
               className={styles.iconButton}
               rotate={institution.refreshing}
@@ -111,6 +122,7 @@ const Institution: React.FC<PropsType> = observer(({
             }
             <OnlineAccountsDialog account={editedAccount} />
             <OfflineAccountDialog institution={institution} account={editedAccount} onHide={handleDialogHide} />
+            <OfflineInstitutionDialog institution={institution} onHide={handleDialogHide} />
             <DeleteConfirmation />
             {
               institution.plaidInstitutionId !== null

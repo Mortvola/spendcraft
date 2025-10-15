@@ -340,6 +340,8 @@ export interface InstitutionInterface {
 
   update(): Promise<InstitutionInterface | null>;
 
+  updateOfflineInstitution(name: string): Promise<void>;
+
   addOnlineAccounts(
     accounts: UnlinkedAccountProps[],
     startDate: string,
