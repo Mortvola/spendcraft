@@ -10,11 +10,11 @@ import {
   UpdateTransactionResponse,
 } from '#common/ResponseTypes';
 import Account from '#app/Models/Account';
-import { schema, rules } from '@adonisjs/validator';
 import TransactionLog from '#app/Models/TransactionLog';
 import Statement from '#app/Models/Statement';
 import transactionFields, { getChanges } from './transactionFields.js';
 import { ModelObject } from "@adonisjs/lucid/types/model";
+import { updateTransaction } from '#validators/transaction';
 
 export default class TransactionsController {
    
@@ -76,24 +76,9 @@ export default class TransactionsController {
     }
 
     const { trxId } = request.params();
-    const requestData = await request.validate({
-      schema: schema.create({
-        name: schema.string.optional([rules.trim()]),
-        amount: schema.number.optional(),
-        principle: schema.number.optional(),
-        date: schema.date.optional(),
-        comment: schema.string.optional([rules.trim()]),
-        version: schema.number(),
-        statementId: schema.number.nullableAndOptional(),
-        categories: schema.array.optional().members(
-          schema.object().members({
-            categoryId: schema.number(),
-            amount: schema.number(),
-            comment: schema.string.optional([rules.trim()]),
-          }),
-        ),
-      }),
-    });
+    const requestData = await request.validateUsing(
+      updateTransaction,
+    );
 
     const trx = await db.transaction();
 

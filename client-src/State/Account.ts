@@ -8,6 +8,7 @@ import {
   AddStatementResponse,
   StatementsResponse,
   StatementProps,
+  isErrorResponse,
 } from '../../common/ResponseTypes';
 import {
   AccountInterface, InstitutionInterface, NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface,
@@ -145,6 +146,12 @@ class Account implements AccountInterface {
         });
 
         return null;
+      }
+    } else {
+      const body = await response.body()
+
+      if (isErrorResponse(body)) {
+        return body.errors;
       }
     }
 

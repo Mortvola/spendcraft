@@ -431,6 +431,13 @@ export interface ErrorProps {
   rule: string;
 }
 
+export const isErrorPropsArray = (r: unknown): r is ErrorProps[] => (
+  Array.isArray(r)
+  && (r[0] as ErrorProps).field !== undefined
+  && (r[0] as ErrorProps).message !== undefined
+  && (r[0] as ErrorProps).rule !== undefined
+)
+
 export interface ErrorResponse {
   errors: ErrorProps[];
 }
@@ -453,6 +460,13 @@ export interface ApiResponse<T> {
   data?: T,
   errors?: ApiError[],
 }
+
+export const isApiErrorArray = (r: unknown): r is ApiError[] => (
+  Array.isArray(r)
+  && (r[0] as ApiError).code !== undefined
+  && (r[0] as ApiError).detail !== undefined
+  && (r[0] as ApiError).source !== undefined
+)
 
 export const isErrorResponse = (r: ErrorResponse | unknown): r is ErrorResponse => (
   (r as ErrorResponse).errors !== undefined

@@ -3,6 +3,7 @@ import {
   Field, FieldProps,
   FormikErrors,
   FormikContextType,
+  FormikHelpers,
 } from 'formik';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import {
@@ -13,7 +14,7 @@ import Amount from '../Amount';
 import { AccountInterface, TransactionCategoryInterface, TransactionInterface } from '../State/Types';
 import AmountInput from '../AmountInput';
 import useMediaQuery from '../MediaQuery';
-import { ApiError, RequestErrorCode, TransactionType } from '../../common/ResponseTypes';
+import { ApiError, ErrorProps, isApiErrorArray, isErrorPropsArray, RequestErrorCode, TransactionType } from '../../common/ResponseTypes';
 import styles from './TransactionDialog.module.scss';
 import PurchaseLocation from './PurchaseLocation';
 
@@ -87,7 +88,7 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
     return errors;
   };
 
-  const handleSubmit = async (values: ValueType) => {
+  const handleSubmit = async (values: ValueType, { setErrors }: FormikHelpers<ValueType>) => {
     const amount = typeof values.amount === 'string' ? parseFloat(values.amount) : values.amount;
     const principle = typeof values.principle === 'string' ? parseFloat(values.principle) : values.principle;
 
@@ -99,7 +100,7 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
       });
     }
 
-    let errors;
+    let errors: ErrorProps[] | ApiError[] | null;
     if (transaction) {
       errors = await transaction.updateTransaction({
         name: values.name,
@@ -134,6 +135,17 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
         if (onReload) {
           onReload();
         }
+      } else if (isErrorPropsArray(errors)) {
+        setFormErrors(setErrors, errors)
+      } else if (isApiErrorArray(errors)) {
+        const errorProps = errors.map((e) => ({
+          // TODO: fix this line so it no longer needs the ''.
+          field: e.source?.pointer ?? '',
+          message: e.detail,
+          rule: e.code,
+        }))
+
+        setFormErrors(setErrors, errorProps)
       }
     }
     else {
