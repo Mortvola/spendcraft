@@ -325,7 +325,7 @@ class CategoriesController {
         balance: 0,
         fundingAmount: requestData.fundingAmount,
         includeFundingTransfers: requestData.type === CategoryType.Bill ? false : requestData.includeFundingTransfers,
-        goalDate: requestData.goalDate ? DateTime.fromJSDate(requestData.goalDate) : undefined,
+        goalDate: requestData.goalDate,
         recurrence: requestData.recurrence,
         useGoal: requestData.useGoal,
         fundingCategories: requestData.fundingCategories,
@@ -366,7 +366,7 @@ class CategoriesController {
       includeFundingTransfers: requestData.includeFundingTransfers,
       hidden: requestData.hidden,
       useGoal: requestData.useGoal,
-      goalDate: requestData.goalDate !== undefined ? DateTime.fromJSDate(requestData.goalDate) : undefined,
+      goalDate: requestData.goalDate,
       recurrence: requestData.recurrence,
       fundingCategories: requestData.fundingCategories,
     }));

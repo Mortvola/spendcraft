@@ -1,5 +1,6 @@
 import { CategoryType } from '#common/ResponseTypes'
 import vine from '@vinejs/vine'
+import { DateTime } from 'luxon'
 
 export const addCategory = vine
   .withMetaData<{ groupId: number }>()
@@ -14,7 +15,7 @@ export const addCategory = vine
       type: vine.enum([CategoryType.Regular, CategoryType.Bill, CategoryType.Goal]).optional(),
       fundingAmount: vine.number().optional(),
       includeFundingTransfers: vine.boolean().optional(),
-      goalDate: vine.date().optional(),
+      goalDate: vine.date().optional().transform((date) => DateTime.fromJSDate(date)),
       recurrence: vine.number().optional(),
       useGoal: vine.boolean(),
       fundingCategories: vine.array(
@@ -68,7 +69,7 @@ export const updateCategory = vine
       }),
       monthlyExpenses: vine.boolean().optional(),
       type: vine.enum([CategoryType.Regular, CategoryType.Bill, CategoryType.Goal] as const).optional(),
-      goalDate: vine.date().optional(),
+      goalDate: vine.date().optional().transform((date) => DateTime.fromJSDate(date)),
       recurrence: vine.number().optional(),
       suspended: vine.boolean().optional(),
       fundingAmount: vine.number().optional(),

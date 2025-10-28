@@ -289,7 +289,7 @@ export default class AccountsController {
         .fill({
           accountId: parseInt(acctId, 10),
           balance: requestData.amount,
-          date: DateTime.fromJSDate(requestData.date),
+          date: requestData.date,
         });
 
       await balance.save();
@@ -366,7 +366,7 @@ export default class AccountsController {
       balance
         .merge({
           balance: requestData.amount,
-          date: DateTime.fromJSDate(requestData.date),
+          date: requestData.date,
         });
 
       await balance.save();
