@@ -2,7 +2,7 @@ import db from '@adonisjs/lucid/services/db';
 import { HttpContext } from '@adonisjs/core/http';
 import Category, { GroupItem } from '#app/Models/Category';
 import CategoryTransfer from '#app/Models/CategoryTransfer';
-import UpdateCategoryTransferValidator from '#app/validation/Validators/UpdateCategoryTransferValidator';
+import { updateCategoryTransfer } from '#validators/categoryTransfer';
 import Transaction from '#app/Models/Transaction';
 import Loan from '#app/Models/Loan';
 import {
@@ -477,7 +477,7 @@ class CategoriesController {
     }
 
     const { tfrId } = request.params();
-    const requestData = await request.validate(UpdateCategoryTransferValidator);
+    const requestData = await request.validateUsing(updateCategoryTransfer);
 
     const trx = await db.transaction();
 

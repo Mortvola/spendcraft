@@ -1,10 +1,10 @@
 import { HttpContext } from '@adonisjs/core/http';
-import { schema } from '@adonisjs/validator';
 import Category from '#app/Models/Category';
 // import FundingPlan from 'App/Models/FundingPlan';
 // import FundingPlanCategory from 'App/Models/FundingPlanCategory';
 // import CategoryHistoryItem from 'App/Models/CategoryHistoryItem';
 import { ApiResponse, FundingPlanDetailsProps, ProposedFundingCategoryProps } from '#common/ResponseTypes';
+import { category } from '#validators/fundingPlan';
 
 class FundingPlanController {
    
@@ -66,14 +66,9 @@ class FundingPlanController {
   }: HttpContext): Promise<Category> {
     const { catId } = request.params();
 
-    const requestData = await request.validate({
-      schema: schema.create({
-        amount: schema.number(),
-        useGoal: schema.boolean.optional(),
-        goalDate: schema.date.optional(),
-        recurrence: schema.number(),
-      }),
-    });
+    const requestData = await request.validateUsing(
+      category
+    );
 
     const item = await Category.updateOrCreate(
       {

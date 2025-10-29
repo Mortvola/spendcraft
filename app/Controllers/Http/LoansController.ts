@@ -1,10 +1,10 @@
 import { HttpContext } from '@adonisjs/core/http';
-import { schema, rules } from '@adonisjs/validator';
 import db from '@adonisjs/lucid/services/db';
 import Category from '#app/Models/Category';
 import Group from '#app/Models/Group';
 import Loan from '#app/Models/Loan';
 import { CategoryType, LoanTransactionsProps, LoanUpdateProps } from '#common/ResponseTypes';
+import { addLoan, updateLoan } from '#validators/loan';
 
 export default class LoansController {
    
@@ -33,16 +33,9 @@ export default class LoansController {
 
     const budget = await user.related('budget').query().firstOrFail();
 
-    const validationSchema = schema.create({
-      name: schema.string(),
-      rate: schema.number(),
-      startDate: schema.date(),
-      amount: schema.number(),
-    });
-
-    const requestData = await request.validate({
-      schema: validationSchema,
-    });
+    const requestData = await request.validateUsing(
+      addLoan
+    );
 
     const trx = await db.transaction();
 
@@ -94,16 +87,9 @@ export default class LoansController {
       throw new Error('user is not defined');
     }
 
-    const validationSchema = schema.create({
-      name: schema.string([rules.trim()]),
-      rate: schema.number(),
-      startDate: schema.date(),
-      startingBalance: schema.number(),
-    });
-
-    const requestData = await request.validate({
-      schema: validationSchema,
-    });
+    const requestData = await request.validateUsing(
+      updateLoan
+    );
 
     const trx = await db.transaction();
 

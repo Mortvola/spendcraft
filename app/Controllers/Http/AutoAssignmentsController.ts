@@ -1,8 +1,8 @@
 import type { HttpContext } from '@adonisjs/core/http'
-import { rules, schema } from '@adonisjs/validator';
 import db from '@adonisjs/lucid/services/db';
 import AutoAssignment from '#app/Models/AutoAssignment';
 import AutoAssignmentCategory from '#app/Models/AutoAssignmentCategory';
+import { addAutoAssignment, updateAutoAssignment } from '#validators/autoAssignment';
 
 export default class AutoAssignmentsController {
    
@@ -52,20 +52,9 @@ export default class AutoAssignmentsController {
       throw new Error('user is not defined');
     }
 
-    const requestData = await request.validate({
-      schema: schema.create({
-        name: schema.string([rules.trim()]),
-        searchStrings: schema.array().members(schema.string()),
-        categories: schema.array().members(
-          schema.object().members({
-            id: schema.number(),
-            categoryId: schema.number(),
-            amount: schema.number(),
-            percentage: schema.boolean(),
-          }),
-        ),
-      }),
-    });
+    const requestData = await request.validateUsing(
+      addAutoAssignment
+    );
 
     const trx = await db.transaction();
 
@@ -116,20 +105,9 @@ export default class AutoAssignmentsController {
     }
 
     const { id } = request.params();
-    const requestData = await request.validate({
-      schema: schema.create({
-        name: schema.string([rules.trim()]),
-        searchStrings: schema.array().members(schema.string()),
-        categories: schema.array().members(
-          schema.object().members({
-            id: schema.number(),
-            categoryId: schema.number(),
-            amount: schema.number(),
-            percentage: schema.boolean(),
-          }),
-        ),
-      }),
-    });
+    const requestData = await request.validateUsing(
+      updateAutoAssignment
+    );
 
     const trx = await db.transaction();
 

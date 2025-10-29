@@ -8,7 +8,6 @@ import {
   AddInstitutionResponse, AddOfflineAccountResponse, AddOnlineAccountsResponse, ApiResponse, CategoryBalanceProps,
   InstitutionProps, InstitutionSyncResponse, TrackingType, UnlinkedAccountProps,
 } from '#common/ResponseTypes';
-import { schema } from '@adonisjs/validator';
 import Transaction from '#app/Models/Transaction';
 import AccountTransaction from '#app/Models/AccountTransaction';
 import { DateTime } from 'luxon';
@@ -18,18 +17,16 @@ import { Exception } from '@adonisjs/core/exceptions';
 import * as Plaid from 'plaid';
 import env from '#start/env'
 import app from '@adonisjs/core/services/app';
-import { update } from '#validators/institution';
+import { addInstitution, addInstitutionCheck, addInstitutionOffline, addOfflineAccount, update } from '#validators/institution';
 
 class InstitutionController {
    
   public async add(context: HttpContext): Promise<ApiResponse<AddInstitutionResponse>> {
     const { request } = context;
 
-    const checkData = await request.validate({
-      schema: schema.create({
-        publicToken: schema.string.optional(),
-      }),
-    });
+    const checkData = await request.validateUsing(
+      addInstitutionCheck
+    );
 
     if (!checkData.publicToken) {
       return this.addOffline(context)
@@ -47,12 +44,9 @@ class InstitutionController {
     }
     const budget = await user.related('budget').query().firstOrFail();
 
-    const requestData = await request.validate({
-      schema: schema.create({
-        publicToken: schema.string(),
-        institutionId: schema.string(),
-      }),
-    });
+    const requestData = await request.validateUsing(
+      addInstitution
+    );
 
     if (!requestData.publicToken) {
       throw new Error('public token is undefined');
@@ -137,27 +131,9 @@ class InstitutionController {
       throw new Error('user is not defined');
     }
 
-    const requestData = await request.validate({
-      schema: schema.create({
-        institution: schema.object().members({
-          name: schema.string(),
-        }),
-        accounts: schema.array().members(
-          schema.object().members({
-            name: schema.string(),
-            balance: schema.number(),
-            type: schema.enum.optional(
-              ['depository', 'credit', 'loan', 'investment', 'other'] as const,
-            ),
-            subtype: schema.string(),
-            tracking: schema.enum(
-              ['None', 'Balances', 'Transactions', 'Uncategorized Transactions'] as const,
-            ),
-          }),
-        ),
-        startDate: schema.date(),
-      }),
-    });
+    const requestData = await request.validateUsing(
+      addInstitutionOffline
+    );
 
     const trx = await db.transaction();
 
@@ -533,17 +509,9 @@ class InstitutionController {
 
     const budget = await user.related('budget').query().firstOrFail();
 
-    const requestData = await request.validate({
-      schema: schema.create({
-        name: schema.string(),
-        balance: schema.number(),
-        type: schema.enum(['depository', 'credit', 'loan', 'investment', 'other'] as const),
-        subtype: schema.string(),
-        tracking: schema.string(),
-        rate: schema.number.optional(),
-        startDate: schema.string(),
-      }),
-    });
+    const requestData = await request.validateUsing(
+      addOfflineAccount
+    );
 
     const trx = await db.transaction();
 

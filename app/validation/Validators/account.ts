@@ -27,3 +27,12 @@ export const updateBalance = vine.compile(
     amount: vine.number(),
   })
 )
+
+export const updateAccount = vine.compile(
+  vine.object({
+    name: vine.string().trim().optional(),
+    closed: vine.boolean().optional(),
+    startDate: vine.date().optional().transform((value) => DateTime.fromJSDate(value)),
+    tracking: vine.string().optional(),
+  }),  
+)

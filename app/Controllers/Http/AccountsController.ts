@@ -1,5 +1,4 @@
 import { HttpContext } from '@adonisjs/core/http';
-import { rules, schema } from '@adonisjs/validator';
 import db from '@adonisjs/lucid/services/db';
 import { Exception } from '@adonisjs/core/exceptions';
 import Account from '#app/Models/Account';
@@ -16,8 +15,10 @@ import {
 import Statement from '#app/Models/Statement';
 import AccountTransaction from '#app/Models/AccountTransaction';
 import transactionFields from './transactionFields.js';
-import { addBalance, updateBalance } from '#app/validation/Validators/account';
+import { addBalance, updateAccount, updateBalance } from '#app/validation/Validators/account';
 import { DateTime } from 'luxon';
+import { addTransaction } from '#validators/transaction';
+import { addStatement, updateStatement } from '#validators/statement';
 
 interface AddedTransaction {
   categories: CategoryBalanceProps[],
@@ -153,22 +154,9 @@ export default class AccountsController {
     const budget = await user.related('budget').query().firstOrFail();
 
     const { acctId } = request.params();
-    const requestData = await request.validate({
-      schema: schema.create({
-        date: schema.date(),
-        name: schema.string(),
-        amount: schema.number(),
-        principle: schema.number.optional(),
-        comment: schema.string.optional(),
-        categories: schema.array().members(
-          schema.object().members({
-            categoryId: schema.number(),
-            amount: schema.number(),
-            comment: schema.string.optional(),
-          }),
-        ),
-      }),
-    });
+    const requestData = await request.validateUsing(
+      addTransaction
+    );
 
     const trx = await db.transaction();
 
@@ -467,14 +455,9 @@ export default class AccountsController {
 
     const budget = await user.related('budget').query().firstOrFail();
 
-    const requestData = await request.validate({
-      schema: schema.create({
-        name: schema.string.optional([rules.trim()]),
-        closed: schema.boolean.optional(),
-        startDate: schema.date.optional(),
-        tracking: schema.string.optional(),
-      }),
-    });
+    const requestData = await request.validateUsing(
+      updateAccount
+    );
 
     const trx = await db.transaction();
 
@@ -611,14 +594,9 @@ export default class AccountsController {
     }
 
     const { acctId } = request.params();
-    const requestData = await request.validate({
-      schema: schema.create({
-        startDate: schema.date(),
-        endDate: schema.date(),
-        startingBalance: schema.number(),
-        endingBalance: schema.number(),
-      }),
-    });
+    const requestData = await request.validateUsing(
+      addStatement,
+    );
 
     const trx = await db.transaction();
 
@@ -671,15 +649,9 @@ export default class AccountsController {
     }
 
     const { statementId } = request.params();
-    const requestData = await request.validate({
-      schema: schema.create({
-        startDate: schema.date.optional(),
-        endDate: schema.date.optional(),
-        startingBalance: schema.number.optional(),
-        endingBalance: schema.number.optional(),
-        reconcile: schema.string.optional(),
-      }),
-    })
+    const requestData = await request.validateUsing(
+      updateStatement
+    )
 
     const trx = await db.transaction();
 

@@ -1,13 +1,12 @@
 import { HttpContext } from '@adonisjs/core/http';
 import { ApiResponse, InstitutionProps } from '#common/ResponseTypes';
 import env from '#start/env'
-import { rules, schema } from '@adonisjs/validator';
 import User from '#app/Models/User';
 import * as Plaid from 'plaid';
 import db from '@adonisjs/lucid/services/db';
 import { Exception } from '@adonisjs/core/exceptions';
 import app from '@adonisjs/core/services/app';
-import { update } from '#app/validation/Validators/user';
+import { addApnsToken, update } from '#app/validation/Validators/user';
 
 export default class UsersController {
    
@@ -125,14 +124,9 @@ export default class UsersController {
       throw new Error('user is not defined');
     }
 
-    const requestData = await request.validate({
-      schema: schema.create({
-        token: schema.string([
-          rules.trim(),
-          rules.minLength(1),
-        ]),
-      }),
-    });
+    const requestData = await request.validateUsing(
+      addApnsToken
+    );
 
     const existingToken = await user.related('apnsTokens')
       .query()
@@ -153,15 +147,6 @@ export default class UsersController {
     if (!user) {
       throw new Error('user is not defined');
     }
-
-    // const requestData = await request.validate({
-    //   schema: schema.create({
-    //     token: schema.string([
-    //       rules.trim(),
-    //       rules.minLength(1),
-    //     ]),
-    //   }),
-    // });
 
     const body = request.raw();
 

@@ -36,3 +36,39 @@ export const registerMessageProvider = new SimpleMessagesProvider({
   'password.regex': 'Passswords must contain at least one lowercase letter, one uppercase letter and one digit',
   'password.confirmed': 'Passwords must match the confirmed password',
 })
+
+export const login = vine.compile(
+  vine.object({
+    username: vine.string().trim(),
+    password: vine.string().trim(),
+  }),
+)
+
+export const refresh = vine.compile(
+  vine.object({
+    data: vine.object({
+      refresh: vine.string(),
+    }),
+  }),
+)
+
+export const logout = vine.compile(
+  vine.object({
+    data: vine.object({
+      refresh: vine.string(),
+    }),
+  }),
+)
+
+export const requestCode = vine.compile(
+  vine.object({
+    email: vine.string().email(),
+  }),
+)
+
+export const verifyCode = vine.compile(
+  vine.object({
+    email: vine.string(),
+    code: vine.string(),
+  }),
+)
