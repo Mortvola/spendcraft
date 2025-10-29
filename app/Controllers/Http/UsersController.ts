@@ -32,10 +32,6 @@ export default class UsersController {
     }
 
     const requestData = await request.validateUsing(update)
-      // messages: {
-      //   'email.email': 'The email address is not valid.',
-      //   'email.unique': 'This email address is already in use.',
-      // },
 
     user.pendingEmail = requestData.email;
 
@@ -124,9 +120,7 @@ export default class UsersController {
       throw new Error('user is not defined');
     }
 
-    const requestData = await request.validateUsing(
-      addApnsToken
-    );
+    const requestData = await request.validateUsing(addApnsToken);
 
     const existingToken = await user.related('apnsTokens')
       .query()

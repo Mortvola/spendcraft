@@ -66,9 +66,7 @@ class FundingPlanController {
   }: HttpContext): Promise<Category> {
     const { catId } = request.params();
 
-    const requestData = await request.validateUsing(
-      category
-    );
+    const requestData = await request.validateUsing(category);
 
     const item = await Category.updateOrCreate(
       {

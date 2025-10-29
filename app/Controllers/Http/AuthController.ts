@@ -5,7 +5,7 @@ import mail from '@adonisjs/mail/services/main';
 import User from '#app/Models/User';
 import { sha256 } from 'js-sha256';
 import { DateTime } from 'luxon';
-import { login, logout, refresh, register, registerMessageProvider, requestCode, updatePassword, verifyCode } from '#app/validation/Validators/auth';
+import { login, logout, refresh, register, requestCode, updatePassword, verifyCode } from '#app/validation/Validators/auth';
 import RequestCodeNotification from '#app/mails/requestCodeNotification';
 import { inject } from '@adonisjs/core';
 import { UserService } from '#services/userService';
@@ -16,12 +16,7 @@ export default class AuthController {
     /**
      * Validate user details
      */
-    const userDetails = await request.validateUsing(
-      register,
-      {
-        messagesProvider: registerMessageProvider,
-      }
-    );
+    const userDetails = await request.validateUsing(register);
 
     await userService.create(userDetails)
   }
@@ -60,13 +55,7 @@ export default class AuthController {
   }
 
   public async login({ auth, request, response }: HttpContext) : Promise<void> {
-    const credentials = await request.validateUsing(
-      login,
-      // messages: {
-      //   'username.required': 'A username is required',
-      //   'password.required': 'A password is required',
-      // },
-    );
+    const credentials = await request.validateUsing(login);
 
     try {
       const user = await User.verifyCredentials(credentials.username, credentials.password)
@@ -101,9 +90,7 @@ export default class AuthController {
   }
 
   public async refresh({ auth, request, response }: HttpContext) : Promise<void> {
-    const payload = await request.validateUsing(
-      refresh
-    );
+    const payload = await request.validateUsing(refresh);
 
     try {
       const token = await auth.use('jwt').loginViaRefreshToken(payload.data.refresh);
@@ -123,20 +110,13 @@ export default class AuthController {
   }
 
   public async logout({ auth, request }: HttpContext) : Promise<void> {
-    const payload = await request.validateUsing(
-      logout
-    );
+    const payload = await request.validateUsing(logout);
 
     auth.use('jwt').revoke(payload.data.refresh);
   }
 
   public async requestCode({ request, response }: HttpContext) : Promise<void> {
-    const requestData = await request.validateUsing(
-      requestCode,
-      // messages: {
-      //   'email.email': 'A valid email address must be provided',
-      // },
-    );
+    const requestData = await request.validateUsing(requestCode);
 
     const user = await User.findBy('email', requestData.email);
 
@@ -151,9 +131,7 @@ export default class AuthController {
   }
 
   public async verifyCode({ auth, request, response }: HttpContext): Promise<void> {
-    const requestData = await request.validateUsing(
-      verifyCode
-    );
+    const requestData = await request.validateUsing(verifyCode);
 
     const user = await User.findBy('email', requestData.email);
 
@@ -214,12 +192,7 @@ export default class AuthController {
       throw new Error('user is not defined');
     }
 
-    const requestData = await request.validateUsing(
-      updatePassword,
-      {
-        messagesProvider: registerMessageProvider,
-      }
-    )
+    const requestData = await request.validateUsing(updatePassword)
 
     user.password = requestData.password;
     await user.save();

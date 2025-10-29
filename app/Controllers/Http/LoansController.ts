@@ -33,9 +33,7 @@ export default class LoansController {
 
     const budget = await user.related('budget').query().firstOrFail();
 
-    const requestData = await request.validateUsing(
-      addLoan
-    );
+    const requestData = await request.validateUsing(addLoan);
 
     const trx = await db.transaction();
 
@@ -87,9 +85,7 @@ export default class LoansController {
       throw new Error('user is not defined');
     }
 
-    const requestData = await request.validateUsing(
-      updateLoan
-    );
+    const requestData = await request.validateUsing(updateLoan);
 
     const trx = await db.transaction();
 

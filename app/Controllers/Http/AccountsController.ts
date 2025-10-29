@@ -154,9 +154,7 @@ export default class AccountsController {
     const budget = await user.related('budget').query().firstOrFail();
 
     const { acctId } = request.params();
-    const requestData = await request.validateUsing(
-      addTransaction
-    );
+    const requestData = await request.validateUsing(addTransaction);
 
     const trx = await db.transaction();
 
@@ -263,9 +261,6 @@ export default class AccountsController {
     const { acctId } = request.params();
 
     const requestData = await request.validateUsing(addBalance)
-      // messages: {
-      //   'date.unique': 'Only one balance per date is allowed.',
-      // },
 
     const trx = await db.transaction();
 
@@ -341,9 +336,6 @@ export default class AccountsController {
           id,
         }
       }
-      // messages: {
-      //   'date.unique': 'Only one balance per date is allowed.',
-      // },
     );
 
     const trx = await db.transaction();
@@ -455,9 +447,7 @@ export default class AccountsController {
 
     const budget = await user.related('budget').query().firstOrFail();
 
-    const requestData = await request.validateUsing(
-      updateAccount
-    );
+    const requestData = await request.validateUsing(updateAccount);
 
     const trx = await db.transaction();
 
@@ -594,9 +584,7 @@ export default class AccountsController {
     }
 
     const { acctId } = request.params();
-    const requestData = await request.validateUsing(
-      addStatement,
-    );
+    const requestData = await request.validateUsing(addStatement);
 
     const trx = await db.transaction();
 
@@ -649,9 +637,7 @@ export default class AccountsController {
     }
 
     const { statementId } = request.params();
-    const requestData = await request.validateUsing(
-      updateStatement
-    )
+    const requestData = await request.validateUsing(updateStatement)
 
     const trx = await db.transaction();
 

@@ -52,9 +52,7 @@ export default class AutoAssignmentsController {
       throw new Error('user is not defined');
     }
 
-    const requestData = await request.validateUsing(
-      addAutoAssignment
-    );
+    const requestData = await request.validateUsing(addAutoAssignment);
 
     const trx = await db.transaction();
 
@@ -105,9 +103,7 @@ export default class AutoAssignmentsController {
     }
 
     const { id } = request.params();
-    const requestData = await request.validateUsing(
-      updateAutoAssignment
-    );
+    const requestData = await request.validateUsing(updateAutoAssignment);
 
     const trx = await db.transaction();
 

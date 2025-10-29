@@ -1,10 +1,15 @@
-import vine from '@vinejs/vine'
+import vine, { SimpleMessagesProvider } from '@vinejs/vine'
 
 export const update = vine.compile(
   vine.object({
-    email: vine.string().trim().normalizeEmail({ all_lowercase: true }).unique({ table: 'users', column: 'email' }),
+    email: vine.string().trim().normalizeEmail({ all_lowercase: true }).email().unique({ table: 'users', column: 'email' }),
   })
 )
+
+update.messagesProvider = new SimpleMessagesProvider({
+  'email.email': 'The email address is not valid.',
+  'email.unique': 'This email address is already in use.',
+})
 
 export const addApnsToken = vine.compile(
   vine.object({

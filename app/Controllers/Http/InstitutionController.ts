@@ -24,9 +24,7 @@ class InstitutionController {
   public async add(context: HttpContext): Promise<ApiResponse<AddInstitutionResponse>> {
     const { request } = context;
 
-    const checkData = await request.validateUsing(
-      addInstitutionCheck
-    );
+    const checkData = await request.validateUsing(addInstitutionCheck);
 
     if (!checkData.publicToken) {
       return this.addOffline(context)
@@ -44,9 +42,7 @@ class InstitutionController {
     }
     const budget = await user.related('budget').query().firstOrFail();
 
-    const requestData = await request.validateUsing(
-      addInstitution
-    );
+    const requestData = await request.validateUsing(addInstitution);
 
     if (!requestData.publicToken) {
       throw new Error('public token is undefined');
@@ -131,9 +127,7 @@ class InstitutionController {
       throw new Error('user is not defined');
     }
 
-    const requestData = await request.validateUsing(
-      addInstitutionOffline
-    );
+    const requestData = await request.validateUsing(addInstitutionOffline);
 
     const trx = await db.transaction();
 
@@ -509,9 +503,7 @@ class InstitutionController {
 
     const budget = await user.related('budget').query().firstOrFail();
 
-    const requestData = await request.validateUsing(
-      addOfflineAccount
-    );
+    const requestData = await request.validateUsing(addOfflineAccount);
 
     const trx = await db.transaction();
 

@@ -1,4 +1,4 @@
-import vine from '@vinejs/vine';
+import vine, { SimpleMessagesProvider } from '@vinejs/vine';
 
 export const updateCategoryTransfer = vine.compile(
   vine.object({
@@ -23,9 +23,10 @@ export const updateCategoryTransfer = vine.compile(
     ).minLength(1), // 'required|validCategory|!allZero:amount|zeroSum:amount',
     type: vine.number(),
   })
-  // public messages = {
-  //   'date.required': 'A date is required',
-  //   'categories.minLength': 'There must be at least one category',
-  //   'categories.zeroSum': 'The sum of the categories must equal the transaction amount',
-  // }
 )
+
+updateCategoryTransfer.messagesProvider = new SimpleMessagesProvider({
+  'date.required': 'A date is required',
+  'categories.minLength': 'There must be at least one category',
+  'categories.zeroSum': 'The sum of the categories must equal the transaction amount',
+})

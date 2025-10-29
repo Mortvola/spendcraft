@@ -1,5 +1,9 @@
-import vine from '@vinejs/vine'
+import vine, { SimpleMessagesProvider } from '@vinejs/vine'
 import { DateTime } from 'luxon'
+
+const messagesProvider = new SimpleMessagesProvider({
+  'date.unique': 'Only one balance per date is allowed.',
+})
 
 export const addBalance = vine.compile(
   vine.object({
@@ -14,6 +18,8 @@ export const addBalance = vine.compile(
   })
 )
 
+addBalance.messagesProvider = messagesProvider;
+
 export const updateBalance = vine.compile(
   vine.object({
     date: vine.date().unique({
@@ -27,6 +33,8 @@ export const updateBalance = vine.compile(
     amount: vine.number(),
   })
 )
+
+updateBalance.messagesProvider = messagesProvider;
 
 export const updateAccount = vine.compile(
   vine.object({

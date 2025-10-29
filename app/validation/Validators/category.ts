@@ -1,5 +1,5 @@
 import { CategoryType } from '#common/ResponseTypes'
-import vine from '@vinejs/vine'
+import vine, { SimpleMessagesProvider } from '@vinejs/vine'
 import { DateTime } from 'luxon'
 
 export const addCategory = vine
@@ -28,10 +28,10 @@ export const addCategory = vine
     })
   )
 
-  // public messages = {
-  //   'name.required': 'A category name must be provided',
-  //   'name.unique': 'The category name must be unique within a group',
-  // }
+addCategory.messagesProvider = new SimpleMessagesProvider({
+  'name.required': 'A category name must be provided',
+  'name.unique': 'The category name must be unique within a group',
+})
 
 export const addGroup = vine
   .withMetaData<{ budgetId: number, noGroupId: number }>()
@@ -50,10 +50,10 @@ export const addGroup = vine
     })
   )
 
-  // public messages = {
-  //   'name.required': 'A group name must be provided',
-  //   'name.unique': 'The group name must be unique',
-  // }
+addGroup.messagesProvider = new SimpleMessagesProvider({
+  'name.required': 'A group name must be provided',
+  'name.unique': 'The group name must be unique within a group',
+})
 
 export const updateCategory = vine
   .withMetaData<{ groupId: number, catId: number }>()
@@ -86,10 +86,10 @@ export const updateCategory = vine
     })
 )
 
-  // public messages = {
-  //   'name.unique': 'The category name must be unique within the group',
-  //   'name.required': 'The category name is required',
-  // }
+updateCategory.messagesProvider = new SimpleMessagesProvider({
+  'name.unique': 'The category name must be unique within the group',
+  'name.required': 'The category name is required',
+})
 
 export const updateGroup = vine
   .withMetaData<{ budgetId: number, groupId: number | string, noGroupId: number }>()
@@ -110,7 +110,7 @@ export const updateGroup = vine
     })
   )
 
-  // public messages = {
-  //   'name.required': 'A group name must be provided',
-  //   'name.unique': 'The group name must be unique',
-  // }
+updateGroup.messagesProvider = new SimpleMessagesProvider({
+  'name.required': 'A group name must be provided',
+  'name.unique': 'The group name must be unique within a group',
+})

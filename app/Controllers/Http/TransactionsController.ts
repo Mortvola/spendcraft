@@ -76,9 +76,7 @@ export default class TransactionsController {
     }
 
     const { trxId } = request.params();
-    const requestData = await request.validateUsing(
-      updateTransaction,
-    );
+    const requestData = await request.validateUsing(updateTransaction);
 
     const trx = await db.transaction();
 
