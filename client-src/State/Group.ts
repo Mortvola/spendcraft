@@ -54,6 +54,20 @@ class Group implements GroupInterface {
     })
   }
 
+  childrenBalance(): number {
+    let balance = 0;
+
+    for (const child of this.children) {
+      if (isCategory(child)) {
+        balance += child.balance
+      } else {
+        balance += child.childrenBalance()
+      }
+    }
+  
+    return balance;
+  }
+
   getFundingPool(): Category {
     if (this.group === null) {
       throw new Error('gropu not set')

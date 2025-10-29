@@ -4,6 +4,7 @@ import GroupButtons from './GroupButtons';
 import Category from './Category';
 import { CategoryInterface, GroupInterface } from '../../State/Types';
 import { isCategory } from '../../State/Category';
+import Amount from '../../Amount';
 
 interface PropsType {
   group: GroupInterface,
@@ -24,29 +25,36 @@ const Group: React.FC<PropsType> = observer(({
         <GroupButtons group={group} />
         <div className="group-name">{group.name}</div>
       </div>
+      {
+        !group.expanded
+          ? <Amount amount={group.childrenBalance()} />
+          : null
+      }
     </div>
     {
-      group.expanded && group.children.map((category) => (
-        isCategory(category)
-          ? (
-            <Category
-              key={category.name}
-              category={category}
-              onCategorySelected={onCategorySelected}
-              selectedCategory={selectedCategory}
-              level={level + 1}
-            />
-          )
-          : (
-            <Group
-              key={category.name}
-              group={category as GroupInterface}
-              onCategorySelected={onCategorySelected}
-              selectedCategory={selectedCategory}
-              level={level + 1}
-            />
-          )
-      ))
+      group.expanded
+        ? group.children.map((category) => (
+          isCategory(category)
+            ? (
+              <Category
+                key={category.name}
+                category={category}
+                onCategorySelected={onCategorySelected}
+                selectedCategory={selectedCategory}
+                level={level + 1}
+              />
+            )
+            : (
+              <Group
+                key={category.name}
+                group={category as GroupInterface}
+                onCategorySelected={onCategorySelected}
+                selectedCategory={selectedCategory}
+                level={level + 1}
+              />
+            )
+          ))
+        : null
     }
   </>
 ));

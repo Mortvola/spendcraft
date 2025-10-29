@@ -39,6 +39,8 @@ export interface GroupInterface {
 
   group: GroupInterface | null;
 
+  childrenBalance(): number;
+
   toggleExpanded(): void;
 
   getFundingPool(): CategoryInterface;

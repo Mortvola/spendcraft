@@ -238,6 +238,12 @@ body {
   min-width: 4.25rem;
 }
 
+.cat-list-group {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  justify-content: space-between;
+}
+
 .cat-list-cat {
   display: grid;
   grid-template-columns: minmax(0, 1fr) max-content;
