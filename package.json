@@ -44,7 +44,7 @@
     "@mortvola/forms": "^0.16.13",
     "@mortvola/http": "^0.1.11",
     "@mortvola/usemodal": "^0.2.4",
-    "@vinejs/vine": "^4.1.0",
+    "@vinejs/vine": "^3.0.1",
     "@vitejs/plugin-react": "^4.6.0",
     "argon2": "^0.43.0",
     "bcrypt": "^6.0.0",
