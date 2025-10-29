@@ -1,6 +1,6 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
-import Buttons from './GroupButtons';
+import GroupButtons from './GroupButtons';
 import Category from './Category';
 import { CategoryInterface, GroupInterface } from '../../State/Types';
 import { isCategory } from '../../State/Category';
@@ -21,12 +21,12 @@ const Group: React.FC<PropsType> = observer(({
   <>
     <div className="cat-list-group" style={{ marginLeft: 25 * level }}>
       <div className="group-element-bar">
-        <Buttons group={group} />
+        <GroupButtons group={group} />
         <div className="group-name">{group.name}</div>
       </div>
     </div>
     {
-      group.children.map((category) => (
+      group.expanded && group.children.map((category) => (
         isCategory(category)
           ? (
             <Category

@@ -34,6 +34,9 @@ class Group implements GroupInterface {
   @observable
   accessor children: TreeNode[] = [];
 
+  @observable
+  accessor expanded = true;
+
   group: Group | null = null;
 
   store: StoreInterface;
@@ -43,6 +46,12 @@ class Group implements GroupInterface {
     this.name = props.name;
     this.type = props.type;
     this.store = store;
+  }
+
+  toggleExpanded(): void {
+    runInAction(() => {
+      this.expanded = !this.expanded
+    })
   }
 
   getFundingPool(): Category {

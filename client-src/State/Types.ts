@@ -35,7 +35,11 @@ export interface GroupInterface {
 
   children: (GroupInterface | CategoryInterface)[];
 
+  expanded: boolean;
+
   group: GroupInterface | null;
+
+  toggleExpanded(): void;
 
   getFundingPool(): CategoryInterface;
 
