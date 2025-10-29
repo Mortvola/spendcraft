@@ -22,7 +22,7 @@ vine.messagesProvider = new SimpleMessagesProvider({
   'email.email': 'A valid email address must be provided',
   'email.required': 'An email address is required',
   'email.unique': 'An account with the requested email address already exists',
-  'name.unique': 'The {{ field }} must be unique',
+  'unique': 'The {{ field }} must be unique',
 })
 
 async function unique(
