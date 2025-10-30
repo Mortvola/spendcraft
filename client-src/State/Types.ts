@@ -17,6 +17,7 @@ import {
 import LoanTransaction from './LoanTransaction';
 import SystemIds from './SystemIds';
 import type Statement from './Statement';
+import { ObservableMap } from 'mobx';
 
 export interface UserInterface {
   username: string | null;
@@ -35,13 +36,9 @@ export interface GroupInterface {
 
   children: (GroupInterface | CategoryInterface)[];
 
-  expanded: boolean;
-
   group: GroupInterface | null;
 
   childrenBalance(): number;
-
-  toggleExpanded(): void;
 
   getFundingPool(): CategoryInterface;
 
@@ -266,6 +263,9 @@ export interface UIStateInterface {
   selectStatement(statement: Statement | null): void;
   selectPlan(plan: FundingPlanInterface | null): void;
   selectTransaction(transaction: TransactionInterface | null): void;
+  toggleGroupExpanded(id: number): void;
+  
+  groupState: ObservableMap;
 
   selectedCategory: CategoryInterface | null;
   selectedPlan: FundingPlanInterface | null;

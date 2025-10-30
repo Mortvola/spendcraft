@@ -1,4 +1,4 @@
-import { observable, runInAction } from 'mobx';
+import { observable, ObservableMap, runInAction } from 'mobx';
 import type Category from './Category';
 import type {
   AccountInterface,
@@ -28,10 +28,21 @@ class UIState implements UIStateInterface {
   @observable
   accessor plaid: Plaid | null = null;
 
+  groupState: ObservableMap
+
   store: StoreInterface;
 
   constructor(store: StoreInterface) {
     this.store = store;
+
+    this.groupState = observable.map(new Map<number, boolean>())
+  }
+
+  toggleGroupExpanded(id: number): void {
+    runInAction(() => {
+      const expanded = this.groupState.get(id) ?? true
+      this.groupState.set(id, !expanded)
+    })
   }
 
   selectCategory(category: Category | null): void {
