@@ -9,6 +9,8 @@ import type {
 import type Plaid from './Plaid';
 import type Statement from './Statement';
 
+const localStorageGroupState = 'groupState'
+
 class UIState implements UIStateInterface {
   @observable
   accessor selectedCategory: CategoryInterface | null = null;
@@ -36,12 +38,31 @@ class UIState implements UIStateInterface {
     this.store = store;
 
     this.groupState = observable.map(new Map<number, boolean>())
+
+    const data = localStorage.getItem(localStorageGroupState);
+
+    if (data) {
+      try {
+        const groupState = JSON.parse(data)
+
+        if (groupState) {
+          this.groupState.replace(groupState)
+        }
+      }
+      catch (error) {
+        console.log(error)
+      }
+    }
   }
 
   toggleGroupExpanded(id: number): void {
     runInAction(() => {
       const expanded = this.groupState.get(id) ?? true
       this.groupState.set(id, !expanded)
+
+      const data = JSON.stringify(this.groupState.toJSON())
+
+      localStorage.setItem(localStorageGroupState, data)
     })
   }
 
