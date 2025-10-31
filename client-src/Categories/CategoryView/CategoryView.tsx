@@ -5,7 +5,7 @@ import {
 } from 'react-router';
 import { useStores } from '../../State/Store';
 import { CategoryInterface } from '../../State/Types';
-import { isGroup } from '../../State/Group';
+// import { isGroup } from '../../State/Group';
 import Group from './Group';
 import SystemCategory from './SystemCategory';
 import Category from './Category';
@@ -14,7 +14,7 @@ import useMediaQuery from '../../MediaQuery';
 import RemoteDataManager from '../../RemoteDataManager';
 import DesktopView from '../../DesktopView';
 import MobileView from '../../MobileView';
-import { GroupType } from '../../../common/ResponseTypes';
+// import { GroupType } from '../../../common/ResponseTypes';
 
 const CategoryView: React.FC = observer(() => {
   const navigate = useNavigate();
@@ -91,35 +91,41 @@ const CategoryView: React.FC = observer(() => {
         ))
       }
       {
-        categoryTree.budget.children.map((group) => {
-          if (isGroup(group)) {
-            if (group.type === GroupType.Regular) {
-              return (
-                <Group
-                  key={group.name}
-                  group={group}
-                  onCategorySelected={handleCategorySelected}
-                  selectedCategory={uiState.selectedCategory}
-                />
-              );
-            }
+        // categoryTree.budget.children.map((group) => {
+        //   if (isGroup(group)) {
+        //     if (group.type === GroupType.Regular) {
+        //       return (
+        //         <Group
+        //           key={group.name}
+        //           group={group}
+        //           onCategorySelected={handleCategorySelected}
+        //           selectedCategory={uiState.selectedCategory}
+        //         />
+        //       );
+        //     }
 
-            return null;
-          }
+        //     return null;
+        //   }
 
-          if (categoryTree.budget === null) {
-            throw new Error('budget is null');
-          }
+        //   if (categoryTree.budget === null) {
+        //     throw new Error('budget is null');
+        //   }
 
-          return (
-            <Category
-              key={`${group.id}`}
-              category={group}
-              onCategorySelected={handleCategorySelected}
-              selectedCategory={uiState.selectedCategory}
-            />
-          );
-        })
+        //   return (
+        //     <Category
+        //       key={`${group.id}`}
+        //       category={group}
+        //       onCategorySelected={handleCategorySelected}
+        //       selectedCategory={uiState.selectedCategory}
+        //     />
+        //   );
+        // })
+        <Group
+          key="budget"
+          group={categoryTree.budget}
+          onCategorySelected={handleCategorySelected}
+          selectedCategory={uiState.selectedCategory}
+        />
       }
     </div>
   )

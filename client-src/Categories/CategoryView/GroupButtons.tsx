@@ -21,17 +21,23 @@ const GroupButtons: React.FC<PropsType> = observer(({ group }) => {
     uiState.toggleGroupExpanded(group.id)
   }
 
-  if (group.type === GroupType.Regular && isGroup(group)) {
+  if ([GroupType.Regular, GroupType.NoGroup].includes(group.type) && isGroup(group)) {
     return (
       <>
-          {
-            uiState.groupState.get(group.id) ?? true
-              ? <ChevronDown size={16} strokeWidth={2.5} onClick={toggleClose} />
-              : <ChevronRight size={16} strokeWidth={2.5} onClick={toggleClose} />
-          }
-        <LucideButton onClick={showGroupDialog} className={styles.catButton}>
-          <SquarePen size={16} strokeWidth={2.5} />
-        </LucideButton>
+        {
+          uiState.groupState.get(group.id) ?? true
+            ? <ChevronDown size={16} strokeWidth={2.5} onClick={toggleClose} />
+            : <ChevronRight size={16} strokeWidth={2.5} onClick={toggleClose} />
+        }
+        {
+          group.type !== GroupType.NoGroup
+            ? (
+              <LucideButton onClick={showGroupDialog} className={styles.catButton}>
+                <SquarePen size={16} strokeWidth={2.5} />
+              </LucideButton>
+            )
+            : null
+        }
         <GroupDialog group={group} />
       </>
     );

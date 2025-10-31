@@ -6,6 +6,7 @@ import { CategoryInterface, GroupInterface } from '../../State/Types';
 import { isCategory } from '../../State/Category';
 import Amount from '../../Amount';
 import { useStores } from '../../State/Store';
+import { GroupType } from '../../../common/ResponseTypes';
 
 interface PropsType {
   group: GroupInterface,
@@ -27,7 +28,11 @@ const Group: React.FC<PropsType> = observer(({
       <div className="cat-list-group" style={{ marginLeft: 25 * level }}>
         <div className="group-element-bar">
           <GroupButtons group={group} />
-          <div className="group-name">{group.name}</div>
+          {
+            group.type === GroupType.NoGroup
+              ? <div className="group-name">Categories</div>
+              : <div className="group-name">{group.name}</div>
+          }
         </div>
         {
           !(uiState.groupState.get(group.id) ?? true)
