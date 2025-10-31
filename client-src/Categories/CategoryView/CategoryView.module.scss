@@ -54,14 +54,26 @@
   margin-left: 1rem;
 
   >:first-child {
-    display: flex;
+    display: grid;
+    grid-template-columns: max-content minmax(0,1fr);
+    overflow: hidden;
     align-items: center;
   }
 }
 
+.name {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
 .account {
-  display: flex;
-  flex-direction: row;
+  display: grid;
+  grid-template-columns: minmax(0,1fr) max-content;
   justify-content: space-between;
   margin-left: 2rem;
+}
+
+.amount {
+  min-width: 4.25rem;
 }

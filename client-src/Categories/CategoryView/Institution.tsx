@@ -23,7 +23,7 @@ const Institution: React.FC<PropsType> = observer(({
   // Get all the accounts within the institution that 
   // are enabled for categorized transactions.
   const accts = institution.accounts
-    .filter((account) => account.tracking === TrackingType.Transactions)
+    .filter((account) => !account.closed && account.tracking === TrackingType.Transactions)
 
   // Add the institution and the accounts only
   // if the institution had accounts with categorized
@@ -38,7 +38,9 @@ const Institution: React.FC<PropsType> = observer(({
                 ? <ChevronDown size={16} strokeWidth={2.5} onClick={handleToggle} />
                 : <ChevronRight size={16} strokeWidth={2.5} onClick={handleToggle} />
             }
-            {institution.name}
+            <div className={styles.name}>
+              {institution.name}
+            </div>
           </div>
           {
             !(uiState.accountState.get(institution.id) ?? true)
@@ -51,8 +53,8 @@ const Institution: React.FC<PropsType> = observer(({
             ? (
               accts.map((account) => (
                 <div className={styles.account}>
-                  <div>{account.name}</div>
-                  <Amount amount={account.balance} />
+                  <div className={styles.name}>{account.name}</div>
+                  <Amount className={styles.amount} amount={account.balance} />
                 </div>
               ))
             )
