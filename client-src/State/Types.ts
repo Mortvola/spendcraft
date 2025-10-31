@@ -264,8 +264,14 @@ export interface UIStateInterface {
   selectPlan(plan: FundingPlanInterface | null): void;
   selectTransaction(transaction: TransactionInterface | null): void;
   toggleGroupExpanded(id: number): void;
-  
+  toggleAccountExpanded(id: number): void;
+  toggleAccountsExpanded(): void;
+
   groupState: ObservableMap;
+
+  accountState: ObservableMap
+
+  accountsState: boolean;
 
   selectedCategory: CategoryInterface | null;
   selectedPlan: FundingPlanInterface | null;

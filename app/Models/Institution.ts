@@ -10,6 +10,7 @@ import Budget from '#app/Models/Budget';
 import { DateTime } from 'luxon';
 import type { BelongsTo, HasMany } from "@adonisjs/lucid/types/relations";
 import app from '@adonisjs/core/services/app';
+import { TrackingType } from '#common/ResponseTypes';
 
 class Institution extends BaseModel {
   @column()
@@ -134,7 +135,7 @@ class Institution extends BaseModel {
             startDate: DateTime.now().startOf('month'),
             balance: 0,
             plaidBalance: plaidAccount.balances.current,
-            tracking: 'Transactions',
+            tracking: TrackingType.Transactions,
             enabled: true,
             closed: false,
           },

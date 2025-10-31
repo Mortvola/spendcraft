@@ -13,9 +13,10 @@ import useMediaQuery from '../../MediaQuery';
 import RemoteDataManager from '../../RemoteDataManager';
 import DesktopView from '../../DesktopView';
 import MobileView from '../../MobileView';
-import { TrackingType } from '../../../common/ResponseTypes';
+import { ChevronDown, ChevronRight } from 'lucide-react';
+import Institution from './Institution';
 import Amount from '../../Amount';
-import { ChevronDown } from 'lucide-react';
+import { TrackingType } from '../../../common/ResponseTypes';
 
 const CategoryView: React.FC = observer(() => {
   const navigate = useNavigate();
@@ -31,6 +32,10 @@ const CategoryView: React.FC = observer(() => {
 
   const handleRebalancesClick = () => {
     navigate('rebalances');
+  }
+
+  const handleAccountsToggle = () => {
+    uiState.toggleAccountsExpanded()
   }
 
   React.useEffect(() => {
@@ -79,6 +84,27 @@ const CategoryView: React.FC = observer(() => {
     )
   }
 
+  const getAccountBalanceTotal = () => (
+    accounts.institutions.reduce((prev, institution) => {
+      const balance = institution.accounts
+        .reduce((p, account) => {
+          if (account.tracking === TrackingType.Transactions) {
+            return p + account.balance
+          }
+
+          return p;
+        }, 0)
+
+      return prev + balance;
+    }, 0)
+  )
+
+  const renderAccounts = () => {
+    return accounts.institutions.flatMap((institution) => (
+      <Institution institution={institution} />
+    ))
+  }
+
   const renderCategories = () => (
     <div className={styles.categories}>
       {
@@ -92,35 +118,6 @@ const CategoryView: React.FC = observer(() => {
         ))
       }
       {
-        // categoryTree.budget.children.map((group) => {
-        //   if (isGroup(group)) {
-        //     if (group.type === GroupType.Regular) {
-        //       return (
-        //         <Group
-        //           key={group.name}
-        //           group={group}
-        //           onCategorySelected={handleCategorySelected}
-        //           selectedCategory={uiState.selectedCategory}
-        //         />
-        //       );
-        //     }
-
-        //     return null;
-        //   }
-
-        //   if (categoryTree.budget === null) {
-        //     throw new Error('budget is null');
-        //   }
-
-        //   return (
-        //     <Category
-        //       key={`${group.id}`}
-        //       category={group}
-        //       onCategorySelected={handleCategorySelected}
-        //       selectedCategory={uiState.selectedCategory}
-        //     />
-        //   );
-        // })
         <Group
           key="budget"
           group={categoryTree.budget}
@@ -129,31 +126,24 @@ const CategoryView: React.FC = observer(() => {
         />
       }
       <div className={styles.accounts}>
-        <ChevronDown size={16} strokeWidth={2.5} />
-        Accounts
+        <div>
+          {
+            uiState.accountsState
+              ? <ChevronDown size={16} strokeWidth={2.5} onClick={handleAccountsToggle} />
+              : <ChevronRight size={16} strokeWidth={2.5} onClick={handleAccountsToggle} />
+          }
+          Accounts
+        </div>
+        {
+          !uiState.accountsState
+            ? <Amount amount={getAccountBalanceTotal()} />
+            : null
+        }
       </div>
       {
-        accounts.institutions.flatMap((institution) => (
-          <>
-            <div className={styles.institution}>
-              <ChevronDown size={16} strokeWidth={2.5} />
-              {institution.name}
-            </div>
-            {
-              institution.accounts.map((account) => (
-                account.tracking === TrackingType.Transactions
-                  ? (
-                    <div className={styles.account}>
-                      <div>{account.name}</div>
-                      <Amount amount={account.balance} />
-                    </div>
-                  )
-                  : null
-              ))
-                .filter((value) => value !== null)
-            }
-          </>
-        ))
+        uiState.accountsState
+          ? renderAccounts()
+          : null
       }
     </div>
   )
