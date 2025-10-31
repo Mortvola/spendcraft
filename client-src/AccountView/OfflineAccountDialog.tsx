@@ -171,7 +171,7 @@ const OfflineAccountDialog: React.FC<PropsType & ModalProps> = ({
         startDate: '',
         type: 'depository',
         subtype: 'checking',
-        tracking: 'Transactions',
+        tracking: TrackingType.Transactions,
         rate: '0',
       }}
       setShow={setShow}

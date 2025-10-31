@@ -317,7 +317,7 @@ class InstitutionController {
           balances: {
             current: balance,
           },
-          tracking: 'None',
+          tracking: TrackingType.None,
         });
       });
     }
@@ -450,7 +450,7 @@ class InstitutionController {
           startDate: DateTime.now().startOf('month'),
           balance,
           plaidBalance: balance,
-          tracking: 'Transactions',
+          tracking: TrackingType.Transactions,
           enabled: true,
           closed: false,
         },

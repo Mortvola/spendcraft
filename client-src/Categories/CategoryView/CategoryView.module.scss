@@ -40,3 +40,20 @@
 .catButton {
   padding-left: 0;
 }
+
+.accounts {
+  margin-top: 1rem;
+}
+
+.institution {
+  display: flex;
+  align-items: center;
+  margin-left: 1rem;
+}
+
+.account {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  margin-left: 2rem;
+}

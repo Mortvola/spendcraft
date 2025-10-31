@@ -777,7 +777,12 @@ export const isUserProps = (
   && (r as UserProps).email !== undefined
 );
 
-export type TrackingType = 'None' | 'Balances' | 'Transactions' | 'Uncategorized Transactions';
+export enum TrackingType {
+  None = 'None',
+  Balances = 'Balances',
+  Transactions = 'Transactions',
+  UncategorizedTransactions = 'Uncategorized Transactions',
+}
 
 export interface UnlinkedAccountProps {
   plaidAccountId: string,

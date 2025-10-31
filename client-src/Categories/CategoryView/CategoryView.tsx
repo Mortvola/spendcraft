@@ -5,7 +5,6 @@ import {
 } from 'react-router';
 import { useStores } from '../../State/Store';
 import { CategoryInterface } from '../../State/Types';
-// import { isGroup } from '../../State/Group';
 import Group from './Group';
 import SystemCategory from './SystemCategory';
 import Category from './Category';
@@ -14,14 +13,16 @@ import useMediaQuery from '../../MediaQuery';
 import RemoteDataManager from '../../RemoteDataManager';
 import DesktopView from '../../DesktopView';
 import MobileView from '../../MobileView';
-// import { GroupType } from '../../../common/ResponseTypes';
+import { TrackingType } from '../../../common/ResponseTypes';
+import Amount from '../../Amount';
+import { ChevronDown } from 'lucide-react';
 
 const CategoryView: React.FC = observer(() => {
   const navigate = useNavigate();
   const params = useParams();
   const rebalancesPath = useResolvedPath('rebalances');
   const rebalancesMatch = useMatch({ path: rebalancesPath.pathname, end: true });
-  const { categoryTree, uiState } = useStores();
+  const { categoryTree, accounts, uiState } = useStores();
   const { isMobile } = useMediaQuery();
 
   const handleCategorySelected = (category: CategoryInterface) => {
@@ -126,6 +127,33 @@ const CategoryView: React.FC = observer(() => {
           onCategorySelected={handleCategorySelected}
           selectedCategory={uiState.selectedCategory}
         />
+      }
+      <div className={styles.accounts}>
+        <ChevronDown size={16} strokeWidth={2.5} />
+        Accounts
+      </div>
+      {
+        accounts.institutions.flatMap((institution) => (
+          <>
+            <div className={styles.institution}>
+              <ChevronDown size={16} strokeWidth={2.5} />
+              {institution.name}
+            </div>
+            {
+              institution.accounts.map((account) => (
+                account.tracking === TrackingType.Transactions
+                  ? (
+                    <div className={styles.account}>
+                      <div>{account.name}</div>
+                      <Amount amount={account.balance} />
+                    </div>
+                  )
+                  : null
+              ))
+                .filter((value) => value !== null)
+            }
+          </>
+        ))
       }
     </div>
   )

@@ -1,3 +1,4 @@
+import { TrackingType } from '#common/ResponseTypes'
 import vine from '@vinejs/vine'
 import { DateTime } from 'luxon'
 
@@ -27,9 +28,7 @@ export const addInstitutionOffline = vine.compile(
           ['depository', 'credit', 'loan', 'investment', 'other'] as const,
         ).optional(),
         subtype: vine.string(),
-        tracking: vine.enum(
-          ['None', 'Balances', 'Transactions', 'Uncategorized Transactions'] as const,
-        ),
+        tracking: vine.enum(TrackingType)
       }),
     ),
     startDate: vine.date().transform((value) => DateTime.fromJSDate(value)),
