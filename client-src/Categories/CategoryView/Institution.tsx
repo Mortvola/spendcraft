@@ -44,7 +44,7 @@ const Institution: React.FC<PropsType> = observer(({
           </div>
           {
             !(uiState.accountState.get(institution.id) ?? true)
-              ? <Amount amount={accts.reduce((prev, acct) => (prev + acct.balance), 0)} />
+              ? <Amount amount={accts.reduce((prev, acct) => (prev + acct.balance + acct.pendingBalance), 0)} />
               : null
           }
         </div>
@@ -54,7 +54,7 @@ const Institution: React.FC<PropsType> = observer(({
               accts.map((account) => (
                 <div className={styles.account}>
                   <div className={styles.name}>{account.name}</div>
-                  <Amount className={styles.amount} amount={account.balance} />
+                  <Amount className={styles.amount} amount={account.balance + account.pendingBalance} />
                 </div>
               ))
             )

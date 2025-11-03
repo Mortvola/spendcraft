@@ -89,7 +89,7 @@ const CategoryView: React.FC = observer(() => {
       const balance = institution.accounts
         .reduce((p, account) => {
           if (!account.closed && account.tracking === TrackingType.Transactions) {
-            return p + account.balance
+            return p + account.balance + account.pendingBalance
           }
 
           return p;

@@ -153,6 +153,8 @@ export interface AccountProps {
 
   balance: number;
 
+  pendingBalance: number;
+
   plaidBalance: number | null;
 
   startDate: string | null;

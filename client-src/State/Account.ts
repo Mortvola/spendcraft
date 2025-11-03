@@ -52,6 +52,9 @@ class Account implements AccountInterface {
   @observable
   accessor balance = 0;
 
+  @observable
+  accessor pendingBalance = 0;
+
   transactions: TransactionContainer;
 
   pendingTransactions: TransactionContainer;
@@ -82,6 +85,7 @@ class Account implements AccountInterface {
     this.subtype = props.subtype;
     this.tracking = props.tracking;
     this.balance = props.balance;
+    this.pendingBalance = props.pendingBalance;
     this.plaidBalance = props.plaidBalance;
     this.startDate = props.startDate ? DateTime.fromISO(props.startDate) : null;
     this.rate = props.rate;
@@ -99,6 +103,7 @@ class Account implements AccountInterface {
     this.subtype = props.subtype;
     this.tracking = props.tracking;
     this.balance = props.balance;
+    this.pendingBalance = props.pendingBalance;
     this.plaidBalance = props.plaidBalance;
     this.startDate = props.startDate ? DateTime.fromISO(props.startDate) : null;
     this.rate = props.rate;

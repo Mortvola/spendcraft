@@ -14,7 +14,7 @@ import { runInAction } from 'mobx';
 import { useStores } from '../State/Store';
 
 const Signin: React.FC = () => {
-  const { user, categoryTree } = useStores()
+  const { user, categoryTree, accounts } = useStores()
   const tiny = responsive.useMediaQuery({ query: '(max-width: 350px)' });
   const small = responsive.useMediaQuery({ query: '(max-width: 600px)' });
   const medium = responsive.useMediaQuery({ query: '(max-width: 1224px)' });
@@ -61,6 +61,7 @@ const Signin: React.FC = () => {
         user.authenticated = true;
         user.load()
         categoryTree.load()
+        accounts.load()
       })
 
       if (location.pathname === '/signin') {

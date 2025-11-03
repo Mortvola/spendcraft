@@ -57,7 +57,15 @@ export default class Budget extends BaseModel {
   public async getConnectedAccounts(this: Budget): Promise<InstitutionProps[]> {
     const result = await this
       .related('institutions').query()
-      .preload('accounts');
+      .preload('accounts', (accountsQuery) => {
+        accountsQuery.withAggregate('accountTransactions', (query) => {
+          query.sum('amount').as('pendingBalance')
+          .where('pending', true)
+          .whereHas('transaction', (transaction) => {
+            transaction.where('deleted', false)
+          })
+        })
+      })
 
     return result.map((i) => ({
       id: i.id,
@@ -74,6 +82,7 @@ export default class Budget extends BaseModel {
         subtype: a.subtype,
         tracking: a.tracking,
         balance: a.balance,
+        pendingBalance: parseFloat(a.$extras.pendingBalance) ?? 0,
         plaidBalance: a.plaidBalance,
         startDate: a.startDate?.toISODate() ?? null,
         rate: a.rate,

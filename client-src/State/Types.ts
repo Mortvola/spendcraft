@@ -443,6 +443,8 @@ export interface AccountInterface {
 
   balance: number;
 
+  pendingBalance: number;
+
   transactions: TransactionContainerInterface;
 
   pendingTransactions: TransactionContainerInterface;
