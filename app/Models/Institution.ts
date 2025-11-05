@@ -80,11 +80,9 @@ class Institution extends BaseModel {
             acct.balance += addedSum
           }
 
-           
           // await acct.updateStartingBalance(
           //   budget, fundingPool,
           // );
-
            
           await acct.save();
         }
@@ -182,8 +180,8 @@ class Institution extends BaseModel {
           .first();
 
         if (at) {
-           
           await acct.deleteAccountTransaction(at)
+          acct.$extras.modified = true
         }
         else {
           logger.info(`removal: transaction not found: ${removed.transaction_id}`)
@@ -216,16 +214,14 @@ class Institution extends BaseModel {
       const accounts = await this.related('accounts').query();
 
       let nextCursor = this.cursor;
-
       let unassignedSum = 0;
-
       let more = true;
+
       while (more) {
-         
         const plaidClient = await app.container.make('plaid')
         const response = await plaidClient.syncTransactions(this, nextCursor);
 
-        // If the cursor has change then we received transaction changes.
+        // If the cursor has changed then we received transaction changes.
         if (response.next_cursor !== nextCursor) {
           // Collect the Plaid accounts from the response so we can process them later.
            
@@ -254,11 +250,9 @@ class Institution extends BaseModel {
           ];
 
           // Process added/modified transactions
-           
           unassignedSum += await this.addOrUpdateTransactions(budget, transactions, accounts, plaidAccounts);
 
           // Process removed transactions
-           
           await this.removeTransactions(response.removed, accounts);
         }
 
@@ -267,7 +261,7 @@ class Institution extends BaseModel {
       }
 
       // If the next cursor and the stored cursor are different then
-      // we transaction changes. Update account and category balances.
+      // we had transaction changes. Update account and category balances.
       if (nextCursor !== this.cursor) {
         await Institution.updateAccountBalances(accounts, plaidAccounts);
 
