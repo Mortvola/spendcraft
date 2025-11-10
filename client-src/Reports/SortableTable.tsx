@@ -2,8 +2,8 @@ import React, {
   CSSProperties,
   ReactElement, ReactNode, useMemo, useState,
 } from 'react';
-import Icon from '../Icon';
 import styles from './SortableTable.module.scss';
+import { ArrowDownNarrowWide, ArrowUpDown, ArrowUpWideNarrow } from 'lucide-react';
 
 interface SortableTableHeaderProps {
   className?: string,
@@ -162,13 +162,13 @@ export default function useSortableTable<T>(keyPrecedence?: string[] | undefined
     const sortIcon = () => {
       if (sortConfig && sortConfig.column === column) {
         if (sortConfig.direction === 'ascending') {
-          return <Icon icon="sort-up" />;
+          return <ArrowDownNarrowWide />;
         }
 
-        return <Icon icon="sort-down" />;
+        return <ArrowUpWideNarrow />;
       }
 
-      return <Icon icon="sort" style={{ color: 'darkgray' }} />;
+      return <ArrowUpDown color="darkgray"  />
     }
 
     return (

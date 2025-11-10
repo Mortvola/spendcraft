@@ -348,6 +348,8 @@ export interface InstitutionInterface {
 
   relink(): Promise<void>;
 
+  unlink(): Promise<void>;
+
   sync(institutionId: number): Promise<boolean>;
 
   update(): Promise<InstitutionInterface | null>;

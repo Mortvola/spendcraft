@@ -85,6 +85,14 @@ class Institution implements InstitutionInterface {
     });
   }
 
+  async unlink(): Promise<void> {
+    const response = await Http.post(`/api/v1/institution/${this.id}/unlink`);
+
+    if (!response.ok) {
+      throw new Error('invalid response')
+    }
+  }
+
   async sync(institutionId: number): Promise<boolean> {
     runInAction(() => {
       this.refreshing = true;

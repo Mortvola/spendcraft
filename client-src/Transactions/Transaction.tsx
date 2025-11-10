@@ -8,7 +8,7 @@ import { TransactionType } from '../../common/ResponseTypes';
 import AccountOwner from './AccountOwner';
 import Reconcile from './Reconcile';
 import Date from '../Date';
-import Icon from '../Icon';
+import { ArrowRightLeft } from 'lucide-react';
 
 interface PropsType {
   transaction: BaseTransactionInterface,
@@ -76,7 +76,7 @@ const Transaction: React.FC<PropsType> = observer(({
     <div className={`${className ?? ''} ${styles.transaction} ${transaction.pending ? styles.pendingTrx : ''}`} onClick={handleClick}>
       {
         transaction.duplicateOfTransactionId
-          ? <Icon icon="arrow-right-arrow-left" iconClass="fa-solid" />
+          ? <ArrowRightLeft />
           : <div />
       }
       <Date className={styles.date} date={transaction.date} />

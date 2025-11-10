@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import {
   Info, Link, Plus, RefreshCw, Settings, Trash2,
+  Unlink,
 } from 'lucide-react';
 import { useAccountsDialog } from './AccountsDialog';
 import { useInstitutionInfoDialog } from './InstitutionInfoDialog';
@@ -37,6 +38,9 @@ const Institution: React.FC<PropsType> = observer(({
   const handleRelinkClick = () => {
     institution.relink();
   };
+  const handleUnlinkClick = () => {
+    institution.unlink();
+  }
   const [editedAccount, setEditedAccount] = useState<AccountInterface | null>(null);
   const [DeleteConfirmation, handleDeleteClick] = useDeleteConfirmation(
     'Delete Confirmation',
@@ -130,6 +134,9 @@ const Institution: React.FC<PropsType> = observer(({
                   <>
                     <LucideButton className={styles.iconButton} onClick={handleRelinkClick}>
                       <Link size={16} strokeWidth={2.5} />
+                    </LucideButton>
+                    <LucideButton className={styles.iconButton} onClick={handleUnlinkClick}>
+                      <Unlink size={16} strokeWidth={2.5} />
                     </LucideButton>
                     <LucideButton className={styles.iconButton} onClick={showInstitutionInfoDialog}>
                       <Info size={16} strokeWidth={2.5} />
