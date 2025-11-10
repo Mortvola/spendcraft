@@ -193,15 +193,18 @@ router.group(() => {
   
       router.group(() => {
         router.post('', [InstitutionController, 'add']);
-        router.patch('/:instId', [InstitutionController, 'updateOffline']);
-        router.post('/:instId', [InstitutionController, 'update']);
-        router.get('/:instId/info', [InstitutionController, 'info']);
-        router.get('/:instId/accounts', [InstitutionController, 'get']);
-        router.post('/:instId/accounts', [InstitutionController, 'addOfflineAccount']);
-        router.post('/:instId/accounts/:acctId/transactions/sync', [InstitutionController, 'sync']);
-        router.delete('/:instId/accounts/:acctId', [InstitutionController, 'deleteAccount']);
-        router.delete('/:instId', [InstitutionController, 'delete']);
-        router.get('/:instId/link-token', [InstitutionController, 'linkToken']);
+        router.group(() => {
+          router.patch('', [InstitutionController, 'updateOffline']);
+          router.post('', [InstitutionController, 'update']);
+          router.get('/info', [InstitutionController, 'info']);
+          router.get('/accounts', [InstitutionController, 'get']);
+          router.post('/accounts', [InstitutionController, 'addOfflineAccount']);
+          router.post('/accounts/:acctId/transactions/sync', [InstitutionController, 'sync']);
+          router.delete('/accounts/:acctId', [InstitutionController, 'deleteAccount']);
+          router.delete('', [InstitutionController, 'delete']);
+          router.get('/link-token', [InstitutionController, 'linkToken']);
+          router.post('/unlink', [InstitutionController, 'unlink']);
+        }).prefix('/:instId')
       }).prefix('/institution');
   
       router.group(() => {

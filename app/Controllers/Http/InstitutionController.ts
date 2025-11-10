@@ -704,6 +704,61 @@ class InstitutionController {
     response.json({ linkToken: linkTokenResponse.link_token });
   }
 
+  public async unlink({ request, auth: { user }, logger}: HttpContext): Promise<void> {
+    if (!user) {
+      throw new Error('user is not defined');
+    }
+
+    const trx = await db.transaction();
+
+    try {
+      const institution = await Institution.findOrFail(request.params().instId, { client: trx });
+
+      if (institution.accessToken) {
+        const plaidClient = await app.container.make('plaid')
+
+        if (institution.institutionId === null) {
+          throw new Error('institutionId is null')
+        }
+      
+        await plaidClient.removeItem(institution.accessToken, institution.institutionId);
+      }
+
+      await institution.merge({
+        plaidItemId: null,
+        institutionId: null,
+        accessToken: null,
+        cursor: null,
+      })
+        .save();
+
+      const accounts = await institution.related('accounts').query()
+
+      for (const account of accounts) {
+        await account.merge({
+          plaidAccountId: null
+        })
+          .save()
+
+        const transactions = await account.related('accountTransactions').query()
+
+        for (const transaction of transactions) {
+          await transaction.merge({
+            providerTransactionId: null,
+          })
+            .save()
+        }
+      }
+
+      await trx.commit()
+    }
+    catch (error) {
+      await trx.rollback();
+      logger.error(error);
+      throw error;
+    }
+  }
+
    
   public async info({ request, auth: { user } }: HttpContext): Promise<Plaid.Institution> {
     if (!user) {

@@ -91,6 +91,10 @@ class Institution implements InstitutionInterface {
     if (!response.ok) {
       throw new Error('invalid response')
     }
+
+    runInAction(() => {
+      this.plaidInstitutionId = null;
+    })
   }
 
   async sync(institutionId: number): Promise<boolean> {

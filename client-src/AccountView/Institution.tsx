@@ -38,9 +38,6 @@ const Institution: React.FC<PropsType> = observer(({
   const handleRelinkClick = () => {
     institution.relink();
   };
-  const handleUnlinkClick = () => {
-    institution.unlink();
-  }
   const [editedAccount, setEditedAccount] = useState<AccountInterface | null>(null);
   const [DeleteConfirmation, handleDeleteClick] = useDeleteConfirmation(
     'Delete Confirmation',
@@ -57,6 +54,23 @@ const Institution: React.FC<PropsType> = observer(({
     ),
     () => {
       institution.delete();
+    },
+  );
+  const [UnlinkConfirmation, handleUnlinkClick] = useDeleteConfirmation(
+    'Unlink Confirmation',
+    'Unlink',
+    (
+      <>
+        <div>
+          Are you sure you want to unlink this institution?
+        </div>
+        <div style={{ marginTop: '1rem' }}>
+          This institution and its accounts will no longer recieve online updates. This cannot be undone.
+        </div>
+      </>
+    ),
+    () => {
+      institution.unlink();
     },
   );
 
@@ -142,6 +156,7 @@ const Institution: React.FC<PropsType> = observer(({
                       <Info size={16} strokeWidth={2.5} />
                     </LucideButton>
                     <InstitutionInfoDialog institution={institution} />
+                    <UnlinkConfirmation />
                   </>
                 )
                 : null
