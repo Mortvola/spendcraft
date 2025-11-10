@@ -45,7 +45,7 @@
     "@mortvola/usemodal": "^0.2.4",
     "@vinejs/vine": "^4.1.0",
     "@vitejs/plugin-react": "^4.6.0",
-    "argon2": "^0.43.0",
+    "argon2": "^0.44.0",
     "bcrypt": "^6.0.0",
     "bullmq": "^5.56.0",
     "camelcase-keys": "^10.0.0",
