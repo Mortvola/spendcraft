@@ -604,18 +604,46 @@ export default class AccountsController {
         endingBalance: requestData.endingBalance,
       });
 
+      const startDate = requestData.startDate.toISODate()
+      const endDate = requestData.endDate.toISODate()
+
+      if (startDate === null || endDate === null) {
+        throw new Error('start date or end date is null')
+      }
+
+      const acctTransactions = await account.related('accountTransactions').query()
+        .whereHas('transaction', (query) => {
+          query.whereBetween('date', [startDate, endDate])
+        })
+        .whereNull('statementId')
+
+      let debits = 0;
+      let credits = 0;
+
+      for (const acctTransaction of acctTransactions) {
+        await acctTransaction.merge({
+          statementId: statement.id,
+        })
+          .save()
+
+        if (acctTransaction.amount < 0) {
+          debits += acctTransaction.amount
+        } else {
+          credits += acctTransaction.amount
+        }
+      }
+
       await trx.commit()
 
       return {
         id: statement.id,
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        startDate: statement.startDate.toISODate()!,
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        endDate: statement.endDate.toISODate()!,
+        startDate,
+        endDate,
         startingBalance: statement.startingBalance,
         endingBalance: statement.endingBalance,
-        credits: 0,
-        debits: 0,
+        credits,
+        debits,
+        transactions: acctTransactions.map((acctTransaction) => acctTransaction.transactionId)
       };
     }
     catch (error) {

@@ -244,7 +244,9 @@ export interface StatementProps {
   debits: number,
 }
 
-export type AddStatementResponse = StatementProps
+export interface AddStatementResponse extends StatementProps {
+  transactions: number[],
+}
 
 export type StatementsResponse = StatementProps[]
 

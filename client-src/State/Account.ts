@@ -195,6 +195,13 @@ class Account implements AccountInterface {
           return 0
         })
 
+        for (const transactionId of props.transactions) {
+          const trx = this.transactions.transactions.find((trx) => trx.id === transactionId)
+          if (trx) {
+            trx.statementId = statement.id
+          }
+        }
+
         this.store.uiState.selectStatement(statement)
       })
 
@@ -227,9 +234,9 @@ class Account implements AccountInterface {
         const statement = this.statements.find((s) => s.id === this.store.uiState.selectedStatement?.id)
         this.store.uiState.selectStatement(statement ?? null)
       })
+    } else {
+      throw new Error('Error response received');
     }
-
-    throw new Error('Error response received');
   }
 
   updateStatement(props: StatementProps): void {
