@@ -26,7 +26,7 @@ export const updateTransaction = vine.compile(
     date: vine.date().optional().transform((date) => DateTime.fromJSDate(date)),
     comment: vine.string().trim().optional(),
     version: vine.number(),
-    statementId: vine.number().optional(),
+    statementId: vine.number().nullable().optional(),
     categories: vine.array(
       vine.object({
         categoryId: vine.number(),
