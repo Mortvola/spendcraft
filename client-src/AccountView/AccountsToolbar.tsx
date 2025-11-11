@@ -7,6 +7,7 @@ import useMediaQuery from '../MediaQuery';
 import { useTransactionDialog } from '../Transactions/TransactionDialog';
 import { useBalanceDialog } from './BalanceDialog';
 import UploadFileButton from '../UploadFileButton';
+import { TrackingType } from '../../common/ResponseTypes';
 
 interface PropsType {
   open?: boolean,
@@ -43,7 +44,7 @@ const AccountsToolbar: React.FC<PropsType> = observer(({
   )
 
   const showDialog = () => {
-    if (uiState.selectedAccount?.tracking === 'Balances') {
+    if (uiState.selectedAccount?.tracking === TrackingType.Balances) {
       showBalanceDialog();
     }
     else {
@@ -53,7 +54,7 @@ const AccountsToolbar: React.FC<PropsType> = observer(({
 
   const handleUploadOfx: ChangeEventHandler<HTMLInputElement> = async (event) => {
     if (event.target.files && event.target.files[0]) {
-      if (uiState.selectedAccount?.tracking !== 'Transactions') {
+      if (uiState.selectedAccount?.tracking !== TrackingType.Transactions) {
         throw new Error('account not selected or not tracking transactions')
       }
 
@@ -85,7 +86,7 @@ const AccountsToolbar: React.FC<PropsType> = observer(({
                 disabled={uiState.selectedAccount === null}
               >
                 {
-                  uiState.selectedAccount && uiState.selectedAccount.tracking === 'Balances'
+                  uiState.selectedAccount && uiState.selectedAccount.tracking === TrackingType.Balances
                     ? 'Add Balance'
                     : 'Add Transaction'
                 }
@@ -93,7 +94,7 @@ const AccountsToolbar: React.FC<PropsType> = observer(({
               <UploadFileButton
                 onFileSelection={handleUploadOfx}
                 label="Import OFX"
-                disabled={uiState.selectedAccount?.tracking !== 'Transactions'}
+                disabled={uiState.selectedAccount?.tracking !== TrackingType.Transactions}
               />
               <TransactionDialog account={uiState.selectedAccount} />
               <BalanceDialog balances={balances} />

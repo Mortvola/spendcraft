@@ -1,7 +1,7 @@
 import { HttpContext } from '@adonisjs/core/http';
 import db from '@adonisjs/lucid/services/db';
 import Budget from '#app/Models/Budget';
-import { BudgetProgressReportResponse, CategoryType, TransactionType } from '#common/ResponseTypes';
+import { BudgetProgressReportResponse, CategoryType, TrackingType, TransactionType } from '#common/ResponseTypes';
 import { DateTime } from 'luxon';
 
 type NetworthReportType = (string | number)[][];
@@ -94,7 +94,7 @@ class ReportController {
               .join('institutions as i', 'i.id', 'a.institution_id')
               .where('i.application_id', budget.id)
               .andWhere('a.closed', false)
-              .andWhere('a.tracking', '!=', 'Balances')
+              .andWhere('a.tracking', '!=', TrackingType.Balances)
               .andWhereIn('t.type', [
                 TransactionType.STARTING_BALANCE,
                 TransactionType.REGULAR_TRANSACTION,
@@ -320,7 +320,7 @@ class ReportController {
           .andOnVal('category_id', '=', acctTransfer.id)
       })
       .where('t.application_id', budget.id)
-      .andWhere('a.tracking', 'Transactions')
+      .andWhere('a.tracking', TrackingType.Transactions)
       .andWhere('t.type', '!=', TransactionType.STARTING_BALANCE)
       .groupByRaw('date_part(\'year\', date) || \'-\' || lpad(cast(date_part(\'month\', date) as varchar), 2, \'0\')')
       .orderBy('month', 'asc');

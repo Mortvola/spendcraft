@@ -175,7 +175,7 @@ export default class CheckBalances extends BaseCommand {
   //       const accounts = await Account
   //         .query()
   //         // .has('accountTransactions')
-  //         .where('tracking', '!=', 'Balances')
+  //         .where('tracking', '!=', TrackingType.Balances)
   //         .whereHas('institution', (query) => {
   //           query.where('budgetId', app.id)
   //         })

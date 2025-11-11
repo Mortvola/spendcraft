@@ -7,6 +7,7 @@ import Balance from './Balance';
 import { useBalanceDialog } from './BalanceDialog';
 import { BalanceInterface } from '../State/Types';
 import { DateTime } from 'luxon';
+import { TrackingType } from '../../common/ResponseTypes';
 
 const BalanceHistory: React.FC = observer(() => {
   const { balances, uiState: { selectedAccount } } = useStores();
@@ -14,7 +15,7 @@ const BalanceHistory: React.FC = observer(() => {
   const [editedBalance, setEditedBalance] = useState<BalanceInterface | null>(null);
 
   React.useEffect(() => {
-    if (selectedAccount) { //&& selectedAccount.tracking === 'Balances') {
+    if (selectedAccount) { //&& selectedAccount.tracking === TrackingType.Balances) {
       balances.load(selectedAccount);
     }
   }, [balances, selectedAccount]);
@@ -54,7 +55,7 @@ const BalanceHistory: React.FC = observer(() => {
   }
 
   return (
-    <div className={`${styles.main} ${selectedAccount?.tracking === 'Balances' ? styles.history : ''} window1`}>
+    <div className={`${styles.main} ${selectedAccount?.tracking === TrackingType.Balances ? styles.history : ''} window1`}>
       <div className="chart-wrapper window ">
         <Chart
           chartType="LineChart"
@@ -70,7 +71,7 @@ const BalanceHistory: React.FC = observer(() => {
         />
       </div>
       {
-        selectedAccount?.tracking === 'Balances'
+        selectedAccount?.tracking === TrackingType.Balances
           ? (
             <>
               <div className="window">

@@ -7,7 +7,7 @@ import AccountTransaction from '#app/Models/AccountTransaction';
 import BalanceHistory from '#app/Models/BalanceHistory';
 import Institution from '#app/Models/Institution';
 import {
-  type AccountType, CategoryBalanceProps, GroupType, type TrackingType, TransactionType,
+  type AccountType, CategoryBalanceProps, GroupType, TrackingType, TransactionType,
 } from '#common/ResponseTypes';
 import Transaction from '#app/Models/Transaction';
 import Budget from '#app/Models/Budget';
@@ -110,7 +110,7 @@ class Account extends BaseModel {
   //     throw new Error('transaction not defined');
   //   }
 
-  //   if (this.tracking !== 'Balances') {
+  //   if (this.tracking !== TrackingType.Balances) {
   //     // Retrieve the past 30 days of transactions
   //     // (unless the account start date is sooner)
   //     let startDate: DateTime;
@@ -628,7 +628,7 @@ class Account extends BaseModel {
   //     }));
   //   }
 
-  //   if (sum !== 0 && this.tracking === 'Transactions') {
+  //   if (sum !== 0 && this.tracking === TrackingType.Transactions) {
   //     const unassigned = await budget.getUnassignedCategory({ client: this.$trx });
 
   //     unassigned.amount += sum;
@@ -826,7 +826,7 @@ class Account extends BaseModel {
         this.balance += sum;
       }
 
-      if (sum !== 0 && this.tracking === 'Transactions') {
+      if (sum !== 0 && this.tracking === TrackingType.Transactions) {
         unassigned.balance += sum;
 
         await unassigned.save();

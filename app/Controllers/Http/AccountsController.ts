@@ -86,7 +86,7 @@ export default class AccountsController {
 
     let balances: BalanceHistory[] | { date: string, balance : number}[] = [];
 
-    if (account.tracking === 'Balances') {
+    if (account.tracking === TrackingType.Transactions) {
       balances = await BalanceHistory.query()
         .where('accountId', accountId)
         .orderBy('date', 'desc');
@@ -168,7 +168,7 @@ export default class AccountsController {
       let { categories } = requestData
 
       // Use the unassigned category if the categories array is empty.
-      if (account.tracking === 'Transactions' && categories.length === 0) {
+      if (account.tracking === TrackingType.Transactions && categories.length === 0) {
         categories = [{
           categoryId: unassignedCat.id,
           amount: requestData.amount,

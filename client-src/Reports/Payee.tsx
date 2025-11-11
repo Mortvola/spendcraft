@@ -9,6 +9,7 @@ import { useStores } from '../State/Store';
 import useSortableTable from './SortableTable';
 import ReportControls from './ReportControls';
 import styles from './Payee.module.scss';
+import { TrackingType } from '../../common/ResponseTypes';
 
 interface PayeeReport {
   [key: string]: string | number,
@@ -88,7 +89,7 @@ const Payee: React.FC = () => {
           unknownFilter: true,
           account: (accounts.institutions.flatMap((i) => (
             i.accounts.filter((a) => (
-              a.tracking === 'Transactions'
+              a.tracking === TrackingType.Transactions
             )))
             .map((a) => (
               {
@@ -128,7 +129,7 @@ const Payee: React.FC = () => {
                         let index = -1;
                         return (accounts.institutions.flatMap((i) => (
                           i.accounts.filter((a) => (
-                            a.tracking === 'Transactions'
+                            a.tracking === TrackingType.Transactions
                           )))
                           .map((a) => {
                             index += 1;

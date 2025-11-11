@@ -214,11 +214,11 @@ router.group(() => {
       }).prefix('/funding-plans');
   
       router.group(() => {
-        router.patch('/:trxId', [TransactionsController, 'update']);
-        router.delete('/:trxId', [TransactionsController, 'delete']);
-        router.get('/:trxId', [TransactionsController, 'get']);
-        router.post('/:trxId/dedup', [TransactionsController, 'dedup']);
-      }).prefix('/transaction');
+        router.patch('', [TransactionsController, 'update']);
+        router.delete('', [TransactionsController, 'delete']);
+        router.get('', [TransactionsController, 'get']);
+        router.post('/dedup', [TransactionsController, 'dedup']);
+      }).prefix('/transaction/:trxId');
   
       router.get('/transactions', [TransactionsController, 'getMultiple'])
   

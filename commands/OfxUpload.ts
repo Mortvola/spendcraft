@@ -5,6 +5,7 @@ import Account from '#app/Models/Account';
 import { BaseCommand } from "@adonisjs/core/ace";
 import { args } from "@adonisjs/core/ace";
 import { CommandOptions } from "@adonisjs/core/types/ace";
+import { TrackingType } from '#common/ResponseTypes';
 
 export default class OfxUpload extends BaseCommand {
   /**
@@ -54,7 +55,7 @@ export default class OfxUpload extends BaseCommand {
       const budget = await user.related('budget').query().firstOrFail();
 
       const institutions = await budget.related('institutions').query()
-        .whereHas('accounts', (accountQuery) => accountQuery.where('tracking', '!=', 'Balances'))
+        .whereHas('accounts', (accountQuery) => accountQuery.where('tracking', '!=', TrackingType.Balances))
         .orderBy('name');
 
       const institutionName = await this.prompt.choice('Select the institution', institutions.map((i) => i.name));
@@ -67,7 +68,7 @@ export default class OfxUpload extends BaseCommand {
 
       const accounts = await inst.related('accounts')
         .query()
-        .where('tracking', '!=', 'Balances')
+        .where('tracking', '!=', TrackingType.Balances)
         .orderBy('name');
 
       let selectedAccount: string | null = null;

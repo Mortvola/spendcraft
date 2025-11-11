@@ -25,7 +25,7 @@ const AccountsDialog: React.FC<PropsType & ModalProps> = ({
 
   const handleValidate = (_values: ValuesType) => {
     const errors: FormikErrors<ValuesType> = {};
-    // if (!values.tracking.some((s) => s !== 'None')) {
+    // if (!values.tracking.some((s) => s !== TrackingType.None)) {
     //   errors.tracking = 'No tracking options selected';
     // }
 
@@ -51,9 +51,9 @@ const AccountsDialog: React.FC<PropsType & ModalProps> = ({
     //       return ({ id: a.id, mask: a.mask, tracking: values.tracking[i] })
     //     }
 
-    //     return ({ id: a.id, mask: a.mask, tracking: 'Transactions' as TrackingType })
+    //     return ({ id: a.id, mask: a.mask, tracking: TrackingType.Transactions })
     //   })
-    //   // .filter((a) => (a.tracking !== 'None' && a.tracking !== undefined));
+    //   // .filter((a) => (a.tracking !== TrackingType.None && a.tracking !== undefined));
 
     // const response: unknown = null;
 

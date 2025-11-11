@@ -8,6 +8,7 @@ import styles from '../Transactions/Transactions.module.scss';
 import styles2 from './AccountDetails.module.scss'
 import PendingRegister from '../Transactions/PendingRegister';
 import StatementsView from './Statements';
+import { TrackingType } from '../../common/ResponseTypes';
 
 enum Tab {
   Transaction = 'transaction',
@@ -66,7 +67,7 @@ const AccountDetails: React.FC = observer(() => {
     <div className={`${styles2.layout}`}>
       <div className={`${styles2.mainTrayTitle} ellipsis`}>{`${selectedAccount.institution.name}: ${selectedAccount.name}`}</div>
       {
-        selectedAccount.tracking === 'Balances'
+        selectedAccount.tracking === TrackingType.Balances
           ? (
             <>
               <div />

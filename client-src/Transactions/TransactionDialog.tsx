@@ -14,7 +14,7 @@ import Amount from '../Amount';
 import { AccountInterface, TransactionCategoryInterface, TransactionInterface } from '../State/Types';
 import AmountInput from '../AmountInput';
 import useMediaQuery from '../MediaQuery';
-import { ApiError, ErrorProps, isApiErrorArray, isErrorPropsArray, RequestErrorCode, TransactionType } from '../../common/ResponseTypes';
+import { ApiError, ErrorProps, isApiErrorArray, isErrorPropsArray, RequestErrorCode, TrackingType, TransactionType } from '../../common/ResponseTypes';
 import styles from './TransactionDialog.module.scss';
 import PurchaseLocation from './PurchaseLocation';
 
@@ -339,7 +339,7 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
         <FormField name="comment" label="Memo:" />
       </div>
       {
-        account === null || account.tracking === 'Transactions'
+        account === null || account.tracking === TrackingType.Transactions
           ? renderSplits()
           : null
       }

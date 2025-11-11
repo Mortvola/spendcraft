@@ -6,6 +6,7 @@ import {
 } from '../State/Types';
 import styles from './Transactions.module.scss';
 import PostedRegister from './PostedRegister';
+import { TrackingType } from '../../common/ResponseTypes';
 
 interface PropsType {
   type: 'category' | 'account' | 'rebalances',
@@ -29,7 +30,7 @@ const Register: React.FC<PropsType> = observer(({
 
       case 'account':
         if (uiState.selectedAccount) {
-          if (!['Transactions', 'Uncategorized Transactions'].includes(uiState.selectedAccount.tracking)) {
+          if (![TrackingType.Transactions, TrackingType.UncategorizedTransactions].includes(uiState.selectedAccount.tracking)) {
             throw new Error(`invalid tracking type for register: ${uiState.selectedAccount.tracking}`);
           }
 

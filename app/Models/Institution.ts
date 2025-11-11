@@ -152,7 +152,7 @@ class Institution extends BaseModel {
         acct.$extras.addedSum = (acct.$extras.addedSum ?? 0) + amount;
       }
 
-      if (acct.tracking === 'Transactions') {
+      if (acct.tracking === TrackingType.Transactions) {
         unassignedSum += unasginedAmount;
       }
 

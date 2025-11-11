@@ -1,3 +1,4 @@
+import { TrackingType } from '#common/ResponseTypes';
 import User from '#models/User';
 import { UserService } from '#services/userService';
 import app from '@adonisjs/core/services/app';
@@ -39,7 +40,7 @@ test.group('Accounts', (group) => {
                 balance: 0,
                 type: 'investment',
                 subtype: 'IRA',
-                tracking: 'Balances'
+                tracking: TrackingType.Balances
               }
             ],
             startDate: '2025-01-01',
@@ -83,7 +84,7 @@ test.group('Accounts', (group) => {
           balance: 0,
           type: 'investment',
           subtype: 'IRA',
-          tracking: 'Balances',
+          tracking: TrackingType.Balances,
           startDate: '2025-01-01',
         })
         .accept('json')

@@ -157,12 +157,12 @@ class InstitutionController {
         });
 
         switch (newAcct.tracking) {
-          case 'Balances':
+          case TrackingType.Balances:
             await newAcct.updateAccountBalanceHistory(newAcct.balance, newAcct.startDate);
             await newAcct.save();
             break
 
-          case 'Transactions':
+          case TrackingType.Transactions:
             await newAcct.updateStartingBalance(budget, fundingPool);
             break;
         }
@@ -382,7 +382,7 @@ class InstitutionController {
   //   // eslint-disable-next-line no-await-in-loop
   //   await acctTransaction.save();
 
-  //   if (acct.tracking === 'Transactions') {
+  //   if (acct.tracking === TrackingType.Transactions) {
   //     // eslint-disable-next-line no-await-in-loop
   //     const transactionCategory = (new TransactionCategory())
   //       .fill({
@@ -536,7 +536,7 @@ class InstitutionController {
 
       await acct.save();
 
-      if (acct.tracking === 'Balances') {
+      if (acct.tracking === TrackingType.Balances) {
         await acct.updateAccountBalanceHistory(acct.balance, start);
         await acct.save();
       }
@@ -821,7 +821,7 @@ class InstitutionController {
           const transCats = transaction.categories;
 
           if (transCats.length === 0) {
-            if (acct.tracking === 'Transactions') {
+            if (acct.tracking === TrackingType.Transactions) {
                
               const unassignedCat = await budget.getUnassignedCategory({ client: budget.$trx });
 

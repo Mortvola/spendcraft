@@ -6,6 +6,7 @@ import AccountTransaction from '#app/Models/AccountTransaction';
 import {
   AccountBalanceProps, ApiResponse, CategoryBalanceProps, CategoryType, RequestErrorCode,
   StatementProps,
+  TrackingType,
   TransactionProps, TransactionsResponse, TransactionType,
   UpdateTransactionResponse,
 } from '#common/ResponseTypes';
@@ -162,7 +163,7 @@ export default class TransactionsController {
           //   split.delete();
           // }
         }
-        else if (account.tracking === 'Transactions') {
+        else if (account.tracking === TrackingType.Transactions) {
           // There are no category splits. Debit the 'Unassigned' category
           if (requestData.amount !== undefined) {
             unassigned.balance -= acctTrans.amount;
@@ -221,7 +222,7 @@ export default class TransactionsController {
             }
           }
         }
-        else if (account.tracking === 'Transactions') {
+        else if (account.tracking === TrackingType.Transactions) {
           // There are no category splits. Debit the 'Unassigned' category
           if (requestData.amount !== undefined) {
             unassigned.balance += requestData.amount;
@@ -439,7 +440,7 @@ export default class TransactionsController {
       const trxCategories = transaction.categories;
 
       if (trxCategories.length === 0) {
-        if (account && account.tracking === 'Transactions') {
+        if (account && account.tracking === TrackingType.Transactions) {
           if (!acctTransaction) {
             throw new Error('acctTransaction is null');
           }

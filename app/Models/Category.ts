@@ -3,7 +3,7 @@ import {
 } from '@adonisjs/lucid/orm';
 import db from '@adonisjs/lucid/services/db';
 import Group from '#app/Models/Group';
-import { CategoryType, TransactionType } from '#common/ResponseTypes';
+import { CategoryType, TrackingType, TransactionType } from '#common/ResponseTypes';
 import Budget from '#app/Models/Budget';
 import { DateTime } from 'luxon';
 import type { BelongsTo } from "@adonisjs/lucid/types/relations";
@@ -132,7 +132,7 @@ export default class Category extends BaseModel {
         q.whereHas('accountTransaction', (q2) => {
           q2
             .andWhereHas('account', (q3) => {
-              q3.where('tracking', 'Transactions')
+              q3.where('tracking', TrackingType.Transactions)
                 .andWhereColumn('startDate', '<=', 'transactions.date')
             })
         })
@@ -183,7 +183,7 @@ export default class Category extends BaseModel {
           q4.whereHas('accountTransaction', (q2) => {
             q2
               .andWhereHas('account', (q3) => {
-                q3.where('tracking', 'Transactions')
+                q3.where('tracking', TrackingType.Transactions)
                   .andWhereColumn('startDate', '<=', 'transactions.date')
               })
           })
@@ -204,7 +204,7 @@ export default class Category extends BaseModel {
     //     q.whereHas('accountTransaction', (q2) => {
     //       q2.where('pending', false)
     //         .whereHas('account', (q3) => {
-    //           q3.where('tracking', 'Transactions')
+    //           q3.where('tracking', TrackingType.Transactions)
     //             .whereColumn('startDate', '<=', 'transactions.date')
     //         })
     //     })
