@@ -67,7 +67,8 @@ const PostedRegister: React.FC<PropsType> = observer(({
       )
     }
 
-    let runningBalance = (category?.balance ?? account?.balance) ?? 0;
+    const accountSign = (account?.type === 'credit' ? -1 : 1)
+    let runningBalance = category?.balance ?? (account?.balance ?? 0) * accountSign;
 
     return trxContainer.transactions.map((transaction) => {
       let { amount } = transaction;
@@ -101,7 +102,7 @@ const PostedRegister: React.FC<PropsType> = observer(({
       )
 
       if (runningBalance !== undefined) {
-        runningBalance -= amount;
+        runningBalance -= amount * accountSign;
       }
 
       return element;
