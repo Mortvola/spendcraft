@@ -181,7 +181,7 @@ class Account extends BaseModel {
 
   //   this.balance = accountsResponse.accounts[0].balances.current;
   //   this.plaidBalance = accountsResponse.accounts[0].balances.current;
-  //   if (this.plaidBalance && (this.type === 'credit' || this.type === 'loan')) {
+  //   if (this.plaidBalance && (this.type === AccountType.Credit || this.type === AccountType.Loan)) {
   //     this.plaidBalance = -this.plaidBalance;
   //   }
 
@@ -227,7 +227,7 @@ class Account extends BaseModel {
   //   const sum = await this.applyTransactions(budget, transactionsResponse.transactions, pendingTransactions);
 
   //   this.plaidBalance = transactionsResponse.accounts[0].balances.current;
-  //   if (this.plaidBalance && (this.type === 'credit' || this.type === 'loan')) {
+  //   if (this.plaidBalance && (this.type === AccountType.Credit || this.type === AccountType.Loan)) {
   //     this.plaidBalance = -this.plaidBalance;
   //   }
 

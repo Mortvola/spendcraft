@@ -213,7 +213,7 @@ export default class CheckBalances extends BaseCommand {
 
   //         let transSum: number;
 
-  //         if (account.type === 'loan') {
+  //         if (account.type === AccountType.Loan) {
   //           transSum = (
   //             account.$extras.principle_sum === null
   //               ? 0

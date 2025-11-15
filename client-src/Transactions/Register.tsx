@@ -6,7 +6,7 @@ import {
 } from '../State/Types';
 import styles from './Transactions.module.scss';
 import PostedRegister from './PostedRegister';
-import { TrackingType } from '../../common/ResponseTypes';
+import { AccountType, TrackingType } from '../../common/ResponseTypes';
 
 interface PropsType {
   type: 'category' | 'account' | 'rebalances',
@@ -79,7 +79,7 @@ const Register: React.FC<PropsType> = observer(({
 
       trxContainer = account.transactions;
 
-      if (account.type === 'loan') {
+      if (account.type === AccountType.Loan) {
         transactionClassName = ` ${styles.loan}`;
       }
 

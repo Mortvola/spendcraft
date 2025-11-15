@@ -10,7 +10,7 @@ import Budget from '#app/Models/Budget';
 import { DateTime } from 'luxon';
 import type { BelongsTo, HasMany } from "@adonisjs/lucid/types/relations";
 import app from '@adonisjs/core/services/app';
-import { TrackingType } from '#common/ResponseTypes';
+import { AccountType, TrackingType } from '#common/ResponseTypes';
 
 class Institution extends BaseModel {
   @column()
@@ -70,7 +70,7 @@ class Institution extends BaseModel {
         // Only operate on the account if there is a corresponding plaid account.
         if (plaidAccount) {
           acct.plaidBalance = plaidAccount.balances.current;
-          if (acct.plaidBalance && (acct.type === 'credit' || acct.type === 'loan')) {
+          if (acct.plaidBalance && (acct.type === AccountType.Credit|| acct.type === AccountType.Loan)) {
             acct.plaidBalance = -acct.plaidBalance;
           }
 
@@ -128,7 +128,7 @@ class Institution extends BaseModel {
             officialName: plaidAccount.official_name,
             mask: plaidAccount.mask,
             subtype: plaidAccount.subtype ?? '',
-            type: plaidAccount.type,
+            type: plaidAccount.type as AccountType,
             institutionId: this.id,
             startDate: DateTime.now().startOf('month'),
             balance: 0,

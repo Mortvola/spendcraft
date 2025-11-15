@@ -6,7 +6,7 @@ import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import {
   FormField, FormModal, FormTextField, setFormErrors,
 } from '@mortvola/forms';
-import { ErrorProps, TrackingType } from '../../common/ResponseTypes';
+import { AccountType, ErrorProps, TrackingType } from '../../common/ResponseTypes';
 import AmountInput from '../AmountInput';
 import { useStores } from '../State/Store';
 import { AccountInterface, InstitutionInterface } from '../State/Types';
@@ -31,7 +31,7 @@ interface ValuesType {
 const APRField = () => {
   const { values } = useFormikContext<ValuesType>();
 
-  if (values.type === 'loan') {
+  if (values.type === AccountType.Loan) {
     return (
       <FormField
         name="rate"
@@ -169,7 +169,7 @@ const OfflineAccountDialog: React.FC<PropsType & ModalProps> = ({
         account: account ? account.name : '',
         balance: account ? account.balance.toString() : '0',
         startDate: '',
-        type: 'depository',
+        type: AccountType.Depository,
         subtype: 'checking',
         tracking: TrackingType.Transactions,
         rate: '0',

@@ -1,4 +1,4 @@
-import { TrackingType } from '#common/ResponseTypes'
+import { AccountType, TrackingType } from '#common/ResponseTypes'
 import vine from '@vinejs/vine'
 import { DateTime } from 'luxon'
 
@@ -24,9 +24,7 @@ export const addInstitutionOffline = vine.compile(
       vine.object({
         name: vine.string(),
         balance: vine.number(),
-        type: vine.enum(
-          ['depository', 'credit', 'loan', 'investment', 'other'] as const,
-        ).optional(),
+        type: vine.enum(AccountType).optional(),
         subtype: vine.string(),
         tracking: vine.enum(TrackingType)
       }),
@@ -39,7 +37,7 @@ export const addOfflineAccount = vine.compile(
   vine.object({
     name: vine.string(),
     balance: vine.number(),
-    type: vine.enum(['depository', 'credit', 'loan', 'investment', 'other'] as const),
+    type: vine.enum(AccountType),
     subtype: vine.string(),
     tracking: vine.string(),
     rate: vine.number().optional(),

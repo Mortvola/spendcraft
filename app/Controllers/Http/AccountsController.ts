@@ -11,6 +11,7 @@ import {
   AddStatementResponse,
   StatementProps,
   AddBalanceResponse,
+  AccountType,
 } from '#common/ResponseTypes';
 import Statement from '#app/Models/Statement';
 import AccountTransaction from '#app/Models/AccountTransaction';
@@ -196,7 +197,7 @@ export default class AccountsController {
         statementId: null,
       });
 
-      if (account.type === 'loan') {
+      if (account.type === AccountType.Loan) {
         account.balance += acctTransaction.principle ?? 0;
       }
       else {

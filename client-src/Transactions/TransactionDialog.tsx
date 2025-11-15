@@ -14,7 +14,7 @@ import Amount from '../Amount';
 import { AccountInterface, TransactionCategoryInterface, TransactionInterface } from '../State/Types';
 import AmountInput from '../AmountInput';
 import useMediaQuery from '../MediaQuery';
-import { ApiError, ErrorProps, isApiErrorArray, isErrorPropsArray, RequestErrorCode, TrackingType, TransactionType } from '../../common/ResponseTypes';
+import { AccountType, ApiError, ErrorProps, isApiErrorArray, isErrorPropsArray, RequestErrorCode, TrackingType, TransactionType } from '../../common/ResponseTypes';
 import styles from './TransactionDialog.module.scss';
 import PurchaseLocation from './PurchaseLocation';
 
@@ -77,7 +77,7 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
   };
 
   const handleSubmit = async (values: ValueType, { setErrors }: FormikHelpers<ValueType>) => {
-    const amount = (typeof values.amount === 'string' ? parseFloat(values.amount) : values.amount) * (account?.type === 'credit' ? -1 : 1);
+    const amount = (typeof values.amount === 'string' ? parseFloat(values.amount) : values.amount) * (account?.type === AccountType.Credit ? -1 : 1);
     const principle = typeof values.principle === 'string' ? parseFloat(values.principle) : values.principle;
 
     // If the transaction amount is less then zero then
@@ -251,7 +251,7 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
       initialValues={{
         date: transaction ? (transaction.date.toISODate() ?? '') : '',
         name: transaction ? transaction.name : '',
-        amount: transaction ? transaction.amount * (account?.type === 'credit' ? -1 : 1) : 0,
+        amount: transaction ? transaction.amount * (account?.type === AccountType.Credit ? -1 : 1) : 0,
         principle: transaction ? (transaction.principle ?? 0) : 0,
         interest: transaction ? (transaction.amount - (transaction.principle ?? 0)) : 0,
         comment: transaction && transaction.comment ? transaction.comment : '',
@@ -291,7 +291,7 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
         style={{
           display: 'grid',
           gridTemplateColumns:
-            account && account.type === 'loan'
+            account && account.type === AccountType.Loan
               ? 'minmax(0, 8rem) minmax(0, 8rem) minmax(0, 8rem) minmax(0, 1fr)'
               : 'minmax(0, 8rem) minmax(0, 1fr)',
           columnGap: '1rem',
@@ -316,7 +316,7 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
           }
         </FormField>
         {
-          account && account.type === 'loan'
+          account && account.type === AccountType.Loan
             ? (
               <>
                 <FormField

@@ -5,6 +5,7 @@ import Institution from '#app/Models/Institution';
 import Account, { AccountSyncResult } from '#app/Models/Account';
 import Category from '#app/Models/Category';
 import {
+  AccountType,
   AddInstitutionResponse, AddOfflineAccountResponse, AddOnlineAccountsResponse, ApiResponse, CategoryBalanceProps,
   InstitutionProps, InstitutionSyncResponse, TrackingType, UnlinkedAccountProps,
 } from '#common/ResponseTypes';
@@ -304,7 +305,7 @@ class InstitutionController {
 
       return accounts.map((acct) => {
         let balance = acct.balances.current;
-        if (balance !== null && (acct.type === 'credit' || acct.type === 'loan')) {
+        if (balance !== null && (acct.type === AccountType.Credit || acct.type === AccountType.Loan)) {
           balance = -balance;
         }
 
@@ -430,7 +431,7 @@ class InstitutionController {
      
     for (const plaidAccount of plaidAccountsResponse.accounts) {
       let balance = plaidAccount.balances.current ?? 0;
-      if (balance && (plaidAccount.type === 'credit' || plaidAccount.type === 'loan')) {
+      if (balance && (plaidAccount.type === AccountType.Credit || plaidAccount.type === AccountType.Loan)) {
         balance = -balance;
       }
 
@@ -446,7 +447,7 @@ class InstitutionController {
           officialName: plaidAccount.official_name,
           mask: plaidAccount.mask,
           subtype: plaidAccount.subtype ?? '',
-          type: plaidAccount.type,
+          type: plaidAccount.type as AccountType,
           institutionId: institution.id,
           startDate: DateTime.now().startOf('month'),
           balance,

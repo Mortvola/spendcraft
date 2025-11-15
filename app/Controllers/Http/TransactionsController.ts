@@ -4,7 +4,7 @@ import Category from '#app/Models/Category';
 import Transaction from '#app/Models/Transaction';
 import AccountTransaction from '#app/Models/AccountTransaction';
 import {
-  AccountBalanceProps, ApiResponse, CategoryBalanceProps, CategoryType, RequestErrorCode,
+  AccountBalanceProps, AccountType, ApiResponse, CategoryBalanceProps, CategoryType, RequestErrorCode,
   StatementProps,
   TrackingType,
   TransactionProps, TransactionsResponse, TransactionType,
@@ -251,7 +251,7 @@ export default class TransactionsController {
         || requestData.principle !== undefined
         || requestData.statementId !== undefined
       ) {
-        if (account.type === 'loan') {
+        if (account.type === AccountType.Loan) {
           account.balance -= acctTrans.principle ?? 0;
         }
         else {
@@ -287,7 +287,7 @@ export default class TransactionsController {
 
         await acctTrans.save();
 
-        if (account.type === 'loan') {
+        if (account.type === AccountType.Loan) {
           account.balance += acctTrans.principle ?? 0;
         }
         else {
@@ -497,7 +497,7 @@ export default class TransactionsController {
         }
 
         if (!acctTransaction.pending) {
-          if (account.type === 'loan') {
+          if (account.type === AccountType.Loan) {
             account.balance -= acctTransaction.principle ?? 0;
           }
           else {

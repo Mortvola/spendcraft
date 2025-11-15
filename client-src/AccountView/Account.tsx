@@ -7,6 +7,7 @@ import { getSubTypeName } from '../State/AccountTypes';
 import Amount from '../Amount';
 import styles from './Account.module.scss';
 import { useDeleteConfirmation } from '../DeleteConfirmation';
+import { AccountType } from '../../common/ResponseTypes';
 
 interface PropsType {
   selected: boolean,
@@ -89,7 +90,7 @@ const Account: React.FC<PropsType> = observer(({
         </div>
         <div>{getSubTypeName(account.type, account.subtype)}</div>
         {
-          account.type === 'loan'
+          account.type === AccountType.Loan
             ? (
               <div>
                 {

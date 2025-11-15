@@ -8,7 +8,7 @@ import RegisterTitles from './RegisterTitles';
 import useTrxDialog from './TrxDialog';
 import Transaction from './Transaction';
 import { useStores } from '../State/Store';
-import { TransactionType } from '../../common/ResponseTypes';
+import { AccountType, TransactionType } from '../../common/ResponseTypes';
 import styles from './Transactions.module.scss';
 import { useNotification } from '../Notification';
 
@@ -67,7 +67,7 @@ const PostedRegister: React.FC<PropsType> = observer(({
       )
     }
 
-    const accountSign = (account?.type === 'credit' ? -1 : 1)
+    const accountSign = (account?.type === AccountType.Credit ? -1 : 1)
     let runningBalance = category?.balance ?? (account?.balance ?? 0) * accountSign;
 
     return trxContainer.transactions.map((transaction) => {
@@ -85,7 +85,7 @@ const PostedRegister: React.FC<PropsType> = observer(({
       else if (category !== null) {
         amount = transaction.getAmountForCategory(category.id);
       }
-      else if (account && account.type === 'loan') {
+      else if (account && account.type === AccountType.Loan) {
         amount = transaction.principle ?? 0;
       }
 

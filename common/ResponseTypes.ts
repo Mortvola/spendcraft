@@ -134,7 +134,13 @@ export const isCategoryProps = (r: unknown): r is CategoryProps => (
   && (r as CategoryProps)?.balance !== undefined
 );
 
-export type AccountType = 'depository' | 'credit' | 'loan' | 'investment' | 'other';
+export enum AccountType {
+  Depository = 'depository',
+  Credit = 'credit',
+  Loan = 'loan',
+  Investment = 'investment',
+  Other = 'other',
+}
 
 export interface AccountProps {
   id: number;
