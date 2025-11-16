@@ -62,6 +62,10 @@ class Account implements AccountInterface {
   @observable
   accessor statements: Statement[] = [];
 
+  get sign(): number {
+    return this.type === AccountType.Credit ? -1 : 1
+  }
+
   store: StoreInterface;
 
   constructor(store: StoreInterface, institution: InstitutionInterface, props: AccountProps) {

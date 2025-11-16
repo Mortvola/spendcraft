@@ -81,7 +81,7 @@ const Transaction: React.FC<PropsType> = observer(({
       }
       <Date className={styles.date} date={transaction.date} />
       <div className={styles.name}>{transaction.name}</div>
-      <Amount className={`${styles.amount} currency`} amount={amount * (account?.type === AccountType.Credit ? -1 : 1)} />
+      <Amount className={`${styles.amount} currency`} amount={amount * (account?.sign ?? 1)} />
       <Amount className={`${styles.runningBalance} currency`} amount={runningBalance} />
       <TransactionAccount transaction={transaction} />
       {transactionAmount()}

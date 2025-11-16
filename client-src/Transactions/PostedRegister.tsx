@@ -67,7 +67,7 @@ const PostedRegister: React.FC<PropsType> = observer(({
       )
     }
 
-    const accountSign = (account?.type === AccountType.Credit ? -1 : 1)
+    const accountSign = account?.sign ?? 1
     let runningBalance = category?.balance ?? (account?.balance ?? 0) * accountSign;
 
     return trxContainer.transactions.map((transaction) => {

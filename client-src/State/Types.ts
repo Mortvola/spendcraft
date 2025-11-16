@@ -453,6 +453,8 @@ export interface AccountInterface {
 
   statements: Statement[]
 
+  get sign(): number
+
   store: StoreInterface;
 
   update(props: AccountProps): void;

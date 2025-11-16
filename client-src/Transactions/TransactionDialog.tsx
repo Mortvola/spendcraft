@@ -77,7 +77,7 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
   };
 
   const handleSubmit = async (values: ValueType, { setErrors }: FormikHelpers<ValueType>) => {
-    const amount = (typeof values.amount === 'string' ? parseFloat(values.amount) : values.amount) * (account?.type === AccountType.Credit ? -1 : 1);
+    const amount = (typeof values.amount === 'string' ? parseFloat(values.amount) : values.amount) * (account?.sign ?? 1);
     const principle = typeof values.principle === 'string' ? parseFloat(values.principle) : values.principle;
 
     // If the transaction amount is less then zero then
@@ -251,7 +251,7 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
       initialValues={{
         date: transaction ? (transaction.date.toISODate() ?? '') : '',
         name: transaction ? transaction.name : '',
-        amount: transaction ? transaction.amount * (account?.type === AccountType.Credit ? -1 : 1) : 0,
+        amount: transaction ? transaction.amount * (account?.sign ?? 1) : 0,
         principle: transaction ? (transaction.principle ?? 0) : 0,
         interest: transaction ? (transaction.amount - (transaction.principle ?? 0)) : 0,
         comment: transaction && transaction.comment ? transaction.comment : '',
