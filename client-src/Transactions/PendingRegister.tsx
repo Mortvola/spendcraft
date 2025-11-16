@@ -21,6 +21,8 @@ const PendingRegister: React.FC<PropsType> = observer(({
   const [TrxDialog, showTrxDialog] = useTrxDialog(); // account ?? undefined);
   const { uiState } = useStores();
 
+  const account = uiState.selectedAccount;
+
   const handleClick = (transaction: BaseTransactionInterface) => {
     uiState.selectTransaction(transaction as TransactionInterface);
     if (
@@ -42,6 +44,7 @@ const PendingRegister: React.FC<PropsType> = observer(({
                 transaction={transaction}
                 amount={transaction.amount}
                 runningBalance={0}
+                account={account}
                 onClick={handleClick}
               />
             ))
