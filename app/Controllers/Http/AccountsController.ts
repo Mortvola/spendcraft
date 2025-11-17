@@ -87,7 +87,7 @@ export default class AccountsController {
 
     let balances: BalanceHistory[] | { date: string, balance : number}[] = [];
 
-    if (account.tracking === TrackingType.Transactions) {
+    if (account.tracking === TrackingType.Balances) {
       balances = await BalanceHistory.query()
         .where('accountId', accountId)
         .orderBy('date', 'desc');
