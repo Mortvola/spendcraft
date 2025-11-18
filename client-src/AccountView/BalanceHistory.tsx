@@ -26,16 +26,16 @@ const BalanceHistory: React.FC = observer(() => {
   const b = balances.balances
 
   if (b.length > 0) {
-    t.push({ balance: b[0].balance, date: b[0].date })
+    t.push({ balance: b[0].balance * (selectedAccount?.sign ?? 1), date: b[0].date })
 
     let d = t[0].date.minus({ days: 1 })
     for (let i = 1; i < b.length; i += 1) {
       while (d.toSeconds() > b[i].date.toSeconds()) {
-        t.push({ balance: b[i].balance, date: d })
+        t.push({ balance: b[i].balance * (selectedAccount?.sign ?? 1), date: d })
         d = d.minus({ day : 1 })
       }
 
-      t.push({ balance: b[i].balance, date: b[i].date })
+      t.push({ balance: b[i].balance * (selectedAccount?.sign ?? 1), date: b[i].date })
       d = b[i].date.minus({ days: 1})
     }
 

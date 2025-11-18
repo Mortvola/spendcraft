@@ -6,6 +6,7 @@ import Statement from '../State/Statement';
 import styles from './StatementView.module.scss'
 import StatementDate from './StatementDate';
 import StatementAmount from './StatementAmount';
+import { useStores } from '../State/Store';
 
 interface PropsType {
   statement: Statement
@@ -14,6 +15,9 @@ interface PropsType {
 const StatementView: React.FC<PropsType> = observer(({
   statement,
 }) => {
+  const { uiState: { selectedAccount } } = useStores()
+  const accountSign = selectedAccount?.sign ?? 1;
+
   const handleReconcileAll = () => {
     statement.update({ reconcile: 'All' })
   }
@@ -31,12 +35,14 @@ const StatementView: React.FC<PropsType> = observer(({
   }
 
   const handleStartingBalanceUpdate = (amount: number) => {
-    statement.update({ startingBalance: amount })
+    statement.update({ startingBalance: amount * accountSign })
   }
 
   const handleEndingBalanceUpdate = (amount: number) => {
-    statement.update({ endingBalance: amount })
+    statement.update({ endingBalance: amount * accountSign })
   }
+
+  const reverseClassName = (accountSign === -1 ? 'reverse' : '')
 
   return (
     <div className={styles.layout}>
@@ -49,30 +55,32 @@ const StatementView: React.FC<PropsType> = observer(({
         </label>
         <label>
           Starting Balance:
-          <StatementAmount amount={statement.startingBalance} onUpdate={handleStartingBalanceUpdate} />
+          <StatementAmount amount={statement.startingBalance * accountSign} onUpdate={handleStartingBalanceUpdate} />
         </label>
         <label>
           Credits:
-          <Amount amount={statement.credits} />
+          <Amount className={reverseClassName} amount={statement.credits * accountSign} />
         </label>
         <label>
           Debits:
-          <Amount amount={statement.debits} />
+          <Amount className={reverseClassName} amount={statement.debits * accountSign} />
         </label>
         <label>
           Ending Balance:
           <Amount
-            amount={statement.startingBalance + statement.credits + statement.debits}
+            className={reverseClassName}
+            amount={(statement.startingBalance + statement.credits + statement.debits) * accountSign}
           />
         </label>
         <label>
           Target Ending Balance:
-          <StatementAmount amount={statement.endingBalance} onUpdate={handleEndingBalanceUpdate} />
+          <StatementAmount amount={statement.endingBalance * accountSign} onUpdate={handleEndingBalanceUpdate} />
         </label>
         <label>
           Ending Balance Difference:
           <Amount
-            amount={statement.startingBalance + statement.credits + statement.debits - statement.endingBalance}
+            className={reverseClassName}
+            amount={(statement.startingBalance + statement.credits + statement.debits - statement.endingBalance) * accountSign}
           />
         </label>
       </div>

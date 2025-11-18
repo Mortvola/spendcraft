@@ -211,6 +211,10 @@ body {
   color: red;
 }
 
+.negative.reverse {
+  color: lightgreen
+}
+
 .group-element-bar {
   display: grid;
   grid-template-columns: max-content max-content max-content;

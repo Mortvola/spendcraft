@@ -32,14 +32,14 @@ interface StatementInterface {
 
 interface PropsType {
   statement?: StatementInterface | null,
-  account?: AccountInterface | null,
+  account: AccountInterface,
   onReload?: () => void,
 }
 
 const StatementDialog: React.FC<PropsType & ModalProps> = ({
   setShow,
   statement = null,
-  account = null,
+  account,
   onReload,
 }) => {
   interface ValueType {
@@ -61,20 +61,16 @@ const StatementDialog: React.FC<PropsType & ModalProps> = ({
       errors = await statement.update({
         startDate: values.startDate,
         endDate: values.endDate,
-        startingBalance: values.startingBalance,
-        endingBalance: values.endingBalance,
+        startingBalance: values.startingBalance * account.sign,
+        endingBalance: values.endingBalance * account.sign,
       });
     }
     else {
-      if (!account) {
-        throw new Error('account is null');
-      }
-
       errors = await account.addStatement(
         values.startDate,
         values.endDate,
-        values.startingBalance,
-        values.endingBalance,
+        values.startingBalance * account.sign,
+        values.endingBalance * account.sign,
       );
     }
 
@@ -115,8 +111,8 @@ const StatementDialog: React.FC<PropsType & ModalProps> = ({
       initialValues={{
         startDate: statement ? (statement.startDate.toISODate() ?? '') : '',
         endDate: statement ? (statement.endDate.toISODate() ?? '') : '',
-        startingBalance: statement ? statement.startingBalance : 0,
-        endingBalance: statement ? statement.endingBalance : 0,
+        startingBalance: statement ? statement.startingBalance * account.sign : 0,
+        endingBalance: statement ? statement.endingBalance * account.sign : 0,
       }}
       setShow={setShow}
       title={statement ? 'Edit Statement' : 'Add Statement'}

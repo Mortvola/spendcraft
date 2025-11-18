@@ -76,13 +76,13 @@ const Account: React.FC<PropsType> = observer(({
       <div className={styles.accountInfo}>
         <div className={styles.accountName}>{account.name}</div>
         <div style={{ display: 'flex' }}>
-          <Amount style={{ textAlign: 'left' }} amount={account.balance} />
+          <Amount style={{ textAlign: 'left' }} amount={account.balance * account.sign} />
           {
             account.plaidBalance !== null && account.balance !== account.plaidBalance
               ? (
                 <>
                   <div>/</div>
-                  <Amount style={{ textAlign: 'left' }} amount={account.plaidBalance} />
+                  <Amount style={{ textAlign: 'left' }} amount={account.plaidBalance * account.sign} />
                 </>
               )
               : null

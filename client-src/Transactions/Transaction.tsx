@@ -72,6 +72,9 @@ const Transaction: React.FC<PropsType> = observer(({
       : null
   );
 
+  const accountSign = account?.sign ?? 1
+  const reverseClassName = accountSign === -1 ? 'reverse' : ''
+
   return (
     <div className={`${className ?? ''} ${styles.transaction} ${transaction.pending ? styles.pendingTrx : ''}`} onClick={handleClick}>
       {
@@ -81,8 +84,8 @@ const Transaction: React.FC<PropsType> = observer(({
       }
       <Date className={styles.date} date={transaction.date} />
       <div className={styles.name}>{transaction.name}</div>
-      <Amount className={`${styles.amount} currency`} amount={amount * (account?.sign ?? 1)} />
-      <Amount className={`${styles.runningBalance} currency`} amount={runningBalance} />
+      <Amount className={`${styles.amount} currency ${reverseClassName}`} amount={amount * accountSign} />
+      <Amount className={`${styles.runningBalance} currency ${reverseClassName}`} amount={runningBalance} />
       <TransactionAccount transaction={transaction} />
       {transactionAmount()}
       { loanFields() }
