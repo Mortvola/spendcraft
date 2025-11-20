@@ -23,14 +23,22 @@
   display: flex;
 }
 
+.inner-title {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .back-button {
-  font-size: 1.25rem;
   width: 0;
   overflow: hidden;
   transition: width 0.3s;
 
   &:global(.open) {
     width: 1rem;
+    display: flex;
+    align-items: center;
   }  
 }
 

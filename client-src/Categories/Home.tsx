@@ -44,6 +44,7 @@ const Home: React.FC = observer(() => {
           <Outlet />
         </Main>
       </DesktopView>
+      
       <MobileView>
         <NavigationView
           title="Categories"

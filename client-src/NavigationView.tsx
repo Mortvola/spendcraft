@@ -1,5 +1,6 @@
 import React from 'react';
 import styles from './NavigationView.module.scss';
+import { ChevronLeft, EllipsisVertical } from 'lucide-react';
 
 interface PropsType {
   title: string,
@@ -18,8 +19,11 @@ const NavigationView: React.FC<PropsType> = ({
 }) => (
   <div className={styles.outerWrapper}>
     <div className={styles.titleWrapper} onClick={onClose}>
-      <div className={`${styles.backButton} ${open ? 'open' : ''}`}>{'<'}</div>
-      <div className={`${styles.title} ${open ? 'open' : ''}`}>{title}</div>
+      <div className={`${styles.backButton} ${open ? 'open' : ''}`}><ChevronLeft /></div>
+      <div className={styles.innerTitle}>
+        <div className={`${styles.title} ${open ? 'open' : ''}`}>{title}</div>
+        <EllipsisVertical />
+      </div>
     </div>
     <div className={styles.wrapper}>
       { children }

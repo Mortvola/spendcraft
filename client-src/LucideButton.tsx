@@ -9,13 +9,13 @@ interface PropsType {
   children: React.ReactNode;
 }
 
-const LucideButton: React.FC<PropsType> = ({
+const LucideButton = React.forwardRef<HTMLButtonElement, PropsType>(({
   caption,
   className,
   rotate,
   onClick,
   children,
-}) => {
+}, ref) => {
   const handleClick: React.MouseEventHandler<HTMLButtonElement> = (event) => {
     event.stopPropagation()
 
@@ -25,7 +25,12 @@ const LucideButton: React.FC<PropsType> = ({
   }
 
   return (
-    <button type="button" className={`btn btn-sm ${styles.layout} ${rotate ? styles.rotate : ''} ${className ?? ''}`} onClick={handleClick}>
+    <button
+      ref={ref}
+      type="button"
+      className={`btn btn-sm ${styles.layout} ${rotate ? styles.rotate : ''} ${className ?? ''}`}
+      onClick={handleClick}
+    >
       { children }
       <div>
         {
@@ -34,6 +39,6 @@ const LucideButton: React.FC<PropsType> = ({
       </div>
     </button>
   );
-}
+})
 
 export default LucideButton;
