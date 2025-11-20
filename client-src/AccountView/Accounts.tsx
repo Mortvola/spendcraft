@@ -11,11 +11,18 @@ import styles from './Accounts.module.scss';
 import DesktopView from '../DesktopView';
 import MobileView from '../MobileView';
 import NavigationView from '../NavigationView';
+import TabViewMenu from '../TabView/TabViewMenu';
+import { EllipsisVertical } from 'lucide-react';
+import TabViewMenuItem from '../TabView/TabViewMenuItem';
+import { useOfflineAccountDialog } from './OfflineAccountDialog';
+import { useStores } from '../State/Store';
 
 const Accounts: React.FC = observer(() => {
+  const { accounts } = useStores()
   const [open, setOpen] = useState<boolean>(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const [OfflineAccountDialog, showOfflineAccountDialog] = useOfflineAccountDialog();
 
   React.useEffect(() => {
     const matched = matchPath({ path: '/accounts/:accountId', caseSensitive: false, end: true }, location.pathname);
@@ -31,6 +38,19 @@ const Accounts: React.FC = observer(() => {
   const handleClose = () => {
     navigate('/accounts')
   }
+
+  const handleAddInstitution = () => {
+    accounts.linkInstitution();
+  };
+
+  const renderMenu = () => (
+    <TabViewMenu
+      icon={<EllipsisVertical size={24} strokeWidth={1} />}
+    >
+      <TabViewMenuItem onClick={handleAddInstitution}>Add Online Institution</TabViewMenuItem>
+      <TabViewMenuItem onClick={showOfflineAccountDialog}>Add Offline Institution</TabViewMenuItem>
+    </TabViewMenu>
+  )
 
   return (
     <>
@@ -60,9 +80,8 @@ const Accounts: React.FC = observer(() => {
           title="Accounts"
           open={open}
           onClose={handleClose}
-          details={(
-            <Outlet />
-          )}
+          details={<Outlet />}
+          menu={open ? undefined : renderMenu() }
         >
           <div className={styles.accounts}>
             <Tabs className="mb-3" mountOnEnter unmountOnExit>
@@ -74,6 +93,7 @@ const Accounts: React.FC = observer(() => {
               </Tab>
             </Tabs>
           </div>
+          <OfflineAccountDialog />
         </NavigationView>
       </MobileView>
     </>
