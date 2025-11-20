@@ -17,14 +17,17 @@ import TabViewMenuItem from '../TabView/TabViewMenuItem';
 import { useOfflineAccountDialog } from './OfflineAccountDialog';
 import { useStores } from '../State/Store';
 import { useTransactionDialog } from '../Transactions/TransactionDialog';
+import { TrackingType } from '../../common/ResponseTypes';
+import { useBalanceDialog } from './BalanceDialog';
 
 const Accounts: React.FC = observer(() => {
-  const { accounts } = useStores()
+  const { accounts, uiState, balances } = useStores()
   const [open, setOpen] = useState<boolean>(false);
   const location = useLocation();
   const navigate = useNavigate();
   const [OfflineAccountDialog, showOfflineAccountDialog] = useOfflineAccountDialog();
   const [TransactionDialog, showTransactionDialog] = useTransactionDialog();
+  const [BalanceDialog, showBalanceDialog] = useBalanceDialog();
 
   React.useEffect(() => {
     const matched = matchPath({ path: '/accounts/:accountId', caseSensitive: false, end: true }, location.pathname);
@@ -58,7 +61,12 @@ const Accounts: React.FC = observer(() => {
     <TabViewMenu
       icon={<EllipsisVertical size={24} strokeWidth={1} />}
     >
-      <TabViewMenuItem onClick={showTransactionDialog}>Add Transaction</TabViewMenuItem>
+      {
+        uiState.selectedAccount && uiState.selectedAccount.tracking === TrackingType.Balances
+          ? <TabViewMenuItem onClick={showBalanceDialog}>Add Balance</TabViewMenuItem>
+          : <TabViewMenuItem onClick={showTransactionDialog}>Add Transaction</TabViewMenuItem>
+      }
+      
       <TabViewMenuItem>Import OFX</TabViewMenuItem>
     </TabViewMenu>
   )
@@ -105,7 +113,8 @@ const Accounts: React.FC = observer(() => {
             </Tabs>
           </div>
           <OfflineAccountDialog />
-          <TransactionDialog />
+          <TransactionDialog account={uiState.selectedAccount} />
+          <BalanceDialog balances={balances} />
         </NavigationView>
       </MobileView>
     </>
