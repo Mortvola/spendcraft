@@ -16,6 +16,7 @@ import { EllipsisVertical } from 'lucide-react';
 import TabViewMenuItem from '../TabView/TabViewMenuItem';
 import { useOfflineAccountDialog } from './OfflineAccountDialog';
 import { useStores } from '../State/Store';
+import { useTransactionDialog } from '../Transactions/TransactionDialog';
 
 const Accounts: React.FC = observer(() => {
   const { accounts } = useStores()
@@ -23,6 +24,7 @@ const Accounts: React.FC = observer(() => {
   const location = useLocation();
   const navigate = useNavigate();
   const [OfflineAccountDialog, showOfflineAccountDialog] = useOfflineAccountDialog();
+  const [TransactionDialog, showTransactionDialog] = useTransactionDialog();
 
   React.useEffect(() => {
     const matched = matchPath({ path: '/accounts/:accountId', caseSensitive: false, end: true }, location.pathname);
@@ -49,6 +51,15 @@ const Accounts: React.FC = observer(() => {
     >
       <TabViewMenuItem onClick={handleAddInstitution}>Add Online Institution</TabViewMenuItem>
       <TabViewMenuItem onClick={showOfflineAccountDialog}>Add Offline Institution</TabViewMenuItem>
+    </TabViewMenu>
+  )
+
+  const renderAccountMenu = () => (
+    <TabViewMenu
+      icon={<EllipsisVertical size={24} strokeWidth={1} />}
+    >
+      <TabViewMenuItem onClick={showTransactionDialog}>Add Transaction</TabViewMenuItem>
+      <TabViewMenuItem>Import OFX</TabViewMenuItem>
     </TabViewMenu>
   )
 
@@ -81,7 +92,7 @@ const Accounts: React.FC = observer(() => {
           open={open}
           onClose={handleClose}
           details={<Outlet />}
-          menu={open ? undefined : renderMenu() }
+          menu={open ? renderAccountMenu() : renderMenu() }
         >
           <div className={styles.accounts}>
             <Tabs className="mb-3" mountOnEnter unmountOnExit>
@@ -94,6 +105,7 @@ const Accounts: React.FC = observer(() => {
             </Tabs>
           </div>
           <OfflineAccountDialog />
+          <TransactionDialog />
         </NavigationView>
       </MobileView>
     </>

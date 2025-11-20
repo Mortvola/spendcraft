@@ -57,8 +57,9 @@ const TabViewMenu: React.FC<PropsType> = ({
     setPosition(undefined)
   }
 
-  const handleWrapperClick = () => {
+  const handleWrapperClick: React.MouseEventHandler<HTMLDivElement> = (event) => {
     setOpen(false);
+    event.stopPropagation()
   }
 
   return (
