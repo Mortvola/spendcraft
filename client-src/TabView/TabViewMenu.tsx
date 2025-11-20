@@ -6,9 +6,7 @@ import LucideButton from '../LucideButton';
 
 interface PropsType {
   icon: React.ReactNode,
-  caption: string,
-  // url: string,
-  // onClick: () => void,
+  caption?: string,
   children?: React.ReactNode,
 }
 
