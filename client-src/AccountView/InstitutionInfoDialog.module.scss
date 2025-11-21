@@ -1,3 +1,8 @@
+.layout {
+	display: flex;
+	align-items: center;
+}
+
 .title {
 	font-weight: bold;
 	margin-bottom: 1rem;
@@ -8,6 +13,14 @@
 .status-item {
   display: grid;
   grid-template-columns: 1.5fr repeat(5, minmax(0, 1fr));
+}
+
+.logo {
+	margin-right: 1rem;
+}
+
+.name {
+	font-size: x-large;
 }
 
 .incident {

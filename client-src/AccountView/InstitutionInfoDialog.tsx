@@ -130,19 +130,20 @@ const InstitutionInfoDialog: React.FC<PropsType & ModalProps> = ({
     if (info) {
       return (
         <div>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-            }}
-          >
+          <div className={styles.layout}>
             {
-              // info.logo
-              //   ? <img src={`data:image/png;base64, ${info.logo}`} alt="logo" width="48" height="48" />
-              //   : null
+              info.logo
+                ? <img
+                    className={styles.logo}
+                    src={`data:image/png;base64, ${info.logo}`}
+                    alt="logo"
+                    width="48"
+                    height="48"
+                  />
+                : null
             }
-            <div style={{ marginLeft: '1rem' }}>
-              <div style={{ fontSize: 'x-large' }}>{info.name}</div>
+            <div>
+              <div className={styles.name}>{info.name}</div>
               {
                 info.url
                   ? <a href={info.url} rel="noopener noreferrer" target="_blank">{info.url}</a>
