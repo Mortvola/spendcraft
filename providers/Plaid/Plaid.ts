@@ -96,14 +96,10 @@ class PlaidWrapper {
     }
 
     try {
-      const param =         {
+      const response = await this.plaid.accountsGet({
         access_token: institution.accessToken,
         options,
-      };
-
-      const response = await this.plaid.accountsGet(
-        param,
-      );
+      });
 
       await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution.institutionId)
 
@@ -166,12 +162,10 @@ class PlaidWrapper {
     }
 
     try {
-      const response = await this.plaid.accountsBalanceGet(
-        {
-          access_token: institution.accessToken,
-        },
+      const response = await this.plaid.accountsBalanceGet({
+        access_token: institution.accessToken,
         options,
-      );
+      });
 
       await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution.institutionId)
 
@@ -220,16 +214,12 @@ class PlaidWrapper {
     }
 
     try {
-      const param: Plaid.TransactionsGetRequest = {
+      const response = await this.plaid.transactionsGet({
         access_token: institution.accessToken,
         start_date: startDate,
         end_date: endDate,
         options,
-      };
-
-      const response = await this.plaid.transactionsGet(
-        param,
-      );
+      });
 
       await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institution.institutionId)
 
@@ -271,13 +261,11 @@ class PlaidWrapper {
     options?: Plaid.InstitutionsGetByIdRequestOptions,
   ): Promise<Plaid.InstitutionsGetByIdResponse> {
     try {
-      const response = await this.plaid.institutionsGetById(
-        {
-          institution_id: institutionId,
-          country_codes: countryCodes,
-        },
+      const response = await this.plaid.institutionsGetById({
+        institution_id: institutionId,
+        country_codes: countryCodes,
         options,
-      );
+      });
 
       await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status)
 

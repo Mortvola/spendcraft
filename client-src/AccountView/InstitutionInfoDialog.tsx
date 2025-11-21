@@ -58,30 +58,29 @@ const InstitutionInfoDialog: React.FC<PropsType & ModalProps> = ({
     })();
   }
 
-  const product = (value: string) => {
-    const words = value.replace('_', ' ').split(' ');
+  // const product = (value: string) => {
+  //   const words = value.replace('_', ' ').split(' ');
 
-    return words.map((w) => (
-      w[0].toUpperCase() + w.substring(1)
-    ))
-      .join(' ');
-  };
+  //   return words.map((w) => (
+  //     w[0].toUpperCase() + w.substring(1)
+  //   ))
+  //     .join(' ');
+  // };
 
   const percent = (value: number) => `${(value * 100).toFixed(0)}%`;
 
-  const renderStatus = (): ReactElement[] | null => {
-    if (info && info.status) {
-      return Object.entries(info.status)
-        .filter(([, value]) => value !== null)
-        .map(([key, value]) => (
-          <div className={styles.statusItem} key={key}>
-            <div>{product(key)}</div>
-            <div>{percent((value as Plaid.ProductStatus).breakdown.success)}</div>
-            <div>{percent((value as Plaid.ProductStatus).breakdown.error_plaid)}</div>
-            <div>{percent((value as Plaid.ProductStatus).breakdown.error_institution)}</div>
-            <div>{DateTime.fromISO((value as Plaid.ProductStatus).last_status_change).toRelative()}</div>
-          </div>
-        ));
+  const renderStatus = (): ReactElement | null => {
+    const transctionUpdates = info?.status?.transactions_updates;
+    if (transctionUpdates) {
+      return (
+        <div className={styles.statusItem}>
+          <div>Transaction Updates</div>
+          <div>{percent(transctionUpdates.breakdown.success)}</div>
+          <div>{percent(transctionUpdates.breakdown.error_plaid)}</div>
+          <div>{percent(transctionUpdates.breakdown.error_institution)}</div>
+          <div>{DateTime.fromISO(transctionUpdates.last_status_change).toRelative()}</div>
+        </div>
+      );
     }
 
     return null;
@@ -97,7 +96,11 @@ const InstitutionInfoDialog: React.FC<PropsType & ModalProps> = ({
               alignItems: 'center',
             }}
           >
-            <img src={`data:image/png;base64, ${info.logo}`} alt="logo" width="48" height="48" />
+            {
+              // info.logo
+              //   ? <img src={`data:image/png;base64, ${info.logo}`} alt="logo" width="48" height="48" />
+              //   : null
+            }
             <div style={{ marginLeft: '1rem' }}>
               <div style={{ fontSize: 'x-large' }}>{info.name}</div>
               {
@@ -110,7 +113,6 @@ const InstitutionInfoDialog: React.FC<PropsType & ModalProps> = ({
           <div>
             <div className={`${styles.title} ${styles.statusItem}`}>
               <div>Product</div>
-              <div>Status</div>
               <div>Success Rate</div>
               <div>Plaid Errors</div>
               <div>Institution Errors</div>
