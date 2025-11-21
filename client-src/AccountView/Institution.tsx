@@ -14,6 +14,7 @@ import styles from './Institution.module.scss';
 import { useRelinkDialog } from './RelinkDialog';
 import LucideButton from '../LucideButton';
 import { useOfflineInstitutionDialog } from './OfflineInstitutionDialog';
+import { DateTime } from 'luxon';
 
 interface PropsType {
   institution: InstitutionInterface,
@@ -76,7 +77,7 @@ const Institution: React.FC<PropsType> = observer(({
 
   let syncDate: string | null = null;
   if (institution.syncDate) {
-    syncDate = `as of ${institution.syncDate.toFormat('LL-dd-y T')}`;
+    syncDate = `as of ${institution.syncDate.toLocaleString(DateTime.DATETIME_MED)}`;
   }
 
   const handleEditAccount = (account: AccountInterface) => {
