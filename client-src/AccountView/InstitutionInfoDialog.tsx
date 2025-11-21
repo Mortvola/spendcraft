@@ -73,18 +73,58 @@ const InstitutionInfoDialog: React.FC<PropsType & ModalProps> = ({
     const transctionUpdates = info?.status?.transactions_updates;
     if (transctionUpdates) {
       return (
-        <div className={styles.statusItem}>
-          <div>Transaction Updates</div>
-          <div>{percent(transctionUpdates.breakdown.success)}</div>
-          <div>{percent(transctionUpdates.breakdown.error_plaid)}</div>
-          <div>{percent(transctionUpdates.breakdown.error_institution)}</div>
-          <div>{DateTime.fromISO(transctionUpdates.last_status_change).toRelative()}</div>
+        <div>
+          <div className={`${styles.title} ${styles.statusItem}`}>
+            <div>Product</div>
+            <div>Success Rate</div>
+            <div>Plaid Errors</div>
+            <div>Institution Errors</div>
+            <div>Last Status Change</div>
+          </div>
+          <div className={styles.statusItem}>
+            <div>Transaction Updates</div>
+            <div>{percent(transctionUpdates.breakdown.success)}</div>
+            <div>{percent(transctionUpdates.breakdown.error_plaid)}</div>
+            <div>{percent(transctionUpdates.breakdown.error_institution)}</div>
+            <div>{DateTime.fromISO(transctionUpdates.last_status_change).toRelative()}</div>
+          </div>
         </div>
       );
     }
 
     return null;
   };
+
+  const renderHealthIncidents = () => {
+    const healthIncidents = info?.status?.health_incidents;
+
+    if (healthIncidents) {
+      return (
+        <div>
+          {
+            healthIncidents.map((incident) => (
+              <div className={styles.incident}>
+                <div>{incident.title}</div>
+                <div>Start: {DateTime.fromISO(incident.start_date).toLocaleString(DateTime.DATETIME_MED)}</div>
+                <div>End: {incident.end_date ? DateTime.fromISO(incident.end_date).toLocaleString(DateTime.DATETIME_MED) : ''}</div>
+                <div>
+                  {
+                    incident.incident_updates.map((update) => (
+                      <div className={styles.update}>
+                        <div>{update.description}</div>
+                        <div>Status: {update.status}</div>
+                        <div>Updated at: {update.updated_date ? DateTime.fromISO(update.updated_date).toLocaleString(DateTime.DATETIME_MED) : ''}</div>
+                      </div>
+                    ))
+                  }
+                </div>
+              </div>
+            ))
+          }
+        </div>
+      )
+    }
+  }
 
   const renderForm = () => {
     if (info) {
@@ -110,16 +150,8 @@ const InstitutionInfoDialog: React.FC<PropsType & ModalProps> = ({
               }
             </div>
           </div>
-          <div>
-            <div className={`${styles.title} ${styles.statusItem}`}>
-              <div>Product</div>
-              <div>Success Rate</div>
-              <div>Plaid Errors</div>
-              <div>Institution Errors</div>
-              <div>Last Status Change</div>
-            </div>
-            {renderStatus()}
-          </div>
+          {renderStatus()}
+          {renderHealthIncidents()}
         </div>
       );
     }
@@ -128,7 +160,7 @@ const InstitutionInfoDialog: React.FC<PropsType & ModalProps> = ({
   };
 
   return (
-    <>
+    <div className={styles.modalWrapper}>
       <Header />
       <Modal.Body>
         {
@@ -136,7 +168,7 @@ const InstitutionInfoDialog: React.FC<PropsType & ModalProps> = ({
         }
       </Modal.Body>
       <Footer setShow={setShow} isSubmitting={false} />
-    </>
+    </div>
   );
 };
 

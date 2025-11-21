@@ -10,3 +10,20 @@
   grid-template-columns: 1.5fr repeat(5, minmax(0, 1fr));
 }
 
+.incident {
+	margin-top: 0.5rem;
+	border: thin gray solid;
+	padding: 0.35rem;
+
+	.update {
+		margin-left: 0.5rem;
+		margin-top: 0.5rem;
+		border-top: thin gray solid;
+	}
+}
+
+.modal-wrapper {
+	display: grid;
+	height: 100%;
+	grid-template-rows: max-content minmax(0,1fr) max-content;
+}
