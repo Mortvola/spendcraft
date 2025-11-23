@@ -26,7 +26,15 @@ class Overview {
 
     if (body) {
       runInAction(() => {
-        this.bills = body.map((props) => new Bill(props));
+        this.bills = body.map((props) => {
+          const category = this.store.categoryTree.getCategory(props.id)
+
+          if (!category) {
+            throw new Error(`category not found for bill id ${props.id}`)
+          }
+
+          return new Bill(props, category)
+        });
 
         this.initialized = true;
       });

@@ -662,11 +662,11 @@ export type BillsResponse = BillProps[]
 export interface BillInterface {
   id: number;
 
-  name: string;
-
   amount: number;
 
   date: DateTime | null;
 
-  debits: number | null,
+  debits: number | null;
+
+  category: CategoryInterface;
 }
