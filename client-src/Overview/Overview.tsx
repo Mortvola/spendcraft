@@ -17,7 +17,7 @@ const Overview = observer(() => {
           overview.bills
             .filter((bill) => !bill.category.suspended && bill.date?.month === DateTime.now().month && bill.category.recurrence === 1)
             .map((bill) => (
-              <Bill key={bill.id} bill={bill} />
+              <Bill key={bill.category.id} bill={bill} />
             ))
         }
       </div>
@@ -28,7 +28,7 @@ const Overview = observer(() => {
           overview.bills
             .filter((bill) => !bill.category.suspended && bill.date?.month === DateTime.now().month && bill.category.recurrence !== 1)
             .map((bill) => (
-              <Bill key={bill.id} bill={bill} />
+              <Bill key={bill.category.id} bill={bill} />
             ))
         }
       </div>
@@ -39,7 +39,7 @@ const Overview = observer(() => {
           overview.bills
             .filter((bill) => !bill.category.suspended && bill.date?.month !== DateTime.now().month)
             .map((bill) => (
-              <Bill key={bill.id} bill={bill} />
+              <Bill key={bill.category.id} bill={bill} />
             ))
         }
       </div>

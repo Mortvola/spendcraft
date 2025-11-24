@@ -660,10 +660,6 @@ export interface PlaidLogInterface {
 export type BillsResponse = BillProps[]
 
 export interface BillInterface {
-  id: number;
-
-  amount: number;
-
   date: DateTime | null;
 
   debits: number | null;
