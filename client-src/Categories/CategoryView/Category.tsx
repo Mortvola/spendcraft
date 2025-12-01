@@ -4,6 +4,7 @@ import Amount from '../../Amount';
 import EditButton from './EditButton';
 import { CategoryInterface } from '../../State/Types';
 import { CategoryType } from '../../../common/ResponseTypes';
+import styles from './Category.module.scss';
 
 interface PropsType {
   category: CategoryInterface,
@@ -31,13 +32,13 @@ const Category: React.FC<PropsType> = observer(({
     className += ' selected';
   }
 
-  let barClassName = 'cat-element-bar';
+  let barClassName = styles.catElementBar;
   if (
     category.type !== CategoryType.Loan
     && category.type !== CategoryType.Regular
     && category.type !== CategoryType.Bill
   ) {
-    barClassName += ' system';
+    barClassName += ` ${styles.system}`;
   }
 
   return (
@@ -49,9 +50,9 @@ const Category: React.FC<PropsType> = observer(({
               ? <EditButton category={category} />
               : null
           }
-          <div className="cat-list-name">{category.name}</div>
+          <div className={styles.catListName}>{category.name}</div>
         </div>
-        <Amount className="cat-list-amt" amount={category.balance} />
+        <Amount className={styles.catListAmt} amount={category.balance} />
       </div>
       {
         category.subcategories.length > 0
@@ -71,7 +72,7 @@ const Category: React.FC<PropsType> = observer(({
               <div className="cat-list-cat" style={{ marginLeft: 25 * (level + 1) }}>
                 <div style={{ justifySelf: 'end', paddingRight: '6px' }}>Total</div>
                 <Amount
-                  className="cat-list-amt"
+                  className={styles.catListAmt}
                   amount={category.getTotalBalance()}
                   style={{ borderTop: 'thin solid white ' }}
                 />

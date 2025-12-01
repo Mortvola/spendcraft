@@ -3,6 +3,7 @@ import { observer } from 'mobx-react-lite';
 import Amount from '../../Amount';
 import { CategoryInterface } from '../../State/Types';
 import { useStores } from '../../State/Store';
+import styles from './Category.module.scss';
 
 interface PropsType {
   category: CategoryInterface | null,
@@ -28,10 +29,10 @@ const SystemCategory: React.FC<PropsType> = observer(({
   if (category) {
     return (
       <div className={className} onClick={handleClick}>
-        <div className="cat-element-bar system">
-          <div className="cat-list-name">{category.name}</div>
+        <div className={`${styles.catElementBar} ${styles.system}`}>
+          <div className={styles.catListName}>{category.name}</div>
         </div>
-        <Amount className="cat-list-amt" amount={category.balance} />
+        <Amount className={styles.catListAmt} amount={category.balance} />
       </div>
     );
   }
