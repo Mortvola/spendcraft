@@ -32,6 +32,9 @@ class UIState implements UIStateInterface {
   @observable
   accessor plaid: Plaid | null = null;
 
+  @observable
+  accessor search = { name: '', amount: '' }
+
   groupState: ObservableMap
 
   accountState: ObservableMap

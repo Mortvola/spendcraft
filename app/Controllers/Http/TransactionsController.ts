@@ -567,11 +567,18 @@ export default class TransactionsController {
 
     const budget = await user.related('budget').query().firstOrFail();
 
-    const results = await budget.related('transactions').query()
+    let nameSearch = request.qs().name;
+    if (nameSearch) {
+      nameSearch = nameSearch.trim()
+    }
+
+    let amountSearch = request.qs().amount;
+    if (amountSearch) {
+      amountSearch = amountSearch.trim()
+    }
+
+    const search = budget.related('transactions').query()
       .where('deleted', false)
-      .whereHas('accountTransaction', (q) => {
-        q.whereILike('name', `%${request.qs().name.trim()}%`)
-      })
       .preload('accountTransaction', (accountTransaction) => {
         accountTransaction.preload('account', (account) => {
           account.preload('institution');
@@ -580,6 +587,20 @@ export default class TransactionsController {
       .limit(request.qs().limit)
       .offset(request.qs().offset)
       .orderBy('date', 'desc')
+
+    if (nameSearch) {
+      search.whereHas('accountTransaction', (q) => {
+        q.whereILike('name', `%${nameSearch}%`)
+      })
+    }
+
+    if (amountSearch) {
+      search.whereHas('accountTransaction', (q) => {
+        q.where('amount', parseFloat(amountSearch))
+      })
+    }
+
+    const results = await search;
 
     return {
       data: {

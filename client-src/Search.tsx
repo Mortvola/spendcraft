@@ -1,7 +1,7 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
 import {
-  Field, Form, Formik, FormikErrors, FormikValues,
+  Field, Form, Formik, FormikErrors,
 } from 'formik';
 import { useStores } from './State/Store';
 import PostedRegister from './Transactions/PostedRegister';
@@ -9,21 +9,38 @@ import trxStyles from './Transactions/Transactions.module.scss';
 import styles from './Search.module.scss';
 
 const Search: React.FC = observer(() => {
-  const { searcher } = useStores();
+  const { searcher, uiState } = useStores();
 
   interface Values {
-    search: ''
+    name: string,
+    amount: string,
   }
 
-  const handleSubmit = (values: FormikValues) => {
-    searcher.transactions.getData(0, `name=${values.search}`);
+  const handleSubmit = (values: Values) => {
+    let queryString = '';
+
+    if (values.name.trim() !== '') {
+      queryString = `name=${values.name}`
+    }
+
+    if (values.amount.trim() !== '') {
+      if (queryString !== '') {
+        queryString += '&'
+      }
+
+      queryString += `amount=${values.amount}`
+    }
+
+    searcher.transactions.getData(0, queryString);
+
+    uiState.search = { name: values.name, amount: values.amount }
   }
 
-  const handleValidate = (values: FormikValues): FormikErrors<Values> => {
+  const handleValidate = (values: Values): FormikErrors<Values> => {
     const errors: FormikErrors<Values> = {};
 
-    if (values.search.trim() === '') {
-      errors.search = 'A non-empty search string must be provided';
+    if (values.name.trim() === '' && values.amount.trim() === '') {
+      errors.name = 'A non-empty search string must be provided';
     }
 
     return errors;
@@ -32,13 +49,22 @@ const Search: React.FC = observer(() => {
   return (
     <div className={styles.layout}>
       <Formik<Values>
-        initialValues={{ search: '' }}
+        initialValues={{ name: uiState.search.name, amount: uiState.search.amount }}
         onSubmit={handleSubmit}
         validate={handleValidate}
       >
         <Form>
           <div className={styles.form}>
-            <Field name="search" />
+            <div className={styles.criteria}>
+              <div className={styles.search}>
+                Name:
+                <Field name="name" />
+              </div>
+              <div className={styles.search}>
+                Amount:
+                <Field name="amount" />
+              </div>
+            </div>
             <button type="submit">
               Search
             </button>

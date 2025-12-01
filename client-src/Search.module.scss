@@ -2,12 +2,25 @@
   display: grid;
   grid-template-rows: max-content minmax(0, 1fr);
   grid-template-columns: minmax(0, 1fr);
+
 }
 
 .form {
   margin: 0.5rem;
+  display: flex;
+  flex-direction: row;
+  column-gap: 0.5rem;
 }
 
-.form > * {
-  margin-right: 0.5rem;
+.criteria {
+  display: flex;
+  flex-direction: row;
+  column-gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.search {
+  display: flex;
+  flex-direction: row;
+  column-gap: 0.5rem;
 }

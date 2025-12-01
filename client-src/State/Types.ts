@@ -281,6 +281,8 @@ export interface UIStateInterface {
   selectedStatement: Statement | null;
   selectedTransaction: TransactionInterface | null;
   plaid: PlaidInterface | null;
+
+  search: { name: string, amount: string };
 }
 
 export interface BudgetInterface extends GroupInterface {
