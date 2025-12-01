@@ -15,7 +15,7 @@ const Overview = observer(() => {
         <MinorTitle>Monthly Bills</MinorTitle>
         {
           overview.bills
-            .filter((bill) => !bill.category.suspended && bill.date?.month === DateTime.now().month && bill.category.recurrence === 1)
+            .filter((bill) => !bill.category.suspended && bill.category.computedGoalDate()?.month === DateTime.now().month && bill.category.recurrence === 1)
             .map((bill) => (
               <Bill key={bill.category.id} bill={bill} />
             ))
@@ -26,7 +26,7 @@ const Overview = observer(() => {
         <MinorTitle>Other Bills Due This Month</MinorTitle>
         {
           overview.bills
-            .filter((bill) => !bill.category.suspended && bill.date?.month === DateTime.now().month && bill.category.recurrence !== 1)
+            .filter((bill) => !bill.category.suspended && bill.category.computedGoalDate()?.month === DateTime.now().month && bill.category.recurrence !== 1)
             .map((bill) => (
               <Bill key={bill.category.id} bill={bill} />
             ))
@@ -37,7 +37,7 @@ const Overview = observer(() => {
         <MinorTitle>Upcoming Bills</MinorTitle>
         {
           overview.bills
-            .filter((bill) => !bill.category.suspended && bill.date?.month !== DateTime.now().month)
+            .filter((bill) => !bill.category.suspended && bill.category.computedGoalDate()?.month !== DateTime.now().month)
             .map((bill) => (
               <Bill key={bill.category.id} bill={bill} />
             ))

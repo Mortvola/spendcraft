@@ -235,6 +235,8 @@ export interface CategoryInterface {
   updateBalance(balance: CategoryBalanceProps): void;
 
   getGroup(): GroupInterface;
+
+  computedGoalDate(): DateTime | null;
 }
 
 export interface RebalancesInterface {
@@ -660,8 +662,6 @@ export interface PlaidLogInterface {
 export type BillsResponse = BillProps[]
 
 export interface BillInterface {
-  date: DateTime | null;
-
   debits: number | null;
 
   category: CategoryInterface;

@@ -672,7 +672,6 @@ class CategoriesController {
     return null;
   }
 
-   
   public async getBills({
     auth: {
       user,
@@ -695,11 +694,7 @@ class CategoriesController {
         day: 1, hour: 0, minute: 0, second: 0, millisecond: 0,
       })
 
-     
     for (const bill of bills) {
-      bill.goalDate = CategoriesController.getGoalDate(bill.goalDate, bill.recurrence)
-
-       
       const debits = await budget
         .related('transactions').query()
          
@@ -713,21 +708,8 @@ class CategoriesController {
       bill.$extras.debits = debits[0].$extras.debits;
     }
 
-    bills.sort((a, b) => (a.goalDate && b.goalDate ? a.goalDate.diff(b.goalDate, 'days').days : 0))
-
-     
-    // for (const b of bills) {
-    //   console.log(`${b.name}, ${b.fundingAmount}, ${b.balance}, ${b.$extras.goalDate.toISODate()}`)
-    // }
-
     return bills.map<BillProps>((bill) => ({
       id: bill.id,
-      name: bill.name,
-      fundingAmount: bill.fundingAmount,
-      balance: bill.balance,
-      goalDate: bill.goalDate?.toISODate() ?? '',
-      recurrence: bill.recurrence,
-      suspended: bill.suspended,
       debits: bill.$extras.debits !== null ? parseFloat(bill.$extras.debits ?? '0.00') : null,
     }));
   }

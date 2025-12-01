@@ -36,6 +36,14 @@ class Overview {
           return new Bill(props, category)
         });
 
+        this.bills.sort((a, b) => {
+          const goalDateA = a.category.computedGoalDate();
+          const goalDateB = b.category.computedGoalDate();
+          return goalDateA && goalDateB
+            ? goalDateA.diff(goalDateB, 'days').days
+            : 0;
+        })
+
         this.initialized = true;
       });
     }

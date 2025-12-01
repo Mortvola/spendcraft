@@ -20,7 +20,7 @@ const Bill: React.FC<PropsType> = observer(({
       <div key={bill.category.id} className={styles.layout}>
         <div className={`${styles.name} ellipsis`} onClick={showCategoryDialog}>{bill.category.name}</div>
         <Amount amount={bill.category.fundingAmount} />
-        <Date date={bill.date} />
+        <Date date={bill.category.computedGoalDate()} />
         <Amount amount={bill.debits} noValue="" />
       </div>
       <CategoryDialog category={bill.category} />

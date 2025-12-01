@@ -330,7 +330,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
                     <CategorySpread
                       name="fundingCategories"
                       categories={formikProps.values.fundingCategories}
-                      title="Categories Funded from:"
+                      title="Funded from:"
                       types={[CategoryType.Regular, CategoryType.Goal, CategoryType.FundingPool]}
                     />
                   )

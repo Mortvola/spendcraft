@@ -214,6 +214,23 @@ class Category implements CategoryInterface {
   getGroup(): GroupInterface {
     return this.store.categoryTree.getCategoryGroup(this.id);
   }
+
+  computedGoalDate(): DateTime | null {
+    if (this.useGoal && this.goalDate) {
+      let adjustedGoal = this.goalDate
+      const now = DateTime.now().startOf('month');
+
+      const monthDiff = this.goalDate.startOf('month').diff(now, 'months').months;
+      if (monthDiff < 0) {
+        const numPeriods = Math.ceil(-monthDiff / this.recurrence);
+        adjustedGoal = this.goalDate.plus({ months: numPeriods * this.recurrence })
+      }
+
+      return adjustedGoal;
+    }
+
+    return null;
+  }
 }
 
 export const isCategory = (r: unknown): r is Category => (

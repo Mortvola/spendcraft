@@ -873,11 +873,5 @@ export enum PendingQueryFlag {
 
 export interface BillProps {
   id: number,
-  name: string,
-  fundingAmount: number,
-  balance: number,
-  goalDate: string,
-  recurrence: number,
-  suspended: boolean,
   debits: number | null,
 }
