@@ -29,7 +29,8 @@ class Category implements CategoryInterface {
   @observable
   accessor balance = 0;
 
-  suspended = false;
+  @observable
+  accessor suspended = false;
 
   fundingAmount = 0;
 

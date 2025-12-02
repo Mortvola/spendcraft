@@ -2,6 +2,10 @@
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
+
+  &.suspended {
+    text-decoration: line-through;
+  }
 }
 
 .cat-list-amt {

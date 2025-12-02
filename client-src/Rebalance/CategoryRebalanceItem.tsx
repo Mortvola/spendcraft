@@ -1,6 +1,7 @@
 import React from 'react';
 import AmountInput from '../AmountInput';
 import Amount from '../Amount';
+import styles from './CategoryRebalanceItem.module.scss';
 
 interface PropsType {
   category: { name: string, balance: number, adjustment: number },
@@ -13,7 +14,7 @@ const CategoryRebalanceItem: React.FC<PropsType> = ({
   onDeltaChange,
   style,
 }) => (
-  <div className="cat-rebalance-item">
+  <div className={styles.catRebalanceItem}>
     <div style={style}>{category.name}</div>
     <Amount amount={category.balance} />
     <AmountInput value={category.adjustment} onDeltaChange={onDeltaChange} />

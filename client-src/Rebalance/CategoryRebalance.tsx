@@ -6,6 +6,7 @@ import {
 import { isGroup } from '../State/Group';
 import { useStores } from '../State/Store';
 import { CategoryType } from '../../common/ResponseTypes';
+import styles from './CategoryRebalanceItem.module.scss';
 
 interface PropsType {
   onDeltaChange: null | ((amunt: number, delta: number, categories: unknown) => void),
@@ -74,7 +75,7 @@ const CategoryRebalance: React.FC<PropsType> = ({
       <>
         <CategoryRebalanceItem
           key={category.id}
-          style={{ paddingLeft: padding }}
+          style={{ paddingLeft: padding, textDecoration: category.suspended ? 'line-through' : undefined }}
           category={{ name: category.name, balance: balance ? balance.balance : 0, adjustment }}
           onDeltaChange={(amount: number, delta: number) => (
             handleDeltaChange(amount, delta, category)
@@ -101,7 +102,7 @@ const CategoryRebalance: React.FC<PropsType> = ({
           if (node.children.length > 0) {
             return (
               <>
-                <div key={node.id} className="cat-rebalance-group" style={{ paddingLeft: padding }}>
+                <div key={node.id} className={styles.catRebalanceGroup} style={{ paddingLeft: padding }}>
                   {node.name}
                 </div>
                 {populateCategories(node.children, padding + 28)}
@@ -140,7 +141,7 @@ const CategoryRebalance: React.FC<PropsType> = ({
   };
 
   return (
-    <div className="cat-rebalance-container">
+    <div className={styles.catRebalanceContainer}>
       {populateTree()}
     </div>
   );

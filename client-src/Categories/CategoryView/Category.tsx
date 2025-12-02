@@ -41,6 +41,11 @@ const Category: React.FC<PropsType> = observer(({
     barClassName += ` ${styles.system}`;
   }
 
+  let nameClassName = styles.catListName;
+  if (category.suspended) {
+    nameClassName += ` ${styles.suspended}`
+  }
+
   return (
     <>
       <div className={className} style={{ marginLeft: 25 * level }} onClick={handleClick}>
@@ -50,7 +55,7 @@ const Category: React.FC<PropsType> = observer(({
               ? <EditButton category={category} />
               : null
           }
-          <div className={styles.catListName}>{category.name}</div>
+          <div className={nameClassName}>{category.name}</div>
         </div>
         <Amount className={styles.catListAmt} amount={category.balance} />
       </div>

@@ -461,27 +461,6 @@ body {
   margin-right: 14px;
 }
 
-.cat-rebalance-container {
-  overflow-y: auto;
-}
-
-.cat-rebalance-item {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  grid-gap: 14px;
-}
-
-.cat-rebalance-item div:first-child {
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  overflow: hidden;
-}
-
-.cat-rebalance-group .cat-rebalance-group,
-.cat-rebalance-group .cat-rebalance-item>div:first-child {
-  padding-left: 28px;
-}
-
 .scrollable-form {
   display: grid;
   height: 100%;
