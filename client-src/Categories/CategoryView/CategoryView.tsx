@@ -108,14 +108,16 @@ const CategoryView: React.FC = observer(() => {
   const renderCategories = () => (
     <div className={styles.categories}>
       {
-        categoryTree.budget.fundingPoolCat?.subcategories.map((subcat) => (
-          <Category
-            key={`${subcat.id}`}
-            category={subcat}
-            onCategorySelected={handleCategorySelected}
-            selectedCategory={uiState.selectedCategory}
-          />
-        ))
+        categoryTree.budget.fundingPoolCat?.subcategories
+          .filter((subcat) => (!subcat.hidden || uiState.showHidden))
+          .map((subcat) => (
+            <Category
+              key={`${subcat.id}`}
+              category={subcat}
+              onCategorySelected={handleCategorySelected}
+              selectedCategory={uiState.selectedCategory}
+            />
+          ))
       }
       {
         <Group

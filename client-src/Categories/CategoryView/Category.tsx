@@ -5,6 +5,7 @@ import EditButton from './EditButton';
 import { CategoryInterface } from '../../State/Types';
 import { CategoryType } from '../../../common/ResponseTypes';
 import styles from './Category.module.scss';
+import { useStores } from '../../State/Store';
 
 interface PropsType {
   category: CategoryInterface,
@@ -19,6 +20,8 @@ const Category: React.FC<PropsType> = observer(({
   onCategorySelected,
   level = 0,
 }) => {
+  const { uiState } = useStores()
+
   const handleClick = () => {
     onCategorySelected(category);
   };
@@ -45,6 +48,9 @@ const Category: React.FC<PropsType> = observer(({
   if (category.suspended) {
     nameClassName += ` ${styles.suspended}`
   }
+  if (category.hidden) {
+    nameClassName += ` ${styles.hidden}`
+  }
 
   return (
     <>
@@ -64,15 +70,17 @@ const Category: React.FC<PropsType> = observer(({
           ? (
             <>
               {
-                category.subcategories.map((sub) => (
-                  <Category
-                    key={`${sub.id}`}
-                    category={sub}
-                    onCategorySelected={() => handleSubcategoryClick(sub)}
-                    selectedCategory={selectedCategory}
-                    level={level + 1}
-                  />
-                ))
+                category.subcategories
+                  .filter((sub) => (!sub.hidden || uiState.showHidden))
+                  .map((sub) => (
+                    <Category
+                      key={`${sub.id}`}
+                      category={sub}
+                      onCategorySelected={() => handleSubcategoryClick(sub)}
+                      selectedCategory={selectedCategory}
+                      level={level + 1}
+                    />
+                  ))
               }
               <div className="cat-list-cat" style={{ marginLeft: 25 * (level + 1) }}>
                 <div style={{ justifySelf: 'end', paddingRight: '6px' }}>Total</div>

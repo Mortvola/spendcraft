@@ -6,6 +6,10 @@
   &.suspended {
     text-decoration: line-through;
   }
+
+  &.hidden {
+    color: gray;
+  }
 }
 
 .cat-list-amt {

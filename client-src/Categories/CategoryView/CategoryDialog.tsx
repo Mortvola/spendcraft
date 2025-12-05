@@ -49,6 +49,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
     groupId: string,
     goalDate: string,
     fundingCategories: CategorySpreadEntry[],
+    hidden: boolean,
   }
 
   const handleCategoryTypeChange = (newType: CategoryType) => {
@@ -78,6 +79,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
         useGoal: values.type !== CategoryType.Regular,
         goalDate: DateTime.fromISO(values.goalDate),
         fundingCategories: values.fundingCategories,
+        hidden: values.hidden,
       });
     }
     else {
@@ -92,6 +94,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
         useGoal: values.type !== CategoryType.Regular,
         goalDate: DateTime.fromISO(values.goalDate),
         fundingCategories: values.fundingCategories,
+        hidden: values.hidden,
       });
     }
 
@@ -208,6 +211,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
         recurrence: category?.recurrence.toString() ?? '1',
         goalDate: getGoalDate(category?.goalDate, category?.recurrence),
         fundingCategories: initialCategories(category?.fundingCategories),
+        hidden: category?.hidden ?? false,
         // monthlyExpenses: category ? category.monthlyExpenses : false,
       }}
       validate={handleValidate}
@@ -274,6 +278,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
                 <FormError name="group" />
               </label>
             </div>
+            <FormCheckbox name="hidden" label="Hidden" />
             <div className={styles.divider} />
             <div className={`${categoryTypeClass()}`}>
               <div className={styles.fundingTitle}>Funding Settings</div>

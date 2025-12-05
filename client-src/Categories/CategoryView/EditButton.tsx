@@ -1,5 +1,5 @@
 import React from 'react';
-import { SquarePen } from 'lucide-react';
+import { Calendar, SquarePen } from 'lucide-react';
 import { useCategoryDialog } from './CategoryDialog';
 import { CategoryInterface } from '../../State/Types';
 import { CategoryType } from '../../../common/ResponseTypes';
@@ -36,7 +36,12 @@ const EditButton: React.FC<PropsType> = ({
   return (
     <div onClick={handleClick}>
       <LucideButton className={styles.catButton} onClick={showDialog}>
-        <SquarePen size={16} strokeWidth={2.5} />
+        {
+          category.useGoal
+            ? <Calendar size={16} strokeWidth={2.5} color={category.type === CategoryType.Bill ? '#ff8f8f' : undefined} />
+            : <SquarePen size={16} strokeWidth={2.5} />
+        }
+        
       </LucideButton>
       <CategoryDialog category={category} />
     </div>

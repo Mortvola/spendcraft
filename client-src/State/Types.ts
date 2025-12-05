@@ -220,6 +220,8 @@ export interface CategoryInterface {
     transactions: LoanTransaction[];
   };
 
+  hidden: boolean;
+
   store: StoreInterface;
 
   getTotalBalance(): number;
@@ -283,6 +285,8 @@ export interface UIStateInterface {
   plaid: PlaidInterface | null;
 
   search: { name: string, amount: string };
+
+  showHidden: boolean;
 }
 
 export interface BudgetInterface extends GroupInterface {
@@ -588,6 +592,7 @@ export interface CategoryParams {
   group: GroupInterface,
   useGoal: boolean,
   fundingCategories: unknown,
+  hidden: boolean,
 }
 
 export interface AutoAssignmentProps {

@@ -53,6 +53,9 @@ class Category implements CategoryInterface {
     transactions: LoanTransaction[];
   } = { balance: 0, transactions: [] };
 
+  @observable
+  accessor hidden = false;
+
   store: StoreInterface;
 
   constructor(props: CategoryProps, store: StoreInterface) {
@@ -67,6 +70,7 @@ class Category implements CategoryInterface {
     this.useGoal = props.useGoal ?? false;
     this.recurrence = props.recurrence;
     this.fundingCategories = props.fundingCategories.map((c, index) => ({ id: index, ...c }));
+    this.hidden = props.hidden;
     this.store = store;
 
     this.transactions = new TransactionContainer(
@@ -120,7 +124,6 @@ class Category implements CategoryInterface {
           ? fundingCategories
           : [],
       goalDate: goalDate?.toISODate(),
-      hidden: false,
     });
 
     const body = await response.body();
@@ -146,6 +149,8 @@ class Category implements CategoryInterface {
           this.recurrence = body.data.recurrence;
           this.goalDate = DateTime.fromISO(body.data.goalDate);
           this.fundingCategories = body.data.fundingCategories.map((c, index) => ({ id: index, ...c }));
+
+          this.hidden = body.data.hidden;
 
           // Find the group the category is currently in
           // and possibly move it to the new group.

@@ -42,6 +42,9 @@ class UIState implements UIStateInterface {
   @observable
   accessor accountsState = true
 
+  @observable
+  accessor showHidden = false
+
   store: StoreInterface;
 
   constructor(store: StoreInterface) {

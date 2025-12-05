@@ -7,6 +7,10 @@ import { isCategory } from '../../State/Category';
 import Amount from '../../Amount';
 import { useStores } from '../../State/Store';
 import { GroupType } from '../../../common/ResponseTypes';
+import { Settings } from 'lucide-react';
+import LucideButton from '../../LucideButton';
+import styles from './Group.module.scss';
+import { useRootDialog } from './RootDialog';
 
 interface PropsType {
   group: GroupInterface,
@@ -22,6 +26,7 @@ const Group: React.FC<PropsType> = observer(({
   level = 0,
 }) => {
   const { uiState } = useStores()
+  const [RootDialog, showRootDialog] = useRootDialog();
 
   return (
     <>
@@ -30,8 +35,15 @@ const Group: React.FC<PropsType> = observer(({
           <GroupButtons group={group} />
           {
             group.type === GroupType.NoGroup
-              ? <div className="group-name">Categories</div>
-              : <div className="group-name">{group.name}</div>
+              ? (
+                <div className={styles.root}>
+                  Categories
+                  <LucideButton onClick={showRootDialog}>
+                    <Settings size={16} strokeWidth={2.5}  />
+                  </LucideButton>
+                </div>
+              )
+              : <div>{group.name}</div>
           }
         </div>
         {
@@ -45,13 +57,17 @@ const Group: React.FC<PropsType> = observer(({
           ? group.children.map((category) => (
             isCategory(category)
               ? (
-                <Category
-                  key={category.name}
-                  category={category}
-                  onCategorySelected={onCategorySelected}
-                  selectedCategory={selectedCategory}
-                  level={level + 1}
-                />
+                !category.hidden || uiState.showHidden
+                  ? (
+                    <Category
+                      key={category.name}
+                      category={category}
+                      onCategorySelected={onCategorySelected}
+                      selectedCategory={selectedCategory}
+                      level={level + 1}
+                    />
+                  )
+                  : null
               )
               : (
                 <Group
@@ -65,6 +81,7 @@ const Group: React.FC<PropsType> = observer(({
             ))
           : null
       }
+      <RootDialog />
     </>
   )
 });
