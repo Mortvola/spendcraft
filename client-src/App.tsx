@@ -39,15 +39,36 @@ import PlaidLogsView from './PlaidLogs/PlaidLogsView';
 import PlaidLogs from './PlaidLogs/PlaidLogs';
 import Overview from './Overview/Overview';
 import OverviewView from './Overview/OverviewView';
+import { createPortal } from 'react-dom';
 
 const App: React.FC = observer(() => {
   const error = useContext(ServerError);
-  const stores = useStores();
+  const { user, uiState } = useStores();
+
+  React.useEffect(() => {
+    const blurEventListener = () => {
+      uiState.setVisibility(false)
+    }
+
+    const focusEventListener = () => {
+      uiState.setVisibility(true)
+    }
+
+    window.addEventListener("blur", blurEventListener)
+    window.addEventListener("focus", focusEventListener)
+
+    return (
+      () => {
+        window.removeEventListener("blur", blurEventListener)
+        window.removeEventListener("focus", focusEventListener)
+      }
+    )
+  })
 
   Http.unauthorizedHandler = () => {
-    if (stores.user.authenticated) {
+    if (user.authenticated) {
       runInAction(() => [
-        stores.user.authenticated = false
+        user.authenticated = false
       ])
     }
   };
@@ -73,19 +94,31 @@ const App: React.FC = observer(() => {
   }
 
   return (
-    <RequireAuth>
-      <div className={styles.layout}>
-        <DesktopView>
-          <Menubar />
-          <Outlet />
-        </DesktopView>
-        <MobileView>
-          <Outlet />
-          <TabView />
-        </MobileView>
-        <PlaidLink />
-      </div>
-    </RequireAuth>
+    <>
+      <RequireAuth>
+        <div className={styles.layout}>
+          <DesktopView>
+            <Menubar />
+            <Outlet />
+          </DesktopView>
+          <MobileView>
+            <Outlet />
+            <TabView />
+          </MobileView>
+          <PlaidLink />
+        </div>
+      </RequireAuth>
+      {
+        !uiState.visible
+          ? (
+            createPortal(
+              <div className={styles.cover} />,
+              document.body,
+            )
+          )
+          : null
+      }
+    </>
   );
 });
 

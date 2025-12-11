@@ -270,6 +270,7 @@ export interface UIStateInterface {
   toggleGroupExpanded(id: number): void;
   toggleAccountExpanded(id: number): void;
   toggleAccountsExpanded(): void;
+  setVisibility(visible: boolean): void;
 
   groupState: ObservableMap;
 
@@ -287,6 +288,8 @@ export interface UIStateInterface {
   search: { name: string, amount: string };
 
   showHidden: boolean;
+
+  visible: boolean;
 }
 
 export interface BudgetInterface extends GroupInterface {

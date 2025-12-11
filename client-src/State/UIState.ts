@@ -45,6 +45,9 @@ class UIState implements UIStateInterface {
   @observable
   accessor showHidden = false
 
+  @observable
+  accessor visible = true
+
   store: StoreInterface;
 
   constructor(store: StoreInterface) {
@@ -169,6 +172,12 @@ class UIState implements UIStateInterface {
     runInAction(() => {
       this.selectedTransaction = transaction;
     });
+  }
+
+  setVisibility(visible: boolean): void {
+    runInAction(() => {
+      this.visible = visible;
+    })
   }
 }
 
