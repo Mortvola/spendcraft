@@ -78,6 +78,16 @@ const TabView: React.FC = observer(() => {
     }
   }
 
+  const handleSignOutClick = () => {
+    (async () => {
+      const signedOut = await user.signOut()
+
+      if (signedOut) {
+        navigate('/');
+      }
+    })()
+  }
+
   return (
     <div className={styles.layout}>
       <TabViewButton
@@ -112,6 +122,7 @@ const TabView: React.FC = observer(() => {
         <TabViewMenuItem onClick={handleAutoAssignClick}>Auto Assign</TabViewMenuItem>
         <TabViewMenuItem onClick={handleSearchClick}>Search</TabViewMenuItem>
         <TabViewMenuItem onClick={handleLogsClick}>Logs</TabViewMenuItem>
+        <TabViewMenuItem onClick={handleSignOutClick}>Sign Out</TabViewMenuItem>
         {
           user.roles.includes('ADMIN')
             ? (

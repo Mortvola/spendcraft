@@ -567,6 +567,8 @@ export interface StoreInterface {
   plans: PlansInterface;
 
   autoAssignments: AutoAssignmentsInterface;
+
+  refresh(): void;
 }
 
 export interface AddTransactionRequest {

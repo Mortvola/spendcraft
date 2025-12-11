@@ -9,8 +9,6 @@ import {
   Link, matchPath, useLocation, useNavigate,
   useParams,
 } from 'react-router';
-import Http from '@mortvola/http';
-import { runInAction } from 'mobx';
 import { useStores } from './State/Store';
 
 enum EventKeys {
@@ -39,8 +37,7 @@ const pathKeys = [
 ]
 
 const Menubar: React.FC = observer(() => {
-  const store = useStores();
-  const { uiState } = store;
+  const { uiState, user } = useStores();
   const [expanded, setExpanded] = React.useState<boolean>(false);
   const navigate = useNavigate();
   const [active, setActive] = React.useState<EventKeys>(EventKeys.HOME);
@@ -58,31 +55,13 @@ const Menubar: React.FC = observer(() => {
   }, [location.pathname]);
 
   const logout = () => {
-    interface LogoutRequest {
-      data: {
-        refresh: string | null,
-      }
-    }
-
     (async () => {
-      const payload = {
-        data: {
-          refresh: Http.refreshToken,
-        },
-      };
+      const signedOut = await user.signOut()
 
-      const response = await Http.post<LogoutRequest, undefined>('/api/v1/logout', payload);
-
-      if (response.ok) {
-        runInAction(() => {
-          store.refresh();
-        })
-        Http.setTokens(null, null);
+      if (signedOut) {
         navigate('/');
       }
-    })();
-
-    return null;
+    })()
   };
 
   const handleSelect = (eventKey: string | null) => {
@@ -165,7 +144,7 @@ const Menubar: React.FC = observer(() => {
             <Nav.Link as={Link} to="/logs" eventKey={EventKeys.LOGS}>Logs</Nav.Link>
           </Nav.Item>
           {
-            store.user.roles.includes('ADMIN')
+            user.roles.includes('ADMIN')
               ? (
                 <Nav.Item>
                   <Nav.Link as={Link} to="/admin" eventKey={EventKeys.ADMIN}>Admin</Nav.Link>
@@ -177,7 +156,7 @@ const Menubar: React.FC = observer(() => {
         <Nav>
           <NavDropdown
             className="dropdown menubar-item"
-            title={store.user.username || ''}
+            title={user.username || ''}
             id="menubar-dropdown"
             align="end"
           >

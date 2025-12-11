@@ -108,6 +108,32 @@ class User implements UserInterface {
 
     throw new Error('invalid response');
   }
+
+  async signOut(): Promise<boolean> {
+    interface LogoutRequest {
+      data: {
+        refresh: string | null,
+      }
+    }
+
+    const payload = {
+      data: {
+        refresh: Http.refreshToken,
+      },
+    };
+
+    const response = await Http.post<LogoutRequest, undefined>('/api/v1/logout', payload);
+
+    if (response.ok) {
+      runInAction(() => {
+        this.store.refresh();
+      })
+      Http.setTokens(null, null);
+      return true
+    }
+
+    return false;
+  }
 }
 
 export default User;
