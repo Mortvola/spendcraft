@@ -4,10 +4,8 @@ import { observer } from 'mobx-react-lite';
 import 'regenerator-runtime';
 import {
   BrowserRouter, Routes, Route, Outlet,
-  // useLocation, useNavigate,
 } from 'react-router';
 import Http, { ServerError, serverError } from '@mortvola/http';
-import '@mortvola/usemodal/dist/main.css';
 import '@mortvola/forms/dist/main.css';
 import { runInAction } from 'mobx';
 import Menubar from './Menubar';
