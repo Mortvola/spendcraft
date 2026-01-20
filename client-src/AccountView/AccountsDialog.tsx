@@ -70,10 +70,6 @@ const AccountsDialog: React.FC<PropsType & ModalProps> = ({
     // }
 
     if (account) {
-      account.startDate = DateTime.fromISO(values.startDate);
-      account.tracking = values.tracking;
-
-      // if (response) {
       account.setSettings({
         startDate: DateTime.fromISO(values.startDate),
         tracking: values.tracking,

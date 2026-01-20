@@ -117,7 +117,10 @@ class Account implements AccountInterface {
   }
 
   async setSettings(settings: AccountSettings): Promise<void> {
-    const response = await Http.patch(`/api/v1/account/${this.id}`, settings);
+    const response = await Http.patch(`/api/v1/account/${this.id}`, {
+      startDate: settings.startDate?.toISODate(),
+      tracking: settings.tracking,
+    });
 
     if (response.ok) {
       runInAction(() => {
@@ -126,6 +129,9 @@ class Account implements AccountInterface {
         if (this.closed) {
           this.institution.closeAccount(this);
         }
+
+        this.startDate = settings.startDate ?? this.startDate;
+        this.tracking = settings.tracking ?? this.tracking;
       });
     }
   }
