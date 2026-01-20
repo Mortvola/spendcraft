@@ -16,27 +16,21 @@ import redis from '@adonisjs/redis/services/main';
 import app from '@adonisjs/core/services/app';
 import ItemLoginRequiredNotification from '#app/mails/itemLoginRequiredNotification';
 
-class WebhookEvent {
-   
+class WebhookEvent {   
   webhook_type: string;
 
-   
   webhook_code: string;
 
-   
   item_id: string;
 
   error: Plaid.PlaidError;
 }
 
-class WebhookItemEvent extends WebhookEvent {
-}
+type ItemEvent = WebhookEvent
 
 class TransactionEvent extends WebhookEvent {
-   
   removed_transactions: string[];
 
-   
   new_transactions: number;
 }
 
@@ -50,7 +44,7 @@ const isWebhookEvent = (r: unknown): r is WebhookEvent => (
   && (r as TransactionEvent).webhook_code !== undefined
 );
 
-const isItemEvent = (r: unknown): r is WebhookItemEvent => (
+const isItemEvent = (r: unknown): r is ItemEvent => (
   isWebhookEvent(r)
   && itemWebhookCodes.includes((r as TransactionEvent).webhook_code)
 )
@@ -60,6 +54,8 @@ const isTransactionEvent = (r: unknown): r is TransactionEvent => (
   // && (r as TransactionEvent).webhook_code === 'TRANSACTIONS'
   && transactionWebhookCodes.includes((r as TransactionEvent).webhook_code)
 );
+
+const verificationMap = new Map<string, Promise<Plaid.WebhookVerificationKeyGetResponse>>()
 
 class WebhookController {
    
@@ -101,7 +97,7 @@ class WebhookController {
     }
   }
 
-  static async processItemEvent(event: WebhookItemEvent): Promise<void> {
+  static async processItemEvent(event: ItemEvent): Promise<void> {
     switch (event.webhook_code) {
       case 'WEBHOOK_UPDATE_ACKNOWLEDGED': {
         const webhookUpdated = event as Plaid.WebhookUpdateAcknowledgedWebhook;
@@ -276,8 +272,20 @@ class WebhookController {
 
     if (!keyString) {
       // The key was not found in the cache. Retrieve it from the server.
-      const plaidClient = await app.container.make('plaid')
-      const { key: publicKey } = await plaidClient.getWebhookVerificationKey(currentKid);
+      // But first check if there is already an outstanding promise for the current KID.
+      let promise = verificationMap.get(currentKid);
+
+      if (!promise) {
+        const plaidClient = await app.container.make('plaid')
+        promise = plaidClient.getWebhookVerificationKey(currentKid);
+
+        verificationMap.set(currentKid, promise)
+
+        // TODO: The entries need to be removed once they become old enough. Currently,
+        // this implementation has a memory leak.
+      }
+
+      const { key: publicKey } = await promise;
 
       keyString = JSON.stringify(publicKey)
       redis.set(redisKey, keyString)
