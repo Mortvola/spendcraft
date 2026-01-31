@@ -68,7 +68,7 @@ class WebhookController {
       const body = request.body();
 
       // Log the request
-      new WebhookLog()
+      await new WebhookLog()
         .fill({
           request: body,
         })
@@ -77,7 +77,7 @@ class WebhookController {
       switch (body.webhook_type) {
         case 'TRANSACTIONS': {
           if (isTransactionEvent(body)) {
-            WebhookController.processTransactionEvent(body);
+            await WebhookController.processTransactionEvent(body);
           }
           break;
         }
@@ -90,6 +90,14 @@ class WebhookController {
 
         default:
           logger.warn(`Unhandled webhook type: ${body.webhook_type}`);
+      }
+
+      // Delete logs that are older than 90 days
+      const results = await WebhookLog.query()
+        .where('created_at', '<', DateTime.now().minus({ days: 90 }).toISODate())
+
+      for (const record of results) {
+        await record.delete()
       }
     }
     else {
@@ -235,11 +243,11 @@ class WebhookController {
   // }
 
    
-  static processTransactionEvent(event: TransactionEvent): void {
+  static async processTransactionEvent(event: TransactionEvent): Promise<void> {
     switch (event.webhook_code) {
       case 'SYNC_UPDATES_AVAILABLE':
         logger.info(JSON.stringify(event));
-        WebhookController.syncUpdate((event as unknown) as Plaid.SyncUpdatesAvailableWebhook);
+        await WebhookController.syncUpdate((event as unknown) as Plaid.SyncUpdatesAvailableWebhook);
         break;
 
       case 'INITIAL_UPDATE':
