@@ -1,5 +1,5 @@
 import { DateTime } from 'luxon'
-import { BaseModel, column } from '@adonisjs/lucid/orm'
+import { BaseModel, column, computed } from '@adonisjs/lucid/orm'
 
 export default class WebhookLog extends BaseModel {
   @column({ isPrimary: true })
@@ -15,4 +15,7 @@ export default class WebhookLog extends BaseModel {
     prepare: (value: unknown) => JSON.stringify(value),
   })
   public request: unknown | null;
+
+  @computed()
+  readonly type = 'Webhook';
 }

@@ -1,5 +1,5 @@
 import { DateTime } from 'luxon'
-import { BaseModel, column } from '@adonisjs/lucid/orm'
+import { BaseModel, column, computed } from '@adonisjs/lucid/orm'
 
 export default class PlaidLog extends BaseModel {
   @column({ isPrimary: true })
@@ -24,4 +24,7 @@ export default class PlaidLog extends BaseModel {
 
   @column()
   public status: number;
+
+  @computed()
+  readonly type = 'Request'
 }

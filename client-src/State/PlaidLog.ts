@@ -4,6 +4,8 @@ import { PlaidLogInterface, PlaidLogProps } from './Types';
 class PlaidLog implements PlaidLogInterface {
   id: number;
 
+  type: string;
+
   createdAt: DateTime;
 
   request: string;
@@ -16,6 +18,7 @@ class PlaidLog implements PlaidLogInterface {
 
   constructor(props: PlaidLogProps) {
     this.id = props.id;
+    this.type = props.type;
     this.createdAt = DateTime.fromISO(props.createdAt);
     this.request = props.request;
     this.response = props.response;
@@ -23,5 +26,9 @@ class PlaidLog implements PlaidLogInterface {
     this.institutionId = props.institutionId;
   }
 }
+
+export const isPlaidLog = (r: unknown): r is PlaidLog => (
+  (r as PlaidLog).type === 'Request'
+)
 
 export default PlaidLog;

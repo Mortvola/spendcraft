@@ -1,11 +1,12 @@
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
-import { PlaidLogsResponse, StoreInterface } from './Types';
+import { isPlaidLogProps, isWebhookLogProps, PlaidLogsResponse, StoreInterface } from './Types';
 import PlaidLog from './PlaidLog';
+import WebhookLog from './WebhookLog';
 
 class PlaidLogs {
   @observable
-  accessor logs: PlaidLog[] = [];
+  accessor logs: (PlaidLog | WebhookLog )[] = [];
 
   store: StoreInterface;
 
@@ -26,7 +27,17 @@ class PlaidLogs {
 
     if (body) {
       runInAction(() => {
-        this.logs = body.map((props) => new PlaidLog(props));
+        this.logs = body.map((props) => {
+          if (isPlaidLogProps(props)) {
+            return new PlaidLog(props)
+          }
+
+          if (isWebhookLogProps(props)) {
+            return new WebhookLog(props)
+          }
+
+          throw new Error('unknown log type')
+        });
 
         this.initialized = true;
       });

@@ -648,6 +648,7 @@ export interface TransactionLogInterface {
 
 export interface PlaidLogProps {
   id: number,
+  type: string,
   createdAt: string;
   request: string;
   response: unknown;
@@ -655,10 +656,30 @@ export interface PlaidLogProps {
   institutionId: string;
 }
 
-export type PlaidLogsResponse = PlaidLogProps[]
+export const isPlaidLogProps = (r : unknown): r is PlaidLogProps => (
+  (r as PlaidLogProps).type === 'Request'
+)
+
+export interface WebhookLogProps {
+  id: number,
+  type: string,
+  createdAt: string;
+  request: {
+    webhook_type: string;
+    webhook_code: string;
+  };
+}
+
+export const isWebhookLogProps = (r : unknown): r is WebhookLogProps => (
+  (r as WebhookLogProps).type === 'Webhook'
+)
+
+export type PlaidLogsResponse = (PlaidLogProps | WebhookLogProps )[]
 
 export interface PlaidLogInterface {
   id: number;
+
+  type: string;
 
   createdAt: DateTime,
 
@@ -669,6 +690,19 @@ export interface PlaidLogInterface {
   status: number;
 
   institutionId?: string;
+}
+
+export interface WebhookLogInterface {
+  id: number;
+
+  type: string;
+
+  createdAt: DateTime,
+
+  request: {
+    webhook_type: string;
+    webhook_code: string;
+  };
 }
 
 export type BillsResponse = BillProps[]
