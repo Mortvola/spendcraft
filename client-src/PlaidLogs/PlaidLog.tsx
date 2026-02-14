@@ -4,6 +4,7 @@ import DateTime from '../DateTime';
 import { PlaidLogInterface } from '../State/Types';
 import styles from './PlaidLog.module.scss';
 import TransactionsSync from './TransactionsSync';
+import JSONView from './JSONView';
 
 interface PropsType {
   log: PlaidLogInterface,
@@ -25,9 +26,7 @@ const PlaidLog: React.FC<PropsType> = ({
     && (log.request === 'syncTransactions' || log.request === '/transactions/sync')
       ? <TransactionsSync response={log.response as PlaidApi.TransactionsSyncResponse} />
       : (
-        <div className={styles.responseWrapper}>
-          <div className={styles.response}>{JSON.stringify(log.response, null, 4)}</div>
-        </div>
+        <JSONView json={log.response} />
       )
   )
 
@@ -38,7 +37,7 @@ const PlaidLog: React.FC<PropsType> = ({
         <div className={styles.layout2}>
           <div className={styles.message}>{log.type}</div>
           <div className={styles.message}>{log.request}</div>
-          <div>{log.institutionId}</div>
+          <div>{log.institutionId ?? '-'}</div>
           <div>{log.status}</div>
         </div>
       </div>

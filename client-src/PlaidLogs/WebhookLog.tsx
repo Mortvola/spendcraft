@@ -1,9 +1,8 @@
 import React from 'react';
-// import * as PlaidApi from 'plaid';
 import DateTime from '../DateTime';
 import { WebhookLogInterface } from '../State/Types';
 import styles from './PlaidLog.module.scss';
-// import TransactionsSync from './TransactionsSync';
+import JSONView from './JSONView';
 
 interface PropsType {
   log: WebhookLogInterface,
@@ -21,9 +20,7 @@ const WebhookLog: React.FC<PropsType> = ({
   }
 
   const renderDetail = () => (
-    <div className={styles.responseWrapper}>
-      <div className={styles.response}>{JSON.stringify(log.request, null, 4)}</div>
-    </div>
+    <JSONView json={log.request} />
   )
 
   return (
@@ -32,8 +29,7 @@ const WebhookLog: React.FC<PropsType> = ({
         <DateTime dateTime={log.createdAt} />
         <div className={styles.layout2}>
           <div className={styles.message}>{log.type}</div>
-          <div className={styles.message}>{log.request.webhook_type}</div>
-          <div className={styles.message}>{log.request.webhook_code}</div>
+          <div className={styles.message}>{log.request.webhook_type}: {log.request.webhook_code}</div>
         </div>
       </div>
       {
