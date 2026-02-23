@@ -1,4 +1,5 @@
 import Institution from '#app/Models/Institution';
+import { DateTime } from 'luxon';
 import PlaidException from './PlaidException.js';
 import * as Plaid from 'plaid';
 export { type WebhookVerificationKeyGetResponse } from 'plaid';
@@ -393,6 +394,14 @@ class PlaidWrapper {
         institutionId,
       })
       .save();
+
+      // Delete logs that are older than 90 days
+      const results = await PlaidLog.query()
+        .where('created_at', '<', DateTime.now().minus({ days: 90 }).toISODate())
+
+      for (const record of results) {
+        await record.delete()
+      }
   }
 }
 
