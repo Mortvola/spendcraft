@@ -6,7 +6,7 @@ import { PlaidLogInterface, WebhookLogInterface } from '../State/Types';
 import styles from './PlaidLogs.module.scss';
 import { isPlaidLog } from '../State/PlaidLog';
 import { isWebhookLog } from '../State/WebhookLog';
-import WebhookLog from './WebhookLOg';
+import WebhookLog from './WebhookLog';
 
 const PlaidLogs = observer(() => {
   const { plaidLogs } = useStores();
