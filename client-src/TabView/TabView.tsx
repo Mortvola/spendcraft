@@ -45,7 +45,7 @@ const TabView: React.FC = observer(() => {
   }
 
   const handlePlaidLogsClick = () => {
-    navigate('/admin');
+    navigate('/plaid-logs');
   }
 
   // const handlePlansClick = () => {

@@ -16,6 +16,7 @@ import AutoAssignments from './AutoAssignments';
 import TransactionLogs from './TransactionLogs';
 import PlaidLogs from './PlaidLogs';
 import Overview from './Overview';
+import Users from './Users';
 
 class Store implements StoreInterface {
   user: User;
@@ -46,6 +47,8 @@ class Store implements StoreInterface {
 
   overview: Overview;
 
+  users: Users;
+
   // initialized = false;
 
   constructor() {
@@ -63,6 +66,7 @@ class Store implements StoreInterface {
     this.transactionLogs = new TransactionLogs(this);
     this.plaidLogs = new PlaidLogs(this);
     this.overview = new Overview(this);
+    this.users = new Users(this)
   }
 
   refresh() {
@@ -81,6 +85,7 @@ class Store implements StoreInterface {
     this.transactionLogs = new TransactionLogs(this);
     this.plaidLogs = new PlaidLogs(this);
     this.overview = new Overview(this);
+    this.users = new Users(this)
   }
 }
 

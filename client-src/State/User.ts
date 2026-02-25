@@ -3,7 +3,7 @@ import Http from '@mortvola/http';
 import {
   ApiResponse, ErrorProps, isErrorResponse, isUserProps,
 } from '../../common/ResponseTypes';
-import { StoreInterface, UserInterface } from './Types';
+import { StoreInterface, UserInterface, UserProps } from './Types';
 
 class User implements UserInterface {
   @observable
@@ -28,13 +28,13 @@ class User implements UserInterface {
   }
 
   async load(): Promise<void> {
-    const response = await Http.get<ApiResponse<unknown>>('/api/v1/user');
+    const response = await Http.get<ApiResponse<UserProps>>('/api/v1/user');
 
     if (response.ok) {
       const { data } = await response.body();
 
       runInAction(() => {
-        if (isUserProps(data)) {
+        if (data) {
           this.username = data.username;
           this.email = data.email;
           this.pendingEmail = data.pendingEmail ?? null;

@@ -712,3 +712,13 @@ export interface BillInterface {
 
   category: CategoryInterface;
 }
+
+export interface UserProps {
+  username: string;
+  email: string;
+  pendingEmail: string;
+  roles: string[];
+  createdAt: string;
+}
+
+export type UsersResponse = UserProps[]

@@ -20,7 +20,8 @@ enum EventKeys {
   AUTO_ASSIGN = 'AUTO_ASSIGN',
   LOGS = 'LOGS',
   BILLS = 'BILLS',
-  ADMIN = 'ADMIN',
+  PLAID_LOGS = 'PLAID_LOGS',
+  USERS = 'USERS',
   LOGOUT = 'LOGOUT',
 }
 
@@ -33,7 +34,7 @@ const pathKeys = [
   { path: '/auto-assignments', key: EventKeys.AUTO_ASSIGN },
   { path: '/logs', key: EventKeys.LOGS },
   { path: '/bills', key: EventKeys.BILLS },
-  { path: '/admin', key: EventKeys.ADMIN },
+  { path: '/plaid-logs', key: EventKeys.PLAID_LOGS },
 ]
 
 const Menubar: React.FC = observer(() => {
@@ -146,9 +147,12 @@ const Menubar: React.FC = observer(() => {
           {
             user.roles.includes('ADMIN')
               ? (
-                <Nav.Item>
-                  <Nav.Link as={Link} to="/admin" eventKey={EventKeys.ADMIN}>Admin</Nav.Link>
-                </Nav.Item>
+                <NavDropdown
+                  title="Admin"
+                >
+                  <NavDropdown.Item as={Link} to="/plaid-logs" eventKey={EventKeys.PLAID_LOGS}>Plaid Logs</NavDropdown.Item>
+                  <NavDropdown.Item as={Link} to="/users" eventKey={EventKeys.USERS}>Users</NavDropdown.Item>
+                </NavDropdown>
               )
               : null
           }

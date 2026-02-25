@@ -39,6 +39,8 @@ import PlaidLogs from './PlaidLogs/PlaidLogs';
 import Overview from './Overview/Overview';
 import OverviewView from './Overview/OverviewView';
 import { createPortal } from 'react-dom';
+import UsersView from './Users/UsersView';
+import Users from './Users/Users';
 
 const App: React.FC = observer(() => {
   const error = useContext(ServerError);
@@ -159,8 +161,11 @@ if (container) {
               <Route path="bills" element={<OverviewView />}>
                 <Route index element={<Overview />} />
               </Route>
-              <Route path="admin" element={<PlaidLogsView />}>
+              <Route path="plaid-logs" element={<PlaidLogsView />}>
                 <Route index element={<PlaidLogs />} />
+              </Route>
+              <Route path="users" element={<UsersView />}>
+                <Route index element={<Users />} />
               </Route>
               <Route path="user" element={<UserAccount />} />
             </Route>

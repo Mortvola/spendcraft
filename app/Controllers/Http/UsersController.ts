@@ -20,6 +20,13 @@ export default class UsersController {
     }
   }
 
+  public async getAll(): Promise<ApiResponse<User[]>> {
+    const users = await User.query()
+
+    return {
+      data: users,
+    }
+  }
    
   public async update({
     request,

@@ -51,7 +51,8 @@ router.get('/user', [HomeController, 'index']);
 router.get('/search', [HomeController, 'index']);
 router.get('/auto-assignments', [HomeController, 'index']);
 router.get('/logs', [HomeController, 'index']);
-router.get('/admin', [HomeController, 'index']);
+router.get('/plaid-logs', [HomeController, 'index']);
+router.get('/users', [HomeController, 'index']);
 router.get('/bills', [HomeController, 'index']);
 router.get('/', [HomeController, 'index']);
 
@@ -253,7 +254,8 @@ router.group(() => {
       router.get('/bills', [CategoriesController, 'getBills']);
 
       router.group(() => {
-        router.get('/plaid-logs', [PlaidLogsController, 'get'])
+        router.get('/plaid-logs', [PlaidLogsController, 'get']);
+        router.get('/users', [UsersController, 'getAll']);
       })
         .prefix('/admin')
         .use(middleware.admin());
