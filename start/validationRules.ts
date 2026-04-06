@@ -39,6 +39,10 @@ async function unique(
     return
   }
 
+  if (options.column === undefined) {
+    throw new Error('column not defined')
+  }
+
   const query = db
     .from(options.table)
     .select(options.column)

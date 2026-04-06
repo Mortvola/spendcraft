@@ -13,10 +13,9 @@
 */
 
 /**
- * Register hook to process TypeScript files using ts-node
+ * Register hook to process TypeScript files
  */
-import { register } from 'node:module'
-register('ts-node/esm', import.meta.url)
+import '@poppinss/ts-exec'
 
 /**
  * Import ace console entrypoint

@@ -78,20 +78,21 @@ export default defineConfig({
     },
   ],
 
-  assetsBundler: false,
   hooks: {
-    onBuildStarting: [() => import('@adonisjs/vite/build_hook')],
+    buildStarting: [
+      () => import('@adonisjs/vite/build_hook'),
+    ],
   },
 
   tests: {
     suites: [
       {
         name: 'functional',
-        files: ['tests/functional/**/*.spec.(js|ts)'],
+        files: ['tests/functional/**/*.spec.{js|ts}'],
       },
       {
         name: 'unit',
-        files: ['tests/unit/**/*.spec.(js|ts)'],
+        files: ['tests/unit/**/*.spec.{js|ts}'],
       },
     ],
   },

@@ -4,7 +4,7 @@ import { sha256 } from 'js-sha256';
 import { decodeProtectedHeader, importJWK, jwtVerify } from 'jose';
 import { DateTime } from 'luxon';
 import * as Plaid from 'plaid';
-import { HttpContext, Request } from '@adonisjs/core/http';
+import { HttpContext, HttpRequest } from '@adonisjs/core/http';
 import db from '@adonisjs/lucid/services/db';
 import Institution from '#app/Models/Institution';
 import mail from '@adonisjs/mail/services/main';
@@ -263,7 +263,7 @@ class WebhookController {
     }
   }
 
-  static async verify(request: Request): Promise<boolean> {
+  static async verify(request: HttpRequest): Promise<boolean> {
     const signedJwt = request.header('Plaid-Verification');
     if (!signedJwt) {
       throw new Exception('Plaid-Verification header is missing');

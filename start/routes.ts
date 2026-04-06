@@ -38,23 +38,23 @@ const WebhookController = () => import("#controllers/WebhookController")
 const ReportController = () => import("#controllers/ReportController")
 const LoansController = () => import("#controllers/LoansController")
 
-router.get('/home', [HomeController, 'index']);
-router.get('/home/:categoryId', [HomeController, 'index']);
-router.get('/plans', [HomeController, 'index']);
-router.get('/accounts', [HomeController, 'index']);
-router.get('/accounts/:accountId', [HomeController, 'index']);
-router.get('/reports', [HomeController, 'index']);
-router.get('/signup', [HomeController, 'index']);
-router.get('/signin', [HomeController, 'index']);
-router.get('/recover-password', [HomeController, 'index']);
-router.get('/user', [HomeController, 'index']);
-router.get('/search', [HomeController, 'index']);
-router.get('/auto-assignments', [HomeController, 'index']);
-router.get('/logs', [HomeController, 'index']);
-router.get('/plaid-logs', [HomeController, 'index']);
-router.get('/users', [HomeController, 'index']);
-router.get('/bills', [HomeController, 'index']);
-router.get('/', [HomeController, 'index']);
+router.get('/home', [HomeController, 'index']).as('home');
+router.get('/home/:categoryId', [HomeController, 'index']).as('home.category');
+router.get('/plans', [HomeController, 'index']).as('nome.plans');
+router.get('/accounts', [HomeController, 'index']).as('home.accounts');
+router.get('/accounts/:accountId', [HomeController, 'index']).as('home.accountId');
+router.get('/reports', [HomeController, 'index']).as('home.reports');
+router.get('/signup', [HomeController, 'index']).as('home.signup');
+router.get('/signin', [HomeController, 'index']).as('home.signin');
+router.get('/recover-password', [HomeController, 'index']).as('home.recover-password');
+router.get('/user', [HomeController, 'index']).as('home.user');
+router.get('/search', [HomeController, 'index']).as('home.search');
+router.get('/auto-assignments', [HomeController, 'index']).as('home.auto-assignments');
+router.get('/logs', [HomeController, 'index']).as('home.logs');
+router.get('/plaid-logs', [HomeController, 'index']).as('home.plaid-logs');
+router.get('/users', [HomeController, 'index']).as('home.users');
+router.get('/bills', [HomeController, 'index']).as('home.bills');
+router.get('/', [HomeController, 'index']).as('home.root');
 
 router.post('/wh', [WebhookController, 'post']);
 router.post('/redirect', () => {
@@ -127,7 +127,7 @@ router.group(() => {
       }).prefix('/user');
   
       router.group(() => {
-        router.get('', [CategoriesController, 'get']);
+        router.get('', [CategoriesController, 'get']).as('group.categories');
         router.post('', [CategoriesController, 'addGroup']);
         router.patch('/:groupId', [CategoriesController, 'updateGroup']);
         router.delete('/:groupId', [CategoriesController, 'deleteGroup']);
@@ -142,7 +142,7 @@ router.group(() => {
   
       router.group(() => {
         router.post('', [CategoriesController, 'transfer']);
-        router.patch('/:tfrId', [CategoriesController, 'transfer']);
+        router.patch('/:tfrId', [CategoriesController, 'transfer']).as('categories.transfer.id');
         router.delete('/:tfrId', [CategoriesController, 'transferDelete']);
       }).prefix('/category-transfer');
   
@@ -186,7 +186,7 @@ router.group(() => {
         .prefix('/statements')
 
       router.group(() => {
-        router.delete('/:id', [AccountsController, 'deleteBalance']);
+        router.delete('/:id', [AccountsController, 'deleteBalance']).as('balance.delete')
       })
         .prefix('/balance');
   
