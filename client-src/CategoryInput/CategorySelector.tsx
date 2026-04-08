@@ -70,36 +70,41 @@ const CategorySelector = observer(React.forwardRef<HTMLDivElement, PropsType>(({
 
   const filteredCategories = (group: GroupInterface, level: number) => (
     group.children
-      .filter((c) => (
-        !categoryFiltered(group, c, filter, types)
+      .filter((child) => (
+        !isCategory(child) || !categoryFiltered(group, child, filter, types)
       ))
-      .map((c) => {
-        if (isCategory(c)) {
+      .map((child) => {
+        if (isCategory(child)) {
           return (
             <CategorySelectorCategory
-              key={`${group.id}:${c.id}`}
-              category={c}
-              selected={selectedCategory !== null && c.id === selectedCategory.id}
+              key={`${group.id}:${child.id}`}
+              category={child}
+              selected={selectedCategory !== null && child.id === selectedCategory.id}
               onSelect={onSelect}
               level={level}
             />
           )
         }
 
-        if (isGroup(c)) {
-          return (
-            <CategorySelectorGroup
-              key={c.id}
-              group={c}
-              level={level}
-            >
-              {filteredCategories(c, level + 1)}
-            </CategorySelectorGroup>
-          );
+        if (isGroup(child)) {
+          const children = filteredCategories(child, level + 1)
+          // Only display a group if there are children.
+          if (children.length > 0) {
+            return (
+              <CategorySelectorGroup
+                key={child.id}
+                group={child}
+                level={level}
+              >
+                { children }
+              </CategorySelectorGroup>
+            );
+          }
         }
 
         return null
       })
+      .filter((child) => child !== null)
   )
 
   const style: Record<string, unknown> = {}; // { display: 'none' };
@@ -173,17 +178,18 @@ const CategorySelector = observer(React.forwardRef<HTMLDivElement, PropsType>(({
           : null
       }
       {
-        categoryTree.budget.children.map((g) => {
-          if (isGroup(g)) {
-            const categories = filteredCategories(g, 1);
-            if (categories.length > 0) {
+        categoryTree.budget.children.map((node) => {
+          if (isGroup(node)) {
+            const children = filteredCategories(node, 1);
+            // Only display a group if there are children.
+            if (children.length > 0) {
               return (
                 <CategorySelectorGroup
-                  key={g.id}
-                  group={g}
+                  key={node.id}
+                  group={node}
                   level={0}
                 >
-                  {filteredCategories(g, 1)}
+                  { children }
                 </CategorySelectorGroup>
               );
             }
@@ -191,20 +197,20 @@ const CategorySelector = observer(React.forwardRef<HTMLDivElement, PropsType>(({
             return null;
           }
 
-          if (!isCategory(g)) {
+          if (!isCategory(node)) {
             throw new Error('group is not a category');
           }
 
-          if (!categoryFiltered(null, g, filter, types)) {
-            if (g.group === null) {
+          if (!categoryFiltered(null, node, filter, types)) {
+            if (node.group === null) {
               throw new Error('group is null')
             }
 
             return (
               <CategorySelectorCategory
-                key={`${g.group.id}:${g.id}`}
-                category={g}
-                selected={selectedCategory !== null && g.id === selectedCategory.id}
+                key={`${node.group.id}:${node.id}`}
+                category={node}
+                selected={selectedCategory !== null && node.id === selectedCategory.id}
                 onSelect={onSelect}
                 level={0}
               />
