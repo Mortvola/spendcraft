@@ -1,11 +1,8 @@
 import React from 'react';
-import { ChevronDown, ChevronRight, SquarePen } from 'lucide-react';
-import { useGroupDialog } from './GroupDialog';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { isGroup } from '../../State/Group';
 import { GroupInterface } from '../../State/Types';
-import styles from './CategoryView.module.scss';
 import { GroupType } from '../../../common/ResponseTypes';
-import LucideButton from '../../LucideButton';
 import { observer } from 'mobx-react-lite';
 import { useStores } from '../../State/Store';
 
@@ -15,31 +12,21 @@ interface PropsType {
 
 const GroupButtons: React.FC<PropsType> = observer(({ group }) => {
   const { uiState } = useStores()
-  const [GroupDialog, showGroupDialog] = useGroupDialog();
 
-  const toggleClose = () => {
+  const toggleClose: React.MouseEventHandler<SVGSVGElement> = (event) => {
     uiState.toggleGroupExpanded(group.id)
+    event.stopPropagation()
   }
 
   if ([GroupType.Regular, GroupType.NoGroup].includes(group.type) && isGroup(group)) {
     return (
-      <>
+      <div style={{width: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
         {
           uiState.groupState.get(group.id) ?? true
             ? <ChevronDown size={16} strokeWidth={2.5} onClick={toggleClose} />
             : <ChevronRight size={16} strokeWidth={2.5} onClick={toggleClose} />
         }
-        {
-          group.type !== GroupType.NoGroup
-            ? (
-              <LucideButton onClick={showGroupDialog} className={styles.catButton}>
-                <SquarePen size={16} strokeWidth={2.5} />
-              </LucideButton>
-            )
-            : null
-        }
-        <GroupDialog group={group} />
-      </>
+      </div>
     );
   }
 

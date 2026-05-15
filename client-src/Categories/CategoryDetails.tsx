@@ -8,23 +8,29 @@ import { CategoryType } from '../../common/ResponseTypes';
 
 const CategoryDetails: React.FC = observer(() => {
   const {
-    uiState: { selectedCategory },
+    uiState: { selectedCategory, selectedGroup },
   } = useStores();
 
-  if (!selectedCategory) {
-    return null;
+  if (selectedCategory) {
+    let className = '';
+    if (selectedCategory.type === CategoryType.Unassigned) {
+      className += styles.unassigned;
+    }
+
+    return (
+      <DetailView className={className} title={selectedCategory.name}>
+        <Register type="category" />
+      </DetailView>
+    );
   }
 
-  let className = '';
-  if (selectedCategory.type === CategoryType.Unassigned) {
-    className += styles.unassigned;
+  if (selectedGroup) {
+    return (
+      <DetailView title={selectedGroup.name} />
+    )
   }
 
-  return (
-    <DetailView className={className} title={selectedCategory.name}>
-      <Register type="category" />
-    </DetailView>
-  );
+  return null;
 });
 
 export default CategoryDetails;

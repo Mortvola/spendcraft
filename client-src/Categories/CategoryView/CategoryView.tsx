@@ -4,7 +4,7 @@ import {
   useMatch, useNavigate, useParams, useResolvedPath,
 } from 'react-router';
 import { useStores } from '../../State/Store';
-import { CategoryInterface } from '../../State/Types';
+import { CategoryInterface, GroupInterface } from '../../State/Types';
 import Group from './Group';
 import SystemCategory from './SystemCategory';
 import Category from './Category';
@@ -30,6 +30,10 @@ const CategoryView: React.FC = observer(() => {
     navigate(category.id.toString());
   };
 
+  const handleGroupSelected = (group: GroupInterface) => {
+    navigate(`g${group.id}`);
+  };
+
   const handleRebalancesClick = () => {
     navigate('rebalances');
   }
@@ -41,14 +45,26 @@ const CategoryView: React.FC = observer(() => {
   React.useEffect(() => {
     if (categoryTree.initialized) {
       if (params.categoryId !== undefined) {
-        const category = categoryTree.getCategory(parseInt(params.categoryId, 10));
+        if (params.categoryId[0] === 'g') {
+          const groupId = params.categoryId.match(/\d+/)
+          if (groupId !== null && groupId[0] !== undefined) {
+            console.log(groupId[0])
+            const group = categoryTree.getGroup(parseInt(groupId[0], 10));
 
-        if (category) {
-          uiState.selectCategory(category);
-        }
-        else {
-          // category wasn't found for the categoryId. Navigate back home.
-          navigate('');
+            if (group) {
+              uiState.selectGroup(group);
+            }
+          }
+        } else {
+          const category = categoryTree.getCategory(parseInt(params.categoryId, 10));
+
+          if (category) {
+            uiState.selectCategory(category);
+          }
+          else {
+            // category wasn't found for the categoryId. Navigate back home.
+            navigate('');
+          }
         }
       }
       else if (rebalancesMatch) {
@@ -124,7 +140,9 @@ const CategoryView: React.FC = observer(() => {
           key="budget"
           group={categoryTree.budget}
           onCategorySelected={handleCategorySelected}
+          onGroupSelected={handleGroupSelected}
           selectedCategory={uiState.selectedCategory}
+          selectedGroup={uiState.selectedGroup}
         />
       }
       <div className={styles.accounts}>

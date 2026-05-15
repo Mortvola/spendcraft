@@ -4,6 +4,7 @@ import type {
   AccountInterface,
   CategoryInterface,
   FundingPlanInterface,
+  GroupInterface,
   StoreInterface, TransactionInterface, UIStateInterface,
 } from './Types';
 import type Plaid from './Plaid';
@@ -16,6 +17,9 @@ const localStorageAccountsState = 'accountsState'
 class UIState implements UIStateInterface {
   @observable
   accessor selectedCategory: CategoryInterface | null = null;
+
+  @observable
+  accessor selectedGroup: GroupInterface | null = null;
 
   @observable
   accessor selectedPlan: FundingPlanInterface | null = null;
@@ -147,7 +151,15 @@ class UIState implements UIStateInterface {
   selectCategory(category: Category | null): void {
     runInAction(() => {
       this.selectedCategory = category;
+      this.selectedGroup = null;
     });
+  }
+
+  selectGroup(group: GroupInterface | null): void {
+    runInAction(() => {
+      this.selectedGroup = group;
+      this.selectedCategory = null
+    })
   }
 
   selectAccount(account: AccountInterface | null): void {

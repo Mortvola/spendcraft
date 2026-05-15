@@ -52,9 +52,11 @@ const Category: React.FC<PropsType> = observer(({
     nameClassName += ` ${styles.hidden}`
   }
 
+  const indent = 15;
+
   return (
     <>
-      <div className={className} style={{ marginLeft: 25 * level }} onClick={handleClick}>
+      <div className={className} style={{ marginLeft: indent * level }} onClick={handleClick}>
         <div className={barClassName}>
           {
             [CategoryType.Regular, CategoryType.Loan, CategoryType.Bill, CategoryType.Goal].includes(category.type)
@@ -82,7 +84,7 @@ const Category: React.FC<PropsType> = observer(({
                     />
                   ))
               }
-              <div className="cat-list-cat" style={{ marginLeft: 25 * (level + 1) }}>
+              <div className="cat-list-cat" style={{ marginLeft: indent * (level + 1) }}>
                 <div style={{ justifySelf: 'end', paddingRight: '6px' }}>Total</div>
                 <Amount
                   className={styles.catListAmt}

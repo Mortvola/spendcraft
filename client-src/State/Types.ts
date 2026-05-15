@@ -263,6 +263,7 @@ export type Views = 'HOME' | 'PLANS' | 'ACCOUNTS' | 'REPORTS' | 'SEARCH' | 'USER
 
 export interface UIStateInterface {
   selectCategory(category: CategoryInterface | null): void;
+  selectGroup(group: GroupInterface | null): void;
   selectAccount(account: AccountInterface | null): void;
   selectStatement(statement: Statement | null): void;
   selectPlan(plan: FundingPlanInterface | null): void;
@@ -279,6 +280,7 @@ export interface UIStateInterface {
   accountsState: boolean;
 
   selectedCategory: CategoryInterface | null;
+  selectedGroup: GroupInterface | null;
   selectedPlan: FundingPlanInterface | null;
   selectedAccount: AccountInterface | null;
   selectedStatement: Statement | null;

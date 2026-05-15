@@ -15,22 +15,37 @@ import { useRootDialog } from './RootDialog';
 interface PropsType {
   group: GroupInterface,
   onCategorySelected: ((category: CategoryInterface) => void),
+  onGroupSelected: ((group: GroupInterface) => void),
   selectedCategory?: CategoryInterface | null,
+  selectedGroup?: GroupInterface | null,
   level?: number,
 }
 
 const Group: React.FC<PropsType> = observer(({
   group,
   onCategorySelected,
+  onGroupSelected,
   selectedCategory = null,
+  selectedGroup = null,
   level = 0,
 }) => {
   const { uiState } = useStores()
   const [RootDialog, showRootDialog] = useRootDialog();
 
+  const handleClick = () => {
+    onGroupSelected(group);
+  };
+
+  let className = 'cat-list-group';
+  if (group.id === selectedGroup?.id) {
+    className += ' selected';
+  }
+
+  const indent = 15;
+
   return (
     <>
-      <div className="cat-list-group" style={{ marginLeft: 25 * level }}>
+      <div className={className} style={{ marginLeft: indent * level }} onClick={handleClick}>
         <div className="group-element-bar">
           <GroupButtons group={group} />
           {
@@ -74,7 +89,9 @@ const Group: React.FC<PropsType> = observer(({
                   key={category.name}
                   group={category as GroupInterface}
                   onCategorySelected={onCategorySelected}
+                  onGroupSelected={onGroupSelected}
                   selectedCategory={selectedCategory}
+                  selectedGroup={selectedGroup}
                   level={level + 1}
                 />
               )

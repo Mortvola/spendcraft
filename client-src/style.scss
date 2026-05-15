@@ -225,6 +225,7 @@ body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) max-content;
   justify-content: space-between;
+  cursor: pointer;
 }
 
 .cat-list-cat {
@@ -241,7 +242,8 @@ body {
 }
 
 @media (hover: hover) {
-  .cat-list-cat {
+  .cat-list-cat,
+  .cat-list-group {
     &:not(.selected):hover {
       background-color: var(--hover-background);
       color: var(--hover-color);
@@ -250,6 +252,7 @@ body {
 }
 
 @media (min-width: breakpoints.$side-by-side) {
+  .cat-list-group,
   .cat-list-cat {
     &.selected {
       background-color: var(--selection-background);
