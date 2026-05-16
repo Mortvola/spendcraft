@@ -58,9 +58,14 @@ const Overview: React.FC = observer(() => {
         <MinorTitle>Upcoming Bills</MinorTitle>
         {
           overview.bills
-            .filter((bill) => (
-              !bill.category.suspended
-              && bill.category.computedGoalDate()?.month !== DateTime.now().month)
+            .filter((bill) => {
+              const goalDate = bill.category.computedGoalDate()
+              const now = DateTime.now()
+
+              return (
+                !bill.category.suspended
+                && !(goalDate?.month === now.month && goalDate?.year === now.year))
+              }
             )
             .map((bill) => (
               <Bill key={bill.category.id} bill={bill} />
