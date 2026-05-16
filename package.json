@@ -64,7 +64,7 @@
     "mobx-react-lite": "^4.0.4",
     "pg": "^8.7.3",
     "pg-native": "^3.0.0",
-    "plaid": "^41.1.0",
+    "plaid": "^42.2.0",
     "react": "^19.1.0",
     "react-bootstrap": "^2.2.2",
     "react-dom": "^19.1.0",
