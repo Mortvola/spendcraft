@@ -259,7 +259,7 @@ export interface PlaidInterface {
   linkToken: string;
 }
 
-export type Views = 'HOME' | 'PLANS' | 'ACCOUNTS' | 'REPORTS' | 'SEARCH' | 'USER_ACCOUNT' | 'LOGOUT';
+// export type Views = 'HOME' | 'PLANS' | 'ACCOUNTS' | 'REPORTS' | 'SEARCH' | 'USER_ACCOUNT' | 'LOGOUT';
 
 export interface UIStateInterface {
   selectCategory(category: CategoryInterface | null): void;

@@ -1,5 +1,5 @@
 import { DateTime } from "luxon";
-import { UserProps } from "./Types";
+import { type UserProps } from "./Types";
 
 class UserRecord {
   username: string

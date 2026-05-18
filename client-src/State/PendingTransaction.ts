@@ -1,6 +1,6 @@
 import { DateTime } from 'luxon';
 import { observable } from 'mobx';
-import { PendingTransactionProps, TransactionType } from '../../common/ResponseTypes';
+import { type PendingTransactionProps, TransactionType } from '../../common/ResponseTypes';
 import { StoreInterface, BaseTransactionInterface } from './Types';
 
 class PendingTransaction implements BaseTransactionInterface {

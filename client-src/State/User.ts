@@ -3,7 +3,7 @@ import Http from '@mortvola/http';
 import {
   ApiResponse, ErrorProps, isErrorResponse, isUserProps,
 } from '../../common/ResponseTypes';
-import { StoreInterface, UserInterface, UserProps } from './Types';
+import { StoreInterface, UserInterface, type UserProps } from './Types';
 
 class User implements UserInterface {
   @observable

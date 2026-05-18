@@ -1,4 +1,4 @@
-import { HistoryMonthProps } from '../../common/ResponseTypes';
+import { type HistoryMonthProps } from '../../common/ResponseTypes';
 
 class HistoryMonth {
   year: number;

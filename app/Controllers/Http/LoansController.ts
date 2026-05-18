@@ -3,7 +3,7 @@ import db from '@adonisjs/lucid/services/db';
 import Category from '#app/Models/Category';
 import Group from '#app/Models/Group';
 import Loan from '#app/Models/Loan';
-import { CategoryType, LoanTransactionsProps, LoanUpdateProps } from '#common/ResponseTypes';
+import { CategoryType, type LoanTransactionsProps, type LoanUpdateProps } from '#common/ResponseTypes';
 import { addLoan, updateLoan } from '#validators/loan';
 
 export default class LoansController {

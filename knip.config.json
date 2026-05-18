@@ -1,0 +1,4 @@
+{
+  "entry": ["client-src/App.tsx"],
+  "project": ["!database/**/*.js", "client-src/**/*.ts", "./common/**/*.ts"]
+}

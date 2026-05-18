@@ -6,7 +6,7 @@ import Account, { AccountSyncResult } from '#app/Models/Account';
 import Category from '#app/Models/Category';
 import {
   AccountType,
-  AddInstitutionResponse, AddOfflineAccountResponse, AddOnlineAccountsResponse, ApiResponse, CategoryBalanceProps,
+  AddInstitutionResponse, AddOfflineAccountResponse, type AddOnlineAccountsResponse, ApiResponse, CategoryBalanceProps,
   InstitutionProps, InstitutionSyncResponse, TrackingType, UnlinkedAccountProps,
 } from '#common/ResponseTypes';
 import Transaction from '#app/Models/Transaction';

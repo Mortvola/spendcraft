@@ -1,7 +1,7 @@
 import { HttpContext } from '@adonisjs/core/http';
 import db from '@adonisjs/lucid/services/db';
 import Budget from '#app/Models/Budget';
-import { BudgetProgressReportResponse, CategoryType, TrackingType, TransactionType } from '#common/ResponseTypes';
+import { type BudgetProgressReportResponse, CategoryType, TrackingType, TransactionType } from '#common/ResponseTypes';
 import { DateTime } from 'luxon';
 
 type NetworthReportType = (string | number)[][];

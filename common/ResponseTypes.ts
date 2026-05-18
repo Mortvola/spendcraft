@@ -77,7 +77,7 @@ export interface AccountBalanceProps {
   balance: number;
 }
 
-export type AddCategoryResponse = CategoryProps
+type AddCategoryResponse = CategoryProps
 
 export const isAddCategoryResponse = (r: unknown): r is AddCategoryResponse => (
   (r as AddCategoryResponse).id !== undefined
@@ -105,7 +105,7 @@ export const isUpdateCategoryResponse = (
   (r as UpdateCategoryResponse).name !== undefined
 );
 
-export interface UpdateLoanResponse {
+interface UpdateLoanResponse {
   name: string;
   balance: number;
   rate: number;
@@ -119,7 +119,7 @@ export const isUpdateLoanResponse = (
   && (r as UpdateLoanResponse).rate !== undefined
 );
 
-export interface UpdateFundingCategoryResponse {
+interface UpdateFundingCategoryResponse {
   id: number;
   fundingAmount: number;
 }
@@ -179,20 +179,15 @@ export const isAccountProps = (r: unknown): r is AccountProps => (
   && (r as AccountProps).balance !== undefined
 );
 
-export interface AccountTrackingProps {
-  id: string,
-  mask: string,
-  tracking: TrackingType,
-}
+// export interface AccountTrackingProps {
+//   id: string,
+//   mask: string,
+//   tracking: TrackingType,
+// }
 
 export interface AddInstitutionProps {
   publicToken: string,
   institutionId: string,
-}
-
-export interface UpdateInstitutionProps {
-  startDate: string,
-  accounts: AccountTrackingProps[],
 }
 
 export interface InstitutionProps {
@@ -387,7 +382,7 @@ export interface LoanTransactionsProps {
   transactions: LoanTransactionProps[],
 }
 
-export interface CategoryLoanResponse {
+interface CategoryLoanResponse {
   balance: number;
   transactions: LoanTransactionProps[];
 }
@@ -413,7 +408,7 @@ export const isLoanUpdateProps = (r: unknown): r is LoanUpdateProps => (
 //   (r as LoanTransactionProps).transaction !== undefined
 // );
 
-export type LoanTransactionsResponse = LoanTransactionProps[];
+type LoanTransactionsResponse = LoanTransactionProps[];
 
 export const isLoanTransactionsResponse = (r: unknown): r is LoanTransactionsResponse => (
   r !== undefined && r !== null
@@ -451,7 +446,7 @@ export const isErrorPropsArray = (r: unknown): r is ErrorProps[] => (
   && (r[0] as ErrorProps).rule !== undefined
 )
 
-export interface ErrorResponse {
+interface ErrorResponse {
   errors: ErrorProps[];
 }
 
@@ -481,11 +476,11 @@ export const isApiErrorArray = (r: unknown): r is ApiError[] => (
   && (r[0] as ApiError).source !== undefined
 )
 
-export const isErrorResponse = (r: ErrorResponse | unknown): r is ErrorResponse => (
+export const isErrorResponse = (r:  | unknown): r is ErrorResponse => (
   (r as ErrorResponse).errors !== undefined
 );
 
-export interface CategoryUpdateResponse {
+interface CategoryUpdateResponse {
   name: string;
 }
 
@@ -505,7 +500,7 @@ export interface UpdateTransactionResponse {
   statement?: StatementProps,
 }
 
-export interface UpdateCategoryTransferResponse {
+interface UpdateCategoryTransferResponse {
   balances: CategoryBalanceProps[],
 
   transaction: {
@@ -522,7 +517,7 @@ export const isUpdateCategoryTransferResponse = (
   || isCategoryBalance((r as UpdateCategoryTransferResponse).balances[0]))
 );
 
-export interface DeleteTransactionResponse {
+interface DeleteTransactionResponse {
   categories: CategoryBalanceProps[],
   acctBalances: AccountBalanceProps[],
 }
@@ -536,7 +531,7 @@ export const isDeleteTransactionResponse = (
   || isCategoryBalance((r as DeleteTransactionResponse).categories[0]))
 );
 
-export interface InsertCategoryTransferResponse {
+interface InsertCategoryTransferResponse {
   balances: CategoryBalanceProps[],
 
   transaction: TransactionProps,
@@ -726,7 +721,7 @@ export interface InstitutionSyncResponse {
   categories: CategoryProps[];
 }
 
-export interface LinkTokenProps {
+interface LinkTokenProps {
   linkToken: string;
 }
 
@@ -815,13 +810,13 @@ export interface UnlinkedAccountProps {
 //   && (r as UnlinkedAccountProps[])[0].plaidAccountId !== undefined)
 // );
 
-export interface AddTransactionProps {
-  date: string,
+// interface AddTransactionProps {
+//   date: string,
 
-  name: string,
+//   name: string,
 
-  amount: number,
-}
+//   amount: number,
+// }
 
 export interface AddTransactionResponse {
   categories: CategoryBalanceProps[],
@@ -834,14 +829,14 @@ export const isAddTransactionResponse = (r: unknown): r is AddTransactionRespons
   && Array.isArray((r as AddTransactionResponse).categories)
 )
 
-export interface CategoryBalanceProps2 {
-  id: number,
-  name: string,
-  balance:number,
-  system: boolean,
-}
+// export interface CategoryBalanceProps2 {
+//   id: number,
+//   name: string,
+//   balance:number,
+//   system: boolean,
+// }
 
-export interface CategoryTreeBalanceProps {
+interface CategoryTreeBalanceProps {
   id: number,
   balance: number,
 }
@@ -868,11 +863,11 @@ export const isDeleteAccountResponse = (r: unknown): r is CategoryBalanceProps[]
 
 export type BudgetProgressReportResponse = [string, number, number[]][];
 
-export enum PendingQueryFlag {
-  NoPending = 0,
-  OnlyPending = 1,
-  WithPending = 2,
-}
+// export enum PendingQueryFlag {
+//   NoPending = 0,
+//   OnlyPending = 1,
+//   WithPending = 2,
+// }
 
 export interface BillProps {
   id: number,

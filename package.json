@@ -10,8 +10,8 @@
     "dev-start": "node ace serve -w",
     "lint": "eslint .",
     "madge": "clear && madge -c ./client-src/App.tsx",
-    "knip": "clear && knip",
-    "test": "node --import ts-node-maintained/register/esm --enable-source-maps bin/test.ts"
+    "knip": "clear && knip --config ./knip.config.json",
+    "test": "node --import @poppinss/ts-exec --enable-source-maps bin/test.ts"
   },
   "madge": {
     "detectiveOptions": {

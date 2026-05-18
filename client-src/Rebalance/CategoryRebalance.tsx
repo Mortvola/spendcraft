@@ -1,7 +1,7 @@
 import React, { ReactElement, useState } from 'react';
 import CategoryRebalanceItem from './CategoryRebalanceItem';
 import {
-  CategoryBalanceInterface, CategoryInterface, GroupInterface, TransactionCategoryInterface,
+  type CategoryBalanceInterface, CategoryInterface, GroupInterface, TransactionCategoryInterface,
 } from '../State/Types';
 import { isGroup } from '../State/Group';
 import { useStores } from '../State/Store';

@@ -10,15 +10,15 @@ import Http from '@mortvola/http';
 import Amount from '../Amount';
 import { useStores } from '../State/Store';
 import {
-  TransactionType, CategoryFundingProps,
+  TransactionType, type CategoryFundingProps,
   ApiResponse,
   ProposedFundingCategoryProps,
   CategoryType,
 } from '../../common/ResponseTypes';
 import Funding from './Funding';
 import {
-  CategoriesValueType,
-  FundingType, ValueType,
+  type CategoriesValueType,
+  type FundingType, ValueType,
 } from './Types'
 import styles from './Funding.module.scss'
 import { CategoryInterface, TransactionInterface } from '../State/Types';
