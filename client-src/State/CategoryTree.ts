@@ -37,7 +37,7 @@ class CategoryTree implements CategoryTreeInterface {
   accessor rebalances: RebalancesInterface | null = null;
 
   @observable
-  accessor subcategories: Category[] = [];
+  accessor bills: Group;
 
   store: StoreInterface;
 
@@ -47,6 +47,16 @@ class CategoryTree implements CategoryTreeInterface {
         id: -1,
         type: GroupType.System,
         name: 'Root',
+        parentGroupId: null,
+      },
+      store,
+    )
+
+    this.bills = new Group(
+      {
+        id: -2,
+        type: GroupType.Bills,
+        name: 'Bills',
         parentGroupId: null,
       },
       store,
@@ -97,7 +107,13 @@ class CategoryTree implements CategoryTreeInterface {
       return this.unassignedCat
     }
 
-    return this.budget.findCategory(categoryId)
+    let category = this.budget.findCategory(categoryId)
+
+    if (category === null) {
+      category = this.bills.findCategory(categoryId)
+    }
+
+    return category;
   }
 
   getGroup(groupId: number): GroupInterface | Group | null {
@@ -180,7 +196,7 @@ class CategoryTree implements CategoryTreeInterface {
 
       if (data) {
         runInAction(() => {
-          // Find the 'No Group' group first
+          // Find the 'No Group' and 'System' groups first
           const noGroup = data.groups.find((g) => g.type === GroupType.NoGroup)
           const systemGroup = data.groups.find((g) => g.type === GroupType.System)
 
@@ -195,8 +211,17 @@ class CategoryTree implements CategoryTreeInterface {
           this.systemIds.systemGroupId = systemGroup.id;
 
           this.budget = new Budget(noGroup, this.store)
+          this.budget.name = 'Categories'
 
-          this.subcategories = [];
+          this.bills = new Group(
+            {
+              id: -2,
+              type: GroupType.Bills,
+              name: 'Bills',
+              parentGroupId: null,
+            },
+            this.store,
+          )
 
           interface StackEntry {
             props: GroupProps | CategoryProps,
@@ -250,7 +275,6 @@ class CategoryTree implements CategoryTreeInterface {
                 case CategoryType.FundingPool:
                   this.budget.fundingPoolCat = node;
                   this.budget.fundingPoolCat.group = this.budget;
-
                   node = undefined
                   break;
 
@@ -259,10 +283,12 @@ class CategoryTree implements CategoryTreeInterface {
                   node = undefined
                   break;
 
-                  // case CategoryType.Bill:
-                  //   this.subcategories.push(node)
-                  //   node = undefined
-                  //   break;
+                case CategoryType.Bill:
+                  node.group = this.bills;
+                  this.bills.children.push(node)
+                  this.bills.children.sort((a, b) => a.name.localeCompare(b.name));
+                  node = undefined
+                  break;
 
                 default:
                   break;

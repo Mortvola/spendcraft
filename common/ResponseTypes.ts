@@ -2,6 +2,7 @@ export enum GroupType {
   NoGroup = 'NO GROUP',
   Regular = 'REGULAR',
   System = 'SYSTEM',
+  Bills = 'BILLS',
 }
 
 export interface GroupProps {

@@ -18,7 +18,7 @@ const GroupButtons: React.FC<PropsType> = observer(({ group }) => {
     event.stopPropagation()
   }
 
-  if ([GroupType.Regular, GroupType.NoGroup].includes(group.type) && isGroup(group)) {
+  if ([GroupType.Regular, GroupType.NoGroup, GroupType.Bills].includes(group.type) && isGroup(group)) {
     return (
       <div style={{width: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
         {

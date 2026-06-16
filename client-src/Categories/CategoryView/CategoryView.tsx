@@ -135,16 +135,24 @@ const CategoryView: React.FC = observer(() => {
             />
           ))
       }
-      {
+      <Group
+        key="budget"
+        group={categoryTree.budget}
+        onCategorySelected={handleCategorySelected}
+        onGroupSelected={handleGroupSelected}
+        selectedCategory={uiState.selectedCategory}
+        selectedGroup={uiState.selectedGroup}
+      />
+      <div className={styles.bills}>
         <Group
-          key="budget"
-          group={categoryTree.budget}
+          key="bills"
+          group={categoryTree.bills}
           onCategorySelected={handleCategorySelected}
           onGroupSelected={handleGroupSelected}
           selectedCategory={uiState.selectedCategory}
           selectedGroup={uiState.selectedGroup}
         />
-      }
+      </div>
       <div className={styles.accounts}>
         <div>
           {

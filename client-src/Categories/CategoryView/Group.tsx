@@ -52,7 +52,7 @@ const Group: React.FC<PropsType> = observer(({
             group.type === GroupType.NoGroup
               ? (
                 <div className={styles.root}>
-                  Categories
+                  {group.name}
                   <LucideButton onClick={showRootDialog}>
                     <Settings size={16} strokeWidth={2.5}  />
                   </LucideButton>

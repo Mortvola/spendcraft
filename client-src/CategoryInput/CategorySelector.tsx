@@ -128,6 +128,51 @@ const CategorySelector = observer(React.forwardRef<HTMLDivElement, PropsType>(({
     event.preventDefault();
   };
 
+  const renderTree = (root: GroupInterface, level = 0) => (
+    root.children.map((node) => {
+      if (isGroup(node)) {
+        const children = filteredCategories(node, 1);
+        // Only display a group if there are children.
+        if (children.length > 0) {
+          return (
+            <CategorySelectorGroup
+              key={node.id}
+              group={node}
+              level={level}
+            >
+              { children }
+            </CategorySelectorGroup>
+          );
+        }
+
+        return null;
+      }
+
+      if (!isCategory(node)) {
+        throw new Error('group is not a category');
+      }
+
+      if (!categoryFiltered(null, node, filter, types)) {
+        if (node.group === null) {
+          throw new Error('group is null')
+        }
+
+        return (
+          <CategorySelectorCategory
+            key={`${node.group.id}:${node.id}`}
+            category={node}
+            selected={selectedCategory !== null && node.id === selectedCategory.id}
+            onSelect={onSelect}
+            level={level}
+          />
+        );
+      }
+
+      return null;
+    })
+      .filter((a) => a !== null)
+  )
+
   return (
     <div
       ref={forwardRef}
@@ -178,47 +223,25 @@ const CategorySelector = observer(React.forwardRef<HTMLDivElement, PropsType>(({
           : null
       }
       {
-        categoryTree.budget.children.map((node) => {
-          if (isGroup(node)) {
-            const children = filteredCategories(node, 1);
-            // Only display a group if there are children.
-            if (children.length > 0) {
-              return (
-                <CategorySelectorGroup
-                  key={node.id}
-                  group={node}
-                  level={0}
-                >
-                  { children }
-                </CategorySelectorGroup>
-              );
-            }
+        renderTree(categoryTree.budget)
+      }
+      {
+        (() => {
+          const bills = renderTree(categoryTree.bills, 1)
 
-            return null;
-          }
-
-          if (!isCategory(node)) {
-            throw new Error('group is not a category');
-          }
-
-          if (!categoryFiltered(null, node, filter, types)) {
-            if (node.group === null) {
-              throw new Error('group is null')
-            }
-
+          if (bills.length > 0) {
             return (
-              <CategorySelectorCategory
-                key={`${node.group.id}:${node.id}`}
-                category={node}
-                selected={selectedCategory !== null && node.id === selectedCategory.id}
-                onSelect={onSelect}
-                level={0}
-              />
-            );
+              <>
+                <div>Bills</div>
+                {
+                  bills
+                }
+              </>
+            )
           }
 
           return null;
-        })
+        })()
       }
     </div>
   );
