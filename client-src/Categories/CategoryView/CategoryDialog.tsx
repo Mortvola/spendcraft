@@ -61,7 +61,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
     let errors = null;
 
     const selectedGroup = categoryTree.getGroup(parseInt(values.groupId, 10))
-      ?? categoryTree.budget;
+      ?? (values.type === CategoryType.Bill ? categoryTree.bills : categoryTree.budget);
 
     if (selectedGroup === null) {
       throw new Error(`group is not a group: ${selectedGroup}`);
@@ -141,12 +141,12 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
     return 'Add Category';
   };
 
-  const populateGroups = () => {
+  const populateGroupsSubtree = (root: GroupInterface) => {
     const options = [];
 
-    options.push(<option key="nogroup" value={categoryTree.budget.id}>No Group</option>);
+    options.push(<option key={root.id} value={root.id}>{root.name}</option>);
 
-    let stack: (GroupInterface | CategoryInterface)[] = [...categoryTree.budget.children]
+    let stack: (GroupInterface | CategoryInterface)[] = [...root.children]
 
     while (stack.length > 0) {
       const group = stack[0];
@@ -163,6 +163,14 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
     }
 
     return options;
+  }
+
+  const populateGroups = (type: CategoryType) => {
+    if (type === CategoryType.Bill) {
+      return populateGroupsSubtree(categoryTree.bills)
+    }
+
+    return populateGroupsSubtree(categoryTree.budget)
   }
 
   const categoryTypeClass = () => (
@@ -269,7 +277,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
                         }}
                       >
                         {
-                          populateGroups()
+                          populateGroups(form.values.type)
                         }
                       </select>
                     )

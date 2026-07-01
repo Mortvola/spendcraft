@@ -76,8 +76,8 @@ const Funding: React.FC<PropsType> = ({
       .filter((item) => item !== null)
   );
 
-  const populateGroups = (): ReactNode => (
-    categoryTree.budget.children.map((node) => {
+  const populateGroups = (root: GroupInterface): ReactNode => (
+    root.children.map((node) => {
       if (isGroup(node)) {
         if (node.id !== categoryTree.systemIds.systemGroupId) {
           return (
@@ -102,7 +102,8 @@ const Funding: React.FC<PropsType> = ({
 
   return (
     <div className="cat-fund-items">
-      {populateGroups()}
+      {populateGroups(categoryTree.budget)}
+      {populateGroups(categoryTree.bills)}
     </div>
   );
 };

@@ -116,11 +116,11 @@ class CategoryTree implements CategoryTreeInterface {
     return category;
   }
 
-  getGroup(groupId: number): GroupInterface | Group | null {
+  private getGroupFromSubtree(groupId: number, root: GroupInterface): GroupInterface | null {
     type StackEntry = (Group | GroupInterface);
 
     let stack: StackEntry[] = [
-      this.budget,
+      root,
     ]
 
     while (stack.length > 0) {
@@ -135,6 +135,16 @@ class CategoryTree implements CategoryTreeInterface {
     }
 
     return null;
+  }
+
+  getGroup(groupId: number): GroupInterface | null {
+    let group = this.getGroupFromSubtree(groupId, this.budget)
+
+    if (group === null) {
+      group = this.getGroupFromSubtree(groupId, this.bills)
+    }
+
+    return group
   }
 
   getCategoryName(categoryId: number): string | null {
@@ -196,9 +206,10 @@ class CategoryTree implements CategoryTreeInterface {
 
       if (data) {
         runInAction(() => {
-          // Find the 'No Group' and 'System' groups first
+          // Find the 'No Group', 'System' and 'Bills' groups first
           const noGroup = data.groups.find((g) => g.type === GroupType.NoGroup)
           const systemGroup = data.groups.find((g) => g.type === GroupType.System)
+          const billsGroup = data.groups.find((g) => g.type === GroupType.Bills)
 
           if (noGroup === undefined) {
             throw new Error('No Group group not found')
@@ -208,34 +219,45 @@ class CategoryTree implements CategoryTreeInterface {
             throw new Error('System group not found')
           }
 
+          if (billsGroup === undefined) {
+            throw new Error('Bills group not found')
+          }
+
           this.systemIds.systemGroupId = systemGroup.id;
 
           this.budget = new Budget(noGroup, this.store)
           this.budget.name = 'Categories'
 
-          this.bills = new Group(
-            {
-              id: -2,
-              type: GroupType.Bills,
-              name: 'Bills',
-              parentGroupId: null,
-            },
-            this.store,
-          )
+          this.bills = new Group(billsGroup, this.store)
 
           interface StackEntry {
             props: GroupProps | CategoryProps,
             parent: Group | null
           }
 
+          // Push onto the stack any groups that are children of the categories root.
           let stack: StackEntry[] = data.groups
             .filter((g) => (
-              (g.parentGroupId === null || g.parentGroupId === noGroup.id) && g.type !== GroupType.NoGroup
+              (g.parentGroupId === null || g.parentGroupId === noGroup.id)
+              && g.type !== GroupType.NoGroup
+              && g.type !== GroupType.Bills
             ))
             .map((g) => ({
               props: g,
               parent: this.budget,
             }))
+
+          // Push onto the stack any groups that are children of the bills root.
+          stack.push(
+            ...data.groups
+              .filter((g) => (
+                g.parentGroupId === billsGroup.id
+              ))
+              .map((g) => ({
+                props: g,
+                parent: this.bills,
+              }))
+          )
 
           // Push onto the stack any categories that are in the No Group group.
           stack.push(
@@ -244,6 +266,16 @@ class CategoryTree implements CategoryTreeInterface {
               .map((c) => ({
                 props: c,
                 parent: this.budget,
+              })),
+          )
+
+          // Push onto the stack any categories that are in the Bills group.
+          stack.push(
+            ...data.categories
+              .filter((c) => c.groupId === billsGroup.id)
+              .map((c) => ({
+                props: c,
+                parent: this.bills,
               })),
           )
 
@@ -280,13 +312,6 @@ class CategoryTree implements CategoryTreeInterface {
 
                 case CategoryType.AccountTransfer:
                   this.accountTransferCat = node;
-                  node = undefined
-                  break;
-
-                case CategoryType.Bill:
-                  node.group = this.bills;
-                  this.bills.children.push(node)
-                  this.bills.children.sort((a, b) => a.name.localeCompare(b.name));
                   node = undefined
                   break;
 

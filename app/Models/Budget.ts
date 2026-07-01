@@ -171,8 +171,18 @@ export default class Budget extends BaseModel {
       })
       .save();
 
+    await (new Group())
+      .useTransaction(this.$trx)
+      .fill({
+        name: 'Bills',
+        type: GroupType.Bills,
+        budgetId: this.id,
+      })
+      .save();
+
     await this.generateBudgetCategories();
   }
+  
 
   private async generateBudgetCategories(): Promise<void> {
     const trx = this.$trx;

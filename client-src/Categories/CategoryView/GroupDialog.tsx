@@ -90,12 +90,12 @@ const GroupDialog: React.FC<PropsType & ModalProps> = ({
     return 'Add Group';
   };
 
-  const populateGroups = () => {
+  const populateGroups = (root: GroupInterface) => {
     const options = [];
 
-    options.push(<option key="nogroup" value={categoryTree.budget.id}>None</option>);
+    options.push(<option key={root.id} value={root.id}>{root.name}</option>);
 
-    let stack: (GroupInterface | CategoryInterface)[] = [...categoryTree.budget.children]
+    let stack: (GroupInterface | CategoryInterface)[] = [...root.children]
 
     while (stack.length > 0) {
       const g = stack[0];
@@ -157,7 +157,10 @@ const GroupDialog: React.FC<PropsType & ModalProps> = ({
                   }}
                 >
                   {
-                    populateGroups()
+                    populateGroups(categoryTree.budget)
+                  }
+                  {
+                    populateGroups(categoryTree.bills)
                   }
                 </select>
               )

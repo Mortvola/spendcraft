@@ -63,7 +63,7 @@ const CategoryRebalance: React.FC<PropsType> = ({
     }
   };
 
-  const categoryItem = (category: CategoryInterface, padding: number): React.JSX.Element => {
+  const categoryItem = (category: CategoryInterface, level: number): React.JSX.Element => {
     let adjustment = 0;
     const catAmount = transactionCategories.find((c) => c.categoryId === category.id);
     if (catAmount) {
@@ -75,7 +75,7 @@ const CategoryRebalance: React.FC<PropsType> = ({
       <>
         <CategoryRebalanceItem
           key={category.id}
-          style={{ paddingLeft: padding, textDecoration: category.suspended ? 'line-through' : undefined }}
+          style={{ paddingLeft: level * 28, textDecoration: category.suspended ? 'line-through' : undefined }}
           category={{ name: category.name, balance: balance ? balance.balance : 0, adjustment }}
           onDeltaChange={(amount: number, delta: number) => (
             handleDeltaChange(amount, delta, category)
@@ -83,14 +83,14 @@ const CategoryRebalance: React.FC<PropsType> = ({
         />
         {
           category.subcategories.map((subcat) => (
-            categoryItem(subcat, padding + 28)
+            categoryItem(subcat, level + 1)
           ))
         }
       </>
     )
   }
 
-  const populateCategories = (categories: (GroupInterface | CategoryInterface)[], padding: number): ReactElement[] => (
+  const populateCategories = (categories: (GroupInterface | CategoryInterface)[], level: number): ReactElement[] => (
     categories
       .filter((node) => (
         isGroup(node)
@@ -102,17 +102,17 @@ const CategoryRebalance: React.FC<PropsType> = ({
           if (node.children.length > 0) {
             return (
               <>
-                <div key={node.id} className={styles.catRebalanceGroup} style={{ paddingLeft: padding }}>
+                <div key={node.id} className={styles.catRebalanceGroup} style={{ paddingLeft: level * 28 }}>
                   {node.name}
                 </div>
-                {populateCategories(node.children, padding + 28)}
+                {populateCategories(node.children, level + 1)}
               </>
             )
           }
         }
         else {
           return (
-            categoryItem(node as CategoryInterface, padding)
+            categoryItem(node as CategoryInterface, level)
           )
         }
 
@@ -121,17 +121,17 @@ const CategoryRebalance: React.FC<PropsType> = ({
       .filter((node) => node !== null)
   );
 
-  const populateTree = () => {
-    if (categoryTree.budget.children) {
+  const populateTree = (root: GroupInterface) => {
+    if (root.children) {
       return (
         <>
           {
-            categoryTree.budget.fundingPoolCat?.subcategories.map((subcat) => (
-              categoryItem(subcat, 0)
-            ))
+            // categoryTree.budget.fundingPoolCat?.subcategories.map((subcat) => (
+            //   categoryItem(subcat, 0)
+            // ))
           }
           {
-            populateCategories(categoryTree.budget.children, 0)
+            populateCategories(root.children, 1)
           }
         </>
       )
@@ -142,7 +142,10 @@ const CategoryRebalance: React.FC<PropsType> = ({
 
   return (
     <div className={styles.catRebalanceContainer}>
-      {populateTree()}
+      <div>Categories</div>
+      {populateTree(categoryTree.budget)}
+      <div>Bills</div>
+      {populateTree(categoryTree.bills)}
     </div>
   );
 };

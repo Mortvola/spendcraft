@@ -317,6 +317,21 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
         }
       })
 
+      // Add to the transaction any bill that is not yet represented
+      categoryTree.bills.forEachCatgory((node: CategoryInterface) => {
+        if (obj[node.id] === undefined) {
+          obj[node.id] = {
+            baseAmount: 0,
+            fundingCategories: [{
+              categoryId: node.getFundingPool().id,
+              amount: 100,
+              percentage: true,
+            }],
+            includeFundingTransfers: false,
+          }
+        }
+      })
+
       return obj;
     }
 
