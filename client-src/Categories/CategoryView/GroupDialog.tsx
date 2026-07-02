@@ -13,6 +13,7 @@ import { ErrorProps, GroupType } from '../../../common/ResponseTypes';
 import { CategoryInterface, GroupInterface } from '../../State/Types';
 import styles from './GroupDialog.module.scss';
 import { isGroup } from '../../State/Group';
+import Select, { components, OptionProps } from 'react-select';
 
 interface PropsType {
   group?: GroupInterface,
@@ -90,24 +91,29 @@ const GroupDialog: React.FC<PropsType & ModalProps> = ({
     return 'Add Group';
   };
 
-  const populateGroups = (root: GroupInterface) => {
-    const options = [];
+  interface OptionType { value: number, label: string, level: number }
 
-    options.push(<option key={root.id} value={root.id}>{root.name}</option>);
+  const populateGroups = (root: GroupInterface): OptionType[] => {
+    const options: OptionType[] = [];
 
-    let stack: (GroupInterface | CategoryInterface)[] = [...root.children]
+    options.push({ value: root.id, label: root.name, level: 0 })
+
+    let stack: { group: (GroupInterface | CategoryInterface), level: number }[] = root.children.map((child) => ({
+      group: child,
+      level: 1,
+    }))
 
     while (stack.length > 0) {
-      const g = stack[0];
+      const { group: g, level} = stack[0];
       stack = stack.slice(1)
 
       if (isGroup(g) && g.type === GroupType.Regular) {
         if (group === undefined || g.id !== group.id) {
-          options.push(<option key={g.id} value={g.id}>{g.name}</option>)
+          options.push({ value: g.id, label: g.name, level: level })
         }
 
         stack = [
-          ...g.children,
+          ...g.children.map((child) => ({ group: child, level: level + 1 })),
           ...stack,
         ]
       }
@@ -121,7 +127,7 @@ const GroupDialog: React.FC<PropsType & ModalProps> = ({
       setShow={setShow}
       initialValues={{
         name: group?.name ?? '',
-        parentGroupId: group?.group?.id ?? null,
+        parentGroupId: group?.group?.id ?? categoryTree.budget.id,
       }}
       title={title()}
       formId="GroupDialogForm"
@@ -147,23 +153,38 @@ const GroupDialog: React.FC<PropsType & ModalProps> = ({
             name="parentGroupId"
           >
             {
-              ({ field, form }: FieldProps<number>) => (
-                <select
-                  className="form-control"
-                  name={field.name}
-                  value={field.value}
-                  onChange={(v) => {
-                    form.setFieldValue(field.name, v.target.value);
-                  }}
-                >
-                  {
-                    populateGroups(categoryTree.budget)
-                  }
-                  {
-                    populateGroups(categoryTree.bills)
-                  }
-                </select>
-              )
+              ({ field, form }: FieldProps<number>) => {
+                const options = [
+                  ...populateGroups(categoryTree.budget),
+                  ...populateGroups(categoryTree.bills)
+                ]
+
+                const Option = (props: OptionProps<OptionType>) => (
+                  <components.Option {...props}>
+                    <div style={{ color: 'black', paddingLeft: props.data.level * 14, textWrap: 'nowrap' }}>{props.data.label}</div>
+                  </components.Option>
+                )
+
+                return (
+                  <Select<OptionType>
+                    name={field.name}
+                    value={options.find((o) => o.value === field.value)}
+                    options={options}
+                    components={{ Option }}
+                    onChange={(v) => {
+                      if (v !== null) {
+                        form.setFieldValue(field.name, v.value);
+                      }
+                    }}
+                    menuPortalTarget={document.body}
+                    menuPosition="absolute"
+                    menuPlacement="auto"
+                    styles={{ menuPortal: (base) => ({ ...base, zIndex: 2000 }) }}
+                    menuShouldScrollIntoView={false}
+                    isSearchable={false}
+                  />
+                )
+              }
             }
           </Field>
           <FormError name="group" />

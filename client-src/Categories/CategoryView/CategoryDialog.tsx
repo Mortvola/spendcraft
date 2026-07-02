@@ -19,6 +19,7 @@ import AmountInput from '../../AmountInput';
 import styles from './CategoryDialog.module.scss';
 import { CategoryType, GroupType } from '../../../common/ResponseTypes';
 import CategorySpread, { CategorySpreadEntry } from '../../CategorySpread/CategorySpread';
+import Select, { components, OptionProps } from 'react-select';
 
 interface Props {
   category?: CategoryInterface | null,
@@ -37,8 +38,10 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
     throw new Error('Unassigned is not defined or null')
   }
 
-  const [categoryType, setCategoryType] = React.useState<CategoryType>((category?.type ?? type) ?? CategoryType.Regular)
+  interface OptionType { value: number, label: string, level: number }
 
+  const [categoryType, setCategoryType] = React.useState<CategoryType>((category?.type ?? type) ?? CategoryType.Regular)
+  
   interface FormValues {
     type: CategoryType,
     name: string,
@@ -46,21 +49,17 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
     fundingAmount: string,
     includeFundingTransfers: boolean,
     recurrence: string,
-    groupId: string,
+    groupId: number,
     goalDate: string,
     fundingCategories: CategorySpreadEntry[],
     hidden: boolean,
-  }
-
-  const handleCategoryTypeChange = (newType: CategoryType) => {
-    setCategoryType(newType)
   }
 
   const handleSubmit = async (values: FormValues, bag: FormikHelpers<FormValues>) => {
     const { setErrors } = bag;
     let errors = null;
 
-    const selectedGroup = categoryTree.getGroup(parseInt(values.groupId, 10))
+    const selectedGroup = categoryTree.getGroup(values.groupId)
       ?? (values.type === CategoryType.Bill ? categoryTree.bills : categoryTree.budget);
 
     if (selectedGroup === null) {
@@ -141,28 +140,31 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
     return 'Add Category';
   };
 
-  const populateGroupsSubtree = (root: GroupInterface) => {
-    const options = [];
+  const populateGroupsSubtree = (root: GroupInterface): OptionType[] => {
+    const options: OptionType[] = [];
 
-    options.push(<option key={root.id} value={root.id}>{root.name}</option>);
+    options.push({ value: root.id, label: root.name, level: 0 })
 
-    let stack: (GroupInterface | CategoryInterface)[] = [...root.children]
+    let stack: { group: (GroupInterface | CategoryInterface), level: number }[] = root.children.map((child) => ({
+      group: child,
+      level: 1,
+    }))
 
     while (stack.length > 0) {
-      const group = stack[0];
+      const { group: g, level} = stack[0];
       stack = stack.slice(1)
 
-      if (isGroup(group) && group.type === GroupType.Regular) {
-        options.push(<option key={group.id} value={group.id}>{group.name}</option>)
+      if (isGroup(g) && g.type === GroupType.Regular) {
+        options.push({ value: g.id, label: g.name, level: level })
 
         stack = [
-          ...group.children,
+          ...g.children.map((child) => ({ group: child, level: level + 1 })),
           ...stack,
         ]
       }
     }
 
-    return options;
+    return options
   }
 
   const populateGroups = (type: CategoryType) => {
@@ -172,6 +174,14 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
 
     return populateGroupsSubtree(categoryTree.budget)
   }
+
+  const [options, setOptions] = React.useState<OptionType[]>(populateGroups((category?.type ?? type) ?? CategoryType.Regular))
+
+  const handleCategoryTypeChange = (newType: CategoryType) => {
+    setCategoryType(newType)
+    setOptions(populateGroups(newType))
+  }
+
 
   const categoryTypeClass = () => (
     [CategoryType.Bill, CategoryType.Goal].includes(categoryType) ? styles.bill : ''
@@ -212,7 +222,7 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
       initialValues={{
         type: categoryType,
         name: category && category.name ? category.name : '',
-        groupId: category?.group?.id.toString() ?? '',
+        groupId: category?.group?.id ?? categoryTree.budget.id,
         suspended: category?.suspended ?? false,
         fundingAmount: category?.fundingAmount.toString() ?? '0',
         includeFundingTransfers: category?.includeFundingTransfers ?? true,
@@ -267,20 +277,33 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
                   name="groupId"
                 >
                   {
-                    ({ field, form }: FieldProps<number>) => (
-                      <select
-                        className="form-control"
-                        name={field.name}
-                        value={field.value}
-                        onChange={(v) => {
-                          form.setFieldValue(field.name, v.target.value);
-                        }}
-                      >
-                        {
-                          populateGroups(form.values.type)
-                        }
-                      </select>
-                    )
+                    ({ field, form }: FieldProps<number>) => {
+                      const Option = (props: OptionProps<OptionType>) => (
+                        <components.Option {...props}>
+                          <div style={{ color: 'black', paddingLeft: props.data.level * 14, textWrap: 'nowrap' }}>{props.data.label}</div>
+                        </components.Option>
+                      )
+
+                      return (
+                        <Select<OptionType>
+                          name={field.name}
+                          value={options.find((o) => o.value === field.value)}
+                          options={options}
+                          components={{ Option }}
+                          onChange={(v) => {
+                            if (v !== null) {
+                              form.setFieldValue(field.name, v.value);
+                            }
+                          }}
+                          menuPortalTarget={document.body}
+                          menuPosition="absolute"
+                          menuPlacement="auto"
+                          styles={{ menuPortal: (base) => ({ ...base, zIndex: 2000 }) }}
+                          menuShouldScrollIntoView={false}
+                          isSearchable={false}
+                        />
+                      )
+                    }
                   }
                 </Field>
                 <FormError name="group" />
