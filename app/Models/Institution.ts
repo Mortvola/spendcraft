@@ -76,7 +76,10 @@ class Institution extends BaseModel {
 
           const addedSum = (acct.$extras.addedSum ?? 0);
 
-          if (addedSum !== 0) {
+          if (!acct.initialized) {
+            acct.balance = acct.plaidBalance ?? 0
+            acct.initialized = true;
+          } else {
             acct.balance += addedSum
           }
 
@@ -131,7 +134,7 @@ class Institution extends BaseModel {
             type: plaidAccount.type as AccountType,
             institutionId: this.id,
             startDate: DateTime.now().startOf('month'),
-            balance: 0,
+            balance: plaidAccount.balances.current ?? 0,
             plaidBalance: plaidAccount.balances.current,
             tracking: TrackingType.Transactions,
             enabled: true,
@@ -142,18 +145,17 @@ class Institution extends BaseModel {
         accounts.push(acct);
       }
 
-      // Only add transactions on or after the starting date.
-      // if (DateTime.fromISO(transaction.date) >= acct.startDate) {
-
-       
       const [amount, unasginedAmount] = await acct.addOrUpdateTransaction(transaction, budget);
 
-      if (!transaction.pending && DateTime.fromISO(transaction.date) >= acct.startDate) {
-        acct.$extras.addedSum = (acct.$extras.addedSum ?? 0) + amount;
-      }
+      // Only add transactions on or after the starting date.
+      if (DateTime.fromISO(transaction.date) >= acct.startDate) {
+        if (!transaction.pending) {
+          acct.$extras.addedSum = (acct.$extras.addedSum ?? 0) + amount;
+        }
 
-      if (acct.tracking === TrackingType.Transactions) {
-        unassignedSum += unasginedAmount;
+        if (acct.tracking === TrackingType.Transactions) {
+          unassignedSum += unasginedAmount;
+        }
       }
 
       acct.$extras.modified = true;

@@ -22,7 +22,7 @@ import CategoryDetails from './Categories/CategoryDetails';
 import Rebalances from './Categories/Rebalances';
 import Signup from './Credentials/Signup';
 import Signin from './Credentials/Signin';
-import Intro from './Intro';
+import Intro from './Onboarding/Intro';
 import RequireAuth from './RequireAuth';
 import RecoverPassword from './Credentials/RecoverPassword';
 import styles from './App.module.scss';

@@ -5,6 +5,7 @@ import styles from './Signup.module.scss';
 import EnterUserInfo from './EnterUserInfo';
 import { Context } from './Types';
 import EnterPassCode from './EnterPassCode';
+import AddAccounts from '../Onboarding/AddAccounts';
 
 const Signup: React.FC = () => {
   const tiny = responsive.useMediaQuery({ query: '(max-width: 350px)' });
@@ -35,8 +36,9 @@ const Signup: React.FC = () => {
         case 'Enter Info':
           return { ...newContext, state: 'Verify Code' };
         case 'Verify Code':
-          navigate('/home');
-          return prev;
+          // navigate('/home');
+          // return prev;
+          return { ...newContext, state: 'Add Accounts' };
         default:
           return prev;
       }
@@ -49,6 +51,8 @@ const Signup: React.FC = () => {
         return <EnterUserInfo context={context} onNext={handleNext} />
       case 'Verify Code':
         return <EnterPassCode context={context} onNext={handleNext} />
+      case 'Add Accounts':
+        return <AddAccounts />
       default:
         return null;
     }

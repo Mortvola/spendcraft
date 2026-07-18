@@ -32,3 +32,4 @@ dist/
 
 runtime.js
 install.sh
+schema.ts

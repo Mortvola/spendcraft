@@ -75,22 +75,25 @@ class Account extends BaseModel {
   public startDate: DateTime;
 
   @column({
-    consume: (value: string) => parseFloat(value),
+    consume: (value: string | null) => value === null ? 0 : parseFloat(value),
   })
   public balance: number;
 
   @column({
-    consume: (value: string) => parseFloat(value),
+    consume: (value: string | null) => value === null ? value : parseFloat(value),
   })
   public plaidBalance: number | null;
 
   @column({
-    consume: (value: string) => parseFloat(value),
+    consume: (value: string | null) => value === null ? value : parseFloat(value),
   })
   public rate: number | null;
 
   @column()
   public enabled: boolean;
+
+  @column()
+  public initialized: boolean;
 
   @belongsTo(() => Institution)
   public institution: BelongsTo<typeof Institution>;

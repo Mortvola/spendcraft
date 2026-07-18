@@ -45,10 +45,6 @@ class InstitutionController {
 
     const requestData = await request.validateUsing(addInstitution);
 
-    if (!requestData.publicToken) {
-      throw new Error('public token is undefined');
-    }
-
     const trx = await db.transaction();
 
     let tokenResponse: Plaid.ItemPublicTokenExchangeResponse | null = null;
@@ -83,7 +79,7 @@ class InstitutionController {
       institution.useTransaction(trx2);
 
       try {
-        await institution.syncUpdate();
+        await institution.syncUpdate();          
 
         await trx2.commit();
       }
@@ -427,8 +423,7 @@ class InstitutionController {
     const plaidClient = await app.container.make('plaid')
 
     const plaidAccountsResponse = await plaidClient.getAccounts(institution);
-
-     
+  
     for (const plaidAccount of plaidAccountsResponse.accounts) {
       let balance = plaidAccount.balances.current ?? 0;
       if (balance && (plaidAccount.type === AccountType.Credit || plaidAccount.type === AccountType.Loan)) {

@@ -3,15 +3,16 @@ import { useNavigate } from 'react-router';
 import * as responsive from 'react-responsive';
 import 'regenerator-runtime';
 import styles from './Intro.module.scss';
+import { observer } from 'mobx-react-lite';
 
-const Intro: React.FC = () => {
+const Intro: React.FC = observer(() => {
   const navigate = useNavigate();
   const tiny = responsive.useMediaQuery({ query: '(max-width: 350px)' });
   const small = responsive.useMediaQuery({ query: '(max-width: 600px)' });
   const medium = responsive.useMediaQuery({ query: '(max-width: 1224px)' });
 
   const handleSignupClick = () => {
-    // navigate('/signup');
+    navigate('/signup');
   }
 
   const handleSigninClick = () => {
@@ -68,6 +69,6 @@ const Intro: React.FC = () => {
       </div>
     </div>
   );
-};
+});
 
 export default Intro;
