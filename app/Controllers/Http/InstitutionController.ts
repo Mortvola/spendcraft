@@ -41,18 +41,22 @@ class InstitutionController {
     if (!user) {
       throw new Error('user is not defined');
     }
-    const budget = await user.related('budget').query().firstOrFail();
 
     const requestData = await request.validateUsing(addInstitution);
-
-    const trx = await db.transaction();
 
     let tokenResponse: Plaid.ItemPublicTokenExchangeResponse | null = null;
     let institutionResponse: Plaid.InstitutionsGetByIdResponse | null = null;
 
     const plaidClient = await app.container.make('plaid')
 
+    const trx = await db.transaction();
+
     try {
+      user.useTransaction(trx)
+
+      // Lock the budget record while we add the institution and selected accounts.
+      const budget = await user.related('budget').query().forUpdate().firstOrFail();
+
       tokenResponse = await plaidClient.exchangePublicToken(requestData.publicToken);
 
       institutionResponse = await plaidClient
@@ -75,7 +79,9 @@ class InstitutionController {
 
       await trx.commit();
 
+      // Now sync the institution with any transactions downloaded to Plaid.
       const trx2 = await db.transaction();
+
       institution.useTransaction(trx2);
 
       try {
@@ -216,11 +222,13 @@ class InstitutionController {
       throw new Error('user is not defined');
     }
 
-    const budget = await user.related('budget').query().firstOrFail();
-
     const trx = await db.transaction();
 
     try {
+      user.useTransaction(trx)
+
+      const budget = await user.related('budget').query().forUpdate().firstOrFail();
+
       const institution = await Institution.findOrFail(request.params().instId, { client: trx });
 
       const accountsResponse = await InstitutionController.addOnlineAccounts(
@@ -594,14 +602,14 @@ class InstitutionController {
       throw new Error('user is not defined');
     }
 
-    const budget = await user.related('budget').query().firstOrFail();
-
     const trx = await db.transaction();
 
     try {
+      user.useTransaction(trx);
+
       // Get the institutions that have been linked to Plaid.
       const institutions = await Institution.query({ client: trx })
-        .where('budgetId', budget.id)
+        .where('budgetId', user.budgetId)
         .whereNotNull('accessToken')
         .andWhere('accessToken', '!=', '');
 

@@ -62,7 +62,7 @@ class Institution extends BaseModel {
     return response.institution;
   }
 
-  private static async updateAccountBalances(accounts: Account[], plaidAccounts: Plaid.AccountBase[]) {
+  private static async updateAccountBalances(budget: Budget, accounts: Account[], plaidAccounts: Plaid.AccountBase[]) {
     return Promise.all(accounts.map(async (acct) => {
       if (acct.$extras.modified ?? false) {
         const plaidAccount = plaidAccounts.find((a) => a.account_id === acct.plaidAccountId);
@@ -74,18 +74,22 @@ class Institution extends BaseModel {
             acct.plaidBalance = -acct.plaidBalance;
           }
 
-          const addedSum = (acct.$extras.addedSum ?? 0);
-
           if (!acct.initialized) {
             acct.balance = acct.plaidBalance ?? 0
             acct.initialized = true;
-          } else {
-            acct.balance += addedSum
-          }
 
-          // await acct.updateStartingBalance(
-          //   budget, fundingPool,
-          // );
+            const startDate = acct.startDate.toISODate()
+
+            if (!startDate) {
+              throw new Error('date is invalid')
+            }
+
+            const fundingPool = await budget.getFundingPoolCategory({ client: budget.$trx });
+            await acct.updateStartingBalance(budget, fundingPool)
+            await fundingPool.save()
+          } else {
+            acct.balance += (acct.$extras.addedSum ?? 0)
+          }
            
           await acct.save();
         }
@@ -121,7 +125,6 @@ class Institution extends BaseModel {
         if (plaidAccount.type === 'brokerage') {
           throw new Error('brokerage account type is not supported.')
         }
-
          
         acct = await this.related('accounts').firstOrCreate(
           { plaidAccountId: plaidAccount.account_id },
@@ -139,13 +142,14 @@ class Institution extends BaseModel {
             tracking: TrackingType.Transactions,
             enabled: true,
             closed: false,
+            initialized: false,
           },
         );
 
         accounts.push(acct);
       }
 
-      const [amount, unasginedAmount] = await acct.addOrUpdateTransaction(transaction, budget);
+      const [amount, unassignedAmount] = await acct.addOrUpdateTransaction(transaction, budget);
 
       // Only add transactions on or after the starting date.
       if (DateTime.fromISO(transaction.date) >= acct.startDate) {
@@ -154,7 +158,7 @@ class Institution extends BaseModel {
         }
 
         if (acct.tracking === TrackingType.Transactions) {
-          unassignedSum += unasginedAmount;
+          unassignedSum += unassignedAmount;
         }
       }
 
@@ -208,6 +212,7 @@ class Institution extends BaseModel {
     try {
       let plaidAccounts: Plaid.AccountBase[] = [];
 
+      // Lock the budget record while we do updates.
       const budget = await this.related('budget')
         .query()
         .forUpdate()
@@ -265,7 +270,7 @@ class Institution extends BaseModel {
       // If the next cursor and the stored cursor are different then
       // we had transaction changes. Update account and category balances.
       if (nextCursor !== this.cursor) {
-        await Institution.updateAccountBalances(accounts, plaidAccounts);
+        await Institution.updateAccountBalances(budget, accounts, plaidAccounts);
 
         const unassigned = await budget.getUnassignedCategory({ client: this.$trx });
         unassigned.balance += unassignedSum;
