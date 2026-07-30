@@ -10,6 +10,8 @@ import { Button } from 'react-bootstrap';
 import styles from './Signin.module.scss';
 import { isErrorResponse } from '../../common/ResponseTypes';
 import { Context } from './Types';
+import { useStores } from '../State/Store';
+import { runInAction } from 'mobx';
 
 interface PropsType {
   context: Context,
@@ -22,6 +24,7 @@ const EnterPassCode: React.FC<PropsType> = ({
   onNext,
   link,
 }) => {
+  const { user, categoryTree, accounts } = useStores()
   const [resendStatus, setResendStatus] = React.useState<string>('')
 
   interface FormValues {
@@ -52,6 +55,13 @@ const EnterPassCode: React.FC<PropsType> = ({
 
       Http.setTokens(data.access, data.refresh);
 
+      runInAction(() => {
+        user.authenticated = true;
+        user.load()
+        categoryTree.load()
+        accounts.load()
+      })
+      
       onNext(context)
     }
     else {
