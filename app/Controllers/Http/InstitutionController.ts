@@ -93,6 +93,12 @@ class InstitutionController {
         await trx2.rollback();
         logger.error(error);
       }
+      finally {
+        if (!trx2.isCompleted) {
+          await trx2.rollback();
+          logger.error('A transaction leak was prevented')
+        }
+      }
 
       return {
         data: {
@@ -116,6 +122,12 @@ class InstitutionController {
 
       throw error;
     }
+    finally {
+        if (!trx.isCompleted) {
+          await trx.rollback();
+          logger.error('A transaction leak was prevented')
+        }
+      }
   }
 
    

@@ -5,7 +5,6 @@ import { decodeProtectedHeader, importJWK, jwtVerify } from 'jose';
 import { DateTime } from 'luxon';
 import * as Plaid from 'plaid';
 import { HttpContext, HttpRequest } from '@adonisjs/core/http';
-import db from '@adonisjs/lucid/services/db';
 import Institution from '#app/Models/Institution';
 import mail from '@adonisjs/mail/services/main';
 import { Exception } from '@adonisjs/core/exceptions';
@@ -149,8 +148,6 @@ class WebhookController {
   }
 
   static async syncUpdate(event: Plaid.SyncUpdatesAvailableWebhook) {
-    const trx = await db.transaction();
-
     try {
       const bullmq = await app.container.make('bullmq')
       const queue = bullmq.queue<PlaidWebHookProps, PlaidWebHookProps>(QueueNamesEnum.PlaidWebHook)
@@ -158,7 +155,6 @@ class WebhookController {
     }
     catch (error) {
       logger.error({ err: error }, `Posting sync to queue failed, event: ${JSON.stringify(event)}`);
-      trx.rollback();
     }
   }
 
