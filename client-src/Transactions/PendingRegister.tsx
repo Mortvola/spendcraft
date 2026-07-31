@@ -33,7 +33,7 @@ const PendingRegister: React.FC<PropsType> = observer(({
     }
   };
 
-  if (trxContainer && trxContainer.transactions.length > 0) {
+  if (trxContainer) {
     return (
       <div className={`register ${transactionStyles.pending} ${className} window`}>
         <RegisterTransactions trxContainer={trxContainer} titles={<RegisterTitles />}>

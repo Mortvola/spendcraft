@@ -95,7 +95,6 @@ $balance-width: 8rem;
   .owner {
     grid-area: owner;
     text-transform: capitalize;
-    font-size: var(--trx-small-text);
   }
   
   .running-balance {
@@ -177,8 +176,7 @@ $balance-width: 8rem;
       display: none;
     }
 
-    .pending-flag,
-    .owner {
+    .pending-flag {
       font-size: var(--trx-small-text);
     }
   }
