@@ -6,6 +6,7 @@ import { observer } from 'mobx-react-lite';
 import style from './TaxDetails.module.scss'
 import Amount from '../Amount';
 import AmountInput from '../AmountInput';
+import TaxComputation from './TaxComputation';
 
 const TaxDetails: React.FC = observer(() => {
   const { taxes } = useStores()
@@ -75,8 +76,6 @@ const TaxDetails: React.FC = observer(() => {
       taxes.qualifiedBusinessIncomeDeduction = parseFloat(event.target.value);
     })
   }
-
-  const taxResults = taxes.run
 
   return (
     <>
@@ -157,33 +156,7 @@ const TaxDetails: React.FC = observer(() => {
         </label>
       </div>
 
-      <div className={style.brackets}>
-        {
-          taxResults.brackets.map((t) => (
-            <div className={style.recordLayout}>
-              <div>{t[0]}%</div>
-              <Amount amount={t[1].amount} />
-              <Amount amount={t[1].tax} />
-            </div>
-          ))
-        }
-      </div>
-      <div className={style.summaryRecord}>
-        <div>Taxed Amount:</div>
-        <Amount amount={taxResults.totalTaxedAmount} />
-      </div>
-      <div className={style.summaryRecord}>
-        <div>Total Taxes:</div>
-        <Amount amount={taxResults.totalTaxes} />
-      </div>
-      <div className={style.summaryRecord}>
-        <div>Marginal Tax Rate:</div>
-        <Amount amount={taxResults.marginalTaxRate} />
-      </div>
-      <div className={style.summaryRecord}>
-        <div>Effective Tax Rate:</div>
-        <Amount amount={taxResults.effectiveTaxRate} />
-      </div>
+      <TaxComputation taxes={taxes} />
     </>
   )
 })

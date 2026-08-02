@@ -193,6 +193,7 @@ export default class Taxes {
 
     let totalTaxes = 0
     let totalTaxedAmount = 0
+    let totalIncome = 0
     let marginalTaxRate = 0
 
     for (const [rate, record] of sortedEntries) {
@@ -203,14 +204,16 @@ export default class Taxes {
         totalTaxedAmount += record.amount
       }
 
+      totalIncome += record.amount
+
       if (record.tax > 0) {
         marginalTaxRate = rate
       }
     }
 
-    const effectiveTaxRate = totalTaxes / totalTaxedAmount * 100.0;
+    const effectiveTaxRate = totalTaxes / totalIncome * 100.0;
 
-    console.log(`total amount: ${totalTaxedAmount}, total taxes: ${totalTaxes}, marginal tax rate: ${marginalTaxRate}, effective tax rate: ${effectiveTaxRate}`)
+    // console.log(`total amount: ${totalTaxedAmount}, total taxes: ${totalTaxes}, marginal tax rate: ${marginalTaxRate}, effective tax rate: ${effectiveTaxRate}`)
 
     return {
       brackets: sortedEntries,
