@@ -14,8 +14,6 @@ export default class Taxes extends BaseCommand {
 
   static options: CommandOptions = {}
 
-  taxMap = new Map<number, { tax: number, amount: number}>()
-
   static getTaxBrackets(filingStatus: FilingStatus): { rate: number, startAmount: number }[] {
     switch (filingStatus) {
       case FilingStatus.Single:
@@ -64,7 +62,7 @@ export default class Taxes extends BaseCommand {
     }
   }
 
-  computeTax(income: number, filingStatus: FilingStatus): number {
+  static computeTax(income: number, filingStatus: FilingStatus, taxMap: Map<number, { tax: number, amount: number}>): number {
     let taxes = 0;
 
     const taxBrackets = Taxes.getTaxBrackets(filingStatus);
@@ -75,11 +73,11 @@ export default class Taxes extends BaseCommand {
 
       taxes += tax;
     
-      let record = this.taxMap.get(taxBrackets[i].rate);
+      let record = taxMap.get(taxBrackets[i].rate);
 
       if (!record) {
         record = { tax, amount }
-        this.taxMap.set(taxBrackets[i].rate, record)
+        taxMap.set(taxBrackets[i].rate, record)
       } else {      
         record.amount += amount
         record.tax += tax
@@ -131,6 +129,26 @@ export default class Taxes extends BaseCommand {
     }
   }
 
+  static printTaxes(taxMap: Map<number, { tax: number, amount: number }>) {
+    const sortedEntries = [...taxMap.entries()].sort((a, b) => (a[0] - b[0]))
+
+    let totalTaxes = 0
+    let totalTaxedAmount = 0
+    let marginalTaxRate = 0
+
+    for (const [rate, record] of sortedEntries) {
+      console.log(`rate: ${rate}%, amount: ${record.amount}, tax: ${record.tax}`)
+      totalTaxes += record.tax
+      totalTaxedAmount += record.amount
+
+      if (record.tax > 0) {
+        marginalTaxRate = rate
+      }
+    }
+
+    console.log(`total amount: ${totalTaxedAmount}, total taxes: ${totalTaxes}, marginal tax rate: ${marginalTaxRate}, effective tax rate: ${totalTaxes / totalTaxedAmount * 100.0}`)
+  }
+
   async run() {
     const filingStatus = FilingStatus.MarriedFilingJointly;
 
@@ -161,6 +179,8 @@ export default class Taxes extends BaseCommand {
     // line 5
     const regularTaxableIncome = Math.max(taxableIncome - dividendsAndGains, 0);
 
+    const taxMap = new Map<number, { tax: number, amount: number}>()
+
     // Compute 0% taxes
     const maxNonTaxableIncome = Taxes.getMaxZeroPctTaxableIncome(filingStatus);
 
@@ -168,7 +188,7 @@ export default class Taxes extends BaseCommand {
 
     // line 9
     const zeroPctTaxedAmount = line7 - Math.min(line7, regularTaxableIncome);
-    this.taxMap.set(0, { amount: zeroPctTaxedAmount, tax: 0 })
+    taxMap.set(0, { amount: zeroPctTaxedAmount, tax: 0 })
 
     // Compute 15% taxes
     const line12 = line10 - zeroPctTaxedAmount
@@ -185,7 +205,7 @@ export default class Taxes extends BaseCommand {
 
     if (fifteenPctTaxedAmount) {
       const fifteenPctTaxes = fifteenPctTaxedAmount * 0.15;
-      this.taxMap.set(15, { amount: fifteenPctTaxedAmount, tax: fifteenPctTaxes })
+      taxMap.set(15, { amount: fifteenPctTaxedAmount, tax: fifteenPctTaxes })
     }
 
     // Compute 20% taxes
@@ -193,28 +213,17 @@ export default class Taxes extends BaseCommand {
 
     if (twentyPctTaxedAmount > 0) {
       const twentyPctTaxes = twentyPctTaxedAmount * 0.20;
-      this.taxMap.set(20, { amount: twentyPctTaxedAmount, tax: twentyPctTaxes })
+      taxMap.set(20, { amount: twentyPctTaxedAmount, tax: twentyPctTaxes })
     }
 
     // Compute regular tax rate
-    this.computeTax(regularTaxableIncome, filingStatus)
+    Taxes.computeTax(regularTaxableIncome, filingStatus, taxMap)
+    Taxes.printTaxes(taxMap)
 
-    const sortedEntries = [...this.taxMap.entries()].sort((a, b) => (a[0] - b[0]))
+    // Compute taxes on taxable income amount
+    const taxableIncomeTaxMap = new Map<number, { tax: number, amount: number}>();
 
-    let totalTaxes = 0
-    let totalTaxedAmount = 0
-    let marginalTaxRate = 0
-
-    for (const [rate, record] of sortedEntries) {
-      console.log(`rate: ${rate}%, amount: ${record.amount}, tax: ${record.tax}`)
-      totalTaxes += record.tax
-      totalTaxedAmount += record.amount
-
-      if (record.tax > 0) {
-        marginalTaxRate = rate
-      }
-    }
-
-    console.log(`total amount: ${totalTaxedAmount}, total taxes: ${totalTaxes}, marginal tax rate: ${marginalTaxRate}, effective tax rate: ${totalTaxes / totalTaxedAmount * 100.0}`)
+    Taxes.computeTax(taxableIncome, filingStatus, taxableIncomeTaxMap)
+    Taxes.printTaxes(taxableIncomeTaxMap)
   }
 }
