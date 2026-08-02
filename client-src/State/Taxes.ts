@@ -7,13 +7,17 @@ export enum FilingStatus {
   HeadOfHousehold,
 }
 
+export interface TaxBracketEntry { tax: number, amount: number }
+
 export interface TaxResults {
-  brackets: [number, { tax: number, amount: number}][],
+  brackets: [number, TaxBracketEntry][],
   totalTaxedAmount: number,
   totalTaxes: number,
   marginalTaxRate: number,
   effectiveTaxRate: number,
 }
+
+type TaxMap = Map<number, TaxBracketEntry>;
 
 export default class Taxes {
   @observable
@@ -117,7 +121,7 @@ export default class Taxes {
     }
   }
 
-  static computeTax(income: number, filingStatus: FilingStatus, taxMap: Map<number, { tax: number, amount: number}>): number {
+  static computeTax(income: number, filingStatus: FilingStatus, taxMap: TaxMap): number {
     let taxes = 0;
 
     const taxBrackets = Taxes.getTaxBrackets(filingStatus);
@@ -184,7 +188,7 @@ export default class Taxes {
     }
   }
 
-  static printTaxes(taxMap: Map<number, { tax: number, amount: number }>): TaxResults {
+  static printTaxes(taxMap: TaxMap): TaxResults {
     const sortedEntries = [...taxMap.entries()].sort((a, b) => (a[0] - b[0]))
 
     let totalTaxes = 0
@@ -219,6 +223,8 @@ export default class Taxes {
 
   @computed
   get run(): TaxResults {
+    const taxBrackets = new Map<number, TaxBracketEntry>()
+
     const dividendsAndGains = this.qualifiedDividends + Math.min(this.longTermCapitalGains, this.capitalGains);
 
     const line10 = Math.min(this.taxableIncome, dividendsAndGains)
@@ -226,18 +232,16 @@ export default class Taxes {
     // line 5
     const ordinaryIncome = Math.max(this.taxableIncome - dividendsAndGains, 0);
 
-    const taxMap = new Map<number, { tax: number, amount: number}>()
-
     // Compute 0% taxes
     const maxNonTaxableIncome = Taxes.getMaxZeroPctTaxableIncome(this.filingStatus);
 
     const line7 = Math.min(this.taxableIncome, maxNonTaxableIncome);
 
     // line 9
-    const zeroPctTaxedAmount = line7 - Math.min(line7, ordinaryIncome);
+    const zeroPctTaxedAmount = Math.max(line7 - ordinaryIncome, 0);
 
     if (zeroPctTaxedAmount > 0) {
-      taxMap.set(0, { amount: zeroPctTaxedAmount, tax: 0 })
+      taxBrackets.set(0, { amount: zeroPctTaxedAmount, tax: 0 })
     }
 
     // Compute 15% taxes
@@ -255,7 +259,7 @@ export default class Taxes {
 
     if (fifteenPctTaxedAmount) {
       const fifteenPctTaxes = fifteenPctTaxedAmount * 0.15;
-      taxMap.set(15, { amount: fifteenPctTaxedAmount, tax: fifteenPctTaxes })
+      taxBrackets.set(15, { amount: fifteenPctTaxedAmount, tax: fifteenPctTaxes })
     }
 
     // Compute 20% taxes
@@ -263,15 +267,15 @@ export default class Taxes {
 
     if (twentyPctTaxedAmount > 0) {
       const twentyPctTaxes = twentyPctTaxedAmount * 0.20;
-      taxMap.set(20, { amount: twentyPctTaxedAmount, tax: twentyPctTaxes })
+      taxBrackets.set(20, { amount: twentyPctTaxedAmount, tax: twentyPctTaxes })
     }
 
     // Compute regular tax rate
-    Taxes.computeTax(ordinaryIncome, this.filingStatus, taxMap)
-    return Taxes.printTaxes(taxMap)
+    Taxes.computeTax(ordinaryIncome, this.filingStatus, taxBrackets)
+    return Taxes.printTaxes(taxBrackets)
 
     // Compute taxes on taxable income amount
-    // const taxableIncomeTaxMap = new Map<number, { tax: number, amount: number}>();
+    // const taxableIncomeTaxMap = new Map<number, TaxBracketEntry>();
 
     // Taxes.computeTax(taxableIncome, this.filingStatus, taxableIncomeTaxMap)
     // Taxes.printTaxes(taxableIncomeTaxMap)
