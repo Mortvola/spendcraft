@@ -1,0 +1,33 @@
+.record-layout {
+  display: flex;
+  flex-direction: row;
+  column-gap: 1rem;
+}
+
+.brackets {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+.summary-record {
+  display: flex;
+  flex-direction: row;
+  column-gap: 1rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  width: max-content;
+  align-items: end;
+
+  >* {
+    width: max-content;
+    display: flex;
+    column-gap: 0.5rem;
+
+    input {
+      width: 7rem;
+    }
+  }
+}

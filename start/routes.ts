@@ -50,6 +50,7 @@ router.get('/recover-password', [HomeController, 'index']).as('home.recover-pass
 router.get('/user', [HomeController, 'index']).as('home.user');
 router.get('/search', [HomeController, 'index']).as('home.search');
 router.get('/auto-assignments', [HomeController, 'index']).as('home.auto-assignments');
+router.get('/taxes', [HomeController, 'index']).as('home.taxes');
 router.get('/logs', [HomeController, 'index']).as('home.logs');
 router.get('/plaid-logs', [HomeController, 'index']).as('home.plaid-logs');
 router.get('/users', [HomeController, 'index']).as('home.users');

@@ -17,6 +17,7 @@ import TransactionLogs from './TransactionLogs';
 import PlaidLogs from './PlaidLogs';
 import Overview from './Overview';
 import Users from './Users';
+import Taxes from './Taxes';
 
 class Store implements StoreInterface {
   user: User;
@@ -49,6 +50,8 @@ class Store implements StoreInterface {
 
   users: Users;
 
+  taxes: Taxes;
+
   // initialized = false;
 
   constructor() {
@@ -67,6 +70,7 @@ class Store implements StoreInterface {
     this.plaidLogs = new PlaidLogs(this);
     this.overview = new Overview(this);
     this.users = new Users(this)
+    this.taxes = new Taxes()
   }
 
   refresh() {

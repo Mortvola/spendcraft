@@ -1,18 +1,73 @@
-import { BaseCommand } from '@adonisjs/core/ace'
-import type { CommandOptions } from '@adonisjs/core/types/ace'
+import { computed, observable } from "mobx";
 
-enum FilingStatus {
+export enum FilingStatus {
   Single,
   MarriedFilingSeparate,
   MarriedFilingJointly,
   HeadOfHousehold,
 }
 
-export default class Taxes extends BaseCommand {
-  static commandName = 'taxes'
-  static description = ''
+export interface TaxResults {
+  brackets: [number, { tax: number, amount: number}][],
+  totalTaxedAmount: number,
+  totalTaxes: number,
+  marginalTaxRate: number,
+  effectiveTaxRate: number,
+}
 
-  static options: CommandOptions = {}
+export default class Taxes {
+  @observable
+  accessor filingStatus = FilingStatus.MarriedFilingJointly;
+
+  @observable
+  accessor taxableInterest = 371;
+
+  @observable
+  accessor taxablePensionAndAnnuities = 0;
+  
+  @observable
+  accessor taxableSocialSecurityBenefits = 12079;
+
+  @observable
+  accessor additionalTaxableIncome = 0;
+
+  @observable
+  accessor taxableIraDistributions = 75000;
+
+  @observable
+  accessor qualifiedDividends = 5686;
+
+  @observable
+  accessor ordinaryDividends = 26614;
+
+  @observable
+  accessor capitalGains = 145209;
+
+  @observable
+  accessor longTermCapitalGains = 148488;
+
+  @observable
+  accessor qualifiedBusinessIncomeDeduction = 45
+
+  @computed
+  get totalIncome() {
+    return this.taxableInterest + this.ordinaryDividends + this.taxableIraDistributions
+      + this.taxablePensionAndAnnuities + this.taxableSocialSecurityBenefits + this.capitalGains + this.additionalTaxableIncome;
+  }
+
+  @computed
+  get standardDeduction() {
+    return Taxes.getStandardDeduction(this.filingStatus)
+  }
+
+  @computed
+  get taxableIncome() {
+    const adjustmentsToIncome = 0;
+
+    const adjustedGrossIncome = this.totalIncome - adjustmentsToIncome;
+
+    return adjustedGrossIncome - (this.standardDeduction + this.qualifiedBusinessIncomeDeduction);
+  }
 
   static getTaxBrackets(filingStatus: FilingStatus): { rate: number, startAmount: number }[] {
     switch (filingStatus) {
@@ -129,7 +184,7 @@ export default class Taxes extends BaseCommand {
     }
   }
 
-  static printTaxes(taxMap: Map<number, { tax: number, amount: number }>) {
+  static printTaxes(taxMap: Map<number, { tax: number, amount: number }>): TaxResults {
     const sortedEntries = [...taxMap.entries()].sort((a, b) => (a[0] - b[0]))
 
     let totalTaxes = 0
@@ -139,65 +194,60 @@ export default class Taxes extends BaseCommand {
     for (const [rate, record] of sortedEntries) {
       console.log(`rate: ${rate}%, amount: ${record.amount}, tax: ${record.tax}`)
       totalTaxes += record.tax
-      totalTaxedAmount += record.amount
+
+      if (record.tax > 0) {
+        totalTaxedAmount += record.amount
+      }
 
       if (record.tax > 0) {
         marginalTaxRate = rate
       }
     }
 
-    console.log(`total amount: ${totalTaxedAmount}, total taxes: ${totalTaxes}, marginal tax rate: ${marginalTaxRate}, effective tax rate: ${totalTaxes / totalTaxedAmount * 100.0}`)
+    const effectiveTaxRate = totalTaxes / totalTaxedAmount * 100.0;
+
+    console.log(`total amount: ${totalTaxedAmount}, total taxes: ${totalTaxes}, marginal tax rate: ${marginalTaxRate}, effective tax rate: ${effectiveTaxRate}`)
+
+    return {
+      brackets: sortedEntries,
+      totalTaxedAmount,
+      totalTaxes,
+      marginalTaxRate,
+      effectiveTaxRate,
+    }
   }
 
-  async run() {
-    const filingStatus = FilingStatus.MarriedFilingJointly;
+  @computed
+  get run(): TaxResults {
+    const dividendsAndGains = this.qualifiedDividends + Math.min(this.longTermCapitalGains, this.capitalGains);
 
-    const taxableInterest = 371;
-    const ordinaryDividends = 26614;
-    const taxableIraDistributions = 75000;
-    const taxablePensionAndAnnuities = 0;
-    const taxableSocialSecurityBenefits = 12079;
-    const capitalGains = 145209;
-    const additionalTaxableIncome = 0;
-
-    const qualifiedDividends = 5686;
-    const longTermCapitalGains = 145209
-
-    const totalIncome = taxableInterest + ordinaryDividends + taxableIraDistributions
-      + taxablePensionAndAnnuities + taxableSocialSecurityBenefits + capitalGains + additionalTaxableIncome;
-
-    const adjustmentsToIncome = 0;
-
-    const adjustedGrossIncome = totalIncome - adjustmentsToIncome;
-
-    const taxableIncome = adjustedGrossIncome - Taxes.getStandardDeduction(filingStatus);
-
-    const dividendsAndGains = qualifiedDividends + longTermCapitalGains;
-
-    const line10 = Math.min(taxableIncome, dividendsAndGains)
+    const line10 = Math.min(this.taxableIncome, dividendsAndGains)
 
     // line 5
-    const regularTaxableIncome = Math.max(taxableIncome - dividendsAndGains, 0);
+    const ordinaryIncome = Math.max(this.taxableIncome - dividendsAndGains, 0);
 
     const taxMap = new Map<number, { tax: number, amount: number}>()
 
     // Compute 0% taxes
-    const maxNonTaxableIncome = Taxes.getMaxZeroPctTaxableIncome(filingStatus);
+    const maxNonTaxableIncome = Taxes.getMaxZeroPctTaxableIncome(this.filingStatus);
 
-    const line7 = Math.min(taxableIncome, maxNonTaxableIncome);
+    const line7 = Math.min(this.taxableIncome, maxNonTaxableIncome);
 
     // line 9
-    const zeroPctTaxedAmount = line7 - Math.min(line7, regularTaxableIncome);
-    taxMap.set(0, { amount: zeroPctTaxedAmount, tax: 0 })
+    const zeroPctTaxedAmount = line7 - Math.min(line7, ordinaryIncome);
+
+    if (zeroPctTaxedAmount > 0) {
+      taxMap.set(0, { amount: zeroPctTaxedAmount, tax: 0 })
+    }
 
     // Compute 15% taxes
     const line12 = line10 - zeroPctTaxedAmount
 
-    const line13 = Taxes.getMaxFifteenPctTaxableIncome(filingStatus);
+    const line13 = Taxes.getMaxFifteenPctTaxableIncome(this.filingStatus);
 
-    const line14 = Math.min(taxableIncome, line13)
+    const line14 = Math.min(this.taxableIncome, line13)
 
-    const line15 = regularTaxableIncome + zeroPctTaxedAmount
+    const line15 = ordinaryIncome + zeroPctTaxedAmount
 
     const line16 = line14 - line15;
 
@@ -217,13 +267,13 @@ export default class Taxes extends BaseCommand {
     }
 
     // Compute regular tax rate
-    Taxes.computeTax(regularTaxableIncome, filingStatus, taxMap)
-    Taxes.printTaxes(taxMap)
+    Taxes.computeTax(ordinaryIncome, this.filingStatus, taxMap)
+    return Taxes.printTaxes(taxMap)
 
     // Compute taxes on taxable income amount
-    const taxableIncomeTaxMap = new Map<number, { tax: number, amount: number}>();
+    // const taxableIncomeTaxMap = new Map<number, { tax: number, amount: number}>();
 
-    Taxes.computeTax(taxableIncome, filingStatus, taxableIncomeTaxMap)
-    Taxes.printTaxes(taxableIncomeTaxMap)
+    // Taxes.computeTax(taxableIncome, this.filingStatus, taxableIncomeTaxMap)
+    // Taxes.printTaxes(taxableIncomeTaxMap)
   }
 }

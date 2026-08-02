@@ -41,6 +41,8 @@ import OverviewView from './Overview/OverviewView';
 import { createPortal } from 'react-dom';
 import UsersView from './Users/UsersView';
 import Users from './Users/Users';
+import Taxes from './Taxes/Taxes';
+import TaxDetails from './Taxes/TaxDetails';
 
 const App: React.FC = observer(() => {
   const error = useContext(ServerError);
@@ -154,6 +156,9 @@ if (container) {
               <Route path="reports" element={<Reports />} />
               <Route path="auto-assignments" element={<AutoAssigments />}>
                 <Route index element={<AutoAssignmentDetails />} />
+              </Route>
+              <Route path="taxes" element={<Taxes />}>
+                <Route index element={<TaxDetails />} />
               </Route>
               <Route path="logs" element={<TransactionLogs />}>
                 <Route index element={<TransactionLogDetails />} />

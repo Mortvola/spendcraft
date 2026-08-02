@@ -18,6 +18,7 @@ enum EventKeys {
   SEARCH = 'SEARCH',
   REPORTS = 'REPORTS',
   AUTO_ASSIGN = 'AUTO_ASSIGN',
+  TAXES = 'TAXES',
   LOGS = 'LOGS',
   BILLS = 'BILLS',
   PLAID_LOGS = 'PLAID_LOGS',
@@ -32,6 +33,7 @@ const pathKeys = [
   { path: '/search', key: EventKeys.SEARCH },
   { path: '/reports', key: EventKeys.REPORTS },
   { path: '/auto-assignments', key: EventKeys.AUTO_ASSIGN },
+  { path: '/taxes', key: EventKeys.TAXES },
   { path: '/logs', key: EventKeys.LOGS },
   { path: '/bills', key: EventKeys.BILLS },
   { path: '/plaid-logs', key: EventKeys.PLAID_LOGS },
@@ -140,6 +142,9 @@ const Menubar: React.FC = observer(() => {
           </Nav.Item>
           <Nav.Item>
             <Nav.Link as={Link} to="/auto-assignments" eventKey={EventKeys.AUTO_ASSIGN}>Auto Assign</Nav.Link>
+          </Nav.Item>
+          <Nav.Item>
+            <Nav.Link as={Link} to="/taxes" eventKey={EventKeys.TAXES}>Taxes</Nav.Link>
           </Nav.Item>
           <Nav.Item>
             <Nav.Link as={Link} to="/logs" eventKey={EventKeys.LOGS}>Logs</Nav.Link>
