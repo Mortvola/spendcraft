@@ -1,11 +1,6 @@
-import { computed, observable } from "mobx";
-
-export enum FilingStatus {
-  Single,
-  MarriedFilingSeparate,
-  MarriedFilingJointly,
-  HeadOfHousehold,
-}
+import Http from "@mortvola/http";
+import { computed, observable, runInAction } from "mobx";
+import { ApiResponse, FilingStatus, TaxProps } from "../../common/ResponseTypes";
 
 export interface TaxBracketEntry { tax: number, amount: number }
 
@@ -24,34 +19,34 @@ export default class Taxes {
   accessor filingStatus = FilingStatus.MarriedFilingJointly;
 
   @observable
-  accessor taxableInterest = 371;
+  accessor taxableInterest = 0;
 
   @observable
   accessor taxablePensionAndAnnuities = 0;
   
   @observable
-  accessor taxableSocialSecurityBenefits = 12079;
+  accessor taxableSocialSecurityBenefits = 0;
 
   @observable
   accessor additionalTaxableIncome = 0;
 
   @observable
-  accessor taxableIraDistributions = 75000;
+  accessor taxableIraDistributions = 0;
 
   @observable
-  accessor qualifiedDividends = 5686;
+  accessor qualifiedDividends = 0;
 
   @observable
-  accessor ordinaryDividends = 26614;
+  accessor ordinaryDividends = 0;
 
   @observable
-  accessor capitalGains = 145209;
+  accessor capitalGains = 0;
 
   @observable
-  accessor longTermCapitalGains = 148488;
+  accessor longTermCapitalGains = 0;
 
   @observable
-  accessor qualifiedBusinessIncomeDeduction = 45
+  accessor qualifiedBusinessIncomeDeduction = 0;
 
   @computed
   get totalIncome() {
@@ -70,7 +65,50 @@ export default class Taxes {
 
     const adjustedGrossIncome = this.totalIncome - adjustmentsToIncome;
 
-    return adjustedGrossIncome - (this.standardDeduction + this.qualifiedBusinessIncomeDeduction);
+    return Math.max(adjustedGrossIncome - (this.standardDeduction + this.qualifiedBusinessIncomeDeduction), 0);
+  }
+
+  async load() {
+    const response = await Http.get<ApiResponse<TaxProps>>('/api/v1/taxes');
+
+    if (response.ok) {
+      const { data } = await response.body();
+
+      if (data) {
+        runInAction(() => {
+          this.filingStatus = data.data.filingStatus ?? 0;
+          this.taxableInterest = data.data.taxableInterest ?? 0;
+          this.qualifiedDividends = data.data.qualifiedDividends ?? 0;
+          this.ordinaryDividends = data.data.ordinaryDividends ?? 0;
+          this.taxableIraDistributions = data.data.taxableIraDistributions ?? 0;
+          this.taxablePensionAndAnnuities = data.data.taxablePensionAndAnnuities ?? 0;
+          this.taxableSocialSecurityBenefits = data.data.taxableSocialSecurityBenefits ?? 0;
+          this.additionalTaxableIncome = data.data.additionalTaxableIncome ?? 0;
+          this.capitalGains = data.data.capitalGains ?? 0;
+          this.longTermCapitalGains = data.data.longTermCapitalGains ?? 0;
+          this.qualifiedBusinessIncomeDeduction = data.data.qualifiedBusinessIncomeDeduction ?? 0;
+        })
+      }
+    }
+  }
+
+  async save() {
+    Http.post<TaxProps, TaxProps>('/api/v1/taxes', {
+      year: 2026,
+      data: {
+        filingStatus: this.filingStatus,
+        taxableInterest: this.taxableInterest,
+        qualifiedDividends: this.qualifiedDividends,
+        ordinaryDividends: this.ordinaryDividends,
+        taxableIraDistributions: this.taxableIraDistributions,
+        taxablePensionAndAnnuities: this.taxablePensionAndAnnuities,
+        taxableSocialSecurityBenefits: this.taxableSocialSecurityBenefits,
+        additionalTaxableIncome: this.additionalTaxableIncome,
+        capitalGains: this.capitalGains,
+        longTermCapitalGains: this.longTermCapitalGains,
+        qualifiedBusinessIncomeDeduction: this.qualifiedBusinessIncomeDeduction,
+      }
+    })
   }
 
   static getTaxBrackets(filingStatus: FilingStatus): { rate: number, startAmount: number }[] {
@@ -130,16 +168,18 @@ export default class Taxes {
       const amount = Math.min(income, taxBrackets[i + 1].startAmount) - taxBrackets[i].startAmount
       const tax = amount * (taxBrackets[i].rate / 100.0)
 
-      taxes += tax;
-    
-      let record = taxMap.get(taxBrackets[i].rate);
+      if (tax > 0) {
+        taxes += tax;
+      
+        let record = taxMap.get(taxBrackets[i].rate);
 
-      if (!record) {
-        record = { tax, amount }
-        taxMap.set(taxBrackets[i].rate, record)
-      } else {      
-        record.amount += amount
-        record.tax += tax
+        if (!record) {
+          record = { tax, amount }
+          taxMap.set(taxBrackets[i].rate, record)
+        } else {      
+          record.amount += amount
+          record.tax += tax
+        }
       }
     
       if (income < taxBrackets[i + 1].startAmount) {
@@ -211,7 +251,7 @@ export default class Taxes {
       }
     }
 
-    const effectiveTaxRate = totalTaxes / totalIncome * 100.0;
+    const effectiveTaxRate = totalIncome == 0 ? 0 : totalTaxes / totalIncome * 100.0;
 
     // console.log(`total amount: ${totalTaxedAmount}, total taxes: ${totalTaxes}, marginal tax rate: ${marginalTaxRate}, effective tax rate: ${effectiveTaxRate}`)
 

@@ -1,3 +1,8 @@
+.wrapper {
+  overflow-y: auto;
+  height: 100%;
+}
+
 .record-layout {
   display: flex;
   flex-direction: row;
@@ -25,9 +30,16 @@
     width: max-content;
     display: flex;
     column-gap: 0.5rem;
-
-    input {
-      width: 7rem;
-    }
   }
+}
+
+.income {
+  display: grid;
+  grid-template-columns: max-content 8rem;
+  margin-top: 1rem;
+  column-gap: 0.5rem;
+}
+
+.block {
+  width: max-content;
 }

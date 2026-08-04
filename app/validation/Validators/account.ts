@@ -5,7 +5,7 @@ const messagesProvider = new SimpleMessagesProvider({
   'date.unique': 'Only one balance per date is allowed.',
 })
 
-export const addBalance = vine.compile(
+export const addBalance = vine.create(
   vine.object({
     date: vine.date().unique({
       table: 'balance_histories',
@@ -20,7 +20,7 @@ export const addBalance = vine.compile(
 
 addBalance.messagesProvider = messagesProvider;
 
-export const updateBalance = vine.compile(
+export const updateBalance = vine.create(
   vine.object({
     date: vine.date().unique({
       table: 'balance_histories',
@@ -36,7 +36,7 @@ export const updateBalance = vine.compile(
 
 updateBalance.messagesProvider = messagesProvider;
 
-export const updateAccount = vine.compile(
+export const updateAccount = vine.create(
   vine.object({
     name: vine.string().trim().optional(),
     closed: vine.boolean().optional(),

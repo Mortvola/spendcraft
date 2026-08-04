@@ -23,6 +23,7 @@ import router from '@adonisjs/core/services/router'
 import env from '#start/env';
 // import drive from '@adonisjs/drive/services/main'
 import { middleware } from '#start/kernel'
+import TaxesController from '#controllers/TaxesController';
 
 const HomeController = () => import('#controllers/HomeController')
 const AuthController = () => import('#controllers/AuthController')
@@ -253,6 +254,12 @@ router.group(() => {
       router.get('/transaction-logs', [TransactionsController, 'logs']);
 
       router.get('/bills', [CategoriesController, 'getBills']);
+
+      router.group(() => {
+          router.get('', [TaxesController, 'get']);
+          router.post('', [TaxesController, 'post']);
+      })
+        .prefix('/taxes');
 
       router.group(() => {
         router.get('/plaid-logs', [PlaidLogsController, 'get']);

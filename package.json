@@ -155,6 +155,7 @@
     "#mails/*": "./app/mails/*.js",
     "#providers/*": "./providers/*.js",
     "#generated/*": "./.adonisjs/server/*.js",
-    "#transformers/*": "./app/transformers/*.js"
+    "#transformers/*": "./app/transformers/*.js",
+    "#types/*": "./app/types/*.js"
   }
 }

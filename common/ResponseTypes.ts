@@ -874,3 +874,27 @@ export interface BillProps {
   id: number,
   debits: number | null,
 }
+
+export enum FilingStatus {
+  Single = 'Single',
+  MarriedFilingSeparate = 'MarriedFilingSeparate',
+  MarriedFilingJointly = 'MarriedFilingJointly',
+  HeadOfHousehold = 'HeadOfHousehold',
+}
+
+export interface TaxProps {
+  year: number,
+  data: {
+    filingStatus: FilingStatus,
+    taxableInterest: number,
+    qualifiedDividends: number,
+    ordinaryDividends: number,
+    taxableIraDistributions: number,
+    taxablePensionAndAnnuities: number,
+    taxableSocialSecurityBenefits: number,
+    additionalTaxableIncome: number,
+    capitalGains: number,
+    longTermCapitalGains: number,
+    qualifiedBusinessIncomeDeduction: number,
+  }
+}

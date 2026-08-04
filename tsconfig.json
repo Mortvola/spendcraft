@@ -25,6 +25,9 @@
       "#models/*": [
         "./app/Models/*.js"
       ],
+      "#types/*": [
+        "./app/types/*.js"
+      ],
       "#services/*": [
         "./app/services/*.js"
       ],
