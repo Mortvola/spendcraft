@@ -14,7 +14,7 @@ export default class Tax extends TaxSchema {
     taxablePensionAndAnnuities: number,
     taxableSocialSecurityBenefits: number,
     additionalTaxableIncome: number,
-    capitalGains: number,
+    shortTermCapitalGains: number,
     longTermCapitalGains: number,
     qualifiedBusinessIncomeDeduction: number,
   }>

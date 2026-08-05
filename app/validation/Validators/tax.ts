@@ -13,7 +13,7 @@ export const addTax = vine.create(
       taxablePensionAndAnnuities: vine.number(),
       taxableSocialSecurityBenefits: vine.number(),
       additionalTaxableIncome: vine.number(),
-      capitalGains: vine.number(),
+      shortTermCapitalGains: vine.number(),
       longTermCapitalGains: vine.number(),
       qualifiedBusinessIncomeDeduction: vine.number(),
     }),

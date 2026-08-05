@@ -49,26 +49,17 @@ const Income: React.FC<PropsType> = observer(({
     })
   }
 
-  const handleCapitalGains: React.ChangeEventHandler<HTMLInputElement> = (event) => {
-    runInAction(() => {
-      taxes.capitalGains = parseFloat(event.target.value);
-    })
-  }
-
   const handleAdditionalIncome: React.ChangeEventHandler<HTMLInputElement> = (event) => {
     runInAction(() => {
       taxes.additionalTaxableIncome = parseFloat(event.target.value);
     })
   }
 
-  const handleLongtermCapitalGains: React.ChangeEventHandler<HTMLInputElement> = (event) => {
-    runInAction(() => {
-      taxes.longTermCapitalGains = parseFloat(event.target.value);
-    })
-  }
-
   return (
     <div className={`${style.income} ${style.block}`}>
+      <div />
+      <div />
+
       <label>
         Taxable Interest:
       </label>
@@ -84,35 +75,48 @@ const Income: React.FC<PropsType> = observer(({
       </label>
       <AmountInput value={taxes.ordinaryDividends} onChange={handleOrdinaryDividends} />
 
+      <div />
+      <div />
+
       <label>
         Taxable IRA Distributions:
       </label>
       <AmountInput value={taxes.taxableIraDistributions} onChange={handleTaxableIraDistributions} />
+
+      <div />
+      <div />
 
       <label>
         Taxable Pensions and Annuities:
       </label>
       <AmountInput value={taxes.taxablePensionAndAnnuities} onChange={handleTaxablePensionsAndAnnuities} />
 
+      <div />
+      <div />
+
       <label>
         Taxable Social Security Benefits:
       </label>
       <AmountInput value={taxes.taxableSocialSecurityBenefits} onChange={handleTaxableSocialSecurityBenefits} />
+
+      <div />
+      <div />
 
       <label>
         Additional Income:
       </label>
       <AmountInput value={taxes.additionalTaxableIncome} onChange={handleAdditionalIncome} />
 
+      <div />
+      <div />
+
       <label>
         Capital Gains:
       </label>
-      <AmountInput value={taxes.capitalGains} onChange={handleCapitalGains} />
+      <Amount amount={taxes.capitalGains} />
 
-      <label>
-        Longterm Capital Gains:
-      </label>
-      <AmountInput value={taxes.longTermCapitalGains} onChange={handleLongtermCapitalGains} />
+      <div />
+      <div />
 
       <label>
         Total Income:

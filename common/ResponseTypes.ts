@@ -893,7 +893,7 @@ export interface TaxProps {
     taxablePensionAndAnnuities: number,
     taxableSocialSecurityBenefits: number,
     additionalTaxableIncome: number,
-    capitalGains: number,
+    shortTermCapitalGains: number,
     longTermCapitalGains: number,
     qualifiedBusinessIncomeDeduction: number,
   }

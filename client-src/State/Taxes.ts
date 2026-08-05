@@ -39,8 +39,19 @@ export default class Taxes {
   @observable
   accessor ordinaryDividends = 0;
 
+  @computed
+  get capitalGains() {
+    const gains = this.shortTermCapitalGains + this.longTermCapitalGains
+
+    if (gains < 0) {
+      return Math.max(gains, this.filingStatus === FilingStatus.MarriedFilingSeparate ? -1500 : -3000)
+    }
+
+    return gains;
+  }
+
   @observable
-  accessor capitalGains = 0;
+  accessor shortTermCapitalGains = 0;
 
   @observable
   accessor longTermCapitalGains = 0;
@@ -84,7 +95,7 @@ export default class Taxes {
           this.taxablePensionAndAnnuities = data.data.taxablePensionAndAnnuities ?? 0;
           this.taxableSocialSecurityBenefits = data.data.taxableSocialSecurityBenefits ?? 0;
           this.additionalTaxableIncome = data.data.additionalTaxableIncome ?? 0;
-          this.capitalGains = data.data.capitalGains ?? 0;
+          this.shortTermCapitalGains = data.data.shortTermCapitalGains ?? 0;
           this.longTermCapitalGains = data.data.longTermCapitalGains ?? 0;
           this.qualifiedBusinessIncomeDeduction = data.data.qualifiedBusinessIncomeDeduction ?? 0;
         })
@@ -104,7 +115,7 @@ export default class Taxes {
         taxablePensionAndAnnuities: this.taxablePensionAndAnnuities,
         taxableSocialSecurityBenefits: this.taxableSocialSecurityBenefits,
         additionalTaxableIncome: this.additionalTaxableIncome,
-        capitalGains: this.capitalGains,
+        shortTermCapitalGains: this.shortTermCapitalGains,
         longTermCapitalGains: this.longTermCapitalGains,
         qualifiedBusinessIncomeDeduction: this.qualifiedBusinessIncomeDeduction,
       }
@@ -268,9 +279,11 @@ export default class Taxes {
   get run(): TaxResults {
     const taxBrackets = new Map<number, TaxBracketEntry>()
 
-    const dividendsAndGains = this.qualifiedDividends + Math.min(this.longTermCapitalGains, this.capitalGains);
-
-    const line10 = Math.min(this.taxableIncome, dividendsAndGains)
+    const dividendsAndGains = this.qualifiedDividends
+      + ((this.longTermCapitalGains <= 0 || this.capitalGains <= 0)
+          ? 0
+          : Math.min(this.longTermCapitalGains, this.capitalGains)
+        )
 
     // line 5
     const ordinaryIncome = Math.max(this.taxableIncome - dividendsAndGains, 0);
@@ -288,6 +301,8 @@ export default class Taxes {
     }
 
     // Compute 15% taxes
+    const line10 = Math.min(this.taxableIncome, dividendsAndGains)
+
     const line12 = line10 - zeroPctTaxedAmount
 
     const line13 = Taxes.getMaxFifteenPctTaxableIncome(this.filingStatus);

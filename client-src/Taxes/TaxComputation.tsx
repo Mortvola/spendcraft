@@ -14,15 +14,16 @@ const TaxComputation: React.FC<PropsType> = observer(({
   const taxResults = taxes.run
 
   return (
-    <div className={style.block}>
+    <div className={style.computations}>
+      Tax Results
       <div className={style.brackets}>
         {
           taxResults.brackets.map((t) => (
-            <div className={style.recordLayout}>
+            <>
               <div>{t[0]}%</div>
               <Amount amount={t[1].amount} />
               <Amount amount={t[1].tax} />
-            </div>
+            </>
           ))
         }
       </div>

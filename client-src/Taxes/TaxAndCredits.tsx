@@ -20,7 +20,7 @@ const TaxAndCredits: React.FC<PropsType> = observer(({
   }
 
   return (
-    <div className={`${style.income} ${style.block}`}>
+    <div className={`${style.taxAndCredits} ${style.block}`}>
       <label>
         Total Income:
       </label>
