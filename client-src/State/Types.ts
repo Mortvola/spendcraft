@@ -486,7 +486,7 @@ export interface AccountInterface {
 
   delete(): void;
 
-  updateOfflineAccount(name: string): Promise<void>;
+  updateOfflineAccount(name: string, type: AccountType, subtype: string): Promise<void>;
 
   setSettings(settings: AccountSettings): void;
 }

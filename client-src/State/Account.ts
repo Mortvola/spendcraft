@@ -174,14 +174,18 @@ class Account implements AccountInterface {
     this.institution.deleteAccount(this);
   }
 
-  async updateOfflineAccount (name: string): Promise<void> {
+  async updateOfflineAccount (name: string, type: AccountType, subtype: string): Promise<void> {
     const response = await Http.patch(`/api/v1/account/${this.id}`, {
       name,
+      type,
+      subtype,
     });
 
     if (response.ok) {
       runInAction(() => {
         this.name = name;
+        this.type = type;
+        this.subtype = subtype;
       });
     }
   }

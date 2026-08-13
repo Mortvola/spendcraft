@@ -479,6 +479,14 @@ export default class AccountsController {
         account.tracking = requestData.tracking as TrackingType;
       }
 
+      if (requestData.type !== undefined) {
+        account.type = requestData.type as AccountType;
+      }
+
+      if (requestData.subtype !== undefined) {
+        account.subtype = requestData.subtype
+      }
+
       await account.save();
 
       await trx.commit();
@@ -743,6 +751,24 @@ export default class AccountsController {
       })
 
       await statement.save()
+
+      // If the statement that is being updated is the latest statement
+      // then make sure the account balance is up to date if
+      // the account only tracks balances.
+      const account = await Account.findOrFail(statement.accountId)
+
+      if (account.tracking === TrackingType.Balances) {
+        const latestStatement = await Statement.query()
+          .where('accountId', statement.accountId)
+          .orderBy('endDate', 'desc')
+          .firstOrFail()
+
+        if (statement.id === latestStatement.id) {
+          account.balance = statement.endingBalance;
+
+          await account.save()
+        }
+      }
 
       const credits = await AccountTransaction.query({ client: trx })
         .sum('amount')

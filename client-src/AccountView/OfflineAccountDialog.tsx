@@ -1,5 +1,5 @@
 import {
-  FieldProps, FormikErrors, FormikHelpers, useFormikContext,
+  FormikErrors, FormikHelpers, useFormikContext,
 } from 'formik';
 import React from 'react';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
@@ -10,7 +10,8 @@ import { AccountType, ErrorProps, TrackingType } from '../../common/ResponseType
 import AmountInput from '../AmountInput';
 import { useStores } from '../State/Store';
 import { AccountInterface, InstitutionInterface } from '../State/Types';
-import { getSubtypes, getTypes } from '../State/AccountTypes';
+import AccountTypeField from './AccountTypeField';
+import AccountSubtypeField from './AccountSubtypeField';
 
 interface PropsType {
   institution?: InstitutionInterface,
@@ -78,7 +79,7 @@ const OfflineAccountDialog: React.FC<PropsType & ModalProps> = ({
 
     if (institution) {
       if (account) {
-        await account.updateOfflineAccount(values.account);
+        await account.updateOfflineAccount(values.account, values.type as AccountType, values.subtype);
       }
       else {
         errors = await institution.addOfflineAccount(
@@ -120,48 +121,6 @@ const OfflineAccountDialog: React.FC<PropsType & ModalProps> = ({
     }
   }
 
-  const subtypeList = ({ field, form }: FieldProps<string, ValuesType>) => (
-    <select
-      name={field.name}
-      value={field.value}
-      className="form-control"
-      onChange={field.onChange}
-      onBlur={field.onBlur}
-    >
-      {
-        (() => (
-          getSubtypes(form.values.type).map((subtype) => (
-            <option key={subtype.key} value={subtype.key}>{subtype.name}</option>
-          ))
-        ))()
-      }
-    </select>
-  )
-
-  const typelist = ({ field, form }: FieldProps<string, ValuesType>) => (
-    <select
-      name={field.name}
-      value={field.value}
-      className="form-control"
-      onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-        const subTypes = getSubtypes(e.target.value);
-
-        if (subTypes.length > 0) {
-          form.setFieldValue('subtype', subTypes[0].key, false);
-        }
-
-        field.onChange(e);
-      }}
-      onBlur={field.onBlur}
-    >
-      {
-        getTypes().map((t) => (
-          <option key={t.key} value={t.key}>{t.name}</option>
-        ))
-      }
-    </select>
-  )
-
   return (
     <FormModal<ValuesType>
       initialValues={{
@@ -169,8 +128,8 @@ const OfflineAccountDialog: React.FC<PropsType & ModalProps> = ({
         account: account ? account.name : '',
         balance: account ? account.balance.toString() : '0',
         startDate: '',
-        type: AccountType.Depository,
-        subtype: 'checking',
+        type: account ? account.type : AccountType.Depository,
+        subtype: account ? account.subtype : 'checking',
         tracking: TrackingType.Transactions,
         rate: '0',
       }}
@@ -188,7 +147,11 @@ const OfflineAccountDialog: React.FC<PropsType & ModalProps> = ({
           gridGap: '0.5rem',
         }}
       >
-        <FormTextField name="institute" label="Institution Name:" readOnly={institution !== undefined} />
+        {
+          !account
+            ? <FormTextField name="institute" label="Institution Name:" readOnly={institution !== undefined} />
+            : null
+        }
         <FormTextField name="account" label="Account Name:" />
         {
           !account
@@ -196,12 +159,8 @@ const OfflineAccountDialog: React.FC<PropsType & ModalProps> = ({
               <>
                 <FormField name="balance" label="Starting Balance:" as={AmountInput} />
                 <FormField name="startDate" label="Start Date:" type="date" />
-                <FormField name="type" label="Account Type:">
-                  {typelist}
-                </FormField>
-                <FormField name="subtype" label="Account Subtype:">
-                  {subtypeList}
-                </FormField>
+                <AccountTypeField name="type" label="Account Type:" />
+                <AccountSubtypeField name="subtype" label="Account Subtype:" />
                 <APRField />
                 <FormField name="tracking" label="Tracking:" as="select">
                   <option value="Transactions">Categorized Transactions</option>
@@ -210,7 +169,12 @@ const OfflineAccountDialog: React.FC<PropsType & ModalProps> = ({
                 </FormField>
               </>
             )
-            : null
+            : (
+              <>
+                <AccountTypeField name="type" label="Account Type:" />
+                <AccountSubtypeField name="subtype" label="Account Subtype:" />
+              </>
+            )
         }
       </div>
     </FormModal>

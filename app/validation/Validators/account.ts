@@ -42,5 +42,7 @@ export const updateAccount = vine.create(
     closed: vine.boolean().optional(),
     startDate: vine.date().optional().transform((value) => DateTime.fromJSDate(value)),
     tracking: vine.string().optional(),
+    type: vine.string().optional(),
+    subtype: vine.string().optional()
   }),  
 )
