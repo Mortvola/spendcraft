@@ -59,22 +59,27 @@ const Income: React.FC<PropsType> = observer(({
     <div className={`${style.income} ${style.block}`}>
       <div />
       <div />
+      <div />
 
       <label>
         Taxable Interest:
       </label>
       <AmountInput value={taxes.taxableInterest} onChange={handleTaxableInterest} />
+      <Amount amount={taxes.actualTaxableInterest} />
 
       <label>
         Qualified Dividends:
       </label>
       <AmountInput value={taxes.qualifiedDividends} onChange={handleQualifiedDividends} />
+      <div />
 
       <label>
         Ordinary Dividends:
       </label>
       <AmountInput value={taxes.ordinaryDividends} onChange={handleOrdinaryDividends} />
+      <Amount amount={taxes.actualOridinaryDividends} />
 
+      <div />
       <div />
       <div />
 
@@ -82,7 +87,9 @@ const Income: React.FC<PropsType> = observer(({
         Taxable IRA Distributions:
       </label>
       <AmountInput value={taxes.taxableIraDistributions} onChange={handleTaxableIraDistributions} />
+      <div />
 
+      <div />
       <div />
       <div />
 
@@ -90,7 +97,9 @@ const Income: React.FC<PropsType> = observer(({
         Taxable Pensions and Annuities:
       </label>
       <AmountInput value={taxes.taxablePensionAndAnnuities} onChange={handleTaxablePensionsAndAnnuities} />
+      <div />
 
+      <div />
       <div />
       <div />
 
@@ -98,7 +107,9 @@ const Income: React.FC<PropsType> = observer(({
         Taxable Social Security Benefits:
       </label>
       <AmountInput value={taxes.taxableSocialSecurityBenefits} onChange={handleTaxableSocialSecurityBenefits} />
+      <div />
 
+      <div />
       <div />
       <div />
 
@@ -106,7 +117,9 @@ const Income: React.FC<PropsType> = observer(({
         Additional Income:
       </label>
       <AmountInput value={taxes.additionalTaxableIncome} onChange={handleAdditionalIncome} />
+      <div />
 
+      <div />
       <div />
       <div />
 
@@ -114,7 +127,9 @@ const Income: React.FC<PropsType> = observer(({
         Capital Gains:
       </label>
       <Amount amount={taxes.capitalGains} />
+      <div />
 
+      <div />
       <div />
       <div />
 
@@ -122,6 +137,7 @@ const Income: React.FC<PropsType> = observer(({
         Total Income:
       </label>
       <Amount amount={taxes.totalIncome} />
+      <div />
     </div>    
   )
 })

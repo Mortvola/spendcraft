@@ -315,9 +315,12 @@ class WebhookController {
       return safeCompare(bodyHash, result.payload.request_body_sha256 as string);
     }
     catch (error) {
-      logger.error(`token verification failed: ${error.message}`);
-      return false;
+      if (error instanceof Error) {
+        logger.error(`token verification failed: ${error.message}`);
+      }
     }
+
+    return false;
   }
 }
 

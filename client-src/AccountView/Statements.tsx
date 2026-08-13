@@ -24,7 +24,7 @@ const Statements: React.FC<PropsType> = observer(({
   const [StatementDialog, showStatementDialog] = useStatementDialog();
 
   React.useEffect(() => {
-    account.getStatements()
+    account.statements.load()
   }, [account])
 
   const handleStatementClick = (statement: Statement) => {
@@ -39,7 +39,7 @@ const Statements: React.FC<PropsType> = observer(({
           <button type="button" onClick={showStatementDialog}>Add</button>
           <div className={styles.items}>
             {
-              account.statements.map((statement) => (
+              account.statements.statements.map((statement) => (
                 <div
                   className={statement === selectedStatement ? styles.selected : ''}
                   key={statement.id}

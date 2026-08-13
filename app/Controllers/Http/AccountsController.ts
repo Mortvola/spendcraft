@@ -532,11 +532,13 @@ export default class AccountsController {
 
       response.status(500);
 
-      response.send({
-        errors: [{
-          message: error.message,
-        }],
-      })
+      if (error instanceof Error) {
+        response.send({
+          errors: [{
+            message: error.message,
+          }],
+        })
+      }
     }
   }
 
@@ -545,7 +547,7 @@ export default class AccountsController {
     auth: {
       user,
     },
-  }: HttpContext) {
+  }: HttpContext): Promise<Statement[]> {
     if (!user) {
       throw new Error('user not defined');
     }
@@ -603,6 +605,12 @@ export default class AccountsController {
         endDate: requestData.endDate,
         startingBalance: requestData.startingBalance,
         endingBalance: requestData.endingBalance,
+        data: requestData.data ? {
+          shortTermCapitalGains: requestData.data.shortTermCapitalGains,
+          longTermCapitalGains: requestData.data.longTermCapitalGains,
+          dividends: requestData.data.dividends,
+          taxableInterest: requestData.data.taxableInterest,
+        } : null
       });
 
       const startDate = requestData.startDate.toISODate()
@@ -644,6 +652,12 @@ export default class AccountsController {
         endingBalance: statement.endingBalance,
         credits,
         debits,
+        data: {
+          shortTermCapitalGains: statement.data?.shortTermCapitalGains ?? 0,
+          longTermCapitalGains: statement.data?.longTermCapitalGains ?? 0,
+          dividends: statement.data?.dividends ?? 0,
+          taxableInterest: statement.data?.taxableInterest ?? 0,
+        },
         transactions: acctTransactions.map((acctTransaction) => acctTransaction.transactionId)
       };
     }
@@ -715,25 +729,20 @@ export default class AccountsController {
         }
       }
 
-      const changes: Record<string, unknown> = {
+      statement.merge({
         startDate: requestData.startDate,
         endDate: requestData.endDate,
         startingBalance: requestData.startingBalance,
         endingBalance: requestData.endingBalance,
-      }
-
-      for (const property of Object.getOwnPropertyNames(changes)) {
-        if (changes[property] === undefined) {
-          // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-          delete changes[property]
+        data: {
+          shortTermCapitalGains: requestData.data?.shortTermCapitalGains ?? 0,
+          longTermCapitalGains: requestData.data?.longTermCapitalGains ?? 0,
+          dividends: requestData.data?.dividends ?? 0,
+          taxableInterest: requestData.data?.taxableInterest ?? 0,
         }
-      }
-      
-      if (Object.getOwnPropertyNames(changes).length > 0) {
-        statement.merge(changes)
+      })
 
-        await statement.save();
-      }
+      await statement.save()
 
       const credits = await AccountTransaction.query({ client: trx })
         .sum('amount')
@@ -763,12 +772,37 @@ export default class AccountsController {
         endingBalance: statement.endingBalance,
         credits: parseFloat(credits[0].$extras.sum ?? 0),
         debits: parseFloat(debits[0].$extras.sum ?? 0),
+        data: {
+          shortTermCapitalGains: statement.data?.shortTermCapitalGains ?? 0,
+          longTermCapitalGains: statement.data?.longTermCapitalGains ?? 0,
+          dividends: statement.data?.dividends ?? 0,
+          taxableInterest: statement.data?.taxableInterest ?? 0,
+        }
       };
     }
     catch (error) {
       logger.error(error)
       await trx.rollback()
       throw error
+    }
+  }
+
+  public async deleteStatement({
+    request,
+    auth: {
+      user,
+    },
+  }: HttpContext) {
+    if (!user) {
+      throw new Error('user not defined');
+    }
+
+    const { statementId } = request.params();
+
+    const statement = await Statement.find(statementId)
+
+    if (statement) {
+      await statement.delete()
     }
   }
 }

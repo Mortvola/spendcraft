@@ -22,6 +22,9 @@ export default class Taxes {
   accessor taxableInterest = 0;
 
   @observable
+  accessor actualTaxableInterest = 0;
+
+  @observable
   accessor taxablePensionAndAnnuities = 0;
   
   @observable
@@ -39,6 +42,9 @@ export default class Taxes {
   @observable
   accessor ordinaryDividends = 0;
 
+  @observable
+  accessor actualOridinaryDividends = 0;
+
   @computed
   get capitalGains() {
     const gains = this.shortTermCapitalGains + this.longTermCapitalGains
@@ -54,7 +60,13 @@ export default class Taxes {
   accessor shortTermCapitalGains = 0;
 
   @observable
+  accessor actualShortTermCapitalGains = 0;
+
+  @observable
   accessor longTermCapitalGains = 0;
+
+  @observable
+  accessor actualLongTermCapitalGains = 0;
 
   @observable
   accessor qualifiedBusinessIncomeDeduction = 0;
@@ -80,33 +92,38 @@ export default class Taxes {
   }
 
   async load() {
-    const response = await Http.get<ApiResponse<TaxProps>>('/api/v1/taxes');
+    const response = await Http.get<ApiResponse<TaxProps>>('/api/v1/taxes/2026');
 
     if (response.ok) {
       const { data } = await response.body();
 
       if (data) {
         runInAction(() => {
-          this.filingStatus = data.data.filingStatus ?? 0;
-          this.taxableInterest = data.data.taxableInterest ?? 0;
-          this.qualifiedDividends = data.data.qualifiedDividends ?? 0;
-          this.ordinaryDividends = data.data.ordinaryDividends ?? 0;
-          this.taxableIraDistributions = data.data.taxableIraDistributions ?? 0;
-          this.taxablePensionAndAnnuities = data.data.taxablePensionAndAnnuities ?? 0;
-          this.taxableSocialSecurityBenefits = data.data.taxableSocialSecurityBenefits ?? 0;
-          this.additionalTaxableIncome = data.data.additionalTaxableIncome ?? 0;
-          this.shortTermCapitalGains = data.data.shortTermCapitalGains ?? 0;
-          this.longTermCapitalGains = data.data.longTermCapitalGains ?? 0;
-          this.qualifiedBusinessIncomeDeduction = data.data.qualifiedBusinessIncomeDeduction ?? 0;
+          this.filingStatus = data.forecast?.filingStatus ?? FilingStatus.Single;
+          this.taxableInterest = data.forecast?.taxableInterest ?? 0;
+          this.qualifiedDividends = data.forecast?.qualifiedDividends ?? 0;
+          this.ordinaryDividends = data.forecast?.ordinaryDividends ?? 0;
+          this.taxableIraDistributions = data.forecast?.taxableIraDistributions ?? 0;
+          this.taxablePensionAndAnnuities = data.forecast?.taxablePensionAndAnnuities ?? 0;
+          this.taxableSocialSecurityBenefits = data.forecast?.taxableSocialSecurityBenefits ?? 0;
+          this.additionalTaxableIncome = data.forecast?.additionalTaxableIncome ?? 0;
+          this.shortTermCapitalGains = data.forecast?.shortTermCapitalGains ?? 0;
+          this.longTermCapitalGains = data.forecast?.longTermCapitalGains ?? 0;
+          this.qualifiedBusinessIncomeDeduction = data.forecast?.qualifiedBusinessIncomeDeduction ?? 0;
+
+          this.actualTaxableInterest = data.actuals?.taxableInterest ?? 0;
+          this.actualOridinaryDividends = data.actuals?.ordinaryDividends ?? 0;
+          this.actualShortTermCapitalGains = data.actuals?.shortTermCapitalGains ?? 0;
+          this.actualLongTermCapitalGains = data.actuals?.longTermCapitalGains ?? 0;
         })
       }
     }
   }
 
   async save() {
-    Http.post<TaxProps, TaxProps>('/api/v1/taxes', {
+    const response = await Http.post<TaxProps, ApiResponse<TaxProps>>('/api/v1/taxes', {
       year: 2026,
-      data: {
+      forecast: {
         filingStatus: this.filingStatus,
         taxableInterest: this.taxableInterest,
         qualifiedDividends: this.qualifiedDividends,
@@ -120,6 +137,31 @@ export default class Taxes {
         qualifiedBusinessIncomeDeduction: this.qualifiedBusinessIncomeDeduction,
       }
     })
+
+    if (response.ok) {
+      const { data } = await response.body();
+
+      if (data) {
+        runInAction(() => {
+          this.filingStatus = data.forecast?.filingStatus ?? FilingStatus.Single;
+          this.taxableInterest = data.forecast?.taxableInterest ?? 0;
+          this.qualifiedDividends = data.forecast?.qualifiedDividends ?? 0;
+          this.ordinaryDividends = data.forecast?.ordinaryDividends ?? 0;
+          this.taxableIraDistributions = data.forecast?.taxableIraDistributions ?? 0;
+          this.taxablePensionAndAnnuities = data.forecast?.taxablePensionAndAnnuities ?? 0;
+          this.taxableSocialSecurityBenefits = data.forecast?.taxableSocialSecurityBenefits ?? 0;
+          this.additionalTaxableIncome = data.forecast?.additionalTaxableIncome ?? 0;
+          this.shortTermCapitalGains = data.forecast?.shortTermCapitalGains ?? 0;
+          this.longTermCapitalGains = data.forecast?.longTermCapitalGains ?? 0;
+          this.qualifiedBusinessIncomeDeduction = data.forecast?.qualifiedBusinessIncomeDeduction ?? 0;
+
+          this.actualTaxableInterest = data.actuals?.taxableInterest ?? 0;
+          this.actualOridinaryDividends = data.actuals?.ordinaryDividends ?? 0;
+          this.actualShortTermCapitalGains = data.actuals?.shortTermCapitalGains ?? 0;
+          this.actualLongTermCapitalGains = data.actuals?.longTermCapitalGains ?? 0;
+        })
+      }
+    }
   }
 
   static getTaxBrackets(filingStatus: FilingStatus): { rate: number, startAmount: number }[] {
@@ -170,10 +212,10 @@ export default class Taxes {
     }
   }
 
-  static computeTax(income: number, filingStatus: FilingStatus, taxMap: TaxMap): number {
+  computeTax(income: number, taxMap: TaxMap): number {
     let taxes = 0;
 
-    const taxBrackets = Taxes.getTaxBrackets(filingStatus);
+    const taxBrackets = Taxes.getTaxBrackets(this.filingStatus);
 
     for (let i = 0; i < taxBrackets.length - 1; i += 1) {
       const amount = Math.min(income, taxBrackets[i + 1].startAmount) - taxBrackets[i].startAmount
@@ -248,7 +290,6 @@ export default class Taxes {
     let marginalTaxRate = 0
 
     for (const [rate, record] of sortedEntries) {
-      console.log(`rate: ${rate}%, amount: ${record.amount}, tax: ${record.tax}`)
       totalTaxes += record.tax
 
       if (record.tax > 0) {
@@ -263,8 +304,6 @@ export default class Taxes {
     }
 
     const effectiveTaxRate = totalIncome == 0 ? 0 : totalTaxes / totalIncome * 100.0;
-
-    // console.log(`total amount: ${totalTaxedAmount}, total taxes: ${totalTaxes}, marginal tax rate: ${marginalTaxRate}, effective tax rate: ${effectiveTaxRate}`)
 
     return {
       brackets: sortedEntries,
@@ -291,10 +330,8 @@ export default class Taxes {
     // Compute 0% taxes
     const maxNonTaxableIncome = Taxes.getMaxZeroPctTaxableIncome(this.filingStatus);
 
-    const line7 = Math.min(this.taxableIncome, maxNonTaxableIncome);
-
     // line 9
-    const zeroPctTaxedAmount = Math.max(line7 - ordinaryIncome, 0);
+    const zeroPctTaxedAmount = Math.max(Math.min(this.taxableIncome, maxNonTaxableIncome) - ordinaryIncome, 0);
 
     if (zeroPctTaxedAmount > 0) {
       taxBrackets.set(0, { amount: zeroPctTaxedAmount, tax: 0 })
@@ -311,11 +348,11 @@ export default class Taxes {
 
     const line15 = ordinaryIncome + zeroPctTaxedAmount
 
-    const line16 = line14 - line15;
+    const line16 = Math.max(line14 - line15, 0);
 
     const fifteenPctTaxedAmount = Math.min(line12, line16)
 
-    if (fifteenPctTaxedAmount) {
+    if (Math.round(fifteenPctTaxedAmount * 100) > 0) {
       const fifteenPctTaxes = fifteenPctTaxedAmount * 0.15;
       taxBrackets.set(15, { amount: fifteenPctTaxedAmount, tax: fifteenPctTaxes })
     }
@@ -323,19 +360,30 @@ export default class Taxes {
     // Compute 20% taxes
     const twentyPctTaxedAmount = line10 - (zeroPctTaxedAmount + fifteenPctTaxedAmount);
 
-    if (twentyPctTaxedAmount > 0) {
+    if (Math.round(twentyPctTaxedAmount * 100) > 0) {
       const twentyPctTaxes = twentyPctTaxedAmount * 0.20;
       taxBrackets.set(20, { amount: twentyPctTaxedAmount, tax: twentyPctTaxes })
     }
 
     // Compute regular tax rate
-    Taxes.computeTax(ordinaryIncome, this.filingStatus, taxBrackets)
-    return Taxes.printTaxes(taxBrackets)
+    this.computeTax(ordinaryIncome, taxBrackets)
 
     // Compute taxes on taxable income amount
-    // const taxableIncomeTaxMap = new Map<number, TaxBracketEntry>();
+    const taxableIncomeTaxBrackets = new Map<number, TaxBracketEntry>();
+    this.computeTax(this.taxableIncome, taxableIncomeTaxBrackets)
 
-    // Taxes.computeTax(taxableIncome, this.filingStatus, taxableIncomeTaxMap)
-    // Taxes.printTaxes(taxableIncomeTaxMap)
+    const t1 = [...taxBrackets.entries()].reduce((prev, current) => (
+      current[1].tax + prev
+    ), 0)
+
+    const t2 = [...taxableIncomeTaxBrackets.entries()].reduce((prev, current) => (
+      current[1].tax + prev
+    ), 0)
+
+    if (t1 < t2) {
+      return Taxes.printTaxes(taxBrackets)
+    }
+
+    return Taxes.printTaxes(taxableIncomeTaxBrackets)
   }
 }

@@ -13,6 +13,7 @@ import {
   BillProps,
   StatementProps,
   GroupType,
+  UpdateStatementProps,
 } from '../../common/ResponseTypes'
 import LoanTransaction from './LoanTransaction';
 import SystemIds from './SystemIds';
@@ -464,7 +465,7 @@ export interface AccountInterface {
 
   pendingTransactions: TransactionContainerInterface;
 
-  statements: Statement[]
+  statements: StatementsInterface
 
   get sign(): number
 
@@ -482,17 +483,6 @@ export interface AccountInterface {
       categories: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
     },
   ): Promise<ErrorProps[] | null>;
-
-  addStatement(
-    startDate: string,
-    endDate: string,
-    startingBalance: number,
-    endingBalance: number,
-  ): Promise<ApiError[] | null>;
-
-  getStatements(): Promise<void>;
-
-  updateStatement(props: StatementProps): void;
 
   delete(): void;
 
@@ -536,6 +526,52 @@ export interface BalancesInterface {
 
   removeBalance(balance: BalanceInterface): void;
 }
+
+export interface StatementInterface {
+  startDate: DateTime;
+
+  endDate: DateTime;
+
+  startingBalance: number;
+
+  endingBalance: number;
+
+  shortTermGains: number;
+
+  longTermGains: number;
+
+  dividends: number;
+
+  taxableInterest: number;
+
+  delete(): Promise<null | ApiError[]>;
+
+  update(
+    props: UpdateStatementProps,
+  ): Promise<ApiError[] | null>
+}
+
+export interface StatementsInterface {
+  statements: Statement[];
+
+  load(): Promise<void>;
+
+  addStatement(
+    startDate: string,
+    endDate: string,
+    startingBalance: number,
+    endingBalance: number,
+    shortTermCapitalGains: number,
+    longTermCapitalGains: number,
+    dividends: number,
+    taxableInterest: number,
+  ): Promise<ApiError[] | null>;
+
+  updateStatement(props: StatementProps): void;
+
+  removeStatement(id: number): void;
+}
+
 
 export interface FundingPlanDetailsInterface {
   id: number;
@@ -585,6 +621,12 @@ export interface AddStatementRequest {
   endDate: string,
   startingBalance: number,
   endingBalance: number,
+  data?: {
+    shortTermCapitalGains?: number,
+    longTermCapitalGains?: number,
+    dividends?: number,
+    taxableInterest?: number,
+  }
 }
 
 export interface CategoryParams {

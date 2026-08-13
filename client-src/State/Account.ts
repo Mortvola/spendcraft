@@ -4,21 +4,16 @@ import { DateTime } from 'luxon';
 import {
   AccountProps, AddTransactionResponse, ErrorProps,
   isAddTransactionResponse, TrackingType, AccountType,
-  ApiError,
-  AddStatementResponse,
-  StatementsResponse,
-  StatementProps,
   isErrorResponse,
 } from '../../common/ResponseTypes';
 import {
   AccountInterface, InstitutionInterface, NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface,
   AddTransactionRequest,
   AccountSettings,
-  AddStatementRequest,
 } from './Types';
 import Transaction from './Transaction';
 import TransactionContainer from './TransactionContainer';
-import Statement from './Statement';
+import Statements from './Statements';
 
 class Account implements AccountInterface {
   id: number;
@@ -60,7 +55,7 @@ class Account implements AccountInterface {
   pendingTransactions: TransactionContainer;
 
   @observable
-  accessor statements: Statement[] = [];
+  accessor statements: Statements;
 
   get sign(): number {
     return this.type === AccountType.Credit ? -1 : 1
@@ -94,6 +89,8 @@ class Account implements AccountInterface {
     this.startDate = props.startDate ? DateTime.fromISO(props.startDate) : null;
     this.rate = props.rate;
     this.institution = institution;
+
+    this.statements = new Statements(this, store)
 
     this.store = store;
   }
@@ -172,94 +169,7 @@ class Account implements AccountInterface {
 
     throw new Error('Error response received');
   }
-
    
-  async addStatement(
-    startDate: string,
-    endDate: string,
-    startingBalance: number,
-    endingBalance: number,
-  ): Promise<ApiError[] | null> {
-    const response = await Http.post<AddStatementRequest, AddStatementResponse>(`/api/v1/account/${this.id}/statements`, {
-      startDate, endDate, startingBalance, endingBalance,
-    });
-
-    if (response.ok) {
-      const props = await response.body();
-
-      runInAction(() => {
-        const statement = new Statement(props)
-
-        this.statements = [
-          ...this.statements,
-          statement,
-        ].sort((a, b) => {
-          if (a.endDate.startOf('day') > b.endDate.startOf('day')) {
-            return -1
-          }
-
-          if (a.endDate.startOf('day') > b.endDate.startOf('day')) {
-            return 1
-          }
-
-          return 0
-        })
-
-        for (const transactionId of props.transactions) {
-          const trx = this.transactions.transactions.find((trx) => trx.id === transactionId)
-          if (trx) {
-            trx.statementId = statement.id
-          }
-        }
-
-        this.store.uiState.selectStatement(statement)
-      })
-
-      return null;
-    }
-
-    throw new Error('Error response received');
-  }
-
-  async getStatements(): Promise<void> {
-    const response = await Http.get<StatementsResponse>(`/api/v1/account/${this.id}/statements`)
-
-    if (response.ok) {
-      const body = await response.body()
-
-      runInAction(() => {
-        this.statements = body.map((props) => new Statement(props))
-          .sort((a, b) => {
-            if (a.endDate.startOf('day') > b.endDate.startOf('day')) {
-              return -1
-            }
-
-            if (a.endDate.startOf('day') > b.endDate.startOf('day')) {
-              return 1
-            }
-
-            return 0
-          })
-
-        const statement = this.statements.find((s) => s.id === this.store.uiState.selectedStatement?.id)
-        this.store.uiState.selectStatement(statement ?? null)
-      })
-    } else {
-      throw new Error('Error response received');
-    }
-  }
-
-  updateStatement(props: StatementProps): void {
-    const statement = this.statements.find((s) => s.id === props.id)
-
-    if (statement) {
-      runInAction(() => {
-        statement.credits = props.credits
-        statement.debits = props.debits
-      })
-    }
-  }
-
   delete(): void {
     this.institution.deleteAccount(this);
   }

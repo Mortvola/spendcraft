@@ -368,12 +368,14 @@ export class PushSubscriptionSchema extends BaseModel {
 }
 
 export class StatementSchema extends BaseModel {
-  static $columns = ['accountId', 'createdAt', 'endDate', 'endingBalance', 'id', 'startDate', 'startingBalance', 'updatedAt'] as const
+  static $columns = ['accountId', 'createdAt', 'data', 'endDate', 'endingBalance', 'id', 'startDate', 'startingBalance', 'updatedAt'] as const
   $columns = StatementSchema.$columns
   @column()
   declare accountId: number
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime | null
+  @column()
+  declare data: any | null
   @column.date()
   declare endDate: DateTime
   @column()
@@ -389,8 +391,10 @@ export class StatementSchema extends BaseModel {
 }
 
 export class TaxSchema extends BaseModel {
-  static $columns = ['createdAt', 'data', 'id', 'updatedAt', 'year'] as const
+  static $columns = ['budgetId', 'createdAt', 'data', 'id', 'updatedAt', 'year'] as const
   $columns = TaxSchema.$columns
+  @column()
+  declare budgetId: number
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime | null
   @column()

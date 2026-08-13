@@ -7,7 +7,8 @@ import useMediaQuery from '../MediaQuery';
 import { useTransactionDialog } from '../Transactions/TransactionDialog';
 import { useBalanceDialog } from './BalanceDialog';
 import UploadFileButton from '../UploadFileButton';
-import { TrackingType } from '../../common/ResponseTypes';
+import { AccountType, TrackingType } from '../../common/ResponseTypes';
+import { useStatementDialog } from './StatementDialog';
 
 interface PropsType {
   open?: boolean,
@@ -20,6 +21,7 @@ const AccountsToolbar: React.FC<PropsType> = observer(({
   const [OfflineAccountDialog, showOfflineAccountDialog] = useOfflineAccountDialog();
   const [TransactionDialog, showTransactionDialog] = useTransactionDialog();
   const [BalanceDialog, showBalanceDialog] = useBalanceDialog();
+  const [StatementDialog, showStatementDialog] = useStatementDialog();
   const { isMobile } = useMediaQuery();
 
   const addInstitution = () => {
@@ -44,7 +46,10 @@ const AccountsToolbar: React.FC<PropsType> = observer(({
   )
 
   const showDialog = () => {
-    if (uiState.selectedAccount?.tracking === TrackingType.Balances) {
+    if (uiState.selectedAccount?.type === AccountType.Investment) {
+      showStatementDialog();
+    }
+    else if (uiState.selectedAccount?.tracking === TrackingType.Balances) {
       showBalanceDialog();
     }
     else {
@@ -73,6 +78,20 @@ const AccountsToolbar: React.FC<PropsType> = observer(({
     }
   };
 
+  const getButtonTitle = () => {
+    if (uiState.selectedAccount) {
+      if (uiState.selectedAccount.type === AccountType.Investment) {
+        return 'Add Statement'
+      }
+
+      if (uiState.selectedAccount.tracking === TrackingType.Balances) {
+        return 'Add Balance';
+      }
+
+      return 'Add Transaction';
+    }
+  }
+
   return (
     <>
       {renderAccountButtons()}
@@ -86,9 +105,7 @@ const AccountsToolbar: React.FC<PropsType> = observer(({
                 disabled={uiState.selectedAccount === null}
               >
                 {
-                  uiState.selectedAccount && uiState.selectedAccount.tracking === TrackingType.Balances
-                    ? 'Add Balance'
-                    : 'Add Transaction'
+                  getButtonTitle()
                 }
               </button>
               <UploadFileButton
@@ -98,6 +115,11 @@ const AccountsToolbar: React.FC<PropsType> = observer(({
               />
               <TransactionDialog account={uiState.selectedAccount} />
               <BalanceDialog balances={balances} />
+              {
+                uiState.selectedAccount !== null
+                  ? <StatementDialog account={uiState.selectedAccount} />
+                  : null
+              }
             </>
           )
           : null

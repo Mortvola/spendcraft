@@ -4,7 +4,7 @@ import vine from '@vinejs/vine'
 export const addTax = vine.create(
   vine.object({
     year: vine.number(),
-    data: vine.object({
+    forecast: vine.object({
       filingStatus: vine.enum(FilingStatus),
       taxableInterest: vine.number(),
       qualifiedDividends: vine.number(),

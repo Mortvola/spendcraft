@@ -1,34 +1,105 @@
 // import type { HttpContext } from '@adonisjs/core/http'
 
-import { ApiResponse, TaxProps } from "#common/ResponseTypes";
+import { ApiResponse, TaxActualProps, TaxProps } from "#common/ResponseTypes";
+import Statement from "#models/Statement";
 import Tax from "#models/Tax";
 import { addTax } from "#validators/tax";
 import { HttpContext } from "@adonisjs/core/http";
+import db from '@adonisjs/lucid/services/db';
+import { DateTime } from "luxon";
 
 export default class TaxesController {
-  async get(): Promise<ApiResponse<TaxProps>> {
-    const tax = await Tax.findByOrFail('year', 2026)
+  async get({
+    request,
+    auth: {
+      user,
+    }
+  }: HttpContext): Promise<ApiResponse<TaxProps>> {
+    if (!user) {
+      throw new Error('user not defined');
+    }
+
+    const budget = await user.related('budget').query().firstOrFail();
+
+    const { year } = request.params();
+
+    const tax = await budget.related('tax').query()
+      .where('year', year)
+      .first()
+
+    const actuals = await TaxesController.getActuals(year, budget.id);
 
     return {
-      data: tax,
+      data: {
+        year: tax?.year ?? DateTime.now().year,
+        forecast: !tax ? undefined : {
+          ...tax.data,
+        },
+        actuals,
+      }
     }
   }
 
-  async post({ request }: HttpContext): Promise<ApiResponse<TaxProps>> {
+  static async getActuals(year: number, budgetId: number): Promise<TaxActualProps> {
+    const actuals = await Statement.query()
+      .whereHas('account', (acctQuery) => {
+        acctQuery.whereHas('institution', (instQuery) => {
+          instQuery.whereHas('budget', (budgetQuery) => {
+            budgetQuery.where('id', budgetId)
+          })
+        })
+      })
+      .select(
+        db.raw("sum(COALESCE((data->>'longTermCapitalGains')::real, 0)) as \"longTermCapitalGains\""),
+        db.raw("sum(COALESCE((data->>'shortTermCapitalGains')::real, 0)) as \"shortTermCapitalGains\""),
+        db.raw("sum(COALESCE((data->>'dividends')::real, 0)) as \"ordinaryDividends\""),
+        db.raw("sum(COALESCE((data->>'taxableInterest')::real, 0)) as \"taxableInterest\""),
+      )
+      .whereBetween('startDate', [`${year}-01-01`, `${year}-12-31`])
+      .first()
+
+    return {
+      taxableInterest: actuals?.$extras.taxableInterest ?? 0,
+      ordinaryDividends: actuals?.$extras.ordinaryDividends ?? 0,
+      shortTermCapitalGains: actuals?.$extras.shortTermCapitalGains ?? 0,
+      longTermCapitalGains: actuals?.$extras.longTermCapitalGains ?? 0,
+    };
+  }
+
+  async post({
+    request,
+    auth: {
+      user,
+    }
+  }: HttpContext): Promise<ApiResponse<TaxProps>> {
+    if (!user) {
+      throw new Error('user not defined');
+    }
+
+    const budget = await user.related('budget').query().firstOrFail();
+
     const requestData = await request.validateUsing(addTax);
     
     const tax = await Tax.updateOrCreate(
       {
-        year: requestData.year
+        year: requestData.year,
+        budgetId: budget.id,
       },
       {
-        year: requestData.year,
-        data: requestData.data,
+        data: requestData.forecast,
       }
     )
 
+    const actuals = await TaxesController.getActuals(tax.year, budget.id);
+
     return {
-      data: tax,
+      data: {
+        year: tax.year,
+        forecast: {
+          ...tax.data,
+        },
+        actuals,
+      },
     };
   }
 }

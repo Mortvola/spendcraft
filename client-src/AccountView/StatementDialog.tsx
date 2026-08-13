@@ -2,33 +2,15 @@ import React from 'react';
 import {
   FormikErrors,
   FormikContextType,
-  FieldProps,
 } from 'formik';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import {
   FormField, FormModal,
 } from '@mortvola/forms';
-import { DateTime } from 'luxon';
-import { AccountInterface } from '../State/Types';
-import { ApiError, RequestErrorCode } from '../../common/ResponseTypes';
+import { AccountInterface, StatementInterface } from '../State/Types';
+import { AccountType, ApiError, RequestErrorCode } from '../../common/ResponseTypes';
 import styles from './StatementDialog.module.scss';
-import AmountInput from '../AmountInput';
-
-interface StatementInterface {
-  startDate: DateTime;
-
-  endDate: DateTime;
-
-  startingBalance: number;
-
-  endingBalance: number;
-
-  delete(): Promise<null | ApiError[]>;
-
-  update(
-    props: { startDate: string, endDate: string, startingBalance: number, endingBalance: number },
-  ): Promise<ApiError[] | null>
-}
+import AmountField from '../AmountField';
 
 interface PropsType {
   statement?: StatementInterface | null,
@@ -47,6 +29,10 @@ const StatementDialog: React.FC<PropsType & ModalProps> = ({
     endDate: string,
     startingBalance: number,
     endingBalance: number,
+    shortTermGains: number,
+    longTermGains: number,
+    dividends: number,
+    taxableInterest: number,
   }
 
   const handleValidate = (_values: ValueType) => {
@@ -63,14 +49,24 @@ const StatementDialog: React.FC<PropsType & ModalProps> = ({
         endDate: values.endDate,
         startingBalance: values.startingBalance * account.sign,
         endingBalance: values.endingBalance * account.sign,
+        data: {
+          shortTermCapitalGains: typeof values.shortTermGains == 'string' ? parseFloat(values.shortTermGains) : values.shortTermGains,
+          longTermCapitalGains: typeof values.longTermGains === 'string' ? parseFloat(values.longTermGains) : values.longTermGains,
+          dividends: typeof values.dividends === 'string' ? parseFloat(values.dividends) : values.dividends,
+          taxableInterest: typeof values.taxableInterest === 'string' ? parseFloat(values.taxableInterest) : values.taxableInterest,
+        }
       });
     }
     else {
-      errors = await account.addStatement(
+      errors = await account.statements.addStatement(
         values.startDate,
         values.endDate,
         values.startingBalance * account.sign,
         values.endingBalance * account.sign,
+        typeof values.shortTermGains == 'string' ? parseFloat(values.shortTermGains) : values.shortTermGains,
+        typeof values.longTermGains === 'string' ? parseFloat(values.longTermGains) : values.longTermGains,
+        typeof values.dividends === 'string' ? parseFloat(values.dividends) : values.dividends,
+        typeof values.taxableInterest === 'string' ? parseFloat(values.taxableInterest) : values.taxableInterest,
       );
     }
 
@@ -113,6 +109,10 @@ const StatementDialog: React.FC<PropsType & ModalProps> = ({
         endDate: statement ? (statement.endDate.toISODate() ?? '') : '',
         startingBalance: statement ? statement.startingBalance * account.sign : 0,
         endingBalance: statement ? statement.endingBalance * account.sign : 0,
+        shortTermGains: statement?.shortTermGains ?? 0,
+        longTermGains: statement?.longTermGains ?? 0,
+        dividends: statement?.dividends ?? 0,
+        taxableInterest: statement?.taxableInterest ?? 0,
       }}
       setShow={setShow}
       title={statement ? 'Edit Statement' : 'Add Statement'}
@@ -123,32 +123,21 @@ const StatementDialog: React.FC<PropsType & ModalProps> = ({
       <div className={styles.main}>
         <FormField name="startDate" type="date" label="Start Date:" />
         <FormField name="endDate" type="date" label="End Date:" />
-        <FormField
-          name="startingBalance"
-          label="Starting Balance:"
-        >
-          {
-            ({ field }: FieldProps<string | number, ValueType>) => (
-              <AmountInput
-                className="form-control"
-                {...field}
-              />
+        <AmountField name="startingBalance" label="Starting Balance:" />
+        <AmountField name="endingBalance" label="Ending Balance:" />
+
+        {
+          account.type === AccountType.Investment
+            ? (
+              <>
+                <AmountField name="taxableInterest" label="Taxable Interest:" />
+                <AmountField name="dividends" label="Dividends:" />
+                <AmountField name="shortTermGains" label="Short-term Gains:" />
+                <AmountField name="longTermGains" label="Long-term Gains:" />
+              </>
             )
-          }
-        </FormField>
-        <FormField
-          name="endingBalance"
-          label="Ending Balance:"
-        >
-          {
-            ({ field }: FieldProps<string | number, ValueType>) => (
-              <AmountInput
-                className="form-control"
-                {...field}
-              />
-            )
-          }
-        </FormField>
+            : null
+        }
       </div>
     </FormModal>
   );

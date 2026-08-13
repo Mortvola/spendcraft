@@ -184,6 +184,7 @@ router.group(() => {
   
       router.group(() => {
         router.patch('/:statementId', [AccountsController, 'updateStatement'])
+        router.delete('/:statementId', [AccountsController, 'deleteStatement'])
       })
         .prefix('/statements')
 
@@ -256,7 +257,7 @@ router.group(() => {
       router.get('/bills', [CategoriesController, 'getBills']);
 
       router.group(() => {
-          router.get('', [TaxesController, 'get']);
+          router.get('/:year', [TaxesController, 'get']);
           router.post('', [TaxesController, 'post']);
       })
         .prefix('/taxes');

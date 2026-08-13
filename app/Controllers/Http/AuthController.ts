@@ -9,6 +9,7 @@ import { login, logout, refresh, register, requestCode, updatePassword, verifyCo
 import RequestCodeNotification from '#app/mails/requestCodeNotification';
 import { inject } from '@adonisjs/core';
 import { UserService } from '#services/userService';
+import { Exception } from '@adonisjs/core/exceptions';
 
 export default class AuthController {
   @inject()
@@ -70,21 +71,23 @@ export default class AuthController {
       })
     }
     catch (error) {
-      if (error.code === 'E_INVALID_AUTH_UID' || error.code === 'E_INVALID_AUTH_PASSWORD') {
-        response.status(401);
-        response.header('content-type', 'application/json');
+      if (error instanceof Exception) {
+        if (error.code === 'E_INVALID_AUTH_UID' || error.code === 'E_INVALID_AUTH_PASSWORD') {
+          response.status(401);
+          response.header('content-type', 'application/json');
 
-        const responseData: unknown = {
-          errors: [
-            { field: 'username', message: 'The username or password does not match our records.' },
-            { field: 'password', message: 'The username or password does not match our records.' },
-          ],
-        };
+          const responseData: unknown = {
+            errors: [
+              { field: 'username', message: 'The username or password does not match our records.' },
+              { field: 'password', message: 'The username or password does not match our records.' },
+            ],
+          };
 
-        response.send(responseData);
-      }
-      else {
-        throw (error);
+          response.send(responseData);
+        }
+        else {
+          throw (error);
+        }
       }
     }
   }

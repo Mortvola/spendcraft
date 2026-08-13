@@ -1,27 +1,32 @@
 import React from 'react';
+import { observer } from 'mobx-react-lite';
+import { DateTime } from 'luxon';
 import Amount from '../Amount';
 import Date from '../Date';
-import { BalanceInterface } from '../State/Types';
 import styles from './Balance.module.scss';
-import { observer } from 'mobx-react-lite';
 
 interface PropsType {
-  balance: BalanceInterface,
-  showBalanceDialog: (balance: BalanceInterface) => void,
+  id: number,
+  balance: number,
+  date: DateTime,
+  onClick: () => void,
 }
 
 const Balance: React.FC<PropsType> = observer(({
+  id,
   balance,
-  showBalanceDialog,
+  date,
+  onClick,
 }) => {
   const handleClick = () => {
-    showBalanceDialog(balance);
+    // showBalanceDialog(balance);
+    onClick()
   }
 
   return (
-    <div key={balance.id} className={styles.balance} onClick={handleClick}>
-      <Date date={balance.date} />
-      <Amount amount={balance.balance} />
+    <div key={id} className={styles.balance} onClick={handleClick}>
+      <Date date={date} />
+      <Amount amount={balance} />
     </div>
   )
 })

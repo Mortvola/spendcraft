@@ -5,42 +5,91 @@ import { useStores } from '../State/Store';
 import styles from './BalanceHistory.module.scss';
 import Balance from './Balance';
 import { useBalanceDialog } from './BalanceDialog';
-import { BalanceInterface } from '../State/Types';
+import { BalanceInterface, StatementInterface } from '../State/Types';
 import { DateTime } from 'luxon';
-import { TrackingType } from '../../common/ResponseTypes';
+import { AccountType, TrackingType } from '../../common/ResponseTypes';
+import { useStatementDialog } from './StatementDialog';
 
 const BalanceHistory: React.FC = observer(() => {
   const { balances, uiState: { selectedAccount } } = useStores();
   const [BalanceDialog, showBalanceDialog] = useBalanceDialog();
+  const [StatementDialog, showStatementDialog] = useStatementDialog();
   const [editedBalance, setEditedBalance] = useState<BalanceInterface | null>(null);
+  const [editedStatement, setEditedStatement] = useState<StatementInterface | null>(null);
 
   React.useEffect(() => {
     if (selectedAccount) { //&& selectedAccount.tracking === TrackingType.Balances) {
-      balances.load(selectedAccount);
+      if (selectedAccount.type === AccountType.Investment) {
+        selectedAccount?.statements.load()
+      } else {
+        balances.load(selectedAccount);
+      }
     }
   }, [balances, selectedAccount]);
 
   let data: [string | null, string | number][] = [];
 
-  const t: { balance: number, date: DateTime }[] = []
-  const b = balances.balances
+  if (selectedAccount?.type === AccountType.Investment) {
+    const t: { balance: number, date: DateTime }[] = []
+    const b = selectedAccount?.statements.statements
 
-  if (b.length > 0) {
-    t.push({ balance: b[0].balance * (selectedAccount?.sign ?? 1), date: b[0].date })
+    if (b.length > 0) {
+      t.push({
+        balance: b[0].endingBalance,
+        date: b[0].endDate,
+      })
 
-    let d = t[0].date.minus({ days: 1 })
-    for (let i = 1; i < b.length; i += 1) {
-      while (d.toSeconds() > b[i].date.toSeconds()) {
-        t.push({ balance: b[i].balance * (selectedAccount?.sign ?? 1), date: d })
-        d = d.minus({ day : 1 })
+      let d = t[0].date.minus({ days: 1 })
+      // for (let i = 1; i < b.length; i += 1) {
+      for (const b2 of b) {
+        // const b2 = b[i];
+        const d2 = b2.startDate;
+        const balance = b2.startingBalance;
+
+        while (d.toSeconds() > d2.toSeconds()) {
+          t.push({
+            balance: balance, date: d,
+          })
+          d = d.minus({ day : 1 })
+        }
+
+        t.push({ balance: balance, date: d2 })
+        d = d2.minus({ days: 1})
       }
 
-      t.push({ balance: b[i].balance * (selectedAccount?.sign ?? 1), date: b[i].date })
-      d = b[i].date.minus({ days: 1})
+      data = t.reverse()
+        .map((b) => [b.date.toISODate(), b.balance]);
     }
+  } else {
+    const t: { balance: number, date: DateTime }[] = []
+    const b = balances.balances
 
-    data = t.reverse()
-      .map((b) => [b.date.toISODate(), b.balance]);
+    if (b.length > 0) {
+      t.push({
+        balance: b[0].balance * (selectedAccount?.sign ?? 1),
+        date: b[0].date,
+      })
+
+      let d = t[0].date.minus({ days: 1 })
+      for (let i = 1; i < b.length; i += 1) {
+        const b2 = b[i]
+        const d2 = b2.date;
+        const balance = b2.balance * (selectedAccount?.sign ?? 1);
+
+        while (d.toSeconds() > d2.toSeconds()) {
+          t.push({
+            balance: balance, date: d,
+          })
+          d = d.minus({ day : 1 })
+        }
+
+        t.push({ balance: balance, date: d2 })
+        d = d2.minus({ days: 1})
+      }
+
+      data = t.reverse()
+        .map((b) => [b.date.toISODate(), b.balance]);
+    }
   }
 
   data.splice(0, 0, ['date', 'balance']);
@@ -50,9 +99,52 @@ const BalanceHistory: React.FC = observer(() => {
     showBalanceDialog();
   }
 
+  const showStmtDialog = (statement: StatementInterface) => {
+    setEditedStatement(statement);
+    showStatementDialog();
+  }
+
   const handleHideDialog = () => {
     setEditedBalance(null);
   }
+
+  const renderStatemenents = () => (
+    <>
+      <div className="window">
+        <div className={styles.list}>
+          {
+            selectedAccount?.statements.statements.map((s) => (
+              <Balance key={s.id} id={s.id} balance={s.startingBalance} date={s.startDate} onClick={() => showStmtDialog(s)} />
+            ))
+          }
+        </div>
+      </div>
+      {
+        selectedAccount && editedStatement
+          ? (
+            <StatementDialog statement={editedStatement} account={selectedAccount} onHide={handleHideDialog} />
+          )
+          : null
+      }
+    </>
+  )
+
+  const renderBalances = () => (
+    selectedAccount?.tracking === TrackingType.Balances
+      ? (
+        <>
+          <div className="window">
+            <div className={styles.list}>
+              {balances.balances.map((b) => (
+                <Balance key={b.id} id={b.id} balance={b.balance} date={b.date} onClick={() => showDialog(b)} />
+              ))}
+            </div>
+          </div>
+          <BalanceDialog balance={editedBalance} onHide={handleHideDialog} />
+        </>
+      )
+      : null
+  )
 
   return (
     <div className={`${styles.main} ${selectedAccount?.tracking === TrackingType.Balances ? styles.history : ''} window1`}>
@@ -71,19 +163,9 @@ const BalanceHistory: React.FC = observer(() => {
         />
       </div>
       {
-        selectedAccount?.tracking === TrackingType.Balances
-          ? (
-            <>
-              <div className="window">
-                <div className={styles.list}>
-                  {balances.balances.map((b) => (
-                    <Balance key={b.id} balance={b} showBalanceDialog={showDialog} />
-                  ))}
-                </div>
-              </div><BalanceDialog balance={editedBalance} onHide={handleHideDialog} />
-            </>
-          )
-          : null
+        selectedAccount?.type === AccountType.Investment
+          ? renderStatemenents()
+          : renderBalances()
       }
     </div>
   );

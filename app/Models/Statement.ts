@@ -1,10 +1,12 @@
 import { DateTime } from 'luxon'
 import {
-  BaseModel, column,
+  BaseModel, belongsTo, column,
   hasMany,
 } from '@adonisjs/lucid/orm'
 import AccountTransaction from './AccountTransaction.js'
-import type { HasMany } from "@adonisjs/lucid/types/relations";
+import type { BelongsTo, HasMany } from "@adonisjs/lucid/types/relations";
+import type { JSON } from '#types/db'
+import Account from './Account.ts';
 
 export default class Statement extends BaseModel {
   @column({ isPrimary: true })
@@ -35,8 +37,19 @@ export default class Statement extends BaseModel {
   })
   public endingBalance: number
 
+  @column()
+  declare data: JSON<{
+    shortTermCapitalGains: number,
+    longTermCapitalGains: number,
+    dividends: number,
+    taxableInterest: number,
+  }> | null
+  
   @hasMany(() => AccountTransaction)
   public accountTransactions: HasMany<typeof AccountTransaction>;
+
+  @belongsTo(() => Account)
+  public account: BelongsTo<typeof Account>;
 
   public serializeExtras() {
     return {

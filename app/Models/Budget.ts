@@ -17,6 +17,7 @@ import AutoAssignment from './AutoAssignment.js';
 import TransactionLog from './TransactionLog.js';
 import type { HasMany } from "@adonisjs/lucid/types/relations";
 import { ModelAdapterOptions } from "@adonisjs/lucid/types/model";
+import Tax from './Tax.ts';
 
 export default class Budget extends BaseModel {
   public static table = 'applications';
@@ -53,6 +54,9 @@ export default class Budget extends BaseModel {
 
   @hasMany(() => TransactionLog)
   public transactionLog: HasMany<typeof TransactionLog>
+
+  @hasMany(() => Tax)
+  public tax: HasMany<typeof Tax>
 
   public async getConnectedAccounts(this: Budget): Promise<InstitutionProps[]> {
     const result = await this

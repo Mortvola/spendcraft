@@ -13,9 +13,6 @@
     "rootDir": "./",
     "sourceMap": true,
     "paths": {
-      "Common/*": [
-        "./common/*"
-      ],
       "#controllers/*": [
         "./app/Controllers/Http/*.js"
       ],

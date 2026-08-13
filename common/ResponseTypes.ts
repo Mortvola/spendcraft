@@ -247,7 +247,18 @@ export interface StatementProps {
   endingBalance: number,
   credits: number,
   debits: number,
+  data?: {
+    shortTermCapitalGains: number,
+    longTermCapitalGains: number,
+    dividends: number,
+    taxableInterest: number,
+  }
 }
+
+export type UpdateStatementProps = Partial<StatementProps & {
+  reconcile: 'All' | 'None'
+}>
+
 
 export interface AddStatementResponse extends StatementProps {
   transactions: number[],
@@ -882,9 +893,16 @@ export enum FilingStatus {
   HeadOfHousehold = 'HeadOfHousehold',
 }
 
+export interface TaxActualProps {
+  taxableInterest: number,
+  ordinaryDividends: number,
+  shortTermCapitalGains: number,
+  longTermCapitalGains: number,
+}
+
 export interface TaxProps {
   year: number,
-  data: {
+  forecast?: {
     filingStatus: FilingStatus,
     taxableInterest: number,
     qualifiedDividends: number,
@@ -896,5 +914,6 @@ export interface TaxProps {
     shortTermCapitalGains: number,
     longTermCapitalGains: number,
     qualifiedBusinessIncomeDeduction: number,
-  }
+  },
+  actuals?: TaxActualProps,
 }

@@ -17,6 +17,7 @@
 .summary-record {
   display: flex;
   flex-direction: row;
+  justify-content: space-between;
   column-gap: 1rem;
 }
 
@@ -37,7 +38,7 @@
 
 .income {
   display: grid;
-  grid-template-columns: max-content 8rem max-content 8rem;
+  grid-template-columns: max-content 8rem 8rem max-content 8rem 8rem;
   margin-top: 1rem;
   column-gap: 0.5rem;
 }
@@ -45,7 +46,7 @@
 .capital-gains,
 .tax-and-credits {
   display: grid;
-  grid-template-columns: max-content 8rem;
+  grid-template-columns: max-content 8rem 8rem;
   margin-top: 1rem;
   column-gap: 0.5rem;
 }
@@ -60,7 +61,7 @@
 }
 
 .computations {
-  width: max-content;
+  width: 225px;
   height: 100%;
   padding-right: 1rem;
   border-right: thin white solid;
