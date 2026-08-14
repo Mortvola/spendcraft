@@ -43,11 +43,13 @@ export default class TaxesController {
   static async getActuals(year: number, budgetId: number): Promise<TaxActualProps> {
     const actuals = await Statement.query()
       .whereHas('account', (acctQuery) => {
-        acctQuery.whereHas('institution', (instQuery) => {
-          instQuery.whereHas('budget', (budgetQuery) => {
-            budgetQuery.where('id', budgetId)
+        acctQuery
+          .whereNotIn('subtype', ['401k', 'Roth 401k', 'Roth', 'ira'])
+          .whereHas('institution', (instQuery) => {
+            instQuery.whereHas('budget', (budgetQuery) => {
+              budgetQuery.where('id', budgetId)
+            })
           })
-        })
       })
       .select(
         db.raw("sum(COALESCE((data->>'longTermCapitalGains')::real, 0)) as \"longTermCapitalGains\""),

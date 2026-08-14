@@ -621,6 +621,22 @@ export default class AccountsController {
         } : null
       });
 
+      // If the statement that is being updated is the latest statement
+      // then make sure the account balance is up to date if
+      // the account only tracks balances.
+      if (account.tracking === TrackingType.Balances) {
+        const latestStatement = await Statement.query()
+          .where('accountId', statement.accountId)
+          .orderBy('endDate', 'desc')
+          .firstOrFail()
+
+        if (statement.id === latestStatement.id) {
+          account.balance = statement.endingBalance;
+
+          await account.save()
+        }
+      }
+
       const startDate = requestData.startDate.toISODate()
       const endDate = requestData.endDate.toISODate()
 
