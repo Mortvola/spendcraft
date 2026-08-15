@@ -1,6 +1,7 @@
 import Http from "@mortvola/http";
 import { computed, observable, runInAction } from "mobx";
 import { ApiResponse, FilingStatus, TaxProps } from "../../common/ResponseTypes";
+import { DateTime } from "luxon";
 
 export interface TaxBracketEntry { tax: number, amount: number }
 
@@ -48,6 +49,7 @@ export default class Taxes {
   @computed
   get capitalGains() {
     const gains = this.shortTermCapitalGains + this.longTermCapitalGains
+      + this.actualShortTermCapitalGains + this.actualLongTermCapitalGains
 
     if (gains < 0) {
       return Math.max(gains, this.filingStatus === FilingStatus.MarriedFilingSeparate ? -1500 : -3000)
@@ -74,7 +76,8 @@ export default class Taxes {
   @computed
   get totalIncome() {
     return this.taxableInterest + this.ordinaryDividends + this.taxableIraDistributions
-      + this.taxablePensionAndAnnuities + this.taxableSocialSecurityBenefits + this.capitalGains + this.additionalTaxableIncome;
+      + this.taxablePensionAndAnnuities + this.taxableSocialSecurityBenefits + this.capitalGains + this.additionalTaxableIncome
+      + this.actualTaxableInterest + this.actualOridinaryDividends;
   }
 
   @computed
@@ -217,8 +220,10 @@ export default class Taxes {
 
     const taxBrackets = Taxes.getTaxBrackets(this.filingStatus);
 
-    for (let i = 0; i < taxBrackets.length - 1; i += 1) {
-      const amount = Math.min(income, taxBrackets[i + 1].startAmount) - taxBrackets[i].startAmount
+    for (let i = 0; i < taxBrackets.length; i += 1) {
+      const upperBound = i < taxBrackets.length - 1 ? taxBrackets[i + 1].startAmount : Infinity;
+
+      const amount = Math.min(income, upperBound) - taxBrackets[i].startAmount
       const tax = amount * (taxBrackets[i].rate / 100.0)
 
       if (tax > 0) {
@@ -227,15 +232,17 @@ export default class Taxes {
         let record = taxMap.get(taxBrackets[i].rate);
 
         if (!record) {
-          record = { tax, amount }
+          // Create the entry in the map with zero starting values.
+          record = { tax: 0, amount: 0 }
           taxMap.set(taxBrackets[i].rate, record)
-        } else {      
-          record.amount += amount
-          record.tax += tax
         }
+
+        // Update the map entry by adding in the new amount and tax
+        record.amount += amount
+        record.tax += tax
       }
     
-      if (income < taxBrackets[i + 1].startAmount) {
+      if (income < upperBound) {
         break;
       }
     }
@@ -318,69 +325,88 @@ export default class Taxes {
   get run(): TaxResults {
     const taxBrackets = new Map<number, TaxBracketEntry>()
 
-    const dividendsAndGains = this.qualifiedDividends
-      + ((this.longTermCapitalGains <= 0 || this.capitalGains <= 0)
-          ? 0
-          : Math.min(this.longTermCapitalGains, this.capitalGains)
-        )
+    const line1 = this.taxableIncome;
+    const line2 = this.qualifiedDividends;
+    const line3 = (((this.longTermCapitalGains + this.actualLongTermCapitalGains) <= 0 || this.capitalGains <= 0)
+        ? 0
+        : Math.min((this.longTermCapitalGains + this.actualLongTermCapitalGains), this.capitalGains)
+      )
 
-    // line 5
-    const ordinaryIncome = Math.max(this.taxableIncome - dividendsAndGains, 0);
+    // line4 - dividends and gains
+    const line4 = line2 + line3
+
+    // line 5 - ordinary income
+    const line5 = Math.max(line1 - line4, 0);
 
     // Compute 0% taxes
-    const maxNonTaxableIncome = Taxes.getMaxZeroPctTaxableIncome(this.filingStatus);
+    const line6 = Taxes.getMaxZeroPctTaxableIncome(this.filingStatus);
+
+    const line7 = Math.min(line1, line6);
+
+    const line8 = Math.min(line5, line7);
 
     // line 9
-    const zeroPctTaxedAmount = Math.max(Math.min(this.taxableIncome, maxNonTaxableIncome) - ordinaryIncome, 0);
+    const line9 = Math.max(line7 - line8, 0);
 
-    if (zeroPctTaxedAmount > 0) {
-      taxBrackets.set(0, { amount: zeroPctTaxedAmount, tax: 0 })
+    if (line9 > 0) {
+      taxBrackets.set(0, { amount: line9, tax: 0 })
     }
 
     // Compute 15% taxes
-    const line10 = Math.min(this.taxableIncome, dividendsAndGains)
+    const line10 = Math.min(line1, line4)
 
-    const line12 = line10 - zeroPctTaxedAmount
+    const line11 = line9
+
+    const line12 = Math.max(line10 - line11, 0)
 
     const line13 = Taxes.getMaxFifteenPctTaxableIncome(this.filingStatus);
 
-    const line14 = Math.min(this.taxableIncome, line13)
+    const line14 = Math.min(line1, line13)
 
-    const line15 = ordinaryIncome + zeroPctTaxedAmount
+    const line15 = line5 + line9
 
     const line16 = Math.max(line14 - line15, 0);
 
-    const fifteenPctTaxedAmount = Math.min(line12, line16)
+    const line17 = Math.min(line12, line16)
 
-    if (Math.round(fifteenPctTaxedAmount * 100) > 0) {
-      const fifteenPctTaxes = fifteenPctTaxedAmount * 0.15;
-      taxBrackets.set(15, { amount: fifteenPctTaxedAmount, tax: fifteenPctTaxes })
+    let line18 = 0
+    if (Math.round(line17 * 100)> 0) {
+      line18 = line17 * 0.15;
+      taxBrackets.set(15, { amount: line17, tax: line18 })
     }
 
-    // Compute 20% taxes
-    const twentyPctTaxedAmount = line10 - (zeroPctTaxedAmount + fifteenPctTaxedAmount);
+    const line19 = line9 + line17
 
-    if (Math.round(twentyPctTaxedAmount * 100) > 0) {
-      const twentyPctTaxes = twentyPctTaxedAmount * 0.20;
-      taxBrackets.set(20, { amount: twentyPctTaxedAmount, tax: twentyPctTaxes })
+    // Compute 20% taxes
+    const line20 = Math.max(line10 - line19, 0);
+
+    let line21 = 0
+    if (Math.round(line20 * 100)> 0) {
+      line21 = line20 * 0.20;
+      taxBrackets.set(20, { amount: line20, tax: line21 })
     }
 
     // Compute regular tax rate
-    this.computeTax(ordinaryIncome, taxBrackets)
+    const line22 = this.computeTax(line5, taxBrackets)
+
+    const line23 = line18 + line21 + line22;
 
     // Compute taxes on taxable income amount
     const taxableIncomeTaxBrackets = new Map<number, TaxBracketEntry>();
-    this.computeTax(this.taxableIncome, taxableIncomeTaxBrackets)
+    const line24 = this.computeTax(line1, taxableIncomeTaxBrackets)
 
-    const t1 = [...taxBrackets.entries()].reduce((prev, current) => (
-      current[1].tax + prev
-    ), 0)
+    // const t1 = [...taxBrackets.entries()].reduce((prev, current) => (
+    //   current[1].tax + prev
+    // ), 0)
 
-    const t2 = [...taxableIncomeTaxBrackets.entries()].reduce((prev, current) => (
-      current[1].tax + prev
-    ), 0)
+    // const t2 = [...taxableIncomeTaxBrackets.entries()].reduce((prev, current) => (
+    //   current[1].tax + prev
+    // ), 0)
 
-    if (t1 < t2) {
+    const line25 = Math.min(line23, line24)
+    console.log(line25)
+
+    if (line23 < line24) {
       return Taxes.printTaxes(taxBrackets)
     }
 
