@@ -894,6 +894,7 @@ export enum FilingStatus {
 }
 
 export interface TaxActualProps {
+  month: number,
   taxableInterest: number,
   ordinaryDividends: number,
   shortTermCapitalGains: number,
@@ -915,5 +916,5 @@ export interface TaxProps {
     longTermCapitalGains: number,
     qualifiedBusinessIncomeDeduction: number,
   },
-  actuals?: TaxActualProps,
+  actuals?: TaxActualProps[],
 }

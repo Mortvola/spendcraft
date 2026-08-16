@@ -40,7 +40,7 @@ export default class TaxesController {
     }
   }
 
-  static async getActuals(year: number, budgetId: number): Promise<TaxActualProps> {
+  static async getActuals(year: number, budgetId: number): Promise<TaxActualProps[]> {
     const actuals = await Statement.query()
       .whereHas('account', (acctQuery) => {
         acctQuery
@@ -52,20 +52,22 @@ export default class TaxesController {
           })
       })
       .select(
+        db.raw("EXTRACT(MONTH from end_date) as month"),
         db.raw("sum(COALESCE((data->>'longTermCapitalGains')::real, 0)) as \"longTermCapitalGains\""),
         db.raw("sum(COALESCE((data->>'shortTermCapitalGains')::real, 0)) as \"shortTermCapitalGains\""),
         db.raw("sum(COALESCE((data->>'dividends')::real, 0)) as \"ordinaryDividends\""),
         db.raw("sum(COALESCE((data->>'taxableInterest')::real, 0)) as \"taxableInterest\""),
       )
       .whereBetween('startDate', [`${year}-01-01`, `${year}-12-31`])
-      .first()
+      .groupByRaw('EXTRACT(MONTH from end_date)')
 
-    return {
-      taxableInterest: actuals?.$extras.taxableInterest ?? 0,
-      ordinaryDividends: actuals?.$extras.ordinaryDividends ?? 0,
-      shortTermCapitalGains: actuals?.$extras.shortTermCapitalGains ?? 0,
-      longTermCapitalGains: actuals?.$extras.longTermCapitalGains ?? 0,
-    };
+    return actuals.map((row) => ({
+      month: row.$extras.month,
+      taxableInterest: row.$extras.taxableInterest ?? 0,
+      ordinaryDividends: row.$extras.ordinaryDividends ?? 0,
+      shortTermCapitalGains: row.$extras.shortTermCapitalGains ?? 0,
+      longTermCapitalGains: row.$extras.longTermCapitalGains ?? 0,
+    }));
   }
 
   async post({

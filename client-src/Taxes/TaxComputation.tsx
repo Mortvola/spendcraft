@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { Fragment } from 'react';
 import { observer } from 'mobx-react-lite';
 import Amount from '../Amount';
-import Taxes from '../State/Taxes';
+import Taxes from '../State/Taxes/Taxes';
 import style from './TaxDetails.module.scss';
 
 interface PropsType {
@@ -19,11 +19,11 @@ const TaxComputation: React.FC<PropsType> = observer(({
       <div className={style.brackets}>
         {
           taxResults.brackets.map((t) => (
-            <>
+            <Fragment key={t[0]}>
               <div>{t[0]}%</div>
               <Amount amount={t[1].amount} />
               <Amount amount={t[1].tax} />
-            </>
+            </Fragment>
           ))
         }
       </div>

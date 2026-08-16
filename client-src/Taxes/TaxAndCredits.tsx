@@ -2,7 +2,7 @@ import React from 'react';
 import { observer } from 'mobx-react-lite';
 import Amount from '../Amount';
 import AmountInput from '../AmountInput';
-import Taxes from '../State/Taxes';
+import Taxes from '../State/Taxes/Taxes';
 import { runInAction } from 'mobx';
 import style from './TaxDetails.module.scss';
 
@@ -24,7 +24,7 @@ const TaxAndCredits: React.FC<PropsType> = observer(({
       <label>
         Total Income:
       </label>
-      <Amount amount={taxes.totalIncome} />
+      <Amount amount={taxes.income.adjustedGrossIncome} />
       <div />
 
       <label>

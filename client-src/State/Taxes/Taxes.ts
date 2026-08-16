@@ -1,7 +1,9 @@
 import Http from "@mortvola/http";
 import { computed, observable, runInAction } from "mobx";
-import { ApiResponse, FilingStatus, TaxProps } from "../../common/ResponseTypes";
-import { DateTime } from "luxon";
+import { ApiResponse, FilingStatus, TaxProps } from "../../../common/ResponseTypes";
+import { worksheet2_9_2026 } from "./Estimated";
+import Income from "./Income";
+import { TaxesInterface } from "./Types";
 
 export interface TaxBracketEntry { tax: number, amount: number }
 
@@ -15,87 +17,43 @@ export interface TaxResults {
 
 type TaxMap = Map<number, TaxBracketEntry>;
 
-export default class Taxes {
+export default class Taxes implements TaxesInterface {
+  @observable
+  accessor year = 2026;
+
   @observable
   accessor filingStatus = FilingStatus.MarriedFilingJointly;
 
-  @observable
-  accessor taxableInterest = 0;
-
-  @observable
-  accessor actualTaxableInterest = 0;
-
-  @observable
-  accessor taxablePensionAndAnnuities = 0;
-  
-  @observable
-  accessor taxableSocialSecurityBenefits = 0;
-
-  @observable
-  accessor additionalTaxableIncome = 0;
-
-  @observable
-  accessor taxableIraDistributions = 0;
-
-  @observable
-  accessor qualifiedDividends = 0;
-
-  @observable
-  accessor ordinaryDividends = 0;
-
-  @observable
-  accessor actualOridinaryDividends = 0;
-
-  @computed
-  get capitalGains() {
-    const gains = this.shortTermCapitalGains + this.longTermCapitalGains
-      + this.actualShortTermCapitalGains + this.actualLongTermCapitalGains
-
-    if (gains < 0) {
-      return Math.max(gains, this.filingStatus === FilingStatus.MarriedFilingSeparate ? -1500 : -3000)
-    }
-
-    return gains;
-  }
-
-  @observable
-  accessor shortTermCapitalGains = 0;
-
-  @observable
-  accessor actualShortTermCapitalGains = 0;
-
-  @observable
-  accessor longTermCapitalGains = 0;
-
-  @observable
-  accessor actualLongTermCapitalGains = 0;
+  income: Income;
 
   @observable
   accessor qualifiedBusinessIncomeDeduction = 0;
 
   @computed
-  get totalIncome() {
-    return this.taxableInterest + this.ordinaryDividends + this.taxableIraDistributions
-      + this.taxablePensionAndAnnuities + this.taxableSocialSecurityBenefits + this.capitalGains + this.additionalTaxableIncome
-      + this.actualTaxableInterest + this.actualOridinaryDividends;
-  }
-
-  @computed
   get standardDeduction() {
-    return Taxes.getStandardDeduction(this.filingStatus)
+    switch (this.filingStatus) {
+      case FilingStatus.Single:
+        return 15750;
+      case FilingStatus.MarriedFilingSeparate:
+        return 15000;
+      case FilingStatus.MarriedFilingJointly:
+        return 31500;
+      case FilingStatus.HeadOfHousehold:
+        return 23625;
+    }
   }
 
   @computed
   get taxableIncome() {
-    const adjustmentsToIncome = 0;
+    return Math.max(this.income.adjustedGrossIncome - (this.standardDeduction + this.qualifiedBusinessIncomeDeduction), 0);
+  }
 
-    const adjustedGrossIncome = this.totalIncome - adjustmentsToIncome;
-
-    return Math.max(adjustedGrossIncome - (this.standardDeduction + this.qualifiedBusinessIncomeDeduction), 0);
+  constructor() {
+    this.income = new Income(this);
   }
 
   async load() {
-    const response = await Http.get<ApiResponse<TaxProps>>('/api/v1/taxes/2026');
+    const response = await Http.get<ApiResponse<TaxProps>>(`/api/v1/taxes/${this.year}`);
 
     if (response.ok) {
       const { data } = await response.body();
@@ -103,21 +61,31 @@ export default class Taxes {
       if (data) {
         runInAction(() => {
           this.filingStatus = data.forecast?.filingStatus ?? FilingStatus.Single;
-          this.taxableInterest = data.forecast?.taxableInterest ?? 0;
-          this.qualifiedDividends = data.forecast?.qualifiedDividends ?? 0;
-          this.ordinaryDividends = data.forecast?.ordinaryDividends ?? 0;
-          this.taxableIraDistributions = data.forecast?.taxableIraDistributions ?? 0;
-          this.taxablePensionAndAnnuities = data.forecast?.taxablePensionAndAnnuities ?? 0;
-          this.taxableSocialSecurityBenefits = data.forecast?.taxableSocialSecurityBenefits ?? 0;
-          this.additionalTaxableIncome = data.forecast?.additionalTaxableIncome ?? 0;
-          this.shortTermCapitalGains = data.forecast?.shortTermCapitalGains ?? 0;
-          this.longTermCapitalGains = data.forecast?.longTermCapitalGains ?? 0;
+          this.income.taxableInterest = data.forecast?.taxableInterest ?? 0;
+          this.income.qualifiedDividends = data.forecast?.qualifiedDividends ?? 0;
+          this.income.ordinaryDividends = data.forecast?.ordinaryDividends ?? 0;
+          this.income.taxableIraDistributions = data.forecast?.taxableIraDistributions ?? 0;
+          this.income.taxablePensionAndAnnuities = data.forecast?.taxablePensionAndAnnuities ?? 0;
+          this.income.taxableSocialSecurityBenefits = data.forecast?.taxableSocialSecurityBenefits ?? 0;
+          this.income.additionalTaxableIncome = data.forecast?.additionalTaxableIncome ?? 0;
+          this.income.shortTermCapitalGains = data.forecast?.shortTermCapitalGains ?? 0;
+          this.income.longTermCapitalGains = data.forecast?.longTermCapitalGains ?? 0;
           this.qualifiedBusinessIncomeDeduction = data.forecast?.qualifiedBusinessIncomeDeduction ?? 0;
 
-          this.actualTaxableInterest = data.actuals?.taxableInterest ?? 0;
-          this.actualOridinaryDividends = data.actuals?.ordinaryDividends ?? 0;
-          this.actualShortTermCapitalGains = data.actuals?.shortTermCapitalGains ?? 0;
-          this.actualLongTermCapitalGains = data.actuals?.longTermCapitalGains ?? 0;
+          if (data.actuals) {
+            const result = data.actuals.reduce((previous, current) => ({
+              month: 0,
+              taxableInterest: current.taxableInterest + previous.taxableInterest,
+              ordinaryDividends: current.ordinaryDividends + previous.ordinaryDividends,
+              shortTermCapitalGains: current.shortTermCapitalGains + previous.shortTermCapitalGains,
+              longTermCapitalGains: current.longTermCapitalGains + previous.longTermCapitalGains,
+            }), { taxableInterest: 0, ordinaryDividends: 0, shortTermCapitalGains: 0, longTermCapitalGains: 0 })
+
+            this.income.actualTaxableInterest = result.taxableInterest;
+            this.income.actualOridinaryDividends = result.ordinaryDividends;
+            this.income.actualShortTermCapitalGains = result.shortTermCapitalGains;
+            this.income.actualLongTermCapitalGains = result.longTermCapitalGains;
+          }
         })
       }
     }
@@ -125,18 +93,18 @@ export default class Taxes {
 
   async save() {
     const response = await Http.post<TaxProps, ApiResponse<TaxProps>>('/api/v1/taxes', {
-      year: 2026,
+      year: this.year,
       forecast: {
         filingStatus: this.filingStatus,
-        taxableInterest: this.taxableInterest,
-        qualifiedDividends: this.qualifiedDividends,
-        ordinaryDividends: this.ordinaryDividends,
-        taxableIraDistributions: this.taxableIraDistributions,
-        taxablePensionAndAnnuities: this.taxablePensionAndAnnuities,
-        taxableSocialSecurityBenefits: this.taxableSocialSecurityBenefits,
-        additionalTaxableIncome: this.additionalTaxableIncome,
-        shortTermCapitalGains: this.shortTermCapitalGains,
-        longTermCapitalGains: this.longTermCapitalGains,
+        taxableInterest: this.income.taxableInterest,
+        qualifiedDividends: this.income.qualifiedDividends,
+        ordinaryDividends: this.income.ordinaryDividends,
+        taxableIraDistributions: this.income.taxableIraDistributions,
+        taxablePensionAndAnnuities: this.income.taxablePensionAndAnnuities,
+        taxableSocialSecurityBenefits: this.income.taxableSocialSecurityBenefits,
+        additionalTaxableIncome: this.income.additionalTaxableIncome,
+        shortTermCapitalGains: this.income.shortTermCapitalGains,
+        longTermCapitalGains: this.income.longTermCapitalGains,
         qualifiedBusinessIncomeDeduction: this.qualifiedBusinessIncomeDeduction,
       }
     })
@@ -147,21 +115,31 @@ export default class Taxes {
       if (data) {
         runInAction(() => {
           this.filingStatus = data.forecast?.filingStatus ?? FilingStatus.Single;
-          this.taxableInterest = data.forecast?.taxableInterest ?? 0;
-          this.qualifiedDividends = data.forecast?.qualifiedDividends ?? 0;
-          this.ordinaryDividends = data.forecast?.ordinaryDividends ?? 0;
-          this.taxableIraDistributions = data.forecast?.taxableIraDistributions ?? 0;
-          this.taxablePensionAndAnnuities = data.forecast?.taxablePensionAndAnnuities ?? 0;
-          this.taxableSocialSecurityBenefits = data.forecast?.taxableSocialSecurityBenefits ?? 0;
-          this.additionalTaxableIncome = data.forecast?.additionalTaxableIncome ?? 0;
-          this.shortTermCapitalGains = data.forecast?.shortTermCapitalGains ?? 0;
-          this.longTermCapitalGains = data.forecast?.longTermCapitalGains ?? 0;
+          this.income.taxableInterest = data.forecast?.taxableInterest ?? 0;
+          this.income.qualifiedDividends = data.forecast?.qualifiedDividends ?? 0;
+          this.income.ordinaryDividends = data.forecast?.ordinaryDividends ?? 0;
+          this.income.taxableIraDistributions = data.forecast?.taxableIraDistributions ?? 0;
+          this.income.taxablePensionAndAnnuities = data.forecast?.taxablePensionAndAnnuities ?? 0;
+          this.income.taxableSocialSecurityBenefits = data.forecast?.taxableSocialSecurityBenefits ?? 0;
+          this.income.additionalTaxableIncome = data.forecast?.additionalTaxableIncome ?? 0;
+          this.income.shortTermCapitalGains = data.forecast?.shortTermCapitalGains ?? 0;
+          this.income.longTermCapitalGains = data.forecast?.longTermCapitalGains ?? 0;
           this.qualifiedBusinessIncomeDeduction = data.forecast?.qualifiedBusinessIncomeDeduction ?? 0;
 
-          this.actualTaxableInterest = data.actuals?.taxableInterest ?? 0;
-          this.actualOridinaryDividends = data.actuals?.ordinaryDividends ?? 0;
-          this.actualShortTermCapitalGains = data.actuals?.shortTermCapitalGains ?? 0;
-          this.actualLongTermCapitalGains = data.actuals?.longTermCapitalGains ?? 0;
+          if (data.actuals) {
+            const result = data.actuals.reduce((previous, current) => ({
+              month: 0,
+              taxableInterest: current.taxableInterest + previous.taxableInterest,
+              ordinaryDividends: current.ordinaryDividends + previous.ordinaryDividends,
+              shortTermCapitalGains: current.shortTermCapitalGains + previous.shortTermCapitalGains,
+              longTermCapitalGains: current.longTermCapitalGains + previous.longTermCapitalGains,
+            }), { taxableInterest: 0, ordinaryDividends: 0, shortTermCapitalGains: 0, longTermCapitalGains: 0 })
+
+            this.income.actualTaxableInterest = result.taxableInterest;
+            this.income.actualOridinaryDividends = result.ordinaryDividends;
+            this.income.actualShortTermCapitalGains = result.shortTermCapitalGains;
+            this.income.actualLongTermCapitalGains = result.longTermCapitalGains;
+          }
         })
       }
     }
@@ -215,7 +193,7 @@ export default class Taxes {
     }
   }
 
-  computeTax(income: number, taxMap: TaxMap): number {
+  computeOrdinaryTax(income: number, taxMap: TaxMap): number {
     let taxes = 0;
 
     const taxBrackets = Taxes.getTaxBrackets(this.filingStatus);
@@ -248,19 +226,6 @@ export default class Taxes {
     }
 
     return taxes;
-  }
-
-  static getStandardDeduction(filingStatus: FilingStatus): number {
-    switch (filingStatus) {
-      case FilingStatus.Single:
-        return 15750;
-      case FilingStatus.MarriedFilingSeparate:
-        return 15000;
-      case FilingStatus.MarriedFilingJointly:
-        return 31500;
-      case FilingStatus.HeadOfHousehold:
-        return 23625;
-    }
   }
 
   static getMaxZeroPctTaxableIncome(filingStatus: FilingStatus): number {
@@ -323,13 +288,37 @@ export default class Taxes {
 
   @computed
   get run(): TaxResults {
+    const standardDeduction = this.standardDeduction
+
+    const result = worksheet2_9_2026({
+      periods: [{
+        agi: this.income.adjustedGrossIncome,
+        standardDeductionPlusCharity: standardDeduction,
+      },
+      {
+        agi: this.income.adjustedGrossIncome,
+        standardDeductionPlusCharity: standardDeduction,
+      },
+      {
+        agi: this.income.adjustedGrossIncome,
+        standardDeductionPlusCharity: standardDeduction,
+      },
+      {
+        agi: this.income.adjustedGrossIncome,
+        standardDeductionPlusCharity: standardDeduction,
+      }],
+      estimatedTaxWorksheetLine12c: 0,
+    })
+
+    console.log(result);
+
     const taxBrackets = new Map<number, TaxBracketEntry>()
 
     const line1 = this.taxableIncome;
-    const line2 = this.qualifiedDividends;
-    const line3 = (((this.longTermCapitalGains + this.actualLongTermCapitalGains) <= 0 || this.capitalGains <= 0)
+    const line2 = this.income.qualifiedDividends;
+    const line3 = (((this.income.longTermCapitalGains + this.income.actualLongTermCapitalGains) <= 0 || this.income.capitalGains <= 0)
         ? 0
-        : Math.min((this.longTermCapitalGains + this.actualLongTermCapitalGains), this.capitalGains)
+        : Math.min((this.income.longTermCapitalGains + this.income.actualLongTermCapitalGains), this.income.capitalGains)
       )
 
     // line4 - dividends and gains
@@ -387,24 +376,16 @@ export default class Taxes {
     }
 
     // Compute regular tax rate
-    const line22 = this.computeTax(line5, taxBrackets)
+    const line22 = this.computeOrdinaryTax(line5, taxBrackets)
 
     const line23 = line18 + line21 + line22;
 
     // Compute taxes on taxable income amount
     const taxableIncomeTaxBrackets = new Map<number, TaxBracketEntry>();
-    const line24 = this.computeTax(line1, taxableIncomeTaxBrackets)
+    const line24 = this.computeOrdinaryTax(line1, taxableIncomeTaxBrackets)
 
-    // const t1 = [...taxBrackets.entries()].reduce((prev, current) => (
-    //   current[1].tax + prev
-    // ), 0)
-
-    // const t2 = [...taxableIncomeTaxBrackets.entries()].reduce((prev, current) => (
-    //   current[1].tax + prev
-    // ), 0)
-
-    const line25 = Math.min(line23, line24)
-    console.log(line25)
+    // const line25 = Math.min(line23, line24)
+    // console.log(line25)
 
     if (line23 < line24) {
       return Taxes.printTaxes(taxBrackets)

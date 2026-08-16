@@ -17,7 +17,7 @@ import TransactionLogs from './TransactionLogs';
 import PlaidLogs from './PlaidLogs';
 import Overview from './Overview';
 import Users from './Users';
-import Taxes from './Taxes';
+import Taxes from './Taxes/Taxes';
 
 class Store implements StoreInterface {
   user: User;
