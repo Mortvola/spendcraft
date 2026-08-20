@@ -16,6 +16,11 @@ export const addTax = vine.create(
       shortTermCapitalGains: vine.number(),
       longTermCapitalGains: vine.number(),
       qualifiedBusinessIncomeDeduction: vine.number(),
+      estimated: vine.object({
+        expectedAgi: vine.number(),
+        priorYearAgi: vine.number(),
+        priorYearTotalTax: vine.number(),
+      }).optional()
     }),
   }),
 )

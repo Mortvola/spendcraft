@@ -52,7 +52,7 @@ export default class TaxesController {
           })
       })
       .select(
-        db.raw("EXTRACT(MONTH from end_date) as month"),
+        db.raw("EXTRACT(MONTH from end_date)::integer as month"),
         db.raw("sum(COALESCE((data->>'longTermCapitalGains')::real, 0)) as \"longTermCapitalGains\""),
         db.raw("sum(COALESCE((data->>'shortTermCapitalGains')::real, 0)) as \"shortTermCapitalGains\""),
         db.raw("sum(COALESCE((data->>'dividends')::real, 0)) as \"ordinaryDividends\""),

@@ -15,13 +15,13 @@ const CapitalGains: React.FC<PropsType> = observer(({
 }) => {
   const handleShorttermCapitalGains: React.ChangeEventHandler<HTMLInputElement> = (event) => {
     runInAction(() => {
-      taxes.income.shortTermCapitalGains = parseFloat(event.target.value);
+      taxes.income[taxes.currentPeriod].shortTermCapitalGains = parseFloat(event.target.value);
     })
   }
 
   const handleLongtermCapitalGains: React.ChangeEventHandler<HTMLInputElement> = (event) => {
     runInAction(() => {
-      taxes.income.longTermCapitalGains = parseFloat(event.target.value);
+      taxes.income[taxes.currentPeriod].longTermCapitalGains = parseFloat(event.target.value);
     })
   }
 
@@ -30,14 +30,14 @@ const CapitalGains: React.FC<PropsType> = observer(({
       <label>
         Short-term Capital Gains:
       </label>
-      <AmountInput value={taxes.income.shortTermCapitalGains} onChange={handleShorttermCapitalGains} />
-      <Amount amount={taxes.income.actualShortTermCapitalGains} />
+      <AmountInput value={taxes.income[taxes.currentPeriod].shortTermCapitalGains} onChange={handleShorttermCapitalGains} />
+      <Amount amount={taxes.income[taxes.currentPeriod].actualShortTermCapitalGains} />
 
       <label>
         Long-term Capital Gains:
       </label>
-      <AmountInput value={taxes.income.longTermCapitalGains} onChange={handleLongtermCapitalGains} />
-      <Amount amount={taxes.income.actualLongTermCapitalGains} />
+      <AmountInput value={taxes.income[taxes.currentPeriod].longTermCapitalGains} onChange={handleLongtermCapitalGains} />
+      <Amount amount={taxes.income[taxes.currentPeriod].actualLongTermCapitalGains} />
     </div>
   )
 })

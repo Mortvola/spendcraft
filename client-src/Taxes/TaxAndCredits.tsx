@@ -24,7 +24,7 @@ const TaxAndCredits: React.FC<PropsType> = observer(({
       <label>
         Total Income:
       </label>
-      <Amount amount={taxes.income.adjustedGrossIncome} />
+      <Amount amount={taxes.income[taxes.currentPeriod].adjustedGrossIncome} />
       <div />
 
       <label>

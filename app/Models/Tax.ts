@@ -17,5 +17,10 @@ export default class Tax extends TaxSchema {
     shortTermCapitalGains: number,
     longTermCapitalGains: number,
     qualifiedBusinessIncomeDeduction: number,
+    estimated?: {
+      expectedAgi: number,
+      priorYearAgi: number,
+      priorYearTotalTax: number,
+    }
   }>
 }

@@ -9,6 +9,8 @@ import TaxAndCredits from './TaxAndCredits';
 import { FilingStatus } from '../../common/ResponseTypes';
 import { Tab, Tabs } from 'react-bootstrap';
 import CapitalGains from './CapitalGains';
+import Worksheet2_1 from './Worksheet2-1';
+import Worksheet2_9 from './Worksheet2-9';
 
 const TaxDetails: React.FC = observer(() => {
   const { taxes } = useStores()
@@ -34,7 +36,7 @@ const TaxDetails: React.FC = observer(() => {
           <TaxComputation taxes={taxes} />
         </div>
 
-        <div>
+        <div className={style.details}>
           <div className={style.form}>
             <label>
               Filing Status: 
@@ -47,22 +49,28 @@ const TaxDetails: React.FC = observer(() => {
             </label>
           </div>
 
-          <div>
-            <div>
-              <Tabs className="mb-3" mountOnEnter unmountOnExit>
-                <Tab eventKey="income" title="Income">
-                  <Income taxes={taxes} />
-                </Tab>
+          <div className={style.tabs}>
+            <Tabs className="mb-3" mountOnEnter unmountOnExit>
+              <Tab eventKey="income" title="Income">
+                <Income taxes={taxes} />
+              </Tab>
 
-                <Tab eventKey="tax-and-credits" title="Tax and Credits">
-                  <TaxAndCredits taxes={taxes} />
-                </Tab>
+              <Tab eventKey="tax-and-credits" title="Tax and Credits">
+                <TaxAndCredits taxes={taxes} />
+              </Tab>
 
-                <Tab eventKey="capital-gains" title="Capital Gains and Losses">
-                  <CapitalGains taxes={taxes} />
-                </Tab>
-              </Tabs>
-            </div>
+              <Tab eventKey="capital-gains" title="Capital Gains and Losses">
+                <CapitalGains taxes={taxes} />
+              </Tab>
+
+              <Tab eventKey="worksheet2-1" title="Worksheet 2-1">
+                <Worksheet2_1 taxes={taxes} />
+              </Tab>
+
+              <Tab eventKey="worksheet2-9" title="Worksheet 2-9">
+                <Worksheet2_9 taxes={taxes} />
+              </Tab>
+            </Tabs>
           </div>
         </div>
       </div>

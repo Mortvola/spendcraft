@@ -1,3 +1,5 @@
+import { FilingStatus } from "../../../common/ResponseTypes";
+
 type WorksheetPeriod = 1 | 2 | 3 | 4;
 
 interface Worksheet29Constants {
@@ -9,7 +11,7 @@ interface Worksheet29Constants {
   seDeductionDivisors: readonly [number, number, number, number];
 }
 
-const WORKSHEET_2_9_2026: Worksheet29Constants = {
+export const WORKSHEET_2_9_2026: Worksheet29Constants = {
   annualizationFactors: [4, 2.4, 1.5, 1],
 
   applicablePercentages: [
@@ -89,17 +91,6 @@ interface Worksheet29PeriodInput {
   schedule1AAdditionalDeductions?: number;
 
   /**
-   * Line 12:
-   * Income tax on line 11.
-   *
-   * This may come from:
-   *   - 2026 Tax Rate Schedules
-   *   - Worksheet 2-10
-   *   - Worksheet 2-11
-   */
-  tax?: number;
-
-  /**
    * Taxes for line 13 BEFORE multiplying by
    * the annualization factor on line 2.
    */
@@ -148,6 +139,8 @@ interface Worksheet29Input {
       Worksheet29PeriodInput,
       Worksheet29PeriodInput
   ];
+
+  taxCalculationCallback: (line1: number, period: number) => number;
 
   /**
    * Worksheet 2-1, line 12c.
@@ -205,7 +198,7 @@ interface Worksheet29Lines {
   32: number;
 }
 
-interface Worksheet29PeriodResult {
+export interface Worksheet29PeriodResult {
   period: WorksheetPeriod;
   description: string;
   lines: Worksheet29Lines;
@@ -317,7 +310,7 @@ export function worksheet2_9_2026(
       *   - Worksheet 2-11
       */
 
-    const line12 = periodInput.tax ?? 0;
+    const line12 = input.taxCalculationCallback(line11, i) ?? 0;
 
     /*
       * -------------------------------------------------------
@@ -326,7 +319,7 @@ export function worksheet2_9_2026(
       * -------------------------------------------------------
       */
 
-    const line13 = (periodInput .line13TaxesBeforeAnnualization ?? 0) * annualizationFactor;
+    const line13 = (periodInput.line13TaxesBeforeAnnualization ?? 0) * annualizationFactor;
 
     /*
       * -------------------------------------------------------
@@ -557,13 +550,6 @@ export function worksheet2_9_2026(
   return results;
 }
 
-type FilingStatus =
-  | "single"
-  | "marriedJoint"
-  | "marriedSeparate"
-  | "headOfHousehold"
-  | "qualifyingSurvivingSpouse";
-
 interface Worksheet210Input {
   filingStatus: FilingStatus;
 
@@ -658,31 +644,31 @@ const CAPITAL_GAIN_THRESHOLDS_2026: Record<
   FilingStatus,
   CapitalGainThresholds
 > = {
-  single: {
+  Single: {
     line11: 49_450,
     line13b: 201_775,
     line19: 545_500
   },
 
-  marriedSeparate: {
+  MarriedFilingSeparate: {
     line11: 49_450,
     line13b: 201_775,
     line19: 306_850
   },
 
-  headOfHousehold: {
+  HeadOfHousehold: {
     line11: 66_200,
     line13b: 201_750,
     line19: 579_600
   },
 
-  marriedJoint: {
+  MarriedFilingJointly: {
     line11: 98_900,
     line13b: 403_550,
     line19: 613_700
   },
 
-  qualifyingSurvivingSpouse: {
+  QualifyingSurvivingSpouse: {
     line11: 98_900,
     line13b: 403_550,
     line19: 613_700
@@ -1090,7 +1076,7 @@ function taxRateSchedule2026(
     );
 
   switch (filingStatus) {
-    case "single":
+    case FilingStatus.Single:
       if (income <= 12_400) {
         return income * 0.10;
       }
@@ -1136,7 +1122,7 @@ function taxRateSchedule2026(
       );
 
 
-    case "headOfHousehold":
+    case FilingStatus.HeadOfHousehold:
       if (income <= 17_700) {
         return income * 0.10;
       }
@@ -1182,8 +1168,8 @@ function taxRateSchedule2026(
       );
 
 
-    case "marriedJoint":
-    case "qualifyingSurvivingSpouse":
+    case FilingStatus.MarriedFilingJointly:
+    case FilingStatus.QualifyingSurvivingSpouse:
       if (income <= 24_800) {
         return income * 0.10;
       }
@@ -1229,7 +1215,7 @@ function taxRateSchedule2026(
       );
 
 
-    case "marriedSeparate":
+    case FilingStatus.MarriedFilingSeparate:
       if (income <= 12_400) {
         return income * 0.10;
       }
@@ -1274,4 +1260,693 @@ function taxRateSchedule2026(
         (income - 384_350) * 0.37
       );
   }
+}
+
+interface Worksheet21Input {
+  filingStatus: FilingStatus;
+
+  /**
+   * Line 1:
+   * Expected 2026 adjusted gross income.
+   *
+   * If self-employed, this should already reflect the
+   * deductible portion of self-employment tax.
+   */
+  adjustedGrossIncome: number;
+
+  /**
+   * Line 2a:
+   *
+   * Either:
+   *   - expected itemized deductions, after any applicable
+   *     Worksheet 2-5 / Worksheet 2-6 adjustments, or
+   *   - standard deduction plus the permitted charitable
+   *     contribution deduction.
+   */
+  deductions: number;
+
+  /**
+   * Line 2b:
+   * Expected qualified business income deduction.
+   */
+  qualifiedBusinessIncomeDeduction?: number;
+
+  /**
+   * Line 2c:
+   * Expected Schedule 1-A, line 38 additional deduction.
+   */
+  schedule1AAdditionalDeduction?: number;
+
+  /**
+   * Line 4:
+   * Tax on line 3.
+   *
+   * This can come from:
+   *   - the 2026 Tax Rate Schedules,
+   *   - Worksheet 2-7 for qualified dividends/capital gains,
+   *   - Worksheet 2-8 for foreign earned income/housing.
+   *
+   * If omitted, this function uses taxRateSchedule2026().
+   */
+  incomeTax?: number;
+
+  /**
+   * Line 5:
+   * Expected alternative minimum tax from Form 6251.
+   */
+  alternativeMinimumTax?: number;
+
+  /**
+   * Other taxes that the Worksheet 2-1 instructions say
+   * should be added on line 6, such as applicable taxes
+   * from Forms 8814 or 4972 and certain credit recaptures.
+   */
+  line6OtherTaxes?: number;
+
+  /**
+   * Line 7:
+   * Expected nonrefundable credits.
+   *
+   * Do not include income tax withholding here.
+   */
+  credits?: number;
+
+  /**
+   * Line 9:
+   * Expected self-employment tax.
+   */
+  selfEmploymentTax?: number;
+
+  /**
+   * Line 10:
+   * Other taxes, including applicable Additional Medicare
+   * Tax, NIIT, and other taxes covered by the instructions.
+   */
+  otherTaxes?: number;
+
+  /**
+   * Line 11b:
+   *
+   * Expected:
+   *   - earned income credit
+   *   - additional child tax credit
+   *   - fuel tax credit
+   *   - net premium tax credit
+   *   - refundable American opportunity credit
+   *   - refundable adoption credit
+   *   - section 1341 credit
+   */
+  refundableCredits?: number;
+
+  /**
+   * Used for line 12a.
+   *
+   * Set true if at least two-thirds of gross income for
+   * 2025 or 2026 is from farming or fishing.
+   */
+  farmingOrFishing?: boolean;
+
+  /**
+   * Prior-year AGI used to determine whether the
+   * 110% safe-harbor rule applies.
+   */
+  priorYearAdjustedGrossIncome: number;
+
+  /**
+   * Prior-year total tax for purposes of Worksheet 2-1
+   * line 12b.
+   *
+   * This should already be calculated according to the
+   * Publication 505 definition of prior-year total tax.
+   */
+  priorYearTotalTax: number;
+
+  /**
+   * Whether the prior-year return covered a full
+   * 12-month tax year.
+   *
+   * Normally must be true to use the prior-year safe harbor.
+   */
+  priorYearWasFull12Months?: boolean;
+
+  /**
+   * Line 13:
+   * Expected 2026 income tax withholding.
+   *
+   * Includes applicable withholding from wages,
+   * pensions, annuities, Additional Medicare Tax, etc.
+   */
+  expectedWithholding?: number;
+
+  /**
+   * Used for line 15.
+   *
+   * Any 2025 overpayment being applied to the
+   * April 15, 2026 installment.
+   */
+  priorYearOverpaymentAppliedToFirstInstallment?: number;
+
+  /**
+   * Optional section 1062 adjustment.
+   *
+   * If a valid section 1062 election applies, supply the
+   * amount by which the normal current-year amount used
+   * in determining the required annual payment should
+   * be reduced.
+   *
+   * Normally 0.
+   */
+  section1062DeferredTaxAdjustment?: number;
+}
+
+
+interface Worksheet21Lines {
+  1: number;
+  "2a": number;
+  "2b": number;
+  "2c": number;
+  "2d": number;
+  3: number;
+  4: number;
+  5: number;
+  6: number;
+  7: number;
+  8: number;
+  9: number;
+  10: number;
+  "11a": number;
+  "11b": number;
+  "11c": number;
+  "12a": number;
+  "12b": number;
+  "12c": number;
+  13: number;
+  "14a": number;
+  "14b": number;
+  15: number;
+}
+
+
+interface Worksheet21Result {
+  lines: Worksheet21Lines;
+
+  /**
+   * True if Worksheet 2-1 indicates that estimated
+   * tax payments are required.
+   */
+  estimatedTaxPaymentsRequired: boolean;
+
+  /**
+   * The first installment from line 15.
+   *
+   * Zero when estimated payments aren't required.
+   */
+  firstInstallment: number;
+
+  /**
+   * Explains why estimated payments aren't required,
+   * when applicable.
+   */
+  stopReason?: "WITHHOLDING_COVERS_REQUIRED_PAYMENT" | "BALANCE_LESS_THAN_1000";
+}
+
+
+/**
+ * IRS Publication 505 (2026)
+ * Worksheet 2-1
+ *
+ * 2026 Estimated Tax Worksheet
+ */
+export function worksheet2_1_2026(
+  input: Worksheet21Input
+): Worksheet21Result {
+  const {
+    filingStatus,
+    adjustedGrossIncome,
+    deductions,
+    qualifiedBusinessIncomeDeduction = 0,
+    schedule1AAdditionalDeduction = 0,
+    alternativeMinimumTax = 0,
+    line6OtherTaxes = 0,
+    credits = 0,
+    selfEmploymentTax = 0,
+    otherTaxes = 0,
+    refundableCredits = 0,
+    farmingOrFishing = false,
+    priorYearAdjustedGrossIncome,
+    priorYearTotalTax,
+    priorYearWasFull12Months = true,
+    expectedWithholding = 0,
+    priorYearOverpaymentAppliedToFirstInstallment = 0,
+    section1062DeferredTaxAdjustment = 0
+  } = input;
+
+  /*
+   * ------------------------------------------------------------
+   * Line 1
+   * Expected adjusted gross income
+   * ------------------------------------------------------------
+   */
+
+  const line1 =
+    adjustedGrossIncome;
+
+
+  /*
+   * ------------------------------------------------------------
+   * Lines 2a-2d
+   * Deductions
+   * ------------------------------------------------------------
+   */
+
+  // Line 2a
+  const line2a =
+    deductions;
+
+  // Line 2b
+  const line2b =
+    qualifiedBusinessIncomeDeduction;
+
+  // Line 2c
+  const line2c =
+    schedule1AAdditionalDeduction;
+
+  // Line 2d
+  const line2d =
+    line2a +
+    line2b +
+    line2c;
+
+
+  /*
+   * ------------------------------------------------------------
+   * Line 3
+   * Taxable income
+   * ------------------------------------------------------------
+   */
+
+  const line3 =
+    Math.max(
+      0,
+      line1 - line2d
+    );
+
+
+  /*
+   * ------------------------------------------------------------
+   * Line 4
+   * Income tax
+   *
+   * If the caller supplies incomeTax, use it.
+   *
+   * Otherwise, calculate ordinary income tax from the
+   * 2026 Tax Rate Schedules.
+   *
+   * The caller should supply incomeTax when Worksheet 2-7
+   * or Worksheet 2-8 is required.
+   * ------------------------------------------------------------
+   */
+
+  const line4 =
+    input.incomeTax ??
+    taxRateSchedule2026(
+      line3,
+      filingStatus
+    );
+
+
+  /*
+   * ------------------------------------------------------------
+   * Line 5
+   * Alternative minimum tax
+   * ------------------------------------------------------------
+   */
+
+  const line5 =
+    alternativeMinimumTax;
+
+
+  /*
+   * ------------------------------------------------------------
+   * Line 6
+   *
+   * Line 4 + line 5 + applicable other taxes that belong
+   * on this worksheet line.
+   * ------------------------------------------------------------
+   */
+
+  const line6 =
+    line4 +
+    line5 +
+    line6OtherTaxes;
+
+
+  /*
+   * ------------------------------------------------------------
+   * Line 7
+   * Credits
+   * ------------------------------------------------------------
+   */
+
+  const line7 =
+    credits;
+
+
+  /*
+   * ------------------------------------------------------------
+   * Line 8
+   *
+   * Line 6 - line 7.
+   * Zero if negative.
+   * ------------------------------------------------------------
+   */
+
+  const line8 =
+    Math.max(
+      0,
+      line6 - line7
+    );
+
+
+  /*
+   * ------------------------------------------------------------
+   * Line 9
+   * Self-employment tax
+   * ------------------------------------------------------------
+   */
+
+  const line9 =
+    selfEmploymentTax;
+
+
+  /*
+   * ------------------------------------------------------------
+   * Line 10
+   * Other taxes
+   * ------------------------------------------------------------
+   */
+
+  const line10 =
+    otherTaxes;
+
+
+  /*
+   * ------------------------------------------------------------
+   * Line 11a
+   *
+   * Add lines 8 through 10.
+   * ------------------------------------------------------------
+   */
+
+  const line11a =
+    line8 +
+    line9 +
+    line10;
+
+
+  /*
+   * ------------------------------------------------------------
+   * Line 11b
+   * Refundable credits
+   * ------------------------------------------------------------
+   */
+
+  const line11b =
+    refundableCredits;
+
+
+  /*
+   * ------------------------------------------------------------
+   * Line 11c
+   *
+   * Total estimated 2026 tax.
+   * ------------------------------------------------------------
+   */
+
+  const line11c =
+    Math.max(
+      0,
+      line11a - line11b
+    );
+
+
+  /*
+   * ------------------------------------------------------------
+   * Line 12a
+   *
+   * Normally:
+   *   90% of expected 2026 tax
+   *
+   * Farming/fishing:
+   *   66 2/3%, represented on the worksheet as 0.6667
+   *
+   * The optional section 1062 adjustment is applied before
+   * the percentage calculation when applicable.
+   * ------------------------------------------------------------
+   */
+
+  const currentYearRequiredPaymentBase =
+    Math.max(
+      0,
+      line11c - section1062DeferredTaxAdjustment
+    );
+
+  const currentYearPercentage =
+    farmingOrFishing
+      ? 0.6667
+      : 0.90;
+
+  const line12a =
+    currentYearRequiredPaymentBase *
+    currentYearPercentage;
+
+
+  /*
+   * ------------------------------------------------------------
+   * Line 12b
+   * Required annual payment based on prior year's tax
+   *
+   * Normally:
+   *   100% of prior-year tax
+   *
+   * Higher-income taxpayers:
+   *   110% of prior-year tax
+   *
+   * The 110% rule does not apply to qualifying
+   * farming/fishing taxpayers.
+   * ------------------------------------------------------------
+   */
+
+  const highIncomeThreshold =
+    filingStatus === FilingStatus.MarriedFilingSeparate
+      ? 75_000
+      : 150_000;
+
+  const isHigherIncomeTaxpayer =
+    !farmingOrFishing &&
+    priorYearAdjustedGrossIncome > highIncomeThreshold;
+
+  const priorYearPercentage =
+    isHigherIncomeTaxpayer
+      ? 1.10
+      : 1.00;
+
+  /*
+   * Publication 505 generally requires the prior-year
+   * return to cover a full 12 months to use this safe harbor.
+   *
+   * If not, there isn't a usable line 12b prior-year
+   * safe-harbor amount, so Infinity causes line 12c to
+   * select line 12a.
+   */
+  const line12b =
+    priorYearWasFull12Months
+      ? priorYearTotalTax * priorYearPercentage
+      : Number.POSITIVE_INFINITY;
+
+
+  /*
+   * ------------------------------------------------------------
+   * Line 12c
+   *
+   * Smaller of lines 12a and 12b.
+   * ------------------------------------------------------------
+   */
+
+  const line12c =
+    Math.min(
+      line12a,
+      line12b
+    );
+
+
+  /*
+   * ------------------------------------------------------------
+   * Line 13
+   * Expected withholding
+   * ------------------------------------------------------------
+   */
+
+  const line13 =
+    expectedWithholding;
+
+
+  /*
+   * ------------------------------------------------------------
+   * Line 14a
+   *
+   * Line 12c - line 13.
+   * ------------------------------------------------------------
+   */
+
+  const line14a =
+    line12c - line13;
+
+
+  /*
+   * If line 14a is zero or less:
+   *
+   * Stop. No estimated tax payments are required.
+   * ------------------------------------------------------------
+   */
+
+  if (line14a <= 0) {
+    return {
+      estimatedTaxPaymentsRequired: false,
+      firstInstallment: 0,
+      stopReason: "WITHHOLDING_COVERS_REQUIRED_PAYMENT",
+
+      lines: {
+        1: line1,
+        "2a": line2a,
+        "2b": line2b,
+        "2c": line2c,
+        "2d": line2d,
+        3: line3,
+        4: line4,
+        5: line5,
+        6: line6,
+        7: line7,
+        8: line8,
+        9: line9,
+        10: line10,
+        "11a": line11a,
+        "11b": line11b,
+        "11c": line11c,
+        "12a": line12a,
+        "12b": line12b,
+        "12c": line12c,
+        13: line13,
+        "14a": line14a,
+        "14b": line11c - line13,
+        15: 0
+      }
+    };
+  }
+
+
+  /*
+   * ------------------------------------------------------------
+   * Line 14b
+   *
+   * Line 11c - line 13.
+   * ------------------------------------------------------------
+   */
+
+  const line14b =
+    line11c - line13;
+
+
+  /*
+   * If line 14b is less than $1,000:
+   *
+   * Stop. No estimated tax payments are required.
+   * ------------------------------------------------------------
+   */
+
+  if (line14b < 1_000) {
+    return {
+      estimatedTaxPaymentsRequired: false,
+      firstInstallment: 0,
+      stopReason: "BALANCE_LESS_THAN_1000",
+
+      lines: {
+        1: line1,
+        "2a": line2a,
+        "2b": line2b,
+        "2c": line2c,
+        "2d": line2d,
+        3: line3,
+        4: line4,
+        5: line5,
+        6: line6,
+        7: line7,
+        8: line8,
+        9: line9,
+        10: line10,
+        "11a": line11a,
+        "11b": line11b,
+        "11c": line11c,
+        "12a": line12a,
+        "12b": line12b,
+        "12c": line12c,
+        13: line13,
+        "14a": line14a,
+        "14b": line14b,
+        15: 0
+      }
+    };
+  }
+
+
+  /*
+   * ------------------------------------------------------------
+   * Line 15
+   *
+   * If the first required payment is due April 15, 2026:
+   *
+   *   1/4 × line 14a
+   *
+   * minus any 2025 overpayment applied to this installment.
+   * ------------------------------------------------------------
+   */
+
+  const line15 =
+    Math.max(
+      0,
+      line14a / 4 -
+      priorYearOverpaymentAppliedToFirstInstallment
+    );
+
+
+  return {
+    estimatedTaxPaymentsRequired: true,
+    firstInstallment: line15,
+
+    lines: {
+      1: line1,
+      "2a": line2a,
+      "2b": line2b,
+      "2c": line2c,
+      "2d": line2d,
+      3: line3,
+      4: line4,
+      5: line5,
+      6: line6,
+      7: line7,
+      8: line8,
+      9: line9,
+      10: line10,
+      "11a": line11a,
+      "11b": line11b,
+      "11c": line11c,
+      "12a": line12a,
+      "12b": line12b,
+      "12c": line12c,
+      13: line13,
+      "14a": line14a,
+      "14b": line14b,
+      15: line15
+    }
+  };
 }

@@ -891,6 +891,7 @@ export enum FilingStatus {
   MarriedFilingSeparate = 'MarriedFilingSeparate',
   MarriedFilingJointly = 'MarriedFilingJointly',
   HeadOfHousehold = 'HeadOfHousehold',
+  QualifyingSurvivingSpouse = 'QualifyingSurvivingSpouse',
 }
 
 export interface TaxActualProps {
@@ -899,6 +900,12 @@ export interface TaxActualProps {
   ordinaryDividends: number,
   shortTermCapitalGains: number,
   longTermCapitalGains: number,
+}
+
+export interface Worksheet2_1_Props {
+  expectedAgi: number,
+  priorYearAgi: number,
+  priorYearTotalTax: number,
 }
 
 export interface TaxProps {
@@ -915,6 +922,7 @@ export interface TaxProps {
     shortTermCapitalGains: number,
     longTermCapitalGains: number,
     qualifiedBusinessIncomeDeduction: number,
+    estimated?: Worksheet2_1_Props
   },
   actuals?: TaxActualProps[],
 }
