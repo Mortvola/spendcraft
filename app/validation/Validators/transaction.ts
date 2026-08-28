@@ -1,7 +1,7 @@
 import vine from '@vinejs/vine'
 import { DateTime } from 'luxon'
 
-export const addTransaction = vine.compile(
+export const addTransaction = vine.create(
   vine.object({
     date: vine.date().transform((value) => DateTime.fromJSDate(value)),
     name: vine.string(),
@@ -18,7 +18,7 @@ export const addTransaction = vine.compile(
   })
 )
 
-export const updateTransaction = vine.compile(
+export const updateTransaction = vine.create(
   vine.object({
     name: vine.string().trim().minLength(1).optional(),
     amount: vine.number().optional(),
@@ -34,5 +34,11 @@ export const updateTransaction = vine.compile(
         comment: vine.string().trim().optional(),
       })
     ).optional(),
+    taxCategories: vine.array(
+      vine.object({
+        type: vine.string(),
+        amount: vine.number()
+      })
+    ).optional()
   })
 )

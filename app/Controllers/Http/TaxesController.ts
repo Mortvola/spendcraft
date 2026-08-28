@@ -1,8 +1,10 @@
 // import type { HttpContext } from '@adonisjs/core/http'
 
-import { ApiResponse, TaxActualProps, TaxProps } from "#common/ResponseTypes";
+import { ApiResponse, TaxActualProps, TaxCategoriesProps, TaxProps } from "#common/ResponseTypes";
 import Statement from "#models/Statement";
 import Tax from "#models/Tax";
+import TaxCategory from "#models/TaxCategory";
+import Transaction from "#models/Transaction";
 import { addTax } from "#validators/tax";
 import { HttpContext } from "@adonisjs/core/http";
 import db from '@adonisjs/lucid/services/db';
@@ -61,13 +63,55 @@ export default class TaxesController {
       .whereBetween('startDate', [`${year}-01-01`, `${year}-12-31`])
       .groupByRaw('EXTRACT(MONTH from end_date)')
 
-    return actuals.map((row) => ({
-      month: row.$extras.month,
-      taxableInterest: row.$extras.taxableInterest ?? 0,
-      ordinaryDividends: row.$extras.ordinaryDividends ?? 0,
-      shortTermCapitalGains: row.$extras.shortTermCapitalGains ?? 0,
-      longTermCapitalGains: row.$extras.longTermCapitalGains ?? 0,
-    }));
+    // Retrieve any taxes associated with transactions
+    const t = await Transaction.query()
+      .select(
+        db.raw("EXTRACT(MONTH from date)::integer as month"),
+        db.raw("(transTaxes.type) as \"tax_type\""),
+        db.raw("sum(COALESCE((transTaxes.amount), 0)) as \"tax_amount\"")
+      )
+      .joinRaw(
+        'cross join lateral jsonb_to_recordset(transactions.taxes) as transTaxes(type varchar, amount real)'
+      )
+      .whereBetween('date', [`${year}-01-01`, `${year}-12-31`])
+      .groupByRaw('EXTRACT(MONTH from date)')
+      .groupByRaw('transTaxes.type')
+
+    const taxes: Record<number, Record<string, number>> = {}
+
+    for (const tax of t) {
+      taxes[tax.$extras.month] = {
+        ...taxes[tax.$extras.month],
+        [tax.$extras.tax_type]: tax.$extras.tax_amount
+      }
+    }
+
+    const result: TaxActualProps[] = []
+
+    for (let i = 1; i <= 12; i += 1) {
+      const a = actuals.find((a2) => a2.$extras.month === i)
+
+      if (a) {
+        result[i - 1] = {
+          month: i,
+          taxableInterest: a.$extras.taxableInterest ?? 0,
+          ordinaryDividends: a.$extras.ordinaryDividends ?? 0,
+          shortTermCapitalGains: a.$extras.shortTermCapitalGains ?? 0,
+          longTermCapitalGains: a.$extras.longTermCapitalGains ?? 0,
+          taxes: {},
+        }
+      }
+
+      if (taxes[i]) {
+        result[i - 1] = {
+          ...result[i - 1],
+          month: i,
+          taxes: taxes[i],
+        }
+      }
+    }
+  
+    return result;
   }
 
   async post({
@@ -105,5 +149,18 @@ export default class TaxesController {
         actuals,
       },
     };
+  }
+
+  async getCategories(): Promise<ApiResponse<TaxCategoriesProps>> {
+    const taxCategories = await TaxCategory.all();
+
+    return {
+      data: {
+        taxCategories: taxCategories.map((taxcat) => ({
+          type: taxcat.type,
+          description: taxcat.description,
+        }))
+      }
+    }
   }
 }

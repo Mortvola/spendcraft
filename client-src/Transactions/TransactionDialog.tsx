@@ -11,12 +11,13 @@ import {
 } from '@mortvola/forms';
 import CategorySplits from '../CategorySplits';
 import Amount from '../Amount';
-import { AccountInterface, TransactionCategoryInterface, TransactionInterface } from '../State/Types';
+import { AccountInterface, TransactionCategoryInterface, TransactionInterface, TransactionTaxCategoryInterface } from '../State/Types';
 import AmountInput from '../AmountInput';
 import useMediaQuery from '../MediaQuery';
 import { AccountType, ApiError, ErrorProps, isApiErrorArray, isErrorPropsArray, RequestErrorCode, TrackingType, TransactionType } from '../../common/ResponseTypes';
 import styles from './TransactionDialog.module.scss';
 import PurchaseLocation from './PurchaseLocation';
+import TransactionTaxCategories from './TransactionTaxCategories';
 
 interface PropsType {
   transaction?: TransactionInterface | null,
@@ -38,6 +39,7 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
     interest?: number,
     comment: string,
     splits: TransactionCategoryInterface[],
+    taxCategories: TransactionTaxCategoryInterface[],
   }
 
   const { isMobile } = useMediaQuery();
@@ -97,6 +99,7 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
         principle,
         comment: values.comment,
         categories: values.splits,
+        taxCategories: values.taxCategories,
       });
     }
     else {
@@ -172,6 +175,20 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
     return [];
   }, [transaction])
 
+  const taxCategories = useMemo((): TransactionTaxCategoryInterface[] => {
+    if (transaction) {
+      if (transaction.taxCategories.length > 0) {
+        return transaction.taxCategories.map((t) => ({
+          ...t,
+        }));
+      }
+
+      return [];
+    }
+
+    return [];
+  }, [transaction])
+
   const [remaining, setRemaining] = useState(() => {
     if (transaction) {
       return computeRemaining(splits, transaction.amount);
@@ -203,9 +220,18 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
     return error;
   }
 
+  const validateTaxCategories = (taxCategories: TransactionTaxCategoryInterface[]) => {
+    let error;
+
+    if (taxCategories !== undefined) {
+    }
+
+    return error;
+  }
+
   const renderSplits = () => (
     <div className="cat-fund-table">
-      <div className={`${splitItemClass} cat-fund-title`}>
+      <div className={`${splitItemClass}`}>
         <div className="item-title">Category</div>
         <div className="item-title-amount">Amount</div>
         {
@@ -246,6 +272,34 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
     </div>
   );
 
+  const renderTaxes = () => (
+    <div>
+      <Field name="taxCategories" validate={validateTaxCategories}>
+        {({
+          field: {
+            value,
+            name,
+          },
+          form: {
+            setFieldValue,
+            values,
+          },
+        }: FieldProps<TransactionTaxCategoryInterface[]>) => {
+          const amount = typeof (values.amount) === 'string' ? parseFloat(values.amount) : values.amount;
+          return (
+            <TransactionTaxCategories
+              taxCategories={value}
+              total={Math.abs(amount)}
+              onChange={(s) => {
+                setFieldValue(name, s);
+              }}
+            />
+          )
+        }}
+      </Field>
+    </div>
+  );
+
   return (
     <FormModal<ValueType>
       initialValues={{
@@ -256,6 +310,7 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
         interest: transaction ? (transaction.amount - (transaction.principle ?? 0)) : 0,
         comment: transaction && transaction.comment ? transaction.comment : '',
         splits,
+        taxCategories,
       }}
       setShow={setShow}
       title={transaction ? 'Edit Transaction' : 'Add Transaction'}
@@ -341,6 +396,11 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
       {
         account === null || account.tracking === TrackingType.Transactions
           ? renderSplits()
+          : null
+      }
+      {
+        account === null || account.tracking === TrackingType.Transactions
+          ? renderTaxes()
           : null
       }
     </FormModal>

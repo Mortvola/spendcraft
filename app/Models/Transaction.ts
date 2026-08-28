@@ -15,6 +15,11 @@ export interface TransCategory {
   comment?: string,
 }
 
+export interface TransTaxCategory {
+  type: string,
+  amount: number,
+}
+
 class Transaction extends BaseModel {
   @column()
   public id: number;
@@ -53,6 +58,11 @@ class Transaction extends BaseModel {
     prepare: (value: TransCategory[]) => JSON.stringify(value),
   })
   public categories: TransCategory[];
+
+  @column({
+    prepare: (value: TransTaxCategory[]) => JSON.stringify(value),
+  })
+  public taxes: TransTaxCategory[];
 
   @column()
   public version: number;

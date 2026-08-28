@@ -309,6 +309,11 @@ export interface TransactionProps {
     baseAmount?: number,
   }[];
 
+  taxes: {
+    type: string,
+    amount: number,
+  }[];
+
   duplicateOfTransactionId: number | null;
 
   accountTransaction: {
@@ -900,6 +905,10 @@ export interface TaxActualProps {
   ordinaryDividends: number,
   shortTermCapitalGains: number,
   longTermCapitalGains: number,
+  taxes: {
+    taxable_social_security_benefits?: number,
+    estimated_tax_payments?: number,
+  },
 }
 
 export interface Worksheet2_1_Props {
@@ -925,4 +934,13 @@ export interface TaxProps {
     estimated?: Worksheet2_1_Props
   },
   actuals?: TaxActualProps[],
+}
+
+export interface TaxCategoryProps {
+  type: string,
+  description: string,
+}
+
+export interface TaxCategoriesProps {
+  taxCategories: TaxCategoryProps[]
 }

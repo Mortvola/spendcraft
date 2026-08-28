@@ -257,6 +257,7 @@ router.group(() => {
       router.get('/bills', [CategoriesController, 'getBills']);
 
       router.group(() => {
+          router.get('/categories', [TaxesController, 'getCategories']);
           router.get('/:year', [TaxesController, 'get']);
           router.post('', [TaxesController, 'post']);
       })

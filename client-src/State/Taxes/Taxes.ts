@@ -86,41 +86,28 @@ export default class Taxes implements TaxesInterface {
           this.income[this.currentPeriod].longTermCapitalGains = data.forecast?.longTermCapitalGains ?? 0;
           this.qualifiedBusinessIncomeDeduction = data.forecast?.qualifiedBusinessIncomeDeduction ?? 0;
 
-          for (let i = 0; i <= 3; i += 1) {
+          for (let i = 0; i < 4; i += 1) {
             this.income[i].actualTaxableInterest = 0;
             this.income[i].actualOridinaryDividends = 0;
             this.income[i].actualShortTermCapitalGains = 0;
             this.income[i].actualLongTermCapitalGains = 0;
+            this.income[i].actualTaxableSocialSecurityBenefits = 0;
+            this.income[i].actualEstimatedTaxPayments = 0;
           }
         
           if (data.actuals) {
+            const periodMonthEnd = [3, 5, 8, 12];
+
             for (const actuals of data.actuals) {
-              if (actuals.month <= 3) {
-                this.income[0].actualTaxableInterest += actuals.taxableInterest;
-                this.income[0].actualOridinaryDividends += actuals.ordinaryDividends;
-                this.income[0].actualShortTermCapitalGains += actuals.shortTermCapitalGains;
-                this.income[0].actualLongTermCapitalGains += actuals.longTermCapitalGains;
-              }
-
-              if (actuals.month <= 5) {
-                this.income[1].actualTaxableInterest += actuals.taxableInterest;
-                this.income[1].actualOridinaryDividends += actuals.ordinaryDividends;
-                this.income[1].actualShortTermCapitalGains += actuals.shortTermCapitalGains;
-                this.income[1].actualLongTermCapitalGains += actuals.longTermCapitalGains;
-              }
-
-              if (actuals.month <= 8) {
-                this.income[2].actualTaxableInterest += actuals.taxableInterest;
-                this.income[2].actualOridinaryDividends += actuals.ordinaryDividends;
-                this.income[2].actualShortTermCapitalGains += actuals.shortTermCapitalGains;
-                this.income[2].actualLongTermCapitalGains += actuals.longTermCapitalGains;
-              }
-
-              if (actuals.month <= 12) {
-                this.income[3].actualTaxableInterest += actuals.taxableInterest;
-                this.income[3].actualOridinaryDividends += actuals.ordinaryDividends;
-                this.income[3].actualShortTermCapitalGains += actuals.shortTermCapitalGains;
-                this.income[3].actualLongTermCapitalGains += actuals.longTermCapitalGains;
+              for (let period = 0; period < 4; period += 1) {
+                if (actuals.month <= periodMonthEnd[period]) {
+                  this.income[period].actualTaxableInterest += actuals.taxableInterest ?? 0;
+                  this.income[period].actualOridinaryDividends += actuals.ordinaryDividends ?? 0;
+                  this.income[period].actualShortTermCapitalGains += actuals.shortTermCapitalGains ?? 0;
+                  this.income[period].actualLongTermCapitalGains += actuals.longTermCapitalGains ?? 0;
+                  this.income[period].actualTaxableSocialSecurityBenefits += actuals.taxes.taxable_social_security_benefits ?? 0;
+                  this.income[period].actualEstimatedTaxPayments += actuals.taxes.estimated_tax_payments ?? 0;
+                }
               }
             }
           }
@@ -180,36 +167,22 @@ export default class Taxes implements TaxesInterface {
             this.income[i].actualOridinaryDividends = 0;
             this.income[i].actualShortTermCapitalGains = 0;
             this.income[i].actualLongTermCapitalGains = 0;
+            this.income[i].actualTaxableSocialSecurityBenefits = 0;
           }
 
           if (data.actuals) {
-            for (const actuals of data.actuals) {
-              if (actuals.month <= 3) {
-                this.income[0].actualTaxableInterest += actuals.taxableInterest;
-                this.income[0].actualOridinaryDividends += actuals.ordinaryDividends;
-                this.income[0].actualShortTermCapitalGains += actuals.shortTermCapitalGains;
-                this.income[0].actualLongTermCapitalGains += actuals.longTermCapitalGains;
-              }
+            const periodMonthEnd = [3, 5, 8, 12];
 
-              if (actuals.month <= 5) {
-                this.income[1].actualTaxableInterest += actuals.taxableInterest;
-                this.income[1].actualOridinaryDividends += actuals.ordinaryDividends;
-                this.income[1].actualShortTermCapitalGains += actuals.shortTermCapitalGains;
-                this.income[1].actualLongTermCapitalGains += actuals.longTermCapitalGains;
-              }
-
-              if (actuals.month <= 8) {
-                this.income[2].actualTaxableInterest += actuals.taxableInterest;
-                this.income[2].actualOridinaryDividends += actuals.ordinaryDividends;
-                this.income[2].actualShortTermCapitalGains += actuals.shortTermCapitalGains;
-                this.income[2].actualLongTermCapitalGains += actuals.longTermCapitalGains;
-              }
-
-              if (actuals.month <= 12) {
-                this.income[3].actualTaxableInterest += actuals.taxableInterest;
-                this.income[3].actualOridinaryDividends += actuals.ordinaryDividends;
-                this.income[3].actualShortTermCapitalGains += actuals.shortTermCapitalGains;
-                this.income[3].actualLongTermCapitalGains += actuals.longTermCapitalGains;
+            for (let period = 0; period < 4; period += 1) {
+              for (const actuals of data.actuals) {
+                if (actuals.month <= periodMonthEnd[period]) {
+                  this.income[period].actualTaxableInterest += actuals.taxableInterest ?? 0;
+                  this.income[period].actualOridinaryDividends += actuals.ordinaryDividends ?? 0;
+                  this.income[period].actualShortTermCapitalGains += actuals.shortTermCapitalGains ?? 0;
+                  this.income[period].actualLongTermCapitalGains += actuals.longTermCapitalGains ?? 0;
+                  this.income[period].actualTaxableSocialSecurityBenefits += actuals.taxes.taxable_social_security_benefits ?? 0;
+                  this.income[period].actualEstimatedTaxPayments += actuals.taxes.estimated_tax_payments ?? 0;
+                }
               }
             }
           }
@@ -384,18 +357,22 @@ export default class Taxes implements TaxesInterface {
       periods: [{
         agi: this.income[0].adjustedGrossIncome,
         standardDeductionPlusCharity: standardDeduction,
+        paymentsAndWithholding: this.income[0].actualEstimatedTaxPayments,
       },
       {
         agi: this.income[1].adjustedGrossIncome,
         standardDeductionPlusCharity: standardDeduction,
+        paymentsAndWithholding: this.income[1].actualEstimatedTaxPayments,
       },
       {
         agi: this.income[2].adjustedGrossIncome,
         standardDeductionPlusCharity: standardDeduction,
+        paymentsAndWithholding: this.income[2].actualEstimatedTaxPayments,
       },
       {
         agi: this.income[3].adjustedGrossIncome,
         standardDeductionPlusCharity: standardDeduction,
+        paymentsAndWithholding: this.income[3].actualEstimatedTaxPayments,
       }],
       taxCalculationCallback: (line11: number, period: number) => {
         console.log(line11);

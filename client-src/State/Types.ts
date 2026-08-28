@@ -71,6 +71,8 @@ export interface TransactionInterface extends BaseTransactionInterface {
 
   categories: TransactionCategoryInterface[];
 
+  taxCategories: TransactionTaxCategoryInterface[];
+
   instituteName: string;
 
   accountName: string;
@@ -108,6 +110,7 @@ export interface TransactionInterface extends BaseTransactionInterface {
       comment?: string,
       statementId?: number | null,
       categories: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
+      taxCategories: TransactionTaxCategoryInterface[],
     },
   ): Promise<null | ApiError[]>;
 
@@ -339,6 +342,12 @@ export interface NewTransactionCategoryInterface {
   type: CategoryType;
   categoryId: number;
   amount: number;
+}
+
+export interface TransactionTaxCategoryInterface {
+  id?: number,
+  type: string,
+  amount: number,
 }
 
 export interface RegisterInterface {

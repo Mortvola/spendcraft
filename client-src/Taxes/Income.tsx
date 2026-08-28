@@ -107,7 +107,7 @@ const Income: React.FC<PropsType> = observer(({
         Taxable Social Security Benefits:
       </label>
       <AmountInput value={taxes.income[taxes.currentPeriod].taxableSocialSecurityBenefits} onChange={handleTaxableSocialSecurityBenefits} />
-      <div />
+      <Amount amount={taxes.income[taxes.currentPeriod].actualTaxableSocialSecurityBenefits} />
 
       <div />
       <div />

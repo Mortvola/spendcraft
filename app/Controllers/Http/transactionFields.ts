@@ -5,7 +5,7 @@ const transactionFields = {
   fields: {
     pick: [
       'id', 'date', 'createdAt', 'sortOrder', 'type', 'comment', 'categories',
-      'duplicateOfTransactionId', 'accountTransaction', 'version',
+      'duplicateOfTransactionId', 'accountTransaction', 'version', 'taxes',
     ],
   },
   relations: {

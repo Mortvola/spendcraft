@@ -18,11 +18,14 @@ import PlaidLogs from './PlaidLogs';
 import Overview from './Overview';
 import Users from './Users';
 import Taxes from './Taxes/Taxes';
+import TaxCategories from './TaxCategories';
 
 class Store implements StoreInterface {
   user: User;
 
   categoryTree: CategoryTree;
+
+  taxCategories: TaxCategories;
 
   register: Register;
 
@@ -57,6 +60,7 @@ class Store implements StoreInterface {
   constructor() {
     this.user = new User(this);
     this.categoryTree = new CategoryTree(this);
+    this.taxCategories = new TaxCategories();
     this.register = new Register(this);
     this.accounts = new Accounts(this);
     this.balances = new Balances(this);

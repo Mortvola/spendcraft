@@ -390,6 +390,21 @@ export class StatementSchema extends BaseModel {
   declare updatedAt: DateTime | null
 }
 
+export class TaxCategorySchema extends BaseModel {
+  static $columns = ['createdAt', 'description', 'id', 'type', 'updatedAt'] as const
+  $columns = TaxCategorySchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime | null
+  @column()
+  declare description: string
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare type: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+}
+
 export class TaxSchema extends BaseModel {
   static $columns = ['budgetId', 'createdAt', 'data', 'id', 'updatedAt', 'year'] as const
   $columns = TaxSchema.$columns
@@ -459,7 +474,7 @@ export class TransactionLogSchema extends BaseModel {
 }
 
 export class TransactionSchema extends BaseModel {
-  static $columns = ['applicationId', 'categories', 'comment', 'createdAt', 'date', 'deleted', 'duplicateOfTransactionId', 'id', 'sortOrder', 'type', 'updatedAt', 'version'] as const
+  static $columns = ['applicationId', 'categories', 'comment', 'createdAt', 'date', 'deleted', 'duplicateOfTransactionId', 'id', 'sortOrder', 'taxes', 'type', 'updatedAt', 'version'] as const
   $columns = TransactionSchema.$columns
   @column()
   declare applicationId: number
@@ -479,6 +494,8 @@ export class TransactionSchema extends BaseModel {
   declare id: number
   @column()
   declare sortOrder: number | null
+  @column()
+  declare taxes: any
   @column()
   declare type: number
   @column.dateTime({ autoCreate: true, autoUpdate: true })

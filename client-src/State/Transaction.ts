@@ -16,6 +16,7 @@ import {
 import {
   NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface,
   TransactionInterface,
+  TransactionTaxCategoryInterface,
 } from './Types';
 
 class Transaction implements TransactionInterface {
@@ -45,6 +46,9 @@ class Transaction implements TransactionInterface {
 
   @observable
   accessor categories: TransactionCategoryInterface[] = [];
+
+  @observable
+  accessor taxCategories: TransactionTaxCategoryInterface[] = [];
 
   @observable
   accessor instituteName: string;
@@ -130,6 +134,13 @@ class Transaction implements TransactionInterface {
         baseAmount: c.baseAmount,
       }));
     }
+
+    if (props.taxes) {
+      this.taxCategories = props.taxes.map((t) => ({
+        type: t.type,
+        amount: t.amount,
+      }))
+    }
   }
 
   async updateTransaction(
@@ -141,6 +152,7 @@ class Transaction implements TransactionInterface {
       comment?: string,
       statementId?: number | null,
       categories?: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
+      taxCategories?: TransactionTaxCategoryInterface[],
     },
   ): Promise<null | ApiError[]> {
     if (this.id === null) {
@@ -227,7 +239,7 @@ class Transaction implements TransactionInterface {
             account.balance = transactionUpdate.acctBalances[0].balance;
 
             if (transactionUpdate.statement) {
-              account.updateStatement(transactionUpdate.statement)
+              // account.updateStatement(transactionUpdate.statement)
             }
           }
         });

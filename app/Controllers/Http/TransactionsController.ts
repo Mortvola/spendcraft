@@ -1,7 +1,7 @@
 import { HttpContext } from '@adonisjs/core/http';
 import db from '@adonisjs/lucid/services/db';
 import Category from '#app/Models/Category';
-import Transaction from '#app/Models/Transaction';
+import Transaction, { TransTaxCategory } from '#app/Models/Transaction';
 import AccountTransaction from '#app/Models/AccountTransaction';
 import {
   AccountBalanceProps, AccountType, ApiResponse, CategoryBalanceProps, CategoryType, RequestErrorCode,
@@ -128,6 +128,7 @@ export default class TransactionsController {
             comment: undefined,
           }]
         }
+
         const { categories } = transaction;
 
         if (categories.length > 0) {
@@ -179,7 +180,6 @@ export default class TransactionsController {
         if (requestData.categories.length > 0) {
           transaction.categories = requestData.categories;
 
-           
           for (const transCategory of requestData.categories) {
              
             const category = await Category.findOrFail(transCategory.categoryId, { client: trx });
@@ -241,6 +241,21 @@ export default class TransactionsController {
             });
           }
         }
+      }
+
+      if (requestData.taxCategories !== undefined) {
+        const transTaxCategories: TransTaxCategory[] = [];
+
+        for (const t of requestData.taxCategories) {
+          if (t.type !== '') {
+            transTaxCategories.push({
+              type: t.type,
+              amount: t.amount
+            })
+          }
+        }
+
+        transaction.taxes = transTaxCategories
       }
 
       let changedStatementId: number | null = null

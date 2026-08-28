@@ -30,6 +30,12 @@ class Income {
   @observable
   accessor actualOridinaryDividends = 0;
 
+  @observable
+  accessor actualTaxableSocialSecurityBenefits = 0;
+
+  @observable
+  accessor actualEstimatedTaxPayments = 0;
+
   @computed
   get capitalGains() {
     const gains = this.shortTermCapitalGains + this.longTermCapitalGains
@@ -58,7 +64,8 @@ class Income {
   get totalIncome() {
     return this.taxableInterest + this.ordinaryDividends + this.taxableIraDistributions
       + this.taxablePensionAndAnnuities + this.taxableSocialSecurityBenefits + this.capitalGains + this.additionalTaxableIncome
-      + this.actualTaxableInterest + this.actualOridinaryDividends;
+      + this.actualTaxableInterest + this.actualOridinaryDividends
+      + this.actualTaxableSocialSecurityBenefits;
   }
 
   @computed

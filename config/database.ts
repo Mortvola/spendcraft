@@ -42,6 +42,9 @@ const databaseConfig = defineConfig({
         password: env.get('PG_PASSWORD', ''),
         database: env.get('PG_DB_NAME'),
       },
+      seeders: {
+        paths: ['./database/seeders'],
+      },
       // healthCheck: true,
       debug: false,
     },
