@@ -1,20 +1,40 @@
 import { observable } from "mobx";
-import { Worksheet2_1_Props } from "../../../common/ResponseTypes";
+import { Worksheet21Result, worksheet2_1_2026 } from "./Estimated";
+import { TaxesInterface } from "./Types";
 
 class Worksheet2_1 {
   @observable
-  accessor expectedAgi: number;
+  accessor expectedAgi = 0;
 
   @observable
-  accessor priorYearAgi: number;
+  accessor priorYearAgi = 0;
 
   @observable
-  accessor priorYearTotalTax: number;
+  accessor priorYearTotalTax = 0;
 
-  constructor(props?: Worksheet2_1_Props) {
-    this.expectedAgi = props?.expectedAgi ?? 0;
-    this.priorYearAgi = props?.priorYearAgi ?? 0;
-    this.priorYearTotalTax = props?.priorYearAgi ?? 0;
+  @observable
+  accessor result: Worksheet21Result | null = null;
+
+  taxes: TaxesInterface;
+
+  constructor(taxes: TaxesInterface) {
+    this.taxes = taxes;
+
+    this.expectedAgi = 0;
+    this.priorYearAgi = 0;
+    this.priorYearTotalTax = 0;
+
+    this.update()
+  }
+
+  update(): void {
+    this.result = worksheet2_1_2026({
+      filingStatus: this.taxes.filingStatus,
+      adjustedGrossIncome: this.expectedAgi,
+      deductions: this.taxes.standardDeduction,
+      priorYearAdjustedGrossIncome: this.priorYearAgi,
+      priorYearTotalTax: this.priorYearTotalTax,
+    })    
   }
 }
 

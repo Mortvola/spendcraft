@@ -26,7 +26,7 @@ const Worksheet2_10: React.FC<PropsType> = observer(({
         }
 
         <label>
-          2. Expected annulized qualified dividends:
+          2. Expected annualized qualified dividends:
         </label>
         {
           worksheet2_9.map((period) => (
@@ -62,7 +62,7 @@ const Worksheet2_10: React.FC<PropsType> = observer(({
         }
 
         <label>
-          6. Expected unnaulized unrecaptured section 1260 gain:
+          6. Expected annaulized unrecaptured section 1260 gain:
         </label>
         {
           worksheet2_9.map((period) => (

@@ -1,7 +1,7 @@
 import Http from "@mortvola/http";
 import { computed, observable, runInAction } from "mobx";
 import { ApiResponse, FilingStatus, TaxProps } from "../../../common/ResponseTypes";
-import { Worksheet29PeriodResult, worksheet2_10_2026, worksheet2_1_2026, worksheet2_9_2026, WORKSHEET_2_9_2026 } from "./Estimated";
+import { Worksheet29PeriodResult, worksheet2_10_2026, worksheet2_9_2026, WORKSHEET_2_9_2026 } from "./Estimated";
 import Income from "./Income";
 import { TaxesInterface } from "./Types";
 import Worksheet2_1 from "./Worksheet2_1";
@@ -53,7 +53,7 @@ export default class Taxes implements TaxesInterface {
       - (this.standardDeduction + this.qualifiedBusinessIncomeDeduction), 0);
   }
 
-  worksheet2_1 = new Worksheet2_1();
+  worksheet2_1: Worksheet2_1;
 
   constructor() {
     this.income = [
@@ -64,6 +64,8 @@ export default class Taxes implements TaxesInterface {
     ];
 
     this.currentPeriod = 2;
+
+    this.worksheet2_1 = new Worksheet2_1(this)
   }
 
   async load() {
@@ -116,6 +118,8 @@ export default class Taxes implements TaxesInterface {
             this.worksheet2_1.expectedAgi = data.forecast.estimated.expectedAgi
             this.worksheet2_1.priorYearAgi = data.forecast.estimated.priorYearAgi
             this.worksheet2_1.priorYearTotalTax = data.forecast.estimated.priorYearTotalTax
+
+            this.worksheet2_1.update()
           }
         })
       }
@@ -191,6 +195,8 @@ export default class Taxes implements TaxesInterface {
             this.worksheet2_1.expectedAgi = data.forecast.estimated.expectedAgi
             this.worksheet2_1.priorYearAgi = data.forecast.estimated.priorYearAgi
             this.worksheet2_1.priorYearTotalTax = data.forecast.estimated.priorYearTotalTax
+
+            this.worksheet2_1.update()
           }
         })
       }
@@ -345,14 +351,6 @@ export default class Taxes implements TaxesInterface {
   get worksheet2_9(): Worksheet29PeriodResult[] {
     const standardDeduction = this.standardDeduction
 
-    const result2_1 = worksheet2_1_2026({
-      filingStatus: this.filingStatus,
-      adjustedGrossIncome: this.worksheet2_1.expectedAgi,
-      deductions: standardDeduction,
-      priorYearAdjustedGrossIncome: this.worksheet2_1.priorYearAgi,
-      priorYearTotalTax: this.worksheet2_1.priorYearTotalTax,
-    })
-
     return worksheet2_9_2026({
       periods: [{
         agi: this.income[0].adjustedGrossIncome,
@@ -382,7 +380,7 @@ export default class Taxes implements TaxesInterface {
           line3: this.income[period].capitalGains * WORKSHEET_2_9_2026.annualizationFactors[period],
         })
       ),
-      estimatedTaxWorksheetLine12c: result2_1.lines['12c'],
+      estimatedTaxWorksheetLine12c: this.worksheet2_1.result?.lines['12c'] ?? 0,
     })
   }
 

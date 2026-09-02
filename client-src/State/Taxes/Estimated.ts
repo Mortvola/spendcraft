@@ -1450,7 +1450,7 @@ interface Worksheet21Lines {
 }
 
 
-interface Worksheet21Result {
+export interface Worksheet21Result {
   lines: Worksheet21Lines;
 
   /**

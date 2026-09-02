@@ -224,6 +224,7 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
     let error;
 
     if (taxCategories !== undefined) {
+      console.log('TODO: complete this')
     }
 
     return error;
@@ -282,14 +283,11 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
           },
           form: {
             setFieldValue,
-            values,
           },
         }: FieldProps<TransactionTaxCategoryInterface[]>) => {
-          const amount = typeof (values.amount) === 'string' ? parseFloat(values.amount) : values.amount;
           return (
             <TransactionTaxCategories
               taxCategories={value}
-              total={Math.abs(amount)}
               onChange={(s) => {
                 setFieldValue(name, s);
               }}

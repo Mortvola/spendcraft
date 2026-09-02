@@ -307,7 +307,7 @@ const Worksheet2_9: React.FC<PropsType> = observer(({
         }
 
         <label>
-          32. Esitmated tax payments required:
+          32. Estimated tax payments required:
         </label>
         {
           worksheet2_9.map((period) => (
