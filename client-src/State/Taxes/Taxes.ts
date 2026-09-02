@@ -374,19 +374,14 @@ export default class Taxes implements TaxesInterface {
         standardDeductionPlusCharity: standardDeduction,
         paymentsAndWithholding: this.income[3].actualEstimatedTaxPayments,
       }],
-      taxCalculationCallback: (line11: number, period: number) => {
-        console.log(line11);
-        console.log(period);
-
-        const result = worksheet2_10_2026({
+      taxCalculationCallback: (taxableIncome: number, period: number) => (
+        worksheet2_10_2026({
           filingStatus: this.filingStatus,
-          line1: line11,
+          line1: taxableIncome,
           line2: this.income[period].qualifiedDividends * WORKSHEET_2_9_2026.annualizationFactors[period],
           line3: this.income[period].capitalGains * WORKSHEET_2_9_2026.annualizationFactors[period],
         })
-        
-        return result.tax;
-      },
+      ),
       estimatedTaxWorksheetLine12c: result2_1.lines['12c'],
     })
   }

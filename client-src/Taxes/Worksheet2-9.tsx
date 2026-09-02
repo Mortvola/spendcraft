@@ -71,7 +71,7 @@ const Worksheet2_9: React.FC<PropsType> = observer(({
         }
 
         <label>
-          7. Standard Deducation:
+          7. Standard Deduction:
         </label>
         {
           worksheet2_9.map((period) => (
@@ -89,7 +89,7 @@ const Worksheet2_9: React.FC<PropsType> = observer(({
         }
 
         <label>
-          9a. Deducation of qualified business income:
+          9a. Deduction of qualified business income:
         </label>
         {
           worksheet2_9.map((period) => (

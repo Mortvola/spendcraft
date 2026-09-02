@@ -140,7 +140,7 @@ interface Worksheet29Input {
       Worksheet29PeriodInput
   ];
 
-  taxCalculationCallback: (line1: number, period: number) => number;
+  taxCalculationCallback: (taxableIncome: number, period: number) => Worksheet210Result;
 
   /**
    * Worksheet 2-1, line 12c.
@@ -202,6 +202,7 @@ export interface Worksheet29PeriodResult {
   period: WorksheetPeriod;
   description: string;
   lines: Worksheet29Lines;
+  worksheet2_10: Worksheet210Result;
 }
 
 
@@ -310,7 +311,8 @@ export function worksheet2_9_2026(
       *   - Worksheet 2-11
       */
 
-    const line12 = input.taxCalculationCallback(line11, i) ?? 0;
+    const worksheet2_10 = input.taxCalculationCallback(line11, i);
+    const line12 =  worksheet2_10.tax;
 
     /*
       * -------------------------------------------------------
@@ -543,7 +545,8 @@ export function worksheet2_9_2026(
         30: line30,
         31: line31,
         32: line32
-      }
+      },
+      worksheet2_10,
     });
   }
 

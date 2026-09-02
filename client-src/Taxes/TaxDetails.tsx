@@ -11,6 +11,7 @@ import { Tab, Tabs } from 'react-bootstrap';
 import CapitalGains from './CapitalGains';
 import Worksheet2_1 from './Worksheet2-1';
 import Worksheet2_9 from './Worksheet2-9';
+import Worksheet2_10 from './Worksheet2-10';
 
 const TaxDetails: React.FC = observer(() => {
   const { taxes } = useStores()
@@ -69,6 +70,10 @@ const TaxDetails: React.FC = observer(() => {
 
               <Tab eventKey="worksheet2-9" title="Worksheet 2-9">
                 <Worksheet2_9 taxes={taxes} />
+              </Tab>
+
+              <Tab eventKey="worksheet2-10" title="Worksheet 2-10">
+                <Worksheet2_10 taxes={taxes} />
               </Tab>
             </Tabs>
           </div>
