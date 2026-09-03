@@ -11,7 +11,11 @@ interface PropsType {
 const Worksheet2_10: React.FC<PropsType> = observer(({
   taxes,
 }) => {
-  const worksheet2_9 = taxes.worksheet2_9
+  const worksheet2_9 = taxes.worksheet2_9.result
+
+  if (worksheet2_9 === null) {
+    return null;
+  }
 
   return (
     <>

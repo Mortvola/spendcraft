@@ -205,7 +205,6 @@ export interface Worksheet29PeriodResult {
   worksheet2_10: Worksheet210Result;
 }
 
-
 /**
  * IRS Publication 505 (2026)
  * Worksheet 2-9

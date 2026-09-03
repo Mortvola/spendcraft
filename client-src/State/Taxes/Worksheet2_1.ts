@@ -1,4 +1,4 @@
-import { observable } from "mobx";
+import { autorun, observable } from "mobx";
 import { Worksheet21Result, worksheet2_1_2026 } from "./Estimated";
 import { TaxesInterface } from "./Types";
 
@@ -24,7 +24,9 @@ class Worksheet2_1 {
     this.priorYearAgi = 0;
     this.priorYearTotalTax = 0;
 
-    this.update()
+    autorun(() => {
+      this.update()
+    })
   }
 
   update(): void {

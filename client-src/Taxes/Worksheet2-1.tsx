@@ -16,21 +16,18 @@ const Worksheet2_1: React.FC<PropsType> = observer(({
   const handleExpectedAGI: React.ChangeEventHandler<HTMLInputElement> = (event) => {
     runInAction(() => {
       taxes.worksheet2_1.expectedAgi = parseFloat(event.target.value);
-      taxes.worksheet2_1.update()
     })
   }
 
   const handlePriorYearAGI: React.ChangeEventHandler<HTMLInputElement> = (event) => {
     runInAction(() => {
       taxes.worksheet2_1.priorYearAgi = parseFloat(event.target.value);
-      taxes.worksheet2_1.update()
     })
   }
 
   const handlePriorYearTotalTax: React.ChangeEventHandler<HTMLInputElement> = (event) => {
     runInAction(() => {
       taxes.worksheet2_1.priorYearTotalTax = parseFloat(event.target.value);
-      taxes.worksheet2_1.update()
     })
   }
 
