@@ -21,31 +21,31 @@ class Worksheet2_9 {
 
     this.result = worksheet2_9_2026({
       periods: [{
-        agi: this.taxes.income[0].adjustedGrossIncome,
+        agi: this.taxes.income.getAdjustedGrossIncome(0),
         standardDeductionPlusCharity: standardDeduction,
-        paymentsAndWithholding: this.taxes.income[0].actualEstimatedTaxPayments,
+        paymentsAndWithholding: this.taxes.income.actuals[0].estimatedTaxPayments,
       },
       {
-        agi: this.taxes.income[1].adjustedGrossIncome,
+        agi: this.taxes.income.getAdjustedGrossIncome(1),
         standardDeductionPlusCharity: standardDeduction,
-        paymentsAndWithholding: this.taxes.income[1].actualEstimatedTaxPayments,
+        paymentsAndWithholding: this.taxes.income.actuals[1].estimatedTaxPayments,
       },
       {
-        agi: this.taxes.income[2].adjustedGrossIncome,
+        agi: this.taxes.income.getAdjustedGrossIncome(2),
         standardDeductionPlusCharity: standardDeduction,
-        paymentsAndWithholding: this.taxes.income[2].actualEstimatedTaxPayments,
+        paymentsAndWithholding: this.taxes.income.actuals[2].estimatedTaxPayments,
       },
       {
-        agi: this.taxes.income[3].adjustedGrossIncome,
+        agi: this.taxes.income.getAdjustedGrossIncome(3),
         standardDeductionPlusCharity: standardDeduction,
-        paymentsAndWithholding: this.taxes.income[3].actualEstimatedTaxPayments,
+        paymentsAndWithholding: this.taxes.income.actuals[3].estimatedTaxPayments,
       }],
       taxCalculationCallback: (taxableIncome: number, period: number) => (
         worksheet2_10_2026({
           filingStatus: this.taxes.filingStatus,
           line1: taxableIncome,
-          line2: this.taxes.income[period].qualifiedDividends * WORKSHEET_2_9_2026.annualizationFactors[period],
-          line3: this.taxes.income[period].capitalGains * WORKSHEET_2_9_2026.annualizationFactors[period],
+          line2: this.taxes.income.qualifiedDividends * WORKSHEET_2_9_2026.annualizationFactors[period],
+          line3: this.taxes.income.getCapitalGains(period) * WORKSHEET_2_9_2026.annualizationFactors[period],
         })
       ),
       estimatedTaxWorksheetLine12c: this.taxes.worksheet2_1.result?.lines['12c'] ?? 0,

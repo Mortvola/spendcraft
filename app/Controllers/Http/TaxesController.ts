@@ -43,7 +43,7 @@ export default class TaxesController {
   }
 
   static async getActuals(year: number, budgetId: number): Promise<TaxActualProps[]> {
-    const actuals = await Statement.query()
+    const statementActuals = await Statement.query()
       .whereHas('account', (acctQuery) => {
         acctQuery
           .whereNotIn('subtype', ['401k', 'Roth 401k', 'Roth', 'ira'])
@@ -89,15 +89,15 @@ export default class TaxesController {
     const result: TaxActualProps[] = []
 
     for (let i = 1; i <= 12; i += 1) {
-      const a = actuals.find((a2) => a2.$extras.month === i)
+      const fromStatements = statementActuals.find((sa) => sa.$extras.month === i)
 
-      if (a) {
+      if (fromStatements) {
         result[i - 1] = {
           month: i,
-          taxableInterest: a.$extras.taxableInterest ?? 0,
-          ordinaryDividends: a.$extras.ordinaryDividends ?? 0,
-          shortTermCapitalGains: a.$extras.shortTermCapitalGains ?? 0,
-          longTermCapitalGains: a.$extras.longTermCapitalGains ?? 0,
+          taxableInterest: fromStatements.$extras.taxableInterest ?? 0,
+          ordinaryDividends: fromStatements.$extras.ordinaryDividends ?? 0,
+          shortTermCapitalGains: fromStatements.$extras.shortTermCapitalGains ?? 0,
+          longTermCapitalGains: fromStatements.$extras.longTermCapitalGains ?? 0,
           taxes: {},
         }
       }

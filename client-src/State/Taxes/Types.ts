@@ -7,7 +7,7 @@ export interface TaxesInterface {
 
   standardDeduction: number;
 
-  income: [Income, Income, Income, Income];
+  income: Income;
 
   worksheet2_1: Worksheet2_1
 }

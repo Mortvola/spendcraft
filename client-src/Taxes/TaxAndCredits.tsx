@@ -5,6 +5,7 @@ import AmountInput from '../AmountInput';
 import Taxes from '../State/Taxes/Taxes';
 import { runInAction } from 'mobx';
 import style from './TaxDetails.module.scss';
+import { getCurrentPeriod } from '../State/Taxes/Estimated';
 
 interface PropsType {
   taxes: Taxes
@@ -24,7 +25,7 @@ const TaxAndCredits: React.FC<PropsType> = observer(({
       <label>
         Total Income:
       </label>
-      <Amount amount={taxes.income[taxes.currentPeriod].adjustedGrossIncome} />
+      <Amount amount={taxes.income.getAdjustedGrossIncome(getCurrentPeriod())} />
       <div />
 
       <label>
@@ -42,7 +43,7 @@ const TaxAndCredits: React.FC<PropsType> = observer(({
       <label>
         Taxable Income:
       </label>
-      <Amount amount={taxes.taxableIncome} />
+      <Amount amount={taxes.getTaxableIncome(getCurrentPeriod())} />
       <div />
     </div>
   )

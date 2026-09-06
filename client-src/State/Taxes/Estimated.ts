@@ -1,3 +1,4 @@
+import { DateTime } from "luxon";
 import { FilingStatus } from "../../../common/ResponseTypes";
 
 type WorksheetPeriod = 1 | 2 | 3 | 4;
@@ -9,6 +10,7 @@ interface Worksheet29Constants {
   seSocialSecurityFactors: readonly [number, number, number, number];
   seMedicareFactors: readonly [number, number, number, number];
   seDeductionDivisors: readonly [number, number, number, number];
+  periodEndMonth: readonly [number, number, number, number];
 }
 
 export const WORKSHEET_2_9_2026: Worksheet29Constants = {
@@ -47,8 +49,28 @@ export const WORKSHEET_2_9_2026: Worksheet29Constants = {
       4.8,
       3,
       2
+  ],
+
+  periodEndMonth: [
+    3, 5, 8, 12,
   ]
 };
+
+export const getCurrentPeriod = (): number => {
+  const month = DateTime.now().month
+
+  let period = 3;
+
+  for (let i = 2; i >= 0; i -= 1) {
+    if (month > WORKSHEET_2_9_2026.periodEndMonth[i]) {
+      break;
+    }
+
+    period = i;
+  }
+
+  return period;
+}
 
 /**
  * Cumulative amounts through the end of a Worksheet 2-9 period.

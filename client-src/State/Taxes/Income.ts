@@ -1,13 +1,12 @@
-import { computed, observable } from "mobx";
+import { observable } from "mobx";
 import { FilingStatus } from "../../../common/ResponseTypes";
 import { TaxesInterface } from "./Types";
+import IncomeActuals from "./IncomeActuals";
+import { getCurrentPeriod } from "./Estimated";
 
 class Income {
   @observable
   accessor taxableInterest = 0;
-
-  @observable
-  accessor actualTaxableInterest = 0;
 
   @observable
   accessor taxablePensionAndAnnuities = 0;
@@ -28,18 +27,26 @@ class Income {
   accessor ordinaryDividends = 0;
 
   @observable
-  accessor actualOridinaryDividends = 0;
+  accessor shortTermCapitalGains = 0;
 
   @observable
-  accessor actualTaxableSocialSecurityBenefits = 0;
+  accessor longTermCapitalGains = 0;
 
-  @observable
-  accessor actualEstimatedTaxPayments = 0;
+  actuals = [new IncomeActuals(), new IncomeActuals(), new IncomeActuals, new IncomeActuals()];
 
-  @computed
-  get capitalGains() {
-    const gains = this.shortTermCapitalGains + this.longTermCapitalGains
-      + this.actualShortTermCapitalGains + this.actualLongTermCapitalGains
+  taxes: TaxesInterface;
+
+  constructor(taxes: TaxesInterface) {
+    this.taxes = taxes
+  }
+
+  getCapitalGains(period: number) {
+    let gains = this.actuals[period].shortTermCapitalGains
+      + this.actuals[period].longTermCapitalGains
+
+    if (getCurrentPeriod() === period) {
+      gains += this.shortTermCapitalGains + this.longTermCapitalGains
+    }
 
     if (gains < 0) {
       return Math.max(gains, this.taxes.filingStatus === FilingStatus.MarriedFilingSeparate ? -1500 : -3000)
@@ -48,37 +55,29 @@ class Income {
     return gains;
   }
 
-  @observable
-  accessor shortTermCapitalGains = 0;
+  getTotalIncome(period: number) {
+    let totalIncome = this.getCapitalGains(period)
+      + this.actuals[period].taxableInterest
+      + this.actuals[period].oridinaryDividends
+      + this.actuals[period].taxableSocialSecurityBenefits;
 
-  @observable
-  accessor actualShortTermCapitalGains = 0;
+    if (getCurrentPeriod() === period) {
+      totalIncome += this.taxableInterest + this.ordinaryDividends + this.taxableIraDistributions
+        + this.taxablePensionAndAnnuities + this.taxableSocialSecurityBenefits
+        + this.additionalTaxableIncome
+      }
 
-  @observable
-  accessor longTermCapitalGains = 0;
-
-  @observable
-  accessor actualLongTermCapitalGains = 0;
-
-  @computed
-  get totalIncome() {
-    return this.taxableInterest + this.ordinaryDividends + this.taxableIraDistributions
-      + this.taxablePensionAndAnnuities + this.taxableSocialSecurityBenefits + this.capitalGains + this.additionalTaxableIncome
-      + this.actualTaxableInterest + this.actualOridinaryDividends
-      + this.actualTaxableSocialSecurityBenefits;
+    return totalIncome
   }
 
-  @computed
-  get adjustedGrossIncome() {
-    const adjustmentsToIncome = 0;
+  getAdjustedGrossIncome(period: number) {
+    let adjustedGrossIncome = this.getTotalIncome(period);
 
-    return this.totalIncome - adjustmentsToIncome;
-  }
+    if (getCurrentPeriod() === period) {
+      adjustedGrossIncome += 0;
+    }
 
-  taxes: TaxesInterface;
-
-  constructor(taxes: TaxesInterface) {
-    this.taxes = taxes
+    return adjustedGrossIncome;
   }
 }
 
