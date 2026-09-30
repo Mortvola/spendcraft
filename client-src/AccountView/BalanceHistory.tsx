@@ -31,20 +31,18 @@ const BalanceHistory: React.FC = observer(() => {
 
   if (selectedAccount?.type === AccountType.Investment) {
     const t: { balance: number, date: DateTime }[] = []
-    const b = selectedAccount?.statements.statements
+    const statements = selectedAccount?.statements.statements
 
-    if (b.length > 0) {
+    if (statements.length > 0) {
       t.push({
-        balance: b[0].endingBalance,
-        date: b[0].endDate,
+        balance: statements[0].endingBalance,
+        date: statements[0].endDate,
       })
 
       let d = t[0].date.minus({ days: 1 })
-      // for (let i = 1; i < b.length; i += 1) {
-      for (const b2 of b) {
-        // const b2 = b[i];
-        const d2 = b2.startDate;
-        const balance = b2.startingBalance;
+      for (const b2 of statements) {
+        const d2 = b2.endDate;
+        const balance = b2.endingBalance;
 
         while (d.toSeconds() > d2.toSeconds()) {
           t.push({
@@ -56,6 +54,11 @@ const BalanceHistory: React.FC = observer(() => {
         t.push({ balance: balance, date: d2 })
         d = d2.minus({ days: 1})
       }
+
+      t.push({
+        balance: statements[statements.length - 1].startingBalance,
+        date: statements[statements.length - 1].startDate,
+      })
 
       data = t.reverse()
         .map((b) => [b.date.toISODate(), b.balance]);
@@ -114,7 +117,7 @@ const BalanceHistory: React.FC = observer(() => {
         <div className={styles.list}>
           {
             selectedAccount?.statements.statements.map((s) => (
-              <Balance key={s.id} id={s.id} balance={s.startingBalance} date={s.startDate} onClick={() => showStmtDialog(s)} />
+              <Balance key={s.id} id={s.id} balance={s.endingBalance} date={s.endDate} onClick={() => showStmtDialog(s)} />
             ))
           }
         </div>
