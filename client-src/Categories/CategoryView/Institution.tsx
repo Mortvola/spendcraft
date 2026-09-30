@@ -52,7 +52,7 @@ const Institution: React.FC<PropsType> = observer(({
           uiState.accountState.get(institution.id) ?? true
             ? (
               accts.map((account) => (
-                <div className={styles.account}>
+                <div key={account.id} className={styles.account}>
                   <div className={styles.name}>{account.name}</div>
                   <Amount className={styles.amount} amount={account.balance + account.pendingBalance} />
                 </div>

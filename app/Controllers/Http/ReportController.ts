@@ -105,27 +105,31 @@ class ReportController {
       .first();
 
     let date = 'date::text'
+    let date2 = 'end_date::text'
     if (days > 10 * 365) {
       date = 'cast(date_trunc(\'year\', date) as date)';
+      date2 = 'cast(date_trunc(\'year\', end_date) as date)';
     }
     else if (days > 2 * 365) {
       date = 'cast(date_trunc(\'month\', date) as date)';
+      date2 = 'cast(date_trunc(\'month\', end_date) as date)';
     }
     else if (days > 0.5 * 365) {
       date = 'cast(date_trunc(\'week\', date) as date)';
+      date2 = 'cast(date_trunc(\'week\', end_date) as date)';
     }
 
     const query = `
       select
-        ${date} AS date,
+        ${date2} AS date,
         accounts.id || '_' || accounts.name AS name,
-        max(CAST(hist.balance AS float)) AS balance
-      from balance_histories AS hist
+        max(CAST(hist.ending_balance AS float)) AS balance
+      from statements AS hist
       join accounts ON accounts.id = hist.account_id
       join institutions ON institutions.id = accounts.institution_id
       where institutions.application_id = ${budget.id}
       and accounts.tracking = 'Balances'
-      group by ${date}, accounts.id
+      group by ${date2}, accounts.id
       union
       select
         date,

@@ -116,8 +116,8 @@ const CategoryView: React.FC = observer(() => {
   )
 
   const renderAccounts = () => {
-    return accounts.institutions.flatMap((institution) => (
-      <Institution institution={institution} />
+    return accounts.institutions.map((institution) => (
+      <Institution key={institution.id} institution={institution} />
     ))
   }
 

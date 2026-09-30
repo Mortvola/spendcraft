@@ -229,6 +229,7 @@ class CategoryTree implements CategoryTreeInterface {
           this.budget.name = 'Categories'
 
           this.bills = new Group(billsGroup, this.store)
+          this.bills.group = this.budget
 
           interface StackEntry {
             props: GroupProps | CategoryProps,

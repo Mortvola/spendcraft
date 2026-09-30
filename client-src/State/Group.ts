@@ -61,7 +61,7 @@ class Group implements GroupInterface {
 
   getFundingPool(): Category {
     if (this.group === null) {
-      throw new Error('gropu not set')
+      throw new Error('group not set')
     }
 
     return this.group?.getFundingPool()
