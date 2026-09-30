@@ -248,7 +248,7 @@ const Worksheet2_9: React.FC<PropsType> = observer(({
         }
 
         <label>
-          25. Annualized Income Installment:
+          25. Annualized Income Installment. Subtract line 24 from line 23:
         </label>
         {
           worksheet2_9.map((period) => (
@@ -293,7 +293,7 @@ const Worksheet2_9: React.FC<PropsType> = observer(({
         }
 
         <label>
-          30. Total required payments for the period:
+          30. Total required payments for the period. Add lines 24 and 29:
         </label>
         {
           worksheet2_9.map((period) => (
@@ -311,7 +311,7 @@ const Worksheet2_9: React.FC<PropsType> = observer(({
         }
 
         <label>
-          32. Estimated tax payments required:
+          32. Estimated tax payments required. Subtract line 31 from line 30:
         </label>
         {
           worksheet2_9.map((period) => (

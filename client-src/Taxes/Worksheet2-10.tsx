@@ -216,7 +216,7 @@ const Worksheet2_10: React.FC<PropsType> = observer(({
         </label>
         {
           worksheet2_9.map((period) => (
-            <Amount amount={period.lines['20']} />
+            <Amount amount={period.worksheet2_10.lines['20']} />
           ))
         }
 
