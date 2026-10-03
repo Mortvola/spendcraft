@@ -65,8 +65,8 @@ const Income: React.FC<PropsType> = observer(({
       <label>
         Taxable Interest:
       </label>
-      <AmountInput value={taxes.income.taxableInterest} onChange={handleTaxableInterest} />
       <Amount amount={taxes.income.actuals[getCurrentPeriod()].taxableInterest} />
+      <AmountInput value={taxes.income.taxableInterest} onChange={handleTaxableInterest} />
 
       <label>
         Qualified Dividends:
@@ -77,8 +77,8 @@ const Income: React.FC<PropsType> = observer(({
       <label>
         Ordinary Dividends:
       </label>
-      <AmountInput value={taxes.income.ordinaryDividends} onChange={handleOrdinaryDividends} />
       <Amount amount={taxes.income.actuals[getCurrentPeriod()].oridinaryDividends} />
+      <AmountInput value={taxes.income.ordinaryDividends} onChange={handleOrdinaryDividends} />
 
       <div />
       <div />
@@ -87,8 +87,8 @@ const Income: React.FC<PropsType> = observer(({
       <label>
         Taxable IRA Distributions:
       </label>
-      <AmountInput value={taxes.income.taxableIraDistributions} onChange={handleTaxableIraDistributions} />
       <div />
+      <AmountInput value={taxes.income.taxableIraDistributions} onChange={handleTaxableIraDistributions} />
 
       <div />
       <div />
@@ -97,8 +97,8 @@ const Income: React.FC<PropsType> = observer(({
       <label>
         Taxable Pensions and Annuities:
       </label>
-      <AmountInput value={taxes.income.taxablePensionAndAnnuities} onChange={handleTaxablePensionsAndAnnuities} />
       <div />
+      <AmountInput value={taxes.income.taxablePensionAndAnnuities} onChange={handleTaxablePensionsAndAnnuities} />
 
       <div />
       <div />
@@ -107,8 +107,8 @@ const Income: React.FC<PropsType> = observer(({
       <label>
         Taxable Social Security Benefits:
       </label>
-      <AmountInput value={taxes.income.taxableSocialSecurityBenefits} onChange={handleTaxableSocialSecurityBenefits} />
       <Amount amount={taxes.income.actuals[getCurrentPeriod()].taxableSocialSecurityBenefits} />
+      <AmountInput value={taxes.income.taxableSocialSecurityBenefits} onChange={handleTaxableSocialSecurityBenefits} />
 
       <div />
       <div />
@@ -117,8 +117,8 @@ const Income: React.FC<PropsType> = observer(({
       <label>
         Additional Income:
       </label>
-      <AmountInput value={taxes.income.additionalTaxableIncome} onChange={handleAdditionalIncome} />
       <div />
+      <AmountInput value={taxes.income.additionalTaxableIncome} onChange={handleAdditionalIncome} />
 
       <div />
       <div />

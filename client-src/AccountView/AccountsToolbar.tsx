@@ -99,20 +99,28 @@ const AccountsToolbar: React.FC<PropsType> = observer(({
         !open || !isMobile
           ? (
             <>
-              <button
-                type="button"
-                onClick={showDialog}
-                disabled={uiState.selectedAccount === null}
-              >
-                {
-                  getButtonTitle()
-                }
-              </button>
-              <UploadFileButton
-                onFileSelection={handleUploadOfx}
-                label="Import OFX"
-                disabled={uiState.selectedAccount?.tracking !== TrackingType.Transactions}
-              />
+              {
+                uiState.selectedAccount
+                  ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={showDialog}
+                        disabled={uiState.selectedAccount === null}
+                      >
+                        {
+                          getButtonTitle()
+                        }
+                      </button>
+                      <UploadFileButton
+                        onFileSelection={handleUploadOfx}
+                        label="Import OFX"
+                        disabled={uiState.selectedAccount?.tracking !== TrackingType.Transactions}
+                      />
+                    </>
+                  )
+                  : null
+              }
               <TransactionDialog account={uiState.selectedAccount} />
               <BalanceDialog balances={balances} />
               {

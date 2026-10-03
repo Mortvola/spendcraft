@@ -31,14 +31,14 @@ const CapitalGains: React.FC<PropsType> = observer(({
       <label>
         Short-term Capital Gains:
       </label>
-      <AmountInput value={taxes.income.shortTermCapitalGains} onChange={handleShorttermCapitalGains} />
       <Amount amount={taxes.income.actuals[getCurrentPeriod()].shortTermCapitalGains} />
+      <AmountInput value={taxes.income.shortTermCapitalGains} onChange={handleShorttermCapitalGains} />
 
       <label>
         Long-term Capital Gains:
       </label>
-      <AmountInput value={taxes.income.longTermCapitalGains} onChange={handleLongtermCapitalGains} />
       <Amount amount={taxes.income.actuals[getCurrentPeriod()].longTermCapitalGains} />
+      <AmountInput value={taxes.income.longTermCapitalGains} onChange={handleLongtermCapitalGains} />
     </div>
   )
 })

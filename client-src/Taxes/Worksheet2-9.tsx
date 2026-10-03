@@ -30,7 +30,7 @@ const Worksheet2_9: React.FC<PropsType> = observer(({
         }
 
         <label>
-          2. Annulization Amounts:
+          2. Annualization Amounts:
         </label>
         {
           worksheet2_9.map((period) => (
