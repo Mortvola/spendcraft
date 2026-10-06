@@ -109,7 +109,7 @@
     "eslint-plugin-import": "^2.25.4",
     "eslint-plugin-jsx-a11y": "^6.5.1",
     "eslint-plugin-react": "^7.28.0",
-    "knip": "^5.58.1",
+    "knip": "^6.40.0",
     "madge": "^8.0.0",
     "mini-css-extract-plugin": "^2.5.3",
     "pino-pretty": "^13.0.0",
