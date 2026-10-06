@@ -12,59 +12,6 @@
     "outDir": "./build",
     "rootDir": "./",
     "sourceMap": true,
-    "paths": {
-      "#controllers/*": [
-        "./app/Controllers/Http/*.js"
-      ],
-      "#exceptions/*": [
-        "./app/Exceptions/*.js"
-      ],
-      "#models/*": [
-        "./app/Models/*.js"
-      ],
-      "#types/*": [
-        "./app/types/*.js"
-      ],
-      "#services/*": [
-        "./app/services/*.js"
-      ],
-      "#listeners/*": [
-        "./app/listeners/*.js"
-      ],
-      "#events/*": [
-        "./app/events/*.js"
-      ],
-      "#middleware/*": [
-        "./app/Middleware/*.js"
-      ],
-      "#validators/*": [
-        "./app/validation/Validators/*.js"
-      ],
-      "#start/*": [
-        "./start/*.js"
-      ],
-      "#config/*": [
-        "./config/*.js"
-      ],
-      "#app/*": [
-        "./app/*.js"
-      ],
-      "#database/*": [
-        "./database/*.js"
-      ],
-      "#contracts/*": [
-        "./contracts/*.js"
-      ],
-      "#common/*": [
-        "./common/*.js"
-      ],
-      "#mails/*": [
-        "./app/mails/*.js"
-      ],
-      "#providers/*": [
-        "./providers/*.js"
-      ]
-    },
     "strictPropertyInitialization": false,
     "module": "NodeNext"
   }
