@@ -10,8 +10,8 @@ interface SortableTableHeaderProps {
   children?: ReactNode,
 }
 
-interface SortableColumnProps {
-  column: string,
+interface SortableColumnProps<T> {
+  column: keyof T,
   className?: string,
   style?: CSSProperties,
   children?: ReactNode,
@@ -28,24 +28,24 @@ interface SortableBodyProps<T> {
 }
 
 interface UseSortableTableType<T> {
-  setData: (data: (T & Record<string, unknown>)[]) => void,
+  setData: (data: T[]) => void,
   SortableTable: {
     (props: SortableTableProps): ReactElement,
     Header: (props: SortableTableHeaderProps) => ReactElement,
-    Column: (props: SortableColumnProps) => ReactElement,
+    Column: (props: SortableColumnProps<T>) => ReactElement,
     Body: (prosp: SortableBodyProps<T>) => ReactElement,
   }
 }
 
-export default function useSortableTable<T>(keyPrecedence?: string[] | undefined): UseSortableTableType<T> {
+export default function useSortableTable<T>(keyPrecedence?: (keyof T)[]): UseSortableTableType<T> {
   type Direction = 'ascending' | 'descending';
 
   interface SortConfig {
-    column: string,
+    column: keyof T,
     direction: Direction,
   }
 
-  const [data, setData] = useState<(T & Record<string, unknown>)[]>([]);
+  const [data, setData] = useState<T[]>([]);
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(() => {
     if (keyPrecedence !== undefined) {
       return { column: keyPrecedence[0], direction: 'ascending' };
@@ -58,9 +58,9 @@ export default function useSortableTable<T>(keyPrecedence?: string[] | undefined
     const sortedData = data.slice();
     if (sortConfig !== null && sortedData !== null) {
       const compare2 = (
-        a: T & Record<string, unknown>,
-        b: T & Record<string, unknown>,
-        key: string,
+        a: T,
+        b: T,
+        key: keyof T,
       ): number => {
         let value = 0;
         const x = a[key];
@@ -83,8 +83,8 @@ export default function useSortableTable<T>(keyPrecedence?: string[] | undefined
 
       sortedData.sort(
         (
-          a: T & Record<string, unknown>,
-          b: T & Record<string, unknown>,
+          a: T,
+          b: T,
         ): number => {
           let value = 0;
 
@@ -109,7 +109,7 @@ export default function useSortableTable<T>(keyPrecedence?: string[] | undefined
     return sortedData;
   }, [data, keyPrecedence, sortConfig]);
 
-  const processTitleClick = (column: string) => {
+  const processTitleClick = (column: keyof T) => {
     let direction: Direction = 'ascending';
     if (sortConfig !== null && sortConfig.column === column) {
       direction = sortConfig.direction === 'ascending' ? 'descending' : 'ascending';
@@ -158,7 +158,7 @@ export default function useSortableTable<T>(keyPrecedence?: string[] | undefined
     className,
     style,
     children,
-  }: SortableColumnProps): ReactElement => {
+  }: SortableColumnProps<T>): ReactElement => {
     const sortIcon = () => {
       if (sortConfig && sortConfig.column === column) {
         if (sortConfig.direction === 'ascending') {

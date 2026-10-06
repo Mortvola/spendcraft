@@ -38,7 +38,7 @@ const PlaidLinkDialog: React.FC<PropsType> = ({
     });
   }, [uiState]);
 
-  const onSuccess = React.useCallback(async (publicToken: string, metadata: PlaidLinkOnSuccessMetadata) => {
+  const onSuccess = React.useCallback(async (publicToken: string | null, metadata: PlaidLinkOnSuccessMetadata) => {
     if (uiState.plaid === null) {
       throw new Error('plaid is null');
     }

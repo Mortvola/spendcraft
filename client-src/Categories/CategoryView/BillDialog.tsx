@@ -57,6 +57,7 @@ const BillDialog: React.FC<PropsType & ModalProps> = ({
         group: selectedGroup,
         useGoal: true,
         fundingCategories: [],
+        hidden: false,
       });
     }
     else {
@@ -69,6 +70,7 @@ const BillDialog: React.FC<PropsType & ModalProps> = ({
         group: selectedGroup,
         useGoal: true,
         fundingCategories: [],
+        hidden: false,
       });
     }
 

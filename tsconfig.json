@@ -38,7 +38,7 @@
         "./app/Middleware/*.js"
       ],
       "#validators/*": [
-        "./validation/Validators/*.js"
+        "./app/validation/Validators/*.js"
       ],
       "#start/*": [
         "./start/*.js"
