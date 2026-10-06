@@ -76,7 +76,7 @@
     "regenerator-runtime": "^0.14.0",
     "safe-compare": "^1.1.4",
     "typescript-eslint": "^8.55.0",
-    "uuid": "^13.0.0",
+    "uuid": "^14.0.2",
     "web-push": "^3.6.6"
   },
   "devDependencies": {

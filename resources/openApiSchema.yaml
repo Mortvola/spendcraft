@@ -335,6 +335,7 @@ components:
             - REGULAR
             - SYSTEM
             - NO GROUP
+            - BILLS
         id:
           type: integer
         hidden:
