@@ -6,7 +6,8 @@
     // "incremental": true,                   /* Enable incremental compilation */
     "target": "ESNext",                          /* Specify ECMAScript target version: 'ES3' (default), 'ES5', 'ES2015', 'ES2016', 'ES2017', 'ES2018', 'ES2019', 'ES2020', or 'ESNEXT'. */
     "module": "ESNext",                     /* Specify module code generation: 'none', 'commonjs', 'amd', 'system', 'umd', 'es2015', 'es2020', or 'ESNext'. */
-    "lib": ["DOM"],                             /* Specify library files to be included in the compilation. */
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],  /* Specify library files to be included in the compilation. */
+    "moduleResolution": "bundler",            /* Specify module resolution strategy: 'node' (Node.js) or 'classic' (TypeScript pre-1.6). */
     "allowJs": true,                          /* Allow javascript files to be compiled. */
     // "checkJs": true,                       /* Report errors in .js files. */
     "jsx": "react-jsx",                           /* Specify JSX code generation: 'preserve', 'react-native', or 'react'. */
@@ -42,7 +43,6 @@
     // "noUncheckedIndexedAccess": true,      /* Include 'undefined' in index signature results */
 
     /* Module Resolution Options */
-    "moduleResolution": "node",            /* Specify module resolution strategy: 'node' (Node.js) or 'classic' (TypeScript pre-1.6). */
     // "baseUrl": ".",                       /* Base directory to resolve non-absolute module names. */
     // "paths": {
     //   "@/*": ["./js/*"]
