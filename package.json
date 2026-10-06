@@ -52,7 +52,7 @@
     "fast-xml-parser": "^5.2.5",
     "fetch-h2": "^3.0.2",
     "formik": "^2.2.9",
-    "hot-hook": "^0.4.0",
+    "hot-hook": "^1.0.0",
     "jose": "^6.0.11",
     "js-sha256": "^1.0.0",
     "jsonwebtoken": "^9.0.0",
