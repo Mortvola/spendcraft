@@ -119,7 +119,7 @@ class ReportController {
       date2 = 'cast(date_trunc(\'week\', end_date) as date)';
     }
 
-    const query = `
+    const query =  `
       select
         ${date2} AS date,
         accounts.id || '_' || accounts.name AS name,
