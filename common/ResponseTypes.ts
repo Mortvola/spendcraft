@@ -94,12 +94,6 @@ export interface UpdateCategoryResponse {
   hidden: boolean,
 }
 
-export const isUpdateCategoryResponse = (
-  r: UpdateCategoryResponse | unknown,
-): r is UpdateCategoryResponse => (
-  (r as UpdateCategoryResponse).name !== undefined
-);
-
 interface UpdateFundingCategoryResponse {
   id: number;
   fundingAmount: number;
@@ -208,16 +202,6 @@ export interface AddInstitutionResponse {
 
   categories: CategoryBalanceProps[];
 }
-
-export const isAddInstitutionResponse = (r: unknown): r is AddInstitutionResponse => (
-  (r as AddInstitutionResponse).id !== undefined
-  && (r as AddInstitutionResponse).name !== undefined
-  // && (r as AddInstitutionResponse).offline !== undefined
-  && (r as AddInstitutionResponse).accounts !== undefined
-  && Array.isArray((r as AddInstitutionResponse).accounts)
-  // && (r as AddInstitutionResponse).categories !== undefined
-  // && Array.isArray((r as AddInstitutionResponse).categories)
-);
 
 export interface StatementProps {
   id: number,
@@ -419,16 +403,6 @@ export const isErrorResponse = (r:  | unknown): r is ErrorResponse => (
   (r as ErrorResponse).errors !== undefined
 );
 
-interface CategoryUpdateResponse {
-  name: string;
-}
-
-export const isCategoryUpdateResponse = (
-  r: CategoryUpdateResponse | unknown,
-): r is CategoryUpdateResponse => (
-  (r as CategoryUpdateResponse).name !== undefined
-);
-
 export interface UpdateTransactionResponse {
   transaction: TransactionProps,
 
@@ -481,11 +455,6 @@ export const isInsertCategoryTransferResponse = (r: unknown): r is InsertCategor
   && Array.isArray((r as InsertCategoryTransferResponse).balances)
   && ((r as InsertCategoryTransferResponse).balances.length === 0
   || isCategoryBalance((r as InsertCategoryTransferResponse).balances[0]))
-);
-
-export const isAccountsResponse = (r: unknown): r is AccountProps[] => (
-  Array.isArray(r)
-  && ((r as AccountProps[]).length === 0 || isAccountProps((r as AccountProps[])[0]))
 );
 
 export interface AddOnlineAccountsResponse {
@@ -585,11 +554,6 @@ export interface FundingInfoProps {
   previousCatTransfers: number,
 }
 
-export const isCategoryFundingProps = (r: unknown): r is CategoryFundingProps => (
-  (r as CategoryFundingProps).amount !== undefined
-  && (r as CategoryFundingProps).categoryId !== undefined
-)
-
 interface AccountSyncProps {
   balance: number;
 
@@ -634,20 +598,11 @@ export interface AddBalanceResponse {
   accountBalance: number,
 }
 
-export const isAddBalanceResponse = (r: unknown): r is AddBalanceResponse => (
-  (r as AddBalanceResponse).balance !== undefined
-)
-
 export interface UpdateBalanceResponse {
   balance: number,
   date: string,
   accountBalance: number,
 }
-
-export const isUpdateBalanceResponse = (r: unknown): r is UpdateBalanceResponse => (
-  (r as UpdateBalanceResponse).balance !== undefined
-  && (r as UpdateBalanceResponse).date !== undefined
-)
 
 export interface UserProps {
   username: string;
