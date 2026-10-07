@@ -15,12 +15,6 @@ export interface GroupProps {
   parentGroupId: number | null,
 }
 
-export const isGroupProps = (r: unknown): r is GroupProps => (
-  (r as GroupProps)?.id !== undefined
-  && (r as GroupProps)?.name !== undefined
-  // && (r as GroupProps).type !== undefined
-);
-
 export enum CategoryType {
   Regular = 'REGULAR',
   Unassigned = 'UNASSIGNED',
@@ -345,10 +339,6 @@ export interface TransactionProps {
   },
 }
 
-export const isTransactionProps = (r: unknown): r is TransactionProps => (
-  r !== undefined
-);
-
 export interface LoanTransactionProps {
   id: number;
 
@@ -423,11 +413,6 @@ export interface TransactionsResponse {
 
   balance: number;
 }
-
-export const isPendingTransactionsResponse = (r: unknown): r is TransactionProps[] => (
-  r !== undefined && r !== null
-  && Array.isArray(r) && (r.length === 0 || isTransactionProps((r as TransactionProps[])[0]))
-)
 
 export interface ErrorProps {
   field: string;
@@ -538,11 +523,6 @@ export const isInsertCategoryTransferResponse = (r: unknown): r is InsertCategor
   && Array.isArray((r as InsertCategoryTransferResponse).balances)
   && ((r as InsertCategoryTransferResponse).balances.length === 0
   || isCategoryBalance((r as InsertCategoryTransferResponse).balances[0]))
-);
-
-export const isGroupsResponse = (r: unknown): r is GroupProps[] => (
-  Array.isArray(r)
-  && ((r as GroupProps[]).length === 0 || isGroupProps((r as GroupProps[])[0]))
 );
 
 export const isAccountsResponse = (r: unknown): r is AccountProps[] => (
