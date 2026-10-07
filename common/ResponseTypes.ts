@@ -349,27 +349,6 @@ export const isTransactionProps = (r: unknown): r is TransactionProps => (
   r !== undefined
 );
 
-export interface PendingTransactionProps {
-  id: number | null;
-  date: string;
-
-  accountTransaction: {
-    name: string;
-
-    amount: number;
-
-    accountOwner: string | null;
-
-    account: {
-      name: string,
-
-      institution: {
-        name: string;
-      }
-    }
-  }
-}
-
 export interface LoanTransactionProps {
   id: number;
 
@@ -620,14 +599,6 @@ export const isFundingPlanResponse = (r: unknown): r is FundingPlan => (
   && ((r as FundingPlan).categories.length === 0 || isFundingPlanCategoryProps((r as FundingPlan).categories[0]))
 )
 
-export interface HistoryMonthProps {
-  year: number;
-
-  month: number;
-
-  amount: number;
-}
-
 export interface HistoryCategoryProps {
   id: number;
 
@@ -644,10 +615,6 @@ export interface HistoryCategoryProps {
 
 //   categories: HistoryCategoryProps[];
 // }
-
-export interface UpdateCategoryProps {
-  amount: number;
-}
 
 export interface FundingPlanDetailsProps {
   id: number;

@@ -15,11 +15,6 @@ export interface FundingInfoType {
   previousCatTransfers: number,
 }
 
-export interface FundingPlanType {
-  planId: number;
-  categories: FundingType[]
-}
-
 export type CategoriesValueType = Record<
   string,
   {
