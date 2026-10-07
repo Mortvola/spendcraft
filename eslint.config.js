@@ -4,6 +4,9 @@ import eslint from '@eslint/js'
 export default tseslint.config(
   {
     ignores: [
+      ".adonisjs/**",
+      "database/schema.ts",
+      "test.js",
       "./database/old-migrations/",
       "./build",
       "public/assets",

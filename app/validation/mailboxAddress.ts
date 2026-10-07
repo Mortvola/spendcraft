@@ -1,7 +1,7 @@
 import vine from '@vinejs/vine'
 
 const invalidMailbox = 'A valid single mailbox address is required'
-const controls = /[\u0000-\u001f\u007f-\u009f]/
+const controls = /\p{Cc}/u
 const parserSyntax = /["()<>,;:\\]/
 
 /** Validate recipients without changing case, provider aliases, or Unicode. */

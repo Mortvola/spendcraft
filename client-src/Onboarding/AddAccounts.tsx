@@ -18,9 +18,11 @@ const AddAccounts: React.FC = observer(() => {
   }
 
   const handleAccountSelected = () => {
+    // Onboarding does not track the selected account.
   }
 
   const handleAccountStateChange = () => {
+    // Onboarding always shows open accounts; no view state needs updating.
   }
 
   return (

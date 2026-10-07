@@ -944,3 +944,12 @@ export interface TaxCategoryProps {
 export interface TaxCategoriesProps {
   taxCategories: TaxCategoryProps[]
 }
+
+/** Validate the row-based net worth report returned by the API. */
+export const isNetworthReport = (value: unknown): value is (string | number)[][] => (
+  Array.isArray(value)
+  && value.every((row: unknown) => (
+    Array.isArray(row)
+    && row.every((cell: unknown) => typeof cell === 'string' || typeof cell === 'number')
+  ))
+)

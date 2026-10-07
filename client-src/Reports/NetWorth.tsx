@@ -2,9 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Chart from 'react-google-charts';
 import Http from '@mortvola/http';
 
-export const isNetworthReport = (r: unknown): r is (number | string)[][] => (
-  true
-)
+import { isNetworthReport } from '../../common/ResponseTypes';
 
 const Networth: React.FC = () => {
   const [data, setData] = useState<(number | string)[][] | null>(null);

@@ -1,9 +1,7 @@
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 
-export const isNetworthReport = (r: unknown): r is number[][] => (
-  true
-)
+import { isNetworthReport } from '../../common/ResponseTypes';
 
 type PayeeReport = {
   name: string,
@@ -21,7 +19,7 @@ class Reports {
   accessor reportType: string | null = null;
 
   @observable
-  accessor data: number[][] | Record<string, string>[] | null = null;
+  accessor data: (string | number)[][] | Record<string, string>[] | null = null;
 
   store: unknown;
 
