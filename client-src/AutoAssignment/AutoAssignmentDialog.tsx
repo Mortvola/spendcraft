@@ -169,5 +169,3 @@ const AutoAssignmentDialog: React.FC<PropsType & ModalProps> = observer(({
 })
 
 export const useAutoAssignmentDialog = makeUseModal<PropsType>(AutoAssignmentDialog, { size: 'md' });
-
-export default AutoAssignmentDialog;

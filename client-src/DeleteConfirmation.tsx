@@ -79,5 +79,4 @@ function useDeleteConfirmation<T>(
   ];
 }
 
-export default Confirmation;
 export { useDeleteConfirmation };

@@ -102,5 +102,3 @@ const DuplicateDialog: React.FC<PropsType & ModalProps> = ({
 };
 
 export const useDuplicateDialog = makeUseModal<PropsType>(DuplicateDialog, { size: 'lg' });
-
-export default DuplicateDialog;

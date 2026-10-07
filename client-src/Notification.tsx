@@ -76,5 +76,4 @@ function useNotification<T>(
   ];
 }
 
-export default Notification;
 export { useNotification };

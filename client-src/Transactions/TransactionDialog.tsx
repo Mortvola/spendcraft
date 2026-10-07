@@ -406,5 +406,3 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
 };
 
 export const useTransactionDialog = makeUseModal<PropsType>(TransactionDialog, { size: 'lg' });
-
-export default TransactionDialog;
