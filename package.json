@@ -12,7 +12,8 @@
     "madge": "clear && madge -c ./client-src/App.tsx",
     "knip": "knip --config ./knip.config.json",
     "check:circular": "dpdm --transform --no-tree --no-progress --exit-code circular:1 --ignore-skip-warning '^node_modules/' -- client-src/App.tsx 'bin/*.ts' adonisrc.ts 'config/**/*.ts' 'start/**/*.ts' 'commands/**/*.ts' 'tests/**/*.spec.{js,ts}' tests/bootstrap.ts",
-    "test": "node --import @poppinss/ts-exec --enable-source-maps bin/test.ts"
+    "test": "node --import @poppinss/ts-exec --enable-source-maps bin/test.ts",
+    "check:circular:regression": "node scripts/checkCircular.mjs"
   },
   "madge": {
     "detectiveOptions": {
