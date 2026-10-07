@@ -59,7 +59,7 @@ export interface CategoryProps {
   hidden: boolean;
 }
 
-export const isCategoryBalance = (r: unknown): r is CategoryBalanceProps => (
+const isCategoryBalance = (r: unknown): r is CategoryBalanceProps => (
   (r as CategoryBalanceProps).id !== undefined
   && (r as CategoryBalanceProps).balance !== undefined
 );
@@ -172,7 +172,7 @@ export interface AccountProps {
   rate: number | null,
 }
 
-export const isAccountProps = (r: unknown): r is AccountProps => (
+const isAccountProps = (r: unknown): r is AccountProps => (
   (r as AccountProps).id !== undefined
   && (r as AccountProps).name !== undefined
   && (r as AccountProps).tracking !== undefined
@@ -203,7 +203,7 @@ export interface InstitutionProps {
   accounts: AccountProps[];
 }
 
-export const isInstitutionProps = (r: unknown): r is InstitutionProps => (
+const isInstitutionProps = (r: unknown): r is InstitutionProps => (
   (r as InstitutionProps).id !== undefined
   && (r as InstitutionProps).name !== undefined
   && (r as InstitutionProps).accounts !== undefined
@@ -721,7 +721,7 @@ export interface BalanceProps {
   date: string;
 }
 
-export const isBalanceProps = (r: unknown): r is BalanceProps => (
+const isBalanceProps = (r: unknown): r is BalanceProps => (
   (r as BalanceProps).balance !== undefined
 );
 
@@ -825,7 +825,7 @@ interface CategoryTreeBalanceProps {
   balance: number,
 }
 
-export const isCategoryTreeBalanceProps = (r: unknown): r is CategoryTreeBalanceProps => (
+const isCategoryTreeBalanceProps = (r: unknown): r is CategoryTreeBalanceProps => (
   (r as CategoryTreeBalanceProps).id !== undefined
   && (r as CategoryTreeBalanceProps).balance !== undefined
 )
