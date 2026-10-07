@@ -11,7 +11,7 @@ import redis from '@adonisjs/redis/services/main';
  * The bridge between the User provider and the
  * Guard
  */
-export interface JwtGuardUser<RealUser> {
+interface JwtGuardUser<RealUser> {
   /**
    * Returns the unique ID of the user
    */
@@ -48,7 +48,7 @@ export interface JwtUserProviderContract<RealUser> {
   findById(identifier: string | number | BigInt): Promise<JwtGuardUser<RealUser> | null>
 }
 
-export interface TokenDuration {
+interface TokenDuration {
   days?: number,
   hours?: number,
   minutes?: number,

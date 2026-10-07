@@ -220,4 +220,4 @@ export default class Category extends BaseModel {
   }
 }
 
-export type { GroupItem, CategoryItem };
+export type { GroupItem };

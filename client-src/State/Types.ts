@@ -26,7 +26,7 @@ export interface UserInterface {
   email: string | null;
 }
 
-export type TreeNodeInterface = (CategoryInterface | GroupInterface);
+type TreeNodeInterface = (CategoryInterface | GroupInterface);
 
 export interface GroupInterface {
   id: number;
@@ -298,7 +298,7 @@ export interface UIStateInterface {
   visible: boolean;
 }
 
-export interface BudgetInterface extends GroupInterface {
+interface BudgetInterface extends GroupInterface {
   fundingPoolCat: CategoryInterface | null;
 }
 

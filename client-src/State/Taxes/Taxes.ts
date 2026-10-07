@@ -7,7 +7,7 @@ import Worksheet2_1 from "./Worksheet2_1";
 import Worksheet2_9 from "./Worksheet2_9";
 import { getCurrentPeriod } from "./Estimated";
 
-export interface TaxBracketEntry { tax: number, amount: number }
+interface TaxBracketEntry { tax: number, amount: number }
 
 export interface TaxResults {
   brackets: [number, TaxBracketEntry][],

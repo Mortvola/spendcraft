@@ -726,7 +726,7 @@ export const isCategoryFundingProps = (r: unknown): r is CategoryFundingProps =>
   && (r as CategoryFundingProps).categoryId !== undefined
 )
 
-export interface AccountSyncProps {
+interface AccountSyncProps {
   balance: number;
 
   plaidBalance: number | null;
@@ -911,7 +911,7 @@ export interface TaxActualProps {
   },
 }
 
-export interface Worksheet2_1_Props {
+interface Worksheet2_1_Props {
   expectedAgi: number,
   priorYearAgi: number,
   priorYearTotalTax: number,
@@ -936,7 +936,7 @@ export interface TaxProps {
   actuals?: TaxActualProps[],
 }
 
-export interface TaxCategoryProps {
+interface TaxCategoryProps {
   type: string,
   description: string,
 }
