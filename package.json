@@ -98,7 +98,6 @@
     "@types/proxy-addr": "^2.0.3",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
-    "@types/react-router-dom": "^5.3.3",
     "@types/regenerator-runtime": "^0.13.1",
     "@types/safe-compare": "^1.1.2",
     "@types/web-push": "^3.6.2",
