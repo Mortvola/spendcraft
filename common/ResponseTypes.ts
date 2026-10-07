@@ -517,26 +517,6 @@ export interface FundingPlanCategoryProps {
   recurrence: number;
 }
 
-export const isFundingPlanCategoryProps = (r: unknown): r is FundingPlanCategoryProps => (
-  (r as FundingPlanCategoryProps).id !== undefined
-  && (r as FundingPlanCategoryProps).categoryId !== undefined
-  && (r as FundingPlanCategoryProps).amount !== undefined
-  && (r as FundingPlanCategoryProps).useGoal !== undefined
-  && (r as FundingPlanCategoryProps).goalDate !== undefined
-  && (r as FundingPlanCategoryProps).recurrence !== undefined
-);
-
-export interface FundingPlan {
-  id: number,
-  categories: FundingPlanCategoryProps[],
-}
-
-export const isFundingPlanResponse = (r: unknown): r is FundingPlan => (
-  (r as FundingPlan).id !== undefined
-  && (Array.isArray((r as FundingPlan).categories))
-  && ((r as FundingPlan).categories.length === 0 || isFundingPlanCategoryProps((r as FundingPlan).categories[0]))
-)
-
 export interface HistoryCategoryProps {
   id: number;
 
@@ -562,14 +542,6 @@ export interface FundingPlanDetailsProps {
   categories: FundingPlanCategoryProps[];
 }
 
-export const isFundingPlanDetailsProps = (
-  r: FundingPlanDetailsProps| unknown,
-): r is FundingPlanDetailsProps => (
-  (r as FundingPlanDetailsProps).id !== undefined
-  && (r as FundingPlanDetailsProps).history !== undefined
-  && (r as FundingPlanDetailsProps).categories !== undefined
-);
-
 export interface FundingPlanProps {
   id: number;
   name: string;
@@ -587,19 +559,6 @@ export interface ProposedFundingCategoryProps {
   }[],
   includeFundingTransfers: boolean,
 }
-
-export const isFundingPlanProps = (r: unknown): r is FundingPlanProps => (
-  (r as FundingPlanProps).id !== undefined
-  && (r as FundingPlanProps).name !== undefined
-);
-
-export const isFundingPlansResponse = (
-  r: unknown,
-): r is FundingPlanProps[] => (
-  Array.isArray(r)
-  && ((r as FundingPlanProps[]).length === 0
-  || isFundingPlanProps((r as FundingPlanProps[])[0]))
-);
 
 export interface CategoryTransferProps {
   id?: number,
