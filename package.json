@@ -89,7 +89,7 @@
     "@japa/api-client": "^3.1.0",
     "@japa/assert": "^4.0.1",
     "@japa/openapi-assertions": "^0.1.1",
-    "@japa/runner": "^4.4.0",
+    "@japa/runner": "^5.3.0",
     "@poppinss/ts-exec": "^1.4.4",
     "@rolldown/plugin-babel": "^0.2.4",
     "@stylistic/eslint-plugin": "^5.1.0",
