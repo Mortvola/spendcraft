@@ -70,8 +70,6 @@ class AccountTransaction extends BaseModel {
     prepare: (value: Location) => JSON.stringify(value),
   })
   public location: Location | null;
-
-  public static readonly Serializer = 'App/Serializer';
 }
 
 export default AccountTransaction;

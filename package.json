@@ -47,7 +47,6 @@
     "argon2": "^0.44.0",
     "bcrypt": "^6.0.0",
     "bullmq": "^6.3.11",
-    "camelcase-keys": "^10.0.0",
     "edge.js": "^6.5.0",
     "fast-xml-parser": "^5.2.5",
     "fetch-h2": "^3.0.2",
