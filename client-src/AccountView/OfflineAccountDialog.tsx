@@ -182,5 +182,3 @@ const OfflineAccountDialog: React.FC<PropsType & ModalProps> = ({
 }
 
 export const useOfflineAccountDialog = makeUseModal<PropsType>(OfflineAccountDialog);
-
-export default OfflineAccountDialog;

@@ -70,5 +70,3 @@ const OfflineInstitutionDialog: React.FC<PropsType & ModalProps> = ({
 }
 
 export const useOfflineInstitutionDialog = makeUseModal<PropsType>(OfflineInstitutionDialog);
-
-export default OfflineInstitutionDialog;

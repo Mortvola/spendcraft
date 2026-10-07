@@ -41,4 +41,3 @@ const RelinkDialog: React.FC<PropsType & ModalProps> = ({
 };
 
 export const useRelinkDialog = makeUseModal<PropsType>(RelinkDialog);
-export default RelinkDialog;

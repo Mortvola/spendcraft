@@ -144,5 +144,3 @@ const StatementDialog: React.FC<PropsType & ModalProps> = ({
 };
 
 export const useStatementDialog = makeUseModal<PropsType>(StatementDialog);
-
-export default StatementDialog;

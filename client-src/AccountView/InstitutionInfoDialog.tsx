@@ -174,5 +174,3 @@ const InstitutionInfoDialog: React.FC<PropsType & ModalProps> = ({
 };
 
 export const useInstitutionInfoDialog = makeUseModal<PropsType>(InstitutionInfoDialog, { size: 'lg' });
-
-export default InstitutionInfoDialog;

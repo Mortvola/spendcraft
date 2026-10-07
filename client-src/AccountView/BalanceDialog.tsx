@@ -102,5 +102,3 @@ const BalanceDialog: React.FC<PropsType & ModalProps> = ({
 };
 
 export const useBalanceDialog = makeUseModal<PropsType>(BalanceDialog);
-
-export default BalanceDialog;

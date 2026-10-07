@@ -1,5 +1,4 @@
 import React from 'react';
-import { observer } from 'mobx-react-lite';
 import {
   Field, ErrorMessage, FormikErrors,
 } from 'formik';
@@ -123,8 +122,4 @@ const AccountsDialog: React.FC<PropsType & ModalProps> = ({
   );
 };
 
-const observedAccountsDialog = observer(AccountsDialog);
-
 export const useAccountsDialog = makeUseModal<PropsType>(AccountsDialog);
-
-export default observedAccountsDialog;
