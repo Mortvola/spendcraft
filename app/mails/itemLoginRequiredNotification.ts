@@ -1,3 +1,4 @@
+import { mailboxAddress } from '../validation/mailboxAddress.js'
 import Institution from '#models/Institution';
 import User from '#models/User';
 import { BaseMail } from '@adonisjs/mail'
@@ -18,7 +19,7 @@ export default class ItemLoginRequiredNotification extends BaseMail {
   prepare() {
     this.message
       .from(env.get('MAIL_FROM_ADDRESS') as string, env.get('MAIL_FROM_NAME') as string)
-      .to(this.user.email)
+      .to(mailboxAddress(this.user.email))
       .subject('Action Required')
       .htmlView('emails/item-login-required', { institution: this.institution.name });    
   }

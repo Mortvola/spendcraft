@@ -1,4 +1,5 @@
 import vine, { SimpleMessagesProvider } from '@vinejs/vine'
+import { mailboxRule } from '../mailboxAddress.js'
 
 const passwordMessageProvider = new SimpleMessagesProvider({
   'password.minLength': 'Passwords must be at least eight characters long',
@@ -20,7 +21,7 @@ const passwordValidation = vine
 export const register = vine.compile(
   vine.object({
     username: vine.string().trim().unique({ table: 'users', column: 'username' }),
-    email: vine.string().trim().normalizeEmail({ all_lowercase: true }).email().unique({ table: 'users', column: 'email' }),
+    email: vine.string().use(mailboxRule()).trim().normalizeEmail({ all_lowercase: true }).email().unique({ table: 'users', column: 'email' }),
     password: passwordValidation,
   })
 )

@@ -1,8 +1,9 @@
 import vine, { SimpleMessagesProvider } from '@vinejs/vine'
+import { mailboxRule } from '../mailboxAddress.js'
 
 export const update = vine.compile(
   vine.object({
-    email: vine.string().trim().normalizeEmail({ all_lowercase: true }).email().unique({ table: 'users', column: 'email' }),
+    email: vine.string().use(mailboxRule()).trim().normalizeEmail({ all_lowercase: true }).email().unique({ table: 'users', column: 'email' }),
   })
 )
 

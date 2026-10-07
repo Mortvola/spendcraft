@@ -1,3 +1,4 @@
+import { mailboxAddress } from '../validation/mailboxAddress.js'
 import { BaseMail } from '@adonisjs/mail'
 import env from '#start/env'
 
@@ -16,7 +17,7 @@ export default class TestNotification extends BaseMail {
   prepare() {
     this.message
       .from(env.get('MAIL_FROM_ADDRESS') as string, env.get('MAIL_FROM_NAME') as string)
-      .to(this.email)
+      .to(mailboxAddress(this.email))
       .subject('Test')
       .text('This is a test email')    
   }
