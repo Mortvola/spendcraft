@@ -41,5 +41,3 @@ const RootDialog: React.FC<ModalProps> = ({
 };
 
 export const useRootDialog = makeUseModal<object>(RootDialog);
-
-export default RootDialog;

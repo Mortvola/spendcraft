@@ -282,5 +282,3 @@ const CategoryTransferDialog: React.FC<PropsType & ModalProps> = ({
 };
 
 export const useCategoryTransferDialog = makeUseModal<PropsType>(CategoryTransferDialog);
-
-export default CategoryTransferDialog;

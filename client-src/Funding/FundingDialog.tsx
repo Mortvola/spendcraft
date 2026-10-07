@@ -515,5 +515,3 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
 };
 
 export const useFundingDialog = makeUseModal<PropsType>(FundingDialog);
-
-export default FundingDialog;

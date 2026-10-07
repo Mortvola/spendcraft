@@ -195,5 +195,3 @@ const GroupDialog: React.FC<PropsType & ModalProps> = ({
 };
 
 export const useGroupDialog = makeUseModal<PropsType>(GroupDialog);
-
-export default GroupDialog;

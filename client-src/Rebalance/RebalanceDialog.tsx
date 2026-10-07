@@ -201,5 +201,3 @@ const RebalanceDialog: React.FC<PropsType & ModalProps> = ({
 };
 
 export const useRebalanceDialog = makeUseModal<PropsType>(RebalanceDialog, { size: 'lg' });
-
-export default RebalanceDialog;

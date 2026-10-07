@@ -383,5 +383,3 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
 };
 
 export const useCategoryDialog = makeUseModal<Props>(CategoryDialog);
-
-export default CategoryDialog;
