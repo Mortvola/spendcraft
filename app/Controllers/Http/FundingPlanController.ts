@@ -2,7 +2,6 @@ import { HttpContext } from '@adonisjs/core/http';
 import Category from '#app/Models/Category';
 // import FundingPlan from 'App/Models/FundingPlan';
 // import FundingPlanCategory from 'App/Models/FundingPlanCategory';
-// import CategoryHistoryItem from 'App/Models/CategoryHistoryItem';
 import { ApiResponse, FundingPlanDetailsProps, ProposedFundingCategoryProps } from '#common/ResponseTypes';
 import { category } from '#validators/fundingPlan';
 
@@ -19,12 +18,6 @@ class FundingPlanController {
       .whereHas('group', (q) => {
         q.where('budgetId', budget.id)
       })
-
-    // let history: CategoryHistoryItem[] = [];
-
-    // if (h) {
-    //   history = await budget.history(parseInt(h, 10));
-    // }
 
     return {
       id: 0,
