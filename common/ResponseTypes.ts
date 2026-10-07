@@ -100,20 +100,6 @@ export const isUpdateCategoryResponse = (
   (r as UpdateCategoryResponse).name !== undefined
 );
 
-interface UpdateLoanResponse {
-  name: string;
-  balance: number;
-  rate: number;
-}
-
-export const isUpdateLoanResponse = (
-  r: unknown,
-): r is UpdateLoanResponse => (
-  (r as UpdateLoanResponse).name !== undefined
-  && (r as UpdateLoanResponse).balance !== undefined
-  && (r as UpdateLoanResponse).rate !== undefined
-);
-
 interface UpdateFundingCategoryResponse {
   id: number;
   fundingAmount: number;
@@ -368,43 +354,15 @@ export interface LoanTransactionsProps {
   transactions: LoanTransactionProps[],
 }
 
-interface CategoryLoanResponse {
-  balance: number;
-  transactions: LoanTransactionProps[];
-}
-
-export const isCategoryLoanResponse = (r: unknown): r is CategoryLoanResponse => (
-  r !== undefined && r !== null
-  && (r as CategoryLoanResponse).transactions !== undefined
-  && (r as CategoryLoanResponse).balance !== undefined
-);
-
 export interface LoanUpdateProps {
   name: string;
 
   loan: LoanTransactionsProps;
 }
 
-export const isLoanUpdateProps = (r: unknown): r is LoanUpdateProps => (
-  ((r as LoanUpdateProps).name !== undefined
-  && isCategoryLoanResponse((r as LoanUpdateProps).loan))
-);
-
 // export const isLoanTransactionProps = (r: unknown): r is LoanTransactionProps => (
 //   (r as LoanTransactionProps).transaction !== undefined
 // );
-
-type LoanTransactionsResponse = LoanTransactionProps[];
-
-export const isLoanTransactionsResponse = (r: unknown): r is LoanTransactionsResponse => (
-  r !== undefined && r !== null
-  && Array.isArray(r)
-  && ((r as LoanTransactionsResponse).length === 0 || (
-    (r as LoanTransactionsResponse)[0].id !== undefined
-    // && (r as LoanTransactionsResponse)[0].amount !== undefined
-    && (r as LoanTransactionsResponse)[0].principle !== undefined
-  ))
-);
 
 export interface TransactionsResponse {
   transactions: TransactionProps[];
