@@ -244,9 +244,4 @@ class Group implements GroupInterface {
   }
 }
 
-export const isCategoriesArray = (r: unknown): r is Category[] => (
-  (Array.isArray(r))
-  && (r.length === 0 || isCategory((r as Category[])[0]))
-);
-
 export default Group;

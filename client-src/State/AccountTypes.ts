@@ -109,16 +109,6 @@ export const getTypes = (): Type[] => (
   }))
 )
 
-export const getTypeName = (acctType: string): string => {
-  const at = getTypes().find((a) => a.key === acctType)
-
-  if (at) {
-    return at.name;
-  }
-
-  return 'Other';
-}
-
 export const getSubTypeName = (acctType: string, acctSubType: string): string => {
   const st = getSubtypes(acctType).find((s) => s.key === acctSubType);
 

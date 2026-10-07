@@ -7,7 +7,7 @@ type PayeeReport = {
   name: string,
 }[];
 
-export const isPayeeReport = (r: unknown): r is Record<string, string>[] => (
+const isPayeeReport = (r: unknown): r is Record<string, string>[] => (
   Array.isArray(r)
   && (r.length === 0 || (
     (r as PayeeReport)[0].name !== undefined

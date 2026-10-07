@@ -8,7 +8,7 @@ import CategorySelectorCategory from './CategorySelectorCategory';
 import { isCategory } from '../State/Category';
 import { CategoryType } from '../../common/ResponseTypes';
 
-export const categoryFiltered = (
+const categoryFiltered = (
   group: GroupInterface | null,
   category: GroupInterface | CategoryInterface,
   filterParts: string[],
