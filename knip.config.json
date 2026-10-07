@@ -1,4 +1,33 @@
 {
-  "entry": ["client-src/App.tsx"],
-  "project": ["!database/**/*.js", "client-src/**/*.ts", "./common/**/*.ts"]
+  "entry": [
+    "client-src/App.tsx",
+    "bin/*.ts",
+    "adonisrc.ts",
+    "config/**/*.ts",
+    "start/**/*.ts",
+    "commands/**/*.ts",
+    "tests/**/*.spec.{js,ts}",
+    "tests/bootstrap.ts",
+    "database/migrations/**/*.ts",
+    "database/seeders/**/*.ts"
+  ],
+  "project": [
+    "app/**/*.{ts,js}",
+    "client-src/**/*.{ts,tsx,scss,sass}",
+    "common/**/*.ts",
+    "bin/**/*.ts",
+    "config/**/*.ts",
+    "start/**/*.ts",
+    "providers/**/*.ts",
+    "commands/**/*.ts",
+    "contracts/**/*.ts",
+    "tests/**/*.{js,ts}",
+    "database/**/*.ts",
+    "*.{js,ts}",
+    "!database/old-migrations/**",
+    "!database/schema.ts",
+    "!test.js"
+  ],
+  "ignoreDependencies": ["hot-hook"],
+  "treatConfigHintsAsErrors": true
 }
