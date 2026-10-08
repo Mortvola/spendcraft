@@ -508,9 +508,10 @@ export default class Budget extends BaseModel {
           cross join lateral jsonb_to_recordset(t.categories) as transCats("categoryId" int, amount decimal)
           where t.date >= ?
           and t.deleted = false
+          and t.application_id = ?
           group by transCats."categoryId"
         ) AS T1 on T1."categoryId" = categories.id
-      `, [firstDayOfMonth.toISODate() ?? '']);
+      `, [firstDayOfMonth.toISODate() ?? '', this.id]);
 
     const fundingMonth = firstDayOfMonth.startOf('month');
 

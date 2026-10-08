@@ -91,17 +91,17 @@ export default class Category extends BaseModel {
       .from('transactions')
        
       .joinRaw('cross join lateral jsonb_to_recordset(transactions.categories) as "transCats"("categoryId" int, amount decimal)')
+      .where('transactions.application_id', budget.id)
       .where((query) => {
-        query
-          .where('date', '>', date)
-          .where('deleted', false)
+        query.where((datedTransactions) => {
+          datedTransactions.where('date', '>', date).where('deleted', false);
+        });
+        // Excluding a transaction must not bypass the transaction's budget.
+        if (transactionId !== undefined) {
+          query.orWhere('transactions.id', transactionId);
+        }
       })
       .groupBy('categoryId');
-
-    // Ignore the transaction identified by transactionId, if any
-    if (transactionId !== undefined) {
-      subQuery.orWhere('transactions.id', transactionId);
-    }
 
     const query = db.query()
       .select(
