@@ -102,15 +102,9 @@ class ReportController {
   }
 
   private static async networth(budget: Budget): Promise<NetworthReportType> {
-    const listCategories = (categories: { name: string }[]): string => {
-      let cats = '';
-
-      categories.forEach((c) => {
-        cats += `, "${c.name}" FLOAT`;
-      });
-
-      return cats;
-    }
+    const listCategories = (categories: { name: string }[]): string => (
+      categories.map((_, index) => `, account_${index} FLOAT`).join('')
+    );
 
     const { days } = await db.query()
       .select(db.raw('current_date - min(date) as days'))

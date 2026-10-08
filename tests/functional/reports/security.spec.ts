@@ -55,6 +55,18 @@ test.group('Report filter security', (group) => {
   let fixture: Awaited<ReturnType<typeof createFixture>>
   group.each.setup(async () => { fixture = await createFixture() })
 
+  let addedTablefunc = false
+  group.setup(async () => {
+    const existing = await db.from('pg_extension').where('extname', 'tablefunc').first()
+    if (!existing) {
+      await db.rawQuery('CREATE EXTENSION tablefunc')
+      addedTablefunc = true
+    }
+  })
+  group.teardown(async () => {
+    if (addedTablefunc) await db.rawQuery('DROP EXTENSION tablefunc')
+  })
+
   async function state() {
     const budgets = [fixture.own.budget.id, fixture.foreign.budget.id]
     const accounts = [fixture.own.account.id, fixture.second.account.id, fixture.foreign.account.id]
@@ -70,6 +82,33 @@ test.group('Report filter security', (group) => {
       db.from('transaction_logs').whereIn('application_id', budgets).orderBy('id'),
     ])
   }
+
+  test('net-worth treats stored account names as data').with([
+    'Everyday checking / savings (personal)',
+    'Account "quoted"',
+    'x" FLOAT, injected FLOAT) --',
+    'x" FLOAT); SELECT pg_sleep(0); --',
+    '銀行 Épargne 💰',
+    'Shared name',
+    'Long account name '.repeat(6),
+  ]).run(async ({ client, assert }, name) => {
+    await fixture.own.account.merge({ name }).save()
+    await fixture.second.account.merge({ name, balance: 200 }).save()
+    await fixture.foreign.account.merge({ name: 'FOREIGN PRIVATE ACCOUNT', balance: 987654 }).save()
+    const date = DateTime.now().minus({ days: 1 }).startOf('day')
+    for (const domain of [fixture.own, fixture.second, fixture.foreign]) {
+      await domain.transaction.merge({ date }).save()
+    }
+    const before = await state()
+    for (const user of [fixture.own.user, fixture.shared]) {
+      const response = await client.get('/api/v1/reports/networth').accept('json').loginAs(user)
+      assert.deepEqual(await state(), before)
+      response.assertStatus(200)
+      assert.deepEqual(response.body(), [['date', name, name], [date.toISODate(), 100, 200]])
+      assert.notInclude(response.text(), 'FOREIGN PRIVATE ACCOUNT')
+      assert.notInclude(response.text(), '987654')
+    }
+  })
 
   for (const report of ['payee', 'category'] as const) {
     const column = report === 'payee' ? 'accounts.id' : 'c.id'
