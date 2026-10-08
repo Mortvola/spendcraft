@@ -184,7 +184,7 @@ export default class AccountsController {
     try {
       const unassignedCat = await budget.getUnassignedCategory({ client: trx });
 
-      const account = await Account.findOrFail(acctId, { client: trx });
+      const account = await budgetAccounts(user.budgetId, { client: trx }).where('id', acctId).firstOrFail();
 
       const transaction = (new Transaction()).useTransaction(trx);
 
@@ -197,6 +197,13 @@ export default class AccountsController {
           amount: requestData.amount,
           comment: undefined,
         }]
+      }
+
+      for (const categoryId of new Set(categories.map((split) => split.categoryId))) {
+        await Category.query({ client: trx })
+          .where('id', categoryId)
+          .whereHas('group', (query) => query.where('budgetId', budget.id))
+          .firstOrFail();
       }
 
       transaction.fill({
@@ -231,7 +238,10 @@ export default class AccountsController {
       const categoryBalances: CategoryBalanceProps[] = [];
 
       for (const split of categories) {
-        const category = await Category.findOrFail(split.categoryId, { client: trx });
+        const category = await Category.query({ client: trx })
+          .where('id', split.categoryId)
+          .whereHas('group', (query) => query.where('budgetId', budget.id))
+          .firstOrFail();
 
         category.balance += split.amount;
 
