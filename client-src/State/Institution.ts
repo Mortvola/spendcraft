@@ -102,6 +102,7 @@ class Institution implements InstitutionInterface {
       this.refreshing = true;
     });
 
+    // TODO: Fix this. The id after accounts is incorrect and unneeded.
     const response = await Http.post<undefined, InstitutionSyncResponse>(`/api/v1/institution/${institutionId}/accounts/${this.id}/transactions/sync`);
 
     if (response.ok) {

@@ -1,6 +1,7 @@
  
 import { HttpContext } from '@adonisjs/core/http';
 import db from '@adonisjs/lucid/services/db';
+import type { ModelAdapterOptions } from '@adonisjs/lucid/types/model';
 import Institution from '#app/Models/Institution';
 import Account, { AccountSyncResult } from '#app/Models/Account';
 import Category from '#app/Models/Category';
@@ -19,6 +20,10 @@ import * as Plaid from 'plaid';
 import env from '#start/env'
 import app from '@adonisjs/core/services/app';
 import { addInstitution, addInstitutionCheck, addInstitutionOffline, addOfflineAccount, update } from '#validators/institution';
+
+function budgetInstitutions(budgetId: number, options?: ModelAdapterOptions) {
+  return Institution.query(options).where('budgetId', budgetId);
+}
 
 class InstitutionController {
    
@@ -241,7 +246,7 @@ class InstitutionController {
 
       const budget = await user.related('budget').query().forUpdate().firstOrFail();
 
-      const institution = await Institution.findOrFail(request.params().instId, { client: trx });
+      const institution = await budgetInstitutions(user.budgetId, { client: trx }).where('id', request.params().instId).firstOrFail();
 
       const accountsResponse = await InstitutionController.addOnlineAccounts(
         budget, institution,
@@ -280,7 +285,7 @@ class InstitutionController {
     const trx = await db.transaction();
 
     try {
-      const institution = await Institution.findOrFail(request.params().instId, { client: trx });
+      const institution = await budgetInstitutions(user.budgetId, { client: trx }).where('id', request.params().instId).firstOrFail();
 
       institution.merge({
         name: requestData.name,
@@ -349,7 +354,7 @@ class InstitutionController {
       throw new Error('user is not defined');
     }
 
-    const inst = await Institution.findOrFail(request.params().instId);
+    const inst = await budgetInstitutions(user.budgetId).where('id', request.params().instId).firstOrFail();
 
     const accounts: UnlinkedAccountProps[] = await InstitutionController
       .getUnconnectedAccounts(inst);
@@ -526,7 +531,7 @@ class InstitutionController {
     const trx = await db.transaction();
 
     try {
-      const institution = await Institution.findOrFail(request.params().instId, { client: trx });
+      const institution = await budgetInstitutions(user.budgetId, { client: trx }).where('id', request.params().instId).firstOrFail();
 
       const fundingPool = await budget.getFundingPoolCategory({ client: trx });
 
@@ -657,7 +662,7 @@ class InstitutionController {
     const trx = await db.transaction();
 
     try {
-      const institution = await Institution.findOrFail(request.params().instId, { client: trx });
+      const institution = await budgetInstitutions(user.budgetId, { client: trx }).where('id', request.params().instId).firstOrFail();
 
       await institution.syncUpdate();
 
@@ -688,7 +693,7 @@ class InstitutionController {
       throw new Error('user is not defined');
     }
 
-    const institution = await Institution.findOrFail(parseInt(request.params().instId, 10));
+    const institution = await budgetInstitutions(user.budgetId).where('id', parseInt(request.params().instId, 10)).firstOrFail();
 
     if (institution.accessToken === null || institution.accessToken === '') {
       throw new Exception(`access token not set for ${institution.plaidItemId}`);
@@ -728,7 +733,7 @@ class InstitutionController {
     const trx = await db.transaction();
 
     try {
-      const institution = await Institution.findOrFail(request.params().instId, { client: trx });
+      const institution = await budgetInstitutions(user.budgetId, { client: trx }).where('id', request.params().instId).firstOrFail();
 
       if (institution.accessToken) {
         const plaidClient = await app.container.make('plaid')
@@ -781,7 +786,7 @@ class InstitutionController {
       throw new Error('user is not defined');
     }
 
-    const institution = await Institution.findOrFail(request.params().instId);
+    const institution = await budgetInstitutions(user.budgetId).where('id', request.params().instId).firstOrFail();
 
     const plaidInstitution = institution.getPlaidInstition();
 
@@ -802,7 +807,10 @@ class InstitutionController {
     budget.useTransaction(trx)
 
     try {
-      const account = await Account.findOrFail(request.params().acctId, { client: trx });
+      const institution = await budgetInstitutions(user.budgetId, { client: trx })
+        .where('id', request.params().instId).firstOrFail();
+      const account = await institution.related('accounts').query()
+        .where('id', request.params().acctId).firstOrFail();
 
       const result = await InstitutionController.deleteAccounts([account], budget);
 
@@ -918,7 +926,7 @@ class InstitutionController {
     try {
       budget.useTransaction(trx)
   
-      const institution = await Institution.findOrFail(request.params().instId, { client: trx });
+      const institution = await budgetInstitutions(user.budgetId, { client: trx }).where('id', request.params().instId).firstOrFail();
 
       const accounts = await institution.related('accounts').query();
 
