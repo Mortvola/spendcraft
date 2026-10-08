@@ -20,12 +20,30 @@ import { addBalance, updateAccount, updateBalance } from '#app/validation/Valida
 import { DateTime } from 'luxon';
 import { addTransaction } from '#validators/transaction';
 import { addStatement, updateStatement } from '#validators/statement';
+import type { ModelAdapterOptions } from '@adonisjs/lucid/types/model';
 
 interface AddedTransaction {
   categories: CategoryBalanceProps[],
   transaction: Record<string, unknown>,
   acctBalances: AccountBalanceProps[],
 };
+
+function budgetAccounts(budgetId: number, options?: ModelAdapterOptions) {
+  return Account.query(options)
+    .whereHas('institution', (query) => query.where('budgetId', budgetId));
+}
+
+function budgetHistory(budgetId: number, options?: ModelAdapterOptions) {
+  return BalanceHistory.query(options)
+    .whereIn('accountId', budgetAccounts(budgetId, options).select('id'));
+}
+
+function budgetStatements(budgetId: number, options?: ModelAdapterOptions) {
+  return Statement.query(options)
+    .whereHas('account', (query) => {
+      query.whereHas('institution', (institution) => institution.where('budgetId', budgetId));
+    });
+}
 
 export default class AccountsController {
   public async transactions({
@@ -49,7 +67,7 @@ export default class AccountsController {
 
     // Determine if the account belongs to the authenticated user
     // and get the balance
-    const acct = await Account.findOrFail(accountId);
+    const acct = await budgetAccounts(user.budgetId).where('id', accountId).firstOrFail();
 
     result.balance = acct.balance;
 
@@ -80,10 +98,14 @@ export default class AccountsController {
     };
   }
 
-  public async balances({ request }: HttpContext): Promise<BalanceHistory[] | { date: string, balance: number}[]> {
+  public async balances({ request, auth: { user } }: HttpContext): Promise<BalanceHistory[] | { date: string, balance: number}[]> {
+    if (!user) {
+      throw new Error('user not defined');
+    }
+
     const accountId = parseInt(request.params().acctId, 10);
 
-    const account = await Account.findOrFail(accountId)
+    const account = await budgetAccounts(user.budgetId).where('id', accountId).firstOrFail()
 
     let balances: BalanceHistory[] | { date: string, balance : number}[] = [];
 
@@ -261,12 +283,11 @@ export default class AccountsController {
 
     const { acctId } = request.params();
 
-    const requestData = await request.validateUsing(addBalance)
-
     const trx = await db.transaction();
 
     try {
-      const account = await Account.findOrFail(acctId, { client: trx });
+      const account = await budgetAccounts(user.budgetId, { client: trx }).where('id', acctId).firstOrFail();
+      const requestData = await request.validateUsing(addBalance)
 
       const balance = (new BalanceHistory())
         .useTransaction(trx)
@@ -329,6 +350,8 @@ export default class AccountsController {
 
     const { acctId, id } = request.params();
 
+    await budgetHistory(user.budgetId).where('id', id).andWhere('accountId', acctId).firstOrFail();
+
     const requestData = await request.validateUsing(
       updateBalance,
       {
@@ -342,7 +365,8 @@ export default class AccountsController {
     const trx = await db.transaction();
 
     try {
-      const balance = await BalanceHistory.findOrFail(id, { client: trx });
+      const balance = await budgetHistory(user.budgetId, { client: trx })
+        .where('id', id).andWhere('accountId', acctId).firstOrFail();
 
       balance
         .merge({
@@ -360,7 +384,7 @@ export default class AccountsController {
       if (balance.id === latestBalance.id) {
         // We just updated the latest balance. Update the account
         // record with the new balance;
-        const account = await Account.findOrFail(balance.accountId, { client: trx });
+        const account = await budgetAccounts(user.budgetId, { client: trx }).where('id', balance.accountId).firstOrFail();
 
         account.balance = latestBalance.balance;
 
@@ -391,12 +415,16 @@ export default class AccountsController {
       throw new Error('user not defined');
     }
 
-    const { id } = request.params();
+    const { acctId, id } = request.params();
 
     const trx = await db.transaction();
 
     try {
-      const balance = await BalanceHistory.findOrFail(id);
+      const historyQuery = budgetHistory(user.budgetId).where('id', id);
+      if (acctId !== undefined) {
+        historyQuery.andWhere('accountId', acctId);
+      }
+      const balance = await historyQuery.firstOrFail();
 
       let latestBalance: BalanceHistory | null = await BalanceHistory.query({ client: trx })
         .where('accountId', balance.accountId)
@@ -409,7 +437,7 @@ export default class AccountsController {
         // We just deleted the latest balance record.
         // Find the next latest, if any, and use that to update
         // the account balance;
-        const account = await Account.findOrFail(balance.accountId, { client: trx });
+        const account = await budgetAccounts(user.budgetId, { client: trx }).where('id', balance.accountId).firstOrFail();
 
         latestBalance = await BalanceHistory.query({ client: trx })
           .where('accountId', balance.accountId)
@@ -448,12 +476,14 @@ export default class AccountsController {
 
     const budget = await user.related('budget').query().firstOrFail();
 
+    await budgetAccounts(user.budgetId).where('id', request.params().acctId).firstOrFail();
+
     const requestData = await request.validateUsing(updateAccount);
 
     const trx = await db.transaction();
 
     try {
-      const account = await Account.findOrFail(request.params().acctId, { client: trx });
+      const account = await budgetAccounts(user.budgetId, { client: trx }).where('id', request.params().acctId).firstOrFail();
 
       if (requestData.name !== undefined) {
         account.name = requestData.name;
@@ -513,6 +543,8 @@ export default class AccountsController {
 
     const { acctId } = request.params();
 
+    await budgetAccounts(user.budgetId).where('id', acctId).firstOrFail();
+
     const trx = await db.transaction();
 
     try {
@@ -522,7 +554,7 @@ export default class AccountsController {
         .forUpdate()
         .firstOrFail();
 
-      const account = await Account.findOrFail(acctId, { client: trx });
+      const account = await budgetAccounts(user.budgetId, { client: trx }).where('id', acctId).firstOrFail();
 
       const body = request.raw();
 
@@ -562,7 +594,7 @@ export default class AccountsController {
 
     const { acctId } = request.params();
 
-    const account = await Account.findOrFail(acctId)
+    const account = await budgetAccounts(user.budgetId).where('id', acctId).firstOrFail()
 
     const statements = await account.related('statements').query()
       .withAggregate('accountTransactions', (query) => {
@@ -606,7 +638,7 @@ export default class AccountsController {
         .forUpdate()
         .firstOrFail();
 
-      const account = await Account.findOrFail(acctId, { client: trx });
+      const account = await budgetAccounts(user.budgetId, { client: trx }).where('id', acctId).firstOrFail();
 
       const statement = await account.related('statements').create({
         startDate: requestData.startDate,
@@ -715,7 +747,7 @@ export default class AccountsController {
         .forUpdate()
         .firstOrFail();
 
-      const statement = await Statement.findOrFail(statementId, { client: trx })
+      const statement = await budgetStatements(user.budgetId, { client: trx }).where('id', statementId).firstOrFail()
 
       if (requestData.reconcile !== undefined) {
         if (requestData.reconcile === 'All') {
@@ -744,6 +776,7 @@ export default class AccountsController {
         else if (requestData.reconcile === 'None') {
           const transactions = await AccountTransaction.query({ client: trx })
             .where('statementId', statement.id)
+            .andWhere('accountId', statement.accountId)
 
           await Promise.all(transactions.map((transaction) => {
             transaction.statementId = null
@@ -771,7 +804,7 @@ export default class AccountsController {
       // If the statement that is being updated is the latest statement
       // then make sure the account balance is up to date if
       // the account only tracks balances.
-      const account = await Account.findOrFail(statement.accountId)
+      const account = await budgetAccounts(user.budgetId).where('id', statement.accountId).firstOrFail()
 
       if (account.tracking === TrackingType.Balances) {
         const latestStatement = await Statement.query()
@@ -789,6 +822,7 @@ export default class AccountsController {
       const credits = await AccountTransaction.query({ client: trx })
         .sum('amount')
         .where('statementId', statement.id)
+        .andWhere('accountId', statement.accountId)
         .where('amount', '>', 0)
         .whereHas('transaction', (query2) => {
           query2.where('deleted', false)
@@ -797,6 +831,7 @@ export default class AccountsController {
       const debits = await AccountTransaction.query({ client: trx })
         .sum('amount')
         .where('statementId', statement.id)
+        .andWhere('accountId', statement.accountId)
         .where('amount', '<', 0)
         .whereHas('transaction', (query2) => {
           query2.where('deleted', false)
@@ -841,10 +876,8 @@ export default class AccountsController {
 
     const { statementId } = request.params();
 
-    const statement = await Statement.find(statementId)
+    const statement = await budgetStatements(user.budgetId).where('id', statementId).firstOrFail()
 
-    if (statement) {
-      await statement.delete()
-    }
+    await statement.delete()
   }
 }
