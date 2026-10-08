@@ -1,6 +1,9 @@
 import { HttpContext } from '@adonisjs/core/http';
 import db from '@adonisjs/lucid/services/db';
 import Budget from '#app/Models/Budget';
+import Account from '#models/Account';
+import Category from '#models/Category';
+import { Exception } from '@adonisjs/core/exceptions';
 import { type BudgetProgressReportResponse, CategoryType, TrackingType, TransactionType } from '#common/ResponseTypes';
 import { DateTime } from 'luxon';
 
@@ -8,6 +11,26 @@ type NetworthReportType = (string | number)[][];
 type PayeeReportType = Record<string, unknown>[];
 type IncomeVsExpensesReportType = [string, number, number, number][];
 type FundingHistoryReportType = [string, number, number, number][];
+
+function parseReportIds(value: unknown): number[] | undefined {
+  if (value === undefined) return undefined;
+
+  const values = Array.isArray(value) ? value : [value];
+  const ids = values.map((item: unknown) => {
+    if (typeof item !== 'string' || !/^\d+$/.test(item.trim())) {
+      throw new Exception('Invalid report resource ID', { status: 422 });
+    }
+
+    const id = Number(item.trim());
+    // Resource IDs are PostgreSQL integer columns.
+    if (!Number.isSafeInteger(id) || id > 2147483647) {
+      throw new Exception('Invalid report resource ID', { status: 422 });
+    }
+    return id;
+  });
+
+  return [...new Set(ids)];
+}
 
 class ReportController {
    
@@ -32,7 +55,13 @@ class ReportController {
           pc,
           a,
         } = request.qs();
-        return ReportController.payee(budget, startDate, endDate, pc, a);
+        const accountIds = parseReportIds(a);
+        for (const id of accountIds ?? []) {
+          await Account.query().where('id', id)
+            .whereHas('institution', (institution) => institution.where('budgetId', budget.id))
+            .firstOrFail();
+        }
+        return ReportController.payee(budget, startDate, endDate, pc, accountIds);
       }
 
       case 'category': {
@@ -41,7 +70,13 @@ class ReportController {
           endDate,
           c,
         } = request.qs();
-        return ReportController.category(budget, startDate, endDate, c);
+        const categoryIds = parseReportIds(c);
+        for (const id of categoryIds ?? []) {
+          await Category.query().where('id', id)
+            .whereHas('group', (group) => group.where('budgetId', budget.id))
+            .firstOrFail();
+        }
+        return ReportController.category(budget, startDate, endDate, categoryIds);
       }
 
       case 'income-vs-expenses': {
@@ -195,9 +230,9 @@ class ReportController {
     startDate: string,
     endDate: string,
     pc?: string[] | string,
-    a?: string[] | string,
+    a?: number[],
   ): Promise<PayeeReportType> {
-    if (pc !== undefined && a !== undefined) {
+    if (pc !== undefined && a !== undefined && a.length > 0) {
       const paymentColumn = 'coalesce(payment_channel, \'unknown\')';
 
       const query = db.query()
@@ -242,12 +277,7 @@ class ReportController {
         query.andWhereRaw(`${paymentColumn} = ?`, [pc]);
       }
 
-      if (Array.isArray(a)) {
-        query.andWhereRaw(`accounts.id in (${a})`);
-      }
-      else {
-        query.andWhereRaw('accounts.id = ?', [a]);
-      }
+      query.whereIn('accounts.id', a);
 
       return query;
     }
@@ -259,9 +289,9 @@ class ReportController {
     budget: Budget,
     startDate: string,
     endDate: string,
-    c?: string[] | string,
+    c?: number[],
   ): Promise<PayeeReportType> {
-    if (c !== undefined) {
+    if (c !== undefined && c.length > 0) {
       const query = db.query()
         .select(
           db.raw('row_number() over (order by g.name, c.name) as "rowNumber"'),
@@ -288,12 +318,7 @@ class ReportController {
         query.andWhere('t.date', '<=', endDate);
       }
 
-      if (Array.isArray(c)) {
-        query.andWhereRaw(`c.id in (${c})`);
-      }
-      else {
-        query.andWhereRaw('c.id = ?', [c]);
-      }
+      query.whereIn('c.id', c);
 
       return query;
     }
