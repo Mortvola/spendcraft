@@ -61,9 +61,9 @@ test.group('Transaction budget isolation', (group) => {
   let fixture: Awaited<ReturnType<typeof createFixture>>
   group.each.setup(async () => { fixture = await createFixture() })
 
-  async function state() {
+  async function state(extraAccounts: number[] = []) {
     const budgets = [fixture.own.budget.id, fixture.foreign.budget.id]
-    const accounts = [fixture.own.account.id, fixture.foreign.account.id]
+    const accounts = [fixture.own.account.id, fixture.foreign.account.id, ...extraAccounts]
     return Promise.all([
       db.from('transactions').whereIn('application_id', budgets).orderBy('id'),
       db.from('accounts').whereIn('id', accounts).orderBy('id'),
@@ -135,14 +135,46 @@ test.group('Transaction budget isolation', (group) => {
     response.assertStatus(404)
   })
 
-  test('own statement can be assigned and cleared', async ({ client, assert }) => {
+  test('own statement can be assigned and cleared').with(['owner', 'shared']).run(async ({ client, assert }, actor) => {
+    const user = actor === 'owner' ? fixture.own.user : fixture.shared
     for (const statementId of [fixture.own.statement.id, null]) {
       const transaction = await Transaction.findOrFail(fixture.own.transaction.id)
       const response = await client.patch(`/api/v1/transaction/${transaction.id}`)
-        .json({ version: transaction.version, statementId }).accept('json').loginAs(fixture.shared)
+        .json({ version: transaction.version, statementId }).accept('json').loginAs(user)
       response.assertStatus(200)
       assert.equal((await AccountTransaction.findOrFail(fixture.own.accountTransaction.id)).statementId, statementId)
     }
+  })
+
+  test('different-account statement rejects the entire update').with(['owner', 'shared']).run(async ({ client, assert }, actor) => {
+    const user = actor === 'owner' ? fixture.own.user : fixture.shared
+    const otherAccount = await fixture.own.institution.related('accounts').create({
+      name: 'Other own account', balance: 200, type: AccountType.Depository,
+      subtype: 'checking', tracking: TrackingType.Transactions,
+      startDate: DateTime.fromISO('2025-01-01'), rate: 0, closed: false,
+    })
+    const otherStatement = await otherAccount.related('statements').create({
+      startDate: DateTime.fromISO('2025-02-01'), endDate: DateTime.fromISO('2025-02-28'),
+      startingBalance: 190, endingBalance: 200,
+    })
+    await fixture.own.accountTransaction.merge({ statementId: fixture.own.statement.id }).save()
+    const before = await state([otherAccount.id])
+    const response = await client.patch(`/api/v1/transaction/${fixture.own.transaction.id}`)
+      .json({ version: 0, statementId: otherStatement.id, amount: 999, name: 'Rejected update',
+        categories: [{ categoryId: fixture.own.category.id, amount: 999 }] })
+      .accept('json').loginAs(user)
+    assert.equal((await AccountTransaction.findOrFail(fixture.own.accountTransaction.id)).statementId,
+      fixture.own.statement.id)
+    assert.deepEqual(await state([otherAccount.id]), before)
+    response.assertStatus(422)
+  })
+
+  test('nonexistent statement retains not-found behavior without mutation', async ({ client, assert }) => {
+    const before = await state()
+    const response = await client.patch(`/api/v1/transaction/${fixture.own.transaction.id}`)
+      .json({ version: 0, statementId: 2147483647, amount: 999 }).accept('json').loginAs(fixture.own.user)
+    assert.deepEqual(await state(), before)
+    response.assertStatus(404)
   })
 
   test('owner and shared-budget user can delete a transaction').with(['owner', 'shared']).run(async ({ client, assert }, actor) => {

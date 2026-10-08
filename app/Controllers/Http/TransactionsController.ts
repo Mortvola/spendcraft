@@ -1,4 +1,5 @@
 import { HttpContext } from '@adonisjs/core/http';
+import { Exception } from '@adonisjs/core/exceptions';
 import db from '@adonisjs/lucid/services/db';
 import Category from '#app/Models/Category';
 import Transaction, { TransTaxCategory } from '#app/Models/Transaction';
@@ -157,12 +158,15 @@ export default class TransactionsController {
       }
 
       if (requestData.statementId !== undefined && requestData.statementId !== null) {
-        await Statement.query({ client: trx })
+        const statement = await Statement.query({ client: trx })
           .where('id', requestData.statementId)
           .whereHas('account', (query) => {
             query.whereHas('institution', (institution) => institution.where('budgetId', budget.id));
           })
           .firstOrFail();
+        if (statement.accountId !== account.id) {
+          throw new Exception('Statement must belong to the transaction account', { status: 422 });
+        }
       }
       // const account = await Account.findOrFail(acctTrans.accountId);
 
