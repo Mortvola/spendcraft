@@ -25,7 +25,7 @@ async function createDomain(label: string) {
     })
     const institution = await budget.related('institutions').create({ name: `${label} bank`, institutionId: `provider-${label}`, accessToken: `test-token-${label}`, plaidItemId: `item-${label}`, cursor: `cursor-${label}` })
     const account = await institution.related('accounts').create({
-      name: `${label} account`, plaidAccountId: `provider-account-${label}`, balance: 100, type: AccountType.Depository,
+      name: `${label} account`, plaidAccountId: `provider-account-${label}-${sequence}`, balance: 100, type: AccountType.Depository,
       subtype: 'checking', tracking: TrackingType.Transactions,
       startDate: DateTime.fromISO('2025-01-01'), rate: 0, closed: false,
     })
@@ -64,13 +64,19 @@ async function createFixture() {
 
 class PlaidFake extends PlaidWrapper {
   calls: { method: string, resource: string | number | null }[] = []
+  accounts: Plaid.AccountBase[] = []
 
   async getAccounts(institution: Institution): Promise<Plaid.AccountsGetResponse> {
     this.calls.push({ method: 'getAccounts', resource: institution.id })
-    return { accounts: [], request_id: 'test', item: {
+    return { accounts: this.accounts, request_id: 'test', item: {
       item_id: 'test-item', webhook: null, error: null, available_products: [], billed_products: [],
       consent_expiration_time: null, update_type: Plaid.ItemUpdateTypeEnum.Background,
     } }
+  }
+
+  async exchangePublicToken(token: string): Promise<Plaid.ItemPublicTokenExchangeResponse> {
+    this.calls.push({ method: 'exchangePublicToken', resource: token })
+    return { access_token: 'test-new-token', item_id: 'test-new-item', request_id: 'test' }
   }
 
   async getInstitutionById(id: string): Promise<Plaid.InstitutionsGetByIdResponse> {
@@ -120,6 +126,81 @@ test.group('Institution isolation', (group) => {
       db.from('plaid_logs').orderBy('id'),
     ])
   }
+
+
+  function providerAccount(id: string): Plaid.AccountBase {
+    return { account_id: id, name: 'Provider returned account', official_name: 'Provider official name',
+      mask: '1234', type: Plaid.AccountType.Depository, subtype: Plaid.AccountSubtype.Checking,
+      balances: { current: 75, available: 75, limit: null, iso_currency_code: 'USD', unofficial_currency_code: null } }
+  }
+
+  test('provider collisions reject another institution account and roll back the whole batch')
+    .with(['create', 'refresh'].flatMap((path) => ['foreign-budget', 'same-budget'].flatMap((scope) =>
+      ['single', 'mixed'].map((batch) => ({ path, scope, batch })))))
+    .run(async ({ client, assert }, scenario) => {
+      const collider = scenario.scope === 'foreign-budget' ? fixture.foreign : fixture.own
+      const target = scenario.scope === 'same-budget'
+        ? await fixture.own.budget.related('institutions').create({ name: 'Other own link', accessToken: 'other-token', plaidItemId: 'other-item' })
+        : fixture.own.institution
+      const providerId = collider.account.plaidAccountId
+      if (!providerId) throw new Error('Fixture must have a provider account ID')
+      fake.accounts = scenario.batch === 'mixed'
+        ? [providerAccount(`new-account-before-collision-${sequence}`), providerAccount(providerId)] : [providerAccount(providerId)]
+      const before = await state()
+      const request = client.post(scenario.path === 'create' ? '/api/v1/institution' : `/api/v1/institution/${target.id}`)
+        .accept('json').loginAs(fixture.shared)
+      if (scenario.path === 'create') request.json({ publicToken: 'test-public-token', institutionId: 'test-provider-bank' })
+      const response = await request
+      const returned = scenario.path === 'create' ? response.body().data?.accounts : response.body().accounts
+      if (Array.isArray(returned)) {
+        assert.isFalse(returned.some((account: { id: number }) => account.id === collider.account.id))
+      }
+      response.assertStatus(409)
+      assert.notInclude(response.text(), collider.account.name)
+      assert.notInclude(response.text(), collider.institution.name)
+      assert.notInclude(response.text(), providerId)
+      assert.notInclude(response.text(), collider.user.username)
+      assert.deepEqual(await state(), before)
+      assert.isFalse(fake.calls.some((call) => call.method === 'syncTransactions'))
+      assert.equal(fake.calls.filter((call) => call.method === 'removeItem').length, scenario.path === 'create' ? 1 : 0)
+    })
+
+  test('owner/shared provider creation and refresh create only institution-owned accounts')
+    .with(['create', 'refresh'].flatMap((path) => ['owner', 'shared'].map((actor) => ({ path, actor }))))
+    .run(async ({ client, assert }, scenario) => {
+      const foreignBefore = await Account.findOrFail(fixture.foreign.account.id)
+      const before = await state()
+      fake.accounts = [providerAccount(`new-distinct-provider-account-${sequence}`)]
+      const request = client.post(scenario.path === 'create' ? '/api/v1/institution' : `/api/v1/institution/${fixture.own.institution.id}`)
+        .accept('json').loginAs(scenario.actor === 'owner' ? fixture.own.user : fixture.shared)
+      if (scenario.path === 'create') request.json({ publicToken: 'test-public-token', institutionId: 'test-provider-bank' })
+      const response = await request
+      response.assertStatus(200)
+      const body = scenario.path === 'create' ? response.body().data : response.body()
+      assert.lengthOf(body.accounts, 1)
+      const account = await Account.findOrFail(body.accounts[0].id)
+      assert.equal(account.institutionId, body.id)
+      assert.equal((await Institution.findOrFail(account.institutionId)).budgetId, fixture.own.budget.id)
+      assert.equal(account.balance, 75)
+      assert.equal(account.name, 'Provider returned account')
+      assert.deepEqual((await Account.findOrFail(fixture.foreign.account.id)).$attributes, foreignBefore.$attributes)
+      const after = await state()
+      assert.deepEqual(after.slice(2), before.slice(2))
+      assert.equal(fake.calls.filter((call) => call.method === 'syncTransactions').length, scenario.path === 'create' ? 1 : 0)
+    })
+
+  test('refresh reuses only the same institution account for owner/shared users')
+    .with(['owner', 'shared']).run(async ({ client, assert }, actor) => {
+      const providerId = fixture.own.account.plaidAccountId
+      if (!providerId) throw new Error('Fixture must have a provider account ID')
+      fake.accounts = [providerAccount(providerId), providerAccount(providerId)]
+      const before = await state()
+      const response = await client.post(`/api/v1/institution/${fixture.own.institution.id}`)
+        .accept('json').loginAs(actor === 'owner' ? fixture.own.user : fixture.shared)
+      response.assertStatus(200)
+      assert.deepEqual(response.body().accounts.map((account: { id: number }) => account.id), [fixture.own.account.id, fixture.own.account.id])
+      assert.deepEqual(await state(), before)
+    })
 
   const accountBody = { name: 'New account', balance: 50, type: AccountType.Depository,
     subtype: 'checking', tracking: TrackingType.Balances, startDate: '2025-01-01', rate: 0 }

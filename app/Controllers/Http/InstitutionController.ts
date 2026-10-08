@@ -443,11 +443,22 @@ class InstitutionController {
 
     const newAccounts: Account[] = [];
 
-    const fundingPool = await budget.getFundingPoolCategory({ client: trx });
-
     const plaidClient = await app.container.make('plaid')
 
     const plaidAccountsResponse = await plaidClient.getAccounts(institution);
+
+    // A provider ID must not reuse an account from a different institution,
+    // even if both institutions belong to the same budget. Check the whole batch.
+    const collision = await Account.query({ client: trx })
+      .select('id')
+      .whereIn('plaidAccountId', plaidAccountsResponse.accounts.map((account) => account.account_id))
+      .whereNot('institutionId', institution.id)
+      .first();
+    if (collision) {
+      throw new Exception('Provider account identifier conflict', { status: 409 });
+    }
+
+    const fundingPool = await budget.getFundingPoolCategory({ client: trx });
   
     for (const plaidAccount of plaidAccountsResponse.accounts) {
       let balance = plaidAccount.balances.current ?? 0;
@@ -459,7 +470,7 @@ class InstitutionController {
         throw new Error('brokerage account type not supported')
       }
 
-      const acct = await Account.firstOrCreate(
+      const acct = await institution.related('accounts').firstOrCreate(
         { plaidAccountId: plaidAccount.account_id },
         {
           plaidAccountId: plaidAccount.account_id,
