@@ -1,10 +1,17 @@
 import { HttpContext } from '@adonisjs/core/http';
 import db from '@adonisjs/lucid/services/db';
+import type { ModelAdapterOptions } from '@adonisjs/lucid/types/model';
 import Category from '#app/Models/Category';
 import Group from '#app/Models/Group';
 import Loan from '#app/Models/Loan';
 import { CategoryType, type LoanTransactionsProps, type LoanUpdateProps } from '#common/ResponseTypes';
 import { addLoan, updateLoan } from '#validators/loan';
+
+function budgetLoans(budgetId: number, options?: ModelAdapterOptions) {
+  return Loan.query(options).whereHas('category', (category) => {
+    category.whereHas('group', (group) => group.where('budgetId', budgetId));
+  });
+}
 
 export default class LoansController {
    
@@ -16,7 +23,7 @@ export default class LoansController {
       throw new Error('user is not defined');
     }
 
-    const loan = await Loan.findByOrFail('categoryId', request.params().catId);
+    const loan = await budgetLoans(user.budgetId).where('categoryId', request.params().catId).firstOrFail();
 
     return loan;
   }
@@ -90,7 +97,7 @@ export default class LoansController {
     const trx = await db.transaction();
 
     try {
-      const loan = await Loan.findByOrFail('categoryId', request.params().catId, { client: trx });
+      const loan = await budgetLoans(user.budgetId, { client: trx }).where('categoryId', request.params().catId).firstOrFail();
 
       loan.merge({
         startDate: requestData.startDate,
@@ -131,7 +138,7 @@ export default class LoansController {
       throw new Error('user is not defined');
     }
 
-    const loan = await Loan.findByOrFail('categoryId', request.params().catId);
+    const loan = await budgetLoans(user.budgetId).where('categoryId', request.params().catId).firstOrFail();
 
     return await loan.getProps();
   }

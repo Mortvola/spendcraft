@@ -56,22 +56,27 @@ class FundingPlanController {
    
   public async updateOrCreateCategory({
     request,
+    auth: { user },
   }: HttpContext): Promise<Category> {
+    if (!user) {
+      throw new Error('user is undefined');
+    }
+
     const { catId } = request.params();
 
     const requestData = await request.validateUsing(category);
 
-    const item = await Category.updateOrCreate(
-      {
-        id: parseInt(catId, 10),
-      },
-      {
-        fundingAmount: requestData.amount,
-        useGoal: requestData.useGoal ?? false,
-        goalDate: requestData.goalDate ?? null,
-        recurrence: requestData.recurrence,
-      },
-    );
+    const item = await Category.query()
+      .where('id', parseInt(catId, 10))
+      .whereHas('group', (group) => group.where('budgetId', user.budgetId))
+      .firstOrFail();
+
+    await item.merge({
+      fundingAmount: requestData.amount,
+      useGoal: requestData.useGoal ?? false,
+      goalDate: requestData.goalDate ?? null,
+      recurrence: requestData.recurrence,
+    }).save();
 
     return item;
   }

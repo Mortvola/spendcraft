@@ -65,6 +65,7 @@ export default class TaxesController {
 
     // Retrieve any taxes associated with transactions
     const t = await Transaction.query()
+      .where('budgetId', budgetId)
       .select(
         db.raw("EXTRACT(MONTH from date)::integer as month"),
         db.raw("(transTaxes.type) as \"tax_type\""),
