@@ -120,6 +120,7 @@ export default class TransactionsController {
       const transaction = await Transaction.query({ client: trx })
         .where('id', trxId)
         .andWhere('budgetId', budget.id)
+        .andWhere('deleted', false)
         .firstOrFail();
 
       // Only perform the update if the versions maatch
@@ -503,6 +504,7 @@ export default class TransactionsController {
       const transaction = await Transaction.query({ client: trx })
         .where('id', trxId)
         .andWhere('budgetId', budget.id)
+        .andWhere('deleted', false)
         .firstOrFail();
 
       const acctTransaction = await AccountTransaction.findBy('transactionId', transaction.id, { client: trx });
@@ -567,7 +569,7 @@ export default class TransactionsController {
             // loan.updateBalance();
           }
 
-          category.save();
+          await category.save();
 
            
           // await trxCat.delete();
@@ -587,7 +589,7 @@ export default class TransactionsController {
             account.balance -= acctTransaction.amount;
           }
 
-          account.save();
+          await account.save();
 
           result.acctBalances.push({ id: account.id, balance: account.balance });
         }
