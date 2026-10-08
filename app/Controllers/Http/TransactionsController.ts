@@ -14,18 +14,29 @@ import Account from '#app/Models/Account';
 import TransactionLog from '#app/Models/TransactionLog';
 import Statement from '#app/Models/Statement';
 import transactionFields, { getChanges } from './transactionFields.js';
-import { ModelObject } from "@adonisjs/lucid/types/model";
+import { ModelObject, ModelAdapterOptions } from "@adonisjs/lucid/types/model";
 import { updateTransaction } from '#validators/transaction';
+
+function budgetCategories(budgetId: number, options?: ModelAdapterOptions) {
+  return Category.query(options)
+    .whereHas('group', (query) => query.where('budgetId', budgetId));
+}
 
 export default class TransactionsController {
    
   public async get({
     request,
+    auth: { user },
   }: HttpContext): Promise<Transaction> {
+    if (!user) {
+      throw new Error('user is not defined');
+    }
+
     const { trxId } = request.params();
 
     const transaction = await Transaction.query()
       .where('id', trxId)
+      .andWhere('budgetId', user.budgetId)
       .andWhere('deleted', false)
       .firstOrFail();
 
@@ -37,11 +48,25 @@ export default class TransactionsController {
    
   public async getMultiple({
     request,
+    auth: { user },
   }: HttpContext): Promise<ApiResponse<TransactionsResponse>> {
+    if (!user) {
+      throw new Error('user is not defined');
+    }
+
     let { t } = request.qs();
 
     if (!Array.isArray(t)) {
       t = [t];
+    }
+
+    const transactionIds: string[] = t.map(String);
+    for (const id of new Set(transactionIds)) {
+      await Transaction.query()
+        .where('id', id)
+        .andWhere('budgetId', user.budgetId)
+        .andWhere('deleted', false)
+        .firstOrFail();
     }
 
     const transactions = await Transaction.query()
@@ -50,7 +75,8 @@ export default class TransactionsController {
           account.preload('institution');
         });
       })
-      .whereIn('id', t)
+      .whereIn('id', transactionIds)
+      .andWhere('budgetId', user.budgetId)
       .andWhere('deleted', false);
 
     return {
@@ -90,7 +116,10 @@ export default class TransactionsController {
         .forUpdate()
         .firstOrFail();
 
-      const transaction = await Transaction.findOrFail(trxId, { client: trx });
+      const transaction = await Transaction.query({ client: trx })
+        .where('id', trxId)
+        .andWhere('budgetId', budget.id)
+        .firstOrFail();
 
       // Only perform the update if the versions maatch
       if (transaction.version !== requestData.version) {
@@ -115,7 +144,26 @@ export default class TransactionsController {
       const acctTrans = await transaction.related('accountTransaction').query().firstOrFail();
       // const acctTrans = await AccountTransaction.findByOrFail('transactionId', trxId, { client: trx });
 
-      const account = await acctTrans.related('account').query().firstOrFail();
+      const account = await acctTrans.related('account').query()
+        .whereHas('institution', (query) => query.where('budgetId', budget.id))
+        .firstOrFail();
+
+      const categoryIds = new Set([
+        ...transaction.categories.map((category) => category.categoryId),
+        ...(requestData.categories ?? []).map((category) => category.categoryId),
+      ]);
+      for (const categoryId of categoryIds) {
+        await budgetCategories(budget.id, { client: trx }).where('id', categoryId).firstOrFail();
+      }
+
+      if (requestData.statementId !== undefined && requestData.statementId !== null) {
+        await Statement.query({ client: trx })
+          .where('id', requestData.statementId)
+          .whereHas('account', (query) => {
+            query.whereHas('institution', (institution) => institution.where('budgetId', budget.id));
+          })
+          .firstOrFail();
+      }
       // const account = await Account.findOrFail(acctTrans.accountId);
 
       const unassignedCat = await budget.getUnassignedCategory({ client: trx });
@@ -137,7 +185,7 @@ export default class TransactionsController {
            
           for (const transCategory of categories) {
              
-            const category = await Category.findOrFail(transCategory.categoryId, { client: trx });
+            const category = await budgetCategories(budget.id, { client: trx }).where('id', transCategory.categoryId).firstOrFail();
 
             category.balance -= transCategory.amount;
 
@@ -182,7 +230,7 @@ export default class TransactionsController {
 
           for (const transCategory of requestData.categories) {
              
-            const category = await Category.findOrFail(transCategory.categoryId, { client: trx });
+            const category = await budgetCategories(budget.id, { client: trx }).where('id', transCategory.categoryId).firstOrFail();
 
             category.balance += transCategory.amount;
 
@@ -351,7 +399,7 @@ export default class TransactionsController {
        
       for (const cat of categoriesResult) {
          
-        const category = await Category.findOrFail(cat.id, { client: trx });
+        const category = await budgetCategories(budget.id, { client: trx }).where('id', cat.id).firstOrFail();
 
          
         cat.count = await category.transactionsCount(budget);
@@ -405,11 +453,17 @@ export default class TransactionsController {
    
   public async dedup({
     request,
+    auth: { user },
   }: HttpContext): Promise<void> {
+    if (!user) {
+      throw new Error('user is not defined');
+    }
+
     const { trxId } = request.params();
 
     const transaction = await Transaction.query()
       .where('id', trxId)
+      .andWhere('budgetId', user.budgetId)
       .andWhere('deleted', false)
       .firstOrFail();
 
@@ -442,17 +496,27 @@ export default class TransactionsController {
 
       const { trxId } = request.params();
 
-      const transaction = await Transaction.findOrFail(trxId, { client: trx });
+      const transaction = await Transaction.query({ client: trx })
+        .where('id', trxId)
+        .andWhere('budgetId', budget.id)
+        .firstOrFail();
 
       const acctTransaction = await AccountTransaction.findBy('transactionId', transaction.id, { client: trx });
 
       let account: Account | null = null;
 
       if (acctTransaction) {
-        account = await Account.findOrFail(acctTransaction.accountId, { client: trx });
+        account = await Account.query({ client: trx })
+          .where('id', acctTransaction.accountId)
+          .whereHas('institution', (query) => query.where('budgetId', budget.id))
+          .firstOrFail();
       }
 
       const trxCategories = transaction.categories;
+
+      for (const categoryId of new Set(trxCategories.map((category) => category.categoryId))) {
+        await budgetCategories(budget.id, { client: trx }).where('id', categoryId).firstOrFail();
+      }
 
       if (trxCategories.length === 0) {
         if (account && account.tracking === TrackingType.Transactions) {
@@ -473,7 +537,7 @@ export default class TransactionsController {
          
         for (const trxCat of trxCategories) {
            
-          const category = await Category.findOrFail(trxCat.categoryId, { client: trx });
+          const category = await budgetCategories(budget.id, { client: trx }).where('id', trxCat.categoryId).firstOrFail();
 
           category.balance -= trxCat.amount;
 
