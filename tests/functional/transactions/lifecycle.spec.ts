@@ -103,6 +103,59 @@ test.group('Ordinary transaction lifecycle', (group) => {
     assert.lengthOf(await db.from('transaction_logs').where('transaction_id', transaction.id), 1)
   })
 
+  test('create rejects inconsistent signed split totals without side effects').with(['single', 'multiple', 'negative', 'wrong-sign']).run(async ({ client, assert }, scenario) => {
+    const before = await snapshot()
+    const amount = scenario === 'negative' ? -20 : 20
+    const categories = scenario === 'multiple'
+      ? [{ categoryId: fixture.first.id, amount: 7 }, { categoryId: fixture.second.id, amount: 12 }]
+      : [{ categoryId: fixture.first.id, amount: scenario === 'negative' ? -19 : scenario === 'wrong-sign' ? -20 : 19 }]
+    const response = await client.post(`/api/v1/account/${fixture.account.id}/transactions`)
+      .json({ date: '2025-03-01', name: 'Inconsistent purchase', amount, categories }).accept('json').loginAs(fixture.user)
+    assert.deepEqual(await snapshot(), before)
+    response.assertStatus(422)
+  })
+
+  test('PATCH validates resulting amount and splits atomically').with(['amount-only', 'splits-only', 'both', 'negative']).run(async ({ client, assert }, scenario) => {
+    const before = await snapshot()
+    const payload = scenario === 'amount-only' ? { amount: 20 }
+      : scenario === 'splits-only' ? { categories: [{ categoryId: fixture.second.id, amount: 20 }] }
+        : scenario === 'negative' ? { amount: -20, categories: [{ categoryId: fixture.second.id, amount: -19 }] }
+          : { amount: 20, categories: [{ categoryId: fixture.second.id, amount: 19 }] }
+    const response = await client.patch(`/api/v1/transaction/${fixture.transaction.id}`)
+      .json({ version: 0, ...payload }).accept('json').loginAs(fixture.user)
+    assert.deepEqual(await snapshot(), before)
+    response.assertStatus(422)
+  })
+
+  test('conserving decimal and zero amounts remain valid').with(['decimal', 'negative-decimal', 'zero', 'empty']).run(async ({ client, assert }, scenario) => {
+    const sign = scenario === 'negative-decimal' ? -1 : 1
+    const amount = scenario === 'zero' || scenario === 'empty' ? 0 : sign * 0.3
+    const categories = scenario === 'empty' ? [] : scenario === 'zero'
+      ? [{ categoryId: fixture.first.id, amount: 0 }]
+      : [{ categoryId: fixture.first.id, amount: sign * 0.1 }, { categoryId: fixture.second.id, amount: sign * 0.2 }]
+    const response = await client.post(`/api/v1/account/${fixture.account.id}/transactions`)
+      .json({ date: '2025-03-01', name: 'Conserving purchase', amount, categories }).accept('json').loginAs(fixture.user)
+    response.assertStatus(200)
+    const transaction = await Transaction.findOrFail(response.body().transaction.id)
+    const accountTransaction = await AccountTransaction.findByOrFail('transactionId', transaction.id)
+    assert.equal(accountTransaction.amount, amount)
+    assert.equal((await Account.findOrFail(fixture.account.id)).balance, 110 + amount)
+    assert.equal(transaction.categories.reduce((sum, split) => sum + Math.round(split.amount * 100), 0), Math.round(amount * 100))
+  })
+
+  test('conserving partial PATCH does not require unchanged fields').with(['amount-only', 'splits-only', 'empty']).run(async ({ client, assert }, scenario) => {
+    const payload = scenario === 'amount-only' ? { amount: 10 }
+      : scenario === 'splits-only' ? { categories: [{ categoryId: fixture.second.id, amount: 10 }] }
+        : { amount: 15, categories: [] }
+    const response = await client.patch(`/api/v1/transaction/${fixture.transaction.id}`)
+      .json({ version: 0, ...payload }).accept('json').loginAs(fixture.user)
+    response.assertStatus(200)
+    const transaction = await Transaction.findOrFail(fixture.transaction.id)
+    const accountTransaction = await AccountTransaction.findOrFail(fixture.accountTransaction.id)
+    assert.equal(transaction.categories.reduce((sum, split) => sum + split.amount, 0), accountTransaction.amount)
+    assert.equal((await Account.findOrFail(fixture.account.id)).balance, 100 + accountTransaction.amount)
+  })
+
   test('deletion reverses ordinary financial effects without destroying linkage', async ({ client, assert }) => {
     const response = await client.delete(`/api/v1/transaction/${fixture.transaction.id}`).accept('json').loginAs(fixture.user)
     response.assertStatus(200)

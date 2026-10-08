@@ -17,6 +17,7 @@ import Statement from '#app/Models/Statement';
 import transactionFields, { getChanges } from './transactionFields.js';
 import { ModelObject, ModelAdapterOptions } from "@adonisjs/lucid/types/model";
 import { updateTransaction } from '#validators/transaction';
+import { validateTransactionSplits } from '#app/validation/transactionSplits';
 
 function budgetCategories(budgetId: number, options?: ModelAdapterOptions) {
   return Category.query(options)
@@ -172,6 +173,15 @@ export default class TransactionsController {
       // const account = await Account.findOrFail(acctTrans.accountId);
 
       const unassignedCat = await budget.getUnassignedCategory({ client: trx });
+
+      if (transaction.type === TransactionType.MANUAL_TRANSACTION
+        && account.tracking === TrackingType.Transactions && account.type !== AccountType.Loan) {
+        const amount = requestData.amount ?? acctTrans.amount;
+        const categories = requestData.categories?.length === 0
+          ? [{ amount }]
+          : requestData.categories ?? transaction.categories;
+        validateTransactionSplits(amount, categories);
+      }
 
       if (requestData.categories !== undefined) {
         if (requestData.categories.length === 0) {

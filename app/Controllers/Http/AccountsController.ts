@@ -19,6 +19,7 @@ import transactionFields from './transactionFields.js';
 import { addBalance, updateAccount, updateBalance } from '#app/validation/Validators/account';
 import { DateTime } from 'luxon';
 import { addTransaction } from '#validators/transaction';
+import { validateTransactionSplits } from '#app/validation/transactionSplits';
 import { addStatement, updateStatement } from '#validators/statement';
 import type { ModelAdapterOptions } from '@adonisjs/lucid/types/model';
 
@@ -204,6 +205,10 @@ export default class AccountsController {
           .where('id', categoryId)
           .whereHas('group', (query) => query.where('budgetId', budget.id))
           .firstOrFail();
+      }
+
+      if (account.tracking === TrackingType.Transactions && account.type !== AccountType.Loan) {
+        validateTransactionSplits(requestData.amount, categories);
       }
 
       transaction.fill({
