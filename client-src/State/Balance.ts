@@ -6,6 +6,7 @@ import {
   ApiResponse,
   BalanceProps, ErrorProps,
   UpdateBalanceResponse,
+  TrackingType,
 } from '../../common/ResponseTypes';
 import { BalanceInterface, BalancesInterface } from './Types';
 
@@ -38,6 +39,10 @@ class Balance implements BalanceInterface {
       runInAction(() => {
         this.balances.removeBalance(this);
       });
+
+      if (this.balances.account?.tracking === TrackingType.Balances) {
+        await this.balances.store.accounts.load();
+      }
 
       return null;
     }
@@ -76,6 +81,10 @@ class Balance implements BalanceInterface {
           }
         }
       });
+
+      if (this.balances.account?.tracking === TrackingType.Balances) {
+        await this.balances.store.accounts.load();
+      }
 
       return null;
     }
