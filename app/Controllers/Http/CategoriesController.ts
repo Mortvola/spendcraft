@@ -19,7 +19,22 @@ import Group from '#app/Models/Group';
 import { DateTime } from 'luxon';
 import transactionFields from './transactionFields.js';
 import { addCategory, addGroup, updateCategory, updateGroup } from '#app/validation/Validators/category';
-import { LucidRow, ModelAttributes } from '@adonisjs/lucid/types/model';
+import { LucidRow, ModelAdapterOptions, ModelAttributes } from '@adonisjs/lucid/types/model';
+
+function budgetGroups(budgetId: number, options?: ModelAdapterOptions) {
+  return Group.query(options).where('budgetId', budgetId);
+}
+
+function budgetCategories(budgetId: number, options?: ModelAdapterOptions) {
+  return Category.query(options)
+    .whereHas('group', (query) => query.where('budgetId', budgetId));
+}
+
+async function authorizeCategories(budgetId: number, ids: number[], options?: ModelAdapterOptions) {
+  for (const id of new Set(ids)) {
+    await budgetCategories(budgetId, options).where('id', id).firstOrFail();
+  }
+}
 
 function removeUndefined<M extends LucidRow, T extends Partial<ModelAttributes<M>>>(obj: T) {
   for (const key in obj) {
@@ -205,7 +220,7 @@ class CategoriesController {
       throw new Error('user is not defined');
     }
 
-    const noGroup = await Group.findByOrFail('type', GroupType.NoGroup)
+    const noGroup = await budgetGroups(user.budgetId).where('type', GroupType.NoGroup).firstOrFail()
 
     const requestData = await request.validateUsing(
       addGroup,
@@ -216,6 +231,10 @@ class CategoriesController {
         },
       },
     );
+
+    if (requestData.parentGroupId !== undefined && requestData.parentGroupId !== null) {
+      await budgetGroups(user.budgetId).where('id', requestData.parentGroupId).firstOrFail();
+    }
 
     const group = await new Group()
       .fill({
@@ -244,9 +263,9 @@ class CategoriesController {
 
     const { groupId } = request.params();
 
-    const group = await Group.findOrFail(groupId);
+    const group = await budgetGroups(user.budgetId).where('id', groupId).firstOrFail();
 
-    const noGroup = await Group.findByOrFail('type', GroupType.NoGroup)
+    const noGroup = await budgetGroups(user.budgetId).where('type', GroupType.NoGroup).firstOrFail()
 
     const requestData = await request.validateUsing(
       updateGroup,
@@ -258,6 +277,10 @@ class CategoriesController {
         },
       },
     );
+
+    if (requestData.parentGroupId !== undefined && requestData.parentGroupId !== null) {
+      await budgetGroups(user.budgetId).where('id', requestData.parentGroupId).firstOrFail();
+    }
 
     group.merge(removeUndefined({
       name: requestData.name,
@@ -280,7 +303,7 @@ class CategoriesController {
 
     const { groupId } = request.params();
 
-    const group = await Group.findOrFail(groupId);
+    const group = await budgetGroups(user.budgetId).where('id', groupId).firstOrFail();
 
     const categories = await group.related('categories').query()
 
@@ -304,8 +327,14 @@ class CategoriesController {
    
   public async addCategory({
     request,
+    auth: { user },
   }: HttpContext): Promise<ApiResponse<Category>> {
+    if (!user) {
+      throw new Error('user is not defined');
+    }
+
     const { groupId } = request.params();
+    await budgetGroups(user.budgetId).where('id', groupId).firstOrFail();
     const requestData = await request.validateUsing(
       addCategory,
       {
@@ -314,6 +343,8 @@ class CategoriesController {
         }
       }
     );
+
+    await authorizeCategories(user.budgetId, requestData.fundingCategories.map((category) => category.categoryId));
 
     const category = new Category();
 
@@ -340,10 +371,19 @@ class CategoriesController {
    
   public async updateCategory({
     request,
+    auth: { user },
   }: HttpContext): Promise<ApiResponse<Category>> {
+    if (!user) {
+      throw new Error('user is not defined');
+    }
+
     let { groupId, catId } = request.params();
     groupId = parseInt(groupId, 10)
     catId = parseInt(catId, 10)
+
+    await budgetGroups(user.budgetId).where('id', groupId).firstOrFail();
+    const category = await budgetCategories(user.budgetId)
+      .where('id', catId).firstOrFail();
 
     const requestData = await request.validateUsing(
       updateCategory,
@@ -355,7 +395,7 @@ class CategoriesController {
       }
     );
 
-    const category = await Category.findOrFail(catId);
+    await authorizeCategories(user.budgetId, (requestData.fundingCategories ?? []).map((category) => category.categoryId));
 
     category.merge(removeUndefined({
       type: requestData.type,
@@ -379,13 +419,19 @@ class CategoriesController {
   }
 
    
-  public async deleteCategory({ request, response, logger }: HttpContext): Promise<ApiResponse<void> | void> {
-    const { catId } = request.params();
+  public async deleteCategory({ request, response, logger, auth: { user } }: HttpContext): Promise<ApiResponse<void> | void> {
+    if (!user) {
+      throw new Error('user is not defined');
+    }
+
+    const { groupId, catId } = request.params();
 
     const trx = await db.transaction();
 
     try {
-      const category = await Category.findOrFail(catId, { client: trx });
+      await budgetGroups(user.budgetId, { client: trx }).where('id', groupId).firstOrFail();
+      const category = await budgetCategories(user.budgetId, { client: trx })
+        .where('id', catId).where('groupId', groupId).firstOrFail();
 
       const result = await db.query()
         .select(1)
@@ -450,7 +496,7 @@ class CategoriesController {
       balance: 0,
     }
 
-    const cat = await Category.findOrFail(categoryId);
+    const cat = await budgetCategories(budget.id).where('id', categoryId).firstOrFail();
 
     result.balance = cat.balance;
 
@@ -504,10 +550,24 @@ class CategoriesController {
       } = { balances: [], transaction: {} };
 
       const { categories, date, type } = requestData;
+      const existingTransaction = tfrId === undefined ? undefined : await budget.related('transactions').query()
+        .where('id', tfrId)
+        .firstOrFail();
+      const referencedCategories = [...categories, ...(existingTransaction?.categories ?? [])];
+      await authorizeCategories(budget.id, referencedCategories.flatMap((category) => [
+        category.categoryId,
+        ...('fundingCategories' in category && Array.isArray(category.fundingCategories)
+          ? category.fundingCategories.flatMap((fundingCategory: unknown) => (
+            typeof fundingCategory === 'object' && fundingCategory !== null
+              && 'categoryId' in fundingCategory && typeof fundingCategory.categoryId === 'number'
+              ? [fundingCategory.categoryId] : []
+          )) : []),
+      ]), { client: trx });
+
       let transaction: Transaction;
       const categeoryDeltas = new Map<number, number>();
 
-      if (tfrId === undefined) {
+      if (!existingTransaction) {
         transaction = await Transaction // budget.related('transactions')
           .create({
             date: DateTime.fromISO(date),
@@ -537,9 +597,7 @@ class CategoriesController {
         };
       }
       else {
-        transaction = await budget.related('transactions').query()
-          .where('id', tfrId)
-          .firstOrFail();
+        transaction = existingTransaction;
 
          
         for (const transCategory of transaction.categories) {
@@ -575,7 +633,7 @@ class CategoriesController {
        
       for (const [categoryId, delta] of categeoryDeltas) {
          
-        const category = await Category.findOrFail(categoryId, { client: trx });
+        const category = await budgetCategories(budget.id, { client: trx }).where('id', categoryId).firstOrFail();
 
         category.balance += delta;
 
@@ -651,6 +709,10 @@ class CategoriesController {
     const budget = await user.related('budget').query().firstOrFail();
 
     const { date, id } = request.qs();
+
+    if (id !== undefined) {
+      await budget.related('transactions').query().where('id', parseInt(id, 10)).firstOrFail();
+    }
 
     return Category.balances(budget, date, id !== undefined ? parseInt(id, 10) : id);
   }
