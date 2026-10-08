@@ -391,15 +391,9 @@ export default class AccountsController {
         .orderBy('date', 'desc')
         .firstOrFail();
 
-      if (balance.id === latestBalance.id) {
-        // We just updated the latest balance. Update the account
-        // record with the new balance;
-        const account = await budgetAccounts(user.budgetId, { client: trx }).where('id', balance.accountId).firstOrFail();
-
-        account.balance = latestBalance.balance;
-
-        await account.save();
-      }
+      const account = await budgetAccounts(user.budgetId, { client: trx }).where('id', balance.accountId).firstOrFail();
+      account.balance = latestBalance.balance;
+      await account.save();
 
       await trx.commit();
 
@@ -430,39 +424,21 @@ export default class AccountsController {
     const trx = await db.transaction();
 
     try {
-      const historyQuery = budgetHistory(user.budgetId).where('id', id);
+      const historyQuery = budgetHistory(user.budgetId, { client: trx }).where('id', id);
       if (acctId !== undefined) {
         historyQuery.andWhere('accountId', acctId);
       }
       const balance = await historyQuery.firstOrFail();
 
-      let latestBalance: BalanceHistory | null = await BalanceHistory.query({ client: trx })
-        .where('accountId', balance.accountId)
-        .orderBy('date', 'desc')
-        .firstOrFail();
-
       await balance.delete();
 
-      if (balance.id === latestBalance.id) {
-        // We just deleted the latest balance record.
-        // Find the next latest, if any, and use that to update
-        // the account balance;
-        const account = await budgetAccounts(user.budgetId, { client: trx }).where('id', balance.accountId).firstOrFail();
-
-        latestBalance = await BalanceHistory.query({ client: trx })
-          .where('accountId', balance.accountId)
-          .orderBy('date', 'desc')
-          .first();
-
-        if (latestBalance) {
-          account.balance = latestBalance.balance;
-        }
-        else {
-          account.balance = 0;
-        }
-
-        await account.save();
-      }
+      const account = await budgetAccounts(user.budgetId, { client: trx }).where('id', balance.accountId).firstOrFail();
+      const latestBalance = await BalanceHistory.query({ client: trx })
+        .where('accountId', balance.accountId)
+        .orderBy('date', 'desc')
+        .first();
+      account.balance = latestBalance?.balance ?? 0;
+      await account.save();
 
       await trx.commit();
     }
