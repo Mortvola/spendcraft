@@ -288,6 +288,41 @@ test.group('Plaid webhook worker', (group) => {
     assert.equal(push.calls, 1)
   })
 
+
+  test('real provider transport failure on page two rejects the worker and rolls back financial state').with(['ECONNRESET', 'ECONNABORTED']).run(async ({ assert, cleanup }, code) => {
+    const original = Object.assign(new Error(`Provider transport ${code}`), { code, config: { headers: { 'PLAID-SECRET': 'fake-secret' } } })
+    const wrapper = new PlaidWrapper(app.config.get('plaid'))
+    let calls = 0
+    const sdk = mock.method(wrapper.plaid, 'transactionsSync', async () => {
+      if (calls++ === 0) return { data: { ...successfulPage(), has_more: true }, status: 200, statusText: 'OK', headers: {}, config: { headers: new Headers() }, request: { path: '/transactions/sync' } }
+      throw original
+    })
+    const audit = mock.method(PlaidWrapper, 'log', async () => { /* Isolate SDK behavior from provider audit persistence. */ })
+    cleanup(() => { sdk.mock.restore(); audit.mock.restore() })
+    app.container.swap(PlaidWrapper, () => wrapper)
+    const before = await snapshot()
+    const job = await enqueue()
+    await process()
+    assert.equal(calls, 2)
+    assert.deepEqual(await snapshot(), before)
+    const error = bull.rejected[0]
+    assert.instanceOf(error, Error)
+    if (!(error instanceof Error)) throw new Error('Expected worker rejection')
+    assert.strictEqual(error.cause, original)
+    assert.equal(error.message, original.message)
+    assert.equal('code' in error ? error.code : undefined, code)
+    assert.notInclude(JSON.stringify(error), 'fake-secret')
+    assert.equal(bull.completed, 0)
+    assert.strictEqual(bull.failed[0], error)
+    assert.equal(push.calls, 0)
+    const stored = await persistedJob(job.id)
+    assert.equal(stored.state, 'failed')
+    assert.equal(stored.failedReason, original.message)
+    assert.equal(stored.attemptsMade, 1)
+    assert.isFalse(await process())
+    assert.equal(calls, 2)
+  })
+
   test('missing institution fails the job without contacting Plaid or mutating financial state', async ({ assert }) => {
     const before = await snapshot()
     const job = await enqueue('missing-item')

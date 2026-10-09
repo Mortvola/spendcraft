@@ -38,7 +38,7 @@ class PlaidWrapper {
       this.plaid = new Plaid.PlaidApi(clientConfig);
     }
     catch (error) {
-      throw new PlaidException(error);
+      throw PlaidException.from(error);
     }
   }
 
@@ -63,8 +63,7 @@ class PlaidWrapper {
       return response.data;
     }
     catch (error) {
-      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status, institution.institutionId)
-      throw new PlaidException(error);
+      return PlaidWrapper.fail(error, institution.institutionId);
     }
   }
 
@@ -82,8 +81,7 @@ class PlaidWrapper {
       return response.data;
     }
     catch (error) {
-      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status, institutionId)
-      throw new PlaidException(error);
+      return PlaidWrapper.fail(error, institutionId);
     }
   }
 
@@ -107,8 +105,7 @@ class PlaidWrapper {
       return response.data;
     }
     catch (error) {
-      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status, institution.institutionId)
-      throw new PlaidException(error);
+      return PlaidWrapper.fail(error, institution.institutionId);
     }
   }
 
@@ -121,8 +118,7 @@ class PlaidWrapper {
       return response.data;
     }
     catch (error) {
-      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status)
-      throw new PlaidException(error);
+      return PlaidWrapper.fail(error);
     }
   }
 
@@ -135,8 +131,7 @@ class PlaidWrapper {
       return response.data;
     }
     catch (error) {
-      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status)
-      throw new PlaidException(error);
+      return PlaidWrapper.fail(error);
     }
   }
 
@@ -149,8 +144,7 @@ class PlaidWrapper {
       return response.data;
     }
     catch (error) {
-      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status)
-      throw new PlaidException(error);
+      return PlaidWrapper.fail(error);
     }
   }
 
@@ -173,8 +167,7 @@ class PlaidWrapper {
       return response.data;
     }
     catch (error) {
-      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status, institution.institutionId)
-      throw new PlaidException(error);
+      return PlaidWrapper.fail(error, institution.institutionId);
     }
   }
 
@@ -199,8 +192,7 @@ class PlaidWrapper {
       return response.data
     }
     catch (error) {
-      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status, institution.institutionId)
-      throw new PlaidException(error);
+      return PlaidWrapper.fail(error, institution.institutionId);
     }
   }
 
@@ -227,8 +219,7 @@ class PlaidWrapper {
       return response.data;
     }
     catch (error) {
-      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status, institution.institutionId)
-      throw new PlaidException(error);
+      return PlaidWrapper.fail(error, institution.institutionId);
     }
   }
 
@@ -251,8 +242,7 @@ class PlaidWrapper {
       return response.data
     }
     catch (error) {
-      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status, institution.institutionId)
-      throw new PlaidException(error);
+      return PlaidWrapper.fail(error, institution.institutionId);
     }
   }
 
@@ -273,8 +263,7 @@ class PlaidWrapper {
       return response.data;
     }
     catch (error) {
-      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status)
-      throw new PlaidException(error);
+      return PlaidWrapper.fail(error);
     }
   }
 
@@ -293,8 +282,7 @@ class PlaidWrapper {
       return response.data;
     }
     catch (error) {
-      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status)
-      throw new PlaidException(error);
+      return PlaidWrapper.fail(error);
     }
   }
 
@@ -317,8 +305,7 @@ class PlaidWrapper {
       return response.data;
     }
     catch (error) {
-      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status, institution.institutionId)
-      throw new PlaidException(error);
+      return PlaidWrapper.fail(error, institution.institutionId);
     }
   }
 
@@ -339,8 +326,7 @@ class PlaidWrapper {
       return response.data;
     }
     catch (error) {
-      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status, institution.institutionId)
-      throw new PlaidException(error);
+      return PlaidWrapper.fail(error, institution.institutionId);
     }
   }
 
@@ -363,8 +349,7 @@ class PlaidWrapper {
       return response.data;
     }
     catch (error) {
-      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status, institution.institutionId)
-      throw new PlaidException(error);
+      return PlaidWrapper.fail(error, institution.institutionId);
     }
   }
 
@@ -377,9 +362,23 @@ class PlaidWrapper {
       return response.data.categories;
     }
     catch (error) {
-      await PlaidWrapper.log(error.response.request?.path ?? '', error.response.data, error.response.status)
-      throw new PlaidException(error);
+      return PlaidWrapper.fail(error);
     }
+  }
+
+  private static async fail(error: unknown, institutionId?: string | null): Promise<never> {
+    const failure = PlaidException.from(error);
+    if (failure instanceof PlaidException) {
+      // from() has established that this is an HTTP response with a Plaid body.
+      if (typeof error === 'object' && error !== null && 'response' in error
+        && typeof error.response === 'object' && error.response !== null
+        && 'status' in error.response && typeof error.response.status === 'number') {
+        const request = 'request' in error.response ? error.response.request : undefined;
+        const path = typeof request === 'object' && request !== null && 'path' in request && typeof request.path === 'string' ? request.path : '';
+        await PlaidWrapper.log(path, failure.plaidError, error.response.status, institutionId);
+      }
+    }
+    throw failure;
   }
 
   static async log(request: string, response: unknown, status: number, institutionId?: string | null) {
