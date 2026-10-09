@@ -9,6 +9,8 @@ import logger from '@adonisjs/core/services/logger'
 import * as Plaid from 'plaid'
 import PlaidWrapper from '#providers/Plaid/Plaid'
 import Budget from '#models/Budget'
+import { CategoryType } from '#common/ResponseTypes'
+import Category from '#models/Category'
 import User from '#models/User'
 import Institution from '#models/Institution'
 import Account from '#models/Account'
@@ -91,6 +93,7 @@ test.group('Plaid staged onboarding characterization', (group) => {
   let removed: string[]
   let restores: (() => void)[]
   let auditStart: number
+  let failedSyncState: { cursor: string | null, syncDate: string | null } | undefined
 
   const success = () => page([providerAccount(accountId)], 'c2', { added: [providerTransaction(accountId, 'purchase', { date: DateTime.now().startOf('month').plus({ days: 1 }).toISODate() ?? '' })] })
 
@@ -106,7 +109,7 @@ test.group('Plaid staged onboarding characterization', (group) => {
     auditStart = (await PlaidLog.query().orderBy('id', 'desc').first())?.id ?? 0
     wrapper = new PlaidWrapper(app.config.get('plaid'))
     app.container.swap(PlaidWrapper, () => wrapper)
-    responses = []; cursors = []; logs = []; removed = []; restores = []; committed = undefined; failure = undefined
+    responses = []; cursors = []; logs = []; removed = []; restores = []; committed = undefined; failure = undefined; failedSyncState = undefined
     const auditResponse = (data: unknown, path: string) => ({ data, status: 200, request: { path } })
     const exchanged = new Set<string>()
     const exchange = mock.method(wrapper.plaid, 'itemPublicTokenExchange', async (body: Plaid.ItemPublicTokenExchangeRequest) => {
@@ -150,7 +153,11 @@ test.group('Plaid staged onboarding characterization', (group) => {
     if (stage === 'local institution' || stage === 'cursor') {
       const save = Institution.prototype.save
       const patched = mock.method(Institution.prototype, 'save', function (this: Institution) {
-        if ((stage === 'local institution' && !this.$isPersisted) || (stage === 'cursor' && this.cursor === 'c2')) throw new Error(`Synthetic ${stage} persistence failure`)
+        if (stage === 'cursor' && this.cursor === 'c2') {
+          failedSyncState = { cursor: this.cursor, syncDate: this.syncDate?.toISO() ?? null }
+          throw new Error('Synthetic cursor persistence failure')
+        }
+        if (stage === 'local institution' && !this.$isPersisted) throw new Error('Synthetic institution persistence failure')
         return save.call(this)
       })
       restores.push(() => patched.mock.restore())
@@ -193,9 +200,29 @@ test.group('Plaid staged onboarding characterization', (group) => {
     assert.lengthOf(await inst.related('accounts').query(), 1)
     assert.isEmpty(removed)
     assert.equal(response.body().data.id, inst.id)
-    // Cursor failure happens after mutating the in-memory model, despite DB rollback.
-    if (stage === 'cursor') assert.isString(response.body().data.syncDate)
-    else assert.isNull(response.body().data.syncDate)
+    // The failed save saw changed attributes, but the response must describe durable state.
+    if (stage === 'cursor') {
+      assert.equal(failedSyncState?.cursor, 'c2')
+      assert.isString(failedSyncState?.syncDate)
+    }
+    assert.equal(response.body().data.syncDate, inst.syncDate?.toISO() ?? null)
+    assert.equal(response.body().data.plaidInstitutionId, inst.institutionId)
+    assert.equal(response.body().data.name, inst.name)
+    for (const returned of response.body().data.accounts) {
+      const account = await Account.findOrFail(returned.id)
+      assert.equal(account.institutionId, inst.id)
+      assert.equal(returned.balance, account.balance)
+      assert.equal(returned.plaidBalance, account.plaidBalance)
+      assert.equal(returned.plaidId, account.plaidAccountId)
+      assert.equal(returned.startDate, account.startDate.toISODate())
+    }
+    const categories = [await budget.getFundingPoolCategory(), await budget.getUnassignedCategory()]
+    for (const category of categories) assert.deepInclude(response.body().data.categories, { id: category.id, balance: category.balance })
+    for (const returned of response.body().data.categories) {
+      const category = await Category.findOrFail(returned.id)
+      assert.equal(returned.balance, category.balance)
+      assert.equal((await category.related('group').query().firstOrFail()).budgetId, budget.id)
+    }
     assert.lengthOf(await budget.getConnectedAccounts(), 1)
     const read = await client.get('/api/v1/connected-accounts').loginAs(user)
     read.assertStatus(200)
@@ -273,18 +300,63 @@ test.group('Plaid staged onboarding characterization', (group) => {
     assert.notInclude(logs.join(''), token)
   })
 
-  test('first-attempt success has the same financial result but returns the pre-sync category snapshot', async ({ client, assert }) => {
-    responses = [success()]
+  test('successful onboarding returns committed category and account balances').with(['unassigned', 'automatic', 'before start', 'pending']).run(async ({ client, assert }, allocation) => {
+    const group = await budget.related('groups').create({ name: 'Response allocations', type: 'Regular' })
+    const assigned = await group.related('categories').create({ name: 'Assigned', type: CategoryType.Regular, balance: 0, fundingCategories: [] })
+    const untouched = await group.related('categories').create({ name: 'Untouched', type: CategoryType.Regular, balance: 0, fundingCategories: [] })
+    if (allocation === 'automatic') {
+      const rule = await budget.related('autoAssignment').create({ name: 'Response rule', searchStrings: ['Provider purchase'] })
+      await rule.related('categories').create({ categoryId: assigned.id, amount: 100, percentage: true })
+    }
+    const provider = providerAccount(accountId)
+    provider.balances.current = 175
+    const date = allocation === 'before start'
+      ? DateTime.now().startOf('month').minus({ days: 1 }).toISODate()
+      : DateTime.now().startOf('month').plus({ days: 1 }).toISODate()
+    responses = [page([provider], 'c2', { added: [providerTransaction(accountId, 'purchase', { amount: 37, date: date ?? '', pending: allocation === 'pending' })] })]
     const response = await client.post('/api/v1/institution').loginAs(user).json({ publicToken: 'fake-public', institutionId: 'test-bank' })
     response.assertStatus(200)
     const inst = await Institution.query().where('budgetId', budget.id).firstOrFail()
     const account = await inst.related('accounts').query().firstOrFail()
     assert.equal(inst.cursor, 'c2')
-    assert.equal(account.balance, 100)
-    assert.equal((await budget.getUnassignedCategory()).balance, -10)
-    assert.equal((await budget.getFundingPoolCategory()).balance, 110)
-    assert.deepEqual(response.body().data.categories.map((category: { balance: number }) => category.balance), [0, 0])
+    assert.isNotNull(inst.syncDate)
+    assert.equal(response.body().data.syncDate, inst.syncDate?.toISO())
+    assert.equal(response.body().data.id, inst.id)
+    assert.equal(response.body().data.accounts[0].id, account.id)
+    assert.equal(account.balance, 175)
+    const unassigned = await budget.getUnassignedCategory()
+    const funding = await budget.getFundingPoolCategory()
+    await assigned.refresh()
+    await untouched.refresh()
+    assert.equal(unassigned.balance, allocation === 'unassigned' || allocation === 'pending' ? -37 : 0)
+    assert.equal(assigned.balance, allocation === 'automatic' ? -37 : 0)
+    assert.equal(untouched.balance, 0)
+    assert.equal(funding.balance, allocation === 'before start' || allocation === 'pending' ? 175 : 212)
+    for (const category of [unassigned, funding, assigned, untouched]) {
+      assert.deepInclude(response.body().data.categories, { id: category.id, balance: category.balance })
+    }
+    assert.equal(response.body().data.accounts[0].balance, account.balance)
+    assert.equal(response.body().data.accounts[0].plaidBalance, account.plaidBalance)
+    assert.equal(response.body().data.accounts[0].pendingBalance, allocation === 'pending' ? -37 : 0)
     assert.lengthOf(await account.related('accountTransactions').query(), 2)
+  })
+
+  test('initial sync can invalidate copied account financial fields').with(['posted', 'pending']).run(async ({ client, assert }, state) => {
+    const provider = providerAccount(accountId)
+    provider.balances.current = state === 'posted' ? 175 : 100
+    responses = [page([provider], 'c2', { added: [providerTransaction(accountId, 'purchase', {
+      amount: 37, pending: state === 'pending',
+      date: DateTime.now().startOf('month').plus({ days: 1 }).toISODate() ?? '',
+    })] })]
+    const response = await client.post('/api/v1/institution').loginAs(user).json({ publicToken: 'fake-public', institutionId: 'test-bank' })
+    response.assertStatus(200)
+    const institution = await Institution.query().where('budgetId', budget.id).firstOrFail()
+    const account = await institution.related('accounts').query().firstOrFail()
+    assert.equal(account.balance, state === 'posted' ? 175 : 100)
+    assert.equal(account.plaidBalance, state === 'posted' ? 175 : 100)
+    assert.equal(response.body().data.accounts[0].balance, account.balance)
+    assert.equal(response.body().data.accounts[0].plaidBalance, account.plaidBalance)
+    assert.equal(response.body().data.accounts[0].pendingBalance, state === 'pending' ? -37 : 0)
   })
 
   test('creation retry with an existing provider account rejects and rolls back new setup', async ({ client, assert }) => {

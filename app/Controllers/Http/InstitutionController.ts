@@ -78,7 +78,7 @@ class InstitutionController {
         })
         .save();
 
-      const accountsResponse = await InstitutionController.addOnlineAccounts(
+      await InstitutionController.addOnlineAccounts(
         budget, institution,
       );
 
@@ -97,6 +97,8 @@ class InstitutionController {
       catch (error) {
         await trx2.rollback();
         logger.error(error);
+        // Rollback clears the transaction, but does not restore model attributes.
+        await institution.refresh();
       }
       finally {
         if (!trx2.isCompleted) {
@@ -105,14 +107,28 @@ class InstitutionController {
         }
       }
 
+      // Initial sync can invalidate the setup snapshot, even when identities stay the same.
+      const connectedInstitution = (await budget.getConnectedAccounts()).find((item) => item.id === institution.id);
+      if (!connectedInstitution) {
+        throw new Error('Connected institution not found');
+      }
+      const categories = await Category.query()
+        .select('id', 'balance')
+        .whereHas('group', (query) => query.where('budgetId', budget.id))
+        .orderBy('id');
+
       return {
         data: {
-          id: institution.id,
-          plaidInstitutionId: institution.institutionId,
-          name: institution.name,
-          syncDate: institution.syncDate?.toISO() ?? null,
-          accounts: accountsResponse.accounts,
-          categories: accountsResponse.categories,
+          id: connectedInstitution.id,
+          plaidInstitutionId: connectedInstitution.plaidInstitutionId,
+          name: connectedInstitution.name,
+          syncDate: connectedInstitution.syncDate,
+          accounts: connectedInstitution.accounts.map((account) => ({
+            ...account,
+            // The existing read returns NaN when the pending aggregate is empty.
+            pendingBalance: Number.isFinite(account.pendingBalance) ? account.pendingBalance : 0,
+          })),
+          categories: categories.map((category) => ({ id: category.id, balance: category.balance })),
         }
       };
     }
