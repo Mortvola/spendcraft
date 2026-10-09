@@ -1,4 +1,5 @@
  
+import redactDiagnostics from '#providers/Plaid/redactDiagnostics';
 import safeCompare from 'safe-compare'
 import { sha256 } from 'js-sha256';
 import { decodeProtectedHeader, importJWK, jwtVerify } from 'jose';
@@ -116,11 +117,11 @@ class WebhookController {
       }
 
       case 'PENDING_EXPIRATION':
-        logger.info(JSON.stringify(event));
+        logger.info(JSON.stringify(redactDiagnostics(event)));
         break;
 
       case 'USER_PERMISSION_REVOKED':
-        logger.info(JSON.stringify(event));
+        logger.info(JSON.stringify(redactDiagnostics(event)));
         break;
 
       case 'ERROR':
@@ -136,12 +137,12 @@ class WebhookController {
           )));
         }
         else {
-          logger.info(JSON.stringify(event));
+          logger.info(JSON.stringify(redactDiagnostics(event)));
         }
         break;
 
       default:
-        logger.warn(`Unknown webhook item event: ${JSON.stringify(event)}`);
+        logger.warn(`Unknown webhook item event: ${JSON.stringify(redactDiagnostics(event))}`);
 
         break;
     }
@@ -243,7 +244,7 @@ class WebhookController {
   static async processTransactionEvent(event: TransactionEvent): Promise<void> {
     switch (event.webhook_code) {
       case 'SYNC_UPDATES_AVAILABLE':
-        logger.info(JSON.stringify(event));
+        logger.info(JSON.stringify(redactDiagnostics(event)));
         await WebhookController.syncUpdate((event as unknown) as Plaid.SyncUpdatesAvailableWebhook);
         break;
 
@@ -251,11 +252,11 @@ class WebhookController {
       case 'HISTORICAL_UPDATE':
       case 'DEFAULT_UPDATE':
       case 'TRANSACTIONS_REMOVED':
-        logger.info(JSON.stringify(event));
+        logger.info(JSON.stringify(redactDiagnostics(event)));
         break;
 
       default:
-        logger.warn(`Unknown webhook transaction event: ${JSON.stringify(event)}`);
+        logger.warn(`Unknown webhook transaction event: ${JSON.stringify(redactDiagnostics(event))}`);
         break;
     }
   }

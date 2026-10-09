@@ -1,6 +1,7 @@
 import { HttpContext } from '@adonisjs/core/http';
 import PlaidError from './PlaidError.js';
 import { Exception } from "@adonisjs/core/exceptions";
+import redactDiagnostics from './redactDiagnostics.js';
 
 /*
 |--------------------------------------------------------------------------
@@ -20,7 +21,7 @@ export default class PlaidException extends Exception {
   constructor(plaidError: PlaidError) {
     super(plaidError.response.data.error_message, { code: 'PLAID_ERROR', status: plaidError.status_code, cause: plaidError });
 
-    this.plaidError = plaidError.response.data;
+    this.plaidError = redactDiagnostics(plaidError.response.data);
   }
 
   static from(error: unknown): Error {

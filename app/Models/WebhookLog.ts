@@ -1,5 +1,6 @@
 import { DateTime } from 'luxon'
 import { BaseModel, column, computed } from '@adonisjs/lucid/orm'
+import redactDiagnostics from '#providers/Plaid/redactDiagnostics'
 
 export default class WebhookLog extends BaseModel {
   @column({ isPrimary: true })
@@ -12,7 +13,7 @@ export default class WebhookLog extends BaseModel {
   public updatedAt: DateTime
 
   @column({
-    prepare: (value: unknown) => JSON.stringify(value),
+    prepare: (value: unknown) => JSON.stringify(redactDiagnostics(value)),
   })
   public request: unknown | null;
 
