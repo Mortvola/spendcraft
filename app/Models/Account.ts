@@ -319,7 +319,9 @@ class Account extends BaseModel {
         // Update the category balance
          
         const category = await Category.findOrFail(cat.categoryId, { client: this.$trx })
-        category.balance += amount / 100.0;
+        if (transaction.date >= this.startDate) {
+          category.balance += amount / 100.0;
+        }
          
         await category.save()
 
@@ -389,20 +391,26 @@ class Account extends BaseModel {
     // if the transaction was deleted then do nothing.
     // TODO: Even if the transaction was deleted update the information.
     if (!transaction.deleted) {
-      // If the transaction is changing from pending to not pending then
-      // return the transaction amount so the account balance can be updated correctly.
-      if (acctTrans.pending && !plaidTransaction.pending) {
-        transactionAmount = -plaidTransaction.amount;
-      }
+      const newAmount = -plaidTransaction.amount;
+      const newDate = DateTime.fromISO(plaidTransaction.date);
+      const oldApplicable = transaction.date >= this.startDate;
+      const newApplicable = newDate >= this.startDate;
+      const oldCategories = transaction.categories.map((category) => ({ ...category }));
+
+      // Replace the old applied effect with the new one. Pending transactions and
+      // transactions before the account start date do not affect its balance.
+      const oldAppliedAmount = oldApplicable && !acctTrans.pending ? acctTrans.amount : 0;
+      const newAppliedAmount = newApplicable && !plaidTransaction.pending ? newAmount : 0;
+      transactionAmount = newAppliedAmount - oldAppliedAmount;
 
       // todo: check to see if any of these attributes have changed
       const accountTransactionChanges: ModelObject = {
         providerTransactionId: plaidTransaction.transaction_id,
         name: plaidTransaction.name ?? undefined,
-        amount: -plaidTransaction.amount,
+        amount: newAmount,
         pending: plaidTransaction.pending ?? false,
         paymentChannel: plaidTransaction.payment_channel,
-        merchantName: plaidTransaction.merchant_name,
+        ...(plaidTransaction.merchant_name !== undefined ? { merchantName: plaidTransaction.merchant_name } : {}),
         accountOwner: plaidTransaction.account_owner,
         location: Account.getLocation(plaidTransaction.location),
       }
@@ -414,55 +422,76 @@ class Account extends BaseModel {
 
       acctTrans.merge(accountTransactionChanges);
 
+      const accountTransactionChanged = acctTrans.$isDirty;
       await acctTrans.save();
 
       const transactionChanges: ModelObject = {
-        date: DateTime.fromISO(plaidTransaction.date),
+        date: newDate,
       }
 
       changes = getChanges(transaction.$attributes, transactionChanges, changes)
-
-      transactionChanges.version = transaction.version + 1;
 
       transaction.merge(transactionChanges);
 
       // If the amount changed then make sure that sum of the transaction
       // categories matches the transaction amount.
-      if (accountTransactionChanges.amount) {
-        const trxCats = transaction.categories;
+      const trxCats = transaction.categories;
 
-        const sum = trxCats.reduce((accum, trxCat) => (
-          accum + trxCat.amount
-        ), 0)
+      const sum = trxCats.reduce((accum, trxCat) => (
+        accum + trxCat.amount
+      ), 0)
 
-        const delta = accountTransactionChanges.amount - sum;
+      const delta = newAmount - sum;
 
-        if (delta !== 0) {
-          // If there is an unassigned transaction category
-          // then adjust its amount. Otherwise, add a new unassigned transaction category.
-          const unassigned = await budget.getUnassignedCategory({ client: this.$trx });
+      if (delta !== 0) {
+        // If there is an unassigned transaction category
+        // then adjust its amount. Otherwise, add a new unassigned transaction category.
+        const unassigned = await budget.getUnassignedCategory({ client: this.$trx });
 
-          const unnassignedTrxCat = trxCats.find((tc) => tc.categoryId === unassigned.id);
+        const unnassignedTrxCat = trxCats.find((tc) => tc.categoryId === unassigned.id);
 
-          if (unnassignedTrxCat) {
-            unnassignedTrxCat.amount += delta;
+        if (unnassignedTrxCat) {
+          unnassignedTrxCat.amount += delta;
+        }
+        else {
+          transaction.categories.push({ categoryId: unassigned.id, amount: delta })
+        }
+
+        unassignedAmount = newApplicable ? delta : 0;
+      }
+
+      if (oldApplicable !== newApplicable && this.tracking === TrackingType.Transactions) {
+        // Keep stored allocations, but apply or reverse their balances when
+        // crossing the start date. Unassigned is accumulated by the institution.
+        const unassigned = await budget.getUnassignedCategory({ client: this.$trx });
+        const appliedCategories = newApplicable ? transaction.categories : oldCategories;
+        const direction = newApplicable ? 1 : -1;
+        unassignedAmount = 0;
+
+        for (const allocation of appliedCategories) {
+          const effect = direction * allocation.amount;
+          if (allocation.categoryId === unassigned.id) {
+            unassignedAmount += effect;
           }
           else {
-            transaction.categories.push({ categoryId: unassigned.id, amount: delta })
+            const category = await Category.findOrFail(allocation.categoryId, { client: this.$trx });
+            category.balance += effect;
+            await category.save();
           }
-
-          unassignedAmount = delta;
         }
       }
 
-      await transaction.save();
+      if (accountTransactionChanged || transaction.$isDirty) {
+        transaction.version += 1;
+        await transaction.save();
 
-      await transaction.related('transactionLog')
-        .create({
-          budgetId: transaction.budgetId,
-          message: `SpendCraft modified a transaction for "${acctTrans.name}" from "${this.name}".`,
-          changes,
-        });
+        await transaction.related('transactionLog')
+          .create({
+            budgetId: transaction.budgetId,
+            message: `SpendCraft modified a transaction for "${acctTrans.name}" from "${this.name}".`,
+            changes,
+          });
+      }
     }
 
     return [transactionAmount, unassignedAmount];
@@ -512,7 +541,11 @@ class Account extends BaseModel {
       unassignedAmount = await this.assignUnassigned(budget, transaction, acctTrans);
     }
 
-    return [acctTrans.amount, unassignedAmount];
+    if (transaction.date < this.startDate) {
+      return [0, 0];
+    }
+
+    return [acctTrans.pending ? 0 : acctTrans.amount, unassignedAmount];
   }
 
   public async addOrUpdateTransaction(
@@ -580,7 +613,7 @@ class Account extends BaseModel {
       }
 
       if (!acctTran.pending && transaction.date >= this.startDate) {
-        this.$extras.addedSum = (this.$extras.addedSum ?? 0) + acctTran.amount;
+        this.$extras.addedSum = (this.$extras.addedSum ?? 0) - acctTran.amount;
       }
 
        

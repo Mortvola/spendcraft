@@ -151,15 +151,11 @@ class Institution extends BaseModel {
 
       const [amount, unassignedAmount] = await acct.addOrUpdateTransaction(transaction, budget);
 
-      // Only add transactions on or after the starting date.
-      if (DateTime.fromISO(transaction.date) >= acct.startDate) {
-        if (!transaction.pending) {
-          acct.$extras.addedSum = (acct.$extras.addedSum ?? 0) + amount;
-        }
+      // Account returns deltas based on both the old and new applicable state.
+      acct.$extras.addedSum = (acct.$extras.addedSum ?? 0) + amount;
 
-        if (acct.tracking === TrackingType.Transactions) {
-          unassignedSum += unassignedAmount;
-        }
+      if (acct.tracking === TrackingType.Transactions) {
+        unassignedSum += unassignedAmount;
       }
 
       acct.$extras.modified = true;

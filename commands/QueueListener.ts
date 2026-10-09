@@ -54,6 +54,8 @@ export default class QueueListener extends BaseCommand {
         logger.error({ err: error }, `sync update failed, item id: ${job.data.itemId}`);
 
         await trx.rollback();
+
+        throw error;
       }
 
       return job.data

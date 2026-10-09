@@ -62,8 +62,6 @@ class WebhookController {
     const verified = await WebhookController.verify(request);
 
     if (verified) {
-      response.noContent();
-
       const body = request.body();
 
       // Log the request
@@ -98,6 +96,8 @@ class WebhookController {
       for (const record of results) {
         await record.delete()
       }
+
+      response.noContent();
     }
     else {
       response.badRequest();
@@ -154,7 +154,8 @@ class WebhookController {
       await queue.add('sync', { itemId: event.item_id })
     }
     catch (error) {
-      logger.error({ err: error }, `Posting sync to queue failed, event: ${JSON.stringify(event)}`);
+      logger.error({ err: error }, 'Posting sync to queue failed');
+      throw error;
     }
   }
 
