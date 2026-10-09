@@ -331,6 +331,39 @@ export class LoanSchema extends BaseModel {
   declare userId: number
 }
 
+export class PlaidItemCleanupSchema extends BaseModel {
+  static $columns = ['attemptCount', 'completedAt', 'createdAt', 'credentialExpiresAt', 'encryptedAccessToken', 'id', 'itemId', 'keyVersion', 'lastAttemptAt', 'lastErrorClass', 'lastErrorCode', 'nextAttemptAt', 'providerContext', 'status'] as const
+  $columns = PlaidItemCleanupSchema.$columns
+  @column()
+  declare attemptCount: number
+  @column.dateTime()
+  declare completedAt: DateTime | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column.dateTime()
+  declare credentialExpiresAt: DateTime | null
+  @column()
+  declare encryptedAccessToken: string | null
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare itemId: string
+  @column()
+  declare keyVersion: string
+  @column.dateTime()
+  declare lastAttemptAt: DateTime | null
+  @column()
+  declare lastErrorClass: string | null
+  @column()
+  declare lastErrorCode: string | null
+  @column.dateTime()
+  declare nextAttemptAt: DateTime | null
+  @column()
+  declare providerContext: string
+  @column()
+  declare status: string
+}
+
 export class PlaidLogSchema extends BaseModel {
   static $columns = ['createdAt', 'id', 'institutionId', 'request', 'response', 'status', 'updatedAt'] as const
   $columns = PlaidLogSchema.$columns

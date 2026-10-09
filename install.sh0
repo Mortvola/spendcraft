@@ -1,12 +1,34 @@
 #!/bin/bash
 
+set -e
+set -o pipefail
+
+: "${SPENDCRAFT_ROOT:?Set SPENDCRAFT_ROOT to the deployment directory}"
+if [ ! -d "$SPENDCRAFT_ROOT" ]; then
+  echo 'Deployment directory does not exist' >&2
+  exit 1
+fi
+
+confirm_deployment() {
+  local expected="$1"
+  local answer
+  echo "$2"
+  printf 'Type %s to continue: ' "$expected"
+  if ! read -r answer || [ "$answer" != "$expected" ]; then
+    echo 'Deployment gate declined. Keep onboarding maintenance enabled; no automatic rollback or traffic resume.' >&2
+    exit 1
+  fi
+}
+
+confirm_deployment DEPLOY 'Confirm: onboarding maintenance is enabled externally and will remain enabled until final verification; production DB target and experimental-record disposition are reviewed; cleanup keys/provider configuration are provisioned; PM2 startup recovery is installed.'
+
 SCRIPT_END=$( awk '
   BEGIN { err=1; } 
   /^\w*___END_OF_SHELL_SCRIPT___\w*$/ { print NR+1; err=0; exit 0; } 
   END { if (err==1) print "?"; }
 ' "$0" )
 
-ZIP_FILE=${SPENDCRAFT_ROOT}/build.zip
+ZIP_FILE="$SPENDCRAFT_ROOT/build.zip"
 
 echo "Checking for embedded file..."
 
@@ -16,30 +38,43 @@ then
    exit 1
 fi
 
-if [ -e ${ZIP_FILE} ]; then
-  rm ${ZIP_FILE}
+if [ -e "$ZIP_FILE" ]; then
+  rm "$ZIP_FILE"
 fi
 
 echo 'Extracting file to ' ${ZIP_FILE}
-tail -n +$SCRIPT_END $0 | base64 -d > ${ZIP_FILE}
+tail -n +"$SCRIPT_END" "$0" | base64 -d > "$ZIP_FILE"
 
-cd ${SPENDCRAFT_ROOT}
+cd "$SPENDCRAFT_ROOT"
 
 APP=spendcraft
 APP_NEW=$APP.new
 APP_OLD=$APP.old
 
-pm2 stop prod-server
-pm2 stop queue
+SERVER_EXISTS=0
+if pm2 describe prod-server > /dev/null 2>&1; then
+  SERVER_EXISTS=1
+  pm2 stop prod-server
+fi
 
-set -e
+QUEUE_EXISTS=0
+if pm2 describe queue > /dev/null 2>&1; then
+  QUEUE_EXISTS=1
+  pm2 stop queue
+fi
+
+CLEANUP_EXISTS=0
+if pm2 describe plaid-cleanup > /dev/null 2>&1; then
+  CLEANUP_EXISTS=1
+  pm2 stop plaid-cleanup
+fi
 
 # ./inst.sh
 # APP=spendcraft
 # APP_NEW=$APP.new
 # APP_OLD=$APP.old
 
-unzip ${ZIP_FILE} > /dev/null
+unzip "$ZIP_FILE" > /dev/null
 rm -fr $APP_NEW
 mv build $APP_NEW
 
@@ -60,6 +95,7 @@ popd
 pushd $APP_NEW
 
 node ace migration:status
+confirm_deployment MIGRATE 'Review the displayed pending migrations and existing production seeding behavior. Confirm backup succeeded and all pending migrations plus db:seed are approved for this database.'
 node ace migration:run
 node ace db:seed
 
@@ -71,13 +107,31 @@ if [ -e $APP ]; then
 fi
 mv $APP_NEW $APP
 
-pm2 restart prod-server --time --cron "0 0 * * *"
-pm2 restart queue --time
+confirm_deployment RESUME 'In another session, verify deployed cleanup configuration/readiness without contacting Plaid, PostgreSQL and Redis access, complete-ledger due/expiry counts, and PM2 reboot recovery. All deployment-managed processes remain stopped. Confirm these checks passed before starting them; keep external maintenance enabled until server and listener health checks pass after startup.'
+
+if [ "$QUEUE_EXISTS" -eq 1 ]; then
+  NODE_ENV=production pm2 restart queue --update-env --time
+else
+  NODE_ENV=production pm2 start "$PWD/$APP/ace.js" --name queue --cwd "$PWD/$APP" --interpreter "$(command -v node)" --time -- queue:listener
+fi
+if [ "$CLEANUP_EXISTS" -eq 1 ]; then
+  NODE_ENV=production pm2 restart plaid-cleanup --update-env --time --kill-timeout 30000 --restart-delay 5000
+else
+  NODE_ENV=production pm2 start "$PWD/$APP/ace.js" --name plaid-cleanup --cwd "$PWD/$APP" --interpreter "$(command -v node)" --time --kill-timeout 30000 --restart-delay 5000 -- plaid:cleanup-listener
+fi
 pm2 logs --nostream
+if [ "$SERVER_EXISTS" -eq 1 ]; then
+  NODE_ENV=production pm2 restart prod-server --update-env --time --cron "0 0 * * *"
+else
+  NODE_ENV=production pm2 start "$PWD/$APP/bin/server.js" --name prod-server --cwd "$PWD/$APP" --interpreter "$(command -v node)" --time --cron "0 0 * * *"
+fi
+pm2 save
+pm2 logs --nostream
+echo 'Verify server health before manually disabling external onboarding maintenance. This installer does not resume traffic.'
 
 # Clean up
-if [ -e ${ZIP_FILE} ]; then
-  rm ${ZIP_FILE}
+if [ -e "$ZIP_FILE" ]; then
+  rm "$ZIP_FILE"
 fi
 
 exit 0
