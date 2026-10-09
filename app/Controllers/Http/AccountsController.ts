@@ -644,20 +644,16 @@ export default class AccountsController {
         } : null
       });
 
-      // If the statement that is being updated is the latest statement
-      // then make sure the account balance is up to date if
-      // the account only tracks balances.
+      // Recompute from the resulting statement order in the mutation transaction.
       if (account.tracking === TrackingType.Balances) {
-        const latestStatement = await Statement.query()
+        const latestStatement = await Statement.query({ client: trx })
           .where('accountId', statement.accountId)
           .orderBy('endDate', 'desc')
           .firstOrFail()
 
-        if (statement.id === latestStatement.id) {
-          account.balance = statement.endingBalance;
+        account.balance = latestStatement.endingBalance;
 
-          await account.save()
-        }
+        await account.save()
       }
 
       const startDate = requestData.startDate.toISODate()
@@ -777,37 +773,26 @@ export default class AccountsController {
         }
       }
 
-      statement.merge({
-        startDate: requestData.startDate,
-        endDate: requestData.endDate,
-        startingBalance: requestData.startingBalance,
-        endingBalance: requestData.endingBalance,
-        data: {
-          shortTermCapitalGains: requestData.data?.shortTermCapitalGains ?? 0,
-          longTermCapitalGains: requestData.data?.longTermCapitalGains ?? 0,
-          dividends: requestData.data?.dividends ?? 0,
-          taxableInterest: requestData.data?.taxableInterest ?? 0,
-        }
-      })
+      if (requestData.startDate !== undefined) statement.startDate = requestData.startDate
+      if (requestData.endDate !== undefined) statement.endDate = requestData.endDate
+      if (requestData.startingBalance !== undefined) statement.startingBalance = requestData.startingBalance
+      if (requestData.endingBalance !== undefined) statement.endingBalance = requestData.endingBalance
+      if (requestData.data !== undefined) statement.data = requestData.data
 
       await statement.save()
 
-      // If the statement that is being updated is the latest statement
-      // then make sure the account balance is up to date if
-      // the account only tracks balances.
-      const account = await budgetAccounts(user.budgetId).where('id', statement.accountId).firstOrFail()
+      // Recompute from the resulting statement order in the mutation transaction.
+      const account = await budgetAccounts(user.budgetId, { client: trx }).where('id', statement.accountId).firstOrFail()
 
       if (account.tracking === TrackingType.Balances) {
-        const latestStatement = await Statement.query()
+        const latestStatement = await Statement.query({ client: trx })
           .where('accountId', statement.accountId)
           .orderBy('endDate', 'desc')
           .firstOrFail()
 
-        if (statement.id === latestStatement.id) {
-          account.balance = statement.endingBalance;
+        account.balance = latestStatement.endingBalance;
 
-          await account.save()
-        }
+        await account.save()
       }
 
       const credits = await AccountTransaction.query({ client: trx })
@@ -828,14 +813,16 @@ export default class AccountsController {
           query2.where('deleted', false)
         })
 
-      await trx.commit()
+      const startDate = statement.startDate.toISODate()
+      const endDate = statement.endDate.toISODate()
+      if (startDate === null || endDate === null) {
+        throw new Error('start date or end date is null')
+      }
 
-      return {
+      const response: StatementProps = {
         id: statement.id,
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        startDate: statement.startDate.toISODate()!,
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        endDate: statement.endDate.toISODate()!,
+        startDate,
+        endDate,
         startingBalance: statement.startingBalance,
         endingBalance: statement.endingBalance,
         credits: parseFloat(credits[0].$extras.sum ?? 0),
@@ -847,6 +834,9 @@ export default class AccountsController {
           taxableInterest: statement.data?.taxableInterest ?? 0,
         }
       };
+
+      await trx.commit()
+      return response
     }
     catch (error) {
       logger.error(error)
