@@ -3,6 +3,7 @@ import { HttpContext } from '@adonisjs/core/http';
 import Category, { GroupItem } from '#app/Models/Category';
 import CategoryTransfer from '#app/Models/CategoryTransfer';
 import { updateCategoryTransfer } from '#validators/categoryTransfer';
+import { validateTransactionSplits } from '#app/validation/transactionSplits';
 import Transaction from '#app/Models/Transaction';
 import Loan from '#app/Models/Loan';
 import {
@@ -563,6 +564,8 @@ class CategoriesController {
               ? [fundingCategory.categoryId] : []
           )) : []),
       ]), { client: trx });
+
+      validateTransactionSplits(0, categories, 'The sum of the category transfer amounts must be zero.');
 
       let transaction: Transaction;
       const categeoryDeltas = new Map<number, number>();
