@@ -76,7 +76,8 @@ class PlaidFake extends PlaidWrapper {
 
   async exchangePublicToken(token: string): Promise<Plaid.ItemPublicTokenExchangeResponse> {
     this.calls.push({ method: 'exchangePublicToken', resource: token })
-    return { access_token: 'test-new-token', item_id: 'test-new-item', request_id: 'test' }
+    const id = ++sequence
+    return { access_token: `test-new-token-${id}`, item_id: `test-new-item-${id}`, request_id: 'test' }
   }
 
   async getInstitutionById(id: string): Promise<Plaid.InstitutionsGetByIdResponse> {

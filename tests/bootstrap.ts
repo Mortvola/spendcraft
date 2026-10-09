@@ -7,6 +7,7 @@ import { pluginAdonisJS } from '@japa/plugin-adonisjs'
 import testUtils from '@adonisjs/core/services/test_utils'
 import { authApiClient } from '@adonisjs/auth/plugins/api_client'
 import env from '#start/env'
+import { randomBytes } from 'node:crypto'
 
 /**
  * This file is imported by the "bin/test.ts" entrypoint file
@@ -37,6 +38,7 @@ export const plugins: Config['plugins'] = [
  */
 export const runnerHooks: Required<Pick<Config, 'setup' | 'teardown'>> = {
   setup: [
+    () => { app.config.set('plaidCleanup', { activeKey: 'test-v1', keys: JSON.stringify({ 'test-v1': randomBytes(32).toString('base64') }) }) },
     () => testUtils.db().truncate(),
   ],
   teardown: [],

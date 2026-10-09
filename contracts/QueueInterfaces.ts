@@ -3,6 +3,6 @@ export interface PlaidWebHookProps {
 }
 
 export enum QueueNamesEnum {
+  'PlaidItemCleanup' = 'PlaidItemCleanup',
   'PlaidWebHook' = 'PlaidWebHook'
 }
-

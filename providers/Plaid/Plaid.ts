@@ -13,8 +13,10 @@ export interface PlaidConfig {
 
 class PlaidWrapper {
   plaid: Plaid.PlaidApi;
+  readonly providerContext: string;
 
   constructor (config: PlaidConfig) {
+    this.providerContext = `${config.environment}:${config.clientId}`;
     let secret = '';
     const env = config.environment;
     if (env === 'sandbox') {
@@ -70,11 +72,12 @@ class PlaidWrapper {
   async removeItem(
     accessToken: string,
     institutionId?: string,
+    timeout?: number,
   ): Promise<Plaid.ItemRemoveResponse> {
     try {
       const response = await this.plaid.itemRemove({
         access_token: accessToken,
-      });
+      }, timeout === undefined ? undefined : { timeout });
 
       await PlaidWrapper.log(response.request?.path ?? '', response.data, response.status, institutionId)
 

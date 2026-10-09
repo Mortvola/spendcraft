@@ -17,6 +17,8 @@ export default await Env.create(new URL("../", import.meta.url), {
   HOST: Env.schema.string({ format: 'host' }),
   PORT: Env.schema.number(),
   APP_KEY: Env.schema.string(),
+  PLAID_CLEANUP_KEY_VERSION: Env.schema.string.optional(),
+  PLAID_CLEANUP_KEYS: Env.schema.string.optional(),
   APP_NAME: Env.schema.string(),
   APP_URL: Env.schema.string(),
   CACHE_VIEWS: Env.schema.boolean(),

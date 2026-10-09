@@ -1,3 +1,4 @@
+import PlaidItemCleanupService from '#services/plaidItemCleanup'
  
 import { HttpContext } from '@adonisjs/core/http';
 import db from '@adonisjs/lucid/services/db';
@@ -54,15 +55,28 @@ class InstitutionController {
 
     const plaidClient = await app.container.make('plaid')
 
+    const cleanup = new PlaidItemCleanupService()
+    await cleanup.ready()
+    tokenResponse = await plaidClient.exchangePublicToken(requestData.publicToken)
+    let protection
+    try {
+      protection = await cleanup.protect(tokenResponse.item_id, tokenResponse.access_token)
+    } catch {
+      // The distributed exchange/storage gap cannot be closed locally. Best effort
+      // compensation here never logs provider errors or the in-memory credential.
+      try { await cleanup.compensateUnprotected(tokenResponse.item_id, tokenResponse.access_token) }
+      catch { logger.error('Plaid cleanup protection unavailable; external cleanup unconfirmed') }
+      throw new Error('Plaid cleanup protection unavailable')
+    }
     const trx = await db.transaction();
+    let committed = false
 
     try {
+      const recovery = await cleanup.lockSetup(protection.id, trx)
       user.useTransaction(trx)
 
       // Lock the budget record while we add the institution and selected accounts.
       const budget = await user.related('budget').query().forUpdate().firstOrFail();
-
-      tokenResponse = await plaidClient.exchangePublicToken(requestData.publicToken);
 
       institutionResponse = await plaidClient
         .getInstitutionById(requestData.institutionId, [Plaid.CountryCode.Us]);
@@ -82,7 +96,9 @@ class InstitutionController {
         budget, institution,
       );
 
+      await cleanup.cancelSetup(recovery)
       await trx.commit();
+      committed = true
 
       // Now sync the institution with any transactions downloaded to Plaid.
       const trx2 = await db.transaction();
@@ -135,11 +151,13 @@ class InstitutionController {
     catch (error) {
       logger.error(error);
 
-      if (tokenResponse?.access_token) {
-        await plaidClient.removeItem(tokenResponse.access_token, institutionResponse?.institution?.institution_id);
+      if (!committed) {
+        if (!trx.isCompleted) await trx.rollback()
+        // A lost commit acknowledgement is resolved by the durable row and the
+        // authoritative Institution check; never infer rollback from an exception.
+        try { await cleanup.attempt(protection.id, true) }
+        catch { logger.error({ cleanupId: protection.id }, 'Plaid cleanup deferred to recovery sweep') }
       }
-
-      await trx.rollback();
 
       throw error;
     }

@@ -1,5 +1,8 @@
+import PlaidItemCleanupService from '#services/plaidItemCleanup'
 import { test } from '@japa/runner'
 import { mock } from 'node:test'
+import { Logger } from '@adonisjs/core/logger'
+import PlaidException from '#providers/Plaid/PlaidException'
 import { randomUUID } from 'node:crypto'
 import { DateTime } from 'luxon'
 import app from '@adonisjs/core/services/app'
@@ -16,6 +19,7 @@ import Institution from '#models/Institution'
 import Account from '#models/Account'
 import AccountTransaction from '#models/AccountTransaction'
 import PlaidLog from '#models/PlaidLog'
+import PlaidItemCleanup from '#models/PlaidItemCleanup'
 import ApplePushNotifications from '#providers/ApplePushNotifications/index'
 import { BullMQ } from '#providers/BullMQ'
 import type { ConnectionOptions, Processor, WorkerOptions } from 'bullmq'
@@ -93,6 +97,11 @@ test.group('Plaid staged onboarding characterization', (group) => {
   let removed: string[]
   let restores: (() => void)[]
   let auditStart: number
+  let failedSetupTrx: Account['$trx']
+  let removalFailure: unknown
+  let acceptedBeforeFailure: boolean
+  let externalRemoved: boolean
+  let removalObservation: { active: boolean, institutions: number, accounts: number } | undefined
   let failedSyncState: { cursor: string | null, syncDate: string | null } | undefined
 
   const success = () => page([providerAccount(accountId)], 'c2', { added: [providerTransaction(accountId, 'purchase', { date: DateTime.now().startOf('month').plus({ days: 1 }).toISODate() ?? '' })] })
@@ -109,7 +118,7 @@ test.group('Plaid staged onboarding characterization', (group) => {
     auditStart = (await PlaidLog.query().orderBy('id', 'desc').first())?.id ?? 0
     wrapper = new PlaidWrapper(app.config.get('plaid'))
     app.container.swap(PlaidWrapper, () => wrapper)
-    responses = []; cursors = []; logs = []; removed = []; restores = []; committed = undefined; failure = undefined; failedSyncState = undefined
+    responses = []; cursors = []; logs = []; removed = []; restores = []; committed = undefined; failure = undefined; failedSyncState = undefined; failedSetupTrx = undefined; removalFailure = undefined; acceptedBeforeFailure = false; externalRemoved = false; removalObservation = undefined
     const auditResponse = (data: unknown, path: string) => ({ data, status: 200, request: { path } })
     const exchanged = new Set<string>()
     const exchange = mock.method(wrapper.plaid, 'itemPublicTokenExchange', async (body: Plaid.ItemPublicTokenExchangeRequest) => {
@@ -136,7 +145,18 @@ test.group('Plaid staged onboarding characterization', (group) => {
     })
     const remove = mock.method(wrapper.plaid, 'itemRemove', async (body: Plaid.ItemRemoveRequest) => {
       removed.push(body.access_token)
-      if (failure === 'cleanup removal') throw new Error('Synthetic Item removal failure')
+      if (failedSetupTrx) {
+        removalObservation = {
+          active: !failedSetupTrx.isCompleted,
+          institutions: (await Institution.query().where('budgetId', budget.id)).length,
+          accounts: (await Account.query().where('plaidAccountId', accountId)).length,
+        }
+      }
+      if (removalFailure !== undefined) {
+        externalRemoved = acceptedBeforeFailure
+        throw removalFailure
+      }
+      externalRemoved = true
       return auditResponse({ request_id: 'remove' }, '/item/remove')
     })
     const logging = mock.method(logger, 'error', (...args: unknown[]) => { logs.push(JSON.stringify(args)) })
@@ -162,7 +182,10 @@ test.group('Plaid staged onboarding characterization', (group) => {
       })
       restores.push(() => patched.mock.restore())
     } else if (stage === 'local account') {
-      const patched = mock.method(Account.prototype, 'save', function () { throw new Error('Synthetic account persistence failure') })
+      const patched = mock.method(Account.prototype, 'save', function (this: Account) {
+        failedSetupTrx = this.$trx
+        throw new Error('Synthetic account persistence failure')
+      })
       restores.push(() => patched.mock.restore())
     } else if (stage === 'financial') {
       const patched = mock.method(AccountTransaction.prototype, 'save', function () { throw new Error('Synthetic financial persistence failure') })
@@ -392,14 +415,166 @@ test.group('Plaid staged onboarding characterization', (group) => {
     assert.isEmpty(removed)
   })
 
-  test('failed Item removal still rolls back local setup but cannot establish external cleanup', async ({ client, assert }) => {
-    failure = 'cleanup removal'
+  test('compensation outcomes preserve rollback and characterize orphan recovery information').with(['success', 'network', 'provider transient', 'provider permanent', 'lost response']).run(async ({ client, assert, cleanup }, outcome) => {
     persistenceFailure('local account')
+    acceptedBeforeFailure = outcome === 'lost response'
+    if (outcome === 'network' || outcome === 'lost response') {
+      removalFailure = Object.assign(new Error('Synthetic removal connection failure'), { code: 'ECONNRESET', config: { headers: { Authorization: token } } })
+    } else if (outcome.startsWith('provider')) {
+      removalFailure = Object.assign(new Error('Synthetic structured removal failure'), {
+        response: { status: outcome === 'provider transient' ? 500 : 400, request: { path: '/item/remove' }, data: {
+          error_type: outcome === 'provider transient' ? 'API_ERROR' : 'INVALID_INPUT',
+          error_code: outcome === 'provider transient' ? 'INTERNAL_SERVER_ERROR' : 'INVALID_ACCESS_TOKEN',
+          error_message: 'Synthetic structured removal failure', request_id: 'safe-removal-request', access_token: token,
+        } },
+      })
+    }
+    let observedError: unknown
+    const originalRemove = wrapper.removeItem
+    const removal = mock.method(wrapper, 'removeItem', async (...args: Parameters<PlaidWrapper['removeItem']>) => {
+      try { return await originalRemove.apply(wrapper, args) }
+      catch (error) { observedError = error; throw error }
+    })
+    cleanup(() => removal.mock.restore())
+    // Capture real Pino serialization for context loggers as well as provider errors.
+    const serialized: string[] = []
+    const capture = new Logger({ enabled: true, level: 'error', destination: { write: (line: string) => { serialized.push(line) } } })
+    const originalLog = Logger.prototype.error
+    const logging = mock.method(Logger.prototype, 'error', function (...args: Parameters<Logger['error']>) {
+      originalLog.apply(capture, args)
+    })
+    cleanup(() => logging.mock.restore())
     const before = await snapshot()
     const response = await client.post('/api/v1/institution').loginAs(user).json({ publicToken: 'fake-public', institutionId: 'test-bank' })
     response.assertStatus(500)
     assert.deepEqual(await snapshot(), before)
+    assert.deepEqual(removalObservation, { active: false, institutions: 0, accounts: 0 })
+    assert.isTrue(failedSetupTrx?.isCompleted)
     assert.lengthOf(removed, 1)
+    assert.isEmpty(await Institution.query().where('budgetId', budget.id).where('accessToken', token))
+    assert.isEmpty(await Institution.query().where('plaidItemId', id))
+    const audits = await PlaidLog.query().where('id', '>', auditStart).orderBy('id')
+    assert.lengthOf(audits, outcome === 'success' || outcome.startsWith('provider') ? 4 : 3)
+    const exchange = audits.find((audit) => audit.request === '/item/public_token/exchange')
+    if (!exchange) throw new Error('Exchange audit missing')
+    assert.deepInclude(exchange.response, { item_id: id, access_token: '[REDACTED]' })
+    assert.notInclude(JSON.stringify(audits), token)
+    assert.notInclude(JSON.stringify(response.body()), token)
+    assert.notInclude(logs.join('') + serialized.join(''), token)
+    assert.include(serialized.join(''), 'Synthetic account persistence failure')
+    const recovery = await PlaidItemCleanup.findByOrFail('itemId', id)
+    assert.equal(recovery.status, outcome === 'success' ? 'completed' : outcome === 'provider permanent' ? 'review_required' : 'pending')
+    assert.equal(recovery.attemptCount, 1)
+    assert.notProperty(recovery.serialize(), 'encryptedAccessToken')
+    if (outcome === 'success') assert.isNull(recovery.encryptedAccessToken)
+    else {
+      assert.isNotNull(recovery.encryptedAccessToken)
+      assert.notInclude(recovery.encryptedAccessToken ?? '', token)
+    }
+    assert.equal(externalRemoved, outcome === 'success' || outcome === 'lost response')
+    if (outcome !== 'success') {
+      assert.instanceOf(observedError, Error)
+      if (!(observedError instanceof Error)) throw new Error('Expected preserved compensation error')
+      assert.strictEqual(observedError.cause, removalFailure)
+      capture.error({ err: observedError }, 'Synthetic compensation failure')
+      assert.notInclude(serialized.join(''), token)
+      if (outcome.startsWith('provider')) {
+        assert.instanceOf(observedError, PlaidException)
+        assert.notProperty(response.body(), 'plaidError')
+      } else {
+        assert.equal('code' in observedError ? observedError.code : undefined, 'ECONNRESET')
+        assert.notInstanceOf(observedError, PlaidException)
+      }
+    }
+    if (outcome === 'lost response') {
+      // A test-double model of the documented already-removed Item error, not a guarantee
+      // of the exact response code of a second real item/remove call.
+      removalFailure = { response: { status: 400, data: { error_type: 'ITEM_ERROR', error_code: 'ITEM_NOT_FOUND', error_message: 'Synthetic already-removed Item', request_id: 'safe-second-request' } } }
+      try { await wrapper.removeItem(token, 'test-bank'); throw new Error('Expected already-removed rejection') }
+      catch (error) {
+        assert.instanceOf(error, PlaidException)
+        if (!(error instanceof PlaidException)) throw error
+        assert.deepInclude(error.plaidError, { error_code: 'ITEM_NOT_FOUND' })
+      }
+      assert.deepEqual(await snapshot(), before)
+    }
+  })
+  test('post-commit response failure cannot remove a successfully connected Item', async ({ client, assert, cleanup }) => {
+    responses = [success()]
+    const brokenResponse = mock.method(Budget.prototype, 'getConnectedAccounts', async () => { throw new Error('Synthetic response failure') })
+    cleanup(() => brokenResponse.mock.restore())
+    const response = await client.post('/api/v1/institution').loginAs(user).json({ publicToken: 'fake-public', institutionId: 'test-bank' })
+    response.assertStatus(500)
+    assert.isEmpty(removed)
+    const institution = await Institution.findByOrFail('plaidItemId', id)
+    assert.equal(institution.budgetId, budget.id)
+    const recovery = await PlaidItemCleanup.findByOrFail('itemId', id)
+    assert.equal(recovery.status, 'cancelled')
+    assert.isNull(recovery.encryptedAccessToken)
+  })
+
+  test('encryption readiness failure happens before public token exchange', async ({ client, assert, cleanup }) => {
+    const original = { ...app.config.get<{ activeKey: string, keys: string }>('plaidCleanup') }
+    app.config.set('plaidCleanup.keys', '{}')
+    cleanup(() => app.config.set('plaidCleanup', original))
+    const before = await snapshot()
+    const response = await client.post('/api/v1/institution').loginAs(user).json({ publicToken: 'fake-public', institutionId: 'test-bank' })
+    response.assertStatus(500)
+    assert.deepEqual(await snapshot(), before)
+    assert.isEmpty(removed)
+    assert.isEmpty(await PlaidLog.query().where('id', '>', auditStart))
+    assert.isNull(await PlaidItemCleanup.findBy('itemId', id))
+  })
+
+  test('lost setup commit acknowledgement cannot compensate the committed Item', async ({ client, assert, cleanup }) => {
+    responses = [success()]
+    const originalCancel = PlaidItemCleanupService.prototype.cancelSetup
+    const cancellation = mock.method(PlaidItemCleanupService.prototype, 'cancelSetup', async function (this: PlaidItemCleanupService, row: PlaidItemCleanup) {
+      await originalCancel.call(this, row)
+      const trx = row.$trx
+      if (!trx) throw new Error('Expected setup transaction')
+      const originalCommit = trx.commit
+      const commit = mock.method(trx, 'commit', async () => {
+        await originalCommit.call(trx)
+        throw new Error('Synthetic lost commit acknowledgement')
+      })
+      cleanup(() => commit.mock.restore())
+    })
+    cleanup(() => cancellation.mock.restore())
+    const response = await client.post('/api/v1/institution').loginAs(user).json({ publicToken: 'fake-public', institutionId: 'test-bank' })
+    response.assertStatus(500)
+    assert.isEmpty(removed)
+    assert.isNotNull(await Institution.findBy('plaidItemId', id))
+    const recovery = await PlaidItemCleanup.findByOrFail('itemId', id)
+    assert.equal(recovery.status, 'cancelled')
+    assert.isNull(recovery.encryptedAccessToken)
+  })
+
+  test('failed durable protection attempts safe in-memory compensation', async ({ client, assert, cleanup }) => {
+    const unavailable = mock.method(PlaidItemCleanupService.prototype, 'protect', async () => { throw new Error('Synthetic storage failure') })
+    cleanup(() => unavailable.mock.restore())
+    const before = await snapshot()
+    const response = await client.post('/api/v1/institution').loginAs(user).json({ publicToken: 'fake-public', institutionId: 'test-bank' })
+    response.assertStatus(500)
+    assert.lengthOf(removed, 1)
+    assert.deepEqual(await snapshot(), before)
+    assert.isNull(await PlaidItemCleanup.findBy('itemId', id))
     assert.notInclude(JSON.stringify(response.body()), token)
   })
+
+  test('encrypted recovery is durable before the next setup provider request', async ({ client, assert, cleanup }) => {
+    const observed = mock.method(wrapper, 'getInstitutionById', async () => {
+      const row = await PlaidItemCleanup.findByOrFail('itemId', id)
+      assert.equal(row.status, 'protected')
+      assert.isNotNull(row.encryptedAccessToken)
+      assert.notInclude(row.encryptedAccessToken ?? '', token)
+      throw new Error('Synthetic setup interruption after protection')
+    })
+    cleanup(() => observed.mock.restore())
+    const response = await client.post('/api/v1/institution').loginAs(user).json({ publicToken: 'fake-public', institutionId: 'test-bank' })
+    response.assertStatus(500)
+    assert.lengthOf(removed, 1)
+    assert.equal((await PlaidItemCleanup.findByOrFail('itemId', id)).status, 'completed')
+  })
+
 })
