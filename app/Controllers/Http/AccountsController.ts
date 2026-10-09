@@ -665,7 +665,7 @@ export default class AccountsController {
 
       const acctTransactions = await account.related('accountTransactions').query()
         .whereHas('transaction', (query) => {
-          query.whereBetween('date', [startDate, endDate])
+          query.where('deleted', false).whereBetween('date', [startDate, endDate])
         })
         .whereNull('statementId')
 
@@ -736,6 +736,9 @@ export default class AccountsController {
 
       const statement = await budgetStatements(user.budgetId, { client: trx }).where('id', statementId).firstOrFail()
 
+      if (requestData.startDate !== undefined) statement.startDate = requestData.startDate
+      if (requestData.endDate !== undefined) statement.endDate = requestData.endDate
+
       if (requestData.reconcile !== undefined) {
         if (requestData.reconcile === 'All') {
           // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -773,8 +776,6 @@ export default class AccountsController {
         }
       }
 
-      if (requestData.startDate !== undefined) statement.startDate = requestData.startDate
-      if (requestData.endDate !== undefined) statement.endDate = requestData.endDate
       if (requestData.startingBalance !== undefined) statement.startingBalance = requestData.startingBalance
       if (requestData.endingBalance !== undefined) statement.endingBalance = requestData.endingBalance
       if (requestData.data !== undefined) statement.data = requestData.data

@@ -122,15 +122,16 @@ test.group('Manual statement correctness', (group) => {
     const result = await state()
     assert.deepEqual([result[0], result[2], result[4]], [snapshot[0], snapshot[2], snapshot[4]])
   })
-  test('creation currently links pending and deleted transactions whereas listed totals exclude deleted', async ({ client, assert }) => {
+  test('creation retains pending eligibility but excludes deleted transactions', async ({ client, assert }) => {
     const pending = await seedTransaction('2025-02-10', 10, { pending: true })
     const deleted = await seedTransaction('2025-02-11', 20, { deleted: true })
     const response = await client.post(`/api/v1/account/${fixture.account.id}/statements`)
       .json(february).accept('json').loginAs(fixture.user)
     response.assertStatus(200)
     const statement = await Statement.query().where('accountId', fixture.account.id).firstOrFail()
-    for (const row of [pending, deleted]) assert.equal((await AccountTransaction.findOrFail(row.id)).statementId, statement.id)
-    assert.equal(response.body().credits, 30)
+    assert.equal((await AccountTransaction.findOrFail(pending.id)).statementId, statement.id)
+    assert.isNull((await AccountTransaction.findOrFail(deleted.id)).statementId)
+    assert.equal(response.body().credits, 10)
     const listed = await client.get(`/api/v1/account/${fixture.account.id}/statements`).accept('json').loginAs(fixture.user)
     listed.assertStatus(200)
     assert.equal(listed.body()[0].credits, 10)
@@ -258,7 +259,7 @@ test.group('Manual statement correctness', (group) => {
     assert.deepEqual((await Statement.findOrFail(statement.id)).data, investmentData)
   })
 
-  test('combined date change currently reconciles the pre-edit period', async ({ client, assert }) => {
+  test('combined date change reconciles the resulting period', async ({ client, assert }) => {
     const statement = await seedStatement(february.startDate, february.endDate, 200)
     const feb = await seedTransaction('2025-02-10', 10)
     const march = await seedTransaction('2025-03-10', 20)
@@ -266,8 +267,8 @@ test.group('Manual statement correctness', (group) => {
       .json({ ...february, startDate: '2025-03-01', endDate: '2025-03-31', data: investmentData, reconcile: 'All' }).accept('json').loginAs(fixture.user)
     response.assertStatus(200)
     assert.equal((await Statement.findOrFail(statement.id)).endDate.toISODate(), '2025-03-31')
-    assert.equal((await AccountTransaction.findOrFail(feb.id)).statementId, statement.id)
-    assert.isNull((await AccountTransaction.findOrFail(march.id)).statementId)
+    assert.equal((await AccountTransaction.findOrFail(march.id)).statementId, statement.id)
+    assert.isNull((await AccountTransaction.findOrFail(feb.id)).statementId)
   })
 
   test('late persistence failure rolls back statement and reconciliation writes')
