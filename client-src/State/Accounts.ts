@@ -51,44 +51,46 @@ class Accounts implements AccountsInterface {
 
     const { data } = await response.body();
 
-    if (data) {
-      if (isInstitutionsResponse(data)) {
-        runInAction(() => {
-          // First remove any institutions from the local list
-          // that do not appear in the response.
-          for (let i = 0; i < this.institutions.length;) {
-            const index = data.findIndex((inst) => inst.id === this.institutions[i].id)
-
-            if (index === -1) {
-              this.institutions = [
-                ...this.institutions.slice(0, i),
-                ...this.institutions.slice(i + 1),
-              ]
-            }
-            else {
-              i += 1;
-            }
-          }
-
-          // For each institution in the reponse, add it to the 
-          // local list if it does not exist and refresh it if it does.
-          data.forEach((i) => {
-            let institution = this.institutions.find(
-              (inst) => inst.id === i.id,
-            );
-
-            if (!institution) {
-              institution = new Institution(this.store, i);
-              this.insertInstitution(institution);
-            }
-            else {
-              institution.refresh(i);
-            }
-          });
-          this.initialized = true;
-        });
-      }
+    if (!Array.isArray(data) || !isInstitutionsResponse(data)
+      || !data.every((institution) => Number.isFinite(institution.id) && Array.isArray(institution.accounts)
+        && institution.accounts.every((account) => Number.isFinite(account.id) && Number.isFinite(account.balance)))) {
+      throw new Error('invalid response');
     }
+
+    runInAction(() => {
+      // First remove any institutions from the local list
+      // that do not appear in the response.
+      for (let i = 0; i < this.institutions.length;) {
+        const index = data.findIndex((inst) => inst.id === this.institutions[i].id)
+
+        if (index === -1) {
+          this.institutions = [
+            ...this.institutions.slice(0, i),
+            ...this.institutions.slice(i + 1),
+          ]
+        }
+        else {
+          i += 1;
+        }
+      }
+
+      // For each institution in the reponse, add it to the
+      // local list if it does not exist and refresh it if it does.
+      data.forEach((i) => {
+        let institution = this.institutions.find(
+          (inst) => inst.id === i.id,
+        );
+
+        if (!institution) {
+          institution = new Institution(this.store, i);
+          this.insertInstitution(institution);
+        }
+        else {
+          institution.refresh(i);
+        }
+      });
+      this.initialized = true;
+    });
   }
 
   insertInstitution(institution: Institution): void {

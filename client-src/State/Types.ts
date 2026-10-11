@@ -14,6 +14,7 @@ import {
   StatementProps,
   GroupType,
   UpdateStatementProps,
+  TransactionProps,
 } from '../../common/ResponseTypes'
 import LoanTransaction from './LoanTransaction';
 import SystemIds from './SystemIds';
@@ -57,6 +58,10 @@ export interface GroupInterface {
 }
 
 export interface TransactionInterface extends BaseTransactionInterface {
+  accountId: number | null;
+
+  refresh(props: TransactionProps): void;
+
   id: number | null;
 
   amount: number;
@@ -303,6 +308,8 @@ interface BudgetInterface extends GroupInterface {
 }
 
 export interface CategoryTreeInterface extends RemoteDataInterface {
+  bills: GroupInterface;
+
   budget: BudgetInterface;
 
   systemIds: SystemIds;
@@ -351,6 +358,12 @@ export interface TransactionTaxCategoryInterface {
 }
 
 export interface RegisterInterface {
+  forEachTransaction(callback: (transaction: TransactionInterface) => void): void;
+
+  updateTransaction(props: TransactionProps): void;
+
+  refreshReconciliation(accountId: number): Promise<void>;
+
   removeTransaction(transactionId: number): void;
 }
 
@@ -561,6 +574,10 @@ export interface StatementInterface {
 }
 
 export interface StatementsInterface {
+  account: AccountInterface;
+
+  store: StoreInterface;
+
   statements: Statement[];
 
   load(): Promise<void>;
@@ -597,6 +614,8 @@ export interface AutoAssignmentsInterface {
 }
 
 export interface StoreInterface {
+  searcher: { transactions: TransactionContainerInterface };
+
   user: UserInterface;
 
   categoryTree: CategoryTreeInterface;

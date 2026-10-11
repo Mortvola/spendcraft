@@ -33,9 +33,6 @@ class FundingPlanDetails implements FundingPlanDetailsInterface {
 
    
   async updateCategoryAmount(category: FundingPlanCategory, amount: number): Promise<void> {
-    // const oldAmount = category.amount;
-    category.amount = amount;
-
     const response = await Http.put(`/api/v1/funding-plans/item/${category.categoryId}`, {
       amount,
       useGoal: category.useGoal,
@@ -45,9 +42,12 @@ class FundingPlanDetails implements FundingPlanDetailsInterface {
 
     if (response.ok) {
       const body = await response.body();
-      if (isUpdateFundingCategoryResponse(body)) {
+      if (isUpdateFundingCategoryResponse(body) && body.id === category.categoryId
+        && Number.isFinite(body.fundingAmount)) {
         runInAction(() => {
-          category.amount = amount;
+          category.amount = body.fundingAmount;
+          const cachedCategory = this.store.categoryTree.getCategory(category.categoryId);
+          if (cachedCategory) cachedCategory.fundingAmount = body.fundingAmount;
         })
       }
       else {

@@ -12,12 +12,21 @@ import {
   ApiError,
   ApiResponse,
   UpdateTransactionResponse,
+  CategoryBalanceProps,
 } from '../../common/ResponseTypes';
 import {
   NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface,
   TransactionInterface,
   TransactionTaxCategoryInterface,
 } from './Types';
+
+const hasBalances = (value: unknown): value is CategoryBalanceProps[] => (
+  Array.isArray(value) && value.every((row: unknown) => (
+    typeof row === 'object' && row !== null
+    && 'id' in row && typeof row.id === 'number' && Number.isFinite(row.id)
+    && 'balance' in row && typeof row.balance === 'number' && Number.isFinite(row.balance)
+  ))
+);
 
 class Transaction implements TransactionInterface {
   @observable
@@ -143,6 +152,34 @@ class Transaction implements TransactionInterface {
     }
   }
 
+  refresh(props: TransactionProps): void {
+    // Construct before touching the cached object so malformed nested data cannot partially apply.
+    const updated = new Transaction(this.store, props);
+    if (props.id !== this.id || !updated.date.isValid || !Number.isFinite(updated.version)
+      || !updated.categories.every((category) => Number.isFinite(category.categoryId) && Number.isFinite(category.amount))
+      || !Number.isFinite(updated.amount)) throw new Error('Invalid transaction response');
+    runInAction(() => {
+      this.date = updated.date;
+      this.type = updated.type;
+      this.comment = updated.comment;
+      this.version = updated.version;
+      this.duplicateOfTransactionId = updated.duplicateOfTransactionId;
+      this.categories = updated.categories;
+      this.taxCategories = updated.taxCategories;
+      this.name = updated.name;
+      this.amount = updated.amount;
+      this.principle = updated.principle;
+      this.instituteName = updated.instituteName;
+      this.accountName = updated.accountName;
+      this.accountId = updated.accountId;
+      this.paymentChannel = updated.paymentChannel;
+      this.location = updated.location;
+      this.accountOwner = updated.accountOwner;
+      this.pending = updated.pending;
+      this.statementId = updated.statementId;
+    });
+  }
+
   async updateTransaction(
     values: {
       date?: string,
@@ -174,75 +211,23 @@ class Transaction implements TransactionInterface {
       const transactionUpdate = data;
 
       if (transactionUpdate) {
+        if (!hasBalances(transactionUpdate.categories) || !hasBalances(transactionUpdate.acctBalances)) {
+          throw new Error('Invalid transaction balances response');
+        }
+        const previousStatementId = this.statementId;
+        this.refresh(transactionUpdate.transaction);
         runInAction(() => {
-          if (this.id === null) {
-            throw new Error('transaction has a null id');
-          }
-
+          this.store.register.updateTransaction(transactionUpdate.transaction);
           this.store.categoryTree.updateBalances(transactionUpdate.categories);
-
-          this.categories = transactionUpdate.transaction.categories.map((c, index) => ({
-            id: index, categoryId: c.categoryId, amount: c.amount, comment: c.comment,
-          }));
-
-          // Determine if the date has changed
-          const newDate = DateTime.fromISO(transactionUpdate.transaction.date)
-          const dateChanged = this.date.year !== newDate.year
-            || this.date.month !== newDate.month
-            || this.date.day !== newDate.day;
-          this.date = newDate;
-
-          this.amount = transactionUpdate.transaction.accountTransaction.amount;
-          this.principle = transactionUpdate.transaction.accountTransaction.principle;
-          this.name = transactionUpdate.transaction.accountTransaction.name;
-          this.statementId = transactionUpdate.transaction.accountTransaction.statementId;
-
-          this.comment = transactionUpdate.transaction.comment;
-          this.version = transactionUpdate.transaction.version;
-
-          // Remove the transaction from the selected category, if any, if the transaction
-          // no longer has the selected category in its splits.
-          if (this.store.uiState.selectedCategory) {
-            if (this.store.categoryTree.unassignedCat === null) {
-              throw new Error('category is null');
-            }
-
-            if ((transactionUpdate.transaction.categories.length === 0
-                && this.store.uiState.selectedCategory.id !== this.store.categoryTree.unassignedCat.id)
-              || (transactionUpdate.transaction.categories.length !== 0
-                && !transactionUpdate.transaction.categories.some(
-                  (c) => (
-                    this.store.uiState.selectedCategory && c.categoryId === this.store.uiState.selectedCategory.id
-                  ),
-                ))
-            ) {
-              this.store.uiState.selectedCategory.transactions.removeTransaction(this.id);
-            }
-            else if (dateChanged) {
-              this.store.uiState.selectedCategory.transactions.removeTransaction(this.id);
-              this.store.uiState.selectedCategory.transactions.insertTransaction(this);
-            }
-          }
-
-          // Remove and re-insert the transaction if the
-          // date has changed to ensure proper ordering
-          if (this.store.uiState.selectedAccount
-            && this.store.uiState.selectedAccount.id === this.accountId
-            && dateChanged) {
-            this.store.uiState.selectedAccount.transactions.removeTransaction(this.id);
-            this.store.uiState.selectedAccount.transactions.insertTransaction(this);
-          }
-
-          const account = this.store.accounts.findAccount(transactionUpdate.acctBalances[0].id);
-
-          if (account) {
-            account.balance = transactionUpdate.acctBalances[0].balance;
-
-            if (transactionUpdate.statement) {
-              // account.updateStatement(transactionUpdate.statement)
-            }
-          }
+          this.store.accounts.updateBalances(transactionUpdate.acctBalances);
+          const account = this.accountId === null ? null : this.store.accounts.findAccount(this.accountId);
+          if (transactionUpdate.statement && account) account.statements.updateStatement(transactionUpdate.statement);
         });
+        const account = this.accountId === null ? null : this.store.accounts.findAccount(this.accountId);
+        if (account && previousStatementId !== null
+          && (!transactionUpdate.statement || previousStatementId !== transactionUpdate.statement.id)) {
+          await account.statements.load();
+        }
 
         return null;
       }
@@ -272,20 +257,16 @@ class Transaction implements TransactionInterface {
     if (response.ok) {
       const { data } = await response.body();
 
-      if (isUpdateCategoryTransferResponse(data)) {
+      if (isUpdateCategoryTransferResponse(data) && hasBalances(data.balances)) {
         runInAction(() => {
           if (this.id === null) {
             throw new Error('transaction has a null id');
           }
 
+          this.refresh(data.transaction);
           this.store.categoryTree.updateBalances(data.balances);
-          this.categories = data.transaction.categories;
+          this.store.register.updateTransaction(data.transaction);
 
-          if (this.store.uiState.selectedCategory && !data.transaction.categories.some(
-            (c) => (this.store.uiState.selectedCategory && c.categoryId === this.store.uiState.selectedCategory.id),
-          )) {
-            this.store.uiState.selectedCategory.transactions.removeTransaction(this.id);
-          }
         });
 
         return null;
@@ -305,7 +286,7 @@ class Transaction implements TransactionInterface {
     if (response.ok) {
       const { data } = await response.body();
 
-      if (isDeleteTransactionResponse(data)) {
+      if (isDeleteTransactionResponse(data) && hasBalances(data.categories) && hasBalances(data.acctBalances)) {
         runInAction(() => {
           if (this.id === null) {
             throw new Error('transaction has a null id');
@@ -316,6 +297,8 @@ class Transaction implements TransactionInterface {
           this.store.register.removeTransaction(this.id);
         });
 
+        const account = this.accountId === null ? null : this.store.accounts.findAccount(this.accountId);
+        if (this.statementId !== null && account) await account.statements.load();
         return null;
       }
     }

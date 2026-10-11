@@ -2,7 +2,7 @@ import { observable, runInAction } from "mobx";
 import { AccountInterface, AddStatementRequest, StatementsInterface, StoreInterface } from "./Types";
 import Statement from "./Statement";
 import Http from "@mortvola/http";
-import { AddStatementResponse, ApiError, StatementProps, StatementsResponse } from "../../common/ResponseTypes";
+import { AddStatementResponse, ApiError, StatementProps, StatementsResponse, TrackingType } from "../../common/ResponseTypes";
 
 class Statements implements StatementsInterface {
   @observable
@@ -21,24 +21,36 @@ class Statements implements StatementsInterface {
   async load(): Promise<void> {
     const response = await Http.get<StatementsResponse>(`/api/v1/account/${this.account.id}/statements`);
 
-    if (response.ok) {
-      const body = await response.body();
-
-      runInAction(() => {
-        this.statements = body.map((props) => new Statement(props, this))
-          .sort((a, b) => {
-            if (a.endDate.startOf('day') > b.endDate.startOf('day')) {
-              return -1
-            }
-
-            if (a.endDate.startOf('day') > b.endDate.startOf('day')) {
-              return 1
-            }
-
-            return 0
-          })
-      });
+    if (!response.ok) throw new Error('Unable to refresh statements');
+    const body = await response.body();
+    if (!Array.isArray(body)) throw new Error('Invalid statements response');
+    // Validate the complete response before changing shared cached instances.
+    for (const props of body) {
+      const candidate = new Statement(props, this);
+      candidate.apply(props);
     }
+
+    runInAction(() => {
+      this.statements = body.map((props) => {
+        const existing = this.statements.find((statement) => statement.id === props.id);
+        if (existing) {
+          existing.apply(props);
+          return existing;
+        }
+        return new Statement(props, this);
+      })
+        .sort((a, b) => {
+          if (a.endDate.startOf('day') > b.endDate.startOf('day')) {
+            return -1
+          }
+
+          if (a.endDate.startOf('day') > b.endDate.startOf('day')) {
+            return 1
+          }
+
+          return 0
+        })
+    });
   }
 
   async addStatement(
@@ -63,10 +75,13 @@ class Statements implements StatementsInterface {
 
     if (response.ok) {
       const props = await response.body();
+      const statement = new Statement(props, this);
+      statement.apply(props);
+      if (!Array.isArray(props.transactions) || !props.transactions.every(Number.isFinite)) {
+        throw new Error('Invalid statement creation response');
+      }
 
       runInAction(() => {
-        const statement = new Statement(props, this)
-
         this.statements = [
           ...this.statements,
           statement,
@@ -82,16 +97,15 @@ class Statements implements StatementsInterface {
           return 0
         })
 
-        for (const transactionId of props.transactions) {
-          const trx = this.account.transactions.transactions.find((trx) => trx.id === transactionId)
-          if (trx) {
-            trx.statementId = statement.id
-          }
-        }
+        this.store.register.forEachTransaction((transaction) => {
+          if (transaction.accountId === this.account.id && transaction.id !== null
+            && props.transactions.includes(transaction.id)) transaction.statementId = statement.id;
+        });
 
         this.store.uiState.selectStatement(statement)
       })
 
+      if (this.account.tracking === TrackingType.Balances) await this.store.accounts.load();
       return null;
     }
 

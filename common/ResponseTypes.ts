@@ -416,9 +416,7 @@ export interface UpdateTransactionResponse {
 interface UpdateCategoryTransferResponse {
   balances: CategoryBalanceProps[],
 
-  transaction: {
-    categories: { categoryId: number, amount: number, comment?: string }[],
-  },
+  transaction: TransactionProps,
 }
 
 export const isUpdateCategoryTransferResponse = (
