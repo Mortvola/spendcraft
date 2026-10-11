@@ -110,7 +110,12 @@ class Statement implements StatementInterface {
           this.statements.store.uiState.selectStatement(null);
         }
       });
-
+      await this.statements.store.register.refreshReconciliation(this.statements.account.id);
+      if (this.statements.account.tracking === TrackingType.Balances) {
+        await this.statements.store.accounts.load();
+      }
+    } else {
+      throw new Error('Statement deletion failed');
     }
 
     return null;

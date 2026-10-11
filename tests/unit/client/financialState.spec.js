@@ -194,16 +194,39 @@ export * from ${source('common/ResponseTypes.ts')};
     assert.equal(cached.category.statementId, 31)
   })
 
-  test('statement deletion removes selected statement without inventing unsupported server effects', async ({ assert }) => {
+  test('statement deletion refreshes authoritative membership and balance', async ({ assert }) => {
     const cached = transactions(f.transactionProps(-10, 30))
     state.runInAction(() => { f.account.tracking = state.TrackingType.Balances; f.account.balance = 90 })
     routes.set('delete /api/v1/statements/30', async () => ({ body: {} }))
+    routes.set('get /api/v1/transactions?t=40', async () => ({ body: { data: { transactions: [f.transactionProps(-10, null)], balance: 0 } } }))
+    accountsResponse(0)
     await f.statement.delete()
-    // The current DELETE endpoint does not clear assignments or recompute balances.
-    assert.equal(cached.account.statementId, 30); assert.equal(cached.category.statementId, 30)
+    assert.isNull(cached.account.statementId); assert.isNull(cached.category.statementId)
     assert.lengthOf(f.account.statements.statements, 0)
-    assert.equal(f.account.balance, 90)
+    assert.equal(f.account.balance, 0)
     assert.equal(f.store.uiState.selectedStatement, null)
+  })
+
+  test('rejected statement deletion preserves cached financial state', async ({ assert }) => {
+    const cached = transactions(f.transactionProps(-10, 30))
+    routes.set('delete /api/v1/statements/30', async () => ({ ok: false, body: {} }))
+    await assert.rejects(() => f.statement.delete())
+    assert.equal(cached.account.statementId, 30)
+    assert.equal(cached.category.statementId, 30)
+    assert.equal(f.store.uiState.selectedStatement, f.statement)
+    assert.lengthOf(f.account.statements.statements, 1)
+    assert.equal(f.account.balance, 90)
+  })
+
+  test('post-delete refresh failure retains confirmed deletion without inventing membership', async ({ assert }) => {
+    const cached = transactions(f.transactionProps(-10, 30))
+    routes.set('delete /api/v1/statements/30', async () => ({ body: {} }))
+    routes.set('get /api/v1/transactions?t=40', async () => ({ ok: false, body: {} }))
+    await assert.rejects(() => f.statement.delete())
+    assert.lengthOf(f.account.statements.statements, 0)
+    assert.equal(f.store.uiState.selectedStatement, null)
+    assert.equal(cached.account.statementId, 30)
+    assert.equal(f.account.balance, 90)
   })
 
   function accountsResponse(balance) {

@@ -858,8 +858,21 @@ export default class AccountsController {
 
     const { statementId } = request.params();
 
-    const statement = await budgetStatements(user.budgetId).where('id', statementId).firstOrFail()
+    await db.transaction(async (trx) => {
+      user.useTransaction(trx)
+      await user.related('budget').query().forUpdate().firstOrFail()
+      const statement = await budgetStatements(user.budgetId, { client: trx }).where('id', statementId).firstOrFail()
+      const account = await budgetAccounts(user.budgetId, { client: trx }).where('id', statement.accountId).firstOrFail()
 
-    await statement.delete()
+      await AccountTransaction.query({ client: trx }).where('statementId', statement.id).update({ statementId: null })
+      await statement.delete()
+
+      if (account.tracking === TrackingType.Balances) {
+        const latest = await Statement.query({ client: trx }).where('accountId', account.id)
+          .orderBy('endDate', 'desc').first()
+        account.balance = latest?.endingBalance ?? 0
+        await account.save()
+      }
+    })
   }
 }
