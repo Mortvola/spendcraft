@@ -229,6 +229,54 @@ export * from ${source('common/ResponseTypes.ts')};
     assert.equal(f.account.balance, 90)
   })
 
+  test('start-date success refreshes shared account/category state without replacing objects', async ({ assert }) => {
+    const cached = transactions()
+    const funding = f.category
+    state.runInAction(() => { funding.balance = 85.85; f.account.balance = 100 })
+    routes.set('patch /api/v1/account/10', async () => ({ body: {} }))
+    routes.set('get /api/v1/connected-accounts', async () => ({ body: { data: [{ ...f.institutionProps, accounts: [{ ...f.accountProps, startDate: '2025-02-01', balance: 100 }] }] } }))
+    routes.set('get /api/v1/groups', async () => ({ body: { data: { categories: [{ id: 20, balance: 92.95 }] } } }))
+    let refreshed = false
+    f.category.transactions.getData = async () => { refreshed = true }
+    const startDate = f.statement.startDate
+    await f.account.setSettings({ startDate })
+    assert.equal(f.account.startDate.toISODate(), '2025-02-01')
+    assert.equal(f.account.balance, 100)
+    assert.equal(funding.balance, 92.95)
+    assert.equal(cached.account.statementId, null)
+    assert.equal(cached.category.statementId, null)
+    assert.isTrue(refreshed)
+    assert.strictEqual(f.store.accounts.findAccount(10), f.account)
+    assert.strictEqual(f.store.categoryTree.getCategory(20), funding)
+  })
+
+  test('HTTP-rejected start-date edit leaves shared financial state unchanged', async ({ assert }) => {
+    const before = f.account.startDate
+    routes.set('patch /api/v1/account/10', async () => ({ ok: false, body: {} }))
+    await assert.rejects(() => f.account.setSettings({ startDate: f.statement.startDate }))
+    assert.equal(f.account.startDate, before)
+    assert.equal(f.account.balance, 100)
+    assert.equal(f.category.balance, 0)
+  })
+
+  test('valid balance-tracked start-date change does not refresh transaction or category stores', async ({ assert }) => {
+    state.runInAction(() => { f.account.tracking = state.TrackingType.Balances })
+    routes.set('patch /api/v1/account/10', async () => ({ body: {} }))
+    await f.account.setSettings({ startDate: f.statement.startDate })
+    assert.equal(f.account.startDate.toISODate(), '2025-02-01')
+    assert.equal(f.account.balance, 100)
+    assert.lengthOf(calls, 1)
+  })
+
+  test('start-date refresh failure propagates while retaining the confirmed date', async ({ assert }) => {
+    routes.set('patch /api/v1/account/10', async () => ({ body: {} }))
+    routes.set('get /api/v1/connected-accounts', async () => ({ ok: false, body: {} }))
+    await assert.rejects(() => f.account.setSettings({ startDate: f.statement.startDate }))
+    assert.equal(f.account.startDate.toISODate(), '2025-02-01')
+    assert.equal(f.account.balance, 100)
+    assert.equal(f.category.balance, 0)
+  })
+
   function accountsResponse(balance) {
     routes.set('get /api/v1/connected-accounts', async () => ({ body: { data: [{ ...f.institutionProps, accounts: [{ ...f.accountProps, tracking: state.TrackingType.Balances, balance }] }] } }))
   }

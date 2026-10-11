@@ -474,6 +474,9 @@ export default class AccountsController {
     const trx = await db.transaction();
 
     try {
+      budget.useTransaction(trx);
+      user.useTransaction(trx);
+      await user.related('budget').query().forUpdate().firstOrFail();
       const account = await budgetAccounts(user.budgetId, { client: trx }).where('id', request.params().acctId).firstOrFail();
 
       if (requestData.name !== undefined) {
@@ -485,15 +488,42 @@ export default class AccountsController {
       }
 
       if (requestData.startDate !== undefined) {
+        const previousDate = account.startDate.toISODate();
+        const nextDate = requestData.startDate.toISODate();
+        if (!previousDate || !nextDate) throw new Error('Invalid account start date');
+
+        if (account.tracking === TrackingType.Transactions && previousDate !== nextDate) {
+          const later = nextDate > previousDate;
+          const crossing = await account.related('accountTransactions').query()
+            .where('pending', false)
+            .whereHas('transaction', (query) => {
+              query.where('deleted', false).whereNot('type', TransactionType.STARTING_BALANCE)
+                .where('date', '>=', later ? previousDate : nextDate)
+                .where('date', '<', later ? nextDate : previousDate);
+            }).preload('transaction');
+          const deltas = new Map<number, number>();
+          const unassigned = await budget.getUnassignedCategory({ client: trx });
+          for (const row of crossing) {
+            const splits = row.transaction.categories.length > 0
+              ? row.transaction.categories : [{ categoryId: unassigned.id, amount: row.amount }];
+            for (const split of splits) {
+              deltas.set(split.categoryId, (deltas.get(split.categoryId) ?? 0)
+                + Math.round(split.amount * 100) * (later ? -1 : 1));
+            }
+          }
+          for (const [categoryId, cents] of deltas) {
+            const category = await Category.query({ client: trx }).where('id', categoryId)
+              .whereHas('group', (query) => query.where('budgetId', budget.id)).firstOrFail();
+            category.balance = (Math.round(category.balance * 100) + cents) / 100;
+            await category.save();
+          }
+        }
         account.startDate = requestData.startDate;
-
-        const fundingPool = await budget.getFundingPoolCategory({ client: trx });
-
-        await account.updateStartingBalance(
-          budget, fundingPool,
-        );
-
-        await fundingPool.save();
+        if (account.tracking === TrackingType.Transactions) {
+          const fundingPool = await budget.getFundingPoolCategory({ client: trx });
+          await account.updateStartingBalance(budget, fundingPool);
+          await fundingPool.save();
+        }
       }
 
       if (requestData.tracking !== undefined) {
@@ -512,11 +542,11 @@ export default class AccountsController {
 
       await trx.commit();
 
-      await budget.syncCategoryBalances();
     }
     catch (error) {
       logger.error(error)
       await trx.rollback();
+      throw error;
     }
   }
 

@@ -4,7 +4,7 @@ import { DateTime } from 'luxon';
 import {
   AccountProps, AddTransactionResponse, ErrorProps,
   isAddTransactionResponse, TrackingType, AccountType,
-  isErrorResponse,
+  isErrorResponse, ApiResponse, CategoryProps,
 } from '../../common/ResponseTypes';
 import {
   AccountInterface, InstitutionInterface, NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface,
@@ -130,6 +130,23 @@ class Account implements AccountInterface {
         this.startDate = settings.startDate ?? this.startDate;
         this.tracking = settings.tracking ?? this.tracking;
       });
+      if (settings.startDate !== undefined && this.tracking === TrackingType.Transactions) {
+        await this.store.accounts.load();
+        const categories = await Http.get<ApiResponse<{ categories: CategoryProps[] }>>('/api/v1/groups');
+        if (!categories.ok) throw new Error('Unable to refresh category balances');
+        const { data } = await categories.body();
+        if (!Array.isArray(data?.categories) || !data.categories.every((category) =>
+          category !== null && Number.isFinite(category.id) && Number.isFinite(category.balance))) {
+          throw new Error('Invalid category balances response');
+        }
+        this.store.categoryTree.updateBalances(data.categories);
+        for (const props of data.categories) {
+          const category = this.store.categoryTree.getCategory(props.id);
+          if (category && category.transactions.transactions.length > 0) await category.transactions.getData(0);
+        }
+      }
+    } else {
+      throw new Error('Account settings update failed');
     }
   }
 
