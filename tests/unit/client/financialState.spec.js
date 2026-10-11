@@ -25,7 +25,6 @@ export { default as Category } from ${source('client-src/State/Category.ts')};
 export { default as Group } from ${source('client-src/State/Group.ts')};
 export { default as Transaction } from ${source('client-src/State/Transaction.ts')};
 export { default as Statement } from ${source('client-src/State/Statement.ts')};
-export { default as FundingPlanDetails } from ${source('client-src/State/FundingPlanDetails.ts')};
 export { default as Balance } from ${source('client-src/State/Balance.ts')};
 export { runInAction } from 'mobx';
 export * from ${source('common/ResponseTypes.ts')};
@@ -352,21 +351,6 @@ export * from ${source('common/ResponseTypes.ts')};
     await f.statement.update({ startDate: '2025-02-15' })
     assert.equal(cached.account.statementId, 30); assert.equal(cached.category.statementId, 30)
     assert.lengthOf(calls, 1)
-  })
-
-  test('failed funding amount edit does not optimistically change the displayed plan', async ({ assert }) => {
-    const details = new state.FundingPlanDetails(f.store, { id: 1, history: [], categories: [{ categoryId: 20, amount: 10, useGoal: false, goalDate: null, recurrence: 1 }] })
-    routes.set('put /api/v1/funding-plans/item/20', async () => ({ ok: false, body: {} }))
-    await assert.rejects(() => details.updateCategoryAmount(details.categories[0], 25))
-    assert.equal(details.categories[0].amount, 10)
-  })
-
-  test('successful funding amount edit applies authoritative response to plan and category', async ({ assert }) => {
-    const details = new state.FundingPlanDetails(f.store, { id: 1, history: [], categories: [{ categoryId: 20, amount: 10, useGoal: false, goalDate: null, recurrence: 1 }] })
-    routes.set('put /api/v1/funding-plans/item/20', async () => ({ body: { id: 20, fundingAmount: 25.02 } }))
-    await details.updateCategoryAmount(details.categories[0], 25.019)
-    assert.equal(details.categories[0].amount, 25.02)
-    assert.equal(f.category.fundingAmount, 25.02)
   })
 
   test('malformed authoritative accounts refresh is an error after a successful statement mutation', async ({ assert }) => {

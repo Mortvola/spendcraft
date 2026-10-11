@@ -3,7 +3,6 @@ import type Category from './Category';
 import type {
   AccountInterface,
   CategoryInterface,
-  FundingPlanInterface,
   GroupInterface,
   StoreInterface, TransactionInterface, UIStateInterface,
 } from './Types';
@@ -20,9 +19,6 @@ class UIState implements UIStateInterface {
 
   @observable
   accessor selectedGroup: GroupInterface | null = null;
-
-  @observable
-  accessor selectedPlan: FundingPlanInterface | null = null;
 
   @observable
   accessor selectedAccount: AccountInterface | null = null;
@@ -172,12 +168,6 @@ class UIState implements UIStateInterface {
     runInAction(() => {
       this.selectedStatement = statement;
     })
-  }
-
-  selectPlan(plan: FundingPlanInterface | null): void {
-    runInAction(() => {
-      this.selectedPlan = plan;
-    });
   }
 
   selectTransaction(transaction: TransactionInterface | null): void {

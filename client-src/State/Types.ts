@@ -254,14 +254,6 @@ export interface RebalancesInterface {
   transactions: TransactionContainerInterface;
 }
 
-export interface FundingPlanInterface {
-  id: number;
-
-  name: string;
-
-  update(name: string): Promise<void>;
-}
-
 export interface PlaidInterface {
   institution: InstitutionInterface | null;
 
@@ -275,7 +267,6 @@ export interface UIStateInterface {
   selectGroup(group: GroupInterface | null): void;
   selectAccount(account: AccountInterface | null): void;
   selectStatement(statement: Statement | null): void;
-  selectPlan(plan: FundingPlanInterface | null): void;
   selectTransaction(transaction: TransactionInterface | null): void;
   toggleGroupExpanded(id: number): void;
   toggleAccountExpanded(id: number): void;
@@ -290,7 +281,6 @@ export interface UIStateInterface {
 
   selectedCategory: CategoryInterface | null;
   selectedGroup: GroupInterface | null;
-  selectedPlan: FundingPlanInterface | null;
   selectedAccount: AccountInterface | null;
   selectedStatement: Statement | null;
   selectedTransaction: TransactionInterface | null;
@@ -599,16 +589,6 @@ export interface StatementsInterface {
 }
 
 
-export interface FundingPlanDetailsInterface {
-  id: number;
-}
-
-export interface PlansInterface {
-  list: FundingPlanInterface[];
-
-  details: FundingPlanDetailsInterface | null;
-}
-
 export interface AutoAssignmentsInterface {
   remove(id: number): void;
 }
@@ -630,7 +610,6 @@ export interface StoreInterface {
 
   reports: Reports;
 
-  plans: PlansInterface;
 
   autoAssignments: AutoAssignmentsInterface;
 

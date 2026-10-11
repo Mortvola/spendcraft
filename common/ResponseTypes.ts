@@ -94,18 +94,6 @@ export interface UpdateCategoryResponse {
   hidden: boolean,
 }
 
-interface UpdateFundingCategoryResponse {
-  id: number;
-  fundingAmount: number;
-}
-
-export const isUpdateFundingCategoryResponse = (
-  r: UpdateFundingCategoryResponse | unknown,
-): r is UpdateFundingCategoryResponse => (
-  (r as UpdateFundingCategoryResponse).fundingAmount !== undefined
-  && (r as UpdateFundingCategoryResponse).id !== undefined
-);
-
 export const isCategoryProps = (r: unknown): r is CategoryProps => (
   (r as CategoryProps)?.id !== undefined
   && (r as CategoryProps)?.name !== undefined
@@ -470,7 +458,7 @@ export interface AddOfflineAccountResponse {
   categories: CategoryBalanceProps[],
 }
 
-export interface FundingPlanCategoryProps {
+interface FundingPlanCategoryProps {
   id?: number;
 
   categoryId: number;
@@ -484,7 +472,7 @@ export interface FundingPlanCategoryProps {
   recurrence: number;
 }
 
-export interface HistoryCategoryProps {
+interface HistoryCategoryProps {
   id: number;
 
   months: {
@@ -507,11 +495,6 @@ export interface FundingPlanDetailsProps {
   history: HistoryCategoryProps[];
 
   categories: FundingPlanCategoryProps[];
-}
-
-export interface FundingPlanProps {
-  id: number;
-  name: string;
 }
 
 export interface ProposedFundingCategoryProps {

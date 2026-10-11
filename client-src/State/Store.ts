@@ -6,7 +6,6 @@ import Register from './Register';
 import Reports from './Reports';
 import UIState from './UIState';
 import User from './User';
-import Plans from './Plans';
 import {
   AccountsInterface, StoreInterface, UIStateInterface,
 } from './Types';
@@ -37,7 +36,6 @@ class Store implements StoreInterface {
 
   reports: Reports;
 
-  plans: Plans;
 
   rebalances: Rebalances;
 
@@ -66,7 +64,6 @@ class Store implements StoreInterface {
     this.balances = new Balances(this);
     this.uiState = new UIState(this);
     this.reports = new Reports(this);
-    this.plans = new Plans(this);
     this.rebalances = new Rebalances(this);
     this.searcher = new Searcher(this);
     this.autoAssignments = new AutoAssignments(this);
@@ -87,7 +84,6 @@ class Store implements StoreInterface {
     this.balances = new Balances(this);
     this.uiState = new UIState(this);
     this.reports = new Reports(this);
-    this.plans = new Plans(this);
     this.rebalances = new Rebalances(this);
     this.autoAssignments = new AutoAssignments(this);
     this.transactionLogs = new TransactionLogs(this);
