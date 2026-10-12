@@ -1,3 +1,4 @@
+import { validateTransactionSplits } from '#app/validation/transactionSplits';
 import { Exception } from '@adonisjs/core/exceptions';
 import {
   BaseModel, hasMany, column, belongsTo
@@ -751,6 +752,28 @@ class Account extends BaseModel {
       const unassigned = await budget.getUnassignedCategory({ client: this.$trx });
 
        
+      // OFX allocations are complete persisted splits, including an explicit remainder.
+      const applyAllocations = async (
+        oldAllocations: Transaction['categories'], oldActive: boolean,
+        newAllocations: Transaction['categories'], newActive: boolean,
+      ) => {
+        if (this.tracking !== TrackingType.Transactions) return;
+        const deltas = new Map<number, number>();
+        for (const [allocations, direction] of [[oldActive ? oldAllocations : [], -1], [newActive ? newAllocations : [], 1]] as const) {
+          for (const allocation of allocations) {
+            deltas.set(allocation.categoryId, (deltas.get(allocation.categoryId) ?? 0)
+              + direction * Math.round(allocation.amount * 100));
+          }
+        }
+        for (const [categoryId, cents] of deltas) {
+          if (cents === 0) continue;
+          const category = categoryId === unassigned.id ? unassigned : await Category.query({ client: this.$trx })
+            .where('id', categoryId).whereHas('group', (group) => group.where('budgetId', budget.id)).firstOrFail();
+          category.balance = (Math.round(category.balance * 100) + cents) / 100;
+          await category.save();
+        }
+      };
+
       for (const message of messages) {
         if (/CREDITCARDMSGSRSV.*/.test(message)) {
           const ccStmtTrnResponse = parsed.OFX[message].CCSTMTTRNRS;
@@ -790,6 +813,16 @@ class Account extends BaseModel {
                
               const transaction = await acctTrans.related('transaction').query().firstOrFail();
 
+              const oldAllocations = transaction.categories.map((allocation) => ({ ...allocation }));
+              const oldActive = !transaction.deleted && transaction.date >= this.startDate;
+              const newAmount = -transactionData.amount;
+              const explicit = oldAllocations.filter((allocation) => allocation.categoryId !== unassigned.id);
+              const remainder = (Math.round(newAmount * 100)
+                - explicit.reduce((total, allocation) => total + Math.round(allocation.amount * 100), 0)) / 100;
+              const allocations = [...explicit, { categoryId: unassigned.id, amount: remainder }];
+              validateTransactionSplits(newAmount, allocations);
+              await applyAllocations(oldAllocations, oldActive, allocations, transactionData.date >= this.startDate);
+
               // The amount to add to the balance is the difference between
               // the old transaction amount and the new transaction amount unless
               // the transaction was previously deleted. In that case, the amount
@@ -805,6 +838,7 @@ class Account extends BaseModel {
                 .merge({
                   deleted: false,
                   date: transactionData.date,
+                  categories: allocations,
                 })
                 .save();
 
@@ -847,6 +881,9 @@ class Account extends BaseModel {
                   amount: -transactionData.amount,
                 });
 
+              validateTransactionSplits(acctTrans.amount, transaction.categories);
+              await applyAllocations([], false, transaction.categories, transaction.date >= this.startDate);
+
               sum += acctTrans.amount;
 
                
@@ -867,18 +904,13 @@ class Account extends BaseModel {
         this.balance += sum;
       }
 
-      if (sum !== 0 && this.tracking === TrackingType.Transactions) {
-        unassigned.balance += sum;
-
-        await unassigned.save();
-      }
-
       await this.updateAccountBalanceHistory(this.balance);
 
       await this.save();
 
       const fundingPool = await budget.getFundingPoolCategory({ client: this.$trx });
       await this.updateStartingBalance(budget, fundingPool);
+      await fundingPool.save();
     }
   }
 
