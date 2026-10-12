@@ -219,9 +219,7 @@ export default class UsersController {
           await Promise.all(groups.map(async (group) => {
             const categories = await group.related('categories').query();
 
-            await Promise.all(categories.map(async (category) => {
-              category.delete()
-            }));
+            await Promise.all(categories.map((category) => category.delete()));
 
             return group.delete()
           }));
