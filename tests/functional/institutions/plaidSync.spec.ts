@@ -819,4 +819,66 @@ test.group('Plaid sync characterization', (group) => {
     await f.institution.refresh()
     assert.equal(f.institution.cursor, 'c2')
   })
+  test('Plaid skips initialized and uninitialized balance-tracked accounts')
+    .with([false, true]).run(async ({ client, assert }, initialized) => {
+      await f.account.merge({ tracking: TrackingType.Balances, initialized, balance: 90 }).save()
+      const before = await snapshot()
+      fake.responses = [page(accounts(), 'balance-mode-cursor', { added: [purchase('balance-mode-transaction')] })]
+      const response = await client.post(url()).loginAs(f.user)
+      response.assertStatus(200)
+      const rows = await f.account.related('accountTransactions').query()
+      assert.lengthOf(rows, 0)
+      const after = await snapshot()
+      assert.deepEqual(after.statements, before.statements)
+      assert.deepEqual(after.accounts, before.accounts)
+      assert.deepEqual(after.categories, before.categories)
+      assert.deepEqual(after.transactions, before.transactions)
+      assert.deepEqual(after.transaction_logs, before.transaction_logs)
+      assert.equal((await Institution.findOrFail(f.institution.id)).cursor, 'balance-mode-cursor')
+    })
+
+  test('mixed institution sync skips balance mode and processes eligible accounts atomically', async ({ client, assert }) => {
+    await f.account.merge({ tracking: TrackingType.Balances, initialized: false, balance: 90 }).save()
+    fake.responses = [page(accounts(), 'mixed-cursor', { added: [purchase('skip'), providerTransaction(providerId(f.other), 'eligible')] })]
+    const response = await client.post(url()).loginAs(f.user)
+    response.assertStatus(200)
+    assert.lengthOf(await f.account.related('accountTransactions').query(), 0)
+    assert.equal((await Account.findOrFail(f.account.id)).balance, 90)
+    assert.lengthOf(await f.other.related('accountTransactions').query(), 1)
+    assert.equal((await Account.findOrFail(f.other.id)).balance, 90)
+    assert.equal((await Institution.findOrFail(f.institution.id)).cursor, 'mixed-cursor')
+    assert.equal((await f.budget.getUnassignedCategory()).balance, -10)
+  })
+
+  test('mixed sync failure rolls back eligible processing and cursor without touching balance mode', async ({ client, assert }) => {
+    await f.account.merge({ tracking: TrackingType.Balances, initialized: false, balance: 90 }).save()
+    const before = await snapshot()
+    fake.responses = [page(accounts(), 'must-not-commit', { added: [purchase('skip'), providerTransaction(providerId(f.other), 'eligible-before-failure'), providerTransaction(providerId(f.other), 'failure')] })]
+    await db.rawQuery("ALTER TABLE account_transactions ADD CONSTRAINT balance_mode_mixed_failure CHECK (provider_transaction_id <> 'failure') NOT VALID")
+    try {
+      const response = await client.post(url()).loginAs(f.user)
+      response.assertStatus(500)
+      assert.deepEqual(await snapshot(), before)
+    } finally {
+      await db.rawQuery('ALTER TABLE account_transactions DROP CONSTRAINT balance_mode_mixed_failure')
+    }
+  })
+
+  test('Plaid modified and removed events leave historical invalid balance-mode financial rows untouched', async ({ client, assert }) => {
+    fake.responses = [page(accounts(), 'seed', { added: [purchase('historical')] })]
+    ;(await client.post(url()).loginAs(f.user)).assertStatus(200)
+    await f.account.merge({ tracking: TrackingType.Balances, balance: 90 }).save()
+    const before = await snapshot()
+    fake.responses = [page(accounts(), 'skip-history', {
+      modified: [purchase('historical', { amount: 20 })],
+      removed: [{ transaction_id: 'historical', account_id: providerId(f.account) }],
+    })]
+    ;(await client.post(url()).loginAs(f.user)).assertStatus(200)
+    const after = await snapshot()
+    for (const table of ['accounts', 'account_transactions', 'transactions', 'categories', 'statements', 'transaction_logs']) {
+      assert.deepEqual(after[table], before[table])
+    }
+    assert.equal((await Institution.findOrFail(f.institution.id)).cursor, 'skip-history')
+  })
+
 })

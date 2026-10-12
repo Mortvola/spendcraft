@@ -64,6 +64,7 @@ class Institution extends BaseModel {
 
   private static async updateAccountBalances(budget: Budget, accounts: Account[], plaidAccounts: Plaid.AccountBase[]) {
     return Promise.all(accounts.map(async (acct) => {
+      if (acct.tracking === TrackingType.Balances) return;
       if (acct.$extras.modified ?? false) {
         const plaidAccount = plaidAccounts.find((a) => a.account_id === acct.plaidAccountId);
 
@@ -149,6 +150,7 @@ class Institution extends BaseModel {
         accounts.push(acct);
       }
 
+      if (acct.tracking === TrackingType.Balances) continue;
       const [amount, unassignedAmount] = await acct.addOrUpdateTransaction(transaction, budget);
 
       // Account returns deltas based on both the old and new applicable state.
@@ -175,7 +177,7 @@ class Institution extends BaseModel {
     for (const removed of removedTransactions) {
       const acct = accounts.find((a) => a.plaidAccountId === removed.account_id)
 
-      if (acct) {
+      if (acct && acct.tracking !== TrackingType.Balances) {
          
         const at = await acct.related('accountTransactions').query()
           .where('providerTransactionId', removed.transaction_id)

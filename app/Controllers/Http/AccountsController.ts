@@ -186,6 +186,9 @@ export default class AccountsController {
       const unassignedCat = await budget.getUnassignedCategory({ client: trx });
 
       const account = await budgetAccounts(user.budgetId, { client: trx }).where('id', acctId).firstOrFail();
+      if (account.tracking === TrackingType.Balances) {
+        throw new Exception('Balance-tracked accounts cannot have transactions', { status: 422 });
+      }
 
       const transaction = (new Transaction()).useTransaction(trx);
 
@@ -478,6 +481,11 @@ export default class AccountsController {
       user.useTransaction(trx);
       await user.related('budget').query().forUpdate().firstOrFail();
       const account = await budgetAccounts(user.budgetId, { client: trx }).where('id', request.params().acctId).firstOrFail();
+      if (requestData.tracking === TrackingType.Balances
+        && (account.tracking === TrackingType.Transactions
+          || (account.tracking !== TrackingType.Balances && await account.related('accountTransactions').query().first()))) {
+        throw new Exception('Transaction tracking cannot be changed to balance tracking', { status: 422 });
+      }
 
       if (requestData.name !== undefined) {
         account.name = requestData.name;
@@ -564,7 +572,10 @@ export default class AccountsController {
 
     const { acctId } = request.params();
 
-    await budgetAccounts(user.budgetId).where('id', acctId).firstOrFail();
+    const authorizedAccount = await budgetAccounts(user.budgetId).where('id', acctId).firstOrFail();
+    if (authorizedAccount.tracking === TrackingType.Balances) {
+      throw new Exception('OFX is not supported for balance-tracked accounts', { status: 422 });
+    }
 
     const trx = await db.transaction();
 

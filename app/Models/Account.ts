@@ -1,3 +1,4 @@
+import { Exception } from '@adonisjs/core/exceptions';
 import {
   BaseModel, hasMany, column, belongsTo
 } from '@adonisjs/lucid/orm';
@@ -709,6 +710,10 @@ class Account extends BaseModel {
     budget: Budget,
     user: User,
   ): Promise<void> {
+    if (this.tracking === TrackingType.Balances) {
+      throw new Exception('OFX is not supported for balance-tracked accounts', { status: 422 });
+    }
+
     // Grab the text after the first pair of line feeds.
     const entities = data.toString().split('\n\n');
     let ofxData = entities[1];
@@ -882,6 +887,10 @@ class Account extends BaseModel {
     budget: Budget,
     fundingPool: Category,
   ): Promise<void> {
+    if (this.tracking === TrackingType.Balances) {
+      throw new Exception('Initial Funding is not supported for balance-tracked accounts', { status: 422 });
+    }
+
     if (!this.$trx) {
       throw new Error('database transaction not set');
     }

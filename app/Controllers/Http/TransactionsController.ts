@@ -151,6 +151,10 @@ export default class TransactionsController {
         .whereHas('institution', (query) => query.where('budgetId', budget.id))
         .firstOrFail();
 
+      if (account.tracking === TrackingType.Balances) {
+        throw new Exception('Balance-tracked accounts cannot have transactions', { status: 422 });
+      }
+
       const categoryIds = new Set([
         ...transaction.categories.map((category) => category.categoryId),
         ...(requestData.categories ?? []).map((category) => category.categoryId),
@@ -526,6 +530,10 @@ export default class TransactionsController {
           .where('id', acctTransaction.accountId)
           .whereHas('institution', (query) => query.where('budgetId', budget.id))
           .firstOrFail();
+      }
+
+      if (account?.tracking === TrackingType.Balances) {
+        throw new Exception('Balance-tracked accounts cannot have transactions', { status: 422 });
       }
 
       const trxCategories = transaction.categories;
