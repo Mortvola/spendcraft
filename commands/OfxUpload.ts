@@ -33,8 +33,6 @@ export default class OfxUpload extends BaseCommand {
       throw new Error('file not found');
     }
 
-    const trx = await db.transaction();
-
     const username = await this.prompt.ask('Enter the username', {
       validate(answer) {
         if (!answer) {
@@ -44,6 +42,8 @@ export default class OfxUpload extends BaseCommand {
         return true;
       },
     });
+
+    const trx = await db.transaction();
 
     try {
       const user = await User.findBy('username', username);
