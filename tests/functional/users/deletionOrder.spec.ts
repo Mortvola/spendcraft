@@ -126,7 +126,8 @@ test.group('Last-user deletion async lifecycle', () => {
         release.release()
         const response = await request
         const outcomes = await Promise.allSettled(deletes)
-        response.assertStatus(200)
+        if (scenario === 'delayed-failure') assert.isAtLeast(response.status(), 400)
+        else response.assertStatus(200)
         assert.isTrue(bindingAtExecution)
         assert.isTrue(captured[0].isCompleted)
         if (scenario === 'delayed-failure') {

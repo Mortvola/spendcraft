@@ -245,6 +245,7 @@ export default class UsersController {
     catch (error) {
       console.log(error);
       await trx.rollback();
+      throw error;
     }
   }
 }
