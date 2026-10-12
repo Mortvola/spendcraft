@@ -39,7 +39,7 @@ export class UserService {
       return user;
     }
     catch (error) {
-      trx.rollback();
+      await trx.rollback();
       throw error;
     }
   }
