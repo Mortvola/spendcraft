@@ -442,6 +442,7 @@ class CategoriesController {
         .first();
 
       if (result) {
+        await trx.rollback();
         response.status(409)
 
         return {
