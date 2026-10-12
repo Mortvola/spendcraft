@@ -18,16 +18,16 @@ import { useOfflineAccountDialog } from './OfflineAccountDialog';
 import { useStores } from '../State/Store';
 import { useTransactionDialog } from '../Transactions/TransactionDialog';
 import { TrackingType } from '../../common/ResponseTypes';
-import { useBalanceDialog } from './BalanceDialog';
+import { useStatementDialog } from './StatementDialog';
 
 const Accounts: React.FC = observer(() => {
-  const { accounts, uiState, balances } = useStores()
+  const { accounts, uiState } = useStores()
   const [open, setOpen] = useState<boolean>(false);
   const location = useLocation();
   const navigate = useNavigate();
   const [OfflineAccountDialog, showOfflineAccountDialog] = useOfflineAccountDialog();
   const [TransactionDialog, showTransactionDialog] = useTransactionDialog();
-  const [BalanceDialog, showBalanceDialog] = useBalanceDialog();
+  const [StatementDialog, showStatementDialog] = useStatementDialog();
 
   React.useEffect(() => {
     const matched = matchPath({ path: '/accounts/:accountId', caseSensitive: false, end: true }, location.pathname);
@@ -63,7 +63,7 @@ const Accounts: React.FC = observer(() => {
     >
       {
         uiState.selectedAccount && uiState.selectedAccount.tracking === TrackingType.Balances
-          ? <TabViewMenuItem onClick={showBalanceDialog}>Add Balance</TabViewMenuItem>
+          ? <TabViewMenuItem onClick={showStatementDialog}>Add Statement</TabViewMenuItem>
           : <TabViewMenuItem onClick={showTransactionDialog}>Add Transaction</TabViewMenuItem>
       }
       
@@ -114,7 +114,7 @@ const Accounts: React.FC = observer(() => {
           </div>
           <OfflineAccountDialog />
           <TransactionDialog account={uiState.selectedAccount} />
-          <BalanceDialog balances={balances} />
+          {uiState.selectedAccount && <StatementDialog account={uiState.selectedAccount} />}
         </NavigationView>
       </MobileView>
     </>

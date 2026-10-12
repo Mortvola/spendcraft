@@ -18,7 +18,11 @@ test.group('Client financial state consistency', (group) => {
     const entry = join(directory, 'entry.js')
     const source = (file) => JSON.stringify(resolve(file))
     await writeFile(entry, `
-export { store } from ${source('client-src/State/Store.ts')};
+export { store, StoreContext } from ${source('client-src/State/Store.ts')};
+export { default as AccountsToolbar } from ${source('client-src/AccountView/AccountsToolbar.tsx')};
+export { default as BalanceHistoryView } from ${source('client-src/AccountView/BalanceHistory.tsx')};
+export { createElement } from ${source('node_modules/react/index.js')};
+export { renderToStaticMarkup } from ${source('node_modules/react-dom/server.node.js')};
 export { default as Http } from '@mortvola/http';
 export { default as Institution } from ${source('client-src/State/Institution.ts')};
 export { default as Category } from ${source('client-src/State/Category.ts')};
@@ -29,7 +33,9 @@ export { default as Balance } from ${source('client-src/State/Balance.ts')};
 export { runInAction } from 'mobx';
 export * from ${source('common/ResponseTypes.ts')};
 `)
-    await build({ configFile: false, logLevel: 'error', plugins: [babel({ plugins: [['@babel/plugin-proposal-decorators', { version: '2023-11' }]] })], resolve: { alias: { '@mortvola/http': resolve('node_modules/@mortvola/http/dist/index.js'), mobx: resolve('node_modules/mobx/dist/mobx.esm.js') } }, build: { target: 'esnext', minify: false, outDir: join(directory, 'out'), lib: { entry, formats: ['es'], fileName: () => 'state.mjs' } } })
+    // Chart loading requires a browser; these checks exercise the surrounding Statement controls.
+    await writeFile(join(directory, 'chart.js'), 'export default function Chart() { return null }\n')
+    await build({ configFile: false, logLevel: 'error', plugins: [babel({ plugins: [['@babel/plugin-proposal-decorators', { version: '2023-11' }]] })], resolve: { alias: [{ find: 'react-google-charts', replacement: join(directory, 'chart.js') }, { find: '@mortvola/http', replacement: resolve('node_modules/@mortvola/http/dist/index.js') }, { find: 'mobx', replacement: resolve('node_modules/mobx/dist/mobx.esm.js') }, { find: /^react$/, replacement: resolve('node_modules/react/index.js') }, { find: /^react\/jsx-runtime$/, replacement: resolve('node_modules/react/jsx-runtime.js') }, { find: /^react-dom$/, replacement: resolve('node_modules/react-dom/index.js') }] }, build: { rolldownOptions: { output: { banner: "import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);" }, external: (id) => id.startsWith(`${resolve('node_modules/react')}/`) || id.startsWith(`${resolve('node_modules/react-dom')}/`) }, target: 'esnext', minify: false, outDir: join(directory, 'out'), lib: { entry, formats: ['es'], fileName: () => 'state.mjs' } } })
     state = await import(pathToFileURL(join(directory, 'out/state.mjs')).href)
   })
   group.teardown(async () => {
@@ -281,27 +287,38 @@ export * from ${source('common/ResponseTypes.ts')};
     routes.set('get /api/v1/connected-accounts', async () => ({ body: { data: [{ ...f.institutionProps, accounts: [{ ...f.accountProps, tracking: state.TrackingType.Balances, balance }] }] } }))
   }
 
-  test('balance-history edits preserve shared account identity and use server current balance').with([{ previous: '2025-02-20', next: '2025-02-20', otherBalance: 100, initial: 100, current: 75 }, { previous: '2025-02-20', next: '2025-02-10', otherBalance: 100, initial: 100, current: 100 }, { previous: '2025-02-10', next: '2025-02-20', otherBalance: 125, initial: 125, current: 75 }]).run(async ({ assert }, scenario) => {
-    state.runInAction(() => { f.account.tracking = state.TrackingType.Balances; f.store.balances.account = f.account })
-    const row = new state.Balance(f.store.balances, { id: 50, date: scenario.previous, balance: 100 })
-    const other = new state.Balance(f.store.balances, { id: 51, date: '2025-02-15', balance: scenario.otherBalance })
-    state.runInAction(() => { f.store.balances.balances = [row, other]; f.account.balance = scenario.initial })
-    routes.set('patch /api/v1/account/10/balances/50', async () => ({ body: { data: { id: 50, date: scenario.next, balance: 75 } } }))
-    accountsResponse(scenario.current)
-    await row.update({ date: scenario.next, amount: 75 })
-    assert.equal(f.account.balance, scenario.current)
-    assert.strictEqual(f.store.accounts.findAccount(10), f.account)
-  })
+  test('balance-tracked toolbar and history use Statements for ordinary and investment accounts')
+    .with([state => state.AccountType.Depository, state => state.AccountType.Investment])
+    .run(async ({ assert }, getType) => {
+      state.runInAction(() => { f.account.tracking = state.TrackingType.Balances; f.account.type = getType(state) })
+      const render = (component) => state.renderToStaticMarkup(state.createElement(state.StoreContext.Provider,
+        { value: f.store }, state.createElement(component)))
+      const toolbar = render(state.AccountsToolbar)
+      assert.include(toolbar, 'Add Statement')
+      assert.notInclude(toolbar, 'Add Balance')
+      let historyReads = 0
+      f.store.balances.load = async () => { historyReads++ }
+      const history = render(state.BalanceHistoryView)
+      assert.include(history, '02/28/25')
+      assert.notInclude(history, 'Add Balance')
+      assert.equal(historyReads, 0)
+    })
 
-  test('balance-history final deletion uses authoritative zero', async ({ assert }) => {
-    state.runInAction(() => { f.account.tracking = state.TrackingType.Balances; f.store.balances.account = f.account })
-    const row = new state.Balance(f.store.balances, { id: 50, date: '2025-02-10', balance: 100 })
-    state.runInAction(() => { f.store.balances.balances = [row] })
-    routes.set('delete /api/v1/balance/50', async () => ({ body: {} }))
-    accountsResponse(0)
-    await row.delete()
-    assert.equal(f.account.balance, 0); assert.lengthOf(f.store.balances.balances, 0)
-  })
+  // Legacy tests accepted manual history as a balance authority. The API now rejects it.
+  test('rejected balance-tracked history operations preserve client account and history state')
+    .with(['create', 'update', 'delete']).run(async ({ assert }, operation) => {
+      state.runInAction(() => { f.store.balances.account = f.account; f.account.tracking = state.TrackingType.Balances })
+      const row = new state.Balance(f.store.balances, { id: 50, date: '2025-02-10', balance: 100 })
+      state.runInAction(() => { f.store.balances.balances = [row] })
+      const url = operation === 'create' ? 'post /api/v1/account/10/balances' : operation === 'update' ? 'patch /api/v1/account/10/balances/50' : 'delete /api/v1/balance/50'
+      routes.set(url, async () => ({ ok: false, body: {} }))
+      await assert.rejects(() => operation === 'create' ? f.store.balances.addBalance({ date: '2025-02-10', amount: 75 })
+        : operation === 'update' ? row.update({ date: '2025-02-10', amount: 75 }) : row.delete())
+      assert.equal(f.account.balance, 100)
+      assert.equal(row.balance, 100)
+      assert.strictEqual(f.store.balances.balances[0], row)
+      assert.lengthOf(calls, 1)
+    })
 
   test('rejected transaction edit leaves cached financial state unchanged', async ({ assert }) => {
     const cached = transactions()
@@ -386,14 +403,6 @@ export * from ${source('common/ResponseTypes.ts')};
     routes.set('post /api/v1/category-transfer', async () => ({ ok: false, body: { data: { transaction: f.transactionProps(), balances: [{ id: 20, balance: -75 }] } } }))
     await assert.rejects(() => f.store.register.addCategoryTransfer({ date: '2025-02-10', categories: [] }, state.TransactionType.FUNDING_TRANSACTION))
     assert.equal(f.category.balance, 0); assert.lengthOf(f.category.transactions.transactions, 0)
-  })
-
-  test('balance-history creation applies authoritative current balance', async ({ assert }) => {
-    state.runInAction(() => { f.store.balances.account = f.account; f.account.tracking = state.TrackingType.Balances; f.account.balance = 100 })
-    routes.set('post /api/v1/account/10/balances', async () => ({ body: { data: { id: 50, date: '2025-02-10', balance: 75, accountBalance: 100 } } }))
-    await f.store.balances.addBalance({ date: '2025-02-10', amount: 75 })
-    assert.equal(f.account.balance, 100)
-    assert.equal(f.store.balances.balances[0].balance, 75)
   })
 
   test('same-budget category movement preserves identity and changes computed group balances', async ({ assert }) => {

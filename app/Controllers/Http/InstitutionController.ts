@@ -212,8 +212,10 @@ class InstitutionController {
 
         switch (newAcct.tracking) {
           case TrackingType.Balances:
-            await newAcct.updateAccountBalanceHistory(newAcct.balance, newAcct.startDate);
-            await newAcct.save();
+            await newAcct.related('statements').create({
+              startDate: newAcct.startDate, endDate: newAcct.startDate,
+              startingBalance: newAcct.balance, endingBalance: newAcct.balance, data: null,
+            });
             break
 
           case TrackingType.Transactions:
@@ -603,8 +605,10 @@ class InstitutionController {
       await acct.save();
 
       if (acct.tracking === TrackingType.Balances) {
-        await acct.updateAccountBalanceHistory(acct.balance, start);
-        await acct.save();
+        await acct.related('statements').create({
+          startDate: start, endDate: start,
+          startingBalance: acct.balance, endingBalance: acct.balance, data: null,
+        });
       }
       else {
          

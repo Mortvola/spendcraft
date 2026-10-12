@@ -4,22 +4,19 @@ import Chart from 'react-google-charts';
 import { useStores } from '../State/Store';
 import styles from './BalanceHistory.module.scss';
 import Balance from './Balance';
-import { useBalanceDialog } from './BalanceDialog';
-import { BalanceInterface, StatementInterface } from '../State/Types';
+import { StatementInterface } from '../State/Types';
 import { DateTime } from 'luxon';
 import { AccountType, TrackingType } from '../../common/ResponseTypes';
 import { useStatementDialog } from './StatementDialog';
 
 const BalanceHistory: React.FC = observer(() => {
   const { balances, uiState: { selectedAccount } } = useStores();
-  const [BalanceDialog, showBalanceDialog] = useBalanceDialog();
   const [StatementDialog, showStatementDialog] = useStatementDialog();
-  const [editedBalance, setEditedBalance] = useState<BalanceInterface | null>(null);
   const [editedStatement, setEditedStatement] = useState<StatementInterface | null>(null);
 
   React.useEffect(() => {
     if (selectedAccount) { //&& selectedAccount.tracking === TrackingType.Balances) {
-      if (selectedAccount.type === AccountType.Investment) {
+      if (selectedAccount.tracking === TrackingType.Balances || selectedAccount.type === AccountType.Investment) {
         selectedAccount?.statements.load()
       } else {
         balances.load(selectedAccount);
@@ -29,7 +26,7 @@ const BalanceHistory: React.FC = observer(() => {
 
   let data: [string | null, string | number][] = [];
 
-  if (selectedAccount?.type === AccountType.Investment) {
+  if (selectedAccount?.tracking === TrackingType.Balances || selectedAccount?.type === AccountType.Investment) {
     const t: { balance: number, date: DateTime }[] = []
     const statements = selectedAccount?.statements.statements
 
@@ -97,18 +94,13 @@ const BalanceHistory: React.FC = observer(() => {
 
   data.splice(0, 0, ['date', 'balance']);
 
-  const showDialog = (balance: BalanceInterface) => {
-    setEditedBalance(balance);
-    showBalanceDialog();
-  }
-
   const showStmtDialog = (statement: StatementInterface) => {
     setEditedStatement(statement);
     showStatementDialog();
   }
 
   const handleHideDialog = () => {
-    setEditedBalance(null);
+    setEditedStatement(null);
   }
 
   const renderStatemenents = () => (
@@ -132,23 +124,6 @@ const BalanceHistory: React.FC = observer(() => {
     </>
   )
 
-  const renderBalances = () => (
-    selectedAccount?.tracking === TrackingType.Balances
-      ? (
-        <>
-          <div className="window">
-            <div className={styles.list}>
-              {balances.balances.map((b) => (
-                <Balance key={b.id} id={b.id} balance={b.balance} date={b.date} onClick={() => showDialog(b)} />
-              ))}
-            </div>
-          </div>
-          <BalanceDialog balance={editedBalance} onHide={handleHideDialog} />
-        </>
-      )
-      : null
-  )
-
   return (
     <div className={`${styles.main} ${selectedAccount?.tracking === TrackingType.Balances ? styles.history : ''} window1`}>
       <div className="chart-wrapper window ">
@@ -166,9 +141,9 @@ const BalanceHistory: React.FC = observer(() => {
         />
       </div>
       {
-        selectedAccount?.type === AccountType.Investment
+        selectedAccount?.tracking === TrackingType.Balances || selectedAccount?.type === AccountType.Investment
           ? renderStatemenents()
-          : renderBalances()
+          : null
       }
     </div>
   );

@@ -18,7 +18,7 @@ async function createFixture() {
     const institution = await budget.related('institutions').create({ name: 'History bank' })
     const account = await institution.related('accounts').create({
       name: 'History account', balance: 0, type: AccountType.Investment, subtype: 'IRA',
-      tracking: TrackingType.Balances, startDate: DateTime.fromISO('2025-01-01'), rate: 0, closed: false,
+      tracking: TrackingType.Transactions, startDate: DateTime.fromISO('2025-01-01'), rate: 0, closed: false,
     })
     const transaction = await budget.related('transactions').create({
       date: DateTime.fromISO('2025-01-01'), type: TransactionType.MANUAL_TRANSACTION,

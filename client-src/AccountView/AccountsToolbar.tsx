@@ -5,7 +5,6 @@ import { useStores } from '../State/Store';
 import { useOfflineAccountDialog } from './OfflineAccountDialog';
 import useMediaQuery from '../MediaQuery';
 import { useTransactionDialog } from '../Transactions/TransactionDialog';
-import { useBalanceDialog } from './BalanceDialog';
 import UploadFileButton from '../UploadFileButton';
 import { AccountType, TrackingType } from '../../common/ResponseTypes';
 import { useStatementDialog } from './StatementDialog';
@@ -17,10 +16,9 @@ interface PropsType {
 const AccountsToolbar: React.FC<PropsType> = observer(({
   open,
 }) => {
-  const { accounts, uiState, balances } = useStores();
+  const { accounts, uiState } = useStores();
   const [OfflineAccountDialog, showOfflineAccountDialog] = useOfflineAccountDialog();
   const [TransactionDialog, showTransactionDialog] = useTransactionDialog();
-  const [BalanceDialog, showBalanceDialog] = useBalanceDialog();
   const [StatementDialog, showStatementDialog] = useStatementDialog();
   const { isMobile } = useMediaQuery();
 
@@ -46,11 +44,8 @@ const AccountsToolbar: React.FC<PropsType> = observer(({
   )
 
   const showDialog = () => {
-    if (uiState.selectedAccount?.type === AccountType.Investment) {
+    if (uiState.selectedAccount?.tracking === TrackingType.Balances || uiState.selectedAccount?.type === AccountType.Investment) {
       showStatementDialog();
-    }
-    else if (uiState.selectedAccount?.tracking === TrackingType.Balances) {
-      showBalanceDialog();
     }
     else {
       showTransactionDialog();
@@ -85,7 +80,7 @@ const AccountsToolbar: React.FC<PropsType> = observer(({
       }
 
       if (uiState.selectedAccount.tracking === TrackingType.Balances) {
-        return 'Add Balance';
+        return 'Add Statement';
       }
 
       return 'Add Transaction';
@@ -122,7 +117,6 @@ const AccountsToolbar: React.FC<PropsType> = observer(({
                   : null
               }
               <TransactionDialog account={uiState.selectedAccount} />
-              <BalanceDialog balances={balances} />
               {
                 uiState.selectedAccount !== null
                   ? <StatementDialog account={uiState.selectedAccount} />

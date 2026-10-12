@@ -115,6 +115,16 @@ class ReportController {
           .join('institutions', 'institutions.id', 'accounts.institution_id')
           .where('application_id', budget.id)
           .andWhere('accounts.closed', false)
+          .andWhere('accounts.tracking', '!=', TrackingType.Balances)
+          .union((statementDates) => {
+            statementDates.select(db.raw('min(statements.start_date) as date'))
+              .from('statements')
+              .join('accounts', 'accounts.id', 'statements.account_id')
+              .join('institutions', 'institutions.id', 'accounts.institution_id')
+              .where('institutions.application_id', budget.id)
+              .andWhere('accounts.closed', false)
+              .andWhere('accounts.tracking', TrackingType.Balances)
+          })
           .union((query2) => {
             query2.select(db.raw('min(date) as date'))
               .from('account_transactions as at')

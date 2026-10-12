@@ -128,6 +128,7 @@ test.group('Account, history and statement budget isolation', (group) => {
     assert.equal((await Account.findOrFail(fixture.own.account.id)).name, 'Shared rename')
   })
   test('shared-budget user can create and update balance history', async ({ client, assert }) => {
+    await fixture.own.account.merge({ tracking: TrackingType.Transactions }).save()
     const url = `/api/v1/account/${fixture.own.account.id}/balances`
     const created = await client.post(url).json({ date: '2025-03-01', amount: 200 }).accept('json').loginAs(fixture.shared)
     created.assertStatus(200)
@@ -139,6 +140,7 @@ test.group('Account, history and statement budget isolation', (group) => {
     assert.equal((await Account.findOrFail(fixture.own.account.id)).balance, 250)
   })
   test('shared-budget user can delete history through either route').with(['nested', 'standalone']).run(async ({ client, assert }, route) => {
+    await fixture.own.account.merge({ tracking: TrackingType.Transactions }).save()
     const path = route === 'nested' ? `/account/${fixture.own.account.id}/balances/${fixture.own.history.id}` : `/balance/${fixture.own.history.id}`
     const response = await client.delete(`/api/v1${path}`).accept('json').loginAs(fixture.shared)
     response.assertStatus(200)

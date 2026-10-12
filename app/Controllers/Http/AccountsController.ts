@@ -305,6 +305,9 @@ export default class AccountsController {
 
     try {
       const account = await budgetAccounts(user.budgetId, { client: trx }).where('id', acctId).firstOrFail();
+      if (account.tracking === TrackingType.Balances) {
+        throw new Exception('Balance-tracked accounts use Statements', { status: 422 });
+      }
       const requestData = await request.validateUsing(addBalance)
 
       const balance = (new BalanceHistory())
@@ -386,6 +389,11 @@ export default class AccountsController {
       const balance = await budgetHistory(user.budgetId, { client: trx })
         .where('id', id).andWhere('accountId', acctId).firstOrFail();
 
+      const account = await budgetAccounts(user.budgetId, { client: trx }).where('id', balance.accountId).firstOrFail();
+      if (account.tracking === TrackingType.Balances) {
+        throw new Exception('Balance-tracked accounts use Statements', { status: 422 });
+      }
+
       balance
         .merge({
           balance: requestData.amount,
@@ -399,7 +407,6 @@ export default class AccountsController {
         .orderBy('date', 'desc')
         .firstOrFail();
 
-      const account = await budgetAccounts(user.budgetId, { client: trx }).where('id', balance.accountId).firstOrFail();
       account.balance = latestBalance.balance;
       await account.save();
 
@@ -438,9 +445,13 @@ export default class AccountsController {
       }
       const balance = await historyQuery.firstOrFail();
 
+      const account = await budgetAccounts(user.budgetId, { client: trx }).where('id', balance.accountId).firstOrFail();
+      if (account.tracking === TrackingType.Balances) {
+        throw new Exception('Balance-tracked accounts use Statements', { status: 422 });
+      }
+
       await balance.delete();
 
-      const account = await budgetAccounts(user.budgetId, { client: trx }).where('id', balance.accountId).firstOrFail();
       const latestBalance = await BalanceHistory.query({ client: trx })
         .where('accountId', balance.accountId)
         .orderBy('date', 'desc')

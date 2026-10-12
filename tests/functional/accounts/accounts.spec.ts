@@ -1,3 +1,5 @@
+import Account from '#models/Account'
+import Statement from '#models/Statement'
 import { AccountType, TrackingType } from '#common/ResponseTypes';
 import User from '#models/User';
 import { UserService } from '#services/userService';
@@ -56,22 +58,25 @@ test.group('Accounts', (group) => {
         accountId = response.body().data.accounts[0].id
     })
 
-  test('add balance item')
+  test('add Statement balance')
     .run(async ({ client, assert }) => {
       assert.isNotNull(accountId)
 
-      const response = await client.post(`/api/v1/account/${accountId}/balances`)
+      const response = await client.post(`/api/v1/account/${accountId}/statements`)
         .json({
-          date: '2025-02-01',
-          amount: 150.10,
+          startDate: '2025-02-01',
+          endDate: '2025-02-28',
+          startingBalance: 0,
+          endingBalance: 150.10,
         })
         .accept('json')
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         .loginAs(user!)
 
-      console.log(JSON.stringify(response.body()))
       response.assertStatus(200)
-      response.assertAgainstApiSpec()
+      const statement = await Statement.findOrFail(response.body().id)
+      assert.equal(statement.endingBalance, 150.10)
+      assert.equal((await Account.findOrFail(statement.accountId)).balance, 150.10)
     })
 
   test('add offline account')
