@@ -111,19 +111,20 @@ test.group('Net-worth history independence', (group) => {
       assert.deepEqual(await report(client, f), [['date', 'Transaction account'], [bucket.toISODate(), 100]])
     })
 
-  test('Initial Funding affects grouping but does not generate its own plotted baseline', async ({ client, assert }) => {
+  test('Initial Funding supplies an opening snapshot and controls grouping', async ({ client, assert }) => {
     const f = await fixture()
     await f.account.merge({ startDate: f.today.minus({ days: 4000 }) }).save()
     await movement(f, f.account.startDate, 105, TransactionType.STARTING_BALANCE)
     await movement(f, f.today.minus({ days: 2 }), -5)
-    assert.deepEqual(await report(client, f), [['date', 'Transaction account'], [f.today.startOf('year').toISODate(), 100]])
+    assert.deepEqual(await report(client, f), [['date', 'Transaction account'], [f.account.startDate.startOf('year').toISODate(), 105], [f.today.startOf('year').toISODate(), 100]])
   })
 
-  test('an Initial-Funding-only account currently has no report data row', async ({ client }) => {
+  test('an Initial-Funding-only account supplies its opening row', async ({ client, assert }) => {
     const f = await fixture()
     await movement(f, f.account.startDate, 100, TransactionType.STARTING_BALANCE)
     const response = await client.get('/api/v1/reports/networth').accept('json').loginAs(f.user)
-    response.assertStatus(500)
+    response.assertStatus(200)
+    assert.deepEqual(response.body(), [['date', 'Transaction account'], [f.account.startDate.toISODate(), 100]])
   })
 
   test('Statement-only balance history ignores stale stored history')

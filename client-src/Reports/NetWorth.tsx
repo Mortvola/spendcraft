@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import Chart from 'react-google-charts';
+import NetworthContent from './NetworthContent';
 import Http from '@mortvola/http';
 
 import { isNetworthReport } from '../../common/ResponseTypes';
@@ -40,34 +40,8 @@ const Networth: React.FC = () => {
     })();
   }, []);
 
-  return (
-    <div className="chart-wrapper window window1">
-      {
-        data !== null
-          ? (
-            <Chart
-              chartType="ComboChart"
-              data={data}
-              options={{
-                width: ('100%' as unknown) as number,
-                height: ('100%' as unknown) as number,
-                legend: { position: 'none' },
-                isStacked: true,
-                hAxis: {
-                  slantedText: true,
-                },
-                seriesType: 'bars',
-                series: {
-                  [data[0].length - 2]: { type: 'line' },
-                },
-                focusTarget: 'datum',
-              }}
-            />
-          )
-          : null
-      }
-    </div>
-  );
+  return <NetworthContent data={data} />;
 };
+
 
 export default Networth;

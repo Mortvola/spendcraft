@@ -1,4 +1,5 @@
 import { test } from '@japa/runner'
+import NetworthContent from '../../../client-src/Reports/NetworthContent.js'
 import { build } from 'vite'
 import babel from '@rolldown/plugin-babel'
 import { mkdtemp, writeFile, rm } from 'node:fs/promises'
@@ -42,6 +43,13 @@ export * from ${source('common/ResponseTypes.ts')};
     if (storageDescriptor) Object.defineProperty(globalThis, 'localStorage', storageDescriptor)
     else Reflect.deleteProperty(globalThis, 'localStorage')
     if (directory) await rm(directory, { recursive: true, force: true })
+  })
+
+  test('header-only net worth renders an empty state without a chart', ({ assert }) => {
+    for (const data of [[['date']], [['date', 'Checking']]]) {
+      const html = state.renderToStaticMarkup(state.createElement(NetworthContent, { data }))
+      assert.include(html, 'No net worth data available.')
+    }
   })
 
   let f

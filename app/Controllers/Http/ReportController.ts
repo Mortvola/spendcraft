@@ -4,7 +4,7 @@ import Budget from '#app/Models/Budget';
 import Account from '#models/Account';
 import Category from '#models/Category';
 import { Exception } from '@adonisjs/core/exceptions';
-import { type BudgetProgressReportResponse, CategoryType, TrackingType, TransactionType } from '#common/ResponseTypes';
+import { type BudgetProgressReportResponse, AccountType, CategoryType, TrackingType, TransactionType } from '#common/ResponseTypes';
 import { DateTime } from 'luxon';
 
 type NetworthReportType = (string | number)[][];
@@ -117,7 +117,7 @@ class ReportController {
           .andWhere('accounts.closed', false)
           .andWhere('accounts.tracking', TrackingType.Balances)
           .union((query2) => {
-            query2.select(db.raw('min(date) as date'))
+            query2.select(db.raw('min(case when t.type = ? and a.tracking = ? and a.type != ? then a.start_date else t.date end) as date', [TransactionType.STARTING_BALANCE, TrackingType.Transactions, AccountType.Loan]))
               .from('account_transactions as at')
               .join('transactions as t', 't.id', 'at.transaction_id')
               .join('accounts as a', 'a.id', 'at.account_id')
@@ -129,6 +129,9 @@ class ReportController {
                 TransactionType.STARTING_BALANCE,
                 TransactionType.REGULAR_TRANSACTION,
                 TransactionType.MANUAL_TRANSACTION])
+              .andWhere((meaningful) => {
+                meaningful.whereNot('t.type', TransactionType.STARTING_BALANCE).orWhereNot('at.amount', 0)
+              })
           })
           .as('union')
       })
@@ -150,6 +153,29 @@ class ReportController {
     }
 
     const query =  `
+      WITH openings AS (
+        SELECT a.id, a.name, a.start_date, at.amount AS opening
+        FROM accounts a
+        JOIN institutions i ON i.id = a.institution_id
+        JOIN account_transactions at ON at.account_id = a.id
+        JOIN transactions t ON t.id = at.transaction_id
+        WHERE i.application_id = ${budget.id}
+          AND a.tracking = '${TrackingType.Transactions}' AND a.type != '${AccountType.Loan}'
+          AND t.type = ${TransactionType.STARTING_BALANCE} AND t.deleted = false AND at.pending = false
+      ), opening_events AS (
+        SELECT id, name, start_date AS date, opening, 0::numeric AS movement
+        FROM openings WHERE opening != 0
+        UNION ALL
+        SELECT o.id, o.name, t.date, o.opening, at.amount
+        FROM openings o
+        JOIN account_transactions at ON at.account_id = o.id
+        JOIN transactions t ON t.id = at.transaction_id
+        WHERE t.type IN (${[TransactionType.REGULAR_TRANSACTION, TransactionType.MANUAL_TRANSACTION]})
+          AND t.date >= o.start_date AND t.deleted = false AND at.pending = false
+      ), opening_buckets AS (
+        SELECT id, name, ${date} AS date, opening, sum(movement) AS movement
+        FROM opening_events GROUP BY id, name, ${date}, opening
+      )
       select
         ${date2} AS date,
         accounts.id || '_' || accounts.name AS name,
@@ -173,12 +199,17 @@ class ReportController {
         join institutions i on i.id = a.institution_id
         where
           a.tracking != 'Balances'
+          and NOT EXISTS (SELECT 1 FROM openings o WHERE o.id = a.id)
           and t.type in (${[TransactionType.REGULAR_TRANSACTION, TransactionType.MANUAL_TRANSACTION]})
           and i.application_id = ${budget.id}
           and at.pending = false
           and t.deleted = false
         group by i.application_id, t.type, ${date}, a.id
       ) as daily
+      union
+      SELECT date, id || '_' || name AS name,
+        opening + sum(movement) OVER (PARTITION BY id ORDER BY date ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS balance
+      FROM opening_buckets
       order by date`;
 
     const categoryQuery = 'select accounts.id || \'_\' || accounts.name AS name '
@@ -188,6 +219,8 @@ class ReportController {
       + 'order by name';
 
     const categories: { rows: { name: string }[] } = await db.rawQuery(categoryQuery);
+
+    if (categories.rows.length === 0) return [['date']];
 
     const crosstab = `SELECT * FROM crosstab($$${query}$$, $$${categoryQuery}$$) `
     + `AS (date TEXT ${listCategories(categories.rows)})`;
@@ -201,6 +234,8 @@ class ReportController {
         .map((item) => item.name.replace(/\d+_/, '')))
     ]
       .concat(data.rows.map((item) => Object.values(item)));
+
+    if (result.length === 1) return result;
 
     // Fill in any gaps in balances
     for (let j = 1; j < result[1].length; j += 1) {
