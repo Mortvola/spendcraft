@@ -424,8 +424,6 @@ export default class TransactionsController {
         cat.count = await category.transactionsCount(budget);
       }
 
-      await trx.commit();
-
       let statement: Statement | null | undefined
 
       // If the transaction was added or removed from a statement then
@@ -459,6 +457,8 @@ export default class TransactionsController {
           statement: statement?.serialize() as StatementProps,
         },
       }
+
+      await trx.commit();
 
       return result;
     }
