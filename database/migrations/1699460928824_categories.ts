@@ -29,11 +29,11 @@ export default class extends BaseSchema {
            .where('id', s.category_id)
         )))
   
-        trx.commit();
+        await trx.commit();
       }
       catch (error) {
         console.log(error);
-        trx.rollback()
+        await trx.rollback()
       }
     })
   }
