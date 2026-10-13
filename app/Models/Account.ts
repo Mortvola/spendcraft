@@ -305,7 +305,7 @@ class Account extends BaseModel {
           amount = Math.round(cat.amount * 100);
           // Adjust the transaction amount so that any follow any percentage entries
           // are applied against the remainder after fixed amounts are applied.
-          transactionAmount -= amount;
+          transactionAmount -= amount / 100.0;
         }
 
         remaining -= amount;
