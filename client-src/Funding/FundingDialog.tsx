@@ -64,7 +64,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
         // If we are on the last item and there is a remaing amount (due to rounding error)
         // then add it to the last funding amount.
         if (i === sortedCategories.length - 1 && percentSum !== categoryAmount) {
-          fundingAmount += percentSum - categoryAmount;
+          fundingAmount += categoryAmount - percentSum;
         }
       }
       else {
