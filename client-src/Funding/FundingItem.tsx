@@ -4,7 +4,7 @@ import {
   Field, FieldProps, useField,
   useFormikContext,
 } from 'formik';
-import { FormCheckbox } from '@mortvola/forms';
+import { FormCheckbox, FormError } from '@mortvola/forms';
 import AmountInput from '../AmountInput';
 import Amount from '../Amount';
 import styles from './Funding.module.scss'
@@ -99,6 +99,7 @@ const FundingItem: React.FC<PropsType> = ({
                 categories={values.categories[category.id].fundingCategories}
                 title="Funding Categories:"
               />
+              <FormError name={`categories.${category.id}.fundingCategories`} />
             </div>
           </div>
         )

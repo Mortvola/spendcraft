@@ -1,3 +1,4 @@
+import { validateFundingPercentages } from '../../common/fundingPercentages'
 import React from 'react';
 import {
   Field, FieldProps,
@@ -228,6 +229,14 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
 
     if (values.date === '') {
       errors.date = 'A date must be specified.';
+    }
+
+    for (const [id, category] of Object.entries(values.categories)) {
+      const issue = validateFundingPercentages(category.fundingCategories)
+      if (issue) {
+        errors.categories ??= {}
+        errors.categories[id] = { fundingCategories: issue.message }
+      }
     }
 
     // Verify that there is at least one non-zero funding item.

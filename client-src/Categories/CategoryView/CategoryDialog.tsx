@@ -1,3 +1,4 @@
+import { validateFundingPercentages } from '../../../common/fundingPercentages'
 import React from 'react';
 import {
   Field,
@@ -110,6 +111,11 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
 
     if (values.name === '') {
       errors.name = 'The category name must not be blank.';
+    }
+
+    if (values.type === CategoryType.Bill) {
+      const issue = validateFundingPercentages(values.fundingCategories)
+      if (issue) errors.fundingCategories = issue.message
     }
 
     return errors;
@@ -363,12 +369,15 @@ const CategoryDialog: React.FC<Props & ModalProps> = ({
               {
                 formikProps.values.type === CategoryType.Bill
                   ? (
-                    <CategorySpread
-                      name="fundingCategories"
-                      categories={formikProps.values.fundingCategories}
-                      title="Funded from:"
-                      types={[CategoryType.Regular, CategoryType.Goal, CategoryType.FundingPool]}
-                    />
+                    <>
+                      <CategorySpread
+                        name="fundingCategories"
+                        categories={formikProps.values.fundingCategories}
+                        title="Funded from:"
+                        types={[CategoryType.Regular, CategoryType.Goal, CategoryType.FundingPool]}
+                      />
+                      <FormError name="fundingCategories" />
+                    </>
                   )
                   : null
               }

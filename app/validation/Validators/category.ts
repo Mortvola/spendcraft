@@ -1,3 +1,4 @@
+import { fundingPercentagesRule } from '#app/validation/fundingPercentages'
 import { CategoryType } from '#common/ResponseTypes'
 import vine, { SimpleMessagesProvider } from '@vinejs/vine'
 import { DateTime } from 'luxon'
@@ -24,7 +25,7 @@ export const addCategory = vine
           amount: vine.number(),
           percentage: vine.boolean(),
         }),
-      ),
+      ).use(fundingPercentagesRule()),
     })
   )
 
@@ -82,7 +83,7 @@ export const updateCategory = vine
           amount: vine.number(),
           percentage: vine.boolean(),
         }),
-      ).optional(),
+      ).use(fundingPercentagesRule()).optional(),
     })
 )
 

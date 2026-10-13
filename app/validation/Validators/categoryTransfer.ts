@@ -1,3 +1,4 @@
+import { fundingPercentagesRule } from '#app/validation/fundingPercentages'
 import vine, { SimpleMessagesProvider } from '@vinejs/vine';
 
 export const updateCategoryTransfer = vine.compile(
@@ -17,7 +18,7 @@ export const updateCategoryTransfer = vine.compile(
             amount: vine.number(),
             percentage: vine.boolean(),
           }),
-        ).optional(),
+        ).use(fundingPercentagesRule()).optional(),
         includeFundingTransfers: vine.boolean().optional(),
       }),
     ).minLength(1), // 'required|validCategory|!allZero:amount|zeroSum:amount',
