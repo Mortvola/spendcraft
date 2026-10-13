@@ -612,7 +612,7 @@ export default class Budget extends BaseModel {
     }
     catch (error) {
       logger.error(error);
-      trx.rollback();
+      await trx.rollback();
     }
   }
 }
