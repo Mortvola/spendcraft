@@ -6,6 +6,6 @@ export const category = vine.compile(
     amount: vine.number(),
     useGoal: vine.boolean().optional(),
     goalDate: vine.date().optional().transform((value) => DateTime.fromJSDate(value)),
-    recurrence: vine.number(),
+    recurrence: vine.number().withoutDecimals().min(1).max(360),
   }),  
 )

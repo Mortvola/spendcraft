@@ -16,7 +16,7 @@ export const addCategory = vine
       fundingAmount: vine.number().optional(),
       includeFundingTransfers: vine.boolean().optional(),
       goalDate: vine.date().optional().transform((date) => DateTime.fromJSDate(date)),
-      recurrence: vine.number().optional(),
+      recurrence: vine.number().withoutDecimals().min(1).max(360).optional(),
       useGoal: vine.boolean(),
       fundingCategories: vine.array(
         vine.object({
@@ -70,7 +70,7 @@ export const updateCategory = vine
       monthlyExpenses: vine.boolean().optional(),
       type: vine.enum([CategoryType.Regular, CategoryType.Bill, CategoryType.Goal] as const).optional(),
       goalDate: vine.date().optional().transform((date) => DateTime.fromJSDate(date)),
-      recurrence: vine.number().optional(),
+      recurrence: vine.number().withoutDecimals().min(1).max(360).optional(),
       suspended: vine.boolean().optional(),
       fundingAmount: vine.number().optional(),
       includeFundingTransfers: vine.boolean().optional(),
