@@ -7,7 +7,7 @@ import Transaction from '#models/Transaction'
 import Account from '#models/Account'
 import { DateTime } from 'luxon'
 import * as Plaid from 'plaid'
-import { AccountType, CategoryType, TrackingType } from '#common/ResponseTypes'
+import { AccountType, CategoryType, TrackingType, TransactionType } from '#common/ResponseTypes'
 
 let sequence = 0
 async function fixture() {
@@ -99,7 +99,7 @@ test.group('Monetary precision characterization', () => {
   })
 
   test('fractional-cent HTTP inputs record decimal-column versus JSON allocation behavior')
-    .with([0.01, 0.005, -0.005, 0.004, 0.1 + 0.2])
+    .with([0, 0.01, -0.01, 0.004, 0.005, 0.006, -0.004, -0.005, -0.006, 1.234, -1.234, '0.005', '-0.005', '1.23', '0.01', '1.234', 0.1 + 0.2])
     .run(async ({ client, assert }, amount) => {
       const f = await fixture()
       const response = await client.post(`/api/v1/account/${f.account.id}/transactions`)
@@ -110,11 +110,126 @@ test.group('Monetary precision characterization', () => {
       const category = await Category.findOrFail(f.categories[0].id)
       const account = await Account.findOrFail(f.account.id)
       const database = association ? await db.from('account_transactions').where('id', association.id).select('amount').first() : null
-      assert.isAtLeast(response.status(), 200)
+      response.assertStatus(200)
+      assert.equal(transaction?.categories[0].amount, Number(amount))
       console.log(JSON.stringify({ scenario: 'fractional cent', input: amount, status: response.status(),
         persistedAmount: association?.amount, persistedSplits: transaction?.categories,
         categoryBalance: category.balance, accountBalance: account.balance,
         rawDecimalAmount: database?.amount, body: response.body() }))
+    })
+
+  test('numeric scale-two cast records signed rounding without creating schema objects', async ({ assert }) => {
+    const values = ['0.004', '0.005', '0.006', '-0.004', '-0.005', '-0.006',
+      '1.004', '1.005', '1.006', '-1.004', '-1.005', '-1.006']
+    const expected = ['0.00', '0.01', '0.01', '0.00', '-0.01', '-0.01',
+      '1.00', '1.01', '1.01', '-1.00', '-1.01', '-1.01']
+    for (const [index, value] of values.entries()) {
+      const result = await db.rawQuery('SELECT CAST(? AS numeric(12,2))::text AS amount', [value])
+      assert.equal(result.rows[0].amount, expected[index])
+      console.log(JSON.stringify({ scenario: 'numeric scale-two rounding', input: value, storedScaleValue: result.rows[0].amount }))
+    }
+  })
+
+  test('transaction PATCH and transfer POST/PATCH record JSON, balance and response precision')
+    .with([0, 0.01, -0.01, 0.004, 0.005, 0.006, -0.004, -0.005, -0.006, 1.234, -1.234, '0.005', '-0.005', '0.01', '1.234', 0.1 + 0.2])
+    .run(async ({ client, assert }, input) => {
+      const amount = Number(input)
+      const f = await fixture()
+      const transaction = await f.budget.related('transactions').create({
+        date: DateTime.fromISO('2025-02-10'), type: TransactionType.MANUAL_TRANSACTION,
+        version: 0, categories: [{ categoryId: f.categories[0].id, amount: 0 }], taxes: [],
+      })
+      const association = await f.account.related('accountTransactions').create({
+        transactionId: transaction.id, name: 'Precision update', amount: 0, pending: false, provider: 'NONE',
+      })
+      const response = await client.patch(`/api/v1/transaction/${transaction.id}`)
+        .json({ version: 0, amount: input, categories: [{ categoryId: f.categories[0].id, amount: input }] })
+        .accept('json').loginAs(f.user)
+      response.assertStatus(200)
+      assert.equal((await Transaction.findOrFail(transaction.id)).categories[0].amount, amount)
+      console.log(JSON.stringify({ scenario: 'fractional PATCH', input, amount: (await AccountTransaction.findOrFail(association.id)).amount,
+        splits: (await Transaction.findOrFail(transaction.id)).categories,
+        categoryBalance: (await Category.findOrFail(f.categories[0].id)).balance,
+        accountBalance: (await Account.findOrFail(f.account.id)).balance, body: response.body() }))
+      const splits = [{ categoryId: f.categories[1].id, amount: input }, { categoryId: f.categories[2].id, amount: -amount }]
+      const created = await client.post('/api/v1/category-transfer').json({ date: '2025-02-10', type: TransactionType.REBALANCE_TRANSACTION,
+        categories: splits }).accept('json').loginAs(f.user)
+      // Negative half ties can fail this sign-asymmetric rounded zero-sum check.
+      created.assertStatus(Math.abs(amount) === 0.005 ? 422 : 200)
+      if (created.status() === 200) {
+        const id = created.body().data.transaction.id
+        const updated = await client.patch(`/api/v1/category-transfer/${id}`).json({ date: '2025-02-11',
+          type: TransactionType.REBALANCE_TRANSACTION, categories: splits }).accept('json').loginAs(f.user)
+        updated.assertStatus(200)
+        console.log(JSON.stringify({ scenario: 'fractional transfer', input, status: created.status(),
+          splits: (await Transaction.findOrFail(id)).categories,
+          categoryBalances: await Promise.all(f.categories.slice(1).map(async c => (await Category.findOrFail(c.id)).balance)),
+          createBody: created.body(), updateBody: updated.body() }))
+      } else {
+        assert.equal((await Category.findOrFail(f.categories[1].id)).balance, 0)
+        assert.equal((await Category.findOrFail(f.categories[2].id)).balance, 0)
+        assert.equal((await f.budget.related('transactions').query()).length, 1)
+        const control = await client.post('/api/v1/category-transfer').json({ date: '2025-02-10', type: TransactionType.REBALANCE_TRANSACTION,
+          categories: splits.map(split => ({ ...split, amount: 0 })) }).accept('json').loginAs(f.user)
+        control.assertStatus(200)
+        const id = control.body().data.transaction.id
+        const before = await Promise.all([db.from('transactions').where('application_id', f.budget.id).orderBy('id'),
+          db.from('categories').whereIn('id', f.categories.map(c => c.id)).orderBy('id')])
+        const rejected = await client.patch(`/api/v1/category-transfer/${id}`).json({ date: '2025-02-11',
+          type: TransactionType.REBALANCE_TRANSACTION, categories: splits }).accept('json').loginAs(f.user)
+        rejected.assertStatus(422)
+        assert.deepEqual(await Promise.all([db.from('transactions').where('application_id', f.budget.id).orderBy('id'),
+          db.from('categories').whereIn('id', f.categories.map(c => c.id)).orderBy('id')]), before)
+        console.log(JSON.stringify({ scenario: 'fractional transfer rejected', input, createBody: created.body(), patchBody: rejected.body() }))
+      }
+    })
+
+  test('funding currency and Statement writers record decimal versus JSON response precision')
+    .with([0, 0.01, -0.01, 0.004, 0.005, 0.006, -0.004, -0.005, -0.006, 1.234, -1.234, '0.005', '0.01', '1.234', 0.1 + 0.2])
+    .run(async ({ client, assert }, amount) => {
+      const f = await fixture()
+      const config = await client.patch(`/api/v1/groups/${f.categories[0].groupId}/categories/${f.categories[0].id}`)
+        .json({ name: 'Currency configuration', fundingAmount: amount }).accept('json').loginAs(f.user)
+      config.assertStatus(200)
+      const plan = await client.put(`/api/v1/funding-plans/item/${f.categories[1].id}`)
+        .json({ amount, recurrence: 1 }).accept('json').loginAs(f.user)
+      plan.assertStatus(200)
+      const data = { shortTermCapitalGains: amount, longTermCapitalGains: 0, dividends: 0, taxableInterest: 0 }
+      const statement = await client.post(`/api/v1/account/${f.account.id}/statements`)
+        .json({ startDate: '2025-02-01', endDate: '2025-02-28', startingBalance: amount, endingBalance: amount, data })
+        .accept('json').loginAs(f.user)
+      statement.assertStatus(200)
+      const storedStatement = await db.from('statements').where('account_id', f.account.id).first()
+      assert.equal(storedStatement.data.shortTermCapitalGains, Number(amount))
+      const updated = await client.patch(`/api/v1/statements/${storedStatement.id}`)
+        .json({ startingBalance: amount, endingBalance: amount, data }).accept('json').loginAs(f.user)
+      updated.assertStatus(200)
+      console.log(JSON.stringify({ scenario: 'currency config and statement', input: amount,
+        category: (await Category.findOrFail(f.categories[0].id)).fundingAmount,
+        planAmount: (await Category.findOrFail(f.categories[1].id)).fundingAmount,
+        storedStatement: await db.from('statements').where('id', storedStatement.id)
+          .select('starting_balance', 'ending_balance', 'data').first(),
+        categoryBody: config.body(), planBody: plan.body(), statementBody: statement.body(), updateBody: updated.body() }))
+    })
+
+  test('balance-tracked Statement raw response and persisted current balance record separate precision')
+    .with([0.004, 0.005, -0.005, 0.1 + 0.2])
+    .run(async ({ client, assert }, amount) => {
+      const f = await fixture()
+      await f.account.merge({ tracking: TrackingType.Balances }).save()
+      const response = await client.post(`/api/v1/account/${f.account.id}/statements`)
+        .json({ startDate: '2025-02-01', endDate: '2025-02-28', startingBalance: amount, endingBalance: amount })
+        .accept('json').loginAs(f.user)
+      response.assertStatus(200)
+      const stored = await db.from('statements').where('account_id', f.account.id).first()
+      const postBalance = (await Account.findOrFail(f.account.id)).balance
+      const updated = await client.patch(`/api/v1/statements/${stored.id}`)
+        .json({ endingBalance: amount }).accept('json').loginAs(f.user)
+      updated.assertStatus(200)
+      assert.equal((await Account.findOrFail(f.account.id)).balance, Number(stored.ending_balance))
+      console.log(JSON.stringify({ scenario: 'balance-tracked statement', input: amount, postBody: response.body(), patchBody: updated.body(),
+        storedStatement: await db.from('statements').where('id', stored.id).select('starting_balance', 'ending_balance').first(),
+        postBalance, patchBalance: (await Account.findOrFail(f.account.id)).balance }))
     })
 
   test('fixed-plus-percentage and percentage-only allocation record conservation and individual shares')
