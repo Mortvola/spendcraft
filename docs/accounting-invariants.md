@@ -14,7 +14,7 @@ Balance-tracked Accounts use the approved Statement lifecycle below. Loan princi
 
 **Confirmed product invariant.** Account contribution eligibility is `!deleted && !pending && date >= startDate`. Category contribution eligibility is `!deleted && date >= startDate`. These describe two different effects. A replacement must account for old and new dates/status as well as changed amounts and allocations.
 
-Scope: ordinary supported account-linked transactions, including manual and provider posting. Opening/type 4, accountless funding/rebalance and Loan special cases require their own lifecycle. Multi-Account transfers require explicit ownership and effect analysis; this document does not invent it. Current evidence: `Account.addTransaction`, `updateTransaction`, `deleteAccountTransaction`; manual controller contradictions are listed in the review.
+Scope: ordinary supported account-linked transactions, including manual and provider posting. Opening/type 4, accountless funding/rebalance and Loan special cases require their own lifecycle. Multi-Account transfers require explicit ownership and effect analysis; this document does not invent it. Current evidence: `Account.addTransaction`, `updateTransaction`, `deleteAccountTransaction`; manual CREATE/PATCH and ordinary startDate crossings now implement the PostgreSQL-verified correction (994 focused / 1,382 full-suite passes; 0 failed, 0 skipped/pending); historical controller contradictions remain in the review as baseline evidence. See [eligibility correction](account-category-eligibility-correction.md).
 
 ## 3. Category effects
 
@@ -32,7 +32,7 @@ Nominal splits describe allocations; they alone do not prove which effects old w
 
 ## 6. Account startDate
 
-**Confirmed product invariant.** Changing startDate preserves Account current balance. Moving the boundary later removes Category effects of active ordinary Transactions becoming ineligible; moving it earlier adds effects becoming eligible. Pending rows participate; deleted rows do not. Opening is handled separately and accountless type 2/3 is unaffected. See `AccountsController.update` and its current pending filter defect.
+**Confirmed product invariant.** Changing startDate preserves Account current balance. Moving the boundary later removes Category effects of active ordinary Transactions becoming ineligible; moving it earlier adds effects becoming eligible. Pending rows participate; deleted rows do not. Opening is handled separately and accountless type 2/3 is unaffected. See `AccountsController.update`: ordinary crossings now include pending, with opening separately excluding pending from its sum. The correction is PostgreSQL-verified: Account current balance remains unchanged, pending Category crossings and the separate opening sum are covered. See [the correction record](account-category-eligibility-correction.md) and [verification evidence](account-category-eligibility-postgresql-verification.md).
 
 ## 7. Initial Funding / opening
 

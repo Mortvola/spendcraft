@@ -405,3 +405,104 @@ test.group('Bounded Account writer PostgreSQL serialization (prepared)', () => {
     })
 
 })
+
+test.group('Eligibility boundary waiting-writer reload (prepared)', () => {
+  test('CREATE/PATCH/OFX reload startDate after waiting for its committed change')
+    .with(['create', 'patch', 'ofx']).run(async ({ client, assert }, kind) => {
+      const f = await fixture()
+      const target = kind === 'patch' ? await seed(client, f) : undefined
+      const entered = signal()
+      const release = signal()
+      let pid = 0
+      let held = false
+      const save = Account.prototype.save
+      const hold = mock.method(Account.prototype, 'save', async function (this: Account) {
+        if (this.id === f.account.id && !held) {
+          held = true
+          if (!this.$trx) throw new Error('Missing owning transaction')
+          const result = await this.$trx.rawQuery('SELECT pg_backend_pid() AS pid')
+          pid = result.rows[0].pid
+          entered.resolve()
+          await release.promise
+        }
+        return save.call(this)
+      })
+      const first = client.patch(`/api/v1/account/${f.account.id}`).json({ startDate: '2025-03-01' }).loginAs(f.user)
+        .then((response) => { response.assertStatus(200) })
+      let second: Promise<void> | undefined
+      try {
+        await entered.promise
+        second = kind === 'create' ? create(client, f, 10)
+          : execute(client, f, kind === 'patch' ? 'patch' : 'ofx110', target)
+        await waitForBudgetWaiter(pid)
+      } finally {
+        release.resolve()
+        await Promise.allSettled([first, ...(second ? [second] : [])])
+        hold.mock.restore()
+      }
+      await first
+      await second
+      const after = await state(f)
+      assert.equal(after.balance, kind === 'patch' ? 104 : 100)
+      assert.equal(after.unassigned, 0)
+      assert.equal(after.pool, kind === 'patch' ? 104 : 100)
+      assert.equal((await Account.findOrFail(f.account.id)).startDate.toISODate(), '2025-03-01')
+      const ordinaryRows = after.rows.filter((row) => row.type !== 4 && !row.deleted)
+      assert.lengthOf(ordinaryRows, 1)
+      assert.equal(ordinaryRows[0].amount, kind === 'patch' ? 6 : 10)
+      if (kind === 'patch') {
+        assert.equal(ordinaryRows[0].version, 1)
+        assert.isTrue(after.logs.some((log) => log.transaction_id === target?.id))
+      }
+      if (kind === 'ofx') assert.equal(after.plaidBalance, 110)
+    })
+})
+
+test.group('startDate rollback eligibility reload', () => {
+  test('waiting CREATE uses the old boundary after a late startDate rollback', async ({ client, assert }) => {
+    const f = await fixture()
+    const entered = signal()
+    const release = signal()
+    let pid = 0
+    let held = false
+    const save = Account.prototype.save
+    const failure = mock.method(Account.prototype, 'save', async function (this: Account) {
+      const saved = await save.call(this)
+      if (this.id === f.account.id && !held && this.startDate.toISODate() === '2025-03-01') {
+        held = true
+        if (!this.$trx) throw new Error('Missing owning transaction')
+        const result = await this.$trx.rawQuery('SELECT pg_backend_pid() AS pid')
+        pid = result.rows[0].pid
+        entered.resolve()
+        await release.promise
+        throw new Error('Injected late startDate rollback')
+      }
+      return saved
+    })
+    const first = client.patch(`/api/v1/account/${f.account.id}`).json({ startDate: '2025-03-01' }).loginAs(f.user)
+      .then((response) => { response.assertStatus(500) })
+    let waiter: Promise<void> | undefined
+    try {
+      await entered.promise
+      waiter = create(client, f, 5)
+      await waitForBudgetWaiter(pid)
+    } finally {
+      release.resolve()
+      await Promise.allSettled([first, ...(waiter ? [waiter] : [])])
+      failure.mock.restore()
+    }
+    await first
+    await waiter
+    const after = await state(f)
+    assert.equal(after.balance, 105)
+    assert.equal(after.unassigned, 5)
+    assert.equal(after.pool, 100)
+    assert.equal((await Account.findOrFail(f.account.id)).startDate.toISODate(), '2025-01-01')
+    const opening = await AccountTransaction.query().where('accountId', f.account.id)
+      .whereHas('transaction', (query) => query.where('type', 4)).preload('transaction').firstOrFail()
+    assert.equal(opening.transaction.date.toISODate(), '2025-01-01')
+    assert.equal(opening.amount, 100)
+    assert.lengthOf(after.rows.filter((row) => row.type === 5), 1)
+    assert.lengthOf(after.logs, 0)
+  })
+})

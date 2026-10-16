@@ -527,8 +527,8 @@ test.group('Plaid sync characterization', (group) => {
   test('initial additions persist allocations but apply balances only on or after the inclusive start date').with([
     { date: '2024-12-31', amount: 10 }, { date: '2025-01-01', amount: 10 }, { date: '2025-02-10', amount: 10 },
     { date: '2024-12-31', amount: -10 }, { date: '2025-01-01', amount: -10 }, { date: '2025-02-10', amount: -10 },
-  ]).run(async ({ client, assert }, { date, amount }) => {
-    fake.responses = [page(accounts(), 'c1', { added: [purchase('purchase', { date, amount })] })]
+  ].flatMap((row) => [false, true].map((pending) => ({ ...row, pending })))).run(async ({ client, assert }, { date, amount, pending }) => {
+    fake.responses = [page(accounts(), 'c1', { added: [purchase('purchase', { date, amount, pending })] })]
     ;(await client.post(url()).loginAs(f.user)).assertStatus(200)
     const { at, transaction } = await local()
     assert.equal(at.amount, -amount)
@@ -536,7 +536,7 @@ test.group('Plaid sync characterization', (group) => {
     assert.equal(transaction.date.toISODate(), date)
     assert.deepEqual(transaction.categories, [{ categoryId: f.unassigned.id, amount: -amount }])
     const applied = date >= '2025-01-01' ? -amount : 0
-    assert.equal((await Account.findOrFail(f.account.id)).balance, 100 + applied)
+    assert.equal((await Account.findOrFail(f.account.id)).balance, 100 + (pending ? 0 : applied))
     await f.unassigned.refresh()
     assert.equal(f.unassigned.balance, applied)
   })
@@ -880,5 +880,26 @@ test.group('Plaid sync characterization', (group) => {
     }
     assert.equal((await Institution.findOrFail(f.institution.id)).cursor, 'skip-history')
   })
+
+  test('pending-only provider transitions change Account effects independently of Categories')
+    .with(['2024-12-31', '2025-01-01', '2025-02-10'].flatMap((date) => [false, true].map((pending) => ({ date, pending }))))
+    .run(async ({ client, assert }, { date, pending }) => {
+      fake.responses = [page(accounts(), 'eligibility-c1', { added: [purchase('purchase', { date, pending })] })]
+      ;(await client.post(url()).loginAs(f.user)).assertStatus(200)
+      const before = await local()
+      await f.unassigned.refresh()
+      const categoryBefore = f.unassigned.balance
+      fake.responses = [page(accounts(), 'eligibility-c2', { modified: [purchase('purchase', { date, pending: !pending })] })]
+      ;(await client.post(url()).loginAs(f.user)).assertStatus(200)
+      const after = await local()
+      assert.equal(after.transaction.id, before.transaction.id)
+      assert.equal(after.at.id, before.at.id)
+      assert.equal(after.at.pending, !pending)
+      assert.equal(after.transaction.version, before.transaction.version + 1)
+      assert.equal((await Account.findOrFail(f.account.id)).balance, 100 + (date >= '2025-01-01' && pending ? -10 : 0))
+      await f.unassigned.refresh()
+      assert.equal(f.unassigned.balance, categoryBefore)
+      assert.equal(categoryBefore, date >= '2025-01-01' ? -10 : 0)
+    })
 
 })

@@ -182,3 +182,80 @@ test.group('Account start-date characterization', () => {
   })
 
 })
+
+test.group('Corrected startDate pending/opening separation (prepared)', () => {
+  test('A→B→A includes pending Category crossings, excludes deleted/opening/accountless, and preserves Account balance', async ({ client, assert }) => {
+    const f = await createFixture()
+    const category = await f.budget.getUnassignedCategory()
+    const pool = await f.budget.getFundingPoolCategory()
+    for (const { amount, pending, deleted } of [
+      { amount: 20, pending: false, deleted: false },
+      { amount: 10, pending: true, deleted: false },
+      { amount: 30, pending: false, deleted: true },
+    ]) {
+      const transaction = await f.budget.related('transactions').create({ date: DateTime.fromISO('2025-01-15'),
+        type: TransactionType.MANUAL_TRANSACTION, version: 0, deleted, sortOrder: 0,
+        categories: [{ categoryId: category.id, amount }], taxes: [] })
+      await f.account.related('accountTransactions').create({ transactionId: transaction.id, amount,
+        pending, name: 'Opening applicability', provider: 'NONE' })
+    }
+    for (const [type, amount] of [[TransactionType.FUNDING_TRANSACTION, 5], [TransactionType.REBALANCE_TRANSACTION, -2]]) {
+      await f.budget.related('transactions').create({ date: DateTime.fromISO('2025-01-15'), type,
+        version: 0, deleted: false, sortOrder: 0, categories: [{ categoryId: category.id, amount }], taxes: [] })
+    }
+    await category.merge({ balance: 33 }).save()
+    // Create opening from the supported active/nonpending signed sum (20), not
+    // the Category-eligible sum (30); all fixture writes use the test safeguard.
+    await db.transaction(async (trx) => {
+      const account = await Account.findOrFail(f.account.id, { client: trx })
+      const funding = await f.budget.getFundingPoolCategory({ client: trx })
+      await account.updateStartingBalance(f.budget, funding)
+      await funding.save()
+    })
+    for (const date of ['2025-02-01', '2025-02-01', '2025-01-01']) {
+      const response = await client.patch(`/api/v1/account/${f.account.id}`).json({ startDate: date }).loginAs(f.user)
+      response.assertStatus(200)
+      const raw = await db.from('accounts').where('id', f.account.id).firstOrFail()
+      assert.equal(Number(raw.balance), 100)
+      assert.equal((await Category.findOrFail(category.id)).balance, date === '2025-01-01' ? 33 : 3)
+      const opening = await AccountTransaction.query().where('accountId', f.account.id)
+        .whereHas('transaction', (query) => query.where('type', TransactionType.STARTING_BALANCE)).preload('transaction').firstOrFail()
+      assert.equal(opening.transaction.date.toISODate(), date)
+      assert.equal(opening.amount, date === '2025-01-01' ? 80 : 100)
+      assert.equal((await Category.findOrFail(pool.id)).balance, opening.amount)
+      assert.lengthOf(await AccountTransaction.query().where('accountId', f.account.id), 4)
+    }
+  })
+})
+
+test.group('Opening signed-sum verification', () => {
+  test('opening uses persisted simple and mixed signed amounts, with an inclusive boundary')
+    .with([[10], [30, -20]]).run(async ({ client, assert }, amounts) => {
+      const f = await createFixture()
+      const unassigned = await f.budget.getUnassignedCategory()
+      // Each linked row is exactly on NEW startDate; opening must exclude itself
+      // on a repeated same-date request and keep Account100 / opening90 / Pool90.
+      for (const amount of amounts) {
+        const transaction = await f.budget.related('transactions').create({ date: DateTime.fromISO('2025-02-01'),
+          type: TransactionType.MANUAL_TRANSACTION, categories: [{ categoryId: unassigned.id, amount }],
+          version: 0, deleted: false, sortOrder: 0, taxes: [] })
+        await f.account.related('accountTransactions').create({ transactionId: transaction.id,
+          name: 'Signed sum', amount, pending: false, provider: 'NONE' })
+      }
+      await unassigned.merge({ balance: 10 }).save()
+      const before = await db.from('accounts').select('balance').where('id', f.account.id).firstOrFail()
+      for (let i = 0; i < 2; i++) {
+        const response = await client.patch(`/api/v1/account/${f.account.id}`).json({ startDate: '2025-02-01' }).loginAs(f.user)
+        response.assertStatus(200)
+        assert.deepEqual(await db.from('accounts').select('balance').where('id', f.account.id).firstOrFail(), before)
+        const opening = await AccountTransaction.query().where('accountId', f.account.id)
+          .whereHas('transaction', (query) => query.where('type', TransactionType.STARTING_BALANCE)).preload('transaction').firstOrFail()
+        const raw = await db.from('account_transactions').select('amount').where('id', opening.id).firstOrFail()
+        assert.equal(Number(raw.amount), 90)
+        assert.equal(opening.transaction.date.toISODate(), '2025-02-01')
+        const pool = await f.budget.getFundingPoolCategory()
+        assert.equal(pool.balance, 90)
+        assert.equal((await Category.findOrFail(unassigned.id)).balance, 10)
+      }
+    })
+})

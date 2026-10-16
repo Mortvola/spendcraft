@@ -1,3 +1,4 @@
+import { accountEligible, categoryEligible } from '#services/transactionEligibility';
 import { HttpContext } from '@adonisjs/core/http';
 import db from '@adonisjs/lucid/services/db';
 import { Exception } from '@adonisjs/core/exceptions';
@@ -221,10 +222,11 @@ export default class AccountsController {
         statementId: null,
       });
 
+      const state = { date: transaction.date, deleted: transaction.deleted, pending: acctTransaction.pending };
       if (account.type === AccountType.Loan) {
         account.balance += acctTransaction.principle ?? 0;
       }
-      else {
+      else if (accountEligible(state, account.startDate)) {
         account.balance += acctTransaction.amount;
       }
 
@@ -233,6 +235,8 @@ export default class AccountsController {
       const categoryBalances: CategoryBalanceProps[] = [];
 
       for (const split of categories) {
+        if (account.type !== AccountType.Loan
+          && !categoryEligible(state, account.startDate)) continue;
         const category = await Category.query({ client: trx })
           .where('id', split.categoryId)
           .whereHas('group', (query) => query.where('budgetId', budget.id))
@@ -320,10 +324,14 @@ export default class AccountsController {
 
         if (account.tracking === TrackingType.Transactions && previousDate !== nextDate) {
           const later = nextDate > previousDate;
+          // Keep Loan's separate lifecycle; ordinary pending allocations cross normally.
           const crossing = await account.related('accountTransactions').query()
-            .where('pending', false)
+            .if(account.type === AccountType.Loan, (query) => query.where('pending', false))
             .whereHas('transaction', (query) => {
-              query.where('deleted', false).whereNot('type', TransactionType.STARTING_BALANCE)
+              query.where('deleted', false);
+              if (account.type === AccountType.Loan) query.whereNot('type', TransactionType.STARTING_BALANCE);
+              else query.whereIn('type', [TransactionType.REGULAR_TRANSACTION, TransactionType.MANUAL_TRANSACTION]);
+              query
                 .where('date', '>=', later ? previousDate : nextDate)
                 .where('date', '<', later ? nextDate : previousDate);
             }).preload('transaction');

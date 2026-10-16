@@ -1,3 +1,4 @@
+import { accountEligible, categoryEligible, categoryEffectDeltas } from '#services/transactionEligibility';
 import { HttpContext } from '@adonisjs/core/http';
 import { Exception } from '@adonisjs/core/exceptions';
 import db from '@adonisjs/lucid/services/db';
@@ -187,7 +188,41 @@ export default class TransactionsController {
         validateTransactionSplits(amount, categories);
       }
 
-      if (requestData.categories !== undefined) {
+      // Ordinary effects use independent old/new eligibility; nominal splits stay intact.
+      const ordinary = account.type !== AccountType.Loan
+        && account.tracking === TrackingType.Transactions
+        && [TransactionType.REGULAR_TRANSACTION, TransactionType.MANUAL_TRANSACTION].includes(transaction.type);
+      const nextDate = requestData.date ?? transaction.date;
+      const oldState = { date: transaction.date, deleted: transaction.deleted, pending: acctTrans.pending };
+      const newState = { ...oldState, date: nextDate };
+      const oldCategoryEligible = categoryEligible(oldState, account.startDate);
+      const newCategoryEligible = categoryEligible(newState, account.startDate);
+      const accountDelta = ordinary
+        ? (accountEligible(newState, account.startDate) ? requestData.amount ?? acctTrans.amount : 0)
+          - (accountEligible(oldState, account.startDate) ? acctTrans.amount : 0)
+        : 0;
+
+      if (ordinary) {
+        if (requestData.categories?.length === 0) {
+          requestData.categories = [{ categoryId: unassignedCat.id,
+            amount: requestData.amount ?? acctTrans.amount, comment: undefined }];
+        }
+        const oldSplits = transaction.categories.length > 0 ? transaction.categories
+          : [{ categoryId: unassignedCat.id, amount: acctTrans.amount }];
+        const nominalNew = requestData.categories ?? transaction.categories;
+        const newSplits = nominalNew.length > 0 ? nominalNew
+          : [{ categoryId: unassignedCat.id, amount: requestData.amount ?? acctTrans.amount }];
+        const deltas = categoryEffectDeltas(oldSplits, newSplits, oldCategoryEligible, newCategoryEligible);
+        for (const [categoryId, delta] of deltas) {
+          if (delta === 0) continue;
+          const category = await budgetCategories(budget.id, { client: trx }).where('id', categoryId).firstOrFail();
+          category.balance += delta;
+          await category.save();
+          categoriesResult.push({ id: category.id, balance: category.balance });
+        }
+      }
+
+      if (!ordinary && requestData.categories !== undefined) {
         if (requestData.categories.length === 0) {
           requestData.categories = [{
             categoryId: unassignedCat.id,
@@ -333,10 +368,10 @@ export default class TransactionsController {
         || requestData.principle !== undefined
         || requestData.statementId !== undefined
       ) {
-        if (account.type === AccountType.Loan) {
+        if (!ordinary && account.type === AccountType.Loan) {
           account.balance -= acctTrans.principle ?? 0;
         }
-        else {
+        else if (!ordinary) {
           account.balance -= acctTrans.amount;
         }
 
@@ -369,13 +404,18 @@ export default class TransactionsController {
 
         await acctTrans.save();
 
-        if (account.type === AccountType.Loan) {
+        if (!ordinary && account.type === AccountType.Loan) {
           account.balance += acctTrans.principle ?? 0;
         }
-        else {
+        else if (!ordinary) {
           account.balance += acctTrans.amount;
         }
 
+        if (!ordinary) await account.save();
+      }
+
+      if (ordinary && accountDelta !== 0) {
+        account.balance += accountDelta;
         await account.save();
       }
 
