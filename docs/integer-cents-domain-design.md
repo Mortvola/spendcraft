@@ -1,5 +1,7 @@
 # Integer cents for posted currency: architecture evaluation
 
+> Subsequent product direction: BalanceHistory is deprecated. Its runtime lifecycle is removed and PostgreSQL-verified (physical schema cleanup deferred); earlier proposals to preserve/fix/migrate that feature are superseded. Historical verification facts below remain unchanged. See [deprecation record](balance-history-deprecation.md). No physical table removal or historical repair is authorized.
+
 Historical architecture evaluation. The final decisions and implementation sequence are in [integer-cents-implementation-plan.md](integer-cents-implementation-plan.md). Its strict-input, legacy-preservation and provider-gate decisions supersede provisional recommendations below; retain this document as historical analysis.
 
 Architecture only. No types, converters, model hooks, validators, JSON, schema,

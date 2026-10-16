@@ -134,12 +134,9 @@ test.group('Budget-gated controller behavior without a database', () => {
       assert.isTrue(rolledBack)
     })
 
-  test('BalanceHistory methods remain outside the new gate', async ({ assert }) => {
-    for (const name of ['addBalance', 'updateBalance', 'deleteBalance']) {
-      const source = await method(accounts, name)
-      assert.notInclude(source.body, '.forUpdate()')
-      assert.include(source.writes, 'account.balance')
-    }
+  test('deprecated history mutations are absent rather than joining the gate', async ({ assert }) => {
+    const source = await readFile(accounts, 'utf8')
+    for (const name of ['addBalance', 'updateBalance', 'deleteBalance']) assert.notInclude(source, `async ${name}(`)
   })
 })
 

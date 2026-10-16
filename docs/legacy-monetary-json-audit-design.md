@@ -1,5 +1,7 @@
 # Legacy monetary JSON / relational consistency audit
 
+> Subsequent product direction: BalanceHistory is deprecated. Its runtime lifecycle is removed and PostgreSQL-verified (physical schema cleanup deferred); earlier proposals to preserve/fix/migrate that feature are superseded. Historical verification facts below remain unchanged. See [deprecation record](balance-history-deprecation.md). No physical table removal or historical repair is authorized.
+
 Preparation only. No database connection or production/data change is authorized by this design.
 Baseline remains 1,136 passing tests; no full suite is needed.
 

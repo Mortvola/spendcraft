@@ -114,11 +114,10 @@ test.group('Account, history and statement budget isolation', (group) => {
     response.assertStatus(404)
   })
 
-  test('shared-budget user can read account resources').with(['transactions', 'balances', 'statements']).run(async ({ client, assert }, resource) => {
+  test('shared-budget user can read account resources').with(['transactions', 'statements']).run(async ({ client, assert }, resource) => {
     const response = await client.get(`/api/v1/account/${fixture.own.account.id}/${resource}`).qs({ limit: 20, offset: 0 }).accept('json').loginAs(fixture.shared)
     response.assertStatus(200)
     if (resource === 'transactions') assert.equal(response.body().data.balance, 123.45)
-    if (resource === 'balances') assert.equal(response.body()[0].id, fixture.own.history.id)
     if (resource === 'statements') assert.equal(response.body()[0].id, fixture.own.statement.id)
   })
 
@@ -127,25 +126,25 @@ test.group('Account, history and statement budget isolation', (group) => {
     response.assertStatus(200)
     assert.equal((await Account.findOrFail(fixture.own.account.id)).name, 'Shared rename')
   })
-  test('shared-budget user can create and update balance history', async ({ client, assert }) => {
+  test('shared-budget user cannot reach deprecated history creation or update', async ({ client, assert }) => {
     await fixture.own.account.merge({ tracking: TrackingType.Transactions }).save()
     const url = `/api/v1/account/${fixture.own.account.id}/balances`
     const created = await client.post(url).json({ date: '2025-03-01', amount: 200 }).accept('json').loginAs(fixture.shared)
-    created.assertStatus(200)
-    const id = created.body().data.id
-    assert.equal((await Account.findOrFail(fixture.own.account.id)).balance, 200)
+    created.assertStatus(404)
+    const id = fixture.own.history.id
+    assert.equal((await Account.findOrFail(fixture.own.account.id)).balance, 123.45)
     const updated = await client.patch(`${url}/${id}`).json({ date: '2025-03-01', amount: 250 }).accept('json').loginAs(fixture.shared)
-    updated.assertStatus(200)
-    assert.equal((await BalanceHistory.findOrFail(id)).balance, 250)
-    assert.equal((await Account.findOrFail(fixture.own.account.id)).balance, 250)
+    updated.assertStatus(404)
+    assert.equal((await BalanceHistory.findOrFail(id)).balance, 123.45)
+    assert.equal((await Account.findOrFail(fixture.own.account.id)).balance, 123.45)
   })
-  test('shared-budget user can delete history through either route').with(['nested', 'standalone']).run(async ({ client, assert }, route) => {
+  test('deprecated history deletion is unavailable through either route').with(['nested', 'standalone']).run(async ({ client, assert }, route) => {
     await fixture.own.account.merge({ tracking: TrackingType.Transactions }).save()
     const path = route === 'nested' ? `/account/${fixture.own.account.id}/balances/${fixture.own.history.id}` : `/balance/${fixture.own.history.id}`
     const response = await client.delete(`/api/v1${path}`).accept('json').loginAs(fixture.shared)
-    response.assertStatus(200)
-    assert.isNull(await BalanceHistory.find(fixture.own.history.id))
-    assert.equal((await Account.findOrFail(fixture.own.account.id)).balance, 0)
+    response.assertStatus(404)
+    assert.equal((await BalanceHistory.findOrFail(fixture.own.history.id)).balance, 123.45)
+    assert.equal((await Account.findOrFail(fixture.own.account.id)).balance, 123.45)
   })
   test('shared-budget user can create a statement', async ({ client, assert }) => {
     const response = await client.post(`/api/v1/account/${fixture.own.account.id}/statements`).json(statementBody).accept('json').loginAs(fixture.shared)

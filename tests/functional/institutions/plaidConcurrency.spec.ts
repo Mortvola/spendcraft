@@ -1,4 +1,5 @@
 import { mock } from 'node:test'
+import { deepStrictEqual } from 'node:assert'
 import { test } from '@japa/runner'
 import app from '@adonisjs/core/services/app'
 import db from '@adonisjs/lucid/services/db'
@@ -53,6 +54,8 @@ async function fixture() {
     })
     const account = await createAccount('A')
     const other = await createAccount('B')
+    await account.related('balanceHistory').create({ date: DateTime.fromISO('2025-02-01'), balance: 98765.43 })
+    await other.related('balanceHistory').create({ date: DateTime.fromISO('2025-02-01'), balance: -98765.43 })
     const unassigned = await budget.getUnassignedCategory({ client: trx })
     const statement = await account.related('statements').create({ startDate: DateTime.fromISO('2025-02-01'), endDate: DateTime.fromISO('2025-02-28'), startingBalance: 100, endingBalance: 90 })
     return { budget, user, shared, institution, account, other, unassigned, statement }
@@ -96,7 +99,13 @@ test.group('Concurrent Plaid synchronization', (group) => {
     f = await fixture()
     fake = new ConcurrentFake(app.config.get('plaid'))
     app.container.swap(PlaidWrapper, () => fake)
-    return () => { fake.release.resolve(); app.container.restore(PlaidWrapper) }
+    const legacyBefore = await db.from('balance_histories').whereIn('account_id', [f.account.id, f.other.id]).orderBy('id')
+    return async () => {
+      try {
+        const legacyAfter = await db.from('balance_histories').whereIn('account_id', [f.account.id, f.other.id]).orderBy('id')
+        deepStrictEqual(legacyAfter, legacyBefore, 'Plaid must ignore and preserve legacy observations')
+      } finally { fake.release.resolve(); app.container.restore(PlaidWrapper) }
+    }
   })
   function providerId() {
     if (!f.account.plaidAccountId) throw new Error('Missing fixture provider ID')

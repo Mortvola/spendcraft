@@ -505,40 +505,10 @@ export interface AccountInterface {
   setSettings(settings: AccountSettings): void;
 }
 
-export interface BalanceInterface {
-  id: number;
-
-  date: DateTime;
-
-  balance: number;
-
-  update(
-    values: {
-      date: string,
-      amount: number,
-    },
-  ): Promise<ApiError[] | null>;
-
-  delete(): Promise<null | ErrorProps[]>;
-}
-
-export interface BalancesInterface {
+export interface AccountBalanceSeriesInterface {
   account: AccountInterface | null;
-
-  balances: BalanceInterface[];
-
-  store: StoreInterface;
-
-  addBalance(
-    values: {
-      date: string,
-      amount: number,
-    },
-  ): Promise<ApiError[] | null>;
-
-  insertBalance(balance: BalanceInterface): void;
-
-  removeBalance(balance: BalanceInterface): void;
+  points: { date: DateTime, balance: number }[];
+  load(account: AccountInterface): Promise<void>;
 }
 
 export interface StatementInterface {
@@ -606,7 +576,7 @@ export interface StoreInterface {
 
   accounts: AccountsInterface;
 
-  balances: BalancesInterface;
+  accountBalanceSeries: AccountBalanceSeriesInterface;
 
   uiState: UIStateInterface;
 

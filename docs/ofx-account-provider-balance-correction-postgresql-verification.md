@@ -1,5 +1,7 @@
 # OFX balance-authority PostgreSQL verification
 
+> Subsequent product direction: BalanceHistory is deprecated. Its runtime lifecycle is removed and PostgreSQL-verified (physical schema cleanup deferred); earlier proposals to preserve/fix/migrate that feature are superseded. Historical verification facts below remain unchanged. See [deprecation record](balance-history-deprecation.md). No physical table removal or historical repair is authorized.
+
 Status: ACCEPTED. Focused 681 / full-suite 1,305 passed, 0 failed, 0 skipped/pending.
 
 Verification HEAD: `3b01c34067e61e778916ebda5a80527540ccef00`. The committed, accepted Account-balance concurrency correction was present. The OFX correction was initially uncommitted; existing files and subsequent externally staged work were preserved. No agent commit, reset or index mutation was performed. Scope: OFX authority correction only, retaining current monetary representations and the bounded concurrency foundation.

@@ -74,7 +74,7 @@ test.group('Statement and balance-history authority characterization', (group) =
             date: operation === 'move-latest-earlier' ? '2025-01-05' : operation === 'move-older-later' ? '2025-03-10' : target.date.toISODate(),
             amount: operation === 'edit-latest-zero' ? 0 : operation === 'edit-older' ? 80 : target.balance,
           }).accept('json').loginAs(f.user)
-      response.assertStatus(422)
+      response.assertStatus(404)
       assert.deepEqual(await snapshot(), before)
       assert.equal((await Account.findOrFail(f.account.id)).balance, 100)
     })
@@ -98,55 +98,17 @@ test.group('Statement and balance-history authority characterization', (group) =
       assert.deepEqual(after.slice(3), before.slice(3))
     })
 
-  test('transaction-tracked history endpoints also overwrite balance although GET derives a transaction series', async ({ client, assert }) => {
-    await f.account.merge({ tracking: TrackingType.Transactions }).save()
-    const response = await client.post(`/api/v1/account/${f.account.id}/balances`).json({ date: '2025-03-10', amount: 250 }).accept('json').loginAs(f.user)
-    response.assertStatus(200)
-    assert.equal((await Account.findOrFail(f.account.id)).balance, 250)
-    const history = await BalanceHistory.query().where('accountId', f.account.id).firstOrFail()
-    ;(await client.patch(`/api/v1/account/${f.account.id}/balances/${history.id}`).json({ date: '2025-03-10', amount: 0 }).accept('json').loginAs(f.user)).assertStatus(200)
-    assert.equal((await Account.findOrFail(f.account.id)).balance, 0)
-    ;(await client.delete(`/api/v1/account/${f.account.id}/balances/${history.id}`).accept('json').loginAs(f.user)).assertStatus(200)
-    assert.lengthOf(await BalanceHistory.query().where('accountId', f.account.id), 0)
-    assert.equal((await Statement.findOrFail(latest.id)).endingBalance, 100)
-  })
-
   // Pre-fix characterization: history POST set 250, Statement PATCH set 120,
   // then history PATCH restored 250. History is now rejected throughout.
   test('history cannot override a later Statement mutation', async ({ client, assert }) => {
     const history = await seedHistory()
-    ;(await client.post(`/api/v1/account/${f.account.id}/balances`).json({ date: '2025-03-10', amount: 250 }).accept('json').loginAs(f.user)).assertStatus(422)
+    ;(await client.post(`/api/v1/account/${f.account.id}/balances`).json({ date: '2025-03-10', amount: 250 }).accept('json').loginAs(f.user)).assertStatus(404)
     assert.equal((await Account.findOrFail(f.account.id)).balance, 100)
     ;(await client.patch(`/api/v1/statements/${latest.id}`).json({ endingBalance: 120 }).accept('json').loginAs(f.user)).assertStatus(200)
     const before = await snapshot()
-    ;(await client.patch(`/api/v1/account/${f.account.id}/balances/${history.last.id}`).json({ date: '2025-02-10', amount: 80 }).accept('json').loginAs(f.user)).assertStatus(422)
+    ;(await client.patch(`/api/v1/account/${f.account.id}/balances/${history.last.id}`).json({ date: '2025-02-10', amount: 80 }).accept('json').loginAs(f.user)).assertStatus(404)
     assert.deepEqual(await snapshot(), before)
     assert.equal((await Account.findOrFail(f.account.id)).balance, 120)
   })
-
-  test('late account save failure rolls back history mutation', async ({ client, assert }) => {
-    await f.account.merge({ tracking: TrackingType.Transactions }).save()
-    const rows = await seedHistory()
-    const before = await snapshot()
-    await db.rawQuery(`ALTER TABLE accounts ADD CONSTRAINT history_authority_failure CHECK (id <> ${f.account.id} OR balance <> 999) NOT VALID`)
-    try {
-      const response = await client.patch(`/api/v1/account/${f.account.id}/balances/${rows.last.id}`).json({ date: '2025-02-10', amount: 999 }).accept('json').loginAs(f.user)
-      response.assertStatus(500)
-      assert.deepEqual(await snapshot(), before)
-    } finally {
-      await db.rawQuery('ALTER TABLE accounts DROP CONSTRAINT history_authority_failure')
-    }
-  })
-  test('standalone balance DELETE also overrides Statement authority')
-    .with([false, true]).run(async ({ client, assert }, finalOnly) => {
-      const rows = await seedHistory(finalOnly)
-      const before = await snapshot()
-      const response = await client.delete(`/api/v1/balance/${rows.last.id}`).accept('json').loginAs(f.user)
-      response.assertStatus(422)
-      assert.equal((await Account.findOrFail(f.account.id)).balance, 100)
-      const after = await snapshot()
-      assert.deepEqual(after.slice(2), before.slice(2))
-      assert.deepEqual(after, before)
-    })
 
 })

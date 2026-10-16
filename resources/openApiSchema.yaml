@@ -189,8 +189,8 @@ paths:
           $ref: "#/components/responses/AddOfflineAccountsResponse"
 
   /api/v1/account/{accountId}/balances:
-    post:
-      summary: 'Add balance'
+    get:
+      summary: Transaction-derived account chart points (no stored BalanceHistory)
       parameters:
         - in: path
           name: accountId
@@ -199,31 +199,20 @@ paths:
           required: true
       responses:
         "200":
-          description: ok
+          description: Existing read-only series for transaction-tracked accounts
           content:
             application/json:
               schema:
-                type: object
-                required:
-                  - data
-                properties:
-                  data:
-                    type: object
-                    required:
-                      - id
-                      - balance
-                      - date
-                      - accountBalance
-                    properties:
-                      id:
-                        type: integer
-                      balance:
-                        type: number
-                      date:
-                        type: string
-                        format: date
-                      accountBalance:
-                        type: number
+                type: array
+                items:
+                  type: object
+                  required: [date, balance]
+                  properties:
+                    date:
+                      type: string
+                      format: date
+                    balance:
+                      type: number
 
 components:
   responses:

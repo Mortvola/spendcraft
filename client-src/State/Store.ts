@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react';
 import Accounts from './Accounts';
-import Balances from './Balances';
+import AccountBalanceSeries from './AccountBalanceSeries';
 import CategoryTree from './CategoryTree';
 import Register from './Register';
 import Reports from './Reports';
@@ -30,7 +30,7 @@ class Store implements StoreInterface {
 
   accounts: AccountsInterface;
 
-  balances: Balances;
+  accountBalanceSeries: AccountBalanceSeries;
 
   uiState: UIStateInterface;
 
@@ -61,7 +61,7 @@ class Store implements StoreInterface {
     this.taxCategories = new TaxCategories();
     this.register = new Register(this);
     this.accounts = new Accounts(this);
-    this.balances = new Balances(this);
+    this.accountBalanceSeries = new AccountBalanceSeries();
     this.uiState = new UIState(this);
     this.reports = new Reports(this);
     this.rebalances = new Rebalances(this);
@@ -81,7 +81,7 @@ class Store implements StoreInterface {
     this.categoryTree = new CategoryTree(this);
     this.register = new Register(this);
     this.accounts = new Accounts(this);
-    this.balances = new Balances(this);
+    this.accountBalanceSeries = new AccountBalanceSeries();
     this.uiState = new UIState(this);
     this.reports = new Reports(this);
     this.rebalances = new Rebalances(this);

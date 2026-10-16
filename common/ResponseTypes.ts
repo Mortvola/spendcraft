@@ -557,33 +557,18 @@ export const isLinkTokenResponse = (
   (r as LinkTokenProps).linkToken !== undefined
 );
 
-export interface BalanceProps {
-  id: number,
+// Read-only points from the existing Transaction-derived account chart endpoint.
+export interface AccountBalancePoint {
   balance: number;
   date: string;
 }
 
-const isBalanceProps = (r: unknown): r is BalanceProps => (
-  (r as BalanceProps).balance !== undefined
+export const isAccountBalanceSeries = (value: unknown): value is AccountBalancePoint[] => (
+  Array.isArray(value) && value.every((point: unknown) =>
+    typeof point === 'object' && point !== null
+    && 'date' in point && typeof point.date === 'string'
+    && 'balance' in point && typeof point.balance === 'number')
 );
-
-export const isBalancesResponse = (r: unknown): r is BalanceProps[] => (
-  (r as BalanceProps[]).length === 0
-  || isBalanceProps((r as BalanceProps[])[0])
-);
-
-export interface AddBalanceResponse {
-  id: number,
-  balance: number,
-  date: string,
-  accountBalance: number,
-}
-
-export interface UpdateBalanceResponse {
-  balance: number,
-  date: string,
-  accountBalance: number,
-}
 
 export interface UserProps {
   username: string;

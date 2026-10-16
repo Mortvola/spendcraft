@@ -19,7 +19,6 @@ const Balance: React.FC<PropsType> = observer(({
   onClick,
 }) => {
   const handleClick = () => {
-    // showBalanceDialog(balance);
     onClick()
   }
 

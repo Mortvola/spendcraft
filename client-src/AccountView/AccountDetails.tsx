@@ -3,7 +3,7 @@ import React from 'react';
 import { Nav } from 'react-bootstrap';
 import { useStores } from '../State/Store';
 import Register from '../Transactions/Register';
-import BalanceHistory from './BalanceHistory';
+import AccountBalanceChart from './AccountBalanceChart';
 import styles from '../Transactions/Transactions.module.scss';
 import styles2 from './AccountDetails.module.scss'
 import PendingRegister from '../Transactions/PendingRegister';
@@ -53,7 +53,7 @@ const AccountDetails: React.FC = observer(() => {
         )
 
       case Tab.Balances:
-        return <BalanceHistory />
+        return <AccountBalanceChart />
 
       case Tab.Statements:
         return <StatementsView account={selectedAccount} />
@@ -72,7 +72,7 @@ const AccountDetails: React.FC = observer(() => {
             <>
               <div />
               <div className={styles2.content}>
-                <BalanceHistory />
+                <AccountBalanceChart />
               </div>
             </>
           )

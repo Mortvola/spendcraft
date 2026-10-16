@@ -1,5 +1,7 @@
 # Posted integer cents: final implementation plan
 
+> Subsequent product direction: BalanceHistory is deprecated. Its runtime lifecycle is removed and PostgreSQL-verified (physical schema cleanup deferred); earlier proposals to preserve/fix/migrate that feature are superseded. Historical verification facts below remain unchanged. See [deprecation record](balance-history-deprecation.md). No physical table removal or historical repair is authorized.
+
 Status: implementation plan, not implementation authorization. Baseline: 1,136 full-suite tests. No database connection, data mutation, audit script, production code, schema migration or cents adapter is part of this task.
 
 This plan supersedes the provisional policy and migration sections of integer-cents-domain-design.md. Prior characterization, provider design and audit documents remain evidence. Decisions now settled: Scope 2 domain cents; strict cent-exact new input; no binary-near-cent tolerance; no universal legacy L1 conversion. `transaction_categories` is non-authoritative and cannot contribute to economic reconstruction or compatibility decisions.

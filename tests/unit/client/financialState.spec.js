@@ -22,7 +22,7 @@ test.group('Client financial state consistency', (group) => {
     await writeFile(entry, `
 export { store, StoreContext } from ${source('client-src/State/Store.ts')};
 export { default as AccountsToolbar } from ${source('client-src/AccountView/AccountsToolbar.tsx')};
-export { default as BalanceHistoryView } from ${source('client-src/AccountView/BalanceHistory.tsx')};
+export { default as AccountBalanceChart } from ${source('client-src/AccountView/AccountBalanceChart.tsx')};
 export { createElement } from ${source('node_modules/react/index.js')};
 export { renderToStaticMarkup } from ${source('node_modules/react-dom/server.node.js')};
 export { default as Http } from '@mortvola/http';
@@ -31,7 +31,6 @@ export { default as Category } from ${source('client-src/State/Category.ts')};
 export { default as Group } from ${source('client-src/State/Group.ts')};
 export { default as Transaction } from ${source('client-src/State/Transaction.ts')};
 export { default as Statement } from ${source('client-src/State/Statement.ts')};
-export { default as Balance } from ${source('client-src/State/Balance.ts')};
 export { runInAction } from 'mobx';
 export * from ${source('common/ResponseTypes.ts')};
 `)
@@ -107,7 +106,7 @@ export * from ${source('common/ResponseTypes.ts')};
     const refreshes = []
     f.account.transactions.getData = async () => { refreshes.push('transactions') }
     f.account.pendingTransactions.getData = async () => { refreshes.push('pending') }
-    f.store.balances.load = async () => { throw new Error('OFX must not refresh history') }
+    assert.notProperty(f.store, 'balances')
     await f.account.uploadOfx(new File(['OFX'], 'test.ofx'))
     assert.equal(f.account.balance, 95); assert.equal(f.account.plaidBalance, 1500)
     assert.equal(f.category.balance, -5)
@@ -328,27 +327,31 @@ export * from ${source('common/ResponseTypes.ts')};
       assert.include(toolbar, 'Add Statement')
       assert.notInclude(toolbar, 'Add Balance')
       let historyReads = 0
-      f.store.balances.load = async () => { historyReads++ }
-      const history = render(state.BalanceHistoryView)
+      f.store.accountBalanceSeries.load = async () => { historyReads++ }
+      const history = render(state.AccountBalanceChart)
       assert.include(history, '02/28/25')
       assert.notInclude(history, 'Add Balance')
       assert.equal(historyReads, 0)
     })
 
-  // Legacy tests accepted manual history as a balance authority. The API now rejects it.
-  test('rejected balance-tracked history operations preserve client account and history state')
-    .with(['create', 'update', 'delete']).run(async ({ assert }, operation) => {
-      state.runInAction(() => { f.store.balances.account = f.account; f.account.tracking = state.TrackingType.Balances })
-      const row = new state.Balance(f.store.balances, { id: 50, date: '2025-02-10', balance: 100 })
-      state.runInAction(() => { f.store.balances.balances = [row] })
-      const url = operation === 'create' ? 'post /api/v1/account/10/balances' : operation === 'update' ? 'patch /api/v1/account/10/balances/50' : 'delete /api/v1/balance/50'
-      routes.set(url, async () => ({ ok: false, body: {} }))
-      await assert.rejects(() => operation === 'create' ? f.store.balances.addBalance({ date: '2025-02-10', amount: 75 })
-        : operation === 'update' ? row.update({ date: '2025-02-10', amount: 75 }) : row.delete())
+  test('read-only transaction chart loads points without observation IDs or Account mutation', async ({ assert }) => {
+    routes.set('get /api/v1/account/10/balances', async () => ({ body: [{ date: '2025-02-10', balance: 95 }] }))
+    await f.store.accountBalanceSeries.load(f.account)
+    const point = f.store.accountBalanceSeries.points[0]
+    assert.equal(point.balance, 95); assert.equal(point.date.toISODate(), '2025-02-10')
+    assert.equal(f.account.balance, 100); assert.equal(f.account.plaidBalance, null)
+    assert.notProperty(point, 'id')
+    for (const method of ['addBalance', 'insertBalance', 'removeBalance']) assert.notProperty(f.store.accountBalanceSeries, method)
+    assert.notProperty(f.store, 'balances')
+  })
+
+  test('rejected or malformed chart request leaves cache and Account unchanged')
+    .with(['rejected', 'malformed']).run(async ({ assert }, result) => {
+      routes.set('get /api/v1/account/10/balances', async () => ({ ok: result !== 'rejected', body: [null] }))
+      await assert.rejects(() => f.store.accountBalanceSeries.load(f.account))
+      assert.lengthOf(f.store.accountBalanceSeries.points, 0)
+      assert.isNull(f.store.accountBalanceSeries.account)
       assert.equal(f.account.balance, 100)
-      assert.equal(row.balance, 100)
-      assert.strictEqual(f.store.balances.balances[0], row)
-      assert.lengthOf(calls, 1)
     })
 
   test('rejected transaction edit leaves cached financial state unchanged', async ({ assert }) => {

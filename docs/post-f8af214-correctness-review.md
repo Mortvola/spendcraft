@@ -1,5 +1,11 @@
 # Post-f8af214 accounting correctness review
 
+## BalanceHistory product resolution — runtime deprecation
+
+BalanceHistory is deprecated. The stronger product resolution for D5–D8 is removal of the supported runtime lifecycle, not a repaired history-to-Account synchronization path. The working tree removes CRUD routes/controllers/validators/client mutators and the unused Account helper; removes the stored-history GET branch; preserves the existing Transaction chart, Statement UI and net-worth calculations. Only minimal model/relationship and parent-destruction cleanup remain alongside schema, migrations and legacy-data tests. No historical row or Account balance is repaired. See [complete deprecation inventory](balance-history-deprecation.md). PostgreSQL verification is accepted:822 focused /1,306 full-suite passed,0 failed,0 skipped/pending. Task-specific authorization is expired; physical schema cleanup remains deferred.
+
+The historical D5–D8 findings below remain accurate descriptions of the former source defect. Their old recommendations to preserve the history API, repair its Account effects or settle duplicate-date policy are superseded by removal. Prior acceptance records and chronological analysis are preserved as history, not current feature requirements.
+
 ## Current implementation status
 
 Against committed accepted concurrency baseline `3b01c34067e61e778916ebda5a80527540ccef00`, the focused OFX correction is now **PostgreSQL-verified and accepted** (681 focused / 1,305 full-suite tests; 0 failed, 0 skipped/pending). D9 missing ledger, D10 Account old/new eligibility, D15 ledger destination and D16 ledger-contaminated opening are corrected in the working tree. Valid ledger writes plaidBalance; Account.balance changes only by eligible Transaction net effects; no OFX BalanceHistory mutation remains. D14 command scope/concurrency was separately corrected and accepted in the baseline. Client success refresh now preserves independent balances and does not refresh history. Malformed supplied ledger/ambiguous identity fails atomically. See [implementation and prepared tests](ofx-account-provider-balance-correction-implementation.md).
@@ -35,7 +41,7 @@ All links refer to current repository files; function names disambiguate the rel
 | Statement tests | [correctness](../tests/functional/accounts/statementCorrectness.spec.ts), [eligibility](../tests/functional/accounts/statementEligibility.spec.ts), [reconciliation](../tests/functional/accounts/statementReconciliation.spec.ts), [deletion](../tests/functional/accounts/statementDeletion.spec.ts) |
 | Pure/client tests | [funding rounding](../tests/unit/client/fundingRounding.spec.js), [funding percentages](../tests/unit/fundingPercentages.spec.ts), [financial State](../tests/unit/client/financialState.spec.js) |
 
-## Current lifecycle map
+## Baseline lifecycle map (historical)
 
 Dollar-valued JS numbers dominate model/controller arithmetic. Numeric relational money is commonly scale 2; Transaction allocations are JSON numbers. “Transaction-bound” below means work is inside a DB transaction, not that every helper is correctly bound or every competing writer serialized.
 
@@ -59,7 +65,7 @@ Dollar-valued JS numbers dominate model/controller arithmetic. Numeric relationa
 | Provider auto-assignment | Through provider Account lifecycle | Fixed/percentage allocations; remainder Unassigned | Category date eligibility in A.autoAssign | Shared provider transaction; floating configuration |
 | Operational commands | OFX upload posts; CheckBalances can repair | Diagnostic/repair sums and optional writes | Different scope/locking; not normal automatic reconstruction | Inspect each command; never run during this task |
 
-## Classified discoveries
+## Baseline classified discoveries
 
 Each numbered finding has exactly one classification. A product rule and its source contradiction are separate findings. Test gaps are stated explicitly: absence of a later regression is not proof of correctness.
 
@@ -163,7 +169,7 @@ API money commonly uses JSON numbers; client arithmetic demonstrably creates bin
 
 ## Recommended focused correctness sequence
 
-1. **BalanceHistory Account noninterference — PAUSED by product direction.** This was the original recommendation; do not implement it now while deprecation is investigated. Small isolated server/client correction to D5–D8; retain evidence behavior, response compatibility, validation, duplicate dates and provider/Statement Account effects. Rewrite wrong-authority test expectations into persisted invariance, including final deletion. No history repair.
+1. **BalanceHistory runtime deprecation — ACCEPTED, physical cleanup deferred.** Product deprecated the entire feature. Remove D5–D8 lifecycle and unused helpers/DTOs instead of correcting their monetary behavior. Keep old data physically inert and preserve existing charts/Statements/reports. No historical repair or schema removal. Prior API-preservation proposal is superseded.
 2. **Tenant-safe operational/legacy entry points.** Address OfxUpload's scoped selection and separately review CategoryTransfer DELETE authorization/awaiting. These security boundaries should not wait for a money representation project.
 3. **Cross-writer concurrency design and regression baseline.** Map lock order, fresh reads and helper transaction binding across all financial writers; test deterministic races once separately authorized. Choose the simplest shared strategy based on baseline evidence, not the abandoned deadlock. This is a prerequisite for reliable financial fixes, not a mandate for old helper architecture.
 4. **Ordinary CREATE/PATCH/startDate eligibility.** D1–D3 with signed amounts, pending/date/active old/new matrices and no Account change on startDate. Preserve opening formula/date, accountless isolation and Statement-only nonfinancial behavior. Characterize historical-old-effect limitations before enabling broad reverse/apply changes.
@@ -244,3 +250,7 @@ The OFX authority, BalanceHistory and eligibility defects remain separate and de
 ## OFX PostgreSQL acceptance
 
 The [OFX verification record](ofx-account-provider-balance-correction-postgresql-verification.md) records independent configured/live pg/pgLog and execution-connection safeguards before every destructive statement, setup and returned cleanup. Both entry points preserve accounting/provider independence, never mutate history and run opening once from accounting balance. Deterministic shared-Budget tests preserve Account/Category effects and last-writer provider observation, including rollback/waiter cases. Full suite:1,305 passed,0 failed,0 skipped/pending; focused acceptance:681 passed. No further production correction was needed during verification. Generic BalanceHistory, unrelated eligibility defects, historical risks and representation work remain separately deferred. Authorization expired at completion; it cannot be reused.
+
+## BalanceHistory runtime deprecation verified
+
+The [verification record](balance-history-deprecation-postgresql-verification.md) establishes removed CRUD routes, legacy observation inertness, preserved Account/provider/Category/Transaction/Statement/opening/chart/report semantics and allowed parent cleanup. Only the four documented model/relationship/parent-cleanup files retain production references. Both target connections and every destructive execution connection were independently safeguarded. Focused822 and full-suite1,306 tests passed with no failure/skip. No production correction was needed during verification. This supersedes the earlier proposal to repair history mutations or defer the feature decision: the supported lifecycle is removed. No historical Account repair or physical table/schema removal occurred.

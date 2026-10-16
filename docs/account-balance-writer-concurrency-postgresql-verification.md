@@ -1,5 +1,7 @@
 # Account-balance concurrency PostgreSQL verification
 
+> Subsequent product direction: BalanceHistory is deprecated. Its runtime lifecycle is removed and PostgreSQL-verified (physical schema cleanup deferred); earlier proposals to preserve/fix/migrate that feature are superseded. Historical verification facts below remain unchanged. See [deprecation record](balance-history-deprecation.md). No physical table removal or historical repair is authorized.
+
 Task scope: verify the bounded concurrency correction only. HEAD: `7fdc6369d787869dd5859341f832c0733a6496f1`. The existing production correction was preserved; verification introduced no additional production semantic changes. Existing staged/untracked user work was preserved. OFX balance-authority correction remains a separate subsequent task.
 
 ## Authorization and safety

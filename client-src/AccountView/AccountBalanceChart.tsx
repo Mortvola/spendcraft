@@ -2,15 +2,15 @@ import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import Chart from 'react-google-charts';
 import { useStores } from '../State/Store';
-import styles from './BalanceHistory.module.scss';
+import styles from './AccountBalanceChart.module.scss';
 import Balance from './Balance';
 import { StatementInterface } from '../State/Types';
 import { DateTime } from 'luxon';
 import { AccountType, TrackingType } from '../../common/ResponseTypes';
 import { useStatementDialog } from './StatementDialog';
 
-const BalanceHistory: React.FC = observer(() => {
-  const { balances, uiState: { selectedAccount } } = useStores();
+const AccountBalanceChart: React.FC = observer(() => {
+  const { accountBalanceSeries, uiState: { selectedAccount } } = useStores();
   const [StatementDialog, showStatementDialog] = useStatementDialog();
   const [editedStatement, setEditedStatement] = useState<StatementInterface | null>(null);
 
@@ -19,10 +19,10 @@ const BalanceHistory: React.FC = observer(() => {
       if (selectedAccount.tracking === TrackingType.Balances || selectedAccount.type === AccountType.Investment) {
         selectedAccount?.statements.load()
       } else {
-        balances.load(selectedAccount);
+        accountBalanceSeries.load(selectedAccount);
       }
     }
-  }, [balances, selectedAccount]);
+  }, [accountBalanceSeries, selectedAccount]);
 
   let data: [string | null, string | number][] = [];
 
@@ -62,7 +62,7 @@ const BalanceHistory: React.FC = observer(() => {
     }
   } else {
     const t: { balance: number, date: DateTime }[] = []
-    const b = balances.balances
+    const b = accountBalanceSeries.points
 
     if (b.length > 0) {
       t.push({
@@ -149,4 +149,4 @@ const BalanceHistory: React.FC = observer(() => {
   );
 });
 
-export default BalanceHistory;
+export default AccountBalanceChart;

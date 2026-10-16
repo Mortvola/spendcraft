@@ -60,11 +60,13 @@ Reconciliation links/unlinks existing Transactions. It does not create adjustmen
 
 The exact equal-ending-date winner needs explicit reconfirmation after reset. Current financial queries order only by end date. The abandoned `end_date DESC, id DESC` choice is a recommendation, not silently restored authority. CREATE versus reconcile-all pending/opening membership differences also need a separate product decision.
 
-## 10. BalanceHistory
+## 10. BalanceHistory — deprecated
 
-**Confirmed product invariant.** BalanceHistory is historical observation/evidence. It must NEVER update Account.balance. CREATE, balance/date UPDATE and DELETE leave current balance unchanged, including newest, backdated, equal-date and final-row cases. There is no latest-history synchronization and no final-delete-to-zero rule.
+**Confirmed product invariant.** BalanceHistory is deprecated. Supported runtime accounting does not read or write BalanceHistory. Historical rows have no authority over Account.balance, provider balance, Transactions, Categories, Statements, opening/Initial Funding, funding/rebalance, initialization or current financial calculations. There is no latest-history synchronization or final-row-delete-to-zero rule.
 
-Provider operations may update Account balance under their own approved semantics and separately persist history. For OFX, that Account change is the Transaction net effect, never an absolute LEDGERBAL replacement. `Account.updateAccountBalanceHistory` is evidence-only; manual controller and client violations must be corrected independently. Existing manual balance-tracked rejection remains the current boundary; this document does not expand it. Date uniqueness and history ordering are history contracts, not current-balance authority.
+The deprecated mutation/list lifecycle is removed, rather than repairing its old Account-balance side effects. No provider/command may repopulate it. Physical historical rows, table/schema and minimal model/relationship support may remain until a separately authorized schema-cleanup task. Existing parent-destruction cleanup may remove dependent rows when their parent is deleted; it is not a supported BalanceHistory product lifecycle.
+
+Active charts remain supported using their existing Transaction-derived series or Statements; net worth retains its existing Transaction/opening/Statement sources. This introduces no replacement history system. Runtime deprecation is PostgreSQL-verified (822 focused /1,306 full-suite passes;0 failed,0 skipped/pending); physical cleanup remains deferred. See [deprecation inventory and compatibility boundary](balance-history-deprecation.md).
 
 ## 11. Provider observations versus posted effects
 

@@ -1,5 +1,7 @@
 # Account-balance writer concurrency design
 
+> Subsequent product direction: BalanceHistory is deprecated. Its runtime lifecycle is removed and PostgreSQL-verified (physical schema cleanup deferred); earlier proposals to preserve/fix/migrate that feature are superseded. Historical verification facts below remain unchanged. See [deprecation record](balance-history-deprecation.md). No physical table removal or historical repair is authorized.
+
 Status: APPROVED bounded design; implemented with non-DB verification, PostgreSQL acceptance passed. The inventory/timelines below retain the pre-correction characterization; see [implementation record](account-balance-writer-concurrency-implementation.md) for current changes. HEAD inspected: `7fdc6369d787869dd5859341f832c0733a6496f1`; committed delta from f8af214 is the two reconciliation documents only. Runtime remains f8af214. Existing staged/unstaged documentation, earlier OFX source test and unrelated untracked files were preserved. No runtime change, DB connection, DB test or historical repair occurred.
 
 ## Invariant and conclusion

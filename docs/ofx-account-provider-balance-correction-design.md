@@ -1,5 +1,7 @@
 # OFX accounting / provider balance correction design
 
+> Subsequent product direction: BalanceHistory is deprecated. Its runtime lifecycle is removed and PostgreSQL-verified (physical schema cleanup deferred); earlier proposals to preserve/fix/migrate that feature are superseded. Historical verification facts below remain unchanged. See [deprecation record](balance-history-deprecation.md). No physical table removal or historical repair is authorized.
+
 Status: APPROVED and implemented against accepted concurrency baseline `3b01c34067e61e778916ebda5a80527540ccef00`; **PostgreSQL-verified and accepted** (681 focused / 1,305 full-suite tests; 0 failed, 0 skipped/pending). Implementation used no database; subsequent verification was separately authorized only against safeguarded localhost:5432/spendcraft_test and is complete. That authorization is expired. See [implementation record](ofx-account-provider-balance-correction-implementation.md).
 
 ## Baseline findings and superseded blocker

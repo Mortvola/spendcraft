@@ -43,6 +43,7 @@ class Account extends BaseModel {
   @hasMany(() => AccountTransaction)
   public accountTransactions: HasMany<typeof AccountTransaction>;
 
+  // Retained only for legacy-row parent-deletion cleanup; no product history lifecycle.
   @hasMany(() => BalanceHistory)
   public balanceHistory: HasMany<typeof BalanceHistory>;
 
@@ -145,7 +146,6 @@ class Account extends BaseModel {
 
   //     this.balance += sum;
 
-  //     await this.updateAccountBalanceHistory(this.balance);
 
   //     const unassigned = await budget.getUnassignedCategory({ client: trx });
   //     result.categories = [{ id: unassigned.id, balance: unassigned.amount }];
@@ -190,7 +190,6 @@ class Account extends BaseModel {
   //     this.plaidBalance = -this.plaidBalance;
   //   }
 
-  //   await this.updateAccountBalanceHistory(this.balance);
   // }
 
   // public async addTransactions(
@@ -676,34 +675,6 @@ class Account extends BaseModel {
 
   //   return sum;
   // }
-
-  public async updateAccountBalanceHistory(
-    this: Account,
-    balance: number,
-    date?: DateTime,
-  ): Promise<void> {
-    let balanceDate = date;
-    if (!balanceDate) {
-      balanceDate = DateTime.utc()
-    }
-
-    const history = await this.related('balanceHistory')
-      .query()
-      .where('date', balanceDate.toFormat('yyyy-MM-dd'))
-      .first();
-
-    // If the history record was not found then create one.
-    // Otherwise, update the one that was found (if the balance has
-    // changed).
-    if (history === null) {
-      await this.related('balanceHistory')
-        .create({ date: balanceDate, balance });
-    }
-    else if (history.balance !== balance) {
-      history.balance = balance;
-      await history.save();
-    }
-  }
 
   public async processOfx(
     this: Account,

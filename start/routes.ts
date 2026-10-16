@@ -168,9 +168,6 @@ router.group(() => {
     
         router.group(() => {
           router.get('', [AccountsController, 'balances']);
-          router.post('', [AccountsController, 'addBalance']);
-          router.delete('/:id', [AccountsController, 'deleteBalance']);
-          router.patch('/:id', [AccountsController, 'updateBalance']);    
         })
           .prefix('/balances')
 
@@ -188,11 +185,6 @@ router.group(() => {
       })
         .prefix('/statements')
 
-      router.group(() => {
-        router.delete('/:id', [AccountsController, 'deleteBalance']).as('balance.delete')
-      })
-        .prefix('/balance');
-  
       router.post('/institutions/sync', [InstitutionController, 'syncAll']);
   
       router.group(() => {

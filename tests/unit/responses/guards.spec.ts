@@ -3,7 +3,7 @@ import {
   AccountType, TrackingType,
   isUpdateCategoryTransferResponse, isDeleteTransactionResponse,
   isInsertCategoryTransferResponse, isDeleteInstitutionResponse, isDeleteAccountResponse,
-  isAddOnlineAccountsResponse, isInstitutionsResponse, isBalancesResponse,
+  isAddOnlineAccountsResponse, isInstitutionsResponse, isAccountBalanceSeries,
   isCategoryTreeBalanceResponse,
 } from '#common/ResponseTypes'
 
@@ -107,23 +107,18 @@ test.group('Response guards / isInstitutionsResponse', () => {
   })
 })
 
-test.group('Response guards / isBalancesResponse', () => {
+test.group('Response guards / isAccountBalanceSeries', () => {
   test('accepts empty and nonempty balances', ({ assert }) => {
-    assert.isTrue(isBalancesResponse([]))
-    assert.isTrue(isBalancesResponse([balance]))
+    assert.isTrue(isAccountBalanceSeries([]))
+    assert.isTrue(isAccountBalanceSeries([balance]))
   })
   test('rejects a first balance missing balance', ({ assert }) => {
-    assert.isFalse(isBalancesResponse([{ id: 4, date: '2026-10-07' }]))
+    assert.isFalse(isAccountBalanceSeries([{ id: 4, date: '2026-10-07' }]))
   })
-  test('checks only the first balance', ({ assert }) => {
-    assert.isTrue(isBalancesResponse([balance, null]))
-  })
-  test('throws for top-level null or a null first balance', ({ assert }) => {
-    assert.throws(() => isBalancesResponse(null), TypeError)
-    assert.throws(() => isBalancesResponse([null]), TypeError)
-  })
-  test('accepts an empty non-array collection', ({ assert }) => {
-    assert.isTrue(isBalancesResponse({ length: 0 }))
+  test('rejects malformed later points and non-array responses', ({ assert }) => {
+    for (const value of [[balance, null], null, [null], { length: 0 }, [{ date: 123, balance: 4 }]]) {
+      assert.isFalse(isAccountBalanceSeries(value))
+    }
   })
 })
 

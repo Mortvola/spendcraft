@@ -2,7 +2,6 @@ import { HttpContext } from '@adonisjs/core/http';
 import db from '@adonisjs/lucid/services/db';
 import { Exception } from '@adonisjs/core/exceptions';
 import Account from '#app/Models/Account';
-import BalanceHistory from '#app/Models/BalanceHistory';
 import Category from '#app/Models/Category';
 import Transaction from '#app/Models/Transaction';
 import {
@@ -10,13 +9,12 @@ import {
   ApiResponse,
   AddStatementResponse,
   StatementProps,
-  AddBalanceResponse,
   AccountType,
 } from '#common/ResponseTypes';
 import Statement from '#app/Models/Statement';
 import AccountTransaction from '#app/Models/AccountTransaction';
 import transactionFields from './transactionFields.js';
-import { addBalance, updateAccount, updateBalance } from '#app/validation/Validators/account';
+import { updateAccount } from '#app/validation/Validators/account';
 import { DateTime } from 'luxon';
 import { addTransaction } from '#validators/transaction';
 import { validateTransactionSplits } from '#app/validation/transactionSplits';
@@ -32,11 +30,6 @@ interface AddedTransaction {
 function budgetAccounts(budgetId: number, options?: ModelAdapterOptions) {
   return Account.query(options)
     .whereHas('institution', (query) => query.where('budgetId', budgetId));
-}
-
-function budgetHistory(budgetId: number, options?: ModelAdapterOptions) {
-  return BalanceHistory.query(options)
-    .whereIn('accountId', budgetAccounts(budgetId, options).select('id'));
 }
 
 function budgetStatements(budgetId: number, options?: ModelAdapterOptions) {
@@ -99,7 +92,7 @@ export default class AccountsController {
     };
   }
 
-  public async balances({ request, auth: { user } }: HttpContext): Promise<BalanceHistory[] | { date: string, balance: number}[]> {
+  public async balances({ request, auth: { user } }: HttpContext): Promise<{ date: string, balance: number }[]> {
     if (!user) {
       throw new Error('user not defined');
     }
@@ -108,60 +101,53 @@ export default class AccountsController {
 
     const account = await budgetAccounts(user.budgetId).where('id', accountId).firstOrFail()
 
-    let balances: BalanceHistory[] | { date: string, balance : number}[] = [];
-
     if (account.tracking === TrackingType.Balances) {
-      balances = await BalanceHistory.query()
-        .where('accountId', accountId)
-        .orderBy('date', 'desc');
-    }
-    else {
-      // Currently hard coded number of days to display.
-      // TODO: send this as a query parameter.
-      const daysToDisplay = 90
-
-      // Find the most recent transaction so we know where the window starts.
-      const mostRecentTransaction = await Transaction.query()
-        .whereHas('accountTransaction', (query) => {
-          query
-            .where('account_id', account.id)
-        })
-        .orderBy('date', 'desc')
-        .first()
-
-      const date = mostRecentTransaction?.date ?? DateTime.now()
-
-      const startDate = date.minus({ days: daysToDisplay })
-
-      const query = `
-        select
-          to_char(date, 'YYYY-MM-DD') as date,
-          balance - COALESCE(sum(trans_sum) over (partition by id order by id, date desc rows between unbounded preceding and 1 preceding), 0) as balance
-        from (
-          select a.id, a.name, cast(date_trunc('day', date) as date) as date, sum(at.amount) as trans_sum, a.balance
-          from account_transactions at
-          join transactions t on t.id = at.transaction_id
-          join accounts a on a.id = at.account_id
-          where
-            a.id = ${account.id}
-            and t.date >= '${startDate.toISODate()}'
-            and t.type in (0, 1, 5)
-            and at.pending = false
-            and t.deleted = false
-          group by t.type, cast(date_trunc('day', date) as date), a.id
-        ) as daily
-        order by date desc
-      `
-
-      const results = await db.rawQuery(query) as { rows: { date: string, balance: string}[] }
-
-      balances = results.rows.map((result) => ({
-        date: result.date,
-        balance: parseFloat(result.balance),
-      }))
+      throw new Exception('Balance-tracked accounts use Statements', { status: 422 });
     }
 
-    return balances;
+    // Currently hard coded number of days to display.
+    // TODO: send this as a query parameter.
+    const daysToDisplay = 90
+
+    // Find the most recent transaction so we know where the window starts.
+    const mostRecentTransaction = await Transaction.query()
+      .whereHas('accountTransaction', (query) => {
+        query
+          .where('account_id', account.id)
+      })
+      .orderBy('date', 'desc')
+      .first()
+
+    const date = mostRecentTransaction?.date ?? DateTime.now()
+
+    const startDate = date.minus({ days: daysToDisplay })
+
+    const query = `
+      select
+        to_char(date, 'YYYY-MM-DD') as date,
+        balance - COALESCE(sum(trans_sum) over (partition by id order by id, date desc rows between unbounded preceding and 1 preceding), 0) as balance
+      from (
+        select a.id, a.name, cast(date_trunc('day', date) as date) as date, sum(at.amount) as trans_sum, a.balance
+        from account_transactions at
+        join transactions t on t.id = at.transaction_id
+        join accounts a on a.id = at.account_id
+        where
+          a.id = ${account.id}
+          and t.date >= '${startDate.toISODate()}'
+          and t.type in (0, 1, 5)
+          and at.pending = false
+          and t.deleted = false
+        group by t.type, cast(date_trunc('day', date) as date), a.id
+      ) as daily
+      order by date desc
+    `
+
+    const results = await db.rawQuery(query) as { rows: { date: string, balance: string}[] }
+
+    return results.rows.map((result) => ({
+      date: result.date,
+      balance: parseFloat(result.balance),
+    }));
   }
 
   public async addTransaction({
@@ -281,186 +267,6 @@ export default class AccountsController {
       };
 
       return result;
-    }
-    catch (error) {
-      await trx.rollback();
-      logger.error(error);
-      throw error;
-    }
-  }
-
-  public async addBalance({
-    request,
-    auth: {
-      user,
-    },
-    logger,
-  }: HttpContext): Promise<ApiResponse<AddBalanceResponse>> {
-    if (!user) {
-      throw new Error('user not defined');
-    }
-
-    const { acctId } = request.params();
-
-    const trx = await db.transaction();
-
-    try {
-      const account = await budgetAccounts(user.budgetId, { client: trx }).where('id', acctId).firstOrFail();
-      if (account.tracking === TrackingType.Balances) {
-        throw new Exception('Balance-tracked accounts use Statements', { status: 422 });
-      }
-      const requestData = await request.validateUsing(addBalance)
-
-      const balance = (new BalanceHistory())
-        .useTransaction(trx)
-        .fill({
-          accountId: parseInt(acctId, 10),
-          balance: requestData.amount,
-          date: requestData.date,
-        });
-
-      await balance.save();
-
-      const latestBalance = await BalanceHistory.query({ client: trx })
-        .where('accountId', account.id)
-        .orderBy('date', 'desc')
-        .orderBy('id', 'asc')
-        .firstOrFail();
-
-      if (balance.id === latestBalance.id) {
-        // We just added a new latest balance. Update the account
-        // record with the new balance.
-        account.balance = latestBalance.balance;
-
-        await account.save();
-      }
-
-      await trx.commit();
-
-      const date = balance.date.toISODate()
-
-      if (!date) {
-        throw new Error('date is null')
-      }
-
-      return {
-        data: {
-          id: balance.id,
-          balance: balance.balance,
-          date,
-          accountBalance: account.balance,
-        }
-      }
-    }
-    catch (error) {
-      await trx.rollback();
-      logger.error(error);
-      throw error;
-    }
-  }
-
-  public async updateBalance({
-    request,
-    auth: {
-      user,
-    },
-    logger,
-  }: HttpContext): Promise<ApiResponse<BalanceHistory>> {
-    if (!user) {
-      throw new Error('user not defined');
-    }
-
-    const { acctId, id } = request.params();
-
-    await budgetHistory(user.budgetId).where('id', id).andWhere('accountId', acctId).firstOrFail();
-
-    const requestData = await request.validateUsing(
-      updateBalance,
-      {
-        meta: {
-          acctId,
-          id,
-        }
-      }
-    );
-
-    const trx = await db.transaction();
-
-    try {
-      const balance = await budgetHistory(user.budgetId, { client: trx })
-        .where('id', id).andWhere('accountId', acctId).firstOrFail();
-
-      const account = await budgetAccounts(user.budgetId, { client: trx }).where('id', balance.accountId).firstOrFail();
-      if (account.tracking === TrackingType.Balances) {
-        throw new Exception('Balance-tracked accounts use Statements', { status: 422 });
-      }
-
-      balance
-        .merge({
-          balance: requestData.amount,
-          date: requestData.date,
-        });
-
-      await balance.save();
-
-      const latestBalance = await BalanceHistory.query({ client: trx })
-        .where('accountId', balance.accountId)
-        .orderBy('date', 'desc')
-        .firstOrFail();
-
-      account.balance = latestBalance.balance;
-      await account.save();
-
-      await trx.commit();
-
-      return {
-        data: balance,
-      }
-    }
-    catch (error) {
-      await trx.rollback();
-      logger.error(error);
-      throw error;
-    }
-  }
-
-  public async deleteBalance({
-    request,
-    auth: {
-      user,
-    },
-    logger,
-  }: HttpContext): Promise<void> {
-    if (!user) {
-      throw new Error('user not defined');
-    }
-
-    const { acctId, id } = request.params();
-
-    const trx = await db.transaction();
-
-    try {
-      const historyQuery = budgetHistory(user.budgetId, { client: trx }).where('id', id);
-      if (acctId !== undefined) {
-        historyQuery.andWhere('accountId', acctId);
-      }
-      const balance = await historyQuery.firstOrFail();
-
-      const account = await budgetAccounts(user.budgetId, { client: trx }).where('id', balance.accountId).firstOrFail();
-      if (account.tracking === TrackingType.Balances) {
-        throw new Exception('Balance-tracked accounts use Statements', { status: 422 });
-      }
-
-      await balance.delete();
-
-      const latestBalance = await BalanceHistory.query({ client: trx })
-        .where('accountId', balance.accountId)
-        .orderBy('date', 'desc')
-        .first();
-      account.balance = latestBalance?.balance ?? 0;
-      await account.save();
-
-      await trx.commit();
     }
     catch (error) {
       await trx.rollback();

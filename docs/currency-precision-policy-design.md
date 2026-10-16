@@ -1,5 +1,7 @@
 # Fractional-cent currency persistence: characterization and policy design
 
+> Subsequent product direction: BalanceHistory is deprecated. Its runtime lifecycle is removed and PostgreSQL-verified (physical schema cleanup deferred); earlier proposals to preserve/fix/migrate that feature are superseded. Historical verification facts below remain unchanged. See [deprecation record](balance-history-deprecation.md). No physical table removal or historical repair is authorized.
+
 No production policy is implemented. Existing sub-cent disagreement is confirmed
 by previous runtime evidence. This task performs source inspection and pure unit
 characterization only; all database tests below await fresh authorization.
