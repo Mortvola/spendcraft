@@ -1,7 +1,7 @@
 import React from 'react';
 import { DateTime } from 'luxon';
 import {
-  Field, FieldProps, useField,
+  Field, FieldProps,
   useFormikContext,
 } from 'formik';
 import { FormCheckbox, FormError } from '@mortvola/forms';
@@ -10,6 +10,8 @@ import Amount from '../Amount';
 import styles from './Funding.module.scss'
 import { FundingInfoType, ValueType } from './Types';
 import VerticalTitled from './VerticalTitled';
+import { calculateFunding, fundingCategoryEffect } from './calculateFunding';
+import { useStores } from '../State/Store';
 import { CategoryInterface } from '../State/Types';
 import CategorySpread from '../CategorySpread/CategorySpread';
 
@@ -33,12 +35,11 @@ const FundingItem: React.FC<PropsType> = ({
   const { values } = useFormikContext<ValueType>();
 
   const name = `categories.${category.id}.baseAmount`;
-  const [field] = useField(name);
-  const balance = (fundingInfo?.initialAmount ?? 0) + (
-    typeof field.value === 'string'
-      ? parseFloat(field.value ?? 0)
-      : (field.value ?? 0)
-  );
+  const { categoryTree: { budget: { fundingPoolCat } } } = useStores();
+  if (!fundingPoolCat) throw new Error('funding pool is unassigned');
+  // Funding edits retain their date, so the month-start snapshot excludes the old record.
+  const balance = (fundingInfo?.initialAmount ?? 0)
+    + fundingCategoryEffect(calculateFunding(values.categories, fundingPoolCat.id), category.id);
 
   const previousMonthName = date.minus({ months: 1 }).monthLong;
 
@@ -67,7 +68,7 @@ const FundingItem: React.FC<PropsType> = ({
                 <VerticalTitled title="Current">
                   <Amount amount={fundingInfo?.initialAmount ?? 0} />
                 </VerticalTitled>
-                <VerticalTitled title="Funding" underscored={false}>
+                <VerticalTitled title="Requested" underscored={false}>
                   <AmountInput onDeltaChange={onDeltaChange} {...fieldProps} />
                 </VerticalTitled>
                 <VerticalTitled title="Balance">

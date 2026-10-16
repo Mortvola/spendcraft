@@ -23,7 +23,7 @@ import {
 } from './Types'
 import styles from './Funding.module.scss'
 import { CategoryInterface, TransactionInterface } from '../State/Types';
-import { CategorySpreadEntry } from '../CategorySpread/CategorySpread';
+import { calculateFunding, fundingCategoryEffect } from './calculateFunding';
 
 interface PropsType {
   transaction?: TransactionInterface;
@@ -42,172 +42,16 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
 
   const [diffOnly, setDiffOnly] = React.useState<boolean>(false);
 
-  const computeSpread = (amount: number, fundingCategories: CategorySpreadEntry[]): Map<number, number> => {
-    let categoryAmount = Math.round(amount * 100);
-    let percentSum = 0;
-
-    // Sort the funding categories by percentage so that fixed amounts are applied before percentage amounts.
-    const sortedCategories = (fundingCategories ?? []).slice().sort((a) => (a.percentage ? 1 : -1))
-
-    const funders = new Map<number, number>();
-
-     
-    // for (const fundingCategory of sortedCategories) {
-    for (let i = 0; i < sortedCategories.length; i += 1) {
-      const fundingCategory = sortedCategories[i];
-      const funding = funders.get(fundingCategory.categoryId) ?? 0;
-      let fundingAmount: number;
-
-      if (fundingCategory.percentage) {
-        fundingAmount = Math.round((fundingCategory.amount / 100.0) * categoryAmount);
-        percentSum += fundingAmount;
-
-        // If we are on the last item and there is a remaing amount (due to rounding error)
-        // then add it to the last funding amount.
-        if (i === sortedCategories.length - 1 && percentSum !== categoryAmount) {
-          fundingAmount += categoryAmount - percentSum;
-        }
-      }
-      else {
-        fundingAmount = Math.round(fundingCategory.amount * 100);
-
-        // Don't take more than what is left in the category amount
-        if (categoryAmount < fundingAmount) {
-          fundingAmount = categoryAmount
-        }
-
-        categoryAmount -= fundingAmount;
-      }
-
-      if (fundingAmount !== 0) {
-        funders.set(fundingCategory.categoryId, funding + fundingAmount)
-        // fundingCategory.fundedAmount = fundingAmount / 100;
-      }
-    }
-
-    return funders;
-  }
-
-  const getCategoriesSum = (categories: CategoriesValueType, fundingCatId: number) => {
-    let sum = 0;
-
-     
-    for (const k of Object.keys(categories)) {
-      const categoryId = parseInt(k, 10)
-
-      if (categoryId !== fundingCatId) {
-        const cat = categories[k]
-
-        if (cat.fundingCategories.some((fc) => fc.categoryId === fundingCatId)) {
-          // At least one funding category matches the one we are looking for
-          // Get the total amount by adding the base amount to the amounts for
-          // each category that uses this category as a funding source.
-          let sum2 = typeof cat.baseAmount === 'string' ? parseFloat(cat.baseAmount) : cat.baseAmount;
-          if (cat.includeFundingTransfers) {
-            const fundingTransfers = getCategoriesSum(categories, categoryId)
-
-            sum2 += fundingTransfers
-          }
-
-          const funders = computeSpread(sum2, cat.fundingCategories)
-          const funderAmount = funders.get(fundingCatId)
-
-          if (funderAmount !== undefined) {
-            sum += funderAmount / 100.0
-          }
-        }
-      }
-    }
-
-    return sum;
-  }
-
   const handleSubmit = async (values: ValueType) => {
     interface Request {
       date: string,
       categories: CategoryFundingProps[],
     }
 
-    const categories: CategoryFundingProps[] = Object.keys(values.categories)
-      .filter((k) => parseInt(k, 10) !== fundingPoolCat.id)
-      .map((k) => {
-        const categoryId = parseInt(k, 10);
-
-        const baseAmount = typeof values.categories[k].baseAmount === 'string'
-          ? parseFloat(values.categories[k].baseAmount)
-          : values.categories[k].baseAmount;
-
-        const amount = baseAmount
-
-        return {
-          categoryId,
-          amount,
-          fundingCategories: values.categories[k].fundingCategories,
-          includeFundingTransfers: values.categories[k].includeFundingTransfers,
-          baseAmount,
-        }
-      })
-
-    const funders = new Map<number, number>();
-
-     
-    for (const category of categories) {
-      const categoryFunders = computeSpread(category.amount, category.fundingCategories);
-
-       
-      for (const [categoryId, amount] of categoryFunders) {
-        const funding = funders.get(categoryId) ?? 0;
-        funders.set(categoryId, funding + amount)
-      }
-    }
-
-    // Adjust amounts for categories that have "include funding transfers" set to true.
-     
-    for (const category of categories) {
-      if (category.includeFundingTransfers) {
-        const previousFundingAmount = computeSpread(category.amount, category.fundingCategories);
-
-         
-        for (const [categoryId, amount] of previousFundingAmount) {
-          const funding = funders.get(categoryId) ?? 0;
-          funders.set(categoryId, funding - amount)
-        }
-
-        // Find funder that matches this category and add the amount.
-        let sum = 0;
-         
-        for (const [categoryId, amount] of funders) {
-          if (categoryId === category.categoryId) {
-            sum += amount;
-          }
-        }
-
-        category.amount += sum / 100.0;
-
-        const newFundingAmount = computeSpread(category.amount, category.fundingCategories);
-
-         
-        for (const [categoryId, amount] of newFundingAmount) {
-          const funding = funders.get(categoryId) ?? 0;
-          funders.set(categoryId, funding + amount)
-        }
-      }
-    }
-
-     
-    for (const [categoryId, amount] of funders) {
-      categories.push({
-        categoryId,
-        amount: -amount / 100.0,
-        baseAmount: 0,
-        funder: true,
-        fundingCategories: [],
-        includeFundingTransfers: false,
-      });
-    }
+    const categories = calculateFunding(values.categories, fundingPoolCat.id);
 
     const request: Request = {
-      date: values.date,
+      date: transaction ? transaction.date.toISODate() ?? values.date : values.date,
       categories,
     };
 
@@ -446,6 +290,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
                   <input
                     {...field}
                     type="date"
+                    disabled={!!transaction}
                     className="form-control"
                     onChange={(event) => {
                       if (!transaction) {
@@ -475,7 +320,9 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
                 ({ form: { values } }: FieldProps<FundingType[]>) => (
                   <Amount
                     className="form-control"
-                    amount={fundingPoolCat.balance - getCategoriesSum(values.categories, fundingPoolCat.id)}
+                    amount={fundingPoolCat.balance
+                      + fundingCategoryEffect(calculateFunding(values.categories, fundingPoolCat.id), fundingPoolCat.id)
+                      - fundingCategoryEffect(transaction?.categories ?? [], fundingPoolCat.id)}
                   />
                 )
               }
@@ -510,12 +357,23 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
                 ({ form: { values } }: FieldProps<FundingType[]>) => (
                   <Amount
                     style={{ minWidth: '6rem' }}
-                    amount={getCategoriesSum(values.categories, fundingPoolCat.id)}
+                    amount={-fundingCategoryEffect(calculateFunding(values.categories, fundingPoolCat.id), fundingPoolCat.id)}
                   />
                 )
               }
             </Field>
           </div>
+          {transaction && (
+            <label>
+              Additional Pool withdrawal:
+              <Field>
+                {({ form: { values } }: FieldProps<FundingType[]>) => (
+                  <Amount amount={fundingCategoryEffect(transaction.categories, fundingPoolCat.id)
+                    - fundingCategoryEffect(calculateFunding(values.categories, fundingPoolCat.id), fundingPoolCat.id)} />
+                )}
+              </Field>
+            </label>
+          )}
           <div className={`dollar-amount ${styles.fundListAmt}`} />
         </div>
       </div>

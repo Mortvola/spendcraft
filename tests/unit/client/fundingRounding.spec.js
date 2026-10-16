@@ -6,11 +6,13 @@ import { URL } from 'node:url'
 import { log } from 'node:console'
 
 async function productionExpressions() {
-  const source = await readFile(new URL('../../../client-src/Funding/FundingDialog.tsx', import.meta.url), 'utf8')
+  const source = (await Promise.all(['calculateFunding.ts', 'FundingDialog.tsx'].map((file) =>
+    readFile(new URL(`../../../client-src/Funding/${file}`, import.meta.url), 'utf8')))).join('\n')
   const ast = ts.createSourceFile('FundingDialog.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  if (ast.parseDiagnostics.length) throw new Error('Invalid production AST source')
   const expressions = new Map()
   function visit(node) {
-    if (ts.isVariableDeclaration(node) && node.initializer && ['computeSpread', 'handleSubmit'].includes(node.name.getText(ast))) {
+    if (ts.isVariableDeclaration(node) && node.initializer && ['computeSpread', 'calculateFunding', 'handleSubmit'].includes(node.name.getText(ast))) {
       expressions.set(node.name.getText(ast), node.initializer.getText(ast))
     }
     ts.forEachChild(node, visit)
@@ -66,7 +68,7 @@ test.group('Funding residual correction regression', () => {
     let order
     const observed = expressions.get('computeSpread').replace('const funders = new Map<number, number>();',
       'observeOrder(sortedCategories.map((entry) => entry.categoryId)); const funders = new Map<number, number>();')
-    const submit = evaluate(`const computeSpread = ${observed}; const handleSubmit = ${expressions.get('handleSubmit')}; handleSubmit;`, {
+    const submit = evaluate(`const computeSpread = ${observed}; const calculateFunding = ${expressions.get('calculateFunding')}; const handleSubmit = ${expressions.get('handleSubmit')}; handleSubmit;`, {
       observeOrder: (ids) => { order = [...ids] },
       fundingPoolCat: { id: 99 }, transaction: undefined, TransactionType: { FUNDING_TRANSACTION: 2 },
       register: { addCategoryTransfer: async (request, type) => { submitted = { request, type }; return null } },
@@ -87,7 +89,7 @@ test.group('Funding allocation rounding characterization', () => {
   test('actual dialog allocation records percentage residual conservation')
     .with([0.01, 0.02, -0.01])
     .run(async ({ assert }, amount) => {
-      const source = await readFile(new URL('../../../client-src/Funding/FundingDialog.tsx', import.meta.url), 'utf8')
+      const source = await readFile(new URL('../../../client-src/Funding/calculateFunding.ts', import.meta.url), 'utf8')
       const ast = ts.createSourceFile('FundingDialog.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
       const matches = []
       function visit(node) {

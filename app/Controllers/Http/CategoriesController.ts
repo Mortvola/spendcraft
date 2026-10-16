@@ -1,5 +1,6 @@
 import db from '@adonisjs/lucid/services/db';
 import { HttpContext } from '@adonisjs/core/http';
+import { Exception } from '@adonisjs/core/exceptions';
 import Category, { GroupItem } from '#app/Models/Category';
 import CategoryTransfer from '#app/Models/CategoryTransfer';
 import { updateCategoryTransfer } from '#validators/categoryTransfer';
@@ -555,6 +556,10 @@ class CategoriesController {
       const existingTransaction = tfrId === undefined ? undefined : await budget.related('transactions').query()
         .where('id', tfrId)
         .firstOrFail();
+      if (existingTransaction?.type === TransactionType.FUNDING_TRANSACTION
+        && existingTransaction.date.toISODate() !== DateTime.fromISO(date).toISODate()) {
+        throw new Exception('The date of a funding transaction cannot be changed.', { status: 422 });
+      }
       const referencedCategories = [...categories, ...(existingTransaction?.categories ?? [])];
       await authorizeCategories(budget.id, referencedCategories.flatMap((category) => [
         category.categoryId,

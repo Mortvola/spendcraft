@@ -1,3 +1,4 @@
+import { calculateFunding } from '../../../client-src/Funding/calculateFunding.ts'
 import { test } from '@japa/runner'
 import { File } from 'node:buffer'
 import NetworthContent from '../../../client-src/Reports/NetworthContent.js'
@@ -542,4 +543,30 @@ export * from ${source('common/ResponseTypes.ts')};
     assert.equal(cached.account.statementId, null); assert.equal(cached.category.statementId, null)
     assert.equal(f.account.transactions.transactions[1].statementId, null)
   })
+  test('funding calculation reaches real State/cache boundaries unchanged').with([false, true]).run(async ({ assert }, rejected) => {
+    const rows = calculateFunding({ 21: { baseAmount: 2, includeFundingTransfers: false,
+      fundingCategories: [{ categoryId: 20, amount: 100, percentage: true }] } }, 20)
+    const props = { ...f.transactionProps(), type: state.TransactionType.FUNDING_TRANSACTION,
+      accountTransaction: undefined, categories: rows }
+    routes.set('post /api/v1/category-transfer', async (payload) => {
+      assert.deepEqual(payload.categories, rows)
+      return rejected ? { ok: false, body: {} }
+        : { body: { data: { transaction: props, balances: [{ id: 20, balance: -2 }, { id: 21, balance: 2 }] } } }
+    })
+    const submit = () => f.store.register.addCategoryTransfer({ date: '2025-03-01', categories: rows }, props.type)
+    if (rejected) {
+      await assert.rejects(submit)
+      assert.equal(f.category.balance, 0)
+      assert.equal(f.other.balance, 0)
+      assert.lengthOf(f.category.transactions.transactions, 0)
+    } else {
+      await submit()
+      assert.equal(f.category.balance, -2)
+      assert.equal(f.other.balance, 2)
+      assert.deepEqual(f.category.transactions.transactions[0].categories, rows.map((row, id) => ({
+        id, comment: undefined, funder: row.funder, ...row,
+      })))
+    }
+  })
+
 })

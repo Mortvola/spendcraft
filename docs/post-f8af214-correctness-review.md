@@ -1,5 +1,26 @@
 # Post-f8af214 accounting correctness review
 
+## Current reconciliation at d4c374d — remaining work
+
+The original findings below are historical evidence, not an assertion that every original defect remains. The complete current classification of every P/D/S/Q/F/H/X item, source-specific writer audit, precision/product/history/cleanup backlogs and ordered recommendations is in [the remaining correctness review](post-reset-remaining-correctness-review.md), against HEAD `d4c374d17de861ad996d56ef3b0db6f10c05223f`.
+
+Resolved/superseded: D1–D3, D5–D11, D14–D16, F2's bounded Account-writer gaps, F3's provider branch/cursor gaps, F11 test safety, S4 history helper and Q4 removed history-validator contract. D12/F9 and floating parts of F10 feed representation work. Q1–Q3/Q5–Q7 remain product questions. D4/F4/H1–H3 remain historical reversal limitations, with a separately recorded current forward CREATE→DELETE contradiction. S1's former ledger authority and X1–X4 abandoned architecture must not be restored.
+
+Confirmed remaining defects are separated rather than hidden in precision work:
+
+| Finding | Current disposition |
+| --- | --- |
+| D13 / R0 replacement target lifecycle | A: accepts deleted/unrelated Budget Transactions; actual-method inert test proves balances change while target remains deleted. Fix before representation migration |
+| F7 / R3 legacy DELETE | A: reachable global legacy ID/Category lookup ignores actor Budget and does not await save. No internal DELETE caller found; conditional on legacy rows, still a financial authorization defect. Contain/retire before migration |
+| R1 excluded shared Category/Pool writers | A: offline opening saves a hydrated existing Pool without the common gate; parent cascades also mutate surviving Categories outside it. Separate from the accepted Account-writer scope; characterize/correct common Category concurrency before migration |
+| R2 Category deletion admission | A: active-membership check and delete can interleave with a gated posting; no gate/recheck or JSON FK establishes atomic admission. Include in focused Category concurrency work |
+| F8 / R4 Loan settings persistence | A: accepted UPDATE merges settings but saves only Category name; updateBalance is inert. Separate from unresolved Loan interest/principal policy; lower-priority API correction can defer |
+| D4/F4 / R5 current forward deletion | A: a newly created pre-start Transaction contributes zero but current DELETE/cascade subtracts its nominal amount. General correction is policy-blocked by D4/F4 historical ambiguity; no guard or inferred repair proposed |
+| F10 / R6 active report allocation reader | A: current JSON-only allocations are absent from legacy transaction_categories joins in active reports. Separate read-side logic correction, not float precision; can defer, but inventory must identify the stale authority |
+
+Recommendation: additional correctness corrections should precede the representation project, starting with D13, then the legacy DELETE surface, then the remaining shared Category/Pool writer/admission boundary. No locking architecture is reopened, no historical reversal policy is invented, and no runtime fix is implemented by this review. Three inert actual-method characterizations pass; both TypeScript checks, lint, Knip, circular and diff checks pass. No database connection occurred. The1,428-test DB baseline predates the later immutable funding-date change. That change is now independently PostgreSQL-accepted:1,098 focused/1,443 full passed with no failure/skip; see [immutable-date verification](immutable-funding-date-postgresql-verification.md). Authorization is expired.
+
+
 ## BalanceHistory product resolution — runtime deprecation
 
 BalanceHistory is deprecated. The stronger product resolution for D5–D8 is removal of the supported runtime lifecycle, not a repaired history-to-Account synchronization path. The working tree removes CRUD routes/controllers/validators/client mutators and the unused Account helper; removes the stored-history GET branch; preserves the existing Transaction chart, Statement UI and net-worth calculations. Only minimal model/relationship and parent-destruction cleanup remain alongside schema, migrations and legacy-data tests. No historical row or Account balance is repaired. See [complete deprecation inventory](balance-history-deprecation.md). PostgreSQL verification is accepted:822 focused /1,306 full-suite passed,0 failed,0 skipped/pending. Task-specific authorization is expired; physical schema cleanup remains deferred.
@@ -11,6 +32,12 @@ The historical D5–D8 findings below remain accurate descriptions of the former
 Against accepted baseline `9c6635b526f37631040462c9fee750e17bc96eec`, D1–D3 now have a focused forward correction: ordinary nonloan manual CREATE applies separate Account/Category eligibility; ordinary types0/5 PATCH replaces old/new effects including date-only crossings; nonloan startDate crossings include pending, exclude deleted/opening/special/accountless shapes and preserve current Account balance. Opening date/formula and separate Pool maintenance are retained. Existing Loan/special behavior is preserved. Current OFX/Plaid effects already meet these eligibility rules and require no source change.
 
 No historical effect is reconstructed. D4 HTTP DELETE and Account/Institution cascade historical reversals remain deferred: nominal current state cannot prove old applied Category effects. No DELETE guard or repair is introduced. Metadata-only PATCH's unnecessary existing financial validation/loading remains separate. See [writer matrix, limitations and prepared verification](account-category-eligibility-correction.md). The historical D1–D3 rows below describe the pre-correction baseline; they are superseded for current corrected paths, not erased. PostgreSQL verification passed 994 focused / 1,382 full-suite tests, 0 failed, 0 skipped/pending. No additional production or safety-infrastructure correction was required; tests were strengthened. See [verification evidence](account-category-eligibility-postgresql-verification.md). Task-specific DB authorization is expired.
+
+## Funding preview/submission correction — PostgreSQL verified
+
+D11 is reconfirmed against HEAD `7ebc714939c88b6d8ef7bc00aebbe2d1bc10d3a4`: recursive preview Pool3 versus actual one-pass submission Pool2 under unchanged inputs. The dialog now uses the unchanged posting calculation for Pool preview and projected net Category effects. Editing includes the server's old-record reversal in Available Funds and distinguishes nominal Total from additional withdrawal. Under the subsequent immutable-date invariant, the month-start Category basis already excludes the existing record; obsolete cross-month compensation and Transaction prop plumbing have been removed. A pure shared number calculation replaces the divergent recursion; no server quote/versioning protocol or posting redesign is introduced. Existing fields/order/rounding, baseAmount snapshots and server validation remain. See [source flow, reproduction and implementation](funding-preview-submission-correction.md).
+
+D12 binary transfer artifact remains characterized/deferred to representation work. Q3 fixed-rule priority remains unresolved and unchanged; no fixed sort correction is approved. Existing stale form submission, Pool availability and cycle policy are not redesigned. D13 replacement-target scope and the legacy CategoryTransfer DELETE issue remain separate. No historical funding data is repaired. Authorized verification passed 1,086 focused / 1,428 full-suite tests, 0 failed, 0 skipped/pending. The original preview3/submission2 case now previews2/posts2 with unchanged submission semantics. Only tests/documentation needed strengthening during verification; no production or safety-infrastructure fix was required. See [verification record](funding-preview-submission-postgresql-verification.md). Task-specific database authorization is expired.
 
 ## Current implementation status
 
@@ -30,7 +57,7 @@ Existing documentation includes `integer-cents-implementation-plan.md`, `integer
 
 ## Evidence index
 
-All links refer to current repository files; function names disambiguate the relevant sections.
+This is the historical evidence index. Some history-specific files/methods have since been removed; retained links/function names identify their former role. Current source/status evidence is in the remaining-review document.
 
 | Key | Source / tests inspected |
 |---|---|
@@ -90,7 +117,7 @@ Each numbered finding has exactly one classification. A product rule and its sou
 | P9 No lost concurrent financial effects | CONFIRMED PRODUCT INVARIANT | Partial forUpdate coverage across AC/TC/CC/I; transactions preserve local atomicity only | Same-Budget operations must compose correctly. This does not choose a locking architecture |
 | P10 Preview represents submission | CONFIRMED PRODUCT INVARIANT | FD displays recursive Pool demand and submits transfer request; pure funding tests establish request boundary | Funding operation shown for approval must agree with posted operation; no frozen-proposal/ETag architecture implied |
 
-### Confirmed current defects
+### Confirmed source defects at the historical baseline
 
 | ID / discovery | Classification | Current evidence / tests | Consequence and focused correction recommendation |
 |---|---|---|---|
@@ -111,7 +138,7 @@ Each numbered finding has exactly one classification. A product rule and its sou
 | D15 OFX ledger destination | CONFIRMED SOURCE DEFECT | A.processOfx uses balance!==null to assign this.balance, including zero; never assigns plaidBalance; ofxReimport currently expects ledger-derived accounting balances | New authoritative direction: ledger updates provider observation plaid_balance only; Account.balance receives eligible Transaction net effects. Previous S1 intentional classification is superseded |
 | D16 OFX ledger-driven opening/Pool change | CONFIRMED SOURCE DEFECT | A.processOfx saves ledger-overwritten Account.balance before updateStartingBalance recalculates opening as balance minus eligible sum | A ledger-only discrepancy can change opening and surviving Pool without Transaction net effect. Remove ledger authority; consistent-opening invariance follows. Missing/inconsistent opening behavior remains a separate activation decision |
 
-### Intentional behavior, open decisions and deferred work
+### Historical intentional behavior, open decisions and deferred work
 
 | ID / discovery | Classification | Evidence / current tests | Consequence / recommendation |
 |---|---|---|---|
@@ -173,14 +200,14 @@ Relational Account/Category/AccountTransaction/Statement/BalanceHistory money co
 
 API money commonly uses JSON numbers; client arithmetic demonstrably creates binary artifacts. Funding baseAmount and percentage/goal intermediates are not automatically posted accounting values. Rates/percentages are not money. Provider valuation observations and Statement income/tax evidence need independent contracts. Existing Math.round validation and UI formatting do not establish lossless financial authority. These are inputs to a future storage/API inventory, not a selected representation design.
 
-## Recommended focused correctness sequence
+## Historical recommended sequence — superseded by current reconciliation
 
 1. **BalanceHistory runtime deprecation — ACCEPTED, physical cleanup deferred.** Product deprecated the entire feature. Remove D5–D8 lifecycle and unused helpers/DTOs instead of correcting their monetary behavior. Keep old data physically inert and preserve existing charts/Statements/reports. No historical repair or schema removal. Prior API-preservation proposal is superseded.
 2. **Tenant-safe operational/legacy entry points.** Address OfxUpload's scoped selection and separately review CategoryTransfer DELETE authorization/awaiting. These security boundaries should not wait for a money representation project.
 3. **Cross-writer concurrency design and regression baseline.** Map lock order, fresh reads and helper transaction binding across all financial writers; test deterministic races once separately authorized. Choose the simplest shared strategy based on baseline evidence, not the abandoned deadlock. This is a prerequisite for reliable financial fixes, not a mandate for old helper architecture.
 4. **Ordinary CREATE/PATCH/startDate eligibility — ACCEPTED.** D1–D3 forward corrections are PostgreSQL-verified (994 focused /1,382 full-suite passed). Signed amounts, pending/date/active old/new matrices, Account invariance, opening formula/date, accountless isolation and Statement-only noninterference pass. Historical-old-effect uncertainty and DELETE/cascade reversal remain separate unresolved work.
 5. **OFX balance authority — NOW the selected next design priority.** D15 destination defect, D9 missing-ledger defect and D10 Transaction eligibility defect must be designed together for both entry points. Ledger changes only plaid_balance; Account.balance changes only by eligible old/new Transaction net effects. Preserve provider precision representation, identity and explicit allocations. See the dedicated correction design; this priority change does not authorize implementation.
-6. **Funding target scope and preview correctness.** D13 then D11; retain actual-request chain regression. Decide fixed priority/cycles separately. D12 belongs in the ensuing representation boundary work or a separately approved narrowly specified arithmetic fix; do not hide tolerant acceptance in a correctness patch.
+6. **Funding target scope.** D11 preview correction is implemented and PostgreSQL-verified using the unchanged submission calculation. D13 target scope remains separate follow-up security/correctness work. Decide fixed priority/cycles separately. D12 belongs in the ensuing representation boundary work or a separately approved narrowly specified arithmetic fix; no precision or priority correction was bundled.
 7. **Resolve remaining policy blockers before affected fixes.** Statement equal-date winner; offline route distinction; transfer/Loan deletion ownership; historically ambiguous reversal policy. Do not silently restore account-linked DELETE blocks or cascade guards. Comment-only robustness is useful but secondary to direct wrong-balance writers.
 
 A new exact-money/storage project should start after the focused forward defects and required concurrency/security decisions have an approved correction baseline. Broad cascade/account-linked deletion is not made safe merely by exact representation. Reporting, auto-assignment real storage and Loan correctness remain separately scoped; rank actual writers over read arithmetic once policy blockers are resolved.
@@ -260,3 +287,7 @@ The [OFX verification record](ofx-account-provider-balance-correction-postgresql
 ## BalanceHistory runtime deprecation verified
 
 The [verification record](balance-history-deprecation-postgresql-verification.md) establishes removed CRUD routes, legacy observation inertness, preserved Account/provider/Category/Transaction/Statement/opening/chart/report semantics and allowed parent cleanup. Only the four documented model/relationship/parent-cleanup files retain production references. Both target connections and every destructive execution connection were independently safeguarded. Focused822 and full-suite1,306 tests passed with no failure/skip. No production correction was needed during verification. This supersedes the earlier proposal to repair history mutations or defer the feature decision: the supported lifecycle is removed. No historical Account repair or physical table/schema removal occurred.
+
+## Subsequent funding-date invariant
+
+Funding Transaction edit dates are now product-defined as immutable. The client disables date editing and submits the original date; the scoped, Budget-gated server replacement handler rejects a changed date with422 before financial effects. Same-date allocation edits remain supported. This supersedes the prior ability to move a funding record across month boundaries. Non-DB regression coverage accompanied the change; prior funding PostgreSQL verification predates it. Subsequent task-specific verification passed2 narrow prepared cases,1,098 focused and1,443 full-suite tests,0 failed,0 skipped/pending. Original dates, same-date replacement, rejected date movement, goals/month projections, rollback, contention and ownership pass; only tests needed updating/strengthening, with no production change. The separate replacement-admission defect remains unresolved. See [verification record](immutable-funding-date-postgresql-verification.md). Authorization is now expired.

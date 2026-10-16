@@ -46,7 +46,9 @@ Opening uses account linkage and a Funding Pool allocation. It is not accountles
 
 ## 8. Accountless funding and rebalance
 
-**Confirmed product invariant.** Type-2 funding and type-3 rebalance use their own Category lifecycle, with no Account.startDate eligibility or synthetic Account context. Preview presented as the proposed funding operation must describe what submission posts. The current dialog violates this for transfer-inclusive chains.
+**Confirmed product invariant.** An existing type-2 funding Transaction's date is immutable during editing. Creation may choose a date; replacement may change allocations but must retain the persisted date. The client disables date editing and the server rejects date changes. This rule does not change type-3 rebalance.
+
+**Confirmed product invariant.** Type-2 funding and type-3 rebalance use their own Category lifecycle, with no Account.startDate eligibility or synthetic Account context. Preview presented as the proposed funding operation must describe what submission posts. For identical inputs/state, Pool demand and Category effect previews must equal the supplied posting instructions. The dialog uses the unchanged submission calculation for previews; PostgreSQL verification passed 1,086 focused / 1,428 full-suite tests, with 0 failed and 0 skipped/pending. This neither defines a frozen quote nor changes existing rounding/order or stale-state behavior. Current JS response arithmetic and relational storage scale remain distinct boundaries. See [funding correction](funding-preview-submission-correction.md) and [verified evidence](funding-preview-submission-postgresql-verification.md).
 
 **Confirmed intentional source behavior.** Funding `baseAmount` records requested pre-transfer base, distinct from final allocation and net Category effect. It is not reversal authority. See `FundingDialog.handleSubmit` and `CategoriesController.transfer`. Its permissible precision and future encoding are not decided here. Percentage/rate configuration is not currency money.
 
