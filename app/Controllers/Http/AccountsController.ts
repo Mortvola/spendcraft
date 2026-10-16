@@ -175,14 +175,15 @@ export default class AccountsController {
       throw new Error('user not defined');
     }
 
-    const budget = await user.related('budget').query().firstOrFail();
-
     const { acctId } = request.params();
     const requestData = await request.validateUsing(addTransaction);
 
     const trx = await db.transaction();
 
     try {
+      user.useTransaction(trx);
+      const budget = await user.related('budget').query().forUpdate().firstOrFail();
+
       const unassignedCat = await budget.getUnassignedCategory({ client: trx });
 
       const account = await budgetAccounts(user.budgetId, { client: trx }).where('id', acctId).firstOrFail();

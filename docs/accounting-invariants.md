@@ -70,6 +70,8 @@ Provider operations may update Account balance under their own approved semantic
 
 **Confirmed product invariant, clarified by subsequent product direction.** OFX produces two independent results: Account.balance changes by new eligible signed Transaction effects minus old eligible signed effects; valid LEDGERBAL updates provider observation Account.plaidBalance only, including zero. A replay of unchanged active Transactions has zero accounting delta even if the ledger observation changes. Absent LEDGERBAL neither prevents posting nor invents a provider observation. Accounting and provider balances may differ meaningfully. The earlier description of an absolute OFX Account-balance observation was source characterization incorrectly promoted to product semantics and is superseded. Current `Account.processOfx` has a confirmed destination defect. Plaid initialized versus uninitialized Accounts retain their separate current paths in `Institution.updateAccountBalances`; no Plaid change is approved here.
 
+**Approved OFX correction boundary.** OFX must not create, update, restore, delete or otherwise mutate BalanceHistory. Its output is Transaction/AccountTransaction/Category effects plus accounting Account.balance net deltas, and an optional provider observation in plaidBalance. Existing historical evidence must remain untouched; manual BalanceHistory behavior is outside this correction. Supplied empty/malformed LEDGERBAL must fail atomically; absent LEDGERBAL is valid. Current runtime has not yet been corrected.
+
 `plaid_balance` → `provider_balance` is future naming cleanup only. No timestamp/schema change or BalanceHistory policy change follows automatically. See [OFX correction design](ofx-account-provider-balance-correction-design.md).
 
 Provider precision, supported currencies, valuation precision and treatment of sub-cent inputs remain unresolved. This document does not approve quantization, strict ingress, retries or quarantine policy.
@@ -88,7 +90,7 @@ Provider precision, supported currencies, valuation precision and treatment of s
 
 ## 14. Historical-data limitations and concurrency
 
-**Confirmed product invariant.** Concurrent financial operations must not lose or corrupt one another's effects. A particular locking implementation is not an accounting invariant. Current partial Budget locks do not prove universal serialization.
+**Confirmed product invariant.** Concurrent financial operations must not lose or corrupt one another's effects. For supported operations on the same surviving Account, their effects must compose exactly once in an allowed serial order. No committed Account delta may be lost because another writer saves Account.balance calculated from stale state. Intentional absolute or derived authority writes retain their own product meaning; serialization does not convert them to deltas. After waiting, calculations must use fresh authoritative state from the owning transaction. A particular locking implementation is not an accounting invariant. Current partial Budget locks do not prove universal serialization.
 
 **Historical data risk.** Forward eligibility rules do not imply that old balances are correct. Identical current nominal records may have different applied-effect histories due to old date/pending writers. Canonical representation proves nominal money, not historical application. Neither timestamps nor current balances are accepted provenance.
 

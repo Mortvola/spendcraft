@@ -681,9 +681,10 @@ class InstitutionController {
 
       const result: AccountSyncResult[] | null = [];
 
-      await Promise.all(institutions.map(async (institution) => (
-        await institution.syncUpdate()
-      )));
+      // These branches share a transaction and Budget-owned Categories.
+      for (const institution of institutions) {
+        await institution.syncUpdate();
+      }
 
       await trx.commit();
 

@@ -63,8 +63,9 @@ class Institution extends BaseModel {
   }
 
   private static async updateAccountBalances(budget: Budget, accounts: Account[], plaidAccounts: Plaid.AccountBase[]) {
-    return Promise.all(accounts.map(async (acct) => {
-      if (acct.tracking === TrackingType.Balances) return;
+    // Opening helpers share the Funding Pool; serialize their reads and saves.
+    for (const acct of accounts) {
+      if (acct.tracking === TrackingType.Balances) continue;
       if (acct.$extras.modified ?? false) {
         const plaidAccount = plaidAccounts.find((a) => a.account_id === acct.plaidAccountId);
 
@@ -95,7 +96,7 @@ class Institution extends BaseModel {
           await acct.save();
         }
       }
-    }));
+    }
   }
 
   private async addOrUpdateTransactions(
@@ -215,6 +216,12 @@ class Institution extends BaseModel {
         .query()
         .forUpdate()
         .firstOrFail();
+
+      // The caller may have loaded this instance before waiting for the gate.
+      await this.refresh();
+      if (this.accessToken === null) {
+        throw new Error('access token is null');
+      }
 
       const accounts = await this.related('accounts').query();
 

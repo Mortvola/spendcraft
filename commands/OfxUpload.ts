@@ -46,15 +46,15 @@ export default class OfxUpload extends BaseCommand {
     const trx = await db.transaction();
 
     try {
-      const user = await User.findBy('username', username);
+      const user = await User.findBy('username', username, { client: trx });
 
       if (!user) {
         throw new Error('Username not found');
       }
 
-      const budget = await user.related('budget').query().firstOrFail();
+      const selectionBudget = await user.related('budget').query().firstOrFail();
 
-      const institutions = await budget.related('institutions').query()
+      const institutions = await selectionBudget.related('institutions').query()
         .whereHas('accounts', (accountQuery) => accountQuery.where('tracking', '!=', TrackingType.Balances))
         .orderBy('name');
 
@@ -78,11 +78,19 @@ export default class OfxUpload extends BaseCommand {
         accounts.map((a) => a.name),
       );
 
-      const account = await Account.findBy('name', selectedAccount, { client: trx });
+      const selection = accounts.find((account) => account.name === selectedAccount);
 
-      if (!account) {
+      if (!selection) {
         throw new Error('account not found');
       }
+
+      // Selection is identity-only. Reload financial authority after waiting.
+      const budget = await user.related('budget').query().forUpdate().firstOrFail();
+      const account = await Account.query({ client: trx })
+        .where('id', selection.id)
+        .where('institutionId', inst.id)
+        .whereHas('institution', (query) => query.where('budgetId', budget.id))
+        .firstOrFail();
 
       await account.processOfx(data.toString(), budget, user);
 

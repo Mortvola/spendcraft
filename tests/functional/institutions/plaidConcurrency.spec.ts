@@ -168,7 +168,7 @@ test.group('Concurrent Plaid synchronization', (group) => {
     const results = await overlap([response('c1', { added: [purchase()] })])
     assert.deepEqual(results, ['committed', 'committed'])
     assert.equal(fake.maximumActive, 1)
-    assert.deepEqual(fake.calls.map((call) => call.cursor), [null, null])
+    assert.deepEqual(fake.calls.map((call) => call.cursor), [null, 'c1'])
     assert.lengthOf(await AccountTransaction.query().where('accountId', f.account.id), 1)
     assert.lengthOf(await Transaction.query().where('budgetId', f.budget.id), 1)
     const { at, transaction } = await local()
@@ -182,7 +182,7 @@ test.group('Concurrent Plaid synchronization', (group) => {
   test('two-page overlap commits complete pagination once', async ({ assert }) => {
     const results = await overlap([response('c1', { added: [purchase()], has_more: true }), response('c2', { added: [purchase('second', { amount: 2.25 })] })])
     assert.deepEqual(results, ['committed', 'committed'])
-    assert.deepEqual(fake.calls.map((call) => call.cursor), [null, 'c1', null, 'c1'])
+    assert.deepEqual(fake.calls.map((call) => call.cursor), [null, 'c1', 'c2', 'c1'])
     assert.equal(fake.maximumActive, 1)
     assert.lengthOf(await AccountTransaction.query().where('accountId', f.account.id), 2)
     assert.equal((await f.account.refresh()).balance, 87.75)
@@ -302,5 +302,67 @@ test.group('Concurrent Plaid synchronization', (group) => {
     assert.lengthOf(await Transaction.query().where('budgetId', f.budget.id), 1)
     assert.lengthOf(await AccountTransaction.query().where('accountId', f.account.id), 1)
   })
+
+  test('waiting manual CREATE preserves a committed Plaid Account and Category effect', async ({ client, assert }) => {
+    const operation = await prepare()
+    fake.plans.set(operation.institution, [response('manual-wait', { added: [purchase()] })])
+    const posting = execute(operation)
+    await fake.entered.promise
+    const manual = client.post(`/api/v1/account/${f.account.id}/transactions`).json({
+      name: 'Concurrent manual', date: '2025-02-10', amount: 5,
+      categories: [{ categoryId: f.unassigned.id, amount: 5 }],
+    }).loginAs(f.shared).then((result) => { result.assertStatus(200) })
+    try { await blocked() }
+    finally { fake.hold = false; fake.release.resolve(); await Promise.allSettled([posting, manual]) }
+    await Promise.all([posting, manual])
+    assert.equal((await f.account.refresh()).balance, 95)
+    assert.equal((await f.unassigned.refresh()).balance, -5)
+    assert.lengthOf(await AccountTransaction.query().where('accountId', f.account.id), 2)
+    assert.lengthOf(await Transaction.query().where('budgetId', f.budget.id), 2)
+    const provider = await local()
+    assert.equal(provider.at.amount, -10)
+    assert.equal(provider.transaction.version, 0)
+    assert.lengthOf(await provider.transaction.related('transactionLog').query(), 1)
+    assert.equal((await f.institution.refresh()).cursor, 'manual-wait')
+  })
+
+  test('shared Funding Pool preserves first-sync effects across sequential financial branches')
+    .with(['two Accounts', 'two Institutions']).run(async ({ client, assert }, shape) => {
+      await f.account.merge({ initialized: false }).save()
+      await f.other.merge({ initialized: false }).save()
+      let secondInstitution = f.institution
+      if (shape === 'two Institutions') {
+        secondInstitution = await f.budget.related('institutions').create({ name: 'Second shared Pool bank',
+          institutionId: `pool-second-${sequence}`, accessToken: 'fake-token', plaidItemId: `pool-item-${sequence}`, cursor: null })
+        await f.other.merge({ institutionId: secondInstitution.id }).save()
+      }
+      const aId = providerId()
+      const bId = f.other.plaidAccountId
+      if (!bId) throw new Error('Missing second provider ID')
+      const requested = mock.method(fake, 'syncTransactions', async (institution: Institution) => {
+        const ids = institution.id === f.institution.id
+          ? shape === 'two Accounts' ? [aId, bId] : [aId] : [bId]
+        return page(ids.map(providerAccount), 'pool-complete', { added: ids.map((id) => providerTransaction(id, `pool-${id}`, { amount: id === aId ? 10 : 20 })) })
+      })
+      try {
+        if (shape === 'two Accounts') await execute(await prepare())
+        else {
+          const response = await client.post('/api/v1/institutions/sync').loginAs(f.user)
+          response.assertStatus(200)
+        }
+      } finally { requested.mock.restore() }
+      assert.equal((await f.account.refresh()).balance, 100)
+      assert.equal((await f.other.refresh()).balance, 100)
+      assert.equal((await f.unassigned.refresh()).balance, -30)
+      assert.equal((await f.budget.getFundingPoolCategory()).balance, 230)
+      for (const [account, amount] of [[f.account, 110], [f.other, 120]] as const) {
+        const opening = await AccountTransaction.query().where('accountId', account.id)
+          .whereHas('transaction', (query) => query.where('type', 4)).preload('transaction').firstOrFail()
+        assert.equal(opening.amount, amount)
+        assert.equal(opening.transaction.date.toISODate(), '2025-01-01')
+      }
+      assert.lengthOf(await Transaction.query().where('budgetId', f.budget.id), 4)
+      assert.lengthOf(await db.from('transaction_logs').where('application_id', f.budget.id), 2)
+    })
 
 })

@@ -503,11 +503,12 @@ export default class TransactionsController {
       throw new Error('user is not defined');
     }
 
-    const budget = await user.related('budget').query().firstOrFail();
-
     const trx = await db.transaction();
 
     try {
+      user.useTransaction(trx);
+      const budget = await user.related('budget').query().forUpdate().firstOrFail();
+
       const result: {
         categories: CategoryBalanceProps[],
         acctBalances: AccountBalanceProps[],

@@ -8,6 +8,8 @@ import testUtils from '@adonisjs/core/services/test_utils'
 import { authApiClient } from '@adonisjs/auth/plugins/api_client'
 import env from '#start/env'
 import { randomBytes } from 'node:crypto'
+import db from '@adonisjs/lucid/services/db'
+import { installDatabaseSafety } from './helpers/databaseSafety.js'
 
 /**
  * This file is imported by the "bin/test.ts" entrypoint file
@@ -39,7 +41,20 @@ export const plugins: Config['plugins'] = [
 export const runnerHooks: Required<Pick<Config, 'setup' | 'teardown'>> = {
   setup: [
     () => { app.config.set('plaidCleanup', { activeKey: 'test-v1', keys: JSON.stringify({ 'test-v1': randomBytes(32).toString('base64') }) }) },
-    () => testUtils.db().truncate(),
+    async () => {
+      const safety = await installDatabaseSafety(db);
+      try {
+        await safety.verify();
+        const cleanup = await testUtils.db().truncate();
+        return async () => {
+          try { await safety.verify(); await cleanup(); }
+          finally { await safety.close(); }
+        };
+      } catch (error) {
+        await safety.close();
+        throw error;
+      }
+    },
   ],
   teardown: [],
 }
