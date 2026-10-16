@@ -113,6 +113,33 @@ class Account implements AccountInterface {
     this.pendingTransactions.url = `/api/v1/account/${props.id}/transactions?pending=1`;
   }
 
+  async uploadOfx(file: File): Promise<void> {
+    if (this.tracking !== TrackingType.Transactions) throw new Error('Account is not tracking transactions');
+    const response = await Http.fetch(`/api/v1/account/${this.id}/ofx`, new Headers({
+      Accept: 'application/json',
+      'Content-Type': 'text/plain',
+      Authorization: `Bearer ${Http.accessToken}`,
+    }), { method: 'POST', body: file });
+    if (!response.ok) throw new Error('OFX upload failed');
+
+    // Refresh both independent balances from the server; no history is owned by OFX.
+    await this.store.accounts.load();
+    const categories = await Http.get<ApiResponse<{ categories: CategoryProps[] }>>('/api/v1/groups');
+    if (!categories.ok) throw new Error('Unable to refresh category balances after OFX upload');
+    const { data } = await categories.body();
+    if (!Array.isArray(data?.categories) || !data.categories.every((category) =>
+      category !== null && Number.isFinite(category.id) && Number.isFinite(category.balance))) {
+      throw new Error('Invalid category balances response');
+    }
+    this.store.categoryTree.updateBalances(data.categories);
+    await this.transactions.getData(0);
+    await this.pendingTransactions.getData(0);
+    for (const props of data.categories) {
+      const category = this.store.categoryTree.getCategory(props.id);
+      if (category && category.transactions.transactions.length > 0) await category.transactions.getData(0);
+    }
+  }
+
   async setSettings(settings: AccountSettings): Promise<void> {
     const response = await Http.patch(`/api/v1/account/${this.id}`, {
       startDate: settings.startDate?.toISODate(),

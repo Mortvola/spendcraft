@@ -721,7 +721,7 @@ class Account extends BaseModel {
 
     if (ofxData) {
       let sum = 0;
-      let balance: number | null = null;
+      let providerBalance: number | undefined;
 
       const sgml2Xml = (sgml: string) => (
         sgml
@@ -749,9 +749,40 @@ class Account extends BaseModel {
 
       const signOn = parsed.OFX[signOnMessage];
 
+      // Preflight the complete upload before mutating financial state. Preserve
+      // the parser's existing identifier and numeric normalization.
+      const incoming: { date: DateTime, name: string, amount: number, transactionId: string }[] = [];
+      for (const message of messages) {
+        if (!/CREDITCARDMSGSRSV.*/.test(message)) continue;
+        const statement = parsed.OFX[message].CCSTMTTRNRS.CCSTMTRS;
+        if (Object.prototype.hasOwnProperty.call(statement, 'LEDGERBAL')) {
+          const value: unknown = statement.LEDGERBAL?.BALAMT;
+          if ((typeof value !== 'number' && typeof value !== 'string')
+            || (typeof value === 'string' && value.trim() === '')
+            || !Number.isFinite(Number(value))) {
+            throw new Error('Invalid OFX ledger balance');
+          }
+          providerBalance = Number(value);
+        }
+        const rows = statement.BANKTRANLIST?.STMTTRN;
+        for (const t of rows === undefined ? [] : Array.isArray(rows) ? rows : [rows]) {
+          incoming.push({
+            date: DateTime.fromFormat(t.DTPOSTED.slice(0, 8), 'yyyyMMdd'),
+            name: t.NAME,
+            amount: -t.TRNAMT,
+            transactionId: `${signOn.SONRS.FI.FID}:${statement.CCACCTFROM.ACCTID}:${t.FITID}`,
+          });
+        }
+      }
+      for (const identity of new Set(incoming.map((row) => row.transactionId))) {
+        const matches = await this.related('accountTransactions').query()
+          .where('providerTransactionId', identity).limit(2);
+        if (matches.length > 1) throw new Error('Ambiguous OFX transaction identity');
+      }
+
       const unassigned = await budget.getUnassignedCategory({ client: this.$trx });
 
-       
+
       // OFX allocations are complete persisted splits, including an explicit remainder.
       const applyAllocations = async (
         oldAllocations: Transaction['categories'], oldActive: boolean,
@@ -774,137 +805,95 @@ class Account extends BaseModel {
         }
       };
 
-      for (const message of messages) {
-        if (/CREDITCARDMSGSRSV.*/.test(message)) {
-          const ccStmtTrnResponse = parsed.OFX[message].CCSTMTTRNRS;
-          const statement = ccStmtTrnResponse.CCSTMTRS;
-          const accountFrom = statement.CCACCTFROM;
-          const ledgerBalance = statement.LEDGERBAL;
-          const bankTransList = statement.BANKTRANLIST;
-          let transactions = bankTransList.STMTTRN;
+      for (const transactionData of incoming) {
+        // First check to see if the transaction is present. If it is then don't insert it.
 
-          if (!Array.isArray(transactions)) {
-            transactions = [transactions]
+        let acctTrans = await this.related('accountTransactions').query()
+          .where('providerTransactionId', transactionData.transactionId)
+          .first();
+
+        if (acctTrans) {
+
+          const transaction = await acctTrans.related('transaction').query().firstOrFail();
+
+          const oldAllocations = transaction.categories.map((allocation) => ({ ...allocation }));
+          const oldActive = !transaction.deleted && transaction.date >= this.startDate;
+          const newAmount = -transactionData.amount;
+          const explicit = oldAllocations.filter((allocation) => allocation.categoryId !== unassigned.id);
+          const remainder = (Math.round(newAmount * 100)
+            - explicit.reduce((total, allocation) => total + Math.round(allocation.amount * 100), 0)) / 100;
+          const allocations = [...explicit, { categoryId: unassigned.id, amount: remainder }];
+          validateTransactionSplits(newAmount, allocations);
+          await applyAllocations(oldAllocations, oldActive, allocations, transactionData.date >= this.startDate);
+
+          const oldEffect = !transaction.deleted && !acctTrans.pending && transaction.date >= this.startDate
+            ? acctTrans.amount : 0;
+          const newEffect = !acctTrans.pending && transactionData.date >= this.startDate ? newAmount : 0;
+          const amount = newEffect - oldEffect;
+
+          await transaction
+            .merge({
+              deleted: false,
+              date: transactionData.date,
+              categories: allocations,
+            })
+            .save();
+
+
+          await acctTrans
+            .merge({
+              transactionId: transaction.id,
+              provider: 'OFX',
+              providerTransactionId: transactionData.transactionId,
+              name: transactionData.name ?? undefined,
+              amount: -transactionData.amount,
+            })
+            .save();
+
+          sum += amount;
+        }
+        else {
+          if (!this.$trx) {
+            throw new Error('database transaction not set');
           }
 
-          balance = ledgerBalance.BALAMT;
 
-           
-          for (const t of transactions) {
-            const transactionData: {
-              date: DateTime,
-              name: string,
-              amount: number,
-              transactionId: string,
-            } = {
-              date: DateTime.fromFormat(t.DTPOSTED.slice(0, 8), 'yyyyMMdd'),
-              name: t.NAME,
-              amount: -t.TRNAMT,
-              transactionId: `${signOn.SONRS.FI.FID}:${accountFrom.ACCTID}:${t.FITID}`,
-            }
+          const transaction = await new Transaction()
+            .useTransaction(this.$trx)
+            .fill({
+              date: transactionData.date,
+              budgetId: budget.id,
+              categories: [{ categoryId: unassigned.id, amount: -transactionData.amount }],
+            })
+            .save();
 
-            // First check to see if the transaction is present. If it is then don't insert it.
-             
-            let acctTrans = await this.related('accountTransactions').query()
-              .where('providerTransactionId', transactionData.transactionId)
-              .first();
 
-            if (acctTrans) {
-               
-              const transaction = await acctTrans.related('transaction').query().firstOrFail();
+          acctTrans = await this.related('accountTransactions')
+            .create({
+              transactionId: transaction.id,
+              provider: 'OFX',
+              providerTransactionId: transactionData.transactionId,
+              accountId: this.id,
+              name: transactionData.name ?? undefined,
+              amount: -transactionData.amount,
+            });
 
-              const oldAllocations = transaction.categories.map((allocation) => ({ ...allocation }));
-              const oldActive = !transaction.deleted && transaction.date >= this.startDate;
-              const newAmount = -transactionData.amount;
-              const explicit = oldAllocations.filter((allocation) => allocation.categoryId !== unassigned.id);
-              const remainder = (Math.round(newAmount * 100)
-                - explicit.reduce((total, allocation) => total + Math.round(allocation.amount * 100), 0)) / 100;
-              const allocations = [...explicit, { categoryId: unassigned.id, amount: remainder }];
-              validateTransactionSplits(newAmount, allocations);
-              await applyAllocations(oldAllocations, oldActive, allocations, transactionData.date >= this.startDate);
+          validateTransactionSplits(acctTrans.amount, transaction.categories);
+          await applyAllocations([], false, transaction.categories, transaction.date >= this.startDate);
 
-              // The amount to add to the balance is the difference between
-              // the old transaction amount and the new transaction amount unless
-              // the transaction was previously deleted. In that case, the amount
-              // is the amount of the new transaction.
-              let amount = -transactionData.amount - acctTrans.amount;
+          if (!acctTrans.pending && transaction.date >= this.startDate) sum += acctTrans.amount;
 
-              if (transaction.deleted) {
-                amount = -transactionData.amount;
-              }
 
-               
-              await transaction
-                .merge({
-                  deleted: false,
-                  date: transactionData.date,
-                  categories: allocations,
-                })
-                .save();
-
-               
-              await acctTrans
-                .merge({
-                  transactionId: transaction.id,
-                  provider: 'OFX',
-                  providerTransactionId: transactionData.transactionId,
-                  name: transactionData.name ?? undefined,
-                  amount: -transactionData.amount,
-                })
-                .save();
-
-              sum += amount;
-            }
-            else {
-              if (!this.$trx) {
-                throw new Error('database transaction not set');
-              }
-
-               
-              const transaction = await new Transaction()
-                .useTransaction(this.$trx)
-                .fill({
-                  date: transactionData.date,
-                  budgetId: budget.id,
-                  categories: [{ categoryId: unassigned.id, amount: -transactionData.amount }],
-                })
-                .save();
-
-               
-              acctTrans = await this.related('accountTransactions')
-                .create({
-                  transactionId: transaction.id,
-                  provider: 'OFX',
-                  providerTransactionId: transactionData.transactionId,
-                  accountId: this.id,
-                  name: transactionData.name ?? undefined,
-                  amount: -transactionData.amount,
-                });
-
-              validateTransactionSplits(acctTrans.amount, transaction.categories);
-              await applyAllocations([], false, transaction.categories, transaction.date >= this.startDate);
-
-              sum += acctTrans.amount;
-
-               
-              await transaction.related('transactionLog')
-                .create({
-                  budgetId: transaction.budgetId,
-                  message: `${user.username} added a transaction for "${acctTrans.name}" from "${this.name}".`,
-                });
-            }
-          }
+          await transaction.related('transactionLog')
+            .create({
+              budgetId: transaction.budgetId,
+              message: `${user.username} added a transaction for "${acctTrans.name}" from "${this.name}".`,
+            });
         }
       }
 
-      if (balance !== null) {
-        this.balance = balance;
-      }
-      else {
-        this.balance += sum;
-      }
-
-      await this.updateAccountBalanceHistory(this.balance);
+      this.balance += sum;
+      if (providerBalance !== undefined) this.plaidBalance = providerBalance;
 
       await this.save();
 

@@ -93,7 +93,7 @@ async function state(f: Fixture) {
   const pool = await f.budget.getFundingPoolCategory()
   const rows = await AccountTransaction.query().where('accountId', account.id).preload('transaction').orderBy('id')
   const logs = await db.from('transaction_logs').where('application_id', f.budget.id).orderBy('id')
-  return { balance: account.balance, unassigned: unassigned.balance, pool: pool.balance,
+  return { balance: account.balance, plaidBalance: account.plaidBalance, unassigned: unassigned.balance, pool: pool.balance,
     rows: rows.map((row) => ({ amount: row.amount, pending: row.pending, type: row.transaction.type,
       deleted: row.transaction.deleted, version: row.transaction.version, categories: row.transaction.categories })), logs }
 }
@@ -103,13 +103,12 @@ test.group('Bounded Account writer PostgreSQL serialization (prepared)', () => {
     { first: 'ofx110', second: 'create5', seeded: false, balance: 115, category: 15, pool: 100, active: 2 },
     { first: 'create10', second: 'create5', seeded: false, balance: 115, category: 15, pool: 100, active: 2 },
     { first: 'create10', second: 'delete', seeded: true, balance: 110, category: 10, pool: 100, active: 1 },
-    // Current absolute OFX semantics are deliberately retained: these are serial
-    // expectations, not the future approved transaction-delta OFX expectations.
-    { first: 'create10', second: 'ofx110', seeded: false, balance: 110, category: 20, pool: 90, active: 2 },
-    { first: 'ofx110', second: 'delete', seeded: true, balance: 106, category: 10, pool: 96, active: 1 },
+    // OFX posts Transaction deltas; its independent provider ledger cannot change opening/Pool.
+    { first: 'create10', second: 'ofx110', seeded: false, balance: 120, category: 20, pool: 100, active: 2 },
+    { first: 'ofx110', second: 'delete', seeded: true, balance: 110, category: 10, pool: 100, active: 1 },
     { first: 'delete', second: 'ofx110', seeded: true, balance: 110, category: 10, pool: 100, active: 1 },
-    { first: 'patch', second: 'ofx110', seeded: true, balance: 110, category: 16, pool: 94, active: 2 },
-    { first: 'ofx110', second: 'patch', seeded: true, balance: 112, category: 16, pool: 96, active: 2 },
+    { first: 'patch', second: 'ofx110', seeded: true, balance: 116, category: 16, pool: 100, active: 2 },
+    { first: 'ofx110', second: 'patch', seeded: true, balance: 116, category: 16, pool: 100, active: 2 },
     { first: 'ofx110', second: 'ofx120', seeded: false, balance: 120, category: 20, pool: 100, active: 2 },
   ] as const).run(async ({ client, assert }, scenario) => {
     const f = await fixture()
@@ -146,6 +145,8 @@ test.group('Bounded Account writer PostgreSQL serialization (prepared)', () => {
     await second
     const after = await state(f)
     assert.equal(after.balance, scenario.balance)
+    const lastOfx = [scenario.first, scenario.second].filter((operation) => operation.startsWith('ofx')).at(-1)
+    assert.equal(after.plaidBalance, lastOfx === 'ofx120' ? 120 : lastOfx ? 110 : null)
     assert.equal(after.unassigned, scenario.category)
     assert.equal(after.pool, scenario.pool)
     const ordinary = after.rows.filter((row) => row.type !== 4)
@@ -204,6 +205,50 @@ test.group('Bounded Account writer PostgreSQL serialization (prepared)', () => {
     assert.equal(manual[0].version, 0)
     assert.lengthOf(after.logs, 0)
   })
+
+  test('rolled-back OFX releases gate and waiter reloads both independent balances')
+    .with(['create5', 'ofx120'] as const).run(async ({ client, assert }, next) => {
+      const f = await fixture()
+      const entered = signal()
+      const release = signal()
+      let held = false
+      let ownerPid = 0
+      const save = Account.prototype.save
+      const failure = mock.method(Account.prototype, 'save', async function (this: Account) {
+        const saved = await save.call(this)
+        if (this.id === f.account.id && !held && this.plaidBalance === 110) {
+          held = true
+          if (!this.$trx) throw new Error('Missing owning transaction')
+          const result = await this.$trx.rawQuery('SELECT pg_backend_pid() AS pid')
+          ownerPid = result.rows[0].pid
+          entered.resolve()
+          await release.promise
+          throw new Error('Synthetic OFX rollback after both balances saved')
+        }
+        return saved
+      })
+      const first = client.post(`/api/v1/account/${f.account.id}/ofx`)
+        .unsafeJson(ofx(10, 110, 'rollback')).type('text/plain').loginAs(f.user)
+        .then((response) => { response.assertStatus(500) })
+      let waiter: Promise<void> | undefined
+      try {
+        await entered.promise
+        waiter = execute(client, f, next)
+        await waitForBudgetWaiter(ownerPid)
+      } finally {
+        release.resolve()
+        await Promise.allSettled([first, ...(waiter ? [waiter] : [])])
+        failure.mock.restore()
+      }
+      await first; await waiter
+      const after = await state(f)
+      assert.equal(after.balance, next === 'create5' ? 105 : 110)
+      assert.equal(after.plaidBalance, next === 'create5' ? null : 120)
+      assert.equal(after.unassigned, next === 'create5' ? 5 : 10)
+      assert.equal(after.pool, 100)
+      assert.lengthOf(after.rows.filter((row) => row.type !== 4), 1)
+      assert.lengthOf(after.logs, next === 'create5' ? 0 : 1)
+    })
 
   test('different Budgets commit independently while another gate is held', async ({ client, assert }) => {
     const f = await fixture()

@@ -1,94 +1,79 @@
-# OFX balance-authority correction: implementation blocker
+# OFX balance-authority correction implementation
 
-Status: OFX balance-authority semantic correction remains paused. The separately approved concurrency prerequisite is PostgreSQL-accepted; no OFX semantic runtime correction has been applied. The original blocker analysis below is retained as history.
+Status: **PostgreSQL-verified and accepted**. Implementation itself made no database connection; subsequent OFX verification received fresh task-specific authorization only for localhost:5432/spendcraft_test. Verification is complete and that authorization is now expired. The earlier concurrency authorization was not reused.
 
-## Baseline verification
+## Baseline and prerequisite
 
-HEAD at task start: `7fdc6369d787869dd5859341f832c0733a6496f1`. Its committed diff from `f8af21435e5279c810a0ab525fdc4a2e1040bf9b` adds only accounting-invariants.md and post-f8af214-correctness-review.md. Runtime app/client/common/commands/start/database/tests source is unchanged. Pre-existing working-tree state includes the earlier OFX design/source test, correctness-review edits and unrelated local untracked files. None was reset/discarded. No unexpected runtime changes were found.
+Exact HEAD before edits: `3b01c34067e61e778916ebda5a80527540ccef00` (“Added more budget locking to resolve concurrency issues.”). Tracked worktree/index were clean. Its committed concurrency correction is the required accepted baseline: CREATE/DELETE/command join Budget gates; PATCH/HTTP OFX/startDate retain them; Plaid refreshes after waiting and shared branches are sequential. Prior verification:214 focused /1,256 full-suite passed with no failures/skips. This task does not claim those DB results for the new semantics. Unrelated untracked editor/generated files, dumps and scratch files were preserved.
 
-AGENTS.md and all three requested documents were read before edits. Current controllers, Account.processOfx, command and database configuration were inspected without importing/bootstraping the application or connecting to a database.
+The earlier OFX implementation attempt stopped before runtime edits because ungated manual stale saves could overwrite OFX. That source defect and its concurrency correction remain documented separately; it is not a new blocker after acceptance. See [concurrency design](account-balance-writer-concurrency-design.md), [implementation](account-balance-writer-concurrency-implementation.md) and [PostgreSQL evidence](account-balance-writer-concurrency-postgresql-verification.md).
 
-## Why implementation stopped before runtime edits
+## Production changes
 
-Section21 of the approved implementation request permits a task-local concurrency correction but requires STOP if broader concurrency architecture is necessary. Current HTTP OFX cooperates with some writers through a Budget row gate, but other ordinary financial writers do not participate:
+- **app/Models/Account.ts, processOfx:** shared correction for HTTP and command. Complete input preflight checks supplied ledger validity and multiple existing matches before financial mutation. Existing parser/identity normalization retained. Missing Transaction list is empty, not an undefined synthetic row.
+- Supplied finite numeric ledger writes only plaidBalance. Missing aggregate leaves provider observation unchanged; supplied empty/malformed/nonfinite fails with existing Error→HTTP500/errors or command rollback/log convention. Zero is a supplied value. No precision/range/scale policy is added.
+- Account.balance receives accumulated eligible old/new signed Transaction deltas, regardless of ledger presence. AccountTransaction.amount equals TRNAMT; no extra Credit sign.
+- Existing Category old/new allocation deltas remain independent of pending. Explicit user splits, metadata/order/duplicate IDs and rounded-cent remainder preserved.
+- New rows apply eligible effects once. Active replay has zero financial delta. Amount/date modifications apply new−old eligible effects. Deleted restoration has zero old effect and eligible new effect once. No omission deletion.
+- Actual pending mapping unchanged: new DB defaultfalse, matched pending retained; parser does not expose a mapped pending distinction. No conversion invented.
+- Multiple existing Account-scoped matches fail before any row in the file mutates. Composite parsed FID/ACCTID/FITID preserved; repeated incoming keys continue sequential replay/modification semantics.
+- Removed **only** the OFX updateAccountBalanceHistory call. Both entry points now perform no history insert/update/delete/restore. Generic/manual history methods/routes are untouched; old rows remain.
+- Account saves after Transaction net effects, before existing opening maintenance. Opening reads accounting balance, not provider ledger. Existing formula/date/Pool signs and missing-opening creation retained. No new adjustment or reconstruction.
+- **client-src/State/Account.ts / Types.ts / AccountView/AccountsToolbar.tsx:** State upload method checks success, reloads authoritative independent balances and Category/Account/pending/loaded Category transaction caches. Toolbar delegates. Existing shared Account objects survive refresh. No history refresh or ledger-derived cache assignment. Rejection causes no refresh/cache mutation. Server response remains unchanged; no new providerBalance field.
 
-| Writer | Read/update evidence | Concurrency consequence |
-|---|---|---|
-| [HTTP OFX](../app/Controllers/Http/AccountsController.ts:572) | Budget FOR UPDATE, then fresh Account, processOfx | Serializes with cooperating Budget-gated writers only |
-| [Manual CREATE](../app/Controllers/Http/AccountsController.ts:167) | Budget read before transaction; Account read without gate; Account.balance += amount; Account.save | Can retain an old Account value across an OFX commit |
-| [Transaction DELETE](../app/Controllers/Http/TransactionsController.ts:495) | No Budget gate; Account read, subtraction and absolute model save | Same stale-save risk; it also mutates surviving Categories |
-| [Manual PATCH](../app/Controllers/Http/TransactionsController.ts:95) | Budget FOR UPDATE before financial reads | Existing cooperating writer; not the source of this particular missing-gate example |
-| [OFX command](../commands/OfxUpload.ts:30) | Transaction, no Budget gate, final global name lookup | Needs local scope/binding/gate correction, but that alone cannot repair other writers |
+HTTP and command Budget gates and scoped post-wait reloads are unchanged. Related Account/Transaction/link/Category/log/opening/Pool persistence still uses the owning transaction. No new Account/Category lock hierarchy, global lock or provider fetch is introduced. Parsing/preflight currently occurs inside the existing Budget transaction; command prompts remain before its gate. No Plaid change.
 
-Account has no balance hook or optimistic balance/version condition which resolves this race. This is a source-derived risk, not a claimed PostgreSQL reproduction.
+## Atomicity and opening
 
-Source-consistent interleaving, using ordinary nonpending eligible amounts:
+Owned mutation set is Transactions, AccountTransactions, Category balances, Account.balance delta, optional plaidBalance, existing opening/Pool and logs. All commit/rollback together under caller transaction. BalanceHistory is outside this set. Malformed ledgers/ambiguous identities preflight before mutation; late persistence/opening failures rely on owning transaction rollback.
 
-1. Account.balance is100. Manual CREATE loads100 but has not saved it.
-2. OFX holds its Budget gate, loads100, imports signed amount+10 and commits110 under the proposed corrected semantics.
-3. Manual CREATE resumes with its hydrated100, adds signed amount-5 and saves95.
-4. Both Transactions remain persisted. The correct combined accounting result would be105.
+For a consistent opening, prior B−S becomes (B+d)−(S+d), so amount/Pool are invariant even when provider observation differs. Example B1000/provider1400, signed new eligible TRNAMT−50, ledger1500 → B950/provider1500, opening unchanged. Existing baseline offsets are not inferred or repaired; retained opening maintenance can create a missing opening according to its existing lifecycle. DTASOF is not opening date; no active provider-observation timestamp is invented.
 
-An OFX-only Account row lock does not make the manual plain SELECT wait/reload its old model. Its later UPDATE may wait for the lock, then still write95. An OFX-only atomic increment also cannot prevent a subsequent stale absolute save. More isolation/retries in OFX alone cannot guarantee cooperation of other transactions. Similar read/modify/save exposure exists for shared Category/Pool state; protecting Account alone is insufficient.
+## Tests changed and prepared
 
-Therefore the smallest complete correction needs participation by relevant competing writers, or a tested shared mutation strategy. Adding an isolated OFX lock would falsely imply safety. Restoring a universal abandoned Budget helper, changing all balances to atomic updates, or broadening locking across unrelated writers is not authorized here. No partial financial fix was applied.
+Non-DB unit OFX tests replaced defect expectations, rather than deleting scenarios. They execute the actual processOfx method using real XML parsing and inert model adapters with a history method that throws if invoked. Cover ledger destination (including finite sub-cent acceptance to prove no new precision policy), absent/invalid observation, new/replay/net amount/date crossings, pending, restored eligible/ineligible/pending, user allocations, ambiguous later identity, repeated incoming identity, no omission deletion and existing numeric identity normalization. Opening instrumentation records accounting balance passed to the helper.
 
-## Proposed prerequisite for approval
+Client financial State tests add success independent-balance/cache refresh and rejected-request noninterference. Existing Account-writer pure/source tests prove accepted Budget gate/fresh-state/provider behavior remains. No application bootstrap or database model import is used by these test runs.
 
-Separately scope a concurrency correction for OFX and relevant same-Budget balance/Category/Pool writers. Inventory actual competing writers, establish one compatible coordination/update strategy, require fresh financial reads after acquisition, and preserve existing product effects. Reuse existing Budget gates where suitable; do not assume the abandoned architecture or add a lower-resource lock hierarchy by default.
+Executable DB tests prepared during implementation, subsequently verified:
 
-At minimum test OFX/manual CREATE, OFX/DELETE, OFX/PATCH and OFX/OFX, command/HTTP overlap, different Accounts sharing Categories/Pool, rollback/retry and different-Budget independence. An Account-only solution is incomplete. The paused manual BalanceHistory balance defect is a known independent writer and must be explicitly accounted for in the concurrency scope without silently implementing its semantic correction.
+- tests/functional/accounts/ofxBalanceAuthority.spec.ts: ledger positive/negative/zero/absent/empty/malformed; six sign/date new cases; ledger-only and replay/new observation; date/amount modifications; matched pending; restoration/replay/omission; ambiguous later match; existing history unchanged; raw persisted balances; opening/Pool independence; post-opening rollback; command import and HTTP replay; foreign/missing Account.
+- tests/functional/accounts/ofxReimport.spec.ts: retain allocation/identity/restoration/date scenarios with accounting-derived expectations and separate provider assertions. Replace obsolete history-constraint failure with a late Pool save failure and full snapshot rollback. No new temporary DDL or cleanup is required.
+- tests/functional/concurrency/accountBalanceWriters.spec.ts: preserve deterministic actual Budget-wait barriers and binding/rollback/security/independence cases. Update four pair expectations that previously depended on ledger replacing accounting balance. OFX/manual CREATE/DELETE/PATCH and OFX/OFX now assert eligible net composition and stable opening/Pool.
+- Existing Plaid concurrency, manual Transaction, startDate, Statement, funding/rebalance, offline, command lifecycle, tenant and Loan suites remain future regression gates. No broader semantics changed to satisfy tests.
 
-Once this prerequisite is approved and completed, resume the focused OFX correction against the approved product rules below.
+Existing centralized test-only safeguards remain unchanged: fresh task-specific authorization is required before execution, with independently verified configured/live pg and pgLog plus actual execution connection, immediately before every destructive setup/cleanup/SQL operation. Only localhost:5432/spendcraft_test may be authorized. No environment switch/acknowledgement is used in this task.
 
-## Approved correction retained; none implemented yet
+## Floating-money inventory retained for later work
 
-- Signed AccountTransaction.amount equals OFX TRNAMT. Account delta is new eligible amount minus old eligible amount, with active/nonpending/date>=startDate evaluated independently for each state.
-- Category deltas use active/date>=startDate; pending does not suppress them. Preserve explicit allocations, metadata/duplicates and Unassigned remainder semantics.
-- Ledger updates plaidBalance only. Absent is valid and preserves it; empty/malformed supplied ledger fails atomically before committed mutations.
-- Replay has zero financial delta; modification applies old/new difference; deleted restoration has zero old effect and applies eligible new effect once. No removal by file omission.
-- Current new OFX rows default nonpending; matched pending status is preserved. No new pending mapping.
-- Preserve current composite parsed identity and fail closed on ambiguous existing logical matches before financial mutation.
-- Remove the single OFX updateAccountBalanceHistory call shared by both entry points. No generic/manual history behavior changes or historical history cleanup. No opening code reads history.
-- Existing opening maintenance must see the resulting accounting balance. For consistent state, `(B+d)-(S+d)=B-S`; ledger-only changes cannot alter opening/Pool. Do not rebuild historical opening state.
-- No new observation timestamp exists in the active Account model; do not invent one. No plaidBalance rename, currency/precision policy or representation change.
-- Client upload currently has no success cache refresh; future correction must refresh authoritative independent balances and affected financial state on success, without history refresh or assumed equality.
-
-## PostgreSQL matrix prepared as design only
-
-No DB-backed test code or destructive fixture helper was added after this stop. The approved design's detailed matrix remains the preparation for subsequent implementation. Extend it with these required acceptance assertions:
-
-| Group | Required cases |
+| Boundary | Current representation/arithmetic retained |
 |---|---|
-| Ledger | Positive/negative/zero/absent versus supplied empty/malformed; ledger-only, transaction-only, both, replay with changed ledger |
-| Transactions | Signed new amount; before/equal/after startDate; replay0; amount/date modifications and crossings; matched pending preserved; restoration once |
-| Identity/allocation | Duplicate existing logical match rejects atomically; current FID/ACCTID/FITID preserved; explicit split metadata and Unassigned remainder preserved |
-| History | Seed existing rows, compare complete before/after rows; no insert/update/delete through either OFX entry point |
-| Opening | Post-Transaction accounting balance controls calculation; provider ledger does not contaminate opening/Pool |
-| Atomicity | Late failure rolls back rows, both balances, Categories/opening/Pool; no history activity |
-| Concurrency | Deterministic stale-read schedules above, both orders; same-Account and shared-Category contention; cooperating command/HTTP; rollback/retry; different Budgets |
-| Security/regressions | Foreign Account/Institution/Budget; manual Transactions, startDate, Statements, funding/rebalance, offline initialization, Plaid and Loan boundaries |
+| Parser | fast-xml-parser numeric normalization; unary minus TRNAMT; Number for valid ledger |
+| Hydration | Account/AccountTransaction/Category numeric fields use existing JS numbers/parseFloat |
+| Account | Eligible signed new−old subtraction, running sum and prior balance+sum |
+| Allocations | JSON number amounts; Math.round(amount*100), explicit split sum/subtraction and remainder /100 |
+| Categories | Grouped rounded-cent numeric accumulation, balance*100 plus delta /100 |
+| Opening | SQL SUM numeric response, subtraction from hydrated Account.balance; opening new−old and Pool floating addition |
+| Persistence/API/client | Existing numeric relational columns, JSON numbers and dollar-number response/client fields |
 
-Future DB verification requires fresh task-specific authorization and verified safety mechanisms. Current tests/bootstrap.ts directly truncates the database; no abandoned safeguard or authorization should be assumed available. Do not request destructive execution as the next step while this implementation remains blocked.
+No new precision policy, exact parser, MinorUnits, money strings or JSON representation exists. Rates/currency/sign/identity normalization are not silently redesigned. CURDEF/DTASOF remain ignored as before. Multi-currency/observation freshness and the future plaidBalance/plaid_balance rename are separate tasks.
 
-## Representation and historical limitations
+## Scope and historical limits
 
-Floating-dollar arithmetic remains in OFX raw old/new amount differences, operation accumulation, Account addition, Category rounded-cent remainder/deltas, and opening subtraction/Pool addition. All are unchanged by this stop. Existing ledger-overwritten balances and previously inserted history remain untouched; no repair/replay is approved.
+Forward-only. No old accounting balance, Category effect, provider balance or historical OFX history is repaired, deleted or replayed. BalanceHistory's generic current-balance defect remains deliberately untouched. No manual eligibility, Statement, funding/rebalance, offline initialization, Plaid, Loan or Transaction DELETE semantic correction is included. Accepted bounded serialization does not certify excluded erroneous/history/cascade writers.
 
-## Verification and mutation boundary
+## Verification
 
-Documentation-only changes record the approved rules and blocker. Runtime/client/test implementation was not changed during this attempt. No DB connection, DB-backed test, destructive setup/cleanup, historical balance repair, BalanceHistory cleanup/general correction, exact-money migration, rename, schema migration, deployment or commit occurred.
+Final focused standalone Japa run: **85 passed, 0 failed, 0 skipped/pending** (21 OFX actual-method cases, 11 Account-writer source/inert behavior cases, 53 bundled client State regressions). No tests/bootstrap.ts or DB-backed suite was loaded. An initial fixture used numeric-only DTPOSTED, which the existing parser normalizes to a number; corrected the fixture to the existing supported timestamp-with-GMT format, without broadening parser behavior. Initial lint identified the new test's missing explicit node:buffer File import and preferred interface spelling; both were corrected.
 
-## Shared Account concurrency design (no implementation)
+Both server/client TypeScript checks passed, including type-checking prepared DB cases without running them. ESLint, Knip, circular regression, server build, client build and standard/staged git diff --check passed. Circular analysis retained only the accepted 11-model/26-edge component. Builds emitted the established >500kB bundle warning (JS approximately1,035.67kB before gzip); no other warning remained.
 
-The source-based recommendation is now documented in [Account-balance writer concurrency design](account-balance-writer-concurrency-design.md). Required normal existing-Account posting set: manual CREATE, PATCH, DELETE, OFX HTTP/command, Plaid syncUpdate through all callers; retain existing mode/startDate and Statement gates. The missing participation is principally CREATE/DELETE/OFX command; existing gated paths require fresh-state/transaction-binding verification, including preloaded provider state. Recommend extending the existing Budget gate to this bounded set before financial reads, not introducing universal application serialization or Account prelocks.
+Prepared coverage comprises25 new OFX authority DB cases,19 updated reimport cases and19 existing deterministic Account-writer concurrency cases with corrected semantic expectations. These counts describe the original preparation, not the expanded final verification matrix. Provider/manual/Statement/etc. regressions subsequently passed. The implementation-only phase did not run the full suite; later verification established the new1,305 baseline.
 
-Initialization-only writes and Category-only operations do not become Account writers. Erroneous manual BalanceHistory writes remain paused and cannot be legitimized by locking. Full OFX activation must explicitly account for any additional shared Category/Pool and parent-lifetime guarantees; Account-delta serialization alone must not be advertised as global financial correctness. No OFX runtime implementation resumed; approval and separately authorized DB verification remain necessary. See the concurrency design for rollout boundaries, remaining product scope choices and deterministic future tests.
+Source audit: both entry points still call the shared method after Budget acquisition/fresh scoped reload; no ledger-to-accounting assignment or OFX history persistence remains; supplied ledger writes plaidBalance; absent ledger leaves it untouched; only Transaction net delta changes accounting balance; opening consumes this.balance; no omission deletion, provider rename or exact-money architecture was added. Generic history methods and unrelated writers remain untouched.
 
-## Concurrency prerequisite implemented, DB verification pending
+The implementation-only phase made no database connection or destructive DB operation. Subsequent fresh OFX authorization permitted safeguarded verification on the exact test target. Final focused acceptance: **681 passed,0 failed,0 skipped/pending**; full suite: **1,305 passed,0 failed,0 skipped/pending**. See [PostgreSQL evidence](ofx-account-provider-balance-correction-postgresql-verification.md).
 
-See [bounded concurrency implementation](account-balance-writer-concurrency-implementation.md). CREATE, DELETE and the OFX command now join existing Budget gates; Plaid reloads after waiting and shared financial branches are sequential. This resolves the missing-protocol implementation prerequisite within the approved participant set, subject to PostgreSQL verification. The OFX processing method, its LEDGERBAL/account assignment, plaidBalance behavior and BalanceHistory coupling are unchanged. No BalanceHistory, eligibility or monetary-representation correction occurred. Do not resume OFX semantic work implicitly.
+Verification strengthened test instrumentation and regressions without further production/safety-infrastructure changes: both entry points use one transaction; opening runs once from accounting balance; a history save would fail the test; current numeric identity normalization replays one row; malformed command rolls back; concurrent final provider value follows serial order; rolled-back OFX releases both balances to fresh waiters. A Lucid relation-parent no-op save was initially mistaken for a financial update; instrumentation now checks dirty monetary fields. Core matrix grew to69 cases (29 OFX authority,19 reimport,21 concurrency), all passing.
 
-## Concurrency prerequisite PostgreSQL acceptance
-
-The bounded concurrency prerequisite is accepted:214 focused and 1,256 full-suite tests passed, 0 failed,0 skipped/pending. The [verification record](account-balance-writer-concurrency-postgresql-verification.md) documents safeguards and exact writer-pair results. This supersedes earlier prerequisite-pending status; historical blocker analysis remains as evidence. OFX semantic implementation has NOT resumed: LEDGERBAL still writes Account.balance, plaidBalance/history/eligibility behavior remains current. A subsequent OFX task may resume separately; this task's DB authorization expires and cannot be reused.
+No historical repair, historical history cleanup, generic BalanceHistory change, unrelated provider change, exact-money migration, rename, application schema migration, deployment or agent-created commit occurred. Task-specific DB authorization is expired.

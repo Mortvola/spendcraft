@@ -1,4 +1,5 @@
 import { test } from '@japa/runner'
+import { File } from 'node:buffer'
 import NetworthContent from '../../../client-src/Reports/NetworthContent.js'
 import { build } from 'vite'
 import babel from '@rolldown/plugin-babel'
@@ -78,7 +79,7 @@ export * from ${source('common/ResponseTypes.ts')};
     state.runInAction(() => { account.statements.statements = [statement]; store.uiState.selectedStatement = statement })
     const transactionProps = (amount = -10, statementId = null) => ({ id: 40, date: '2025-02-10', type: state.TransactionType.MANUAL_TRANSACTION, sortOrder: 0, comment: '', version: 0, duplicateOfTransactionId: null, categories: [{ categoryId: 20, amount }], taxes: [], accountTransaction: { name: 'Purchase', amount, principle: null, statementId, pending: false, accountOwner: null, paymentChannel: null, location: null, account: { id: 10, name: 'Checking', institution: { name: 'Offline bank' } } } })
     routes = new Map(); calls = []
-    originals = new Map(['get', 'post', 'put', 'patch', 'delete'].map((method) => [method, state.Http[method]]))
+    originals = new Map(['get', 'post', 'put', 'patch', 'delete', 'fetch'].map((method) => [method, state.Http[method]]))
     for (const method of originals.keys()) state.Http[method] = async (url, payload) => {
       calls.push({ method, url, payload })
       const handler = routes.get(`${method} ${url}`)
@@ -98,6 +99,28 @@ export * from ${source('common/ResponseTypes.ts')};
     })
     return { account: f.account.transactions.transactions[0], category: f.category.transactions.transactions[0] }
   }
+
+  test('OFX refreshes independent balances and financial caches without history', async ({ assert }) => {
+    routes.set('fetch /api/v1/account/10/ofx', async () => ({ body: {} }))
+    routes.set('get /api/v1/connected-accounts', async () => ({ body: { data: [{ ...f.institutionProps, accounts: [{ ...f.accountProps, balance: 95, plaidBalance: 1500 }] }] } }))
+    routes.set('get /api/v1/groups', async () => ({ body: { data: { categories: [{ id: 20, balance: -5 }] } } }))
+    const refreshes = []
+    f.account.transactions.getData = async () => { refreshes.push('transactions') }
+    f.account.pendingTransactions.getData = async () => { refreshes.push('pending') }
+    f.store.balances.load = async () => { throw new Error('OFX must not refresh history') }
+    await f.account.uploadOfx(new File(['OFX'], 'test.ofx'))
+    assert.equal(f.account.balance, 95); assert.equal(f.account.plaidBalance, 1500)
+    assert.equal(f.category.balance, -5)
+    assert.deepEqual(refreshes, ['transactions', 'pending'])
+    assert.strictEqual(f.store.accounts.findAccount(10), f.account)
+  })
+
+  test('rejected OFX does not refresh or mutate caches', async ({ assert }) => {
+    routes.set('fetch /api/v1/account/10/ofx', async () => ({ ok: false, body: {} }))
+    await assert.rejects(() => f.account.uploadOfx(new File(['OFX'], 'test.ofx')), /OFX upload failed/)
+    assert.equal(f.account.balance, 100); assert.equal(f.account.plaidBalance, null)
+    assert.equal(f.category.balance, 0); assert.lengthOf(calls, 1)
+  })
 
   test('transaction edit applies returned statement totals', async ({ assert }) => {
     const trx = transactions().account

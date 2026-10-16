@@ -1,4 +1,6 @@
 import financialAssert from 'node:assert/strict'
+import { mock } from 'node:test'
+import Category from '#models/Category'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
 import { DateTime } from 'luxon'
@@ -48,7 +50,7 @@ test.group('OFX reimport financial consistency', () => {
       .where('groups.application_id', f.budget.id).orderBy('categories.id')
     const history = await db.from('balance_histories').where('account_id', account.id).orderBy('id')
     const logs = await db.from('transaction_logs').where('application_id', f.budget.id).orderBy('id')
-    const result = { balance: account.balance, categories, history, logs, transactions: associations.map((a) => ({
+    const result = { balance: account.balance, plaidBalance: account.plaidBalance, categories, history, logs, transactions: associations.map((a) => ({
       id: a.transaction.id, associationId: a.id, providerId: a.providerTransactionId, amount: a.amount,
       date: a.transaction.date.toISODate(), deleted: a.transaction.deleted, version: a.transaction.version,
       splits: a.transaction.categories, splitTotal: a.transaction.categories.reduce((sum, split) => sum + split.amount, 0),
@@ -106,7 +108,8 @@ test.group('OFX reimport financial consistency', () => {
       const updated = after.transactions.find((transaction) => transaction.id === identity.transactionId);
       assert.deepEqual(updated?.splits.filter((split) => split.categoryId !== unassignedId), previous?.splits.filter((split) => split.categoryId !== unassignedId));
       assert.equal(updated?.amount, scenario.amount);
-      assert.equal(after.balance, 100 + scenario.amount);
+      assert.equal(after.balance, scenario.amount);
+      assert.equal(after.plaidBalance, 100 + scenario.amount);
       ;(await upload(client, f, scenario.amount, '2025-02-10', 100 + scenario.amount)).assertStatus(200)
       ;(await upload(client, f, scenario.amount, '2025-02-10', 100 + scenario.amount)).assertStatus(200)
       const replay = await state(f)
@@ -152,19 +155,23 @@ test.group('OFX reimport financial consistency', () => {
       const after = await state(f)
       console.log(JSON.stringify({ scenario, before, after }))
       assert.equal((await imported(f)).transactionId, identity.transactionId)
+      assert.equal(after.balance, scenario.after >= '2025-02-01' ? scenario.amount : 0)
     })
 
-  test('late history persistence failure rolls back the full import', async ({ client, assert }) => {
+  test('late Pool persistence failure rolls back accounting, provider and full import state', async ({ client, assert }) => {
     const f = await fixture()
     ;(await upload(client, f)).assertStatus(200)
     await categorize(client, f, true)
     const before = await state(f)
-    await db.rawQuery(`ALTER TABLE balance_histories ADD CONSTRAINT ofx_characterization_failure CHECK (account_id != ${f.account.id} OR balance != 115)`)
+    const pool = await f.budget.getFundingPoolCategory()
+    const save = Category.prototype.save
+    const failure = mock.method(Category.prototype, 'save', async function (this: Category) {
+      if (this.id === pool.id) throw new Error('Injected late Pool persistence failure')
+      return save.call(this)
+    })
     try {
       ;(await upload(client, f, 15, '2025-02-11', 115)).assertStatus(500)
       assert.deepEqual(await state(f), before)
-    } finally {
-      await db.rawQuery('ALTER TABLE balance_histories DROP CONSTRAINT ofx_characterization_failure')
-    }
+    } finally { failure.mock.restore() }
   })
 })

@@ -500,6 +500,8 @@ export interface AccountInterface {
 
   updateOfflineAccount(name: string, type: AccountType, subtype: string): Promise<void>;
 
+  uploadOfx(file: File): Promise<void>;
+
   setSettings(settings: AccountSettings): void;
 }
 

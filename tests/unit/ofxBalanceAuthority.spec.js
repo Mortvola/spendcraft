@@ -4,10 +4,10 @@ import { runInNewContext } from 'node:vm'
 import { URL } from 'node:url'
 import ts from 'typescript'
 import { XMLParser } from 'fast-xml-parser'
+import { DateTime } from 'luxon'
 
-// Characterizes the existing defect, not the desired product contract. No model,
-// application bootstrap or database is imported. Replace defect expectations
-// with the approved independence assertions when the correction is implemented.
+// Execute the production method with real parsing and inert persistence adapters.
+// No application bootstrap, model import or database connection is involved.
 async function currentMethod() {
   const source = await readFile(new URL('../../app/Models/Account.ts', import.meta.url), 'utf8')
   const ast = ts.createSourceFile('Account.ts', source, ts.ScriptTarget.Latest, true)
@@ -23,63 +23,203 @@ async function currentMethod() {
   }).outputText
 }
 
-async function ledgerOnly(ledger) {
-  const calls = []
-  // Inert parsed fixture isolates the balance epilogue. It does not claim the
-  // current XML empty-transaction-list parser supports ledger-only uploads.
-  const parsed = { OFX: { SIGNONMSGSRSV1: { SONRS: { FI: { FID: 1 } } },
-    CREDITCARDMSGSRSV1: { CCSTMTTRNRS: { CCSTMTRS: {
-      CCACCTFROM: { ACCTID: 'test' }, BANKTRANLIST: { STMTTRN: [] }, ...ledger,
-    } } } } }
-  const method = runInNewContext(await currentMethod(), {
-    XMLParser: class { parse() { return parsed } },
-    TrackingType: { Transactions: 'Transactions', Balances: 'Balances' },
-  })
-  const account = { tracking: 'Transactions', balance: 1000, plaidBalance: 1400,
-    $trx: {}, async save() { calls.push('account-save') },
-    async updateAccountBalanceHistory(balance) { calls.push(['history', balance]) },
-    async updateStartingBalance() { calls.push(['opening', this.balance]) },
-  }
-  const budget = { async getUnassignedCategory() { return { id: 1 } },
-    async getFundingPoolCategory() { return { async save() { calls.push('pool-save') } } },
-  }
-  return { account, calls, run: () => method.call(account, 'header\n\n<OFX/>', budget, {}) }
+function document(rows = [], ledger = '<LEDGERBAL><BALAMT>1500</LEDGERBAL>') {
+  return 'OFXHEADER:100\n\n<OFX><SIGNONMSGSRSV1><SONRS><FI><FID>1</FI></SONRS></SIGNONMSGSRSV1>'
+    + '<CREDITCARDMSGSRSV1><CCSTMTTRNRS><CCSTMTRS><CCACCTFROM><ACCTID>test</CCACCTFROM>'
+    + `<BANKTRANLIST>${rows.map(({ id = 'one', amount = -50, date = '20250210' }) =>
+      `<STMTTRN><DTPOSTED>${date}120000[0:GMT]<TRNAMT>${amount}<FITID>${id}<NAME>Movement</STMTTRN>`).join('')}</BANKTRANLIST>`
+    + `${ledger}</CCSTMTRS></CCSTMTTRNRS></CREDITCARDMSGSRSV1></OFX>`
 }
 
-test.group('OFX balance authority source characterization', () => {
-  test('current supplied ledger overwrites accounting balance and leaves provider balance unchanged', async ({ assert }) => {
-    const fixture = await ledgerOnly({ LEDGERBAL: { BALAMT: 1500 } })
-    await fixture.run()
-    assert.equal(fixture.account.balance, 1500)
-    assert.equal(fixture.account.plaidBalance, 1400)
-    assert.deepEqual(fixture.calls[0], ['history', 1500])
-    assert.deepEqual(fixture.calls[2], ['opening', 1500])
+async function fixture() {
+  const calls = []
+  const links = []
+  const categories = new Map()
+  function category(id, balance = 0) {
+    const row = { id, balance, async save() { calls.push(['category', id, this.balance]) } }
+    categories.set(id, row)
+    return row
+  }
+  const unassigned = category(1)
+  const pool = category(2)
+  class Transaction {
+    constructor() { this.id = links.length + 1; this.deleted = false }
+    useTransaction() { return this }
+    fill(values) { Object.assign(this, values); return this }
+    merge(values) { return this.fill(values) }
+    async save() { calls.push(['transaction', this.id]); return this }
+    related() { return { create: async () => { calls.push('log') } } }
+  }
+  const account = { tracking: 'Transactions', balance: 1000, plaidBalance: 1400,
+    startDate: DateTime.fromISO('2025-02-01'), $trx: {}, id: 10, name: 'Checking',
+    async save() { calls.push(['account', this.balance, this.plaidBalance]) },
+    async updateAccountBalanceHistory() { throw new Error('OFX must not write history') },
+    async updateStartingBalance() { calls.push(['opening', this.balance]) },
+    related() {
+      return {
+        query() {
+          let identity
+          return { where(_field, value) { identity = value; return this },
+            async first() { return links.find((link) => link.providerTransactionId === identity) },
+            async limit(count) { return links.filter((link) => link.providerTransactionId === identity).slice(0, count) } }
+        },
+        async create(values) {
+          const transaction = f.lastTransaction
+          const row = { pending: false, ...values,
+            merge(next) { Object.assign(this, next); return this },
+            async save() { calls.push(['link', this.amount]); return this },
+            related() { return { query: () => ({ firstOrFail: async () => transaction }) } },
+            transaction,
+          }
+          links.push(row)
+          return row
+        },
+      }
+    },
+  }
+  const f = { account, calls, links, categories, category, lastTransaction: null }
+  class PersistedTransaction extends Transaction {
+    async save() { f.lastTransaction = this; return super.save() }
+  }
+  const categoryQuery = { where(field, id) { if (field === 'id') this.id = id; return this },
+    whereHas() { return this }, async firstOrFail() { return categories.get(this.id) } }
+  const runMethod = runInNewContext(await currentMethod(), {
+    XMLParser, DateTime, Transaction: PersistedTransaction,
+    Category: { query: () => Object.create(categoryQuery) },
+    TrackingType: { Transactions: 'Transactions', Balances: 'Balances' },
+    validateTransactionSplits(amount, allocations) {
+      if (Math.round(allocations.reduce((sum, row) => sum + row.amount, 0) * 100) !== Math.round(amount * 100)) throw new Error('Invalid splits')
+    },
+  })
+  const budget = { id: 3, async getUnassignedCategory() { return unassigned }, async getFundingPoolCategory() { return pool } }
+  f.run = (rows, ledger) => runMethod.call(account, document(rows, ledger), budget, { username: 'test' })
+  return f
+}
+
+test.group('OFX accounting and provider balance independence', () => {
+  test('ledger-only observation never replaces accounting balance or writes history')
+    .with([1500, -1500, 0, 0.005]).run(async ({ assert }, ledger) => {
+      const f = await fixture()
+      await f.run([], `<LEDGERBAL><BALAMT>${ledger}</LEDGERBAL>`)
+      assert.equal(f.account.balance, 1000)
+      assert.equal(f.account.plaidBalance, ledger)
+      assert.deepInclude(f.calls, ['opening', 1000])
+    })
+
+  test('absent ledger preserves provider balance and still posts Transactions', async ({ assert }) => {
+    const f = await fixture()
+    await f.run([{}], '')
+    assert.equal(f.account.balance, 950)
+    assert.equal(f.account.plaidBalance, 1400)
+    assert.equal(f.categories.get(1).balance, -50)
+    assert.deepInclude(f.calls, ['opening', 950])
   })
 
-  test('current zero ledger also overwrites accounting balance', async ({ assert }) => {
-    const fixture = await ledgerOnly({ LEDGERBAL: { BALAMT: 0 } })
-    await fixture.run()
-    assert.equal(fixture.account.balance, 0)
-    assert.equal(fixture.account.plaidBalance, 1400)
+  test('malformed supplied ledger fails before any mutation')
+    .with(['<LEDGERBAL/>', '<LEDGERBAL><BALAMT></BALAMT></LEDGERBAL>', '<LEDGERBAL><BALAMT>garbage</LEDGERBAL>', '<LEDGERBAL><BALAMT>Infinity</LEDGERBAL>'])
+    .run(async ({ assert }, ledger) => {
+      const f = await fixture()
+      await assert.rejects(() => f.run([{}], ledger), /Invalid OFX ledger balance/)
+      assert.deepEqual(f.calls, [])
+      assert.equal(f.account.balance, 1000); assert.equal(f.account.plaidBalance, 1400)
+    })
+
+  test('new, replay and ledger change compose independently', async ({ assert }) => {
+    const f = await fixture()
+    await f.run([{}])
+    assert.equal(f.account.balance, 950); assert.equal(f.account.plaidBalance, 1500)
+    const count = f.links.length
+    await f.run([{}], '<LEDGERBAL><BALAMT>1600</LEDGERBAL>')
+    assert.equal(f.account.balance, 950); assert.equal(f.account.plaidBalance, 1600)
+    assert.equal(f.categories.get(1).balance, -50)
+    assert.lengthOf(f.links, count)
   })
 
-  test('current absent ledger throws before balance persistence', async ({ assert }) => {
-    const fixture = await ledgerOnly({})
-    await assert.rejects(fixture.run, /BALAMT/)
-    assert.deepEqual(fixture.calls, [])
-    assert.equal(fixture.account.balance, 1000)
+  test('modification applies old/new amount difference', async ({ assert }) => {
+    const f = await fixture()
+    await f.run([{ amount: 10 }], '')
+    await f.run([{ amount: 15 }], '')
+    assert.equal(f.account.balance, 1015)
+    assert.equal(f.categories.get(1).balance, 15)
   })
 
-  test('current explicit null BALAMT takes the incremental branch', async ({ assert }) => {
-    const fixture = await ledgerOnly({ LEDGERBAL: { BALAMT: null } })
-    await fixture.run()
-    assert.equal(fixture.account.balance, 1000)
-    assert.equal(fixture.account.plaidBalance, 1400)
+  test('date crossings independently remove and add Account and Category effects', async ({ assert }) => {
+    const f = await fixture()
+    await f.run([{ amount: 10, date: '20250110' }], '')
+    assert.equal(f.account.balance, 1000); assert.equal(f.categories.get(1).balance, 0)
+    await f.run([{ amount: 10, date: '20250201' }], '')
+    assert.equal(f.account.balance, 1010); assert.equal(f.categories.get(1).balance, 10)
+    await f.run([{ amount: 10, date: '20250131' }], '')
+    assert.equal(f.account.balance, 1000); assert.equal(f.categories.get(1).balance, 0)
   })
 
-  test('current default XML parser can collapse leading-zero numeric identifiers', ({ assert }) => {
-    const parser = new XMLParser()
-    assert.deepEqual(parser.parse('<OFX><FID>001</FID><ACCTID>002</ACCTID><FITID>003</FITID></OFX>'),
+  test('matched pending status suppresses Account only', async ({ assert }) => {
+    const f = await fixture()
+    await f.run([{ amount: 10, date: '20250110' }], '')
+    f.links[0].pending = true
+    await f.run([{ amount: 15 }], '')
+    assert.equal(f.account.balance, 1000)
+    assert.equal(f.categories.get(1).balance, 15)
+    assert.isTrue(f.links[0].pending)
+  })
+
+  test('restoration reapplies eligible effects once', async ({ assert }) => {
+    const f = await fixture()
+    await f.run([{ amount: 10 }], '')
+    f.links[0].transaction.deleted = true
+    f.account.balance = 1000; f.categories.get(1).balance = 0
+    await f.run([{ amount: 15 }], '')
+    await f.run([{ amount: 15 }], '')
+    assert.equal(f.account.balance, 1015); assert.equal(f.categories.get(1).balance, 15)
+    assert.isFalse(f.links[0].transaction.deleted)
+  })
+
+  test('explicit allocation metadata/order survive replay and amount modification', async ({ assert }) => {
+    const f = await fixture()
+    await f.run([{ amount: 10 }], '')
+    const explicit = { categoryId: 3, amount: 4, comment: 'User allocation' }
+    f.category(3, 4); f.categories.get(1).balance = 6
+    f.links[0].transaction.categories = [explicit, { categoryId: 1, amount: 6 }]
+    await f.run([{ amount: 15 }], '')
+    assert.deepEqual(f.links[0].transaction.categories[0], explicit)
+    assert.equal(f.categories.get(3).balance, 4); assert.equal(f.categories.get(1).balance, 11)
+  })
+
+  test('ambiguous later identity fails before earlier row can mutate', async ({ assert }) => {
+    const f = await fixture()
+    await f.run([{ id: 'duplicate' }], '')
+    f.links.push(f.links[0]); f.calls.length = 0
+    await assert.rejects(() => f.run([{ id: 'new' }, { id: 'duplicate' }], ''), /Ambiguous OFX transaction identity/)
+    assert.deepEqual(f.calls, [])
+  })
+
+  test('omitted Transactions are retained', async ({ assert }) => {
+    const f = await fixture()
+    await f.run([{ id: 'first' }, { id: 'second' }], '')
+    await f.run([{ id: 'second' }], '')
+    assert.lengthOf(f.links, 2); assert.equal(f.account.balance, 900)
+  })
+
+  test('repeated incoming identity posts once and keeps one linkage', async ({ assert }) => {
+    const f = await fixture()
+    await f.run([{ amount: 10 }, { amount: 10 }], '')
+    assert.equal(f.account.balance, 1010); assert.equal(f.categories.get(1).balance, 10)
+    assert.lengthOf(f.links, 1)
+  })
+
+  test('restored pending or pre-startDate observation cannot post Account effect')
+    .with([{ pending: true, date: '20250210', category: 15 }, { pending: false, date: '20250131', category: 0 }])
+    .run(async ({ assert }, scenario) => {
+      const f = await fixture()
+      await f.run([{ amount: 10 }], '')
+      f.links[0].transaction.deleted = true; f.links[0].pending = scenario.pending
+      f.account.balance = 1000; f.categories.get(1).balance = 0
+      await f.run([{ amount: 15, date: scenario.date }], '')
+      assert.equal(f.account.balance, 1000); assert.equal(f.categories.get(1).balance, scenario.category)
+    })
+
+  test('default XML parser identifier normalization remains unchanged', ({ assert }) => {
+    assert.deepEqual(new XMLParser().parse('<OFX><FID>001</FID><ACCTID>002</ACCTID><FITID>003</FITID></OFX>'),
       { OFX: { FID: 1, ACCTID: 2, FITID: 3 } })
   })
 })
