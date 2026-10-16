@@ -1,0 +1,207 @@
+# Post-f8af214 accounting correctness review
+
+## Baseline and method
+
+Reviewed October 16, 2026 against HEAD `f8af21435e5279c810a0ab525fdc4a2e1040bf9b`, committed October 13, 2026 at 21:41:53 -0600. Subject: “Added documentation, scripts and tests in preparation for migrating from use of dollar amounts to cent amounts.” Tracked working tree and index were clean before this task. Existing untracked local editor/generated files, backups, dumps and scratch files were left untouched. Only this document and [accounting-invariants.md](accounting-invariants.md) are task changes; neither is staged.
+
+Subsequent priority/product correction: **do not implement the BalanceHistory correction yet**; it may be deprecated and remains under investigation. OFX accounting/provider-balance separation is the next characterization/design task. The OFX product direction below supersedes the original absolute-ledger interpretation.
+
+This is source characterization, not runtime/database acceptance. The abandoned branch's 2,926-test baseline does not apply here. No PostgreSQL connection, app bootstrap or DB-backed test was run. Existing functional tests were read, not executed. Current `tests/bootstrap.ts` calls database truncation directly; no abandoned safety helper should be assumed present.
+
+Existing documentation includes `integer-cents-implementation-plan.md`, `integer-cents-domain-design.md`, `currency-precision-policy-design.md`, `external-dollar-to-cents-policy-design.md`, `import-posted-cents-boundary-design.md`, `legacy-category-authority-analysis.md`, `legacy-money-production-audit.md` and legacy audit/forensic designs. They are evidence of prior analysis/proposals, not approval of a new representation. The later MinorUnits/verification documents are absent from this commit and were not restored.
+
+## Evidence index
+
+All links refer to current repository files; function names disambiguate the relevant sections.
+
+| Key | Source / tests inspected |
+|---|---|
+| AC | [AccountsController](../app/Controllers/Http/AccountsController.ts): addTransaction, addBalance/updateBalance/deleteBalance, update, ofx, addStatement/updateStatement/deleteStatement |
+| TC | [TransactionsController](../app/Controllers/Http/TransactionsController.ts): update, delete, getRebalances |
+| A | [Account](../app/Models/Account.ts): autoAssign, updateTransaction, addTransaction, addOrUpdateTransaction, deleteAccountTransaction, updateAccountBalanceHistory, processOfx, updateStartingBalance |
+| IC | [InstitutionController](../app/Controllers/Http/InstitutionController.ts): addOffline, addOfflineAccount, addOnlineAccounts, unlink, deleteAccounts, deleteAccount, delete |
+| I | [Institution](../app/Models/Institution.ts): updateAccountBalances, syncUpdate |
+| CC | [CategoriesController](../app/Controllers/Http/CategoriesController.ts): transfer, deletion and legacy transfer deletion |
+| FD | [FundingDialog](../client-src/Funding/FundingDialog.tsx): computeSpread, getCategoriesSum, handleSubmit |
+| BH | [BalanceHistory model](../app/Models/BalanceHistory.ts), [Account validators](../app/validation/Validators/account.ts), [validation rules](../start/validationRules.ts), [Balances state](../client-src/State/Balances.ts), [Balance state](../client-src/State/Balance.ts) |
+| T | [Transaction validator](../app/validation/Validators/transaction.ts), [split validation](../app/validation/transactionSplits.ts) |
+| Tests | [Transaction lifecycle](../tests/functional/transactions/lifecycle.spec.ts), [startDate](../tests/functional/accounts/startDate.spec.ts), [BalanceHistory](../tests/functional/accounts/balanceHistory.spec.ts), [history authority](../tests/functional/accounts/balanceHistoryAuthority.spec.ts), [OFX reimport](../tests/functional/accounts/ofxReimport.spec.ts), [OFX command](../tests/functional/commands/ofxLifecycle.spec.ts) |
+| Statement tests | [correctness](../tests/functional/accounts/statementCorrectness.spec.ts), [eligibility](../tests/functional/accounts/statementEligibility.spec.ts), [reconciliation](../tests/functional/accounts/statementReconciliation.spec.ts), [deletion](../tests/functional/accounts/statementDeletion.spec.ts) |
+| Pure/client tests | [funding rounding](../tests/unit/client/fundingRounding.spec.js), [funding percentages](../tests/unit/fundingPercentages.spec.ts), [financial State](../tests/unit/client/financialState.spec.js) |
+
+## Current lifecycle map
+
+Dollar-valued JS numbers dominate model/controller arithmetic. Numeric relational money is commonly scale 2; Transaction allocations are JSON numbers. “Transaction-bound” below means work is inside a DB transaction, not that every helper is correctly bound or every competing writer serialized.
+
+| Lifecycle | Account effect | Category / Pool effect | Status / date behavior | Transaction / locking structure |
+|---|---|---|---|---|
+| Manual CREATE (AC.addTransaction) | Adds signed amount unconditionally; Loan uses principle | Adds all supplied splits or Unassigned fallback | No startDate eligibility; HTTP does not expose pending here | Transaction-bound; no Budget gate |
+| PATCH (TC.update) | Reverse/apply when name/amount/principle/statementId supplied | Reverse/apply supplied allocations | No pending/startDate gating; date-only does not cross effects; active target/version required | Budget lock and transaction; one Account link required |
+| Transaction DELETE | Subtracts nonpending linked amount/principle | Subtracts nominal splits or Unassigned fallback | Active target, no startDate check; broad types | Transaction, no Budget gate; soft delete |
+| Account startDate | Preserves current balance | Crosses Category boundary, then separate opening Pool delta | Active non-type4 crossing incorrectly excludes pending | Budget lock and transaction |
+| New offline Institution | Initial balance assigned | Transactions Account creates opening/Pool; Balances creates Statement | Creation date/startDate conventions retained | Transaction, parallel Account creation, no Budget gate |
+| Existing offline Institution + Account | Initial balance assigned | Transactions opening call omitted; Balances creates Statement | Route distinction unresolved | Transaction, no Budget gate; some global related reads |
+| Opening (A.updateStartingBalance) | No Account increment | Pool adjusted by new minus old opening | Sum active/nonpending/date>=start, excludes type4; opening date updated | Requires owning transaction; mutable hydrated money |
+| Type2 funding / type3 rebalance | No Account effect in normal accountless use | Group old negative/new positive splits | No startDate context | CC.transfer takes Budget gate; target shape insufficiently checked |
+| Statements | Balances follows latest ending balance/final zero; Transactions unchanged | None | Membership only; latest endDate only; CREATE/reconcile filters differ | Budget gates and transaction |
+| Manual BalanceHistory | Incorrectly replaces Account from history or zero | None | CREATE conditional latest; UPDATE/DELETE recompute | Transaction, no Budget gate |
+| OFX | Supplied ledger absolute; fallback incremental | Old/new date-aware allocations, pending independent | Active/restore identity; missing ledger throws; fallback incomplete | HTTP Budget gate; command differs |
+| Plaid | Old/new date/pending-aware incremental effects; initial/provider absolute case | Date-aware, pending independent | Soft removal, pending-id matching; deleted local update ignored | sync Budget gate, parallel Account processing |
+| Account/Institution DELETE | Account disappears | Reverses JSON/Unassigned nominal effects | No eligibility/type/deleted filtering in cascade | Transaction, no Budget gate; external item removal before local cascade |
+| Category DELETE | None | No automatic reallocation; active nonzero membership blocks | JSON membership check; Loan linkage cleanup | Separate existing lifecycle |
+| Loans | Principal/amount-special paths | Loan Categories/payment behavior separate | Incomplete/no-op balance helper; unresolved | Do not generalize nonloan rules |
+| Provider auto-assignment | Through provider Account lifecycle | Fixed/percentage allocations; remainder Unassigned | Category date eligibility in A.autoAssign | Shared provider transaction; floating configuration |
+| Operational commands | OFX upload posts; CheckBalances can repair | Diagnostic/repair sums and optional writes | Different scope/locking; not normal automatic reconstruction | Inspect each command; never run during this task |
+
+## Classified discoveries
+
+Each numbered finding has exactly one classification. A product rule and its source contradiction are separate findings. Test gaps are stated explicitly: absence of a later regression is not proof of correctness.
+
+### Product rules retained
+
+| ID / discovery | Classification | Current evidence and tests | Direction / consequence / future requirement |
+|---|---|---|---|
+| P1 Ordinary Account eligibility | CONFIRMED PRODUCT INVARIANT | A.addTransaction/updateTransaction/deleteAccountTransaction implement date/pending distinctions; lifecycle tests exercise signed amounts | Explicit user direction: active, nonpending, date>=startDate. Apply consistently; Loans/opening separate |
+| P2 Ordinary Category eligibility | CONFIRMED PRODUCT INVARIANT | A.autoAssign, processOfx.applyAllocations and Plaid old/new Category paths; OFX reimport date cases | Explicit direction: active and date>=startDate, independent of pending |
+| P3 StartDate preserves current balance | CONFIRMED PRODUCT INVARIANT | AC.update and startDate tests | Cross Categories, not Account current balance; pending included, deleted/opening excluded |
+| P4 Opening formula/date | CONFIRMED PRODUCT INVARIANT | A.updateStartingBalance; startDate identity/rollback tests | Current balance minus applicable signed amounts; exclude opening; date follows new startDate; Pool separate |
+| P5 Accountless Category lifecycle | CONFIRMED PRODUCT INVARIANT | CC.transfer and FD; TC.getRebalances | Type2/3 do not acquire Account.startDate context |
+| P6 BalanceHistory evidence only | CONFIRMED PRODUCT INVARIANT | A.updateAccountBalanceHistory already evidence-only; manual controller contradicts; historyAuthority tests encode contradiction | Explicit product correction: no Account mutation for any CRUD/date/latest/final case |
+| P7 Statements | CONFIRMED PRODUCT INVARIANT | AC Statement methods and Statement tests | Balances latest ending balance/final zero; Transactions invariant; membership only, no adjustment posting |
+| P8 Provider observation separation | CONFIRMED PRODUCT INVARIANT | A.processOfx final absolute/fallback branches; I.updateAccountBalances | OFX Account updates must be Transaction net effects; LEDGERBAL is provider observation in plaid_balance. Plaid semantics remain separate; history helper has no Account authority |
+| P9 No lost concurrent financial effects | CONFIRMED PRODUCT INVARIANT | Partial forUpdate coverage across AC/TC/CC/I; transactions preserve local atomicity only | Same-Budget operations must compose correctly. This does not choose a locking architecture |
+| P10 Preview represents submission | CONFIRMED PRODUCT INVARIANT | FD displays recursive Pool demand and submits transfer request; pure funding tests establish request boundary | Funding operation shown for approval must agree with posted operation; no frozen-proposal/ETag architecture implied |
+
+### Confirmed current defects
+
+| ID / discovery | Classification | Current evidence / tests | Consequence and focused correction recommendation |
+|---|---|---|---|
+| D1 Manual CREATE before startDate | CONFIRMED SOURCE DEFECT | AC.addTransaction adds Account amount and Categories without boundary check; lifecycle tests lack full date matrix | Violates P1/P2. Add boundary regressions and correct both effects independently |
+| D2 PATCH old/new eligibility | CONFIRMED SOURCE DEFECT | TC.update Account branch ignores pending/date; Category branch ignores date; date-only skips both; existing lifecycle replacement tests | Amount edits can apply ineligible effects; date changes can leave stale effects. Characterize old/new eligible deltas, preserve nonfinancial semantics |
+| D3 StartDate pending crossing | CONFIRMED SOURCE DEFECT | AC.update crossing query filters pending=false; startDate tests cover other cases | Pending eligible Category effects are not crossed. Remove semantic exclusion in future focused fix, not opening sum's legitimate pending exclusion |
+| D4 HTTP DELETE eligibility/type handling | CONFIRMED SOURCE DEFECT | TC.delete subtracts all Category splits, Account subtract checks only pending; lifecycle tests currently expect ordinary deletion | Pre-start contributions can be subtracted despite forward ineligibility. Generic type4 subtraction also treats an opening as an Account posting. Safe historical reversal policy still required; do not automatically reapply later guards |
+| D5 BalanceHistory CREATE | CONFIRMED SOURCE DEFECT | AC.addBalance latest date DESC,id ASC, conditional Account save; BH functional tests | Newest observation can overwrite current balance. Remove only history-driven Account write; preserve evidence/validation/API behavior |
+| D6 BalanceHistory UPDATE | CONFIRMED SOURCE DEFECT | AC.updateBalance selects latest date DESC and saves Account; historyAuthority tests | Balance/date edits overwrite current balance regardless of edited row's recency. Future tests must assert persisted Account invariance |
+| D7 BalanceHistory DELETE | CONFIRMED SOURCE DEFECT | AC.deleteBalance latest remaining or0; historyAuthority tests | Latest/nonlatest/final removal changes Account; final zero is explicitly wrong. Retain scenarios, change expectations to invariant |
+| D8 BalanceHistory client cache | CONFIRMED SOURCE DEFECT | State/Balances.add assigns response.accountBalance to cached Account; State/Balance update/delete only reload for Balances mode, which server rejects; financialState rejection tests | History owns no Account cache mutation. Remove assignment in focused fix; retain POST compatibility if harmless. Do not solve supported-mode stale cache by copying observations |
+| D9 Missing OFX ledger dereference | CONFIRMED SOURCE DEFECT | A.processOfx accesses ledgerBalance.BALAMT before intended null fallback; both HTTP and OfxUpload call it; existing OFX tests cover supplied ledger | Absent LEDGERBAL throws before fallback. Characterize actual parser input before narrowly correcting |
+| D10 OFX incremental fallback eligibility | CONFIRMED SOURCE DEFECT | A.processOfx sums raw new/changed amounts without weighted old/new pending/date eligibility | Violates P1 when fallback is reached (e.g. null BALAMT); missing object currently throws first. Fix together with missing-ledger tests; supplied absolute ledger must remain absolute |
+| D11 Funding preview/submission disagreement | CONFIRMED SOURCE DEFECT | FD recursive getCategoriesSum versus one-pass handleSubmit; isolated execution reproduced below; current rounding tests don't cover chain identity | User approves a different Pool demand. Correct shared financial semantics without importing abandoned proposal architecture |
+| D12 Transfer-inclusive binary artifact | CONFIRMED SOURCE DEFECT | FD category.amount += sum/100; isolated production function execution below | Arithmetic creates noncanonical posted-request representation. Both arithmetic and representation defect; future representation project must cover it, not tolerate it silently |
+| D13 Funding replacement target scope | CONFIRMED SOURCE DEFECT | CC.transfer loads existing Budget Transaction by id without enforcing active/accountless/type target; request type validation does not establish target lifecycle | Can apply accountless replacement logic to unrelated/deleted/account-linked state. Add actual target-scope tests before changing behavior; no generic money guard architecture required |
+| D14 OFX operational Account selector | CONFIRMED SOURCE DEFECT | commands/OfxUpload.ts offers scoped choices but resolves selected name with global Account.findBy; command test file lacks collision proof | Same-name Accounts can select wrong ownership. Scope actual resolution, bind financial context, test duplicate names. Prioritize tenant safety |
+
+### Intentional behavior, open decisions and deferred work
+
+| ID / discovery | Classification | Evidence / current tests | Consequence / recommendation |
+|---|---|---|---|
+| D15 OFX ledger destination | CONFIRMED SOURCE DEFECT | A.processOfx uses balance!==null to assign this.balance, including zero; never assigns plaidBalance; ofxReimport currently expects ledger-derived accounting balances | New authoritative direction: ledger updates provider observation plaid_balance only; Account.balance receives eligible Transaction net effects. Previous S1 intentional classification is superseded |
+| S2 OFX identity/reimport | CONFIRMED INTENTIONAL SOURCE BEHAVIOR | A.processOfx FID:ACCTID:FITID, scoped Account, merge deleted=false; ofxReimport | Preserve local identity/restoration, explicit non-Unassigned allocations and remainder semantics |
+| S3 Plaid date/pending deltas | CONFIRMED INTENTIONAL SOURCE BEHAVIOR | A.updateTransaction/addTransaction/deleteAccountTransaction; I.syncUpdate | Current ordinary old/new effect logic already distinguishes P1/P2. Do not reapply blanket abandoned provider correction |
+| S4 Provider history helper | CONFIRMED INTENTIONAL SOURCE BEHAVIOR | A.updateAccountBalanceHistory only creates/updates history; OFX explicitly updates Account separately; Plaid history calls commented | Generic history persistence has no hidden Account side effect; manual controller is offending owner |
+| S5 Funding baseAmount | CONFIRMED INTENTIONAL SOURCE BEHAVIOR | FD.handleSubmit snapshots parsed base before include-transfer amount changes; edit uses baseAmount fallback; CC persists JSON | Requested/pre-transfer provenance, not gross or net posted effect; do not force all snapshots into currency precision |
+| S6 Category deletion protection | CONFIRMED INTENTIONAL SOURCE BEHAVIOR | CC.delete queries active nonzero JSON membership and rejects; no reallocation loop | Category deletion does not redistribute Transactions. Zero/deleted membership has separate current treatment |
+| Q1 Statement equal-date winner | UNRESOLVED PRODUCT / ACCOUNTING QUESTION | AC latest Statement queries order only endDate DESC; Statement tests no explicit ID tie contract | Financial selection is underspecified and can change balance. Determinism is needed; recommend end_date DESC,id DESC, but reconfirm winner policy rather than restoring later choice automatically |
+| Q2 Offline route difference | UNRESOLVED PRODUCT / ACCOUNTING QUESTION | IC.addOffline invokes opening; addOfflineAccount opening commented; both Balances paths create Statement | Preserve pending decision. Source demonstrates difference, not intentional accounting rationale |
+| Q3 Fixed funding priority | UNRESOLVED PRODUCT / ACCOUNTING QUESTION | FD sort comparator ignores b; fixed rules consume remaining amount; pure actual-source probe gives second of two fixed rules entire amount | Fixed-before-percentage comment does not define fixed tie priority. Approve intended priority before correction |
+| Q4 BalanceHistory duplicate dates | UNRESOLVED PRODUCT / ACCOUNTING QUESTION | account validator uses VineDate.unique; custom rule returns unless value string, incompatible with parsed-date path; CREATE metadata differs from UPDATE | Validation appears ineffective for parsed dates. Establish day/multiple-observation contract before declaring duplicates invalid. No Account authority rationale remains |
+| Q5 Statement membership filters | UNRESOLVED PRODUCT / ACCOUNTING QUESTION | CREATE date-linking differs from UPDATE reconcileAll pending/type4 exclusions; Statement eligibility tests | Clarify membership selection independently of financial contribution; no adjustment posting |
+| Q6 Loan/account transfer ownership | UNRESOLVED PRODUCT / ACCOUNTING QUESTION | TC hasOne link versus cascade all links; Loan principle-specific branches and no-op updateBalance | No safe generalized nonloan reverse/apply rule for these shapes without characterization |
+| Q7 Money input/quantization policy | UNRESOLVED PRODUCT / ACCOUNTING QUESTION | Vine number validators, Math.round callers, existing precision policy designs | Exact scale-2 rejection, tie rules, provider currency and sub-cent observation policy require new representation project approval; not automatically restored |
+| F1 Comment-only PATCH robustness | DEFERRED CORRECTNESS ISSUE | TC.update loads link/Account/Categories and validates type5 splits for comment+version; no financial write branch for only comment | Can block a nonfinancial edit on monetary inconsistency/accountless link requirement. No demonstrated balance delta. Future isolation is robustness work, not evidence of existing financial corruption |
+| F2 Partial concurrency coverage | DEFERRED CORRECTNESS ISSUE | Existing Budget gates in PATCH/startDate/OFX HTTP/Statements/transfer/sync; missing CREATE/DELETE/history/offline/cascades/OfxUpload gates | Read-modify-write races plausible; no DB deadlock reproduced here. Design/retest common serialization strategy and fresh reads before choosing universal Budget locking |
+| F3 Provider internal concurrency/recovery | DEFERRED CORRECTNESS ISSUE | I.updateAccountBalances Promise.all loads Pool per opening; syncUpdate uses instance cursor loaded before gate; Plaid cleanup service exists | Shared Pool lost-update and stale cursor risks need targeted tests. Preserve token/cursor recovery; do not redesign currency |
+| F4 Cascade implementation safety | DEFERRED CORRECTNESS ISSUE | IC.deleteAccounts reverses nominal JSON/Unassigned floats without eligibility/deleted/type/multilink preflight, then hard deletes | Surviving Categories can be wrong; complete affected-set and reversal policy needed, not a mechanical exact-arithmetic migration |
+| F5 Remote deletion ordering | DEFERRED CORRECTNESS ISSUE | IC.delete removes connected remote item before local deleteAccounts | Local failure cannot roll back remote removal. Preflight/recovery semantics require separate focused design |
+| F6 Cascade cleanup coverage | DEFERRED CORRECTNESS ISSUE | IC.deleteAccounts explicitly removes links/Transactions/history/Account, not Statements/logs; relevant migrations use plain integer links | Possible orphan/evidence cleanup issue; no live orphan claim. Verify lifecycle/FK assumptions with authorized tests before correction |
+| F7 Legacy CategoryTransfer DELETE | DEFERRED CORRECTNESS ISSUE | CategoryTransfer/CategorySplit legacy representation; reachable authenticated category-transfer DELETE handler lacks tenant scoping and awaits for saves; modern funding/rebalance delete via State.Transaction | Compatibility/security review needed. Model is architecturally legacy; do not falsely claim literal @deprecated annotation. Do not silently remove endpoint |
+| F8 Loans | DEFERRED CORRECTNESS ISSUE | Loan.updateBalance commented implementation, getProps placeholder balance; LoansController and Account principle branches | Principal, interest, payment, opening and deletion semantics require dedicated correctness design; not a bulk precision conversion |
+| F9 Provider auto-assignment storage | DEFERRED CORRECTNESS ISSUE | migration 1718921355278 auto_assignment_categories amount float, AutoAssignmentCategory hydration, A.autoAssign | PostgreSQL real fixed/percentage configuration can affect posted allocations. Separate from type2 funding configuration. Future schema/data policy needed |
+| F10 Reports and operational repair | DEFERRED CORRECTNESS ISSUE | Budget/Category report sums, Statement income/tax JSON, CheckBalances --fix/interactive, CheckUnassigned | Read-side floats and legacy join funding reports are not historical posting authority. Repair commands are not approved automatic replay. Scope each command separately |
+| F11 Test DB safety | DEFERRED CORRECTNESS ISSUE | tests/bootstrap.ts setup directly truncates | Before future DB tests, establish task-specific authorization and configured/live target safeguards; no old authorization/helper survives reset by assumption |
+
+### Historical risk and discarded architecture
+
+| ID / discovery | Classification | Evidence / reasoning | Consequence |
+|---|---|---|---|
+| H1 Historically applied Category effects | HISTORICAL DATA RISK | D1/D2/D3/D4 and old writers differ; current JSON and Account.startDate contain no applied-effect ledger | Identical nominal records can have different applied history. Current canonical money + current eligibility are insufficient for broad old reversal |
+| H2 Prior BalanceHistory damage | HISTORICAL DATA RISK | D5–D8 can overwrite independently maintained balance | Removing writes is forward-only; current history cannot prove which current Account balance is damaged. No automatic correction |
+| H3 Cascade/reversal compatibility | HISTORICAL DATA RISK | IC nominal subtraction, provider restoration and multi-link/opening assumptions | A precision guard would not establish economic authority. No timestamp era contract or approved provenance exists |
+| X1 Exact-money architecture | ABANDONED MIGRATION ARCHITECTURE | Current source lacks later MinorUnits helpers, extraction/policy layers, DTOs, guards, strict validators, exact AmountInput modes and API contracts | Do not recreate them from old acceptance. New project must justify boundaries from this baseline |
+| X2 Later locking/deadlock result | ABANDONED MIGRATION ARCHITECTURE | Current partial locks differ from abandoned fine-grained locking implementation | Prior reproduced PATCH/DELETE deadlock does not prove this commit has it. Universal Budget locking remains a candidate, not automatically retained architecture |
+| X3 Later lifecycle machinery | ABANDONED MIGRATION ARCHITECTURE | No frozen funding proposal/ETag, canonical accountless DELETE guard, era mechanism or exact opening replacement preflight in baseline | Product identity/safety requirements survive; specific transport/schema/guard design does not. Account-linked DELETE remains reachable here |
+| X4 Provenance/repair inference | ABANDONED MIGRATION ARCHITECTURE | No accepted persisted applied-effect provenance; current nominal/index data cannot reconstruct it | Do not revive rejected provenance or normalize-on-touch as a shortcut |
+
+## Concrete characterization results
+
+Executed actual AST-extracted FD functions in a Node VM with inert register/setShow stubs; no app imports or database bootstrap:
+
+- Category10 requested1, include=true, funded100%Pool99; Category20 requested1, include=true, funded100%10; Category30 requested1, include=false, funded100%20. Recursive Pool preview = **3**. Submission's one ascending-key pass produces destination amounts 2,2,1 and funder rows Pool=-2,10=-2,20=-1. This is a dependency-order discrepancy, not merely a rounding tie.
+- Category10 requested0.1, include=true, fundedPool; Category20 requested0.2, funded10: submitted destination10 = **0.30000000000000004**, Pool=-0.3. Binary arithmetic becomes request JSON evidence.
+- Two fixed funders [1,2], each requesting1 against total1: current computeSpread awards100 cents to **2**. This records current behavior without approving priority.
+
+Current funding rounding tests already characterize residual recipient/direction and conservation at their existing rounded-cent boundary. Their success does not establish preview/submission identity or exact monetary representation. No new tie-breaking/rounding product policy is adopted.
+
+## Reversal safety counterexample
+
+Take an active pending ordinary Transaction dated after current startDate, nominal Category allocation10. A writer obeying P2 applied10; another historical writer suppressing pending Category effects applied0. Both can leave the same present date/pending/splits. Subtracting10 on deletion is correct in the first history and wrong in the second. Similarly, pre-start CREATE currently applies effects while other writers do not, and old boundary changes may omit pending rows. Current Category balance can include unrelated effects and is not evidence resolving the difference.
+
+Forward fixes cannot retroactively distinguish these histories. Opening's nominal Pool split is separate from ordinary eligibility, but current generic deletion, first-type4 selection, malformed/duplicate shapes and multi-link records still need explicit analysis. Accountless2/3 nominal splits have a different lifecycle; do not attach an Account to infer startDate. No new public conflict code or deletion block is approved here.
+
+## Monetary representation knowledge retained
+
+Relational Account/Category/AccountTransaction/Statement/BalanceHistory money commonly uses numeric(12,2), hydrated via parseFloat into JS numbers. Transaction Category splits and snapshots are JSON/JSONB numbers; modern JSON allocation writers and legacy transaction_categories can disagree. JSONB numeric text and a JS-parsed number are different representations; JSONB is not an archive of original byte spelling. Numeric scale2 may already have rounded original sub-cent input; current cent-valued storage cannot recover that input.
+
+API money commonly uses JSON numbers; client arithmetic demonstrably creates binary artifacts. Funding baseAmount and percentage/goal intermediates are not automatically posted accounting values. Rates/percentages are not money. Provider valuation observations and Statement income/tax evidence need independent contracts. Existing Math.round validation and UI formatting do not establish lossless financial authority. These are inputs to a future storage/API inventory, not a selected representation design.
+
+## Recommended focused correctness sequence
+
+1. **BalanceHistory Account noninterference — PAUSED by product direction.** This was the original recommendation; do not implement it now while deprecation is investigated. Small isolated server/client correction to D5–D8; retain evidence behavior, response compatibility, validation, duplicate dates and provider/Statement Account effects. Rewrite wrong-authority test expectations into persisted invariance, including final deletion. No history repair.
+2. **Tenant-safe operational/legacy entry points.** Address OfxUpload's scoped selection and separately review CategoryTransfer DELETE authorization/awaiting. These security boundaries should not wait for a money representation project.
+3. **Cross-writer concurrency design and regression baseline.** Map lock order, fresh reads and helper transaction binding across all financial writers; test deterministic races once separately authorized. Choose the simplest shared strategy based on baseline evidence, not the abandoned deadlock. This is a prerequisite for reliable financial fixes, not a mandate for old helper architecture.
+4. **Ordinary CREATE/PATCH/startDate eligibility.** D1–D3 with signed amounts, pending/date/active old/new matrices and no Account change on startDate. Preserve opening formula/date, accountless isolation and Statement-only nonfinancial behavior. Characterize historical-old-effect limitations before enabling broad reverse/apply changes.
+5. **OFX balance authority — NOW the selected next design priority.** D15 destination defect, D9 missing-ledger defect and D10 Transaction eligibility defect must be designed together for both entry points. Ledger changes only plaid_balance; Account.balance changes only by eligible old/new Transaction net effects. Preserve provider precision representation, identity and explicit allocations. See the dedicated correction design; this priority change does not authorize implementation.
+6. **Funding target scope and preview correctness.** D13 then D11; retain actual-request chain regression. Decide fixed priority/cycles separately. D12 belongs in the ensuing representation boundary work or a separately approved narrowly specified arithmetic fix; do not hide tolerant acceptance in a correctness patch.
+7. **Resolve remaining policy blockers before affected fixes.** Statement equal-date winner; offline route distinction; transfer/Loan deletion ownership; historically ambiguous reversal policy. Do not silently restore account-linked DELETE blocks or cascade guards. Comment-only robustness is useful but secondary to direct wrong-balance writers.
+
+A new exact-money/storage project should start after the focused forward defects and required concurrency/security decisions have an approved correction baseline. Broad cascade/account-linked deletion is not made safe merely by exact representation. Reporting, auto-assignment real storage and Loan correctness remain separately scoped; rank actual writers over read arithmetic once policy blockers are resolved.
+
+## Future verification and audit boundaries
+
+Design future regressions around product outcomes, not abandoned helper names: persisted Account/Category effects, date/pending crossings, no history Account writes, Statement authority, provider/accounting separation, preview/request equality, target ownership, rollback and concurrency. Keep existing scenarios that encoded defects; change expected semantics explicitly rather than dropping tests. Future DB execution requires fresh authorization and safety controls first.
+
+Read-only audits could estimate legacy nominal precision, multi-link/type4 shapes, equal Statement dates, and Accounts exposed to history mutations. They cannot prove historically applied effects without independent evidence. Logs may help some cases but are not guaranteed complete history. No startup/request repair, replay, normalization, provenance inference, audit or historical data mutation was executed or authorized.
+
+## Verification for this reconciliation
+
+Only source/documents and isolated non-DB checks are used.  No runtime implementation, schema, provider, Loan, precision policy, historical balances or deletion capability changed. No deployment or commit occurred.
+
+### Additional reachability and history details
+
+- Manual history POST/PATCH/nested DELETE and standalone DELETE are authenticated routes in `start/routes.ts`; a disconnected editor does not make them dead code. Account ownership follows Account → Institution → Budget; history mutations scope the target through that Account/Budget. Balances tracking rejects before history mutation. Loan type is not explicitly excluded by these manual methods; do not assume abandoned nonloan guards exist.
+- BalanceHistory has an integer identity/account linkage, DATE observation date, numeric(12,2) balance and database-created timestamps; its model exposes no source/provider discriminator. Manual PATCH currently requires both amount and date. Do not infer manual provenance solely from a history row. Historical original sub-cent input may already have been rounded by storage.
+- Isolated execution of the actual AST-extracted `unique` function with VineDate and an inert database stub confirmed a parsed Date reaches the rule with **zero database calls**. The validator's “Only one balance per date is allowed” message expresses validation intent, but does not settle the product question of legitimate same-day evidence. CREATE also omits the Account metadata expected by its filter. Do not bundle cardinality changes into the Account-balance defect correction.
+- AC.balances returns stored history for Balances tracking; Transactions tracking instead derives a recent series from current Account balance and signed Transaction movements. Thus manually persisted history is not necessarily what the supported transaction-tracked GET displays. `ReportController.networth` currently uses Statements for Balances tracking and Transaction/opening-based series for other modes, with FLOAT conversions/crosstab reporting. Do not claim current net-worth SQL directly uses balance_histories. Evidence may be retained independently of its current report reachability.
+- `InstitutionController.unlink` clears provider identifiers/token/cursor and linked provider Transaction IDs while retaining financial rows. This is different from deleting an Institution and its surviving Category reversal. Provider removal events use their own posting/removal lifecycle, not this parent cascade.
+- `UsersController.delete` removes the financial graph only when no other Budget user remains; this whole-graph destruction differs from one-Account deletion. It does not need surviving Category reversal when Categories disappear too. External removal and cleanup completeness still need their own safety review. There is no separately established general Budget DELETE financial-reversal contract here.
+- Existing history tests explicitly assert wrong behavior: `creating first/newer/older history uses chronological latest`, `editing amount/date recomputes chronological latest`, `deleting latest/older/last history preserves remaining balance`, and `transaction-tracked history endpoints also overwrite balance although GET derives a transaction series`. Future tests must preserve these scenarios and assert unchanged persisted Account balance. Old rollback tests force Account-save failure; replacement tests should force failure in state the corrected history lifecycle actually owns.
+- Current OFX parser numerically parses supported CREDITCARD statement content. Raw decimal spelling/precision is not preserved end to end. Supplied ledger and posting amounts therefore need a later explicit representation boundary. OFX saves Account before opening maintenance; Plaid initialization calls opening maintenance with in-memory Account balance before saving it. The ordering difference alone is not proof of a bug because the opening helper uses the instance balance, but transaction binding and shared Pool concurrency must be tested.
+
+### Non-DB check results
+
+- Server TypeScript: passed (`npx tsc --noEmit -p tsconfig.json`).
+- Client TypeScript: passed (`npx tsc --noEmit -p client-src/tsconfig.json`).
+- ESLint and Knip: passed.
+- Circular regression: passed; existing accepted Lucid SCC has 11 members/26 internal edges, no unexpected components (388 analyzed files).
+- Explicit standalone Japa funding rounding tests: **14 passed, 0 failed**.
+- Explicit standalone Japa percentage/client-state tests with `@poppinss/ts-exec`: **81 passed, 0 failed**. Combined focused result: **95 passed**. These characterize current behavior; they do not certify the documented defects as corrected. Neither run imported tests/bootstrap.ts.
+- Initial plain-Node attempt to load client-state tests failed to resolve a `.js` import of TSX. Rerunning with the repository TypeScript loader resolved it; no source/config workaround was made.
+- `git diff --check` and staged diff check passed. New document whitespace was also checked separately; the index remains unchanged. No builds or DB suite were needed for documentation-only edits.
+
+No runtime behavior changed; no database connection, historical repair, provider/Statement/Loan behavior change, MinorUnits implementation, schema migration, deployment or commit occurred.
+
+## OFX product-direction reconciliation
+
+The previous claim that supplied OFX ledger should be preserved as absolute Account.balance authority is withdrawn. The source observation remains true; its classification as intentional product semantics was wrong under the now-explicit rule. D15 is separate from D9 missing-ledger dereference and D10 raw Account delta eligibility. Opening recalculation can currently transmit the incorrect ledger replacement to type4/Pool state; that secondary consequence is characterized in [the OFX correction design](ofx-account-provider-balance-correction-design.md), not accepted as opening policy.
+
+Historical Account/opening/Pool balances may already reflect ledger replacement (**HISTORICAL DATA RISK**). No replay-based repair or inferred starting balance is authorized. Corrected forward deltas preserve an existing offset; they do not repair it. The new design retains representation, defers the plaid_balance rename and does not implement the paused BalanceHistory correction.
