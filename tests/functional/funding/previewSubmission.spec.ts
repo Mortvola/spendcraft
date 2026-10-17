@@ -299,7 +299,9 @@ test.group('Immutable funding date verification', () => {
       for (const type of [2, 3]) {
         const rejected = await client.patch(`/api/v1/category-transfer/${id}`).json({ date: '2025-04-17', type, categories: rows }).accept('json').loginAs(f.user)
         rejected.assertStatus(422)
-        assert.include(JSON.stringify(rejected.body()), 'The date of a funding transaction cannot be changed.')
+        assert.include(JSON.stringify(rejected.body()), type === 2
+          ? 'The date of a funding transaction cannot be changed.'
+          : 'This transaction is not a supported funding or rebalance replacement target.')
         assert.deepEqual(await read(), original)
         assert.deepEqual(await balances(), before)
       }

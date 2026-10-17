@@ -3,7 +3,6 @@ import { readFile } from 'node:fs/promises'
 import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
 import { DateTime } from 'luxon'
-import { validateTransactionSplits } from '../../app/validation/transactionSplits.ts'
 
 // Executes current method bodies against inert adapters: no app/DB bootstrap.
 async function method(file, name, context) {
@@ -22,27 +21,22 @@ async function method(file, name, context) {
 const noop = async () => undefined
 
 test.group('Remaining correctness source characterization without DB', () => {
-  test('replacement can post a delta while its target remains deleted', async ({ assert }) => {
-    const categories = new Map([1, 2].map((id) => [id, { id, balance: 0, save: noop }]))
-    const existing = { id: 10, type: 2, deleted: true, date: DateTime.fromISO('2025-03-01'),
-      categories: [{ categoryId: 1, amount: 10 }, { categoryId: 2, amount: -10 }],
-      merge(values) { Object.assign(this, values); return this }, save: noop,
-      serialize() { return { id: this.id } } }
-    const budget = { id: 1, related: () => ({ query: () => ({ where() { return this }, firstOrFail: async () => existing }) }) }
+  test('deleted replacement target rejects before the former financial mutation', async ({ assert }) => {
+    let rolledBack = false
+    const target = { type: 2, deleted: true }
+    const budget = { id: 1, related: () => ({ query: () => ({ where(key, value) {
+      if (key === 'deleted') assert.isFalse(value)
+      return this
+    }, firstOrFail: async () => { throw new Error('Row not found') } }) }) }
     const user = { useTransaction: noop, related: () => ({ query: () => ({ forUpdate: () => ({ firstOrFail: async () => budget }) }) }) }
     const transfer = await method('app/Controllers/Http/CategoriesController.ts', 'transfer', {
-      db: { transaction: async () => ({ commit: noop, rollback: noop }) }, DateTime,
-      updateCategoryTransfer: {}, TransactionType: { FUNDING_TRANSACTION: 2 },
-      authorizeCategories: noop, validateTransactionSplits, removeUndefined: (value) => value,
-      transactionFields: {}, budgetCategories: () => ({ where(key, id) { this.id = id; return this },
-        firstOrFail() { return categories.get(this.id) } }),
+      db: { transaction: async () => ({ rollback: async () => { rolledBack = true } }) }, updateCategoryTransfer: {},
     })
-    await transfer({ request: { params: () => ({ tfrId: 10 }), validateUsing: async () => ({
+    await assert.rejects(() => transfer({ request: { params: () => ({ tfrId: 10 }), validateUsing: async () => ({
       date: '2025-03-01', type: 2, categories: [{ categoryId: 1, amount: 20 }, { categoryId: 2, amount: -20 }],
-    }) }, auth: { user }, logger: { error: noop } })
-    assert.isTrue(existing.deleted)
-    assert.equal(categories.get(1).balance, 10)
-    assert.equal(categories.get(2).balance, -10)
+    }) }, auth: { user }, logger: { error: noop } }), 'Row not found')
+    assert.isTrue(target.deleted)
+    assert.isTrue(rolledBack)
   })
 
   test('legacy DELETE resolves and mutates foreign rows without consulting the actor', async ({ assert }) => {

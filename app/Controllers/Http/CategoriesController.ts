@@ -6,6 +6,7 @@ import CategoryTransfer from '#app/Models/CategoryTransfer';
 import { updateCategoryTransfer } from '#validators/categoryTransfer';
 import { validateTransactionSplits } from '#app/validation/transactionSplits';
 import Transaction from '#app/Models/Transaction';
+import AccountTransaction from '#app/Models/AccountTransaction';
 import Loan from '#app/Models/Loan';
 import {
   CategoryBalanceProps,
@@ -25,6 +26,14 @@ import { LucidRow, ModelAdapterOptions, ModelAttributes } from '@adonisjs/lucid/
 
 function budgetGroups(budgetId: number, options?: ModelAdapterOptions) {
   return Group.query(options).where('budgetId', budgetId);
+}
+
+function hasReplacementAllocations(value: unknown): value is { categoryId: number, amount: number }[] {
+  return Array.isArray(value) && value.length > 0 && value.every((split: unknown) => (
+    typeof split === 'object' && split !== null
+    && 'categoryId' in split && typeof split.categoryId === 'number' && Number.isInteger(split.categoryId)
+    && 'amount' in split && typeof split.amount === 'number' && Number.isFinite(split.amount)
+  ));
 }
 
 function budgetCategories(budgetId: number, options?: ModelAdapterOptions) {
@@ -555,7 +564,28 @@ class CategoriesController {
       const { categories, date, type } = requestData;
       const existingTransaction = tfrId === undefined ? undefined : await budget.related('transactions').query()
         .where('id', tfrId)
+        .where('deleted', false)
         .firstOrFail();
+      if (existingTransaction) {
+        const fundingTarget = type === TransactionType.FUNDING_TRANSACTION
+          && existingTransaction.type === TransactionType.FUNDING_TRANSACTION;
+        const rebalanceTarget = type === TransactionType.REBALANCE_TRANSACTION
+          && existingTransaction.type === TransactionType.REBALANCE_TRANSACTION;
+        if ((!fundingTarget && !rebalanceTarget)
+          || !hasReplacementAllocations(existingTransaction.categories)) {
+          throw new Exception('This transaction is not a supported funding or rebalance replacement target.', { status: 422 });
+        }
+
+        // Do not rely on the hasOne relation: even one of several links disqualifies the target.
+        const accountLink = await AccountTransaction.query({ client: trx })
+          .where('transactionId', existingTransaction.id).first();
+        const loanLink = await db.from('loan_transactions as lt').useTransaction(trx)
+          .join('transaction_categories as tc', 'tc.id', 'lt.transaction_category_id')
+          .where('tc.transaction_id', existingTransaction.id).select('lt.id').first();
+        if (accountLink || loanLink) {
+          throw new Exception('Account-linked or Loan-related transactions cannot be replaced as funding or rebalance.', { status: 422 });
+        }
+      }
       if (existingTransaction?.type === TransactionType.FUNDING_TRANSACTION
         && existingTransaction.date.toISODate() !== DateTime.fromISO(date).toISODate()) {
         throw new Exception('The date of a funding transaction cannot be changed.', { status: 422 });

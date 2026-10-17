@@ -45,7 +45,7 @@ Source abbreviations: AC=[AccountsController](../app/Controllers/Http/AccountsCo
 | D10 OFX eligible deltas | G | Old/new Account effects and Category effects independent; date/restoration/replay cases verified |
 | D11 Funding3/2 mismatch | G | Same calculation now previews2/posts2; no posting-policy change |
 | D12 Binary transfer artifact | B | calculateFunding category.amount += sum/100; artifact remains explicitly tested; economic algorithm unchanged |
-| D13 Replacement target scope | A | CC.transfer looks up any Budget Transaction, lacks active/type/accountless admission; R0 below |
+| D13 Replacement target scope | G (PostgreSQL-accepted) | Fresh scoped active target, matching type2/3, no Account/Loan ownership and readable allocations required before reversal; see admission correction |
 | D14 OFX command scope | G | commands/OfxUpload scoped identity reload after Budget gate; command collision/foreign tests |
 | D15 Ledger destination | G | Valid ledger writes plaidBalance only; independent accounting sum |
 | D16 Ledger-contaminated opening | G | processOfx saves accounting balance before single opening maintenance; ledger-only isolation verified |
@@ -83,13 +83,15 @@ Source abbreviations: AC=[AccountsController](../app/Controllers/Http/AccountsCo
 
 ## 3. Remaining confirmed correctness defects
 
-### R0 / D13: replacement lifecycle admission (A)
+### R0 / D13: replacement lifecycle admission (G; PostgreSQL-accepted)
+
+The findings below describe the pre-correction source. The focused [admission correction](funding-rebalance-replacement-admission-correction.md) now rejects deleted/unsupported targets before financial mutation, after the existing Budget gate. Type2 dates remain immutable and type3 dates editable. PostgreSQL acceptance passes:1,075 focused/1,511 full,0 failed,0 skipped/pending; see the [verification record](funding-rebalance-replacement-admission-postgresql-verification.md). No historical repair is performed.
 
 CC.transfer at its `existingTransaction` lookup checks Budget ownership only. The new immutable-date check protects existing type2 dates but does not require an active type2/3 accountless target. It reverses all old nominal rows and adds supplied rows, retaining target type/deleted/link state. Existing category/isolation tests prove foreign-resource rejection, not lifecycle admission.
 
 A concrete source-executed counterexample: deleted type2 has nominal A+10/Pool−10 and zero applied effect; same-date PATCH to A+20/Pool−20 commits A+10/Pool−10 while Transaction.deleted stays true. It therefore creates an economic effect owned by a deleted record. Active ordinary/opening/account-linked targets are also admitted; zero-sum request validation is not a target-lifecycle check. The request validator accepts a general numeric type, so supported creation types should be explicitly characterized in the same focused admission review. Do not conflate this with stored-money validation.
 
-`tests/unit/remainingCorrectness.spec.js` executes the actual transfer method with valid zero-sum rows and inert scoped adapters, reproducing the deleted-target contradiction without DB/bootstrap. Correct behavior is clear: accountless funding/rebalance replacement cannot edit a deleted or unrelated lifecycle. The precise allowed type/shape matrix and rejection precedence need focused tests before implementation, preserving same-date edits and immutable funding dates.
+`tests/unit/remainingCorrectness.spec.js` executes the actual transfer method with valid zero-sum rows and inert scoped adapters, reproducing the deleted-target contradiction without DB/bootstrap. Correct behavior is clear: accountless funding/rebalance replacement cannot edit a deleted or unrelated lifecycle. That characterization is now a rejection regression; the admission document records the independently derived type2/type3 contracts, precedence and prepared PostgreSQL matrix.
 
 ### R1: ungated surviving Category/Pool updates (A; concurrency)
 
@@ -192,7 +194,7 @@ No replay, reconstruction, repair-on-touch, automatic balance repair, inferred/p
 | Opening | No Account delta; current balance minus the active/nonpending/on-or-after linked sum (`balance - sum`) | Pool new−old replacement; regular gated callers safe; ungated offline/cascade callers remain R1. Accountless cannot enter Account relationship; type4 excluded |
 | Statement CREATE/PATCH/DELETE | Latest ending balance/final zero for Balances only; gated | No Category posting; equal-endDate winner C. Transactions-mode membership never becomes authority |
 | New Account initialization | New Account assignment; cannot stale-overwrite a previously existing Account | New offline Institution can mutate an existing Pool outside gate (R1); existing-Institution route difference C |
-| Accountless funding/rebalance | No Account effect | Gated sequential grouped Category new−old; no startDate context; D13 target admission A; funding date immutable |
+| Accountless funding/rebalance | No Account effect | Gated sequential grouped Category new−old; no startDate context; D13 admission PostgreSQL-accepted; funding date immutable |
 | HTTP Transaction DELETE | Gated nonpending subtraction; legacy date/type behavior remains | R5 forward contradiction; D4 historical authority unresolved, no new guard |
 | Account/Institution cascade | Account disappears; no surviving Account delta to serialize | Surviving nominal Category/Pool reversal D/F4, independent ungated race R1; physical history cleanup permitted |
 | Legacy transfer DELETE | No Account writer | Global unscoped legacy mutations/unawaited save R3 |
@@ -207,7 +209,7 @@ No unexplained normal Account.balance writer was found outside the accepted part
 
 | Rank | Finding | Timing recommendation | Reason / bounded next work |
 | --- | --- | --- | --- |
-|1| R0/D13 modern replacement lifecycle | **FIX BEFORE EXACT-MONEY** | Active API can corrupt Category/Pool with a deleted/unrelated owner. Clear accountless lifecycle boundary, no historical inference needed to reject unsupported targets. Add active/type/link/date/rollback/security tests before changes |
+|1| R0/D13 modern replacement lifecycle | **RESOLVED** | Admission/noninterference/concurrency/rollback verified;1,075 focused/1,511 full pass. No historical repair |
 |2| R3/F7 reachable legacy DELETE | **FIX BEFORE EXACT-MONEY** | Cross-tenant financial mutation when legacy rows exist; contain or retire the route after explicit compatibility review. Awaiting/gate/ownership must be coherent if retained |
 |3| R1 + R2 remaining Category/Pool writer/admission races | **FIX BEFORE EXACT-MONEY** | Can lose committed Pool/Category effects or delete a newly referenced Category during normal overlap. Focused characterization/design using existing Budget protocol, including offline opening and parent-delete participants; do not change reversal semantics or reopen Account lock architecture |
 |4| R6 report allocation source | **CAN DEFER UNTIL AFTER REPRESENTATION MIGRATION** | Active incorrect read outputs need a separate correction, but do not mutate financial state. Inventory both modern JSON authority and obsolete readers now; do not preserve their join algorithm as intended semantics |
@@ -216,12 +218,14 @@ No unexplained normal Account.balance writer was found outside the accepted part
 
 The rank3 scope must explicitly address independent concurrency without pretending that a Budget gate proves historical reversal authority. If parent deletion cannot be safely included without policy, report that activation boundary rather than silently inferring history. Existing Account-gated participants must keep their gate/fresh-state/transaction binding in any later deployment. No partial ungated/gated writer rollout can claim a complete shared-Category guarantee.
 
-Prioritize one focused task at a time, beginning with modern replacement admission. No new exact-money architecture is selected. Unresolved priorities/Statement ties/offline symmetry and historical risks alone would not force another correctness task; the concrete A findings do.
+Prioritize one focused task at a time, with modern replacement admission now accepted; next is the separately scoped legacy DELETE surface. No new exact-money architecture is selected. Unresolved priorities/Statement ties/offline symmetry and historical risks alone would not force another correctness task; the concrete A findings do.
 
 ## 10. Exact-money readiness decision and verification
 
-**B. ONE OR MORE CORRECTNESS FIXES SHOULD COME FIRST.** R0/D13, R3/F7 and the R1/R2 Category/Pool concurrency boundary are the ordered pre-migration recommendations. The monetary storage/API inventory may record all affected boundaries now, but should not assume these behavioral defects are accepted accounting semantics.
+**B. ONE OR MORE CORRECTNESS FIXES SHOULD COME FIRST.** R0/D13 is now resolved. R3/F7 and the R1/R2 Category/Pool concurrency boundary remain the ordered pre-migration recommendations. The monetary storage/API inventory may record all affected boundaries now, but should not assume these behavioral defects are accepted accounting semantics.
 
 Added only tests/unit/remainingCorrectness.spec.js: three actual-method non-DB characterizations for deleted replacement, unscoped legacy DELETE and unsaved Loan settings. These intentionally document defects; they are not acceptance tests of corrected behavior. They use inert adapters and the production zero-sum validator; no ORM/app/bootstrap/database is imported. Race schedules and report source mismatches are source-based findings, not newly executed PostgreSQL results. Existing DB records are used only for their accepted scopes.
 
 Verification: all3 new inert characterization tests passed (0 failed,0 skipped). Both server/client TypeScript checks, ESLint, Knip and circular regression passed; only the accepted11-model/26-edge circular component remains. Working-tree and staged diff checks passed, including explicit new-file whitespace checks. No builds or DB tests were needed/run. Production-directory diff against HEAD is empty. No runtime behavior, provider, monetary representation, schema, historical state, deployment or commit changed; no PostgreSQL connection or destructive DB operation occurred. Existing untracked local files and the index were preserved.
+
+Current follow-up: replacement admission has been implemented with 199 passing non-DB tests. The earlier three-test characterization baseline above is historical; deleted replacement now asserts rejection. Subsequent PostgreSQL verification passed1,075 focused/1,511 full,0 failed,0 skipped/pending; task-specific authorization is expired.

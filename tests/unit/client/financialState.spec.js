@@ -569,4 +569,24 @@ export * from ${source('common/ResponseTypes.ts')};
     }
   })
 
+  test('rejected funding/rebalance replacement preserves every cached financial value').with([2, 3]).run(async ({ assert }, type) => {
+    const props = { ...f.transactionProps(), type, accountTransaction: undefined,
+      categories: [{ categoryId: 20, amount: -2 }, { categoryId: 21, amount: 2 }] }
+    state.runInAction(() => {
+      f.category.transactions.setTransactions([props]); f.other.transactions.setTransactions([props])
+      f.category.balance = -2; f.other.balance = 2
+    })
+    const cached = f.category.transactions.transactions[0]
+    const before = { date: cached.date.toISODate(), categories: cached.categories.map((row) => ({ ...row })) }
+    routes.set('patch /api/v1/category-transfer/40', async () => ({ ok: false, body: {
+      errors: [{ status: '422', detail: 'Unsupported replacement target' }],
+      data: { transaction: { ...props, date: '2025-04-01' }, balances: [{ id: 20, balance: 999 }] },
+    } }))
+    await assert.rejects(() => cached.updateCategoryTransfer({ date: '2025-04-01', categories: [] }))
+    assert.equal(cached.date.toISODate(), before.date)
+    assert.deepEqual(cached.categories, before.categories)
+    assert.equal(f.category.balance, -2); assert.equal(f.other.balance, 2)
+    assert.equal(f.other.transactions.transactions[0].date.toISODate(), before.date)
+  })
+
 })

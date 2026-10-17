@@ -18,7 +18,7 @@ async function expression(file, name) {
   let found
   function visit(node) {
     if (ts.isVariableDeclaration(node) && node.name.getText(ast) === name) found = node.initializer.getText(ast)
-    if (ts.isMethodDeclaration(node) && node.name.getText(ast) === name) found = `(async function(${node.parameters.map((p) => p.getText(ast)).join(',')}) ${node.body.getText(ast)})`
+    if ((ts.isMethodDeclaration(node) || ts.isFunctionDeclaration(node)) && node.name?.getText(ast) === name) found = `(${node.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.AsyncKeyword) ? 'async ' : ''}function(${node.parameters.map((p) => p.getText(ast)).join(',')}) ${node.body.getText(ast)})`
     ts.forEachChild(node, visit)
   }
   visit(ast)
@@ -80,11 +80,15 @@ test.group('Funding same-state preview and submission without DB', () => {
   test('server rejects funding date edits after scoped reload and before financial mutation', async ({ assert }) => {
     let rolledBack = false
     const trx = { rollback: async () => { rolledBack = true } }
-    const existing = { type: 2, date: DateTime.fromISO('2025-03-01') }
+    const existing = { id: 1, type: 2, date: DateTime.fromISO('2025-03-01'),
+      categories: [{ categoryId: 1, amount: 1 }, { categoryId: 2, amount: -1 }] }
     const budget = { related: () => ({ query: () => ({ where() { return this }, firstOrFail: async () => existing }) }) }
     const user = { useTransaction: () => undefined, related: () => ({ query: () => ({ forUpdate: () => ({ firstOrFail: async () => budget }) }) }) }
     const transfer = runInNewContext(await expression('app/Controllers/Http/CategoriesController.ts', 'transfer'), {
-      db: { transaction: async () => trx }, updateCategoryTransfer: {}, DateTime,
+      db: { transaction: async () => trx, from: () => ({ useTransaction() { return this }, join() { return this },
+        where() { return this }, select() { return this }, first: async () => null }) }, updateCategoryTransfer: {}, DateTime,
+      AccountTransaction: { query: () => ({ where() { return this }, first: async () => null }) },
+      hasReplacementAllocations: runInNewContext(await expression('app/Controllers/Http/CategoriesController.ts', 'hasReplacementAllocations')),
       TransactionType: { FUNDING_TRANSACTION: 2 }, Exception: class extends Error {},
     })
     await assert.rejects(() => transfer({ request: { params: () => ({ tfrId: 1 }),
