@@ -362,7 +362,18 @@ class ReportController {
   ): Promise<IncomeVsExpensesReportType> {
     const acctTransfer = await budget.getAccountTransferCategory();
 
+    // One attribution total per Transaction prevents repeating each Account movement.
+    const transfers = db.query()
+      .from('transactions as transfer_transaction')
+      .joinRaw('cross join lateral jsonb_to_recordset(transfer_transaction.categories) as transfer("categoryId" int, amount decimal)')
+      .select('transfer_transaction.id as transaction_id')
+      .sum('transfer.amount as amount')
+      .where('transfer_transaction.application_id', budget.id)
+      .andWhere('transfer.categoryId', acctTransfer.id)
+      .groupBy('transfer_transaction.id');
+
     const query = await db.query()
+      .with('transfers', transfers)
       .select(
         db.raw(
           'date_part(\'year\', date) || '
@@ -375,10 +386,7 @@ class ReportController {
       .from('transactions as t')
       .join('account_transactions as at', 'at.transaction_id', 't.id')
       .join('accounts as a', 'a.id', 'at.account_id')
-      .leftJoin('transaction_categories as tc', (q) => {
-        q.on('tc.transaction_id', 't.id')
-          .andOnVal('category_id', '=', acctTransfer.id)
-      })
+      .leftJoin('transfers as tc', 'tc.transaction_id', 't.id')
       .where('t.application_id', budget.id)
       .andWhere('a.tracking', TrackingType.Transactions)
       .andWhere('t.type', '!=', TransactionType.STARTING_BALANCE)

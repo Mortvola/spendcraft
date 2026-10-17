@@ -1,6 +1,46 @@
 # Post-reset remaining correctness review
 
-## 1. Current accepted baseline
+## Latest accepted status — Income fan-out / JSON deduction
+
+At HEAD `756cf3a8f8d52bb9b11255a5bf80341d3f00fdcc`, the sole ranked pre-inventory Income prerequisite is PostgreSQL-accepted. [Acceptance record](income-vs-expenses-transfer-fanout-postgresql-verification.md):27 safeguard,33 narrow,1,721 focused and1,762 full-suite passes;0 failed,0 skipped/pending in each final gate. The original31 prepared cases also all passed. No production correction was required during verification. This status supersedes earlier pending/readiness recommendations below while preserving their historical context.
+
+The approved contract is AccountTransaction movement minus matching CURRENT JSON transfer sum grouped by Transaction before joining movements. It is NOT JSON-only income accounting. No transaction_categories fallback exists. Duplicate amounts remain additive; movement50 with one50 or20+30 reports0,20+20 reports10, emptyJSON/legacy50 reports50. Other report bodies, tax/Statements and financial writers remain unchanged. All accepted baseline corrections remain present. Broader transfer/Progress/product policy and historical DELETE/cascade limitations remain deferred; monetary representation/precision remains the next inventory, not part of this correction.
+
+**BEHAVIORAL BASELINE READY — BEGIN MONETARY STORAGE/API INVENTORY.** No further unambiguous isolated prerequisite is introduced by this verification. Both TypeScript checks, ESLint, Knip, circular regression, server/client-asset build and normal/staged diff checks pass. Every destructive operation and cleanup was independently safeguarded only on localhost:5432/spendcraft_test. Authorization is now expired. No historical repair, unrelated report authority, DELETE/cascade correction, money/schema migration, deployment or commit occurred.
+
+
+## Authoritative final pre-migration status — 756cf3a8
+
+Final review HEAD: `756cf3a8f8d52bb9b11255a5bf80341d3f00fdcc`. **This section and [monetary-migration-correctness-readiness.md](monetary-migration-correctness-readiness.md) supersede earlier readiness/ranking and unresolved labels below.** Historical findings/chronology are preserved. All13 accepted correction areas are present; latest accepted broad PostgreSQL baseline is1,697 passes/0 failures/skips, not rerun here. This task is non-DB review/characterization only; no runtime change or historical repair.
+
+**Decision B — ADDITIONAL CORRECTNESS FIXES REQUIRED FIRST:** recommend only the isolated Income Vs. Expenses Account-movement fan-out correction before monetary inventory. The existing transfer-subtraction policy yields0 for one transfer50 but50 for equivalent transfer20+30 because it repeats movement50. Aggregate current selected attribution once per movement without changing source/selection/sign/API semantics. This cardinality contradiction is independent of the broader unresolved JSON/transfer policy. It is not approval to rewrite that report or Budget Progress in this review.
+
+| Remaining finding | Primary final classification | Prerequisite? |
+| --- | --- | --- |
+| Income transfer-join cardinality | A active correctness defect | YES, narrow once-per-movement arithmetic; future task/DB verification required |
+| Income broader source/transfer/status policy | C product question | No; do not extend Category's JSON authority decision automatically |
+| Budget Progress authority/expense selection | C product question | No; unsupported monthly flag and display contract need decisions |
+| monthlyExpenses optional API no-op | C support/persistence contract question | No active visible save claim found; validators accept it, controllers/model omit it |
+| Commented monthlyExpenses editor | H dormant UI feature | No; no live editor checkbox or State field persistence |
+| Ordinary current CREATE→DELETE eligibility | A active forward defect | No unconditional safe rollout: current trace proven, historical activation policy unresolved |
+| Broad historical DELETE/cascade reversal | D historical authority limitation | No; no applied-effect evidence, provenance/cutoff/repair inferred |
+| Current cascade pre-start/deleted trace | A forward contradiction | No general safe activation until D/special-lifecycle issues resolved |
+| Fixed funding priority; Statement equal-date winner; offline route difference | C product questions | No established intended alternative |
+| Loan principal/interest/payment financial behavior | C product question | Configuration persistence is separately G/accepted |
+| Category deletion substantive active-nonzero restriction | F intentional established behavior | Concurrency G/accepted; no invented new guards |
+| CategoryTransfer DELETE, BalanceHistory runtime, modern funding/admission/date, Loan settings, two corrected reports | G resolved | Preserve acceptance, no reopening |
+| Provider/report/relational/client/API monetary precision | B representation backlog | Inventory now, no behavioral fix disguised as exactness |
+| Naming/schema remnants/operational tools/parent-retention audit | E cleanup | Not prerequisites |
+| Commented derivation/repair/sync algorithms | H dormant/unsupported | Not prerequisites |
+
+No new reachable supported cross-tenant mutation/exploit was established. Remaining conditional join-coherence gaps require malformed/cross-linked persisted state not produced by normal scoped writers; defensive scoping is separate cleanup, not an inferred exploit. Tax/Payee/Net Worth/Statements retain specialized accepted sources. Fixed priority, Statement ties and offline symmetry remain genuinely unresolved.
+
+New inert tests execute actual current CREATE→DELETE for pre-start±10 and an eligible roundtrip; historical ambiguity does not make the current failure correct. A current-era trace has calculable eligibility without provenance, but production admission cannot distinguish it from historical indistinguishable effects using current canonical state. This is NOT a recommendation for a blanket current-eligibility DELETE patch. See the readiness document for branch-specific cascade status, all unresolved-item classifications, accepted correction ledger, monetary inventory, historical limitations and migration guardrails.
+
+The older A/R6 blanket source finding is superseded: Category and Funding History are G; Income cardinality is A; Income broader semantics and Budget Progress are C. A/R4 Loan persistence is G. Earlier “ready/blocked/defer” recommendations apply only to their historical stage. No database authorization remains active. Final review verification:233 focused non-DB passes (3 new),0 failed/skipped; both TS checks, ESLint, Knip, circular and both diff checks pass. No builds/DB tests were required. Only documentation and one inert characterization file changed; production diff/index are unchanged.
+
+
+## 1. Historical review baseline and subsequent acceptance ledger
 
 Review HEAD: `d4c374d17de861ad996d56ef3b0db6f10c05223f`. Tracked working tree and index were clean before review; unrelated untracked generated/editor/backup/scratch files were preserved. This task changes documentation and adds inert characterization tests only. No application bootstrap or PostgreSQL connection is permitted or used.
 
@@ -131,9 +171,9 @@ Separate from primary D4/F4 historical limitation, current source has a reproduc
 
 However, the same current nominal record might be an old pre-fix CREATE that **did** apply10. Reversing zero based on current eligibility would leave the old applied effect. The current DB record does not tell these histories apart. A known test operation sequence proves the forward bug; it does not create a durable production authority marker. No blanket current-eligibility fix, account-linked guard, canonical-money guard or provenance inference is recommended. Policy/resolution is required for a generally safe deployment. Exact representation cannot remove this limitation.
 
-### R6: active report readers still use obsolete allocation storage (A; read side)
+### R6: historical report-source finding and current split status
 
-RC.category, fundingHistory and budgetProgress aggregate `transaction_categories`, while current manual/provider/type2 writes populate Transaction.categories JSON and do not maintain that old table. RC.incomeVsExpenses subtracts Account-transfer allocations through the same legacy join. Reports.tsx exposes Category, Income Vs. Expenses, Funding History and Budget Progress, so these are active outputs, not only old commands.
+At the earlier review, RC.category, fundingHistory and budgetProgress aggregated `transaction_categories`, while manual/provider/type2 writes populated Transaction.categories JSON without maintaining that table. Category/Funding History are now PostgreSQL-accepted JSON readers; current split status is in the authoritative final table above. RC.incomeVsExpenses subtracts Account-transfer allocations through the same legacy join. Reports.tsx exposes Category, Income Vs. Expenses, Funding History and Budget Progress, so these are active outputs, not only old commands.
 
 A current JSON-only +10 funding row has no legacy split; fundingHistory cannot report its10. Category reports omit modern JSON-only allocations; Account transfers cannot be reliably excluded through an unmaintained legacy join. These are source-of-truth/selection defects independent of whether arithmetic is float or exact. Existing reports/security.spec.ts seeds legacy splits and proves tenant/filter safety, not modern JSON-only report completeness. No new DB/report result is asserted. Deleted/pending/date selection policies and the budgetProgress monthly_expenses legacy flag must be characterized separately rather than silently changed while switching the allocation reader.
 
@@ -218,7 +258,7 @@ No unexplained normal Account.balance writer was found outside the accepted part
 |1| R0/D13 modern replacement lifecycle | **RESOLVED** | Admission/noninterference/concurrency/rollback verified;1,075 focused/1,511 full pass. No historical repair |
 |2| R3/F7 legacy DELETE removal | **RESOLVED** | Route/handler/wrappers removed;10 core,1,171 focused/1,526 full pass; no financial replacement or physical schema removal |
 |3| R1 bounded initialization + R2 deletion admission | **RESOLVED FOR APPROVED BOUNDED SCOPE** | PostgreSQL-accepted:32 narrow/1,213 focused/1,568 full pass; fresh Pool and membership binding instrumented. Cascades remain historical/lifetime-blocked; no universal guarantee |
-|4| R6 report allocation source | **CAN DEFER UNTIL AFTER REPRESENTATION MIGRATION** | Active incorrect read outputs need a separate correction, but do not mutate financial state. Inventory both modern JSON authority and obsolete readers now; do not preserve their join algorithm as intended semantics |
+|4| R6 report allocation source/cardinality | **SUPERSEDED BY FINAL SPLIT CLASSIFICATION** | Category/Funding History G; Income cardinality A is the sole current prerequisite recommendation; broader Income and Progress C. See final readiness section |
 |5| R4 Loan settings persistence | **RESOLVED FOR CONFIGURATION PERSISTENCE** | PostgreSQL-accepted:32 narrow/1,277 focused/1,632 full pass. Principal/interest/payment semantics remain unresolved; no financial redesign |
 | Policy-blocked | R5 forward DELETE/cascade contradiction | **CAN DEFER UNTIL AFTER REPRESENTATION MIGRATION** (historical policy prerequisite) | Current forward bug is real, but a generally safe reversal cannot be derived from existing state. Resolve product deletion/resolution policy before activation; no mechanical current-eligibility patch or guard recommended |
 
@@ -287,3 +327,21 @@ The [implementation record](category-funding-history-report-authority-implementa
 ### Category/Funding History authority — PostgreSQL accepted
 
 The [verification record](category-funding-history-report-authority-postgresql-verification.md) resolves the approved two-report portion of R6 at HEAD b06de757:27 safeguard/43 narrow/1,656 focused/1,697 full-suite passes,0 failed,0 skipped/pending. Both reports use exclusive current JSON, including intentionally omitted legacy-only attribution. JSON50 wins over missing/stale/matching legacy rows; duplicates/counts, persisted net funding/date, Pool exclusion, provider/manual origins, scoped missing/foreign references and unchanged raw state pass. Actual SQL reads JSON without fallback or writes. Current status: **G/resolved for Category and Funding History only**. Income Vs. Expenses/cardinality and Budget Progress/expense-selection remain A findings with unresolved policy; do not mark all reporting corrected. Tax, Payee, Net Worth, Statements and structural Loan ownership remain unchanged. No runtime fix was needed during verification; test instrumentation/coverage was strengthened. Static/build/diff checks pass. Every destructive operation/cleanup independently safeguarded localhost:5432/spendcraft_test; authorization is now expired. No historical repair, monetary/schema migration, deployment or commit occurred.
+
+
+## Income Vs. Expenses cardinality follow-up — implemented, DB verification pending
+
+At HEAD756cf3a8, the sole approved prerequisite A1/R6 arithmetic correction is now implemented in incomeVsExpenses only; see [correction record](income-vs-expenses-transfer-fanout-correction.md). A Budget-scoped relational CTE SUMs the CURRENT qualifying transfer rows by Transaction ID before the unchanged Account-movement join/SUM. Equivalent50 versus20+30 now both report0; legitimate20+20 reports10 on movement50. Current relational attribution, sign classification, selection/group/order/response and client remain unchanged; this does NOT approve JSON migration or broader transfer policy. Other report methods and Transaction DELETE/cascades remain untouched. Historical review findings above describe pre-correction source. Do not mark A1 PostgreSQL-accepted or monetary readiness fully satisfied until fresh task-specific verification passes. Non-DB tests and executable DB cases are recorded in the correction document; no database connection, destructive operation, data repair, monetary/schema migration, deployment or commit occurred. Previous database authorization is expired.
+
+Implementation non-DB verification:253 focused passes (20 new fan-out cases),0 failed/skipped; both TypeScript checks, ESLint, Knip, circular regression, server/client-asset build and both diff checks pass.25 PostgreSQL acceptance cases are executable/prepared but NOT RUN. Only incomeVsExpenses changes in production; other report hashes pass. Fresh task-specific DB authorization must be restricted to localhost:5432/spendcraft_test with safeguards independently before every destructive operation/cleanup.
+
+
+## Income transfer-deduction authority clarification — implemented, DB verification pending
+
+Subsequent explicit product direction supersedes the earlier relational-only candidate: Income Vs. Expenses continues to use AccountTransaction.amount for movements, but deducts CURRENT Transaction.categories JSON amounts matching the Budget's Account Transfer Category. A scoped JSON-expanding CTE sums by Transaction ID before the unchanged per-link movement calculation, preventing split fan-out. Empty/missing JSON supplies no deduction; no transaction_categories fallback/merge occurs, and legacy-only attribution is not copied or repaired. Movement selection, original-sign bucket, periods/order/API and other reports remain unchanged. This is not JSON-only income accounting. Broader transfer/status/multi-link/tax policies and Budget Progress/structural legacy uses are not changed. See [current correction record](income-vs-expenses-transfer-fanout-correction.md). Earlier relational-preservation claims and253-test verification describe the superseded candidate, not current authority or DB acceptance. No database connection occurred; authorization remains expired.
+
+JSON-deduction implementation verification:262 non-DB focused passes,0 failed/skipped, including26 dedicated Income cases and25 allocation/source cases. Both TypeScript checks, final ESLint, Knip, circular regression, server/client-asset build and diff checks pass.31 PostgreSQL cases are prepared but not run. Only Income uses the newly approved JSON deduction; movement amounts remain AccountTransaction-based. No database connection, data repair, monetary/schema change or commit occurred.
+
+## Latest Income verification follow-up
+
+The approved AccountTransaction-minus-JSON-deduction implementation has passed33 narrow and1,721 focused PostgreSQL/source/client tests,0 failed,0 skipped/pending; see [verification](income-vs-expenses-transfer-fanout-postgresql-verification.md). JSON transfers sum by owning Transaction before the unchanged movement join. Equivalent partitions no longer duplicate movements, equal-valued entries remain additive and legacy-only deduction is intentionally absent. Both Transaction scopes are Budget-bound. Other report bodies and financial writers remain unchanged. Earlier relational-only/pending characterizations are superseded by explicit product approval of JSON deduction and the latest acceptance outcome below. Budget Progress, broader transfer policy, historical DELETE/cascades, product questions, cleanup and precision remain separately classified.

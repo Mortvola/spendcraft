@@ -17,7 +17,7 @@ async function sourceMethod(name, context = {}) {
   return { body, run: runInNewContext(ts.transpileModule(expression, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText,
     { TransactionType, CategoryType, TrackingType, DateTime, ...context }) }
 }
-function adapter({ legacy = [], categories = [{ id: 10, name: 'Food', groupName: 'Living', budgetId: 1 }],
+function adapter({ categories = [{ id: 10, name: 'Food', groupName: 'Living', budgetId: 1 }],
   transaction = { id: 1, type: 5, date: '2026-02-10', budgetId: 1, amount: 50, categories: [{ categoryId: 10, amount: 50 }] } } = {}) {
   const queries = []
   function query() {
@@ -28,6 +28,7 @@ function adapter({ legacy = [], categories = [{ id: 10, name: 'Food', groupName:
       joinRaw(value) { this.joins.push([value]); return this },
       leftJoin(table, callback) {
         this.joins.push([table])
+        if (typeof callback !== 'function') return this
         const join = { on() { return this }, andOnVal: (_column, _op, value) => { this.transferId = value; return join } }
         callback(join); return this
       },
@@ -37,7 +38,8 @@ function adapter({ legacy = [], categories = [{ id: 10, name: 'Food', groupName:
       andWhere(...values) { return this.where(...values) },
       whereIn(column, value) { this.filters.push({ column, operator: 'in', value }); return this },
       andWhereIn(...values) { return this.whereIn(...values) },
-      groupBy() { return this }, groupByRaw() { return this }, orderBy() { return this },
+      with(_name, table) { this.transferId = table.filters.find((filter) => filter.column === 'transfer.categoryId')?.value; return this },
+      sum() { return this }, as() { return this }, groupBy() { return this }, groupByRaw() { return this }, orderBy() { return this },
       then(resolve, reject) {
         return Promise.resolve().then(() => {
           const accepts = (row) => this.filters.every(({ column, operator, value }) => {
@@ -51,7 +53,7 @@ function adapter({ legacy = [], categories = [{ id: 10, name: 'Food', groupName:
               default: throw new Error(`Unsupported inert operator ${operator}`)
             }
           })
-          if (this.source === 'transactions as t' && this.joins.some(([value]) => value.includes('jsonb_to_recordset'))) {
+          if (this.source === 'transactions as t' && this.joins.some(([value]) => typeof value === 'string' && value.includes('jsonb_to_recordset'))) {
             const result = new Map()
             for (const split of transaction.categories ?? []) {
               const category = categories.find((c) => c.id === split.categoryId)
@@ -69,8 +71,8 @@ function adapter({ legacy = [], categories = [{ id: 10, name: 'Food', groupName:
             if (!this.selects.some((sql) => sql.includes('at.amount - COALESCE(tc.amount, 0)'))) throw new Error('Income algorithm changed')
             const row = { 't.application_id': transaction.budgetId, 'a.tracking': TrackingType.Transactions, 't.type': transaction.type }
             if (!accepts(row)) return []
-            const splits = legacy.filter((s) => s.transactionId === transaction.id && s.categoryId === this.transferId)
-            const net = (splits.length ? splits : [{ amount: 0 }]).reduce((sum, s) => sum + transaction.amount - s.amount, 0)
+            const splits = (transaction.categories ?? []).filter((s) => s.categoryId === this.transferId)
+            const net = transaction.amount - splits.reduce((sum, s) => sum + s.amount, 0)
             return [{ month: '2026-02', income: transaction.amount >= 0 ? String(net) : '0', expenses: transaction.amount < 0 ? String(net) : '0' }]
           }
           throw new Error(`Unsupported inert source ${this.source}`)
@@ -118,23 +120,26 @@ test.group('Allocation report authority characterization without DB', () => {
     assert.deepEqual(await run({ id: 1 }, '', '', [10]), [])
     assert.isTrue(f.queries[0].filters.some((filter) => filter.column === 't.application_id'))
   })
-  test('JSON-only internal transfer is not subtracted; duplicate legacy links multiply Account amount').with([
-    { legacy: [], expected: 50 },
-    { legacy: [{ transactionId: 1, categoryId: 99, amount: 50 }], expected: 0 },
-    { legacy: [{ transactionId: 1, categoryId: 99, amount: 20 }, { transactionId: 1, categoryId: 99, amount: 30 }], expected: 50 },
+  test('Income movement source stays linked amounts; JSON alone defines transfer deduction').with([
+    { legacy: [], json: [50], expected: 0 },
+    { legacy: [{ transactionId: 1, categoryId: 99, amount: 50 }], json: [], expected: 50 },
+    { legacy: [{ transactionId: 1, categoryId: 99, amount: 20 }], json: [50], expected: 0 },
+    { legacy: [{ transactionId: 1, categoryId: 99, amount: 50 }], json: [20, 30], expected: 0 },
+    { legacy: [{ transactionId: 1, categoryId: 99, amount: 50 }], json: [20], expected: 30 },
+    { legacy: [{ transactionId: 1, categoryId: 99, amount: 50 }], json: [50], expected: 0 },
   ]).run(async ({ assert }, scenario) => {
     const f = adapter({ legacy: scenario.legacy, transaction: { id: 1, type: 5, budgetId: 1, amount: 50,
-      categories: [{ categoryId: 99, amount: 50 }] } })
+      categories: scenario.json.map((amount) => ({ categoryId: 99, amount })) } })
     const { run } = await sourceMethod('incomeVsExpenses', { db: f.db })
     const rows = await run({ id: 1, getAccountTransferCategory: async () => ({ id: 99 }) })
     assert.equal(rows[0][1], scenario.expected)
   })
-  test('four reports remain active; only the approved two change authority', async ({ assert }) => {
+  test('active Category, Funding History and Income JSON readers leave Progress separate', async ({ assert }) => {
     const ui = await readFile('client-src/Reports/Reports.tsx', 'utf8')
     for (const [method, component] of [['category', 'Category'], ['incomeVsExpenses', 'IncomeVsExpenses'], ['fundingHistory', 'FundingHistory'], ['budgetProgress', 'BudgetProgress']]) {
       assert.include(ui, `<${component} />`)
       const body = (await sourceMethod(method)).body
-      if (['category', 'fundingHistory'].includes(method)) { assert.notInclude(body, 'transaction_categories'); assert.include(body, 'jsonb_to_recordset') }
+      if (['category', 'fundingHistory', 'incomeVsExpenses'].includes(method)) { assert.notInclude(body, 'transaction_categories'); assert.include(body, 'jsonb_to_recordset') }
       else assert.include(body, 'transaction_categories')
     }
   })
@@ -185,11 +190,12 @@ test.group('Allocation report authority characterization without DB', () => {
 
   test('unapproved report methods remain byte-identical to accepted HEAD', async ({ assert }) => {
     const hashes = {
-  "incomeVsExpenses": "e625d930ba7aa37ca58d000cffda04e96b5510d85a0c65f594ccc488074eb0fd",
-  "budgetProgress": "5c8355aa378311a62a5fef6858264af6deddbd7dd7cccbd25433a5282fa7d510",
-  "networth": "e47cc049b2a8e38fed5c82d4f18b1e081ad7776b6e29713cabaa03b2e8a0b0a6",
-  "payee": "3f0e01b9cd0bd438a41341e01d93ff67e07966ae153baa07154e5b3d876ce397"
-}
+      "category": "1caea34c25ffab950a028e98728d841114cb7c65edab083c2b7791dc3d825bb5",
+      "fundingHistory": "3da6fcfae35c462858fb1bd9e44cb88093218aea69cfb3f076748329216ca965",
+      "budgetProgress": "5c8355aa378311a62a5fef6858264af6deddbd7dd7cccbd25433a5282fa7d510",
+      "networth": "e47cc049b2a8e38fed5c82d4f18b1e081ad7776b6e29713cabaa03b2e8a0b0a6",
+      "payee": "3f0e01b9cd0bd438a41341e01d93ff67e07966ae153baa07154e5b3d876ce397"
+    }
     for (const [name, hash] of Object.entries(hashes)) {
       assert.equal(createHash('sha256').update((await sourceMethod(name)).body).digest('hex'), hash)
     }
