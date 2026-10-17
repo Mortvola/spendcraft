@@ -145,7 +145,6 @@ router.group(() => {
       router.group(() => {
         router.post('', [CategoriesController, 'transfer']);
         router.patch('/:tfrId', [CategoriesController, 'transfer']).as('categories.transfer.id');
-        router.delete('/:tfrId', [CategoriesController, 'transferDelete']);
       }).prefix('/category-transfer');
   
       router.get('/category-balances', [CategoriesController, 'balances']);

@@ -39,16 +39,11 @@ test.group('Remaining correctness source characterization without DB', () => {
     assert.isTrue(rolledBack)
   })
 
-  test('legacy DELETE resolves and mutates foreign rows without consulting the actor', async ({ assert }) => {
-    const category = { budgetId: 2, balance: 100, save: noop }
-    const transferDelete = await method('app/Controllers/Http/CategoriesController.ts', 'transferDelete', {
-      db: { transaction: async () => ({ commit: noop, rollback: noop }) },
-      CategoryTransfer: { findOrFail: async () => ({ splits: async () => [{ categoryId: 200, amount: 10, delete: noop }], delete: noop }) },
-      Category: { find: async () => category },
-    })
-    await transferDelete({ request: { params: () => ({ tfrId: 99 }) },
-      auth: { user: { budgetId: 1 } }, logger: { error: noop } })
-    assert.equal(category.balance, 90)
+  test('legacy DELETE financial handler and route are removed', async ({ assert }) => {
+    const controller = await readFile('app/Controllers/Http/CategoriesController.ts', 'utf8')
+    const routes = await readFile('start/routes.ts', 'utf8')
+    assert.notInclude(controller, 'transferDelete')
+    assert.notInclude(routes, 'transferDelete')
   })
 
   test('Loan update commits the Category name but never saves merged Loan settings', async ({ assert }) => {

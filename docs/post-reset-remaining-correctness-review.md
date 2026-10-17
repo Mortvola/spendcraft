@@ -68,7 +68,7 @@ Source abbreviations: AC=[AccountsController](../app/Controllers/Http/AccountsCo
 | F4 Cascade nominal reversal | D | IC.deleteAccounts reverses unfiltered nominal allocations; H1/H3 and R5 counterexample apply. Concurrency independent R1 |
 | F5 Remote removal ordering | C | IC.delete removes remote item before local cascade; local rollback cannot restore remote item. Desired failure/recovery/deletion contract not established; no compensating action invented |
 | F6 Parent cleanup coverage | E | IC.deleteAccounts explicitly removes links/Transactions/history/Accounts, not Statements/logs; Statement/log migrations have plain integer references. Cleanup review needed; no live orphan-count claim |
-| F7 Legacy transfer DELETE | A | Authenticated route→CC.transferDelete resolves global legacy ID/Category and calls save without await; R3 below. Separate from harmless dormant model cleanup |
+| F7 Legacy transfer DELETE | G (runtime removal PostgreSQL-accepted) | No supported DELETE caller found; route/handler/delete-only wrappers removed. Modern Transaction POST/PATCH retained; see deprecation record |
 | F8 Loan financial model | C | Loan.updateBalance no-op/getProps zero placeholder; Account Loan principal/interest paths separate. Settings persistence contradiction separated as R4 |
 | F9 Auto-assignment real | B | auto_assignment_categories.amount float migration, AutoAssignmentCategory.consume parseFloat; percentage=false money config versus true ratio; autoAssign affects posted allocation |
 | F10 Reporting/repair floats | B | RC CAST AS float, parseFloat, Category/Budget sums; legacy-reader logic separated R6, administrative repair restriction below |
@@ -107,7 +107,9 @@ CC.deleteCategory reads scoped Category, checks active nonzero JSON membership t
 
 This contradicts the established “cannot delete a Category containing active nonzero Transactions” restriction, independently of monetary precision. The existing deletionLifecycle tests establish serial restrictions/rollback; they do not prove this overlap safe. No DB race is claimed executed here. Include this admission boundary in a focused Category/Pool concurrency follow-up; do not make Category deletion reallocate money or repair legacy references.
 
-### R3 / F7: legacy transfer DELETE authorization/completion (A; security)
+### R3 / F7: legacy transfer DELETE authorization/completion (G; PostgreSQL-accepted)
+
+The following is the historical pre-removal finding. Current [DELETE deprecation](category-transfer-delete-deprecation.md) removes the route, handler and unused legacy model wrappers after confirming no supported DELETE dependency. Modern funding/rebalance POST/PATCH, conditional type1 compatibility UI and Transaction DELETE remain unchanged.Implementation-stage204 non-DB tests passed; subsequent verification passed10 core,1,171 focused/1,526 full,0 failed,0 skipped/pending. See [the verification record](category-transfer-delete-deprecation-postgresql-verification.md). Legacy tables were already absent; retained-row/legacy-cascade checks are not applicable. No historical data or schema change occurred.
 
 Authenticated `DELETE /api/v1/category-transfer/:tfrId` still routes to CC.transferDelete. The handler neither receives/uses the authenticated Budget nor scopes CategoryTransfer or Category lookups. Given a retained legacy transfer with splits, another authenticated tenant can select its ID and subtract from the owner's Categories. An inert actual-method test demonstrates the handler mutates a Category belonging to Budget2 with an actor in Budget1. It also invokes category.save without await and has no Budget gate; no promise of atomic completion/serialization can be made.
 
@@ -177,7 +179,7 @@ No replay, reconstruction, repair-on-touch, automatic balance repair, inferred/p
 
 - BalanceHistory table/rows, minimal model/Account relation and parent cleanup remain until separately authorized schema/data-retention work. No product reader/writer remains; no reason to precede inventory with a table drop.
 - plaidBalance/plaid_balance naming→providerBalance/provider_balance is deferred naming/API/schema coordination; corrected authority already uses it correctly.
-- Legacy CategoryTransfer/CategorySplit architecture and dormant client/state/commented provider/Loan code can be retired after reachability/compatibility decisions. The reachable unsafe DELETE is R3, not harmless cleanup.
+- Legacy CategoryTransfer DELETE and its unused model wrappers are removed and PostgreSQL-accepted (R3). Archived schemas/historical rows remain untouched. Modern names and conditional type1 UI remain; broader compatibility cleanup is separate.
 - F1 metadata-only PATCH loading/validation isolation is robustness cleanup; ordinary metadata tests establish financial noninterference.
 - F6 orphan/log/Statement cleanup coverage needs an authorized lifecycle audit. Plain integer migrations and omitted explicit cleanup are evidence of a gap, not live proof of orphan counts or permission to delete evidence.
 - CheckBalances' explicit Category --fix/interactive recomputation remains administrative, gated across selected Budgets; Account repair is commented. CheckUnassigned is diagnostic. These are not normal posting authority or approved historical reconstruction; do not execute them as migration preparation. Multi-Budget administrative scanning does not imply normal cross-Budget financial transfers.
@@ -197,7 +199,7 @@ No replay, reconstruction, repair-on-touch, automatic balance repair, inferred/p
 | Accountless funding/rebalance | No Account effect | Gated sequential grouped Category new−old; no startDate context; D13 admission PostgreSQL-accepted; funding date immutable |
 | HTTP Transaction DELETE | Gated nonpending subtraction; legacy date/type behavior remains | R5 forward contradiction; D4 historical authority unresolved, no new guard |
 | Account/Institution cascade | Account disappears; no surviving Account delta to serialize | Surviving nominal Category/Pool reversal D/F4, independent ungated race R1; physical history cleanup permitted |
-| Legacy transfer DELETE | No Account writer | Global unscoped legacy mutations/unawaited save R3 |
+| Legacy transfer DELETE | Removed | No replacement financial path; R3 retirement PostgreSQL-accepted; historical-table cases not applicable to the current absent schema |
 | Category deletion | No Account writer | Serial active-membership restriction intact; race R2; no reallocation |
 | Loan Category API | Separate Loan.balance/config, not ordinary Account.balance | No-op derivation/placeholder response C; unsaved settings R4; Loan-type Account branches not generalized |
 | Operational repair/diagnostics | Active Account repair code absent | Explicit CheckBalances Category repair is administrative; not supported automatic posting/migration authority |
@@ -210,7 +212,7 @@ No unexplained normal Account.balance writer was found outside the accepted part
 | Rank | Finding | Timing recommendation | Reason / bounded next work |
 | --- | --- | --- | --- |
 |1| R0/D13 modern replacement lifecycle | **RESOLVED** | Admission/noninterference/concurrency/rollback verified;1,075 focused/1,511 full pass. No historical repair |
-|2| R3/F7 reachable legacy DELETE | **FIX BEFORE EXACT-MONEY** | Cross-tenant financial mutation when legacy rows exist; contain or retire the route after explicit compatibility review. Awaiting/gate/ownership must be coherent if retained |
+|2| R3/F7 legacy DELETE removal | **RESOLVED** | Route/handler/wrappers removed;10 core,1,171 focused/1,526 full pass; no financial replacement or physical schema removal |
 |3| R1 + R2 remaining Category/Pool writer/admission races | **FIX BEFORE EXACT-MONEY** | Can lose committed Pool/Category effects or delete a newly referenced Category during normal overlap. Focused characterization/design using existing Budget protocol, including offline opening and parent-delete participants; do not change reversal semantics or reopen Account lock architecture |
 |4| R6 report allocation source | **CAN DEFER UNTIL AFTER REPRESENTATION MIGRATION** | Active incorrect read outputs need a separate correction, but do not mutate financial state. Inventory both modern JSON authority and obsolete readers now; do not preserve their join algorithm as intended semantics |
 |5| R4 Loan settings persistence | **CAN DEFER UNTIL AFTER REPRESENTATION MIGRATION** | Isolated routed API, no active settings UI caller found; fix persistence/support behavior separately from principal/interest computation. Do not claim current updates persist |
@@ -218,14 +220,16 @@ No unexplained normal Account.balance writer was found outside the accepted part
 
 The rank3 scope must explicitly address independent concurrency without pretending that a Budget gate proves historical reversal authority. If parent deletion cannot be safely included without policy, report that activation boundary rather than silently inferring history. Existing Account-gated participants must keep their gate/fresh-state/transaction binding in any later deployment. No partial ungated/gated writer rollout can claim a complete shared-Category guarantee.
 
-Prioritize one focused task at a time, with modern replacement admission now accepted; next is the separately scoped legacy DELETE surface. No new exact-money architecture is selected. Unresolved priorities/Statement ties/offline symmetry and historical risks alone would not force another correctness task; the concrete A findings do.
+Prioritize one focused task at a time, with modern replacement admission now accepted; legacy DELETE removal is now accepted; next is the separately scoped Category/Pool writer/admission boundary. No new exact-money architecture is selected. Unresolved priorities/Statement ties/offline symmetry and historical risks alone would not force another correctness task; the concrete A findings do.
 
 ## 10. Exact-money readiness decision and verification
 
-**B. ONE OR MORE CORRECTNESS FIXES SHOULD COME FIRST.** R0/D13 is now resolved. R3/F7 and the R1/R2 Category/Pool concurrency boundary remain the ordered pre-migration recommendations. The monetary storage/API inventory may record all affected boundaries now, but should not assume these behavioral defects are accepted accounting semantics.
+**B. ONE OR MORE CORRECTNESS FIXES SHOULD COME FIRST.** R0/D13 is now resolved. R3/F7 is now resolved. Address the R1/R2 Category/Pool concurrency boundary as separately scoped work. The monetary storage/API inventory may record all affected boundaries now, but should not assume these behavioral defects are accepted accounting semantics.
 
 Added only tests/unit/remainingCorrectness.spec.js: three actual-method non-DB characterizations for deleted replacement, unscoped legacy DELETE and unsaved Loan settings. These intentionally document defects; they are not acceptance tests of corrected behavior. They use inert adapters and the production zero-sum validator; no ORM/app/bootstrap/database is imported. Race schedules and report source mismatches are source-based findings, not newly executed PostgreSQL results. Existing DB records are used only for their accepted scopes.
 
 Verification: all3 new inert characterization tests passed (0 failed,0 skipped). Both server/client TypeScript checks, ESLint, Knip and circular regression passed; only the accepted11-model/26-edge circular component remains. Working-tree and staged diff checks passed, including explicit new-file whitespace checks. No builds or DB tests were needed/run. Production-directory diff against HEAD is empty. No runtime behavior, provider, monetary representation, schema, historical state, deployment or commit changed; no PostgreSQL connection or destructive DB operation occurred. Existing untracked local files and the index were preserved.
 
 Current follow-up: replacement admission has been implemented with 199 passing non-DB tests. The earlier three-test characterization baseline above is historical; deleted replacement now asserts rejection. Subsequent PostgreSQL verification passed1,075 focused/1,511 full,0 failed,0 skipped/pending; task-specific authorization is expired.
+
+Subsequent F7 follow-up: the old unsafe inert DELETE assertion is replaced with route/handler absence assertions, with historical reproduction retained in [the deprecation record](category-transfer-delete-deprecation.md). No production reader/writer of category_transfers/category_splits remains; similarly named modern Transaction code is retained. Subsequent task-specific verification now accepts removal:1,171 focused/1,526 full pass,0 failures/skips; see the dedicated verification record. No production correction was needed; authorization is expired.

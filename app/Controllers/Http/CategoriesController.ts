@@ -2,7 +2,6 @@ import db from '@adonisjs/lucid/services/db';
 import { HttpContext } from '@adonisjs/core/http';
 import { Exception } from '@adonisjs/core/exceptions';
 import Category, { GroupItem } from '#app/Models/Category';
-import CategoryTransfer from '#app/Models/CategoryTransfer';
 import { updateCategoryTransfer } from '#validators/categoryTransfer';
 import { validateTransactionSplits } from '#app/validation/transactionSplits';
 import Transaction from '#app/Models/Transaction';
@@ -689,43 +688,6 @@ class CategoriesController {
       return {
         data: result,
       }
-    }
-    catch (error) {
-      await trx.rollback();
-      logger.error(error);
-      throw error;
-    }
-  }
-
-   
-  public async transferDelete({ request, logger }: HttpContext): Promise<void> {
-    const trx = await db.transaction();
-
-    try {
-      const { tfrId } = request.params();
-
-      const categoryTransfer = await CategoryTransfer.findOrFail(tfrId, { client: trx });
-
-      const categorySplits = await categoryTransfer.splits(trx);
-
-       
-      for (const cs of categorySplits) {
-         
-        const category = await Category.find(cs.categoryId, { client: trx });
-
-        if (category) {
-          category.balance -= cs.amount;
-
-          category.save();
-
-           
-          await cs.delete();
-        }
-      }
-
-      await categoryTransfer.delete();
-
-      await trx.commit();
     }
     catch (error) {
       await trx.rollback();
