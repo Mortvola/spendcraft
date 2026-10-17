@@ -90,6 +90,12 @@ test.group('OFX reimport financial consistency', () => {
     assert.deepEqual(after.categories, before.categories)
     assert.equal(after.balance, before.balance)
     assert.equal(after.logs.length, before.logs.length)
+    const nominal = after.transactions[0].splits[0]
+    const categoryReport = await client.get('/api/v1/reports/category').qs({ c: nominal.categoryId }).loginAs(f.user)
+    categoryReport.assertStatus(200)
+    assert.equal(categoryReport.body()[0].sum, nominal.amount)
+    assert.equal(categoryReport.body()[0].count, 1)
+
   })
 
   test('changed amounts preserve or violate allocations as currently implemented')

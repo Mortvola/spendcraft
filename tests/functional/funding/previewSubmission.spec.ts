@@ -93,6 +93,15 @@ test.group('Funding preview/submission persisted equality', () => {
       replaced.assertStatus(200)
       for (const [id, initial] of before) assert.equal((await Category.findOrFail(id)).balance,
         Math.round((initial + fundingCategoryEffect(rows, id)) * 100) / 100)
+      // Report current persisted net rows after the real create/replacement workflow.
+      const history = await client.get('/api/v1/reports/funding-history').loginAs(f.user)
+      history.assertStatus(200)
+      assert.isUndefined(history.body().find((row: { categoryId: number }) => row.categoryId === f.pool.id))
+      for (const categoryId of new Set(rows.map((row) => row.categoryId))) {
+        if (categoryId === f.pool.id) continue
+        const reported = history.body().find((row: { categoryId: number }) => row.categoryId === categoryId)
+        assert.deepEqual(reported.history, [{ year: 2025, month: 3, amount: fundingCategoryEffect(rows, categoryId) }])
+      }
       assert.deepEqual(await db.from('accounts').orderBy('id'), snapshot)
     })
 

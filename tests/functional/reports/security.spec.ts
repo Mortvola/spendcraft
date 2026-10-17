@@ -175,7 +175,7 @@ test.group('Report filter security', (group) => {
       try {
         const response = await client.get(`/api/v1/reports/${report}`).qs(filters([id(fixture.own), id(fixture.second)])).accept('json').loginAs(fixture.own.user)
         response.assertStatus(200)
-        const query = queries.find((event) => event.sql.includes(report === 'payee' ? 'account_transactions' : 'transaction_categories') && event.sql.includes('group by'))
+        const query = queries.find((event) => event.sql.includes(report === 'payee' ? 'account_transactions' : 'jsonb_to_recordset') && event.sql.includes('group by'))
         assert.isDefined(query)
         if (!query) throw new Error('Report query was not captured')
         assert.include(query.bindings ?? [], id(fixture.own))

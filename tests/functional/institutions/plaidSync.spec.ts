@@ -120,6 +120,10 @@ test.group('Plaid sync characterization', (group) => {
       assert.isFalse(transaction.deleted)
       assert.deepEqual(transaction.categories, [{ categoryId: f.unassigned.id, amount: -10 }])
     }
+    const categoryReport = await client.get('/api/v1/reports/category').qs({ c: f.unassigned.id }).loginAs(f.user)
+    categoryReport.assertStatus(200)
+    assert.equal(categoryReport.body()[0].sum, -count * 10)
+    assert.equal(categoryReport.body()[0].count, count)
     await f.institution.refresh()
     assert.equal(f.institution.cursor, 'c1')
     assert.deepEqual(fake.cursors, [null])

@@ -327,14 +327,15 @@ class ReportController {
           db.raw('row_number() over (order by g.name, c.name) as "rowNumber"'),
           'g.name as groupName',
           'c.name as categoryName',
-          db.raw('CAST(sum(tc.amount) as float) as sum'),
+          db.raw('CAST(sum(allocation.amount) as float) as sum'),
           db.raw('CAST(count(*) as integer) as count'),
         )
-        .from('transaction_categories as tc')
-        .join('categories as c', 'c.id', 'tc.category_id')
+        .from('transactions as t')
+        .joinRaw('cross join lateral jsonb_to_recordset(t.categories) as allocation("categoryId" int, amount decimal)')
+        .join('categories as c', 'c.id', 'allocation.categoryId')
         .join('groups as g', 'g.id', 'c.group_id')
-        .join('transactions as t', 't.id', 'tc.transaction_id')
         .where('g.application_id', budget.id)
+        .andWhere('t.application_id', budget.id)
         .andWhereIn('t.type', [TransactionType.MANUAL_TRANSACTION, TransactionType.REGULAR_TRANSACTION])
         .groupBy(['g.name', 'c.name'])
         .orderBy('g.name', 'asc')
@@ -409,10 +410,11 @@ class ReportController {
               json_build_object(
                 'year', EXTRACT(YEAR FROM t.date),
                 'month', EXTRACT(MONTH FROM t.date),
-                'amount', sum(tc.amount)) AS monthly_amount
-            from transaction_categories AS tc
-            join transactions as t on t.id = tc.transaction_id and t.type = 2
-            where tc.category_id = c.id
+                'amount', sum(allocation.amount)) AS monthly_amount
+            from transactions as t
+            cross join lateral jsonb_to_recordset(t.categories) as allocation("categoryId" int, amount decimal)
+            where t.type = 2 and t.application_id = g.application_id
+              and allocation."categoryId" = c.id
             group by EXTRACT(MONTH FROM date), EXTRACT(YEAR FROM date)
           ) as amounts
         ) as history`),
