@@ -46,22 +46,26 @@ test.group('Remaining correctness source characterization without DB', () => {
     assert.notInclude(routes, 'transferDelete')
   })
 
-  test('Loan update commits the Category name but never saves merged Loan settings', async ({ assert }) => {
+  test('Loan update saves merged settings and Category name after the Budget gate', async ({ assert }) => {
     const persisted = { rate: 5, startingBalance: 100 }
     let saves = 0
-    const category = { name: 'Old', merge(values) { Object.assign(this, values) }, save: noop }
+    const persistedCategory = { name: 'Old' }
+    const category = { name: 'Old', merge(values) { Object.assign(this, values) },
+      async save() { persistedCategory.name = this.name } }
     const updateBalance = await method('app/Models/Loan.ts', 'updateBalance', {})
     const loan = { ...persisted, merge(values) { Object.assign(this, values) }, updateBalance,
       async save() { saves++; persisted.rate = this.rate; persisted.startingBalance = this.startingBalance },
       related: () => ({ query: () => ({ firstOrFail: async () => category }) }), getProps: async () => ({ balance: 0, transactions: [] }) }
+    let gated = false
     const update = await method('app/Controllers/Http/LoansController.ts', 'update', {
       db: { transaction: async () => ({ commit: noop, rollback: noop }) }, updateLoan: {},
-      budgetLoans: () => ({ where() { return this }, firstOrFail: async () => loan }),
+      budgetLoans: () => { assert.isTrue(gated); return { where() { return this }, firstOrFail: async () => loan } },
     })
     await update({ request: { params: () => ({ catId: 1 }), validateUsing: async () => ({ name: 'New', rate: 8,
-      startingBalance: 200, startDate: DateTime.fromISO('2025-02-01') }) }, auth: { user: { budgetId: 1 } }, logger: { error: noop } })
+      startingBalance: 200, startDate: DateTime.fromISO('2025-02-01') }) }, auth: { user: { budgetId: 1, useTransaction: noop, related: () => ({ query: () => ({ forUpdate() { return this }, firstOrFail: async () => { gated = true } }) }) } }, logger: { error: noop } })
     assert.equal(category.name, 'New')
-    assert.equal(saves, 0)
-    assert.deepEqual(persisted, { rate: 5, startingBalance: 100 })
+    assert.equal(persistedCategory.name, 'New')
+    assert.equal(saves, 1)
+    assert.deepEqual(persisted, { rate: 8, startingBalance: 200 })
   })
 })

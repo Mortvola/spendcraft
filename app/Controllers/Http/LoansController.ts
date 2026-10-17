@@ -97,7 +97,11 @@ export default class LoansController {
     const trx = await db.transaction();
 
     try {
+      user.useTransaction(trx);
+      await user.related('budget').query().forUpdate().firstOrFail();
+
       const loan = await budgetLoans(user.budgetId, { client: trx }).where('categoryId', request.params().catId).firstOrFail();
+      const category = await loan.related('category').query().firstOrFail();
 
       loan.merge({
         startDate: requestData.startDate,
@@ -107,12 +111,11 @@ export default class LoansController {
 
       await loan.updateBalance();
 
-      const category = await loan.related('category').query().firstOrFail();
-
       category.merge({
         name: requestData.name,
       });
 
+      await loan.save();
       await category.save();
 
       await trx.commit();
