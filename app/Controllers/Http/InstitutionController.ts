@@ -189,7 +189,7 @@ class InstitutionController {
       user.useTransaction(trx)
 
       const budget = await user.related('budget')
-        .query().firstOrFail();
+        .query().forUpdate().firstOrFail();
 
       const fundingPool = await budget.getFundingPoolCategory({ client: trx });
 

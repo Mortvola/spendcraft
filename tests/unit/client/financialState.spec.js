@@ -589,4 +589,17 @@ export * from ${source('common/ResponseTypes.ts')};
     assert.equal(f.other.transactions.transactions[0].date.toISODate(), before.date)
   })
 
+  test('Category in-use rejection preserves cache; successful delete removes only its Category', async ({ assert }) => {
+    const path = `/api/v1/groups/${f.category.group.id}/categories/${f.category.id}`
+    const error = { code: 'HAS_CHILDREN', status: '409', detail: 'Category is in use' }
+    routes.set(`delete ${path}`, async () => ({ ok: false, body: { errors: [error] } }))
+    const before = [...f.store.categoryTree.budget.children]
+    assert.deepEqual(await f.category.delete(), [error])
+    assert.deepEqual([...f.store.categoryTree.budget.children], before)
+    routes.set(`delete ${path}`, async () => ({ body: {} }))
+    await f.category.delete()
+    assert.notInclude(f.store.categoryTree.budget.children, f.category)
+    assert.include(f.store.categoryTree.budget.children, f.other)
+  })
+
 })

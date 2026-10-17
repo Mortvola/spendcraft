@@ -439,11 +439,14 @@ class CategoriesController {
     const trx = await db.transaction();
 
     try {
+      user.useTransaction(trx);
+      await user.related('budget').query().forUpdate().firstOrFail();
+
       await budgetGroups(user.budgetId, { client: trx }).where('id', groupId).firstOrFail();
       const category = await budgetCategories(user.budgetId, { client: trx })
         .where('id', catId).where('groupId', groupId).firstOrFail();
 
-      const result = await db.query()
+      const result = await db.query().useTransaction(trx)
         .select(1)
         .from('transactions')
         .where('deleted', false)
