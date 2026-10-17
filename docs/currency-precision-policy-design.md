@@ -1,5 +1,8 @@
 # Fractional-cent currency persistence: characterization and policy design
 
+> **Current monetary migration scope:** Loans and the entire `transaction_categories` architecture are deprecated and excluded from the exact-money migration, regardless of where they are referenced. Earlier catalogs and preservation recommendations below do not make these active authorities or migration requirements. Shared-code dependencies require separately approved retirement; leave runtime, schema and historical data unchanged. See [approved scope and dependency boundaries](monetary-migration-scope.md).
+
+
 > Subsequent product direction: BalanceHistory is deprecated. Its runtime lifecycle is removed and PostgreSQL-verified (physical schema cleanup deferred); earlier proposals to preserve/fix/migrate that feature are superseded. Historical verification facts below remain unchanged. See [deprecation record](balance-history-deprecation.md). No physical table removal or historical repair is authorized.
 
 No production policy is implemented. Existing sub-cent disagreement is confirmed
@@ -10,7 +13,7 @@ characterization only; all database tests below await fresh authorization.
 
 | Concept | Persistence | Runtime/API | Financial role |
 | --- | --- | --- | --- |
-| AccountTransaction.amount / principle | numeric(12,2) | Vine number, ORM parseFloat on reads; saves retain in-memory attributes | Account balance, Statement sums, transaction conservation |
+| AccountTransaction.amount (Loan-specific principle excluded) | numeric(12,2) | Vine number, ORM parseFloat on reads; saves retain in-memory attributes | Account balance, Statement sums, transaction conservation |
 | Account.balance / plaid_balance | numeric(12,2) | number; nullable provider balance | Actual/reported balance |
 | Category.balance (formerly amount) | numeric(12,2) | number via consume parseFloat | Posted financial state |
 | Category.funding_amount | numeric(12,2) | number | Currency configuration / goal amount, not percentage |
@@ -23,8 +26,9 @@ characterization only; all database tests below await fresh authorization.
 | Category.funding_categories and embedded fundingCategories | JSONB | amount plus percentage flag | Fixed amount is currency; percentage has the closed 0.01-percentage-point rule |
 | AutoAssignmentCategory.amount | Knex float/PostgreSQL real | number / parseFloat | Fixed currency OR percentage configuration; storage precision defect deferred |
 | TransactionLog.changes | JSON / serialized object | raw before/after numeric attributes | Audit snapshots, not authoritative posted state |
-| Historic transaction_categories and funding_plan_categories | numeric(12,2); expected fields also scale 2 | Historical migrations/older paths | No active CategoryTransaction model; current allocations use Transaction.categories |
-| Loan balance/starting_balance / historical principal rows | numeric(12,2) | number | Precision inventory only; financial semantics remain deferred |
+| Historic transaction_categories architecture | Deprecated / excluded | No active migration contract | Retain code/schema/data unchanged; no monetary representation or fallback design |
+| Historic funding_plan_categories | Historical migrations/older paths | Historical source catalog only | Not promoted to active authority by this document |
+| Complete Loan feature / Loan-specific monetary fields | Deprecated / excluded | No active migration contract | Separate retirement only; not part of the exact-money inventory or acceptance |
 
 Integer cents are transient in auto-assignment, funding spread/residual handling,
 OFX delta accumulation and account start-date/category effect handling. They are

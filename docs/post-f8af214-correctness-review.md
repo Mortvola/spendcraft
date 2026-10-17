@@ -1,5 +1,8 @@
 # Post-f8af214 accounting correctness review
 
+> **Current monetary migration scope:** Loans and the entire `transaction_categories` architecture are deprecated and excluded from the exact-money migration, regardless of where they are referenced. Earlier catalogs and preservation recommendations below do not make these active authorities or migration requirements. Shared-code dependencies require separately approved retirement; leave runtime, schema and historical data unchanged. See [approved scope and dependency boundaries](monetary-migration-scope.md).
+
+
 ## Latest accepted status — Income fan-out / JSON deduction
 
 At HEAD `756cf3a8f8d52bb9b11255a5bf80341d3f00fdcc`, the sole ranked pre-inventory Income prerequisite is PostgreSQL-accepted. [Acceptance record](income-vs-expenses-transfer-fanout-postgresql-verification.md):27 safeguard,33 narrow,1,721 focused and1,762 full-suite passes;0 failed,0 skipped/pending in each final gate. The original31 prepared cases also all passed. No production correction was required during verification. This status supersedes earlier pending/readiness recommendations below while preserving their historical context.

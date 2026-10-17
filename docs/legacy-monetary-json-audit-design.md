@@ -1,5 +1,8 @@
 # Legacy monetary JSON / relational consistency audit
 
+> **Current monetary migration scope:** Loans and the entire `transaction_categories` architecture are deprecated and excluded from the exact-money migration, regardless of where they are referenced. Earlier catalogs and preservation recommendations below do not make these active authorities or migration requirements. Shared-code dependencies require separately approved retirement; leave runtime, schema and historical data unchanged. See [approved scope and dependency boundaries](monetary-migration-scope.md).
+
+
 > Subsequent product direction: BalanceHistory is deprecated. Its runtime lifecycle is removed and PostgreSQL-verified (physical schema cleanup deferred); earlier proposals to preserve/fix/migrate that feature are superseded. Historical verification facts below remain unchanged. See [deprecation record](balance-history-deprecation.md). No physical table removal or historical repair is authorized.
 
 Preparation only. No database connection or production/data change is authorized by this design.

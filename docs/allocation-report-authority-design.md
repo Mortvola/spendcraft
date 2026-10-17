@@ -1,5 +1,8 @@
 # Allocation / reporting authority characterization and design
 
+> **Current monetary migration scope:** Loans and the entire `transaction_categories` architecture are deprecated and excluded from the exact-money migration, regardless of where they are referenced. Earlier catalogs and preservation recommendations below do not make these active authorities or migration requirements. Shared-code dependencies require separately approved retirement; leave runtime, schema and historical data unchanged. See [approved scope and dependency boundaries](monetary-migration-scope.md).
+
+
 ## Baseline, scope and recommendation
 
 HEAD `b06de7575eda2354d30ac3d741b8ff7aba3ad74c`. Tracked tree/index were clean at the start; unrelated local/generated/editor/backup files were preserved and not inspected. Current source matches the accepted corrections, including the committed Loan configuration gate/save. Read accounting invariants, both correctness reviews and accepted eligibility, funding, admission, Loan, OFX and BalanceHistory verification records. Their database results are prior evidence, not tests rerun here. Database authorization is expired. No PostgreSQL connection/bootstrap/test/setup/cleanup, runtime change, schema change, historical repair or monetary migration occurred.
