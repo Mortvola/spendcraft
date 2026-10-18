@@ -92,13 +92,14 @@ test.group('Category/Pool bounded Budget protocol (no database)', () => {
     const f = await offlineFixture({ balances: [10, 20], tracking: TrackingType.Balances })
     assert.equal(f.storedPool, 100); assert.equal(f.statements, 2); assert.lengthOf(f.seen, 0)
   })
-  test('only opening-posting offline route adds gate before Pool and lower writes', async ({ assert }) => {
+  test('both offline routes gate reads while only new-Institution creation posts opening effects', async ({ assert }) => {
     const fresh = await method(institutions, 'addOffline')
     const existing = await method(institutions, 'addOfflineAccount')
     assert.isBelow(fresh.body.indexOf('.forUpdate()'), fresh.body.indexOf('getFundingPoolCategory'))
     assert.isBelow(fresh.body.indexOf('.forUpdate()'), fresh.body.indexOf("related('institutions').create"))
     assert.include(fresh.body, 'getFundingPoolCategory({ client: trx })')
-    assert.notInclude(existing.body, 'forUpdate')
+    assert.include(existing.body, '.forUpdate()')
+    assert.isBelow(existing.body.indexOf('.forUpdate()'), existing.body.indexOf('budgetInstitutions('))
     assert.notInclude(existing.body, 'updateStartingBalance')
     assert.notInclude(existing.body, 'fundingPool.save')
     const helper = await method('app/Models/Account.ts', 'updateStartingBalance')
@@ -125,9 +126,14 @@ test.group('Category/Pool bounded Budget protocol (no database)', () => {
     assert.include(body, 'db.query().useTransaction(trx)')
     assert.notInclude(body, 'category.balance'); assert.include(body, "where('deleted', false)")
   })
-  test('parent cascade loops remain ungated with historical limitation unchanged', async ({ assert }) => {
-    for (const name of ['deleteAccount', 'delete', 'deleteAccounts']) assert.notInclude((await method(institutions, name)).body, 'forUpdate')
+  test('shared cascade arithmetic remains unchanged and acquires no additional explicit lock', async ({ assert }) => {
+    for (const name of ['deleteAccount', 'delete']) {
+      const entry = await method(institutions, name)
+      assert.include(entry.body, '.forUpdate()')
+      assert.isBelow(entry.body.indexOf('.forUpdate()'), entry.body.indexOf('budgetInstitutions('))
+    }
     const { body } = await method(institutions, 'deleteAccounts')
+    assert.notInclude(body, 'forUpdate')
     assert.include(body, 'category.balance -= tc.amount'); assert.notInclude(body, 'transaction.deleted')
   })
 })

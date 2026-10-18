@@ -518,17 +518,22 @@ export default class TransactionsController {
       throw new Error('user is not defined');
     }
 
-    const { trxId } = request.params();
+    await db.transaction(async (trx) => {
+      user.useTransaction(trx);
+      await user.related('budget').query().forUpdate().firstOrFail();
 
-    const transaction = await Transaction.query()
-      .where('id', trxId)
-      .andWhere('budgetId', user.budgetId)
-      .andWhere('deleted', false)
-      .firstOrFail();
+      const { trxId } = request.params();
 
-    transaction.duplicateOfTransactionId = null;
+      const transaction = await Transaction.query({ client: trx })
+        .where('id', trxId)
+        .andWhere('budgetId', user.budgetId)
+        .andWhere('deleted', false)
+        .firstOrFail();
 
-    await transaction.save();
+      transaction.duplicateOfTransactionId = null;
+
+      await transaction.save();
+    });
   }
 
    

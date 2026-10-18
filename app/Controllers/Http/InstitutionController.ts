@@ -321,6 +321,9 @@ class InstitutionController {
     const trx = await db.transaction();
 
     try {
+      user.useTransaction(trx);
+      await user.related('budget').query().forUpdate().firstOrFail();
+
       const institution = await budgetInstitutions(user.budgetId, { client: trx }).where('id', request.params().instId).firstOrFail();
 
       institution.merge({
@@ -571,13 +574,14 @@ class InstitutionController {
       throw new Error('user is not defined');
     }
 
-    const budget = await user.related('budget').query().firstOrFail();
-
     const requestData = await request.validateUsing(addOfflineAccount);
 
     const trx = await db.transaction();
 
     try {
+      user.useTransaction(trx);
+      const budget = await user.related('budget').query().forUpdate().firstOrFail();
+
       const institution = await budgetInstitutions(user.budgetId, { client: trx }).where('id', request.params().instId).firstOrFail();
 
       const fundingPool = await budget.getFundingPoolCategory({ client: trx });
@@ -617,7 +621,7 @@ class InstitutionController {
         // );
       }
 
-      const unassigned = await budget.getUnassignedCategory();
+      const unassigned = await budget.getUnassignedCategory({ client: trx });
 
       await trx.commit();
 
@@ -783,6 +787,9 @@ class InstitutionController {
     const trx = await db.transaction();
 
     try {
+      user.useTransaction(trx);
+      await user.related('budget').query().forUpdate().firstOrFail();
+
       const institution = await budgetInstitutions(user.budgetId, { client: trx }).where('id', request.params().instId).firstOrFail();
 
       if (institution.accessToken) {
@@ -853,13 +860,12 @@ class InstitutionController {
 
     const trx = await db.transaction();
 
-    const budget = await user.related('budget').query().firstOrFail();
-    budget.useTransaction(trx)
-
     try {
+      user.useTransaction(trx);
+      const budget = await user.related('budget').query().forUpdate().firstOrFail();
       const institution = await budgetInstitutions(user.budgetId, { client: trx })
         .where('id', request.params().instId).firstOrFail();
-      const account = await institution.related('accounts').query()
+      const account = await institution.related('accounts').query().useTransaction(trx)
         .where('id', request.params().acctId).firstOrFail();
 
       const result = await InstitutionController.deleteAccounts([account], budget);
@@ -969,16 +975,15 @@ class InstitutionController {
       throw new Error('user is not defined');
     }
 
-    const budget = await user.related('budget').query().firstOrFail();
-
     const trx = await db.transaction();
 
     try {
-      budget.useTransaction(trx)
+      user.useTransaction(trx);
+      const budget = await user.related('budget').query().forUpdate().firstOrFail();
   
       const institution = await budgetInstitutions(user.budgetId, { client: trx }).where('id', request.params().instId).firstOrFail();
 
-      const accounts = await institution.related('accounts').query();
+      const accounts = await institution.related('accounts').query().useTransaction(trx);
 
       if (institution.accessToken) {
         const plaidClient = await app.container.make('plaid')

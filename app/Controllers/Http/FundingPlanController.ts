@@ -1,38 +1,7 @@
 import { HttpContext } from '@adonisjs/core/http';
-import Category from '#app/Models/Category';
-// import FundingPlan from 'App/Models/FundingPlan';
-// import FundingPlanCategory from 'App/Models/FundingPlanCategory';
-import { ApiResponse, FundingPlanDetailsProps, ProposedFundingCategoryProps } from '#common/ResponseTypes';
-import { category } from '#validators/fundingPlan';
+import { ApiResponse, ProposedFundingCategoryProps } from '#common/ResponseTypes';
 
 class FundingPlanController {
-   
-  public async getPlan({ auth: { user } }: HttpContext): Promise<FundingPlanDetailsProps> {
-    if (!user) {
-      throw new Error('user is undefined');
-    }
-
-    const budget = await user.related('budget').query().firstOrFail();
-
-    const categories = await Category.query()
-      .whereHas('group', (q) => {
-        q.where('budgetId', budget.id)
-      })
-
-    return {
-      id: 0,
-      categories: categories.map((c) => ({
-        id: c.id,
-        categoryId: c.id,
-        amount: c.fundingAmount,
-        useGoal: c.useGoal,
-        goalDate: c.goalDate?.toISODate() ?? null,
-        recurrence: c.recurrence,
-      })),
-      history: [],
-    };
-  }
-
    
   public async getProposed({
     auth: {
@@ -51,34 +20,6 @@ class FundingPlanController {
     return {
       data: await budget.getProposedFunding(date),
     }
-  }
-
-   
-  public async updateOrCreateCategory({
-    request,
-    auth: { user },
-  }: HttpContext): Promise<Category> {
-    if (!user) {
-      throw new Error('user is undefined');
-    }
-
-    const { catId } = request.params();
-
-    const requestData = await request.validateUsing(category);
-
-    const item = await Category.query()
-      .where('id', parseInt(catId, 10))
-      .whereHas('group', (group) => group.where('budgetId', user.budgetId))
-      .firstOrFail();
-
-    await item.merge({
-      fundingAmount: requestData.amount,
-      useGoal: requestData.useGoal ?? false,
-      goalDate: requestData.goalDate ?? null,
-      recurrence: requestData.recurrence,
-    }).save();
-
-    return item;
   }
 }
 

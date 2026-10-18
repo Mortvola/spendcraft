@@ -203,9 +203,7 @@ router.group(() => {
       }).prefix('/institution');
   
       router.group(() => {
-        router.get('/', [FundingPlanController, 'getPlan']);
         router.get('/proposed', [FundingPlanController, 'getProposed']);
-        router.put('/item/:catId', [FundingPlanController, 'updateOrCreateCategory']);
       }).prefix('/funding-plans');
   
       router.group(() => {

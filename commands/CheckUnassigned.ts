@@ -20,36 +20,36 @@ export default class CheckUnassigned extends BaseCommand {
     const { default: Database } = await import('@adonisjs/lucid/services/db');
     const { default: Budget } = await import('#models/Budget');
 
-    const trx = await Database.transaction();
-
     try {
-      const budgets = await Budget.all({ client: trx });
+      const budgets = await Budget.query().select('id');
 
-      await Promise.all(budgets.map(async (budget) => {
-        const unassignedCat = await budget.getUnassignedCategory();
+      for (const selected of budgets) {
+        const count = await Database.transaction(async (trx) => {
+          const budget = await Budget.query({ client: trx })
+            .where('id', selected.id).forUpdate().firstOrFail();
+          const unassignedCat = await budget.getUnassignedCategory({ client: trx });
 
-        // Find all transactions that don't have transaction categories.
-        const transactions = await budget.related('transactions').query()
-          .whereRaw('jsonb_array_length(categories) = ?', [0])
-          .has('accountTransaction')
-          .preload('accountTransaction');
+          // Preserve the existing empty-JSON and AccountTransaction selection.
+          const transactions = await budget.related('transactions').query().useTransaction(trx)
+            .whereRaw('jsonb_array_length(categories) = ?', [0])
+            .has('accountTransaction')
+            .preload('accountTransaction');
 
-        if (transactions.length > 0) {
-          // Create an unassigned transaction category for each found transaction.
           await Promise.all(transactions.map(async (transaction) => {
             transaction.categories = [{ categoryId: unassignedCat.id, amount: transaction.accountTransaction.amount }];
             return transaction.save();
           }));
 
-          console.log(`budget: ${budget.id}, count: ${transactions.length}`);
-        }
-      }));
+          return transactions.length;
+        });
 
-      await trx.commit();
+        if (count > 0) {
+          console.log(`budget: ${selected.id}, count: ${count}`);
+        }
+      }
     }
     catch (error) {
       console.log(error);
-      await trx.rollback();
     }
   }
 

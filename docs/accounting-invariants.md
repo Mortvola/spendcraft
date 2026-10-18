@@ -1,5 +1,7 @@
 # SpendCraft accounting invariants
 
+> Mandatory concurrency architecture: the Budget row is the sole explicit application-level serialization lock. No explicit non-Budget row locks, advisory locks or alternative mechanisms may be introduced or relied on for a new correction. Acquire Budget before authoritative mutable reads and use its owning transaction. Existing recovery/advisory and hidden Tax-upsert locks are identified in [the architecture record](budget-serialization-architecture.md); they are discrepancies, not approved exceptions. If Budget alone is insufficient, stop and report the blocker.
+
 Reconciled against `f8af21435e5279c810a0ab525fdc4a2e1040bf9b` on October 16, 2026. This document records product semantics, not certification that current code implements them. The companion [correctness review](post-f8af214-correctness-review.md) identifies contradictions and evidence. Later abandoned implementation acceptance does not establish current implementation coverage.
 
 ## 1. Account balance authority

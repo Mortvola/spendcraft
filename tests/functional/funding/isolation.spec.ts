@@ -3,7 +3,6 @@ import db from '@adonisjs/lucid/services/db'
 import { DateTime } from 'luxon'
 import Budget from '#models/Budget'
 import User from '#models/User'
-import Category from '#models/Category'
 import { CategoryType, TransactionType } from '#common/ResponseTypes'
 
 let sequence = 0
@@ -32,7 +31,7 @@ async function createFixture() {
   return { own, foreign, shared }
 }
 
-test.group('Funding configuration isolation', (group) => {
+test.group('Removed funding routes and proposed funding isolation', (group) => {
   let fixture: Awaited<ReturnType<typeof createFixture>>
   group.each.setup(async () => { fixture = await createFixture() })
 
@@ -41,7 +40,7 @@ test.group('Funding configuration isolation', (group) => {
       db.from('funding_plans').orderBy('id'), db.from('funding_plan_categories').orderBy('id')])
   }
 
-  test('foreign and missing funding categories reject updates without mutation').with(['foreign', 'missing']).run(async ({ client, assert }, target) => {
+  test('removed funding configuration route rejects foreign and missing targets without mutation').with(['foreign', 'missing']).run(async ({ client, assert }, target) => {
     const before = await state()
     const id = target === 'foreign' ? fixture.foreign.category.id : missingId
     const response = await client.put(`/api/v1/funding-plans/item/${id}`)
@@ -50,24 +49,22 @@ test.group('Funding configuration isolation', (group) => {
     response.assertStatus(404)
   })
 
-  test('owner and shared-budget users can update own funding configuration').with(['owner', 'shared']).run(async ({ client, assert }, actor) => {
+  test('removed funding configuration route rejects owner and shared-budget writes without mutation').with(['owner', 'shared']).run(async ({ client, assert }, actor) => {
+    const before = await state()
     const response = await client.put(`/api/v1/funding-plans/item/${fixture.own.category.id}`)
       .json({ amount: 25, useGoal: true, goalDate: '2025-12-01', recurrence: 2 }).accept('json').loginAs(actor === 'owner' ? fixture.own.user : fixture.shared)
-    response.assertStatus(200)
-    const category = await Category.findOrFail(fixture.own.category.id)
-    assert.equal(category.fundingAmount, 25)
-    assert.isTrue(category.useGoal)
-    assert.equal(category.recurrence, 2)
-    assert.equal(category.balance, 100)
-    assert.equal((await Category.findOrFail(fixture.foreign.category.id)).fundingAmount, 99)
+    response.assertStatus(404)
+    assert.deepEqual(await state(), before)
   })
 
-  test('funding plan and proposed reads contain only budget categories', async ({ client, assert }) => {
-    const plan = await client.get('/api/v1/funding-plans').accept('json').loginAs(fixture.shared)
-    plan.assertStatus(200)
-    const ids = plan.body().categories.map((row: { categoryId: number }) => row.categoryId)
-    assert.include(ids, fixture.own.category.id)
-    assert.notInclude(ids, fixture.foreign.category.id)
+  test('removed funding plan GET route returns not found without mutation', async ({ client, assert }) => {
+    const before = await state()
+    const response = await client.get('/api/v1/funding-plans').accept('json').loginAs(fixture.shared)
+    response.assertStatus(404)
+    assert.deepEqual(await state(), before)
+  })
+
+  test('proposed funding reads contain only budget categories', async ({ client, assert }) => {
     const proposed = await client.get('/api/v1/funding-plans/proposed?date=2025-03-01').accept('json').loginAs(fixture.shared)
     proposed.assertStatus(200)
     const proposedIds = proposed.body().data.map((row: { categoryId: number }) => row.categoryId)

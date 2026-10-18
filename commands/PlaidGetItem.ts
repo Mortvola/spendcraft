@@ -1,5 +1,7 @@
 import env from '#start/env'
 import Institution from '#app/Models/Institution';
+import Budget from '#models/Budget';
+import db from '@adonisjs/lucid/services/db';
 import { BaseCommand } from "@adonisjs/core/ace";
 import { args } from "@adonisjs/core/ace";
 import { flags } from "@adonisjs/core/ace";
@@ -31,26 +33,37 @@ export default class PlaidGetItem extends BaseCommand {
 
     try {
       if (this.accessToken.match(environmentRegEx)) {
-        const institiution = await Institution.findByOrFail('accessToken', this.accessToken)
+        const selection = await Institution.findByOrFail('accessToken', this.accessToken)
 
         const plaidClient = await this.app.container.make('plaid')
 
-        const response = await plaidClient.getItem(institiution);
+        const response = await plaidClient.getItem(selection);
         this.logger.info(JSON.stringify(response, null, 2));
 
         if (this.fix) {
-          const institution = await Institution.findBy('accessToken', this.accessToken);
+          await db.transaction(async (trx) => {
+            await Budget.query({ client: trx })
+              .where('id', selection.budgetId)
+              .forUpdate()
+              .firstOrFail();
 
-          if (institution && institution.plaidItemId !== response.item.item_id) {
-            this.logger.info(`Changing item id from ${institution.plaidItemId} to ${response.item.item_id}`);
+            const institution = await Institution.query({ client: trx })
+              .where('id', selection.id)
+              .where('budgetId', selection.budgetId)
+              .where('accessToken', this.accessToken)
+              .first();
 
-            institution.plaidItemId = response.item.item_id;
+            if (institution && institution.plaidItemId !== response.item.item_id) {
+              this.logger.info(`Changing item id from ${institution.plaidItemId} to ${response.item.item_id}`);
 
-            await institution.save();
-          }
-          else {
-            this.logger.info('Items IDs are the same');
-          }
+              institution.plaidItemId = response.item.item_id;
+
+              await institution.save();
+            }
+            else {
+              this.logger.info('Items IDs are the same');
+            }
+          });
         }
       }
       else {

@@ -171,6 +171,7 @@ export default class UsersController {
 
     try {
       user.useTransaction(trx);
+      const budget = await user.related('budget').query().forUpdate().firstOrFail();
 
       await user.delete();
 
@@ -178,8 +179,6 @@ export default class UsersController {
 
       if (others.length === 0) {
         // No other users are using this budget so delete it
-        const budget = await user.related('budget').query().first();
-
         if (budget) {
           // Delete institutions
           const institutions = await budget.related('institutions').query();

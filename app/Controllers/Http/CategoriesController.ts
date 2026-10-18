@@ -230,34 +230,41 @@ class CategoriesController {
       throw new Error('user is not defined');
     }
 
-    const noGroup = await budgetGroups(user.budgetId).where('type', GroupType.NoGroup).firstOrFail()
+    return db.transaction(async (trx) => {
+      user.useTransaction(trx);
+      await user.related('budget').query().forUpdate().firstOrFail();
 
-    const requestData = await request.validateUsing(
-      addGroup,
-      {
-        meta: {
-          budgetId: user.budgetId,
-          noGroupId: noGroup.id,
+      const noGroup = await budgetGroups(user.budgetId, { client: trx }).where('type', GroupType.NoGroup).firstOrFail()
+
+      const requestData = await request.validateUsing(
+        addGroup,
+        {
+          meta: {
+            budgetId: user.budgetId,
+            trx,
+            noGroupId: noGroup.id,
+          },
         },
-      },
-    );
+      );
 
-    if (requestData.parentGroupId !== undefined && requestData.parentGroupId !== null) {
-      await budgetGroups(user.budgetId).where('id', requestData.parentGroupId).firstOrFail();
-    }
+      if (requestData.parentGroupId !== undefined && requestData.parentGroupId !== null) {
+        await budgetGroups(user.budgetId, { client: trx }).where('id', requestData.parentGroupId).firstOrFail();
+      }
 
-    const group = await new Group()
-      .fill({
-        name: requestData.name,
-        budgetId: user.budgetId,
-        type: GroupType.Regular,
-        parentGroupId: requestData.parentGroupId,
-      })
-      .save();
+      const group = await new Group()
+        .useTransaction(trx)
+        .fill({
+          name: requestData.name,
+          budgetId: user.budgetId,
+          type: GroupType.Regular,
+          parentGroupId: requestData.parentGroupId,
+        })
+        .save();
 
-    return {
-      data: group
-    };
+      return {
+        data: group
+      };
+    });
   }
 
    
@@ -271,38 +278,44 @@ class CategoriesController {
       throw new Error('user is not defined');
     }
 
-    const { groupId } = request.params();
+    return db.transaction(async (trx) => {
+      user.useTransaction(trx);
+      await user.related('budget').query().forUpdate().firstOrFail();
 
-    const group = await budgetGroups(user.budgetId).where('id', groupId).firstOrFail();
+      const { groupId } = request.params();
 
-    const noGroup = await budgetGroups(user.budgetId).where('type', GroupType.NoGroup).firstOrFail()
+      const group = await budgetGroups(user.budgetId, { client: trx }).where('id', groupId).firstOrFail();
 
-    const requestData = await request.validateUsing(
-      updateGroup,
-      {
-        meta: {
-          budgetId: user.budgetId,
-          groupId,
-          noGroupId: noGroup.id,
+      const noGroup = await budgetGroups(user.budgetId, { client: trx }).where('type', GroupType.NoGroup).firstOrFail()
+
+      const requestData = await request.validateUsing(
+        updateGroup,
+        {
+          meta: {
+            budgetId: user.budgetId,
+            trx,
+            groupId,
+            noGroupId: noGroup.id,
+          },
         },
-      },
-    );
+      );
 
-    if (requestData.parentGroupId !== undefined && requestData.parentGroupId !== null) {
-      await budgetGroups(user.budgetId).where('id', requestData.parentGroupId).firstOrFail();
-    }
+      if (requestData.parentGroupId !== undefined && requestData.parentGroupId !== null) {
+        await budgetGroups(user.budgetId, { client: trx }).where('id', requestData.parentGroupId).firstOrFail();
+      }
 
-    group.merge(removeUndefined({
-      name: requestData.name,
-      hidden: requestData.hidden,
-      parentGroupId: requestData.parentGroupId,
-    }));
+      group.merge(removeUndefined({
+        name: requestData.name,
+        hidden: requestData.hidden,
+        parentGroupId: requestData.parentGroupId,
+      }));
 
-    await group.save();
+      await group.save();
 
-    return {
-      data: group,
-    };
+      return {
+        data: group,
+      };
+    });
   }
 
    
@@ -311,27 +324,32 @@ class CategoriesController {
       throw new Error('user is not defined');
     }
 
-    const { groupId } = request.params();
+    return db.transaction(async (trx) => {
+      user.useTransaction(trx);
+      await user.related('budget').query().forUpdate().firstOrFail();
 
-    const group = await budgetGroups(user.budgetId).where('id', groupId).firstOrFail();
+      const { groupId } = request.params();
 
-    const categories = await group.related('categories').query()
+      const group = await budgetGroups(user.budgetId, { client: trx }).where('id', groupId).firstOrFail();
 
-    if (categories.length > 0) {
-      response.status(409)
+      const categories = await group.related('categories').query().useTransaction(trx)
 
-      return {
-        errors: [{
-          code: RequestErrorCode.HAS_CHILDREN,
-          status: '409',
-          detail: 'Unable to delete the group because it contains one or more categories',
-        }]
+      if (categories.length > 0) {
+        response.status(409)
+
+        return {
+          errors: [{
+            code: RequestErrorCode.HAS_CHILDREN,
+            status: '409',
+            detail: 'Unable to delete the group because it contains one or more categories',
+          }]
+        }
       }
-    }
 
-    await group.delete();
+      await group.delete();
 
-    response.status(204)
+      response.status(204)
+    });
   }
 
    
@@ -343,39 +361,45 @@ class CategoriesController {
       throw new Error('user is not defined');
     }
 
-    const { groupId } = request.params();
-    await budgetGroups(user.budgetId).where('id', groupId).firstOrFail();
-    const requestData = await request.validateUsing(
-      addCategory,
-      {
-        meta: {
-          groupId: parseInt(groupId, 10),
+    return db.transaction(async (trx) => {
+      user.useTransaction(trx);
+      await user.related('budget').query().forUpdate().firstOrFail();
+
+      const { groupId } = request.params();
+      await budgetGroups(user.budgetId, { client: trx }).where('id', groupId).firstOrFail();
+      const requestData = await request.validateUsing(
+        addCategory,
+        {
+          meta: {
+            trx,
+            groupId: parseInt(groupId, 10),
+          }
         }
-      }
-    );
+      );
 
-    await authorizeCategories(user.budgetId, requestData.fundingCategories.map((category) => category.categoryId));
+      await authorizeCategories(user.budgetId, requestData.fundingCategories.map((category) => category.categoryId), { client: trx });
 
-    const category = new Category();
+      const category = new Category().useTransaction(trx);
 
-    await category
-      .fill({
-        type: requestData.type ?? CategoryType.Regular,
-        groupId: parseInt(groupId, 10),
-        name: requestData.name,
-        balance: 0,
-        fundingAmount: requestData.fundingAmount,
-        includeFundingTransfers: requestData.type === CategoryType.Bill ? false : requestData.includeFundingTransfers,
-        goalDate: requestData.goalDate,
-        recurrence: requestData.recurrence,
-        useGoal: requestData.useGoal,
-        fundingCategories: requestData.fundingCategories,
-      })
-      .save();
+      await category
+        .fill({
+          type: requestData.type ?? CategoryType.Regular,
+          groupId: parseInt(groupId, 10),
+          name: requestData.name,
+          balance: 0,
+          fundingAmount: requestData.fundingAmount,
+          includeFundingTransfers: requestData.type === CategoryType.Bill ? false : requestData.includeFundingTransfers,
+          goalDate: requestData.goalDate,
+          recurrence: requestData.recurrence,
+          useGoal: requestData.useGoal,
+          fundingCategories: requestData.fundingCategories,
+        })
+        .save();
 
-    return {
-      data: category
-    };
+      return {
+        data: category
+      };
+    });
   }
 
    
@@ -387,45 +411,51 @@ class CategoriesController {
       throw new Error('user is not defined');
     }
 
-    let { groupId, catId } = request.params();
-    groupId = parseInt(groupId, 10)
-    catId = parseInt(catId, 10)
+    return db.transaction(async (trx) => {
+      user.useTransaction(trx);
+      await user.related('budget').query().forUpdate().firstOrFail();
 
-    await budgetGroups(user.budgetId).where('id', groupId).firstOrFail();
-    const category = await budgetCategories(user.budgetId)
-      .where('id', catId).firstOrFail();
+      let { groupId, catId } = request.params();
+      groupId = parseInt(groupId, 10)
+      catId = parseInt(catId, 10)
 
-    const requestData = await request.validateUsing(
-      updateCategory,
-      {
-        meta: {
-          groupId,
-          catId,
+      await budgetGroups(user.budgetId, { client: trx }).where('id', groupId).firstOrFail();
+      const category = await budgetCategories(user.budgetId, { client: trx })
+        .where('id', catId).firstOrFail();
+
+      const requestData = await request.validateUsing(
+        updateCategory,
+        {
+          meta: {
+            trx,
+            groupId,
+            catId,
+          }
         }
-      }
-    );
+      );
 
-    await authorizeCategories(user.budgetId, (requestData.fundingCategories ?? []).map((category) => category.categoryId));
+      await authorizeCategories(user.budgetId, (requestData.fundingCategories ?? []).map((category) => category.categoryId), { client: trx });
 
-    category.merge(removeUndefined({
-      type: requestData.type,
-      name: requestData.name,
-      groupId,
-      suspended: requestData.suspended,
-      fundingAmount: requestData.fundingAmount,
-      includeFundingTransfers: requestData.includeFundingTransfers,
-      hidden: requestData.hidden,
-      useGoal: requestData.useGoal,
-      goalDate: requestData.goalDate,
-      recurrence: requestData.recurrence,
-      fundingCategories: requestData.fundingCategories,
-    }));
+      category.merge(removeUndefined({
+        type: requestData.type,
+        name: requestData.name,
+        groupId,
+        suspended: requestData.suspended,
+        fundingAmount: requestData.fundingAmount,
+        includeFundingTransfers: requestData.includeFundingTransfers,
+        hidden: requestData.hidden,
+        useGoal: requestData.useGoal,
+        goalDate: requestData.goalDate,
+        recurrence: requestData.recurrence,
+        fundingCategories: requestData.fundingCategories,
+      }));
 
-    await category.save();
+      await category.save();
 
-    return {
-      data: category
-    };
+      return {
+        data: category
+      };
+    });
   }
 
    

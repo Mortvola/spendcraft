@@ -1,16 +1,17 @@
+import type { TransactionClientContract } from '@adonisjs/lucid/types/database'
 import { fundingPercentagesRule } from '#app/validation/fundingPercentages'
 import { CategoryType } from '#common/ResponseTypes'
 import vine, { SimpleMessagesProvider } from '@vinejs/vine'
 import { DateTime } from 'luxon'
 
 export const addCategory = vine
-  .withMetaData<{ groupId: number }>()
+  .withMetaData<{ groupId: number, trx: TransactionClientContract }>()
   .compile(
     vine.object({
       name: vine.string().unique({
           table: 'categories',
           column: 'name',
-          filter: (db, _value, field) => { db.where('group_id', field.meta.groupId) },
+          filter: (db, _value, field) => { db.useTransaction(field.meta.trx).where('group_id', field.meta.groupId) },
         }),
       monthlyExpenses: vine.boolean().optional(),
       type: vine.enum([CategoryType.Regular, CategoryType.Bill, CategoryType.Goal]).optional(),
@@ -35,7 +36,7 @@ addCategory.messagesProvider = new SimpleMessagesProvider({
 })
 
 export const addGroup = vine
-  .withMetaData<{ budgetId: number, noGroupId: number }>()
+  .withMetaData<{ budgetId: number, noGroupId: number, trx: TransactionClientContract }>()
   .compile(
     vine.object({
       name: vine.string().unique({
@@ -43,6 +44,7 @@ export const addGroup = vine
           column: 'name',
           filter: (db, _value, field) => {
             db
+              .useTransaction(field.meta.trx)
               .where('application_id', field.meta.budgetId)
               .andWhereRaw('COALESCE(parent_group_id, ??) = ?', [field.meta.noGroupId, field.data.parentGroupId ?? field.meta.noGroupId])
           },
@@ -57,14 +59,14 @@ addGroup.messagesProvider = new SimpleMessagesProvider({
 })
 
 export const updateCategory = vine
-  .withMetaData<{ groupId: number, catId: number }>()
+  .withMetaData<{ groupId: number, catId: number, trx: TransactionClientContract }>()
   .compile(
     vine.object({
       name: vine.string().unique({
         table: 'categories',
         column: 'name',
         filter: (db, _value, field) => {
-          db.where('group_id', field.meta.groupId)
+          db.useTransaction(field.meta.trx).where('group_id', field.meta.groupId)
             .andWhereNot('id', field.meta.catId)
         }
       }),
@@ -93,7 +95,7 @@ updateCategory.messagesProvider = new SimpleMessagesProvider({
 })
 
 export const updateGroup = vine
-  .withMetaData<{ budgetId: number, groupId: number | string, noGroupId: number }>()
+  .withMetaData<{ budgetId: number, groupId: number | string, noGroupId: number, trx: TransactionClientContract }>()
   .compile(
     vine.object({
       name: vine.string().unique({
@@ -101,6 +103,7 @@ export const updateGroup = vine
         column: 'name',
         filter: (db, _value, field) => {
           db
+            .useTransaction(field.meta.trx)
             .where('application_id', field.meta.budgetId)
             .andWhereRaw(`COALESCE(parent_group_id, ??) = ?`, [field.meta.noGroupId, field.data.parentGroupId ?? field.meta.noGroupId])
             .andWhereNot('id', field.meta.groupId)

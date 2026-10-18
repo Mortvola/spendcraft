@@ -39,8 +39,8 @@ function legacyRead(category: Category) {
 
 test.group('Funding recurrence characterization', () => {
   // API contracts preserve coercion and optional-field behavior while enforcing the business domain.
-  test('positive-integer API contract and past-goal proposal for each writer')
-    .with(['create', 'patch', 'funding'])
+  test('positive-integer recurrence and past-goal proposal for supported Category create/PATCH')
+    .with(['create', 'patch'])
     .run(async ({ client, assert }, path) => {
       const f = await fixture()
       const values = [1, 3, 360, 0, -1, -3, 1.5, '2', '1.5', 'abc', 361, 2147483647, 2147483648, undefined, null]
@@ -53,13 +53,10 @@ test.group('Funding recurrence characterization', () => {
           fundingCategories: [], ...(recurrence === undefined ? {} : { recurrence }) }
         const request = path === 'create'
           ? client.post(`/api/v1/groups/${f.group.id}/categories`).json(payload)
-          : path === 'patch'
-            ? client.patch(`/api/v1/groups/${f.group.id}/categories/${f.category.id}`).json(payload)
-            : client.put(`/api/v1/funding-plans/item/${f.category.id}`).json({ amount: 120,
-              useGoal: true, goalDate: '2025-01-01', ...(recurrence === undefined ? {} : { recurrence }) })
+          : client.patch(`/api/v1/groups/${f.group.id}/categories/${f.category.id}`).json(payload)
         const response = await request.accept('json').loginAs(f.user)
         const absent = recurrence === undefined || recurrence === null
-        const accepted = recurrence === 1 || recurrence === 3 || recurrence === 360 || recurrence === '2' || (absent && path !== 'funding')
+        const accepted = recurrence === 1 || recurrence === 3 || recurrence === 360 || recurrence === '2' || absent
         response.assertStatus(accepted ? 200 : 422)
         const stored = path === 'create'
           ? await Category.query().where('groupId', f.group.id).where('name', name).first()

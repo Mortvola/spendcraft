@@ -125,21 +125,32 @@ export default class TaxesController {
       throw new Error('user not defined');
     }
 
-    const budget = await user.related('budget').query().firstOrFail();
-
     const requestData = await request.validateUsing(addTax);
-    
-    const tax = await Tax.updateOrCreate(
-      {
-        year: requestData.year,
-        budgetId: budget.id,
-      },
-      {
-        data: requestData.forecast,
-      }
-    )
 
-    const actuals = await TaxesController.getActuals(tax.year, budget.id);
+    const { tax, budgetId } = await db.transaction(async (trx) => {
+      user.useTransaction(trx);
+      const budget = await user.related('budget').query().forUpdate().firstOrFail();
+
+      let tax = await Tax.query({ client: trx })
+        .where('budgetId', budget.id)
+        .where('year', requestData.year)
+        .first();
+
+      if (tax) {
+        tax.data = requestData.forecast;
+        await tax.save();
+      } else {
+        tax = await Tax.create({
+          year: requestData.year,
+          budgetId: budget.id,
+          data: requestData.forecast,
+        }, { client: trx });
+      }
+
+      return { tax, budgetId: budget.id };
+    });
+
+    const actuals = await TaxesController.getActuals(tax.year, budgetId);
 
     return {
       data: {

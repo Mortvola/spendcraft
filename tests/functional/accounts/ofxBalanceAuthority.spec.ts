@@ -66,7 +66,7 @@ async function snapshot(f: Fixture) {
 }
 async function assertBalances(f: Fixture, expected: number, provider: number, category: number) {
   const account = await Account.findOrFail(f.account.id)
-  if (account.balance !== expected || account.plaidBalance !== provider) throw new Error('Independent Account balances disagree')
+  if (account.balance !== expected || account.plaidBalance !== provider) throw new Error(`Independent Account balances disagree: actual ${account.balance}/${account.plaidBalance}; expected ${expected}/${provider}`)
   const raw = await db.rawQuery('SELECT balance::text, plaid_balance::text FROM accounts WHERE id = ?', [account.id])
   if (Number(raw.rows[0].balance) !== expected || Number(raw.rows[0].plaid_balance) !== provider) throw new Error('Raw persistence disagrees')
   const unassigned = await Category.findOrFail(f.unassigned.id)

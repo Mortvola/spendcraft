@@ -184,16 +184,13 @@ test.group('Monetary precision characterization', () => {
       }
     })
 
-  test('funding currency and Statement writers record decimal versus JSON response precision')
+  test('Category funding configuration and Statement writers record decimal versus JSON response precision')
     .with([0, 0.01, -0.01, 0.004, 0.005, 0.006, -0.004, -0.005, -0.006, 1.234, -1.234, '0.005', '0.01', '1.234', 0.1 + 0.2])
     .run(async ({ client, assert }, amount) => {
       const f = await fixture()
       const config = await client.patch(`/api/v1/groups/${f.categories[0].groupId}/categories/${f.categories[0].id}`)
         .json({ name: 'Currency configuration', fundingAmount: amount }).accept('json').loginAs(f.user)
       config.assertStatus(200)
-      const plan = await client.put(`/api/v1/funding-plans/item/${f.categories[1].id}`)
-        .json({ amount, recurrence: 1 }).accept('json').loginAs(f.user)
-      plan.assertStatus(200)
       const data = { shortTermCapitalGains: amount, longTermCapitalGains: 0, dividends: 0, taxableInterest: 0 }
       const statement = await client.post(`/api/v1/account/${f.account.id}/statements`)
         .json({ startDate: '2025-02-01', endDate: '2025-02-28', startingBalance: amount, endingBalance: amount, data })
@@ -206,10 +203,9 @@ test.group('Monetary precision characterization', () => {
       updated.assertStatus(200)
       console.log(JSON.stringify({ scenario: 'currency config and statement', input: amount,
         category: (await Category.findOrFail(f.categories[0].id)).fundingAmount,
-        planAmount: (await Category.findOrFail(f.categories[1].id)).fundingAmount,
         storedStatement: await db.from('statements').where('id', storedStatement.id)
           .select('starting_balance', 'ending_balance', 'data').first(),
-        categoryBody: config.body(), planBody: plan.body(), statementBody: statement.body(), updateBody: updated.body() }))
+        categoryBody: config.body(), statementBody: statement.body(), updateBody: updated.body() }))
     })
 
   test('balance-tracked Statement raw response and persisted current balance record separate precision')

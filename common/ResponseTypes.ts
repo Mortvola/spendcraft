@@ -458,45 +458,6 @@ export interface AddOfflineAccountResponse {
   categories: CategoryBalanceProps[],
 }
 
-interface FundingPlanCategoryProps {
-  id?: number;
-
-  categoryId: number;
-
-  amount: number;
-
-  useGoal: boolean;
-
-  goalDate: string | null;
-
-  recurrence: number;
-}
-
-interface HistoryCategoryProps {
-  id: number;
-
-  months: {
-    expenses: number,
-    funding: number,
-  }[]
-}
-
-// export interface HistoryGroupProps {
-//   id: number;
-
-//   name: string;
-
-//   categories: HistoryCategoryProps[];
-// }
-
-export interface FundingPlanDetailsProps {
-  id: number;
-
-  history: HistoryCategoryProps[];
-
-  categories: FundingPlanCategoryProps[];
-}
-
 export interface ProposedFundingCategoryProps {
   categoryId: number,
   amount: number,
