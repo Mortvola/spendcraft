@@ -138,3 +138,9 @@ Do not make speculative changes to several unrelated files or dependencies at on
 - Do not reset, clean, rebase, force-push, or otherwise perform destructive Git operations unless explicitly requested.
 - Do not create commits unless explicitly requested.
 - Before a substantial migration, preserve the ability to distinguish the migration changes from unrelated work.
+
+## Operator database scripts
+
+- Scripts requested for production or `spendcraft_sandbox` must read connection settings from a `.env` file using `PG_HOST`, `PG_PORT`, `PG_USER`, `PG_PASSWORD`, and `PG_DB_NAME`.
+- These scripts must automatically create a unique output directory and print its absolute path to standard output immediately after creation, before database work begins, following `scripts/auditTransactionCategoryCents.mjs`. Preserve existing output files; never overwrite a previous run's results.
+- Do not print credentials or commit environment files. Preparing a script does not authorize executing it against a database.
