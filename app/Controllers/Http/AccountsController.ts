@@ -740,7 +740,11 @@ export default class AccountsController {
       const statement = await budgetStatements(user.budgetId, { client: trx }).where('id', statementId).firstOrFail()
       const account = await budgetAccounts(user.budgetId, { client: trx }).where('id', statement.accountId).firstOrFail()
 
-      await AccountTransaction.query({ client: trx }).where('statementId', statement.id).update({ statementId: null })
+      const accountTransactions = await AccountTransaction.query({ client: trx }).where('statementId', statement.id)
+      for (const accountTransaction of accountTransactions) {
+        accountTransaction.statementId = null
+        await accountTransaction.save()
+      }
       await statement.delete()
 
       if (account.tracking === TrackingType.Balances) {

@@ -43,6 +43,9 @@ class Transaction extends BaseModel {
     finishCategoryStorageSave(transaction);
   }
 
+  @column.dateTime({ autoCreate: true, autoUpdate: true, serializeAs: null })
+  public updatedAt: DateTime;
+
   @column()
   public id: number;
 

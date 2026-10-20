@@ -36,6 +36,9 @@ export interface AccountSyncResult {
 }
 
 class Account extends BaseModel {
+  @column.dateTime({ autoCreate: true, autoUpdate: true, serializeAs: null })
+  public updatedAt: DateTime;
+
   @column()
   public id: number;
 

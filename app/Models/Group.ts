@@ -1,3 +1,4 @@
+import { DateTime } from 'luxon';
 import {
   BaseModel, belongsTo, column, hasMany
 } from '@adonisjs/lucid/orm';
@@ -6,6 +7,9 @@ import Budget from '#app/Models/Budget';
 import type { BelongsTo, HasMany } from "@adonisjs/lucid/types/relations";
 
 class Group extends BaseModel {
+  @column.dateTime({ autoCreate: true, autoUpdate: true, serializeAs: null })
+  public updatedAt: DateTime;
+
   @column()
   public id: number;
 

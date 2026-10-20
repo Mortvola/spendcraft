@@ -1,3 +1,4 @@
+import { DateTime } from 'luxon';
 import {
   BaseModel, belongsTo, column,
 } from '@adonisjs/lucid/orm';
@@ -17,6 +18,9 @@ interface Location {
 }
 
 class AccountTransaction extends BaseModel {
+  @column.dateTime({ autoCreate: true, autoUpdate: true, serializeAs: null })
+  public updatedAt: DateTime;
+
   @column({ serializeAs: null })
   public id: number;
 

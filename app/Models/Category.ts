@@ -30,6 +30,9 @@ interface FundingCategory {
 }
 
 export default class Category extends BaseModel {
+  @column.dateTime({ autoCreate: true, autoUpdate: true, serializeAs: null })
+  public updatedAt: DateTime;
+
   @column()
   public id: number;
 

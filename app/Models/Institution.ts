@@ -13,6 +13,9 @@ import app from '@adonisjs/core/services/app';
 import { AccountType, TrackingType } from '#common/ResponseTypes';
 
 class Institution extends BaseModel {
+  @column.dateTime({ autoCreate: true, autoUpdate: true, serializeAs: null })
+  public updatedAt: DateTime;
+
   @column()
   public id: number;
 
