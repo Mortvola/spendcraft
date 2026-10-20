@@ -1,0 +1,2 @@
+{"phase":"identity","identity":{"database":"budget","username":"ubuntu","port":5433,"server":"127.0.0.1/32","peer":"127.0.0.1/32","default_read_only":"on","read_only":"on","isolation":"repeatable read"}}
+{"status":"failed","phase":"identity","code":"IDENTITY_OR_READONLY_MISMATCH"}
