@@ -1,3 +1,4 @@
+import { writeHistoricalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
 import { DateTime } from 'luxon'
@@ -187,10 +188,10 @@ test.group('Transaction budget isolation', (group) => {
   })
 
   test('stored foreign categories cannot participate in update or deletion').with(['patch', 'delete']).run(async ({ client, assert }, operation) => {
-    await fixture.own.transaction.merge({ categories: [
+    await writeHistoricalTransactionFixture(fixture.own.transaction, { categories: [
       { categoryId: fixture.own.category.id, amount: 5 },
       { categoryId: fixture.foreign.category.id, amount: 5 },
-    ] }).save()
+    ] })
     const before = await state()
     const url = `/api/v1/transaction/${fixture.own.transaction.id}`
     const response = operation === 'patch'

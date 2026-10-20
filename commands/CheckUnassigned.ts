@@ -1,3 +1,4 @@
+import { validateStoredCategoryConservation } from '#services/transactionCategoryStorage';
 import { BaseCommand } from "@adonisjs/core/ace";
 import { CommandOptions } from "@adonisjs/core/types/ace";
 
@@ -37,7 +38,9 @@ export default class CheckUnassigned extends BaseCommand {
 
           await Promise.all(transactions.map(async (transaction) => {
             transaction.categories = [{ categoryId: unassignedCat.id, amount: transaction.accountTransaction.amount }];
-            return transaction.save();
+            await transaction.save();
+            if (!transaction.deleted) await validateStoredCategoryConservation(transaction);
+            return transaction;
           }));
 
           return transactions.length;

@@ -1,5 +1,7 @@
+import { prepareCategoryStorage, finishCategoryStorageSave } from '#services/categoryStorageBinding';
+import { bindCategoryStorage, prepareNewCategoryStorage } from '#services/transactionCategoryStorage';
 import {
-  BaseModel, hasMany, column,
+  BaseModel, hasMany, column, afterFind, afterFetch, beforeSave, afterSave,
   belongsTo, hasOne,
 } from '@adonisjs/lucid/orm';
 import { DateTime } from 'luxon';
@@ -21,6 +23,26 @@ export interface TransTaxCategory {
 }
 
 class Transaction extends BaseModel {
+  @afterFind()
+  public static async bindActiveCategories(transaction: Transaction) {
+    await bindCategoryStorage([transaction]);
+  }
+
+  @afterFetch()
+  public static async bindActiveCategoryList(transactions: Transaction[]) {
+    await bindCategoryStorage(transactions);
+  }
+
+  @beforeSave()
+  public static async encodeActiveCategories(transaction: Transaction) {
+    await prepareNewCategoryStorage(transaction);
+  }
+
+  @afterSave()
+  public static finishActiveCategories(transaction: Transaction) {
+    finishCategoryStorageSave(transaction);
+  }
+
   @column()
   public id: number;
 
@@ -55,7 +77,7 @@ class Transaction extends BaseModel {
   public duplicateOfTransactionId: number | null;
 
   @column({
-    prepare: (value: TransCategory[]) => JSON.stringify(value),
+    prepare: (value: TransCategory[], _attribute, model) => prepareCategoryStorage(value, model),
   })
   public categories: TransCategory[];
 

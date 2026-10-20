@@ -1,3 +1,4 @@
+import { writeHistoricalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
 import { DateTime } from 'luxon'
@@ -119,8 +120,9 @@ test.group('Group/category/transfer isolation', (group) => {
 
   test('rejects inaccessible exclusion transactions without changing state').with(['foreign', 'missing', 'legacy-cross-reference']).run(async ({ client, assert }, target) => {
     if (target === 'legacy-cross-reference') {
-      fixture.foreign.transaction.categories = [{ categoryId: fixture.own.category.id, amount: -10 }]
-      await fixture.foreign.transaction.save()
+      await writeHistoricalTransactionFixture(fixture.foreign.transaction, {
+        categories: [{ categoryId: fixture.own.category.id, amount: -10 }],
+      })
     }
     const id = target === 'missing' ? missingId : fixture.foreign.transaction.id
     const ordinary = await client.get('/api/v1/category-balances?date=2025-03-01').accept('json').loginAs(fixture.own.user)
@@ -205,8 +207,7 @@ test.group('Group/category/transfer isolation', (group) => {
     const categories = reference === 'split'
       ? [{ categoryId: fixture.foreign.category.id, amount: -10 }, { categoryId: fixture.own.otherCategory.id, amount: 10 }]
       : [{ categoryId: fixture.own.category.id, amount: -10, fundingCategories: [funding(fixture.foreign.category.id)] }, { categoryId: fixture.own.otherCategory.id, amount: 10 }]
-    transaction.categories = categories
-    await transaction.save()
+    await writeHistoricalTransactionFixture(transaction, { categories })
     const before = await state()
     const response = await client.patch(`/api/v1/category-transfer/${transaction.id}`)
       .json(transferBody([fixture.own.category.id, fixture.own.otherCategory.id])).accept('json').loginAs(fixture.own.user)

@@ -76,9 +76,10 @@ export default class CheckBalances extends BaseCommand {
               left outer join accounts a on a.id = at.account_id
               where (a.start_date is null OR t.date >= a.start_date)
               and t.deleted = false
+              and t.application_id = ?
               group by transCats."categoryId"
             ) AS T on T."categoryId" = categories.id
-          `)
+          `, [budget.id])
           .select('categories.*')
           .select('trans_sum')
           .preload('group');

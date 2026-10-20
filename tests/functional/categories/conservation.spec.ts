@@ -56,24 +56,28 @@ test.group('Category transfer conservation', (group) => {
       : scenario === 'multi'
       ? [{ categoryId: fixture.first.id, amount: -4 }, { categoryId: fixture.first.id, amount: -6 }, { categoryId: fixture.second.id, amount: 10 }]
       : [{ categoryId: fixture.first.id, amount: amount === 0 ? 0 : -amount }, { categoryId: fixture.second.id, amount }]
-    const categories = scenario === 'funding' ? splits.map((split) => split.amount < 0
+    const pool = await fixture.budget.getFundingPoolCategory()
+    const selectedSplits = scenario === 'funding' ? splits.map((split) => split.amount < 0 ? { ...split, categoryId: pool.id } : split) : splits
+    const categories = scenario === 'funding' ? selectedSplits.map((split) => split.amount < 0
       ? { ...split, funder: true }
       : { ...split, funder: false, baseAmount: split.amount, includeFundingTransfers: true,
         fundingCategories: [{ categoryId: fixture.first.id, amount: 100, percentage: true }] }) : splits
     const type = scenario === 'funding' ? TransactionType.FUNDING_TRANSACTION : TransactionType.REBALANCE_TRANSACTION
     const before = await state()
+    const debitId = scenario === 'funding' ? pool.id : fixture.first.id
+    const initialDebitBalance = (await Category.findOrFail(debitId)).balance
     const created = await client.post('/api/v1/category-transfer')
       .json({ date: '2025-03-01', type, categories }).accept('json').loginAs(fixture.user)
     created.assertStatus(200)
     const id = created.body().data.transaction.id
     assert.deepEqual((await Transaction.findOrFail(id)).categories, categories)
-    assert.equal((await Category.findOrFail(fixture.first.id)).balance, 10 - amount)
+    assert.equal((await Category.findOrFail(debitId)).balance, initialDebitBalance - amount)
     assert.equal((await Category.findOrFail(fixture.second.id)).balance, amount)
     const replacementDate = type === TransactionType.FUNDING_TRANSACTION ? '2025-03-01' : '2025-03-02'
     const updated = await client.patch(`/api/v1/category-transfer/${id}`)
       .json({ date: replacementDate, type, categories }).accept('json').loginAs(fixture.user)
     updated.assertStatus(200)
-    assert.equal((await Category.findOrFail(fixture.first.id)).balance, 10 - amount)
+    assert.equal((await Category.findOrFail(debitId)).balance, initialDebitBalance - amount)
     assert.equal((await Category.findOrFail(fixture.second.id)).balance, amount)
     assert.equal((await Transaction.findOrFail(id)).date.toISODate(), replacementDate)
     const after = await state()

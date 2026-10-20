@@ -115,6 +115,7 @@ test.group('Remaining Budget writer characterization without DB', () => {
         } }
     } }
     const run = await method('commands/CheckUnassigned.ts', 'checkUnassigned', {
+      validateStoredCategoryConservation: async () => undefined,
       loadDatabase: async () => ({ default: database }), loadBudget: async () => ({ default: Budget }),
       console: { log: (message) => { events.push(message) } },
     }, true)
@@ -134,6 +135,7 @@ test.group('Remaining Budget writer characterization without DB', () => {
     const events = []
     const owner = {}
     const run = await method('commands/CheckUnassigned.ts', 'checkUnassigned', {
+      validateStoredCategoryConservation: async () => undefined,
       loadDatabase: async () => ({ default: { transaction: async (callback) => {
         try { await callback(owner); events.push('commit') }
         catch (error) { events.push('rollback'); throw error }

@@ -1,3 +1,4 @@
+import { writeHistoricalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 // PREPARED ONLY: requires fresh localhost:5432/spendcraft_test authorization.
 // Use tests/bootstrap.ts and its centralized per-statement pg/pgLog/execution guard.
 // This suite adds no direct cleanup SQL; bootstrap cleanup is independently guarded.
@@ -291,7 +292,7 @@ test.group('Staged Budget writers PostgreSQL acceptance', (group) => {
       return query
     })
     cleanup(() => discovery.mock.restore())
-    await f.transaction.merge({ categories: [] }).save()
+    await writeHistoricalTransactionFixture(f.transaction, { categories: [] })
     const command = await ace.create(CheckUnassigned, [])
     const trx = await db.transaction()
     let pending: Promise<void> | undefined

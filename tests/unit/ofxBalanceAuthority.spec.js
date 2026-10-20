@@ -84,6 +84,8 @@ async function fixture() {
   const categoryQuery = { where(field, id) { if (field === 'id') this.id = id; return this },
     whereHas() { return this }, async firstOrFail() { return categories.get(this.id) } }
   const runMethod = runInNewContext(await currentMethod(), {
+    requestCategoryStorage: (model) => model, hasCategoryStorage: () => true, validateStoredCategoryConservation: async () => undefined,
+    AccountType: { Loan: 'loan' }, TransactionType: { REGULAR_TRANSACTION: 0 },
     XMLParser, DateTime, Transaction: PersistedTransaction,
     Category: { query: () => Object.create(categoryQuery) },
     TrackingType: { Transactions: 'Transactions', Balances: 'Balances' },

@@ -1,3 +1,6 @@
+import { canonicalCategoryAllocations } from '#services/categoryAmountCodec';
+import { hasCategoryStorage, excludeCategoryStorage } from '#services/categoryStorageBinding';
+import { validateStoredCategoryConservation } from '#services/transactionCategoryStorage';
 import { accountEligible, categoryEligible, categoryEffectDeltas } from '#services/transactionEligibility';
 import { HttpContext } from '@adonisjs/core/http';
 import { Exception } from '@adonisjs/core/exceptions';
@@ -161,7 +164,12 @@ export default class TransactionsController {
         ...(requestData.categories ?? []).map((category) => category.categoryId),
       ]);
       for (const categoryId of categoryIds) {
-        await budgetCategories(budget.id, { client: trx }).where('id', categoryId).firstOrFail();
+        const referencedCategory = await budgetCategories(budget.id, { client: trx }).where('id', categoryId).firstOrFail();
+        if (referencedCategory.type === CategoryType.Loan) excludeCategoryStorage(transaction);
+      }
+
+      if (requestData.categories !== undefined && hasCategoryStorage(transaction)) {
+        requestData.categories = canonicalCategoryAllocations(requestData.categories);
       }
 
       if (requestData.statementId !== undefined && requestData.statementId !== null) {
@@ -185,7 +193,7 @@ export default class TransactionsController {
         const categories = requestData.categories?.length === 0
           ? [{ amount }]
           : requestData.categories ?? transaction.categories;
-        validateTransactionSplits(amount, categories);
+        validateTransactionSplits(amount, categories, undefined, hasCategoryStorage(transaction));
       }
 
       // Ordinary effects use independent old/new eligibility; nominal splits stay intact.
@@ -440,6 +448,9 @@ export default class TransactionsController {
       transaction.merge(transactionChanges);
 
       await transaction.save();
+      if (requestData.categories !== undefined || requestData.amount !== undefined) {
+        await validateStoredCategoryConservation(transaction);
+      }
 
       await transaction.related('transactionLog')
         .create({

@@ -1,3 +1,4 @@
+import { writeHistoricalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 // DB-backed verification requires fresh task-specific authorization and current safeguards.
 import { test } from '@japa/runner'
 import { mock } from 'node:test'
@@ -40,11 +41,11 @@ test.group('Replacement admission persisted noninterference (prepared)', () => {
     const f = await fixture(shape === 'deleted rebalance' || shape === 'rebalance as funding'
       ? TransactionType.REBALANCE_TRANSACTION : TransactionType.FUNDING_TRANSACTION)
     let type: number = shape === 'deleted rebalance' || shape === 'funding as rebalance' ? 3 : 2
-    if (shape.startsWith('deleted')) await f.target.merge({ deleted: true }).save()
+    if (shape.startsWith('deleted')) await writeHistoricalTransactionFixture(f.target, { deleted: true })
     const unrelated: Record<string, TransactionType> = { manual: TransactionType.MANUAL_TRANSACTION,
       provider: TransactionType.REGULAR_TRANSACTION, opening: TransactionType.STARTING_BALANCE,
       transfer: TransactionType.TRANSFER_TRANSACTION }
-    if (shape in unrelated) await f.target.merge({ type: unrelated[shape] }).save()
+    if (shape in unrelated) await writeHistoricalTransactionFixture(f.target, { type: unrelated[shape] })
     if (shape === 'unknown type') await db.from('transactions').where('id', f.target.id).update({ type: 99 })
     if (shape === 'unknown request') type = 99
     if (['one link', 'multiple links', 'Loan Account'].includes(shape)) {
@@ -90,7 +91,7 @@ test.group('Replacement admission persisted noninterference (prepared)', () => {
 
   test('optional metadata is not required and funding date rejection is inert', async ({ client, assert }) => {
     const f = await fixture()
-    await f.target.merge({ categories: [{ categoryId: f.category.id, amount: 2 }, { categoryId: f.pool.id, amount: -2 }] }).save()
+    await writeHistoricalTransactionFixture(f.target, { categories: [{ categoryId: f.category.id, amount: 2 }, { categoryId: f.pool.id, amount: -2 }] })
     const before = await state()
     const rejected = await client.patch(`/api/v1/category-transfer/${f.target.id}`)
       .json({ type: 2, date: '2025-04-01', categories: f.rows(3) }).accept('json').loginAs(f.user)

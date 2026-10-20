@@ -1,3 +1,4 @@
+import { categoryNonzeroAllocationSql } from '#services/categoryAmountCodec';
 import {
   BaseModel, belongsTo, column,
 } from '@adonisjs/lucid/orm';
@@ -127,7 +128,7 @@ export default class Category extends BaseModel {
       .related('transactions').query()
       .where('deleted', false)
        
-      .whereRaw('categories::jsonb @\\? (\'$[*] \\? (@.categoryId == \' || ? || \' && @.amount != 0)\')::jsonpath', [this.id])
+      .whereRaw(categoryNonzeroAllocationSql, [this.id])
       .where((q) => {
         q.whereHas('accountTransaction', (q2) => {
           q2
@@ -178,7 +179,7 @@ export default class Category extends BaseModel {
       q.count('*').as('count')
         .where('deleted', false)
          
-        .whereRaw('categories::jsonb @\\? (\'$[*] \\? (@.categoryId == \' || ? || \' && @.amount != 0)\')::jsonpath', [this.id])
+        .whereRaw(categoryNonzeroAllocationSql, [this.id])
         .where((q4) => {
           q4.whereHas('accountTransaction', (q2) => {
             q2

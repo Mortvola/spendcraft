@@ -1,3 +1,4 @@
+import { writeHistoricalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
 import { DateTime } from 'luxon'
@@ -53,8 +54,8 @@ test.group('Exclusive Category and Funding History JSON authority', () => {
     ]).run(async ({ client, assert }, scenario) => {
       const f = await createDomain('authority')
       // Fixture updates/inserts are individually protected by the installed driver guard.
-      await f.transaction.merge({ type: report === 'category' ? TransactionType.MANUAL_TRANSACTION : 2,
-        categories: scenario.json.map((amount) => ({ categoryId: f.category.id, amount })) }).save()
+      await writeHistoricalTransactionFixture(f.transaction, { type: report === 'category' ? TransactionType.MANUAL_TRANSACTION : 2,
+        categories: scenario.json.map((amount) => ({ categoryId: f.category.id, amount })) })
       if (scenario.legacy !== null) await db.table('transaction_categories').insert({
         transaction_id: f.transaction.id, category_id: f.category.id, amount: scenario.legacy,
       })
@@ -80,7 +81,7 @@ test.group('Exclusive Category and Funding History JSON authority', () => {
       const f = await createDomain('selection')
       await f.account.merge({ startDate: DateTime.fromISO('2026-01-01') }).save()
       await f.account.related('accountTransactions').query().update({ pending: true })
-      await f.transaction.merge({ type: scenario.type, deleted: scenario.deleted }).save()
+      await writeHistoricalTransactionFixture(f.transaction, { type: scenario.type, deleted: scenario.deleted })
       const response = await client.get(`/api/v1/reports/${report}`).qs({ c: f.category.id }).loginAs(f.user)
       response.assertStatus(200)
       const included = report === 'category' ? [0, 5].includes(scenario.type) : scenario.type === 2
@@ -90,10 +91,10 @@ test.group('Exclusive Category and Funding History JSON authority', () => {
 
     test(`${report}: foreign Transaction and Category JSON cannot cross scope`, async ({ client, assert }) => {
       const own = await createDomain('owner'), foreign = await createDomain('foreign')
-      await own.transaction.merge({ type: report === 'category' ? 5 : 2,
-        categories: [{ categoryId: foreign.category.id, amount: 999 }] }).save()
-      await foreign.transaction.merge({ type: report === 'category' ? 5 : 2,
-        categories: [{ categoryId: own.category.id, amount: 888 }] }).save()
+      await writeHistoricalTransactionFixture(own.transaction, { type: report === 'category' ? 5 : 2,
+        categories: [{ categoryId: foreign.category.id, amount: 999 }] })
+      await writeHistoricalTransactionFixture(foreign.transaction, { type: report === 'category' ? 5 : 2,
+        categories: [{ categoryId: own.category.id, amount: 888 }] })
       const before = await Promise.all([snapshot(own.budget.id), snapshot(foreign.budget.id)])
       const response = await client.get(`/api/v1/reports/${report}`).qs({ c: own.category.id }).loginAs(own.user)
       response.assertStatus(200)
@@ -107,9 +108,9 @@ test.group('Exclusive Category and Funding History JSON authority', () => {
   for (const report of ['category', 'funding-history'] as const) {
     test(`${report}: unresolved JSON IDs never fallback and valid siblings survive`, async ({ client, assert }) => {
       const f = await createDomain('missing')
-      await f.transaction.merge({ type: report === 'category' ? 5 : 2, categories: [
+      await writeHistoricalTransactionFixture(f.transaction, { type: report === 'category' ? 5 : 2, categories: [
         { categoryId: 2147483647, amount: 999 }, { categoryId: f.category.id, amount: 7 },
-      ] }).save()
+      ] })
       await db.table('transaction_categories').insert({ transaction_id: f.transaction.id, category_id: f.category.id, amount: 80 })
       const response = await client.get(`/api/v1/reports/${report}`).qs({ c: f.category.id }).loginAs(f.user)
       response.assertStatus(200)
@@ -119,7 +120,7 @@ test.group('Exclusive Category and Funding History JSON authority', () => {
 
     test(`${report}: actual SQL is JSON-only, read-only and one aggregate query`, async ({ client, assert }) => {
       const f = await createDomain('observe')
-      await f.transaction.merge({ type: report === 'category' ? 5 : 2 }).save()
+      await writeHistoricalTransactionFixture(f.transaction, { type: report === 'category' ? 5 : 2 })
       await f.budget.related('transactions').createMany(Array.from({ length: 25 }, () => ({
         date: DateTime.fromISO('2025-02-01'), type: report === 'category' ? 5 : 2,
         version: 0, deleted: false, sortOrder: 0, categories: [{ categoryId: f.category.id, amount: 10 }], taxes: [],
@@ -156,7 +157,7 @@ test.group('Exclusive Category and Funding History JSON authority', () => {
     test(`${report}: before/equal/after startDate remains nominal`).with(['2024-12-31', '2025-01-01', '2025-01-02'])
       .run(async ({ client, assert }, date) => {
         const f = await createDomain('boundary')
-        await f.transaction.merge({ date: DateTime.fromISO(date), type: report === 'category' ? 5 : 2 }).save()
+        await writeHistoricalTransactionFixture(f.transaction, { date: DateTime.fromISO(date), type: report === 'category' ? 5 : 2 })
         const response = await client.get(`/api/v1/reports/${report}`).qs({ c: f.category.id }).loginAs(f.user)
         response.assertStatus(200)
         if (report === 'category') assert.equal(response.body()[0].sum, 10)
@@ -168,7 +169,7 @@ test.group('Exclusive Category and Funding History JSON authority', () => {
     const f = await createDomain('names')
     await f.category.merge({ name: 'B current' }).save()
     const other = await f.group.related('categories').create({ name: 'A current', type: CategoryType.Regular, balance: 0, fundingCategories: [] })
-    await f.transaction.merge({ categories: [{ categoryId: f.category.id, amount: 20 }, { categoryId: f.category.id, amount: 30 }, { categoryId: other.id, amount: 4 }] }).save()
+    await writeHistoricalTransactionFixture(f.transaction, { categories: [{ categoryId: f.category.id, amount: 20 }, { categoryId: f.category.id, amount: 30 }, { categoryId: other.id, amount: 4 }] })
     await f.budget.related('transactions').create({ date: f.transaction.date, type: 5, version: 0, sortOrder: 0, deleted: false,
       categories: [{ categoryId: f.category.id, amount: 5 }], taxes: [] })
     const response = await client.get('/api/v1/reports/category').qs({ c: [f.category.id, other.id] }).loginAs(f.user)
@@ -207,10 +208,10 @@ test.group('Exclusive Category and Funding History JSON authority', () => {
   test('Category preserves inclusive date range, current names, multiple Categories and explicit Unassigned', async ({ client, assert }) => {
     const f = await createDomain('range')
     const unassigned = await f.budget.getUnassignedCategory()
-    await f.transaction.merge({ categories: [
+    await writeHistoricalTransactionFixture(f.transaction, { categories: [
       { categoryId: f.category.id, amount: 20 }, { categoryId: f.category.id, amount: 30 },
       { categoryId: unassigned.id, amount: -5 },
-    ] }).save()
+    ] })
     const response = await client.get('/api/v1/reports/category').qs({
       c: [f.category.id, unassigned.id], startDate: '2025-02-01', endDate: '2025-02-01',
     }).loginAs(f.user)
@@ -227,7 +228,7 @@ test.group('Exclusive Category and Funding History JSON authority', () => {
     { rule: 'transfer-inclusive', amount: 0.30000000000000004 },
   ]).run(async ({ client, assert }, scenario) => {
     const f = await createDomain(scenario.rule)
-    await f.transaction.merge({ type: 2, categories: [{ categoryId: f.category.id, amount: scenario.amount }] }).save()
+    await writeHistoricalTransactionFixture(f.transaction, { type: 2, categories: [{ categoryId: f.category.id, amount: scenario.amount }] })
     const response = await client.get('/api/v1/reports/funding-history').loginAs(f.user)
     response.assertStatus(200)
     assert.equal(response.body().find((r: { categoryId: number }) => r.categoryId === f.category.id).history[0].amount, scenario.amount)
@@ -237,10 +238,10 @@ test.group('Exclusive Category and Funding History JSON authority', () => {
     const f = await createDomain('net')
     const pool = await f.budget.getFundingPoolCategory()
     const netRow = { categoryId: f.category.id, amount: 2, baseAmount: 3 }
-    await f.transaction.merge({ type: 2, categories: [
+    await writeHistoricalTransactionFixture(f.transaction, { type: 2, categories: [
       netRow,
       { categoryId: pool.id, amount: -2 },
-    ] }).save()
+    ] })
     const response = await client.get('/api/v1/reports/funding-history').loginAs(f.user)
     response.assertStatus(200)
     assert.isUndefined(response.body().find((r: { categoryId: number }) => r.categoryId === pool.id))

@@ -1,3 +1,4 @@
+import { encodeCategoryAllocations } from '#services/categoryAmountCodec'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
 import testUtils from '@adonisjs/core/services/test_utils'
@@ -18,11 +19,12 @@ async function fixture() {
       balance: 0, useGoal: false, fundingCategories: [] })
     const source = await group.related('categories').create({ name: 'Source', type: CategoryType.Regular,
       balance: 100, useGoal: false, fundingCategories: [] })
-    const categories = [{ categoryId: category.id, amount: 10, fundingCategories: [{ categoryId: source.id, amount: 100, percentage: true }] }, { categoryId: source.id, amount: -10 }]
+    const pool = await budget.getFundingPoolCategory({ client: trx })
+    const categories = [{ categoryId: category.id, amount: 10, fundingCategories: [{ categoryId: source.id, amount: 100, percentage: true }] }, { categoryId: source.id, amount: -10 }, { categoryId: pool.id, amount: 0 }]
     const transaction = await budget.related('transactions').create({
       date: DateTime.fromISO('2025-03-01'), type: TransactionType.FUNDING_TRANSACTION, categories,
     })
-    return { budget, user, group, category, source, transaction }
+    return { budget, user, group, category, source, pool, transaction }
   })
 }
 
@@ -53,6 +55,8 @@ const cases = [
 ]
 
 test.group('Funding configuration validation regression', (group) => {
+  // Each case exercises the entire configuration matrix through guarded HTTP writes.
+  group.each.timeout(30_000)
   group.teardown(() => testUtils.db().truncate())
   for (const writer of ['category create', 'category update', 'funding create', 'funding update']) {
     test(`${writer}: supplied configurations enforce validation and persistence`, async ({ client, assert }) => {
@@ -70,7 +74,7 @@ test.group('Funding configuration validation regression', (group) => {
           ? { name: `Configuration ${index}`, type: CategoryType.Bill, useGoal: false, fundingCategories: configuration }
           : { date: '2025-03-01', type: TransactionType.FUNDING_TRANSACTION,
             categories: [{ categoryId: f.category.id, amount: 10, fundingCategories: configuration },
-              { categoryId: f.source.id, amount: -10 }] }
+              { categoryId: f.source.id, amount: -10 }, { categoryId: f.pool.id, amount: 0 }] }
         const before = await Promise.all([db.from('categories').where('group_id', f.group.id).orderBy('id'),
           db.from('transactions').where('application_id', f.budget.id).orderBy('id')])
         const response = await request.json(body).accept('json').loginAs(f.user)
@@ -165,11 +169,12 @@ test.group('Funding configuration validation regression', (group) => {
     for (const extra of [{}, { fundingCategories: null }]) {
       await db.from('transactions').where('id', f.transaction.id).update({ categories: JSON.stringify(before.categories) })
       const response = await client.patch(path).json({ ...body, categories: [
-        { categoryId: f.category.id, amount: 10, ...extra }, { categoryId: f.source.id, amount: -10 },
+        { categoryId: f.category.id, amount: 10, ...extra }, { categoryId: f.source.id, amount: -10 }, { categoryId: f.pool.id, amount: 0 },
       ] }).accept('json').loginAs(f.user)
       response.assertStatus(200)
       const stored = await db.from('transactions').where('id', f.transaction.id).first()
-      assert.deepEqual(stored.categories, [{ categoryId: f.category.id, amount: 10 }, { categoryId: f.source.id, amount: -10 }])
+      assert.deepEqual(stored.categories, encodeCategoryAllocations([{ categoryId: f.category.id, amount: 10 },
+        { categoryId: f.source.id, amount: -10 }, { categoryId: f.pool.id, amount: 0 }]))
     }
   })
 })

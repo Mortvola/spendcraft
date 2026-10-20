@@ -62,7 +62,8 @@ test.group('Current Transaction Category string compatibility — no DB', () => 
         }), async create(values) { link = values; return values } }),
       }
       const update = await current('app/Models/Account.ts', 'updateStartingBalance', {
-        Transaction, TrackingType: { Balances: 'Balances' }, TransactionType: { STARTING_BALANCE: 4 }, logger: { info: () => undefined },
+        requestCategoryStorage: (model) => model, validateStoredCategoryConservation: async () => undefined,
+        AccountType: { Loan: 'loan' }, Transaction, TrackingType: { Balances: 'Balances' }, TransactionType: { STARTING_BALANCE: 4 }, logger: { info: () => undefined },
       })
       await update.call(account, { id: 2 }, pool)
       assert.equal(account.balance, 100)
@@ -75,10 +76,10 @@ test.group('Current Transaction Category string compatibility — no DB', () => 
         assert.equal(pool.balance, 5); assert.equal(row.categories[0].comment, 'keep'); assert.equal(saves, 2)
       }
     })
-  test('three raw JSON-path sites compare amounts to a numeric zero', async ({ assert }) => {
+  test('three SQL membership sites share typed mixed-storage comparison', async ({ assert }) => {
     const controller = await readFile('app/Controllers/Http/CategoriesController.ts', 'utf8')
     const model = await readFile('app/Models/Category.ts', 'utf8')
-    assert.equal(controller.match(/@\.amount != 0/g)?.length, 1)
-    assert.equal(model.match(/@\.amount != 0/g)?.length, 2)
+    assert.equal(controller.match(/whereRaw\(categoryNonzeroAllocationSql/g)?.length, 1)
+    assert.equal(model.match(/whereRaw\(categoryNonzeroAllocationSql/g)?.length, 2)
   })
 })

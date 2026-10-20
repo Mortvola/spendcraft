@@ -1,3 +1,4 @@
+import { canonicalCategoryAllocations, encodeCategoryAllocations, categoryAmountCents, checkedCentSum } from '#services/categoryAmountCodec'
 // Requires task-specific authorization and the current
 // configured/live pg + pgLog + exact execution-connection safeguards before SQL.
 import { test } from '@japa/runner'
@@ -67,32 +68,39 @@ test.group('Funding preview/submission persisted equality', () => {
       const snapshot = await db.from('accounts').orderBy('id')
       const response = await client.post('/api/v1/category-transfer').json({ date: '2025-03-01', type: TransactionType.FUNDING_TRANSACTION,
         categories: rows }).loginAs(f.user)
+      if (scenario === 'residual' || scenario === 'zero') {
+        // Individually rounded nonconserving cents / absent Pool are rejected by approved policy.
+        response.assertStatus(422)
+        assert.lengthOf(await Transaction.query().where('budgetId', f.budget.id), 0)
+        for (const [id, initial] of before) assert.equal((await Category.findOrFail(id)).balance, initial)
+        return
+      }
       response.assertStatus(200)
       const transaction = await Transaction.findOrFail(response.body().data.transaction.id)
       assert.equal(transaction.type, TransactionType.FUNDING_TRANSACTION)
-      assert.deepEqual(transaction.categories, rows)
+      assert.deepEqual(transaction.categories, canonicalCategoryAllocations(rows))
       const persisted = await db.from('transactions').where('id', transaction.id).first()
-      assert.deepEqual(persisted.categories, rows)
+      assert.deepEqual(persisted.categories, encodeCategoryAllocations(rows))
       assert.lengthOf(await transaction.related('accountTransaction').query(), 0)
       for (const [id, initial] of before) {
         // Existing numeric(12,2) storage; compare the current display/accounting
         // scale, without asserting a future exact representation for JSON.
-        const expected = Math.round((initial + fundingCategoryEffect(rows, id)) * 100) / 100
+        const expected = Math.round((initial + fundingCategoryEffect(canonicalCategoryAllocations(rows), id)) * 100) / 100
         assert.equal((await Category.findOrFail(id)).balance, expected)
         const rawCategory = await db.from('categories').select('balance').where('id', id).first()
         assert.equal(Number(rawCategory.balance), expected)
         // The existing response exposes hydrated JS arithmetic before a DB reload.
         // Preserve its binary artifact independently of numeric(12,2) persistence.
         assert.equal(response.body().data.balances.find((row: { id: number }) => row.id === id)?.balance ?? initial,
-          initial + fundingCategoryEffect(rows, id))
+          initial + fundingCategoryEffect(canonicalCategoryAllocations(rows), id))
       }
-      if (scenario === 'chain' || scenario === 'low Pool') assert.equal(fundingCategoryEffect(rows, f.pool.id), -2)
-      if (scenario === 'transfer') assert.equal(transaction.categories[0].amount, 0.30000000000000004)
+      if (scenario === 'chain' || scenario === 'low Pool') assert.equal(fundingCategoryEffect(canonicalCategoryAllocations(rows), f.pool.id), -2)
+      if (scenario === 'transfer') assert.equal(transaction.categories[0].amount, 0.3)
       const replaced = await client.patch(`/api/v1/category-transfer/${transaction.id}`).json({ date: '2025-03-01',
         type: TransactionType.FUNDING_TRANSACTION, categories: rows }).loginAs(f.user)
       replaced.assertStatus(200)
       for (const [id, initial] of before) assert.equal((await Category.findOrFail(id)).balance,
-        Math.round((initial + fundingCategoryEffect(rows, id)) * 100) / 100)
+        Math.round((initial + fundingCategoryEffect(canonicalCategoryAllocations(rows), id)) * 100) / 100)
       // Report current persisted net rows after the real create/replacement workflow.
       const history = await client.get('/api/v1/reports/funding-history').loginAs(f.user)
       history.assertStatus(200)
@@ -100,7 +108,7 @@ test.group('Funding preview/submission persisted equality', () => {
       for (const categoryId of new Set(rows.map((row) => row.categoryId))) {
         if (categoryId === f.pool.id) continue
         const reported = history.body().find((row: { categoryId: number }) => row.categoryId === categoryId)
-        assert.deepEqual(reported.history, [{ year: 2025, month: 3, amount: fundingCategoryEffect(rows, categoryId) }])
+        assert.deepEqual(reported.history, [{ year: 2025, month: 3, amount: checkedCentSum(rows.filter((row) => row.categoryId === categoryId).map((row) => categoryAmountCents(row.amount))) / 100 }])
       }
       assert.deepEqual(await db.from('accounts').orderBy('id'), snapshot)
     })
@@ -300,7 +308,7 @@ test.group('Immutable funding date verification', () => {
       const original = await read()
       assert.equal(original.date, '2025-03-17')
       assert.equal(original.type, 2)
-      assert.deepEqual(original.categories, rows)
+      assert.deepEqual(original.categories, encodeCategoryAllocations(rows))
       const balances = () => db.from('categories').select('categories.*').join('groups', 'groups.id', 'categories.group_id')
         .where('groups.application_id', f.budget.id).orderBy('categories.id')
       const before = await balances()
@@ -323,10 +331,10 @@ test.group('Immutable funding date verification', () => {
       replaced.assertStatus(200)
       assert.deepEqual(await read(), original)
       assert.deepEqual(await balances(), before)
-      assert.equal((await Category.findOrFail(a.id)).balance, Math.round((initial + fundingCategoryEffect(rows, a.id)) * 100) / 100)
-      assert.equal((await Category.findOrFail(f.pool.id)).balance, Math.round((10 + fundingCategoryEffect(rows, f.pool.id)) * 100) / 100)
+      assert.equal((await Category.findOrFail(a.id)).balance, Math.round((initial + fundingCategoryEffect(canonicalCategoryAllocations(rows), a.id)) * 100) / 100)
+      assert.equal((await Category.findOrFail(f.pool.id)).balance, Math.round((10 + fundingCategoryEffect(canonicalCategoryAllocations(rows), f.pool.id)) * 100) / 100)
       assert.equal(rows[0].baseAmount, base)
-      if (rule === 'transfer') assert.equal(original.categories[0].amount, 0.30000000000000004)
+      if (rule === 'transfer') assert.equal(original.categories[0].amount, '0.30')
     })
 
   test('replacement late failure restores original date, metadata, Categories and Pool', async ({ client, assert }) => {
@@ -450,7 +458,7 @@ test.group('Immutable funding date ownership and lifecycle isolation', () => {
     const transaction = await Transaction.findOrFail(id)
     assert.isTrue(transaction.deleted)
     assert.equal(transaction.date.toISODate(), '2025-03-17')
-    assert.deepEqual(transaction.categories, rows)
+    assert.deepEqual(transaction.categories, canonicalCategoryAllocations(rows))
     assert.equal((await Category.findOrFail(f.categories[0].id)).balance, 0)
     assert.equal((await Category.findOrFail(f.pool.id)).balance, 10)
   })

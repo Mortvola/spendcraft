@@ -1,3 +1,4 @@
+import { writeHistoricalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
 import { DateTime } from 'luxon'
@@ -72,7 +73,7 @@ test.group('Ordinary transaction lifecycle', (group) => {
 
   test('updates reverse old splits and apply replacement state').with(['amount', 'category', 'single-to-multiple', 'multiple-to-single', 'metadata', 'date']).run(async ({ client, assert }, scenario) => {
     if (scenario === 'multiple-to-single') {
-      await fixture.transaction.merge({ categories: [{ categoryId: fixture.first.id, amount: 4 }, { categoryId: fixture.second.id, amount: 6 }] }).save()
+      await writeHistoricalTransactionFixture(fixture.transaction, { categories: [{ categoryId: fixture.first.id, amount: 4 }, { categoryId: fixture.second.id, amount: 6 }] })
       await fixture.first.merge({ balance: 4 }).save()
       await fixture.second.merge({ balance: 6 }).save()
     }

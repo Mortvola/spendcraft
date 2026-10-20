@@ -1,9 +1,12 @@
+import { requestCategoryStorage } from '#services/categoryStorageBinding';
+import { categoryNonzeroAllocationSql } from '#services/categoryAmountCodec';
+import { validateStoredCategoryConservation } from '#services/transactionCategoryStorage';
+import { validateCategoryConservation } from '#services/categoryAmountCodec';
 import db from '@adonisjs/lucid/services/db';
 import { HttpContext } from '@adonisjs/core/http';
 import { Exception } from '@adonisjs/core/exceptions';
 import Category, { GroupItem } from '#app/Models/Category';
 import { updateCategoryTransfer } from '#validators/categoryTransfer';
-import { validateTransactionSplits } from '#app/validation/transactionSplits';
 import Transaction from '#app/Models/Transaction';
 import AccountTransaction from '#app/Models/AccountTransaction';
 import Loan from '#app/Models/Loan';
@@ -103,9 +106,10 @@ class CategoriesController {
             cross join lateral jsonb_to_recordset(t.categories) as transCats("categoryId" int, amount decimal)
             where t.date >= ?
             and t.deleted = false
+            and t.application_id = ?
             group by transCats."categoryId"
           ) AS T1 on T1."categoryId" = categories.id
-        `, [firstDayOfMonth.toISODate() ?? ''])
+        `, [firstDayOfMonth.toISODate() ?? '', budget.id])
         // Get the sum of the transactions (minus funding and category transfers) from the prrevious month
         // .withAggregate('transactionCategory', (query) => {
         //   query.sum('amount').as('previousSum')
@@ -123,12 +127,14 @@ class CategoriesController {
             where t.date < ?
             and t.date >= ?
             and t.deleted = false
+            and t.application_id = ?
             and t.type NOT IN (?, ?)
             group by transCats."categoryId"
           ) AS T2 on T2."categoryId" = categories.id
         `, [
           firstDayOfMonth.toISODate() ?? '',
           firstDayOfPreviousMonth.toISODate() ?? '',
+          budget.id,
           TransactionType.FUNDING_TRANSACTION,
           TransactionType.REBALANCE_TRANSACTION,
         ])
@@ -152,12 +158,14 @@ class CategoriesController {
             where t.date < ?
             and t.date >= ?
             and t.deleted = false
+            and t.application_id = ?
             and t.type = ?
             group by transCats."categoryId"
           ) AS T3 on T3."categoryId" = categories.id
         `, [
           firstDayOfMonth.toISODate() ?? '',
           firstDayOfPreviousMonth.toISODate() ?? '',
+          budget.id,
           TransactionType.FUNDING_TRANSACTION,
         ])
         // Get the sum of the category transfers from the previous month
@@ -177,12 +185,14 @@ class CategoriesController {
             where t.date < ?
             and t.date >= ?
             and t.deleted = false
+            and t.application_id = ?
             and t.type = ?
             group by transCats."categoryId"
           ) AS T4 on T4."categoryId" = categories.id
         `, [
           firstDayOfMonth.toISODate() ?? '',
           firstDayOfPreviousMonth.toISODate() ?? '',
+          budget.id,
           TransactionType.REBALANCE_TRANSACTION,
         ])
 
@@ -479,8 +489,9 @@ class CategoriesController {
       const result = await db.query().useTransaction(trx)
         .select(1)
         .from('transactions')
+        .where('application_id', user.budgetId)
         .where('deleted', false)
-        .whereRaw('categories::jsonb @\\? (\'$[*] \\? (@.categoryId == \' || ? || \' && @.amount != 0)\')::jsonpath', [category.id])
+        .whereRaw(categoryNonzeroAllocationSql, [category.id])
         .first();
 
       if (result) {
@@ -594,6 +605,9 @@ class CategoriesController {
       } = { balances: [], transaction: {} };
 
       const { categories, date, type } = requestData;
+      if (tfrId === undefined && ![TransactionType.FUNDING_TRANSACTION, TransactionType.REBALANCE_TRANSACTION].includes(type)) {
+        throw new Exception('Category transfers can create only funding or rebalance transactions.', { status: 422 });
+      }
       const existingTransaction = tfrId === undefined ? undefined : await budget.related('transactions').query()
         .where('id', tfrId)
         .where('deleted', false)
@@ -633,14 +647,16 @@ class CategoriesController {
           )) : []),
       ]), { client: trx });
 
-      validateTransactionSplits(0, categories, 'The sum of the category transfer amounts must be zero.');
+      const pool = type === TransactionType.FUNDING_TRANSACTION
+        ? await budget.getFundingPoolCategory({ client: trx }) : undefined;
+      validateCategoryConservation(type, categories, undefined, pool?.id);
 
       let transaction: Transaction;
       const categeoryDeltas = new Map<number, number>();
 
       if (!existingTransaction) {
-        transaction = await Transaction // budget.related('transactions')
-          .create({
+        transaction = await requestCategoryStorage(new Transaction()).useTransaction(trx)
+          .fill({
             date: DateTime.fromISO(date),
             type,
             categories: categories.map((category) => ({
@@ -653,7 +669,7 @@ class CategoriesController {
               baseAmount: category.baseAmount,
             })),
             budgetId: budget.id,
-          }, { client: trx });
+          }).save();
 
         result.transaction = {
           id: transaction.id,
@@ -692,11 +708,13 @@ class CategoriesController {
           .save()
       }
 
+      await validateStoredCategoryConservation(transaction);
+
       // const existingSplits: StrictValues[] = [];
 
       // Insert the category splits
        
-      for (const transCategory of categories) {
+      for (const transCategory of transaction.categories) {
         const delta = categeoryDeltas.get(transCategory.categoryId) ?? 0;
         categeoryDeltas.set(transCategory.categoryId, transCategory.amount + delta);
       }

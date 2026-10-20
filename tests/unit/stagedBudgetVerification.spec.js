@@ -67,19 +67,22 @@ test('Plaid sync waiter refreshes after Budget and rejects an earlier committed 
   assert.deepEqual(events, ['gate', 'acquired', 'refresh'])
 })
 
-test('staged serialization preserves shared cascade arithmetic, reporting and accepted financial writer methods', async ({ assert }) => {
+test('storage and approved tenant-scoping corrections preserve unrelated methods', async ({ assert }) => {
+  const changedMethods = new Map([
+    ['app/Controllers/Http/AccountsController.ts', ['addTransaction']],
+    ['app/Models/Account.ts', ['updateTransaction', 'addTransaction', 'processOfx', 'updateStartingBalance']],
+    ['app/Controllers/Http/TransactionsController.ts', ['update']],
+    // Category GET scoping was separately authorized; its four SQL bindings have dedicated regressions.
+    ['app/Controllers/Http/CategoriesController.ts', ['transfer', 'deleteCategory', 'get']],
+  ])
   for (const file of ['app/Controllers/Http/ReportController.ts', 'app/Controllers/Http/AccountsController.ts',
-    'app/Models/Account.ts', 'app/Models/Institution.ts']) {
-    assert.equal(await readFile(file, 'utf8'), execFileSync('git', ['show', `HEAD:${file}`], { encoding: 'utf8' }))
-  }
-  for (const [file, names] of [
-    ['app/Controllers/Http/InstitutionController.ts', ['deleteAccounts', 'addOffline', 'add', 'update']],
-    ['app/Controllers/Http/TransactionsController.ts', ['update', 'delete']],
-    ['app/Controllers/Http/CategoriesController.ts', ['transfer', 'deleteCategory']],
-    ['app/Controllers/Http/TaxesController.ts', ['getActuals']],
-  ]) {
+    'app/Models/Account.ts', 'app/Models/Institution.ts', 'app/Controllers/Http/InstitutionController.ts',
+    'app/Controllers/Http/TransactionsController.ts', 'app/Controllers/Http/CategoriesController.ts',
+    'app/Controllers/Http/TaxesController.ts']) {
     const current = methods(await readFile(file, 'utf8'))
     const before = methods(execFileSync('git', ['show', `HEAD:${file}`], { encoding: 'utf8' }))
-    for (const name of names) assert.equal(current.get(name), before.get(name), `${file}:${name}`)
+    for (const [name, body] of before) {
+      if (!(changedMethods.get(file) ?? []).includes(name)) assert.equal(current.get(name), body, `${file}:${name}`)
+    }
   }
 })

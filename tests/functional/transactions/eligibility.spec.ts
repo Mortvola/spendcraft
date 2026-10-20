@@ -91,7 +91,7 @@ test.group('Account/Category eligibility correction (prepared)', () => {
 })
 
 test.group('Additional PATCH effect isolation (prepared)', () => {
-  test('provider-linked amount-only PATCH keeps nominal explicit allocations', async ({ client, assert }) => {
+  test('provider-linked nonconserving amount-only PATCH rejects without changing allocations', async ({ client, assert }) => {
     const f = await fixture()
     const transaction = await f.budget.related('transactions').create({ date: DateTime.fromISO(dates[1]),
       type: TransactionType.REGULAR_TRANSACTION, categories: [{ categoryId: f.category.id, amount: 10 }],
@@ -101,8 +101,8 @@ test.group('Additional PATCH effect isolation (prepared)', () => {
     await f.account.merge({ balance: 110 }).save()
     await f.category.merge({ balance: 10 }).save()
     const response = await client.patch(`/api/v1/transaction/${transaction.id}`).json({ version: 0, amount: 20 }).loginAs(f.user)
-    response.assertStatus(200)
-    assert.equal((await Account.findOrFail(f.account.id)).balance, 120)
+    response.assertStatus(422)
+    assert.equal((await Account.findOrFail(f.account.id)).balance, 110)
     assert.equal((await Category.findOrFail(f.category.id)).balance, 10)
     assert.deepEqual((await Transaction.findOrFail(transaction.id)).categories, [{ categoryId: f.category.id, amount: 10 }])
   })
@@ -157,8 +157,15 @@ test.group('Eligibility verification edge cases', () => {
       const response = await client.patch(`/api/v1/transaction/${transaction.id}`).json({ version: 0,
         ...(field === 'amount' ? { amount: 20 } : { categories: [{ categoryId: unassigned.id, amount: 10 }] }),
       }).loginAs(f.user)
+      if (field === 'amount') {
+        response.assertStatus(422)
+        assert.equal((await Account.findOrFail(f.account.id)).balance, eligible ? 110 : 100)
+        assert.equal((await Category.findOrFail(f.category.id)).balance, eligible ? 10 : 0)
+        assert.equal((await AccountTransaction.findByOrFail('transactionId', transaction.id)).amount, 10)
+        return
+      }
       response.assertStatus(200)
-      assert.equal((await Account.findOrFail(f.account.id)).balance, eligible ? (field === 'amount' ? 120 : 110) : 100)
+      assert.equal((await Account.findOrFail(f.account.id)).balance, eligible ? 110 : 100)
       assert.equal((await Category.findOrFail(f.category.id)).balance, eligible && field === 'amount' ? 10 : 0)
       assert.equal((await Category.findOrFail(unassigned.id)).balance, eligible && field === 'categories' ? 10 : 0)
     })

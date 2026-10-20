@@ -92,7 +92,7 @@ async function poolReadContention(f: { budget: Budget }, first: Operation, secon
     release.resolve(); await Promise.allSettled([a, ...(b ? [b] : [])]); interception.mock.restore()
   }
   await a; await b
-  deepStrictEqual(reads, [100]) // Funding loads requested Categories through its scoped query, not this helper.
+  deepStrictEqual(reads, [100, 110]) // Initialization, then the required-Pool funding preflight after waiting.
 }
 let sequence = 0
 async function fixture() {
@@ -253,7 +253,7 @@ test.group('Bounded offline Pool concurrency', (group) => {
     })
     try {
       await contend(f.pool.id, false, () => funding(client, f), () => initialize(client, f))
-      deepStrictEqual(reads, [80]); await pool(f, 90)
+      deepStrictEqual(reads, [100, 80]); await pool(f, 90)
     } finally { hook.mock.restore() }
   })
   test('separate initializations both compose', async ({ client }) => {
@@ -331,7 +331,7 @@ test.group('Category deletion admission vs protected writers', (group) => {
       let owner: TransactionClientContract | undefined
       query.useTransaction = (trx) => { owner = trx; return originalUse(trx) }
       query.first = async () => {
-        if (query.toSQL().sql.includes('jsonpath')) {
+        if (query.toSQL().sql.includes('jsonb_array_elements')) {
           ok(owner, 'Membership query must bind owning transaction')
           membershipTrx = owner
           const locks = await owner.rawQuery(`SELECT 1 FROM pg_locks WHERE pid = pg_backend_pid()

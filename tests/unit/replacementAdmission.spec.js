@@ -4,6 +4,7 @@ import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
 import { DateTime } from 'luxon'
 import { TransactionType } from '../../common/ResponseTypes.ts'
+import { validateCategoryConservation } from '../../app/services/categoryAmountCodec.ts'
 import { validateTransactionSplits } from '../../app/validation/transactionSplits.ts'
 
 async function expressions() {
@@ -34,7 +35,7 @@ async function harness(shape = {}, request = {}) {
     merge(values) { log.push('target.merge'); Object.assign(this, values); return this },
     save: async () => { log.push('target.save') }, serialize() { return { id: this.id, date: this.date.toISODate(), type: this.type, categories: this.categories } } }
   const before = JSON.stringify({ target: { ...target }, balances: [...categories].map(([id, c]) => [id, c.balance]) })
-  const budget = { id: 1, related: () => ({ query: () => {
+  const budget = { id: 1, getFundingPoolCategory: async () => ({ id: 2 }), related: () => ({ query: () => {
     const filters = []
     return { where(key, value) { filters.push([key, value]); return this }, firstOrFail: async () => {
       log.push('target.read')
@@ -51,12 +52,13 @@ async function harness(shape = {}, request = {}) {
   } }) }) }) }
   const source = await expressions()
   const reversal = 'for (const transCategory of transaction.categories)'
-  const application = 'for (const transCategory of categories)'
+  const application = 'for (const transCategory of transaction.categories)'
   if (!source.transfer.includes(reversal) || !source.transfer.includes(application)) throw new Error('Missing financial loops')
   const instrumented = source.transfer.replace(reversal, `observeReversal(); ${reversal}`)
     .replace(application, `observeApplication(); ${application}`)
   const transfer = runInNewContext(instrumented, {
     observeReversal: () => { log.push('reverse') }, observeApplication: () => { log.push('apply') },
+    validateCategoryConservation, validateStoredCategoryConservation: async () => undefined,
     TransactionType, DateTime, Exception: Rejection, updateCategoryTransfer: {}, transactionFields: {},
     hasReplacementAllocations: runInNewContext(source.hasReplacementAllocations), validateTransactionSplits,
     removeUndefined: (value) => value,

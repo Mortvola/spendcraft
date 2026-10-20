@@ -1,3 +1,4 @@
+import { categoryNonzeroAllocationSql } from '../../app/services/categoryAmountCodec.ts'
 import { test } from '@japa/runner'
 import { readFile } from 'node:fs/promises'
 import { runInNewContext } from 'node:vm'
@@ -64,11 +65,21 @@ async function deletionFixture(outcome) {
     related: () => ({ query: () => ({ forUpdate() { events.push('gate'); return this },
       firstOrFail: async () => { events.push('acquired'); return { id: 3 } } }) }) }
   const { run } = await method(categories, 'deleteCategory', {
+    categoryNonzeroAllocationSql,
     db: { transaction: async () => owner, query: () => ({ useTransaction(trx) {
       if (trx !== owner || !events.includes('acquired')) throw new Error('Membership escaped gate/trx')
       events.push('membership.bound'); return this
-    }, select() { return this }, from() { return this }, where() { return this }, whereRaw() { return this },
-    first: async () => { events.push('membership.read'); return outcome === 'used' ? { id: 10 } : undefined } }) },
+    }, select() { return this }, from() { return this }, where(column, value) {
+      if (column === 'application_id') {
+        if (value !== user.budgetId) throw new Error('Wrong membership Budget')
+        events.push('membership.scoped')
+      }
+      return this
+    }, whereRaw() { return this },
+    first: async () => {
+      events.push('membership.read')
+      return outcome === 'used' || (outcome === 'foreign' && !events.includes('membership.scoped')) ? { id: 10 } : undefined
+    } }) },
     budgetGroups: (id, { client }) => { if (client !== owner) throw new Error('Group read escaped'); return chain({ id: 2 }) },
     budgetCategories: (id, { client }) => { if (client !== owner) throw new Error('Category read escaped'); return chain(category) },
     CategoryType, RequestErrorCode: { HAS_CHILDREN: 'HAS_CHILDREN' },
@@ -115,6 +126,13 @@ test.group('Category/Pool bounded Budget protocol (no database)', () => {
     const f = await deletionFixture('unused'); await f.invoke()
     assert.equal(f.status(), 204); assert.isBelow(f.events.indexOf('membership.read'), f.events.indexOf('delete'))
     assert.include(f.events, 'membership.bound'); assert.include(f.events, 'commit')
+  })
+  test('foreign cross-linked allocations cannot block owning Budget Category deletion', async ({ assert }) => {
+    const f = await deletionFixture('foreign'); await f.invoke()
+    assert.equal(f.status(), 204)
+    assert.isBelow(f.events.indexOf('acquired'), f.events.indexOf('membership.scoped'))
+    assert.isBelow(f.events.indexOf('membership.scoped'), f.events.indexOf('membership.read'))
+    assert.include(f.events, 'delete'); assert.include(f.events, 'commit')
   })
   test('missing/deleted Category after wait rejects without another deletion', async ({ assert }) => {
     const f = await deletionFixture('missing'); await assert.rejects(f.invoke, 'Row not found')

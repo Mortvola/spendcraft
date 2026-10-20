@@ -1,3 +1,5 @@
+import { requestCategoryStorage, excludeCategoryStorage } from '#services/categoryStorageBinding';
+import { validateStoredCategoryConservation } from '#services/transactionCategoryStorage';
 import { accountEligible, categoryEligible } from '#services/transactionEligibility';
 import { HttpContext } from '@adonisjs/core/http';
 import db from '@adonisjs/lucid/services/db';
@@ -10,7 +12,7 @@ import {
   ApiResponse,
   AddStatementResponse,
   StatementProps,
-  AccountType,
+  AccountType, CategoryType,
 } from '#common/ResponseTypes';
 import Statement from '#app/Models/Statement';
 import AccountTransaction from '#app/Models/AccountTransaction';
@@ -178,7 +180,7 @@ export default class AccountsController {
         throw new Exception('Balance-tracked accounts cannot have transactions', { status: 422 });
       }
 
-      const transaction = (new Transaction()).useTransaction(trx);
+      const transaction = requestCategoryStorage(new Transaction(), account.type !== AccountType.Loan).useTransaction(trx);
 
       let { categories } = requestData
 
@@ -191,15 +193,20 @@ export default class AccountsController {
         }]
       }
 
+      let categoryStorageActive = account.type !== AccountType.Loan;
       for (const categoryId of new Set(categories.map((split) => split.categoryId))) {
-        await Category.query({ client: trx })
+        const referencedCategory = await Category.query({ client: trx })
           .where('id', categoryId)
           .whereHas('group', (query) => query.where('budgetId', budget.id))
           .firstOrFail();
+        if (referencedCategory.type === CategoryType.Loan) {
+          categoryStorageActive = false;
+          excludeCategoryStorage(transaction);
+        }
       }
 
       if (account.tracking === TrackingType.Transactions && account.type !== AccountType.Loan) {
-        validateTransactionSplits(requestData.amount, categories);
+        validateTransactionSplits(requestData.amount, categories, undefined, categoryStorageActive);
       }
 
       transaction.fill({
@@ -222,6 +229,8 @@ export default class AccountsController {
         statementId: null,
       });
 
+      await validateStoredCategoryConservation(transaction);
+
       const state = { date: transaction.date, deleted: transaction.deleted, pending: acctTransaction.pending };
       if (account.type === AccountType.Loan) {
         account.balance += acctTransaction.principle ?? 0;
@@ -234,7 +243,7 @@ export default class AccountsController {
 
       const categoryBalances: CategoryBalanceProps[] = [];
 
-      for (const split of categories) {
+      for (const split of transaction.categories) {
         if (account.type !== AccountType.Loan
           && !categoryEligible(state, account.startDate)) continue;
         const category = await Category.query({ client: trx })

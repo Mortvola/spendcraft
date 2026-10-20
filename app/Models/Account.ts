@@ -1,3 +1,5 @@
+import { requestCategoryStorage, hasCategoryStorage } from '#services/categoryStorageBinding';
+import { validateStoredCategoryConservation } from '#services/transactionCategoryStorage';
 import { validateTransactionSplits } from '#app/validation/transactionSplits';
 import { Exception } from '@adonisjs/core/exceptions';
 import {
@@ -9,7 +11,7 @@ import AccountTransaction from '#app/Models/AccountTransaction';
 import BalanceHistory from '#app/Models/BalanceHistory';
 import Institution from '#app/Models/Institution';
 import {
-  type AccountType, CategoryBalanceProps, GroupType, TrackingType, TransactionType,
+  AccountType, CategoryBalanceProps, GroupType, TrackingType, TransactionType,
 } from '#common/ResponseTypes';
 import Transaction from '#app/Models/Transaction';
 import Budget from '#app/Models/Budget';
@@ -393,6 +395,7 @@ class Account extends BaseModel {
     // TODO: Even if the transaction was deleted update the information.
     if (!transaction.deleted) {
       const newAmount = -plaidTransaction.amount;
+      const amountChanged = acctTrans.amount !== newAmount;
       const newDate = DateTime.fromISO(plaidTransaction.date);
       const oldApplicable = transaction.date >= this.startDate;
       const newApplicable = newDate >= this.startDate;
@@ -482,9 +485,11 @@ class Account extends BaseModel {
         }
       }
 
+      const allocationsChanged = Object.hasOwn(transaction.$dirty, 'categories');
       if (accountTransactionChanged || transaction.$isDirty) {
         transaction.version += 1;
         await transaction.save();
+        if (allocationsChanged || amountChanged) await validateStoredCategoryConservation(transaction);
 
         await transaction.related('transactionLog')
           .create({
@@ -509,9 +514,11 @@ class Account extends BaseModel {
 
     let unassignedAmount = 0;
 
-    const transaction = await new Transaction()
+    const transaction = await requestCategoryStorage(new Transaction(), this.type !== AccountType.Loan)
       .useTransaction(this.$trx)
       .fill({
+        type: TransactionType.REGULAR_TRANSACTION,
+        categories: [],
         date: DateTime.fromISO(plaidTransaction.date),
         budgetId: budget.id,
       })
@@ -541,6 +548,8 @@ class Account extends BaseModel {
     if (!(await this.autoAssign(budget, transaction, acctTrans))) {
       unassignedAmount = await this.assignUnassigned(budget, transaction, acctTrans);
     }
+
+    await validateStoredCategoryConservation(transaction);
 
     if (transaction.date < this.startDate) {
       return [0, 0];
@@ -794,7 +803,7 @@ class Account extends BaseModel {
           const remainder = (Math.round(newAmount * 100)
             - explicit.reduce((total, allocation) => total + Math.round(allocation.amount * 100), 0)) / 100;
           const allocations = [...explicit, { categoryId: unassigned.id, amount: remainder }];
-          validateTransactionSplits(newAmount, allocations);
+          validateTransactionSplits(newAmount, allocations, undefined, hasCategoryStorage(transaction));
           await applyAllocations(oldAllocations, oldActive, allocations, transactionData.date >= this.startDate);
 
           const oldEffect = !transaction.deleted && !acctTrans.pending && transaction.date >= this.startDate
@@ -821,6 +830,7 @@ class Account extends BaseModel {
             })
             .save();
 
+          await validateStoredCategoryConservation(transaction);
           sum += amount;
         }
         else {
@@ -829,9 +839,10 @@ class Account extends BaseModel {
           }
 
 
-          const transaction = await new Transaction()
+          const transaction = await requestCategoryStorage(new Transaction(), this.type !== AccountType.Loan)
             .useTransaction(this.$trx)
             .fill({
+              type: TransactionType.REGULAR_TRANSACTION,
               date: transactionData.date,
               budgetId: budget.id,
               categories: [{ categoryId: unassigned.id, amount: -transactionData.amount }],
@@ -849,7 +860,8 @@ class Account extends BaseModel {
               amount: -transactionData.amount,
             });
 
-          validateTransactionSplits(acctTrans.amount, transaction.categories);
+          validateTransactionSplits(acctTrans.amount, transaction.categories, undefined, hasCategoryStorage(transaction));
+          await validateStoredCategoryConservation(transaction);
           await applyAllocations([], false, transaction.categories, transaction.date >= this.startDate);
 
           if (!acctTrans.pending && transaction.date >= this.startDate) sum += acctTrans.amount;
@@ -934,6 +946,7 @@ class Account extends BaseModel {
       transaction.categories[0].amount = acctTrx.amount
 
       await transaction.save();
+      await validateStoredCategoryConservation(transaction);
 
       if (delta !== 0) {
         logger.info(`Initial funding for account ${this.id} changed by ${delta}`);
@@ -942,7 +955,7 @@ class Account extends BaseModel {
       fundingPool.balance += delta;
     }
     else {
-      const transaction = await (new Transaction())
+      const transaction = await requestCategoryStorage(new Transaction(), this.type !== AccountType.Loan)
         .useTransaction(this.$trx)
         .fill({
           date: this.startDate,
@@ -960,6 +973,7 @@ class Account extends BaseModel {
         amount: startingBalance,
       });
 
+      await validateStoredCategoryConservation(transaction);
       fundingPool.balance += startingBalance;
     }
   }

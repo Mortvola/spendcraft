@@ -43,7 +43,7 @@ test.group('Final readiness forward deletion characterization without DB', () =>
       async save() { events.push('transaction.save') }
       static query() { return query(transaction) }
     }
-    const globals = { accountEligible, categoryEligible, validateTransactionSplits, Transaction,
+    const globals = { requestCategoryStorage: (model) => model, excludeCategoryStorage: () => undefined, validateStoredCategoryConservation: async () => undefined, accountEligible, categoryEligible, validateTransactionSplits, Transaction,
       Account: { query: () => query(account) }, AccountTransaction: { findBy: async () => link },
       Category: { query: () => query(category) }, budgetCategories: () => query(category),
       budgetAccounts: () => query(account), db: { transaction: async () => trx },

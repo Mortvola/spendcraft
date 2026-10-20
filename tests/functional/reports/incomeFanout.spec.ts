@@ -1,3 +1,4 @@
+import { writeHistoricalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 // Run only with fresh task-specific PostgreSQL authorization.
 // Standard bootstrap independently guards pg/pgLog/execution before every
 // destructive fixture statement and returned cleanup; no local teardown/DDL.
@@ -149,9 +150,9 @@ test.group('Income Vs Expenses transfer fan-out PostgreSQL acceptance', () => {
     const own = await fixture(), foreign = await fixture()
     await movement(own, 50, [20, 20])
     const other = await movement(foreign, 999, [])
-    await other.transaction.merge({ categories: [{ categoryId: own.category.id, amount: 999 }] }).save()
+    await writeHistoricalTransactionFixture(other.transaction, { categories: [{ categoryId: own.category.id, amount: 999 }] })
     const ownTransaction = await own.budget.related('transactions').query().firstOrFail()
-    await ownTransaction.merge({ categories: [...ownTransaction.categories, { categoryId: foreign.category.id, amount: 999 }] }).save()
+    await writeHistoricalTransactionFixture(ownTransaction, { categories: [...ownTransaction.categories, { categoryId: foreign.category.id, amount: 999 }] })
     const before = await snapshot()
     const response = await client.get('/api/v1/reports/income-vs-expenses').loginAs(own.user)
     response.assertStatus(200)
@@ -164,9 +165,9 @@ test.group('Income Vs Expenses transfer fan-out PostgreSQL acceptance', () => {
     const unassigned = await f.budget.getUnassignedCategory()
     const pool = await f.budget.getFundingPoolCategory()
     const m = await movement(f, 50, [20])
-    await m.transaction.merge({ categories: [...m.transaction.categories,
+    await writeHistoricalTransactionFixture(m.transaction, { categories: [...m.transaction.categories,
       { categoryId: unassigned.id, amount: 999 }, { categoryId: pool.id, amount: 999 },
-      { categoryId: 2147483647, amount: 999 }] }).save()
+      { categoryId: 2147483647, amount: 999 }] })
     const before = await snapshot()
     const response = await client.get('/api/v1/reports/income-vs-expenses').loginAs(f.user)
     response.assertStatus(200)
@@ -177,7 +178,7 @@ test.group('Income Vs Expenses transfer fan-out PostgreSQL acceptance', () => {
   test('JSON transfer deduction is one read-only scoped aggregate, EXPLAIN sanity', async ({ client, assert }) => {
     const f = await fixture()
     const first = await movement(f, 50, [])
-    await first.transaction.merge({ categories: [{ categoryId: f.category.id, amount: 50 }] }).save()
+    await writeHistoricalTransactionFixture(first.transaction, { categories: [{ categoryId: f.category.id, amount: 50 }] })
     for (let i = 0; i < 25; i++) await movement(f, 50, [20, 30])
     const before = await snapshot(), ids = await selected(f)
     const queries: { sql: string, bindings?: readonly unknown[] }[] = []

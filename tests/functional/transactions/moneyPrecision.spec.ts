@@ -1,3 +1,4 @@
+import { categoryAmountCents, storedCategoryAmount } from '#services/categoryAmountCodec'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
 import Budget from '#models/Budget'
@@ -98,10 +99,13 @@ test.group('Monetary precision characterization', () => {
       categoryBalance: (await Category.findOrFail(f.categories[0].id)).balance }))
   })
 
-  test('fractional-cent HTTP inputs record decimal-column versus JSON allocation behavior')
+  test('fractional-cent HTTP inputs enforce encoded allocation versus decimal-column conservation')
     .with([0, 0.01, -0.01, 0.004, 0.005, 0.006, -0.004, -0.005, -0.006, 1.234, -1.234, '0.005', '-0.005', '1.23', '0.01', '1.234', 0.1 + 0.2])
     .run(async ({ client, assert }, amount) => {
       const f = await fixture()
+      const decimal = (await db.rawQuery('SELECT CAST(? AS numeric(12,2))::text AS amount', [Number(amount)])).rows[0].amount
+      const conserves = categoryAmountCents(Number(amount)) === categoryAmountCents(decimal)
+      const before = await db.from('categories').whereIn('id', f.categories.map((row) => row.id)).orderBy('id')
       const response = await client.post(`/api/v1/account/${f.account.id}/transactions`)
         .json({ date: '2025-02-10', name: 'Fractional cent', amount,
           categories: [{ categoryId: f.categories[0].id, amount }] }).accept('json').loginAs(f.user)
@@ -110,8 +114,18 @@ test.group('Monetary precision characterization', () => {
       const category = await Category.findOrFail(f.categories[0].id)
       const account = await Account.findOrFail(f.account.id)
       const database = association ? await db.from('account_transactions').where('id', association.id).select('amount').first() : null
-      response.assertStatus(200)
-      assert.equal(transaction?.categories[0].amount, Number(amount))
+      response.assertStatus(conserves ? 200 : 422)
+      if (!conserves) {
+        assert.isNull(association)
+        assert.lengthOf(await f.budget.related('transactions').query(), 0)
+        assert.equal(account.balance, 0)
+        assert.deepEqual(await db.from('categories').whereIn('id', f.categories.map((row) => row.id)).orderBy('id'), before)
+      } else {
+        if (!transaction || !association) throw new Error('Successful CREATE must persist its Transaction and AccountTransaction')
+        assert.equal(transaction.categories[0].amount, categoryAmountCents(Number(amount)) / 100)
+        assert.equal((await db.from('transactions').where('id', transaction.id).first()).categories[0].amount, storedCategoryAmount(Number(amount)))
+        assert.equal(association.amount, Number(decimal))
+      }
       console.log(JSON.stringify({ scenario: 'fractional cent', input: amount, status: response.status(),
         persistedAmount: association?.amount, persistedSplits: transaction?.categories,
         categoryBalance: category.balance, accountBalance: account.balance,
@@ -145,8 +159,17 @@ test.group('Monetary precision characterization', () => {
       const response = await client.patch(`/api/v1/transaction/${transaction.id}`)
         .json({ version: 0, amount: input, categories: [{ categoryId: f.categories[0].id, amount: input }] })
         .accept('json').loginAs(f.user)
-      response.assertStatus(200)
-      assert.equal((await Transaction.findOrFail(transaction.id)).categories[0].amount, amount)
+      const decimal = (await db.rawQuery('SELECT CAST(? AS numeric(12,2))::text AS amount', [amount])).rows[0].amount
+      const conserves = categoryAmountCents(amount) === categoryAmountCents(decimal)
+      response.assertStatus(conserves ? 200 : 422)
+      assert.equal((await Transaction.findOrFail(transaction.id)).categories[0].amount, conserves ? categoryAmountCents(amount) / 100 : 0)
+      assert.equal((await AccountTransaction.findOrFail(association.id)).amount, conserves ? Number(decimal) : 0)
+      if (conserves) assert.equal((await db.from('transactions').where('id', transaction.id).first()).categories[0].amount, storedCategoryAmount(amount))
+      else {
+        assert.equal((await Account.findOrFail(f.account.id)).balance, 0)
+        assert.equal((await Category.findOrFail(f.categories[0].id)).balance, 0)
+        assert.equal((await Transaction.findOrFail(transaction.id)).version, 0)
+      }
       console.log(JSON.stringify({ scenario: 'fractional PATCH', input, amount: (await AccountTransaction.findOrFail(association.id)).amount,
         splits: (await Transaction.findOrFail(transaction.id)).categories,
         categoryBalance: (await Category.findOrFail(f.categories[0].id)).balance,
@@ -155,7 +178,7 @@ test.group('Monetary precision characterization', () => {
       const created = await client.post('/api/v1/category-transfer').json({ date: '2025-02-10', type: TransactionType.REBALANCE_TRANSACTION,
         categories: splits }).accept('json').loginAs(f.user)
       // Negative half ties can fail this sign-asymmetric rounded zero-sum check.
-      created.assertStatus(Math.abs(amount) === 0.005 ? 422 : 200)
+      created.assertStatus(categoryAmountCents(amount) + categoryAmountCents(-amount) === 0 ? 200 : 422)
       if (created.status() === 200) {
         const id = created.body().data.transaction.id
         const updated = await client.patch(`/api/v1/category-transfer/${id}`).json({ date: '2025-02-11',

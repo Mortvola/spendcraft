@@ -1,10 +1,20 @@
 # Transaction Category exact-cent compatibility review
 
+## Current bounded runtime implementation — PostgreSQL verification pending
+
+At HEAD `1c2a1edaa8e1dc8112e2d949deefb5b9e637633b`, the active storage boundary is implemented; see [implementation, coverage and acceptance record](transaction-category-decimal-string-implementation.md). This supersedes earlier design-only, model-only, blocked-admission and type4-unsupported language below. No historical conversion is implemented or executed.
+
+Approved admission decisions are now enforced: category-transfer CREATE accepts only2/3; type2 requires its owning Pool allocation (no absence-as-zero inference). The3 central service modules encode only top-level amount strings, decode active numeric/string/mixed storage into numeric runtime/API values without writing on read, and check signed per-allocation integer-cent conservation at owning transaction boundaries. New nominal posting uses the encoded numeric value; other money/configuration metadata remains unchanged. Existing Loan/deprecated paths are excluded, not globally decoded.
+
+The authoritative accepted audit baseline is **6247 Transactions:6234 pass,10 fail,3 unsupported,0 malformed**. Ordinary0/5:6152/8/0; funding2:39/2/3; rebalance3:35/0/0; opening4:8/0/0. No nondeleted failure/unsupported record.38 Transactions change on rounding,36 conserve;10451 conversion checks agree. All8 opening325,326,344,345,406,3044,5278,6381 pass with no rounding changes; ordinary7261 passes at−28.94. Older6246/type4-unsupported counts below are historical only. The original artifact directories are absent now: these are accepted user-provided findings, not a newly rerun/read database audit. Preserve all13 deleted exceptions and their discrepancies; none was converted or repaired.
+
+Compatibility status: H01–H03/H07–H13 remain numeric consumers behind the new scoped model boundary. H04–H06 now use a shared typed EXISTS numeric predicate with no join fan-out. Existing decimal SQL readers and API/client compatibility still require real PostgreSQL acceptance.40 new executable PostgreSQL cases are prepared, not run; existing provider/report/accounting suites remain required. Historical conversion and deployment approval remain separate.
+
 ## Approved type-4 audit amendment
 
 Type4 opening Transactions now follow the same signed account-linked conservation rule as types0/5: sum each individually rounded allocation in checked integer cents and compare against the single scoped AccountTransaction amount. Include every allocation, including Funding Pool entries; do not apply type2's opposite-sign rule. Pending/deleted/pre-start status does not exclude nominal conservation. Empty allocations sum to zero; missing or multiple links remain unsupported. The audit reports opening candidates separately as `opening` and in `byType["4"]`.
 
-This supersedes earlier statements below excluding type4 from conservation. The existing historical artifact's eight unsupported type4 outcomes remain historical results of the previous tool; they do not establish whether these records conserve. Rerun the updated read-only tool into a fresh output directory to obtain their allocation details and results. No historical artifact or financial data was changed. The approved deleted-record representation-conversion policy remains unchanged.
+This supersedes earlier statements below excluding type4 from conservation. The older artifact's eight unsupported type4 outcomes were superseded by the accepted updated audit: all8 now pass. No rerun is authorized or needed in this implementation task. No historical artifact or financial data was changed. The approved deleted-record representation-conversion policy remains unchanged.
 
 
 Design/characterization only, at HEAD `341de4a9e5af37e0ed543efcdaab31b7b4b4ffe2`. No production edits or database connection. See [implementation design](transaction-category-exact-cent-storage-design.md#implementation-ready-design--accepted-audit-and-deleted-policy) for codec contracts, historical policy and rollout. This review supersedes the earlier inventory's tentative model-only adaptation and unverified opening classification.
