@@ -69,6 +69,14 @@ export default defineConfig({
 
   metaFiles: [
     {
+      pattern: 'scripts/captureDeploymentManifests.mjs',
+      reloadServer: false,
+    },
+    {
+      pattern: 'scripts/lib/releaseManifest.mjs',
+      reloadServer: false,
+    },
+    {
       pattern: 'public/**',
       reloadServer: false,
     },

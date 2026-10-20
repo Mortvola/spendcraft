@@ -20,6 +20,34 @@ confirm_deployment() {
   fi
 }
 
+seed_database() {
+  local answer
+  while true; do
+    printf 'Database seeding: type SEED to run seeders, SKIP to continue without seeding, or ABORT to stop installation: '
+    if ! read -r answer; then
+      echo 'No seeding decision received. Installation aborted; services remain stopped. No automatic rollback or traffic resume.' >&2
+      exit 1
+    fi
+    case "$answer" in
+      SEED|seed)
+        node ace db:seed
+        return
+        ;;
+      SKIP|skip)
+        echo 'Skipping database seeding.'
+        return
+        ;;
+      ABORT|abort)
+        echo 'Installation aborted; services remain stopped. No automatic rollback or traffic resume.' >&2
+        exit 1
+        ;;
+      *)
+        echo 'Enter SEED, SKIP, or ABORT.' >&2
+        ;;
+    esac
+  done
+}
+
 confirm_deployment DEPLOY 'Confirm: onboarding maintenance is enabled externally and will remain enabled until final verification; production DB target and experimental-record disposition are reviewed; cleanup keys/provider configuration are provisioned; PM2 startup recovery is installed.'
 
 SCRIPT_END=$( awk '
@@ -95,11 +123,14 @@ popd
 pushd $APP_NEW
 
 node ace migration:status
-confirm_deployment MIGRATE 'Review the displayed pending migrations and existing production seeding behavior. Confirm backup succeeded and all pending migrations plus db:seed are approved for this database.'
+confirm_deployment MIGRATE 'Confirm backup succeeded and review the pending migrations before invoking the migration command. Seeding has a separate SEED/SKIP/ABORT prompt afterward.'
 node ace migration:run
-node ace db:seed
+seed_database
 
 popd
+
+# Keep identities outside both releases, before deleting the old rollback target or swapping directories.
+node "$PWD/$APP_NEW/scripts/captureDeploymentManifests.mjs" --root "$PWD"
 
 rm -fr $APP_OLD
 if [ -e $APP ]; then
