@@ -325,3 +325,17 @@ external maintenance. Maintain that external gate during failures/reboots too.
 - Verify PM2 reboot/crash recovery, configuration, database and Redis access.
 - Check complete-ledger counts, due-age and expiry; inspect infrastructure/review logs.
 - Resume onboarding; retain compatible cleanup code and keys during any rollback.
+
+### Local key-rotation command
+
+Run from the installed application directory:
+
+```bash
+node ace plaid:rotate-cleanup-keys
+```
+
+The command runs without booting the application, contacting Plaid, or connecting to PostgreSQL. It edits the existing `.env` selected by Adonis EnvEditor (including `ENV_PATH` if configured). If both settings are absent/empty, it creates `v1`; otherwise it adds one more than the highest existing canonical `vN` version and selects it in `PLAID_CLEANUP_KEY_VERSION`. Existing keys, including legacy non-`vN` names, are preserved byte-for-byte as secret values. It generates 32 random bytes encoded as base64. A malformed map, invalid retained secret, missing referenced active key or unsafe version counter fails without a save. Old ciphertext is not re-encrypted and no key is removed. `.env.example`, when present, receives empty placeholders. Secrets are not printed.
+
+Run only one rotation at a time and coordinate it with configuration edits/deployment. The command does not implement a file lock or distributed rotation protocol. Pause/drain onboarding producers and cleanup work before changing the file; restart/reload every relevant server/listener/admin process with the complete new map before permitting work under the new active version. Do not restart only one process while other consumers lack the new key. For a staged rollout without stopping writers, follow the existing expand-map-then-activate procedure instead; this command switches both local settings together. It does not restart services. Retain a secure configuration recovery copy; after any filesystem save error, privately verify both settings before retrying. Removing old keys still requires independently establishing that no outstanding ciphertext references them.
+
+The installer invokes `node ace plaid:rotate-cleanup-keys --if-missing` after APP_KEY/VAPID/JWT generation. This initializes `v1` only if neither setting is configured (an empty map/empty placeholders count as unconfigured). An existing valid pair is preserved without saving or rotating. A partial or malformed configuration fails closed. Running without `--if-missing` remains an explicit rotation. The command is explicitly registered in Ace so it is available before full environment configuration is complete.

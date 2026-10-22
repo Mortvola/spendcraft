@@ -69,8 +69,8 @@ await GenerateKey.prototype.run.call({ force:process.argv.includes('--force'), s
     assert.isAbove(call, source.indexOf('\nnpm ci --omit dev --omit optional'))
     assert.isBelow(call, source.indexOf('\nnode ace migration:status'))
   })
-  test('installer generates APP_KEY then VAPID/JWT keys before prompts and stops on key-generation failure')
-    .with([0, 1, 2]).run(async ({ assert }, pushStatus) => {
+  test('installer generates APP_KEY then VAPID/JWT/cleanup keys before prompts and stops on key-generation failure')
+    .with([0, 1, 2, 3]).run(async ({ assert }, pushStatus) => {
       const source = await readFile('install.sh0', 'utf8')
       const start = source.indexOf('\nensure_app_key\n')
       const end = source.indexOf('\npopd', start)
@@ -86,15 +86,16 @@ node() {
     return ${pushStatus === 1 ? 1 : 0}
   fi
   if [ "$*" = 'ace generate:jwt-keys' ]; then printf 'JWT\\n'; return ${pushStatus === 2 ? 2 : 0}; fi
+  if [ "$*" = 'ace plaid:rotate-cleanup-keys --if-missing' ]; then printf 'CLEANUP\\n'; return ${pushStatus === 3 ? 3 : 0}; fi
   if [ "$1" = scripts/configureInstallerEnv.mjs ]; then printf 'CONFIGURE\\n'; return 0; fi
   return 98
 }
 ${source.slice(start, end)}
 `], { encoding: 'utf8', env: { PATH: process.env.PATH, ENV_PATH: '/must-not-be-used' } })
       assert.equal(result.status, pushStatus, result.stderr)
-      assert.equal(result.stdout, pushStatus === 0 ? 'APP_KEY\nVAPID\nJWT\nCONFIGURE\n' : pushStatus === 1 ? 'APP_KEY\nVAPID\n' : 'APP_KEY\nVAPID\nJWT\n')
+      assert.equal(result.stdout, pushStatus === 0 ? 'APP_KEY\nVAPID\nJWT\nCLEANUP\nCONFIGURE\n' : pushStatus === 1 ? 'APP_KEY\nVAPID\n' : pushStatus === 2 ? 'APP_KEY\nVAPID\nJWT\n' : 'APP_KEY\nVAPID\nJWT\nCLEANUP\n')
       const required = JSON.parse(await readFile('installer.env.required.json', 'utf8'))
-      assert.isFalse(required.some((entry) => entry.name.startsWith('VAPID_') || entry.name.startsWith('JWT_')))
+      assert.isFalse(required.some((entry) => entry.name.startsWith('VAPID_') || entry.name.startsWith('JWT_') || entry.name.startsWith('PLAID_CLEANUP_KEY')))
     })
 
 })

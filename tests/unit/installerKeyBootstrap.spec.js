@@ -13,7 +13,7 @@ test.group('Installer key commands through real Ace bootstrap (isolated applicat
     for (const dir of ['commands', 'bin', 'start']) await mkdir(join(root, dir))
     await symlink(resolve('node_modules'), join(root, 'node_modules'))
     await writeFile(join(root, 'package.json'), JSON.stringify({ type: 'module', imports: { '#start/env': './start/env.ts' } }))
-    for (const file of ['adonisrc.ts', 'bin/console.ts', 'commands/GenerateWebPushKeys.ts', 'commands/GenerateJwtKeys.ts']) {
+    for (const file of ['adonisrc.ts', 'bin/console.ts', 'commands/GenerateWebPushKeys.ts', 'commands/GenerateJwtKeys.ts', 'commands/RotatePlaidCleanupKeys.ts']) {
       await writeFile(join(root, file), await readFile(file))
     }
     await writeFile(join(root, 'ace.js'), "import '@poppinss/ts-exec'; await import('./bin/console.js')\n")
@@ -35,7 +35,7 @@ export default class Unrelated extends BaseCommand { static commandName = 'unrel
     })
   }
   test('APP_KEY, VAPID and JWT initialize without discovery or booting full environment validation', async ({ assert }) => {
-    for (const args of [['generate:key', '--force'], ['generate:web-push-keys'], ['generate:jwt-keys']]) {
+    for (const args of [['generate:key', '--force'], ['generate:web-push-keys'], ['generate:jwt-keys'], ['plaid:rotate-cleanup-keys', '--if-missing']]) {
       const result = run(args)
       assert.equal(result.status, 0, result.stdout + result.stderr)
       assert.notInclude(result.stdout + result.stderr, 'EnvValidationException')
@@ -44,7 +44,9 @@ export default class Unrelated extends BaseCommand { static commandName = 'unrel
     const env = parseEnv(contents)
     for (const name of ['APP_KEY', 'VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY', 'JWT_PUBLIC_KEY', 'JWT_PRIVATE_KEY']) assert.isNotEmpty(env[name])
     assert.isUndefined(env.NOT_CONFIGURED_YET)
+    assert.equal(env.PLAID_CLEANUP_KEY_VERSION, 'v1')
     for (const command of ['generate:web-push-keys', 'generate:jwt-keys']) assert.equal(run([command]).status, 0)
+    assert.equal(run(['plaid:rotate-cleanup-keys', '--if-missing']).status, 0)
     assert.equal(await readFile(join(root, '.env'), 'utf8'), contents)
     // The unrelated command still triggers validation: no global bypass exists.
     const unrelated = run(['unrelated'])
@@ -62,6 +64,15 @@ export default class Unrelated extends BaseCommand { static commandName = 'unrel
     assert.notEqual(result.status, 0)
     assert.include(result.stdout + result.stderr, 'EnvValidationException')
     assert.equal(await readFile(join(root, '.env'), 'utf8'), original)
+  }).timeout(30000)
+
+  test('cleanup key rotation is available through Ace before full environment validation', async ({ assert }) => {
+    const result = run(['plaid:rotate-cleanup-keys'])
+    assert.equal(result.status, 0, result.stdout + result.stderr)
+    const env = parseEnv(await readFile(join(root, '.env'), 'utf8'))
+    assert.equal(env.PLAID_CLEANUP_KEY_VERSION, 'v1')
+    assert.match(JSON.parse(env.PLAID_CLEANUP_KEYS).v1, /^[A-Za-z0-9+/]{43}=$/)
+    assert.isUndefined(env.NOT_CONFIGURED_YET)
   }).timeout(30000)
 
 })

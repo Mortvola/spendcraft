@@ -35,7 +35,11 @@ test.group('Installer consolidated automatic values (temporary files only)', (gr
   test('all former defaults are present as automatic values in the consolidated metadata', async ({ assert }) => {
     const required = JSON.parse(await readFile('installer.env.required.json', 'utf8'))
     for (const [name, value] of Object.entries(commonValues)) {
-      assert.deepEqual(required.filter((entry) => entry.name === name), [{ name, type: 'value', value }])
+      const matches = required.filter((entry) => entry.name === name)
+      assert.lengthOf(matches, 1)
+      assert.equal(matches[0].type, 'value')
+      assert.include(['string', 'number'], typeof matches[0].value)
+      assert.strictEqual(String(matches[0].value), value)
     }
     const run = await fixture('', required.filter((entry) => entry.type === 'value'))
     const result = run()

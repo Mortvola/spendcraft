@@ -18,6 +18,7 @@ export default defineConfig({
     async () => new ListLoader([
       (await import('./commands/GenerateWebPushKeys.js')).default,
       (await import('./commands/GenerateJwtKeys.js')).default,
+      (await import('./commands/RotatePlaidCleanupKeys.js')).default,
     ]),
     () => import('@adonisjs/lucid/commands'),
     () => import('@adonisjs/mail/commands'),

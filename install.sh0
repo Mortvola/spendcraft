@@ -163,6 +163,7 @@ npm ci --omit dev --omit optional
 ensure_app_key
 ENV_PATH= NODE_ENV=production node ace generate:web-push-keys
 ENV_PATH= NODE_ENV=production node ace generate:jwt-keys
+ENV_PATH= NODE_ENV=production node ace plaid:rotate-cleanup-keys --if-missing
 node scripts/configureInstallerEnv.mjs --target "$INSTALL_TARGET" \
   --env-file .env --requirements installer.env.required.json
 
