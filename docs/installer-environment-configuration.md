@@ -63,3 +63,19 @@ Automatic numeric JSON values are written without quotes (`PORT=3334`); string v
 Plaid cleanup key initialization runs before interactive configuration. `--if-missing` creates `PLAID_CLEANUP_KEYS` with a random `v1` secret and sets `PLAID_CLEANUP_KEY_VERSION=v1` only when no keys/version are configured. Existing valid settings are preserved byte-for-byte, without rotation. Partial/malformed settings abort rather than replacing recovery credentials. Both former cleanup prompts are removed from the metadata. Explicit future rotation still uses the command without `--if-missing`.
 
 The installer template lives at `installer/install.sh0`. `deploy.sh` reads it there and continues generating `install.sh` in the repository root for upload. The template is not part of the application build payload. Historical verification records may refer to its former root-level location.
+
+
+## Shared Nginx configuration
+
+The application payload includes `installer/nginx.conf`. After environment setup,
+the installer copies it to `$SPENDCRAFT_ROOT/nginx.conf` if absent, replacing
+`spendcraft.app` with `staging.spendcraft.app` only for a newly created staging file.
+Existing shared configuration is never overwritten. The enabled site is
+`/etc/nginx/sites-enabled/spendcraft.conf`, a symlink to that shared file rather
+than a config copy inside the swapped release. Conflicting enabled entries stop
+installation. `sudo nginx -t` validates before backup/migrations; a failed check
+removes only a newly created link. After RESUME and PM2 startup/save, a second
+validation precedes `sudo systemctl reload nginx`. Sudo/Nginx/systemd must already
+be available. No default or differently named existing sites are removed. HTTPS
+and Certbot remain separate operator actions. Tests use temporary files and
+mocked sudo/Nginx; they do not modify `/etc/nginx` or real services.

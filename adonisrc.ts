@@ -77,6 +77,10 @@ export default defineConfig({
 
   metaFiles: [
     {
+      pattern: 'installer/nginx.conf',
+      reloadServer: false,
+    },
+    {
       pattern: 'installer/installer.env.required.json',
       reloadServer: false,
     },

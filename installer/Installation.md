@@ -147,19 +147,60 @@ pm2 startup
 sudo apt install nginx
 ```
 
-Create the config file
+The installer packages `installer/nginx.conf` as an initial HTTP-only site. It
+creates `$SPENDCRAFT_ROOT/nginx.conf` only when no file exists there. For a staging
+installation it substitutes `staging.spendcraft.app` for `spendcraft.app` in the
+new file. Existing configurations are preserved, including Certbot changes.
 
-```bash
-sudo nginx -t
+Nginx references the shared configuration through:
 
-sudo service nginx restart
+```text
+/etc/nginx/sites-enabled/spendcraft.conf -> $SPENDCRAFT_ROOT/nginx.conf
 ```
+
+The installer requires sudo permission to create this link, run `nginx -t`, and
+reload Nginx. A conflicting sites-enabled entry is never overwritten; resolve it
+manually. Existing site files under other names are not removed, so review any
+old SpendCraft site definitions to avoid duplicate host declarations. Validation
+runs before backup/migrations, and Nginx is validated again and reloaded only after
+the RESUME confirmation and application-process startup. An unsuccessful install
+before that point does not reload Nginx. If initial validation fails, only a newly
+created enabled link is removed; the shared file remains for inspection.
+
+Ensure DNS points to the intended server and HTTP port 80 is accessible before
+using Certbot. The installer does not request certificates, add TLS configuration,
+or change firewalls. Run Certbot separately after installation for the selected
+hostname. Subsequent deployments preserve the shared file instead of replacing
+certificate settings with the initial template.
 
 ### On the Mac
 
 sudo nginx -s stop; sudo nginx
 
 ## Let's Encrypt certificates
+
+Install certbot using snap:
+
+```bash
+sudo apt update
+sudo apt install snapd -y
+sudo snap install core
+sudo snap refresh core
+sudo snap install --classic certbot
+```
+
+Verify the installation and verify the nginx plugin is installed:
+
+```bash
+certbot --version
+sudo certbot plugins
+```
+
+After the Spendcraft install script completes successfully the first time, install the certificate from Certbot:
+
+```bash
+sudo certbot --nginx -d staging.spendcraft.app
+```
 
 ## node-gyp
 

@@ -37,6 +37,51 @@ confirm_deployment() {
   fi
 }
 
+configure_nginx() {
+  local root="$1"
+  local template="$2"
+  local target="$3"
+  local config="$root/nginx.conf"
+  local site=/etc/nginx/sites-enabled/spendcraft.conf
+  local created_link=0
+
+  node --input-type=module -- - "$config" "$template" "$target" <<'NGINX_CONFIG'
+import { open, readFile, stat } from 'node:fs/promises'
+const [config, template, target] = process.argv.slice(2)
+if (!['production', 'staging'].includes(target)) throw new Error('Invalid Nginx deployment target')
+try {
+  if (!(await stat(config)).isFile()) throw new Error('Existing Nginx configuration is not a regular file')
+  console.log('Existing shared Nginx configuration preserved.')
+} catch (error) {
+  if (error.code !== 'ENOENT') throw error
+  const source = await readFile(template, 'utf8')
+  const contents = target === 'staging' ? source.replaceAll('spendcraft.app', 'staging.spendcraft.app') : source
+  const file = await open(config, 'wx', 0o644)
+  try { await file.writeFile(contents); await file.sync() } finally { await file.close() }
+  console.log('Created shared Nginx configuration.')
+}
+NGINX_CONFIG
+
+  if sudo test -e "$site" || sudo test -L "$site"; then
+    if ! sudo test -L "$site" || [ "$(sudo readlink -f -- "$site")" != "$config" ]; then
+      echo "Nginx site $site already exists and does not link to $config; resolve it manually. Nothing was replaced." >&2
+      return 1
+    fi
+  else
+    sudo ln -s -- "$config" "$site"
+    created_link=1
+  fi
+  if ! sudo nginx -t; then
+    # Remove only the link created by this invocation; preserve the shared file
+    # for inspection and leave pre-existing enabled sites untouched.
+    if [ "$created_link" -eq 1 ]; then
+      sudo rm -- "$site"
+    fi
+    echo 'Nginx configuration validation failed; installation stopped before migrations or release swap.' >&2
+    return 1
+  fi
+}
+
 ensure_app_key() {
   if node --input-type=module <<'APP_KEY_CHECK'
 import { readFile } from 'node:fs/promises'
@@ -169,6 +214,8 @@ node scripts/configureInstallerEnv.mjs --target "$INSTALL_TARGET" \
 
 popd
 
+configure_nginx "$PWD" "$PWD/$APP_NEW/installer/nginx.conf" "$INSTALL_TARGET"
+
 bash "$SPENDCRAFT_ROOT/$APP_NEW/installer/backup.sh" \
   --env-file "$SPENDCRAFT_ROOT/$APP-env" \
   --output-parent "$SPENDCRAFT_ROOT/backups"
@@ -210,6 +257,8 @@ else
   NODE_ENV=production pm2 start "$PWD/$APP/bin/server.js" --name prod-server --cwd "$PWD/$APP" --interpreter "$(command -v node)" --time --cron "0 0 * * *"
 fi
 pm2 save
+sudo nginx -t
+sudo systemctl reload nginx
 pm2 logs --nostream
 echo 'Verify server health before manually disabling external onboarding maintenance. This installer does not resume traffic.'
 
