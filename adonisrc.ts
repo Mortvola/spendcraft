@@ -1,4 +1,5 @@
 import { defineConfig } from '@adonisjs/core/app'
+import { ListLoader } from '@adonisjs/core/ace'
 
 export default defineConfig({
   /*
@@ -12,6 +13,12 @@ export default defineConfig({
   */
   commands: [
     () => import('@adonisjs/core/commands'),
+    // Discover installer key commands without scanning unrelated commands that
+    // import start/env before the installer has populated required settings.
+    async () => new ListLoader([
+      (await import('./commands/GenerateWebPushKeys.js')).default,
+      (await import('./commands/GenerateJwtKeys.js')).default,
+    ]),
     () => import('@adonisjs/lucid/commands'),
     () => import('@adonisjs/mail/commands'),
   ],
@@ -68,6 +75,18 @@ export default defineConfig({
   ],
 
   metaFiles: [
+    {
+      pattern: 'installer.env.required.json',
+      reloadServer: false,
+    },
+    {
+      pattern: 'scripts/configureInstallerEnv.mjs',
+      reloadServer: false,
+    },
+    {
+      pattern: 'backup.sh',
+      reloadServer: false,
+    },
     {
       pattern: 'scripts/captureDeploymentManifests.mjs',
       reloadServer: false,

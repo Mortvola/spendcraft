@@ -1,7 +1,7 @@
 import { test } from '@japa/runner'
 import process from 'node:process'
 import { spawnSync } from 'node:child_process'
-import { mkdtemp, mkdir, writeFile, readFile, symlink, rm, realpath, readdir, stat } from 'node:fs/promises'
+import { mkdtemp, mkdir, writeFile, readFile, symlink, rm, realpath, readdir, stat, lstat } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { resolve, join } from 'node:path'
 import { recordDeployment, writeBuildSource } from '../../scripts/captureDeploymentManifests.mjs'
@@ -121,4 +121,67 @@ ${excerpt}
     assert.equal(result.status, 0, result.stderr)
     assert.isTrue(result.stdout.trim().startsWith(join(root, 'releases/deployment-')))
   })
+  test('CLI diagnostics identify incomplete release and offending file without revealing secrets', async ({ assert }) => {
+    await release('spendcraft'); await release('spendcraft.new', true)
+    await rm(join(root, 'spendcraft/ace.js'))
+    const result = spawnSync(process.execPath, [resolve('scripts/captureDeploymentManifests.mjs'), '--root', root], { encoding: 'utf8' })
+    assert.equal(result.status, 1)
+    const diagnostic = JSON.parse(result.stderr.split('\n').find((line) => line.startsWith('Diagnostic: ')).slice('Diagnostic: '.length))
+    assert.deepEqual(diagnostic, { phase: 'capture-previous-release', path: join(root, 'spendcraft'), code: 'incomplete_release', entry: 'ace.js' })
+    assert.notInclude(result.stderr, 'not-a-real-credential')
+    const output = result.stdout.trim()
+    assert.notInclude(await readdir(output), 'deployment.json')
+  })
+  test('read-only inspection identifies broken secret links without creating deployment records', async ({ assert }) => {
+    await release('spendcraft.new', true)
+    await symlink('../missing-push-key', join(root, 'spendcraft.new/PushNotificationKey.p8'))
+    const before = await readdir(root)
+    const result = spawnSync(process.execPath, [resolve('scripts/captureDeploymentManifests.mjs'), '--inspect-root', root], { encoding: 'utf8' })
+    assert.equal(result.status, 1)
+    const diagnostic = JSON.parse(result.stderr.split('\n').find((line) => line.startsWith('Diagnostic: ')).slice('Diagnostic: '.length))
+    assert.deepEqual(diagnostic, { phase: 'capture-current-release', path: join(root, 'spendcraft.new'), code: 'ENOENT', entry: 'PushNotificationKey.p8' })
+    assert.deepEqual(await readdir(root), before)
+    assert.notInclude(result.stderr, 'not-a-real-credential')
+  })
+  test('read-only inspection validates releases and build identity without writing records', async ({ assert }) => {
+    await release('spendcraft'); await release('spendcraft.new', true)
+    const before = await readdir(root)
+    const result = spawnSync(process.execPath, [resolve('scripts/captureDeploymentManifests.mjs'), '--inspect-root', root], { encoding: 'utf8' })
+    assert.equal(result.status, 0, result.stderr)
+    assert.include(result.stdout, 'Release inspection passed')
+    assert.deepEqual(await readdir(root), before)
+    assert.notInclude(await readdir(root), 'releases')
+  })
+  test('invalid build JSON diagnostic excludes raw file content', async ({ assert }) => {
+    await release('spendcraft.new', true)
+    await writeFile(join(root, 'spendcraft.new/release-source.json'), 'not-json-private-marker')
+    const result = spawnSync(process.execPath, [resolve('scripts/captureDeploymentManifests.mjs'), '--inspect-root', root], { encoding: 'utf8' })
+    assert.equal(result.status, 1)
+    assert.include(result.stderr, 'read-current-build-identity')
+    assert.include(result.stderr, 'invalid_json')
+    assert.notInclude(result.stderr, 'not-json-private-marker')
+  })
+
+  test('installer links the optional Apple key only when its target is a file')
+    .with(['present', 'missing', 'directory', 'dangling']).run(async ({ assert }, state) => {
+      const current = await release('spendcraft.new', true)
+      const key = join(root, 'PushNotificationKey.p8')
+      if (state === 'present') await writeFile(key, 'synthetic-private-key')
+      if (state === 'directory') await mkdir(key)
+      if (state === 'dangling') await symlink('missing-key', key)
+      const source = await readFile('install.sh0', 'utf8')
+      const start = source.indexOf('if [ -f ../PushNotificationKey.p8 ]; then')
+      assert.isAbove(start, 0)
+      const end = source.indexOf('\nfi', start) + 3
+      const result = spawnSync('bash', ['-c', `set -e\n${source.slice(start, end)}\n`], { cwd: current, encoding: 'utf8' })
+      assert.equal(result.status, 0, result.stderr)
+      const link = join(current, 'PushNotificationKey.p8')
+      if (state === 'present') {
+        assert.isTrue((await lstat(link)).isSymbolicLink())
+        assert.equal(await realpath(link), key)
+      } else await assert.rejects(() => lstat(link))
+      const manifest = await releaseManifest(current)
+      assert.notInclude(JSON.stringify(manifest), 'synthetic-private-key')
+    })
+
 })

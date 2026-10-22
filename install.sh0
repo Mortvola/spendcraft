@@ -3,6 +3,23 @@
 set -e
 set -o pipefail
 
+# deploy.sh embeds the selected target. The unpackaged template requires one.
+INSTALL_TARGET=unconfigured
+if [ "$#" -gt 1 ]; then
+  echo 'Usage: install.sh [production|staging]' >&2
+  exit 1
+fi
+if [ "$INSTALL_TARGET" = unconfigured ]; then
+  INSTALL_TARGET="${1:-}"
+elif [ "$#" -eq 1 ] && [ "$1" != "$INSTALL_TARGET" ]; then
+  echo 'Installer target does not match its packaged deployment target.' >&2
+  exit 1
+fi
+case "$INSTALL_TARGET" in
+  production|staging) ;;
+  *) echo 'Explicit production or staging installation target required.' >&2; exit 1 ;;
+esac
+
 : "${SPENDCRAFT_ROOT:?Set SPENDCRAFT_ROOT to the deployment directory}"
 if [ ! -d "$SPENDCRAFT_ROOT" ]; then
   echo 'Deployment directory does not exist' >&2
@@ -17,6 +34,31 @@ confirm_deployment() {
   if ! read -r answer || [ "$answer" != "$expected" ]; then
     echo 'Deployment gate declined. Keep onboarding maintenance enabled; no automatic rollback or traffic resume.' >&2
     exit 1
+  fi
+}
+
+ensure_app_key() {
+  if node --input-type=module <<'APP_KEY_CHECK'
+import { readFile } from 'node:fs/promises'
+import { parseEnv } from 'node:util'
+try {
+  const env = parseEnv(await readFile('.env', 'utf8'))
+  process.exit(env.APP_KEY ? 0 : 42)
+} catch {
+  console.error('Cannot read or parse .env; APP_KEY was not changed.')
+  process.exit(1)
+}
+APP_KEY_CHECK
+  then
+    echo 'Existing APP_KEY preserved.'
+  else
+    local status=$?
+    if [ "$status" -ne 42 ]; then
+      return "$status"
+    fi
+    # The framework command writes through the shared .env symlink. Force file
+    # output in production mode; never display the generated key in installer logs.
+    ENV_PATH= NODE_ENV=production node ace generate:key --force
   fi
 }
 
@@ -48,7 +90,7 @@ seed_database() {
   done
 }
 
-confirm_deployment DEPLOY 'Confirm: onboarding maintenance is enabled externally and will remain enabled until final verification; production DB target and experimental-record disposition are reviewed; cleanup keys/provider configuration are provisioned; PM2 startup recovery is installed.'
+confirm_deployment DEPLOY "Confirm $INSTALL_TARGET installation: onboarding maintenance is enabled externally and will remain enabled until final verification; the selected DB target and experimental-record disposition are reviewed; cleanup keys/provider configuration are provisioned; PM2 startup recovery is installed."
 
 SCRIPT_END=$( awk '
   BEGIN { err=1; } 
@@ -110,15 +152,25 @@ pushd $APP_NEW
 
 ln -s ../$APP-env .env
 ln -s ../.npmrc .npmrc
-ln -s ../PushNotificationKey.p8 .
+if [ -f ../PushNotificationKey.p8 ]; then
+  ln -s ../PushNotificationKey.p8 .
+fi
 
 #npm -dd ci --omit dev --omit optional
 #npm -dd ci --omit dev --omit optional --foreground-scripts
 npm ci --omit dev --omit optional
 
+ensure_app_key
+ENV_PATH= NODE_ENV=production node ace generate:web-push-keys
+ENV_PATH= NODE_ENV=production node ace generate:jwt-keys
+node scripts/configureInstallerEnv.mjs --target "$INSTALL_TARGET" \
+  --env-file .env --requirements installer.env.required.json
+
 popd
 
-./backup.sh
+bash "$SPENDCRAFT_ROOT/$APP_NEW/backup.sh" \
+  --env-file "$SPENDCRAFT_ROOT/$APP-env" \
+  --output-parent "$SPENDCRAFT_ROOT/backups"
 
 pushd $APP_NEW
 

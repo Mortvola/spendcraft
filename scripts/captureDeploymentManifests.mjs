@@ -25,37 +25,57 @@ async function sourceMetadata(directory, required) {
   }
 }
 
+async function captureStep(phase, path, operation) {
+  try { return await operation() }
+  catch (error) {
+    error.captureContext ??= { phase, path }
+    throw error
+  }
+}
+
 export async function recordDeployment(root, print = (path) => console.log(path)) {
-  const canonical = await realpath(root)
-  if (canonical !== resolve(root) || !(await lstat(root)).isDirectory()) throw new Error('invalid_deployment_root')
+  const canonical = await captureStep('validate-root', root, async () => {
+    const path = await realpath(root)
+    if (path !== resolve(root) || !(await lstat(root)).isDirectory()) throw new Error('invalid_deployment_root')
+    return path
+  })
   const records = join(canonical, 'releases')
-  await mkdir(records, { recursive: true, mode: 0o700 })
-  if ((await lstat(records)).isSymbolicLink() || await realpath(records) !== records) throw new Error('invalid_release_records_directory')
-  const output = await mkdtemp(join(records, `deployment-${new Date().toISOString().replaceAll(':', '-')}-`))
+  await captureStep('prepare-records-directory', records, async () => {
+    await mkdir(records, { recursive: true, mode: 0o700 })
+    if ((await lstat(records)).isSymbolicLink() || await realpath(records) !== records) throw new Error('invalid_release_records_directory')
+  })
+  const output = await captureStep('create-record-directory', records,
+    () => mkdtemp(join(records, `deployment-${new Date().toISOString().replaceAll(':', '-')}-`)))
   print(output)
   const current = join(canonical, 'spendcraft.new')
   const previous = join(canonical, 'spendcraft')
-  const currentSource = await sourceMetadata(current, true)
-  let previousExists = true
-  try { await lstat(previous) } catch (error) { if (error.code === 'ENOENT') previousExists = false; else throw error }
+  const currentSource = await captureStep('read-current-build-identity', join(current, 'release-source.json'), () => sourceMetadata(current, true))
+  const previousExists = await captureStep('inspect-previous-release', previous, async () => {
+    try { await lstat(previous); return true } catch (error) { if (error.code === 'ENOENT') return false; throw error }
+  })
   let previousManifest = null
   let previousSource = null
   if (previousExists) {
-    previousManifest = await releaseManifest(previous)
-    previousSource = await sourceMetadata(previous, false)
-    await writeExclusive(join(output, 'previous-release-manifest.json'), previousManifest)
+    previousManifest = await captureStep('capture-previous-release', previous, () => releaseManifest(previous))
+    previousSource = await captureStep('read-previous-build-identity', join(previous, 'release-source.json'), () => sourceMetadata(previous, false))
+    const path = join(output, 'previous-release-manifest.json')
+    await captureStep('write-previous-manifest', path, () => writeExclusive(path, previousManifest))
   }
-  const currentManifest = await releaseManifest(current)
-  await writeExclusive(join(output, 'current-release-manifest.json'), currentManifest)
+  const currentManifest = await captureStep('capture-current-release', current, () => releaseManifest(current))
+  const manifestPath = join(output, 'current-release-manifest.json')
+  await captureStep('write-current-manifest', manifestPath, () => writeExclusive(manifestPath, currentManifest))
   const record = { format: 1, status: 'captured-before-swap', capturedAt: new Date().toISOString(),
     previous: previousManifest ? { identity: previousManifest.identity, source: previousSource,
       manifest: 'previous-release-manifest.json', installedPathAfterSwap: join(canonical, 'spendcraft.old') } : null,
     current: { identity: currentManifest.identity, source: currentSource, manifest: 'current-release-manifest.json',
       installedPathAfterSwap: join(canonical, 'spendcraft') } }
-  await writeExclusive(join(output, 'deployment.json'), record)
+  const recordPath = join(output, 'deployment.json')
+  await captureStep('write-deployment-record', recordPath, () => writeExclusive(recordPath, record))
   for (const path of [output, records, canonical]) {
-    const directory = await open(path, 'r')
-    try { await directory.sync() } finally { await directory.close() }
+    await captureStep('sync-record-directory', path, async () => {
+      const directory = await open(path, 'r')
+      try { await directory.sync() } finally { await directory.close() }
+    })
   }
   return { output, record }
 }
@@ -68,17 +88,50 @@ export async function writeBuildSource(path, git = (args) => execFileSync('git',
   await writeExclusive(path, { format: 1, commit, dirty, builtAt: new Date().toISOString() })
 }
 
+async function inspectDeployment(root) {
+  const canonical = await captureStep('validate-root', root, async () => {
+    const path = await realpath(root)
+    if (path !== resolve(root) || !(await lstat(root)).isDirectory()) throw new Error('invalid_deployment_root')
+    return path
+  })
+  const current = join(canonical, 'spendcraft.new')
+  await captureStep('read-current-build-identity', join(current, 'release-source.json'), () => sourceMetadata(current, true))
+  for (const [phase, path] of [['capture-previous-release', join(canonical, 'spendcraft')], ['capture-current-release', current]]) {
+    if (phase === 'capture-previous-release') {
+      const exists = await captureStep('inspect-previous-release', path, async () => {
+        try { await lstat(path); return true } catch (error) { if (error.code === 'ENOENT') return false; throw error }
+      })
+      if (!exists) continue
+    }
+    await captureStep(phase, path, () => releaseManifest(path))
+    if (phase === 'capture-previous-release') await captureStep('read-previous-build-identity', join(path, 'release-source.json'), () => sourceMetadata(path, false))
+  }
+  console.log('Release inspection passed. No deployment records, release directories or processes were changed.')
+}
+
 export async function main(args = process.argv.slice(2)) {
   const { values } = parseArgs({ args, strict: true, options: {
-    root: { type: 'string' }, 'write-build-source': { type: 'string' },
+    root: { type: 'string' }, 'write-build-source': { type: 'string' }, 'inspect-root': { type: 'string' },
   } })
-  if (Boolean(values.root) === Boolean(values['write-build-source'])) throw new Error('choose_one_capture_mode')
-  if (values.root) await recordDeployment(resolve(values.root))
+  if ([values.root, values['write-build-source'], values['inspect-root']].filter(Boolean).length !== 1) throw new Error('choose_one_capture_mode')
+  if (values['inspect-root']) await inspectDeployment(resolve(values['inspect-root']))
+  else if (values.root) await recordDeployment(resolve(values.root))
   else await writeBuildSource(resolve(values['write-build-source']))
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
-  main().catch(() => {
+  main().catch((error) => {
+    // Never print raw parser errors, file contents, credentials or child stderr.
+    const knownReasons = new Set(['invalid_deployment_root', 'invalid_release_records_directory',
+      'invalid_release_source', 'release_path_not_real_directory', 'incomplete_release',
+      'invalid_release_package', 'invalid_release_lockfile', 'missing_runtime_dependency',
+      'client_entry_missing', 'client_asset_missing', 'secret_must_be_external_symlink',
+      'secret_target_inside_release', 'unreviewed_external_release_symlink',
+      'unsupported_release_file', 'release_env_missing', 'invalid_build_commit', 'choose_one_capture_mode'])
+    const code = typeof error.code === 'string' && /^[A-Z][A-Z0-9_]{0,63}$/.test(error.code)
+      ? error.code : knownReasons.has(error.message) ? error.message
+        : error instanceof SyntaxError ? 'invalid_json' : 'unclassified_error'
+    console.error(`Diagnostic: ${JSON.stringify({ ...error.captureContext, code, entry: error.manifestEntry })}`)
     console.error('Release manifest capture failed. Do not swap releases or resume processes; inspect the partial deployment record.')
     process.exitCode = 1
   })

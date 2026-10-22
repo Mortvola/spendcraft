@@ -34,6 +34,7 @@
     "@adonisjs/core": "^7.3.0",
     "@adonisjs/cors": "^3.0.0",
     "@adonisjs/drive": "^4.0.0",
+    "@adonisjs/env": "7.1.0",
     "@adonisjs/lucid": "^22.4.2",
     "@adonisjs/mail": "^10.2.0",
     "@adonisjs/redis": "^10.0.0",
