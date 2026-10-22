@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { spawnSync } from 'node:child_process'
 
 async function runDecision(input, seedStatus = 0) {
-  const source = await readFile('install.sh0', 'utf8')
+  const source = await readFile('installer/install.sh0', 'utf8')
   const start = source.indexOf('seed_database() {')
   const end = source.indexOf('\nconfirm_deployment DEPLOY', start)
   if (start < 0 || end < 0) throw new Error('Missing installer seeding function')
@@ -58,7 +58,7 @@ test.group('Installer operator seeding decision (no database)', () => {
     assert.notInclude(result.stdout, 'CONTINUED')
   })
   test('decision occurs after migration command and before release switch/restarts', async ({ assert }) => {
-    const source = await readFile('install.sh0', 'utf8')
+    const source = await readFile('installer/install.sh0', 'utf8')
     const call = source.indexOf('\nseed_database\n')
     assert.isAbove(call, source.indexOf('\nnode ace migration:run\n'))
     assert.isBelow(call, source.indexOf('mv $APP_NEW $APP'))

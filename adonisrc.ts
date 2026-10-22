@@ -77,7 +77,7 @@ export default defineConfig({
 
   metaFiles: [
     {
-      pattern: 'installer.env.required.json',
+      pattern: 'installer/installer.env.required.json',
       reloadServer: false,
     },
     {
@@ -85,7 +85,7 @@ export default defineConfig({
       reloadServer: false,
     },
     {
-      pattern: 'backup.sh',
+      pattern: 'installer/backup.sh',
       reloadServer: false,
     },
     {

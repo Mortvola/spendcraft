@@ -44,7 +44,7 @@ The accepted commit also includes admission/conservation validation and Category
 
 ## Automatic installer capture — filesystem only
 
-`install.sh0` now captures both manifests automatically after dependency/configuration preparation and the existing migration/seeding decisions, while deployment-managed processes are stopped, **before** deleting `spendcraft.old` or swapping releases. It calls the packaged filesystem-only `scripts/captureDeploymentManifests.mjs`; installation and rollback share `scripts/lib/releaseManifest.mjs`, with identical format, validation and hashing. Manifest capture performs no database operations or application bootstrap.
+`installer/install.sh0` now captures both manifests automatically after dependency/configuration preparation and the existing migration/seeding decisions, while deployment-managed processes are stopped, **before** deleting `spendcraft.old` or swapping releases. It calls the packaged filesystem-only `scripts/captureDeploymentManifests.mjs`; installation and rollback share `scripts/lib/releaseManifest.mjs`, with identical format, validation and hashing. Manifest capture performs no database operations or application bootstrap.
 
 Every installation prints a unique private directory such as `$SPENDCRAFT_ROOT/releases/deployment-<timestamp>-<random>/`. It contains:
 

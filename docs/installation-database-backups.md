@@ -1,16 +1,16 @@
 # Packaged installation database backups
 
-`backup.sh` is a standalone operator tool included in the Adonis build through `adonisrc.ts` metaFiles. `deploy.sh` already archives the complete build directory; no extra packaging step or root-level backup-script copy is needed.
+`installer/backup.sh` is a standalone operator tool included in the Adonis build through `adonisrc.ts` metaFiles. `deploy.sh` already archives the complete build directory; no extra packaging step or root-level backup-script copy is needed.
 
-After extraction and dependency preparation, before migration status/run, `install.sh0` invokes:
+After extraction and dependency preparation, before migration status/run, `installer/install.sh0` invokes:
 
 ```bash
-bash "$SPENDCRAFT_ROOT/spendcraft.new/backup.sh" \
+bash "$SPENDCRAFT_ROOT/spendcraft.new/installer/backup.sh" \
   --env-file "$SPENDCRAFT_ROOT/spendcraft-env" \
   --output-parent "$SPENDCRAFT_ROOT/backups"
 ```
 
-It can also be invoked independently from an installed release with the same explicit paths. Preparation/package tests do not authorize running a backup against production or staging. The installer still requires operator decisions; do not run it simply to test backup tooling.
+It can also be invoked independently as `$SPENDCRAFT_ROOT/spendcraft/installer/backup.sh` with the same explicit environment/output paths. The backup script is not copied to the installation root. Preparation/package tests do not authorize running a backup against production or staging. The installer still requires operator decisions; do not run it simply to test backup tooling.
 
 ## Configuration and outputs
 

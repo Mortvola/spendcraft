@@ -31,7 +31,7 @@ esac
 rm -f build.zip;
 zip -r build build > /dev/null;
 
-sed "s/^INSTALL_TARGET=unconfigured$/INSTALL_TARGET=$1/" ./install.sh0 > install.sh
+sed "s/^INSTALL_TARGET=unconfigured$/INSTALL_TARGET=$1/" ./installer/install.sh0 > install.sh
 base64 -i ./build.zip >> install.sh
 chmod u+x install.sh
 

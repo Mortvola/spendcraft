@@ -6,7 +6,7 @@ import { join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { spawnSync } from 'node:child_process'
 
-const script = resolve('backup.sh')
+const script = resolve('installer/backup.sh')
 const valid = 'PG_HOST=localhost\nPG_PORT=5432\nPG_USER=staging_user\nPG_PASSWORD="private-test-password"\nPG_DB_NAME=spendcraft_staging\n'
 
 test.group('Packaged installer backup (mock pg_dump only)', (group) => {
@@ -107,12 +107,14 @@ ${behavior === 'failure' ? 'process.exitCode=7;' : behavior === 'signal' ? "proc
   })
   test('payload includes the script; installer invokes it before migrations with explicit external paths', async ({ assert }) => {
     const config = await readFile('adonisrc.ts', 'utf8')
-    assert.include(config, "pattern: 'backup.sh'")
-    const installer = await readFile('install.sh0', 'utf8')
-    assert.include(installer, 'bash "$SPENDCRAFT_ROOT/$APP_NEW/backup.sh"')
+    assert.include(config, "pattern: 'installer/backup.sh'")
+    assert.notInclude(config, "pattern: 'backup.sh'")
+    await assert.rejects(() => readFile('backup.sh'))
+    const installer = await readFile('installer/install.sh0', 'utf8')
+    assert.include(installer, 'bash "$SPENDCRAFT_ROOT/$APP_NEW/installer/backup.sh"')
     assert.include(installer, '--env-file "$SPENDCRAFT_ROOT/$APP-env"')
     assert.include(installer, '--output-parent "$SPENDCRAFT_ROOT/backups"')
-    assert.isBelow(installer.indexOf('bash "$SPENDCRAFT_ROOT/$APP_NEW/backup.sh"'), installer.indexOf('\nnode ace migration:status'))
+    assert.isBelow(installer.indexOf('bash "$SPENDCRAFT_ROOT/$APP_NEW/installer/backup.sh"'), installer.indexOf('\nnode ace migration:status'))
     assert.notInclude(installer, '\n./backup.sh\n')
   })
 })

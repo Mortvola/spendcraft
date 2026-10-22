@@ -95,7 +95,7 @@ Both `pg` and `pgLog` must resolve from the same staging `.env` PG_HOST/PG_PORT/
     spendcraft-env            # staging-only environment; mode 0600
     .npmrc                    # staging read-only registry credential, if required
     PushNotificationKey.p8    # independent nonproduction test key; never production's
-    backup.sh                 # reviewed environment-aware backup wrapper
+    spendcraft/installer/backup.sh  # versioned environment-aware backup wrapper
     backups/                  # installer logical dumps
     releases/deployment-.../  # paired release manifests and deployment record
     maintenance/              # reviewed operator tools/plans outside swapped releases
@@ -128,9 +128,9 @@ Current installer hardcodes production process names; rollback hardcodes product
 Repository flow:
 
 1. `deploy.sh` calls `build.sh`; server build includes Vite assets. Build source provenance is written to `build/release-source.json`.
-2. It zips build, appends base64 payload to `install.sh0`, creates executable installer, then scps it to `ubuntu@${SPENDCRAFT_SERVER}` using a hardcoded local SSH-key path. Packaging assumes development-host `base64 -i`; do not assume portable Linux build-host syntax without checking.
+2. It zips build, appends base64 payload to the template `installer/install.sh0`, creates executable installer, then scps it to `ubuntu@${SPENDCRAFT_SERVER}` using a hardcoded local SSH-key path. Packaging assumes development-host `base64 -i`; do not assume portable Linux build-host syntax without checking.
 3. Installer requires existing SPENDCRAFT_ROOT and an explicit DEPLOY confirmation. It extracts payload, stops named existing PM2 applications, prepares spendcraft.new and external symlinks, runs `npm ci --omit dev --omit optional` on the target.
-4. It invokes **host-side `./backup.sh`**, not a versioned repository implementation. It shows migration status, requires MIGRATE confirmation, invokes Lucid migration command (with its production consent behavior), then independently asks SEED/SKIP/ABORT.
+4. The original inspected installer invoked host-side `./backup.sh`. The current installer invokes its versioned `spendcraft.new/installer/backup.sh` payload instead. It shows migration status, requires MIGRATE confirmation, invokes Lucid migration command (with its production consent behavior), then independently asks SEED/SKIP/ABORT.
 5. It captures paired manifests before deleting the old rollback target; removes existing spendcraft.old, renames current to old, new to current. These are directory renames, not a source rebuild in place.
 6. RESUME confirmation precedes PM2 restart/start and saved definitions. Logs are shown; external maintenance must be manually removed only after health verification. `set -e`/pipefail stop on errors, but there is no general automatic restoration of directories/DB or complete child/scheduler fence.
 

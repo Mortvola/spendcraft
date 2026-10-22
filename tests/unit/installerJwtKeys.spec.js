@@ -91,11 +91,11 @@ test.group('Installer JWT key generation (temporary files, no app or database)',
     await assert.rejects(() => readFile(join(root, 'shared-env')))
   })
   test('installer invokes generation before prompting and omits JWT prompts', async ({ assert }) => {
-    const source = await readFile('install.sh0', 'utf8')
+    const source = await readFile('installer/install.sh0', 'utf8')
     const call = source.indexOf('\nENV_PATH= NODE_ENV=production node ace generate:jwt-keys\n')
     assert.isAbove(call, source.indexOf('\nensure_app_key\n'))
     assert.isBelow(call, source.indexOf('\nnode scripts/configureInstallerEnv.mjs'))
-    const entries = JSON.parse(await readFile('installer.env.required.json', 'utf8'))
+    const entries = JSON.parse(await readFile('installer/installer.env.required.json', 'utf8'))
     assert.isFalse(entries.some((entry) => entry.name.startsWith('JWT_')))
   })
 })

@@ -1,5 +1,5 @@
 import { test } from '@japa/runner'
-import { mkdtemp, writeFile, readFile, rm } from 'node:fs/promises'
+import { mkdtemp, mkdir, writeFile, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { spawnSync } from 'node:child_process'
@@ -9,7 +9,8 @@ async function runDeploy(args, variables = {}) {
   const directory = await mkdtemp(join(tmpdir(), 'spendcraft-deploy-target-'))
   try {
     await writeFile(join(directory, 'build.sh'), '#!/bin/bash\nprintf "BUILD\\n"\n', { mode: 0o700 })
-    await writeFile(join(directory, 'install.sh0'), await readFile('install.sh0', 'utf8'))
+    await mkdir(join(directory, 'installer'))
+    await writeFile(join(directory, 'installer/install.sh0'), await readFile('installer/install.sh0', 'utf8'))
     return spawnSync('bash', ['-c', `
 rm() { :; }
 zip() { :; }
@@ -64,7 +65,7 @@ test.group('Deploy target selection (inert build and upload)', () => {
       assert.equal(result.status, 0)
     })
   test('an installer rejects a conflicting packaged target before installation', async ({ assert }) => {
-    const source = await readFile('install.sh0', 'utf8')
+    const source = await readFile('installer/install.sh0', 'utf8')
     const header = source.slice(0, source.indexOf('\nconfirm_deployment() {'))
       .replace('INSTALL_TARGET=unconfigured', 'INSTALL_TARGET=staging')
     const result = spawnSync('bash', ['-c', header, 'install.sh', 'production'], { encoding: 'utf8', env: { PATH: process.env.PATH } })

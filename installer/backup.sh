@@ -21,7 +21,7 @@ try {
     'env-file': { type: 'string' }, 'output-parent': { type: 'string' },
   } })
   if (!values['env-file'] || !values['output-parent']) {
-    throw new Error('Usage: bash backup.sh --env-file PATH --output-parent DIRECTORY')
+    throw new Error('Usage: bash installer/backup.sh --env-file PATH --output-parent DIRECTORY')
   }
 
   phase = 'output_directory'

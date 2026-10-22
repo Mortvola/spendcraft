@@ -83,7 +83,7 @@ test.group('Installer release manifests (temporary packages, no services or data
     await assert.rejects(() => writeBuildSource(join(root, 'bad.json'), () => 'not-a-commit'), 'invalid_build_commit')
   })
   test('actual installer stops before directory deletion/swap if capture fails', async ({ assert }) => {
-    const source = await readFile('install.sh0', 'utf8')
+    const source = await readFile('installer/install.sh0', 'utf8')
     const call = source.indexOf('node "$PWD/$APP_NEW/scripts/captureDeploymentManifests.mjs"')
     const end = source.indexOf('\nconfirm_deployment RESUME', call)
     assert.isAbove(call, source.indexOf('\nseed_database\n'))
@@ -169,7 +169,7 @@ ${excerpt}
       if (state === 'present') await writeFile(key, 'synthetic-private-key')
       if (state === 'directory') await mkdir(key)
       if (state === 'dangling') await symlink('missing-key', key)
-      const source = await readFile('install.sh0', 'utf8')
+      const source = await readFile('installer/install.sh0', 'utf8')
       const start = source.indexOf('if [ -f ../PushNotificationKey.p8 ]; then')
       assert.isAbove(start, 0)
       const end = source.indexOf('\nfi', start) + 3

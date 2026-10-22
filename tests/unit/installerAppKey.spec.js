@@ -28,7 +28,7 @@ await writeFile('invoked.json', JSON.stringify(process.argv.slice(2)));
 await GenerateKey.prototype.run.call({ force:process.argv.includes('--force'), show:false,
   app:{appRoot:new URL('./',import.meta.url)},logger:{action(){return {succeeded(){}}},log(){throw Error('Key must not be printed')}} });
 `)
-    const source = await readFile('install.sh0', 'utf8')
+    const source = await readFile('installer/install.sh0', 'utf8')
     const start = source.indexOf('ensure_app_key() {')
     const end = source.indexOf('\nseed_database() {', start)
     return spawnSync('bash', ['-c', `set -e\n${source.slice(start, end)}\nensure_app_key\n`], {
@@ -64,14 +64,14 @@ await GenerateKey.prototype.run.call({ force:process.argv.includes('--force'), s
     await assert.rejects(() => readFile(join(root, 'spendcraft-env')))
   })
   test('key initialization follows dependency installation and precedes app migration bootstrap', async ({ assert }) => {
-    const source = await readFile('install.sh0', 'utf8')
+    const source = await readFile('installer/install.sh0', 'utf8')
     const call = source.indexOf('\nensure_app_key\n')
     assert.isAbove(call, source.indexOf('\nnpm ci --omit dev --omit optional'))
     assert.isBelow(call, source.indexOf('\nnode ace migration:status'))
   })
   test('installer generates APP_KEY then VAPID/JWT/cleanup keys before prompts and stops on key-generation failure')
     .with([0, 1, 2, 3]).run(async ({ assert }, pushStatus) => {
-      const source = await readFile('install.sh0', 'utf8')
+      const source = await readFile('installer/install.sh0', 'utf8')
       const start = source.indexOf('\nensure_app_key\n')
       const end = source.indexOf('\npopd', start)
       assert.isAbove(start, 0)
@@ -94,7 +94,7 @@ ${source.slice(start, end)}
 `], { encoding: 'utf8', env: { PATH: process.env.PATH, ENV_PATH: '/must-not-be-used' } })
       assert.equal(result.status, pushStatus, result.stderr)
       assert.equal(result.stdout, pushStatus === 0 ? 'APP_KEY\nVAPID\nJWT\nCLEANUP\nCONFIGURE\n' : pushStatus === 1 ? 'APP_KEY\nVAPID\n' : pushStatus === 2 ? 'APP_KEY\nVAPID\nJWT\n' : 'APP_KEY\nVAPID\nJWT\nCLEANUP\n')
-      const required = JSON.parse(await readFile('installer.env.required.json', 'utf8'))
+      const required = JSON.parse(await readFile('installer/installer.env.required.json', 'utf8'))
       assert.isFalse(required.some((entry) => entry.name.startsWith('VAPID_') || entry.name.startsWith('JWT_') || entry.name.startsWith('PLAID_CLEANUP_KEY')))
     })
 

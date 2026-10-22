@@ -123,7 +123,7 @@ export async function terminalAnswer(entry) {
 export async function configureRequiredEnvironment({ target, envFile, requirementsFile, ask = terminalAnswer, notify = console.log }) {
   let metadata
   try { metadata = JSON.parse(await readFile(requirementsFile, 'utf8')) }
-  catch { fail('Cannot read or parse installer.env.required.json') }
+  catch { fail(`Cannot read or parse required-settings file ${JSON.stringify(requirementsFile)}`) }
   const requirements = selectRequirements(metadata, target)
   let resolved, original
   try { resolved = await realpath(envFile); original = await readFile(resolved, 'utf8') }

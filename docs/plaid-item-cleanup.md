@@ -96,7 +96,7 @@ Deployment order:
    confirming startup of all PM2 processes. Verify server and listener health afterward.
 5. Resume onboarding only after readiness checks and listener verification.
 
-`install.sh0` (embedded by `deploy.sh` into `install.sh`) stops `prod-server`,
+`installer/install.sh0` (embedded by `deploy.sh` into `install.sh`) stops `prod-server`,
 `queue`, and any existing `plaid-cleanup` process before directory replacement.
 It runs migrations before switching directories, waits for readiness confirmation,
 then starts/restarts all processes and saves the PM2 process list. It also runs the

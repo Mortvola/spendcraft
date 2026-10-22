@@ -24,16 +24,16 @@ test.group('Installer consolidated automatic values (temporary files only)', (gr
   })
   async function fixture(contents, requirements = metadata) {
     const release = join(root, 'spendcraft.new')
-    await mkdir(release)
+    await mkdir(join(release, 'installer'), { recursive: true })
     if (contents !== null) await writeFile(join(root, 'spendcraft-env'), contents, { mode: 0o600 })
     await symlink('../spendcraft-env', join(release, '.env'))
-    if (requirements !== null) await writeFile(join(release, 'installer.env.required.json'), JSON.stringify(requirements))
-    return () => spawnSync(process.execPath, [resolve('scripts/configureInstallerEnv.mjs'), '--target', 'staging', '--env-file', '.env', '--requirements', 'installer.env.required.json'], {
+    if (requirements !== null) await writeFile(join(release, 'installer/installer.env.required.json'), JSON.stringify(requirements))
+    return () => spawnSync(process.execPath, [resolve('scripts/configureInstallerEnv.mjs'), '--target', 'staging', '--env-file', '.env', '--requirements', 'installer/installer.env.required.json'], {
       cwd: release, env: { PATH: process.env.PATH }, encoding: 'utf8',
     })
   }
   test('all former defaults are present as automatic values in the consolidated metadata', async ({ assert }) => {
-    const required = JSON.parse(await readFile('installer.env.required.json', 'utf8'))
+    const required = JSON.parse(await readFile('installer/installer.env.required.json', 'utf8'))
     for (const [name, value] of Object.entries(commonValues)) {
       const matches = required.filter((entry) => entry.name === name)
       assert.lengthOf(matches, 1)
@@ -86,7 +86,7 @@ test.group('Installer consolidated automatic values (temporary files only)', (gr
     await fixture(null)
     await assert.rejects(() => configureRequiredEnvironment({
       target: 'staging', envFile: join(root, 'spendcraft.new/.env'),
-      requirementsFile: join(root, 'spendcraft.new/installer.env.required.json'),
+      requirementsFile: join(root, 'spendcraft.new/installer/installer.env.required.json'),
     }), 'Cannot read .env or its symlink target')
     await assert.rejects(() => readFile(join(root, 'spendcraft-env')))
   })
@@ -102,9 +102,9 @@ test.group('Installer consolidated automatic values (temporary files only)', (gr
   test('installer packages only consolidated metadata and initializes configuration before application commands', async ({ assert }) => {
     await assert.rejects(() => readFile('installer.env.defaults'))
     const config = await readFile('adonisrc.ts', 'utf8')
-    assert.include(config, "pattern: 'installer.env.required.json'")
+    assert.include(config, "pattern: 'installer/installer.env.required.json'")
     assert.notInclude(config, "pattern: 'installer.env.defaults'")
-    const installer = await readFile('install.sh0', 'utf8')
+    const installer = await readFile('installer/install.sh0', 'utf8')
     assert.notInclude(installer, 'ensure_env_defaults')
     const call = installer.indexOf('\nnode scripts/configureInstallerEnv.mjs')
     assert.isAbove(call, installer.indexOf('\nnpm ci --omit dev --omit optional'))
