@@ -8,9 +8,10 @@ import { readFile, readdir, realpath, lstat, mkdir, mkdtemp, open, rename } from
 import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { readProcessManifest, processDefinitions, matchesDefinition } from './lib/pm2Processes.mjs'
+import { normalizedIP } from './lib/applicationRollback.mjs'
 import { releaseManifest } from './lib/releaseManifest.mjs'
 import { validatePlan, connectionConfig, verifyIdentity, verifyApplicationConnections, verifyReleases,
-  releaseDifferences, isSingleForkProcess } from './rollbackTransactionCategoryStorage.mjs'
+  releaseDifferences, isSingleForkProcess } from './rollbackApplication.mjs'
 
 const command = promisify(execFile)
 const hash = (value) => createHash('sha256').update(value).digest('hex')
@@ -66,13 +67,13 @@ export async function createPlan({ root, environment, envFile, current, previous
     const original = join(root, 'spendcraft.old', item.script.slice(join(root, 'spendcraft').length + 1))
     previousProcesses.push({ ...item, scriptSha256: hash(await readFile(original)) })
   }
-  const plan = { environment, root, productionRoot: environment === 'production' ? root : '/spendcraft-prod/server',
+  const plan = { rollbackKind: 'application-only', environment, root, productionRoot: environment === 'production' ? root : '/spendcraft-prod/server',
     pm2Executable, pm2Home, productionPm2Home: pm2Home, envFile, expected,
     currentManifest: join(record, 'current-release-manifest.json'), previousManifest: join(record, 'previous-release-manifest.json'),
     reviewedDifferencesSha256: hash(JSON.stringify(releaseDifferences(current, previous))),
     databaseConfigSha256: hash(await readFile(join(root, 'spendcraft/config/database.js'))),
     maintenanceStatement: 'All external writers, schedulers and traffic are fenced for this operation',
-    recoveryProcedure: 'Keep writers stopped on failure. Preserve both releases and the rollback journal. Review commit certainty before recovery; never automatically restore a database backup. Follow docs/transaction-category-decimal-string-rollback.md and verify backup recoverability before execution.',
+    recoveryProcedure: 'Keep writers stopped on failure. Preserve both releases and the rollback journal. No database conversion is performed; never automatically restore a database backup. Follow docs/application-release-rollback.md and verify backup recoverability before application restoration.',
     smokeUrl, processes, processManifestSha256: hash(JSON.stringify(manifest)),
     ...(previousManifest ? { previousProcesses, previousProcessManifestSha256: hash(JSON.stringify(previousManifest)) }
       : { manualRestart: true }), generated: true, generatedAt: new Date().toISOString() }
@@ -105,8 +106,10 @@ export async function discoverDatabaseIdentity(config, expected, Client) {
       await planStep('connect-database-' + (index + 1), () => client.connect())
       if (index === 0) {
         const result = await planStep('discover-loopback-identity', () => client.query('SELECT inet_server_addr()::text AS server, inet_client_addr()::text AS peer'))
-        expected.serverAddress = result.rows[0]?.server?.replace(/^::ffff:/, '')
-        expected.clientAddress = result.rows[0]?.peer?.replace(/^::ffff:/, '')
+        try {
+          expected.serverAddress = normalizedIP(result.rows[0]?.server)
+          expected.clientAddress = normalizedIP(result.rows[0]?.peer)
+        } catch { throw new Error('ambiguous_database_target') }
         if (!['127.0.0.1', '::1'].includes(expected.serverAddress)
           || !['127.0.0.1', '::1'].includes(expected.clientAddress)) throw Object.assign(new Error('ambiguous_database_target'), { planPhase: 'discover-loopback-identity' })
       }
@@ -158,7 +161,7 @@ export async function main(args = process.argv.slice(2)) {
   await planStep('validate-application-connections', () => verifyApplicationConnections(join(root, 'spendcraft'), plan.databaseConfigSha256))
   try { await planStep('verify-release-compatibility', () => verifyReleases(plan, output)) }
   catch (error) {
-    if (!['not_the_first_decimal_string_release_pair', 'database_release_difference', 'secret_link_difference'].includes(error.message)) throw error
+    if (!['compatible_decimal_string_release_pair_required', 'database_release_difference', 'secret_link_difference'].includes(error.message)) throw error
     await publishPlan(maintenance, output, { root, currentManifest: plan.currentManifest,
       unavailableReason: error.message, generated: true })
     console.log('Release-specific rollback unavailable: ' + error.message + '. No conversion or rollback was executed.')

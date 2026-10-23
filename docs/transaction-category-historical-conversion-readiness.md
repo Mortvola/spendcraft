@@ -1,5 +1,43 @@
 # Transaction Category historical conversion readiness
 
+## Resumption — conversion-specific recovery approved
+
+At source HEAD `ed696bc5587f9d6988e8fd8520e9691880d16cfd`, branch
+`dollar-to-cents-2`, the operator reports compatible releases deployed to staging
+and production. This is not fresh server/database evidence. The product revision
+now approves recovery that retains that compatible application release and
+restores exact original Category JSON from a pinned preconversion snapshot.
+
+The converter/recovery CLI is
+`scripts/convertHistoricalTransactionCategories.mjs`; policy helpers are in
+`scripts/lib/historicalCategoryConversion.mjs`. It supports explicit plans,
+read-only dry-run, separately confirmed execution, atomic conversion, durable raw
+JSON snapshots, unchanged-row-protected atomic recovery and numeric/string/mixed
+handling. No old release swap or automatic process operations occur.
+
+The first-release rollback guard in
+`installer/rollbackTransactionCategoryStorage.mjs` remains unchanged. Both
+installed releases containing a codec is correctly rejected for that different
+scenario and no longer blocks this approved conversion-specific recovery design.
+Strict host-CIDR loopback handling is implemented/tested only in the new tooling;
+the old rollback tool is not patched or reused for conversion recovery.
+
+The historical 6,254-record / 6,241-candidate / 10,457-numeric-leaf findings below
+remain historical reference counts, not fixed current expectations. All known
+deleted exceptions remain preserved. No current production/staging audit has been
+run, and **no historical conversion or recovery has occurred**.
+
+See [implementation, recovery and staging procedure](transaction-category-historical-conversion-implementation.md)
+for exact arguments, plan fields, original-JSON protection and future acceptance.
+Local non-database verification passed 322 tests (88 new; zero failed/skipped),
+both TypeScript checks, Knip, circular regression, changed-file ESLint and syntax/
+whitespace checks. Repository-wide ESLint has six pre-existing errors in an
+unrelated generated probe, left unchanged; full details are in the implementation
+record. No application build is affected.
+Fresh staging-only authorization and a complete synthetic staging rehearsal are
+required next. Production requires later independent approval. The following
+October 20 observations are retained as historical evidence, not current targets.
+
 ## Decision and scope
 
 Read-only investigation on October 20, 2026, at HEAD `54b12f90fe7df23e640f9072255a6d574169fe2c`, branch `dollar-to-cents-2`. Tracked working tree and index were clean at entry. Existing unrelated untracked files were preserved.

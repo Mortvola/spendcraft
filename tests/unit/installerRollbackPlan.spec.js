@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createHash } from 'node:crypto'
 import { createPlan, publishPlan, discoverDatabaseIdentity, planDiagnostic, planStep } from '../../installer/generateRollbackPlan.mjs'
-import { validatePlan } from '../../installer/rollbackTransactionCategoryStorage.mjs'
+import { validatePlan } from '../../installer/rollbackApplication.mjs'
 
 const hash = (value) => createHash('sha256').update(value).digest('hex')
 test.group('Automatic installer rollback plan (temporary files, no database or PM2)', (group) => {
@@ -40,6 +40,7 @@ test.group('Automatic installer rollback plan (temporary files, no database or P
   })
   test('production discovery captures actual definitions and hashes without credentials', async ({ assert }) => {
     const plan = await createPlan(input)
+    assert.equal(plan.rollbackKind, 'application-only')
     validatePlan(plan)
     assert.isTrue(plan.generated)
     assert.equal(plan.productionRoot, root)

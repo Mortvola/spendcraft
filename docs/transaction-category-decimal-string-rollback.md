@@ -1,5 +1,12 @@
 # Transaction Category decimal-string release rollback
 
+> Current normal rollback uses the application-only executor and leaves database
+> values unchanged. See [compatible application rollback](application-release-rollback.md).
+> The first-release conversion executor/guard is preserved but is not selected or
+> bundled for normal rollback. Historical conversion recovery remains a separate
+> explicitly invoked operation that retains the compatible application release.
+
+
 ## Status and scope
 
 Implemented against repository HEAD `be41cdd4c0c572087e136a81f045ccf95e0e94eb` on October 20, 2026. **Prepared and mock-tested; a separately authorized sandbox rehearsal is required before production use. No real rollback or database connection occurred.**

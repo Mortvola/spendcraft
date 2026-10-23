@@ -32,12 +32,13 @@ export async function selectRollback(root) {
     if (error instanceof SyntaxError) throw new Error('invalid_rollback_plan_json')
     throw error
   }
+  if (manifest.purpose !== 'spendcraft-application-rollback' || plan.rollbackKind !== 'application-only') throw new Error('application_only_rollback_required')
   if (plan.unavailableReason) throw new Error('rollback_unavailable_for_installed_release')
   if (plan.root !== root || typeof plan.currentManifest !== 'string' || !isAbsolute(plan.currentManifest)) throw new Error('rollback_plan_target_mismatch')
   const expected = JSON.parse(await readFile(plan.currentManifest, 'utf8'))
   const hash = createHash('sha256').update(JSON.stringify(expected.files)).digest('hex')
   if (expected.format !== 1 || hash !== expected.identity || expected.identity !== current.identity) throw new Error('rollback_plan_release_mismatch')
-  return { bundle, planPath, maintenance, executor: join(bundle, 'rollbackTransactionCategoryStorage.mjs') }
+  return { bundle, planPath, maintenance, executor: join(bundle, 'rollbackApplication.mjs') }
 }
 
 async function executeChild({ executor, planPath, maintenance }, mode) {

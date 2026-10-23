@@ -37,7 +37,7 @@ export async function verifyRollbackBundle(directory) {
   if (!(await lstat(join(directory, 'bundle.json'))).isFile()) throw new Error('invalid_rollback_bundle_manifest')
   const manifest = JSON.parse(await readFile(join(directory, 'bundle.json'), 'utf8'))
   const files = await inventoryFiles(directory)
-  if (manifest.format !== 1 || manifest.purpose !== 'transaction-category-decimal-string-rollback'
+  if (manifest.format !== 1 || !['transaction-category-decimal-string-rollback', 'spendcraft-application-rollback'].includes(manifest.purpose)
     || !/^[a-f0-9]{64}$/.test(manifest.releaseId) || manifest.filesSha256 !== hash(JSON.stringify(files))
     || JSON.stringify(manifest.files) !== JSON.stringify(files)) throw new Error('rollback_bundle_integrity_mismatch')
   return manifest

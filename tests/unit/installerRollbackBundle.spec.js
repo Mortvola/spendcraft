@@ -7,7 +7,7 @@ import { join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { spawnSync } from 'node:child_process'
 import { selectRollback, launchRollback } from '../../installer/launchRollback.mjs'
-import { assertExecutorBundle, releaseManifest } from '../../installer/rollbackTransactionCategoryStorage.mjs'
+import { assertExecutorBundle, releaseManifest } from '../../installer/rollbackApplication.mjs'
 import { prepareRollbackBundle, verifyRollbackBundle } from '../../installer/prepareRollbackBundle.mjs'
 
 const releaseId = 'a'.repeat(64)
@@ -22,7 +22,7 @@ test.group('Stable rollback bundle (local packages, no database/services/network
   async function fixture() {
     const release = join(root, 'spendcraft.new')
     await mkdir(join(release, 'installer/lib'), { recursive: true })
-    for (const file of ['pm2-processes.json', 'lib/pm2Processes.mjs', 'prepareRollbackBundle.mjs', 'rollbackTransactionCategoryStorage.mjs', 'lib/categoryRollback.mjs', 'lib/releaseManifest.mjs', 'lib/rollbackBundleIntegrity.mjs', 'launchRollback.mjs', 'rollback.sh']) {
+    for (const file of ['pm2-processes.json', 'lib/pm2Processes.mjs', 'prepareRollbackBundle.mjs', 'rollbackApplication.mjs', 'lib/applicationRollback.mjs', 'lib/releaseManifest.mjs', 'lib/rollbackBundleIntegrity.mjs', 'launchRollback.mjs', 'rollback.sh']) {
       await writeFile(join(release, 'installer', file), await readFile(join('installer', file)))
     }
     await writeFile(join(release, 'package.json'), JSON.stringify({ name: 'spendcraft', type: 'module', dependencies: { pg: '1.0.0' } }))
@@ -56,7 +56,7 @@ test.group('Stable rollback bundle (local packages, no database/services/network
     await rename(release, join(root, 'spendcraft'))
     const currentManifest = join(root, 'current.json')
     await writeFile(currentManifest, JSON.stringify(current))
-    const plan = { root, currentManifest }
+    const plan = { rollbackKind: 'application-only', root, currentManifest }
     await writeFile(join(root, 'maintenance/rollback-plan.json'), JSON.stringify(plan))
     return { ...bundle, current, plan }
   }
@@ -68,7 +68,7 @@ test.group('Stable rollback bundle (local packages, no database/services/network
         called++
         assert.equal(selection.bundle, setup.directory)
         assert.equal(selection.planPath, join(root, 'maintenance/rollback-plan.json'))
-        assert.equal(selection.executor, join(setup.directory, 'rollbackTransactionCategoryStorage.mjs'))
+        assert.equal(selection.executor, join(setup.directory, 'rollbackApplication.mjs'))
         assert.equal(selectedMode, mode)
         return 7
       })
@@ -76,6 +76,21 @@ test.group('Stable rollback bundle (local packages, no database/services/network
       assert.equal(exitCode, 7)
       await assertExecutorBundle(setup.plan, setup.directory)
     })
+  test('refuses legacy conversion plans and bundles instead of dispatching to the conversion tool', async ({ assert }) => {
+    const setup = await installed()
+    await writeFile(join(root, 'maintenance/rollback-plan.json'), JSON.stringify({ ...setup.plan, rollbackKind: 'legacy-conversion' }))
+    let called = false
+    await assert.rejects(() => launchRollback(root, '--execute', async () => { called = true }), 'application_only_rollback_required')
+    assert.isFalse(called)
+    const path = join(setup.directory, 'bundle.json')
+    const manifest = JSON.parse(await readFile(path, 'utf8'))
+    manifest.purpose = 'transaction-category-decimal-string-rollback'
+    await writeFile(path, JSON.stringify(manifest))
+    await writeFile(join(root, 'maintenance/rollback-plan.json'), JSON.stringify(setup.plan))
+    await assert.rejects(() => launchRollback(root, '--execute', async () => { called = true }), 'application_only_rollback_required')
+    assert.isFalse(called)
+    assert.notInclude(await readdir(setup.directory), 'rollbackTransactionCategoryStorage.mjs')
+  })
   test('never falls back to another bundle after the installed release changes', async ({ assert }) => {
     await installed()
     await writeFile(join(root, 'spendcraft/ace.js'), '// changed installed release')
@@ -84,7 +99,7 @@ test.group('Stable rollback bundle (local packages, no database/services/network
   test('rejects damaged bundles and mismatched bundle identities before invoking any child').with(['damage', 'wrong-id'])
     .run(async ({ assert }, kind) => {
       const setup = await installed()
-      if (kind === 'damage') await writeFile(join(setup.directory, 'lib/categoryRollback.mjs'), '// changed')
+      if (kind === 'damage') await writeFile(join(setup.directory, 'lib/applicationRollback.mjs'), '// changed')
       else {
         const path = join(setup.directory, 'bundle.json')
         const manifest = JSON.parse(await readFile(path, 'utf8'))
@@ -155,7 +170,7 @@ test.group('Stable rollback bundle (local packages, no database/services/network
     assert.equal(await readFile(join(result.directory, 'bundle.json'), 'utf8'), original)
     await rename(release, join(root, 'spendcraft'))
     await rm(join(root, 'spendcraft'), { recursive: true })
-    const help = spawnSync(process.execPath, ['rollbackTransactionCategoryStorage.mjs', '--help'], { cwd: result.directory, encoding: 'utf8' })
+    const help = spawnSync(process.execPath, ['rollbackApplication.mjs', '--help'], { cwd: result.directory, encoding: 'utf8' })
     assert.equal(help.status, 0, help.stderr)
     const require = createRequire(join(result.directory, 'package.json'))
     assert.isTrue(require.resolve('pg').startsWith(result.directory + '/'))
@@ -168,11 +183,11 @@ test.group('Stable rollback bundle (local packages, no database/services/network
     const empty = { format: 1, files: [], identity: createHash('sha256').update('[]').digest('hex') }
     await writeFile(join(root, 'current.json'), JSON.stringify(empty))
     await writeFile(join(root, 'previous.json'), JSON.stringify(empty))
-    const compared = spawnSync(process.execPath, ['rollbackTransactionCategoryStorage.mjs', '--compare-manifests',
+    const compared = spawnSync(process.execPath, ['rollbackApplication.mjs', '--compare-manifests',
       '--current-manifest', join(root, 'current.json'), '--previous-manifest', join(root, 'previous.json')],
     { cwd: result.directory, encoding: 'utf8' })
     assert.equal(compared.status, 0, compared.stderr)
-    assert.isTrue(compared.stdout.trim().startsWith(join(root, 'maintenance/rollback/category-storage-rollback-')))
+    assert.isTrue(compared.stdout.trim().startsWith(join(root, 'maintenance/rollback/application-rollback-')))
     await verifyRollbackBundle(result.directory)
   })
   test('copies the actual installed pg dependency closure and imports it outside the release', async ({ assert }) => {
@@ -185,7 +200,7 @@ test.group('Stable rollback bundle (local packages, no database/services/network
   test('fails before publication if a tool or required dependency is missing').with(['tool', 'dependency'])
     .run(async ({ assert }, missing) => {
       const release = await fixture()
-      await rm(join(release, missing === 'tool' ? 'installer/lib/categoryRollback.mjs' : 'node_modules/fixture-runtime'), { recursive: true })
+      await rm(join(release, missing === 'tool' ? 'installer/lib/applicationRollback.mjs' : 'node_modules/fixture-runtime'), { recursive: true })
       await assert.rejects(() => prepareRollbackBundle({ root, release, releaseId, source }))
       await assert.rejects(() => readFile(join(root, 'maintenance/rollback', releaseId, 'bundle.json')))
       assert.isTrue((await readdir(join(root, 'maintenance/rollback'))).some((name) => name.startsWith('.prepare-')))
@@ -193,9 +208,9 @@ test.group('Stable rollback bundle (local packages, no database/services/network
   test('never overwrites a damaged existing bundle', async ({ assert }) => {
     const release = await fixture()
     const result = await prepareRollbackBundle({ root, release, releaseId, source })
-    await writeFile(join(result.directory, 'lib/categoryRollback.mjs'), 'damaged')
+    await writeFile(join(result.directory, 'lib/applicationRollback.mjs'), 'damaged')
     await assert.rejects(() => prepareRollbackBundle({ root, release, releaseId, source }), 'rollback_bundle_integrity_mismatch')
-    assert.equal(await readFile(join(result.directory, 'lib/categoryRollback.mjs'), 'utf8'), 'damaged')
+    assert.equal(await readFile(join(result.directory, 'lib/applicationRollback.mjs'), 'utf8'), 'damaged')
   })
   test('rejects symlinked maintenance directories and roots inside the source release', async ({ assert }) => {
     const release = await fixture()
@@ -255,7 +270,7 @@ test.group('Stable rollback bundle (local packages, no database/services/network
     assert.include(installer.slice(call, installer.indexOf('\n', call)), '--prepare-rollback-bundle')
     assert.isBelow(call, installer.indexOf('\nrm -fr $APP_OLD'))
     const config = await readFile('adonisrc.ts', 'utf8')
-    for (const file of ['pm2-processes.json', 'lib/pm2Processes.mjs', 'rollbackTransactionCategoryStorage.mjs', 'prepareRollbackBundle.mjs', 'lib/categoryRollback.mjs', 'lib/releaseManifest.mjs', 'lib/rollbackBundleIntegrity.mjs', 'launchRollback.mjs', 'rollback.sh']) {
+    for (const file of ['pm2-processes.json', 'lib/pm2Processes.mjs', 'rollbackApplication.mjs', 'prepareRollbackBundle.mjs', 'lib/applicationRollback.mjs', 'lib/releaseManifest.mjs', 'lib/rollbackBundleIntegrity.mjs', 'launchRollback.mjs', 'rollback.sh']) {
       assert.include(config, `pattern: 'installer/${file}'`)
     }
   })
