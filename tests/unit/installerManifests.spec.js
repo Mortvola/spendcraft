@@ -121,7 +121,8 @@ ${excerpt}
     assert.include(configuration, "pattern: 'installer/lib/releaseManifest.mjs'")
     const build = await readFile('build.sh', 'utf8')
     assert.isAbove(build.indexOf('--write-build-source'), build.indexOf('npm run server-build'))
-    assert.include(await readFile('deploy.sh', 'utf8'), './build.sh')
+    assert.isAbove(build.indexOf('releasePackage.mjs package'), build.indexOf('--write-build-source'))
+    assert.notInclude(await readFile('deploy.sh', 'utf8'), './build.sh')
   })
   test('CLI prints deployment folder and never needs database settings', async ({ assert }) => {
     await release('spendcraft.new', true)

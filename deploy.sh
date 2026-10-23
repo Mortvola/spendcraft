@@ -1,9 +1,9 @@
 #!/bin/bash
 
-set -e
+set -euo pipefail
 
-if [ "$#" -ne 1 ]; then
-  echo "Usage: $0 production|staging" >&2
+if [ "$#" -ne 2 ]; then
+  echo "Usage: $0 production|staging RELEASE_DIRECTORY" >&2
   exit 1
 fi
 
@@ -21,18 +21,16 @@ case "$1" in
     DEPLOY_SSH_KEY="$SPENDCRAFT_STAGING_SSH_KEY"
     ;;
   *)
-    echo "Usage: $0 production|staging" >&2
+    echo "Usage: $0 production|staging RELEASE_DIRECTORY" >&2
     exit 1
     ;;
 esac
 
-./build.sh
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+DEPLOY_DIR=$(mktemp -d "${TMPDIR:-/tmp}/spendcraft-deploy.XXXXXX")
+trap 'rm -rf -- "$DEPLOY_DIR"' EXIT
 
-rm -f build.zip;
-zip -r build build > /dev/null;
+node "$SCRIPT_DIR/installer/releasePackage.mjs" installer \
+  --release "$2" --target "$1" --output "$DEPLOY_DIR/install.sh"
 
-sed "s/^INSTALL_TARGET=unconfigured$/INSTALL_TARGET=$1/" ./installer/install.sh0 > install.sh
-base64 -i ./build.zip >> install.sh
-chmod u+x install.sh
-
-scp -i "$DEPLOY_SSH_KEY" install.sh "ubuntu@${DEPLOY_SERVER}:"
+scp -i "$DEPLOY_SSH_KEY" "$DEPLOY_DIR/install.sh" "ubuntu@${DEPLOY_SERVER}:"

@@ -244,3 +244,26 @@ node ace migration:run
 ## Unzip
 
 sudo apt install unzip
+
+
+## Promote the same build from staging to production
+
+Build once locally with `./build.sh`. Save the unique `releases/release-*`
+directory it prints. Upload it to staging with:
+
+```bash
+./deploy.sh staging releases/<printed-release-directory>
+```
+
+After installing and accepting that release on staging, upload the same saved
+package to production:
+
+```bash
+./deploy.sh production releases/<same-release-directory>
+```
+
+Deployment verifies checksums and does not rebuild or execute installation
+remotely. The application's archive and saved installer template stay the same;
+the wrapper is bound to the selected environment. Each build creates a new
+package; existing accepted packages must not be edited. See
+`docs/installer-environment-configuration.md` for artifact contents and safeguards.

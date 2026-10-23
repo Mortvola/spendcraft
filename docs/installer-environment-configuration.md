@@ -2,7 +2,7 @@
 
 The release contains one checked-in configuration file, `installer/installer.env.required.json`. It holds automatic nonsecret values and metadata for values supplied privately by the operator. It must never contain secrets. APP_KEY, VAPID, JWT and Plaid cleanup keys are excluded because their key-generation commands handle them. The separate `installer.env.defaults` payload and defaults-appending installer step have been removed; all fourteen former defaults are `type: "value"` entries in the consolidated file.
 
-`deploy.sh production` or `deploy.sh staging` embeds that target in generated `install.sh`, before its archive payload. The operator still uploads and runs the installer manually; deploy.sh does not execute remotely. A packaged installer accepts no target argument, or the identical target; a conflicting argument aborts before installation. The unpackaged template requires an explicit target argument. NODE_ENV stays production for both runtime environments and is not the deployment target selector. Preserve production/staging root, database, provider and PM2 isolation independently; this setting does not itself prove host identity or replace the rollback tool's independent target checks.
+`deploy.sh production RELEASE_DIRECTORY` or `deploy.sh staging RELEASE_DIRECTORY` embeds that target in generated `install.sh`, before its archive payload. The operator still uploads and runs the installer manually; deploy.sh does not execute remotely. A packaged installer accepts no target argument, or the identical target; a conflicting argument aborts before installation. The unpackaged template requires an explicit target argument. NODE_ENV stays production for both runtime environments and is not the deployment target selector. Preserve production/staging root, database, provider and PM2 isolation independently; this setting does not itself prove host identity or replace the rollback tool's independent target checks.
 
 After extracting spendcraft.new, linking the shared .env and installing dependencies, the installer first initializes APP_KEY, then runs `ENV_PATH= NODE_ENV=production node ace generate:web-push-keys`, then runs `ENV_PATH= NODE_ENV=production node ace generate:jwt-keys` and `ENV_PATH= NODE_ENV=production node ace plaid:rotate-cleanup-keys --if-missing`, and then invokes `installer/configureInstallerEnv.mjs` with its embedded target. It next runs the backup and proceeds to migration/seeding decisions. The metadata and helper are copied by Adonis metaFiles into build; the existing deploy archive includes them.
 
@@ -16,7 +16,7 @@ All prompted answers are collected before writing. A mode-0600 file in the share
 
 Input is single-line. For multiline keys, use the literal escaped newline format required by the application's existing key configuration; the installer initializes missing cleanup keys separately. Quoted/hash/space-containing input is encoded only when it round-trips exactly. Dollar interpolation, file: identifiers, control characters and values that cannot be safely represented on one .env line are rejected rather than silently changed. These restrictions avoid Adonis interpolation changing secret meanings; they are not a complete application credential/key-format validator. Existing nonempty values are not automatically rewritten or repaired. No secrets are printed or passed as shell/Node command arguments.
 
-Tests use temporary synthetic files and real local pseudo-terminals (Python 3) for echo, Ctrl+C and EOF checks. Builds/tests do not authorize an installation or database connection. The production/staging servers were not contacted during this implementation. Stage the metadata/helper changes together with deploy.sh, installer/install.sh0 and adonisrc.ts; the generated installer is ignored and must be rebuilt before testing the new behavior.
+Tests use temporary synthetic files and real local pseudo-terminals (Python 3) for echo, Ctrl+C and EOF checks. Builds/tests do not authorize an installation or database connection. The production/staging servers were not contacted during this implementation. Stage the metadata/helper changes together with deploy.sh, installer/install.sh0 and adonisrc.ts; build a new saved release package before testing new installer behavior. Promoting an already-tested package never rebuilds it.
 
 Metadata behavior is explicit:
 
@@ -62,7 +62,7 @@ Automatic numeric JSON values are written without quotes (`PORT=3334`); string v
 
 Plaid cleanup key initialization runs before interactive configuration. `--if-missing` creates `PLAID_CLEANUP_KEYS` with a random `v1` secret and sets `PLAID_CLEANUP_KEY_VERSION=v1` only when no keys/version are configured. Existing valid settings are preserved byte-for-byte, without rotation. Partial/malformed settings abort rather than replacing recovery credentials. Both former cleanup prompts are removed from the metadata. Explicit future rotation still uses the command without `--if-missing`.
 
-The installer template lives at `installer/install.sh0`. `deploy.sh` reads it there and continues generating `install.sh` in the repository root for upload. The template is not part of the application build payload. Historical verification records may refer to its former root-level location.
+The installer template lives at `installer/install.sh0`. `build.sh` captures it there; `deploy.sh` uses the saved copy to generate a temporary `install.sh` for upload. The template is saved with each release package outside the application archive. Historical verification records may refer to its former root-level location.
 
 
 ## Shared Nginx configuration
@@ -198,3 +198,61 @@ release's arguments and must not be blindly restarted. The operator determines
 startup commands/settings, verifies application and financial read paths, reviews
 PM2 persistence/schedules, and only then resumes traffic. No automatic smoke test
 or scheduler restoration is attempted in this mode.
+
+
+## Build once and promote the saved release
+
+`build.sh` now runs the existing server/client asset build, captures
+`build/release-source.json`, then creates a unique local package under
+`releases/release-<build-time>-<commit-prefix>-<unique-suffix>/`. It prints the
+absolute package path, content-based release ID and application archive SHA-256.
+Each package contains:
+
+- `build.zip`: the complete application archive, including its build-source metadata.
+- `install.sh0`: the exact installer template captured for this release.
+- `release-source.json`: Git commit, dirty flag and build timestamp.
+- `release.json`: format version, source metadata, file sizes/SHA-256 checksums
+  and an identity derived from that content. This package ID is distinct from the
+  installed-file manifest identity used to select a rollback bundle.
+
+Packages are treated as immutable: packaging always creates a unique directory,
+never replaces an earlier package, and marks completed files read-only. A failed
+package may leave an incomplete directory; without a valid `release.json` it
+cannot be deployed. Local `releases/` is Git-ignored; preserve approved packages
+outside any disposable build cleanup. These local packages are separate from the
+server's installation-time `releases/deployment-*` records.
+
+Example (replace the illustrative path with the path printed by build.sh):
+
+```bash
+./build.sh
+./deploy.sh staging releases/release-<printed-name>
+# Run the uploaded installer on staging and complete acceptance.
+./deploy.sh production releases/release-<same-printed-name>
+```
+
+There is no implicit latest release or automatic build fallback. `deploy.sh`
+requires exactly an explicit environment and package path. It verifies package
+identity/checksums, generates a target-bound installer from the saved template and
+archive in a private temporary directory, and uploads it as `~/install.sh` using
+the existing selected SSH key/server settings. Temporary upload files are cleaned
+up on success or failure; the saved package is never modified. Deployment still
+does not run installation remotely. Staging uses `SPENDCRAFT_STAGING_SERVER` and
+`SPENDCRAFT_STAGING_SSH_KEY`; production uses `SPENDCRAFT_SERVER` and
+`SPENDCRAFT_SSH_KEY` as before.
+
+Both environments receive the exact same application archive and saved installer
+logic, with only `INSTALL_TARGET` specialized in the shell wrapper. Subsequent
+source/template/build-directory changes do not affect an existing package. A
+checksum mismatch aborts before scp; rebuild as a new release rather than editing
+an approved package. Logs show the same release ID/archive checksum on both
+uploads. Target-specific `.env`, credentials and generated keys remain on each
+server; server-side npm installation still uses the packaged lockfile, so runtime
+and platform parity remain part of staging acceptance. No production/staging
+upload or installation was executed while implementing this workflow.
+
+The common local implementation helper is `installer/releasePackage.mjs`; no
+separate `package.sh` command was introduced. It does not bootstrap the app,
+connect to a database or control services. ZIP and Node must be available on the
+build machine. Root build/deploy scripts resolve their own tooling paths; a
+relative package argument is interpreted relative to the caller's directory.

@@ -32,3 +32,6 @@ dist/
 
 runtime.js
 install.sh
+
+# Saved local build artifacts, promoted unchanged between environments
+/releases/
