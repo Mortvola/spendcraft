@@ -90,8 +90,15 @@ GRANT ALL ON SCHEMA public TO ubuntu;
 Connect to the spendcraft database and install the tablefunc extension:
 
 ```
-\connect spendcraft
-CREATE extension tablefunc;
+sudo -u postgres psql -d spendcraft -v ON_ERROR_STOP=1 \
+  -c 'CREATE EXTENSION IF NOT EXISTS tablefunc WITH SCHEMA public;'
+```
+
+Verify the extension was installed:
+
+```bash
+sudo -u postgres psql -d spendcraft \
+  -c "SELECT to_regprocedure('public.crosstab(text,text)');"
 ```
 
 ## nvm
