@@ -26,6 +26,18 @@ test.group('Installer required settings (temporary configuration only)', (group)
     await writeFile(join(root, 'required.json'), JSON.stringify(requirements))
     return { envFile: join(root, '.env'), requirementsFile: join(root, 'required.json'), target: 'staging', notify: () => undefined }
   }
+  test('checked-in APP_NAME accepts and preserves the production capitalization')
+    .with(['production', 'staging']).run(async ({ assert }, target) => {
+      const settings = JSON.parse(await readFile('installer/installer.env.required.json', 'utf8'))
+      const entry = settings.find((item) => item.name === 'APP_NAME')
+      assert.equal(entry.value, 'SpendCraft')
+      const original = 'APP_NAME=SpendCraft\n'
+      const options = await fixture(original, [entry])
+      options.target = target
+      options.ask = async () => { throw new Error('Existing app name must not prompt') }
+      assert.deepEqual(await configureRequiredEnvironment(options), [])
+      assert.equal(await readFile(join(root, 'shared-env'), 'utf8'), original)
+    })
   test('prompts only for the selected environment, confirms secrets and preserves shared configuration', async ({ assert }) => {
     const original = '# unchanged\nAPP_KEY=preserved\nSMTP_PASSWORD=\n'
     const options = await fixture(original)
