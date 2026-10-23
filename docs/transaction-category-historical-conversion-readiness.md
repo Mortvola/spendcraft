@@ -1,5 +1,49 @@
 # Transaction Category historical conversion readiness
 
+## Deleted-state conservation policy
+
+Conversion logic no longer contains or checks production Transaction IDs.
+Supported, valid deleted records may be converted without passing conservation;
+existing discrepancies and empty arrays are preserved. Failed/unsupported findings
+remain visible as exceptions. Malformed amounts/structures/types and unsafe cents
+still block. Nondeleted failures still block, and linked balance-tracked Accounts
+remain excluded. Historical IDs below are evidence only, not exception criteria.
+
+
+## Current interface — .env only, no manual plan
+
+Run `node scripts/convertHistoricalTransactionCategories.mjs --env /absolute/sandbox.env`
+for a read-only dry-run (or omit `--env` to use `.env`). No plan, application release
+hash, installation directory or internal database identifier is supplied. The
+script verifies the configured/live target and discovers database/cluster identity
+automatically. Execution requires `--execute`. The verified `spendcraft_sandbox` database skips
+PM2; other databases require all manifest PM2 processes to be stopped. There is
+no confirmation, writer-attestation, external-backup or database-session check. Original-JSON snapshots and atomic,
+unchanged-row-protected recovery remain separate from application rollback.
+
+This supersedes plan/release-identity instructions in earlier historical records.
+Local verification passed 281 focused tests, both TypeScript checks, changed-file
+lint, Knip, circular regression, syntax and whitespace checks. Repository-wide
+lint retains six unrelated generated-probe errors. No database connection or
+historical conversion/recovery was run for this revision.
+See [current commands](transaction-category-historical-conversion-implementation.md#running-directly-from-env).
+
+
+## Portability revision — explicit sandbox support
+
+The conversion/recovery tooling no longer depends on EC2 metadata, instance IDs,
+AWS accounts, private IPs or Linux machine IDs. It supports an explicitly selected
+local `sandbox` target restricted to `spendcraft_sandbox`, in addition to staging
+and production. Database/cluster/role/port/peer checks, compatible-release checks,
+exact confirmation, raw snapshots and unchanged-row recovery remain mandatory.
+The revision passed 279 focused non-database tests and the relevant type/static
+checks; repository-wide lint retains six unrelated generated-probe errors.
+No database connection or conversion/recovery was performed for this revision.
+See the [local sandbox procedure](transaction-category-historical-conversion-implementation.md#running-directly-from-env)
+for plan format, `.env` requirements, release capture and commands. Prior EC2
+inspection records below are historical evidence, not current tool prerequisites.
+
+
 ## Resumption — conversion-specific recovery approved
 
 At source HEAD `ed696bc5587f9d6988e8fd8520e9691880d16cfd`, branch
@@ -192,3 +236,17 @@ Lucid's installed initiateAutoUpdateColumns implementation only updates declared
 A standalone direct import of the real Transaction model could not run without Adonis application initialization (Lucid db service app.booted error); it made no database connection. A subsequent non-DB characterization asserted absence of updatedAt/autoUpdate in the actual source and exercised real Lucid BaseModel timestamp preparation with equivalent missing metadata, plus an autoUpdate-enabled control: the missing mapping emits no timestamp, while the control generates one. This is source/framework evidence, not a real endpoint persistence test.
 
 Smallest proposed runtime correction, not implemented: add `@column.dateTime({ autoCreate: true, autoUpdate: true, serializeAs: null }) public updatedAt: DateTime` to Transaction and test actual CREATE/PATCH/replacement and metadata-only saves. Query-builder/raw UPDATE paths bypass model timestamp automation and must be considered separately if promising universal modification tracking. Do not backfill historical timestamps with invented update times. No production runtime or schema correction was made.
+
+## Balance-tracked Account exclusion
+
+The conversion skips an entire Transaction if any linked Account has tracking
+`Balances`, including opening/type-4 records and mixed-link shapes. The exclusion
+applies before allocation validation/conservation and makes no data changes.
+Skipped records are reported with `status: skipped` and reason
+`linked_balance_tracked_account` in `transactions.jsonl`, counted as
+`balanceTracked` in the summary and `skipped` by Transaction type. They are not
+conversion candidates, do not contribute allocation/rounding/conservation counts,
+and are never included in a conversion recovery snapshot or UPDATE. Deprecated
+exclusions remain separate. Other validation and deleted-record policies remain
+unchanged. Recovery of an existing pinned snapshot retains its original scope;
+this exclusion does not silently omit restoration entries.

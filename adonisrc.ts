@@ -101,11 +101,11 @@ export default defineConfig({
       reloadServer: false,
     },
     {
-      pattern: 'installer/rollbackTransactionCategoryStorage.mjs',
+      pattern: 'installer/rollbackApplication.mjs',
       reloadServer: false,
     },
     {
-      pattern: 'installer/lib/categoryRollback.mjs',
+      pattern: 'installer/lib/applicationRollback.mjs',
       reloadServer: false,
     },
     {

@@ -2,14 +2,10 @@
 import { createHash } from 'node:crypto'
 import { URL } from 'node:url'
 import { isIP } from 'node:net'
-import { isAbsolute, resolve, relative } from 'node:path'
 import { auditTransaction, checkedAdd, decimalTextCents, roundAmount, PAGE_SQL } from '../auditTransactionCategoryCents.mjs'
 
 export const sha256 = text => createHash('sha256').update(text).digest('hex')
-export const MAINTENANCE = 'All financial writers, schedulers, provider commands and traffic are stopped and fenced'
 const supported = [0, 2, 3, 4, 5]
-const emptyOrdinary = [3974, 3975, 3977, 4116, 4262, 4412, 4413, 4415]
-const emptyFunding = [2578, 3077, 3388]
 
 // PostgreSQL inet text may contain a full-width CIDR suffix. Networks are rejected.
 export function loopback(value) {
@@ -24,31 +20,25 @@ export function loopback(value) {
   throw new Error('non_loopback_address')
 }
 
-export function validatePlan(plan) {
-  if (plan?.format !== 1 || !['production', 'staging'].includes(plan.environment)) throw new Error('explicit_environment_required')
-  for (const name of ['production', 'staging']) {
-    const target = plan.targets?.[name]
-    if (!target || !/^i-[a-f0-9]{8,17}$/.test(target.instanceId) || !/^[a-z]{2}-[a-z]+-\d$/.test(target.region)
-      || !/^\d{12}$/.test(target.accountId) || isIP(target.privateIp) !== 4
-      || !isAbsolute(target.root ?? '') || resolve(target.root) !== target.root
-      || !isAbsolute(target.envFile ?? '') || !['localhost', '127.0.0.1', '::1'].includes(target.database?.host)
-      || !Number.isInteger(target.database.port) || target.database.port < 1 || target.database.port > 65535
-      || !/^[a-zA-Z0-9_]+$/.test(target.database.name ?? '') || !/^[a-zA-Z0-9_]+$/.test(target.database.user ?? '')
-      || ['spendcraft_test', 'spendcraft_sandbox'].includes(target.database.name)) throw new Error('invalid_explicit_target')
-    loopback(target.database.server); loopback(target.database.peer)
-    if (!/^\d+$/.test(target.database.systemIdentifier ?? '') || !/^\d+$/.test(target.database.oid ?? '')
-      || !/^[a-f0-9]{64}$/.test(target.release ?? '')) throw new Error('reviewed_identity_required')
-  }
-  const { staging: a, production: b } = plan.targets
-  if (a.instanceId === b.instanceId || a.privateIp === b.privateIp || a.root === b.root
-    || !relative(a.root, b.root).startsWith('..') || !relative(b.root, a.root).startsWith('..')
-    || a.database.name === b.database.name) throw new Error('targets_not_isolated')
-  return plan.targets[plan.environment]
+export function verifyConnectionConfiguration(config) {
+  if (!['localhost', '127.0.0.1', '::1'].includes(config.host)
+    || !Number.isInteger(config.port) || config.port < 1 || config.port > 65535
+    || !/^[a-zA-Z0-9_]+$/.test(config.database ?? '') || !/^[a-zA-Z0-9_]+$/.test(config.user ?? '')) throw new Error('invalid_explicit_connection')
 }
 
-export function verifyHost(document, target) {
-  if (document?.instanceId !== target.instanceId || document.region !== target.region
-    || document.accountId !== target.accountId || document.privateIp !== target.privateIp) throw new Error('ec2_identity_mismatch')
+export async function discoverTarget(client, config) {
+  verifyConnectionConfiguration(config)
+  const { rows } = await client.query(IDENTITY_SQL)
+  const live = rows[0]
+  if (rows.length !== 1 || !/^\d+$/.test(live?.oid ?? '') || !/^\d+$/.test(live?.system_identifier ?? '')) throw new Error('database_identity_unavailable')
+  const target = { database: { host: config.host, port: config.port, name: config.database, user: config.user,
+    server: loopback(live.server), peer: loopback(live.peer), oid: live.oid, systemIdentifier: live.system_identifier } }
+  // Compare the observed connection with .env before accepting any discovered identity.
+  if (live.database !== config.database || live.username !== config.user || live.port !== config.port
+    || loopback(client.connection?.stream?.remoteAddress) !== target.database.server
+    || client.connection?.stream?.remotePort !== config.port) throw new Error('live_database_identity_mismatch')
+  await verifyDatabase(client, config, target)
+  return target
 }
 
 export const IDENTITY_SQL = `SELECT current_database() AS database, current_user AS username,
@@ -88,6 +78,9 @@ export function convertedAmount(value) {
 
 export function classify(row) {
   if (row.deprecated) return { excluded: true, patches: [], kind: 'deprecated' }
+  if (Array.isArray(row.links) && row.links.some(link => link?.tracking === 'Balances')) {
+    return { excluded: true, patches: [], kind: 'balanceTracked' }
+  }
   if (!supported.includes(row.type) || !Array.isArray(row.categories)) throw new Error('unsupported_transaction_shape')
   let numeric = 0, strings = 0, rounded = 0, total = 0
   const patches = []
@@ -100,11 +93,7 @@ export function classify(row) {
     else strings++
   })
   const finding = auditTransaction(row)
-  const id = Number(row.id)
-  const exception = row.deleted === true && (
-    (emptyOrdinary.includes(id) && [0, 5].includes(row.type) && row.categories.length === 0 && finding.status === 'fail')
-    || (emptyFunding.includes(id) && row.type === 2 && row.categories.length === 0 && finding.reason === 'empty_funding_or_rebalance_not_supported_by_endpoint')
-    || ([4596, 4597].includes(id) && row.type === 2 && finding.status === 'fail' && finding.differenceCents === 9))
+  const exception = row.deleted === true && ['fail', 'unsupported'].includes(finding.status)
   const result = { patches, numeric, strings, rounded, total, exception, finding,
     kind: numeric ? strings ? 'mixed' : 'numeric' : strings ? 'string' : 'empty' }
   if (finding.status !== 'pass' && !exception) throw Object.assign(new Error(`conservation_${finding.status}`), { classification: result })
@@ -126,11 +115,6 @@ export function leafExpression(patches, start = 1) {
     parameters.push([String(index), 'amount'], stored)
   })
   return { expression, parameters }
-}
-
-export function exactConfirmation(operation, plan, snapshotHash = '') {
-  const target = validatePlan(plan)
-  return `${operation} ${plan.environment} ${target.database.name} ${target.instanceId} ${target.release}${snapshotHash ? ` ${snapshotHash}` : ''}`
 }
 
 // Dependencies are injected so failure/atomicity/order can be tested without PostgreSQL.

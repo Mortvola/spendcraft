@@ -4,16 +4,13 @@ import { test } from '@japa/runner'
 import { mkdtemp, readFile, writeFile, rm, readdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { sha256, MAINTENANCE, loopback, validatePlan, verifyHost, verifyConfigured, verifyDatabase,
-  classify, convertedAmount, leafExpression, exactConfirmation, atomic, SCAN_SQL } from '../../scripts/lib/historicalCategoryConversion.mjs'
-import { argumentsFor, operationalPreflight, runConversion, runRecovery } from '../../scripts/convertHistoricalTransactionCategories.mjs'
+import { sha256, loopback, discoverTarget, verifyConnectionConfiguration, verifyConfigured, verifyDatabase,
+  classify, convertedAmount, leafExpression, atomic, SCAN_SQL } from '../../scripts/lib/historicalCategoryConversion.mjs'
+import { argumentsFor, conversionDiagnostic, runConversion, runRecovery } from '../../scripts/convertHistoricalTransactionCategories.mjs'
 
-function plan() {
-  const target = (name, instance, ip) => ({ instanceId: instance, region: 'us-west-2', accountId: '123456789012', privateIp: ip,
-    root: `/srv/${name}`, envFile: `/srv/${name}/.env`, release: 'a'.repeat(64), database: { host: 'localhost', port: 5432,
-      name, user: name, server: '127.0.0.1', peer: '127.0.0.1', systemIdentifier: '123456', oid: '16384' } })
-  return { format: 1, environment: 'staging', targets: { staging: target('spendcraft_staging', 'i-12345678', '10.0.0.1'),
-    production: target('spendcraft', 'i-87654321', '10.0.0.2') } }
+function targetFor(name = 'spendcraft_staging') {
+  return { database: { host: 'localhost', port: 5432, name, user: name,
+    server: '127.0.0.1', peer: '127.0.0.1', systemIdentifier: '123456', oid: '16384' } }
 }
 const ordinary = (amounts, expected = '0.30', type = 5) => ({ id: 1, type, deleted: false, deprecated: false,
   categories: amounts.map(amount => ({ categoryId: 10, amount })), links: [{ amount: expected, tracking: 'Transactions', scoped: true }], poolIds: [99] })
@@ -21,8 +18,7 @@ const configFor = target => ({ host: target.database.host, port: target.database
 const liveFor = target => ({ database: target.database.name, username: target.database.user, port: target.database.port,
   server: '127.0.0.1/32', peer: '::ffff:127.0.0.1/128', oid: '16384', system_identifier: '123456' })
 
-function fixture() {
-  const p = plan(), target = validatePlan(p)
+function fixture(target = targetFor()) {
   const original = '[{"categoryId":10,"amount":0.30000000000000004,"meta":9007199254740993}]'
   const converted = original.replace('0.30000000000000004', '"0.30"')
   let state = { categories: original, hash: 'original', version: '100' }, saved
@@ -56,16 +52,16 @@ function fixture() {
       throw new Error('unexpected_mock_query')
     },
   }
-  return { client, calls, p, target, original, converted, state: () => state,
+  return { client, calls, target, original, converted, state: () => state,
     change: () => { state = { ...state, hash: 'later-change', version: '500' } },
     equalValueSave: () => { state = { ...state, version: '500' } } }
 }
-async function withFixture(work) {
+async function withFixture(work, override) {
   const output = await mkdtemp(join(tmpdir(), 'category-conversion-test-'))
   try {
-    const f = fixture()
+    const f = fixture(override)
     let guards = 0
-    const context = { plan: f.p, target: f.target, config: configFor(f.target), output, readOnly: false,
+    const context = { maintenance: { maintenanceId: 'synthetic-window', writersStopped: true }, target: f.target, config: configFor(f.target), output, readOnly: false,
       guard: async () => { guards++ } }
     await work({ ...f, context, guards: () => guards })
   } finally { await rm(output, { recursive: true, force: true }) }
@@ -112,14 +108,15 @@ test.group('Historical Category conversion — pure policy and isolation', () =>
   test('checked accumulation rejects overflow before cancellation', ({ assert }) => {
     assert.throws(() => classify(ordinary([45035996273704.95, 45035996273704.95, 1, -1])))
   })
-  test('known deleted empty ordinary exceptions stay empty').with([3974, 3975, 3977, 4116, 4262, 4412, 4413, 4415]).run(({ assert }, id) => {
+  test('deleted empty ordinary exceptions depend on state, not ID').with([1, 37, 3974, 999999]).run(({ assert }, id) => {
     const row = { ...ordinary([], '1.00'), id, deleted: true }
     assert.isTrue(classify(row).exception); assert.isEmpty(classify(row).patches)
     assert.throws(() => classify({ ...row, deleted: false }))
   })
-  test('known deleted empty funding stays empty').with([2578, 3077, 3388]).run(({ assert }, id) => {
+  test('deleted empty funding stays empty regardless of ID').with([1, 148, 2578, 999999]).run(({ assert }, id) => {
     assert.isTrue(classify({ ...ordinary([]), id, type: 2, deleted: true, links: [] }).exception)
-    assert.throws(() => classify({ ...ordinary([]), id, type: 2, deleted: true }))
+    assert.isTrue(classify({ ...ordinary([]), id, type: 2, deleted: true }).exception)
+    assert.throws(() => classify({ ...ordinary([]), id, type: 2, deleted: false, links: [] }))
   })
   test('nine-cent funding discrepancies are not repaired').with([4596, 4597]).run(({ assert }, id) => {
     const row = { ...ordinary([]), id, type: 2, deleted: true, links: [], categories: [{ categoryId: 10, amount: 1.09 }, { categoryId: 99, amount: -1 }] }
@@ -133,19 +130,12 @@ test.group('Historical Category conversion — pure policy and isolation', () =>
       { ...ordinary([0.3]), links: [] }, { ...ordinary([0.3]), links: [...ordinary([0.3]).links, ...ordinary([0.3]).links] }]) assert.throws(() => classify(row))
     assert.isTrue(classify({ deprecated: true }).excluded)
   })
-  test('no default target, generic force, implicit execute or ambiguous modes', ({ assert }) => {
-    for (const args of [[], ['--plan', 'p'], ['--execute'], ['--plan', 'p', '--execute', '--dry-run'], ['--force'],
-      ['--plan', 'p', '--dry-run', '--recover']]) assert.throws(() => argumentsFor(args))
-    assert.isTrue(argumentsFor(['--plan', 'p', '--dry-run'])['dry-run'])
-    const p = plan(); assert.include(exactConfirmation('CONVERT', p), 'spendcraft_staging i-12345678')
-    assert.notEqual(exactConfirmation('CONVERT', p), 'yes')
-  })
-  test('explicit plan prevents shared host, root, database and missing identities', ({ assert }) => {
-    for (const key of ['instanceId', 'privateIp', 'root']) { const p = plan(); p.targets.staging[key] = p.targets.production[key]; assert.throws(() => validatePlan(p)) }
-    const p = plan(); p.targets.staging.database.name = p.targets.production.database.name; assert.throws(() => validatePlan(p))
-    assert.throws(() => validatePlan({ ...plan(), environment: undefined }))
-    assert.throws(() => verifyHost({ instanceId: 'i-99999999' }, validatePlan(plan())))
-    const t = validatePlan(plan()); assert.throws(() => verifyConfigured({ ...configFor(t), port: 5433 }, t))
+  test('defaults to .env and dry-run; execution is explicit and no plan is accepted', ({ assert }) => {
+    const defaults = argumentsFor([])
+    assert.equal(defaults['env'], '.env'); assert.isTrue(defaults['dry-run'])
+    for (const args of [['--plan', 'p'], ['--force'], ['--execute', '--dry-run'], ['--recover']]) assert.throws(() => argumentsFor(args))
+    assert.isFalse(argumentsFor(['--execute'])['dry-run'])
+    const t = targetFor(); assert.throws(() => verifyConfigured({ ...configFor(t), port: 5433 }, t))
   })
   test('live database identity checks CIDR, remote socket and immutable cluster identity', async ({ assert }) => {
     const f = fixture(); await verifyDatabase(f.client, configFor(f.target), f.target)
@@ -209,10 +199,10 @@ test.group('Historical Category conversion — mocked atomic execution/recovery'
     await assert.rejects(() => runRecovery(f.client, f.context, path, pin), 'changed_row_recovery_refused')
     assert.equal(f.state().hash, 'later-change')
   }))
-  test('wrong release/target and tampered original payload fail before recovery updates', async ({ assert }) => withFixture(async f => {
+  test('wrong database target and tampered original payload fail before recovery updates', async ({ assert }) => withFixture(async f => {
     await runConversion(f.client, f.context)
     const path = join(f.context.output, 'snapshot.json'), pin = f.context.snapshotHash
-    f.context.target = { ...f.target, release: 'b'.repeat(64) }
+    f.context.target = { database: { ...f.target.database, oid: '999' } }
     await assert.rejects(() => runRecovery(f.client, f.context, path, pin), 'snapshot_target_mismatch')
     f.context.target = f.target
     await writeFile(join(f.context.output, 'original-categories.jsonl'), '{}\n')
@@ -244,33 +234,10 @@ test.group('Historical Category conversion — mocked atomic execution/recovery'
     assert.equal(f.state().categories, f.converted)
     assert.equal(f.calls.at(-1).sql, 'ROLLBACK')
   }))
-  test('CLI rejects generic execution confirmation before reading environment or connecting', async ({ assert }) => withFixture(async f => {
-    const path = join(f.context.output, 'plan.json')
-    await writeFile(path, JSON.stringify(f.p))
-    for (let attempt = 0; attempt < 2; attempt++) {
-      const result = spawnSync(process.execPath, ['scripts/convertHistoricalTransactionCategories.mjs', '--plan', path,
-        '--execute', '--confirm', 'yes', '--output-parent', f.context.output], { encoding: 'utf8' })
-      assert.equal(result.status, 1)
-      const directory = result.stdout.trim()
-      assert.isTrue(directory.startsWith(f.context.output))
-      const failure = JSON.parse(await readFile(join(directory, 'failure.json'), 'utf8'))
-      assert.equal(failure.code, 'exact_target_confirmation_required')
-    }
-    assert.equal((await readdir(f.context.output)).filter(name => name.startsWith('category-conversion-')).length, 2)
-  }))
-  test('execution requires a fresh pinned readable backup for the same database and a writer fence', async ({ assert }) => withFixture(async f => {
-    const file = join(f.context.output, 'backup.dump')
-    await writeFile(file, 'synthetic archive bytes')
-    const p = { ...f.p, maintenanceStatement: MAINTENANCE, maintenanceId: 'synthetic-maintenance-1', writers: [{ name: 'web', stopped: true }],
-      backup: { file, sha256: sha256('synthetic archive bytes'), database: f.target.database.name,
-        verifiedAt: new Date().toISOString(), recoveryProcedure: 'Synthetic restore rehearsal passed; recovery procedure reviewed for this isolated staging target.' } }
-    const listing = async () => ';     dbname: ' + f.target.database.name
-    await operationalPreflight(p, f.target, listing)
-    await assert.rejects(() => operationalPreflight({ ...p, writers: [{ name: 'web', stopped: false }] }, f.target, listing), 'writer_fence_attestation_required')
-    await assert.rejects(() => operationalPreflight({ ...p, backup: { ...p.backup, sha256: '0'.repeat(64) } }, f.target, listing), 'verified_fresh_backup_required')
-    await assert.rejects(() => operationalPreflight({ ...p, backup: { ...p.backup, verifiedAt: '2000-01-01' } }, f.target, listing), 'verified_fresh_backup_required')
-    await assert.rejects(() => operationalPreflight(p, f.target, async () => '; dbname: foreign'), 'backup_database_mismatch')
-  }))
+  test('removed confirmation and writer-attestation switches are rejected before execution', ({ assert }) => {
+    for (const args of [['--confirm', 'yes'], ['--writers-stopped'], ['--backup', 'old.dump']]) assert.throws(() => argumentsFor(args))
+    assert.isTrue(argumentsFor(['--execute']).execute)
+  })
   test('new nondeleted failure blocks all updates and reports conservation separately from malformed data', async ({ assert }) => withFixture(async f => {
     const query = f.client.query.bind(f.client)
     f.client.query = async (sql, parameters) => {
@@ -283,6 +250,178 @@ test.group('Historical Category conversion — mocked atomic execution/recovery'
     const result = JSON.parse(await readFile(join(f.context.output, 'preflight.json'), 'utf8'))
     assert.equal(result.blockingRecords, 1); assert.equal(result.fail, 1); assert.equal(result.malformed, 0)
     assert.equal(result.numericAmounts, 1); assert.isFalse(result.preconditionsPass)
+    const detail = JSON.parse((await readFile(join(f.context.output, 'transactions.jsonl'), 'utf8')).trim())
+    assert.equal(detail.reason, 'rounded_cent_conservation_mismatch'); assert.isFalse(detail.deleted)
+    assert.equal(detail.categorySumCents, 30); assert.equal(detail.expectedCents, 31); assert.equal(detail.differenceCents, -1)
+    assert.equal(detail.originalCategoryAmounts[0].value, 0.30000000000000004)
+    assert.deepEqual(detail.roundedCategoryAmounts, ['0.30']); assert.deepEqual(detail.categoryCents, [30])
+    assert.equal(detail.accountTransactionLinks[0].amount, '0.31')
+  }))
+  test('database identifiers are discovered and verified without a plan or release', async ({ assert }) => {
+    for (const name of ['spendcraft_sandbox', 'spendcraft_staging', 'budget']) {
+      const t = targetFor(name), f = fixture(t)
+      const discovered = await discoverTarget(f.client, configFor(t))
+      assert.deepEqual(discovered, t); assert.notProperty(discovered, 'release'); assert.notProperty(discovered, 'instanceId')
+      await assert.rejects(() => discoverTarget(f.client, { ...configFor(t), database: 'foreign' }), 'live_database_identity_mismatch')
+      assert.throws(() => verifyConnectionConfiguration({ ...configFor(t), host: 'remote.example' }), 'invalid_explicit_connection')
+    }
+  })
+  test('sandbox conversion and pinned recovery retain database identity and exact original values', async ({ assert }) => withFixture(async f => {
+    await runConversion(f.client, f.context)
+    const snapshotFile = join(f.context.output, 'snapshot.json')
+    const manifest = JSON.parse(await readFile(snapshotFile, 'utf8'))
+    assert.equal(manifest.format, 2); assert.equal(manifest.target.database.name, 'spendcraft_sandbox')
+    assert.notProperty(manifest, 'release'); assert.notProperty(manifest, 'environment')
+    assert.equal((await runRecovery(f.client, f.context, snapshotFile, f.context.snapshotHash)).restored, 1)
+    assert.equal(f.state().categories, f.original)
+    f.context.target = targetFor('budget')
+    await assert.rejects(() => runRecovery(f.client, f.context, snapshotFile, f.context.snapshotHash), 'snapshot_target_mismatch')
+  }, targetFor('spendcraft_sandbox')))
+  test('no conversion/recovery code depends on EC2, a release directory or a plan', async ({ assert }) => {
+    const source = await readFile('scripts/convertHistoricalTransactionCategories.mjs', 'utf8')
+    assert.notMatch(source, /169\.254\.169\.254|instanceDocument|verifyHost|globalThis\.fetch|releaseManifest|validatePlan/)
+  })
+  test('diagnostics preserve safe codes/phases without raw credentials or SQL data', ({ assert }) => {
+    const secret = 'password=private-credential financial-detail'
+    for (const [code, phase] of [['ENOENT', 'read_environment'], ['ECONNREFUSED', 'connect'], ['28P01', 'connect'], ['42501', 'verify_database']]) {
+      const result = conversionDiagnostic(Object.assign(new Error(secret), { code, detail: secret }), phase)
+      assert.equal(result.code, code); assert.equal(result.phase, phase)
+      assert.notInclude(JSON.stringify(result), secret)
+      assert.isString(result.hint)
+    }
+    assert.equal(conversionDiagnostic(new SyntaxError(secret), 'read_snapshot').code, 'INVALID_JSON')
+    assert.equal(conversionDiagnostic(new Error(secret), 'connect').code, 'unclassified_error')
+    assert.equal(conversionDiagnostic(Object.assign(new Error('pm2_manifest_process_not_stopped'), { processName: 'queue' }), 'verify_pm2_stopped').process, 'queue')
+  })
+  test('CLI explains missing .env without database work or misleading maintenance instructions', async ({ assert }) => withFixture(async f => {
+    const result = spawnSync(process.execPath, ['scripts/convertHistoricalTransactionCategories.mjs', '--env', join(f.context.output, 'missing.env'),
+      '--output-parent', f.context.output], { encoding: 'utf8' })
+    assert.equal(result.status, 1); assert.include(result.stderr, 'Diagnostic:')
+    assert.include(result.stderr, 'Dry-run failed; no conversion or recovery updates were requested.')
+    assert.notInclude(result.stderr, 'Keep writers fenced')
+    const failure = JSON.parse(await readFile(join(result.stdout.trim(), 'failure.json'), 'utf8'))
+    assert.equal(failure.phase, 'read_environment'); assert.equal(failure.code, 'ENOENT'); assert.isString(failure.hint)
+  }))
+  test('discovery rejects wrong user/port and unavailable internal identity', async ({ assert }) => {
+    const f = fixture(), config = configFor(f.target)
+    for (const changed of [{ user: 'foreign' }, { port: 5433 }]) {
+      await assert.rejects(() => discoverTarget(f.client, { ...config, ...changed }), 'live_database_identity_mismatch')
+    }
+    const query = f.client.query.bind(f.client)
+    f.client.query = async (sql, values) => {
+      const result = await query(sql, values)
+      if (sql.includes('inet_server_addr()')) result.rows[0].system_identifier = null
+      return result
+    }
+    await assert.rejects(() => discoverTarget(f.client, config), 'database_identity_unavailable')
+  })
+  test('rejected records retain subtype reasons, deleted status and computed cents').with([
+    { id: 342, type: 2, deleted: false, categories: [{ categoryId: 10, amount: 1.09 }, { categoryId: 99, amount: -1 }],
+      links: [], reason: 'rounded_cent_conservation_mismatch', sum: 9, pool: -100, nonPool: 109, difference: 9 },
+    { id: 148, type: 2, deleted: false, categories: [], links: [],
+      reason: 'empty_funding_or_rebalance_not_supported_by_endpoint', sum: 0, pool: null, nonPool: null, difference: null },
+    { id: 596, type: 4, deleted: false, categories: [{ categoryId: 10, amount: 0.3 }], links: [],
+      reason: 'ordinary_link_count_not_one', sum: 30, pool: null, nonPool: null, difference: null },
+    { id: 7, type: 2, deleted: false, categories: [{ categoryId: 10, amount: 0.3 }], links: [],
+      reason: 'missing_pool_allocation', sum: 30, pool: null, nonPool: null, difference: null },
+    { id: 8, type: 3, deleted: false, categories: [{ categoryId: 10, amount: 0.3 }, { categoryId: 10, amount: -0.2 }], links: [],
+      reason: 'rounded_cent_conservation_mismatch', sum: 10, pool: null, nonPool: null, difference: 10 },
+    { id: 9, type: 5, deleted: true, categories: [{ categoryId: 10, amount: 'bad' }], links: [],
+      reason: 'noncanonical_amount', sum: null, pool: null, nonPool: null, difference: null },
+  ]).run(async ({ assert }, example) => withFixture(async f => {
+    const query = f.client.query.bind(f.client)
+    f.client.query = async (sql, parameters) => {
+      const result = await query(sql, parameters)
+      if (sql === SCAN_SQL) for (const row of result.rows) {
+        Object.assign(row, { id: example.id, type: example.type, deleted: example.deleted,
+          categories_text: JSON.stringify(example.categories), links_text: JSON.stringify(example.links) })
+      }
+      return result
+    }
+    await assert.rejects(() => runConversion(f.client, f.context), 'preconditions_failed_inspect_transactions_jsonl')
+    const detail = JSON.parse((await readFile(join(f.context.output, 'transactions.jsonl'), 'utf8')).trim())
+    assert.equal(detail.reason, example.reason); assert.equal(detail.deleted, example.deleted)
+    assert.equal(detail.categorySumCents, example.sum); assert.equal(detail.poolAllocationCents, example.pool)
+    assert.equal(detail.nonPoolSumCents, example.nonPool); assert.equal(detail.differenceCents, example.difference)
+    assert.deepEqual(detail.accountTransactionLinks, example.links); assert.deepEqual(detail.poolCategoryIds, [99])
+    if (example.type === 3) assert.equal(detail.signedRemainderCents, 10)
+    if (example.type === 4) assert.isNull(detail.expectedCents)
+    if (example.id === 342) {
+      assert.equal(detail.expectedCents, 100)
+      assert.deepEqual(detail.categoryCents, [109, -100])
+      assert.deepEqual(detail.roundedCategoryAmounts, ['1.09', '-1.00'])
+    }
+    assert.isFalse(f.calls.some(call => call.sql.startsWith('UPDATE')))
+  }))
+  test('any balance-tracked link excludes the whole Transaction before allocation validation').with([0, 2, 3, 4, 5]).run(({ assert }, type) => {
+    const row = { ...ordinary([0.3], '0.30', type), categories: { unsupported: true } }
+    row.links.push({ tracking: 'Balances', scoped: true, amount: '0.30' })
+    const before = JSON.stringify(row)
+    const result = classify(row)
+    assert.isTrue(result.excluded); assert.equal(result.kind, 'balanceTracked'); assert.isEmpty(result.patches)
+    assert.equal(JSON.stringify(row), before)
+  })
+  test('balance-tracked Transactions are reported separately and never snapshotted or updated').with([true, false]).run(async ({ assert }, readOnly) => withFixture(async f => {
+    f.context.readOnly = readOnly; f.client.readOnly = readOnly
+    const query = f.client.query.bind(f.client)
+    f.client.query = async (sql, values) => {
+      const result = await query(sql, values)
+      if (sql === SCAN_SQL) for (const row of result.rows) {
+        row.type = 4; row.links_text = JSON.stringify([{ amount: '0.30', tracking: 'Balances', scoped: true }])
+      }
+      return result
+    }
+    const summary = await runConversion(f.client, f.context)
+    assert.equal(summary.balanceTracked, 1); assert.equal(summary.blockingRecords, 0)
+    assert.equal(summary.candidates, 0); assert.equal(summary.numericAmounts, 0); assert.isTrue(summary.preconditionsPass)
+    assert.equal(summary.byType[4].skipped, 1); assert.equal(summary.byType[4].transactions, 1)
+    assert.isFalse(f.calls.some(call => call.sql.startsWith('UPDATE')))
+    assert.equal(f.state().categories, f.original)
+    const detail = JSON.parse((await readFile(join(f.context.output, 'transactions.jsonl'), 'utf8')).trim())
+    assert.equal(detail.status, 'skipped'); assert.equal(detail.reason, 'linked_balance_tracked_account')
+    if (!readOnly) assert.equal(await readFile(join(f.context.output, 'original-categories.jsonl'), 'utf8'), '')
+  }))
+  test('deleted conservation discrepancies of any size/type are preserved without an ID list').with([
+    { ...ordinary([0.3], '0.31'), id: 12345, deleted: true },
+    { ...ordinary([0.3], '0.31', 4), id: 12346, deleted: true },
+    { ...ordinary([0.3], '0.31', 3), id: 12347, deleted: true, links: [] },
+    { ...ordinary([], '0.00', 2), id: 12348, deleted: true, links: [],
+      categories: [{ categoryId: 10, amount: 1.09 }, { categoryId: 99, amount: -1.1 }] },
+  ]).run(({ assert }, row) => {
+    const before = JSON.stringify(row), result = classify(row)
+    assert.isTrue(result.exception); assert.equal(result.finding.status, 'fail')
+    assert.equal(JSON.stringify(row), before)
+    assert.throws(() => classify({ ...row, deleted: false }))
+  })
+  test('deleted state never bypasses invalid amounts, types, Category IDs or overflow', ({ assert }) => {
+    for (const row of [ordinary([NaN]), ordinary([Number.MAX_SAFE_INTEGER]), ordinary(['bad']), ordinary([0.3], 'bad'),
+      { ...ordinary([0.3]), type: 9 }, { ...ordinary([0.3]), categories: null },
+      { ...ordinary([0.3]), categories: [{ categoryId: 0, amount: 0.3 }] },
+      ordinary([45035996273704.95, 45035996273704.95, 1])]) {
+      assert.throws(() => classify({ ...row, deleted: true }))
+    }
+    const valid = { ...ordinary([0.3]), deleted: true }
+    assert.isFalse(classify(valid).exception)
+  })
+  test('arbitrary deleted funding mismatch converts without repair and recovery restores its exact JSON', async ({ assert }) => withFixture(async f => {
+    const query = f.client.query.bind(f.client)
+    f.client.query = async (sql, values) => {
+      const result = await query(sql, values)
+      if (sql === SCAN_SQL) for (const row of result.rows) {
+        row.type = 2; row.deleted = true; row.links_text = '[]'
+      }
+      return result
+    }
+    const summary = await runConversion(f.client, f.context)
+    assert.equal(summary.exceptions, 1); assert.equal(summary.unsupported, 1)
+    assert.equal(summary.blockingRecords, 0); assert.equal(summary.candidates, 1); assert.isTrue(summary.preconditionsPass)
+    const detail = JSON.parse((await readFile(join(f.context.output, 'transactions.jsonl'), 'utf8')).trim())
+    assert.isTrue(detail.deleted); assert.isTrue(detail.exception); assert.equal(detail.reason, 'missing_pool_allocation')
+    assert.equal(detail.categorySumCents, 30); assert.deepEqual(detail.roundedCategoryAmounts, ['0.30'])
+    assert.equal(f.state().categories, f.converted)
+    const manifestFile = join(f.context.output, 'snapshot.json')
+    assert.equal((await runRecovery(f.client, f.context, manifestFile, f.context.snapshotHash)).restored, 1)
+    assert.equal(f.state().categories, f.original)
   }))
   test('snapshot SHA protects the actual bytes, not reserialized JSON', ({ assert }) => {
     assert.notEqual(sha256('{"a":1}'), sha256('{ "a":1 }'))

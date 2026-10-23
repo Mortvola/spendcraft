@@ -3,18 +3,16 @@ import process from 'node:process'
 import console from 'node:console'
 import { pathToFileURL } from 'node:url'
 import { parseArgs, isDeepStrictEqual } from 'node:util'
-import { mkdtemp, open, readFile, realpath, stat } from 'node:fs/promises'
+import { mkdtemp, open, readFile } from 'node:fs/promises'
 import { createReadStream } from 'node:fs'
-import { createHash } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { createInterface } from 'node:readline'
-import { join, resolve, isAbsolute } from 'node:path'
-import { execFile } from 'node:child_process'
-import { promisify } from 'node:util'
-import { configuration } from './auditTransactionCategoryCents.mjs'
+import { join, resolve } from 'node:path'
+import { configuration, failureInfo } from './auditTransactionCategoryCents.mjs'
+import { createPm2Guard } from './lib/conversionPm2.mjs'
 import { assertSchema } from '../installer/lib/categoryRollback.mjs'
-import { releaseManifest } from '../installer/lib/releaseManifest.mjs'
-import { sha256, MAINTENANCE, validatePlan, verifyHost, verifyConfigured, verifyDatabase, classify, SCAN_SQL,
-  leafExpression, exactConfirmation, atomic } from './lib/historicalCategoryConversion.mjs'
+import { sha256, verifyConnectionConfiguration, discoverTarget, verifyDatabase, classify, SCAN_SQL,
+  leafExpression, atomic } from './lib/historicalCategoryConversion.mjs'
 
 async function hashFile(file) {
   const hash = createHash('sha256')
@@ -30,60 +28,30 @@ async function* records(file) {
   const lines = createInterface({ input, crlfDelay: Infinity })
   try { for await (const line of lines) yield JSON.parse(line) } finally { lines.close(); input.destroy() }
 }
-async function instanceDocument() {
-  const response = await globalThis.fetch('http://169.254.169.254/latest/api/token', {
-    method: 'PUT', headers: { 'X-aws-ec2-metadata-token-ttl-seconds': '60' }, redirect: 'error', signal: globalThis.AbortSignal.timeout(3000),
-  })
-  if (!response.ok) throw new Error('imds_token_failed')
-  const document = await globalThis.fetch('http://169.254.169.254/latest/dynamic/instance-identity/document', {
-    headers: { 'X-aws-ec2-metadata-token': await response.text() }, redirect: 'error', signal: globalThis.AbortSignal.timeout(3000),
-  })
-  if (!document.ok) throw new Error('imds_identity_failed')
-  return document.json()
-}
-
 export function argumentsFor(args) {
   const { values } = parseArgs({ args, strict: true, allowPositionals: false, options: {
-    plan: { type: 'string' }, 'dry-run': { type: 'boolean' }, execute: { type: 'boolean' }, recover: { type: 'boolean' },
-    confirm: { type: 'string' }, snapshot: { type: 'string' }, 'snapshot-sha256': { type: 'string' }, 'output-parent': { type: 'string' },
+    'env': { type: 'string', default: '.env' }, 'dry-run': { type: 'boolean' }, execute: { type: 'boolean' }, recover: { type: 'boolean' },
+    pm2: { type: 'string' }, 'pm2-home': { type: 'string' }, 'pm2-manifest': { type: 'string' },
+    snapshot: { type: 'string' }, 'snapshot-sha256': { type: 'string' }, 'output-parent': { type: 'string' },
   } })
-  if (!values.plan || Number(Boolean(values['dry-run'])) + Number(Boolean(values.execute)) !== 1) throw new Error('explicit_plan_and_one_mode_required')
+  if (values['dry-run'] && values.execute) throw new Error('choose_dry_run_or_execute')
+  values['dry-run'] = !values.execute
   if (values.recover && (!values.snapshot || !/^[a-f0-9]{64}$/.test(values['snapshot-sha256'] ?? ''))) throw new Error('pinned_recovery_snapshot_required')
   if (!values.recover && (values.snapshot || values['snapshot-sha256'])) throw new Error('unexpected_snapshot')
   return values
 }
 
-export async function operationalPreflight(plan, target, listArchive = async file => {
-  const { stdout } = await promisify(execFile)('pg_restore', ['--list', resolve(file)], { maxBuffer: 16 * 1024 * 1024, timeout: 30000 })
-  return stdout
-}) {
-  if (plan.maintenanceStatement !== MAINTENANCE || typeof plan.maintenanceId !== 'string' || plan.maintenanceId.length < 12
-    || !Array.isArray(plan.writers) || !plan.writers.length || plan.writers.some(writer => typeof writer.name !== 'string' || writer.stopped !== true)) {
-    throw new Error('writer_fence_attestation_required')
+export async function executionWriterGuard(options, target, createGuard = createPm2Guard) {
+  if (target.database.name === 'spendcraft_sandbox') {
+    return async () => ({ mode: 'sandbox', processes: [], checkedAt: new Date().toISOString() })
   }
-  const backup = plan.backup
-  const age = Date.now() - Date.parse(backup?.verifiedAt)
-  if (!backup || !isAbsolute(backup.file ?? '') || !Number.isFinite(age) || age < 0 || age > 86400000 || backup.database !== target.database.name
-    || typeof backup.recoveryProcedure !== 'string' || backup.recoveryProcedure.length < 40
-    || !/^[a-f0-9]{64}$/.test(backup.sha256 ?? '') || await hashFile(backup.file) !== backup.sha256) throw new Error('verified_fresh_backup_required')
-  const info = await stat(backup.file)
-  const fileAge = Date.now() - info.mtimeMs
-  if (!info.isFile() || info.size <= 0 || fileAge < -60000 || fileAge > 86400000) throw new Error('fresh_backup_file_required')
-  const stdout = await listArchive(backup.file)
-  if (stdout.match(/^;\s*dbname: (.+)$/m)?.[1] !== target.database.name) throw new Error('backup_database_mismatch')
-}
-
-async function noOtherSessions(client) {
-  await client.query('SELECT pg_stat_clear_snapshot()')
-  const { rows } = await client.query(`SELECT pid FROM pg_stat_activity WHERE datname=current_database()
-    AND pid<>pg_backend_pid() AND backend_type='client backend'`)
-  if (rows.length) throw new Error('other_database_clients_present')
+  return createGuard(options)
 }
 
 export async function runConversion(client, context) {
-  const { plan, target, output, config, readOnly, guard } = context
+  const { maintenance, target, output, config, readOnly, guard } = context
   const summary = { transactions: 0, numericAmounts: 0, canonicalStrings: 0, candidates: 0, mixed: 0,
-    empty: 0, blockingRecords: 0, malformed: 0, exceptions: 0, deprecated: 0, roundedTransactions: 0, pass: 0, fail: 0, unsupported: 0, byType: {}, preconditionsPass: false }
+    empty: 0, blockingRecords: 0, malformed: 0, exceptions: 0, deprecated: 0, balanceTracked: 0, roundedTransactions: 0, pass: 0, fail: 0, unsupported: 0, byType: {}, preconditionsPass: false }
   const snapshotPath = join(output, 'original-categories.jsonl')
   const snapshot = readOnly ? undefined : await open(snapshotPath, 'wx', 0o600)
   const detail = await open(join(output, 'transactions.jsonl'), 'wx', 0o600)
@@ -106,15 +74,16 @@ export async function runConversion(client, context) {
         if (!rows.length) break
         for (const row of rows) {
           summary.transactions++
-          let result
+          let result, input
           try {
-            result = classify({ ...row, categories: JSON.parse(row.categories_text), links: JSON.parse(row.links_text), poolIds: JSON.parse(row.pool_ids) })
+            input = { ...row, categories: JSON.parse(row.categories_text), links: JSON.parse(row.links_text), poolIds: JSON.parse(row.pool_ids) }
+            result = classify(input)
           } catch (error) {
             summary.blockingRecords++
             const status = error.message === 'conservation_fail' ? 'fail'
               : error.message === 'conservation_unsupported' || error.message === 'unsupported_transaction_shape' ? 'unsupported' : 'malformed'
             summary[status]++
-            const counts = summary.byType[row.type] ??= { transactions: 0, pass: 0, fail: 0, unsupported: 0, malformed: 0 }
+            const counts = summary.byType[row.type] ??= { transactions: 0, pass: 0, fail: 0, unsupported: 0, malformed: 0, skipped: 0 }
             counts.transactions++; counts[status]++
             const blocked = error.classification
             if (blocked) {
@@ -124,11 +93,30 @@ export async function runConversion(client, context) {
               if (blocked.kind === 'empty') summary.empty++
               if (blocked.rounded) summary.roundedTransactions++
             }
-            await detail.write(JSON.stringify({ id: row.id, type: row.type, error: error.message }) + '\n')
+            const finding = blocked?.finding
+            const code = /^[a-z][a-z0-9_]{2,100}$/.test(error.message ?? '') ? error.message : 'invalid_transaction_input'
+            await detail.write(JSON.stringify({ id: row.id, type: row.type, error: code,
+              reason: finding?.reason ?? code, deleted: row.deleted, conservation: finding?.status ?? status,
+              originalCategoryAmounts: finding?.originalCategoryAmounts ?? null,
+              roundedCategoryAmounts: finding?.roundedCategoryAmounts ?? null,
+              categoryCents: finding?.categoryCents ?? null, categorySumCents: finding?.categorySumCents ?? null,
+              expectedCents: finding?.expectedCents ?? null, differenceCents: finding?.differenceCents ?? null,
+              poolAllocationCents: finding?.poolAllocationCents ?? null, nonPoolSumCents: finding?.nonPoolSumCents ?? null,
+              signedRemainderCents: finding?.signedRemainderCents ?? null,
+              accountTransactionLinks: input?.links ?? null, poolCategoryIds: input?.poolIds ?? null }) + '\n')
             continue
           }
-          if (result.excluded) { summary.deprecated++; continue }
-          const counts = summary.byType[row.type] ??= { transactions: 0, pass: 0, fail: 0, unsupported: 0, malformed: 0 }
+          if (result.excluded) {
+            if (result.kind === 'balanceTracked') {
+              summary.balanceTracked++
+              const counts = summary.byType[row.type] ??= { transactions: 0, pass: 0, fail: 0, unsupported: 0, malformed: 0, skipped: 0 }
+              counts.transactions++; counts.skipped++
+              await detail.write(JSON.stringify({ id: row.id, type: row.type, deleted: row.deleted,
+                status: 'skipped', reason: 'linked_balance_tracked_account' }) + '\n')
+            } else summary.deprecated++
+            continue
+          }
+          const counts = summary.byType[row.type] ??= { transactions: 0, pass: 0, fail: 0, unsupported: 0, malformed: 0, skipped: 0 }
           counts.transactions++; counts[result.finding.status]++; summary[result.finding.status]++
           summary.numericAmounts += result.numeric; summary.canonicalStrings += result.strings
           if (result.exception) summary.exceptions++
@@ -136,7 +124,13 @@ export async function runConversion(client, context) {
           if (result.kind === 'empty') summary.empty++
           if (result.rounded) summary.roundedTransactions++
           await detail.write(JSON.stringify({ id: row.id, type: row.type, kind: result.kind, numeric: result.numeric,
-            rounded: result.rounded, conservation: result.finding.status, differenceCents: result.finding.differenceCents, exception: result.exception }) + '\n')
+            rounded: result.rounded, conservation: result.finding.status, differenceCents: result.finding.differenceCents, exception: result.exception,
+            ...(result.exception ? { deleted: row.deleted, reason: result.finding.reason,
+              originalCategoryAmounts: result.finding.originalCategoryAmounts, roundedCategoryAmounts: result.finding.roundedCategoryAmounts,
+              categoryCents: result.finding.categoryCents, categorySumCents: result.finding.categorySumCents,
+              expectedCents: result.finding.expectedCents, poolAllocationCents: result.finding.poolAllocationCents ?? null,
+              nonPoolSumCents: result.finding.nonPoolSumCents ?? null, signedRemainderCents: result.finding.signedRemainderCents ?? null,
+              accountTransactionLinks: input.links, poolCategoryIds: input.poolIds } : {}) }) + '\n')
           if (!result.patches.length) continue
           summary.candidates++
           if (!readOnly) {
@@ -161,8 +155,8 @@ export async function runConversion(client, context) {
       if (!readOnly) {
         await snapshot.sync(); await snapshot.close()
         const digest = await hashFile(snapshotPath)
-        const manifest = { format: 1, operation: 'historical-category-conversion', target, environment: plan.environment,
-          release: target.release, maintenanceId: plan.maintenanceId, backup: plan.backup, writers: plan.writers, created: new Date().toISOString(), xid,
+        const manifest = { format: 2, operation: 'historical-category-conversion', target,
+          maintenance, created: new Date().toISOString(), xid,
           candidates: summary.candidates, amounts: summary.numericAmounts, dataSha256: digest }
         const manifestPath = join(output, 'snapshot.json')
         await save(manifestPath, manifest)
@@ -211,9 +205,8 @@ export async function runRecovery(client, context, snapshotFile, pinnedHash) {
   if (sha256(manifestText) !== pinnedHash) throw new Error('snapshot_identity_mismatch')
   const manifest = JSON.parse(manifestText)
   const dataFile = join(resolve(snapshotFile, '..'), 'original-categories.jsonl')
-  if (manifest.format !== 1 || manifest.operation !== 'historical-category-conversion'
-    || manifest.environment !== context.plan.environment || !isDeepStrictEqual(manifest.target, context.target)
-    || manifest.release !== context.target.release || !/^\d+$/.test(manifest.xid ?? '')
+  if (manifest.format !== 2 || manifest.operation !== 'historical-category-conversion'
+    || !isDeepStrictEqual(manifest.target, context.target) || !/^\d+$/.test(manifest.xid ?? '')
     || await hashFile(dataFile) !== manifest.dataSha256) throw new Error('snapshot_target_mismatch')
   return atomic(client, context.readOnly, async () => {
     await verifyDatabase(client, context.config, context.target)
@@ -243,57 +236,91 @@ export async function runRecovery(client, context, snapshotFile, pinnedHash) {
   })
 }
 
+export function conversionDiagnostic(error, phase) {
+  const audit = failureInfo(error, phase)
+  const code = audit.code !== 'unclassified_error' ? audit.code
+    : error instanceof SyntaxError ? 'INVALID_JSON'
+      : /^[a-z][a-z0-9_]{2,100}$/.test(error.message ?? '') ? error.message : 'unclassified_error'
+  const hints = {
+    ENOENT: phase === 'read_environment' ? 'The selected .env file does not exist; use --env with its actual path.'
+      : 'A required local file or executable was not found.',
+    EACCES: 'Permission denied while reading or writing a required local file.',
+    EPERM: 'The operating system denied the requested file operation.',
+    ENOSPC: 'The output filesystem has insufficient free space.',
+    ECONNREFUSED: 'The configured PostgreSQL host/port refused the connection.',
+    ETIMEDOUT: 'The configured connection timed out.',
+    '28P01': 'PostgreSQL rejected the configured username/password.',
+    '3D000': 'The configured PostgreSQL database does not exist.',
+    '42501': 'The database role lacks a required permission; identity verification includes pg_control_system(). No permission changes were attempted.',
+    INVALID_JSON: 'A required snapshot JSON document has invalid JSON syntax.',
+    SASL_PASSWORD_MISSING: 'The selected .env does not supply a usable password for password-based authentication.',
+    SASL_PASSWORD_INVALID_TYPE: 'The selected .env does not supply a valid password string.',
+    pm2_manifest_process_not_stopped: 'A process named in the PM2 manifest is not stopped. Stop it before execution; the script will not stop it.',
+    pm2_manifest_process_missing_or_duplicate: 'The selected PM2 daemon must have exactly one registered process for each manifest name. Check PM2_HOME and the manifest.',
+    invalid_process_manifest: 'The selected PM2 process manifest is missing valid required settings.',
+    invalid_pm2_process_list: 'PM2 did not return a valid JSON process list.',
+    pm2_daemon_identity_mismatch: 'The selected PM2_HOME does not identify the expected live PM2 daemon.',
+    unclassified_error: 'An unclassified error occurred in the reported phase; raw exception text is withheld to protect credentials and financial data.',
+  }
+  return { phase, code, ...(typeof error.processName === 'string' && /^[a-z][a-z0-9-]*$/.test(error.processName) ? { process: error.processName } : {}), ...(hints[code] ? { hint: hints[code] } : {}),
+    ...(audit.sqlPosition ? { sqlPosition: audit.sqlPosition } : {}) }
+}
+
 export async function main(args = process.argv.slice(2)) {
   const options = argumentsFor(args)
   const output = await mkdtemp(join(resolve(options['output-parent'] ?? process.cwd()), 'category-conversion-'))
   console.log(output) // Always before configuration, host checks or database work.
   let client, context
+  let phase = 'read_environment'
   try {
-    const plan = JSON.parse(await readFile(options.plan, 'utf8'))
-    const target = validatePlan(plan)
+    const config = await configuration(options['env'])
+    phase = 'verify_configuration'
+    verifyConnectionConfiguration(config)
     const operation = options.recover ? 'RECOVER' : 'CONVERT'
-    if (options.execute && options.confirm !== exactConfirmation(operation, plan, options['snapshot-sha256'])) throw new Error('exact_target_confirmation_required')
-    const config = await configuration(target.envFile, {}, target.database.name)
-    verifyConfigured(config, target)
-    let codecHash
-    const localGuard = async (full = false) => {
-      verifyHost(await instanceDocument(), target)
-      if (await realpath(join(target.root, 'spendcraft')) !== join(target.root, 'spendcraft')
-        || (full && (await releaseManifest(join(target.root, 'spendcraft'))).identity !== target.release)) throw new Error('compatible_release_identity_mismatch')
-      const currentCodecHash = sha256(await readFile(join(target.root, 'spendcraft/app/services/categoryAmountCodec.js')))
-      if (codecHash && codecHash !== currentCodecHash) throw new Error('compatible_release_identity_mismatch')
-      codecHash = currentCodecHash
-    }
-    await localGuard(true)
-    if (options.execute) await operationalPreflight(plan, target)
+    phase = 'load_driver'
     const { default: pg } = await import('pg')
     client = new pg.Client({ host: config.host, port: config.port, database: config.database, user: config.user, password: config.password,
       ssl: false, connectionTimeoutMillis: 10000, application_name: 'spendcraft_historical_category_conversion',
       options: `-c default_transaction_read_only=${options.execute ? 'off' : 'on'} -c statement_timeout=30000 -c lock_timeout=3000 -c idle_in_transaction_session_timeout=600000 -c search_path=pg_catalog,public` })
     client.on('error', () => undefined)
+    phase = 'connect'
     await client.connect()
-    const identity = await verifyDatabase(client, config, target)
-    await save(join(output, 'target.json'), { environment: plan.environment, identity, release: target.release })
-    context = { plan, target, output, config, readOnly: !options.execute,
+    phase = 'verify_database'
+    const target = await discoverTarget(client, config)
+    const identity = target.database
+    let maintenance, pm2Guard
+    if (options.execute) {
+      phase = 'verify_pm2_stopped'
+      pm2Guard = await executionWriterGuard(options, target)
+      maintenance = { maintenanceId: randomUUID(), pm2: await pm2Guard() }
+    }
+    phase = 'write_target'
+    await save(join(output, 'target.json'), { identity })
+    context = { maintenance, target, output, config, readOnly: !options.execute,
       onSnapshot: evidence => console.log(JSON.stringify({ recoveryPoint: evidence })),
-      guard: async (full = false) => {
-        await localGuard(full)
-        const freshConfig = await configuration(target.envFile, {}, target.database.name)
+      guard: async () => {
+        await pm2Guard()
+        const freshConfig = await configuration(options['env'], {}, target.database.name)
         await verifyDatabase(client, freshConfig, target)
-        await noOtherSessions(client)
       } }
+    phase = options.recover ? 'recover' : 'convert'
     const result = options.recover
       ? await runRecovery(client, context, resolve(options.snapshot), options['snapshot-sha256'])
       : await runConversion(client, context)
+    phase = 'write_summary'
     await save(join(output, 'summary.json'), { status: 'complete', operation, dryRun: !options.execute, result,
       ...(context.snapshotHash ? { snapshotSha256: context.snapshotHash } : {}) })
     console.log(JSON.stringify({ status: 'complete', operation, dryRun: !options.execute, ...result,
       ...(context.snapshotHash ? { snapshotSha256: context.snapshotHash } : {}) }))
   } catch (error) {
-    // Only controlled labels leave this process; database errors can contain financial data.
-    const code = /^[a-z][a-z0-9_]{2,100}$/.test(error.message ?? '') ? error.message : 'operation_failed_inspect_private_evidence'
-    await save(join(output, 'failure.json'), { status: 'incomplete', code, snapshotSha256: context?.snapshotHash ?? null })
-    console.error(`INCOMPLETE: ${code}. Keep writers fenced; do not infer commit outcome or restart services.`)
+    const diagnostic = conversionDiagnostic(error, phase)
+    console.error(`Diagnostic: ${JSON.stringify(diagnostic)}`)
+    try {
+      await save(join(output, 'failure.json'), { status: 'incomplete', ...diagnostic, snapshotSha256: context?.snapshotHash ?? null })
+    } catch { console.error('Could not write failure.json; retain the diagnostic printed above.') }
+    const instruction = options['dry-run'] ? 'Dry-run failed; no conversion or recovery updates were requested.'
+      : 'Keep writers fenced; do not infer commit outcome or restart services.'
+    console.error(`INCOMPLETE: ${diagnostic.code}. ${instruction}`)
     process.exitCode = 1
   } finally {
     try { await client?.end() } catch {
