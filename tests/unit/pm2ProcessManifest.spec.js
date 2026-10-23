@@ -74,6 +74,23 @@ test.group('Release-owned PM2 process manifest (no real services)', () => {
       run: async (args) => calls.push(args) })
     assert.deepEqual(calls, [['stop', 'all']])
   })
+  test('legacy shutdown reports every process name before issuing stop all', async ({ assert }) => {
+    const events = []
+    await manageProcesses({ action: 'stop', root, incoming: manifest(), entries: [entry('first'), entry('second')],
+      print: (message) => events.push(message), run: async (args) => events.push(args) })
+    assert.deepEqual(events, ['Stopping PM2 process: "first"', 'Stopping PM2 process: "second"', ['stop', 'all']])
+  })
+  test('manifest startup and shutdown report each process before its command', async ({ assert }) => {
+    const events = []
+    await manageProcesses({ action: 'stop', root, incoming: manifest(), previous: manifest(), entries: [entry()],
+      print: (message) => events.push(message), run: async (args) => events.push(args) })
+    assert.deepEqual(events, ['Stopping PM2 process: "worker"', ['stop', 'worker']])
+    events.length = 0
+    await manageProcesses({ action: 'start', root, incoming: manifest(), entries: [],
+      print: (message) => events.push(message), run: async (args) => events.push(args) })
+    assert.equal(events[0], 'Starting PM2 process: "worker"')
+    assert.equal(events[1][0], 'start')
+  })
   test('empty legacy PM2 daemon needs no stop command', async ({ assert }) => {
     const calls = []
     await manageProcesses({ action: 'stop', root, incoming: manifest(), entries: [], run: async (args) => calls.push(args) })
@@ -136,6 +153,7 @@ test.group('Release-owned PM2 process manifest (no real services)', () => {
   })
   test('shell delegates process control and packaging includes the manifest and helpers', async ({ assert }) => {
     const shell = await readFile('installer/install.sh0', 'utf8')
+    assert.notInclude(shell, 'pm2 logs')
     assert.include(shell, '--action stop')
     assert.include(shell, '--action start')
     for (const name of ['prod-server', 'plaid-cleanup', 'queue']) assert.notMatch(shell, new RegExp('pm2 (?:start|stop|restart) ' + name))

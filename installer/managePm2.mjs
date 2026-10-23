@@ -9,13 +9,16 @@ import { pathToFileURL } from 'node:url'
 import { inside, readProcessManifest, processDefinitions, replaceProcesses } from './lib/pm2Processes.mjs'
 const execute = promisify(execFile)
 
-export async function manageProcesses({ action, root, incoming, entries, run, previous }) {
+export async function manageProcesses({ action, root, incoming, entries, run, previous, print = (message) => console.log(message) }) {
   if (!['stop', 'start'].includes(action)) throw new Error('invalid_process_action')
   if (!Array.isArray(entries)) throw new Error('invalid_pm2_inventory')
   const desired = processDefinitions(incoming, join(root, 'spendcraft'))
   if (action === 'stop' && !previous) {
     // Explicit legacy-upgrade policy: stop every app in the selected PM2 daemon.
-    if (entries.length) await run(['stop', 'all'])
+    if (entries.length) {
+      for (const entry of entries) print('Stopping PM2 process: ' + JSON.stringify(entry.name))
+      await run(['stop', 'all'])
+    }
     return
   }
   const old = previous ? processDefinitions(previous, join(root, 'spendcraft')) : desired
@@ -34,8 +37,17 @@ export async function manageProcesses({ action, root, incoming, entries, run, pr
     && (previous || entry.pm2_env?.status !== 'stopped'))) throw new Error('unmanaged_installation_process')
   // Complete admission before any stop/delete/start command.
   const existing = names.filter((name) => entries.some((entry) => entry.name === name))
-  if (action === 'start') await replaceProcesses(existing, desired, run)
-  else for (const name of existing) await run(['stop', name])
+  if (action === 'start') {
+    await replaceProcesses(existing, desired, async (args) => {
+      if (args[0] === 'start') print('Starting PM2 process: ' + JSON.stringify(args[args.indexOf('--name') + 1]))
+      return run(args)
+    })
+  } else {
+    for (const name of existing) {
+      print('Stopping PM2 process: ' + JSON.stringify(name))
+      await run(['stop', name])
+    }
+  }
 
 }
 

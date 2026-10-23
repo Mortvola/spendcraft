@@ -202,7 +202,6 @@ bash "$SPENDCRAFT_ROOT/$APP_NEW/installer/backup.sh" \
 pushd $APP_NEW
 
 node ace migration:status
-confirm_deployment MIGRATE 'Confirm backup succeeded and review the pending migrations before invoking the migration command. Seeding has a separate SEED/SKIP/ABORT prompt afterward.'
 node ace migration:run
 seed_database
 
@@ -224,7 +223,6 @@ pm2 save
 node "$PWD/$APP/installer/generateRollbackPlan.mjs" --root "$PWD" --target "$INSTALL_TARGET"
 sudo nginx -t
 sudo systemctl reload nginx
-pm2 logs --nostream
 echo 'Verify server health before manually disabling external onboarding maintenance. This installer does not resume traffic.'
 
 # Clean up
