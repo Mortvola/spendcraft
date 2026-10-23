@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process'
 import { join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { parseEnv } from 'node:util'
-import { configureRequiredEnvironment } from '../../scripts/configureInstallerEnv.mjs'
+import { configureRequiredEnvironment } from '../../installer/configureInstallerEnv.mjs'
 
 const commonValues = {
   SESSION_DRIVER: 'cookie', HASH_DRIVER: 'bcrypt', PLAID_PRODUCTS: 'transactions',
@@ -28,7 +28,7 @@ test.group('Installer consolidated automatic values (temporary files only)', (gr
     if (contents !== null) await writeFile(join(root, 'spendcraft-env'), contents, { mode: 0o600 })
     await symlink('../spendcraft-env', join(release, '.env'))
     if (requirements !== null) await writeFile(join(release, 'installer/installer.env.required.json'), JSON.stringify(requirements))
-    return () => spawnSync(process.execPath, [resolve('scripts/configureInstallerEnv.mjs'), '--target', 'staging', '--env-file', '.env', '--requirements', 'installer/installer.env.required.json'], {
+    return () => spawnSync(process.execPath, [resolve('installer/configureInstallerEnv.mjs'), '--target', 'staging', '--env-file', '.env', '--requirements', 'installer/installer.env.required.json'], {
       cwd: release, env: { PATH: process.env.PATH }, encoding: 'utf8',
     })
   }
@@ -106,7 +106,7 @@ test.group('Installer consolidated automatic values (temporary files only)', (gr
     assert.notInclude(config, "pattern: 'installer.env.defaults'")
     const installer = await readFile('installer/install.sh0', 'utf8')
     assert.notInclude(installer, 'ensure_env_defaults')
-    const call = installer.indexOf('\nnode scripts/configureInstallerEnv.mjs')
+    const call = installer.indexOf('\nnode installer/configureInstallerEnv.mjs')
     assert.isAbove(call, installer.indexOf('\nnpm ci --omit dev --omit optional'))
     assert.isAbove(call, installer.indexOf('\nensure_app_key\n'))
     assert.isBelow(call, installer.indexOf('\nnode ace migration:status'))

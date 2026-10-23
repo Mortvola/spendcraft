@@ -2,9 +2,9 @@
 
 The release contains one checked-in configuration file, `installer/installer.env.required.json`. It holds automatic nonsecret values and metadata for values supplied privately by the operator. It must never contain secrets. APP_KEY, VAPID, JWT and Plaid cleanup keys are excluded because their key-generation commands handle them. The separate `installer.env.defaults` payload and defaults-appending installer step have been removed; all fourteen former defaults are `type: "value"` entries in the consolidated file.
 
-`deploy.sh production` or `deploy.sh staging` embeds that target in generated `install.sh`, before its archive payload. The operator still uploads and runs the installer manually; deploy.sh does not execute remotely. A packaged installer accepts no target argument, or the identical target; a conflicting argument aborts before installation. The unpackaged template requires an explicit target argument. NODE_ENV stays production for both runtime environments and is not the deployment target selector. Preserve production/staging root, database, provider and PM2 isolation independently; this setting does not itself prove host identity or fix the release-specific rollback script's missing staging mode.
+`deploy.sh production` or `deploy.sh staging` embeds that target in generated `install.sh`, before its archive payload. The operator still uploads and runs the installer manually; deploy.sh does not execute remotely. A packaged installer accepts no target argument, or the identical target; a conflicting argument aborts before installation. The unpackaged template requires an explicit target argument. NODE_ENV stays production for both runtime environments and is not the deployment target selector. Preserve production/staging root, database, provider and PM2 isolation independently; this setting does not itself prove host identity or replace the rollback tool's independent target checks.
 
-After extracting spendcraft.new, linking the shared .env and installing dependencies, the installer first initializes APP_KEY, then runs `ENV_PATH= NODE_ENV=production node ace generate:web-push-keys`, then runs `ENV_PATH= NODE_ENV=production node ace generate:jwt-keys` and `ENV_PATH= NODE_ENV=production node ace plaid:rotate-cleanup-keys --if-missing`, and then invokes `scripts/configureInstallerEnv.mjs` with its embedded target. It next runs the backup and proceeds to migration/seeding decisions. The metadata and helper are copied by Adonis metaFiles into build; the existing deploy archive includes them.
+After extracting spendcraft.new, linking the shared .env and installing dependencies, the installer first initializes APP_KEY, then runs `ENV_PATH= NODE_ENV=production node ace generate:web-push-keys`, then runs `ENV_PATH= NODE_ENV=production node ace generate:jwt-keys` and `ENV_PATH= NODE_ENV=production node ace plaid:rotate-cleanup-keys --if-missing`, and then invokes `installer/configureInstallerEnv.mjs` with its embedded target. It next runs the backup and proceeds to migration/seeding decisions. The metadata and helper are copied by Adonis metaFiles into build; the existing deploy archive includes them.
 
 The required-settings helper reads the shared .env through its symlink. Nonempty configured values are preserved. Explicit empty values are also preserved when allowEmpty=true; otherwise they require configuration. Environment-specific entries are skipped outside their selected target. A configured value conflicting with a fixed value or a prompt entry's choices aborts without changing it. Staging's PLAID_ENV must be sandbox; it never requests PLAID_PRODUCTION_SECRET. This does not enable provider operations or establish sandbox credentials; optional provider integration remains separately controlled.
 
@@ -50,11 +50,11 @@ Manifest capture still fails closed before directory deletion/swap. Its CLI now 
 To inspect a stopped, partially prepared installation without rerunning installation, migration, seeding or manifest-record creation, use the updated tooling:
 
 ```bash
-node /spendcraft_staging/server/spendcraft.new/scripts/captureDeploymentManifests.mjs \
+node /spendcraft_staging/server/spendcraft.new/installer/captureDeploymentManifests.mjs \
   --inspect-root /spendcraft_staging/server
 ```
 
-Both `scripts/captureDeploymentManifests.mjs` and `scripts/lib/releaseManifest.mjs` must be the updated versions in the prepared release. Inspection only reads the prepared/current release files and their build identities. It creates no deployment record and does not modify releases, contact a database, or manage processes. A successful inspection does not prove that record-directory writes or filesystem syncs will succeed during actual capture. Keep processes stopped and do not manually swap releases while the capture failure remains unresolved. The staging failure reported under `deployment-2026-10-22T02-14-59.185Z-kMjx7X` has no established root cause until its diagnostic is collected; no safety check has been relaxed.
+Both `installer/captureDeploymentManifests.mjs` and `installer/lib/releaseManifest.mjs` must be the updated versions in the prepared release. Inspection only reads the prepared/current release files and their build identities. It creates no deployment record and does not modify releases, contact a database, or manage processes. A successful inspection does not prove that record-directory writes or filesystem syncs will succeed during actual capture. Keep processes stopped and do not manually swap releases while the capture failure remains unresolved. The staging failure reported under `deployment-2026-10-22T02-14-59.185Z-kMjx7X` has no established root cause until its diagnostic is collected; no safety check has been relaxed.
 
 The installer creates the optional `PushNotificationKey.p8` link only when `../PushNotificationKey.p8` resolves to a regular file. A missing target, directory or dangling target symlink is skipped. Apple push requires a separately supplied valid APNs key; this change does not disable notification code or relax manifest validation for links that exist.
 
@@ -79,3 +79,122 @@ validation precedes `sudo systemctl reload nginx`. Sudo/Nginx/systemd must alrea
 be available. No default or differently named existing sites are removed. HTTPS
 and Certbot remain separate operator actions. Tests use temporary files and
 mocked sudo/Nginx; they do not modify `/etc/nginx` or real services.
+
+
+## Installer/rollback tool locations and stable bundle
+
+Installation-only helpers and the release-specific rollback executor/helpers now live under `installer/`, including `lib/categoryRollback.mjs` and `lib/releaseManifest.mjs`. `build.sh`, installer calls, metadata packaging and tests use those paths. Other scripts, including financial audit tooling, remain under `scripts/`.
+
+Before a release swap the installer captures manifests and prepares `$SPENDCRAFT_ROOT/maintenance/rollback/<current-manifest-identity>/` with the rollback executor, both helpers, a standalone verification helper, `pg` and its runtime dependency closure, and `bundle.json`/README. A failed preparation stops installation before deleting or swapping releases; previous bundles remain untouched. Files are published from a unique private staging directory, and an identical existing bundle can be reused only after integrity verification. The release ID and bundle path are printed; this requires additional disk capacity for the small PostgreSQL-client dependency closure, not a second copy of the full application node_modules.
+
+No rollback is run and no database connection is made by bundling. After startup and PM2 save, a separate installer step automatically generates the operational plan using read-only database identity checks. Runtime Node/system tools and existing execution safeguards remain required. See the release-specific rollback document before any use. Run operations from a stable maintenance working directory, keeping plans and outputs outside the immutable bundle.
+
+Installation also publishes `$SPENDCRAFT_ROOT/maintenance/rollback.sh`. Invoke it
+with only `--dry-run` or `--execute`; it automatically selects and verifies the
+bundle matching the actual installed release. The reviewed plan must exist at
+`$SPENDCRAFT_ROOT/maintenance/rollback-plan.json`; no plan is created automatically.
+A missing/corrupt matching bundle, mismatched plan, or edited managed launcher
+stops rather than guessing. Versioned launcher implementations are retained under
+`maintenance/rollback/launcher-<launcher-id>/`, and the managed shell is updated
+atomically. The release-specific executor repeats integrity/release checks before
+any database connection. Authorization and existing confirmation requirements
+remain unchanged.
+
+
+Rollback supports separate EC2 `production` and `staging` targets through the
+reviewed `maintenance/rollback-plan.json`. Neither requires a machine ID; target
+checks use the installation, release, database and PM2 configuration.
+Staging can use the installer's normal process names and Ubuntu PM2 home on its
+own host. See [EC2 target configuration](transaction-category-decimal-string-rollback.md#ec2-staging-and-production-targets).
+
+
+## Automatic rollback plan
+
+After PM2 startup/save, the installer calls `installer/generateRollbackPlan.mjs`
+with the explicit installation target and root. It captures release/config hashes,
+process definitions and independently verified local database identities, then
+publishes private `maintenance/rollback-plan.json` atomically. No operator JSON
+assembly is required. An output directory retains the plan, previous active plan
+and differences. Passwords and PM2 environment maps are excluded. Fresh installs
+or incompatible release pairs publish an unavailable marker; unexpected failures
+stop before final Nginx reload without reverting already-started processes.
+Generated plans require execution-time compatibility/maintenance confirmation;
+plan generation does not authorize rollback. See the rollback guide for details.
+
+
+## Release-owned PM2 process manifest
+
+`installer/pm2-processes.json` is the operational source of truth, packaged with
+each release. It belongs under `installer/`, rather than Adonis `start/`, because
+installation and offline rollback consume it without bootstrapping the app.
+The current ordered definitions are:
+
+| Process | Release-relative script | Arguments | Special settings |
+|---|---|---|---|
+| queue | ace.js | queue:listener | Timestamped logs |
+| plaid-cleanup | ace.js | plaid:cleanup-listener | 30,000 ms shutdown timeout; 5,000 ms restart delay; timestamped logs |
+| prod-server | bin/server.js | none | Daily `0 0 * * *` restart; timestamped logs |
+
+All use the release directory as cwd, the invoking Node interpreter, and the
+existing runtime `NODE_ENV=production` on both EC2 environments. Paths are relative
+to the release; credentials and environment maps are forbidden. Schema version 1
+validates unique names, relative in-release paths, arguments and supported settings.
+
+The shell unpacks the new payload, then delegates shutdown to
+`installer/managePm2.mjs --root ROOT --release ROOT/spendcraft.new --action stop`.
+This built-in-only helper runs before npm dependency installation and financial
+setup. It stops the union of old/new manifest names. On an upgrade from a
+pre-manifest release, it explicitly stops ALL applications in the selected PM2
+daemon using `pm2 stop all`, including applications outside the installation root.
+This operator-approved legacy fallback avoids guessing the old process inventory.
+With an existing manifest, unknown in-root writers, foreign same-name processes
+and duplicates still block the operation; unrelated applications are untouched. Failure may leave some managed processes stopped; no automatic
+resume is attempted.
+
+After swap and RESUME, `--release ROOT/spendcraft --action start` verifies existing
+managed processes are stopped, removes their old PM2 definitions and creates the
+incoming definitions in manifest order. This deliberately replaces stale wrapper
+paths/arguments/settings instead of blindly restarting them. Old-only manifest-managed processes
+are removed. On a legacy upgrade, unknown stopped processes are left stopped and
+are not adopted or restarted; unrelated applications stopped by the fallback must
+be reviewed/restarted manually by the operator. A failure stops further startup commands; inspect partial state
+before resuming. PM2 save, generated rollback plan and Nginx validation/reload
+remain separate existing shell steps. No new daemon, service, cron or database
+operation is introduced by manifest parsing.
+
+Plan generation compares live process identity/arguments, single fork mode,
+shutdown/restart settings and the declared schedule with the current manifest.
+It captures separate hashed process inventories from current and previous
+manifests. Rollback verifies both inventories against the exact releases, stops
+the current set and starts the previous set, even when process names/arguments
+changed. Maintenance startup suppresses cron restart until separately reviewed
+restoration. A previous release without a manifest records `manualRestart: true`: an otherwise
+valid rollback restores that release but leaves the managed processes stopped for
+operator-directed startup and verification. No previous process definition is
+guessed or patched in place. All existing
+release-specific monetary compatibility checks remain unchanged.
+
+
+## Missing-manifest compatibility policy
+
+Only an absent manifest triggers fallback. Malformed JSON, invalid schema or
+permissions failures remain errors. The incoming release still requires its own
+valid manifest for installation startup. The selected daemon is the operator's
+normal PM2 context (`PM2_HOME` when set); no other user's daemon is targeted.
+On the first legacy upgrade, every process in that daemon is stopped, regardless
+of application path. An empty daemon needs no stop command. Normal incoming
+manifest startup still checks ownership of same-name apps and refuses to replace
+a running process. The fallback does not authorize deleting or restarting unknown
+apps. Installation does not stop/restart systemd, Redis, PostgreSQL or Nginx via
+this PM2 fallback.
+
+When the rollback target has no manifest, the generated plan records manual
+startup instead of declaring the release unavailable solely for that reason.
+All independent monetary release-pair, backup, database and maintenance gates
+remain. After a successful conversion/swap, rollback journals
+`manual-restart-required`, does not claim completion, and returns instructions to
+the operator. PM2 definitions remain durably stopped; they may contain the newer
+release's arguments and must not be blindly restarted. The operator determines
+startup commands/settings, verifies application and financial read paths, reviews
+PM2 persistence/schedules, and only then resumes traffic. No automatic smoke test
+or scheduler restoration is attempted in this mode.

@@ -1,0 +1,32 @@
+{
+  "format": 1,
+  "processes": [
+    {
+      "name": "queue",
+      "script": "ace.js",
+      "cwd": ".",
+      "interpreter": "node",
+      "args": ["queue:listener"],
+      "time": true
+    },
+    {
+      "name": "plaid-cleanup",
+      "script": "ace.js",
+      "cwd": ".",
+      "interpreter": "node",
+      "args": ["plaid:cleanup-listener"],
+      "time": true,
+      "killTimeout": 30000,
+      "restartDelay": 5000
+    },
+    {
+      "name": "prod-server",
+      "script": "bin/server.js",
+      "cwd": ".",
+      "interpreter": "node",
+      "args": [],
+      "time": true,
+      "cronRestart": "0 0 * * *"
+    }
+  ]
+}

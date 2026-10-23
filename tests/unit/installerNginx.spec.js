@@ -98,7 +98,7 @@ configure_nginx "$TEST_ROOT" "$TEST_TEMPLATE" "$TEST_TARGET"
     assert.include(await readFile('adonisrc.ts', 'utf8'), "pattern: 'installer/nginx.conf'")
     const source = await readFile('installer/install.sh0', 'utf8')
     const call = source.indexOf('\nconfigure_nginx "$PWD" "$PWD/$APP_NEW/installer/nginx.conf" "$INSTALL_TARGET"')
-    assert.isAbove(call, source.indexOf('\nnode scripts/configureInstallerEnv.mjs'))
+    assert.isAbove(call, source.indexOf('\nnode installer/configureInstallerEnv.mjs'))
     assert.isBelow(call, source.indexOf('\nbash "$SPENDCRAFT_ROOT/$APP_NEW/installer/backup.sh"'))
     const reload = source.indexOf('\nsudo systemctl reload nginx')
     assert.isAbove(reload, source.indexOf('\nconfirm_deployment RESUME'))

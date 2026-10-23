@@ -94,7 +94,7 @@ test.group('Installer JWT key generation (temporary files, no app or database)',
     const source = await readFile('installer/install.sh0', 'utf8')
     const call = source.indexOf('\nENV_PATH= NODE_ENV=production node ace generate:jwt-keys\n')
     assert.isAbove(call, source.indexOf('\nensure_app_key\n'))
-    assert.isBelow(call, source.indexOf('\nnode scripts/configureInstallerEnv.mjs'))
+    assert.isBelow(call, source.indexOf('\nnode installer/configureInstallerEnv.mjs'))
     const entries = JSON.parse(await readFile('installer/installer.env.required.json', 'utf8'))
     assert.isFalse(entries.some((entry) => entry.name.startsWith('JWT_')))
   })

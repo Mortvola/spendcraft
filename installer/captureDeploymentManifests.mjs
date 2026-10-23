@@ -7,6 +7,7 @@ import { execFileSync } from 'node:child_process'
 import { resolve, join } from 'node:path'
 import { lstat, realpath, readFile, open, mkdir, mkdtemp } from 'node:fs/promises'
 import { releaseManifest } from './lib/releaseManifest.mjs'
+import { prepareRollbackBundle } from './prepareRollbackBundle.mjs'
 
 async function writeExclusive(path, value) {
   const file = await open(path, 'wx', 0o600)
@@ -111,11 +112,17 @@ async function inspectDeployment(root) {
 
 export async function main(args = process.argv.slice(2)) {
   const { values } = parseArgs({ args, strict: true, options: {
-    root: { type: 'string' }, 'write-build-source': { type: 'string' }, 'inspect-root': { type: 'string' },
+    root: { type: 'string' }, 'write-build-source': { type: 'string' }, 'inspect-root': { type: 'string' }, 'prepare-rollback-bundle': { type: 'boolean' },
   } })
   if ([values.root, values['write-build-source'], values['inspect-root']].filter(Boolean).length !== 1) throw new Error('choose_one_capture_mode')
+  if (values['prepare-rollback-bundle'] && !values.root) throw new Error('bundle_requires_deployment_capture')
   if (values['inspect-root']) await inspectDeployment(resolve(values['inspect-root']))
-  else if (values.root) await recordDeployment(resolve(values.root))
+  else if (values.root) {
+    const { record } = await recordDeployment(resolve(values.root))
+    if (values['prepare-rollback-bundle']) await captureStep('prepare-rollback-bundle', resolve(values.root),
+      () => prepareRollbackBundle({ root: resolve(values.root), release: join(resolve(values.root), 'spendcraft.new'),
+        releaseId: record.current.identity, source: record.current.source }, (message) => console.log(message)))
+  }
   else await writeBuildSource(resolve(values['write-build-source']))
 }
 
@@ -127,7 +134,15 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
       'invalid_release_package', 'invalid_release_lockfile', 'missing_runtime_dependency',
       'client_entry_missing', 'client_asset_missing', 'secret_must_be_external_symlink',
       'secret_target_inside_release', 'unreviewed_external_release_symlink',
-      'unsupported_release_file', 'release_env_missing', 'invalid_build_commit', 'choose_one_capture_mode'])
+      'unsupported_release_file', 'release_env_missing', 'invalid_build_commit', 'choose_one_capture_mode',
+      'bundle_requires_deployment_capture', 'rollback_bundle_unsupported_file', 'invalid_bundle_dependency',
+      'bundle_dependency_package_missing', 'bundle_dependency_outside_release', 'rollback_bundle_symlink', 'invalid_rollback_bundle_manifest',
+      'rollback_bundle_integrity_mismatch', 'invalid_rollback_bundle_release_id',
+      'rollback_bundle_root_not_canonical', 'rollback_bundle_root_inside_release',
+      'unsafe_rollback_bundle_directory', 'rollback_tool_missing_or_linked', 'existing_rollback_bundle_conflict',
+      'invalid_rollback_shell_template', 'rollback_launcher_identity_mismatch', 'unmanaged_rollback_shell',
+      'rollback_shell_changed_during_installation', 'rollback_launcher_integrity_mismatch',
+      'invalid_rollback_launcher_directory', 'invalid_rollback_launcher_manifest'])
     const code = typeof error.code === 'string' && /^[A-Z][A-Z0-9_]{0,63}$/.test(error.code)
       ? error.code : knownReasons.has(error.message) ? error.message
         : error instanceof SyntaxError ? 'invalid_json' : 'unclassified_error'

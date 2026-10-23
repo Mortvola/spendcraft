@@ -241,6 +241,10 @@ export async function orchestrate(options, operations) {
     await operations.backup()
     await operations.convert()
     await operations.swap()
+    if (options.manualRestart) {
+      await operations.journal('manual-restart-required', {})
+      return { manualRestartRequired: true }
+    }
     await operations.restart()
     await operations.smoke()
     await operations.journal('complete', {})

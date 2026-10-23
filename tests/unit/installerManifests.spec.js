@@ -1,11 +1,12 @@
 import { test } from '@japa/runner'
 import process from 'node:process'
 import { spawnSync } from 'node:child_process'
-import { mkdtemp, mkdir, writeFile, readFile, symlink, rm, realpath, readdir, stat, lstat } from 'node:fs/promises'
+import { mkdtemp, mkdir, writeFile, readFile, symlink, rm, realpath, readdir, stat, lstat, rename } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { resolve, join } from 'node:path'
-import { recordDeployment, writeBuildSource } from '../../scripts/captureDeploymentManifests.mjs'
-import { releaseManifest } from '../../scripts/lib/releaseManifest.mjs'
+import { recordDeployment, writeBuildSource } from '../../installer/captureDeploymentManifests.mjs'
+import { main as generateRollbackPlan } from '../../installer/generateRollbackPlan.mjs'
+import { releaseManifest } from '../../installer/lib/releaseManifest.mjs'
 
 test.group('Installer release manifests (temporary packages, no services or database)', (group) => {
   let root
@@ -47,6 +48,14 @@ test.group('Installer release manifests (temporary packages, no services or data
     assert.equal((await stat(output)).mode & 0o777, 0o700)
     assert.notInclude(await readFile(join(output, 'deployment.json'), 'utf8'), 'not-a-real-credential')
   })
+  test('fresh install automatically publishes unavailable plan without PM2 or database access', async ({ assert }) => {
+    await release('spendcraft.new', true)
+    await rename(join(root, 'spendcraft.new'), join(root, 'spendcraft'))
+    await generateRollbackPlan(['--root', root, '--target', 'staging'])
+    const plan = JSON.parse(await readFile(join(root, 'maintenance/rollback-plan.json'), 'utf8'))
+    assert.equal(plan.unavailableReason, 'no_previous_installed_release')
+    assert.equal(plan.root, root)
+  })
   test('fresh installation records that no previous release exists', async ({ assert }) => {
     await release('spendcraft.new', true)
     const { output, record } = await recordDeployment(root, () => undefined)
@@ -84,10 +93,10 @@ test.group('Installer release manifests (temporary packages, no services or data
   })
   test('actual installer stops before directory deletion/swap if capture fails', async ({ assert }) => {
     const source = await readFile('installer/install.sh0', 'utf8')
-    const call = source.indexOf('node "$PWD/$APP_NEW/scripts/captureDeploymentManifests.mjs"')
+    const call = source.indexOf('node "$PWD/$APP_NEW/installer/captureDeploymentManifests.mjs"')
     const end = source.indexOf('\nconfirm_deployment RESUME', call)
     assert.isAbove(call, source.indexOf('\nseed_database\n'))
-    assert.isAbove(call, source.indexOf('pm2 stop plaid-cleanup'))
+    assert.isAbove(call, source.indexOf('--action stop'))
     assert.isAbove(call, source.indexOf('npm ci --omit dev --omit optional'))
     assert.isBelow(call, source.indexOf('rm -fr $APP_OLD'))
     const excerpt = source.slice(call, end)
@@ -108,15 +117,15 @@ ${excerpt}
   })
   test('capture tooling is packaged and build metadata is generated before deployment packaging', async ({ assert }) => {
     const configuration = await readFile('adonisrc.ts', 'utf8')
-    assert.include(configuration, "pattern: 'scripts/captureDeploymentManifests.mjs'")
-    assert.include(configuration, "pattern: 'scripts/lib/releaseManifest.mjs'")
+    assert.include(configuration, "pattern: 'installer/captureDeploymentManifests.mjs'")
+    assert.include(configuration, "pattern: 'installer/lib/releaseManifest.mjs'")
     const build = await readFile('build.sh', 'utf8')
     assert.isAbove(build.indexOf('--write-build-source'), build.indexOf('npm run server-build'))
     assert.include(await readFile('deploy.sh', 'utf8'), './build.sh')
   })
   test('CLI prints deployment folder and never needs database settings', async ({ assert }) => {
     await release('spendcraft.new', true)
-    const result = spawnSync(process.execPath, [resolve('scripts/captureDeploymentManifests.mjs'), '--root', root],
+    const result = spawnSync(process.execPath, [resolve('installer/captureDeploymentManifests.mjs'), '--root', root],
       { cwd: root, encoding: 'utf8' })
     assert.equal(result.status, 0, result.stderr)
     assert.isTrue(result.stdout.trim().startsWith(join(root, 'releases/deployment-')))
@@ -124,7 +133,7 @@ ${excerpt}
   test('CLI diagnostics identify incomplete release and offending file without revealing secrets', async ({ assert }) => {
     await release('spendcraft'); await release('spendcraft.new', true)
     await rm(join(root, 'spendcraft/ace.js'))
-    const result = spawnSync(process.execPath, [resolve('scripts/captureDeploymentManifests.mjs'), '--root', root], { encoding: 'utf8' })
+    const result = spawnSync(process.execPath, [resolve('installer/captureDeploymentManifests.mjs'), '--root', root], { encoding: 'utf8' })
     assert.equal(result.status, 1)
     const diagnostic = JSON.parse(result.stderr.split('\n').find((line) => line.startsWith('Diagnostic: ')).slice('Diagnostic: '.length))
     assert.deepEqual(diagnostic, { phase: 'capture-previous-release', path: join(root, 'spendcraft'), code: 'incomplete_release', entry: 'ace.js' })
@@ -136,7 +145,7 @@ ${excerpt}
     await release('spendcraft.new', true)
     await symlink('../missing-push-key', join(root, 'spendcraft.new/PushNotificationKey.p8'))
     const before = await readdir(root)
-    const result = spawnSync(process.execPath, [resolve('scripts/captureDeploymentManifests.mjs'), '--inspect-root', root], { encoding: 'utf8' })
+    const result = spawnSync(process.execPath, [resolve('installer/captureDeploymentManifests.mjs'), '--inspect-root', root], { encoding: 'utf8' })
     assert.equal(result.status, 1)
     const diagnostic = JSON.parse(result.stderr.split('\n').find((line) => line.startsWith('Diagnostic: ')).slice('Diagnostic: '.length))
     assert.deepEqual(diagnostic, { phase: 'capture-current-release', path: join(root, 'spendcraft.new'), code: 'ENOENT', entry: 'PushNotificationKey.p8' })
@@ -146,7 +155,7 @@ ${excerpt}
   test('read-only inspection validates releases and build identity without writing records', async ({ assert }) => {
     await release('spendcraft'); await release('spendcraft.new', true)
     const before = await readdir(root)
-    const result = spawnSync(process.execPath, [resolve('scripts/captureDeploymentManifests.mjs'), '--inspect-root', root], { encoding: 'utf8' })
+    const result = spawnSync(process.execPath, [resolve('installer/captureDeploymentManifests.mjs'), '--inspect-root', root], { encoding: 'utf8' })
     assert.equal(result.status, 0, result.stderr)
     assert.include(result.stdout, 'Release inspection passed')
     assert.deepEqual(await readdir(root), before)
@@ -155,7 +164,7 @@ ${excerpt}
   test('invalid build JSON diagnostic excludes raw file content', async ({ assert }) => {
     await release('spendcraft.new', true)
     await writeFile(join(root, 'spendcraft.new/release-source.json'), 'not-json-private-marker')
-    const result = spawnSync(process.execPath, [resolve('scripts/captureDeploymentManifests.mjs'), '--inspect-root', root], { encoding: 'utf8' })
+    const result = spawnSync(process.execPath, [resolve('installer/captureDeploymentManifests.mjs'), '--inspect-root', root], { encoding: 'utf8' })
     assert.equal(result.status, 1)
     assert.include(result.stderr, 'read-current-build-identity')
     assert.include(result.stderr, 'invalid_json')

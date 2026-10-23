@@ -4,7 +4,7 @@
 
 Implemented against repository HEAD `be41cdd4c0c572087e136a81f045ccf95e0e94eb` on October 20, 2026. **Prepared and mock-tested; a separately authorized sandbox rehearsal is required before production use. No real rollback or database connection occurred.**
 
-Script: `scripts/rollbackTransactionCategoryStorage.mjs`. Conversion/workflow helpers: `scripts/lib/categoryRollback.mjs`. Shared release identity: `scripts/lib/releaseManifest.mjs`. Automatic installer capture: `scripts/captureDeploymentManifests.mjs`. Non-database tests: `tests/unit/transactionCategoryRollback.spec.js` and `tests/unit/installerManifests.spec.js`.
+Script: `installer/rollbackTransactionCategoryStorage.mjs`. Conversion/workflow helpers: `installer/lib/categoryRollback.mjs`. Shared release identity: `installer/lib/releaseManifest.mjs`. Automatic installer capture: `installer/captureDeploymentManifests.mjs`. Non-database tests: `tests/unit/transactionCategoryRollback.spec.js` and `tests/unit/installerManifests.spec.js`.
 
 The installer moves today's installed `spendcraft` to `spendcraft.old` during deployment. That future directory is the rollback target. Today's older `spendcraft.old` is not a prerequisite for preparing this script. The earlier blocked assessment incorrectly treated present directory generation and execution-time recovery prerequisites as implementation blockers. It is superseded by this procedure.
 
@@ -44,7 +44,7 @@ The accepted commit also includes admission/conservation validation and Category
 
 ## Automatic installer capture — filesystem only
 
-`installer/install.sh0` now captures both manifests automatically after dependency/configuration preparation and the existing migration/seeding decisions, while deployment-managed processes are stopped, **before** deleting `spendcraft.old` or swapping releases. It calls the packaged filesystem-only `scripts/captureDeploymentManifests.mjs`; installation and rollback share `scripts/lib/releaseManifest.mjs`, with identical format, validation and hashing. Manifest capture performs no database operations or application bootstrap.
+`installer/install.sh0` now captures both manifests automatically after dependency/configuration preparation and the existing migration/seeding decisions, while deployment-managed processes are stopped, **before** deleting `spendcraft.old` or swapping releases. It calls the packaged filesystem-only `installer/captureDeploymentManifests.mjs`; installation and rollback share `installer/lib/releaseManifest.mjs`, with identical format, validation and hashing. Manifest capture performs no database operations or application bootstrap.
 
 Every installation prints a unique private directory such as `$SPENDCRAFT_ROOT/releases/deployment-<timestamp>-<random>/`. It contains:
 
@@ -56,14 +56,14 @@ Any capture/validation failure aborts the installer before its old-directory rem
 
 The established `deploy.sh` → `build.sh` flow now writes `build/release-source.json` after the server build and before archiving. It records Git HEAD, build time and whether staged/unstaged/untracked repository work exists. A dirty flag is conservative and does not assert every untracked file is packaged; manifest hashes identify actual installed bytes. Missing/invalid source metadata on the new package stops automatic capture. Older packages may have no source metadata; their commit remains unknown rather than guessed.
 
-Adonis metadata includes only the capture tool and shared manifest helper in the application package; the rollback executor is not installed or run by this change. Use the automatic pair as `previousManifest` and `currentManifest` in the rollback plan. Compatibility review and rollback approval remain separate.
+The application payload now includes installer and rollback tooling under `installer/`, including both shared helpers. The installer prepares a separate self-contained rollback bundle before swapping releases; it does not execute rollback. Use the automatic pair as `previousManifest` and `currentManifest` in the rollback plan. Compatibility review and rollback approval remain separate.
 
 ### Optional manual capture
 
 For additional inspection or packages installed without the updated installer, manual capture remains available. From a directory outside the release being captured, before forward deployment:
 
 ```bash
-node /path/to/operator-checkout/scripts/rollbackTransactionCategoryStorage.mjs \
+node /path/to/operator-checkout/installer/rollbackTransactionCategoryStorage.mjs \
   --capture-release /spendcraft-prod/server/spendcraft
 ```
 
@@ -74,17 +74,17 @@ Capture the new installed release after deployment, or capture the fully prepare
 Compare the two manifests without a database connection:
 
 ```bash
-node /path/to/operator-checkout/scripts/rollbackTransactionCategoryStorage.mjs \
+node /path/to/operator-checkout/installer/rollbackTransactionCategoryStorage.mjs \
   --compare-manifests \
   --current-manifest /absolute/current/release-manifest.json \
   --previous-manifest /absolute/previous/release-manifest.json
 ```
 
-`release-differences.json` contains the sorted changed path list and its SHA-256. Review the actual corresponding source and runtime changes, not merely the path list. Exact manifest identities already bind each file's contents. Copy the reviewed list fingerprint into the plan. The unchanged `config/database.js` file's SHA-256 is available in either manifest's `files` list.
+`release-differences.json` contains the sorted changed path list and its SHA-256. Review the actual corresponding source and runtime changes, not merely the path list. Exact manifest identities already bind each file's contents. The installer records this fingerprint automatically; review the actual differences before executing rollback. The unchanged `config/database.js` file's SHA-256 is available in either manifest's `files` list.
 
 ## Explicit plan
 
-Create a private operator JSON plan. Paths and identities below are illustrative; replace them with reviewed actual values. Never put a password in this plan. The selected external `.env` must contain `PG_HOST`, `PG_PORT`, `PG_USER`, `PG_PASSWORD` and `PG_DB_NAME`. Ambient PG variables cannot override these connection fields.
+The installer generates the private operational JSON plan automatically. The following example documents its fields; operators do not need to assemble it manually. Paths and identities below are illustrative. Never put a password in this plan. The selected external `.env` must contain `PG_HOST`, `PG_PORT`, `PG_USER`, `PG_PASSWORD` and `PG_DB_NAME`. Ambient PG variables cannot override these connection fields.
 
 ```json
 {
@@ -121,11 +121,11 @@ Create a private operator JSON plan. Paths and identities below are illustrative
     },
     {
       "name": "queue",
-      "script": "/spendcraft-prod/server/queue.sh",
+      "script": "/spendcraft-prod/server/spendcraft/ace.js",
       "scriptSha256": "REPLACE_WITH_64_HEX_DIGITS",
-      "cwd": "/spendcraft-prod/server",
-      "interpreter": "/bin/bash",
-      "args": []
+      "cwd": "/spendcraft-prod/server/spendcraft",
+      "interpreter": "node",
+      "args": ["queue:listener"]
     },
     {
       "name": "plaid-cleanup",
@@ -139,7 +139,7 @@ Create a private operator JSON plan. Paths and identities below are illustrative
 }
 ```
 
-Use exact saved/live PM2 metadata; the interpreter example may differ on the host. Only standalone fork-mode processes without an explicit `instances` property are supported. The wrapper hash is independent of a package manifest because it lives outside the release. Production process names are exactly `prod-server`, `queue`, `plaid-cleanup`. Sandbox names are exactly `sandbox-prod-server`, `sandbox-queue`, `sandbox-plaid-cleanup`. Sandbox also requires a separate PM2 home/daemon; renamed processes in the production PM2 home are insufficient isolation. A wrong name is never interpreted as permission to stop an unrelated application.
+Use exact saved/live PM2 metadata; the interpreter example may differ on the host. Only standalone fork-mode processes with `instances` absent or numeric `1` are supported. Cluster mode, multiple instances and ambiguous instance values are rejected. The wrapper hash is independent of a package manifest because it lives outside the release. New generated plans derive process names from each release manifest; the current manifest declares `queue`, `plaid-cleanup`, `prod-server`. Legacy explicit sandbox plans use isolated prefixed names. Sandbox also requires a separate PM2 home/daemon; renamed processes in the production PM2 home are insufficient isolation. A wrong name is never interpreted as permission to stop an unrelated application.
 
 Only explicit loopback PostgreSQL TCP endpoints are supported in this first version. Set expected server/client IPs to the verified actual IPv4 or IPv6 loopback identities. A socket connection, missing peer, mismatched database/user/port or unresolved ambiguity is rejected. No production target is inferred, and no prior `spendcraft_test` authorization is reused.
 
@@ -148,7 +148,7 @@ Only explicit loopback PostgreSQL TCP endpoints are supported in this first vers
 Only after separate read-only authorization for the selected environment:
 
 ```bash
-node /path/to/operator-checkout/scripts/rollbackTransactionCategoryStorage.mjs \
+node /path/to/operator-checkout/installer/rollbackTransactionCategoryStorage.mjs \
   --plan /absolute/rollback-plan.json --dry-run
 ```
 
@@ -156,14 +156,14 @@ Dry-run validates manifests, reviewed differences, `.env`, both application conn
 
 Outputs: `preflight.json`, `release-differences.json`, concise stdout summary, `summary.json`, and `transactions.jsonl` with affected IDs/conversion counts or sanitized rejection reasons. No credentials or allocation comments are logged. Malformed and ambiguous records are separate counts, produce a nonzero exit and block execution. Unsupported/deprecated types are excluded; ambiguous ownership inside supported active lifecycles fails closed. The existing active boundary's nondeprecated ownership rules are retained.
 
-All modes create unique output directories and exclusive result files; no prior results are overwritten. Even a failed preflight preserves whatever evidence was produced. If invoked from inside an installed release, results are placed in a sibling directory, so reporting does not change the release being inspected. Running the operator checkout outside both releases remains recommended.
+All modes create unique output directories and exclusive result files; no prior results are overwritten. Even a failed preflight preserves whatever evidence was produced. If invoked from inside an installed release, results are placed in a sibling directory, so reporting does not change the release being inspected. Run from a stable maintenance directory outside both releases and outside the immutable bundle, using an absolute path to the bundled executor.
 
 ## Execution — separate approval required
 
 Do not run this during preparation. After a successful sandbox rehearsal and explicit production authorization:
 
 ```bash
-node /path/to/operator-checkout/scripts/rollbackTransactionCategoryStorage.mjs \
+node /path/to/operator-checkout/installer/rollbackTransactionCategoryStorage.mjs \
   --plan /absolute/rollback-plan.json --execute
 ```
 
@@ -221,7 +221,7 @@ Dataset safety caps are 100,000 examined Transactions, 10,000 patches per Transa
 
 ## Changed files and verification
 
-New tooling: `scripts/rollbackTransactionCategoryStorage.mjs`, `scripts/lib/categoryRollback.mjs`; new tests: `tests/unit/transactionCategoryRollback.spec.js`; this rollback document updated. Existing staged installer/deployment work is preserved and not staged again. Test/static results are recorded after final verification below.
+New tooling: `installer/rollbackTransactionCategoryStorage.mjs`, `installer/lib/categoryRollback.mjs`; new tests: `tests/unit/transactionCategoryRollback.spec.js`; this rollback document updated. Existing staged installer/deployment work is preserved and not staged again. Test/static results are recorded after final verification below.
 
 ### Rollback preparation verification (before installer integration)
 
@@ -237,6 +237,278 @@ New tooling: `scripts/rollbackTransactionCategoryStorage.mjs`, `scripts/lib/cate
 - 98 focused non-database tests passed, 0 failures/skips: 10 installer-manifest cases, 78 rollback cases and 10 existing seeding cases. Tests execute the actual installer swap excerpt with inert node/rm/mv substitutes, verifying capture failure prevents deletion/swap, plus filesystem-only fixture captures and real capture CLI invocation. Fresh installations, unique records, previous/current validation, missing provenance and dirty build metadata are covered.
 - Both TypeScript projects, ESLint, Knip, circular regression, shell/Node syntax checks and both diff checks passed.
 - `./build.sh` succeeded, including Vite client assets and server compilation. Repeated build succeeded; packaged capture/helper files are byte-identical to their sources, and `build/release-source.json` records actual HEAD with `dirty: true`. Existing Vite chunk-size warning remains; no build failure.
-- Integration changes: `install.sh0`, `build.sh`, `adonisrc.ts`; new `scripts/captureDeploymentManifests.mjs`, shared `scripts/lib/releaseManifest.mjs` and `tests/unit/installerManifests.spec.js`. Rollback script now imports/re-exports the extracted shared manifest function without changing its hashing/validation behavior. This document describes the automatic records.
+- Integration changes: `install.sh0`, `build.sh`, `adonisrc.ts`; new `installer/captureDeploymentManifests.mjs`, shared `installer/lib/releaseManifest.mjs` and `tests/unit/installerManifests.spec.js`. Rollback script now imports/re-exports the extracted shared manifest function without changing its hashing/validation behavior. This document describes the automatic records.
 - The staged snapshot SHA-256 remains `cb9654a75ae267226c878168f048abe5a880081ee9a4ff43f5c2cfbb34037a6a`. All integration edits remain unstaged; `install.sh0` has both the original staged changes and these new unstaged changes. No index modification or commit occurred.
 - No actual installer/deployment, PostgreSQL connection, PM2 operation or historical conversion occurred. Only local builds and isolated temporary fixture operations ran. Full installed-host rehearsal remains separately authorized operational work.
+
+
+## Release-bundled operator tooling
+
+The installer calls `installer/captureDeploymentManifests.mjs --root "$PWD" --prepare-rollback-bundle` after migration/seeding decisions and before deleting `spendcraft.old` or swapping releases. Capture itself remains filesystem-only; adding the flag additionally prepares the stable bundle:
+
+```text
+$SPENDCRAFT_ROOT/maintenance/rollback/<current-manifest-identity>/
+  rollbackTransactionCategoryStorage.mjs
+  prepareRollbackBundle.mjs
+  lib/categoryRollback.mjs
+  lib/releaseManifest.mjs
+  package.json
+  node_modules/pg/             # installed pure-JavaScript runtime dependency closure
+  bundle.json                  # release identity, source metadata and file hashes
+  README.md
+```
+
+The identity is the complete prepared-release manifest identity, including dirty-build bytes, not just a Git commit or package version. Existing bundles are never overwritten: an identical verified bundle is reused; corruption or conflicting contents stops installation. Preparation happens in a private `.prepare-*` directory; failed preparation remains evidence and is never used as a published bundle. Final publication uses an atomic directory rename and directory sync. Installation is a single-operator procedure; do not run concurrent installers or edit files during capture/packaging. No new application lock, database operation or rollback execution is introduced.
+
+Dependencies are copied from the prepared release's installed packages using their actual runtime dependency graph. Required dependencies/required peers are included; available optional dependencies are included. Optional peers (notably native `pg-native`) are not required for the pure-JavaScript client. Package lifecycle scripts and network installation are not run. The bundle verifies that its isolated `pg` import exposes `Client` without constructing a client or connecting. It contains no .env, application credentials, database backup or private rollback plan. Node.js, PostgreSQL command-line tools, PM2 and the reviewed host/recovery prerequisites are still required on the host.
+
+Verify integrity from the bundle directory without touching a database:
+
+```bash
+node --input-type=module -e 'import {verifyRollbackBundle} from "./prepareRollbackBundle.mjs"; await verifyRollbackBundle("."); console.log("Bundle verified")'
+```
+
+Store plans and execution outputs outside the immutable bundle. From a stable maintenance working directory, use the **actual identity printed at installation**, for example:
+
+```bash
+node "$SPENDCRAFT_ROOT/maintenance/rollback/<current-manifest-identity>/rollbackTransactionCategoryStorage.mjs" --help
+# After separate authorization and preparation of a reviewed plan:
+node "$SPENDCRAFT_ROOT/maintenance/rollback/<current-manifest-identity>/rollbackTransactionCategoryStorage.mjs" \
+  --plan /absolute/private/rollback-plan.json --dry-run
+# --execute remains a separately authorized, explicitly confirmed operation.
+```
+
+Packaging does not certify compatibility with a future release, authorize any database access, or approve the operational plan. A separate post-startup installer step generates that plan. Review new manifest/difference hashes for every release and rehearse on staging before execution. Application directory swaps do not remove or rename the maintenance bundle. Never automatically rotate/delete older bundles; retention is a separate operator decision. Earlier records used root `scripts/` paths; source paths now live under `installer/`.
+
+## Automatic bundle selection with rollback.sh
+
+The preferred entry point after installation is:
+
+```bash
+"$SPENDCRAFT_ROOT/maintenance/rollback.sh" --dry-run
+# Only with separately granted execution authorization:
+"$SPENDCRAFT_ROOT/maintenance/rollback.sh" --execute
+```
+
+The installer publishes an executable managed shell wrapper and a versioned,
+verified Node launcher under `maintenance/rollback/launcher-<launcher-id>/`.
+Existing launcher versions remain available. Updating the managed wrapper is an
+atomic file replacement; a manually edited/unrecognized wrapper is not silently
+overwritten. Installation fails closed on launcher preparation or integrity errors.
+No default rollback mode exists; exactly one of the two modes is required.
+
+The installer generates the operational plan at
+`$SPENDCRAFT_ROOT/maintenance/rollback-plan.json` with mode 0600 after swapping
+releases and starting/saving PM2. No manual JSON assembly is required. Generation
+captures facts; it does not approve compatibility, declare writers stopped, or
+execute rollback. Stale/foreign plans remain rejected. No plan argument or manual
+bundle selection is needed at launch time.
+
+The launcher derives the installation root from the installed shell location and
+rejects a conflicting SPENDCRAFT_ROOT. It hashes the actual installed `spendcraft`
+using the established manifest algorithm, selects **only** the bundle whose
+release ID matches, verifies every bundle file, and binds the fixed plan's current
+manifest to that same identity. Missing/corrupt bundles or stale/foreign plans stop
+without executing a child. It never picks the newest bundle or falls back to an
+older one. The bundled executor independently checks its integrity and release
+binding before database connections and checks the binding again during release
+preflight. Existing prior-release, schema, database, PM2, maintenance, recovery and
+explicit confirmation checks remain in force. Source-checkout execution remains
+available with an explicit reviewed plan and its existing safeguards.
+
+The verified executor runs with its terminal attached, so interactive execution
+confirmation still works. It receives the fixed plan path and selected mode; exit
+status is propagated. The launcher removes NODE_OPTIONS, NODE_PATH and
+NODE_PG_FORCE_NATIVE from the child's environment to prevent ambient loader/native
+settings from bypassing the isolated pure-JavaScript dependency bundle. Results
+and journals remain outside the immutable bundle. Selection and launcher checks
+are filesystem-only; --dry-run itself still performs separately authorized
+read-only database inspection. Packaging/launch availability is not authorization
+to inspect or modify a database.
+
+The versioned launcher contains `launchRollback.mjs`, the shared filesystem release
+manifest/integrity helpers, its managed shell copy and `launcher.json`. This is
+separate from release-specific `<release-id>/` bundle directories. Both the
+rollback integrity helper and file inventory are shared with packaging to avoid
+conflicting verification rules. No service restart or rollback is performed by
+installing the launcher.
+
+## EC2 staging and production targets
+
+Both installed EC2 environments use the same launcher:
+
+```bash
+"$SPENDCRAFT_ROOT/maintenance/rollback.sh" --dry-run
+"$SPENDCRAFT_ROOT/maintenance/rollback.sh" --execute
+```
+
+Each installer generates its own `maintenance/rollback-plan.json`, setting
+`environment` to `production` or `staging`. No machine ID is required;
+the plan remains applicable when the installation disks move to a replacement
+EC2 instance. Reverify the installation paths, release manifests, database
+identity and PM2 definitions after any move. Never copy a production plan
+unchanged to staging.
+
+For staging, set `root` to the actual staging root (currently
+`/spendcraft_staging/server`), `envFile` to its own reviewed environment file,
+and use staging's verified database/user/port in `expected`. No staging database
+name or port is inferred. `productionRoot` still names the production installation
+root for path exclusion; staging root and environment file must not overlap it.
+The test and local sandbox database names are rejected for EC2 staging.
+
+Both EC2 environments use installer process names `prod-server`, `queue`,
+and `plaid-cleanup`, with exact local script paths, working directories and
+hashes in the plan. Separate EC2 hosts may both use `/home/ubuntu/.pm2`;
+`productionPm2Home` remains required, but staging does not apply same-machine
+sandbox PM2-home exclusion. Exact release matching, process definitions and existing
+live PM2 checks protect selection. Production retains its matching PM2-home rule.
+Local `sandbox` mode retains its separate root, database, PM2 home and prefixed
+process-name requirements.
+
+Use the staging health URL (or a reviewed local endpoint) for `smokeUrl`;
+do not point staging health checks at production. All backup, maintenance,
+release-manifest, database identity, confirmation, conversion and recovery gates
+remain required. This change was tested locally with mock connections and
+temporary files; no server access, conversion or rollback was performed.
+
+## Automatic operational plan generation
+
+`installer/generateRollbackPlan.mjs --root ABSOLUTE_ROOT --target production|staging`
+is called automatically after the release swap and `pm2 save`, before final Nginx
+reload. It discovers the exact captured deployment record matching both installed
+releases, shared environment-file path, local PM2 executable/home and the three
+allowlisted process definitions. It hashes actual scripts and database config,
+uses `APP_URL` for health checks, and validates existing release compatibility
+rules. It never stores `.env` contents, passwords, or PM2 environment maps.
+
+The helper creates a unique private `maintenance/rollback-plan-generation-*`
+directory and prints its absolute path before database work. It verifies the
+application pg/pgLog configuration and opens three independent read-only
+connections using the existing PG fields. Configured/live database, user, port,
+and loopback server/peer checks remain mandatory. Read-only SELECTs discover the
+actual IPv4/IPv6 loopback identities; no financial records are queried. Generation
+executes no conversion, migrations, backups, PM2 stop/restart or application swap.
+The installer's ordinary startup has already occurred at this point.
+
+It saves a private plan and release-difference report in that output directory,
+archives any previous active plan there, and atomically publishes the new active
+plan. Symlink destinations are rejected. Failed discovery stops the installer
+before final Nginx reload and prints a safe diagnostic; already-started processes
+are not automatically stopped or reverted. A prior active plan is not valid for
+a different release. Preserve the printed output and investigate before retrying.
+
+A fresh installation has no rollback target: the helper publishes an unavailable
+marker rather than inventing a previous release. Likewise a release pair outside
+this first decimal-string rollback's supported scope (including changed schema
+files/configuration or secret links) gets an explicit unavailable marker. The
+launcher rejects those markers. Such an installation is not rollback-ready;
+a separate rollback design may be needed. Other unexpected validation failures
+abort plan generation rather than publishing a usable plan.
+
+On `--execute`, an automatically generated plan adds a `READY` confirmation
+requiring review of the output's `release-differences.json`, compatibility,
+external traffic/writer fencing, disabled PM2 schedules and backup recovery
+understanding. The exact database/previous-release confirmation still follows.
+The generated maintenance/recovery text is a checklist, not evidence of completed
+operator actions. Dry-run never prompts for these execution approvals. Existing
+live writer checks, PM2 runtime checks, fresh verified backup and atomic conversion
+remain mandatory. Backup readiness is established at rollback time, not assumed
+from installation-time backup age. No rollback or database access was performed
+while developing this helper; staging testing is still required.
+
+### Plan generation diagnostics
+
+Failures report a JSON diagnostic containing the failing phase and sanitized error
+code. PostgreSQL SQLSTATE codes (including digit-prefixed codes such as `28P01`)
+are retained. Command failures include a numeric exit code when available; parser
+failures report `invalid_json`. Raw exception messages, PM2 output, child stderr,
+SQL and credentials are not printed. For example, `connect-database-1` identifies
+connection failure; `parse-pm2-state` identifies non-JSON PM2 stdout. Share only
+the diagnostic and output-directory path, never `.env` or full `pm2 jlist` output.
+Do not rerun the entire installer just to obtain diagnostics: updated tooling can
+rerun plan generation alone against the installed releases (read-only database
+identity access and private local plan/report writes), after the appropriate
+environment authorization. A prior `unclassified_error` alone does not establish
+the production/staging root cause.
+
+### PM2 single-instance metadata correction
+
+Staging discovery reported `prod-server` as `fork_mode` with numeric `instances: 1`.
+This is supported single-process metadata. Plan generation and every live/saved
+PM2 selection now share `isSingleForkProcess`, accepting an absent instance field
+or numeric 1 while rejecting cluster mode, zero/multiple instances, strings and
+null. Duplicate process names still fail; stopped-state/cron/PID/path checks remain.
+The immutable installed rollback bundle must not be patched in place. External
+updated tooling can diagnose/generate a plan, but a corrected packaged executor
+must be installed through the established release/bundle procedure before treating
+actual rollback as verified. No server-side process setting needs changing merely
+to remove PM2's normal `instances: 1` field.
+
+## Release-owned PM2 definitions
+
+The authoritative deployment configuration is now
+`installer/pm2-processes.json`, supported by `installer/lib/pm2Processes.mjs`.
+The installer reads it through `installer/managePm2.mjs`; shell process-name lists
+and per-process start/restart branches have been removed. The JSON and shared
+helper are included in the immutable rollback bundle and verified by its file
+inventory, as well as in each release's complete manifest.
+
+Automatically generated plans contain current `processes`, `previousProcesses`,
+and hashes of both parsed process manifests. Definitions include script hashes,
+absolute resolved paths and the manifest settings; only allowlisted metadata is
+captured. Current live PM2 state must match the current manifest before generating
+a plan. Rollback rereads both exact installed release manifests and verifies
+both process inventories before any stop or conversion. It stops the current
+release set, deletes its stopped PM2 definitions after restoration approval,
+and creates the previous release set with its original script/args/timeout/delay
+settings. Cron restart is suppressed throughout maintenance. Partial startup
+failures stop the managed current/previous processes that remain; they never
+trigger an automatic database restore or an unreviewed restart.
+
+Existing manually reviewed plans retain their explicit captured process inventory
+for compatibility; new installer-generated plans require the current release-owned
+JSON manifest and use the previous manifest when present, never inferring
+previous definitions from current names. A pre-manifest
+previous release records `manualRestart: true`, retaining all other compatibility
+and database checks; successful restoration leaves managed processes stopped for
+operator-controlled startup and verification. This does not make the original
+first-decimal-string conversion rollback generic: its existing monetary release
+pair restriction, backup, writer-fence, database identity and confirmation gates
+still apply. No existing installed manifest/bundle is silently rewritten.
+
+Validation covered the actual current manifest, both single-instance PM2 forms,
+foreign/duplicate/unexpected processes, old/new name unions, changed arguments,
+previous-release startup, schedule suppression, failed replacement and exact plan
+binding. Tests use mocks and temporary directories only. Real PM2 installation,
+service shutdown, database conversion and rollback were not executed.
+
+## Legacy target without a PM2 manifest: manual startup
+
+The operator-approved fallback distinguishes a missing file from an invalid file.
+Missing previous `installer/pm2-processes.json` now produces a generated plan with
+`manualRestart: true`, no `previousProcesses` and no previous process-manifest
+hash. Invalid JSON/schema or access failures still stop plan generation. Exact
+release identities remain mandatory, and rollback rechecks that the previous
+manifest is absent; it does not silently fall back if a declared manifest changes.
+
+For an otherwise supported rollback, current processes are still stopped from the
+current manifest, persisted stopped twice, fenced and backed up before conversion.
+After atomic conversion and verified release restoration, orchestration journals
+`manual-restart-required` and returns without calling restart or smoke. It does
+not journal `complete` or announce fully completed rollback. The operator must
+review the restored release and determine how to start it, verify service health,
+transactions/reports/provider errors, review saved PM2 startup definitions and
+schedules, then resume traffic manually. Do not use `pm2 restart all` on saved
+new-release definitions without this review. Incomplete/manual journals require
+recovery review before any later automated rollback.
+
+This startup policy does not waive the first-decimal-string release-pair rule,
+schema compatibility, fresh backup, explicit execution approvals or historical
+nonrepair requirements. A release pair with both versions already supporting
+decimal strings remains outside the conversion rollback's scope.
+
+Separately, the installer now uses `pm2 stop all` in the selected daemon when the
+currently installed release lacks a process manifest. This may stop unrelated
+applications in that same daemon, by explicit operator policy. Only incoming
+manifest processes are started automatically; others remain stopped for operator
+review. No process was actually stopped or started during development/testing.

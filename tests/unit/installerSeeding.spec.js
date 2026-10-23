@@ -62,7 +62,7 @@ test.group('Installer operator seeding decision (no database)', () => {
     const call = source.indexOf('\nseed_database\n')
     assert.isAbove(call, source.indexOf('\nnode ace migration:run\n'))
     assert.isBelow(call, source.indexOf('mv $APP_NEW $APP'))
-    assert.isBelow(call, source.indexOf('pm2 restart queue'))
+    assert.isBelow(call, source.indexOf('--action start'))
     assert.notInclude(source, 'all pending migrations plus db:seed are approved')
   })
 })

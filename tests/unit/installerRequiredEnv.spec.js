@@ -7,7 +7,7 @@ import { spawnSync } from 'node:child_process'
 import { parseEnv } from 'node:util'
 import { URL } from 'node:url'
 import { EnvParser } from '@adonisjs/core/env'
-import { configureRequiredEnvironment, selectRequirements, encodeAnswer } from '../../scripts/configureInstallerEnv.mjs'
+import { configureRequiredEnvironment, selectRequirements, encodeAnswer } from '../../installer/configureInstallerEnv.mjs'
 
 const metadata = [
   { type: 'prompt', name: 'SMTP_PASSWORD', prompt: 'SMTP password', secret: true, allowEmpty: false },
@@ -102,7 +102,7 @@ test.group('Installer required settings (temporary configuration only)', (group)
       assert.deepEqual(await configureRequiredEnvironment({ ...options, target, ask }), [])
       assert.equal(await readFile(join(root, 'shared-env'), 'utf8'), contents)
       await writeFile(join(root, 'shared-env'), '')
-      const result = spawnSync(process.execPath, [resolve('scripts/configureInstallerEnv.mjs'), '--target', target, '--env-file', options.envFile, '--requirements', options.requirementsFile], { encoding: 'utf8' })
+      const result = spawnSync(process.execPath, [resolve('installer/configureInstallerEnv.mjs'), '--target', target, '--env-file', options.envFile, '--requirements', options.requirementsFile], { encoding: 'utf8' })
       assert.equal(result.status, 0, result.stderr)
       assert.equal(parseEnv(await readFile(join(root, 'shared-env'), 'utf8')).PLAID_ENV, expected)
     })
@@ -124,7 +124,7 @@ test.group('Installer required settings (temporary configuration only)', (group)
     })
   test('missing inputs cannot be collected without a TTY', async ({ assert }) => {
     const options = await fixture('')
-    const result = spawnSync(process.execPath, [resolve('scripts/configureInstallerEnv.mjs'), '--target', 'staging', '--env-file', options.envFile, '--requirements', options.requirementsFile], { encoding: 'utf8' })
+    const result = spawnSync(process.execPath, [resolve('installer/configureInstallerEnv.mjs'), '--target', 'staging', '--env-file', options.envFile, '--requirements', options.requirementsFile], { encoding: 'utf8' })
     assert.equal(result.status, 1)
     assert.include(result.stderr, 'Interactive terminal required')
     assert.equal(await readFile(join(root, 'shared-env'), 'utf8'), '')
@@ -165,7 +165,7 @@ while time.monotonic()<deadline:
 if child.poll() is None:child.kill()
 code=child.wait();os.close(master)
 print(json.dumps({'code':code,'answers':sent,'visible':visible,'masked':b'***********************' in transcript,'secretEchoed':b'synthetic-hidden-secret' in transcript}))
-`, process.execPath, resolve('scripts/configureInstallerEnv.mjs'), options.envFile, options.requirementsFile, scenario], { encoding: 'utf8', timeout: 12000 })
+`, process.execPath, resolve('installer/configureInstallerEnv.mjs'), options.envFile, options.requirementsFile, scenario], { encoding: 'utf8', timeout: 12000 })
       assert.equal(result.status, 0, result.stderr)
       const observed = JSON.parse(result.stdout)
       assert.isTrue(observed.visible, 'Prompt must remain visible after readline clears/redraws the terminal')
@@ -297,9 +297,9 @@ print(json.dumps({'code':code,'answers':sent,'visible':visible,'masked':b'******
   ]).run(({ assert }, value) => assert.throws(() => selectRequirements(value, 'staging')))
   test('installer packages metadata/helper and generates keys before prompts, backups, migrations and process startup', async ({ assert }) => {
     const config = await readFile('adonisrc.ts', 'utf8')
-    for (const file of ['installer/installer.env.required.json', 'scripts/configureInstallerEnv.mjs']) assert.include(config, `pattern: '${file}'`)
+    for (const file of ['installer/installer.env.required.json', 'installer/configureInstallerEnv.mjs']) assert.include(config, `pattern: '${file}'`)
     const source = await readFile('installer/install.sh0', 'utf8')
-    const call = source.indexOf('\nnode scripts/configureInstallerEnv.mjs')
+    const call = source.indexOf('\nnode installer/configureInstallerEnv.mjs')
     assert.isAbove(call, source.indexOf('\nnpm ci --omit dev --omit optional'))
     assert.notInclude(source, 'ensure_env_defaults')
     assert.isAbove(call, source.indexOf('\nensure_app_key\n'))

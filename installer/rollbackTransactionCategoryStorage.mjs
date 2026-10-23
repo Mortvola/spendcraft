@@ -1,7 +1,7 @@
 // Offline, release-specific operator tooling. Never imported by the application.
 import process from 'node:process'
 import console from 'node:console'
-import { pathToFileURL, URL } from 'node:url'
+import { pathToFileURL, fileURLToPath, URL } from 'node:url'
 import { parseArgs, parseEnv } from 'node:util'
 import { createHash } from 'node:crypto'
 import { Buffer } from 'node:buffer'
@@ -13,6 +13,8 @@ import { setTimeout as delay } from 'node:timers/promises'
 import { createInterface } from 'node:readline/promises'
 import { assertClean, assertSchema, convert, orchestrate, scan, swapDirectories } from './lib/categoryRollback.mjs'
 
+import { verifyRollbackBundle } from './lib/rollbackBundleIntegrity.mjs'
+import { readProcessManifest, processDefinitions, replaceProcesses, matchesDefinition } from './lib/pm2Processes.mjs'
 import { releaseManifest, secretLinks } from './lib/releaseManifest.mjs'
 export { releaseManifest } from './lib/releaseManifest.mjs'
 const sha = (value) => createHash('sha256').update(value).digest('hex')
@@ -37,20 +39,26 @@ export function releaseDifferences(current, previous) {
 }
 
 export function validatePlan(plan) {
-  if (!['production', 'sandbox'].includes(plan.environment) || !isAbsolute(plan.root ?? '')
+  if (!['production', 'staging', 'sandbox'].includes(plan.environment) || !isAbsolute(plan.root ?? '')
     || !isAbsolute(plan.productionRoot ?? '') || !isAbsolute(plan.envFile ?? '')) throw new Error('invalid_plan_paths')
   if (plan.environment === 'sandbox' && (inside(plan.productionRoot, plan.root) || inside(plan.root, plan.productionRoot)
     || inside('/spendcraft-prod/server', plan.root) || inside(plan.root, '/spendcraft-prod/server')
     || inside('/spendcraft-prod/server', plan.envFile)
     || plan.expected?.database !== 'spendcraft_sandbox')) throw new Error('sandbox_not_isolated')
+  if (plan.environment === 'staging' && (inside(plan.productionRoot, plan.root) || inside(plan.root, plan.productionRoot)
+    || inside('/spendcraft-prod/server', plan.root) || inside(plan.root, '/spendcraft-prod/server')
+    || inside(plan.productionRoot, plan.envFile) || inside('/spendcraft-prod/server', plan.envFile)
+    || ['spendcraft_sandbox', 'spendcraft_test'].includes(plan.expected?.database))) {
+    throw new Error('staging_not_isolated')
+  }
   if (plan.environment === 'production' && (plan.root !== plan.productionRoot
     || ['spendcraft_sandbox', 'spendcraft_test'].includes(plan.expected?.database))) throw new Error('production_target_mismatch')
   if (![plan.pm2Executable, plan.pm2Home, plan.productionPm2Home].every((path) => typeof path === 'string' && isAbsolute(path))) {
     throw new Error('explicit_pm2_paths_required')
   }
-  if (plan.environment === 'production' ? plan.pm2Home !== plan.productionPm2Home
-    : inside(plan.productionPm2Home, plan.pm2Home) || inside(plan.pm2Home, plan.productionPm2Home)
-      || inside('/home/ubuntu/.pm2', plan.pm2Home) || inside(plan.pm2Home, '/home/ubuntu/.pm2')) {
+  if ((plan.environment === 'production' && plan.pm2Home !== plan.productionPm2Home)
+    || (plan.environment === 'sandbox' && (inside(plan.productionPm2Home, plan.pm2Home) || inside(plan.pm2Home, plan.productionPm2Home)
+      || inside('/home/ubuntu/.pm2', plan.pm2Home) || inside(plan.pm2Home, '/home/ubuntu/.pm2')))) {
     throw new Error('pm2_home_not_isolated')
   }
   const expected = plan.expected
@@ -65,12 +73,17 @@ export function validatePlan(plan) {
   }
   if (plan.maintenanceStatement !== 'All external writers, schedulers and traffic are fenced for this operation'
     || typeof plan.recoveryProcedure !== 'string' || plan.recoveryProcedure.trim().length < 40) throw new Error('operational_review_required')
-  if (!Array.isArray(plan.processes) || plan.processes.length !== 3) throw new Error('exact_process_inventory_required')
-  const names = plan.processes.map((item) => item.name)
-  const required = plan.environment === 'production' ? ['prod-server', 'queue', 'plaid-cleanup']
-    : ['sandbox-prod-server', 'sandbox-queue', 'sandbox-plaid-cleanup']
-  if (JSON.stringify([...names].sort()) !== JSON.stringify(required.sort())) throw new Error('invalid_pm2_selection')
-  for (const item of plan.processes) {
+  if (!Array.isArray(plan.processes) || !plan.processes.length || plan.processes.length > 32) throw new Error('exact_process_inventory_required')
+  if (plan.manualRestart !== undefined && typeof plan.manualRestart !== 'boolean') throw new Error('invalid_manual_restart_policy')
+  if (plan.manualRestart && (plan.previousProcesses !== undefined || plan.previousProcessManifestSha256 !== undefined)) throw new Error('conflicting_restart_policy')
+  if (plan.previousProcesses !== undefined && (!Array.isArray(plan.previousProcesses)
+    || !plan.previousProcesses.length || plan.previousProcesses.length > 32)) throw new Error('invalid_previous_process_inventory')
+  for (const definitions of [plan.processes, ...(plan.previousProcesses ? [plan.previousProcesses] : [])]) {
+    const names = definitions.map((item) => item.name)
+    if (names.some((name) => typeof name !== 'string' || !/^[a-z][a-z0-9-]*$/.test(name))
+      || new Set(names).size !== names.length) throw new Error('invalid_pm2_selection')
+  }
+  for (const item of [...plan.processes, ...(plan.previousProcesses ?? [])]) {
     if (![item.script, item.cwd].every((path) => typeof path === 'string' && isAbsolute(path))
       || !(typeof item.interpreter === 'string' && (isAbsolute(item.interpreter) || ['node', 'bash'].includes(item.interpreter)))
       || !inside(plan.root, item.script) || !inside(plan.root, item.cwd) || !Array.isArray(item.args)
@@ -127,6 +140,12 @@ export function assertConfirmation(answer, expected) {
   if (typeof expected !== 'string' || !expected || answer !== expected) throw new Error('confirmation_declined')
 }
 
+// PM2 may explicitly record its default single instance in fork-mode metadata.
+export function isSingleForkProcess(definition) {
+  return definition?.exec_mode === 'fork_mode'
+    && (definition.instances === undefined || definition.instances === 1)
+}
+
 export function selectProcesses(entries, definitions) {
   return definitions.map((definition) => {
     const matches = entries.filter((entry) => entry.name === definition.name)
@@ -134,9 +153,7 @@ export function selectProcesses(entries, definitions) {
     const processEntry = matches[0]
     const env = processEntry.pm2_env
     const args = env.args === undefined ? [] : env.args
-    if (env.pm_exec_path !== definition.script || env.pm_cwd !== definition.cwd
-      || env.exec_interpreter !== definition.interpreter || JSON.stringify(args) !== JSON.stringify(definition.args)
-      || env.exec_mode !== 'fork_mode' || env.instances !== undefined) {
+    if (!matchesDefinition({ ...env, args }, definition) || !isSingleForkProcess(env)) {
       throw new Error('pm2_definition_mismatch')
     }
     if (env.cron_restart) throw new Error('disable_pm2_cron_during_maintenance')
@@ -240,10 +257,20 @@ async function syncDirectory(path) {
   try { await directory.sync() } finally { await directory.close() }
 }
 
+export async function assertExecutorBundle(plan, directory = dirname(fileURLToPath(import.meta.url)), currentIdentity) {
+  if (!await exists(join(directory, 'bundle.json'))) return
+  const manifest = await verifyRollbackBundle(directory)
+  const expected = JSON.parse(await readFile(plan.currentManifest, 'utf8'))
+  const current = currentIdentity ?? (await releaseManifest(join(plan.root, 'spendcraft'))).identity
+  if (expected.format !== 1 || expected.identity !== sha(JSON.stringify(expected.files))
+    || manifest.releaseId !== expected.identity || manifest.releaseId !== current) throw new Error('rollback_bundle_release_mismatch')
+}
+
 export async function verifyReleases(plan, output) {
   if (await realpath(plan.root) !== plan.root || inside(join(plan.root, 'spendcraft'), output)
     || inside(join(plan.root, 'spendcraft.old'), output)) throw new Error('unsafe_root_or_output_path')
   const current = await releaseManifest(join(plan.root, 'spendcraft'))
+  await assertExecutorBundle(plan, undefined, current.identity)
   const previous = await releaseManifest(join(plan.root, 'spendcraft.old'))
   for (const [actual, file] of [[current, plan.currentManifest], [previous, plan.previousManifest]]) {
     const expected = JSON.parse(await readFile(file, 'utf8'))
@@ -267,12 +294,34 @@ export async function verifyReleases(plan, output) {
     if (JSON.stringify(currentFiles.get(key)) !== JSON.stringify(oldFiles.get(key))) throw new Error('secret_link_difference')
   }
   if (currentFiles.get('.env')?.target !== await realpath(plan.envFile)) throw new Error('env_file_not_application_env')
+  if (plan.generated) {
+    for (const [release, definitions, expectedHash] of [
+      [join(plan.root, 'spendcraft'), plan.processes, plan.processManifestSha256],
+      [join(plan.root, 'spendcraft.old'), plan.previousProcesses, plan.previousProcessManifestSha256],
+    ]) {
+      if (release === join(plan.root, 'spendcraft.old') && plan.manualRestart) {
+        try { await readProcessManifest(release) }
+        catch (error) { if (error.code === 'ENOENT') continue; throw error }
+        throw new Error('previous_process_manifest_now_present')
+      }
+      const manifest = await readProcessManifest(release)
+      if (sha(JSON.stringify(manifest)) !== expectedHash || !Array.isArray(definitions)) throw new Error('process_manifest_changed')
+      const expected = processDefinitions(manifest, join(plan.root, 'spendcraft'))
+      if (definitions.length !== expected.length) throw new Error('process_manifest_mismatch')
+      for (let index = 0; index < expected.length; index++) {
+        const item = expected[index], actual = definitions[index]
+        const source = join(release, relative(join(plan.root, 'spendcraft'), item.script))
+        if (JSON.stringify({ ...item, scriptSha256: await fileHash(source) }) !== JSON.stringify(actual)) throw new Error('process_manifest_mismatch')
+      }
+    }
+  }
   return { current: current.identity, previous: previous.identity, differences }
 }
 
 async function productionOperations(plan, output, confirm, clients, config) {
   const live = join(plan.root, 'spendcraft')
   const previous = join(plan.root, 'spendcraft.old')
+  let restorationStarted = false
   const stamp = output.split('/').at(-1)
   const stage = join(plan.root, `spendcraft.rollback-stage-${stamp}`)
   const retained = join(plan.root, `spendcraft.forward-recovery-${stamp}`)
@@ -290,7 +339,7 @@ async function productionOperations(plan, output, confirm, clients, config) {
     const daemonArgs = await readFile(`/proc/${pid}/cmdline`, 'utf8')
     if (!daemonArgs.includes(`PM2 v5.4.1: God Daemon (${plan.pm2Home})`)) throw new Error('pm2_daemon_identity_mismatch')
     daemonPid = pid
-    return command(plan.pm2Executable, args, { env: { ...process.env, PM2_HOME: plan.pm2Home } })
+    return command(plan.pm2Executable, args, { env: { ...process.env, PM2_HOME: plan.pm2Home, NODE_ENV: 'production' } })
   }
   const journal = async (phase, detail) => {
     journalFile ??= await open(journalPath, 'wx', 0o600)
@@ -331,7 +380,7 @@ async function productionOperations(plan, output, confirm, clients, config) {
         if (await fileHash(definition.script) !== definition.scriptSha256) throw new Error('process_script_changed')
       }
       for (const client of clients) await verifyIdentity(client, plan.expected)
-      await writeJson(join(output, 'preflight.json'), { identities, database: plan.expected, processes: observed,
+      await writeJson(join(output, 'preflight.json'), { manualRestart: plan.manualRestart === true, identities, database: plan.expected, processes: observed,
         directories: { live, previous, stage, retained }, recoveryProcedure: plan.recoveryProcedure })
     },
     confirm,
@@ -357,11 +406,17 @@ async function productionOperations(plan, output, confirm, clients, config) {
     },
     async stop() {
       const entries = JSON.parse(await pm2(['jlist']))
-      observed = selectProcesses(entries, plan.processes)
+      const candidates = [...plan.processes, ...(plan.previousProcesses ?? [])]
+      const activeDefinitions = restorationStarted ? entries.filter((entry) => candidates.some((item) => item.name === entry.name)).map((entry) => {
+        const match = candidates.find((item) => item.name === entry.name && matchesDefinition(entry.pm2_env, item))
+        if (!match) throw new Error('pm2_definition_mismatch')
+        return match
+      }) : plan.processes
+      observed = selectProcesses(entries, activeDefinitions)
       const table = await processTable()
       stoppedPids = [...stoppedPids, ...writerProcesses(table, plan.root, observed.map((item) => item.pid), process.pid, [daemonPid])]
       // Unknown in-root PM2 definitions could resurrect a writer; fail closed.
-      assertNoExtraProcesses(entries, plan.processes, plan.root)
+      assertNoExtraProcesses(entries, activeDefinitions, plan.root)
       for (const name of ['dump.pm2', 'dump.pm2.bak']) {
         const source = join(plan.pm2Home, name), target = join(output, `original-${name}`)
         if (await exists(source) && !await exists(target)) {
@@ -369,7 +424,7 @@ async function productionOperations(plan, output, confirm, clients, config) {
           try { await file.writeFile(await readFile(source)); await file.sync() } finally { await file.close() }
         }
       }
-      for (const item of plan.processes) await pm2(['stop', item.name])
+      for (const item of activeDefinitions) await pm2(['stop', item.name])
       for (let attempt = 0; attempt < 100; attempt++) {
         const remaining = await processTable()
         if (!writerProcesses(remaining, plan.root, [], process.pid, [daemonPid]).length
@@ -377,7 +432,7 @@ async function productionOperations(plan, output, confirm, clients, config) {
         if (attempt === 99) throw new Error('writer_shutdown_incomplete')
         await delay(100)
       }
-      const stopped = selectProcesses(JSON.parse(await pm2(['jlist'])), plan.processes)
+      const stopped = selectProcesses(JSON.parse(await pm2(['jlist'])), activeDefinitions)
       if (stopped.some((item) => item.status !== 'stopped' || item.pid > 0)) throw new Error('pm2_not_stopped')
       await persistStoppedState({
         save: () => pm2(['save']),
@@ -387,7 +442,7 @@ async function productionOperations(plan, output, confirm, clients, config) {
           await syncDirectory(plan.pm2Home)
         },
         read: async (name) => JSON.parse(await readFile(join(plan.pm2Home, name), 'utf8')),
-      }, plan.processes)
+      }, activeDefinitions)
       await journal('startup-definitions-stopped', {})
       await guard()
     },
@@ -424,12 +479,19 @@ async function productionOperations(plan, output, confirm, clients, config) {
       })
     },
     async restart() {
+      if (plan.manualRestart) throw new Error('manual_restart_required')
       await guard()
       await confirm('Database conversion and application restoration verified. Keep external traffic fenced.',
         `START ${plan.expected.database} ${identities.previous}`)
-      for (const item of plan.processes) await pm2(['restart', item.name])
+      const restored = plan.previousProcesses ?? plan.processes
+      if (plan.previousProcesses) {
+        restorationStarted = true
+        await replaceProcesses(plan.processes.map((item) => item.name), restored, pm2, true)
+      } else {
+        for (const item of restored) await pm2(['restart', item.name])
+      }
       await delay(1000)
-      const restarted = selectProcesses(JSON.parse(await pm2(['jlist'])), plan.processes)
+      const restarted = selectProcesses(JSON.parse(await pm2(['jlist'])), restored)
       if (restarted.some((item) => item.status !== 'online' || !(item.pid > 0))) throw new Error('pm2_restart_unhealthy')
       await journal('processes-restarted', { processes: restarted })
     },
@@ -451,7 +513,7 @@ export async function main(args = process.argv.slice(2)) {
     'compare-manifests': { type: 'boolean' }, 'current-manifest': { type: 'string' }, 'previous-manifest': { type: 'string' },
     'dry-run': { type: 'boolean' }, execute: { type: 'boolean' }, help: { type: 'boolean' } }, strict: true })
   if (values.help) {
-    console.log('Capture: node scripts/rollbackTransactionCategoryStorage.mjs --capture-release /absolute/release\nCompare: --compare-manifests --current-manifest /absolute/current.json --previous-manifest /absolute/previous.json\nInspect: --plan /absolute/plan.json --dry-run\nExecute (separate authorization required): --plan /absolute/plan.json --execute')
+    console.log('Capture: node /absolute/rollback-bundle/rollbackTransactionCategoryStorage.mjs --capture-release /absolute/release\nCompare: --compare-manifests --current-manifest /absolute/current.json --previous-manifest /absolute/previous.json\nInspect: --plan /absolute/plan.json --dry-run\nExecute (separate authorization required): --plan /absolute/plan.json --execute')
     return
   }
   if ([values['capture-release'], values['compare-manifests'], values['dry-run'], values.execute].filter(Boolean).length !== 1
@@ -460,9 +522,16 @@ export async function main(args = process.argv.slice(2)) {
       : Boolean(values['current-manifest'] || values['previous-manifest']))) throw new Error('choose_exactly_one_mode')
   let plan
   let outputParent = await realpath(process.cwd())
+  // Keep journals/results outside a packaged immutable maintenance bundle,
+  // including when the operator invokes the executor from inside that bundle.
+  const toolDirectory = dirname(fileURLToPath(import.meta.url))
+  if (inside(toolDirectory, outputParent) && await exists(join(toolDirectory, 'bundle.json'))) {
+    outputParent = dirname(toolDirectory)
+  }
   if (values.plan) {
     plan = JSON.parse(await readFile(values.plan, 'utf8'))
     validatePlan(plan)
+    await assertExecutorBundle(plan, toolDirectory)
     if (await realpath(plan.root) !== plan.root) throw new Error('root_path_not_canonical')
     if ([join(plan.root, 'spendcraft'), join(plan.root, 'spendcraft.old')].some((path) => inside(path, outputParent))) {
       outputParent = plan.root
@@ -511,6 +580,15 @@ export async function main(args = process.argv.slice(2)) {
       await verifyIdentity(client, plan.expected)
     }
     const confirm = async (warning, expected) => {
+      if (plan.generated) {
+        console.log('Automatically captured release differences are observations, not prior approval. Review release-differences.json in this output directory before continuing.')
+        console.log(plan.recoveryProcedure)
+        const review = createInterface({ input: process.stdin, output: process.stdout })
+        try {
+          if (!process.stdin.isTTY || !process.stdout.isTTY) throw new Error('interactive_confirmation_required')
+          assertConfirmation(await review.question('Confirm compatibility review, external writers/traffic fenced, PM2 cron disabled and backup recovery understood. Type READY: '), 'READY')
+        } finally { review.close() }
+      }
       console.log(warning)
       if (!process.stdin.isTTY || !process.stdout.isTTY) throw new Error('interactive_confirmation_required')
       const terminal = createInterface({ input: process.stdin, output: process.stdout })
@@ -521,8 +599,10 @@ export async function main(args = process.argv.slice(2)) {
     operations = await productionOperations(plan, output, confirm, clients, config)
     const previous = JSON.parse(await readFile(plan.previousManifest, 'utf8'))
     const result = await orchestrate({ dryRun: Boolean(values['dry-run']),
-      confirmation: `ROLLBACK ${plan.expected.database} ${previous.identity}` }, operations)
+      manualRestart: plan.manualRestart === true, confirmation: `ROLLBACK ${plan.expected.database} ${previous.identity}` }, operations)
+    if (plan.manualRestart) console.log('Previous release has no process manifest: manual startup and verification are required after restoration; no automatic process restart is permitted.')
     if (values['dry-run']) console.log(`Read-only inspection: ${result.examined} examined; ${result.affected} Transactions / ${result.strings} string amounts to convert; ${result.numeric} numeric amounts unchanged; ${result.malformed} malformed; ${result.unsupported} unsupported; ${result.excluded} excluded.`)
+    else if (result?.manualRestartRequired) console.log('Release restored; automatic restart and smoke tests were NOT run. All managed processes remain stopped. Operator must determine startup commands, restart the restored release, verify health/read paths, and review saved PM2 definitions before resuming traffic.')
     else console.log('Rollback completed. Review journal and smoke evidence before manually resuming traffic and reviewed schedules.')
   } finally {
     try { await operations?.close() } finally { await Promise.allSettled(clients.map((client) => client.end())) }

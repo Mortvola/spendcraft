@@ -5,14 +5,16 @@ import { spawnSync } from 'node:child_process'
 import { mkdtemp, mkdir, writeFile, readFile, symlink, rm, realpath, stat } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
+import { createPlan } from '../../installer/generateRollbackPlan.mjs'
+import { processDefinitions } from '../../installer/lib/pm2Processes.mjs'
 import {
   numericAmount, planAllocations, patchQuery, scan, convert, orchestrate, swapDirectories, WARNING,
-} from '../../scripts/lib/categoryRollback.mjs'
+} from '../../installer/lib/categoryRollback.mjs'
 import {
   releaseManifest, releaseDifferences, validatePlan, connectionConfig, verifyIdentity,
   selectProcesses, assertNoExtraProcesses, writerProcesses, verifyReleases, verifyApplicationConnections, assertConfirmation,
   persistStoppedState, verifyPm2Runtime, main,
-} from '../../scripts/rollbackTransactionCategoryStorage.mjs'
+} from '../../installer/rollbackTransactionCategoryStorage.mjs'
 
 const hash = (value) => createHash('sha256').update(value).digest('hex')
 const expected = { host: 'localhost', port: 5433, database: 'budget', user: 'operator',
@@ -223,6 +225,18 @@ test.group('Rollback orchestration and identity (mocked destructive operations)'
     await assert.rejects(() => orchestrate({ confirmation: 'force' }, operations('', calls)))
     assert.deepEqual(calls, ['preflight', 'inspect', 'confirm'])
   })
+  test('manual restart policy restores release but never starts processes, smoke-tests or claims complete', async ({ assert }) => {
+    const calls = []
+    const mocked = operations('', calls)
+    mocked.journal = async (phase) => calls.push('journal:' + phase)
+    const result = await orchestrate({ manualRestart: true, confirmation: 'ROLLBACK budget previous' }, mocked)
+    assert.isTrue(result.manualRestartRequired)
+    assert.include(calls, 'swap')
+    assert.notInclude(calls, 'restart')
+    assert.notInclude(calls, 'smoke')
+    assert.include(calls, 'journal:manual-restart-required')
+    assert.notInclude(calls, 'journal:complete')
+  })
   test('actual confirmation rejects generic yes/force and wrong release', ({ assert }) => {
     const expectedAnswer = 'ROLLBACK budget previous'
     assertConfirmation(expectedAnswer, expectedAnswer)
@@ -282,6 +296,26 @@ test.group('Rollback orchestration and identity (mocked destructive operations)'
       assert.throws(() => validatePlan({ ...plan(), ...change }))
     }
   })
+  test('EC2 staging uses the installer process names and its own server root', ({ assert }) => {
+    const configuration = plan()
+    configuration.environment = 'staging'
+    configuration.root = '/spendcraft_staging/server'
+    configuration.envFile = '/spendcraft_staging/server/spendcraft-env'
+    configuration.pm2Home = '/home/ubuntu/.pm2'
+    configuration.productionPm2Home = '/home/ubuntu/.pm2'
+    configuration.processes = configuration.processes.map((item) => ({
+      ...item, cwd: configuration.root, script: item.script.replace('/production/server', configuration.root),
+    }))
+    validatePlan(configuration)
+    for (const change of [
+      { root: configuration.productionRoot },
+      { envFile: '/production/server/spendcraft-env' },
+      { root: '/spendcraft-prod/server' },
+      { expected: { ...expected, database: 'spendcraft_test' } },
+      { expected: { ...expected, database: 'spendcraft_sandbox' } },
+      { processes: configuration.processes.map((item) => ({ ...item, name: 'duplicate-name' })) },
+    ]) assert.throws(() => validatePlan({ ...configuration, ...change }))
+  })
   test('only reviewed PM2 definitions are selected; scheduled restart must be disabled', ({ assert }) => {
     const definitions = plan().processes
     const entries = definitions.map((entry, index) => ({ name: entry.name, pid: index + 100, pm2_env: {
@@ -306,7 +340,25 @@ test.group('Rollback orchestration and identity (mocked destructive operations)'
     await persistStoppedState(operations, definitions)
     assert.deepEqual(calls, ['save', 'save', 'sync:dump.pm2', 'read:dump.pm2', 'sync:dump.pm2.bak', 'read:dump.pm2.bak'])
     await assert.rejects(() => persistStoppedState({ ...operations, read: async () => entries.map((entry) => ({ ...entry, status: 'online' })) }, definitions), 'pm2_startup_not_stopped')
-    await assert.rejects(() => persistStoppedState({ ...operations, read: async () => entries.map((entry) => ({ ...entry, instances: 1 })) }, definitions), 'pm2_definition_mismatch')
+    await assert.rejects(() => persistStoppedState({ ...operations, read: async () => entries.map((entry) => ({ ...entry, instances: 2 })) }, definitions), 'pm2_definition_mismatch')
+  })
+  test('live and saved PM2 metadata support one fork instance, rejecting multiple or ambiguous instances', async ({ assert }) => {
+    const definitions = plan().processes
+    for (const instances of [undefined, 1]) {
+      const entries = definitions.map((entry) => ({ name: entry.name, pm_exec_path: entry.script,
+        pm_cwd: entry.cwd, exec_interpreter: entry.interpreter, args: entry.args,
+        exec_mode: 'fork_mode', instances, status: 'stopped' }))
+      assert.lengthOf(selectProcesses(entries.map((entry) => ({ name: entry.name, pm2_env: entry })), definitions), 3)
+      await persistStoppedState({ save: async () => undefined, sync: async () => undefined,
+        read: async () => entries }, definitions)
+      for (const change of [{ exec_mode: 'cluster_mode' }, { instances: 2 }, { instances: 0 },
+        { instances: -1 }, { instances: '1' }, { instances: null }]) {
+        const changed = entries.map((entry) => ({ name: entry.name, pm2_env: { ...entry, ...change } }))
+        assert.throws(() => selectProcesses(changed, definitions), 'pm2_definition_mismatch')
+      }
+      const duplicate = [...entries, entries[0]].map((entry) => ({ name: entry.name, pm2_env: entry }))
+      assert.throws(() => selectProcesses(duplicate, definitions), 'missing_or_duplicate_pm2_process')
+    }
   })
   test('sandbox cannot use the production PM2 home even with renamed applications', ({ assert }) => {
     const configuration = plan()
@@ -391,7 +443,7 @@ test.group('Rollback release/connection fixtures (temporary files only)', (group
   })
   test('actual CLI capture creates unique private output folders without database work', async ({ assert }) => {
     const directory = await release('previous')
-    const script = resolve('scripts/rollbackTransactionCategoryStorage.mjs')
+    const script = resolve('installer/rollbackTransactionCategoryStorage.mjs')
     const folders = []
     for (let count = 0; count < 2; count++) {
       const result = spawnSync(process.execPath, [script, '--capture-release', directory], { cwd: temporary, encoding: 'utf8' })
@@ -408,7 +460,7 @@ test.group('Rollback release/connection fixtures (temporary files only)', (group
   test('running capture from inside a release writes only to a sibling output folder', async ({ assert }) => {
     const directory = await release('previous')
     const before = await releaseManifest(directory)
-    const result = spawnSync(process.execPath, [resolve('scripts/rollbackTransactionCategoryStorage.mjs'),
+    const result = spawnSync(process.execPath, [resolve('installer/rollbackTransactionCategoryStorage.mjs'),
       '--capture-release', directory], { cwd: directory, encoding: 'utf8' })
     assert.equal(result.status, 0, result.stderr)
     assert.isTrue(result.stdout.split('\n')[0].startsWith(`${temporary}/category-storage-rollback-`))
@@ -427,6 +479,55 @@ test.group('Rollback release/connection fixtures (temporary files only)', (group
     assert.equal((await verifyReleases(configuration, output)).previous, right.identity)
     await writeFile(join(previous, 'ace.js'), '// changed')
     await assert.rejects(() => verifyReleases(configuration, output), 'release_manifest_mismatch')
+  })
+  test('generated rollback plan binds both release manifests and previous process definitions', async ({ assert }) => {
+    const current = await release('spendcraft', true)
+    const previous = await release('spendcraft.old', false)
+    const manifest = JSON.parse(await readFile('installer/pm2-processes.json', 'utf8'))
+    const oldManifest = { format: 1, processes: [{ name: 'previous-worker', script: 'ace.js', cwd: '.',
+      interpreter: 'node', args: ['previous:command'], time: true }] }
+    for (const [directory, value] of [[current, manifest], [previous, oldManifest]]) {
+      await mkdir(join(directory, 'installer'), { recursive: true })
+      await writeFile(join(directory, 'installer/pm2-processes.json'), JSON.stringify(value))
+    }
+    const left = await releaseManifest(current), right = await releaseManifest(previous)
+    await writeFile(join(temporary, 'current-release-manifest.json'), JSON.stringify(left))
+    await writeFile(join(temporary, 'previous-release-manifest.json'), JSON.stringify(right))
+    const entries = processDefinitions(manifest, current).map((item) => ({ name: item.name, pm2_env: {
+      pm_exec_path: item.script, pm_cwd: item.cwd, exec_interpreter: item.interpreter, args: item.args,
+      exec_mode: 'fork_mode', instances: 1, kill_timeout: item.killTimeout, restart_delay: item.restartDelay, cron_restart: item.cronRestart,
+    } }))
+    const configuration = await createPlan({ root: temporary, environment: 'production', envFile: join(temporary, 'spendcraft-env'),
+      current: left, previous: right, record: temporary, pm2Executable: '/reviewed/bin/pm2', pm2Home: '/reviewed/.pm2', entries,
+      expected, smokeUrl: 'http://localhost:3334' })
+    assert.equal(configuration.previousProcesses[0].name, 'previous-worker')
+    assert.deepEqual(configuration.previousProcesses[0].args, ['previous:command'])
+    const output = join(temporary, 'valid-output'); await mkdir(output)
+    assert.equal((await verifyReleases(configuration, output)).previous, right.identity)
+    configuration.previousProcesses[0].args = ['unreviewed:command']
+    const badOutput = join(temporary, 'bad-output'); await mkdir(badOutput)
+    await assert.rejects(() => verifyReleases(configuration, badOutput), 'process_manifest_mismatch')
+  })
+  test('generated plan with no previous process manifest verifies a manual-start restoration', async ({ assert }) => {
+    const current = await release('spendcraft', true)
+    const previous = await release('spendcraft.old', false)
+    const manifest = { format: 1, processes: [{ name: 'worker', script: 'ace.js', cwd: '.', interpreter: 'node', args: [], time: true }] }
+    await mkdir(join(current, 'installer'), { recursive: true })
+    await writeFile(join(current, 'installer/pm2-processes.json'), JSON.stringify(manifest))
+    const left = await releaseManifest(current), right = await releaseManifest(previous)
+    await writeFile(join(temporary, 'current-release-manifest.json'), JSON.stringify(left))
+    await writeFile(join(temporary, 'previous-release-manifest.json'), JSON.stringify(right))
+    const definitions = processDefinitions(manifest, current)
+    const configuration = await createPlan({ root: temporary, environment: 'production', envFile: join(temporary, 'spendcraft-env'),
+      current: left, previous: right, record: temporary, pm2Executable: '/reviewed/bin/pm2', pm2Home: '/reviewed/.pm2',
+      entries: definitions.map((item) => ({ name: item.name, pm2_env: { pm_exec_path: item.script, pm_cwd: item.cwd,
+        exec_interpreter: item.interpreter, args: item.args, exec_mode: 'fork_mode', instances: 1 } })),
+      expected, smokeUrl: 'http://localhost:3334' })
+    assert.isTrue(configuration.manualRestart)
+    validatePlan(configuration)
+    const output = join(temporary, 'manual-output'); await mkdir(output)
+    assert.equal((await verifyReleases(configuration, output)).previous, right.identity)
+    assert.throws(() => validatePlan({ ...configuration, previousProcesses: definitions }), 'conflicting_restart_policy')
   })
   test('connection comes only from .env and explicit expected identity', async ({ assert }) => {
     await release('previous')
@@ -452,7 +553,7 @@ test.group('Rollback release/connection fixtures (temporary files only)', (group
   test('import has no execution side effects and CLI rejects generic force modes', async ({ assert }) => {
     await assert.rejects(() => main(['--execute', '--dry-run', '--plan', '/not-used']))
     await assert.rejects(() => main(['--force']))
-    const source = await readFile('scripts/rollbackTransactionCategoryStorage.mjs', 'utf8')
+    const source = await readFile('installer/rollbackTransactionCategoryStorage.mjs', 'utf8')
     assert.notInclude(source, 'migration:run')
     assert.notInclude(source, 'db:seed')
     assert.notInclude(source, "['restore'")

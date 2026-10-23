@@ -85,7 +85,7 @@ export default defineConfig({
       reloadServer: false,
     },
     {
-      pattern: 'scripts/configureInstallerEnv.mjs',
+      pattern: 'installer/configureInstallerEnv.mjs',
       reloadServer: false,
     },
     {
@@ -93,11 +93,51 @@ export default defineConfig({
       reloadServer: false,
     },
     {
-      pattern: 'scripts/captureDeploymentManifests.mjs',
+      pattern: 'installer/captureDeploymentManifests.mjs',
       reloadServer: false,
     },
     {
-      pattern: 'scripts/lib/releaseManifest.mjs',
+      pattern: 'installer/lib/releaseManifest.mjs',
+      reloadServer: false,
+    },
+    {
+      pattern: 'installer/rollbackTransactionCategoryStorage.mjs',
+      reloadServer: false,
+    },
+    {
+      pattern: 'installer/lib/categoryRollback.mjs',
+      reloadServer: false,
+    },
+    {
+      pattern: 'installer/pm2-processes.json',
+      reloadServer: false,
+    },
+    {
+      pattern: 'installer/managePm2.mjs',
+      reloadServer: false,
+    },
+    {
+      pattern: 'installer/lib/pm2Processes.mjs',
+      reloadServer: false,
+    },
+    {
+      pattern: 'installer/generateRollbackPlan.mjs',
+      reloadServer: false,
+    },
+    {
+      pattern: 'installer/prepareRollbackBundle.mjs',
+      reloadServer: false,
+    },
+    {
+      pattern: 'installer/rollback.sh',
+      reloadServer: false,
+    },
+    {
+      pattern: 'installer/launchRollback.mjs',
+      reloadServer: false,
+    },
+    {
+      pattern: 'installer/lib/rollbackBundleIntegrity.mjs',
       reloadServer: false,
     },
     {

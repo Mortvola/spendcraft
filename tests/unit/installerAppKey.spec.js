@@ -87,7 +87,7 @@ node() {
   fi
   if [ "$*" = 'ace generate:jwt-keys' ]; then printf 'JWT\\n'; return ${pushStatus === 2 ? 2 : 0}; fi
   if [ "$*" = 'ace plaid:rotate-cleanup-keys --if-missing' ]; then printf 'CLEANUP\\n'; return ${pushStatus === 3 ? 3 : 0}; fi
-  if [ "$1" = scripts/configureInstallerEnv.mjs ]; then printf 'CONFIGURE\\n'; return 0; fi
+  if [ "$1" = installer/configureInstallerEnv.mjs ]; then printf 'CONFIGURE\\n'; return 0; fi
   return 98
 }
 ${source.slice(start, end)}

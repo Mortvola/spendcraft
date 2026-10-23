@@ -166,32 +166,11 @@ APP=spendcraft
 APP_NEW=$APP.new
 APP_OLD=$APP.old
 
-SERVER_EXISTS=0
-if pm2 describe prod-server > /dev/null 2>&1; then
-  SERVER_EXISTS=1
-  pm2 stop prod-server
-fi
-
-QUEUE_EXISTS=0
-if pm2 describe queue > /dev/null 2>&1; then
-  QUEUE_EXISTS=1
-  pm2 stop queue
-fi
-
-CLEANUP_EXISTS=0
-if pm2 describe plaid-cleanup > /dev/null 2>&1; then
-  CLEANUP_EXISTS=1
-  pm2 stop plaid-cleanup
-fi
-
-# ./inst.sh
-# APP=spendcraft
-# APP_NEW=$APP.new
-# APP_OLD=$APP.old
-
+# Unpack tooling before process shutdown; no migration or application swap occurs here.
 unzip "$ZIP_FILE" > /dev/null
 rm -fr $APP_NEW
 mv build $APP_NEW
+node "$PWD/$APP_NEW/installer/managePm2.mjs" --root "$PWD" --release "$PWD/$APP_NEW" --action stop
 
 pushd $APP_NEW
 
@@ -209,7 +188,7 @@ ensure_app_key
 ENV_PATH= NODE_ENV=production node ace generate:web-push-keys
 ENV_PATH= NODE_ENV=production node ace generate:jwt-keys
 ENV_PATH= NODE_ENV=production node ace plaid:rotate-cleanup-keys --if-missing
-node scripts/configureInstallerEnv.mjs --target "$INSTALL_TARGET" \
+node installer/configureInstallerEnv.mjs --target "$INSTALL_TARGET" \
   --env-file .env --requirements installer/installer.env.required.json
 
 popd
@@ -230,7 +209,7 @@ seed_database
 popd
 
 # Keep identities outside both releases, before deleting the old rollback target or swapping directories.
-node "$PWD/$APP_NEW/scripts/captureDeploymentManifests.mjs" --root "$PWD"
+node "$PWD/$APP_NEW/installer/captureDeploymentManifests.mjs" --root "$PWD" --prepare-rollback-bundle
 
 rm -fr $APP_OLD
 if [ -e $APP ]; then
@@ -240,23 +219,9 @@ mv $APP_NEW $APP
 
 confirm_deployment RESUME 'In another session, verify deployed cleanup configuration/readiness without contacting Plaid, PostgreSQL and Redis access, complete-ledger due/expiry counts, and PM2 reboot recovery. All deployment-managed processes remain stopped. Confirm these checks passed before starting them; keep external maintenance enabled until server and listener health checks pass after startup.'
 
-if [ "$QUEUE_EXISTS" -eq 1 ]; then
-  NODE_ENV=production pm2 restart queue --update-env --time
-else
-  NODE_ENV=production pm2 start "$PWD/$APP/ace.js" --name queue --cwd "$PWD/$APP" --interpreter "$(command -v node)" --time -- queue:listener
-fi
-if [ "$CLEANUP_EXISTS" -eq 1 ]; then
-  NODE_ENV=production pm2 restart plaid-cleanup --update-env --time --kill-timeout 30000 --restart-delay 5000
-else
-  NODE_ENV=production pm2 start "$PWD/$APP/ace.js" --name plaid-cleanup --cwd "$PWD/$APP" --interpreter "$(command -v node)" --time --kill-timeout 30000 --restart-delay 5000 -- plaid:cleanup-listener
-fi
-pm2 logs --nostream
-if [ "$SERVER_EXISTS" -eq 1 ]; then
-  NODE_ENV=production pm2 restart prod-server --update-env --time --cron "0 0 * * *"
-else
-  NODE_ENV=production pm2 start "$PWD/$APP/bin/server.js" --name prod-server --cwd "$PWD/$APP" --interpreter "$(command -v node)" --time --cron "0 0 * * *"
-fi
+node "$PWD/$APP/installer/managePm2.mjs" --root "$PWD" --release "$PWD/$APP" --action start
 pm2 save
+node "$PWD/$APP/installer/generateRollbackPlan.mjs" --root "$PWD" --target "$INSTALL_TARGET"
 sudo nginx -t
 sudo systemctl reload nginx
 pm2 logs --nostream
