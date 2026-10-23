@@ -42,7 +42,7 @@ const configuration = {
 test.group('Deploy saved release target selection (mock upload, no build/network)', () => {
   test('uploads the selected saved release with the correct target and quoted key path')
     .with(['production', 'staging']).run(async ({ assert }, target) => {
-      const result = await runDeploy([target, '<release>'], configuration)
+      const result = await runDeploy(['<release>', target], configuration)
       assert.equal(result.status, 0, result.stderr)
       assert.include(result.stdout, 'Verified release ID: ' + result.release.id)
       assert.include(result.stdout, `UPLOAD_KEY:/keys/${target} key.pem\nUPLOAD_DEST:ubuntu@${target}.example:`)
@@ -50,17 +50,17 @@ test.group('Deploy saved release target selection (mock upload, no build/network
       assert.notInclude(result.stdout, 'BUILD')
     })
   test('rejects missing, invalid or extra arguments before packaging/upload')
-    .with([[], ['production'], ['test', '<release>'], ['production', '<release>', 'extra']]).run(async ({ assert }, args) => {
+    .with([[], ['production'], ['<release>', 'test'], ['<release>', 'production', 'extra']]).run(async ({ assert }, args) => {
       const result = await runDeploy(args, configuration)
       assert.equal(result.status, 1)
       assert.equal(result.stdout, '')
-      assert.include(result.stderr, 'production|staging RELEASE_DIRECTORY')
+      assert.include(result.stderr, 'RELEASE_DIRECTORY production|staging')
     })
   test('rejects missing or empty selected configuration before upload')
     .with(Object.keys(configuration)).run(async ({ assert }, variable) => {
       const variables = { ...configuration, [variable]: '' }
       const target = variable.includes('STAGING') ? 'staging' : 'production'
-      const result = await runDeploy([target, '<release>'], variables)
+      const result = await runDeploy(['<release>', target], variables)
       assert.equal(result.status, 1)
       assert.equal(result.stdout, '')
       assert.include(result.stderr, variable)
@@ -68,11 +68,11 @@ test.group('Deploy saved release target selection (mock upload, no build/network
   test('does not require the other environment configuration')
     .with(['production', 'staging']).run(async ({ assert }, target) => {
       const variables = Object.fromEntries(Object.entries(configuration).filter(([key]) => key.includes('STAGING') === (target === 'staging')))
-      const result = await runDeploy([target, '<release>'], variables)
+      const result = await runDeploy(['<release>', target], variables)
       assert.equal(result.status, 0, result.stderr)
     })
   test('rejects a modified application archive before scp', async ({ assert }) => {
-    const result = await runDeploy(['production', '<release>'], configuration, true)
+    const result = await runDeploy(['<release>', 'production'], configuration, true)
     assert.equal(result.status, 1)
     assert.include(result.stderr, 'release_checksum_mismatch')
     assert.notInclude(result.stdout, 'UPLOAD_')
@@ -81,7 +81,7 @@ test.group('Deploy saved release target selection (mock upload, no build/network
     const source = await readFile('deploy.sh', 'utf8')
     assert.notInclude(source, './build.sh')
     assert.notMatch(source, /\bnpm\b|\bzip -|installer\/install\.sh0/)
-    assert.include(source, '--release "$2" --target "$1"')
+    assert.include(source, '--release "$1" --target "$2"')
   })
   test('an installer rejects a conflicting packaged target before installation', async ({ assert }) => {
     const source = await readFile('installer/install.sh0', 'utf8')

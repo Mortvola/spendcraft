@@ -2,7 +2,7 @@
 
 The release contains one checked-in configuration file, `installer/installer.env.required.json`. It holds automatic nonsecret values and metadata for values supplied privately by the operator. It must never contain secrets. APP_KEY, VAPID, JWT and Plaid cleanup keys are excluded because their key-generation commands handle them. The separate `installer.env.defaults` payload and defaults-appending installer step have been removed; all fourteen former defaults are `type: "value"` entries in the consolidated file.
 
-`deploy.sh production RELEASE_DIRECTORY` or `deploy.sh staging RELEASE_DIRECTORY` embeds that target in generated `install.sh`, before its archive payload. The operator still uploads and runs the installer manually; deploy.sh does not execute remotely. A packaged installer accepts no target argument, or the identical target; a conflicting argument aborts before installation. The unpackaged template requires an explicit target argument. NODE_ENV stays production for both runtime environments and is not the deployment target selector. Preserve production/staging root, database, provider and PM2 isolation independently; this setting does not itself prove host identity or replace the rollback tool's independent target checks.
+`deploy.sh RELEASE_DIRECTORY production` or `deploy.sh RELEASE_DIRECTORY staging` embeds that target in generated `install.sh`, before its archive payload. The operator still uploads and runs the installer manually; deploy.sh does not execute remotely. A packaged installer accepts no target argument, or the identical target; a conflicting argument aborts before installation. The unpackaged template requires an explicit target argument. NODE_ENV stays production for both runtime environments and is not the deployment target selector. Preserve production/staging root, database, provider and PM2 isolation independently; this setting does not itself prove host identity or replace the rollback tool's independent target checks.
 
 After extracting spendcraft.new, linking the shared .env and installing dependencies, the installer first initializes APP_KEY, then runs `ENV_PATH= NODE_ENV=production node ace generate:web-push-keys`, then runs `ENV_PATH= NODE_ENV=production node ace generate:jwt-keys` and `ENV_PATH= NODE_ENV=production node ace plaid:rotate-cleanup-keys --if-missing`, and then invokes `installer/configureInstallerEnv.mjs` with its embedded target. It next runs the backup and proceeds to migration/seeding decisions. The metadata and helper are copied by Adonis metaFiles into build; the existing deploy archive includes them.
 
@@ -226,9 +226,9 @@ Example (replace the illustrative path with the path printed by build.sh):
 
 ```bash
 ./build.sh
-./deploy.sh staging releases/release-<printed-name>
+./deploy.sh releases/release-<printed-name> staging
 # Run the uploaded installer on staging and complete acceptance.
-./deploy.sh production releases/release-<same-printed-name>
+./deploy.sh releases/release-<same-printed-name> production
 ```
 
 There is no implicit latest release or automatic build fallback. `deploy.sh`

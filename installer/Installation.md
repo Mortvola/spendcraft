@@ -252,14 +252,14 @@ Build once locally with `./build.sh`. Save the unique `releases/release-*`
 directory it prints. Upload it to staging with:
 
 ```bash
-./deploy.sh staging releases/<printed-release-directory>
+./deploy.sh releases/<printed-release-directory> staging
 ```
 
 After installing and accepting that release on staging, upload the same saved
 package to production:
 
 ```bash
-./deploy.sh production releases/<same-release-directory>
+./deploy.sh releases/<same-release-directory> production
 ```
 
 Deployment verifies checksums and does not rebuild or execute installation
