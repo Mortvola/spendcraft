@@ -1,3 +1,5 @@
+import { bindTaxStorage, prepareTaxStorageSave } from '#services/transactionTaxStorage';
+import { prepareTaxStorage, finishTaxStorageSave } from '#services/taxStorageBinding';
 import { prepareCategoryStorage, finishCategoryStorageSave } from '#services/categoryStorageBinding';
 import { bindCategoryStorage, prepareNewCategoryStorage } from '#services/transactionCategoryStorage';
 import {
@@ -17,7 +19,7 @@ interface TransCategory {
   comment?: string,
 }
 
-export interface TransTaxCategory {
+interface TransTaxCategory {
   type: string,
   amount: number,
 }
@@ -26,21 +28,25 @@ class Transaction extends BaseModel {
   @afterFind()
   public static async bindActiveCategories(transaction: Transaction) {
     await bindCategoryStorage([transaction]);
+    await bindTaxStorage([transaction]);
   }
 
   @afterFetch()
   public static async bindActiveCategoryList(transactions: Transaction[]) {
     await bindCategoryStorage(transactions);
+    await bindTaxStorage(transactions);
   }
 
   @beforeSave()
   public static async encodeActiveCategories(transaction: Transaction) {
     await prepareNewCategoryStorage(transaction);
+    await prepareTaxStorageSave(transaction);
   }
 
   @afterSave()
   public static finishActiveCategories(transaction: Transaction) {
     finishCategoryStorageSave(transaction);
+    finishTaxStorageSave(transaction);
   }
 
   @column.dateTime({ autoCreate: true, autoUpdate: true, serializeAs: null })
@@ -85,7 +91,7 @@ class Transaction extends BaseModel {
   public categories: TransCategory[];
 
   @column({
-    prepare: (value: TransTaxCategory[]) => JSON.stringify(value),
+    prepare: (value: TransTaxCategory[], _attribute, model) => prepareTaxStorage(value, model),
   })
   public taxes: TransTaxCategory[];
 

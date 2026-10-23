@@ -67,12 +67,21 @@ test.group('Statement DELETE persisted-state characterization', () => {
         db.from('transaction_logs').where('application_id', f.budget.id).orderBy('id'),
       ])
       const before = await snapshot()
+      const deleteStartedAt = Date.now()
       const response = await client.delete(`/api/v1/statements/${target.id}`).accept('json').loginAs(f.user)
       response.assertStatus(200)
       const after = await snapshot()
       assert.deepEqual(after[2], before[2])
-      assert.deepEqual(after[1], before[1].map((row) => row.statement_id === target.id
-        ? { ...row, statement_id: null } : row))
+      assert.deepEqual(after[1], before[1].map((row, index) => {
+        if (row.statement_id !== target.id) return row
+        // Committed model saves now auto-update timestamps when unlinking Statements.
+        // Keep every other column under the original strict equality assertion.
+        const updatedAt = after[1][index].updated_at.getTime()
+        assert.isAtLeast(updatedAt, row.updated_at.getTime())
+        assert.isAtLeast(updatedAt, deleteStartedAt)
+        assert.isAtMost(updatedAt, Date.now())
+        return { ...row, statement_id: null, updated_at: after[1][index].updated_at }
+      }))
       assert.equal(Number(after[0][0].balance), scenario.tracking === TrackingType.Balances
         ? neighbor?.endingBalance ?? 0 : 300)
       assert.deepEqual(after[4], before[4])

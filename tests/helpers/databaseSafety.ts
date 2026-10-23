@@ -2,7 +2,8 @@ import type { Database } from '@adonisjs/lucid/database'
 
 const authorizedTestTarget = 'localhost:5432/spendcraft_test'
 export const identitySql = `SELECT current_database() AS database, inet_server_port() AS port,
-  inet_server_addr()::text AS server, inet_client_addr()::text AS peer`
+  inet_server_addr()::text AS server, inet_client_addr()::text AS peer,
+  current_user AS username, session_user AS authenticated_user`
 
 interface Target { host: string, port: number, database: string }
 interface Identity { database: string, port: number, server: string, peer: string }
@@ -14,6 +15,12 @@ export function configuredTarget(value: unknown): Target {
     throw new Error(`Test database safety: configured target must be ${authorizedTestTarget}`)
   }
   return { host: 'localhost', port: 5432, database: 'spendcraft_test' }
+}
+function configuredUser(value: unknown): string {
+  if (!record(value) || typeof value.user !== 'string' || !value.user.trim()) {
+    throw new Error('Test database safety: configured user missing')
+  }
+  return value.user
 }
 function loopback(value: unknown) {
   return typeof value === 'string' && /^(127\.0\.0\.1(?:\/32)?|::1(?:\/128)?|::ffff:127\.0\.0\.1(?:\/128)?)$/.test(value)
@@ -41,7 +48,11 @@ function identityResult(value: unknown) {
 export async function installDatabaseSafety(db: Database) {
   const names = ['pg', 'pgLog'] as const
   function checkConfigurations() {
-    for (const name of names) configuredTarget(db.manager.get(name)?.config.connection)
+    for (const name of names) {
+      const connection = db.manager.get(name)?.config.connection
+      configuredTarget(connection)
+      configuredUser(connection)
+    }
   }
   checkConfigurations() // Fail before acquiring any connection on mismatch.
   const clients = names.map((name) => db.connection(name).getWriteClient().client)
@@ -53,16 +64,27 @@ export async function installDatabaseSafety(db: Database) {
   const verificationConnections: unknown[] = []
   let checks = 0
   let guarded = 0
-  async function identify(client: object, connection: unknown) {
+  async function identify(client: object, connection: unknown, expectedUser?: string) {
     const result: unknown = await Reflect.apply(original, client, [connection, { sql: identitySql, bindings: [] }])
-    return identityResult(result)
+    const identity = identityResult(result)
+    if (!record(result) || !record(result.response) || !Array.isArray(result.response.rows)) throw new Error('Test database safety: missing user identity')
+    const row: unknown = result.response.rows[0]
+    const users = names.map(name => {
+      const config = db.manager.get(name)?.config.connection
+      return configuredUser(config)
+    })
+    if (!record(row) || typeof row.username !== 'string' || row.username !== row.authenticated_user
+      || (expectedUser ? row.username !== expectedUser : !users.includes(row.username))) {
+      throw new Error('Test database safety: authenticated user mismatch')
+    }
+    return { ...identity, username: row.username, authenticated_user: row.authenticated_user }
   }
   async function verify() {
     checkConfigurations()
     const evidence = []
     for (let i = 0; i < clients.length; i++) {
       evidence.push({ connection: names[i], configured: configuredTarget(db.manager.get(names[i])?.config.connection),
-        live: await identify(clients[i], verificationConnections[i]) })
+        live: await identify(clients[i], verificationConnections[i], configuredUser(db.manager.get(names[i])?.config.connection)) })
     }
     checks++
     if (checks === 1) console.info('Test database safety verified', JSON.stringify(evidence))

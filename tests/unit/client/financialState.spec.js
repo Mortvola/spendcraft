@@ -1,3 +1,4 @@
+import { decodeTaxAttributions, encodeTaxAttributions } from '../../../app/services/taxAmountCodec.ts'
 import { calculateFunding } from '../../../client-src/Funding/calculateFunding.ts'
 import { test } from '@japa/runner'
 import { File } from 'node:buffer'
@@ -139,6 +140,24 @@ export * from ${source('common/ResponseTypes.ts')};
     assert.equal(cached.account.amount, amount)
     assert.equal(cached.category.amount, amount)
     assert.equal(cached.category.version, 1)
+  })
+
+  test('tax editor response refreshes numeric attribution across financial caches without balance changes', async ({ assert }) => {
+    const cached = transactions()
+    const submitted = [{ type: 'estimated_tax_payments', amount: 12.345 }, { type: 'estimated_tax_payments', amount: -0.125 }]
+    const returned = { ...f.transactionProps(), version: 1, taxes: decodeTaxAttributions(encodeTaxAttributions(submitted)) }
+    routes.set('patch /api/v1/transaction/40', async payload => {
+      assert.deepEqual(payload.taxCategories, submitted)
+      return { body: { data: { transaction: returned, categories: [], acctBalances: [] } } }
+    })
+    const balances = [f.account.balance, f.category.balance]
+    await cached.account.updateTransaction({ taxCategories: submitted })
+    for (const transaction of [cached.account, cached.category]) {
+      assert.deepEqual(transaction.taxCategories.map(tax => tax.amount), [12.35, -0.12])
+      assert.isTrue(transaction.taxCategories.every(tax => typeof tax.amount === 'number'))
+      assert.deepEqual(transaction.categories.map(category => category.amount), [-10])
+    }
+    assert.deepEqual([f.account.balance, f.category.balance], balances)
   })
 
   test('statement editing refreshes authoritative current balance for balance-tracked accounts', async ({ assert }) => {

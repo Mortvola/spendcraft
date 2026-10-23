@@ -104,6 +104,22 @@ test.group('Plaid sync characterization', (group) => {
     return { at, transaction }
   }
 
+  test('Plaid reimport preserves numeric/string/mixed tax attribution').with(['numeric', 'string', 'mixed'])
+    .run(async ({ client, assert }, encoding) => {
+      fake.responses = [page(accounts(), 'tax-c1', { added: [purchase()] })]
+      ;(await client.post(url()).loginAs(f.user)).assertStatus(200)
+      const { transaction } = await local()
+      const taxes = [{ type: 'estimated_tax_payments', amount: encoding === 'numeric' ? 1.005 : '1.00', extra: { keep: true } },
+        { type: 'estimated_tax_payments', amount: encoding === 'string' ? '-0.12' : -0.125 }]
+      await db.from('transactions').where('id', transaction.id).update({ taxes: JSON.stringify(taxes) })
+      fake.responses = [page(accounts(), 'tax-c2', { modified: [purchase('purchase', { amount: 15 })] })]
+      ;(await client.post(url()).loginAs(f.user)).assertStatus(200)
+      assert.deepEqual((await db.from('transactions').where('id', transaction.id).firstOrFail()).taxes, taxes)
+      const response = await client.get(`/api/v1/transaction/${transaction.id}`).loginAs(f.user)
+      response.assertStatus(200)
+      assert.deepEqual(response.body().taxes.map((tax: { amount: number }) => tax.amount), taxes.map(tax => Number(tax.amount)))
+    })
+
   test('first sync applies posted purchases once to account and unassigned category').with([1, 3]).run(async ({ client, assert }, count) => {
     fake.responses = [page(accounts(), 'c1', { added: Array.from({ length: count }, (_, i) => purchase(`purchase-${i}`)) })]
     const response = await client.post(url()).loginAs(f.user)

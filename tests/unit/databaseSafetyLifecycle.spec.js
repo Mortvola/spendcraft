@@ -3,10 +3,10 @@ import { installDatabaseSafety, identitySql } from '../helpers/databaseSafety.js
 
 function fixture() {
   const events = []
-  const configs = { pg: { host: 'localhost', port: 5432, database: 'spendcraft_test' },
-    pgLog: { host: 'localhost', port: 5432, database: 'spendcraft_test' } }
-  const identities = { pg: { database: 'spendcraft_test', port: 5432, server: '127.0.0.1', peer: '::1/128' },
-    pgLog: { database: 'spendcraft_test', port: 5432, server: '::1', peer: '127.0.0.1' } }
+  const configs = { pg: { host: 'localhost', port: 5432, database: 'spendcraft_test', user: 'test_role' },
+    pgLog: { host: 'localhost', port: 5432, database: 'spendcraft_test', user: 'test_role' } }
+  const identities = { pg: { database: 'spendcraft_test', user: 'test_role', port: 5432, server: '127.0.0.1', peer: '::1/128', username: 'test_role', authenticated_user: 'test_role' },
+    pgLog: { database: 'spendcraft_test', user: 'test_role', port: 5432, server: '::1', peer: '127.0.0.1', username: 'test_role', authenticated_user: 'test_role' } }
   class Driver {
     constructor(name) { this.name = name }
     async acquireConnection() { events.push(`acquire:${this.name}`); return { name: this.name } }
@@ -42,6 +42,16 @@ test.group('Database safety driver and cleanup lifecycle (inert connections)', (
       // A later cleanup has its own check; setup verification is not reused.
       await f.drivers.pgLog.query({ name: 'pgLog' }, { sql: 'DROP TABLE fixture' })
       assert.deepEqual(f.events, ['verify:pg', 'verify:pgLog', 'verify:pgLog', 'execute:DROP TABLE fixture'])
+    } finally { await guard.close() }
+  })
+  test('authenticated user mismatch blocks destructive execution', async ({ assert }) => {
+    const f = fixture()
+    const guard = await installDatabaseSafety(f.db)
+    try {
+      f.events.length = 0
+      f.identities.pg.authenticated_user = 'foreign_role'
+      await assert.rejects(() => f.drivers.pg.query({ name: 'pg' }, { sql: 'DELETE FROM fixture' }))
+      assert.isFalse(f.events.some(event => event.startsWith('execute:')))
     } finally { await guard.close() }
   })
   test('changed live identity blocks later cleanup independently', async ({ assert }) => {

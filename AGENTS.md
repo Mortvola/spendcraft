@@ -141,6 +141,7 @@ Do not make speculative changes to several unrelated files or dependencies at on
 
 ## Operator database scripts
 
+- Place audit and other script-generated output under the project's `script-output/` directory. Create unique per-run subdirectories there when applicable; preserve earlier output and print the absolute output path before work begins.
 - Scripts requested for production or `spendcraft_sandbox` must read connection settings from a `.env` file using `PG_HOST`, `PG_PORT`, `PG_USER`, `PG_PASSWORD`, and `PG_DB_NAME`.
 - These scripts must automatically create a unique output directory and print its absolute path to standard output immediately after creation, before database work begins, following `scripts/auditTransactionCategoryCents.mjs`. Preserve existing output files; never overwrite a previous run's results.
 - Do not print credentials or commit environment files. Preparing a script does not authorize executing it against a database.

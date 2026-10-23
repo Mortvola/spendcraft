@@ -77,6 +77,10 @@ export default defineConfig({
 
   metaFiles: [
     {
+      pattern: 'scripts/auditTransactionTaxPrecision.mjs',
+      reloadServer: false,
+    },
+    {
       pattern: 'scripts/convertHistoricalTransactionCategories.mjs',
       reloadServer: false,
     },

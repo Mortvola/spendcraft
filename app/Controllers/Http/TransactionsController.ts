@@ -1,3 +1,5 @@
+import { prepareTaxReplacement } from '#services/transactionTaxStorage';
+import { excludeTaxStorage } from '#services/taxStorageBinding';
 import { canonicalCategoryAllocations } from '#services/categoryAmountCodec';
 import { hasCategoryStorage, excludeCategoryStorage } from '#services/categoryStorageBinding';
 import { validateStoredCategoryConservation } from '#services/transactionCategoryStorage';
@@ -6,7 +8,7 @@ import { HttpContext } from '@adonisjs/core/http';
 import { Exception } from '@adonisjs/core/exceptions';
 import db from '@adonisjs/lucid/services/db';
 import Category from '#app/Models/Category';
-import Transaction, { TransTaxCategory } from '#app/Models/Transaction';
+import Transaction from '#app/Models/Transaction';
 import AccountTransaction from '#app/Models/AccountTransaction';
 import {
   AccountBalanceProps, AccountType, ApiResponse, CategoryBalanceProps, CategoryType, RequestErrorCode,
@@ -165,8 +167,14 @@ export default class TransactionsController {
       ]);
       for (const categoryId of categoryIds) {
         const referencedCategory = await budgetCategories(budget.id, { client: trx }).where('id', categoryId).firstOrFail();
-        if (referencedCategory.type === CategoryType.Loan) excludeCategoryStorage(transaction);
+        if (referencedCategory.type === CategoryType.Loan) {
+          excludeCategoryStorage(transaction);
+          excludeTaxStorage(transaction);
+        }
       }
+
+      const taxReplacement = requestData.taxCategories === undefined ? undefined
+        : await prepareTaxReplacement(transaction, requestData.taxCategories, request.input('taxCategories'));
 
       if (requestData.categories !== undefined && hasCategoryStorage(transaction)) {
         requestData.categories = canonicalCategoryAllocations(requestData.categories);
@@ -353,20 +361,7 @@ export default class TransactionsController {
         }
       }
 
-      if (requestData.taxCategories !== undefined) {
-        const transTaxCategories: TransTaxCategory[] = [];
-
-        for (const t of requestData.taxCategories) {
-          if (t.type !== '') {
-            transTaxCategories.push({
-              type: t.type,
-              amount: t.amount
-            })
-          }
-        }
-
-        transaction.taxes = transTaxCategories
-      }
+      if (taxReplacement !== undefined) transaction.taxes = taxReplacement;
 
       let changedStatementId: number | null = null
 

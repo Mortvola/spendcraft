@@ -32,20 +32,24 @@ test.group('Installer consolidated automatic values (temporary files only)', (gr
       cwd: release, env: { PATH: process.env.PATH }, encoding: 'utf8',
     })
   }
-  test('all former defaults are present as automatic values in the consolidated metadata', async ({ assert }) => {
+  test('release automatic values retain defaults and environment-specific webhooks', async ({ assert }) => {
     const required = JSON.parse(await readFile('installer/installer.env.required.json', 'utf8'))
-    for (const [name, value] of Object.entries(commonValues)) {
+    const releaseValues = { ...commonValues, PLAID_WEBHOOK: { production: 'https://spendcraft.app/wh', staging: 'https://staging.spendcraft.app/wh' } }
+    for (const [name, value] of Object.entries(releaseValues)) {
       const matches = required.filter((entry) => entry.name === name)
       assert.lengthOf(matches, 1)
       assert.equal(matches[0].type, 'value')
-      assert.include(['string', 'number'], typeof matches[0].value)
-      assert.strictEqual(String(matches[0].value), value)
+      if (typeof value === 'object') assert.deepEqual(matches[0].value, value)
+      else {
+        assert.include(['string', 'number'], typeof matches[0].value)
+        assert.strictEqual(String(matches[0].value), value)
+      }
     }
     const run = await fixture('', required.filter((entry) => entry.type === 'value'))
     const result = run()
     assert.equal(result.status, 0, result.stderr)
     const env = parseEnv(await readFile(join(root, 'spendcraft-env'), 'utf8'))
-    for (const [name, value] of Object.entries(commonValues)) assert.equal(env[name], value)
+    for (const [name, value] of Object.entries(releaseValues)) assert.equal(env[name], typeof value === 'object' ? value.staging : value)
     for (const entry of required.filter((item) => item.type === 'value')) {
       assert.equal(env[entry.name], String(typeof entry.value === 'object' ? entry.value.staging : entry.value))
     }
