@@ -14,12 +14,13 @@ export function normalizedIP(value) {
   throw new Error('non_loopback_address')
 }
 
-export const WARNING = 'This operation restores the previous compatible SpendCraft application release. Database values will not be converted or restored. Historical conversion recovery is a separate operation.'
+export const WARNING = 'This operation restores the previous compatible SpendCraft application release. The outgoing release will be removed and spendcraft.old consumed. Database values will not be converted or restored. Historical conversion recovery is a separate operation.'
 
-// Three renames, not an atomic multi-directory exchange. The durable journal and
-// unchanged release identities permit manual recovery; never auto-retry a partial swap.
+// One-way restoration: retain the outgoing tree only until restoration is verified.
+// Renames/removal are journaled, not one atomic operation; never auto-retry an interruption.
 export async function swapDirectories(paths, operations) {
   const { live, previous, temporary, identities } = paths
+  if (!await operations.exists(previous)) throw new Error('no_previous_installed_release')
   await operations.guard()
   if (await operations.identity(live) !== identities.current || await operations.identity(previous) !== identities.previous) {
     throw new Error('release_changed_before_swap')
@@ -33,12 +34,18 @@ export async function swapDirectories(paths, operations) {
   await operations.rename(previous, live)
   await operations.sync()
   await operations.journal('previous-release-promoted', { live, temporary })
-  if (await operations.exists(previous) || await operations.identity(temporary) !== identities.current) throw new Error('swap_state_changed')
-  await operations.rename(temporary, previous)
+  if (await operations.exists(previous) || await operations.identity(live) !== identities.previous
+    || await operations.identity(temporary) !== identities.current) throw new Error('swap_state_changed')
+  // Reverify the target, stopped writers and both identities before irreversible cleanup.
+  await operations.guard()
+  if (await operations.identity(live) !== identities.previous || await operations.identity(temporary) !== identities.current
+    || await operations.exists(previous)) throw new Error('swap_state_changed')
+  await operations.journal('outgoing-release-removal-pending', { live, temporary })
+  await operations.remove(temporary)
   await operations.sync()
-  if (await operations.identity(live) !== identities.previous || await operations.identity(previous) !== identities.current
-    || await operations.exists(temporary)) throw new Error('swapped_release_mismatch')
-  await operations.journal('two-directory-swap-completed', { live, previous })
+  if (await operations.identity(live) !== identities.previous || await operations.exists(previous)
+    || await operations.exists(temporary)) throw new Error('restored_release_mismatch')
+  await operations.journal('one-way-rollback-completed', { live })
 }
 
 export async function orchestrate(options, operations) {

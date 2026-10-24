@@ -1,5 +1,7 @@
 # Compatible application release rollback
 
+> Current revision: rollback is one-way. It consumes `spendcraft.old` and removes the outgoing temporary release after verified restoration. A missing old blocks rollback before execution. Earlier exchange descriptions below are historical; see the latest one-way policy. This revision is uncommitted and requires a new artifact before deployment.
+
 Normal installer rollback now restores the previous compatible application
 release **without converting or restoring database values**. Historical
 Transaction Category conversion recovery is independently invoked using
@@ -104,3 +106,7 @@ compatibility is required before destructive action, not codec presence alone.
 See [the two-directory interruption table](transaction-tax-decimal-string-recovery.md#interruption-and-retry-table).
 The temporary swap path is never a persistent recovery slot. Interrupted swaps
 require identity-based manual review; the existing journal blocks automatic retry.
+
+## Current one-way semantics
+
+The later operator decision supersedes exchange: move outgoing current temporarily, promote old to current, verify restoration and independently recheck execution safeguards, then remove the outgoing temporary tree. Successful rollback leaves current only and consumes old. A second attempt fails with `no_previous_installed_release`; the stable launcher/executor/helper reject before destructive work. A future deployment must create old again before another rollback is possible. Partial cleanup errors stop startup and require reviewed cleanup; do not treat residue as a recovery slot. See the current policy in the tax recovery document. No database restore or tax reversal is added.

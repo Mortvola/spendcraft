@@ -13,6 +13,8 @@ import { verifyRollbackBundle, verifyRollbackLauncher } from './lib/rollbackBund
 export async function selectRollback(root) {
   root = resolve(root)
   if (await realpath(root) !== root) throw new Error('rollback_root_not_canonical')
+  try { await lstat(join(root, 'spendcraft.old')) }
+  catch (error) { if (error.code === 'ENOENT') throw new Error('no_previous_installed_release'); throw error }
   const maintenance = join(root, 'maintenance')
   const bundles = join(maintenance, 'rollback')
   for (const directory of [maintenance, bundles]) {

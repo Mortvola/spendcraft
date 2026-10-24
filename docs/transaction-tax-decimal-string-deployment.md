@@ -1,5 +1,7 @@
 # Transaction tax decimal-string release: commit and deployment preparation
 
+> Current revision: rollback is one-way. It consumes `spendcraft.old` and removes the outgoing temporary release after verified restoration. A missing old blocks rollback before execution. Earlier exchange descriptions below are historical; see the latest one-way policy. This revision is uncommitted and requires a new artifact before deployment.
+
 Preparation date: 2026-10-23. **No deployment was executed. Deployment is blocked pending tax-compatible recovery review.**
 
 ## Exact release and Git reconciliation
@@ -194,3 +196,13 @@ This removes the code/commit blockers only after artifact verification succeeds;
 Production deployment and historical tax conversion remain separately deferred. No staging/production database access, PM2 operation, installed-release modification, migration, seeding, AWS change or deployment occurs in artifact preparation.
 
 Final local verification: 377 non-DB tests passed (34 new swap cases), zero failures/skips/pending; both TypeScript checks, changed-file ESLint, Knip, circular regression, server/client builds, syntax and both diff checks passed. Existing large-client-bundle warning remains. The approved tax arithmetic/API/reporting files are unchanged. No database tests or server operations ran. The post-commit artifact receipt supplies exact source/package/archive identities; staging execution remains separately unauthorized.
+
+## Current rollback revision: one-way restoration
+
+The approved behavior supersedes the earlier exchange design: rollback consumes old, restores it to current, verifies the complete restored identity, then removes the outgoing temporary tree. After success only `spendcraft` remains. It cannot toggle forward; no further rollback is available until a later deployment creates old again. A missing old is rejected explicitly before executor dispatch/database access/shutdown/mutation. Existing compatibility and execution safeguards remain.
+
+See [the one-way interruption and cleanup policy](transaction-tax-decimal-string-recovery.md#current-policy-one-way-rollback--supersedes-directory-exchange). The outgoing temporary tree protects the restoration steps only, and is deleted after guarded verification. Interrupted deletion can leave partial cleanup residue; abort before startup and require verified manual cleanup, never recreate an old release slot or restore a database. A subsequent startup failure cannot return automatically to the removed outgoing version.
+
+The one-way revision is uncommitted and no new deployment installers have been generated. Previously saved `7871889` artifacts still use exchange and are not the deployment candidate for this changed behavior. They were not altered. A later reviewed commit/artifact and fresh staging approval are required; no deployment or historical conversion is authorized here.
+
+One-way revision verification: 381 focused non-database tests passed, zero failures/skips/pending, including actual shell rejection when old is missing, second-attempt rejection, guarded cleanup/partial-removal failure and interruption tests. Both TypeScript checks, changed-file ESLint, Knip, circular regression, Node/shell syntax, server build and both diff checks passed. Existing client bundle-size warning remains. Logs: `script-output/one-way-rollback-d25r1649/`. No database connection, actual rollback, PM2 operation, server access, deployment, installer regeneration or commit occurred.

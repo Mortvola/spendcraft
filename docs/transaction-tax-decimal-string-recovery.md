@@ -1,5 +1,7 @@
 # Transaction Tax release recovery
 
+> Current revision: rollback is one-way. It consumes `spendcraft.old` and removes the outgoing temporary release after verified restoration. A missing old blocks rollback before execution. Earlier exchange descriptions below are historical; see the latest one-way policy. This revision is uncommitted and requires a new artifact before deployment.
+
 Date: 2026-10-23. Source HEAD: `d62834c4202223557bbffd83cbdc1caffee97553`, branch `dollar-to-cents-2`. Recovery guard changes are uncommitted and not deployed.
 
 ## Approved simplified recovery policy
@@ -211,3 +213,34 @@ Remaining staging gates: fresh actual EC2/SSH host, canonical root, configured/l
 Local finalization checks: **377 focused non-database tests passed**, zero failures/skips/pending, including **34 new two-directory swap cases**. Both TypeScript projects, changed-file ESLint, Knip, circular regression, server/client builds, syntax and both diff checks passed. The client >500 kB bundle warning is unchanged. No PostgreSQL tests or remote inspection ran; the accepted 2,807-test database baseline applies to unchanged tax runtime code. Verification logs, final Git audit and exact committed-source/artifact receipt are retained under the ignored task output directory named above. No private output, credentials, backups, unrelated files or generated artifacts belong to the source commit. The exact artifact remains blocked from execution until fresh staging authorization and all staging preflight gates pass.
 
 Relocation admission also rejects absolute internal release symlinks before shutdown/swap: their targets would not follow a directory rename. Existing external shared-secret links remain permitted and unchanged. A real compiled-fixture regression verifies rejection without process, directory, journal or financial mutation; do not rewrite such links during rollback to force admission.
+
+## Current policy: one-way rollback — supersedes directory exchange
+
+Rollback now restores an earlier release and **consumes** `spendcraft.old`; it does not toggle current/old. Normal deployment still keeps current/old, but successful rollback leaves only `spendcraft`. Another rollback is unavailable until a subsequent deployment creates a new `spendcraft.old`.
+
+The normal stable launcher, direct executor and filesystem helper explicitly reject a missing `spendcraft.old` with `no_previous_installed_release`. The launcher never dispatches an executor in that case. Rejection precedes database access, shutdown or filesystem mutation. Existing tax/Category/compiled identity/manifest/PM2/database/backup admission remains; unknown compatibility still fails closed. The historical Category-only conversion executor remains unchanged and excluded from normal rollback.
+
+After admission, writer shutdown and backup, the one-way operation is:
+
+1. Journal and rename current to the single temporary path; sync the parent and journal the phase.
+2. Rename old to current; sync and journal promotion. Verify the restored complete identity, outgoing temporary identity and absence of old.
+3. Independently repeat the existing database/configuration/stopped-writer guard and both identities. Durably journal `outgoing-release-removal-pending`.
+4. Recursively remove **only the outgoing temporary tree**, without following its external secret symlinks; sync the parent. Verify restored current again and absence of old/temporary; journal `one-way-rollback-completed`.
+5. Offer the existing startup approval and use the restored process definitions. No database value or financial record is restored or reversed.
+
+The warning now explicitly states that the outgoing release is removed and old is consumed. Complete code identity verification precedes removal; this is not a guarantee that startup will succeed. A later startup failure keeps writers stopped and needs investigation/forward correction, not automatic return to the removed version.
+
+| Interruption | Filesystem and required handling |
+| --- | --- |
+| Before first rename | Both original releases remain; no automatic retry over an existing journal. |
+| After first rename | Previous remains at old; outgoing remains at temporary; current is absent. Stop and inspect both identities before separately authorized manual restoration. |
+| After promotion/before cleanup | Restored current is complete; old absent; outgoing temporary remains complete. Verify current and journal, keep writers stopped and review cleanup. Do not rename outgoing to old. |
+| During removal | Restored current remains complete; old absent; temporary may be partially removed. It is cleanup residue, not a usable recovery release. Preserve journal; verify restored identity and exact temporary path before separately authorized manual cleanup. |
+| After removal/before completion journal | Only restored current remains. Validate it and record completion after review; never attempt another rollback to the removed version. |
+| Before/during failed restart | Restored current remains; no previous version remains to roll back to. Keep traffic/writers fenced and investigate. |
+
+Removal is not atomic. A partial cleanup error aborts before startup; the temporary path may remain until explicit manual cleanup, while the verified restored release stays intact. No automatic retry, restoration from backup, old re-creation, tax reversal or deletion of restored/current data occurs. Shared environment/configuration files remain outside the removed tree. Tests exercise failed/partial removal, all promotion boundaries and abrupt child-process exits after both renames and after removal, alongside missing-old and second-attempt rejection.
+
+This revision is uncommitted and not deployed. The prior `7871889830159ee55a6d82475882901f33be06c8` installers implement exchange, **not this one-way policy**; they remain unchanged and must not be used to claim this behavior. Commit/rebuild/reverify an exact artifact in a separate authorized task before deployment. The old exchange verification sections above are historical; current results follow below.
+
+One-way revision verification: 381 focused non-database tests passed, zero failures/skips/pending, including actual shell rejection when old is missing, second-attempt rejection, guarded cleanup/partial-removal failure and interruption tests. Both TypeScript checks, changed-file ESLint, Knip, circular regression, Node/shell syntax, server build and both diff checks passed. Existing client bundle-size warning remains. Logs: `script-output/one-way-rollback-d25r1649/`. No database connection, actual rollback, PM2 operation, server access, deployment, installer regeneration or commit occurred.

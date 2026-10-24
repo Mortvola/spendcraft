@@ -7,7 +7,7 @@ import { parseArgs, parseEnv } from 'node:util'
 import { createHash } from 'node:crypto'
 import { Buffer } from 'node:buffer'
 import { createReadStream } from 'node:fs'
-import { readFile, readdir, lstat, realpath, readlink, open, mkdtemp, rename, mkdir } from 'node:fs/promises'
+import { readFile, readdir, lstat, realpath, readlink, open, mkdtemp, rename, mkdir, rm } from 'node:fs/promises'
 import { resolve, join, relative, isAbsolute, dirname } from 'node:path'
 import { spawn } from 'node:child_process'
 import { setTimeout as delay } from 'node:timers/promises'
@@ -268,12 +268,18 @@ export async function assertExecutorBundle(plan, directory = dirname(fileURLToPa
     || manifest.releaseId !== expected.identity || manifest.releaseId !== current) throw new Error('rollback_bundle_release_mismatch')
 }
 
+async function previousReleaseManifest(root) {
+  const directory = join(root, 'spendcraft.old')
+  if (!await exists(directory)) throw new Error('no_previous_installed_release')
+  return releaseManifest(directory)
+}
+
 export async function verifyReleases(plan, output) {
   if (await realpath(plan.root) !== plan.root || inside(join(plan.root, 'spendcraft'), output)
     || inside(join(plan.root, 'spendcraft.old'), output)) throw new Error('unsafe_root_or_output_path')
   const current = await releaseManifest(join(plan.root, 'spendcraft'))
   await assertExecutorBundle(plan, undefined, current.identity)
-  const previous = await releaseManifest(join(plan.root, 'spendcraft.old'))
+  const previous = await previousReleaseManifest(plan.root)
   for (const [actual, file] of [[current, plan.currentManifest], [previous, plan.previousManifest]]) {
     const expected = JSON.parse(await readFile(file, 'utf8'))
     if (expected.format !== 1 || expected.identity !== sha(JSON.stringify(expected.files))
@@ -465,7 +471,7 @@ async function productionOperations(plan, output, confirm, clients, config) {
     async swap() {
       await swapDirectories({ live, previous, temporary, identities }, {
         guard, journal, exists, identity: async (path) => (await releaseManifest(path)).identity,
-        rename, sync: () => syncDirectory(plan.root),
+        rename, remove: path => rm(path, { recursive: true, force: false }), sync: () => syncDirectory(plan.root),
       })
     },
     async restart() {
@@ -521,6 +527,7 @@ export async function main(args = process.argv.slice(2)) {
   if (values.plan) {
     plan = JSON.parse(await readFile(values.plan, 'utf8'))
     validatePlan(plan)
+    if (!await exists(join(plan.root, 'spendcraft.old'))) throw new Error('no_previous_installed_release')
     await assertExecutorBundle(plan, toolDirectory)
     if (await realpath(plan.root) !== plan.root) throw new Error('root_path_not_canonical')
     if ([join(plan.root, 'spendcraft'), join(plan.root, 'spendcraft.old')].some((path) => inside(path, outputParent))) {
@@ -562,7 +569,7 @@ export async function main(args = process.argv.slice(2)) {
   }
   // Reject unreviewed storage readers before constructing any database client.
   requireTaxStorageCompatibility(await releaseManifest(join(plan.root, 'spendcraft')))
-  requireTaxStorageCompatibility(await releaseManifest(join(plan.root, 'spendcraft.old')))
+  requireTaxStorageCompatibility(await previousReleaseManifest(plan.root))
   if (process.platform !== 'linux') throw new Error('execution_host_must_be_linux')
   const config = await connectionConfig(plan.envFile, plan.expected)
   const { Client } = await import('pg')

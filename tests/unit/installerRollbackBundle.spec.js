@@ -54,12 +54,26 @@ test.group('Stable rollback bundle (local packages, no database/services/network
     const current = await releaseManifest(release)
     const bundle = await prepareRollbackBundle({ root, release, releaseId: current.identity, source })
     await rename(release, join(root, 'spendcraft'))
+    await mkdir(join(root, 'spendcraft.old'))
     const currentManifest = join(root, 'current.json')
     await writeFile(currentManifest, JSON.stringify(current))
     const plan = { rollbackKind: 'application-only', root, currentManifest }
     await writeFile(join(root, 'maintenance/rollback-plan.json'), JSON.stringify(plan))
     return { ...bundle, current, plan }
   }
+  test('no previous release rejects launch before executor or process/database access', async ({ assert }) => {
+    await installed()
+    await rm(join(root, 'spendcraft.old'), { recursive: true })
+    const before = await readdir(root)
+    let called = false
+    await assert.rejects(() => launchRollback(root, '--execute', async () => { called = true; return 0 }), 'no_previous_installed_release')
+    assert.isFalse(called)
+    const result = spawnSync('bash', [join(root, 'maintenance/rollback.sh'), '--execute'],
+      { encoding: 'utf8', env: { ...process.env, SPENDCRAFT_ROOT: root } })
+    assert.notEqual(result.status, 0)
+    assert.include(result.stderr, 'no_previous_installed_release')
+    assert.deepEqual(await readdir(root), before)
+  })
   test('selects the exact installed bundle and hands off only the selected mode and fixed plan')
     .with(['--dry-run', '--execute']).run(async ({ assert }, mode) => {
       const setup = await installed()

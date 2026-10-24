@@ -25,7 +25,7 @@ async function release(root, name, version) {
   await symlink(join(root, 'shared-env'), join(dir, '.env'))
 }
 
-test.group('Two-directory application rollback — real temporary compiled releases, no database/PM2', group => {
+test.group('One-way application rollback — real temporary compiled releases, no database/PM2', group => {
   let root, paths, plan, output
   group.each.setup(async () => {
     root = await realpath(await mkdtemp(join(tmpdir(), 'two-release-swap-')))
@@ -43,15 +43,16 @@ test.group('Two-directory application rollback — real temporary compiled relea
     return () => rm(root, { recursive: true, force: true })
   })
   async function operations(fail) {
-    let renamed = 0
+    let renamed = 0, removed = false
     const journal = join(output, 'swap.jsonl'), events = []
     async function inject(point) { events.push(point); if (fail === point) throw new Error('injected_' + point) }
-    return { events, get renamed() { return renamed },
-      guard: () => inject('guard'),
+    return { events, get renamed() { return renamed }, get removed() { return removed },
+      guard: () => inject(renamed === 2 ? 'guard-cleanup' : 'guard'),
       exists: async path => { try { await lstat(path); return true } catch (error) { if (error.code !== 'ENOENT') throw error; return false } },
       identity: async path => (await releaseManifest(path)).identity,
       rename: async (from, to) => { await inject('rename-' + (renamed + 1) + '-before'); await rename(from, to); renamed++; await inject('rename-' + renamed + '-after') },
-      sync: async () => { const dir = await open(root, 'r'); try { await dir.sync() } finally { await dir.close() }; await inject('sync-' + renamed) },
+      remove: async path => { await inject('remove-before'); await rm(path, { recursive: true, force: false }); removed = true; await inject('remove-after') },
+      sync: async () => { const dir = await open(root, 'r'); try { await dir.sync() } finally { await dir.close() }; await inject(removed ? 'sync-cleanup' : 'sync-' + renamed) },
       journal: async (phase, detail) => {
         await inject('journal-' + phase)
         const file = await open(journal, 'a', 0o600)
@@ -59,54 +60,63 @@ test.group('Two-directory application rollback — real temporary compiled relea
       },
     }
   }
-  test('admitted compiled releases exchange identities and a second swap exchanges them back', async ({ assert }) => {
+  test('one-way rollback consumes old and a subsequent rollback fails without side effects', async ({ assert }) => {
     await verifyReleases(plan, output)
     await swapDirectories(paths, await operations())
     assert.equal((await releaseManifest(paths.live)).identity, paths.identities.previous)
-    assert.equal((await releaseManifest(paths.previous)).identity, paths.identities.current)
-    assert.notInclude(await readdir(root), '.spendcraft.rollback-swap-test')
-    assert.deepEqual((await readdir(root)).filter(name => name.startsWith('spendcraft')), ['spendcraft', 'spendcraft.old'])
-    assert.equal(JSON.parse((await readFile(join(output, 'swap.jsonl'), 'utf8')).trim().split('\n').at(-1)).phase, 'two-directory-swap-completed')
-    const again = { ...paths, identities: { current: paths.identities.previous, previous: paths.identities.current } }
-    await writeFile(plan.currentManifest, JSON.stringify(await releaseManifest(paths.live)))
-    await writeFile(plan.previousManifest, JSON.stringify(await releaseManifest(paths.previous)))
-    plan.reviewedDifferencesSha256 = hash(JSON.stringify(releaseDifferences(await releaseManifest(paths.live), await releaseManifest(paths.previous))))
+    await assert.rejects(() => lstat(paths.previous))
+    await assert.rejects(() => lstat(paths.temporary))
+    assert.deepEqual((await readdir(root)).filter(name => name.startsWith('spendcraft')), ['spendcraft'])
+    assert.equal(JSON.parse((await readFile(join(output, 'swap.jsonl'), 'utf8')).trim().split('\n').at(-1)).phase, 'one-way-rollback-completed')
+    assert.equal(await readFile(join(root, 'shared-env'), 'utf8'), 'synthetic')
     const repeatOutput = join(root, 'repeat-output'); await mkdir(repeatOutput)
-    await verifyReleases(plan, repeatOutput)
-    await swapDirectories(again, await operations())
-    assert.equal((await releaseManifest(paths.live)).identity, paths.identities.current)
-    assert.equal((await releaseManifest(paths.previous)).identity, paths.identities.previous)
+    await assert.rejects(() => verifyReleases(plan, repeatOutput), 'no_previous_installed_release')
+    const second = await operations()
+    await assert.rejects(() => swapDirectories(paths, second), 'no_previous_installed_release')
+    assert.deepEqual(second.events, [])
+    assert.equal((await releaseManifest(paths.live)).identity, paths.identities.previous)
   })
-  test('every interruption retains both complete identities; manual completion follows observed state').with([
+  test('interruptions preserve the restored release and journaled one-way cleanup state').with([
     'guard', 'journal-swap-pending', 'rename-1-before', 'rename-1-after', 'sync-1', 'journal-current-release-temporary',
     'rename-2-before', 'rename-2-after', 'sync-2', 'journal-previous-release-promoted',
-    'rename-3-before', 'rename-3-after', 'sync-3', 'journal-two-directory-swap-completed',
+    'guard-cleanup', 'journal-outgoing-release-removal-pending', 'remove-before', 'remove-after', 'sync-cleanup', 'journal-one-way-rollback-completed',
   ]).run(async ({ assert }, fail) => {
     const ops = await operations(fail), before = await readFile(join(root, 'financial-sentinel.json'), 'utf8')
     await assert.rejects(() => swapDirectories(paths, ops), 'injected_' + fail)
     const locations = []
     for (const path of [paths.live, paths.previous, paths.temporary]) if (await ops.exists(path)) locations.push({ path, identity: await ops.identity(path) })
-    assert.deepEqual(locations.map(row => row.identity).sort(), Object.values(paths.identities).sort())
-    const expected = [
+    assert.deepEqual(locations.map(row => row.identity).sort(), ops.removed ? [paths.identities.previous] : Object.values(paths.identities).sort())
+    const expected = ops.removed ? [[paths.live, paths.identities.previous]] : [
       [[paths.live, paths.identities.current], [paths.previous, paths.identities.previous]],
       [[paths.temporary, paths.identities.current], [paths.previous, paths.identities.previous]],
       [[paths.temporary, paths.identities.current], [paths.live, paths.identities.previous]],
-      [[paths.previous, paths.identities.current], [paths.live, paths.identities.previous]],
     ][ops.renamed]
     assert.deepEqual(locations.map(row => [row.path, row.identity]).sort(), expected.sort())
     // Exercise documented manual completion only on the verified phase state.
     // This is not an automatic retry or a new executor bypass.
-    if (ops.renamed === 0) { await rename(paths.live, paths.temporary); await rename(paths.previous, paths.live); await rename(paths.temporary, paths.previous) }
-    if (ops.renamed === 1) { await rename(paths.previous, paths.live); await rename(paths.temporary, paths.previous) }
-    if (ops.renamed === 2) await rename(paths.temporary, paths.previous)
+    if (ops.renamed === 0) { await rename(paths.live, paths.temporary); await rename(paths.previous, paths.live) }
+    if (ops.renamed === 1) await rename(paths.previous, paths.live)
+    if (!ops.removed) await rm(paths.temporary, { recursive: true, force: false })
     assert.equal((await releaseManifest(paths.live)).identity, paths.identities.previous)
-    assert.equal((await releaseManifest(paths.previous)).identity, paths.identities.current)
+    await assert.rejects(() => lstat(paths.previous))
     assert.equal(await readFile(join(root, 'financial-sentinel.json'), 'utf8'), before)
   })
-  test('abrupt child exit after each rename leaves both release trees discoverable').with([1, 2, 3])
+  test('partial cleanup failure leaves the verified restored release and blocks a second rollback', async ({ assert }) => {
+    const ops = await operations()
+    ops.remove = async path => { await rm(join(path, 'public/assets/App.js')); throw new Error('partial_cleanup_failure') }
+    await assert.rejects(() => swapDirectories(paths, ops), 'partial_cleanup_failure')
+    assert.equal((await releaseManifest(paths.live)).identity, paths.identities.previous)
+    await assert.rejects(() => lstat(paths.previous))
+    assert.isTrue((await lstat(paths.temporary)).isDirectory())
+    const phases = (await readFile(join(output, 'swap.jsonl'), 'utf8')).trim().split('\n').map(line => JSON.parse(line).phase)
+    assert.equal(phases.at(-1), 'outgoing-release-removal-pending')
+    await assert.rejects(() => swapDirectories(paths, ops), 'no_previous_installed_release')
+    assert.equal(await readFile(join(root, 'shared-env'), 'utf8'), 'synthetic')
+  })
+  test('abrupt child exit leaves the restored target or the original two trees recoverable').with(['rename-1', 'rename-2', 'remove'])
     .run(async ({ assert }, afterRename) => {
       const script = `import process from 'node:process';
-import {rename,lstat,open} from 'node:fs/promises';
+import {rename,lstat,open,rm} from 'node:fs/promises';
 import {swapDirectories} from ${JSON.stringify(pathToFileURL(resolve('installer/lib/applicationRollback.mjs')).href)};
 import {releaseManifest} from ${JSON.stringify(pathToFileURL(resolve('installer/lib/releaseManifest.mjs')).href)};
 const paths=${JSON.stringify(paths)}; let count=0;
@@ -114,15 +124,16 @@ await swapDirectories(paths, {guard:async()=>{},identity:async p=>(await release
 exists:async p=>{try{await lstat(p);return true}catch(e){if(e.code==='ENOENT')return false;throw e}},
 journal:async(phase,detail)=>{const f=await open(${JSON.stringify(join(output, 'crash-journal.jsonl'))},'a');try{await f.writeFile(JSON.stringify({phase,...detail})+'\\n');await f.sync()}finally{await f.close()}},
 sync:async()=>{const d=await open(${JSON.stringify(root)},'r');try{await d.sync()}finally{await d.close()}},
-rename:async(a,b)=>{await rename(a,b);if(++count===${afterRename})process.exit(77)}});`
+remove:async p=>{await rm(p,{recursive:true,force:false});if(${JSON.stringify(afterRename)}==='remove')process.exit(77)},
+rename:async(a,b)=>{await rename(a,b);if('rename-'+(++count)===${JSON.stringify(afterRename)})process.exit(77)}});`
       const child = spawnSync(process.execPath, ['--input-type=module', '-e', script], { encoding: 'utf8' })
       assert.equal(child.status, 77, child.stderr)
       const ops = await operations(), found = []
       for (const path of [paths.live, paths.previous, paths.temporary]) if (await ops.exists(path)) found.push(await ops.identity(path))
-      assert.deepEqual(found.sort(), Object.values(paths.identities).sort())
+      assert.deepEqual(found.sort(), afterRename === 'remove' ? [paths.identities.previous] : Object.values(paths.identities).sort())
       const journal = (await readFile(join(output, 'crash-journal.jsonl'), 'utf8')).trim().split('\n').map(line => JSON.parse(line))
       assert.equal(journal[0].phase, 'swap-pending')
-      assert.notInclude(journal.map(row => row.phase), 'two-directory-swap-completed')
+      assert.notInclude(journal.map(row => row.phase), 'one-way-rollback-completed')
     })
   test('bad compatibility, missing assets/releases and invalid manifests reject before shutdown or journaling').with([
     'tax', 'category', 'asset', 'missing', 'manifest', 'absolute-link',
@@ -142,7 +153,8 @@ rename:async(a,b)=>{await rename(a,b);if(++count===${afterRename})process.exit(7
     const before = await readdir(root), money = await readFile(join(root, 'financial-sentinel.json'), 'utf8')
     const ops = Object.fromEntries(['inspect', 'confirm', 'journal', 'stop', 'backup', 'swap', 'restart', 'smoke'].map(name => [name, async () => { events.push(name) }]))
     ops.preflight = () => verifyReleases(plan, output)
-    await assert.rejects(() => orchestrate({ dryRun: false }, ops))
+    if (kind === 'missing') await assert.rejects(() => orchestrate({ dryRun: false }, ops), 'no_previous_installed_release')
+    else await assert.rejects(() => orchestrate({ dryRun: false }, ops))
     assert.deepEqual(events, [])
     assert.deepEqual(await readdir(root), before)
     assert.equal(await readFile(join(root, 'financial-sentinel.json'), 'utf8'), money)
@@ -160,7 +172,7 @@ rename:async(a,b)=>{await rename(a,b);if(++count===${afterRename})process.exit(7
       else assert.equal(events.at(-1), 'stop')
       if (fail !== 'restart') assert.notInclude(events, 'restart')
     })
-  test('restored startup and restart failures observe the exchanged complete releases').with(['success', 'after-stop', 'before-restart', 'restart'])
+  test('restored startup and restart failures preserve one-way restoration').with(['success', 'after-stop', 'before-restart', 'restart'])
     .run(async ({ assert }, scenario) => {
       const events = [], money = await readFile(join(root, 'financial-sentinel.json'), 'utf8')
       const ops = {
@@ -171,7 +183,7 @@ rename:async(a,b)=>{await rename(a,b);if(++count===${afterRename})process.exit(7
         restart: async () => {
           events.push('restart')
           assert.equal((await releaseManifest(paths.live)).identity, paths.identities.previous)
-          assert.equal((await releaseManifest(paths.previous)).identity, paths.identities.current)
+          await assert.rejects(() => lstat(paths.previous))
           if (scenario === 'restart') throw new Error('injected')
         },
         smoke: async () => { events.push('smoke') },
@@ -181,7 +193,8 @@ rename:async(a,b)=>{await rename(a,b);if(++count===${afterRename})process.exit(7
       if (scenario === 'after-stop' || scenario === 'before-restart') assert.notInclude(events, 'restart')
       const expected = scenario === 'after-stop' ? paths.identities : { current: paths.identities.previous, previous: paths.identities.current }
       assert.equal((await releaseManifest(paths.live)).identity, expected.current)
-      assert.equal((await releaseManifest(paths.previous)).identity, expected.previous)
+      if (scenario === 'after-stop') assert.equal((await releaseManifest(paths.previous)).identity, expected.previous)
+      else await assert.rejects(() => lstat(paths.previous))
       await assert.rejects(() => lstat(paths.temporary))
       assert.equal(await readFile(join(root, 'financial-sentinel.json'), 'utf8'), money)
     })
