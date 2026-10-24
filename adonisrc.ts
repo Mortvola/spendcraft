@@ -76,6 +76,8 @@ export default defineConfig({
   ],
 
   metaFiles: [
+    { pattern: 'installer/tax-storage-profile.json', reloadServer: false },
+    { pattern: 'installer/lib/taxReleaseRecovery.mjs', reloadServer: false },
     {
       pattern: 'scripts/auditTransactionTaxPrecision.mjs',
       reloadServer: false,

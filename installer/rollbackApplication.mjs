@@ -1,3 +1,4 @@
+import { requireTaxStorageCompatibility } from './lib/taxReleaseRecovery.mjs'
 // Application-only rollback. Never converts or restores database values. Never imported by the application.
 import process from 'node:process'
 import console from 'node:console'
@@ -6,7 +7,7 @@ import { parseArgs, parseEnv } from 'node:util'
 import { createHash } from 'node:crypto'
 import { Buffer } from 'node:buffer'
 import { createReadStream } from 'node:fs'
-import { readFile, readdir, lstat, realpath, readlink, open, mkdtemp, cp, rename } from 'node:fs/promises'
+import { readFile, readdir, lstat, realpath, readlink, open, mkdtemp, cp, rename, mkdir } from 'node:fs/promises'
 import { resolve, join, relative, isAbsolute, dirname } from 'node:path'
 import { spawn } from 'node:child_process'
 import { setTimeout as delay } from 'node:timers/promises'
@@ -40,6 +41,7 @@ export function releaseDifferences(current, previous) {
 
 export function validatePlan(plan) {
   if (plan.rollbackKind !== 'application-only') throw new Error('application_only_plan_required')
+  if (plan.recoveryIdentity !== undefined) throw new Error('alternate_recovery_target_not_supported')
   if (!['production', 'staging', 'sandbox'].includes(plan.environment) || !isAbsolute(plan.root ?? '')
     || !isAbsolute(plan.productionRoot ?? '') || !isAbsolute(plan.envFile ?? '')) throw new Error('invalid_plan_paths')
   if (plan.environment === 'sandbox' && (inside(plan.productionRoot, plan.root) || inside(plan.root, plan.productionRoot)
@@ -289,6 +291,8 @@ export async function verifyReleases(plan, output) {
     if ((file.startsWith('database/') || file === 'config/database.js')
       && JSON.stringify(currentFiles.get(file)) !== JSON.stringify(oldFiles.get(file))) throw new Error('database_release_difference')
   }
+  requireTaxStorageCompatibility(current)
+  requireTaxStorageCompatibility(previous)
   if (currentFiles.get('config/database.js')?.sha256 !== plan.databaseConfigSha256) throw new Error('database_config_not_reviewed')
   for (const key of secretLinks) {
     if (JSON.stringify(currentFiles.get(key)) !== JSON.stringify(oldFiles.get(key))) throw new Error('secret_link_difference')
@@ -533,6 +537,10 @@ export async function main(args = process.argv.slice(2)) {
       outputParent = dirname(path)
     }
   }
+  if (plan) outputParent = plan.root
+  outputParent = join(outputParent, 'script-output')
+  await mkdir(outputParent, { recursive: true, mode: 0o700 })
+  if (await realpath(outputParent) !== outputParent) throw new Error('unsafe_output_directory')
   const output = await mkdtemp(join(outputParent, 'application-rollback-'))
   console.log(output) // Required before all database work; every invocation has private unique results.
   if (values['compare-manifests']) {
@@ -553,6 +561,9 @@ export async function main(args = process.argv.slice(2)) {
     console.log(`Release identity: ${manifest.identity}`)
     return
   }
+  // Reject unreviewed storage readers before constructing any database client.
+  requireTaxStorageCompatibility(await releaseManifest(join(plan.root, 'spendcraft')))
+  requireTaxStorageCompatibility(await releaseManifest(join(plan.root, 'spendcraft.old')))
   if (process.platform !== 'linux') throw new Error('execution_host_must_be_linux')
   const config = await connectionConfig(plan.envFile, plan.expected)
   const { Client } = await import('pg')

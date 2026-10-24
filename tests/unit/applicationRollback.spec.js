@@ -1,3 +1,4 @@
+import { writeTaxRuntimeFixture } from '../helpers/taxRecoveryRelease.js'
 import { test } from '@japa/runner'
 import { readFile, writeFile, mkdir, mkdtemp, symlink, realpath, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -68,7 +69,7 @@ test.group('Application-only rollback — no database/services', () => {
         await writeFile(join(directory, 'config/database.js'), database)
         await writeFile(join(directory, 'public/assets/App.js'), '// synthetic')
         await writeFile(join(directory, 'public/assets/.vite/manifest.json'), JSON.stringify({ 'client-src/App.tsx': { isEntry: true, file: 'App.js' } }))
-        if (codec) await writeFile(join(directory, 'app/services/categoryAmountCodec.js'), '// codec')
+        await writeTaxRuntimeFixture(directory, codec)
         await symlink(envFile, join(directory, '.env'))
         return releaseManifest(directory)
       }

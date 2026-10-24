@@ -126,7 +126,10 @@ export async function main(args = process.argv.slice(2)) {
   const maintenance = join(root, 'maintenance')
   await planStep('prepare-maintenance-directory', () => mkdir(maintenance, { recursive: true, mode: 0o700 }))
   if (await realpath(maintenance) !== maintenance) throw new Error('unsafe_maintenance_directory')
-  const output = await planStep('create-output-directory', () => mkdtemp(join(maintenance, 'rollback-plan-generation-')))
+  const outputParent = join(root, 'script-output')
+  await mkdir(outputParent, { recursive: true, mode: 0o700 })
+  if (await realpath(outputParent) !== outputParent) throw new Error('unsafe_output_parent')
+  const output = await planStep('create-output-directory', () => mkdtemp(join(outputParent, 'rollback-plan-generation-')))
   console.log(output) // Print unique absolute output location before any database work.
   const current = await planStep('inspect-current-release', () => releaseManifest(join(root, 'spendcraft')))
   try { await lstat(join(root, 'spendcraft.old')) }
@@ -161,7 +164,7 @@ export async function main(args = process.argv.slice(2)) {
   await planStep('validate-application-connections', () => verifyApplicationConnections(join(root, 'spendcraft'), plan.databaseConfigSha256))
   try { await planStep('verify-release-compatibility', () => verifyReleases(plan, output)) }
   catch (error) {
-    if (!['compatible_decimal_string_release_pair_required', 'database_release_difference', 'secret_link_difference'].includes(error.message)) throw error
+    if (!['compatible_decimal_string_release_pair_required', 'database_release_difference', 'secret_link_difference', 'tax_storage_compatibility_unknown'].includes(error.message)) throw error
     await publishPlan(maintenance, output, { root, currentManifest: plan.currentManifest,
       unavailableReason: error.message, generated: true })
     console.log('Release-specific rollback unavailable: ' + error.message + '. No conversion or rollback was executed.')

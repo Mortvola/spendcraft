@@ -1,0 +1,16 @@
+{
+  "format": 1,
+  "sourceCommit": "d62834c4202223557bbffd83cbdc1caffee97553",
+  "purpose": "reviewed-tax-category-storage-boundary",
+  "files": {
+    "app/Models/Transaction.js": "1961147b105d002a78b5a0aaf47aaa37383aede07066d67c334b4ec4e9c7a4a2",
+    "app/Controllers/Http/TransactionsController.js": "9685bda289148f2fea6d465e8935bfe17a5502eb52357c4ba3ce9f89e0f38a27",
+    "app/Controllers/Http/TaxesController.js": "70a1d358113a034421b9909589aa15f910f420cd55f78f833986c102648d5ab8",
+    "app/services/taxAmountCodec.js": "ab07f63f27c6c5c078cfd11ea11ee4271a3bd9cd777ba1ade8a2adba6aacf736",
+    "app/services/taxStorageBinding.js": "27ff73af0a942a2cff7998f5ce9078ebfe64203717709c8996b88f5d23fb3e61",
+    "app/services/transactionTaxStorage.js": "2b08d34b5072ed14b4dfc88984b43098096dcfaa6edce0fbba9644cd32e4e458",
+    "app/services/categoryAmountCodec.js": "9fb397e11ac36e0da6793e4b646e91928611a3bbfa8b99d6659fdbd710fd611c",
+    "app/services/categoryStorageBinding.js": "7af24156a8d1daba902bd022d2ef84b6e0597afe7098c797a862801e88804a36",
+    "app/services/transactionCategoryStorage.js": "9428c45aa40b2c42b0d1fc43855160e677d16b4bcee5f753cbacaa69a4a68175"
+  }
+}
