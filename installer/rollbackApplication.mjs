@@ -7,7 +7,7 @@ import { parseArgs, parseEnv } from 'node:util'
 import { createHash } from 'node:crypto'
 import { Buffer } from 'node:buffer'
 import { createReadStream } from 'node:fs'
-import { readFile, readdir, lstat, realpath, readlink, open, mkdtemp, cp, rename, mkdir } from 'node:fs/promises'
+import { readFile, readdir, lstat, realpath, readlink, open, mkdtemp, rename, mkdir } from 'node:fs/promises'
 import { resolve, join, relative, isAbsolute, dirname } from 'node:path'
 import { spawn } from 'node:child_process'
 import { setTimeout as delay } from 'node:timers/promises'
@@ -293,6 +293,9 @@ export async function verifyReleases(plan, output) {
   }
   requireTaxStorageCompatibility(current)
   requireTaxStorageCompatibility(previous)
+  if ([current, previous].some(manifest => manifest.files.some(file => file.kind === 'link' && isAbsolute(file.target)))) {
+    throw new Error('nonrelocatable_release_link')
+  }
   if (currentFiles.get('config/database.js')?.sha256 !== plan.databaseConfigSha256) throw new Error('database_config_not_reviewed')
   for (const key of secretLinks) {
     if (JSON.stringify(currentFiles.get(key)) !== JSON.stringify(oldFiles.get(key))) throw new Error('secret_link_difference')
@@ -327,8 +330,7 @@ async function productionOperations(plan, output, confirm, clients, config) {
   const previous = join(plan.root, 'spendcraft.old')
   let restorationStarted = false
   const stamp = output.split('/').at(-1)
-  const stage = join(plan.root, `spendcraft.rollback-stage-${stamp}`)
-  const retained = join(plan.root, `spendcraft.forward-recovery-${stamp}`)
+  const temporary = join(plan.root, `.spendcraft.rollback-swap-${stamp}`)
   const journalPath = join(plan.root, '.transaction-category-release-rollback.jsonl')
   let journalFile
   let identities
@@ -352,7 +354,7 @@ async function productionOperations(plan, output, confirm, clients, config) {
     await syncDirectory(plan.root)
   }
   const guard = async () => {
-    // Independently verify configured pg/pgLog and every live connection before each UPDATE and COMMIT.
+    // Independently verify configured pg/pgLog and every live connection before protected filesystem/restart operations. No database mutation occurs.
     await connectionConfig(plan.envFile, plan.expected)
     await verifyApplicationConnections(live, plan.databaseConfigSha256)
     const verified = []
@@ -371,7 +373,7 @@ async function productionOperations(plan, output, confirm, clients, config) {
     async preflight() {
       if (process.platform !== 'linux') throw new Error('execution_host_must_be_linux')
       validatePlan(plan)
-      if (await exists(journalPath) || await exists(stage) || await exists(retained)) throw new Error('prior_run_requires_recovery_review')
+      if (await exists(journalPath) || await exists(temporary)) throw new Error('prior_run_requires_recovery_review')
       identities = await verifyReleases(plan, output)
       await verifyApplicationConnections(live, plan.databaseConfigSha256)
       if (await realpath(plan.pm2Home) !== plan.pm2Home) throw new Error('pm2_home_not_canonical')
@@ -385,7 +387,7 @@ async function productionOperations(plan, output, confirm, clients, config) {
       }
       for (const client of clients) await verifyIdentity(client, plan.expected)
       await writeJson(join(output, 'preflight.json'), { manualRestart: plan.manualRestart === true, identities, database: plan.expected, processes: observed,
-        directories: { live, previous, stage, retained }, recoveryProcedure: plan.recoveryProcedure })
+        directories: { live, previous, temporary }, recoveryProcedure: plan.recoveryProcedure })
     },
     confirm,
     journal,
@@ -458,13 +460,10 @@ async function productionOperations(plan, output, confirm, clients, config) {
         recoveryProcedure: plan.recoveryProcedure, completedAt: new Date().toISOString() })
       await confirm('Confirm the fresh backup completed and the documented recovery procedure is understood.',
         `RECOVERY ${plan.expected.database}`)
-      // Copy before swapping: insufficient space or missing dependencies must fail before changing application directories.
-      await cp(previous, stage, { recursive: true, dereference: false, force: false, errorOnExist: true, verbatimSymlinks: true })
-      if ((await releaseManifest(stage)).identity !== identities.previous) throw new Error('staged_release_changed')
-      await journal('previous-release-staged', { stage, retained })
+      // swapDirectories rechecks both complete identities after this backup, before the first rename.
     },
     async swap() {
-      await swapDirectories({ live, previous, stage, retained, identities }, {
+      await swapDirectories({ live, previous, temporary, identities }, {
         guard, journal, exists, identity: async (path) => (await releaseManifest(path)).identity,
         rename, sync: () => syncDirectory(plan.root),
       })

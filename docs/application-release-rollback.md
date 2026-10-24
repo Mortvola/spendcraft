@@ -44,8 +44,8 @@ inspection evidence. It does not stop processes, scan or convert allocations,
 create a database backup, swap directories or restart services.
 
 Execution preserves existing maintenance/fencing confirmation, selected-PM2
-shutdown, fresh verified logical backup, staged previous-release copy, atomic
-filesystem renames/journaling, explicit restart approval and health/read checks.
+shutdown, fresh verified logical backup, a journaled three-rename exchange of current/old
+through a temporary path (each rename is atomic; the sequence is not), explicit restart approval and health/read checks.
 All three database verification connections enforce
 `default_transaction_read_only=on`. The executor contains no monetary conversion,
 allocation scan, financial repair, schema migration or database UPDATE/restore.
@@ -61,8 +61,8 @@ advisory lock or additional application-level row lock is introduced.
 The previous release's process manifest controls restored startup. If absent,
 the application files may be restored but all processes remain stopped for manual
 operator startup and verification. Failures after stopping writers do not
-implicitly resume them. Both releases, recovery copy, backup and journal remain
-available; no automatic database restore or Category representation reversal is
+implicitly resume them. Both releases, backup and journal remain
+available; a successful exchange leaves only spendcraft and spendcraft.old; no automatic database restore or Category representation reversal is
 attempted.
 
 ## Local verification and future staging rehearsal
@@ -98,3 +98,9 @@ New rollback changes are unstaged, including the explanatory addition to the
 already-staged historical implementation document. Existing unrelated files were
 preserved. No database connection, real rollback/recovery, service operation,
 installed-file change, deployment or commit occurred.
+
+For the current tax release, complete reviewed Category/tax/model/PATCH/report
+compatibility is required before destructive action, not codec presence alone.
+See [the two-directory interruption table](transaction-tax-decimal-string-recovery.md#interruption-and-retry-table).
+The temporary swap path is never a persistent recovery slot. Interrupted swaps
+require identity-based manual review; the existing journal blocks automatic retry.

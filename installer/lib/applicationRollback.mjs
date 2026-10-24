@@ -16,21 +16,29 @@ export function normalizedIP(value) {
 
 export const WARNING = 'This operation restores the previous compatible SpendCraft application release. Database values will not be converted or restored. Historical conversion recovery is a separate operation.'
 
+// Three renames, not an atomic multi-directory exchange. The durable journal and
+// unchanged release identities permit manual recovery; never auto-retry a partial swap.
 export async function swapDirectories(paths, operations) {
-  const { live, previous, stage, retained, identities } = paths
+  const { live, previous, temporary, identities } = paths
   await operations.guard()
-  if (await operations.identity(live) !== identities.current || await operations.identity(previous) !== identities.previous
-    || await operations.identity(stage) !== identities.previous) throw new Error('release_changed_before_swap')
-  if (await operations.exists(retained)) throw new Error('recovery_destination_exists')
-  await operations.journal('swap-pending', { live, previous, stage, retained })
-  await operations.rename(live, retained)
+  if (await operations.identity(live) !== identities.current || await operations.identity(previous) !== identities.previous) {
+    throw new Error('release_changed_before_swap')
+  }
+  if (await operations.exists(temporary)) throw new Error('swap_temporary_exists')
+  await operations.journal('swap-pending', { live, previous, temporary })
+  await operations.rename(live, temporary)
   await operations.sync()
-  await operations.journal('current-release-retained', { retained })
-  if (await operations.exists(live)) throw new Error('live_destination_reappeared')
-  await operations.rename(stage, live)
+  await operations.journal('current-release-temporary', { temporary })
+  if (await operations.exists(live) || await operations.identity(previous) !== identities.previous) throw new Error('swap_state_changed')
+  await operations.rename(previous, live)
   await operations.sync()
-  if (await operations.identity(live) !== identities.previous) throw new Error('restored_release_mismatch')
-  await operations.journal('previous-release-restored', { live, previous, retained })
+  await operations.journal('previous-release-promoted', { live, temporary })
+  if (await operations.exists(previous) || await operations.identity(temporary) !== identities.current) throw new Error('swap_state_changed')
+  await operations.rename(temporary, previous)
+  await operations.sync()
+  if (await operations.identity(live) !== identities.previous || await operations.identity(previous) !== identities.current
+    || await operations.exists(temporary)) throw new Error('swapped_release_mismatch')
+  await operations.journal('two-directory-swap-completed', { live, previous })
 }
 
 export async function orchestrate(options, operations) {
