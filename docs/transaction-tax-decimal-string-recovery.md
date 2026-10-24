@@ -1,6 +1,6 @@
 # Transaction Tax release recovery
 
-> Current revision: rollback is one-way. It consumes `spendcraft.old` and removes the outgoing temporary release after verified restoration. A missing old blocks rollback before execution. Earlier exchange descriptions below are historical; see the latest one-way policy. This revision is uncommitted and requires a new artifact before deployment.
+> Current finalized policy: one-way rollback consumes old, verifies filesystem restoration, starts and health-checks the restored application, then removes the outgoing temporary tree. Success leaves only current. Earlier exchange/early-cleanup descriptions below are historical; use the finalization section. Deployment remains separately unauthorized.
 
 Date: 2026-10-23. Source HEAD: `d62834c4202223557bbffd83cbdc1caffee97553`, branch `dollar-to-cents-2`. Recovery guard changes are uncommitted and not deployed.
 
@@ -244,3 +244,55 @@ Removal is not atomic. A partial cleanup error aborts before startup; the tempor
 This revision is uncommitted and not deployed. The prior `7871889830159ee55a6d82475882901f33be06c8` installers implement exchange, **not this one-way policy**; they remain unchanged and must not be used to claim this behavior. Commit/rebuild/reverify an exact artifact in a separate authorized task before deployment. The old exchange verification sections above are historical; current results follow below.
 
 One-way revision verification: 381 focused non-database tests passed, zero failures/skips/pending, including actual shell rejection when old is missing, second-attempt rejection, guarded cleanup/partial-removal failure and interruption tests. Both TypeScript checks, changed-file ESLint, Knip, circular regression, Node/shell syntax, server build and both diff checks passed. Existing client bundle-size warning remains. Logs: `script-output/one-way-rollback-d25r1649/`. No database connection, actual rollback, PM2 operation, server access, deployment, installer regeneration or commit occurred.
+
+## One-way finalization: retain outgoing until runtime health passes
+
+Review date: 2026-10-23 (America/Denver). Actual starting HEAD: `160a6e7b578a29cb7a70f14d8e97778638f3521e`, branch `dollar-to-cents-2`. The one-way implementation was already committed at task start; index and tracked working tree were clean. Unrelated untracked editor, key, backup and scratch files are preserved and excluded. No server or database is accessed in this task.
+
+### Small safety correction and exact ordering
+
+The earlier code verified filesystem identity but deleted outgoing before startup. That would remove the only alternative application tree even if the restored binary failed to start. Finalization makes the smallest lifecycle correction: **separate restoration from cleanup, and invoke cleanup only after existing runtime verification passes**. It does not add a persistent recovery slot, restore old, toggle versions, reverse tax storage or restore a database.
+
+1. Before any database connection, validate explicit environment/root/plan, current/old existence and complete manifests, compiled Category/tax/model/PATCH/report compatibility, dependencies/assets, shared configuration mapping, PM2 paths/runtime source/saved definitions/script hashes and absence of existing journal or abandoned temporary path. Private diagnostic output is permitted; installed releases and execution journals are unchanged on rejection. Filesystem-only admission repeats before execution to reject stale state.
+2. Independently verify configured/live pg, pgLog, execution connection and socket identities as before. Confirm maintenance, stop only the intended writers, verify their shutdown/cron/stopped-dump state, obtain and verify the fresh logical backup. Exclusive-session and stopped-writer admission remain mandatory before directory rotation.
+3. Journal current → temporary and old → current, sync the parent after each rename, verify both complete identities and old absence. Journal `filesystem-restoration-verified`. Current now contains the intended previous release; outgoing is still complete at the one temporary path.
+4. Start the restored release with its reviewed PM2 definitions. Require online status and valid PIDs. Perform the established HTTP startup check and require the explicit authenticated read-only Transaction/report/database-connectivity and startup/server/provider-error checks. The operator's `READ CHECKS PASSED <database>` confirmation remains mandatory. Save PM2 state and durably journal health evidence. Only then mark runtime health verified.
+5. Cleanup independently checks the health evidence, configured/live database identities, application connection mapping, reviewed PM2 runtime/current restored definitions/online state, no uncontrolled in-root PM2 process and no outgoing-path writer or old PID/start-time still alive. Reverify both complete trees and missing old. Journal `outgoing-release-removal-pending`, remove only outgoing temporary, sync and verify restored identity and absence of both old/temporary. Journal `one-way-rollback-completed`, then final completion. Shared-secret symlink targets are not removed.
+
+Restored application connections are expected during step 5. The cleanup-only guard therefore verifies database identity while allowing those expected connections; it is **not** the exclusive-session/stopped-writer gate used for financial fencing and rotation. Cleanup performs only filesystem deletion of a quiescent outgoing tree, not database mutation or financial reconstruction. Existing stop/rotation identity and exclusivity guards are unchanged. A failed cleanup guard stops completion and the existing error path stops managed restored writers. No generic bypass is provided.
+
+### Filesystem versus runtime verification
+
+Filesystem verification uses the full manifest, including required server entrypoints, nine reviewed compiled boundary files, client manifest/assets, declared runtime dependencies, file modes and external shared environment/configuration links. Generated plans additionally verify the release-bound PM2 manifest and script hashes; internal absolute symlinks that cannot survive relocation remain rejected.
+
+Runtime verification combines automatic PM2/HTTP evidence and fresh PostgreSQL identity queries with the existing explicit operator-authenticated read/error checks. It does not claim that a redirect alone proves authenticated/database functionality. No production credentials are embedded in the tool or artifact. Startup/error-log review remains an operator step, and actual EC2 behavior must be established in the later staging rehearsal.
+
+If a prior release has no process manifest and the reviewed plan requires manual startup, the tool stops at `manual-restart-required` with outgoing retained. It does not claim successful completion or delete outgoing without health evidence. Manual startup/verification/cleanup needs a separately reviewed authorized procedure; there is no automatic resume or force-cleanup flag.
+
+### Failure-state matrix and completion invariant
+
+| Failure | Preserved state and required response |
+| --- | --- |
+| Missing old, unknown identity/compatibility, missing asset/dependency or stale journal | Reject before database connection/process shutdown/application mutation. Only safe diagnostics may be written. Existing journal is not changed. |
+| Shutdown/backup failure | Both original directories remain; keep writers fenced. No rename, deletion or automatic retry. |
+| First rename / restoration interrupted | Both original trees remain at journaled paths; current may be absent. Verify actual full identities, not merely last journal phase. Stop for manual recovery. |
+| Filesystem restoration verification failure | No cleanup or restart. Preserve both observed trees, journal and stopped writers for investigation. |
+| PM2 restart or HTTP/authenticated/runtime health failure | Restored current and complete outgoing temporary remain; no cleanup. Existing error handling stops managed writers. Investigate; do not automatically return to outgoing or restore a database. |
+| Cleanup admission failure | Both complete trees remain, old absent. Stop managed writers and investigate the failed identity/process/health check. |
+| Removal partially fails | Restored current remains verified; outgoing may be partial cleanup residue. Journal says removal pending; abort and stop managed writers. Do not treat residue as runnable or recreate old. Manual cleanup requires fresh root/host/DB/writer verification and explicit authorization. |
+| Removal completes but journal/finalization fails | Only restored current remains. Verify it and journal actual completion after review; do not repeat rollback. |
+| Success | Restored current runs and passed health checks; old/temporary absent; journal completed; database representation unchanged. A second rollback fails with `no_previous_installed_release`. |
+
+The temporary path exists only while the operation is incomplete; it is not another completed release slot. No prior/current tree is automatically discarded until health is positively recorded. Actual process-exit tests exercise both rename boundaries and cleanup, not physical disk/power-loss guarantees. Existing journals deliberately block blind retry, including completed runs until their evidence is reviewed/archived. No automatic recovery or monetary reversal is added.
+
+### Verification, provenance and next gates
+
+Final focused selection: **387 non-database tests passed**, zero failures/skips/pending. Tests use actual production helpers with complete representative emitted release fixtures, mocked process/database operations, real temporary filesystem transitions and abrupt child exits. They cover health-before-cleanup ordering, health rejection, missing-old/second-attempt rejection, positive/negative compatibility, stale journals and abandoned temporary rejection before database work, partial cleanup, startup failure, manual-required startup, asset/manifest failures and unchanged synthetic financial sentinels. Tests do not claim a real EC2/PM2/database rehearsal.
+
+Both TypeScript checks, changed-file ESLint, Knip, circular regression, server/client builds, script syntax and both diff checks pass. Existing client >500 kB bundle warning remains. Accepted monetary runtime code and the nine compiled tax/Category boundary hashes remain unchanged; the earlier 2,807-test PostgreSQL acceptance is not rerun. No staging/production/sandbox/test database connection occurs.
+
+The final release is the commit containing this section. After committing, build once from a clean detached checkout with established `bash build.sh`. Exact commit, `dirty:false`, UTC build timestamp, package ID, ZIP SHA-256, template hash and both target installer hashes are recorded together in `script-output/one-way-finalization-3nhy2qo5/artifact-receipt.json` and the package's `release-source.json`/`release.json`. This avoids embedding a commit's own hash into its source. Verify committed helper/executor/profile/bundle code and the nine accepted compiled monetary boundary files inside the ZIP, its CRC and private-file exclusions, and byte-identical decoded embedded archives in both wrappers. The previous ZIP `63d24c0a49afa2c30081e3cbad0eaea20596b35fc6dae4018b6df180649c4dec` implements exchange and is superseded; never reuse it for this release.
+
+Staging deployment remains unauthorized. Before later execution on `staging.spendcraft.app`, freshly verify EC2/SSH identity, `/spendcraft_staging/server`, configured/live/execution DB identity including role/port/server/peer, exact installed pair, backup readability/recoverability, free-space peak and complete PM2/cron/child/external-writer inventory. Decline migrations and SKIP seeding. Use synthetic data only, test the initial incompatible-pair rejection without shutdown/mutation, then a genuinely reviewed compatible pair and every interruption/cleanup state. Do not edit metadata to manufacture compatibility. Production needs same-artifact staging acceptance and independent approval; historical tax conversion remains separate.
+
+Manual-startup-required execution explicitly returns an incomplete result and CLI exit status 2, retaining outgoing and leaving processes stopped. It cannot be mistaken for completed cleanup/health acceptance. Dry-run remains non-mutating and does not claim runtime verification.

@@ -12,7 +12,7 @@ import { resolve, join, relative, isAbsolute, dirname } from 'node:path'
 import { spawn } from 'node:child_process'
 import { setTimeout as delay } from 'node:timers/promises'
 import { createInterface } from 'node:readline/promises'
-import { orchestrate, swapDirectories, normalizedIP } from './lib/applicationRollback.mjs'
+import { orchestrate, swapDirectories, cleanupOutgoingRelease, normalizedIP } from './lib/applicationRollback.mjs'
 
 import { verifyRollbackBundle } from './lib/rollbackBundleIntegrity.mjs'
 import { readProcessManifest, processDefinitions, replaceProcesses, matchesDefinition } from './lib/pm2Processes.mjs'
@@ -331,10 +331,30 @@ export async function verifyReleases(plan, output) {
   return { current: current.identity, previous: previous.identity, differences }
 }
 
+// Filesystem/config/process definitions only. Must run before opening database clients
+// and repeat immediately before execution to reject stale admission.
+export async function verifyFilesystemAdmission(plan, output) {
+  validatePlan(plan)
+  if (await realpath(plan.root) !== plan.root) throw new Error('root_path_not_canonical')
+  if (await exists(join(plan.root, '.transaction-category-release-rollback.jsonl'))
+    || (await readdir(plan.root)).some(name => name.startsWith('.spendcraft.rollback-swap-'))) throw new Error('prior_run_requires_recovery_review')
+  const identities = await verifyReleases(plan, output)
+  await verifyApplicationConnections(join(plan.root, 'spendcraft'), plan.databaseConfigSha256)
+  if (await realpath(plan.pm2Home) !== plan.pm2Home) throw new Error('pm2_home_not_canonical')
+  await verifyPm2Runtime(plan.pm2Executable)
+  const entries = JSON.parse(await readFile(join(plan.pm2Home, 'dump.pm2'), 'utf8'))
+  const observed = selectProcesses(entries.map(entry => ({ name: entry.name, pid: entry.pm_pid ?? 0, pm2_env: entry })), plan.processes)
+  for (const definition of plan.processes) {
+    if (await fileHash(definition.script) !== definition.scriptSha256) throw new Error('process_script_changed')
+  }
+  return { identities, observed }
+}
+
 async function productionOperations(plan, output, confirm, clients, config) {
   const live = join(plan.root, 'spendcraft')
   const previous = join(plan.root, 'spendcraft.old')
   let restorationStarted = false
+  let healthVerified = false
   const stamp = output.split('/').at(-1)
   const temporary = join(plan.root, `.spendcraft.rollback-swap-${stamp}`)
   const journalPath = join(plan.root, '.transaction-category-release-rollback.jsonl')
@@ -378,19 +398,9 @@ async function productionOperations(plan, output, confirm, clients, config) {
   const operations = {
     async preflight() {
       if (process.platform !== 'linux') throw new Error('execution_host_must_be_linux')
-      validatePlan(plan)
-      if (await exists(journalPath) || await exists(temporary)) throw new Error('prior_run_requires_recovery_review')
-      identities = await verifyReleases(plan, output)
-      await verifyApplicationConnections(live, plan.databaseConfigSha256)
-      if (await realpath(plan.pm2Home) !== plan.pm2Home) throw new Error('pm2_home_not_canonical')
-      await verifyPm2Runtime(plan.pm2Executable)
-      // Capture reviewed definitions without ever persisting the PM2 environment.
-      const entries = JSON.parse(await readFile(join(plan.pm2Home, 'dump.pm2'), 'utf8'))
-      // Saved dump entries do not carry pm2_env; normalize only the expected metadata shape.
-      observed = selectProcesses(entries.map((entry) => ({ name: entry.name, pid: entry.pm_pid ?? 0, pm2_env: entry })), plan.processes)
-      for (const definition of plan.processes) {
-        if (await fileHash(definition.script) !== definition.scriptSha256) throw new Error('process_script_changed')
-      }
+      const admission = await verifyFilesystemAdmission(plan, output)
+      identities = admission.identities
+      observed = admission.observed
       for (const client of clients) await verifyIdentity(client, plan.expected)
       await writeJson(join(output, 'preflight.json'), { manualRestart: plan.manualRestart === true, identities, database: plan.expected, processes: observed,
         directories: { live, previous, temporary }, recoveryProcedure: plan.recoveryProcedure })
@@ -471,7 +481,7 @@ async function productionOperations(plan, output, confirm, clients, config) {
     async swap() {
       await swapDirectories({ live, previous, temporary, identities }, {
         guard, journal, exists, identity: async (path) => (await releaseManifest(path)).identity,
-        rename, remove: path => rm(path, { recursive: true, force: false }), sync: () => syncDirectory(plan.root),
+        rename, sync: () => syncDirectory(plan.root),
       })
     },
     async restart() {
@@ -494,10 +504,35 @@ async function productionOperations(plan, output, confirm, clients, config) {
     async smoke() {
       const response = await globalThis.fetch(plan.smokeUrl, { redirect: 'manual', signal: globalThis.AbortSignal.timeout(10000) })
       if (![200, 301, 302, 303, 307, 308].includes(response.status)) throw new Error('http_startup_check_failed')
-      await confirm('Perform authenticated read-only Transaction, allocation display, funding/rebalance and report checks; inspect server/provider errors. Do not create financial test records. Keep traffic fenced if any check fails.',
+      await confirm('Perform authenticated read-only Transaction, allocation display, funding/rebalance and report checks; verify database connectivity and inspect startup/server/provider errors. Do not create financial test records. Keep traffic fenced if any check fails.',
         `READ CHECKS PASSED ${plan.expected.database}`)
       await pm2(['save'])
       await journal('smoke-confirmed', { httpStatus: response.status })
+      healthVerified = true
+    },
+    async cleanup() {
+      await cleanupOutgoingRelease({ live, previous, temporary, identities }, {
+        verifyHealth: async () => { if (!healthVerified) throw new Error('runtime_health_not_verified') },
+        guard: async () => {
+          // Only outgoing filesystem cleanup happens with the restored runtime online.
+          // Exclusive-session/stopped-writer admission remains mandatory for rotation;
+          // live DB identities are independently reverified here without rejecting the
+          // restored application's expected connections.
+          await connectionConfig(plan.envFile, plan.expected)
+          await verifyApplicationConnections(live, plan.databaseConfigSha256)
+          for (const client of clients) await verifyIdentity(client, plan.expected)
+          const restored = plan.previousProcesses ?? plan.processes
+          const entries = JSON.parse(await pm2(['jlist']))
+          const running = selectProcesses(entries, restored)
+          if (running.some(entry => entry.status !== 'online' || !(entry.pid > 0))) throw new Error('pm2_restart_unhealthy')
+          assertNoExtraProcesses(entries, restored, plan.root)
+          const table = await processTable()
+          if (writerProcesses(table, temporary, [], process.pid, [daemonPid]).length
+            || stoppedPids.some(old => table.some(item => item.pid === old.pid && item.start === old.start))) throw new Error('outgoing_release_still_in_use')
+        },
+        journal, exists, identity: async path => (await releaseManifest(path)).identity,
+        remove: path => rm(path, { recursive: true, force: false }), sync: () => syncDirectory(plan.root),
+      })
     },
     async close() { await journalFile?.close() },
   }
@@ -571,6 +606,9 @@ export async function main(args = process.argv.slice(2)) {
   requireTaxStorageCompatibility(await releaseManifest(join(plan.root, 'spendcraft')))
   requireTaxStorageCompatibility(await previousReleaseManifest(plan.root))
   if (process.platform !== 'linux') throw new Error('execution_host_must_be_linux')
+  const admissionOutput = join(output, 'admission')
+  await mkdir(admissionOutput, { mode: 0o700 })
+  await verifyFilesystemAdmission(plan, admissionOutput)
   const config = await connectionConfig(plan.envFile, plan.expected)
   const { Client } = await import('pg')
   const clients = []
@@ -606,7 +644,10 @@ export async function main(args = process.argv.slice(2)) {
       manualRestart: plan.manualRestart === true, confirmation: `ROLLBACK ${plan.expected.database} ${previous.identity}` }, operations)
     if (plan.manualRestart) console.log('Previous release has no process manifest: manual startup and verification are required after restoration; no automatic process restart is permitted.')
     if (values['dry-run']) console.log('Application-only rollback inspection complete; no database conversion or data changes are planned.')
-    else if (result?.manualRestartRequired) console.log('Release restored; automatic restart and smoke tests were NOT run. All managed processes remain stopped. Operator must determine startup commands, restart the restored release, verify health/read paths, and review saved PM2 definitions before resuming traffic.')
+    else if (result?.manualRestartRequired) {
+      console.log('Rollback incomplete: manual startup and health verification are required. Outgoing temporary release was retained; cleanup was NOT run. All managed processes remain stopped. Review journal and PM2 definitions before separately authorized manual completion.')
+      process.exitCode = 2
+    }
     else console.log('Rollback completed. Review journal and smoke evidence before manually resuming traffic and reviewed schedules.')
   } finally {
     try { await operations?.close() } finally { await Promise.allSettled(clients.map((client) => client.end())) }

@@ -1,6 +1,6 @@
 # Compatible application release rollback
 
-> Current revision: rollback is one-way. It consumes `spendcraft.old` and removes the outgoing temporary release after verified restoration. A missing old blocks rollback before execution. Earlier exchange descriptions below are historical; see the latest one-way policy. This revision is uncommitted and requires a new artifact before deployment.
+> Current finalized policy: one-way rollback consumes old, verifies filesystem restoration, starts and health-checks the restored application, then removes the outgoing temporary tree. Success leaves only current. Earlier exchange/early-cleanup descriptions below are historical; use the finalization section. Deployment remains separately unauthorized.
 
 Normal installer rollback now restores the previous compatible application
 release **without converting or restoring database values**. Historical
@@ -110,3 +110,5 @@ require identity-based manual review; the existing journal blocks automatic retr
 ## Current one-way semantics
 
 The later operator decision supersedes exchange: move outgoing current temporarily, promote old to current, verify restoration and independently recheck execution safeguards, then remove the outgoing temporary tree. Successful rollback leaves current only and consumes old. A second attempt fails with `no_previous_installed_release`; the stable launcher/executor/helper reject before destructive work. A future deployment must create old again before another rollback is possible. Partial cleanup errors stop startup and require reviewed cleanup; do not treat residue as a recovery slot. See the current policy in the tax recovery document. No database restore or tax reversal is added.
+
+Finalized safety ordering: outgoing cleanup now runs only after restored PM2 startup and established HTTP/authenticated read/database/startup-error checks pass. Filesystem verification alone never permits removal. Missing old and stale journal/temporary states are rejected in filesystem-only admission before database connection. Health failure preserves outgoing and stops managed writers; successful cleanup consumes old permanently. See the current finalization section in the tax recovery document. Earlier early-cleanup descriptions are historical.

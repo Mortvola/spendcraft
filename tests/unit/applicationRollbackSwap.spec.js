@@ -7,8 +7,8 @@ import { mkdtemp, mkdir, writeFile, readFile, symlink, realpath, rm, rename, rea
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createHash } from 'node:crypto'
-import { swapDirectories, orchestrate } from '../../installer/lib/applicationRollback.mjs'
-import { releaseManifest, verifyReleases, releaseDifferences } from '../../installer/rollbackApplication.mjs'
+import { swapDirectories, cleanupOutgoingRelease, orchestrate } from '../../installer/lib/applicationRollback.mjs'
+import { releaseManifest, verifyReleases, verifyFilesystemAdmission, releaseDifferences } from '../../installer/rollbackApplication.mjs'
 import { writeTaxRuntimeFixture } from '../helpers/taxRecoveryRelease.js'
 const hash = value => createHash('sha256').update(value).digest('hex')
 
@@ -47,6 +47,7 @@ test.group('One-way application rollback — real temporary compiled releases, n
     const journal = join(output, 'swap.jsonl'), events = []
     async function inject(point) { events.push(point); if (fail === point) throw new Error('injected_' + point) }
     return { events, get renamed() { return renamed }, get removed() { return removed },
+      verifyHealth: () => inject('health'),
       guard: () => inject(renamed === 2 ? 'guard-cleanup' : 'guard'),
       exists: async path => { try { await lstat(path); return true } catch (error) { if (error.code !== 'ENOENT') throw error; return false } },
       identity: async path => (await releaseManifest(path)).identity,
@@ -62,7 +63,10 @@ test.group('One-way application rollback — real temporary compiled releases, n
   }
   test('one-way rollback consumes old and a subsequent rollback fails without side effects', async ({ assert }) => {
     await verifyReleases(plan, output)
-    await swapDirectories(paths, await operations())
+    const ops = await operations()
+    await swapDirectories(paths, ops)
+    assert.equal((await releaseManifest(paths.temporary)).identity, paths.identities.current)
+    await cleanupOutgoingRelease(paths, ops)
     assert.equal((await releaseManifest(paths.live)).identity, paths.identities.previous)
     await assert.rejects(() => lstat(paths.previous))
     await assert.rejects(() => lstat(paths.temporary))
@@ -79,10 +83,10 @@ test.group('One-way application rollback — real temporary compiled releases, n
   test('interruptions preserve the restored release and journaled one-way cleanup state').with([
     'guard', 'journal-swap-pending', 'rename-1-before', 'rename-1-after', 'sync-1', 'journal-current-release-temporary',
     'rename-2-before', 'rename-2-after', 'sync-2', 'journal-previous-release-promoted',
-    'guard-cleanup', 'journal-outgoing-release-removal-pending', 'remove-before', 'remove-after', 'sync-cleanup', 'journal-one-way-rollback-completed',
+    'health', 'guard-cleanup', 'journal-outgoing-release-removal-pending', 'remove-before', 'remove-after', 'sync-cleanup', 'journal-one-way-rollback-completed',
   ]).run(async ({ assert }, fail) => {
     const ops = await operations(fail), before = await readFile(join(root, 'financial-sentinel.json'), 'utf8')
-    await assert.rejects(() => swapDirectories(paths, ops), 'injected_' + fail)
+    await assert.rejects(async () => { await swapDirectories(paths, ops); await cleanupOutgoingRelease(paths, ops) }, 'injected_' + fail)
     const locations = []
     for (const path of [paths.live, paths.previous, paths.temporary]) if (await ops.exists(path)) locations.push({ path, identity: await ops.identity(path) })
     assert.deepEqual(locations.map(row => row.identity).sort(), ops.removed ? [paths.identities.previous] : Object.values(paths.identities).sort())
@@ -101,10 +105,20 @@ test.group('One-way application rollback — real temporary compiled releases, n
     await assert.rejects(() => lstat(paths.previous))
     assert.equal(await readFile(join(root, 'financial-sentinel.json'), 'utf8'), before)
   })
+  test('filesystem restoration alone cannot authorize outgoing-release deletion', async ({ assert }) => {
+    const ops = await operations()
+    await swapDirectories(paths, ops)
+    ops.verifyHealth = async () => { throw new Error('runtime_health_not_verified') }
+    await assert.rejects(() => cleanupOutgoingRelease(paths, ops), 'runtime_health_not_verified')
+    assert.equal((await releaseManifest(paths.live)).identity, paths.identities.previous)
+    assert.equal((await releaseManifest(paths.temporary)).identity, paths.identities.current)
+    assert.notInclude(ops.events, 'remove-before')
+  })
   test('partial cleanup failure leaves the verified restored release and blocks a second rollback', async ({ assert }) => {
     const ops = await operations()
     ops.remove = async path => { await rm(join(path, 'public/assets/App.js')); throw new Error('partial_cleanup_failure') }
-    await assert.rejects(() => swapDirectories(paths, ops), 'partial_cleanup_failure')
+    await swapDirectories(paths, ops)
+    await assert.rejects(() => cleanupOutgoingRelease(paths, ops), 'partial_cleanup_failure')
     assert.equal((await releaseManifest(paths.live)).identity, paths.identities.previous)
     await assert.rejects(() => lstat(paths.previous))
     assert.isTrue((await lstat(paths.temporary)).isDirectory())
@@ -117,15 +131,16 @@ test.group('One-way application rollback — real temporary compiled releases, n
     .run(async ({ assert }, afterRename) => {
       const script = `import process from 'node:process';
 import {rename,lstat,open,rm} from 'node:fs/promises';
-import {swapDirectories} from ${JSON.stringify(pathToFileURL(resolve('installer/lib/applicationRollback.mjs')).href)};
+import {swapDirectories,cleanupOutgoingRelease} from ${JSON.stringify(pathToFileURL(resolve('installer/lib/applicationRollback.mjs')).href)};
 import {releaseManifest} from ${JSON.stringify(pathToFileURL(resolve('installer/lib/releaseManifest.mjs')).href)};
 const paths=${JSON.stringify(paths)}; let count=0;
-await swapDirectories(paths, {guard:async()=>{},identity:async p=>(await releaseManifest(p)).identity,
+const ops={guard:async()=>{},verifyHealth:async()=>{},identity:async p=>(await releaseManifest(p)).identity,
 exists:async p=>{try{await lstat(p);return true}catch(e){if(e.code==='ENOENT')return false;throw e}},
 journal:async(phase,detail)=>{const f=await open(${JSON.stringify(join(output, 'crash-journal.jsonl'))},'a');try{await f.writeFile(JSON.stringify({phase,...detail})+'\\n');await f.sync()}finally{await f.close()}},
 sync:async()=>{const d=await open(${JSON.stringify(root)},'r');try{await d.sync()}finally{await d.close()}},
 remove:async p=>{await rm(p,{recursive:true,force:false});if(${JSON.stringify(afterRename)}==='remove')process.exit(77)},
-rename:async(a,b)=>{await rename(a,b);if('rename-'+(++count)===${JSON.stringify(afterRename)})process.exit(77)}});`
+rename:async(a,b)=>{await rename(a,b);if('rename-'+(++count)===${JSON.stringify(afterRename)})process.exit(77)}};
+await swapDirectories(paths,ops);await cleanupOutgoingRelease(paths,ops);`
       const child = spawnSync(process.execPath, ['--input-type=module', '-e', script], { encoding: 'utf8' })
       assert.equal(child.status, 77, child.stderr)
       const ops = await operations(), found = []
@@ -151,7 +166,7 @@ rename:async(a,b)=>{await rename(a,b);if('rename-'+(++count)===${JSON.stringify(
     if (kind === 'manifest') await writeFile(plan.previousManifest, '{"format":1,"identity":"invalid","files":[]}')
     const events = []
     const before = await readdir(root), money = await readFile(join(root, 'financial-sentinel.json'), 'utf8')
-    const ops = Object.fromEntries(['inspect', 'confirm', 'journal', 'stop', 'backup', 'swap', 'restart', 'smoke'].map(name => [name, async () => { events.push(name) }]))
+    const ops = Object.fromEntries(['inspect', 'confirm', 'journal', 'stop', 'backup', 'swap', 'restart', 'smoke', 'cleanup'].map(name => [name, async () => { events.push(name) }]))
     ops.preflight = () => verifyReleases(plan, output)
     if (kind === 'missing') await assert.rejects(() => orchestrate({ dryRun: false }, ops), 'no_previous_installed_release')
     else await assert.rejects(() => orchestrate({ dryRun: false }, ops))
@@ -160,9 +175,25 @@ rename:async(a,b)=>{await rename(a,b);if('rename-'+(++count)===${JSON.stringify(
     assert.equal(await readFile(join(root, 'financial-sentinel.json'), 'utf8'), money)
     await assert.rejects(() => readFile(join(output, 'swap.jsonl')))
   })
+  test('existing journal or abandoned temporary blocks filesystem admission before database work').with(['journal', 'temporary'])
+    .run(async ({ assert }, kind) => {
+      const validPlan = { ...plan, rollbackKind: 'application-only', environment: 'staging', productionRoot: '/spendcraft-prod/server',
+        pm2Executable: '/reviewed/bin/pm2', pm2Home: join(root, '.pm2'), productionPm2Home: '/home/ubuntu/.pm2',
+        expected: { host: 'localhost', port: 5432, database: 'spendcraft', user: 'ubuntu', serverAddress: '127.0.0.1', clientAddress: '127.0.0.1' },
+        maintenanceStatement: 'All external writers, schedulers and traffic are fenced for this operation',
+        recoveryProcedure: 'Preserve journal and verify complete release identities before any manual recovery action.',
+        processes: [{ name: 'prod-server', script: join(root, 'spendcraft/bin/server.js'), cwd: paths.live, interpreter: 'node', args: [], scriptSha256: hash('// synthetic current') }],
+        smokeUrl: 'https://staging.spendcraft.app' }
+      if (kind === 'journal') await writeFile(join(root, '.transaction-category-release-rollback.jsonl'), '{"phase":"incomplete"}')
+      else await mkdir(join(root, '.spendcraft.rollback-swap-abandoned'))
+      await assert.rejects(() => verifyFilesystemAdmission(validPlan, output), 'prior_run_requires_recovery_review')
+      assert.equal((await releaseManifest(paths.live)).identity, paths.identities.current)
+      assert.equal((await releaseManifest(paths.previous)).identity, paths.identities.previous)
+      await assert.rejects(() => lstat(join(output, 'release-differences.json')))
+    })
   test('orchestration failures never automatically resume writers').with(['confirm', 'stop', 'backup', 'swap', 'restart'])
     .run(async ({ assert }, fail) => {
-      const events = [], ops = Object.fromEntries(['inspect', 'confirm', 'journal', 'stop', 'backup', 'swap', 'restart', 'smoke'].map(name => [name, async () => {
+      const events = [], ops = Object.fromEntries(['inspect', 'confirm', 'journal', 'stop', 'backup', 'swap', 'restart', 'smoke', 'cleanup'].map(name => [name, async () => {
         events.push(name); if (name === fail) throw new Error('injected')
       }]))
       ops.preflight = () => verifyReleases(plan, output)
@@ -172,30 +203,49 @@ rename:async(a,b)=>{await rename(a,b);if('rename-'+(++count)===${JSON.stringify(
       else assert.equal(events.at(-1), 'stop')
       if (fail !== 'restart') assert.notInclude(events, 'restart')
     })
-  test('restored startup and restart failures preserve one-way restoration').with(['success', 'after-stop', 'before-restart', 'restart'])
+  test('outgoing release is preserved until runtime health and cleanup complete').with(['success', 'after-stop', 'before-restart', 'restart', 'smoke', 'cleanup'])
     .run(async ({ assert }, scenario) => {
       const events = [], money = await readFile(join(root, 'financial-sentinel.json'), 'utf8')
+      let healthy = false
+      const files = await operations()
+      files.verifyHealth = async () => { if (!healthy) throw new Error('runtime_health_not_verified') }
       const ops = {
         preflight: () => verifyReleases(plan, output), inspect: async () => { events.push('inspect') }, confirm: async () => { events.push('confirm') },
         journal: async phase => { if (scenario === 'after-stop' && phase === 'writers-stopped') throw new Error('injected') },
         stop: async () => { events.push('stop') }, backup: async () => { events.push('backup') },
-        swap: async () => { await swapDirectories(paths, await operations()); if (scenario === 'before-restart') throw new Error('injected') },
+        swap: async () => { await swapDirectories(paths, files); if (scenario === 'before-restart') throw new Error('injected') },
         restart: async () => {
           events.push('restart')
           assert.equal((await releaseManifest(paths.live)).identity, paths.identities.previous)
-          await assert.rejects(() => lstat(paths.previous))
+          assert.equal((await releaseManifest(paths.temporary)).identity, paths.identities.current)
           if (scenario === 'restart') throw new Error('injected')
         },
-        smoke: async () => { events.push('smoke') },
+        smoke: async () => {
+          events.push('smoke')
+          assert.equal((await releaseManifest(paths.temporary)).identity, paths.identities.current)
+          if (scenario === 'smoke') throw new Error('injected')
+          healthy = true
+        },
+        cleanup: async () => {
+          events.push('cleanup')
+          if (scenario === 'cleanup') throw new Error('injected')
+          await cleanupOutgoingRelease(paths, files)
+        },
       }
-      if (scenario === 'success') await orchestrate({ dryRun: false }, ops)
-      else { await assert.rejects(() => orchestrate({ dryRun: false }, ops), 'injected'); assert.equal(events.at(-1), 'stop'); assert.notInclude(events, 'smoke') }
+      if (scenario === 'success') {
+        await orchestrate({ dryRun: false }, ops)
+        await assert.rejects(() => lstat(paths.temporary))
+        assert.isBelow(events.indexOf('smoke'), events.indexOf('cleanup'))
+      } else {
+        await assert.rejects(() => orchestrate({ dryRun: false }, ops), 'injected')
+        assert.equal(events.at(-1), 'stop')
+        if (scenario !== 'cleanup') assert.notInclude(events, 'cleanup')
+        if (scenario !== 'after-stop') assert.equal((await releaseManifest(paths.temporary)).identity, paths.identities.current)
+      }
       if (scenario === 'after-stop' || scenario === 'before-restart') assert.notInclude(events, 'restart')
-      const expected = scenario === 'after-stop' ? paths.identities : { current: paths.identities.previous, previous: paths.identities.current }
-      assert.equal((await releaseManifest(paths.live)).identity, expected.current)
-      if (scenario === 'after-stop') assert.equal((await releaseManifest(paths.previous)).identity, expected.previous)
+      assert.equal((await releaseManifest(paths.live)).identity, scenario === 'after-stop' ? paths.identities.current : paths.identities.previous)
+      if (scenario === 'after-stop') assert.equal((await releaseManifest(paths.previous)).identity, paths.identities.previous)
       else await assert.rejects(() => lstat(paths.previous))
-      await assert.rejects(() => lstat(paths.temporary))
       assert.equal(await readFile(join(root, 'financial-sentinel.json'), 'utf8'), money)
     })
   test('executor and installer retain only the established persistent slots', async ({ assert }) => {
@@ -203,6 +253,9 @@ rename:async(a,b)=>{await rename(a,b);if('rename-'+(++count)===${JSON.stringify(
     assert.notInclude(source, 'spendcraft.forward-recovery-')
     assert.notInclude(source, 'await cp(')
     assert.include(source, 'prior_run_requires_recovery_review')
+    assert.isBelow(source.indexOf('await verifyFilesystemAdmission(plan, admissionOutput)'), source.indexOf("const { Client } = await import('pg')"))
+    const workflow = await readFile('installer/lib/applicationRollback.mjs', 'utf8')
+    assert.isBelow(workflow.indexOf('await operations.smoke()'), workflow.indexOf('await operations.cleanup()'))
     const installer = await readFile('installer/install.sh0', 'utf8')
     assert.include(installer, 'mv $APP $APP_OLD'); assert.include(installer, 'mv $APP_NEW $APP')
     assert.include(installer, 'SKIP'); assert.notInclude(installer, 'forward-recovery')

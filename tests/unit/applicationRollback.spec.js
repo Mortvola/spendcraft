@@ -11,7 +11,7 @@ const hash = value => createHash('sha256').update(value).digest('hex')
 
 function operations(fail) {
   const calls = []
-  const ops = Object.fromEntries(['preflight', 'inspect', 'confirm', 'journal', 'stop', 'backup', 'swap', 'restart', 'smoke'].map(name => [name,
+  const ops = Object.fromEntries(['preflight', 'inspect', 'confirm', 'journal', 'stop', 'backup', 'swap', 'restart', 'smoke', 'cleanup'].map(name => [name,
     async () => { calls.push(name); if (name === fail) throw new Error('injected_failure'); return { applicationOnly: true } }]))
   ops.convert = async () => { throw new Error('conversion_must_never_be_called') }
   return { calls, ops }
@@ -25,6 +25,7 @@ test.group('Application-only rollback — no database/services', () => {
     assert.isBelow(calls.indexOf('backup'), calls.indexOf('swap'))
     assert.isBelow(calls.indexOf('swap'), calls.indexOf('restart'))
     assert.isBelow(calls.indexOf('restart'), calls.indexOf('smoke'))
+    assert.isBelow(calls.indexOf('smoke'), calls.indexOf('cleanup'))
     assert.notInclude(calls, 'convert'); assert.include(WARNING, 'Database values will not be converted or restored')
   })
   test('dry-run is inspection only', async ({ assert }) => {
@@ -35,12 +36,14 @@ test.group('Application-only rollback — no database/services', () => {
   test('late failures never restart processes or convert data').with(['backup', 'swap']).run(async ({ assert }, fail) => {
     const { calls, ops } = operations(fail)
     await assert.rejects(() => orchestrate({ dryRun: false }, ops), 'injected_failure')
-    assert.notInclude(calls, 'restart'); assert.notInclude(calls, 'convert'); assert.equal(calls.at(-1), 'stop')
+    assert.notInclude(calls, 'restart'); assert.notInclude(calls, 'convert'); assert.notInclude(calls, 'cleanup'); assert.equal(calls.at(-1), 'stop')
   })
   test('missing previous process manifest leaves processes stopped', async ({ assert }) => {
     const { calls, ops } = operations()
-    assert.isTrue((await orchestrate({ manualRestart: true }, ops)).manualRestartRequired)
-    assert.include(calls, 'swap'); assert.notInclude(calls, 'restart'); assert.notInclude(calls, 'convert')
+    const result = await orchestrate({ manualRestart: true }, ops)
+    assert.isTrue(result.manualRestartRequired)
+    assert.isFalse(result.completed)
+    assert.include(calls, 'swap'); assert.notInclude(calls, 'restart'); assert.notInclude(calls, 'convert'); assert.notInclude(calls, 'cleanup')
   })
   test('new executor contains no allocation scan, data restore or mutation queries', async ({ assert }) => {
     const source = await readFile('installer/rollbackApplication.mjs', 'utf8')

@@ -16,7 +16,7 @@ export function normalizedIP(value) {
 
 export const WARNING = 'This operation restores the previous compatible SpendCraft application release. The outgoing release will be removed and spendcraft.old consumed. Database values will not be converted or restored. Historical conversion recovery is a separate operation.'
 
-// One-way restoration: retain the outgoing tree only until restoration is verified.
+// One-way restoration: retain the outgoing tree until restoration and runtime health are verified.
 // Renames/removal are journaled, not one atomic operation; never auto-retry an interruption.
 export async function swapDirectories(paths, operations) {
   const { live, previous, temporary, identities } = paths
@@ -36,7 +36,13 @@ export async function swapDirectories(paths, operations) {
   await operations.journal('previous-release-promoted', { live, temporary })
   if (await operations.exists(previous) || await operations.identity(live) !== identities.previous
     || await operations.identity(temporary) !== identities.current) throw new Error('swap_state_changed')
-  // Reverify the target, stopped writers and both identities before irreversible cleanup.
+  await operations.journal('filesystem-restoration-verified', { live, temporary })
+}
+
+export async function cleanupOutgoingRelease(paths, operations) {
+  const { live, previous, temporary, identities } = paths
+  await operations.verifyHealth()
+  // Reverify runtime health, safe cleanup admission and both identities before irreversible cleanup.
   await operations.guard()
   if (await operations.identity(live) !== identities.previous || await operations.identity(temporary) !== identities.current
     || await operations.exists(previous)) throw new Error('swap_state_changed')
@@ -64,10 +70,11 @@ export async function orchestrate(options, operations) {
     await operations.swap()
     if (options.manualRestart) {
       await operations.journal('manual-restart-required', {})
-      return { manualRestartRequired: true }
+      return { manualRestartRequired: true, completed: false }
     }
     await operations.restart()
     await operations.smoke()
+    await operations.cleanup()
     await operations.journal('complete', {})
   } catch (error) {
     if (stopped) {

@@ -55,7 +55,7 @@ test.group('Tax compatible release recovery (temporary files only)', group => {
     .run(async ({ assert }, scenario) => {
       const financialState = { transactions: [1, 2], taxes: scenario === 'after-writes' ? ['12.35'] : [12.34], balance: 123 }
       const before = JSON.stringify(financialState), events = []
-      const ops = Object.fromEntries(['preflight', 'inspect', 'confirm', 'journal', 'stop', 'backup', 'swap', 'restart', 'smoke'].map(name => [name, async () => {
+      const ops = Object.fromEntries(['preflight', 'inspect', 'confirm', 'journal', 'stop', 'backup', 'swap', 'restart', 'smoke', 'cleanup'].map(name => [name, async () => {
         events.push(name)
         if (name === 'swap') throw new Error('interrupted')
       }]))
