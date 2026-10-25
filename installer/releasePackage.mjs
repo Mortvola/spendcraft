@@ -28,7 +28,7 @@ function validateSource(source) {
     || typeof source.builtAt !== 'string' || !Number.isFinite(Date.parse(source.builtAt))) throw new Error('invalid_release_source')
 }
 function validateTemplate(template) {
-  if ((template.match(/^ {2}production\|staging\) INSTALL_TARGET="\$1" ;;$/gm) ?? []).length !== 1
+  if ((template.match(/^INSTALL_TARGET="\$SPENDCRAFT_ENV"$/gm) ?? []).length !== 1
     || (template.match(/^___END_OF_SHELL_SCRIPT___$/gm) ?? []).length !== 1
     || !template.trimEnd().endsWith('___END_OF_SHELL_SCRIPT___')) throw new Error('invalid_installer_template')
 }

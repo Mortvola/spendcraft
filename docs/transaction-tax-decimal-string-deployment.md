@@ -83,7 +83,7 @@ ssh -i "$SPENDCRAFT_STAGING_SSH_KEY" "ubuntu@${SPENDCRAFT_STAGING_SERVER}"
 On the verified staging host, confirm `$SPENDCRAFT_ROOT`, release/recovery identities, available disk, writers and backup destination, then run the uploaded installer:
 
 ```sh
-bash "$HOME/install.sh" staging
+bash "$HOME/install.sh"
 ```
 
 Type DEPLOY only after reviewing its actual target and maintenance conditions. Decline migrations, select SKIP for seeding, and confirm RESUME only after its stated checks. Verify the promoted release source/complete manifest against the tested package, and archive deployment evidence under a private `script-output/` directory without editing release contents.
@@ -126,7 +126,7 @@ After separate approval, use the identical release directory:
 bash deploy.sh "$RELEASE_DIRECTORY" production
 ssh -i "$SPENDCRAFT_SSH_KEY" "ubuntu@${SPENDCRAFT_SERVER}"
 # On the verified production host, after all gates:
-bash "$HOME/install.sh" production
+bash "$HOME/install.sh"
 ```
 
 Verify release/process/HTTP health, authentication, existing Transactions and numeric tax API responses, tax reports and ordinary Category/report functionality without altering real financial records. New-write verification requires a separately approved safe production procedure; otherwise label that path unobserved in production and cite staging/PostgreSQL evidence. Monitor provider and listener errors. Do not automatically restore a backup or swap to an incompatible previous release on failure; fence writers and retain evidence.
@@ -232,6 +232,8 @@ Read-only staging preflight reverified EC2 identity, current/old full identities
 
 ## Unified installer interface
 
-The installer generator now writes one `install.sh` without embedding a target choice. Generate it with `node installer/releasePackage.mjs installer --release "$RELEASE_DIRECTORY" --output install.sh`; invoke `./install.sh staging` or `./install.sh production`. The application archive is not transformed by target selection. Exactly one valid target argument is required before any installation activity. No server-identity check is added; the operator must select the correct server/root and target. SSH destination/key selection in deploy.sh is unchanged, and upload does not execute installation. Existing environment-specific prompts/settings, backup protections, PM2 behavior and rollback guards remain unchanged.
+Generate one installer with `node installer/releasePackage.mjs installer --release "$RELEASE_DIRECTORY" --output install.sh`, then run `./install.sh` with no arguments on the selected server. It reads SPENDCRAFT_ENV and SPENDCRAFT_ROOT directly from root-owned `/etc/spendcraft/environment`; inherited values and login initialization do not select the installation environment. Missing, duplicate, unknown, malformed or unsafe settings stop before installation activity. No server-identity check is added.
 
-The unified-generator/template changes require a commit before a final artifact can be generated from a clean checkout of that committed source. Do not relabel the earlier committed artifact as unified or regenerate it with uncommitted tooling. This task does not authorize a commit, package promotion or deployment.
+See [server setup and login-shell snippet](../installer/Installation.md#authoritative-server-environment) for the exact one-time staging/production file contents, permissions and `.profile` data parser. The installation root must already exist. The same archive is embedded regardless of server configuration. Existing environment-specific prompts/settings, backups, migrations/seeding decisions, PM2 and rollback behavior are unchanged.
+
+`deploy.sh RELEASE_DIRECTORY staging|production` still selects only the SSH destination/key and uploads `~/install.sh`; it never executes installation, sets server environment variables or overwrites `/etc/spendcraft/environment`. After upload, run `bash "$HOME/install.sh"` without arguments. Operator deployment authorization is still required. The generator/template changes require a commit before clean-checkout release packaging; do not present an uncommitted artifact as a committed release.

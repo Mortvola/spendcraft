@@ -3,17 +3,57 @@
 set -e
 set -o pipefail
 
-# The same installer/archive is used for both environments.
-if [ "$#" -ne 1 ]; then
-  echo 'Usage: install.sh staging|production' >&2
+# Server-local settings are authoritative; inherited variables are never used.
+if [ "$#" -ne 0 ]; then
+  echo 'Usage: install.sh (no arguments)' >&2
   exit 1
 fi
-case "$1" in
-  production|staging) INSTALL_TARGET="$1" ;;
-  *) echo 'Usage: install.sh staging|production' >&2; exit 1 ;;
-esac
 
-: "${SPENDCRAFT_ROOT:?Set SPENDCRAFT_ROOT to the deployment directory}"
+load_spendcraft_environment() {
+  local config=/etc/spendcraft/environment
+  local directory="${config%/*}" line env_value='' root_value='' env_seen=0 root_seen=0
+  unset SPENDCRAFT_ENV SPENDCRAFT_ROOT || return 1
+  if [ -L "$config" ] || [ -L "$directory" ] || [ ! -f "$config" ] || [ ! -r "$config" ]; then
+    printf 'SpendCraft configuration is missing, unreadable or symlinked.\n' >&2
+    return 1
+  fi
+  case "$(/usr/bin/stat -c '%u:%a' -- "$directory")" in
+    0:500|0:550|0:555|0:700|0:750|0:755) ;;
+    *) printf 'Unsafe SpendCraft configuration directory ownership or permissions.\n' >&2; return 1 ;;
+  esac
+  case "$(/usr/bin/stat -c '%u:%a' -- "$config")" in
+    0:400|0:440|0:444|0:600|0:640|0:644) ;;
+    *) printf 'Unsafe SpendCraft configuration file ownership or permissions.\n' >&2; return 1 ;;
+  esac
+  while IFS= read -r line || [ -n "$line" ]; do
+    case "$line" in
+      SPENDCRAFT_ENV=*)
+        if [ "$env_seen" -ne 0 ]; then printf 'Duplicate SPENDCRAFT_ENV.\n' >&2; return 1; fi
+        env_seen=1
+        env_value=${line#SPENDCRAFT_ENV=}
+        case "$env_value" in staging|production) ;; *) printf 'Invalid SPENDCRAFT_ENV.\n' >&2; return 1 ;; esac
+        ;;
+      SPENDCRAFT_ROOT=*)
+        if [ "$root_seen" -ne 0 ]; then printf 'Duplicate SPENDCRAFT_ROOT.\n' >&2; return 1; fi
+        root_seen=1
+        root_value=${line#SPENDCRAFT_ROOT=}
+        case "$root_value" in /*) ;; *) printf 'SPENDCRAFT_ROOT must be absolute.\n' >&2; return 1 ;; esac
+        case "$root_value" in *[!a-zA-Z0-9_./-]*) printf 'Invalid SPENDCRAFT_ROOT path syntax.\n' >&2; return 1 ;; esac
+        ;;
+      *) printf 'Unknown or malformed SpendCraft configuration setting.\n' >&2; return 1 ;;
+    esac
+  done < "$config"
+  if [ "$env_seen" -ne 1 ] || [ "$root_seen" -ne 1 ]; then
+    printf 'Both SPENDCRAFT_ENV and SPENDCRAFT_ROOT are required.\n' >&2
+    return 1
+  fi
+  SPENDCRAFT_ENV=$env_value
+  SPENDCRAFT_ROOT=$root_value
+  export SPENDCRAFT_ENV SPENDCRAFT_ROOT
+}
+
+load_spendcraft_environment
+INSTALL_TARGET="$SPENDCRAFT_ENV"
 if [ ! -d "$SPENDCRAFT_ROOT" ]; then
   echo 'Deployment directory does not exist' >&2
   exit 1

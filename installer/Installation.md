@@ -27,11 +27,62 @@ sudo blkid /dev/nvme1n1
 sudo nano /etc/fstab
 ```
 
-Create an environment variable in ubuntu's .bashrc file:
+### Authoritative server environment
+
+Run only the block for the server being configured. Stop on any error. These one-time commands create a root-owned directory and a new root-owned mode-0644 data file; noclobber refuses to overwrite an existing file or symlink. Do not place secrets in this file.
+
+On staging:
 
 ```bash
-export SPENDCRAFT_ROOT=/spendcraft/server
+sudo test ! -L /etc/spendcraft &&
+sudo install -d -o root -g root -m 0755 /etc/spendcraft &&
+sudo sh -c 'set -C; umask 022; cat > /etc/spendcraft/environment' <<'EOF'
+SPENDCRAFT_ENV=staging
+SPENDCRAFT_ROOT=/spendcraft_staging/server
+EOF
 ```
+
+On production:
+
+```bash
+sudo test ! -L /etc/spendcraft &&
+sudo install -d -o root -g root -m 0755 /etc/spendcraft &&
+sudo sh -c 'set -C; umask 022; cat > /etc/spendcraft/environment' <<'EOF'
+SPENDCRAFT_ENV=production
+SPENDCRAFT_ROOT=/spendcraft-prod/server
+EOF
+```
+
+Use exactly these two unquoted `KEY=value` settings, once each, in either order. Blank lines, comments, whitespace around `=`, quotes, unknown keys and shell substitutions are rejected. Roots must be absolute simple paths using letters, digits, underscore, slash, dot and hyphen. The file must be root-owned, readable and non-executable, with mode 400/440/444/600/640/644; `/etc/spendcraft` must be a real root-owned directory with mode 500/550/555/700/750/755. Neither may be a symlink. Standard setup is directory 0755 and file 0644. Keep the existing server root directory in place.
+
+### Login-shell exports
+
+Read-only inspection on October 25, 2026 found `/bin/bash` for ubuntu on both servers, `.profile` present, and neither `.bash_profile` nor `.bash_login`. Bash therefore uses `.profile`. If either higher-priority file is added later, ensure it invokes `.profile` or put the snippet in the selected login file. Do not execute `/etc/spendcraft/environment` itself. Non-login shells inherit exported values; they do not read `.profile` themselves.
+
+When applying this setup, remove older hardcoded SPENDCRAFT_ENV/SPENDCRAFT_ROOT assignments from the user's shell startup files. Append the following snippet at the end of `~/.profile` (after its existing `.bashrc` inclusion), so `/etc/spendcraft/environment` remains the authoritative source. No actual profile file was changed by this implementation task.
+
+<!-- spendcraft-profile-start -->
+```sh
+if [ -r /etc/spendcraft/environment ]; then
+  while IFS='=' read -r key value; do
+    case "$key=$value" in
+      SPENDCRAFT_ENV=staging|SPENDCRAFT_ENV=production|SPENDCRAFT_ROOT=/*)
+        export "$key=$value"
+        ;;
+      *)
+        printf 'Invalid SpendCraft environment setting: %s\n' "$key" >&2
+        ;;
+    esac
+  done < /etc/spendcraft/environment
+else
+  printf 'Cannot read /etc/spendcraft/environment\n' >&2
+fi
+```
+<!-- spendcraft-profile-end -->
+
+This convenience snippet reports invalid entries; duplicate valid keys use the last value. The installer performs the full validation independently.
+
+The installer does not depend on this snippet or inherited variables. Run it without arguments: `./install.sh`. It independently parses the same fixed data file before prompting, extracting or changing anything; arguments are rejected. No server-identity check is performed.
 
 ## Postgres
 
@@ -227,7 +278,7 @@ sudo apt install make g++ libpq-dev
 
 ## App set up
 
-Create a file in your $SPENDCRAFT_ROOT/server folder named spendcraft-env:
+Create the application environment file at `$SPENDCRAFT_ROOT/spendcraft-env`:
 
 ```
 APP_NAME=SpendCraft
@@ -244,11 +295,11 @@ PG_USER=ubuntu
 PG_DB_NAME=spendcraft
 ```
 
-In the installed spendcraft root folder (usually $SPENDCRAFT_ROOT/server/spendcraft) link spendcraft-env to .env:
+In the installed spendcraft root folder (usually `$SPENDCRAFT_ROOT/spendcraft`) link spendcraft-env to .env:
 
 ```bash
-cd $SPENDCRAFT_ROOT/server/spendcraft
-ln -s $SPENDCRAFT_ROOT/server/spendcraft-env .env
+cd "$SPENDCRAFT_ROOT/spendcraft"
+ln -s "$SPENDCRAFT_ROOT/spendcraft-env" .env
 ```
 
 Run the migrations to create the tables:
