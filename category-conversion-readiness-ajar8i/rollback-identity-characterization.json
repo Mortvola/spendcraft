@@ -1,5 +1,0 @@
-{
-  "result": "current rollback rejects actual PostgreSQL inet text /32 identity",
-  "expectedError": "live_database_identity_mismatch",
-  "mode": "pure actual helper with inert connection and recorded identity; no rollback execution"
-}

@@ -148,6 +148,15 @@ pm2 start server.js --time
 pm2 startup
 ```
 
+Configure PM2 to restart after a system reboot by issueing this commmands and following their instructions.
+```bash
+# 1. Generate the startup script (Copy and paste the output line this command generates)
+pm2 startup ubuntu
+
+# 2. Freeze your current process list so it persists on boot
+pm2 save
+```
+
 ## nginx
 
 ```bash

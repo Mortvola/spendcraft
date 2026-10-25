@@ -168,14 +168,24 @@ export async function verifyPm2Runtime(executable) {
   const pkg = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'))
   // This release-specific procedure reviewed stopped-state resurrection in the actual installed source.
   const reviewed = {
-    'lib/God.js': '6f283d694e00ec66e65605e47264c918313809d57662008a3c1a1b4dad87aa88',
-    'lib/API/Startup.js': '4c88ebbc0be3d76ed89e3bde9bc44c7d74c41a6ebf4660334a9a600376920f9a',
-    'lib/Common.js': 'ec76f7aeeab38e6cebf2e6b83cedf2d8b5f1d510019331e5c72404624785d50f',
+    '5.4.1': {
+      'lib/God.js': '6f283d694e00ec66e65605e47264c918313809d57662008a3c1a1b4dad87aa88',
+      'lib/API/Startup.js': '4c88ebbc0be3d76ed89e3bde9bc44c7d74c41a6ebf4660334a9a600376920f9a',
+      'lib/Common.js': 'ec76f7aeeab38e6cebf2e6b83cedf2d8b5f1d510019331e5c72404624785d50f',
+    },
+    '7.1.0': {
+      'lib/God.js': '244e0c2e4725960b323394ac941a73a416e6db8cbbb5ddfb5cfdf2405ec64f91',
+      'lib/API/Startup.js': '6a07233e729cb951c275bcace85398bbdf9f083d6e1124a5df163ec6cc8798d9',
+      'lib/Common.js': '223476aede876e172f8653e8a00227f536538ea1fc174fdb0c4eee198b5f9dbf',
+      'lib/API.js': '1bd03fd1800d6e66751ffdf8e0f11d18e35d6c621ad323a8c3dd499d16d4b275',
+      'lib/God/ActionMethods.js': '5d432cfaf91f04174433aa71a1ccfdabca47afc179aa5cb72cdc29b3318afec7',
+    },
   }
-  if (pkg.name !== 'pm2' || pkg.version !== '5.4.1') throw new Error('unreviewed_pm2_version')
-  for (const [file, expectedHash] of Object.entries(reviewed)) {
+  if (pkg.name !== 'pm2' || !Object.hasOwn(reviewed, pkg.version)) throw new Error('unreviewed_pm2_version')
+  for (const [file, expectedHash] of Object.entries(reviewed[pkg.version])) {
     if (await fileHash(join(root, file)) !== expectedHash) throw new Error('unreviewed_pm2_startup_source')
   }
+  return pkg.version
 }
 
 export async function persistStoppedState(operations, definitions) {
@@ -364,12 +374,12 @@ async function productionOperations(plan, output, confirm, clients, config) {
   let stoppedPids = []
   let daemonPid
   const pm2 = async (args) => {
-    await verifyPm2Runtime(plan.pm2Executable)
+    const runtimeVersion = await verifyPm2Runtime(plan.pm2Executable)
     const pid = Number((await readFile(join(plan.pm2Home, 'pm2.pid'), 'utf8')).trim())
     if (!Number.isInteger(pid) || pid <= 0) throw new Error('pm2_daemon_not_running')
     process.kill(pid, 0) // Never start a daemon as a side effect of inspection.
     const daemonArgs = await readFile(`/proc/${pid}/cmdline`, 'utf8')
-    if (!daemonArgs.includes(`PM2 v5.4.1: God Daemon (${plan.pm2Home})`)) throw new Error('pm2_daemon_identity_mismatch')
+    if (!daemonArgs.includes(`PM2 v${runtimeVersion}: God Daemon (${plan.pm2Home})`)) throw new Error('pm2_daemon_identity_mismatch')
     daemonPid = pid
     return command(plan.pm2Executable, args, { env: { ...process.env, PM2_HOME: plan.pm2Home, NODE_ENV: 'production' } })
   }

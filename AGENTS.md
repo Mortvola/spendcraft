@@ -145,3 +145,27 @@ Do not make speculative changes to several unrelated files or dependencies at on
 - Scripts requested for production or `spendcraft_sandbox` must read connection settings from a `.env` file using `PG_HOST`, `PG_PORT`, `PG_USER`, `PG_PASSWORD`, and `PG_DB_NAME`.
 - These scripts must automatically create a unique output directory and print its absolute path to standard output immediately after creation, before database work begins, following `scripts/auditTransactionCategoryCents.mjs`. Preserve existing output files; never overwrite a previous run's results.
 - Do not print credentials or commit environment files. Preparing a script does not authorize executing it against a database.
+
+## Task Scope and Efficiency
+
+Follow these rules for every task unless explicitly overridden.
+
+1. **Minimum necessary work.** Perform only the work required to satisfy the user's stated objective. Do not expand scope to adjacent issues.
+
+2. **Prefer simple solutions.** Modify existing code when practical. Avoid new abstractions, frameworks, utilities, or scripts unless clearly necessary.
+
+3. **No unsolicited improvements.** Do not refactor unrelated code, modernize dependencies, expand architecture, or fix unrelated defects.
+
+4. **Stop on scope expansion.** If completing the task requires substantial additional work, a product decision, or changes outside the requested scope, stop and explain the issue before proceeding.
+
+5. **Proportionate testing.** Run focused tests and checks relevant to the changes. Reserve full-suite verification for major changes or explicit requests.
+
+6. **Minimal documentation.** Update only documentation directly affected by the task. Do not create new design or verification documents unless requested.
+
+7. **Time efficiency.** Prefer the shortest reliable path to completion. Do not repeatedly investigate the same issue or pursue speculative edge cases.
+
+8. **Preserve existing work.** Do not discard, overwrite, stage, or commit unrelated user changes.
+
+9. **Concise reporting.** Report what changed, what was verified, and any remaining blockers. Avoid lengthy inventories unless requested.
+
+10. **Safety boundaries remain mandatory.** Never weaken database, security, deployment, or financial safeguards to reduce effort.

@@ -1,0 +1,20 @@
+[
+  {
+    "schema": "public",
+    "table": "plaid_item_cleanups",
+    "name": "plaid_item_cleanups_check",
+    "type": "c",
+    "validated": true,
+    "original": "CHECK ((((status)::text <> ALL ((ARRAY['cancelled'::character varying, 'completed'::character varying])::text[])) OR (encrypted_access_token IS NULL)))",
+    "restored": "CHECK ((((status)::text <> ALL (ARRAY[('cancelled'::character varying)::text, ('completed'::character varying)::text])) OR (encrypted_access_token IS NULL)))"
+  },
+  {
+    "schema": "public",
+    "table": "plaid_item_cleanups",
+    "name": "plaid_item_cleanups_status_check",
+    "type": "c",
+    "validated": true,
+    "original": "CHECK (((status)::text = ANY ((ARRAY['protected'::character varying, 'pending'::character varying, 'review_required'::character varying, 'cancelled'::character varying, 'completed'::character varying])::text[])))",
+    "restored": "CHECK (((status)::text = ANY (ARRAY[('protected'::character varying)::text, ('pending'::character varying)::text, ('review_required'::character varying)::text, ('cancelled'::character varying)::text, ('completed'::character varying)::text])))"
+  }
+]

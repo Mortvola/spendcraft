@@ -36,12 +36,8 @@ install.sh
 # Saved local build artifacts, promoted unchanged between environments
 /releases/
 
-category-conversion-*/
-
 # Generated AdonisJS files
 /.adonisjs/
-
-tax-historical-audit-*/
 
 # Audit and other script-generated output
 /script-output/

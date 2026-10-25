@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createHash } from 'node:crypto'
 import { orchestrate, normalizedIP, WARNING } from '../../installer/lib/applicationRollback.mjs'
-import { verifyReleases, releaseManifest, releaseDifferences, validatePlan } from '../../installer/rollbackApplication.mjs'
+import { verifyReleases, releaseManifest, releaseDifferences, validatePlan, verifyPm2Runtime, persistStoppedState } from '../../installer/rollbackApplication.mjs'
 import { verifyReleases as legacyVerify } from '../../installer/rollbackTransactionCategoryStorage.mjs'
 const hash = value => createHash('sha256').update(value).digest('hex')
 
@@ -97,5 +97,44 @@ test.group('Application-only rollback — no database/services', () => {
       const schemaOutput = join(root, 'schema-output'); await mkdir(schemaOutput)
       await assert.rejects(() => verifyReleases(plan, schemaOutput), 'database_release_difference')
     } finally { await rm(root, { recursive: true, force: true }) }
+  })
+})
+
+test.group('Application rollback — reviewed PM2 runtime admission (no daemon)', () => {
+  for (const version of ['5.4.1', '7.1.0']) {
+    test(`PM2 ${version} requires the exact reviewed source, not just a version label`, async ({ assert }) => {
+      const root = await mkdtemp(join(tmpdir(), 'rollback-pm2-'))
+      try {
+        await mkdir(join(root, 'bin'))
+        await mkdir(join(root, 'lib'))
+        await writeFile(join(root, 'bin/pm2'), 'not executed')
+        await writeFile(join(root, 'package.json'), JSON.stringify({ name: 'pm2', version }))
+        await writeFile(join(root, 'lib/God.js'), 'unreviewed source')
+        await assert.rejects(() => verifyPm2Runtime(join(root, 'bin/pm2')), 'unreviewed_pm2_startup_source')
+      } finally { await rm(root, { recursive: true, force: true }) }
+    })
+  }
+  for (const pkg of [{ name: 'pm2', version: '7.1.1' }, { name: 'other', version: '7.1.0' }]) {
+    test(`unreviewed package ${pkg.name}@${pkg.version} is rejected`, async ({ assert }) => {
+      const root = await mkdtemp(join(tmpdir(), 'rollback-pm2-'))
+      try {
+        await mkdir(join(root, 'bin'))
+        await writeFile(join(root, 'bin/pm2'), 'not executed')
+        await writeFile(join(root, 'package.json'), JSON.stringify(pkg))
+        await assert.rejects(() => verifyPm2Runtime(join(root, 'bin/pm2')), 'unreviewed_pm2_version')
+      } finally { await rm(root, { recursive: true, force: true }) }
+    })
+  }
+  test('both primary and fallback PM2 dumps must retain stopped entries', async ({ assert }) => {
+    const definition = { name: 'queue', script: '/staging/ace.js', cwd: '/staging', interpreter: '/node', args: [] }
+    const entry = { name: 'queue', pm_exec_path: definition.script, pm_cwd: definition.cwd,
+      exec_interpreter: definition.interpreter, args: [], exec_mode: 'fork_mode', status: 'stopped' }
+    const calls = []
+    const operations = { save: async () => { calls.push('save') }, sync: async name => { calls.push(name) },
+      read: async () => [entry] }
+    await persistStoppedState(operations, [definition])
+    assert.deepEqual(calls, ['save', 'save', 'dump.pm2', 'dump.pm2.bak'])
+    await assert.rejects(() => persistStoppedState({ ...operations, read: async () => [{ ...entry, status: 'online' }] },
+      [definition]), 'pm2_startup_not_stopped')
   })
 })
