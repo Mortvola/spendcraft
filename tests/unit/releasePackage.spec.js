@@ -94,15 +94,35 @@ test.group('Saved release packaging and promotion (local files only)', (group) =
     await writeFile(join(root, 'installer/install.sh0'), 'no target guard or payload delimiter')
     await assert.rejects(() => packageRelease(root, () => undefined), 'invalid_installer_template')
   })
-  test('build.sh builds and packages once and works outside the project directory', async ({ assert }) => {
+  test('build.sh installs checkout-local locked dependencies before building and packaging', async ({ assert }) => {
     await cp('installer', join(root, 'installer'), { recursive: true })
     await writeFile(join(root, 'build.sh'), await readFile('build.sh', 'utf8'))
     const bin = join(root, 'bin'); await mkdir(bin)
-    await writeFile(join(bin, 'npm'), '#!/bin/bash\nrm -rf build\nmkdir -p build\nprintf "synthetic app" > build/app.js\nprintf "BUILD\\n"\n', { mode: 0o700 })
-    await writeFile(join(bin, 'git'), '#!/bin/bash\ncase "$1" in\n rev-parse) printf "' + 'a'.repeat(40) + '\\n" ;;\n status) exit 0 ;;\n *) exit 99 ;;\nesac\n', { mode: 0o700 })
-    const result = spawnSync('bash', [join(root, 'build.sh')], { cwd: tmpdir(), env: { PATH: bin + ':' + process.env.PATH }, encoding: 'utf8' })
+    await writeFile(join(root, 'package-lock.json'), '{"lockfileVersion":3,"fixture":"committed"}\n')
+    await writeFile(join(bin, 'npm'), `#!/bin/bash
+case "$*" in
+  ci)
+    [ "$PWD" = "$EXPECTED_ROOT" ] || exit 91
+    [ "$(cat package-lock.json)" = '{"lockfileVersion":3,"fixture":"committed"}' ] || exit 92
+    mkdir node_modules
+    printf 'INSTALL_CHECKOUT_DEPENDENCIES\\n'
+    ;;
+  'run server-build')
+    [ -d node_modules ] && [ ! -L node_modules ] || exit 93
+    rm -rf build
+    mkdir -p build
+    printf 'synthetic app' > build/app.js
+    printf 'BUILD\\n'
+    ;;
+  *) exit 94 ;;
+esac
+`, { mode: 0o700 })
+    await writeFile(join(bin, 'git'), '#!/bin/bash\ncase "$1" in\n diff) exit 0 ;;\n rev-parse) printf "' + 'a'.repeat(40) + '\\n" ;;\n status) exit 0 ;;\n *) exit 99 ;;\nesac\n', { mode: 0o700 })
+    const result = spawnSync('bash', [join(root, 'build.sh')], { cwd: tmpdir(), env: { PATH: bin + ':' + process.env.PATH, EXPECTED_ROOT: root }, encoding: 'utf8' })
     assert.equal(result.status, 0, result.stderr)
     assert.equal(result.stdout.split('BUILD').length - 1, 1)
+    assert.isBelow(result.stdout.indexOf('INSTALL_CHECKOUT_DEPENDENCIES'), result.stdout.indexOf('BUILD'))
+    assert.equal(await readFile(join(root, 'package-lock.json'), 'utf8'), '{"lockfileVersion":3,"fixture":"committed"}\n')
     assert.include(result.stdout, 'Release package: ')
     const directories = await readdir(join(root, 'releases'))
     assert.lengthOf(directories, 1)
@@ -114,12 +134,39 @@ test.group('Saved release packaging and promotion (local files only)', (group) =
     await cp('installer', join(root, 'installer'), { recursive: true })
     await writeFile(join(root, 'build.sh'), await readFile('build.sh', 'utf8'))
     const bin = join(root, 'bin'); await mkdir(bin)
-    await writeFile(join(bin, 'npm'), '#!/bin/bash\nexit 7\n', { mode: 0o700 })
+    await writeFile(join(bin, 'npm'), '#!/bin/bash\nif [ "$*" = ci ]; then exit 0; fi\nexit 7\n', { mode: 0o700 })
+    await writeFile(join(bin, 'git'), '#!/bin/bash\n[ "$1" = diff ]\n', { mode: 0o700 })
     const result = spawnSync('bash', [join(root, 'build.sh')], { env: { PATH: bin + ':' + process.env.PATH }, encoding: 'utf8' })
     assert.equal(result.status, 7)
     assert.notInclude(result.stdout, 'Release package:')
     await assert.rejects(() => readdir(join(root, 'releases')))
   })
+  test('dependency isolation failures stop before building or packaging')
+    .with(['symlink', 'manifest', 'install']).run(async ({ assert }, failure) => {
+      await writeFile(join(root, 'build.sh'), await readFile('build.sh', 'utf8'))
+      const bin = join(root, 'bin'); await mkdir(bin)
+      await writeFile(join(bin, 'git'), '#!/bin/bash\nexit ' + (failure === 'manifest' ? '1' : '0') + '\n', { mode: 0o700 })
+      await writeFile(join(bin, 'npm'), '#!/bin/bash\nprintf "NPM:%s\\n" "$*"\nexit 8\n', { mode: 0o700 })
+      if (failure === 'symlink') {
+        await mkdir(join(root, 'development-dependencies'))
+        await writeFile(join(root, 'development-dependencies/sentinel'), 'preserve')
+        await symlink(join(root, 'development-dependencies'), join(root, 'node_modules'))
+      }
+      const result = spawnSync('bash', [join(root, 'build.sh')], {
+        env: { PATH: bin + ':' + process.env.PATH }, encoding: 'utf8',
+      })
+      assert.equal(result.status, failure === 'install' ? 8 : 1)
+      assert.notInclude(result.stdout, 'run server-build')
+      assert.notInclude(result.stdout, 'Release package:')
+      if (failure === 'install') assert.include(result.stdout, 'NPM:ci')
+      else assert.notInclude(result.stdout, 'NPM:')
+      if (failure === 'symlink') {
+        assert.include(result.stderr, 'symlinked node_modules')
+        assert.equal(await readFile(join(root, 'development-dependencies/sentinel'), 'utf8'), 'preserve')
+      }
+      if (failure === 'manifest') assert.include(result.stderr, 'must match the committed HEAD')
+      await assert.rejects(() => readdir(join(root, 'releases')))
+    })
   test('deploy script references only existing release packaging, not a build', async ({ assert }) => {
     const script = await readFile(resolve('deploy.sh'), 'utf8')
     assert.notInclude(script, './build.sh')
