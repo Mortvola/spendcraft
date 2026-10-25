@@ -156,3 +156,109 @@ The initial 7-file staged fingerprint recorded above describes implementation-ta
 Final PostgreSQL verification result: **45 original cases passed**, **1,269 expanded focused cases passed**, **one additional raw-Category noninterference case passed**, and **2,807 complete-suite tests passed**; zero failures/skips/pending in final acceptance runs. The final tax file contains 62 cases. Full-suite safeguards recorded 79,662 independent identity checks and 79,659 guarded operations. Both TypeScript checks, changed-file lint, Knip, circular regression, server/client builds and both diff checks passed. Full-repository lint retains 15 errors in the two untouched private audit artifacts; builds retain the existing large-chunk warning.
 
 An unrelated installer unit assertion also required a test-only update for committed environment-specific PLAID_WEBHOOK metadata. No installer/production runtime code changed. Final status is **accepted for deployment preparation**, with historical conversion deferred. The companion verification record contains all initial failures/reproductions, justified test corrections, final status and the externally changed staged-snapshot evidence. No agent staging or commit occurred.
+
+## Historical conversion preparation — October 25, 2026
+
+Source baseline: `4b07bb8c2e1127819cdd2544a2871f5939d33b43`, branch `dollar-to-cents-2`. The operator reports compatible runtime deployment and verification on staging and production. Historical conversion is **prepared only**, not executed. The earlier 21 numeric production entries are historical evidence; current counts require a separately authorized audit.
+
+### Audit and conversion commands
+
+Run on the selected database server from a checkout containing the new operator script and its existing helper dependencies. This preparation does not deploy/package the script into an installed release. Use the actual server `.env` file; all PG settings, including the password, come from that file, never ambient PG variables. Both environments currently use a database called `spendcraft`; `--database` must match the explicitly selected file. There is no default production connection and no EC2/hostname/fingerprint check.
+
+For staging, after separate authorization:
+
+```sh
+mkdir -p script-output
+node scripts/auditTransactionTaxPrecision.mjs \
+  --env /spendcraft_staging/server/spendcraft-env --database spendcraft \
+  --output-parent "$PWD/script-output"
+node scripts/convertHistoricalTransactionTaxes.mjs \
+  --env /spendcraft_staging/server/spendcraft-env --database spendcraft
+```
+
+The existing precision audit reports entry-level numeric/string/malformed/fractional-cent/rounding counts and transaction-level mixed/empty/unsupported counts; it retains raw monetary tokens privately. Its older `roundingPolicyApprovedForTax: false`/characterization wording describes the audit's original policy status, not the subsequent product approval recorded here. No audit or historical result was rewritten. Review unsupported findings rather than assuming they are corrupt: the audit marks type 1 outside its original characterization set, while active tax readers/reporting do not impose that type filter. The converter excludes positively identified deprecated Loan records and validates tax entries independently of Transaction type, deleted state or allocation totals. No legacy relational allocation dependency is used.
+
+The converter's default is a repeatable-read **read-only dry run**. It writes unique private output under `script-output/tax-conversion-*`, prints the absolute directory before database work, and produces `summary.json`, `summary.txt`, `preflight.json`, and `transactions.jsonl`. Counts distinguish Transactions (`transactions`, `candidates`, `mixed`, `empty`, `nullTaxData`, `blockingRecords`, `excludedDeprecated`) from tax entries (`numericAmounts`, `stringAmounts`, `canonicalStrings`, `malformedAmounts`, `roundedAmounts`). Details include original numeric tokens, proposed values and rounding differences in cents. Missing/null tax data and empty arrays are preserved. Any malformed/unsafe active entry or unsupported tax shape blocks the **entire** execution before updates.
+
+Canonical strings are preserved verbatim. Numeric amounts use the existing checked Category conversion helper, sharing the approved `Math.round(amount * 100)`/divide/`toFixed(2)` policy with the production tax codec. No aggregate tax conservation rule is imposed. Only numeric `taxes[index].amount` leaves are patched with SQL `jsonb_set`; types, order, duplicates, optional metadata and other JSON numeric tokens are not reserialized through JavaScript.
+
+Before execution, obtain fresh authorization, a verified database backup and complete writer shutdown/fencing, including scheduled writers. The script never stops processes or disables scheduled restarts. It requires the existing PM2 manifest's processes to remain stopped, verifies the existing daemon without bootstrapping another, and rechecks PM2/database identity before each write and commit. No sandbox/production bypass is provided.
+
+```sh
+# Future execution only; all writers must already be fenced/stopped.
+node scripts/convertHistoricalTransactionTaxes.mjs \
+  --env /spendcraft_staging/server/spendcraft-env --database spendcraft --execute
+```
+
+Connection admission checks configuration, database/user, port, PostgreSQL cluster identifier, database OID, live server/peer and actual socket endpoint. A targeted schema check requires ordinary JSONB storage without RLS, rules or user triggers. Execution scans and converts atomically in one repeatable-read transaction with bounded 100-row pages and at most 1,000 entries per tax array. Any unsupported schema requires review, not bypass. No API, reporting arithmetic, balance, Category storage, schema or runtime code changes are involved.
+
+### Recovery and idempotence
+
+Before the first UPDATE, execution durably saves the original PostgreSQL tax JSON text to `original-taxes.jsonl`, plus proposed JSON, original/converted whole-row hashes, non-tax metadata hash and original row version. `snapshot.json` pins the data-file SHA-256, database identity and conversion transaction ID; its SHA-256 is printed and repeated in completion output. Preserve both files together. A filesystem write failure before the first update prevents conversion. An uncertain COMMIT response is reported as uncertain; never infer rollback or automatically retry.
+
+Use the emitted snapshot path/hash, not the examples as literal values:
+
+```sh
+# Recovery preflight is read-only unless --execute is supplied.
+node scripts/convertHistoricalTransactionTaxes.mjs \
+  --env /spendcraft_staging/server/spendcraft-env --database spendcraft \
+  --recover --snapshot "$SNAPSHOT_PATH" --snapshot-sha256 "$SNAPSHOT_SHA256"
+# After separate authorization and unchanged-row verification, same command plus --execute.
+```
+
+Recovery verifies the pinned files and exact database identity, then requires every affected Transaction's complete converted row hash, tax JSON and `xmin` to match. Later edits, including equal-value saves, refuse recovery; nothing is overwritten. A failure rolls back all recovery updates. Successful recovery restores only original tax JSON and verifies all other columns through the whole-row hash. It never restores a database backup or rolls back the application. A second conversion is a no-op; a repeated recovery is deliberately refused once row versions change. Recovering an older snapshot after a later conversion is likewise not automatic.
+
+### Small synthetic staging rehearsal (not executed)
+
+1. Obtain staging execution authorization and independently verify the configured/live database identity. Use a new isolated synthetic Budget and ordinary/manual Transactions created through existing UI/API paths; do not reuse or edit real history. Record fixture IDs and complete raw before-images, including AccountTransaction amounts, Accounts, all Budget Categories/Funding Pool and Transaction fields.
+2. Under verified staging-only fixture writes, seed **only those identified synthetic Transactions' tax JSON** with: numeric `12.34`; existing string `"12.34"`; and an ordered mixed array containing duplicate tax types, numeric `12.345`, `-1.005`, `0.125`, `-0.125`, `0.30000000000000004`, `0` and existing `"0.30"`. Include optional nested metadata. Keep valid existing Category allocations and all accounting relationships unchanged. Record original PostgreSQL JSON text after fixture setup. Negative zero normalizes to ordinary zero in PostgreSQL JSONB; exercise signed-zero policy in the pure tests as well.
+3. Run the audit and converter dry run. Reconcile raw entry counts and proposed changes with those fixtures. Fence all writers, then execute once. Verify raw JSON string types and expected values (`"12.35"`, `"-1.00"`, `"0.13"`, `"-0.12"`, `"0.30"`, `"0.00"`), unchanged preexisting strings/types/order/duplicates/metadata, and unchanged unrelated Transaction fields and financial snapshots.
+4. Execute a second time in a new output directory: require zero candidates/updates. Preserve the **first** snapshot for recovery; the second no-op run does not change row versions. Run recovery dry run and authorized recovery execution from that first snapshot. Verify original raw tax JSON and unrelated fields exactly restored, then check numeric/mixed API reads and existing tax reports. Keep the compatible application release throughout.
+5. Optionally edit a synthetic converted row through the API before recovery to prove recovery refusal. This is a separate negative branch: preserve the row and diagnostics on refusal; do not repair or force recovery. Fixture cleanup is a separately reviewed, ID-scoped staging operation, never wildcard deletion.
+
+Remaining gates: fresh read-only historical counts, actual staging conversion/recovery rehearsal, verified backup and shutdown window, delivery of the committed operator files, and separate production execution authorization. No database connection or conversion took place during preparation.
+
+Preparation verification: **235 focused non-database tests passed**, including **41 new tax-conversion cases** plus existing Category conversion/identity, PM2 fencing and tax-audit regressions. Changed-file ESLint, script/test syntax checks and both Git diff checks passed. No application TypeScript or schema files changed; no database-backed tests ran.
+
+### Staging finalization commands (prepared only)
+
+Use a tooling checkout containing the finalized commit, outside the installed application directory. These commands are for later authorization; they were not executed during finalization. Do not assume the newly committed script is already on staging. The converter has **database-wide scope**, not a fixture-ID filter: after a fresh dry run, every nonempty `patches` entry in `transactions.jsonl` must belong to the explicit synthetic fixture ID allowlist before execution. If unrelated historical numeric candidates exist, **stop**; do not convert them under synthetic-only authorization. Recheck with all writers fenced before execution. No production operation is authorized by this plan.
+
+```sh
+# On staging, in the reviewed tooling checkout; read-only authorization required.
+mkdir -p script-output
+node scripts/auditTransactionTaxPrecision.mjs \
+  --env /spendcraft_staging/server/spendcraft-env --database spendcraft \
+  --output-parent "$PWD/script-output"
+node scripts/convertHistoricalTransactionTaxes.mjs \
+  --env /spendcraft_staging/server/spendcraft-env --database spendcraft --dry-run
+
+# After separately approved synthetic setup, candidate-ID review, backup and writer fencing:
+node scripts/convertHistoricalTransactionTaxes.mjs \
+  --env /spendcraft_staging/server/spendcraft-env --database spendcraft --execute
+# FIRST_RUN is the absolute output directory printed by that successful execution.
+# Read snapshot path and SHA-256 from its recoveryPoint/completion output.
+
+# Numeric API check, with a token for the synthetic fixture's own Budget:
+curl --fail --silent --show-error \
+  -H "Authorization: Bearer $STAGING_ACCESS_TOKEN" -H 'Accept: application/json' \
+  "https://staging.spendcraft.app/api/v1/transaction/$SYNTHETIC_TRANSACTION_ID"
+# Require numeric taxes[].amount values matching the approved rounded values.
+
+# Second execution: require candidates=0 and numericAmounts=0; canonicalStrings unchanged.
+node scripts/convertHistoricalTransactionTaxes.mjs \
+  --env /spendcraft_staging/server/spendcraft-env --database spendcraft --execute
+
+# Recovery preflight, using the FIRST execution's pinned snapshot:
+node scripts/convertHistoricalTransactionTaxes.mjs \
+  --env /spendcraft_staging/server/spendcraft-env --database spendcraft --recover \
+  --snapshot "$FIRST_RUN/snapshot.json" --snapshot-sha256 "$SNAPSHOT_SHA256"
+# Separately authorized recovery; no PM2 restart until recovery verification completes:
+node scripts/convertHistoricalTransactionTaxes.mjs \
+  --env /spendcraft_staging/server/spendcraft-env --database spendcraft --recover --execute \
+  --snapshot "$FIRST_RUN/snapshot.json" --snapshot-sha256 "$SNAPSHOT_SHA256"
+```
+
+Successful first execution verifies raw canonical JSON strings, row counts, metadata hashes and every converted whole-row hash before COMMIT. Successful recovery verifies exact original PostgreSQL tax JSON and original whole-row hashes for every restored row before COMMIT. Require `status=complete`, zero exit status and `restored` equal to the first run's `candidates`; audit again to reconcile original numeric/string/mixed counts. Retain the raw snapshots and both completion records. Do not use the second no-op snapshot for recovery. API checks require a separately authorized process-start window; they can be done after recovery or between conversion and recovery provided **no affected Transaction is edited**, then writers must be fenced again.
+
+For the refusal branch, perform a fresh separately approved synthetic conversion, retain its new snapshot/hash, then deliberately edit only a synthetic converted Transaction via the existing UI or tax PATCH API (using its current version). Fence writers again and run the same recovery command **without `--execute`** against that snapshot. Require `changed_row_recovery_refused` and a nonzero exit; do not execute recovery, retry, repair the row or reuse the earlier success-branch snapshot. The non-database regression also covers equal-value saves via a changed PostgreSQL row version. This negative branch follows successful exact recovery so it cannot prevent testing the success branch.
