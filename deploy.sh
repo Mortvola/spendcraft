@@ -31,6 +31,6 @@ DEPLOY_DIR=$(mktemp -d "${TMPDIR:-/tmp}/spendcraft-deploy.XXXXXX")
 trap 'rm -rf -- "$DEPLOY_DIR"' EXIT
 
 node "$SCRIPT_DIR/installer/releasePackage.mjs" installer \
-  --release "$1" --target "$2" --output "$DEPLOY_DIR/install.sh"
+  --release "$1" --output "$DEPLOY_DIR/install.sh"
 
 scp -i "$DEPLOY_SSH_KEY" "$DEPLOY_DIR/install.sh" "ubuntu@${DEPLOY_SERVER}:"

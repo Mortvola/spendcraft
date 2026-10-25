@@ -33,25 +33,29 @@ test.group('Saved release packaging and promotion (local files only)', (group) =
     assert.equal(embedded.status, 0)
     assert.deepEqual(JSON.parse(embedded.stdout), source)
   })
-  test('staging and production installers embed identical tested archive bytes and saved template', async ({ assert }) => {
+  test('one installer preserves the saved archive and is identical for either runtime target', async ({ assert }) => {
     await writeFile(join(root, 'build/random.bin'), randomBytes(250001))
     const release = await packageRelease(root, () => undefined)
     const original = await readFile(join(release.directory, 'build.zip'))
-    // Future source edits/builds must have no effect on promotion of the saved package.
     await writeFile(join(root, 'installer/install.sh0'), 'a completely different installer')
     await writeFile(join(root, 'build/app.js'), '// later untested source')
-    const installers = []
-    for (const target of ['staging', 'production']) {
-      const output = join(root, target + '.sh')
-      const actual = await createInstaller(release.directory, target, output)
-      assert.equal(actual.id, release.manifest.id)
-      const script = await readFile(output, 'utf8')
-      assert.include(script, 'INSTALL_TARGET=' + target)
-      assert.deepEqual(payload(script), original)
-      installers.push(script.replace('INSTALL_TARGET=' + target, 'INSTALL_TARGET=unconfigured'))
-    }
-    assert.equal(installers[0], installers[1])
+    const output = join(root, 'install.sh')
+    const actual = await createInstaller(release.directory, output)
+    assert.equal(actual.id, release.manifest.id)
+    const script = await readFile(output, 'utf8')
+    assert.include(script, 'production|staging) INSTALL_TARGET="$1"')
+    assert.deepEqual(payload(script), original)
+    assert.notInclude(script, 'INSTALL_TARGET=production\n')
+    assert.notInclude(script, 'INSTALL_TARGET=staging\n')
     assert.equal((await verifyPackage(release.directory)).id, release.manifest.id)
+  })
+  test('generator rejects obsolete target-specific packaging options', async ({ assert }) => {
+    const release = await packageRelease(root, () => undefined)
+    const output = join(root, 'install.sh')
+    const result = spawnSync(process.execPath, [resolve('installer/releasePackage.mjs'), 'installer',
+      '--release', release.directory, '--target', 'staging', '--output', output], { encoding: 'utf8' })
+    assert.equal(result.status, 1)
+    await assert.rejects(() => readFile(output))
   })
   test('modified template, archive or source metadata is rejected', async ({ assert }) => {
     for (const name of ['build.zip', 'install.sh0', 'release-source.json']) {
@@ -69,22 +73,22 @@ test.group('Saved release packaging and promotion (local files only)', (group) =
     const incomplete = join(root, 'incomplete'); await mkdir(incomplete)
     await assert.rejects(() => verifyPackage(incomplete))
   })
-  test('rejects linked archive and invalid target without creating an installer', async ({ assert }) => {
+  test('rejects a linked archive without creating an installer', async ({ assert }) => {
     const release = await packageRelease(root, () => undefined)
     const archive = join(release.directory, 'build.zip')
     await writeFile(join(root, 'other.zip'), await readFile(archive))
     await rm(archive); await symlink(join(root, 'other.zip'), archive)
     await assert.rejects(() => verifyPackage(release.directory), 'release_file_must_be_regular')
-    await assert.rejects(() => createInstaller(release.directory, 'unknown', join(root, 'output.sh')), 'explicit_deployment_target_required')
+    await assert.rejects(() => createInstaller(release.directory, join(root, 'output.sh')), 'release_file_must_be_regular')
   })
   test('does not overwrite output installers or write generated files into the saved package', async ({ assert }) => {
     const release = await packageRelease(root, () => undefined)
     const existing = join(root, 'existing.sh'); await writeFile(existing, 'keep')
-    await assert.rejects(() => createInstaller(release.directory, 'staging', existing))
+    await assert.rejects(() => createInstaller(release.directory, existing))
     assert.equal(await readFile(existing, 'utf8'), 'keep')
-    await assert.rejects(() => createInstaller(release.directory, 'staging', join(release.directory, 'install.sh')), 'installer_output_inside_release')
+    await assert.rejects(() => createInstaller(release.directory, join(release.directory, 'install.sh')), 'installer_output_inside_release')
     await symlink(release.directory, join(root, 'release-alias'))
-    await assert.rejects(() => createInstaller(release.directory, 'staging', join(root, 'release-alias/install.sh')), 'installer_output_inside_release')
+    await assert.rejects(() => createInstaller(release.directory, join(root, 'release-alias/install.sh')), 'installer_output_inside_release')
   })
   test('invalid template cannot become an eligible release', async ({ assert }) => {
     await writeFile(join(root, 'installer/install.sh0'), 'no target guard or payload delimiter')

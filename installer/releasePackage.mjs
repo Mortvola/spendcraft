@@ -28,7 +28,7 @@ function validateSource(source) {
     || typeof source.builtAt !== 'string' || !Number.isFinite(Date.parse(source.builtAt))) throw new Error('invalid_release_source')
 }
 function validateTemplate(template) {
-  if ((template.match(/^INSTALL_TARGET=unconfigured$/gm) ?? []).length !== 1
+  if ((template.match(/^ {2}production\|staging\) INSTALL_TARGET="\$1" ;;$/gm) ?? []).length !== 1
     || (template.match(/^___END_OF_SHELL_SCRIPT___$/gm) ?? []).length !== 1
     || !template.trimEnd().endsWith('___END_OF_SHELL_SCRIPT___')) throw new Error('invalid_installer_template')
 }
@@ -102,13 +102,12 @@ export async function verifyPackage(directory) {
   return manifest
 }
 
-export async function createInstaller(directory, target, output) {
-  if (!['production', 'staging'].includes(target)) throw new Error('explicit_deployment_target_required')
+export async function createInstaller(directory, output) {
   directory = resolve(directory)
   const manifest = await verifyPackage(directory)
   const savedTemplate = await readFile(join(directory, 'install.sh0'))
   if (hash(savedTemplate) !== manifest.files['install.sh0'].sha256) throw new Error('release_changed_during_packaging')
-  const template = savedTemplate.toString('utf8').replace(/^INSTALL_TARGET=unconfigured$/m, 'INSTALL_TARGET=' + target)
+  const template = savedTemplate.toString('utf8')
   output = join(await realpath(dirname(resolve(output))), basename(output))
   // An installer is disposable upload output, never a mutation of the saved package.
   if (output === directory || output.startsWith(directory + '/')) throw new Error('installer_output_inside_release')
@@ -140,16 +139,15 @@ export async function createInstaller(directory, target, output) {
 
 export async function main(args = process.argv.slice(2)) {
   const { values, positionals } = parseArgs({ args, strict: true, allowPositionals: true, options: {
-    root: { type: 'string' }, release: { type: 'string' }, target: { type: 'string' }, output: { type: 'string' },
+    root: { type: 'string' }, release: { type: 'string' }, output: { type: 'string' },
   } })
   if (positionals.length !== 1) throw new Error('release_package_mode_required')
-  if (positionals[0] === 'package' && values.root && !values.release && !values.target && !values.output) {
+  if (positionals[0] === 'package' && values.root && !values.release && !values.output) {
     await packageRelease(values.root)
-  } else if (positionals[0] === 'installer' && values.release && values.target && values.output && !values.root) {
-    const manifest = await createInstaller(values.release, values.target, values.output)
+  } else if (positionals[0] === 'installer' && values.release && values.output && !values.root) {
+    const manifest = await createInstaller(values.release, values.output)
     console.log('Verified release ID: ' + manifest.id)
     console.log('Application archive SHA256: ' + manifest.files['build.zip'].sha256)
-    console.log('Installer target: ' + values.target)
   } else throw new Error('invalid_release_package_arguments')
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {

@@ -3,21 +3,14 @@
 set -e
 set -o pipefail
 
-# deploy.sh embeds the selected target. The unpackaged template requires one.
-INSTALL_TARGET=unconfigured
-if [ "$#" -gt 1 ]; then
-  echo 'Usage: install.sh [production|staging]' >&2
+# The same installer/archive is used for both environments.
+if [ "$#" -ne 1 ]; then
+  echo 'Usage: install.sh staging|production' >&2
   exit 1
 fi
-if [ "$INSTALL_TARGET" = unconfigured ]; then
-  INSTALL_TARGET="${1:-}"
-elif [ "$#" -eq 1 ] && [ "$1" != "$INSTALL_TARGET" ]; then
-  echo 'Installer target does not match its packaged deployment target.' >&2
-  exit 1
-fi
-case "$INSTALL_TARGET" in
-  production|staging) ;;
-  *) echo 'Explicit production or staging installation target required.' >&2; exit 1 ;;
+case "$1" in
+  production|staging) INSTALL_TARGET="$1" ;;
+  *) echo 'Usage: install.sh staging|production' >&2; exit 1 ;;
 esac
 
 : "${SPENDCRAFT_ROOT:?Set SPENDCRAFT_ROOT to the deployment directory}"

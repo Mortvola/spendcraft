@@ -46,7 +46,7 @@ test.group('Deploy saved release target selection (mock upload, no build/network
       assert.equal(result.status, 0, result.stderr)
       assert.include(result.stdout, 'Verified release ID: ' + result.release.id)
       assert.include(result.stdout, `UPLOAD_KEY:/keys/${target} key.pem\nUPLOAD_DEST:ubuntu@${target}.example:`)
-      assert.include(result.installer, `INSTALL_TARGET=${target}\n`)
+      assert.include(result.installer, 'production|staging) INSTALL_TARGET="$1"')
       assert.notInclude(result.stdout, 'BUILD')
     })
   test('rejects missing, invalid or extra arguments before packaging/upload')
@@ -81,14 +81,33 @@ test.group('Deploy saved release target selection (mock upload, no build/network
     const source = await readFile('deploy.sh', 'utf8')
     assert.notInclude(source, './build.sh')
     assert.notMatch(source, /\bnpm\b|\bzip -|installer\/install\.sh0/)
-    assert.include(source, '--release "$1" --target "$2"')
+    assert.include(source, '--release "$1" --output')
+    assert.notInclude(source, '--target')
   })
-  test('an installer rejects a conflicting packaged target before installation', async ({ assert }) => {
-    const source = await readFile('installer/install.sh0', 'utf8')
-    const header = source.slice(0, source.indexOf('\nconfirm_deployment() {'))
-      .replace('INSTALL_TARGET=unconfigured', 'INSTALL_TARGET=staging')
-    const result = spawnSync('bash', ['-c', header, 'install.sh', 'production'], { encoding: 'utf8', env: { PATH: process.env.PATH } })
-    assert.equal(result.status, 1)
-    assert.include(result.stderr, 'does not match its packaged deployment target')
-  })
+  test('unified installer rejects invalid arguments before installation')
+    .with([[], ['unknown'], ['staging', 'extra'], ['production', 'staging']]).run(async ({ assert }, args) => {
+      const source = await readFile('installer/install.sh0', 'utf8')
+      const header = source.slice(0, source.indexOf('\nconfirm_deployment() {'))
+      const result = spawnSync('/bin/bash', ['-c', header, 'install.sh', ...args], {
+        encoding: 'utf8', env: { PATH: '/nonexistent', INSTALL_TARGET: 'production' },
+      })
+      assert.equal(result.status, 1)
+      assert.include(result.stderr, 'Usage: install.sh staging|production')
+      assert.equal(result.stdout, '')
+    })
+})
+
+test.group('Unified installer runtime target selection (header only, no install)', () => {
+  test('accepts exactly one target and overrides any inherited target')
+    .with(['staging', 'production']).run(async ({ assert }, target) => {
+      const directory = await realpath(await mkdtemp(join(tmpdir(), 'installer-target-')))
+      try {
+        const source = await readFile('installer/install.sh0', 'utf8')
+        const header = source.slice(0, source.indexOf('\nconfirm_deployment() {'))
+        const result = spawnSync('/bin/bash', ['-c', header + '\nprintf "%s\\n" "$INSTALL_TARGET"',
+          'install.sh', target], { encoding: 'utf8', env: { SPENDCRAFT_ROOT: directory, INSTALL_TARGET: 'incorrect' } })
+        assert.equal(result.status, 0, result.stderr)
+        assert.equal(result.stdout, target + '\n')
+      } finally { await rm(directory, { recursive: true, force: true }) }
+    })
 })

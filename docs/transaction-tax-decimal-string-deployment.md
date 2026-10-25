@@ -83,7 +83,7 @@ ssh -i "$SPENDCRAFT_STAGING_SSH_KEY" "ubuntu@${SPENDCRAFT_STAGING_SERVER}"
 On the verified staging host, confirm `$SPENDCRAFT_ROOT`, release/recovery identities, available disk, writers and backup destination, then run the uploaded installer:
 
 ```sh
-bash "$HOME/install.sh"
+bash "$HOME/install.sh" staging
 ```
 
 Type DEPLOY only after reviewing its actual target and maintenance conditions. Decline migrations, select SKIP for seeding, and confirm RESUME only after its stated checks. Verify the promoted release source/complete manifest against the tested package, and archive deployment evidence under a private `script-output/` directory without editing release contents.
@@ -126,7 +126,7 @@ After separate approval, use the identical release directory:
 bash deploy.sh "$RELEASE_DIRECTORY" production
 ssh -i "$SPENDCRAFT_SSH_KEY" "ubuntu@${SPENDCRAFT_SERVER}"
 # On the verified production host, after all gates:
-bash "$HOME/install.sh"
+bash "$HOME/install.sh" production
 ```
 
 Verify release/process/HTTP health, authentication, existing Transactions and numeric tax API responses, tax reports and ordinary Category/report functionality without altering real financial records. New-write verification requires a separately approved safe production procedure; otherwise label that path unobserved in production and cite staging/PostgreSQL evidence. Monitor provider and listener errors. Do not automatically restore a backup or swap to an incompatible previous release on failure; fence writers and retain evidence.
@@ -228,3 +228,10 @@ Source `2429cd32250430d5238ea6d79a066096ccbe8c87`, branch `dollar-to-cents-2`. T
 Read-only staging preflight reverified EC2 identity, current/old full identities, three live read-only database identities, 2.73 GiB data-volume headroom, PM2 PID/manifest mapping and HTTP/HTTPS 200. Both installed releases lack tax decoding and remain inadmissible rollback targets. The finalized rollback is one-way, keeps outgoing temporary files until filesystem/runtime verification, then removes them; it never recreates old or reverses tax storage. Installer rotation remains unchanged.
 
 **Execution remains blocked:** backup completion/checksum/footer pass, but successful restore recoverability is not established. PM2 daemon exists, but no PM2 systemd unit is listed and reboot recovery is unverified. Resolve these gates, repeat volatile writer/identity/capacity checks, then request fresh staging execution approval. Decline migrations, SKIP seeding. No staging-changing operation, production access, historical conversion, process control, deployment, stage or commit occurred. Detailed evidence is under `script-output/tax-staging-acceptance-preflight-rf3bkjwt/`; future smoke/guard/interruption matrices and exact saved-package commands are in the linked record.
+
+
+## Unified installer interface
+
+The installer generator now writes one `install.sh` without embedding a target choice. Generate it with `node installer/releasePackage.mjs installer --release "$RELEASE_DIRECTORY" --output install.sh`; invoke `./install.sh staging` or `./install.sh production`. The application archive is not transformed by target selection. Exactly one valid target argument is required before any installation activity. No server-identity check is added; the operator must select the correct server/root and target. SSH destination/key selection in deploy.sh is unchanged, and upload does not execute installation. Existing environment-specific prompts/settings, backup protections, PM2 behavior and rollback guards remain unchanged.
+
+The unified-generator/template changes require a commit before a final artifact can be generated from a clean checkout of that committed source. Do not relabel the earlier committed artifact as unified or regenerate it with uncommitted tooling. This task does not authorize a commit, package promotion or deployment.
