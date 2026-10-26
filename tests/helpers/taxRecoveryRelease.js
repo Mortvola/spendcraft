@@ -8,9 +8,10 @@ async function taxRuntimeFiles() {
   const profile = JSON.parse(await readFile('installer/tax-storage-profile.json', 'utf8'))
   const config = ts.readConfigFile('tsconfig.json', ts.sys.readFile)
   const options = ts.parseJsonConfigFileContent(config.config, ts.sys, '.').options
-  const program = ts.createProgram(Object.keys(profile.files).map(file => file.replace(/\.js$/, '.ts')), options)
+  const names = [...Object.keys(profile.files), ...Object.keys(profile.statementIncomeFiles)]
+  const program = ts.createProgram(names.map(file => file.replace(/\.js$/, '.ts')), options)
   const files = new Map()
-  for (const name of Object.keys(profile.files)) {
+  for (const name of names) {
     const source = program.getSourceFile(name.replace(/\.js$/, '.ts'))
     if (!source) throw new Error('Missing production fixture source')
     program.emit(source, (path, contents) => {

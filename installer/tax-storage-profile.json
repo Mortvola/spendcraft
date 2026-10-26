@@ -12,5 +12,12 @@
     "app/services/categoryAmountCodec.js": "9fb397e11ac36e0da6793e4b646e91928611a3bbfa8b99d6659fdbd710fd611c",
     "app/services/categoryStorageBinding.js": "7af24156a8d1daba902bd022d2ef84b6e0597afe7098c797a862801e88804a36",
     "app/services/transactionCategoryStorage.js": "9428c45aa40b2c42b0d1fc43855160e677d16b4bcee5f753cbacaa69a4a68175"
+  },
+  "statementIncomeSourceCommit": "e07648afcaa4d721c96648570f171d359e759996",
+  "statementIncomeFiles": {
+    "app/Models/Statement.js": "ad295f84499f1c351d36e73c7be4f54e0dc96a20a6d685d754fe1d743005db14",
+    "app/services/statementIncomeCodec.js": "32e1306e45eeebd167e9392bca7763a82dd5f45b1af5e10a2c884d5a42e73110",
+    "app/services/statementIncomeStorage.js": "0fe145ba859996b95a0349a40bb170769d72f1159a95e869dc45f67cd2698308",
+    "app/Controllers/Http/AccountsController.js": "760b0a89a390138346873926fdc9c2a43effbcd0c068163d7e8647e3cbf46ec8"
   }
 }

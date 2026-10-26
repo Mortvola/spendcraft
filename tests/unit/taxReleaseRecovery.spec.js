@@ -1,11 +1,11 @@
 import { validateCategoryConservation } from '../../app/services/categoryAmountCodec.ts'
 import { decodeTaxAttributions, encodeTaxAttributions } from '../../app/services/taxAmountCodec.ts'
 import { test } from '@japa/runner'
-import { mkdtemp, mkdir, writeFile, readFile, realpath, symlink, rm } from 'node:fs/promises'
+import { mkdtemp, mkdir, writeFile, readFile, realpath, symlink, rm, readdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createHash } from 'node:crypto'
-import { taxStorageCompatibility, requireTaxStorageCompatibility } from '../../installer/lib/taxReleaseRecovery.mjs'
+import { taxStorageCompatibility, statementIncomeStorageCompatibility, requireTaxStorageCompatibility } from '../../installer/lib/taxReleaseRecovery.mjs'
 import { releaseManifest, verifyReleases, validatePlan, releaseDifferences } from '../../installer/rollbackApplication.mjs'
 import { writeTaxRuntimeFixture } from '../helpers/taxRecoveryRelease.js'
 import { orchestrate } from '../../installer/lib/applicationRollback.mjs'
@@ -35,7 +35,59 @@ test.group('Tax compatible release recovery (temporary files only)', group => {
   test('recognizes real emitted model, PATCH, report and both codec boundaries', async ({ assert }) => {
     const release = await fixture(root), manifest = await releaseManifest(release)
     assert.equal(taxStorageCompatibility(manifest), 'reviewed-tax-and-category-boundary')
+    assert.equal(statementIncomeStorageCompatibility(manifest), 'reviewed-statement-income-boundary')
     assert.doesNotThrow(() => requireTaxStorageCompatibility(manifest))
+  })
+  test('Statement model, codec, binding and API writer must all be reviewed compiled files').with([
+    'app/Models/Statement.js', 'app/services/statementIncomeCodec.js',
+    'app/services/statementIncomeStorage.js', 'app/Controllers/Http/AccountsController.js',
+  ]).run(async ({ assert }, name) => {
+    const release = await fixture(root)
+    await writeFile(join(release, name), '// unreviewed or numeric-only implementation')
+    const manifest = await releaseManifest(release)
+    assert.equal(taxStorageCompatibility(manifest), 'reviewed-tax-and-category-boundary')
+    assert.equal(statementIncomeStorageCompatibility(manifest), 'unknown')
+    assert.throws(() => requireTaxStorageCompatibility(manifest), 'statement_income_storage_compatibility_unknown')
+  })
+  test('missing decoding and metadata-only compatibility declarations fail closed', async ({ assert }) => {
+    const release = await fixture(root)
+    await rm(join(release, 'app/services/statementIncomeStorage.js'))
+    await writeFile(join(release, 'release-source.json'), JSON.stringify({ commit: 'e07648afcaa4d721c96648570f171d359e759996', capabilities: ['statement-income-strings'] }))
+    await writeFile(join(release, 'statement-income-compatible'), 'true')
+    const manifest = await releaseManifest(release)
+    assert.equal(statementIncomeStorageCompatibility(manifest), 'unknown')
+    assert.throws(() => requireTaxStorageCompatibility(manifest), 'statement_income_storage_compatibility_unknown')
+    for (const unknown of [null, {}, { format: 1, identity: 'x', files: [] }, { capabilities: ['statement-income-strings'] }]) {
+      assert.equal(statementIncomeStorageCompatibility(unknown), 'unknown')
+    }
+  })
+  test('genuinely compatible prior release passes admission independently of commit labels', async ({ assert }) => {
+    const currentDirectory = await fixture(root, 'spendcraft'), previousDirectory = await fixture(root, 'spendcraft.old')
+    await writeFile(join(previousDirectory, 'release-source.json'), JSON.stringify({ commit: 'a'.repeat(40) }))
+    const current = await releaseManifest(currentDirectory), previous = await releaseManifest(previousDirectory)
+    const output = join(root, 'inspection'); await mkdir(output)
+    await writeFile(join(output, 'current.json'), JSON.stringify(current)); await writeFile(join(output, 'previous.json'), JSON.stringify(previous))
+    const plan = { root, currentManifest: join(output, 'current.json'), previousManifest: join(output, 'previous.json'),
+      envFile: join(root, 'spendcraft-env'), reviewedDifferencesSha256: hash(JSON.stringify(releaseDifferences(current, previous))),
+      databaseConfigSha256: hash('// synthetic db config') }
+    assert.equal((await verifyReleases(plan, output)).previous, previous.identity)
+  })
+  test('Statement rejection prevents database inspection, PM2 shutdown and directory/journal changes', async ({ assert }) => {
+    const currentDirectory = await fixture(root, 'spendcraft'), previousDirectory = await fixture(root, 'spendcraft.old')
+    await rm(join(previousDirectory, 'app/services/statementIncomeStorage.js'))
+    const current = await releaseManifest(currentDirectory), previous = await releaseManifest(previousDirectory)
+    const output = join(root, 'inspection'); await mkdir(output)
+    await writeFile(join(output, 'current.json'), JSON.stringify(current)); await writeFile(join(output, 'previous.json'), JSON.stringify(previous))
+    const plan = { root, currentManifest: join(output, 'current.json'), previousManifest: join(output, 'previous.json'),
+      envFile: join(root, 'spendcraft-env'), reviewedDifferencesSha256: hash(JSON.stringify(releaseDifferences(current, previous))),
+      databaseConfigSha256: hash('// synthetic db config') }
+    const events = [], before = await readdir(root)
+    const ops = Object.fromEntries(['inspect', 'confirm', 'journal', 'stop', 'backup', 'swap', 'restart', 'smoke', 'cleanup'].map(name => [name, async () => { events.push(name) }]))
+    ops.preflight = () => verifyReleases(plan, output)
+    await assert.rejects(() => orchestrate({ dryRun: false }, ops), 'statement_income_storage_compatibility_unknown')
+    assert.deepEqual(events, []); assert.deepEqual(await readdir(root), before)
+    assert.equal((await releaseManifest(currentDirectory)).identity, current.identity)
+    assert.equal((await releaseManifest(previousDirectory)).identity, previous.identity)
   })
   test('mere codec presence, missing/changed components and unknown manifests fail closed').with([
     'app/Models/Transaction.js', 'app/services/taxAmountCodec.js', 'app/services/taxStorageBinding.js',
@@ -102,5 +154,11 @@ test.group('Tax compatible release recovery (temporary files only)', group => {
     const executor = await readFile('installer/rollbackApplication.mjs', 'utf8')
     assert.include(executor, 'requireTaxStorageCompatibility(previous)')
     assert.notInclude(executor, 'UPDATE transactions')
+    const entrypoint = executor.slice(executor.indexOf('export async function main('))
+    const gate = entrypoint.indexOf('requireTaxStorageCompatibility(await previousReleaseManifest(plan.root))')
+    assert.isAbove(gate, 0)
+    assert.isBelow(gate, entrypoint.indexOf('await verifyFilesystemAdmission('))
+    assert.isBelow(gate, entrypoint.indexOf('await connectionConfig('))
+    assert.isBelow(gate, entrypoint.indexOf("await import('pg')"))
   })
 })

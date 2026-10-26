@@ -1,4 +1,4 @@
-// Filesystem-only recognition of the reviewed tax/Category storage boundary.
+// Filesystem-only recognition of reviewed tax, Category and Statement storage.
 // No application bootstrap, database driver, PM2, or financial mutation.
 import { readFile } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
@@ -14,8 +14,21 @@ export function taxStorageCompatibility(manifest) {
   return Object.entries(profile.files).every(([name, digest]) => files.get(name)?.kind === 'file'
     && files.get(name).sha256 === digest) ? 'reviewed-tax-and-category-boundary' : 'unknown'
 }
+export function statementIncomeStorageCompatibility(manifest) {
+  if (manifest?.format !== 1 || !Array.isArray(manifest.files)
+    || manifest.identity !== hash(JSON.stringify(manifest.files))
+    || !profile.statementIncomeFiles || Object.keys(profile.statementIncomeFiles).length !== 4) return 'unknown'
+  const files = new Map(manifest.files.map(file => [file.name, file]))
+  // Pin model hydration/serialization, the codec, storage lifecycle and API writers.
+  // Commit labels, marker files and the mere presence of a decoder cannot admit a release.
+  return Object.entries(profile.statementIncomeFiles).every(([name, digest]) => files.get(name)?.kind === 'file'
+    && files.get(name).sha256 === digest) ? 'reviewed-statement-income-boundary' : 'unknown'
+}
 export function requireTaxStorageCompatibility(manifest) {
   if (taxStorageCompatibility(manifest) !== 'reviewed-tax-and-category-boundary') {
     throw new Error('tax_storage_compatibility_unknown')
+  }
+  if (statementIncomeStorageCompatibility(manifest) !== 'reviewed-statement-income-boundary') {
+    throw new Error('statement_income_storage_compatibility_unknown')
   }
 }
