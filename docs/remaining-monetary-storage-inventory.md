@@ -240,3 +240,54 @@ Changed production files: Statement model, AccountsController and the two Statem
 ### Statement income acceptance result
 
 On October 26, 2026, the existing 15 PostgreSQL cases passed against independently safeguarded `localhost:5432/spendcraft_test`, plus 261 focused regressions (197 database / 64 non-DB) and 28 safeguard tests. Zero failures/skips/pending in the final selections. A test-only JSON Accept-header correction fixed two initial browser-redirect status failures without changing production behavior or weakening assertions. Both TypeScript checks (source-only server context), changed-file lint, syntax and diff checks passed. See the [acceptance record](remaining-json-money-migration-candidates.md#statement-income-postgresql-acceptance--october-26-2026) for raw storage, compatibility, financial noninterference, scope exclusions and safety evidence. Statement income decimal-string storage is ready for commit review; deployment and historical conversion remain separate. No staging or production data was accessed or changed.
+
+## Historical Statement income conversion preparation — October 26, 2026
+
+Preparation baseline: `df25ff88e3508471974299da595872910064875a`, branch `dollar-to-cents-2`. The compatible production application is `f40db71b43b7b7fa9c867454a9faa41d31d675de`; the operator reports staging and production deployment accepted. The previously observed 273 Statements / 156 numeric income amounts are historical evidence, not an execution allowlist. **No audit, conversion, recovery or database connection was performed during this preparation.**
+
+[`scripts/convertHistoricalStatementIncome.mjs`](../scripts/convertHistoricalStatementIncome.mjs) adapts the existing Tax historical conversion procedure. It changes only numeric `data.shortTermCapitalGains`, `data.longTermCapitalGains`, `data.dividends` and `data.taxableInterest`, using `Math.round(amount * 100)` followed by `(cents / 100).toFixed(2)`. Negative ties retain JavaScript behavior and zero becomes `"0.00"`. Canonical strings are validated and preserved. Missing leaves, SQL-null data and JSON-null data remain unchanged; malformed/noncanonical present amounts (including null income leaves) block execution rather than becoming zero. There is no conservation rule or reporting-SQL change.
+
+The default is a repeatable-read, read-only dry run. Explicit `--database` is mandatory and must agree with the selected `.env` file's `PG_HOST`, `PG_PORT`, `PG_USER`, `PG_PASSWORD`, `PG_DB_NAME`; there is no default production target. Existing safeguards independently verify configured and live database identity, OID/system identifier, server/peer addresses, authenticated user and actual execution socket. No host/EC2 identity checks are added. Each run prints a new absolute output directory under `script-output/` before configuration/connection work and preserves previous outputs. `statements.jsonl` identifies candidate Statement, Account and Budget IDs, exact original amount tokens, proposed values and rounding differences; `preflight.json` summarizes numeric/string/mixed/null/malformed counts. Missing ownership blocks object conversion.
+
+Execution requires separate operator authorization and `--execute`. The unchanged manifest-based PM2 stopped-writer guard runs before execution and repeatedly before mutations/commit; operators must also fence traffic, scheduled restarts and other writers. Conversion locks owning Budget rows in stable ID order before the authoritative scan, matching Statement API serialization. Unsupported column types, user triggers, rules or row-level security fail closed. All changes occur in one atomic transaction. PostgreSQL `jsonb_set(..., false)` updates only approved, already-present leaves; the entire JSON object is never reserialized through JavaScript. This preserves unrelated values, including large numeric metadata. Full-row hashes, `xmin`, Account/Budget ownership, unrelated-JSON/column hashes and exact PostgreSQL proposed output are checked around writes. Only `statements.data` is assigned; balances, timestamps, AccountTransactions, Accounts, Categories/Funding Pools and Transaction JSON are never assigned.
+
+Before the first update, execution durably writes `original-statement-income.jsonl`, its SHA-256 in `snapshot.json`, and the manifest SHA-256 printed as `recoveryPoint`. The snapshot pins database identity, transaction ID, Statement IDs, Account/Budget ownership, original row versions, original/converted raw PostgreSQL JSON and full-row hashes. Preserve these private files and the fresh database backup. Recovery requires the exact manifest path/hash, the same explicit database, separate authorization and `--recover --execute`. A recovery dry run is read-only. Recovery locks affected Budgets, verifies current JSON/full-row hashes/`xmin` and ownership, and restores original raw JSON only. Later edits—including equal-value saves that advance `xmin`—refuse recovery. A failure rolls back the transaction; preserve evidence and investigate uncertain commit outcomes before retrying. There is no automatic database-backup restoration, application rollback, writer restart or cleanup.
+
+### Future staging rehearsal — authorization required
+
+Run the reviewed tooling checkout on staging without replacing installed application files. These are future commands, **not executed**:
+
+```bash
+node scripts/auditStatementIncomePrecision.mjs \
+  --env /spendcraft_staging/server/spendcraft-env --database spendcraft
+
+node scripts/convertHistoricalStatementIncome.mjs \
+  --env /spendcraft_staging/server/spendcraft-env --database spendcraft --dry-run
+
+# Only after separately authorized synthetic fixture creation, writer shutdown,
+# verified backup/identity, and confirmation that ALL candidates are those fixtures:
+node scripts/convertHistoricalStatementIncome.mjs \
+  --env /spendcraft_staging/server/spendcraft-env --database spendcraft --execute
+```
+
+Use one isolated synthetic Budget with numeric, string, mixed, positive/negative, half-tie/fractional-cent and SQL-null Statements plus unrelated JSON metadata. Record exact fixture IDs and raw financial snapshots. Never assume a preexisting record is synthetic. Stop if any dry-run candidate lies outside the approved fixtures. After execution, inspect raw JSON strings, numeric API serialization and unchanged reporting/balances/other financial snapshots. Repeat `--execute` into its newly generated output directory: require zero candidates/updates and retain the first recovery point.
+
+Using the **first execution's** printed snapshot and checksum:
+
+```bash
+# Replace both placeholders with the exact pinned values from that execution.
+node scripts/convertHistoricalStatementIncome.mjs \
+  --env /spendcraft_staging/server/spendcraft-env --database spendcraft \
+  --recover --snapshot /absolute/run/snapshot.json --snapshot-sha256 SHA256 --dry-run
+
+# Separately authorized recovery, with writers still stopped:
+node scripts/convertHistoricalStatementIncome.mjs \
+  --env /spendcraft_staging/server/spendcraft-env --database spendcraft \
+  --recover --snapshot /absolute/run/snapshot.json --snapshot-sha256 SHA256 --execute
+```
+
+Verify exact original raw JSON and financial noninterference. For edited-row refusal, perform a separately reviewed second synthetic conversion, edit one synthetic Statement afterwards, and require recovery rejection with no persisted partial recovery. Preserve the refusal evidence before any authorized fixture cleanup. Cleanup must independently verify target identity and exact fixture ownership; it is not performed by this script. Verify database safety before restoring intended writers and checking health.
+
+**Remaining gates:** review/commit of this tooling, separately authorized staging fixture/conversion/recovery/cleanup rehearsal, then a fresh read-only production audit and candidate review. Production conversion/recovery requires its own explicit authorization and maintenance/backup checks. Historical values are not converted by deploying the compatible application.
+
+**Preparation verification:** 280 focused non-database cases passed (45 new Statement conversion/recovery cases plus 235 existing Tax/Category conversion, stopped-writer and precision-audit cases), with zero failures/skips. Changed-file ESLint, script/test syntax and both Git diff checks passed. Tests use inert database/PM2 collaborators and real codecs/transaction helpers; they do not establish PostgreSQL execution acceptance. The synthetic staging rehearsal remains required.
