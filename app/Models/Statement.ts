@@ -1,14 +1,22 @@
 import { DateTime } from 'luxon'
 import {
   BaseModel, belongsTo, column,
-  hasMany,
+  hasMany, beforeSave, afterSave,
 } from '@adonisjs/lucid/orm'
 import AccountTransaction from './AccountTransaction.js'
 import type { BelongsTo, HasMany } from "@adonisjs/lucid/types/relations";
-import type { JSON } from '#types/db'
 import Account from './Account.ts';
+import { decodeStatementIncome } from '#services/statementIncomeCodec'
+import type { StatementIncomeData } from '#services/statementIncomeCodec'
+import { consumeStatementIncome, prepareStatementIncome, stageStatementIncomeSave, finishStatementIncomeSave } from '#services/statementIncomeStorage'
 
 export default class Statement extends BaseModel {
+  @beforeSave()
+  public static stageIncome(row: Statement) { stageStatementIncomeSave(row) }
+
+  @afterSave()
+  public static finishIncome(row: Statement) { finishStatementIncomeSave(row) }
+
   @column({ isPrimary: true })
   public id: number
 
@@ -37,13 +45,12 @@ export default class Statement extends BaseModel {
   })
   public endingBalance: number
 
-  @column()
-  declare data: JSON<{
-    shortTermCapitalGains: number,
-    longTermCapitalGains: number,
-    dividends: number,
-    taxableInterest: number,
-  }> | null
+  @column({
+    consume: (value, _key, row) => consumeStatementIncome(value, row),
+    prepare: (value, _key, row) => prepareStatementIncome(value, row),
+    serialize: (value) => decodeStatementIncome(value),
+  })
+  declare data: StatementIncomeData | null
   
   @hasMany(() => AccountTransaction)
   public accountTransactions: HasMany<typeof AccountTransaction>;

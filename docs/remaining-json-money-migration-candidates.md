@@ -180,3 +180,86 @@ Inspected current non-DB precision/funding tests, `tests/functional/accounts/sta
 Ran only existing standalone non-DB suites `tests/unit/precision/currentHandling.spec.js` and `tests/unit/fundingPercentages.spec.ts`: **39 passed, 0 failed, 0 skipped**. These exercise actual input/calculator/funding/percentage code without application/database bootstrap. In particular they demonstrate controlled-input subcent propagation and negative-half rounding differences. No test expectations or runtime code were modified.
 
 All local document links validated. Working-tree and staged whitespace checks passed. Staged diff fingerprint remained unchanged. Only this new document is unstaged; existing work was preserved. TypeScript/lint/Knip/circular/build checks were not needed because no code/test/configuration changed. No database connection, historical change, monetary representation change, schema migration, deployment or commit occurred.
+
+
+## Statement income audit preparation — October 25, 2026
+
+HEAD `009d377adef5cdd3adc33f427e84a6396a849133`, branch `dollar-to-cents-2`. The original recommendations above are historical; the two accepted Transaction migrations remain complete. This update concerns only the four Statement income paths characterized in the [inventory](remaining-monetary-storage-inventory.md#statement-income-attribution-characterization--october-25-2026).
+
+### Prepared audit, not executed
+
+The existing Transaction audits cannot enumerate Statement objects or reproduce their report selection. [auditStatementIncomePrecision.mjs](../scripts/auditStatementIncomePrecision.mjs) is a small Statement-specific adaptation using the existing `.env` configuration, configured/live/actual-socket identity checks and exact raw-token `inspectAmount` analysis. It introduces no migration framework and has no write mode.
+
+Future separately authorized invocation, from the repository or compatible tooling directory:
+
+```bash
+node scripts/auditStatementIncomePrecision.mjs \
+  --env /absolute/path/to/selected-environment-file \
+  --database EXPLICIT_DATABASE_NAME \
+  --output-parent "$PWD/script-output"
+```
+
+The operator must choose the actual environment file and exact database; there is no default database or production target. Settings come exclusively from that file's `PG_HOST`, `PG_PORT`, `PG_USER`, `PG_PASSWORD`, `PG_DB_NAME`, and explicit selection must match it. No server-identity check is added. `--print-sql` prints the SELECT statements without connecting. There is no execution/conversion/recovery option.
+
+Before any connection, the CLI creates and prints an absolute unique `script-output/statement-income-audit-*` directory. Private `statements.jsonl` retains each Statement ID, Account/Budget, dates, original `data::text`, raw amount tokens, types and per-value precision findings, including unrelated JSON properties. JSONB raw tokens preserve stored numeric precision that JavaScript hydration may lose; they cannot recover pre-storage lexical input. `summary.json` records total Statements, object/null/malformed shapes, mixed numeric/string objects and per-field presence, numeric, string, canonical string, missing, null, malformed/unsafe, fractional-cent, hypothetical numeric-change and source-to-number-loss counts. Missing fields in SQL-null/JSON-null objects are counted as missing, with the parent shape recorded separately. Explicit null leaves are present/null and not silently converted to zero.
+
+Hypothetical reference rounding for **numeric** leaves is `Math.round(amount * 100)` followed by `(cents / 100).toFixed(2)`, compared against raw decimal tokens using existing exact audit arithmetic. It is analysis only, not an approved Statement policy. Strings are independently characterized for syntax, canonical form, safe range and fractional cents and preserved unchanged in the hypothesis; the audit does not decide to convert or round historical strings. Unsafe or malformed inputs are retained and flagged, not repaired or zeroed. Per-value changed flags/difference cents and raw values are in private findings. Values beyond the helper's supported safe-cent/range bounds are blockers for a hypothetical conversion; their fractional-cent analysis is not certified.
+
+One repeatable-read, read-only transaction covers all pages and report comparisons. Connection defaults enforce read-only mode before identity discovery; transaction mode is checked, identity is reverified at completion, and query/idle/session duration limits bound the scan. It uses separate SELECTs against Statements and existing ownership relationships; it does not query deprecated dependencies. No public application bootstrap, providers, workers, schema writes or normalization-on-read occur. Partial/error output is explicitly incomplete, never a successful historical audit.
+
+For report impact, a parameterized SELECT compares current report sums against hypothetical numeric-leaf rounding within the **same snapshot**, retaining all existing strings. Both sides use PostgreSQL `real` casts/SUM, existing retirement-subtype exclusions, Budget selection, start-date year and end-date month. It reports all groups and exact changed-group inventory; dividends use the same source field that the API names ordinaryDividends. SQL-null/missing leaves retain existing `COALESCE` behavior. Malformed/unsupported values prevent report comparison and produce an explicit `not_compared_unsupported_values` result; a real-cast/query failure makes the run incomplete. This measures impact of hypothetical round-each input changes, not a proposal to change tax aggregation precision. Floating artifacts must not be misclassified as ledger damage. Report differences need review before any policy approval.
+
+No historical counts or report differences are known yet; no PostgreSQL connection was made. Historical audit execution requires separate authorization. Findings contain financial data and must remain private under script-output.
+
+### Minimum later compatibility work, conditional on approval
+
+Use a narrowly scoped four-leaf Statement encoding/decoding boundary; keep numeric runtime/API values and support numeric/string/mixed historical objects. Cover native model/list/nested serialization and both explicit mutation DTOs; `?? 0` is not decoding. Encode only explicitly submitted/replaced income data, preserve unrelated metadata and null/missing semantics, and do not normalize old data on read or metadata-only saves. Confirm existing `->>`/`real` SQL compatibility against PostgreSQL without changing its arithmetic, selection or public response shape. Historical conversion would require its own audit, authorization, atomic tax-independent recovery snapshot and unchanged-row safeguards following established conventions. Do not modify balance columns or reinterpret the existing reconciliation/Account balance lifecycle.
+
+### Decisions still required
+
+1. Confirm whether all four entered currency totals must be cent-scale, including historical gain/loss and interest totals; source establishes monetary meaning but not a mandatory two-decimal contract.
+2. Choose how new and historical fractional cents should be handled: preserve greater precision, reject new subcents, or approve a specific rounding policy. JavaScript negative half ties and binary artifacts must be explicitly accepted if Math.round is chosen; Category/Tax approval does not carry over.
+3. After the audit, resolve any malformed/unsafe/noncanonical historical values, string treatment and report differences before authorizing compatibility implementation or conversion. No automatic repair is proposed.
+
+These decisions block a storage migration, not the prepared read-only audit. There is no newly discovered four-field semantic split requiring a broader investigation, and no conservation requirement tying income to Statement balance changes.
+
+
+## Statement income implementation and acceptance
+
+October 26, 2026; baseline `009d377adef5cdd3adc33f427e84a6396a849133` on `dollar-to-cents-2`. The operator approved cent-scale storage and the same JavaScript Math.round policy for all four Statement income leaves. Earlier pending-policy text above is historical characterization, not an outstanding implementation decision. See the [implemented boundary](remaining-monetary-storage-inventory.md#statement-income-decimal-string-implementation--october-26-2026).
+
+**Non-database verification:** 179 focused cases passed, zero failures/skips: 64 new [Statement income cases](../tests/unit/statementIncomeStorage.spec.js), plus 115 existing Category/Tax codec and storage-boundary regressions. Tests use actual production codecs, real Statement column/hook declarations with an inert Lucid adapter, and actual CREATE/PATCH method bodies with inert collaborators. Coverage includes mixed reads, rounding/ties/artifacts/negative zero, malformed/unsafe rejection, numeric serialization and mutation responses, raw persistence payloads, null/missing data, unrelated JSON preservation, no write-on-read, no normalization on unrelated saves, failed-save staging, financial/balance noninterference, rollback paths, Budget isolation and deterministic waiting before authoritative reads. No application/database bootstrap or PostgreSQL tests ran.
+
+Changed-file ESLint, JavaScript syntax and client TypeScript passed. The direct root TypeScript command includes ignored old release-source checkouts under script-output and fails with conflicting project/type declarations. A temporary verification config extending the real server config and excluding only those generated copies (alongside its existing exclusions) passes for current source, including prepared PostgreSQL cases. The repository TypeScript configuration was not changed. No full suite or builds ran. Check logs are under `script-output/statement-income-storage-j1opafag/`.
+
+**Prepared PostgreSQL gate — not executed:** [statementIncomeStorage.spec.ts](../tests/functional/accounts/statementIncomeStorage.spec.ts) defines 15 executable cases using the existing authenticated HTTP, fixture, transaction and database-safety infrastructure:
+
+- Four CREATE cases verify raw `jsonb_typeof` string storage, exact canonical values and numeric API rounding, including fractional cents, negative ties, binary artifacts and negative zero.
+- Two income-only PATCH cases cover transaction-tracked and balance-tracked Accounts, raw metadata preservation, unchanged Statement balances and snapshots of Account/AccountTransaction/Transaction/Category state (including Funding Pool rows).
+- Two legacy numeric/mixed cases verify numeric list responses, unchanged raw rows after reads, and preservation on unrelated PATCH.
+- One mixed-to-string tax-report case verifies existing production real aggregation; one SQL-null/omitted-data case verifies null semantics.
+- Three rejected-input cases verify no partial raw Statement or financial mutation.
+- One owning-transaction rollback case verifies exact raw-row recovery after a deliberate exception under the Budget lock; one foreign-Budget HTTP case verifies isolation.
+
+These tests require separate database authorization and the existing centralized safeguards for all setup, fixture writes and cleanup. They have been type-checked but must not be described as PostgreSQL acceptance until executed successfully. Existing Statement correctness/reconciliation/tracking suites remain unchanged and are appropriate focused regressions during that later gate. No new test framework was introduced.
+
+**Remaining work:** authorized PostgreSQL acceptance, compatible release/deployment and rollback review, then separately prepared/authorized historical conversion and recovery. Do not convert the 156 previously observed numeric values, reinterpret nulls as zero, or change tax-report arithmetic as part of compatible code verification.
+
+
+## Statement income PostgreSQL acceptance — October 26, 2026
+
+HEAD `009d377adef5cdd3adc33f427e84a6396a849133`, branch `dollar-to-cents-2`; tested the staged Statement implementation without production-code changes. All execution was local to **localhost:5432/spendcraft_test**, configured and authenticated user **spendcraft_test**, live server/peer **::1/128**. Existing centralized safeguards independently checked configured/live `pg` and `pgLog` identities plus the actual execution connection before every destructive SQL operation, including setup and cleanup. The safeguard suite ran first: **28 passed**, zero failed/skipped/pending.
+
+**Original prepared cases: 15 passed, zero failed/skipped/pending.** The first attempt encountered occupied HTTP port 3337 before running any cases; subsequent runs used an available per-run HTTP port without changing server configuration or stopping an existing process. The first actual case run had 13 passes/two failures because invalid-input requests omitted JSON Accept headers. Adonis session middleware renders browser validation failures as redirects, which the API client followed to a 200 page. The test-only correction adds `.accept('json')` consistently and asserts zero redirects on rejected inputs. The 422 assertions and raw-state comparisons remain intact. All 15 then passed; production code was unchanged.
+
+The accepted cases establish raw JSON string types/canonical values for all four leaves, fractional-cent/negative-tie/artifact/zero rounding, numeric CREATE/PATCH/list responses, numeric and mixed historical reads, SQL-null preservation, unchanged metadata and Statement balances, financial snapshots, unchanged historical storage after reads/unrelated PATCH, existing real-aggregation reports, invalid/unsafe atomic rejection, owning-transaction rollback, and foreign-Budget rejection. Nonfinite scalar rejection and additional positive/negative ties remain covered by the focused non-DB production-code tests; JSON cannot directly represent Infinity/NaN. No report arithmetic was changed.
+
+**Expanded focused regression: 261 passed, zero failed/skipped/pending**, separately from the original 15. This comprises 197 PostgreSQL cases and 64 non-DB Statement income cases: 233 cases in the main selection plus 28 existing Statement correctness cases. Selection covers Statement eligibility, creation/update/reconciliation and balance authority, AccountTransaction behavior, actual Budget-lock contention/transaction ownership, rollback, reporting isolation, and existing Category/Tax decimal-string storage. Schema-changing older fault-injection cases were deliberately outside this selection: five `statementCorrectness` constraint-injection variants and the separate `statementReconciliation`/`statementDeletion` suites were not executed. No schema safeguard or assertion was disabled; rollback is covered by the new acceptance case and existing non-DDL regressions. This is focused acceptance, not a full-suite claim.
+
+Safety evidence for successful runs: original 15 **705 independent checks / 702 guarded operations**; main expanded selection **9,108 / 9,105**; Statement correctness selection **1,297 / 1,294**. Each run completed independently safeguarded truncation cleanup. Initial failed attempts and their cleanup are also retained in evidence. Test setup reported migrations already up to date; no schema changes were required or performed.
+
+**Static verification:** source-only server TypeScript, client TypeScript, changed-file ESLint, relevant script/unit syntax and both Git diff checks passed. Server verification reused the existing temporary config extending the real project and excluding generated source archives under script-output; repository tsconfig remains unchanged. The normal root check's archived-source contamination remains a separate workspace limitation. No full builds or complete automated suite ran. The occupied Vite HMR port 24678 emitted a nonfatal warning; existing listeners were left untouched. Expected negative-path logs (422/404 and deliberate injected errors) do not indicate acceptance failures.
+
+Evidence: `script-output/statement-income-postgresql-p438yqyl/`, including original attempts, corrected prepared-case log, exact regression selections, safety evidence, static logs and Git inventory. Only the acceptance test and these two migration documents gained unstaged verification changes; the pre-existing staged implementation/index and unrelated work were preserved. No staging/production access, historical conversion, deployment or commit occurred. Local test-database authorization expired when verification completed.
+
+The implementation is accepted for commit review. Release/deployment review and separately authorized historical conversion remain subsequent work; none of the previously observed 156 production numeric values was converted here.

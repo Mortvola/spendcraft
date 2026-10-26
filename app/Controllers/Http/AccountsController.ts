@@ -15,6 +15,8 @@ import {
   AccountType, CategoryType,
 } from '#common/ResponseTypes';
 import Statement from '#app/Models/Statement';
+import { validateSubmittedStatementIncome, encodeStatementIncome } from '#services/statementIncomeCodec';
+import { replaceStatementIncome } from '#services/statementIncomeStorage';
 import AccountTransaction from '#app/Models/AccountTransaction';
 import transactionFields from './transactionFields.js';
 import { updateAccount } from '#app/validation/Validators/account';
@@ -495,6 +497,8 @@ export default class AccountsController {
 
     const { acctId } = request.params();
     const requestData = await request.validateUsing(addStatement);
+    validateSubmittedStatementIncome(request.input('data'));
+    if (requestData.data !== undefined) encodeStatementIncome(requestData.data);
 
     const trx = await db.transaction();
 
@@ -600,6 +604,8 @@ export default class AccountsController {
 
     const { statementId } = request.params();
     const requestData = await request.validateUsing(updateStatement)
+    validateSubmittedStatementIncome(request.input('data'))
+    if (requestData.data !== undefined) encodeStatementIncome(requestData.data)
 
     const trx = await db.transaction();
 
@@ -654,7 +660,7 @@ export default class AccountsController {
 
       if (requestData.startingBalance !== undefined) statement.startingBalance = requestData.startingBalance
       if (requestData.endingBalance !== undefined) statement.endingBalance = requestData.endingBalance
-      if (requestData.data !== undefined) statement.data = requestData.data
+      if (requestData.data !== undefined) replaceStatementIncome(statement, requestData.data)
 
       await statement.save()
 
