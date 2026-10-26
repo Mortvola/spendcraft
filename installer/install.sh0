@@ -75,7 +75,8 @@ configure_nginx() {
   local template="$2"
   local target="$3"
   local config="$root/nginx.conf"
-  local site=/etc/nginx/sites-enabled/spendcraft.conf
+  # Preserve the established site name; changing it can enable the same site twice.
+  local site=/etc/nginx/sites-enabled/spendcraft.app
   local created_link=0
 
   node --input-type=module -- - "$config" "$template" "$target" <<'NGINX_CONFIG'

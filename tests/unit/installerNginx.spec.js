@@ -23,7 +23,7 @@ sudo() {
   local args=()
   local arg
   for arg in "$@"; do
-    if [ "$arg" = /etc/nginx/sites-enabled/spendcraft.conf ]; then args+=("$TEST_SITE"); else args+=("$arg"); fi
+    if [ "$arg" = /etc/nginx/sites-enabled/spendcraft.app ]; then args+=("$TEST_SITE"); else args+=("$arg"); fi
   done
   case "\${args[0]}" in
     nginx) printf 'NGINX_TEST\\n'; return ${status} ;;
@@ -61,6 +61,20 @@ configure_nginx "$TEST_ROOT" "$TEST_TEMPLATE" "$TEST_TARGET"
       const result = await run('staging')
       assert.equal(result.status, 0, result.stderr)
       assert.equal(await readFile(join(root, 'nginx.conf'), 'utf8'), original)
+    }
+  })
+  test('retains the established spendcraft.app link name and reuses an existing link', async ({ assert }) => {
+    const source = await readFile('installer/install.sh0', 'utf8')
+    assert.include(source, 'local site=/etc/nginx/sites-enabled/spendcraft.app\n')
+    assert.notInclude(source, '/etc/nginx/sites-enabled/spendcraft.conf')
+    const site = join(root, 'enabled-site')
+    await symlink(join(root, 'nginx.conf'), site)
+    const original = await lstat(site)
+    for (let index = 0; index < 2; index++) {
+      const result = await run('production')
+      assert.equal(result.status, 0, result.stderr)
+      assert.equal((await lstat(site)).ino, original.ino)
+      assert.equal(await readlink(site), join(root, 'nginx.conf'))
     }
   })
   test('refuses a conflicting enabled entry without replacing it').with(['file', 'link'])

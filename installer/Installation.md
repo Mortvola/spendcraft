@@ -222,7 +222,7 @@ new file. Existing configurations are preserved, including Certbot changes.
 Nginx references the shared configuration through:
 
 ```text
-/etc/nginx/sites-enabled/spendcraft.conf -> $SPENDCRAFT_ROOT/nginx.conf
+/etc/nginx/sites-enabled/spendcraft.app -> $SPENDCRAFT_ROOT/nginx.conf
 ```
 
 The installer requires sudo permission to create this link, run `nginx -t`, and

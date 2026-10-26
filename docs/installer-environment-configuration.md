@@ -71,7 +71,7 @@ The application payload includes `installer/nginx.conf`. After environment setup
 the installer copies it to `$SPENDCRAFT_ROOT/nginx.conf` if absent, replacing
 `spendcraft.app` with `staging.spendcraft.app` only for a newly created staging file.
 Existing shared configuration is never overwritten. The enabled site is
-`/etc/nginx/sites-enabled/spendcraft.conf`, a symlink to that shared file rather
+`/etc/nginx/sites-enabled/spendcraft.app`, a symlink to that shared file rather
 than a config copy inside the swapped release. Conflicting enabled entries stop
 installation. `sudo nginx -t` validates before backup/migrations; a failed check
 removes only a newly created link. After RESUME and PM2 startup/save, a second
