@@ -47,6 +47,9 @@ export function requireTaxStorageCompatibility(manifest) {
   if (transactionLogStorageCompatibility(manifest) !== 'reviewed-transaction-log-boundary') {
     throw new Error('transaction_log_storage_compatibility_unknown')
   }
+  if (fundingStorageCompatibility(manifest) !== 'reviewed-funding-storage') {
+    throw new Error('funding_storage_compatibility_unknown')
+  }
   if (taxStorageCompatibility(manifest) !== 'reviewed-tax-and-category-boundary') {
     throw new Error('tax_storage_compatibility_unknown')
   }
@@ -56,6 +59,15 @@ export function requireTaxStorageCompatibility(manifest) {
   if (autoAssignmentPrecisionCompatibility(manifest) !== 'reviewed-auto-assignment-precision') {
     throw new Error('auto_assignment_precision_compatibility_unknown')
   }
+}
+
+export function fundingStorageCompatibility(manifest) {
+  if (manifest?.format !== 1 || !Array.isArray(manifest.files)
+    || manifest.identity !== hash(JSON.stringify(manifest.files))
+    || !profile.fundingFiles || Object.keys(profile.fundingFiles).length !== 11) return 'unknown'
+  const files = new Map(manifest.files.map(file => [file.name, file]))
+  return Object.entries(profile.fundingFiles).every(([name, digest]) => files.get(name)?.kind === 'file'
+    && files.get(name).sha256 === digest) ? 'reviewed-funding-storage' : 'unknown'
 }
 
 export function autoAssignmentPrecisionCompatibility(manifest) {

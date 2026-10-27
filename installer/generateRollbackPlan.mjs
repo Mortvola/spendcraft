@@ -166,7 +166,8 @@ export async function main(args = process.argv.slice(2)) {
   catch (error) {
     if (!['compatible_decimal_string_release_pair_required', 'database_release_difference', 'secret_link_difference', 'tax_storage_compatibility_unknown',
       'statement_income_storage_compatibility_unknown', 'tax_forecast_storage_compatibility_unknown',
-      'transaction_log_storage_compatibility_unknown', 'auto_assignment_precision_compatibility_unknown'].includes(error.message)) throw error
+      'transaction_log_storage_compatibility_unknown', 'auto_assignment_precision_compatibility_unknown',
+      'funding_storage_compatibility_unknown'].includes(error.message)) throw error
     await publishPlan(maintenance, output, { root, currentManifest: plan.currentManifest,
       unavailableReason: error.message, generated: true })
     console.log('Release-specific rollback unavailable: ' + error.message + '. No conversion or rollback was executed.')

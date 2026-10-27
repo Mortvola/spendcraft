@@ -2,6 +2,7 @@ import { bound, requested, excluded, bindResolvedCategoryStorage, stageCategoryS
 import type Transaction from '#models/Transaction'
 import db from '@adonisjs/lucid/services/db'
 import { Exception } from '@adonisjs/core/exceptions'
+import { stageFundingStorage } from './fundingStorage.ts'
 import { validateCategoryConservation, categoryAmountCents, checkedCentSum, encodeCategoryAllocations } from './categoryAmountCodec.ts'
 
 const supported = [0, 2, 3, 4, 5]
@@ -60,6 +61,8 @@ export async function prepareNewCategoryStorage(transaction: Transaction): Promi
     && !bound.has(transaction) && Object.hasOwn(transaction.$dirty, 'categories')) {
     throw new Exception('Unsupported Category allocation ownership.', { status: 422 })
   }
+  // Resolve Loan exclusions before an explicit funding replacement encodes metadata.
+  if (bound.has(transaction)) stageFundingStorage(transaction, 'categories')
   stageCategoryStorage(transaction)
 }
 

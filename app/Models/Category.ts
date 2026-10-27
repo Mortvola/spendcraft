@@ -1,6 +1,7 @@
 import { categoryNonzeroAllocationSql } from '#services/categoryAmountCodec';
+import { consumeFundingStorage, prepareFundingStorage, finishFundingStorage, stageFundingStorage } from '#services/fundingStorage';
 import {
-  BaseModel, belongsTo, column,
+  BaseModel, belongsTo, column, beforeSave, afterSave,
 } from '@adonisjs/lucid/orm';
 import db from '@adonisjs/lucid/services/db';
 import Group from '#app/Models/Group';
@@ -30,6 +31,16 @@ interface FundingCategory {
 }
 
 export default class Category extends BaseModel {
+  @beforeSave()
+  public static stageFunding(category: Category) {
+    if (category.type !== CategoryType.Loan) stageFundingStorage(category, 'fundingCategories');
+  }
+
+  @afterSave()
+  public static finishFunding(category: Category) {
+    finishFundingStorage(category, 'fundingCategories');
+  }
+
   @column.dateTime({ autoCreate: true, autoUpdate: true, serializeAs: null })
   public updatedAt: DateTime;
 
@@ -74,7 +85,8 @@ export default class Category extends BaseModel {
   public recurrence: number;
 
   @column({
-    prepare: (value: FundingCategory[]) => JSON.stringify(value),
+    consume: (value, _attribute, model) => model.$attributes.type === CategoryType.Loan ? value : consumeFundingStorage(value, model),
+    prepare: (value, _attribute, model) => JSON.stringify(model.$attributes.type === CategoryType.Loan ? value : prepareFundingStorage(value, model)),
   })
   public fundingCategories: FundingCategory[];
 

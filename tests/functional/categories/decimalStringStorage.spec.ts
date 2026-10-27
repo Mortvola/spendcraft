@@ -118,7 +118,7 @@ test.group('Transaction Category decimal-string storage (prepared)', () => {
       await db.from('transactions').where('id', target.id).update({ categories: '[]' })
     })
 
-  test('all supported types encode only top-level amount and conserve').with([0, 5, 2, 3, 4])
+  test('all supported types encode approved amounts, preserve unrelated JSON and conserve').with([0, 5, 2, 3, 4])
     .run(async ({ assert }, type) => {
       const f = await fixture()
       let id = 0
@@ -138,8 +138,10 @@ test.group('Transaction Category decimal-string storage (prepared)', () => {
       const stored = (await raw(id)).categories
       assert.deepEqual(stored.map((row: { amount: string }) => row.amount), [0, 4, 5].includes(type) ? ['0.10', '0.20'] : ['0.10', '0.20', '-0.30'])
       if (type === 2 || type === 3) {
-        assert.strictEqual(stored[0].baseAmount, 1.005)
+        assert.strictEqual(stored[0].baseAmount, '1.00')
         assert.deepEqual(stored[0].extra, { amount: 1.005 })
+        const decoded = await Transaction.findOrFail(id)
+        assert.strictEqual(decoded.serialize().categories[0].baseAmount, 1)
       }
     })
 

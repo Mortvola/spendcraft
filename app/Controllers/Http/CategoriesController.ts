@@ -1,4 +1,5 @@
 import { requestCategoryStorage } from '#services/categoryStorageBinding';
+import { requestFundingStorage } from '#services/fundingStorage';
 import { categoryNonzeroAllocationSql } from '#services/categoryAmountCodec';
 import { validateStoredCategoryConservation } from '#services/transactionCategoryStorage';
 import { validateCategoryConservation } from '#services/categoryAmountCodec';
@@ -390,6 +391,7 @@ class CategoriesController {
       await authorizeCategories(user.budgetId, requestData.fundingCategories.map((category) => category.categoryId), { client: trx });
 
       const category = new Category().useTransaction(trx);
+      requestFundingStorage(category);
 
       await category
         .fill({
@@ -445,6 +447,7 @@ class CategoriesController {
       );
 
       await authorizeCategories(user.budgetId, (requestData.fundingCategories ?? []).map((category) => category.categoryId), { client: trx });
+      if (requestData.fundingCategories !== undefined) requestFundingStorage(category);
 
       category.merge(removeUndefined({
         type: requestData.type,
@@ -685,6 +688,7 @@ class CategoriesController {
       }
       else {
         transaction = existingTransaction;
+        requestFundingStorage(transaction);
 
          
         for (const transCategory of transaction.categories) {

@@ -32,7 +32,8 @@ test.group('Funding configuration client regression', () => {
       { percentages: [50, 50], fixed: 10, valid: true }, { percentages: [], fixed: 7, valid: true },
       { percentages: [], valid: true }, { percentages: [-1, 101], valid: false },
       { percentages: [99.99], valid: false }, { percentages: [100.01], valid: false },
-      { percentages: [0], valid: false }, { percentages: [0.001, 99.999], valid: false },
+      { percentages: [0], valid: false }, { percentages: [0.001, 99.999], valid: true },
+      { percentages: [12.345, 87.655], valid: false },
     ]
     for (const scenario of cases) {
       const entries = scenario.percentages.map((amount) => ({ categoryId: 1, amount, percentage: true }))

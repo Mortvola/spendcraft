@@ -109,7 +109,7 @@ test.group('Automatic installer rollback plan (temporary files, no database or P
     assert.deepEqual(JSON.parse(await readFile(join(output, 'rollback-plan.json'), 'utf8')), plan)
     await assert.rejects(() => publishPlan(maintenance, output, plan))
   })
-  test('compiled release compatibility publishes a valid plan or completes discovery with unavailable status').with(['compatible', 'missing', 'unreviewed', 'tax-missing', 'tax-unreviewed', 'log-missing', 'log-unreviewed', 'auto-missing', 'auto-unreviewed'])
+  test('compiled release compatibility publishes a valid plan or completes discovery with unavailable status').with(['compatible', 'missing', 'unreviewed', 'tax-missing', 'tax-unreviewed', 'log-missing', 'log-unreviewed', 'auto-missing', 'auto-unreviewed', 'funding-missing', 'funding-unreviewed'])
     .run(async ({ assert }, storage) => {
       await writeFile(input.envFile, 'PG_HOST=localhost\nPG_PORT=5432\nPG_USER=ubuntu\nPG_PASSWORD=synthetic\nPG_DB_NAME=spendcraft\nAPP_URL=https://staging.spendcraft.app\n')
       for (const name of ['spendcraft', 'spendcraft.old']) {
@@ -125,8 +125,8 @@ test.group('Automatic installer rollback plan (temporary files, no database or P
         await writeFile(join(directory, 'public/assets/.vite/manifest.json'), JSON.stringify({ 'client-src/App.tsx': { isEntry: true, file: 'App.js' } }))
         await symlink(input.envFile, join(directory, '.env'))
       }
-      const name = storage.startsWith('auto-') ? 'app/Models/AutoAssignmentCategory.js' : storage.startsWith('tax-') ? 'app/Models/Tax.js' : storage.startsWith('log-') ? 'app/Models/TransactionLog.js' : 'app/services/statementIncomeStorage.js'
-      const reason = storage.startsWith('auto-') ? 'auto_assignment_precision_compatibility_unknown' : storage.startsWith('tax-') ? 'tax_forecast_storage_compatibility_unknown' : storage.startsWith('log-') ? 'transaction_log_storage_compatibility_unknown' : 'statement_income_storage_compatibility_unknown'
+      const name = storage.startsWith('funding-') ? 'app/services/fundingAmountCodec.js' : storage.startsWith('auto-') ? 'app/Models/AutoAssignmentCategory.js' : storage.startsWith('tax-') ? 'app/Models/Tax.js' : storage.startsWith('log-') ? 'app/Models/TransactionLog.js' : 'app/services/statementIncomeStorage.js'
+      const reason = storage.startsWith('funding-') ? 'funding_storage_compatibility_unknown' : storage.startsWith('auto-') ? 'auto_assignment_precision_compatibility_unknown' : storage.startsWith('tax-') ? 'tax_forecast_storage_compatibility_unknown' : storage.startsWith('log-') ? 'transaction_log_storage_compatibility_unknown' : 'statement_income_storage_compatibility_unknown'
       const decoder = join(root, 'spendcraft.old', name)
       if (storage.endsWith('missing')) await rm(decoder)
       else if (storage.endsWith('unreviewed')) await writeFile(decoder, '// unknown implementation')

@@ -10,8 +10,8 @@
     "app/services/taxStorageBinding.js": "27ff73af0a942a2cff7998f5ce9078ebfe64203717709c8996b88f5d23fb3e61",
     "app/services/transactionTaxStorage.js": "2b08d34b5072ed14b4dfc88984b43098096dcfaa6edce0fbba9644cd32e4e458",
     "app/services/categoryAmountCodec.js": "9fb397e11ac36e0da6793e4b646e91928611a3bbfa8b99d6659fdbd710fd611c",
-    "app/services/categoryStorageBinding.js": "7af24156a8d1daba902bd022d2ef84b6e0597afe7098c797a862801e88804a36",
-    "app/services/transactionCategoryStorage.js": "9428c45aa40b2c42b0d1fc43855160e677d16b4bcee5f753cbacaa69a4a68175"
+    "app/services/categoryStorageBinding.js": "b9078e69be7ce7186883a4d1a2aaae5ccbf9c83b9283be8fb9a2f31d3f7bf924",
+    "app/services/transactionCategoryStorage.js": "54429ea861a2c91a8bc755fb75ef26d4ac92fef12434af4d2549d8bec7f31177"
   },
   "statementIncomeSourceCommit": "e07648afcaa4d721c96648570f171d359e759996",
   "statementIncomeFiles": {
@@ -37,5 +37,18 @@
     "app/Controllers/Http/AutoAssignmentsController.js": "8dc9095f426ca64853fd75698a527058ba968ed5df812b7f1bcccceb1c7c5660",
     "app/validation/Validators/autoAssignment.js": "ef3d6f22117fd4026660703345447fa7fcfc722e42c6cdc37ac93bda40598996",
     "app/validation/autoAssignmentAmount.js": "7096fc6e92fc7f8f95237b6518dfd69a363f07815412bbf2a4525210d8805edb"
+  },
+  "fundingFiles": {
+    "app/Models/Category.js": "f8e57b52f4024d2ff057897ff8588cfad197402798a97c5e159189638fdceadd",
+    "app/Models/Transaction.js": "1961147b105d002a78b5a0aaf47aaa37383aede07066d67c334b4ec4e9c7a4a2",
+    "app/services/categoryStorageBinding.js": "b9078e69be7ce7186883a4d1a2aaae5ccbf9c83b9283be8fb9a2f31d3f7bf924",
+    "app/services/fundingAmountCodec.js": "dd1f5290786bae190c2280de0f3863e3349ad572685672a7bada32d5926bbfac",
+    "app/services/fundingStorage.js": "04f8a48a85428337d5c31a91fc9b25b3ec6a046ceddefbe644adbffc9e1770ff",
+    "app/Controllers/Http/CategoriesController.js": "9615dc831e0cebe832fe0ed5e232c1ac5a4e9c90d850127bee3491bd87827b1b",
+    "common/fundingPercentages.js": "6a7461d07eefd374b8876bee4e130c4c6f91735f8edc810a9a3b99d0fddfc42b",
+    "app/validation/fundingPercentages.js": "c57cf48de63e4d783ff056c5c8f5bb55bd9c6dbe74a6d0b77cd89d6eadc29afa",
+    "app/validation/Validators/category.js": "5769c842356475f177dc866a45ad1b33948db6f255a6fa1f84acf862e68c607a",
+    "app/validation/Validators/categoryTransfer.js": "b234a703c5e24bf324196b7780e43f6fb8612b373b84d98db7113aaf36243fc6",
+    "app/services/transactionCategoryStorage.js": "54429ea861a2c91a8bc755fb75ef26d4ac92fef12434af4d2549d8bec7f31177"
   }
 }

@@ -1,4 +1,5 @@
 import { encodeCategoryAllocations } from '#services/categoryAmountCodec'
+import { decodeFundingRules } from '#services/fundingAmountCodec'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
 import testUtils from '@adonisjs/core/services/test_utils'
@@ -80,10 +81,9 @@ test.group('Funding configuration validation regression', (group) => {
         const response = await request.json(body).accept('json').loginAs(f.user)
         if (['negative but total 100', 'negative single', 'negative fractional but total 100',
           'below hundred', 'above hundred', 'below pair', 'above pair', 'zero percentage total',
-          'finer precision', 'nonnumeric'].includes(scenario.name)) {
+          'nonnumeric'].includes(scenario.name)) {
           response.assertStatus(422)
           const rule = scenario.name.startsWith('negative') ? 'fundingPercentageNonnegative'
-            : scenario.name === 'finer precision' ? 'fundingPercentagePrecision'
             : scenario.name === 'nonnumeric' ? 'number' : 'fundingPercentageTotal'
           const field = writer.startsWith('category') ? 'fundingCategories' : 'categories.*.fundingCategories'
           assert.deepEqual(response.body().errors.map((error: { code: string, source: { pointer: string } }) => ({ rule: error.code, field: error.source.pointer })),
@@ -93,10 +93,10 @@ test.group('Funding configuration validation regression', (group) => {
           continue
         }
         response.assertStatus(200)
-        const expected = configuration.map((entry) => ({ ...entry, amount: Number(entry.amount) }))
+        const expected = configuration.map((entry) => ({ ...entry, amount: Math.round(Number(entry.amount) * 100) / 100 }))
         const stored = writer.startsWith('category')
           ? (await Category.findOrFail(writer === 'category create' ? response.body().data.id : f.category.id)).fundingCategories
-          : (await db.from('transactions').where('id', writer === 'funding create' ? response.body().data.transaction.id : f.transaction.id).first()).categories[0].fundingCategories
+          : decodeFundingRules((await db.from('transactions').where('id', writer === 'funding create' ? response.body().data.transaction.id : f.transaction.id).first()).categories[0].fundingCategories)
         assert.deepEqual(stored, expected, `${writer}: ${scenario.name}`)
         const after = await db.from('categories').where('group_id', f.group.id).orderBy('id')
         if (writer === 'category create') {

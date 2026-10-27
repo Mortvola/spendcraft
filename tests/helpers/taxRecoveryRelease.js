@@ -9,7 +9,8 @@ async function taxRuntimeFiles() {
   const config = ts.readConfigFile('tsconfig.json', ts.sys.readFile)
   const options = ts.parseJsonConfigFileContent(config.config, ts.sys, '.').options
   const names = [...new Set([...Object.keys(profile.files), ...Object.keys(profile.statementIncomeFiles),
-    ...Object.keys(profile.taxForecastFiles), ...Object.keys(profile.transactionLogFiles), ...Object.keys(profile.autoAssignmentFiles)])]
+    ...Object.keys(profile.taxForecastFiles), ...Object.keys(profile.transactionLogFiles), ...Object.keys(profile.autoAssignmentFiles),
+    ...Object.keys(profile.fundingFiles)])]
   const program = ts.createProgram(names.map(file => file.replace(/\.js$/, '.ts')), options)
   const files = new Map()
   for (const name of names) {
