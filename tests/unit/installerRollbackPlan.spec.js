@@ -6,7 +6,6 @@ import { createHash } from 'node:crypto'
 import process from 'node:process'
 import { main, createPlan, publishPlan, discoverDatabaseIdentity, planDiagnostic, planStep } from '../../installer/generateRollbackPlan.mjs'
 import { validatePlan, releaseManifest, verifyReleases } from '../../installer/rollbackApplication.mjs'
-import { writeTaxRuntimeFixture } from '../helpers/taxRecoveryRelease.js'
 
 const hash = (value) => createHash('sha256').update(value).digest('hex')
 test.group('Automatic installer rollback plan (temporary files, no database or PM2)', (group) => {
@@ -109,77 +108,6 @@ test.group('Automatic installer rollback plan (temporary files, no database or P
     assert.deepEqual(JSON.parse(await readFile(join(output, 'rollback-plan.json'), 'utf8')), plan)
     await assert.rejects(() => publishPlan(maintenance, output, plan))
   })
-  test('compiled release compatibility publishes a valid plan or completes discovery with unavailable status').with(['compatible', 'missing', 'unreviewed', 'tax-missing', 'tax-unreviewed', 'log-missing', 'log-unreviewed', 'auto-missing', 'auto-unreviewed', 'funding-missing', 'funding-unreviewed'])
-    .run(async ({ assert }, storage) => {
-      await writeFile(input.envFile, 'PG_HOST=localhost\nPG_PORT=5432\nPG_USER=ubuntu\nPG_PASSWORD=synthetic\nPG_DB_NAME=spendcraft\nAPP_URL=https://staging.spendcraft.app\n')
-      for (const name of ['spendcraft', 'spendcraft.old']) {
-        const directory = join(root, name)
-        for (const path of ['bin', 'node_modules', 'public/assets/.vite', 'config', 'commands']) await mkdir(join(directory, path), { recursive: true })
-        for (const file of ['bin/server.js', 'ace.js', 'commands/QueueListener.js', 'commands/PlaidCleanupListener.js']) await writeFile(join(directory, file), '// synthetic')
-        await writeTaxRuntimeFixture(directory)
-        const connection = "host:env.get('PG_HOST'),port:env.get('PG_PORT'),user:env.get('PG_USER'),password:env.get('PG_PASSWORD',''),database:env.get('PG_DB_NAME')"
-        await writeFile(join(directory, 'config/database.js'), `export default {pg:{client:'pg',connection:{${connection}}},pgLog:{client:'pg',connection:{${connection}}}}`)
-        await writeFile(join(directory, 'package.json'), JSON.stringify({ name: 'spendcraft', type: 'module', dependencies: {} }))
-        await writeFile(join(directory, 'package-lock.json'), JSON.stringify({ name: 'spendcraft', lockfileVersion: 3 }))
-        await writeFile(join(directory, 'public/assets/App.js'), '// synthetic client')
-        await writeFile(join(directory, 'public/assets/.vite/manifest.json'), JSON.stringify({ 'client-src/App.tsx': { isEntry: true, file: 'App.js' } }))
-        await symlink(input.envFile, join(directory, '.env'))
-      }
-      const name = storage.startsWith('funding-') ? 'app/services/fundingAmountCodec.js' : storage.startsWith('auto-') ? 'app/Models/AutoAssignmentCategory.js' : storage.startsWith('tax-') ? 'app/Models/Tax.js' : storage.startsWith('log-') ? 'app/Models/TransactionLog.js' : 'app/services/statementIncomeStorage.js'
-      const reason = storage.startsWith('funding-') ? 'funding_storage_compatibility_unknown' : storage.startsWith('auto-') ? 'auto_assignment_precision_compatibility_unknown' : storage.startsWith('tax-') ? 'tax_forecast_storage_compatibility_unknown' : storage.startsWith('log-') ? 'transaction_log_storage_compatibility_unknown' : 'statement_income_storage_compatibility_unknown'
-      const decoder = join(root, 'spendcraft.old', name)
-      if (storage.endsWith('missing')) await rm(decoder)
-      else if (storage.endsWith('unreviewed')) await writeFile(decoder, '// unknown implementation')
-      const current = await releaseManifest(join(root, 'spendcraft')), previous = await releaseManifest(join(root, 'spendcraft.old'))
-      const record = join(root, 'releases/deployment-synthetic')
-      await mkdir(record, { recursive: true })
-      await writeFile(join(record, 'deployment.json'), JSON.stringify({ current, previous }))
-      await writeFile(join(record, 'current-release-manifest.json'), JSON.stringify(current))
-      await writeFile(join(record, 'previous-release-manifest.json'), JSON.stringify(previous))
-      const previousPlan = await createPlan({ ...input, current, previous, record })
-      if (storage === 'compatible') {
-        const output = join(root, 'record')
-        assert.equal((await verifyReleases(previousPlan, output)).previous, previous.identity)
-        await publishPlan(join(root, 'maintenance'), output, previousPlan)
-        const published = JSON.parse(await readFile(join(root, 'maintenance/rollback-plan.json'), 'utf8'))
-        validatePlan(published)
-        assert.equal(published.rollbackKind, 'application-only')
-        assert.notProperty(published, 'unavailableReason')
-        return
-      }
-      await writeFile(join(root, 'maintenance/rollback-plan.json'), JSON.stringify(previousPlan))
-      const bin = join(root, 'test-bin'); await mkdir(bin)
-      const pm2 = join(bin, 'pm2')
-      await writeFile(pm2, '#!/bin/sh\nprintf \'%s\\n\' \'' + JSON.stringify(input.entries) + '\'\n')
-      await chmod(pm2, 0o700)
-      const saved = { PATH: process.env.PATH, PM2_HOME: process.env.PM2_HOME }
-      process.env.PATH = bin + ':' + saved.PATH
-      process.env.PM2_HOME = root
-      try {
-        // Runs real discovery/publication. A database connection would fail: no
-        // database exists for this fixture, and compatibility must return first.
-        await main(['--root', root, '--target', 'staging'])
-      } finally {
-        if (saved.PATH === undefined) delete process.env.PATH
-        else process.env.PATH = saved.PATH
-        if (saved.PM2_HOME === undefined) delete process.env.PM2_HOME
-        else process.env.PM2_HOME = saved.PM2_HOME
-      }
-      const unavailable = JSON.parse(await readFile(join(root, 'maintenance/rollback-plan.json'), 'utf8'))
-      assert.equal(unavailable.unavailableReason, reason)
-      assert.notProperty(unavailable, 'rollbackKind')
-      assert.notProperty(unavailable, 'processes')
-      assert.throws(() => validatePlan(unavailable), 'application_only_plan_required')
-      const [run] = await readdir(join(root, 'script-output'))
-      const output = join(root, 'script-output', run)
-      assert.deepEqual(JSON.parse(await readFile(join(output, 'rollback-plan.json'), 'utf8')), unavailable)
-      assert.deepEqual(JSON.parse(await readFile(join(output, 'previous-rollback-plan.json'), 'utf8')), previousPlan)
-      assert.equal((await releaseManifest(join(root, 'spendcraft'))).identity, current.identity)
-      assert.equal((await releaseManifest(join(root, 'spendcraft.old'))).identity, previous.identity)
-      // The same release pair remains inadmissible to actual rollback.
-      const rejected = join(root, 'rejected-execution'); await mkdir(rejected)
-      await assert.rejects(() => verifyReleases(previousPlan, rejected), reason)
-    })
   test('rejects symlink plan without changing its target', async ({ assert }) => {
     const target = join(root, 'private.json')
     await writeFile(target, '{}')
@@ -265,11 +193,11 @@ test.group('Automatic installer rollback plan (temporary files, no database or P
     catch (observed) { assert.deepEqual(planDiagnostic(observed), { phase: 'inspect-current-release', code: 'missing_runtime_dependency' }) }
   })
   test('generated plan execution requires explicit readiness review and dry-run avoids confirmation', async ({ assert }) => {
-    const executor = await readFile('installer/rollbackTransactionCategoryStorage.mjs', 'utf8')
+    const executor = await readFile('installer/rollbackApplication.mjs', 'utf8')
     assert.include(executor, 'if (plan.generated)')
     assert.include(executor, "assertConfirmation(await review.question(")
     assert.include(executor, "Type READY: '), 'READY')")
-    const core = await readFile('installer/lib/categoryRollback.mjs', 'utf8')
+    const core = await readFile('installer/lib/applicationRollback.mjs', 'utf8')
     assert.isBelow(core.indexOf('if (options.dryRun) return operations.inspect()'), core.indexOf('await operations.confirm(WARNING'))
   })
 })

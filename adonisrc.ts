@@ -76,36 +76,6 @@ export default defineConfig({
   ],
 
   metaFiles: [
-    { pattern: 'installer/tax-storage-profile.json', reloadServer: false },
-    { pattern: 'installer/lib/taxReleaseRecovery.mjs', reloadServer: false },
-    {
-      pattern: 'scripts/auditTransactionTaxPrecision.mjs',
-      reloadServer: false,
-    },
-    {
-      pattern: 'scripts/convertHistoricalTransactionCategories.mjs',
-      reloadServer: false,
-    },
-    {
-      pattern: 'scripts/lib/historicalCategoryConversion.mjs',
-      reloadServer: false,
-    },
-    {
-      pattern: 'scripts/lib/conversionPm2.mjs',
-      reloadServer: false,
-    },
-    {
-      pattern: 'scripts/auditTransactionCategoryCents.mjs',
-      reloadServer: false,
-    },
-    {
-      pattern: 'scripts/auditLegacyMoney.mjs',
-      reloadServer: false,
-    },
-    {
-      pattern: 'installer/lib/categoryRollback.mjs',
-      reloadServer: false,
-    },
     {
       pattern: 'installer/nginx.conf',
       reloadServer: false,

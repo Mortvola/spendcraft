@@ -1,4 +1,3 @@
-import { requireTaxStorageCompatibility } from './lib/taxReleaseRecovery.mjs'
 // Application-only rollback. Never converts or restores database values. Never imported by the application.
 import process from 'node:process'
 import console from 'node:console'
@@ -300,15 +299,10 @@ export async function verifyReleases(plan, output) {
   if (sha(JSON.stringify(differences)) !== plan.reviewedDifferencesSha256) throw new Error('release_differences_not_reviewed')
   const currentFiles = new Map(current.files.map((file) => [file.name, file]))
   const oldFiles = new Map(previous.files.map((file) => [file.name, file]))
-  if (!currentFiles.has('app/services/categoryAmountCodec.js') || !oldFiles.has('app/services/categoryAmountCodec.js')) {
-    throw new Error('compatible_decimal_string_release_pair_required')
-  }
   for (const file of new Set([...currentFiles.keys(), ...oldFiles.keys()])) {
     if ((file.startsWith('database/') || file === 'config/database.js')
       && JSON.stringify(currentFiles.get(file)) !== JSON.stringify(oldFiles.get(file))) throw new Error('database_release_difference')
   }
-  requireTaxStorageCompatibility(current)
-  requireTaxStorageCompatibility(previous)
   if ([current, previous].some(manifest => manifest.files.some(file => file.kind === 'link' && isAbsolute(file.target)))) {
     throw new Error('nonrelocatable_release_link')
   }
@@ -612,9 +606,6 @@ export async function main(args = process.argv.slice(2)) {
     console.log(`Release identity: ${manifest.identity}`)
     return
   }
-  // Reject unreviewed storage readers before constructing any database client.
-  requireTaxStorageCompatibility(await releaseManifest(join(plan.root, 'spendcraft')))
-  requireTaxStorageCompatibility(await previousReleaseManifest(plan.root))
   if (process.platform !== 'linux') throw new Error('execution_host_must_be_linux')
   const admissionOutput = join(output, 'admission')
   await mkdir(admissionOutput, { mode: 0o700 })

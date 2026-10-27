@@ -1,4 +1,3 @@
-import { writeTaxRuntimeFixture } from '../helpers/taxRecoveryRelease.js'
 import { test } from '@japa/runner'
 import { readFile, writeFile, mkdir, mkdtemp, symlink, realpath, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -6,7 +5,6 @@ import { join } from 'node:path'
 import { createHash } from 'node:crypto'
 import { orchestrate, normalizedIP, WARNING } from '../../installer/lib/applicationRollback.mjs'
 import { verifyReleases, releaseManifest, releaseDifferences, validatePlan, verifyPm2Runtime, persistStoppedState } from '../../installer/rollbackApplication.mjs'
-import { verifyReleases as legacyVerify } from '../../installer/rollbackTransactionCategoryStorage.mjs'
 const hash = value => createHash('sha256').update(value).digest('hex')
 
 function operations(fail) {
@@ -59,11 +57,11 @@ test.group('Application-only rollback — no database/services', () => {
     for (const value of ['::1/64', '127.0.0.1/24', '10.0.0.1', 'localhost', '::1%lo']) assert.throws(() => normalizedIP(value))
     assert.throws(() => validatePlan({}), 'application_only_plan_required')
   })
-  test('both codec-compatible releases pass; numeric-only predecessor and schema drift fail closed', async ({ assert }) => {
+  test('ordinary releases pass without migration codecs; schema drift fails closed', async ({ assert }) => {
     const root = await realpath(await mkdtemp(join(tmpdir(), 'application-rollback-')))
     try {
       const envFile = join(root, 'shared-env'); await writeFile(envFile, 'synthetic')
-      async function release(name, codec = true, database = '{}') {
+      async function release(name, database = '{}') {
         const directory = join(root, name)
         for (const path of ['bin', 'node_modules', 'public/assets/.vite', 'config', 'app/Models', 'app/services', 'commands']) await mkdir(join(directory, path), { recursive: true })
         for (const file of ['bin/server.js', 'ace.js', 'app/Models/Transaction.js', 'commands/QueueListener.js', 'commands/PlaidCleanupListener.js']) await writeFile(join(directory, file), '{}')
@@ -72,7 +70,6 @@ test.group('Application-only rollback — no database/services', () => {
         await writeFile(join(directory, 'config/database.js'), database)
         await writeFile(join(directory, 'public/assets/App.js'), '// synthetic')
         await writeFile(join(directory, 'public/assets/.vite/manifest.json'), JSON.stringify({ 'client-src/App.tsx': { isEntry: true, file: 'App.js' } }))
-        await writeTaxRuntimeFixture(directory, codec)
         await symlink(envFile, join(directory, '.env'))
         return releaseManifest(directory)
       }
@@ -86,13 +83,7 @@ test.group('Application-only rollback — no database/services', () => {
       }
       let plan = await configuration()
       assert.equal((await verifyReleases(plan, output)).previous, previous.identity)
-      await mkdir(join(root, 'legacy-output'))
-      await assert.rejects(() => legacyVerify(plan, join(root, 'legacy-output')), 'not_the_first_decimal_string_release_pair')
-      await rm(join(root, 'spendcraft.old'), { recursive: true }); previous = await release('spendcraft.old', false)
-      plan = await configuration()
-      const incompatibleOutput = join(root, 'incompatible-output'); await mkdir(incompatibleOutput)
-      await assert.rejects(() => verifyReleases(plan, incompatibleOutput), 'compatible_decimal_string_release_pair_required')
-      await rm(join(root, 'spendcraft.old'), { recursive: true }); previous = await release('spendcraft.old', true, '// changed DB schema/config')
+      await rm(join(root, 'spendcraft.old'), { recursive: true }); previous = await release('spendcraft.old', '// changed DB schema/config')
       plan = await configuration()
       const schemaOutput = join(root, 'schema-output'); await mkdir(schemaOutput)
       await assert.rejects(() => verifyReleases(plan, schemaOutput), 'database_release_difference')

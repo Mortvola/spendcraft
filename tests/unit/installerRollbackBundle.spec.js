@@ -22,7 +22,7 @@ test.group('Stable rollback bundle (local packages, no database/services/network
   async function fixture() {
     const release = join(root, 'spendcraft.new')
     await mkdir(join(release, 'installer/lib'), { recursive: true })
-    for (const file of ['tax-storage-profile.json', 'lib/taxReleaseRecovery.mjs', 'pm2-processes.json', 'lib/pm2Processes.mjs', 'prepareRollbackBundle.mjs', 'rollbackApplication.mjs', 'lib/applicationRollback.mjs', 'lib/releaseManifest.mjs', 'lib/rollbackBundleIntegrity.mjs', 'launchRollback.mjs', 'rollback.sh']) {
+    for (const file of ['pm2-processes.json', 'lib/pm2Processes.mjs', 'prepareRollbackBundle.mjs', 'rollbackApplication.mjs', 'lib/applicationRollback.mjs', 'lib/releaseManifest.mjs', 'lib/rollbackBundleIntegrity.mjs', 'launchRollback.mjs', 'rollback.sh']) {
       await writeFile(join(release, 'installer', file), await readFile(join('installer', file)))
     }
     await writeFile(join(release, 'package.json'), JSON.stringify({ name: 'spendcraft', type: 'module', dependencies: { pg: '1.0.0' } }))
@@ -284,7 +284,7 @@ test.group('Stable rollback bundle (local packages, no database/services/network
     assert.include(installer.slice(call, installer.indexOf('\n', call)), '--prepare-rollback-bundle')
     assert.isBelow(call, installer.indexOf('\nrm -fr $APP_OLD'))
     const config = await readFile('adonisrc.ts', 'utf8')
-    for (const file of ['tax-storage-profile.json', 'lib/taxReleaseRecovery.mjs', 'pm2-processes.json', 'lib/pm2Processes.mjs', 'rollbackApplication.mjs', 'prepareRollbackBundle.mjs', 'lib/applicationRollback.mjs', 'lib/releaseManifest.mjs', 'lib/rollbackBundleIntegrity.mjs', 'launchRollback.mjs', 'rollback.sh']) {
+    for (const file of ['pm2-processes.json', 'lib/pm2Processes.mjs', 'rollbackApplication.mjs', 'prepareRollbackBundle.mjs', 'lib/applicationRollback.mjs', 'lib/releaseManifest.mjs', 'lib/rollbackBundleIntegrity.mjs', 'launchRollback.mjs', 'rollback.sh']) {
       assert.include(config, `pattern: 'installer/${file}'`)
     }
   })

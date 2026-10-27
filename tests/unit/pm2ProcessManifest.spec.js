@@ -460,7 +460,7 @@ test.group('Release-owned PM2 process manifest (no real services)', () => {
     assert.isAbove(shell.indexOf('--action start'), shell.indexOf('confirm_deployment RESUME'))
     const packaging = await readFile('adonisrc.ts', 'utf8')
     for (const file of ['pm2-processes.json', 'managePm2.mjs', 'lib/pm2Processes.mjs']) assert.include(packaging, 'installer/' + file)
-    const executor = await readFile('installer/rollbackTransactionCategoryStorage.mjs', 'utf8')
+    const executor = await readFile('installer/rollbackApplication.mjs', 'utf8')
     assert.include(executor, 'const restored = plan.previousProcesses ?? plan.processes')
     assert.include(executor, 'replaceProcesses(plan.processes.map((item) => item.name), restored, pm2, true)')
     assert.include(executor, "throw new Error('process_manifest_mismatch')")

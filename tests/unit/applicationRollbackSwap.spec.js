@@ -9,14 +9,12 @@ import { join } from 'node:path'
 import { createHash } from 'node:crypto'
 import { swapDirectories, cleanupOutgoingRelease, orchestrate } from '../../installer/lib/applicationRollback.mjs'
 import { releaseManifest, verifyReleases, verifyFilesystemAdmission, releaseDifferences } from '../../installer/rollbackApplication.mjs'
-import { writeTaxRuntimeFixture } from '../helpers/taxRecoveryRelease.js'
 const hash = value => createHash('sha256').update(value).digest('hex')
 
 async function release(root, name, version) {
   const dir = join(root, name)
-  for (const path of ['bin', 'commands', 'config', 'node_modules', 'public/assets/.vite']) await mkdir(join(dir, path), { recursive: true })
-  for (const path of ['ace.js', 'bin/server.js', 'commands/QueueListener.js', 'commands/PlaidCleanupListener.js']) await writeFile(join(dir, path), '// synthetic ' + version)
-  await writeTaxRuntimeFixture(dir)
+  for (const path of ['bin', 'commands', 'config', 'app/Models', 'node_modules', 'public/assets/.vite']) await mkdir(join(dir, path), { recursive: true })
+  for (const path of ['ace.js', 'bin/server.js', 'app/Models/Transaction.js', 'commands/QueueListener.js', 'commands/PlaidCleanupListener.js']) await writeFile(join(dir, path), '// synthetic ' + version)
   await writeFile(join(dir, 'config/database.js'), '// unchanged db configuration')
   await writeFile(join(dir, 'package.json'), JSON.stringify({ name: 'spendcraft', type: 'module', dependencies: {} }))
   await writeFile(join(dir, 'package-lock.json'), JSON.stringify({ name: 'spendcraft', lockfileVersion: 3 }))
@@ -151,7 +149,7 @@ await swapDirectories(paths,ops);await cleanupOutgoingRelease(paths,ops);`
       assert.notInclude(journal.map(row => row.phase), 'one-way-rollback-completed')
     })
   test('bad compatibility, missing assets/releases and invalid manifests reject before shutdown or journaling').with([
-    'tax', 'category', 'asset', 'missing', 'manifest', 'absolute-link',
+    'tax', 'asset', 'missing', 'manifest', 'absolute-link',
   ]).run(async ({ assert }, kind) => {
     if (kind === 'absolute-link') {
       await symlink(join(paths.live, 'public/assets/App.js'), join(paths.live, 'absolute-client-link'))
@@ -160,7 +158,6 @@ await swapDirectories(paths,ops);await cleanupOutgoingRelease(paths,ops);`
       plan.reviewedDifferencesSha256 = hash(JSON.stringify(releaseDifferences(current, previous)))
     }
     if (kind === 'tax') await writeFile(join(paths.previous, 'app/Models/Transaction.js'), '// old unsupported model')
-    if (kind === 'category') await rm(join(paths.previous, 'app/services/categoryAmountCodec.js'))
     if (kind === 'asset') await rm(join(paths.previous, 'public/assets/App.js'))
     if (kind === 'missing') await rm(paths.previous, { recursive: true })
     if (kind === 'manifest') await writeFile(plan.previousManifest, '{"format":1,"identity":"invalid","files":[]}')

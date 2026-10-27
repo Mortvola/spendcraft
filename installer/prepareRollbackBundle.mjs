@@ -11,7 +11,7 @@ import { inventoryFiles, verifyRollbackBundle, verifyRollbackLauncher } from './
 export { verifyRollbackBundle } from './lib/rollbackBundleIntegrity.mjs'
 
 const execute = promisify(execFile)
-const tools = ['tax-storage-profile.json', 'lib/taxReleaseRecovery.mjs', 'lib/pm2Processes.mjs', 'pm2-processes.json', 'prepareRollbackBundle.mjs', 'rollbackApplication.mjs', 'lib/applicationRollback.mjs', 'lib/releaseManifest.mjs', 'lib/rollbackBundleIntegrity.mjs']
+const tools = ['lib/pm2Processes.mjs', 'pm2-processes.json', 'prepareRollbackBundle.mjs', 'rollbackApplication.mjs', 'lib/applicationRollback.mjs', 'lib/releaseManifest.mjs', 'lib/rollbackBundleIntegrity.mjs']
 const hash = (value) => createHash('sha256').update(value).digest('hex')
 const inside = (parent, child) => child === parent || (!relative(parent, child).startsWith('..') && !isAbsolute(relative(parent, child)))
 
