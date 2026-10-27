@@ -41,7 +41,7 @@ function provider(amount: number): Plaid.Transaction {
     payment_meta: { reference_number: null, ppd_id: null, payee: null, by_order_of: null, payer: null, payment_method: null, payment_processor: null, reason: null } }
 }
 
-test.group('Monetary precision characterization', () => {
+test.group('Monetary persistence and allocation regressions', () => {
   // Regression expectations preserve existing sign, rounding, ordering and residual semantics.
   test('mixed-unit correction preserves individual allocations, conservation and balance effects')
     .with([
@@ -83,7 +83,7 @@ test.group('Monetary precision characterization', () => {
       }
     })
 
-  test('repeated sub-cent writes record JSON totals against persisted balances', async ({ client }) => {
+  test('repeated sub-cent writes persist canonical zeros without accumulating fractional allocations', async ({ client, assert }) => {
     const f = await fixture()
     for (let i = 0; i < 3; i++) {
       const response = await client.post(`/api/v1/account/${f.account.id}/transactions`)
@@ -94,9 +94,13 @@ test.group('Monetary precision characterization', () => {
     const transactions = await f.budget.related('transactions').query()
     const rawSplitTotal = transactions.reduce((sum, transaction) => sum + transaction.categories.reduce((subtotal, split) => subtotal + split.amount, 0), 0)
     const associationTotal = (await f.account.related('accountTransactions').query()).reduce((sum, row) => sum + row.amount, 0)
-    console.log(JSON.stringify({ scenario: 'repeated sub-cent', rawSplitTotal, roundedSplitTotal: Math.round(rawSplitTotal * 100) / 100,
-      associationTotal, accountBalance: (await Account.findOrFail(f.account.id)).balance,
-      categoryBalance: (await Category.findOrFail(f.categories[0].id)).balance }))
+    assert.lengthOf(transactions, 3)
+    assert.equal(rawSplitTotal, 0)
+    assert.equal(associationTotal, 0)
+    assert.equal((await Account.findOrFail(f.account.id)).balance, 0)
+    assert.equal((await Category.findOrFail(f.categories[0].id)).balance, 0)
+    const stored = await db.from('transactions').where('application_id', f.budget.id).orderBy('id')
+    assert.deepEqual(stored.map(row => row.categories[0].amount), ['0.00', '0.00', '0.00'])
   })
 
   test('fractional-cent HTTP inputs enforce encoded allocation versus decimal-column conservation')
@@ -275,7 +279,7 @@ test.group('Monetary precision characterization', () => {
         splits: transaction.categories, balances, conservedCents: cents }))
     })
 
-  test('large fixed auto-assignment configuration records real-column precision')
+  test('large fixed auto-assignment values retain exact numeric storage and allocation cents')
     .with([65536.01, 131072.01, 1000000.01])
     .run(async ({ assert }, amount) => {
     const f = await fixture()
@@ -285,7 +289,7 @@ test.group('Monetary precision characterization', () => {
     await rule.related('categories').create({ categoryId: f.categories[1].id, amount: 0.01, percentage: false })
     const persisted = await rule.related('categories').query().where('id', entry.id).firstOrFail()
     const storage = await db.from('auto_assignment_categories').where('id', entry.id)
-      .select(db.raw('amount::double precision as binary_value')).first()
+      .select(db.raw('amount::text as stored_value')).first()
     let transactionId = 0
     await db.transaction(async (trx) => {
       f.budget.useTransaction(trx)
@@ -295,7 +299,10 @@ test.group('Monetary precision characterization', () => {
     })
     const transaction = await Transaction.findOrFail(transactionId)
     assert.isNumber(persisted.amount)
-    console.log(JSON.stringify({ scenario: 'real-column precision', configuredAmount: amount,
-      storedBinaryValue: storage.binary_value, persistedAmount: persisted.amount, splits: transaction.categories }))
+    assert.equal(persisted.amount, amount)
+    assert.equal(storage.stored_value, amount.toFixed(2))
+    assert.deepEqual(transaction.categories.map(split => split.amount), [amount, 0.01])
+    assert.equal(transaction.categories.reduce((total, split) => total + categoryAmountCents(split.amount), 0),
+      categoryAmountCents(amount) + 1)
   })
 })

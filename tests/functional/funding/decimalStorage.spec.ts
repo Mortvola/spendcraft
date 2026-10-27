@@ -1,4 +1,4 @@
-// Prepared only: requires explicit authorization for localhost:5432/spendcraft_test
+// Requires explicit authorization for localhost:5432/spendcraft_test
 // and the existing configured/live/execution connection safeguards in tests/bootstrap.ts.
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
@@ -26,7 +26,7 @@ async function fixture() {
 const balances = async () => Promise.all(['accounts', 'account_transactions', 'categories', 'statements']
   .map(table => db.from(table).orderBy('id')))
 
-test.group('Funding decimal-string PostgreSQL acceptance (prepared, not executed)', () => {
+test.group('Funding decimal-string PostgreSQL acceptance', () => {
   test('Category CREATE and PATCH store both rule modes as strings and return numeric APIs').with(['create', 'patch'])
     .run(async ({ client, assert }, operation) => {
       const f = await fixture()

@@ -6,6 +6,8 @@ import { addTransaction } from '../../../app/validation/Validators/transaction.t
 import { validateTransactionSplits } from '../../../app/validation/transactionSplits.ts'
 import { calculateFunding } from '../../../client-src/Funding/calculateFunding.ts'
 import parseEquation from '../../../client-src/EquationParser.ts'
+import { encodeFundingMetadata } from '../../../app/services/fundingAmountCodec.ts'
+import { encodeCategoryAllocations } from '../../../app/services/categoryAmountCodec.ts'
 
 // Execute current component expressions without application/DB bootstrap or a DOM.
 async function component(name, context) {
@@ -92,12 +94,17 @@ test.group('Current monetary handling without database', () => {
     assert.isNaN(parseEquation('0/0'))
     assert.throws(() => parseEquation('1.2.3'))
   })
-  test('funding artifact and base snapshot survive JSON serialization', ({ assert }) => {
+  test('funding calculations retain intermediate precision until canonical persistence encoding', ({ assert }) => {
     const row = (baseAmount, from, includeFundingTransfers = false) => ({ baseAmount, includeFundingTransfers,
       fundingCategories: [{ categoryId: from, amount: 100, percentage: true }] })
     const rows = calculateFunding({ 10: row(0.1, 99, true), 20: row(0.2, 10) }, 99)
     const transmitted = JSON.parse(JSON.stringify(rows))
     assert.equal(transmitted[0].amount, 0.30000000000000004)
     assert.equal(transmitted[0].baseAmount, 0.1)
+    const stored = encodeCategoryAllocations(encodeFundingMetadata(transmitted))
+    assert.equal(stored[0].amount, '0.30')
+    assert.equal(stored[0].baseAmount, '0.10')
+    assert.equal(stored[0].fundingCategories[0].amount, '100.00')
+    assert.equal(transmitted[0].amount, 0.30000000000000004)
   })
 })
