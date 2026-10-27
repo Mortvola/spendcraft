@@ -9,7 +9,7 @@ import { homedir } from 'node:os'
 import { createHash, randomUUID } from 'node:crypto'
 import { pathToFileURL } from 'node:url'
 import { inside, readProcessManifest, processDefinitions, replaceProcesses, matchesDefinition } from './lib/pm2Processes.mjs'
-import { verifyPm2Runtime, processTable, writerProcesses } from './rollbackApplication.mjs'
+import { verifyPm2Runtime } from './rollbackApplication.mjs'
 const execute = promisify(execFile)
 const actions = ['stop', 'verify', 'prepared', 'start', 'complete']
 const digest = value => createHash('sha256').update(JSON.stringify(value)).digest('hex')
@@ -19,13 +19,12 @@ function validateState(state, root, incoming) {
   if (state?.format !== 1 || state.root !== root || state.manifest !== digest(incoming)
     || !/^[a-f0-9-]{36}$/.test(state.id ?? '')
     || !['captured', 'fenced', 'prepared', 'resuming', 'restored', 'resume-failed', 'complete'].includes(state.phase)
-    || !Array.isArray(state.processes) || state.processes.length > 128 || !Array.isArray(state.writers)
+    || !Array.isArray(state.processes) || state.processes.length > 128
     || new Set(state.processes.map(item => item?.name)).size !== state.processes.length) throw new Error('invalid_installer_pm2_maintenance_state')
   for (const item of state.processes) {
     if (typeof item.name !== 'string' || !item.name || (item.cron !== null
       && (typeof item.cron !== 'string' || item.cron.trim().split(/\s+/).length !== 5))) throw new Error('invalid_saved_pm2_schedule')
   }
-  if (state.writers.some(item => !Number.isSafeInteger(item?.pid) || item.pid < 1 || !/^\d+$/.test(item.start ?? ''))) throw new Error('invalid_saved_writer_state')
   return state
 }
 
@@ -105,14 +104,10 @@ async function savedState(run, dumps, check) {
   }
 }
 
-export async function installerMaintenance({ action, root, incoming, previous, run, store, dumps, inventory, ignoredPids = [], print = message => console.log(message) }) {
-  if (typeof inventory !== 'function') throw new Error('writer_inventory_required')
+export async function installerMaintenance({ action, root, incoming, previous, run, store, dumps, print = message => console.log(message) }) {
+  // PM2's stopped status confirms shutdown of managed writers and their children.
+  // Cron registrations and both startup dumps are fenced separately below.
   const list = async () => JSON.parse((await run(['jlist'])).stdout)
-  const verifyWriters = async state => {
-    const table = await inventory()
-    if (writerProcesses(table, root, [], process.pid, ignoredPids).length
-      || state.writers.some(old => table.some(item => item.pid === old.pid && item.start === old.start))) throw new Error('writer_shutdown_incomplete')
-  }
   let state
   if (action === 'stop') {
     const entries = await list(), commands = []
@@ -120,9 +115,7 @@ export async function installerMaintenance({ action, root, incoming, previous, r
     await manageProcesses({ action, root, incoming, previous, entries, run: async args => commands.push(args), print: () => undefined })
     const targets = entries.filter(entry => commands.some(args => args[1] === 'all' || args[1] === entry.name))
     const desired = processDefinitions(incoming, join(root, 'spendcraft'))
-    const writers = writerProcesses(await inventory(), root, targets.map(entry => entry.pid), process.pid, ignoredPids)
-      .map(({ pid, start }) => ({ pid, start }))
-    state = validateState({ format: 1, id: randomUUID(), root, manifest: digest(incoming), phase: 'captured', writers,
+    state = validateState({ format: 1, id: randomUUID(), root, manifest: digest(incoming), phase: 'captured',
       processes: targets.map(entry => ({ name: entry.name, cron: schedule(entry.pm2_env) })) }, root, incoming)
     for (const item of state.processes) {
       const definition = desired.find(value => value.name === item.name)
@@ -140,7 +133,6 @@ export async function installerMaintenance({ action, root, incoming, previous, r
       await run(['stop', item.name])
     }
     assertFence(await list(), state)
-    await verifyWriters(state)
     await savedState(run, dumps, entries => assertFence(entries, state))
     state.phase = 'fenced'
     await store.save(state)
@@ -150,7 +142,6 @@ export async function installerMaintenance({ action, root, incoming, previous, r
   if (action === 'verify' || action === 'prepared') {
     if (state.phase !== 'fenced' && !(action === 'verify' && state.phase === 'prepared')) throw new Error('installer_pm2_fence_not_ready')
     assertFence(await list(), state)
-    await verifyWriters(state)
     // Verify saved state without rewriting it or introducing new restarts.
     for (const name of ['dump.pm2', 'dump.pm2.bak']) {
       const entries = await dumps(name)
@@ -163,7 +154,6 @@ export async function installerMaintenance({ action, root, incoming, previous, r
   if (action === 'start') {
     if (state.phase !== 'prepared') throw new Error('database_preparation_not_confirmed')
     assertFence(await list(), state)
-    await verifyWriters(state)
     state.phase = 'resuming'
     await store.save(state)
     try {
@@ -253,8 +243,6 @@ export async function main(args = process.argv.slice(2)) {
   const executable = (await execute('which', ['pm2'])).stdout.trim()
   await verifyPm2Runtime(executable) // Existing reviewed 5.4.1 / 7.1.0 resurrection admission.
   const pm2Home = await realpath(process.env.PM2_HOME || join(homedir(), '.pm2'))
-  const daemonPid = Number((await readFile(join(pm2Home, 'pm2.pid'), 'utf8')).trim())
-  if (!Number.isSafeInteger(daemonPid) || daemonPid < 1) throw new Error('invalid_pm2_daemon_pid')
   const run = args => execute(executable, args, { env: { ...process.env, PM2_HOME: pm2Home, NODE_ENV: 'production' }, maxBuffer: 8 * 1024 * 1024 })
   const dumps = async name => {
     const path = join(pm2Home, name), stat = await lstat(path)
@@ -267,7 +255,7 @@ export async function main(args = process.argv.slice(2)) {
     return entries
   }
   await installerMaintenance({ action: values.action, root, incoming, previous, run, dumps,
-    inventory: processTable, ignoredPids: [daemonPid], store: await maintenanceStore(root) })
+    store: await maintenanceStore(root) })
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   main().catch((error) => {

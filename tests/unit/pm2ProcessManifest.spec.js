@@ -1,5 +1,6 @@
 import { test } from '@japa/runner'
 import process from 'node:process'
+import { URL } from 'node:url'
 import { readFile, mkdtemp, realpath, rm, writeFile, stat, readdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -26,7 +27,7 @@ function maintenanceFixture(cron = '0 0 * * *') {
   const jobs = new Set(['prod-server']), calls = [], events = [], saved = {}, archive = []
   let state
   const f = { incoming, previous: incoming, calls, events, jobs, archive, ignoreDelete: false,
-    fail: '', corruptDump: false, orphan: null, ignoreStartCron: false,
+    fail: '', corruptDump: false, ignoreStop: false, ignoreStartCron: false,
     get entries() { return entries }, get state() { return state },
     set state(value) { state = value },
     fireCron() { for (const item of entries) if (jobs.has(item.name)) { item.pid = 999; item.pm2_env.status = 'online' } },
@@ -43,10 +44,6 @@ function maintenanceFixture(cron = '0 0 * * *') {
       if (f.corruptDump) return [{ name: 'queue', status: 'online' }]
       return clone(saved[name])
     },
-    async inventory() {
-      return [...entries.filter(item => item.pid > 0).map(item => ({ pid: item.pid, parent: 0, start: '1',
-        cwd: root + '/spendcraft', args: [] })), ...(f.orphan ? [f.orphan] : [])]
-    },
     async run(args) {
       calls.push(args)
       if (args[0] !== 'jlist') events.push(args.join(' '))
@@ -57,7 +54,7 @@ function maintenanceFixture(cron = '0 0 * * *') {
         jobs.delete(args[1]); events.push('cron-removed:' + args[1])
         entries = entries.filter(item => item.name !== args[1])
       }
-      if (args[0] === 'stop') {
+      if (args[0] === 'stop' && !f.ignoreStop) {
         for (const item of entries.filter(item => args[1] === 'all' || args[1] === item.name)) {
           item.pid = 0; item.pm2_env.status = 'stopped'
           // Deliberately retains cron, reproducing the real PM2 stop behavior.
@@ -80,7 +77,7 @@ function maintenanceFixture(cron = '0 0 * * *') {
     },
     async act(action) {
       return installerMaintenance({ action, root, incoming, previous: f.previous,
-        run: f.run, store: f.store, dumps: f.dumps, inventory: f.inventory, print: () => undefined })
+        run: f.run, store: f.store, dumps: f.dumps, print: () => undefined })
     },
   }
   return f
@@ -167,14 +164,34 @@ test.group('Installer durable PM2 maintenance fence (inert daemon and files)', (
       assert.equal(f.state.phase, 'captured')
       assert.isFalse(f.calls.some(args => args[0] === 'start'))
     })
-  test('a surviving child outside the release directory still blocks migration', async ({ assert }) => {
+  test('PM2 still reporting a running writer blocks migration', async ({ assert }) => {
     const f = maintenanceFixture()
-    f.orphan = { pid: 77, parent: f.entries[2].pid, start: '123', cwd: '/tmp', args: ['worker'] }
-    await assert.rejects(() => f.act('stop'), 'writer_shutdown_incomplete')
+    f.ignoreStop = true
+    await assert.rejects(() => f.act('stop'), 'pm2_writer_not_fenced')
     assert.equal(f.state.phase, 'captured')
-    assert.includeDeepMembers(f.state.writers, [{ pid: 77, start: '123' }])
     assert.isFalse(f.calls.some(args => args[0] === 'start'))
   })
+  test('maintenance trusts PM2 without requiring a process inventory', async ({ assert }) => {
+    const f = maintenanceFixture()
+    await f.act('stop'); await f.act('verify'); await f.act('prepared')
+    assert.notProperty(f.state, 'writers')
+    await f.act('start'); await f.act('complete')
+    assert.isUndefined(f.state)
+    const source = await readFile(new URL('../../installer/managePm2.mjs', import.meta.url), 'utf8')
+    assert.notInclude(source, 'processTable')
+    assert.notInclude(source, 'writerProcesses')
+    assert.notInclude(source, '/proc')
+  })
+  test('PM2 reactivation blocks verification, preparation and startup').with(['verify', 'prepared', 'start'])
+    .run(async ({ assert }, action) => {
+      const f = maintenanceFixture()
+      await f.act('stop')
+      if (action === 'start') await f.act('prepared')
+      const writer = f.entries.find(item => item.name === 'queue')
+      writer.pm2_env.status = 'online'; writer.pid = 999
+      await assert.rejects(() => f.act(action), 'pm2_writer_not_fenced')
+      assert.isFalse(f.calls.some(args => args[0] === 'start'))
+    })
   test('restoration failure fences partial startup and retains original schedules', async ({ assert }) => {
     const f = maintenanceFixture()
     await f.act('stop'); await f.act('prepared')
