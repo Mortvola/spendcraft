@@ -2,7 +2,7 @@
 
 ## Status and baseline
 
-**PostgreSQL verified:** 1,086 focused / 1,428 full-suite tests passed, 0 failed, 0 skipped/pending. The original3/2 case now previews2/posts2; submission semantics remain unchanged. See [authorized verification](funding-preview-submission-postgresql-verification.md) for safety, raw persistence, rule/replacement/stale-form matrices and counts. Task-specific database authorization is expired. The implementation-phase chronology below is retained as evidence.
+**PostgreSQL verified:** 1,086 focused / 1,428 full-suite tests passed, 0 failed, 0 skipped/pending. The original3/2 case now previews2/posts2; submission semantics remain unchanged. See authorized verification for safety, raw persistence, rule/replacement/stale-form matrices and counts. Task-specific database authorization is expired. The implementation-phase chronology below is retained as evidence.
 
 Implemented against HEAD `7ebc714939c88b6d8ef7bc00aebbe2d1bc10d3a4`. The tracked tree was clean. Its committed delta from 9c6635 contains the accepted ordinary eligibility/startDate correction and verification records; accepted Budget serialization, OFX authority and BalanceHistory runtime deprecation are present. Existing unrelated untracked local files remain untouched.
 
@@ -151,11 +151,11 @@ Production changes are limited to FundingDialog.tsx, Funding.tsx, FundingItem.ts
 
 Tests: new unit/client/fundingPreview.spec.js, updated unit/client/fundingRounding.spec.js (same14 expectations, new source location), updated unit/client/financialState.spec.js, historical fixture and prepared functional/funding/previewSubmission.spec.ts. Documentation: this record plus accounting-invariants.md and post-f8af214-correctness-review.md. No unrelated working-tree or index work was discarded/staged.
 
-All final non-DB verification passed. The accepted circular component remains11 models /26 internal edges. The separate client build retains the established >500kB bundle advisory only. Subsequent PostgreSQL verification is tracked in [the verification record](funding-preview-submission-postgresql-verification.md), including independent safeguards before every destructive operation. No historical funding repair, exact-money/MinorUnits, monetary representation/rounding-policy change, priority correction, schema migration, deployment or commit occurred.
+All final non-DB verification passed. The accepted circular component remains11 models /26 internal edges. The separate client build retains the established >500kB bundle advisory only. Subsequent PostgreSQL verification is tracked in the verification record, including independent safeguards before every destructive operation. No historical funding repair, exact-money/MinorUnits, monetary representation/rounding-policy change, priority correction, schema migration, deployment or commit occurred.
 
 ## Subsequent invariant: funding edit date is immutable
 
-**PostgreSQL-verified and accepted:**2 narrow prepared /1,098 focused /1,443 full-suite tests passed,0 failed,0 skipped/pending. See [dedicated immutable-date verification](immutable-funding-date-postgresql-verification.md). Authorization expired on completion. Implementation-phase pending statements below are historical.
+**PostgreSQL-verified and accepted:**2 narrow prepared /1,098 focused /1,443 full-suite tests passed,0 failed,0 skipped/pending. See dedicated immutable-date verification. Authorization expired on completion. Implementation-phase pending statements below are historical.
 
 Product direction after the verification above: an existing type-2 funding Transaction cannot change date during editing. FundingDialog disables its date field and sends the persisted date on replacement. CategoriesController.transfer checks the existing scoped Transaction after Budget acquisition and rejects a different date with422 before Category authorization/deltas or persistence. The check follows the existing Transaction type, so changing the request type cannot bypass it. New funding dates and type-3 rebalance semantics are unchanged.
 

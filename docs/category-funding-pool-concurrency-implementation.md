@@ -2,7 +2,7 @@
 
 ## Status and baseline
 
-**PostgreSQL-verified and accepted.** See [the verification record](category-funding-pool-concurrency-postgresql-verification.md):32 narrow,1,213 focused and1,568 full-suite passes,0 failed,0 skipped/pending. No production correction was required during verification. The implementation-stage evidence below is retained as history.
+**PostgreSQL-verified and accepted.** See the verification record:32 narrow,1,213 focused and1,568 full-suite passes,0 failed,0 skipped/pending. No production correction was required during verification. The implementation-stage evidence below is retained as history.
 
 Implementation HEAD `e49bebe3bf29e8a773709a59bd9c2780014944f0`. The accepted design/review and characterization tests were staged before implementation; they and unrelated local files were preserved. No agent index mutation, reset or commit occurred. Current source matches the approved bounded design; accepted Account-writer gates, OFX authority, BalanceHistory removal, ordinary eligibility/startDate, funding preview, immutable type2 date, replacement admission and legacy DELETE removal remain present.
 

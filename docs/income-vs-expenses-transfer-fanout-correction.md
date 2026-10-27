@@ -1,6 +1,6 @@
 # Income Vs. Expenses JSON transfer deduction and fan-out correction
 
-**Current status: PostgreSQL ACCEPTED.** [Verification](income-vs-expenses-transfer-fanout-postgresql-verification.md):33 narrow,1,721 focused,1,762 full-suite passes;0 failed,0 skipped/pending. All27 safeguard tests passed first. No further production change was needed; earlier implementation-stage pending statements below are historical. Task-specific authorization is now expired.
+**Current status: PostgreSQL ACCEPTED.** Verification:33 narrow,1,721 focused,1,762 full-suite passes;0 failed,0 skipped/pending. All27 safeguard tests passed first. No further production change was needed; earlier implementation-stage pending statements below are historical. Task-specific authorization is now expired.
 
 ## Baseline and scope
 
@@ -115,4 +115,4 @@ Current JSON implementation evidence: Income method contains no transaction_cate
 
 ## PostgreSQL verification follow-up
 
-The task-specific verification record is [Income PostgreSQL acceptance](income-vs-expenses-transfer-fanout-postgresql-verification.md). All31 prepared cases passed; two additional cases cover a single zero and irrelevant/missing JSON Category references, for33 narrow passes. The approved JSON deduction is explicit product direction, superseding the earlier relational-only candidate. No production or safety-infrastructure correction was needed. Focused acceptance passed1,721 tests,0 failed,0 skipped/pending before starting the complete suite. Historical non-DB and prepared-only statements above describe implementation-stage evidence, not the latest verification status.
+The task-specific verification record is Income PostgreSQL acceptance. All31 prepared cases passed; two additional cases cover a single zero and irrelevant/missing JSON Category references, for33 narrow passes. The approved JSON deduction is explicit product direction, superseding the earlier relational-only candidate. No production or safety-infrastructure correction was needed. Focused acceptance passed1,721 tests,0 failed,0 skipped/pending before starting the complete suite. Historical non-DB and prepared-only statements above describe implementation-stage evidence, not the latest verification status.

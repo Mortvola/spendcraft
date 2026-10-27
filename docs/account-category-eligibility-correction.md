@@ -2,7 +2,7 @@
 
 ## Status and baseline
 
-Implemented against HEAD `9c6635b526f37631040462c9fee750e17bc96eec`, with an initially clean tracked tree. The accepted shared Budget gate, OFX accounting/provider-balance separation and BalanceHistory runtime deprecation are retained. The implementation phase made no database connection. Subsequent task-specific PostgreSQL verification is **accepted**: 994 focused / 1,382 full-suite passed, 0 failed, 0 skipped/pending. See [verification evidence](account-category-eligibility-postgresql-verification.md). Existing local untracked files are untouched.
+Implemented against HEAD `9c6635b526f37631040462c9fee750e17bc96eec`, with an initially clean tracked tree. The accepted shared Budget gate, OFX accounting/provider-balance separation and BalanceHistory runtime deprecation are retained. The implementation phase made no database connection. Subsequent task-specific PostgreSQL verification is **accepted**: 994 focused / 1,382 full-suite passed, 0 failed, 0 skipped/pending. See verification evidence. Existing local untracked files are untouched.
 
 This is a forward correctness correction using existing monetary types and arithmetic. It introduces no schema, representation, parser, precision, API capability, historical repair or DELETE guard.
 

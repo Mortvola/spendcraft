@@ -2,7 +2,7 @@
 
 ## Status and baseline
 
-**POSTGRESQL-VERIFIED AND ACCEPTED.** See [verification](loan-settings-update-persistence-postgresql-verification.md):32 narrow,1,277 focused and1,632 full-suite passes,0 failed,0 skipped/pending. No additional production correction was needed. The approved follow-up reuses the existing Budget gate and saves both models; see the implementation section below. The original investigation/blocker is retained as historical evidence.
+**POSTGRESQL-VERIFIED AND ACCEPTED.** See verification:32 narrow,1,277 focused and1,632 full-suite passes,0 failed,0 skipped/pending. No additional production correction was needed. The approved follow-up reuses the existing Budget gate and saves both models; see the implementation section below. The original investigation/blocker is retained as historical evidence.
 
 Original characterization: HEAD `dcdf0d0e60bba52f1c8cd236a9631b034d5d6126`. The missing save is confirmed, but adding only Loan.save exposes a reproducible concurrent complete-settings update anomaly. Per the task's concurrency stop condition, no runtime change, new lock or SQL update was implemented. This is not a claim that the persistence defect is resolved.
 

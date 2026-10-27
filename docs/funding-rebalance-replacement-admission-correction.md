@@ -4,7 +4,7 @@
 
 Implemented against HEAD `e9e3f006fe7832cd048992fd65a8f4fb5884fd97`. Tracked tree/index were clean before work; unrelated untracked local files were preserved. The commit contains the accepted Account-writer gate, OFX authority, BalanceHistory deprecation, ordinary eligibility, funding preview and immutable funding-date corrections. Its delta from d4c374d is verification/review/test documentation, not unexpected runtime changes.
 
-**PostgreSQL-accepted:** see the [dedicated verification record](funding-rebalance-replacement-admission-postgresql-verification.md). The implementation-stage results below are historical; subsequent task-specific verification uses independent configured/live pg/pgLog/execution safeguards before every destructive operation.
+**PostgreSQL-accepted:** see the dedicated verification record. The implementation-stage results below are historical; subsequent task-specific verification uses independent configured/live pg/pgLog/execution safeguards before every destructive operation.
 
 ## Reconfirmed defect before correction
 
@@ -115,4 +115,4 @@ Non-DB verification: **199 passed, 0 failed** across focused admission, funding 
 
 The original34 prepared cases pass after correcting required Account subtype in test fixtures. Verification adds an explicit optional-metadata/immutable-date case. No production correction was needed; see the dedicated record for final focused/full results and authorization expiration.
 
-Final verification: **1,075 focused /1,511 full-suite passed,0 failed,0 skipped/pending**. All35 admission cases pass. Both TypeScript checks, lint, Knip, circular, server/client builds and diff checks pass. Only test fixture subtype and explicit optional-metadata/date coverage changed during verification; no production correction was needed. See [verification](funding-rebalance-replacement-admission-postgresql-verification.md). Task-specific database authorization is expired.
+Final verification: **1,075 focused /1,511 full-suite passed,0 failed,0 skipped/pending**. All35 admission cases pass. Both TypeScript checks, lint, Knip, circular, server/client builds and diff checks pass. Only test fixture subtype and explicit optional-metadata/date coverage changed during verification; no production correction was needed. See verification. Task-specific database authorization is expired.

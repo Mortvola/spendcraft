@@ -1,6 +1,6 @@
 # BalanceHistory runtime deprecation
 
-Status: **PostgreSQL-verified and accepted**. Focused 822 / full-suite 1,306 passed, 0 failed, 0 skipped/pending. Implementation made no database connection; subsequent fresh verification authorization applied only to guarded localhost:5432/spendcraft_test and is now expired. Physical schema cleanup is deferred. See [verification evidence](balance-history-deprecation-postgresql-verification.md).
+Status: **PostgreSQL-verified and accepted**. Focused 822 / full-suite 1,306 passed, 0 failed, 0 skipped/pending. Implementation made no database connection; subsequent fresh verification authorization applied only to guarded localhost:5432/spendcraft_test and is now expired. Physical schema cleanup is deferred. See verification evidence.
 
 ## Product decision and baseline
 
@@ -163,6 +163,6 @@ Local backup.sql, dump.sql and spendcraft.sql remain inert historical data artif
 
 ## Verification completion and physical-cleanup boundary
 
-Fresh task-specific PostgreSQL verification completed only against localhost:5432/spendcraft_test with independent configured/live pg, pgLog and execution safeguards before every destructive statement, setup and cleanup. Focused acceptance: **822 passed, 0 failed, 0 skipped/pending**; full suite: **1,306 passed, 0 failed, 0 skipped/pending**. No further production or safety-infrastructure correction was required. Tests strengthened all four offline initialization combinations and last-user graph cleanup with foreign-data preservation. Current-source audit retains only the four documented cleanup/model files. See [verification evidence](balance-history-deprecation-postgresql-verification.md).
+Fresh task-specific PostgreSQL verification completed only against localhost:5432/spendcraft_test with independent configured/live pg, pgLog and execution safeguards before every destructive statement, setup and cleanup. Focused acceptance: **822 passed, 0 failed, 0 skipped/pending**; full suite: **1,306 passed, 0 failed, 0 skipped/pending**. No further production or safety-infrastructure correction was required. Tests strengthened all four offline initialization combinations and last-user graph cleanup with foreign-data preservation. Current-source audit retains only the four documented cleanup/model files. See verification evidence.
 
 Authorization is now expired. No historical rows outside authorized test fixtures/cleanup were changed; no Account repair, physical table/model/schema removal, monetary migration, unrelated accounting/provider change, deployment or commit occurred. Physical retention/drop policy, FK/migration replay, removal of the minimal model/relationship and retained cleanup require a separate task and authorization. No active product blocker was found.

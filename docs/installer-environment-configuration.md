@@ -2,9 +2,9 @@
 
 The release contains one checked-in configuration file, `installer/installer.env.required.json`. It holds automatic nonsecret values and metadata for values supplied privately by the operator. It must never contain secrets. APP_KEY, VAPID, JWT and Plaid cleanup keys are excluded because their key-generation commands handle them. The separate `installer.env.defaults` payload and defaults-appending installer step have been removed; all fourteen former defaults are `type: "value"` entries in the consolidated file.
 
-`deploy.sh RELEASE_DIRECTORY production` or `deploy.sh RELEASE_DIRECTORY staging` embeds that target in generated `install.sh`, before its archive payload. The operator still uploads and runs the installer manually; deploy.sh does not execute remotely. A packaged installer accepts no target argument, or the identical target; a conflicting argument aborts before installation. The unpackaged template requires an explicit target argument. NODE_ENV stays production for both runtime environments and is not the deployment target selector. Preserve production/staging root, database, provider and PM2 isolation independently; this setting does not itself prove host identity or replace the rollback tool's independent target checks.
+`deploy.sh RELEASE_DIRECTORY production` or `deploy.sh RELEASE_DIRECTORY staging` selects the upload destination for the saved release package. It generates one unified `install.sh` and uploads it; it does not run the installer remotely. The installer accepts no arguments and reads `SPENDCRAFT_ENV` and `SPENDCRAFT_ROOT` directly from `/etc/spendcraft/environment`. Inherited target variables are not authoritative. NODE_ENV stays production for both runtime environments and is not the deployment target selector. Preserve production/staging root, database, provider and PM2 isolation independently; the server-local settings do not replace ordinary rollback target checks.
 
-After extracting spendcraft.new, linking the shared .env and installing dependencies, the installer first initializes APP_KEY, then runs `ENV_PATH= NODE_ENV=production node ace generate:web-push-keys`, then runs `ENV_PATH= NODE_ENV=production node ace generate:jwt-keys` and `ENV_PATH= NODE_ENV=production node ace plaid:rotate-cleanup-keys --if-missing`, and then invokes `installer/configureInstallerEnv.mjs` with its embedded target. It next runs the backup and proceeds to migration/seeding decisions. The metadata and helper are copied by Adonis metaFiles into build; the existing deploy archive includes them.
+After extracting spendcraft.new, fencing PM2 restarts/stopping writers, linking the shared .env and installing dependencies, the installer initializes APP_KEY, then runs `ENV_PATH= NODE_ENV=production node ace generate:web-push-keys`, `ENV_PATH= NODE_ENV=production node ace generate:jwt-keys` and `ENV_PATH= NODE_ENV=production node ace plaid:rotate-cleanup-keys --if-missing`. It invokes `installer/configureInstallerEnv.mjs` with the server-local target, creates the database backup, then runs migrations and `node ace db:seed`. Seeding is automatic; there is no SEED/SKIP/ABORT prompt. The DEPLOY and RESUME confirmations remain. The metadata and helper are included by Adonis metaFiles; the release packager archives the build before deploy.sh generates the upload installer.
 
 The required-settings helper reads the shared .env through its symlink. Nonempty configured values are preserved. Explicit empty values are also preserved when allowEmpty=true; otherwise they require configuration. Environment-specific entries are skipped outside their selected target. A configured value conflicting with a fixed value or a prompt entry's choices aborts without changing it. Staging's PLAID_ENV must be sandbox; it never requests PLAID_PRODUCTION_SECRET. This does not enable provider operations or establish sandbox credentials; optional provider integration remains separately controlled.
 
@@ -92,7 +92,7 @@ No rollback is run and no database connection is made by bundling. After startup
 Installation also publishes `$SPENDCRAFT_ROOT/maintenance/rollback.sh`. Invoke it
 with only `--dry-run` or `--execute`; it automatically selects and verifies the
 bundle matching the actual installed release. The reviewed plan must exist at
-`$SPENDCRAFT_ROOT/maintenance/rollback-plan.json`; no plan is created automatically.
+`$SPENDCRAFT_ROOT/maintenance/rollback-plan.json`; the installer generates it after startup, while the launcher itself does not create or repair a plan.
 A missing/corrupt matching bundle, mismatched plan, or edited managed launcher
 stops rather than guessing. Versioned launcher implementations are retained under
 `maintenance/rollback/launcher-<launcher-id>/`, and the managed shell is updated
@@ -105,7 +105,7 @@ Rollback supports separate EC2 `production` and `staging` targets through the
 reviewed `maintenance/rollback-plan.json`. Neither requires a machine ID; target
 checks use the installation, release, database and PM2 configuration.
 Staging can use the installer's normal process names and Ubuntu PM2 home on its
-own host. See [EC2 target configuration](transaction-category-decimal-string-rollback.md#ec2-staging-and-production-targets).
+own host. See [application rollback](application-release-rollback.md) for current release-restoration behavior.
 
 
 ## Automatic rollback plan

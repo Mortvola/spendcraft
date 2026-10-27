@@ -2,7 +2,7 @@
 
 ## Status and baseline
 
-**PostgreSQL-accepted**; see [the verification record](category-transfer-delete-deprecation-postgresql-verification.md). The implementation-stage baseline below is historical. HEAD `03b3a89d9e9d537b1d9f0b0a090ec6645282f3ef` contains the accepted Account-writer serialization, OFX accounting/provider authority, BalanceHistory runtime deprecation, ordinary eligibility/startDate, funding preview/submission, immutable funding date and replacement-admission corrections. Tracked tree/index were clean before work; unrelated untracked local files were preserved. No PostgreSQL connection, test bootstrap, destructive setup/cleanup or historical data operation occurred. Prior DB authorization is expired.
+**PostgreSQL-accepted**; see the verification record. The implementation-stage baseline below is historical. HEAD `03b3a89d9e9d537b1d9f0b0a090ec6645282f3ef` contains the accepted Account-writer serialization, OFX accounting/provider authority, BalanceHistory runtime deprecation, ordinary eligibility/startDate, funding preview/submission, immutable funding date and replacement-admission corrections. Tracked tree/index were clean before work; unrelated untracked local files were preserved. No PostgreSQL connection, test bootstrap, destructive setup/cleanup or historical data operation occurred. Prior DB authorization is expired.
 
 Decision: remove the obsolete standalone DELETE, rather than repair its authorization, awaiting or locking. No supported product workflow or concrete external compatibility contract was found for it. This does **not** deprecate the active modern POST/PATCH endpoints merely because their URL and DTO names contain category-transfer.
 
