@@ -1,3 +1,5 @@
+import { validateSubmittedTaxForecast } from '#services/taxMonetaryCodec'
+import { replaceTaxForecast } from '#services/taxMonetaryStorage'
 // import type { HttpContext } from '@adonisjs/core/http'
 
 import { ApiResponse, TaxActualProps, TaxCategoriesProps, TaxProps } from "#common/ResponseTypes";
@@ -125,6 +127,7 @@ export default class TaxesController {
       throw new Error('user not defined');
     }
 
+    validateSubmittedTaxForecast(request.input('forecast'));
     const requestData = await request.validateUsing(addTax);
 
     const { tax, budgetId } = await db.transaction(async (trx) => {
@@ -137,7 +140,7 @@ export default class TaxesController {
         .first();
 
       if (tax) {
-        tax.data = requestData.forecast;
+        replaceTaxForecast(tax, requestData.forecast);
         await tax.save();
       } else {
         tax = await Tax.create({

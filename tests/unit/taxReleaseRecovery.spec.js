@@ -5,7 +5,7 @@ import { mkdtemp, mkdir, writeFile, readFile, realpath, symlink, rm, readdir } f
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createHash } from 'node:crypto'
-import { taxStorageCompatibility, statementIncomeStorageCompatibility, requireTaxStorageCompatibility } from '../../installer/lib/taxReleaseRecovery.mjs'
+import { taxStorageCompatibility, statementIncomeStorageCompatibility, taxForecastStorageCompatibility, transactionLogStorageCompatibility, requireTaxStorageCompatibility } from '../../installer/lib/taxReleaseRecovery.mjs'
 import { releaseManifest, verifyReleases, validatePlan, releaseDifferences } from '../../installer/rollbackApplication.mjs'
 import { writeTaxRuntimeFixture } from '../helpers/taxRecoveryRelease.js'
 import { orchestrate } from '../../installer/lib/applicationRollback.mjs'
@@ -36,6 +36,8 @@ test.group('Tax compatible release recovery (temporary files only)', group => {
     const release = await fixture(root), manifest = await releaseManifest(release)
     assert.equal(taxStorageCompatibility(manifest), 'reviewed-tax-and-category-boundary')
     assert.equal(statementIncomeStorageCompatibility(manifest), 'reviewed-statement-income-boundary')
+    assert.equal(taxForecastStorageCompatibility(manifest), 'reviewed-tax-forecast-boundary')
+    assert.equal(transactionLogStorageCompatibility(manifest), 'reviewed-transaction-log-boundary')
     assert.doesNotThrow(() => requireTaxStorageCompatibility(manifest))
   })
   test('Statement model, codec, binding and API writer must all be reviewed compiled files').with([
@@ -48,6 +50,39 @@ test.group('Tax compatible release recovery (temporary files only)', group => {
     assert.equal(taxStorageCompatibility(manifest), 'reviewed-tax-and-category-boundary')
     assert.equal(statementIncomeStorageCompatibility(manifest), 'unknown')
     assert.throws(() => requireTaxStorageCompatibility(manifest), 'statement_income_storage_compatibility_unknown')
+  })
+  test('Tax and TransactionLog rejection precedes all destructive orchestration').with([
+    ['app/Models/Tax.js', 'tax_forecast_storage_compatibility_unknown'],
+    ['app/Models/TransactionLog.js', 'transaction_log_storage_compatibility_unknown'],
+    ['app/services/taxMonetaryCodec.js', 'tax_forecast_storage_compatibility_unknown'],
+    ['app/services/taxMonetaryStorage.js', 'tax_forecast_storage_compatibility_unknown'],
+  ]).run(async ({ assert }, [name, reason]) => {
+    const currentDirectory = await fixture(root, 'spendcraft'), previousDirectory = await fixture(root, 'spendcraft.old')
+    await writeFile(join(previousDirectory, name), '// numeric-only or unreviewed boundary')
+    const current = await releaseManifest(currentDirectory), previous = await releaseManifest(previousDirectory)
+    const output = join(root, 'inspection'); await mkdir(output)
+    await writeFile(join(output, 'current.json'), JSON.stringify(current)); await writeFile(join(output, 'previous.json'), JSON.stringify(previous))
+    const plan = { root, currentManifest: join(output, 'current.json'), previousManifest: join(output, 'previous.json'),
+      envFile: join(root, 'spendcraft-env'), reviewedDifferencesSha256: hash(JSON.stringify(releaseDifferences(current, previous))),
+      databaseConfigSha256: hash('// synthetic db config') }
+    const events = [], before = await readdir(root)
+    const ops = Object.fromEntries(['inspect', 'confirm', 'journal', 'stop', 'backup', 'swap', 'restart', 'smoke', 'cleanup'].map(n => [n, async () => events.push(n)]))
+    ops.preflight = () => verifyReleases(plan, output)
+    await assert.rejects(() => orchestrate({ dryRun: false }, ops), reason)
+    assert.deepEqual(events, []); assert.deepEqual(await readdir(root), before)
+    assert.equal((await releaseManifest(currentDirectory)).identity, current.identity)
+    assert.equal((await releaseManifest(previousDirectory)).identity, previous.identity)
+  })
+  test('new compatibility cannot be established by markers or unknown manifests', async ({ assert }) => {
+    const release = await fixture(root)
+    await rm(join(release, 'app/Models/TransactionLog.js'))
+    await writeFile(join(release, 'transaction-log-compatible'), 'true')
+    const manifest = await releaseManifest(release)
+    assert.equal(transactionLogStorageCompatibility(manifest), 'unknown')
+    assert.throws(() => requireTaxStorageCompatibility(manifest), 'transaction_log_storage_compatibility_unknown')
+    for (const unknown of [null, {}, { format: 1, identity: 'x', files: [] }, { capabilities: ['tax-forecast', 'transaction-log'] }]) {
+      assert.equal(taxForecastStorageCompatibility(unknown), 'unknown'); assert.equal(transactionLogStorageCompatibility(unknown), 'unknown')
+    }
   })
   test('missing decoding and metadata-only compatibility declarations fail closed', async ({ assert }) => {
     const release = await fixture(root)
@@ -98,7 +133,7 @@ test.group('Tax compatible release recovery (temporary files only)', group => {
     await writeFile(join(release, name), '// unrelated or older implementation')
     const manifest = await releaseManifest(release)
     assert.equal(taxStorageCompatibility(manifest), 'unknown')
-    assert.throws(() => requireTaxStorageCompatibility(manifest), 'tax_storage_compatibility_unknown')
+    assert.throws(() => requireTaxStorageCompatibility(manifest), name === 'app/Controllers/Http/TaxesController.js' ? 'tax_forecast_storage_compatibility_unknown' : 'tax_storage_compatibility_unknown')
   })
   test('invalid and self-declared capability manifests are not trusted', ({ assert }) => {
     for (const value of [null, {}, { format: 1, identity: 'x', files: [] }, { capabilities: ['tax-string'] }]) assert.equal(taxStorageCompatibility(value), 'unknown')

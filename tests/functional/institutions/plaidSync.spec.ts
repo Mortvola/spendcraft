@@ -256,7 +256,7 @@ test.group('Plaid sync characterization', (group) => {
     assert.lengthOf(newLogs, logs.length + 1)
     assert.include(newLogs[newLogs.length - 1].message, 'modified a transaction')
     // The existing date-diff formatter omits date details; dirty-state detection must not.
-    assert.deepEqual(newLogs[newLogs.length - 1].changes[field], expected)
+    assert.deepEqual(newLogs[newLogs.length - 1].changes?.[field], expected)
     const state = await snapshot()
     fake.responses = [page(accounts(), 'c3', { modified: [modified] })]
     ;(await client.post(url()).loginAs(f.user)).assertStatus(200)

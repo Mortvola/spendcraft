@@ -24,7 +24,29 @@ export function statementIncomeStorageCompatibility(manifest) {
   return Object.entries(profile.statementIncomeFiles).every(([name, digest]) => files.get(name)?.kind === 'file'
     && files.get(name).sha256 === digest) ? 'reviewed-statement-income-boundary' : 'unknown'
 }
+export function taxForecastStorageCompatibility(manifest) {
+  if (manifest?.format !== 1 || !Array.isArray(manifest.files)
+    || manifest.identity !== hash(JSON.stringify(manifest.files))
+    || !profile.taxForecastFiles || Object.keys(profile.taxForecastFiles).length !== 4) return 'unknown'
+  const files = new Map(manifest.files.map(file => [file.name, file]))
+  return Object.entries(profile.taxForecastFiles).every(([name, digest]) => files.get(name)?.kind === 'file'
+    && files.get(name).sha256 === digest) ? 'reviewed-tax-forecast-boundary' : 'unknown'
+}
+export function transactionLogStorageCompatibility(manifest) {
+  if (manifest?.format !== 1 || !Array.isArray(manifest.files)
+    || manifest.identity !== hash(JSON.stringify(manifest.files))
+    || !profile.transactionLogFiles || Object.keys(profile.transactionLogFiles).length !== 3) return 'unknown'
+  const files = new Map(manifest.files.map(file => [file.name, file]))
+  return Object.entries(profile.transactionLogFiles).every(([name, digest]) => files.get(name)?.kind === 'file'
+    && files.get(name).sha256 === digest) ? 'reviewed-transaction-log-boundary' : 'unknown'
+}
 export function requireTaxStorageCompatibility(manifest) {
+  if (taxForecastStorageCompatibility(manifest) !== 'reviewed-tax-forecast-boundary') {
+    throw new Error('tax_forecast_storage_compatibility_unknown')
+  }
+  if (transactionLogStorageCompatibility(manifest) !== 'reviewed-transaction-log-boundary') {
+    throw new Error('transaction_log_storage_compatibility_unknown')
+  }
   if (taxStorageCompatibility(manifest) !== 'reviewed-tax-and-category-boundary') {
     throw new Error('tax_storage_compatibility_unknown')
   }

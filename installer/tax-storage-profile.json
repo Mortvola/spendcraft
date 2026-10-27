@@ -5,7 +5,7 @@
   "files": {
     "app/Models/Transaction.js": "1961147b105d002a78b5a0aaf47aaa37383aede07066d67c334b4ec4e9c7a4a2",
     "app/Controllers/Http/TransactionsController.js": "9685bda289148f2fea6d465e8935bfe17a5502eb52357c4ba3ce9f89e0f38a27",
-    "app/Controllers/Http/TaxesController.js": "70a1d358113a034421b9909589aa15f910f420cd55f78f833986c102648d5ab8",
+    "app/Controllers/Http/TaxesController.js": "d79c78d6c57eb6f03a28ba9b5ccd0b6bdfa995f953c71ad17be8e34a9ee30f2f",
     "app/services/taxAmountCodec.js": "ab07f63f27c6c5c078cfd11ea11ee4271a3bd9cd777ba1ade8a2adba6aacf736",
     "app/services/taxStorageBinding.js": "27ff73af0a942a2cff7998f5ce9078ebfe64203717709c8996b88f5d23fb3e61",
     "app/services/transactionTaxStorage.js": "2b08d34b5072ed14b4dfc88984b43098096dcfaa6edce0fbba9644cd32e4e458",
@@ -19,5 +19,16 @@
     "app/services/statementIncomeCodec.js": "32e1306e45eeebd167e9392bca7763a82dd5f45b1af5e10a2c884d5a42e73110",
     "app/services/statementIncomeStorage.js": "0fe145ba859996b95a0349a40bb170769d72f1159a95e869dc45f67cd2698308",
     "app/Controllers/Http/AccountsController.js": "760b0a89a390138346873926fdc9c2a43effbcd0c068163d7e8647e3cbf46ec8"
+  },
+  "taxForecastFiles": {
+    "app/Models/Tax.js": "05e0ff5e5dd7e954ee63e465f345f22591904a13a59790ff3b4e244cf6ca85e6",
+    "app/services/taxMonetaryCodec.js": "14cd0edf3cf7da9ed3c493c889e2eafeca175dafcfe736707b4c319f360d9e52",
+    "app/services/taxMonetaryStorage.js": "ca44987245927c5c91c8492aafc9bc809bdfb99a38abeb63b66eaeb1bc1d2938",
+    "app/Controllers/Http/TaxesController.js": "d79c78d6c57eb6f03a28ba9b5ccd0b6bdfa995f953c71ad17be8e34a9ee30f2f"
+  },
+  "transactionLogFiles": {
+    "app/Models/TransactionLog.js": "1e74c27444fa23aefc1646f17a41c91a7ca497554948364381a2aa313d7dbfa0",
+    "app/services/taxMonetaryCodec.js": "14cd0edf3cf7da9ed3c493c889e2eafeca175dafcfe736707b4c319f360d9e52",
+    "app/services/taxMonetaryStorage.js": "ca44987245927c5c91c8492aafc9bc809bdfb99a38abeb63b66eaeb1bc1d2938"
   }
 }

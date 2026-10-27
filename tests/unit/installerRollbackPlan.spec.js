@@ -109,7 +109,7 @@ test.group('Automatic installer rollback plan (temporary files, no database or P
     assert.deepEqual(JSON.parse(await readFile(join(output, 'rollback-plan.json'), 'utf8')), plan)
     await assert.rejects(() => publishPlan(maintenance, output, plan))
   })
-  test('compiled release compatibility publishes a valid plan or completes discovery with unavailable status').with(['compatible', 'missing', 'unreviewed'])
+  test('compiled release compatibility publishes a valid plan or completes discovery with unavailable status').with(['compatible', 'missing', 'unreviewed', 'tax-missing', 'tax-unreviewed', 'log-missing', 'log-unreviewed'])
     .run(async ({ assert }, storage) => {
       await writeFile(input.envFile, 'PG_HOST=localhost\nPG_PORT=5432\nPG_USER=ubuntu\nPG_PASSWORD=synthetic\nPG_DB_NAME=spendcraft\nAPP_URL=https://staging.spendcraft.app\n')
       for (const name of ['spendcraft', 'spendcraft.old']) {
@@ -125,9 +125,11 @@ test.group('Automatic installer rollback plan (temporary files, no database or P
         await writeFile(join(directory, 'public/assets/.vite/manifest.json'), JSON.stringify({ 'client-src/App.tsx': { isEntry: true, file: 'App.js' } }))
         await symlink(input.envFile, join(directory, '.env'))
       }
-      const decoder = join(root, 'spendcraft.old/app/services/statementIncomeStorage.js')
-      if (storage === 'missing') await rm(decoder)
-      else if (storage === 'unreviewed') await writeFile(decoder, '// unknown implementation')
+      const name = storage.startsWith('tax-') ? 'app/Models/Tax.js' : storage.startsWith('log-') ? 'app/Models/TransactionLog.js' : 'app/services/statementIncomeStorage.js'
+      const reason = storage.startsWith('tax-') ? 'tax_forecast_storage_compatibility_unknown' : storage.startsWith('log-') ? 'transaction_log_storage_compatibility_unknown' : 'statement_income_storage_compatibility_unknown'
+      const decoder = join(root, 'spendcraft.old', name)
+      if (storage.endsWith('missing')) await rm(decoder)
+      else if (storage.endsWith('unreviewed')) await writeFile(decoder, '// unknown implementation')
       const current = await releaseManifest(join(root, 'spendcraft')), previous = await releaseManifest(join(root, 'spendcraft.old'))
       const record = join(root, 'releases/deployment-synthetic')
       await mkdir(record, { recursive: true })
@@ -164,7 +166,7 @@ test.group('Automatic installer rollback plan (temporary files, no database or P
         else process.env.PM2_HOME = saved.PM2_HOME
       }
       const unavailable = JSON.parse(await readFile(join(root, 'maintenance/rollback-plan.json'), 'utf8'))
-      assert.equal(unavailable.unavailableReason, 'statement_income_storage_compatibility_unknown')
+      assert.equal(unavailable.unavailableReason, reason)
       assert.notProperty(unavailable, 'rollbackKind')
       assert.notProperty(unavailable, 'processes')
       assert.throws(() => validatePlan(unavailable), 'application_only_plan_required')
@@ -176,7 +178,7 @@ test.group('Automatic installer rollback plan (temporary files, no database or P
       assert.equal((await releaseManifest(join(root, 'spendcraft.old'))).identity, previous.identity)
       // The same release pair remains inadmissible to actual rollback.
       const rejected = join(root, 'rejected-execution'); await mkdir(rejected)
-      await assert.rejects(() => verifyReleases(previousPlan, rejected), 'statement_income_storage_compatibility_unknown')
+      await assert.rejects(() => verifyReleases(previousPlan, rejected), reason)
     })
   test('rejects symlink plan without changing its target', async ({ assert }) => {
     const target = join(root, 'private.json')

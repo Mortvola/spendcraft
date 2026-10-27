@@ -1,10 +1,23 @@
 import { TaxSchema } from '#database/schema'
-import { column } from '@adonisjs/lucid/orm'
+import { column, beforeSave, afterSave } from '@adonisjs/lucid/orm'
 import type { JSON } from '#types/db'
 import { FilingStatus } from '#common/ResponseTypes'
 
+import { decodeTaxForecast } from '#services/taxMonetaryCodec'
+import { consumeTaxForecast, prepareTaxForecast, stageTaxMoneySave, finishTaxMoneySave } from '#services/taxMonetaryStorage'
+
 export default class Tax extends TaxSchema {
-  @column()
+  @beforeSave()
+  public static stageMoney(row: Tax) { stageTaxMoneySave(row) }
+
+  @afterSave()
+  public static finishMoney(row: Tax) { finishTaxMoneySave(row, 'data') }
+
+  @column({
+    consume: (value, _key, row) => consumeTaxForecast(value, row),
+    prepare: (value, _key, row) => prepareTaxForecast(value, row),
+    serialize: value => decodeTaxForecast(value),
+  })
   declare data: JSON<{
     filingStatus: FilingStatus,
     taxableInterest: number,
