@@ -1,6 +1,6 @@
 # Remaining application JSON money: narrow candidate review
 
-Refreshed October 26, 2026 against HEAD `a506dce0cc92e4f992da394fa944ac6bbc5852e1`, branch `dollar-to-cents-2`. This source-only review supersedes the October 23 ranking, later pending Statement gates, and the earlier two-field recommendation. The operator selected all 13 monetary leaves in `taxes.data` plus the two confirmed TransactionLog amount leaves as one future migration project; The established Math.round cent policy is explicitly approved for all 15 leaves. Historical execution remains separately authorized; source implementation is now complete pending PostgreSQL verification. PlaidLog money is permanently excluded. No database connection or deployed-application change occurred; this task adds the scoped source implementation described below.
+Refreshed October 26, 2026 against HEAD `64a04aa022bad1fc1bc22f5c81d269a693ee68aa`, branch `dollar-to-cents-2`. This review supersedes the October 23 ranking, later pending Statement gates, and the earlier two-field recommendation. The operator selected all 13 monetary leaves in `taxes.data` plus the two confirmed TransactionLog amount leaves as one migration project. The established Math.round cent policy is explicitly approved for all 15 leaves. Compatible application storage is accepted in staging and production; historical conversion/recovery is prepared below and still requires separate execution authorization. PlaidLog money is permanently excluded. No database connection or deployed-application change occurred during conversion-tool preparation.
 
 ## Completed work and counting boundary
 
@@ -48,7 +48,7 @@ TransactionLog money is included in the analysis below. **All `plaid_logs` monet
 
 Writers: [TransactionsController.update](../app/Controllers/Http/TransactionsController.ts), [Account.updateTransaction](../app/Models/Account.ts), [getChanges](../app/Controllers/Http/transactionFields.ts) and [TransactionLog](../app/Models/TransactionLog.ts). Logs are persisted through the related Transaction/owning transaction; JSON.stringify applies no cent quantization. The log endpoint returns model changes, but current [TransactionLog client state](../client-src/State/TransactionLog.ts) retains only metadata/message and no monetary calculations use these leaves. No extra monetary paths come from message-only logs.
 
-Top-level array diffs are skipped by getChanges; null/object branches can retain nested snapshots. Unknown historical nested allocation, tax or funding amounts are an open diagnostic surface, not an automatic extension of the two fixed log paths. Loan-only `principle` is excluded. The operator explicitly included both scalar leaves in the same future conversion project as the 13 Tax forecast leaves: **15 confirmed monetary paths total**. The prepared audit now reads both tables in one consistent read-only snapshot. A future conversion must preserve unrelated log changes and the original raw log evidence. **TransactionLog policy is approved:** numeric money uses `Math.round(amount * 100)` then `(cents / 100).toFixed(2)`, including existing negative-half behavior, zero as `"0.00"`, canonical-string preservation and rejection of malformed/nonfinite/unsafe amounts. Subcent historical proposals may therefore change monetary value under this approved policy; report the exact difference before execution and retain exact originals for recovery. Tax forecast uses the same approved policy; no conversion execution is authorized. Unknown nested historical shapes require inventory review rather than being silently converted or silently certified complete. **The TransactionLog storage boundary is now implemented in source; historical conversion is not implemented or executed here.**
+Top-level array diffs are skipped by getChanges; null/object branches can retain nested snapshots. Unknown historical nested allocation, tax or funding amounts are an open diagnostic surface, not an automatic extension of the two fixed log paths. Loan-only `principle` is excluded. The operator explicitly included both scalar leaves in the same future conversion project as the 13 Tax forecast leaves: **15 confirmed monetary paths total**. The prepared audit now reads both tables in one consistent read-only snapshot. A future conversion must preserve unrelated log changes and the original raw log evidence. **TransactionLog policy is approved:** numeric money uses `Math.round(amount * 100)` then `(cents / 100).toFixed(2)`, including existing negative-half behavior, zero as `"0.00"`, canonical-string preservation and rejection of malformed/nonfinite/unsafe amounts. Subcent historical proposals may therefore change monetary value under this approved policy; report the exact difference before execution and retain exact originals for recovery. Tax forecast uses the same approved policy; no conversion execution is authorized. Unknown nested historical shapes require inventory review rather than being silently converted or silently certified complete. **The TransactionLog storage boundary is deployed; historical conversion/recovery tooling is prepared below and has not been executed.**
 
 ## Complete Tax forecast project: 13 monetary leaves
 
@@ -111,7 +111,7 @@ Keep raw values and calculation results private. An audit error leaves partial e
 
 ## Implemented storage boundaries — PostgreSQL verification pending
 
-Current uncommitted source implements all 15 approved paths through [taxMonetaryCodec](../app/services/taxMonetaryCodec.ts) and [taxMonetaryStorage](../app/services/taxMonetaryStorage.ts). The scoped codec reuses the existing scalar cent/string functions without changing Category, Transaction Tax or Statement codecs. All numeric writes use `Math.round(amount * 100)` and `(cents / 100).toFixed(2)`; finite/safe representable cents are required, negative half ties retain JavaScript behavior, and zero stores as `"0.00"`. Missing/null values remain missing/null; canonical strings are validated, preserved and decoded to numbers. Legacy numeric reads retain their original precision and never save merely because they were read.
+The committed compatible release implements all 15 approved paths through [taxMonetaryCodec](../app/services/taxMonetaryCodec.ts) and [taxMonetaryStorage](../app/services/taxMonetaryStorage.ts). The scoped codec reuses the existing scalar cent/string functions without changing Category, Transaction Tax or Statement codecs. All numeric writes use `Math.round(amount * 100)` and `(cents / 100).toFixed(2)`; finite/safe representable cents are required, negative half ties retain JavaScript behavior, and zero stores as `"0.00"`. Missing/null values remain missing/null; canonical strings are validated, preserved and decoded to numbers. Legacy numeric reads retain their original precision and never save merely because they were read.
 
 **Tax:** [Tax model](../app/Models/Tax.ts) owns native JSONB prepare/consume/serialize and before/after-save hooks. Raw originals are retained separately from decoded runtime state, so unrelated column saves omit data and metadata-only JSON saves retain the original numeric/string/null leaves. Explicit forecast replacement encodes submitted income values even when equal to legacy values. [TaxesController.post](../app/Controllers/Http/TaxesController.ts) validates monetary inputs before coercion/persistence and uses the replacement boundary for existing rows, retaining unrelated root/nested JSON. Omitted estimated data is not manufactured as zeros. Existing Budget locking, transaction binding, ownership, year lookup and numeric GET/POST response shapes remain. Supported decimal numeric-string request syntax is still accepted through Vine; booleans/blanks/hex/nonfinite/unsafe amounts reject. No client/shared API contract or worksheet/report SQL changed.
 
@@ -127,7 +127,7 @@ Current uncommitted source implements all 15 approved paths through [taxMonetary
 
 The read-only production audit examined one Tax record and 9,007 TransactionLogs: 13 Tax and 92 log monetary values, all numeric and cent-scale, with no malformed/unsafe/subcent values or rounding differences. All supported 2026 Worksheet 2-1 comparisons were unchanged. This is dated evidence, not a future allowlist. Full details are private in `script-output/tax-monetary-production-audit-a4aueeil/verification.json`. No complete tax-report equivalence claim is made beyond the supported calculation comparison.
 
-The cent policy is approved for all 15 paths; no additional rounding decision is pending. Remaining gates are separate local PostgreSQL authorization/acceptance, commit review, compatible packaging and deployment approval, followed by separately prepared/authorized historical conversion and recovery. None of the 105 historical values was converted during implementation. Historical conversion must preserve original raw JSON, ownership/row versions and all unrelated data, serialize through the owning Budget and refuse recovery after subsequent edits. Plaid logs remain permanently excluded.
+The cent policy is approved for all 15 paths; no additional rounding decision is pending. The acceptance and deployment gates recorded below have since passed: compatible release `64a04aa022bad1fc1bc22f5c81d269a693ee68aa` is accepted in staging and production. Historical conversion and recovery remain separate operations; the preparation section below describes their tooling and remaining approvals. None of the 105 historical values was converted by application deployment. Historical conversion must preserve original raw JSON, ownership/row versions and all unrelated data, serialize through the owning Budget and refuse recovery after subsequent edits. Plaid logs remain permanently excluded.
 
 ## Prepared PostgreSQL acceptance
 
@@ -158,3 +158,74 @@ Rollback tests accept actual reviewed emitted Tax/TransactionLog implementations
 **Static checks:** source-only server TypeScript and client TypeScript, changed-file ESLint, relevant syntax, documentation links and both Git diff checks passed. Server checking reuses the established temporary config excluding generated release checkouts; repository tsconfig is unchanged. The existing occupied Vite HMR port 24678 emitted a nonfatal warning while HTTP tests used port 34591; no existing listener was stopped. Expected 422/404 and injected-error logs are negative-path evidence, not failures.
 
 No production implementation, test, staged file or unrelated work changed during acceptance; only the two existing monetary migration documents gained results. No staging/production database was accessed, no historical data was converted, and no deployment or commit occurred. Task-specific local database authorization expired when the specified runs and safeguarded cleanup completed. The 15-path implementation and rollback safeguards are **accepted for commit review**. Packaging/deployment and historical conversion remain separately authorized future work; no additional rounding-policy decision is pending.
+
+## Historical Tax and TransactionLog conversion preparation — October 26, 2026
+
+Prepared against HEAD `64a04aa022bad1fc1bc22f5c81d269a693ee68aa`, branch `dollar-to-cents-2`, after compatible application deployment to both environments. This section supersedes the earlier pending deployment gates, without claiming that historical conversion has occurred.
+
+[`convertHistoricalTaxMonetary.mjs`](../scripts/convertHistoricalTaxMonetary.mjs) adapts the established Statement/Transaction Tax conversion and recovery procedure. **One command and one atomic repeatable-read transaction cover both tables**, so failure in either boundary rolls back the other. Only numeric leaves in the 13 Tax paths and two log paths listed above are converted. Existing canonical strings, missing/null values, unrelated JSON and all other row columns are preserved. No schema, model, report, calculation or ordinary application reader changes are involved; no conservation rule is added. Plaid logs are never queried.
+
+The converter reuses the existing scalar conversion/precision inspection, explicit CLI target validation, configured/live/execution connection checks, loopback normalization, PM2 stopped-writer guard and atomic transaction helper. `.env` supplies `PG_HOST`, `PG_PORT`, `PG_USER`, `PG_PASSWORD` and `PG_DB_NAME`; `--database` must agree. There is no default database or production target, and no server-identity check. Importing the module does not connect. Every CLI invocation creates and immediately prints a unique absolute directory under `script-output`, before database work; files are private, exclusive-create and never overwrite earlier runs.
+
+**Dry run:** default read-only mode, also selected explicitly with `--dry-run`, uses no Budget locks or database writes. `records.jsonl` identifies each source/table, record ID, Budget, Tax year or parent Transaction, original raw JSON, every proposed string, original amount token and exact rounding difference. `preflight.json` and `summary.json` give aggregate counts and separate table/candidate counts. Malformed/noncanonical/unsafe values, unsupported shapes, ambiguous targeted log keys or unavailable candidate ownership block the entire conversion. Null amounts are preserved, not treated as malformed or manufactured as zero. Counts of 13/92/105 from earlier production evidence are observations, never a fixed allowlist.
+
+**Execution:** `--execute` is separate from dry run. It requires the existing PM2 guard to establish exactly the intended processes are stopped, locks owning Budgets in ascending ID order, and repeatedly checks writers and database identity. Operators must also use the established maintenance procedure to suppress scheduled restarts and fence non-PM2/child writers. Admission rejects unexpected column types, nonordinary tables, RLS, rules or user triggers. Every payload update compares ownership, original row hash and `xmin`, then verifies exact proposed raw payload, resulting full-row hash, unchanged other columns and conversion transaction ID. Only `taxes.data` and `transaction_logs.changes` can be assigned; `updated_at`, balances, IDs, messages and ownership columns are not assigned.
+
+### TransactionLog JSON preservation
+
+Tax uses parameterized `jsonb_set(..., false)` at the approved leaves. TransactionLogs stay PostgreSQL **`json` throughout**: ordered `json_each`/`json_object_agg` patch only numeric `amount.old/new` and carry other JSON values as raw `json`, without a JSONB cast or JavaScript object reserialization. This retains member order, duplicate **unrelated** keys, numeric token precision (including unrelated integers beyond JavaScript precision), null values and nested metadata. Message-only and other noncandidate rows receive no UPDATE. Duplicate `amount` keys, or duplicate `old/new` keys inside `amount` (including escaped spellings of the same key), are refused for review rather than collapsed or silently updated. Unsupported JSON extraction cases fail closed.
+
+Only separators/key escaping in the reconstructed root and `amount` objects may be reformatted during conversion; byte-identical formatting of those objects is not promised. Unrelated value tokens are retained. Log row/other-column hashes use ordered JSON values from `row_to_json`, never conversion of the payload to JSONB. **Recovery restores the original raw log text exactly**, including original whitespace, escaping, duplicate keys and number spellings. This SQL behavior still requires the separately authorized PostgreSQL rehearsal; offline fixtures are not evidence of live SQL execution.
+
+### Commands and recovery
+
+Run from an approved tooling checkout with its existing dependencies and process manifest available. Do not change installed application files merely to run tooling. The examples below are prepared commands, not execution authorization.
+
+```bash
+# Read-only staging audit and complete conversion preview.
+node scripts/auditTaxForecastPrecision.mjs \
+  --env /spendcraft_staging/server/spendcraft-env --database spendcraft \
+  --output-parent "$PWD/script-output"
+node scripts/convertHistoricalTaxMonetary.mjs \
+  --env /spendcraft_staging/server/spendcraft-env --database spendcraft --dry-run \
+  --output-parent "$PWD/script-output"
+
+# Only after explicit conversion authorization and the established maintenance procedure.
+node scripts/convertHistoricalTaxMonetary.mjs \
+  --env /spendcraft_staging/server/spendcraft-env --database spendcraft --execute \
+  --pm2-home /home/ubuntu/.pm2 --pm2-manifest installer/pm2-processes.json \
+  --output-parent "$PWD/script-output"
+
+# Verify the pinned conversion snapshot without recovery writes.
+node scripts/convertHistoricalTaxMonetary.mjs \
+  --env /spendcraft_staging/server/spendcraft-env --database spendcraft --recover --dry-run \
+  --snapshot "$SNAPSHOT" --snapshot-sha256 "$SNAPSHOT_SHA256" \
+  --output-parent "$PWD/script-output"
+
+# Requires separate recovery authorization and stopped writers.
+node scripts/convertHistoricalTaxMonetary.mjs \
+  --env /spendcraft_staging/server/spendcraft-env --database spendcraft --recover --execute \
+  --snapshot "$SNAPSHOT" --snapshot-sha256 "$SNAPSHOT_SHA256" \
+  --pm2-home /home/ubuntu/.pm2 --pm2-manifest installer/pm2-processes.json \
+  --output-parent "$PWD/script-output"
+```
+
+Production preparation uses the same commands with `--env /spendcraft-prod/server/spendcraft-env --database budget`. Production execution needs its own fresh audit, complete approved candidate/proposed-value set, backup, maintenance window and explicit authorization. Never infer production approval from a staging rehearsal.
+
+Before any conversion UPDATE, the tool fsyncs `original-tax-monetary.jsonl` and `snapshot.json`, records the data SHA-256 in the manifest, and prints the manifest path/SHA-256 as a recovery point. Preserve that original pin independently as `$SNAPSHOT_SHA256`; do not replace it with a newly calculated hash to make a changed snapshot pass. The manifest binds the complete target identity, operation, candidate count and conversion transaction ID; each entry records source, ID, Budget, parent Transaction where relevant, original/converted raw JSON, full-row hashes, other-column hash and original `xmin`.
+
+Recovery verifies both hashes and the full target identity, obtains the same Budget serialization, and refuses any missing/moved/edited row or equal-value later save using the converted payload/hash and conversion `xmin`. It restores only affected payloads, using `::json` for logs and `::jsonb` for Tax, and verifies original raw JSON/full-row hashes. Recovery of both boundaries is atomic. No recovery, database-backup restoration or application rollback is automatic. After any failure or uncertain COMMIT, preserve evidence and establish committed state before a retry or restarting writers.
+
+### Required staging rehearsal
+
+1. With separate staging authorization, verify target identity and existing candidates first. Use the established PM2 maintenance procedure and a fresh backup. Do not assume all preexisting staging data is synthetic.
+2. Use minimal isolated synthetic fixtures for all 15 paths: numbers/strings/mixed values, signs, fractional cents and half ties, missing/null parents/leaves, message-only logs, unrelated large-number/nested JSON and unrelated duplicate keys. Record every ID; do not modify preexisting financial records.
+3. Run audit and dry run; require the full candidate set to be exactly the approved fixtures. Confirm duplicate monetary keys are rejected. Stop on unrelated candidates rather than changing scope or filters.
+4. Execute conversion; inspect raw JSON types/tokens, unchanged IDs/ownership/order/messages and financial snapshots. Verify numeric application responses and existing Worksheet calculations without changing intermediate arithmetic.
+5. Execute again and require zero candidates/updates, preserving the first snapshot and pin.
+6. With separately authorized recovery, restore that synthetic snapshot exactly, including log text/whitespace, and compare hashes. In a separate synthetic case, edit after conversion and confirm recovery refuses to overwrite the new state.
+7. Clean up fixtures only if specifically authorized and ownership is certain; restore normal restart schedules and service availability using the established procedure after verifying database safety.
+
+Focused offline coverage is in [`historicalTaxMonetaryConversion.spec.js`](../tests/unit/historicalTaxMonetaryConversion.spec.js). It tests codec parity, malformed/unsafe rejection, complete dry-run details, JSON-preserving SQL structure, combined atomicity, idempotency, pinned exact recovery, later-edit/equal-save/ownership refusal, writer/schema/identity admission, commit uncertainty and unchanged cent-scale Worksheet behavior. Actual PostgreSQL `json_object_agg` persistence, locking and recovery remain unexecuted until separate staging authorization. No database or deployed environment was touched during preparation.
+
+Preparation verification: **295 focused non-database cases passed, zero failures/skips**, including **53 new cases** and the existing Statement income, Transaction Tax, Category conversion/recovery and Tax precision-audit cases. Changed-file ESLint, script/test syntax and both Git diff checks passed. No TypeScript/application code changed; no full suite, build or PostgreSQL test ran. Staging audit, synthetic conversion, recovery, cleanup and any production operation still require their respective explicit authorizations.
