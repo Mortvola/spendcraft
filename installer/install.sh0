@@ -54,6 +54,10 @@ load_spendcraft_environment() {
 
 load_spendcraft_environment
 INSTALL_TARGET="$SPENDCRAFT_ENV"
+if [ -e "$SPENDCRAFT_ROOT/maintenance/installer-pm2.json" ] || [ -L "$SPENDCRAFT_ROOT/maintenance/installer-pm2.json" ]; then
+  echo 'Unfinished PM2 maintenance exists. Preserve its state and inspect the interrupted installation; do not rerun the installer or resume writers without verifying database safety.' >&2
+  exit 1
+fi
 if [ ! -d "$SPENDCRAFT_ROOT" ]; then
   echo 'Deployment directory does not exist' >&2
   exit 1
@@ -229,15 +233,19 @@ popd
 
 configure_nginx "$PWD" "$PWD/$APP_NEW/installer/nginx.conf" "$INSTALL_TARGET"
 
+node "$PWD/$APP_NEW/installer/managePm2.mjs" --root "$PWD" --release "$PWD/$APP_NEW" --action verify
 bash "$SPENDCRAFT_ROOT/$APP_NEW/installer/backup.sh" \
   --env-file "$SPENDCRAFT_ROOT/$APP-env" \
   --output-parent "$SPENDCRAFT_ROOT/backups"
 
 pushd $APP_NEW
 
+node installer/managePm2.mjs --root "$SPENDCRAFT_ROOT" --release "$PWD" --action verify
 node ace migration:status
 node ace migration:run
+node installer/managePm2.mjs --root "$SPENDCRAFT_ROOT" --release "$PWD" --action verify
 seed_database
+node installer/managePm2.mjs --root "$SPENDCRAFT_ROOT" --release "$PWD" --action prepared
 
 popd
 
@@ -257,6 +265,7 @@ pm2 save
 node "$PWD/$APP/installer/generateRollbackPlan.mjs" --root "$PWD" --target "$INSTALL_TARGET"
 sudo nginx -t
 sudo systemctl reload nginx
+node "$PWD/$APP/installer/managePm2.mjs" --root "$PWD" --release "$PWD/$APP" --action complete
 echo 'Verify server health before manually disabling external onboarding maintenance. This installer does not resume traffic.'
 
 # Clean up

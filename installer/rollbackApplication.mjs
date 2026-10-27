@@ -223,7 +223,7 @@ async function command(executable, args, options = {}) {
   })
 }
 
-async function processTable() {
+export async function processTable() {
   const entries = []
   for (const pid of (await readdir('/proc')).filter((name) => /^\d+$/.test(name))) {
     try {
