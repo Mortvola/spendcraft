@@ -306,12 +306,12 @@ gate; do not run their truncating bootstrap against production.
 
 ### Deployment checklist
 
-The installer requires three explicit operator confirmations: `DEPLOY` for reviewed
+The installer requires two explicit operator confirmations: `DEPLOY` for reviewed
 configuration/database/experimental-record prerequisites and external onboarding
-maintenance, `MIGRATE` after displaying pending migrations, and `RESUME` before
-starting any PM2 process. After the migration command, a separate SEED/SKIP/ABORT
-decision runs seeders, skips seeding, or aborts installation. Blank/invalid seeding
-input reprompts; EOF aborts. Use a second session for readiness checks. These are human review
+maintenance, and `RESUME` before starting any PM2 process. Between these gates,
+the installer displays migration status, runs pending migrations and runs seeders
+automatically. There is no separate migration or seeding confirmation; failure
+stops installation. Use a second session for readiness checks. These are human review
 gates, not automated readiness probes; do not blindly pipe confirmations into the
 installer. Wrong input or EOF aborts with no automatic rollback or traffic resume.
 After the final confirmation, verify normal server health before manually removing

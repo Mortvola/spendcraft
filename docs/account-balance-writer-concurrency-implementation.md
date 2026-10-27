@@ -2,7 +2,7 @@
 
 > Subsequent product direction: BalanceHistory is deprecated. Its runtime lifecycle is removed and PostgreSQL-verified (physical schema cleanup deferred); earlier proposals to preserve/fix/migrate that feature are superseded. Historical verification facts below remain unchanged. See [deprecation record](balance-history-deprecation.md). No physical table removal or historical repair is authorized.
 
-Status: implemented; PostgreSQL verification accepted. OFX balance-authority semantic implementation remains paused. No database was connected and no DB-backed test/setup/cleanup was run.
+Status: implemented; PostgreSQL verification accepted. The subsequent [OFX balance-authority correction](ofx-account-provider-balance-correction-implementation.md) is also implemented and PostgreSQL-accepted. The implementation phase itself made no database connection or DB-backed test/setup/cleanup run; verification occurred separately.
 
 ## Baseline and files
 
