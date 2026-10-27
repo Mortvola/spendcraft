@@ -53,4 +53,16 @@ export function requireTaxStorageCompatibility(manifest) {
   if (statementIncomeStorageCompatibility(manifest) !== 'reviewed-statement-income-boundary') {
     throw new Error('statement_income_storage_compatibility_unknown')
   }
+  if (autoAssignmentPrecisionCompatibility(manifest) !== 'reviewed-auto-assignment-precision') {
+    throw new Error('auto_assignment_precision_compatibility_unknown')
+  }
+}
+
+export function autoAssignmentPrecisionCompatibility(manifest) {
+  if (manifest?.format !== 1 || !Array.isArray(manifest.files)
+    || manifest.identity !== hash(JSON.stringify(manifest.files))
+    || !profile.autoAssignmentFiles || Object.keys(profile.autoAssignmentFiles).length !== 5) return 'unknown'
+  const files = new Map(manifest.files.map(file => [file.name, file]))
+  return Object.entries(profile.autoAssignmentFiles).every(([name, digest]) => files.get(name)?.kind === 'file'
+    && files.get(name).sha256 === digest) ? 'reviewed-auto-assignment-precision' : 'unknown'
 }

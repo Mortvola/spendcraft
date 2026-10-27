@@ -1,37 +1,27 @@
 # Remaining monetary storage inventory
 
-Refreshed October 26, 2026 against HEAD `a506dce0cc92e4f992da394fa944ac6bbc5852e1`; branch: `dollar-to-cents-2`.
+Reconciled against HEAD `744419e1d41edf5fb9c0736e57fbd8e928521eef`, branch `dollar-to-cents-2`, after the operator-accepted production conversions. This refresh uses current source and accepted completion evidence; it makes no new database observation. Schema definitions describe repository migrations, not independently verified live schema.
 
-This is a source-only inventory of remaining storage, with the three operator-accepted production migrations marked complete. No database was accessed during this refresh. Types, defaults and nullability are source-defined, not a certification of live schema or populations. PostgreSQL `numeric` is exact decimal storage; JavaScript `number` hydration and numeric APIs are separate boundaries. The [candidate review](remaining-json-money-migration-candidates.md) recommends the next narrow audit slice, not an authorized migration.
+Scope follows [monetary migration scope](monetary-migration-scope.md) and [accounting invariants](accounting-invariants.md). Loans, every deprecated `transaction_categories` dependency and deprecated BalanceHistory are excluded. Plaid logs are permanently excluded from conversion: preserve provider-supplied types, including additional provider monetary paths.
 
-## Baseline and preservation
+## Counts and reconciliation
 
-No tracked or staged changes existed at entry. Existing untracked editor configuration, dumps, a PEM file and local report/test files were preserved and not used as inventory evidence. The two inventory documents already had unstaged refresh edits at task entry; those are preserved and extended. This characterization adds only a read-only Tax forecast audit and its focused tests alongside the documentation. Completed migration results below are accepted prior execution evidence, not fresh database observations.
+Count one relational column or named JSON leaf pattern; `[]` represents any array position. Optional leaves count once. Currency/percentage modes share a location and are not counted twice. These are storage locations, not row counts.
 
-**Loans and the entire `transaction_categories` architecture are deprecated and excluded from the exact-money migration, regardless of where they are referenced.** No fields from those paths are included in the active counts. BalanceHistory is also explicitly deprecated by the accounting invariants and has no supported balance-write lifecycle. Historical schema presence alone does not make a field active.
-
-## Counts and counting rules
-
-A relational field means one table/column; a JSON path means one named leaf pattern, with `[]` representing any array position. Optional paths count once. Polymorphic fields count once as a monetary location and are additionally described in rate mode; they are not counted twice. These are source fields, not populated-row or runtime-occurrence counts.
-
-| Measure | Count | Basis |
+| Storage category | Remaining in scope | Disposition |
 | --- | ---: | --- |
-| Remaining known active monetary locations | **32** | 8 relational columns + 24 named JSON-number paths, including diagnostic copies |
-| Active relational monetary columns | **8** | Seven exact decimal columns and one polymorphic floating column |
-| A: exact decimal relational money | **7** | All `numeric(12,2)` |
-| B: floating relational money | **1** | `auto_assignment_categories.amount` in fixed mode, PostgreSQL `real` |
-| C: integer minor-unit monetary columns | **0 found** | Integer schema fields are IDs, counts, years, versions or recurrence, not persisted cents |
-| D: remaining application/configuration JSON-number money paths | **16** | 3 funding configuration/snapshot paths + 13 tax forecast/worksheet paths |
-| D: additional named diagnostic JSON-number money paths | **8** | Two TransactionLog paths included with Tax forecast in the future migration project + six Plaid response paths permanently excluded from conversion |
-| Permanently excluded provider diagnostic paths | **6 named** | `plaid_logs` money must retain Plaid synchronization data types; all additional Plaid monetary paths are likewise excluded |
-| E: completed canonical decimal-string money paths | **6** | Category amount (1), Tax amount (1), Statement income (4); outside remaining 32 |
-| Polymorphic money/percentage locations | **3** | Auto-assignment relational amount; Category funding rule amount; Transaction funding-rule snapshot amount |
-| H: named money fields with unresolved type/meaning | **0 among the 32** | Live presence is not queried |
-| Open diagnostic payload surfaces with unbounded/unspecified additional paths | **3** | Transaction changes, raw Plaid responses/errors, raw verified webhooks; not three additional confirmed money fields |
+| Exact relational decimal | **7** | All `numeric(12,2)`; no representation migration needed |
+| Floating-point relational | **1** | Fixed-mode auto-assignment amount; next candidate for audit/precision approval |
+| Application/configuration JSON-number paths | **3** | Funding configuration and snapshots; deferred |
+| Confirmed diagnostic JSON-number paths | **0** | The two confirmed TransactionLog money leaves are completed |
+| Integer minor-unit storage | **0 found** | Runtime integer-cent calculations are not persisted cent columns |
+| **Remaining in-scope monetary locations** | **11** | Seven exact columns plus four unresolved representation candidates |
+| Completed decimal-string paths, outside remaining count | **21** | Category (1), Transaction Tax (1), Statement income (4), Tax forecast (13), TransactionLog (2) |
+| Permanently excluded named Plaid diagnostic paths | **6** | Descriptive only; not active migration candidates |
 
-There are **38 known monetary storage locations including the six completed paths**. This finite count is not a claim that arbitrary provider payloads can contain only the enumerated paths. The open payload contract and its limitations are recorded below rather than inventing a count of undocumented fields. Currency variants use the same leaf and are not separately counted.
+The old **32** comprised 7 exact columns + 1 floating column + 16 application JSON paths + 8 diagnostic JSON paths. Source reconciliation confirms that 13 of the 16 application paths were the completed Tax leaves, while 2 of the 8 diagnostic paths were the completed Log leaves. The other 6 diagnostics were already excluded Plaid paths. Thus **32 − 13 − 2 = 17** is the descriptive remainder *including excluded Plaid*, whereas **17 − 6 = 11** is the remaining in-scope count. Only **4** of those 11 lack an exact cent-storage boundary. There is no overlap with the six earlier completed paths: the known descriptive total remains **38 = 21 completed + 11 remaining in scope + 6 excluded**.
 
-Classification: A exact scaled relational decimal; B floating relational; C integer minor unit; D JSON numeric money; E decimal text; F mixed/legacy representation; G rate/percentage, not money; H insufficient source evidence. Diagnostic historical values can be absent/null and are not monetary zero.
+Open-ended diagnostic containers are not assigned invented finite counts. Unknown historical nested money requires separate characterization, not automatic conversion or reopening a completed leaf.
 
 ## Relational field inventory
 
@@ -50,9 +40,15 @@ Runtime/API types refer to active model paths. All seven decimal money fields ha
 
 Funding Pool is a Category, not a separate money table. Opening amount is an AccountTransaction plus the completed Category allocation, not a separate opening column. `account_transactions.principle` and Loan-only amounts are excluded, even where the shared models/DTOs retain them.
 
-## Application JSON-number money (16 remaining paths)
+**Migration disposition:** all seven `numeric(12,2)` money columns above already have exact scale-2 storage. No representation conversion is needed merely because models hydrate them as JavaScript numbers. PostgreSQL scale/range enforcement does not prove preceding JavaScript arithmetic exact; changing that arithmetic is outside this inventory.
 
-All rows below are D, runtime/API `number` unless noted. JSONB represents numeric tokens as PostgreSQL numeric, but these writers start with JavaScript numbers: no fixed two-decimal scale follows from JSONB. JSON serialization is not the decimal-string storage boundary implemented for allocation `amount`.
+The eighth relational location, `auto_assignment_categories.amount`, remains PostgreSQL `real` in deployed databases. **Implemented and locally PostgreSQL-accepted: `numeric(12,2)` for the shared column, with two-decimal percentages.** Counts remain unchanged until deployment and migration. The NOT NULL amount, nullable `percentage` DEFAULT false, IDs and unrelated schema are preserved. Null/false modes remain fixed dollars; true means percentage points (`12.75` means 12.75%). The approved ingress and historical policy is `Math.round(value * 100) / 100`, including negative half ties; finite/range/safe-cent validation rejects invalid inputs.
+
+The [implementation and audit](remaining-json-money-migration-candidates.md#historical-audit-and-allocation-impact-readiness) preserve original `real` evidence and actual allocation-method comparisons. CREATE/PATCH retain their Budget locks and transactions; scoped Vine validation and model hooks quantize writes. Decimal-text preparation and existing parseFloat hydration preserve numeric model/API values. CategorySpread already accepts fractional percentages and keeps its mode-toggle behavior. Account.autoAssign formulas, ordering and residual handling are untouched. No new 0–100 or percentage-total rule is imposed.
+
+## Application JSON-number money: three remaining paths
+
+All three are application/configuration or historical snapshot money, with numeric runtime/API values. JSONB numeric tokens are PostgreSQL numeric values but have no fixed scale-2 storage contract. No new precision policy is approved.
 
 ### Funding configuration and snapshots (3 paths)
 
@@ -64,150 +60,67 @@ All rows below are D, runtime/API `number` unless noted. JSONB represents numeri
 
 There is no top-level `transactions.base_amount` column in generated schema/migrations. `funder`, `includeFundingTransfers`, Category IDs and comment are not additional money. Transfer deductions use the outer allocation amount, already completed, not a separate persisted transfer total.
 
-### Tax forecasts (13 paths)
+**Migration disposition:** defer these three paths until stored fixed-rule precision, pre-transfer base precision and funding-edit reconstruction behavior are approved. All participate in future funding calculations or reconstruction; none is an additional authoritative balance. Their percentage-rule modes are rates, not currency. [fundingPercentages](../common/fundingPercentages.ts) validates those percentages separately; it does not impose fixed-money cent precision.
 
-`taxes.data` is JSONB NOT NULL, no default. `TaxesController.post` validates forecast numbers and stores `requestData.forecast` through Tax on CREATE/update, under the owning Budget lock/transaction. Current source `Tax extends TaxSchema` overrides data with a scoped prepare/consume/serialize boundary and save hooks for the 13 leaves, using taxMonetaryCodec/taxMonetaryStorage. It checks finite/safe cents and quantizes only intended new monetary writes; metadata-only saves retain historical representation. Deployed baseline/current populations are separate from this uncommitted source implementation. `TaxesController.get/post` returns these values in `forecast`; client `State/Taxes` computes income, gains, tax and estimates with numbers. They are user-entered forecast/configuration snapshots, not ledger postings. Sources: [Tax model](../app/Models/Tax.ts), [tax validator](../app/validation/Validators/tax.ts), [TaxesController](../app/Controllers/Http/TaxesController.ts), [client Income](../client-src/State/Taxes/Income.ts), [client Taxes](../client-src/State/Taxes/Taxes.ts), [client Estimated](../client-src/State/Taxes/Estimated.ts). Schema: `1785801445008_create_taxes_table.ts`; Budget ownership added by `1786590318871` / `1786637621875`.
+## Completed migrations: 21 paths
 
-| Table / JSON path | Required? | Class | Monetary meaning |
-| --- | --- | --- | --- |
-| `taxes.data.taxableInterest` | Yes | D | Taxable interest forecast |
-| `taxes.data.qualifiedDividends` | Yes | D | Qualified dividend forecast |
-| `taxes.data.ordinaryDividends` | Yes | D | Ordinary dividend forecast |
-| `taxes.data.taxableIraDistributions` | Yes | D | Taxable IRA distribution forecast |
-| `taxes.data.taxablePensionAndAnnuities` | Yes | D | Taxable pension/annuity forecast |
-| `taxes.data.taxableSocialSecurityBenefits` | Yes | D | Taxable benefit forecast |
-| `taxes.data.additionalTaxableIncome` | Yes | D | Additional taxable income forecast |
-| `taxes.data.shortTermCapitalGains` | Yes | D | Short-term gains forecast |
-| `taxes.data.longTermCapitalGains` | Yes | D | Long-term gains forecast |
-| `taxes.data.qualifiedBusinessIncomeDeduction` | Yes | D | Deduction amount, not a rate |
-| `taxes.data.estimated.expectedAgi` | Only if optional estimated object supplied | D | Expected adjusted gross income |
-| `taxes.data.estimated.priorYearAgi` | Same | D | Prior-year adjusted gross income |
-| `taxes.data.estimated.priorYearTotalTax` | Same | D | Prior-year tax amount |
+All paths below are **COMPLETED — DECIMAL-STRING STORAGE**, including accepted production historical conversion. They are excluded from active migration candidates. Storage uses canonical two-decimal dollar strings; runtime/public API values remain numbers. Preserve numeric/string/mixed compatibility readers, null behavior, no-write-on-read behavior and existing rollback safeguards. Previously approved Math.round policy applies to these paths, not automatically to remaining fields.
 
-All 13 are in the same approved 15-path migration group as TransactionLog old/new money. The cent policy and current source boundaries have passed PostgreSQL acceptance, pending commit review and deployment; historical conversion remains separate. Ten top-level amounts are entered forecasts; optional `estimated` has one expected AGI forecast and two prior-year observations. None is a source-defined stored calculation intermediate or imported amount. No active monetary arrays/dynamic keys are defined. The deployed baseline remains numeric JSON. Current uncommitted source encodes new writes as canonical two-decimal strings using the approved Math.round policy while preserving numeric runtime/API values and unmodified historical reads. `filingStatus` is a nonmonetary string enum; row IDs/year and calculation rates/counts are not additional money paths.
-
-The [complete characterization and prepared audit](remaining-json-money-migration-candidates.md#complete-tax-forecast-project-13-monetary-leaves) covers readers/writers and calculation dependencies for every field. Income/gains feed AGI, loss limits and ordinary/preferential liability; the deduction reduces taxable income; estimated inputs feed payment/safe-harbor decisions and installment division. Stored input precision is separate from subcent intermediate results. Prior-year AGI rounding can change strict threshold selection; liability/payment boundaries can also change. No tax formula or reporting SQL is modified.
-
-[`auditTaxForecastPrecision.mjs`](../scripts/auditTaxForecastPrecision.mjs) prepares one read-only audit for all 13 fields, preserving raw data/tokens and reporting per-field presence, numeric/string/mixed/null/malformed/unsafe, whole-dollar/cent/subcent and hypothetical rounding differences. Unknown historical paths are surfaced for review. It compares the actual existing 2026 Worksheet 2-1 calculation for supported estimated inputs; other years/shapes and complete actuals-dependent tax/report calculations are explicitly not certified. No audit has been executed against PostgreSQL.
-
-No separate persisted tax total, tax liability column, income snapshot table or Budget target money column was found in the active schema. Calculated client worksheets, tax brackets and standard-deduction constants are not persisted forecast fields simply because their interfaces contain monetary numbers.
-
-## Diagnostic monetary copies (8 named paths)
-
-These are persisted observations/audit information, not accounting authorities. They remain in the descriptive inventory even when excluded from conversion. Null/optional values remain null/absent; schemas do not constrain monetary scale. **Product decision: all monetary values in `plaid_logs` must remain untouched and must never be converted. Preserve the data types supplied by Plaid synchronization, including numbers and nulls.** This applies to the six named paths below and any additional provider monetary paths; existing credential redaction is unchanged.
-
-| Table / column.path | Type / class | Writer and source input | Reader / API / precision / authority |
-| --- | --- | --- | --- |
-| `transaction_logs.changes.amount.old` | JSON number; D | `getChanges` called by manual `TransactionsController.update` and Plaid `Account.updateTransaction`, records old numeric AccountTransaction amount; `TransactionLog.changes` JSON.stringify | Transaction log endpoint returns model changes; current client TransactionLog retains only ID/date/message/Transaction ID, not amount details. Informational numeric snapshot; no posting or rounding |
-| `transaction_logs.changes.amount.new` | JSON number; D | Same paths, proposed replacement numeric movement amount | Same; proposed value can have more precision than final numeric(12,2) column; preserving what was proposed is an audit-fidelity question, not a settled cent policy |
-| `plaid_logs.response.accounts[].balances.current` | JSON number/null; D | `PlaidWrapper.getAccounts/getBalance/getTransactions/syncTransactions` logs SDK response.data, through `PlaidLog.response` redaction then JSON.stringify | Diagnostic log readers retain provider response; provider-reported observation; no application quantization |
-| `plaid_logs.response.accounts[].balances.available` | JSON number/null; D | Same | Available funds observation; no posting authority |
-| `plaid_logs.response.accounts[].balances.limit` | JSON number/null; D | Same | Credit/overdraft limit observation, still money; no posting authority |
-| `plaid_logs.response.transactions[].amount` | JSON number; D | `PlaidWrapper.getTransactions` logs original SDK response | Provider transaction observation; retained provider sign, not assumed equal to AccountTransaction sign |
-| `plaid_logs.response.added[].amount` | JSON number; D | `PlaidWrapper.syncTransactions` logs SDK added rows | Same; original provider money before accounting transform |
-| `plaid_logs.response.modified[].amount` | JSON number; D | Same for modified rows | Same |
-
-Sources: [transactionFields.getChanges](../app/Controllers/Http/transactionFields.ts), [TransactionLog](../app/Models/TransactionLog.ts), [Account](../app/Models/Account.ts), [TransactionsController](../app/Controllers/Http/TransactionsController.ts), [Plaid wrapper](../providers/Plaid/Plaid.ts), [PlaidLog](../app/Models/PlaidLog.ts), [redaction](../providers/Plaid/redactDiagnostics.ts). Local installed SDK `node_modules/plaid/dist/api.d.ts`: AccountBalance, AccountsGetResponse, TransactionsGetResponse, TransactionsSyncResponse establish numeric provider shapes. Loan-specific SDK fields are excluded.
-
-`PlaidWrapper.log` writes through the separate `pgLog` connection, outside the owning financial transaction/Budget gate; this is diagnostics, not financial serialization authority. `config/database.ts` currently points pg and pgLog at the same configured PG database. TransactionLog creation is through the owning Transaction relationship/transaction. Do not assume a financial rollback also removes an independently persisted Plaid response.
-
-### TransactionLog monetary characterization
-
-The two confirmed active scalar money paths are **`transaction_logs.changes.amount.old`** and **`transaction_logs.changes.amount.new`**. They record signed AccountTransaction movement values, not balances, percentages, or calculated tax amounts. Manual `TransactionsController.update` and Plaid-driven `Account.updateTransaction` pass numeric attribute diffs into `getChanges` and create a related TransactionLog within the owning financial transaction. `TransactionLog.changes` serializes the unrounded diff with JSON.stringify. Message-only creation/deletion/import/auto-assignment logs do not add another structured monetary leaf.
-
-`old` normally comes from an exact `numeric(12,2)` AccountTransaction hydrated to a JavaScript number. `new` is the submitted/transformed numeric value, captured before database scale enforcement; a subcent proposal can therefore legitimately differ in precision from the final saved AccountTransaction. Neither log leaf is posting/reversal authority or a stored calculation intermediate. No active balance calculation or report was found consuming these log amounts. The API can serialize changes, but the current log client state/UI drops the changes payload and renders metadata/message; it is not a numeric monetary consumer today.
-
-`getChanges` intentionally leaves ordinary top-level array changes unrecorded (TODO). Its null/object branches can copy complete JSON values. Consequently, historical `changes.categories.old/new` payloads could contain nested Category amount/baseAmount/rule metadata, and arbitrary historical changes could contain tax amounts; these are conditional/open payloads, not newly proven fixed active writers or permission to reopen completed migrations. Audit any such shapes before assigning units or changing them. `changes.principle` is Loan-only and remains excluded; IDs, version, statementId, dates and locations are not currency.
-
-The prepared combined read-only precision audit retains raw `changes::text`, classifies both scalar leaves (numeric/string/null/missing, safe/subcent, original versus proposed precision), and inventories unusual nested amount shapes without rewriting them. The operator selected these two scalar paths for conversion in the same future project as all 13 Tax forecast paths (15 paths total). The existing new Tax forecast audit now also characterizes TransactionLog in the same read-only snapshot and writes separate private log evidence; it never reads PlaidLog. Current source implements the two log leaf boundaries through TransactionLog prepare/consume/serialize/save hooks, retaining numeric APIs, missing/null semantics and unchanged history on unrelated operations. No database access or historical conversion occurred. **Approved TransactionLog rounding:** use `const cents = Math.round(amount * 100)` and `const storedAmount = (cents / 100).toFixed(2)`, preserving the established negative-half behavior and storing zero as `"0.00"`; reject malformed/nonfinite amounts and unsafe integer-cent results. Canonical strings remain unchanged. The operator explicitly accepts this policy for log monetary fields, including historical subcent proposals; the audit must report every monetary difference and preserve original raw evidence. The same policy is now approved for Tax forecast as well; no conversion execution is authorized. The source column is nullable PostgreSQL JSON, not JSONB; a future update must preserve unrelated JSON and recovery evidence without changing schemas.
-
-### Open payloads and representation uncertainty
-
-1. `transaction_logs.changes` is `Record<string, unknown>` JSON. The two active known movement-money paths above are definite. `getChanges` skips normal array diffs (TODO), so it does not systematically snapshot Category/tax arrays. Object/null branches can copy values; historical or externally written changes may contain numeric or string nested allocation metadata. Those arbitrary residual paths are **H/F possibilities**, not a countable additional fixed monetary schema. No guarantee that the outer allocation migration changed audit history.
-2. `plaid_logs.response` accepts unknown response/error payloads, redacts credential keys but preserves other numbers. The six known nonloan monetary paths above are explicit examples from actual invoked SDK methods; extra provider/error fields are an **open H surface**. Source cannot certify an exhaustive list of arbitrary provider extensions or historical payloads, nor their live frequency.
-3. `webhook_logs.request` is JSON of the entire signature-verified request body (`WebhookController.post`), redacted on prepare. Supported transaction/item events carry IDs/counts/status, with no fixed money leaf in their application interface. The raw body can retain additional properties; no confirmed monetary leaf is counted. Additional monetary content is **H**, not an assertion that counts such as new_transactions are money. Sources: [WebhookLog](../app/Models/WebhookLog.ts), [WebhookController](../app/Controllers/Http/WebhookController.ts).
-
-JSON column declarations do not establish current historic content. No live JSON scan was authorized or performed. The inventory is complete for statically defined active monetary paths and explicitly leaves these open containers unbounded.
-
-## Completed decimal-string storage — E (6 paths; 3 migrations)
-
-These migrations are complete and verified in production. They are excluded from the remaining migration list. Numeric/string/mixed compatibility readers remain intentional and must not be removed. New writes use canonical two-decimal strings and the individually approved JavaScript `Math.round(amount * 100)` policy; runtime/API amounts remain numbers. These approvals do not establish a policy for remaining fields.
-
-| Completed path | Role and boundary | Accepted completion evidence |
-| --- | --- | --- |
-| `transactions.categories[].amount` | Signed Category allocation/posting money; [Category codec](../app/services/categoryAmountCodec.ts), [storage binding](../app/services/transactionCategoryStorage.ts), [Transaction](../app/Models/Transaction.ts) | Accepted production conversion: 10,474 canonical strings; deleted historical exceptions preserved. Funding metadata alongside this amount was outside conversion scope. |
-| `transactions.taxes[].amount` | Tax reporting attribution, not balance authority; [Tax codec](../app/services/taxAmountCodec.ts), [storage binding](../app/services/transactionTaxStorage.ts) | Accepted production conversion: 20 numeric amounts converted, one existing string preserved, zero rounding changes; audit/idempotency/noninterference passed. |
-| `statements.data.shortTermCapitalGains` | Entered short-term gain/loss reporting total | Four-field production conversion accepted October 26, 2026: 39 Statements / 156 amounts, zero monetary changes; 234 SQL-null data rows unchanged. |
-| `statements.data.longTermCapitalGains` | Entered long-term gain/loss reporting total | Same accepted four-field conversion. |
-| `statements.data.dividends` | Entered dividend total; ordinaryDividends in reports | Same accepted four-field conversion. |
-| `statements.data.taxableInterest` | Entered taxable interest total | Same accepted four-field conversion. |
-
-Statement boundary: [income codec](../app/services/statementIncomeCodec.ts), [storage binding](../app/services/statementIncomeStorage.ts), [Statement](../app/Models/Statement.ts), [AccountsController](../app/Controllers/Http/AccountsController.ts). Reads and unrelated updates do not normalize historical values. Unrelated JSON, null semantics and Statement balances are preserved. Existing TaxesController `real` aggregation remains unchanged. The accepted 15 PostgreSQL cases, 261 focused regressions and 28 database safeguards remain prior acceptance evidence, not tests rerun for this refresh.
-
-Accepted latest production evidence: `script-output/statement-production-conversion-h7s3lbyx/completion.json` records zero remaining candidates, unchanged financial/schema hashes, unchanged totals across 60 report groups, numeric controller/API serialization and successful service recovery. Recovery snapshot and backup remain private operational evidence, not outstanding conversion work. Source implementation predates this documentation refresh; no completed migration is reopened.
-
-## Rate/percentage modes — G, not additional money
-
-| Field/mode | Representation | Semantics and validation |
-| --- | --- | --- |
-| `auto_assignment_categories.amount` when percentage=true | PostgreSQL real; JS/API number | Percent of transaction remainder after fixed allocations. `Account.autoAssign`: `Math.round(transactionAmount * (cat.amount / 100) * 100)`. Numeric validator does not apply the funding-rule percentage constraints. SQL percentage can be null; falsy runtime branch treats it as fixed. No assertion made about historical null prevalence. |
-| `categories.funding_categories[].amount` when percentage=true | JSONB number | Percentage spread, not dollars. `fundingPercentagesRule` / `validateFundingPercentages` enforce finite nonnegative percentages with at most two decimal places and exactly 100% total when percentage entries exist. Fixed-money entries are not subjected to percentage precision validation. |
-| `transactions.categories[].fundingCategories[].amount` when percentage=true | JSONB number | Persisted percentage-rule snapshot, same validation on new transfer submissions. Outer amount string encoding leaves this percentage numeric. |
-| `accounts.rate` | `numeric(5,3)`, nullable; number/null after consume | Rate, not currency. Shared model/offline Account request can carry it. Loan-specific use is excluded, and no active nonloan monetary authority is inferred. |
-
-Identifiers, funding recurrence, goal dates, booleans, filingStatus, years, sort order, versions, latitude/longitude, status codes, token timestamps, request counts and SDK transaction counts are not money. There is no separate goal-amount column: goal money uses `categories.funding_amount`.
-
-## Reader, writer and precision boundaries
-
-- **Relational decimal storage:** seven columns store exact decimal values at scale 2, maximum finite magnitude 9,999,999,999.99 for numeric(12,2). PostgreSQL scale rounding/range enforcement occurs on assignment; it does not prove preceding JavaScript sums exact. Model consume functions produce binary floating-point numbers; numeric API serialization is intentional. AccountTransaction SQL nullability versus model `number` is a representational mismatch, not certification all active rows are nonnull.
-- **Floating configuration:** Knex's PostgreSQL compiler emits `real` for `float`; the auto-assignment amount is binary floating storage. Rounding in `autoAssign` happens when applying the rule, after storage. Fixed money and percentages share a column and have different units.
-- **JSON:** The 16 remaining application JSON paths are Category funding configuration, baseAmount/rule snapshots and tax forecast/worksheet inputs. Their writers use numeric DTOs/direct object assignment/JSON.stringify without a cent-scale storage codec. No universal two-decimal constraint exists for those 16 paths. Completed Category/Tax/Statement income paths have their own approved boundaries. JSONB's numeric token support cannot recover intended decimals lost before serialization. JSON logs likewise preserve number serialization, not a scale rule.
-- **Validation:** Vine `number()` is numeric validation/coercion, not `.decimalPlaces(2)` or an integer-cent guarantee. AmountInput and Amount/`toFixed(2)` display/edit boundaries do not establish persistence-wide cent validation. Some allocation/conservation calculations use checked cents; Account balance, funding metadata, forecasting and many aggregate paths still use ordinary number arithmetic.
-- **SQL reads:** Category/Funding History/Income Vs. Expenses use approved Transaction JSON allocation authority with explicit decimal extraction; response builders parse/cast as needed. Tax actuals explicitly cast JSON money to `real`, introducing a floating computation boundary even though the originating JSONB token is decimal. Report crosstab float output and SQL SUM results are derived responses, not additional stored columns. Budget Progress's deprecated relational allocation queries are excluded entirely.
-- **Client reads:** Account/Category caches and Funding/Tax MobX state hold numeric API values for arithmetic. AmountInput and reusable [Amount](../client-src/Amount.tsx) formatting are presentation/input behavior, not persistent exact-decimal state. Inspecting localStorage use found UI expansion flags, not an additional persisted financial cache. JWT Redis values and webhook-key Redis caches hold auth IDs/keys, not money. No active monetary queue payload store was identified by the application writer search.
-
-### Transaction binding / Budget gate characterization
-
-| Writer family | Observed boundary |
+| Completed storage path | Status |
 | --- | --- |
-| Manual CREATE/PATCH/DELETE; Account startDate; Statement operations | Controllers begin DB transaction, bind user/owning Budget, acquire Budget FOR UPDATE, reload resources and save through that transaction. Runtime monetary inputs/deltas remain numeric; completed Category, Tax and Statement income boundaries encode their approved storage leaves. |
-| OFX/Plaid; opening; offline/online initialization | Account/Institution helpers use caller transaction (`$trx`); sync/setup and financial controller gates own Budget serialization. Helpers are not independent lock mechanisms. Opening computes Account balance minus applicable movements and persists type 4. |
-| Category settings, funding/rebalance and Category/Account/Institution deletion | Controller-owned Budget gate and transaction; numeric configuration/Category balance saves, with completed allocation storage boundary applied separately. No new concurrency claim about historical reversal accuracy. |
-| Auto-assignment configuration | Controller post/patch takes Budget gate, authorizes Categories, writes parent/child through transaction-bound relationships; applying rules occurs inside Account lifecycle. |
-| Tax forecast | Controller post's Budget-gated transaction performs Tax read/create/update; subsequent actuals query is a read outside the mutation transaction. |
-| Audit/provider logs | Transaction logs through related transaction; Plaid diagnostics explicitly separate pgLog save and retention. Webhook logging independent of a Budget mutation; no financial amount authority. |
+| `transactions.categories[].amount` | COMPLETED — DECIMAL-STRING STORAGE |
+| `transactions.taxes[].amount` | COMPLETED — DECIMAL-STRING STORAGE |
+| `statements.data.shortTermCapitalGains` | COMPLETED — DECIMAL-STRING STORAGE |
+| `statements.data.longTermCapitalGains` | COMPLETED — DECIMAL-STRING STORAGE |
+| `statements.data.dividends` | COMPLETED — DECIMAL-STRING STORAGE |
+| `statements.data.taxableInterest` | COMPLETED — DECIMAL-STRING STORAGE |
+| `taxes.data.taxableInterest` | COMPLETED — DECIMAL-STRING STORAGE |
+| `taxes.data.qualifiedDividends` | COMPLETED — DECIMAL-STRING STORAGE |
+| `taxes.data.ordinaryDividends` | COMPLETED — DECIMAL-STRING STORAGE |
+| `taxes.data.taxableIraDistributions` | COMPLETED — DECIMAL-STRING STORAGE |
+| `taxes.data.taxablePensionAndAnnuities` | COMPLETED — DECIMAL-STRING STORAGE |
+| `taxes.data.taxableSocialSecurityBenefits` | COMPLETED — DECIMAL-STRING STORAGE |
+| `taxes.data.additionalTaxableIncome` | COMPLETED — DECIMAL-STRING STORAGE |
+| `taxes.data.shortTermCapitalGains` | COMPLETED — DECIMAL-STRING STORAGE |
+| `taxes.data.longTermCapitalGains` | COMPLETED — DECIMAL-STRING STORAGE |
+| `taxes.data.qualifiedBusinessIncomeDeduction` | COMPLETED — DECIMAL-STRING STORAGE |
+| `taxes.data.estimated.expectedAgi` | COMPLETED — DECIMAL-STRING STORAGE |
+| `taxes.data.estimated.priorYearAgi` | COMPLETED — DECIMAL-STRING STORAGE |
+| `taxes.data.estimated.priorYearTotalTax` | COMPLETED — DECIMAL-STRING STORAGE |
+| `transaction_logs.changes.amount.old` | COMPLETED — DECIMAL-STRING STORAGE |
+| `transaction_logs.changes.amount.new` | COMPLETED — DECIMAL-STRING STORAGE |
 
-This is a storage-oriented source trace, not a repeat of real concurrency acceptance or a complete new lock audit. No extra locks or infrastructure changes are proposed.
+Boundaries: [Category codec](../app/services/categoryAmountCodec.ts), [Transaction Tax codec](../app/services/taxAmountCodec.ts), [Statement income codec](../app/services/statementIncomeCodec.ts), [Tax/Log codec](../app/services/taxMonetaryCodec.ts) and their scoped storage bindings/models. Statement income is reporting attribution, not starting/ending balance storage. Tax forecasts are inputs, not persisted Worksheet intermediates. Log amounts are diagnostic copies, not posting authority; the nullable PostgreSQL `json` column is unchanged.
 
-## Schema reconciliation and exclusions
+Accepted historical results: Transaction Tax converted 20 numeric values and preserved one existing string; Statement income converted 39 Statements / 156 values and preserved 234 SQL-null data rows; Tax/Log converted 1 Tax / 46 Logs / 105 values with zero monetary differences. Category allocation conversion is also accepted complete. Idempotency, financial noninterference and numeric application compatibility passed. The final Tax/Log Worksheet verification matched all 23 lines and every result field, including floating-point intermediates. Private receipts: `script-output/tax-monetary-production-conversion-q8avcuut/` and `script-output/production-worksheet-verification-66toh3ng/verification.json`. These are accepted prior results, not rerun checks. Preserve original recovery snapshots and backups; completed conversions are not outstanding work.
 
-- Migrations originally call `categories.amount` monetary state; `1699459162542_categories` renames it to `balance`. Generated schema and active model agree on balance. Do not count both names.
-- `FundingPlanCategorySchema` and physical funding-plan tables remain in generated schema/migration history, but no active FundingPlan model/writer is present; `FundingPlanController.getProposed` delegates to current Category configuration. Old amount/expected_to_spend columns are inactive historical storage, not active configuration fields. No removal or migration is proposed.
-- `database/schema.ts` maps decimal columns to raw string types, while hand-written active Account, AccountTransaction, Category and Statement models convert decimals to numbers. This is explained hydration, not evidence that PostgreSQL stores floating values in those decimal columns.
-- `1630751986203_accounts.ts` down migration spells the drop column `place_balance`, while up/model/generated schema say `plaid_balance`. This historical rollback discrepancy is recorded, not executed or corrected.
-- No generated type file certifies numeric precision, current database extensions, schema drift or live JSON shape. Source types cannot rule out old/ad-hoc writes. Those are limits of source-only characterization; no live verification is implied.
-- Other JSON columns were inspected: AccountTransaction location is geographic/address data; auto-assignment search_strings, User roles/OTP, push subscriptions, cleanup recovery metadata and Budget/Group catalogs have no source-defined active monetary leaves. Runtime environment requirements contain ports/counts/credentials, not monetary settings.
-- Operator audit/conversion evidence, exact-original-JSON recovery files, logical dumps and external logs can contain numeric historical money. They are recovery/diagnostic artifacts, not a newly counted application financial field. Their presence does not undo any completed production conversion. No private dump or recovery file was opened for this task.
+## Permanently excluded diagnostics and open payloads
 
-## Findings and limitations
+| Permanently excluded JSON path | Meaning / source |
+| --- | --- |
+| `plaid_logs.response.accounts[].balances.current` | Provider current balance observation |
+| `plaid_logs.response.accounts[].balances.available` | Provider available funds observation |
+| `plaid_logs.response.accounts[].balances.limit` | Provider credit/overdraft limit |
+| `plaid_logs.response.transactions[].amount` | Original provider transaction amount |
+| `plaid_logs.response.added[].amount` | Original synchronized added amount |
+| `plaid_logs.response.modified[].amount` | Original synchronized modified amount |
 
-There are **32 remaining known active locations**, but only **25 lack a cent-scale storage boundary**: one floating relational field plus 24 JSON-number paths. Of those 25, **17 are application/configuration locations** (one relational + 16 JSON), and eight are diagnostic copies. Six of the eight diagnostic paths are permanently excluded Plaid copies; absence of a cent boundary is not a recommendation to convert them. The other **seven remaining relational columns already use exact `numeric(12,2)`** and need no representation migration merely because models return numbers. All counts exclude the six completed paths and deprecated storage.
+[Plaid wrapper](../providers/Plaid/Plaid.ts) and [PlaidLog](../app/Models/PlaidLog.ts) preserve provider numeric/null types subject to existing credential redaction. Diagnostic readers do not make these balance authorities. No Plaid logs were accessed; all additional Plaid monetary paths are also permanently excluded.
 
-The [next candidate review](remaining-json-money-migration-candidates.md) records all 13 Tax forecast/worksheet monetary leaves as one future migration project, with approved precision policy, implemented source boundaries and a prepared read-only audit; PostgreSQL acceptance is complete; historical conversion remains pending. Funding reconstruction/configuration is deferred; the two TransactionLog money paths are included in the same future project and audit, with the established Math.round cent policy approved and implemented for all 15 paths, PostgreSQL-accepted and pending commit review. PlaidLog money is permanently excluded from conversion. No conversion is authorized by this inventory.
+Three open surfaces remain outside finite path counts: arbitrary `transaction_logs.changes`, Plaid responses/errors (excluded), and signature-verified `webhook_logs.request`. [getChanges](../app/Controllers/Http/transactionFields.ts) skips ordinary top-level array diffs but can retain object/null snapshots; this does not prove additional fixed monetary paths in old nested payloads. [WebhookController](../app/Controllers/Http/WebhookController.ts) defines no fixed monetary leaf in its supported event interface. Do not normalize unknown history or infer that unrelated numbers are money.
 
-Unknowns remain live schema drift, current populations, subcent data and extra money in opaque diagnostic containers. Funding configuration/calculation precision remains unresolved; Plaid provider data types must be preserved; arbitrary payloads are not falsely certified finite.
+## Nonmonetary modes, exclusions and source limits
 
-## Verification
+- `auto_assignment_categories.amount` with percentage=true is a percentage of the remaining transaction base. Its validator does not apply the separate funding-rule percentage constraints.
+- `categories.funding_categories[].amount` and `transactions.categories[].fundingCategories[].amount` with percentage=true are percentage rules, not extra monetary locations.
+- `accounts.rate` is `numeric(5,3)`, a rate rather than currency. IDs, counts, years, dates, flags and geographic coordinates are not money.
+- `categories.amount` was renamed to `balance`; do not count both names. Funding Pool is a Category, not another money table. Opening uses AccountTransaction plus completed allocation storage.
+- Retired funding-plan tables and BalanceHistory schema presence do not establish supported active writers. Excluded Loan-only amounts and deprecated `transaction_categories` dependencies remain unchanged.
+- Recovery snapshots, dumps and operator evidence can contain historical numeric money; they are not new application storage locations or evidence that a completed migration needs repeating.
+- Source cannot establish live populations/schema drift or enumerate arbitrary historical payload extensions. No database was accessed for this refresh.
 
-Characterization, read-only audit preparation and the scoped source implementation described in the candidate review. Current Tax model/validator/controller and worksheet persistence/calculation paths, auto-assignment model/validator/application path, funding configuration, completed codecs and existing source inventory were inspected without application bootstrap or database access. The final focused selection passed 469 non-database cases, including the 48 audit cases; both source-only server and client TypeScript checks passed. The candidate review records 14 prepared, unexecuted PostgreSQL cases. Syntax, changed-file ESLint, local documentation links/section anchors, count reconciliation, Markdown table structure and both Git diff checks passed. No application suite, builds or PostgreSQL tests are run. Existing untracked work was preserved; nothing was staged or committed.
+## Next step and verification
 
-Source changes are limited to the approved 15-path storage boundaries and existing rollback admission/plan handling. No database connection, historical conversion, schema migration, PM2 action or deployed-environment change occurred.
+The [candidate review](remaining-json-money-migration-candidates.md) records the implemented auto-assignment migration, approved rounding, prepared PostgreSQL cases and stopped-writer rollout. Funding reconstruction remains deferred; the seven already-exact decimal columns need no representation conversion.
 
-
-## Tax and TransactionLog acceptance update — October 26, 2026
-
-The existing 15-path implementation passed **14 prepared PostgreSQL cases**, plus **637 focused regressions** (168 PostgreSQL / 469 non-database) and **28 separate safeguard tests**, with zero failures, skips or pending tests. No production-code or test corrections were required. All database access was independently restricted to `localhost:5432/spendcraft_test`, authenticated user `spendcraft_test`, live/execution loopback `::1` on port 5432. Existing per-statement guards verified both configured/live application connections and actual execution connections before every destructive operation, including setup and cleanup; each run completed guarded cleanup. No schema changes or migrations were needed.
-
-Acceptance verifies all 15 raw string paths, numeric runtime/API compatibility, unchanged historical numeric/mixed data on reads/metadata-only saves, optional/null/unrelated JSON preservation, TransactionLog PostgreSQL `json` and SQL-null/JSON-null distinctions, append-only history, actual Budget contention/rollback/isolation and financial noninterference. Existing Worksheet 2-1 formulas, AGI/safe-harbor selection and higher-precision installments remain unchanged. Compiled release admission, nonfatal unavailable-plan handling and one-way rollback regressions passed without real service/directory operations. Source-only server/client TypeScript, lint, syntax, documentation and both Git diff checks passed.
-
-See the [detailed acceptance results](remaining-json-money-migration-candidates.md#tax-monetary-postgresql-acceptance--october-26-2026) and private evidence `script-output/tax-monetary-postgresql-t6j25tiy/`. Source implementation/index and unrelated work were preserved. No staging or production access, historical conversion, deployment or commit occurred. Local task-specific database authorization has expired. **Commit review is ready; deployment and historical conversion remain separate.** Descriptive inventory counts still include deployed historical numeric storage until those later steps complete; accepted source implementation is not a claim that the 105 production values were converted.
+Local acceptance passed the original 11 PostgreSQL cases, 9 supplemental precision/locking cases, 182 existing PostgreSQL regressions, 114 offline precision/rollback cases and 28 safety cases. Both TypeScript projects, changed-file lint/syntax and both diff checks passed. Only localhost:5432/spendcraft_test was accessed/migrated, through independent setup/execution/cleanup guards. The normal Adonis runner journaled the migration and all checked fixture tables were empty afterward. No production code correction, staging/production access, deployment, build or commit occurred. See the [candidate review](remaining-json-money-migration-candidates.md#verification-and-prepared-postgresql-acceptance) for evidence and resolved test-only issues. Future database operations require renewed authorization.

@@ -30,5 +30,12 @@
     "app/Models/TransactionLog.js": "1e74c27444fa23aefc1646f17a41c91a7ca497554948364381a2aa313d7dbfa0",
     "app/services/taxMonetaryCodec.js": "14cd0edf3cf7da9ed3c493c889e2eafeca175dafcfe736707b4c319f360d9e52",
     "app/services/taxMonetaryStorage.js": "ca44987245927c5c91c8492aafc9bc809bdfb99a38abeb63b66eaeb1bc1d2938"
+  },
+  "autoAssignmentFiles": {
+    "app/Models/AutoAssignmentCategory.js": "5e7387aa2bba4733ee6be6709a5f3c4b3c9f4ff9d2d7a97b98fdb6021c2d4b9a",
+    "app/services/autoAssignmentAmount.js": "d6795c80feb8b14136a7a3c5c4b4a3cd4c3013961868dcbebba0e8cd4b2b19c4",
+    "app/Controllers/Http/AutoAssignmentsController.js": "8dc9095f426ca64853fd75698a527058ba968ed5df812b7f1bcccceb1c7c5660",
+    "app/validation/Validators/autoAssignment.js": "ef3d6f22117fd4026660703345447fa7fcfc722e42c6cdc37ac93bda40598996",
+    "app/validation/autoAssignmentAmount.js": "7096fc6e92fc7f8f95237b6518dfd69a363f07815412bbf2a4525210d8805edb"
   }
 }

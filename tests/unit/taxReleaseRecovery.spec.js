@@ -5,7 +5,7 @@ import { mkdtemp, mkdir, writeFile, readFile, realpath, symlink, rm, readdir } f
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createHash } from 'node:crypto'
-import { taxStorageCompatibility, statementIncomeStorageCompatibility, taxForecastStorageCompatibility, transactionLogStorageCompatibility, requireTaxStorageCompatibility } from '../../installer/lib/taxReleaseRecovery.mjs'
+import { taxStorageCompatibility, statementIncomeStorageCompatibility, taxForecastStorageCompatibility, transactionLogStorageCompatibility, autoAssignmentPrecisionCompatibility, requireTaxStorageCompatibility } from '../../installer/lib/taxReleaseRecovery.mjs'
 import { releaseManifest, verifyReleases, validatePlan, releaseDifferences } from '../../installer/rollbackApplication.mjs'
 import { writeTaxRuntimeFixture } from '../helpers/taxRecoveryRelease.js'
 import { orchestrate } from '../../installer/lib/applicationRollback.mjs'
@@ -38,6 +38,7 @@ test.group('Tax compatible release recovery (temporary files only)', group => {
     assert.equal(statementIncomeStorageCompatibility(manifest), 'reviewed-statement-income-boundary')
     assert.equal(taxForecastStorageCompatibility(manifest), 'reviewed-tax-forecast-boundary')
     assert.equal(transactionLogStorageCompatibility(manifest), 'reviewed-transaction-log-boundary')
+    assert.equal(autoAssignmentPrecisionCompatibility(manifest), 'reviewed-auto-assignment-precision')
     assert.doesNotThrow(() => requireTaxStorageCompatibility(manifest))
   })
   test('Statement model, codec, binding and API writer must all be reviewed compiled files').with([
@@ -52,6 +53,11 @@ test.group('Tax compatible release recovery (temporary files only)', group => {
     assert.throws(() => requireTaxStorageCompatibility(manifest), 'statement_income_storage_compatibility_unknown')
   })
   test('Tax and TransactionLog rejection precedes all destructive orchestration').with([
+    ['app/Models/AutoAssignmentCategory.js', 'auto_assignment_precision_compatibility_unknown'],
+    ['app/services/autoAssignmentAmount.js', 'auto_assignment_precision_compatibility_unknown'],
+    ['app/Controllers/Http/AutoAssignmentsController.js', 'auto_assignment_precision_compatibility_unknown'],
+    ['app/validation/Validators/autoAssignment.js', 'auto_assignment_precision_compatibility_unknown'],
+    ['app/validation/autoAssignmentAmount.js', 'auto_assignment_precision_compatibility_unknown'],
     ['app/Models/Tax.js', 'tax_forecast_storage_compatibility_unknown'],
     ['app/Models/TransactionLog.js', 'transaction_log_storage_compatibility_unknown'],
     ['app/services/taxMonetaryCodec.js', 'tax_forecast_storage_compatibility_unknown'],

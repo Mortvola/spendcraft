@@ -220,7 +220,8 @@ test.group('Monetary precision characterization', () => {
         .accept('json').loginAs(f.user)
       statement.assertStatus(200)
       const storedStatement = await db.from('statements').where('account_id', f.account.id).first()
-      assert.equal(storedStatement.data.shortTermCapitalGains, Number(amount))
+      // Statement income now has its accepted canonical-string storage boundary.
+      assert.strictEqual(storedStatement.data.shortTermCapitalGains, (Math.round(Number(amount) * 100) / 100).toFixed(2))
       const updated = await client.patch(`/api/v1/statements/${storedStatement.id}`)
         .json({ startingBalance: amount, endingBalance: amount, data }).accept('json').loginAs(f.user)
       updated.assertStatus(200)

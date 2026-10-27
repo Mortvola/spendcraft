@@ -1,7 +1,13 @@
 import { DateTime } from 'luxon'
-import { BaseModel, column } from '@adonisjs/lucid/orm'
+import { BaseModel, column, beforeSave } from '@adonisjs/lucid/orm'
+import { roundAutoAssignmentAmount } from '#services/autoAssignmentAmount'
 
 export default class AutoAssignmentCategory extends BaseModel {
+  @beforeSave()
+  public static roundAmount(row: AutoAssignmentCategory) {
+    if (Object.hasOwn(row.$dirty, 'amount')) row.amount = roundAutoAssignmentAmount(row.amount)
+  }
+
   @column({ isPrimary: true })
   public id: number
 
@@ -19,6 +25,7 @@ export default class AutoAssignmentCategory extends BaseModel {
 
   @column({
     consume: (value: string) => parseFloat(value),
+    prepare: (value: number) => roundAutoAssignmentAmount(value).toFixed(2),
   })
   public amount: number
 
