@@ -1,121 +1,39 @@
-# Compatible application release rollback
+# Application release rollback
 
-> Current finalized policy: one-way rollback consumes old, verifies filesystem restoration, starts and health-checks the restored application, then removes the outgoing temporary tree. Success leaves only current. Earlier exchange/early-cleanup descriptions below are historical; use the finalization section. Deployment remains separately unauthorized.
+Normal rollback restores the previous installed application without converting monetary values, running migrations or restoring the database. It is a one-way operation: successful rollback consumes `spendcraft.old` and removes the outgoing release after health verification.
 
-Normal installer rollback now restores the previous compatible application
-release **without converting or restoring database values**. Historical
-Transaction Category conversion recovery is independently invoked using
-`scripts/convertHistoricalTransactionCategories.mjs --recover` and an exact
-original-JSON snapshot; it never swaps application directories.
+## Installation and entry point
 
-## Installation and selection
+The installer uses [captureDeploymentManifests.mjs](../installer/captureDeploymentManifests.mjs) to record release identities and prepare an immutable, release-bound rollback bundle before swapping directories. After startup, [generateRollbackPlan.mjs](../installer/generateRollbackPlan.mjs) publishes the ordinary application-only plan under `$SPENDCRAFT_ROOT/maintenance/`.
 
-The installer captures both releases and publishes an immutable release-bound
-bundle containing `installer/rollbackApplication.mjs` and
-`installer/lib/applicationRollback.mjs`. The bundle purpose is
-`spendcraft-application-rollback`; its generated plan explicitly requires
-`rollbackKind: application-only`. `adonisrc.ts` includes these files in the build.
-The stable entry point remains:
+The stable entry point selects the installed release's exact bundle and plan:
 
-```sh
+```bash
 "$SPENDCRAFT_ROOT/maintenance/rollback.sh" --dry-run
 "$SPENDCRAFT_ROOT/maintenance/rollback.sh" --execute
 ```
 
-The launcher resolves the currently installed release's exact bundle and plan.
-It refuses legacy conversion bundles/plans; there is no fallback to an older
-bundle or executor. Both releases must contain `categoryAmountCodec.js`. A
-numeric-only predecessor is rejected rather than triggering string-to-number
-conversion. Matching codec presence is a necessary compatibility check, not proof
-that arbitrary future schema/API changes are reversible: release differences,
-shared secrets, database configuration and complete release identities are still
-verified. Database/migration file differences block automatic rollback.
+Execution requires authorization for the selected environment and the existing maintenance/readiness confirmations. A dry run can access the selected database read-only and writes inspection output; it does not stop writers, create a backup, swap releases or restart processes.
 
-The original `installer/rollbackTransactionCategoryStorage.mjs` and its
-first-release guard remain unchanged in source for their historical scenario.
-Neither that executor nor `lib/categoryRollback.mjs` is included in new normal
-rollback bundles. Existing installed bundles remain immutable; deploy a newly
-built release to install the new launcher, bundle and plan. Do not patch deployed
-bundles or reuse an old plan with the new executor.
+## Admission and unavailable rollback
 
-## Execution safeguards and behavior
+[rollbackApplication.mjs](../installer/rollbackApplication.mjs) retains ordinary release manifests, bundle integrity, reviewed release differences, database/schema-file consistency, shared-secret links, database connection identity and PM2 process-definition checks. Missing releases, incomplete journals and abandoned swap state block execution. The launcher does not fall back to another bundle or dispatch to a monetary conversion tool.
 
-Separate environment-specific authorization is required even for database reads.
-Dry-run verifies releases, target and PM2 definitions and writes private local
-inspection evidence. It does not stop processes, scan or convert allocations,
-create a database backup, swap directories or restart services.
+The completed monetary migration's compiled hash profiles and codec-presence gates have been removed. There is no automatic migration-specific certification of old readers or writers. Operators must still review the proposed release pair; removing those gates does not make arbitrary older application or schema versions interchangeable.
 
-Execution preserves existing maintenance/fencing confirmation, selected-PM2
-shutdown, fresh verified logical backup, a journaled three-rename exchange of current/old
-through a temporary path (each rename is atomic; the sequence is not), explicit restart approval and health/read checks.
-All three database verification connections enforce
-`default_transaction_read_only=on`. The executor contains no monetary conversion,
-allocation scan, financial repair, schema migration or database UPDATE/restore.
-Backup commands read the database; they do not restore it. Implicit normal writes
-by the resumed compatible application's jobs are ordinary application behavior,
-not rollback conversion.
+A fresh installation without a previous release reports rollback unavailable. Database/schema-file or shared-secret differences also produce a nonfatal unavailable plan during installation. Such a plan is not executable. Other discovery failures remain errors; they are not silently treated as unavailable rollback.
 
-CIDR loopback host text is strictly normalized in the new application-only
-identity code. Invalid prefixes, networks, wrong database/user/port, remote peers
-and unreviewed connection mappings still fail closed. No machine-ID lock,
-advisory lock or additional application-level row lock is introduced.
+## Execution and interruption
 
-The previous release's process manifest controls restored startup. If absent,
-the application files may be restored but all processes remain stopped for manual
-operator startup and verification. Failures after stopping writers do not
-implicitly resume them. Both releases, backup and journal remain
-available; a successful exchange leaves only spendcraft and spendcraft.old; no automatic database restore or Category representation reversal is
-attempted.
+The established workflow verifies admission and readiness, stops the selected writers, creates a fresh database backup, then journals the directory changes:
 
-## Local verification and future staging rehearsal
+1. Move outgoing `spendcraft` to a temporary swap path.
+2. Promote `spendcraft.old` to `spendcraft` and verify identities.
+3. Start the restored release using its process definitions and verify health.
+4. Remove the outgoing temporary tree only after successful verification.
 
-Non-database tests exercise compatible/numeric-only release pairs, preserved
-legacy guard rejection, exact bundle dispatch and exclusion of the legacy tool,
-backup/swap/restart ordering, failures, manual startup, CIDR identity and
-self-contained payload behavior. No actual rollback, database connection, PM2
-operation or installed-file modification is authorized by these tests.
+Each rename is atomic; the sequence is not. The temporary path is not a permanent recovery slot. If the previous release has no process manifest, rollback requires manual startup and leaves managed writers stopped. Failures after shutdown do not automatically resume writers or restore a backup. Preserve the journal and remaining release directories for explicit recovery review; do not automatically retry an interrupted operation.
 
-After a separately authorized staging deployment, inspect the generated plan's
-kind and bundle purpose, run the read-only inspection, fence writers and rehearse
-application-only rollback with synthetic data. Compare raw allocation JSON and
-financial state before/after; strings, numeric and mixed values must remain
-unchanged by the rollback. Rehearse historical conversion recovery separately,
-keeping the compatible application installed. Production requires independent
-approval.
+Successful rollback leaves only `spendcraft`. A second rollback fails because `spendcraft.old` has been consumed. A later installation must create a new previous release before rollback is available again.
 
-Local verification: 241 focused non-database tests passed, zero failed/skipped
-(application-only workflow, installer plan/bundle, legacy rollback guard,
-historical conversion/recovery and PM2 manifest regressions). Both TypeScript
-checks, changed-file ESLint, Knip, circular regression, server build including
-client assets, separate client build, syntax and whitespace checks passed.
-Repository-wide ESLint retains six pre-existing no-undef errors in the unrelated
-`category-conversion-readiness-ajar8i/production-readonly-probe.mjs`; it was left
-unchanged. Builds report the existing large-client-chunk warning; server asset
-build may also report informational plugin timings. No errors were suppressed.
-
-The pre-existing five-file staged historical-conversion snapshot was preserved
-byte-for-byte (SHA256 of cached diff:
-`0a98e4711dd6bcc05b4faf8dd85fda56835872f7f52b7e9473a87367be6c1b92`).
-New rollback changes are unstaged, including the explanatory addition to the
-already-staged historical implementation document. Existing unrelated files were
-preserved. No database connection, real rollback/recovery, service operation,
-installed-file change, deployment or commit occurred.
-
-For the current tax release, complete reviewed Category/tax/model/PATCH/report
-compatibility is required before destructive action, not codec presence alone.
-See [the two-directory interruption table](transaction-tax-decimal-string-recovery.md#interruption-and-retry-table).
-The temporary swap path is never a persistent recovery slot. Interrupted swaps
-require identity-based manual review; the existing journal blocks automatic retry.
-
-## Current one-way semantics
-
-The later operator decision supersedes exchange: move outgoing current temporarily, promote old to current, verify restoration and independently recheck execution safeguards, then remove the outgoing temporary tree. Successful rollback leaves current only and consumes old. A second attempt fails with `no_previous_installed_release`; the stable launcher/executor/helper reject before destructive work. A future deployment must create old again before another rollback is possible. Partial cleanup errors stop startup and require reviewed cleanup; do not treat residue as a recovery slot. See the current policy in the tax recovery document. No database restore or tax reversal is added.
-
-Finalized safety ordering: outgoing cleanup now runs only after restored PM2 startup and established HTTP/authenticated read/database/startup-error checks pass. Filesystem verification alone never permits removal. Missing old and stale journal/temporary states are rejected in filesystem-only admission before database connection. Health failure preserves outgoing and stops managed writers; successful cleanup consumes old permanently. See the current finalization section in the tax recovery document. Earlier early-cleanup descriptions are historical.
-
-
-## Tax forecast and TransactionLog storage admission
-
-The current source guard extends the existing compiled-file profile to all 13 `taxes.data` monetary leaves and `transaction_logs.changes.amount.old/new`. It pins actual emitted Tax model/controller, TransactionLog model and scoped codec/save-binding files; release labels, marker files and decoder presence alone are insufficient. Incompatible/unknown Tax forecast or TransactionLog implementations reject with `tax_forecast_storage_compatibility_unknown` / `transaction_log_storage_compatibility_unknown` before database admission, PM2 shutdown or directory mutation. Existing Category, Transaction Tax and Statement income checks remain required. A genuinely reviewed compatible previous release remains eligible.
-
-Rollback-plan discovery treats both new compatibility errors as nonfatal **rollback unavailable**, publishes no executable plan and allows successful installation completion. Actual rollback still fails closed. The one-way contract, journal, health-before-cleanup, consumed previous directory and interrupted-swap protections are unchanged; no third persistent release copy is introduced. Local non-database tests use emitted production fixtures and verify compatible admission, incompatible/missing/unknown rejection, zero destructive orchestration, and unavailable status replacing an old plan. PostgreSQL acceptance, deployment and historical conversion remain separate authorizations. No operational rollback or database mutation accompanies this documentation change.
+The executor performs no financial repair, JSON representation reversal or database restore. See [installation backups](installation-database-backups.md) for backup format and limitations, and [installer configuration](installer-environment-configuration.md) for the deployment environment.
