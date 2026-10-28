@@ -6,10 +6,14 @@ import PopoverBody from 'react-bootstrap/PopoverBody';
 import parseEquation from './EquationParser';
 import styles from './AmountInput.module.scss';
 import * as Console from './Console';
+import { formatMoneyCents } from '../common/moneyCents';
+import { inputMoneyCents } from './monetary';
 
 interface PropsType {
+  exactCents?: boolean,
   id?: string,
   value?: number | string;
+  onValueChange?: (amount: string) => void;
   onDeltaChange?: (amount: number, delta: number) => void;
   onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onBlur?: (event: React.ChangeEvent<HTMLInputElement>) => void;
@@ -21,8 +25,10 @@ interface PropsType {
 }
 
 const AmountInput: React.FC<PropsType> = ({
+  exactCents = false,
   id,
   value = 0,
+  onValueChange,
   onDeltaChange,
   onChange,
   onBlur,
@@ -32,7 +38,12 @@ const AmountInput: React.FC<PropsType> = ({
   name,
   readOnly,
 }) => {
-  const convertAmount = (amount: string | number) => (
+  const convertExactAmount = (amount: string | number) => {
+    try { return formatMoneyCents(inputMoneyCents(amount)); }
+    catch { return String(amount); }
+  };
+
+  const convertAmount = (amount: string | number) => exactCents ? convertExactAmount(amount) : (
     typeof amount === 'string'
       ? parseFloat(amount).toFixed(2)
       : amount.toFixed(2)
@@ -60,6 +71,7 @@ const AmountInput: React.FC<PropsType> = ({
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setInputAmount(event.target.value);
+    onValueChange?.(event.target.value);
 
     if (onChange) {
       onChange(event);
@@ -71,10 +83,12 @@ const AmountInput: React.FC<PropsType> = ({
     try {
       if (event.target.value === '') {
         setInputAmount('');
+        onValueChange?.('');
       }
       else {
         const val = parseEquation(event.target.value);
         setInputAmount(val.toFixed(2));
+        onValueChange?.(val.toFixed(2));
       }
     }
     catch (error) {
@@ -83,11 +97,18 @@ const AmountInput: React.FC<PropsType> = ({
   };
 
   const handleFocus = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setInitialValue(parseFloat(event.target.value).toFixed(2));
+    setInitialValue(convertAmount(event.target.value));
     setFocus(true);
   };
 
   const handleBlur = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (exactCents) {
+      setInputAmount(convertExactAmount(event.target.value));
+      onBlur?.(event);
+      setFocus(false);
+      return;
+    }
+
     let newAmount = Math.round(parseFloat(event.target.value) * 100.0) / 100.0;
 
     if (Number.isNaN(newAmount)) {
@@ -148,7 +169,10 @@ const AmountInput: React.FC<PropsType> = ({
     inputValue = typeof value === 'string' ? value : value.toFixed(2);
   }
 
-  if (!focus) {
+  if (!focus && exactCents) {
+    inputValue = convertExactAmount(inputValue);
+  }
+  else if (!focus) {
     let v: string | number = inputValue;
     if (typeof v === 'string') {
       v = (parseFloat(v) * 100.0) / 100.0;

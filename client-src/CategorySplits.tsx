@@ -3,7 +3,15 @@ import React, {
 } from 'react';
 import CategorySplitItem from './CategorySplitItem';
 import { useStores } from './State/Store';
+import { addMoneyCents, formatMoneyCents, parseMoneyCents, subtractMoneyCents, type MoneyCents } from '../common/moneyCents';
+import { inputMoneyCents } from './monetary';
 import { TransactionCategoryInterface } from './State/Types';
+
+export type CategorySplitInput = Omit<TransactionCategoryInterface, 'amount'> & { amount: string };
+
+export const sumSplitCents = (splits: readonly CategorySplitInput[]): MoneyCents => (
+  addMoneyCents(...splits.map(split => inputMoneyCents(split.amount)))
+);
 
 function* creatNextIdGen(): Generator<number, number> {
   let id = -1;
@@ -17,12 +25,13 @@ const nextIdGen = creatNextIdGen();
 const nextId = (): number => nextIdGen.next().value;
 
 interface PropsType {
-  splits: TransactionCategoryInterface[],
+  splits: CategorySplitInput[],
   onChange: (
-    splits: TransactionCategoryInterface[]
+    splits: CategorySplitInput[]
   ) => void,
-  total: number,
+  total: MoneyCents,
   credit?: boolean,
+  numericInput?: boolean,
 }
 
 const CategorySplits: React.FC<PropsType> = ({
@@ -30,6 +39,7 @@ const CategorySplits: React.FC<PropsType> = ({
   onChange,
   total,
   credit = true,
+  numericInput = false,
 }) => {
   const { categoryTree } = useStores();
 
@@ -37,7 +47,7 @@ const CategorySplits: React.FC<PropsType> = ({
     throw new Error('unassigned category is null');
   }
 
-  const [editedSplits, setEditedSplits] = useState<TransactionCategoryInterface[]>(
+  const [editedSplits, setEditedSplits] = useState<CategorySplitInput[]>(
     splits && splits.length > 0
       ? splits.map((s) => {
         if (s.id === undefined) {
@@ -49,23 +59,23 @@ const CategorySplits: React.FC<PropsType> = ({
 
         return {
           ...s,
-          amount: (credit ? s.amount : -s.amount),
+          amount: credit ? s.amount : formatMoneyCents(subtractMoneyCents(parseMoneyCents('0.00'), inputMoneyCents(s.amount))),
         };
       })
       : [{
-        id: nextId(), categoryId: categoryTree.unassignedCat.id, amount: total,
+        id: nextId(), categoryId: categoryTree.unassignedCat.id, amount: formatMoneyCents(total),
       }],
   );
 
   useEffect(() => {
     if (splits.length === 0 && categoryTree.unassignedCat) {
       setEditedSplits([{
-        id: nextId(), categoryId: categoryTree.unassignedCat.id, amount: total,
+        id: nextId(), categoryId: categoryTree.unassignedCat.id, amount: formatMoneyCents(total),
       }]);
     }
   }, [categoryTree.unassignedCat, splits.length, total])
 
-  const handleChange = (id: number, amount: number) => {
+  const handleChange = (id: number, amount: string) => {
     const splitIndex = editedSplits.findIndex((s) => s.id === id);
 
     if (splitIndex !== -1) {
@@ -118,8 +128,9 @@ const CategorySplits: React.FC<PropsType> = ({
     const index = editedSplits.findIndex((s) => s.id === afterId);
 
     if (index !== -1) {
-      const sum = editedSplits.reduce((accum, item) => accum + item.amount, 0);
-      const amount = total - sum;
+      let amount: string;
+      try { amount = formatMoneyCents(subtractMoneyCents(total, sumSplitCents(editedSplits))); }
+      catch { return; } // Leave invalid edits visible for form validation.
 
       const newSplits = editedSplits.slice();
       newSplits.splice(
@@ -155,9 +166,10 @@ const CategorySplits: React.FC<PropsType> = ({
         <CategorySplitItem
           key={s.id}
           split={s}
+          numericInput={numericInput}
           onAddItem={handleAddItem}
           onDeleteItem={handleDeleteItem}
-          onDeltaChange={handleChange}
+          onAmountChange={handleChange}
           onCategoryChange={handleCategoryChange}
           onCommentChange={handleCommentChange}
         />

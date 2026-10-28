@@ -2,16 +2,20 @@ import React from 'react';
 import { Minus, Plus } from 'lucide-react';
 import CategoryInput from './CategoryInput/CategoryInput';
 import AmountInput from './AmountInput';
-import { CategoryInterface, TransactionCategoryInterface } from './State/Types';
+import type { CategorySplitInput } from './CategorySplits';
+import { formatMoneyCents } from '../common/moneyCents';
+import { inputMoneyCents } from './monetary';
+import { CategoryInterface } from './State/Types';
 import styles from './CategorySplitItem.module.scss';
 import useMediaQuery from './MediaQuery';
 import { useStores } from './State/Store';
 import LucideButton from './LucideButton';
 
 interface PropsType {
-  split: TransactionCategoryInterface,
+  split: CategorySplitInput,
+  numericInput?: boolean,
   onCategoryChange: (id: number, categoryId: number) => void,
-  onDeltaChange: (id: number, amount: number, delta: number) => void,
+  onAmountChange: (id: number, amount: string) => void,
   onAddItem: (afterId: number) => void,
   onDeleteItem: (id: number) => void,
   onCommentChange: (id: number, comment: string) => void,
@@ -19,8 +23,8 @@ interface PropsType {
 
 const CategorySplitItem: React.FC<PropsType> = ({
   split,
-  onCategoryChange,
-  onDeltaChange,
+  numericInput = false,  onCategoryChange,
+  onAmountChange,
   onAddItem,
   onDeleteItem,
   onCommentChange,
@@ -39,11 +43,11 @@ const CategorySplitItem: React.FC<PropsType> = ({
     onCategoryChange(split.id, category.id);
   };
 
-  const handleDeltaChange = (amount: number, delta: number) => {
+  const handleAmountChange = (amount: string) => {
     if (split.id === undefined) {
       throw new Error('missing id');
     }
-    onDeltaChange(split.id, amount, delta);
+    onAmountChange(split.id, amount);
   };
 
   const handleCommentChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -77,7 +81,15 @@ const CategorySplitItem: React.FC<PropsType> = ({
           onCategoryChange={handleCategoryChange}
           categoryId={categoryId === unassignedCat.id ? null : categoryId}
         />
-        <AmountInput onDeltaChange={handleDeltaChange} value={split.amount} style={{ margin: '1px' }} />
+        <AmountInput
+          exactCents={!numericInput}
+          {...(numericInput ? { onDeltaChange: (amount: number) => {
+            if (split.id === undefined) throw new Error('missing id');
+            onAmountChange(split.id, formatMoneyCents(inputMoneyCents(amount)));
+          } } : { onValueChange: handleAmountChange })}
+          value={split.amount}
+          style={{ margin: '1px' }}
+        />
         <input
           type="text"
           className={styles.comment}

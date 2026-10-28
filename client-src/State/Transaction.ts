@@ -49,6 +49,12 @@ class Transaction implements TransactionInterface {
   @observable
   private accessor categoryCents: { categoryId: number; amount: MoneyCents }[] = [];
 
+  getCategoryAmountCents(index: number): MoneyCents {
+    const category = this.categoryCents[index];
+    if (!category) throw new Error('Missing transaction category cents');
+    return category.amount;
+  }
+
   getRegisterAmountCents(categoryId?: number, positiveOnly = false): MoneyCents {
     const categories = this.categoryCents.filter((category) => (
       positiveOnly ? category.amount > 0 : category.categoryId === categoryId

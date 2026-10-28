@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import {
   Field, FieldProps,
   FormikErrors,
@@ -9,9 +9,11 @@ import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import {
   FormError, FormField, FormModal, setFormErrors,
 } from '@mortvola/forms';
-import CategorySplits from '../CategorySplits';
-import Amount from '../Amount';
-import { AccountInterface, TransactionCategoryInterface, TransactionInterface, TransactionTaxCategoryInterface } from '../State/Types';
+import CategorySplits, { sumSplitCents, type CategorySplitInput } from '../CategorySplits';
+import { formatMoneyCents, parseMoneyCents, subtractMoneyCents, type MoneyCents } from '../../common/moneyCents';
+import { decodeAmount, inputMoneyCents } from '../monetary';
+import MoneyCentsAmount from '../MoneyCentsAmount';
+import { AccountInterface, TransactionInterface, TransactionTaxCategoryInterface } from '../State/Types';
 import AmountInput from '../AmountInput';
 import useMediaQuery from '../MediaQuery';
 import { AccountType, ApiError, ErrorProps, isApiErrorArray, isErrorPropsArray, RequestErrorCode, TrackingType, TransactionType } from '../../common/ResponseTypes';
@@ -34,61 +36,56 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
   interface ValueType {
     date: string,
     name: string,
-    amount: number,
+    amount: string | number,
     principle?: number,
     interest?: number,
     comment: string,
-    splits: TransactionCategoryInterface[],
+    splits: CategorySplitInput[],
     taxCategories: TransactionTaxCategoryInterface[],
   }
 
   const { isMobile } = useMediaQuery();
 
-  const computeRemaining = (categories: TransactionCategoryInterface[], total: number) => {
-    let sum = 0;
-    if (categories && categories.length > 0) {
-      sum = categories.reduce((accum: number, item) => (
-        accum + item.amount
-      ), 0);
+  const zero = parseMoneyCents('0.00');
+  const absoluteCents = (amount: MoneyCents) => amount < 0 ? subtractMoneyCents(zero, amount) : amount;
+  const transactionAmountCents = (value: string | number) => inputMoneyCents(value, account?.sign ?? 1);
 
-      return Math.abs(total) - sum;
-    }
-
-    // If there are no categories, assume the transaction total is assigned to a single
-    // unassigned item.
-    return 0;
-  };
+  const computeRemaining = (categories: CategorySplitInput[], total: string | number): MoneyCents => (
+    // No explicit splits means the whole transaction belongs to the unassigned category.
+    categories.length === 0 ? zero : subtractMoneyCents(absoluteCents(transactionAmountCents(total)), sumSplitCents(categories))
+  );
 
   const handleValidate = (values: ValueType) => {
     const errors: FormikErrors<ValueType> = {};
-
-    if (values.splits.length > 0) {
-      const sum = values.splits.reduce(
-        (accum: number, item: TransactionCategoryInterface) => (
-          accum + Math.round(item.amount * 100)
-        ),
-        0,
-      );
-
-      if (sum !== Math.abs(Math.round(values.amount * 100))) {
+    let amountCents: MoneyCents;
+    try {
+      amountCents = transactionAmountCents(values.amount);
+    }
+    catch {
+      errors.amount = 'Enter a valid, safe monetary amount.';
+      return errors;
+    }
+    try {
+      if (values.splits.length > 0 && sumSplitCents(values.splits) !== absoluteCents(amountCents)) {
         errors.splits = 'The sum of the categories does not match the transaction amount.';
       }
     }
-
+    catch {
+      errors.splits = 'Enter valid, safe category amounts.';
+    }
     return errors;
   };
 
   const handleSubmit = async (values: ValueType, { setErrors }: FormikHelpers<ValueType>) => {
-    const amount = (typeof values.amount === 'string' ? parseFloat(values.amount) : values.amount) * (account?.sign ?? 1);
+    const amountCents = transactionAmountCents(values.amount);
+    const amount = decodeAmount(formatMoneyCents(amountCents));
     const principle = typeof values.principle === 'string' ? parseFloat(values.principle) : values.principle;
 
-    // If the transaction amount is less then zero then
-    // negate all of the category amounts.
-    if (amount < 0) {
-      values.splits.forEach((element) => {
-        element.amount *= -1;
-      });
-    }
+    // Convert only at the existing numeric state-method boundary, after cent arithmetic.
+    const categories = values.splits.map((split) => {
+      const cents = inputMoneyCents(split.amount);
+      return { ...split, amount: decodeAmount(formatMoneyCents(amountCents < 0 ? subtractMoneyCents(zero, cents) : cents)) };
+    });
 
     let errors: ErrorProps[] | ApiError[] | null;
     if (transaction) {
@@ -98,7 +95,7 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
         amount,
         principle,
         comment: values.comment,
-        categories: values.splits,
+        categories,
         taxCategories: values.taxCategories,
       });
     }
@@ -113,7 +110,7 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
         amount,
         principle,
         comment: values.comment,
-        categories: values.splits,
+        categories,
       });
     }
 
@@ -160,12 +157,14 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
     }
   };
 
-  const splits = useMemo((): TransactionCategoryInterface[] => {
+  const splits = useMemo((): CategorySplitInput[] => {
     if (transaction) {
       if (transaction.categories.length > 0) {
-        return transaction.categories.map((c) => ({
+        return transaction.categories.map((c, index) => ({
           ...c,
-          amount: transaction.amount < 0 ? -c.amount : c.amount,
+          amount: formatMoneyCents(transaction.amountCents < 0
+            ? subtractMoneyCents(zero, transaction.getCategoryAmountCents(index))
+            : transaction.getCategoryAmountCents(index)),
         }));
       }
 
@@ -189,14 +188,6 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
     return [];
   }, [transaction])
 
-  const [remaining, setRemaining] = useState(() => {
-    if (transaction) {
-      return computeRemaining(splits, transaction.amount);
-    }
-
-    return 0;
-  });
-
   const splitItemClass = 'transaction-split-item no-balances';
 
   let paymentChannel = 'unknown';
@@ -208,7 +199,7 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
     transaction !== null && transaction.type === TransactionType.REGULAR_TRANSACTION
   );
 
-  const validateSplits = (splits: TransactionCategoryInterface[]) => {
+  const validateSplits = (splits: CategorySplitInput[]) => {
     let error;
 
     if (splits !== undefined) {
@@ -251,24 +242,31 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
             setFieldValue,
             values,
           },
-        }: FieldProps<TransactionCategoryInterface[]>) => {
-          const amount = typeof (values.amount) === 'string' ? parseFloat(values.amount) : values.amount;
+        }: FieldProps<CategorySplitInput[], ValueType>) => {
+          let remaining: MoneyCents | null = null;
+          let total = zero;
+          try {
+            total = absoluteCents(transactionAmountCents(values.amount));
+            remaining = computeRemaining(value, values.amount);
+          }
+          catch { /* Form validation reports invalid or unsafe input. */ }
           return (
-            <CategorySplits
-              splits={value}
-              total={Math.abs(amount)}
-              onChange={(s) => {
-                setFieldValue(name, s);
-                setRemaining(computeRemaining(s, amount));
-              }}
-            />
+            <>
+              <CategorySplits
+                splits={value}
+                total={total}
+                onChange={(splits) => setFieldValue(name, splits)}
+              />
+              <div className={splitItemClass}>
+                <div className="unassigned-label">Remaining:</div>
+                {remaining === null
+                  ? <div>Invalid amount</div>
+                  : <MoneyCentsAmount amount={remaining} style={{ margin: '1px', padding: '1px' }} />}
+              </div>
+            </>
           )
         }}
       </Field>
-      <div className={splitItemClass}>
-        <div className="unassigned-label">Remaining:</div>
-        <Amount amount={remaining} style={{ margin: '1px', padding: '1px' }} />
-      </div>
       <FormError name="splits" />
     </div>
   );
@@ -303,7 +301,8 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
       initialValues={{
         date: transaction ? (transaction.date.toISODate() ?? '') : '',
         name: transaction ? transaction.name : '',
-        amount: transaction ? transaction.amount * (account?.sign ?? 1) : 0,
+        amount: transaction ? formatMoneyCents((account?.sign ?? 1) === -1
+          ? subtractMoneyCents(zero, transaction.amountCents) : transaction.amountCents) : '0.00',
         principle: transaction ? (transaction.principle ?? 0) : 0,
         interest: transaction ? (transaction.amount - (transaction.principle ?? 0)) : 0,
         comment: transaction && transaction.comment ? transaction.comment : '',
@@ -356,14 +355,12 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
           readOnly={isReadOnly()}
         >
           {
-            ({ field, form: { values } }: FieldProps<string | number, ValueType>) => (
+            ({ field }: FieldProps<string | number, ValueType>) => (
               <AmountInput
+                exactCents
                 className="form-control"
                 readOnly={isReadOnly()}
                 {...field}
-                onBlur={(v) => {
-                  setRemaining(computeRemaining(values.splits, parseFloat(v.target.value)));
-                }}
               />
             )
           }

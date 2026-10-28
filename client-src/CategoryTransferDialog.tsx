@@ -6,7 +6,8 @@ import {
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import { SubmitButton } from '@mortvola/forms';
 import Http from '@mortvola/http';
-import { encodeTransferCategories } from './monetary';
+import { formatMoneyCents, parseMoneyCents } from '../common/moneyCents';
+import { inputMoneyCents, decodeAmount, encodeTransferCategories } from './monetary';
 import CategorySplits from './CategorySplits';
 import Transaction from './State/Transaction';
 import { TransactionCategoryInterface } from './State/Types';
@@ -221,13 +222,14 @@ const CategoryTransferDialog: React.FC<PropsType & ModalProps> = ({
                     },
                   }: FieldProps<TransactionCategoryInterface[]>) => (
                     <CategorySplits
+                      numericInput
                       splits={value.map((s) => (
-                        { ...s, ...{ amount: s.amount * -1 } }
+                        { ...s, amount: formatMoneyCents(inputMoneyCents(s.amount, -1)) }
                       ))}
-                      total={0}
+                      total={parseMoneyCents('0.00')}
                       onChange={(splits) => {
                         setFieldValue(name, splits.map((s) => (
-                          { ...s, ...{ amount: s.amount * -1 } }
+                          { ...s, amount: -decodeAmount(formatMoneyCents(inputMoneyCents(s.amount))) }
                         )));
                         handleTotalChange();
                       }}
@@ -262,10 +264,11 @@ const CategoryTransferDialog: React.FC<PropsType & ModalProps> = ({
                   },
                 }: FieldProps<TransactionCategoryInterface[]>) => (
                   <CategorySplits
-                    splits={value}
-                    total={0}
+                    numericInput
+                    splits={value.map(s => ({ ...s, amount: formatMoneyCents(inputMoneyCents(s.amount)) }))}
+                    total={parseMoneyCents('0.00')}
                     onChange={(splits) => {
-                      setFieldValue(name, splits);
+                      setFieldValue(name, splits.map(s => ({ ...s, amount: decodeAmount(formatMoneyCents(inputMoneyCents(s.amount))) })));
                       handleTotalChange();
                     }}
                   />
