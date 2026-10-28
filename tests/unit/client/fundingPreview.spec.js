@@ -286,3 +286,21 @@ test.group('Funding preview API decimal strings', () => {
       previousFunding: 12.5, previousBaseAmount: 0.3, previousExpenses: -0.3, previousCatTransfers: 0 }])
   })
 })
+
+
+test('bills endpoint encodes debit totals and preserves null without changing aggregates', async ({ assert }) => {
+  const totals = ['-12.5', '0', '-0.125', '0.300', null]
+  const bills = totals.map((_, index) => ({ id: index + 1, $extras: {} }))
+  const query = { whereHas() { return this }, where() { return Promise.resolve(bills) } }
+  const budget = { id: 1, related: () => ({ query: () => ({
+    joinRaw() { return this },
+    where(field, value) { if (field === 'transCats.categoryId') this.id = value; return this },
+    sum() { return Promise.resolve([{ $extras: { debits: totals[this.id - 1] } }]) },
+  }) }) }
+  const getBills = runInNewContext(await expression('app/Controllers/Http/CategoriesController.ts', 'getBills'), {
+    DateTime, CategoryType, Category: { query: () => query }, encodeMonetaryAmount,
+  })
+  const response = await getBills({ auth: { user: { related: () => ({ query: () => ({ firstOrFail: async () => budget }) }) } } })
+  assert.deepEqual(Array.from(response, bill => bill.debits), ['-12.50', '0.00', '-0.12', '0.30', null])
+  assert.deepEqual(bills.map(bill => bill.$extras.debits), totals)
+})

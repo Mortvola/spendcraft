@@ -653,7 +653,7 @@ export type BudgetProgressReportResponse = [string, number, number[]][];
 
 export interface BillProps {
   id: number,
-  debits: number | null,
+  debits: DecimalMoneyString | null,
 }
 
 export enum FilingStatus {

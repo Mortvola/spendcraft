@@ -829,7 +829,7 @@ class CategoriesController {
 
     return bills.map<BillProps>((bill) => ({
       id: bill.id,
-      debits: bill.$extras.debits !== null ? parseFloat(bill.$extras.debits ?? '0.00') : null,
+      debits: bill.$extras.debits !== null ? encodeMonetaryAmount(parseFloat(bill.$extras.debits ?? '0.00')) : null,
     }));
   }
 }

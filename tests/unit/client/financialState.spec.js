@@ -33,6 +33,7 @@ export { default as Category } from ${source('client-src/State/Category.ts')};
 export { default as Group } from ${source('client-src/State/Group.ts')};
 export { default as Transaction } from ${source('client-src/State/Transaction.ts')};
 export { decodeAmount } from ${source('client-src/monetary.ts')};
+export { default as Bill } from ${source('client-src/State/Bill.ts')};
 export { default as Statement } from ${source('client-src/State/Statement.ts')};
 export { runInAction } from 'mobx';
 export * from ${source('common/ResponseTypes.ts')};
@@ -224,6 +225,17 @@ export * from ${source('common/ResponseTypes.ts')};
       assert.throws(() => new state.Transaction(f.store, { ...f.transactionProps(), categories: [
         { categoryId: 20, amount: '1.00', baseAmount: amount },
       ] }))
+    }
+  })
+
+  test('bill debit strings become numeric client values and preserve null', ({ assert }) => {
+    for (const [debits, expected] of [['-12.50', -12.5], ['0.00', 0], ['0.30', 0.3], [null, null]]) {
+      const bill = new state.Bill({ id: 20, debits }, f.category)
+      assert.strictEqual(bill.debits, expected)
+      assert.strictEqual(bill.category, f.category)
+    }
+    for (const debits of [1, undefined, '', '1.2', '-0.00', 'Infinity', '90071992547409.92']) {
+      assert.throws(() => new state.Bill({ id: 20, debits }, f.category))
     }
   })
 

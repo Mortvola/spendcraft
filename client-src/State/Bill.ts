@@ -1,3 +1,4 @@
+import { decodeAmount } from '../monetary';
 import { BillProps } from '../../common/ResponseTypes';
 import { BillInterface, CategoryInterface } from './Types';
 
@@ -8,7 +9,7 @@ class Bill implements BillInterface {
 
   constructor(props: BillProps, category: CategoryInterface) {
     this.category = category;
-    this.debits = props.debits;
+    this.debits = props.debits === null ? null : decodeAmount(props.debits);
   }
 }
 
