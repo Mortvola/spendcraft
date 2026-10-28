@@ -374,7 +374,7 @@ class InstitutionController {
           type: acct.type,
           subtype: acct.subtype as string,
           balances: {
-            current: balance,
+            current: balance === null ? null : encodeMonetaryAmount(balance),
           },
           tracking: TrackingType.None,
         });

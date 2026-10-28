@@ -241,6 +241,32 @@ export * from ${source('common/ResponseTypes.ts')};
     }
   })
 
+  test('Transaction principal strings decode into numeric client state and preserve null', ({ assert }) => {
+    for (const [principle, expected] of [['12.50', 12.5], ['-0.12', -0.12], ['0.00', 0], [null, null]]) {
+      const props = f.transactionProps()
+      const transaction = new state.Transaction(f.store, { ...props, accountTransaction: { ...props.accountTransaction, principle } })
+      assert.strictEqual(transaction.principle, expected)
+    }
+    for (const principle of [1, '', '1.2', '-0.00', 'Infinity']) {
+      const props = f.transactionProps()
+      assert.throws(() => new state.Transaction(f.store, { ...props, accountTransaction: { ...props.accountTransaction, principle } }))
+    }
+  })
+
+  test('unlinked Plaid balances are decoded into numeric requests without changing the response', async ({ assert }) => {
+    const accounts = [{ plaidAccountId: 'one', balances: { current: '-12.50' } },
+      { plaidAccountId: 'two', balances: { current: null } }]
+    routes.set('post /api/v1/institution/1/accounts', async payload => {
+      assert.strictEqual(payload.plaidAccounts[0].balances.current, -12.5)
+      assert.isNull(payload.plaidAccounts[1].balances.current)
+      assert.strictEqual(payload.startDate, '2025-03-01')
+      return { body: { accounts: [], categories: [] } }
+    })
+    await f.institution.addOnlineAccounts(accounts, '2025-03-01')
+    assert.strictEqual(accounts[0].balances.current, '-12.50')
+    assert.isNull(accounts[1].balances.current)
+  })
+
   test('Tax responses decode forecasts and monthly actuals while requests and Worksheets remain numeric', async ({ assert }) => {
     const forecast = { filingStatus: state.FilingStatus.Single,
       ...Object.fromEntries(taxForecastFields.map(field => [field, '0.30'])),

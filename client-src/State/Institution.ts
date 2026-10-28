@@ -214,7 +214,12 @@ class Institution implements InstitutionInterface {
     startDate: string,
   ): Promise<null> {
     const response = await Http.post(`/api/v1/institution/${this.id}/accounts`, {
-      plaidAccounts: accounts,
+      plaidAccounts: accounts.map((account) => ({
+        ...account,
+        balances: { ...account.balances,
+          current: account.balances.current === null ? null : decodeAmount(account.balances.current),
+        },
+      })),
       startDate,
     });
 

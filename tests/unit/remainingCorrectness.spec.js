@@ -1,4 +1,5 @@
-import { TransactionType } from '../../common/ResponseTypes.ts'
+import { encodeMonetaryAmount } from '../../app/services/categoryAmountCodec.ts'
+import { AccountType, TrackingType, TransactionType } from '../../common/ResponseTypes.ts'
 import { test } from '@japa/runner'
 import { readFile } from 'node:fs/promises'
 import { runInNewContext } from 'node:vm'
@@ -89,3 +90,25 @@ test('transaction list endpoints return canonical placeholder balances').with(['
     assert.strictEqual(response.data.balance, '0.00')
     assert.deepEqual(Array.from(response.data.transactions), [])
   })
+
+
+test('unlinked Plaid responses encode balances after existing debt sign handling', async ({ assert }) => {
+  const accounts = [
+    { account_id: 'linked', type: AccountType.Depository, balances: { current: 50 } },
+    { account_id: 'cash', type: AccountType.Depository, balances: { current: 12.5 } },
+    { account_id: 'credit', type: AccountType.Credit, balances: { current: 100.125 } },
+    { account_id: 'loan', type: AccountType.Loan, balances: { current: -0.125 } },
+    { account_id: 'null', type: AccountType.Depository, balances: { current: null } },
+    { account_id: 'zero', type: AccountType.Depository, balances: { current: 0 } },
+  ]
+  const handler = await method('app/Controllers/Http/InstitutionController.ts', 'getUnconnectedAccounts', {
+    AccountType, TrackingType, encodeMonetaryAmount,
+    Account: { query: () => ({ where: async () => [{ plaidAccountId: 'linked' }] }) },
+    app: { container: { make: async () => ({ getAccounts: async () => ({ accounts }) }) } },
+  })
+  const response = await handler({ id: 1, accessToken: 'synthetic' })
+  assert.deepEqual(Array.from(response, row => row.plaidAccountId), ['cash', 'credit', 'loan', 'null', 'zero'])
+  assert.deepEqual(Array.from(response, row => row.balances.current), ['12.50', '-100.12', '0.13', null, '0.00'])
+  assert.deepEqual(accounts.map(row => row.balances.current), [12.5, 100.125, -0.125, null, 0])
+  assert.deepEqual(Array.from(await handler({ id: 1, accessToken: null })), [])
+})

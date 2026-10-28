@@ -109,7 +109,7 @@ class Transaction implements TransactionInterface {
     if (props.accountTransaction) {
       this.name = props.accountTransaction.name;
       this.amount = decodeAmount(props.accountTransaction.amount);
-      this.principle = props.accountTransaction.principle;
+      this.principle = props.accountTransaction.principle === null ? null : decodeAmount(props.accountTransaction.principle);
       this.instituteName = props.accountTransaction.account.institution.name;
       this.accountName = props.accountTransaction.account.name;
       this.accountId = props.accountTransaction.account.id;

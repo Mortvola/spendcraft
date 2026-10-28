@@ -296,7 +296,7 @@ export interface TransactionProps {
 
     amount: DecimalMoneyString;
 
-    principle: number | null;
+    principle: DecimalMoneyString | null;
 
     paymentChannel: string | null,
 
@@ -590,7 +590,7 @@ export interface UnlinkedAccountProps {
   type: string,
   subtype: string | null,
   balances: {
-    current: number | null,
+    current: DecimalMoneyString | null,
   },
   tracking: TrackingType,
 }

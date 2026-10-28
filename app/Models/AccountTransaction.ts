@@ -51,6 +51,7 @@ class AccountTransaction extends BaseModel {
 
   @column({
     consume: (value: string) => (value !== null ? parseFloat(value) : null),
+    serialize: (value: number | null) => value === null ? null : encodeMonetaryAmount(value),
   })
   public principle: number | null;
 

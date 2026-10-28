@@ -134,7 +134,7 @@ test.group('AccountTransaction amount API strings', () => {
     assert.strictEqual(JSON.parse(JSON.stringify(row)).amount, expected)
     assert.strictEqual(transaction.serialize(transactionFields).accountTransaction.amount, expected)
     assert.strictEqual(row.amount, amount)
-    assert.strictEqual(row.serialize().principle, 1.25)
+    assert.strictEqual(row.serialize().principle, '1.25')
     assert.deepEqual(row.$attributes, before)
   })
   test('hydrated database amounts serialize without making the model dirty', ({ assert }) => {
@@ -286,5 +286,18 @@ test('auto-assignment responses encode fixed dollars and preserve numeric model 
       assert.deepEqual(rule.$attributes, before)
       assert.isFalse(rule.$isDirty)
     }
+  }
+})
+
+
+test('AccountTransaction principal serialization preserves numeric models and nulls', ({ assert }) => {
+  for (const [principle, expected] of [[12.5, '12.50'], [0, '0.00'], [-0.125, '-0.12'],
+    [0.125, '0.13'], [1.005, '1.00'], [0.1 + 0.2, '0.30'], [null, null]] as const) {
+    const row = accountTransaction().merge({ principle })
+    const before = globalThis.structuredClone(row.$attributes)
+    assert.strictEqual(row.serialize().principle, expected)
+    assert.strictEqual(JSON.parse(JSON.stringify(row)).principle, expected)
+    assert.strictEqual(row.principle, principle)
+    assert.deepEqual(row.$attributes, before)
   }
 })
