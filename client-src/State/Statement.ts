@@ -4,6 +4,39 @@ import { observable, runInAction } from 'mobx';
 import { ApiError, StatementProps, UpdateStatementProps, TrackingType } from '../../common/ResponseTypes';
 import { StatementInterface, StatementsInterface } from './Types';
 
+// Decode only the Statement wire contract. UI and existing calculations remain numeric.
+export function decodeAmount(value: unknown): number {
+  if (typeof value !== 'string' || value.length > 24 || !/^-?(?:0|[1-9]\d*)\.\d{2}$/.test(value) || value === '-0.00') {
+    throw new Error('Invalid monetary response');
+  }
+  const negative = value.startsWith('-');
+  const [whole, fraction] = value.replace(/^-/, '').split('.');
+  const cents = (BigInt(whole) * 100n + BigInt(fraction)) * (negative ? -1n : 1n);
+  if (cents > BigInt(Number.MAX_SAFE_INTEGER) || cents < -BigInt(Number.MAX_SAFE_INTEGER)) {
+    throw new Error('Unsafe monetary response');
+  }
+  const amount = Number(cents) / 100;
+  if (Math.round(amount * 100) !== Number(cents)) throw new Error('Unsafe monetary response');
+  return amount;
+}
+
+function decodeStatementAmounts(props: StatementProps) {
+  const income = props.data;
+  if (income !== null && income !== undefined && (typeof income !== 'object' || Array.isArray(income))) {
+    throw new Error('Invalid statement income response');
+  }
+  return {
+    startingBalance: decodeAmount(props.startingBalance),
+    endingBalance: decodeAmount(props.endingBalance),
+    credits: decodeAmount(props.credits),
+    debits: decodeAmount(props.debits),
+    shortTermGains: income?.shortTermCapitalGains == null ? 0 : decodeAmount(income.shortTermCapitalGains),
+    longTermGains: income?.longTermCapitalGains == null ? 0 : decodeAmount(income.longTermCapitalGains),
+    dividends: income?.dividends == null ? 0 : decodeAmount(income.dividends),
+    taxableInterest: income?.taxableInterest == null ? 0 : decodeAmount(income.taxableInterest),
+  };
+}
+
 class Statement implements StatementInterface {
   @observable
   accessor id: number;
@@ -44,38 +77,39 @@ class Statement implements StatementInterface {
     props: StatementProps,
     statements: StatementsInterface,
   ) {
+    const amounts = decodeStatementAmounts(props);
     this.id = props.id
     this.startDate = DateTime.fromISO(props.startDate)
     this.endDate = DateTime.fromISO(props.endDate)
-    this.startingBalance = props.startingBalance
-    this.endingBalance = props.endingBalance
-    this.credits = props.credits
-    this.debits = props.debits
-    this.shortTermGains = props.data?.shortTermCapitalGains ?? 0
-    this.longTermGains = props.data?.longTermCapitalGains ?? 0
-    this.dividends = props.data?.dividends ?? 0
-    this.taxableInterest = props.data?.taxableInterest ?? 0
+    this.startingBalance = amounts.startingBalance
+    this.endingBalance = amounts.endingBalance
+    this.credits = amounts.credits
+    this.debits = amounts.debits
+    this.shortTermGains = amounts.shortTermGains
+    this.longTermGains = amounts.longTermGains
+    this.dividends = amounts.dividends
+    this.taxableInterest = amounts.taxableInterest
 
     this.statements = statements
   }
 
   apply(props: StatementProps): void {
+    const amounts = decodeStatementAmounts(props);
     if (props.id !== this.id || !DateTime.fromISO(props.startDate).isValid
-      || !DateTime.fromISO(props.endDate).isValid
-      || ![props.credits, props.debits, props.startingBalance, props.endingBalance].every(Number.isFinite)) {
+      || !DateTime.fromISO(props.endDate).isValid) {
       throw new Error('Invalid statement response');
     }
     runInAction(() => {
-      this.credits = props.credits;
-      this.debits = props.debits;
+      this.credits = amounts.credits;
+      this.debits = amounts.debits;
       this.startDate = DateTime.fromISO(props.startDate);
       this.endDate = DateTime.fromISO(props.endDate);
-      this.startingBalance = props.startingBalance
-      this.endingBalance = props.endingBalance;
-      this.shortTermGains = props.data?.shortTermCapitalGains ?? 0
-      this.longTermGains = props.data?.longTermCapitalGains ?? 0
-      this.dividends = props.data?.dividends ?? 0
-      this.taxableInterest = props.data?.taxableInterest ?? 0
+      this.startingBalance = amounts.startingBalance
+      this.endingBalance = amounts.endingBalance;
+      this.shortTermGains = amounts.shortTermGains
+      this.longTermGains = amounts.longTermGains
+      this.dividends = amounts.dividends
+      this.taxableInterest = amounts.taxableInterest
     })
   }
 

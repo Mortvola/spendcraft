@@ -1,7 +1,8 @@
 import type { LucidRow } from '@adonisjs/lucid/types/model'
 import { isDeepStrictEqual } from 'node:util'
 import { decodeTaxForecast, decodeTransactionLogMoney, encodeTaxForecast, monetaryObject,
-  taxForecastPaths, transactionLogMoneyPaths, storedTaxMonetaryAmount } from './taxMonetaryCodec.ts'
+  taxForecastPaths, transactionLogMoneyPaths } from './taxMonetaryCodec.ts'
+import { encodeMonetaryAmount } from './categoryAmountCodec.ts'
 
 const originals = new WeakMap<object, unknown>()
 const pending = new WeakMap<object, unknown>()
@@ -52,7 +53,7 @@ function prepare(value: unknown, row: LucidRow, property: 'data' | 'changes'): s
     const old = oldParent === null || oldParent === undefined ? null : monetaryObject(oldParent)
     const oldDecoded = decodedParent === null || decodedParent === undefined ? null : monetaryObject(decodedParent)
     if (row.$isPersisted && old && Object.hasOwn(old, key) && isDeepStrictEqual(container[key], oldDecoded?.[key])) container[key] = old[key]
-    else if (container[key] !== null && container[key] !== undefined) container[key] = storedTaxMonetaryAmount(container[key])
+    else if (container[key] !== null && container[key] !== undefined) container[key] = encodeMonetaryAmount(container[key])
     if (path.length === 1) result[key] = container[key]
     else result[path[0]] = container
   }

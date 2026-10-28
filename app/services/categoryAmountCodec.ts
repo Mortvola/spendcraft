@@ -13,7 +13,7 @@ export function checkedCentSum(values: readonly number[]): number {
   return Object.is(sum, -0) ? 0 : sum
 }
 
-export function categoryAmountCents(value: unknown): number {
+export function monetaryAmountCents(value: unknown): number {
   if (typeof value === 'string') {
     if (value.length > 24 || !/^-?(?:0|[1-9]\d*)\.\d{2}$/.test(value) || value === '-0.00') invalid()
     const negative = value.startsWith('-')
@@ -28,26 +28,26 @@ export function categoryAmountCents(value: unknown): number {
   return Object.is(cents, -0) ? 0 : cents
 }
 
-export function storedCategoryAmount(value: unknown): string {
-  const cents = categoryAmountCents(value)
+export function encodeMonetaryAmount(value: unknown): string {
+  const cents = monetaryAmountCents(value)
   const encoded = (cents / 100).toFixed(2)
-  if (categoryAmountCents(encoded) !== cents) invalid('Category amount cannot be represented safely')
+  if (monetaryAmountCents(encoded) !== cents) invalid('Category amount cannot be represented safely')
   return encoded
 }
 
 export function decodeStoredMonetaryAmount(value: unknown): number {
   if (typeof value !== 'string') invalid('Stored monetary amount must be a canonical decimal string')
-  const cents = categoryAmountCents(value)
+  const cents = monetaryAmountCents(value)
   const amount = cents / 100
-  if (categoryAmountCents(amount) !== cents) invalid('Category amount cannot be decoded safely')
+  if (monetaryAmountCents(amount) !== cents) invalid('Category amount cannot be decoded safely')
   return amount
 }
 
 function runtimeCategoryAmount(value: unknown): number {
-  const cents = categoryAmountCents(value)
+  const cents = monetaryAmountCents(value)
   if (typeof value === 'number') return value // Unsaved/runtime values retain their calculation precision.
   const number = cents / 100
-  if (categoryAmountCents(number) !== cents) invalid('Category amount cannot be decoded safely')
+  if (monetaryAmountCents(number) !== cents) invalid('Category amount cannot be decoded safely')
   return number
 }
 
@@ -71,15 +71,15 @@ export function decodeCategoryAllocations(value: unknown): CategoryAllocation[] 
 }
 
 export function encodeCategoryAllocations(value: unknown) {
-  return allocations(value).map((entry) => ({ ...entry, amount: storedCategoryAmount(entry.amount) }))
+  return allocations(value).map((entry) => ({ ...entry, amount: encodeMonetaryAmount(entry.amount) }))
 }
 
 export function validateCategoryConservation(type: number, value: unknown, expected?: number, poolId?: number): void {
   const rows = allocations(value)
-  const cents = rows.map((row) => categoryAmountCents(row.amount))
+  const cents = rows.map((row) => monetaryAmountCents(row.amount))
   const total = checkedCentSum(cents)
   if ([0, 4, 5].includes(type)) {
-    if (expected === undefined || total !== categoryAmountCents(expected)) invalid('The sum of the categories does not match the transaction amount.')
+    if (expected === undefined || total !== monetaryAmountCents(expected)) invalid('The sum of the categories does not match the transaction amount.')
   } else if (type === 2) {
     if (poolId === undefined || !rows.some((row) => row.categoryId === poolId)) invalid('Funding requires a Funding Pool allocation.')
     const pool = checkedCentSum(cents.filter((_, index) => rows[index].categoryId === poolId))
@@ -101,5 +101,5 @@ export const categoryNonzeroAllocationSql = `EXISTS (
 // New nominal input uses the same numeric value that its encoded storage will expose.
 // Metadata is copied without conversion; existing clean legacy reads do not call this.
 export function canonicalCategoryAllocations<T extends CategoryAllocation>(rows: readonly T[]): T[] {
-  return rows.map((row) => ({ ...row, amount: runtimeCategoryAmount(storedCategoryAmount(row.amount)) }))
+  return rows.map((row) => ({ ...row, amount: runtimeCategoryAmount(encodeMonetaryAmount(row.amount)) }))
 }

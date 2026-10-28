@@ -1,4 +1,4 @@
-import { canonicalCategoryAllocations, encodeCategoryAllocations, categoryAmountCents, checkedCentSum } from '#services/categoryAmountCodec'
+import { canonicalCategoryAllocations, encodeCategoryAllocations, monetaryAmountCents, checkedCentSum } from '#services/categoryAmountCodec'
 import { encodeFundingMetadata, decodeFundingMetadata } from '#services/fundingAmountCodec'
 // Requires task-specific authorization and the current
 // configured/live pg + pgLog + exact execution-connection safeguards before SQL.
@@ -109,7 +109,7 @@ test.group('Funding preview/submission persisted equality', () => {
       for (const categoryId of new Set(rows.map((row) => row.categoryId))) {
         if (categoryId === f.pool.id) continue
         const reported = history.body().find((row: { categoryId: number }) => row.categoryId === categoryId)
-        assert.deepEqual(reported.history, [{ year: 2025, month: 3, amount: checkedCentSum(rows.filter((row) => row.categoryId === categoryId).map((row) => categoryAmountCents(row.amount))) / 100 }])
+        assert.deepEqual(reported.history, [{ year: 2025, month: 3, amount: checkedCentSum(rows.filter((row) => row.categoryId === categoryId).map((row) => monetaryAmountCents(row.amount))) / 100 }])
       }
       assert.deepEqual(await db.from('accounts').orderBy('id'), snapshot)
     })

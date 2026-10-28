@@ -1,11 +1,12 @@
 import { test } from '@japa/runner'
+import { encodeMonetaryAmount } from '../../app/services/categoryAmountCodec.ts'
 import { BaseModel, column, beforeSave, afterSave } from '@adonisjs/lucid/orm'
 import { DateTime } from 'luxon'
 import { EventEmitter } from 'node:events'
 import { readFile } from 'node:fs/promises'
 import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
-import { decodeStatementIncome, serializeStatementIncome, encodeStatementIncome, statementIncomeFields, storedStatementIncomeAmount,
+import { decodeStatementIncome, serializeStatementIncome, serializeStatementIncomeResponse, encodeStatementIncome, statementIncomeFields,
   validateSubmittedStatementIncome } from '../../app/services/statementIncomeCodec.ts'
 import { consumeStatementIncome, prepareStatementIncome, stageStatementIncomeSave, finishStatementIncomeSave,
   replaceStatementIncome } from '../../app/services/statementIncomeStorage.ts'
@@ -16,8 +17,8 @@ const data = amount => Object.fromEntries(statementIncomeFields.map(f => [f, amo
 async function sample() {
   const source = ts.createSourceFile('Statement.ts', await readFile('app/Models/Statement.ts', 'utf8'), ts.ScriptTarget.Latest, true)
   const model = source.statements.find(ts.isClassDeclaration)
-  const names = ['stageIncome', 'finishIncome', 'id', 'accountId', 'startDate', 'endDate', 'startingBalance', 'endingBalance', 'data']
-  const context = { BaseModel, column, beforeSave, afterSave, DateTime, serializeStatementIncome,
+  const names = ['stageIncome', 'finishIncome', 'id', 'accountId', 'startDate', 'endDate', 'startingBalance', 'endingBalance', 'data', 'serializeExtras']
+  const context = { BaseModel, column, beforeSave, afterSave, DateTime, serializeStatementIncomeResponse, encodeMonetaryAmount,
     consumeStatementIncome, prepareStatementIncome, stageStatementIncomeSave, finishStatementIncomeSave }
   runInNewContext(ts.transpileModule(`class Sample extends BaseModel { ${model.members.filter(m => names.includes(m.name?.getText(source))).map(m => m.getText(source)).join('\n')} }\nglobalThis.Sample=Sample`, {
     compilerOptions: { target: ts.ScriptTarget.ES2022, experimentalDecorators: true },
@@ -37,13 +38,13 @@ test.group('Statement income production codec and model boundary (no database)',
     [12.34, '12.34'], [-12.34, '-12.34'], [12.345, '12.35'], [0.125, '0.13'], [-0.125, '-0.12'],
     [-1.005, '-1.00'], [0.1 + 0.2, '0.30'], [0, '0.00'], [-0, '0.00'], [0.005, '0.01'], [-0.005, '0.00'],
   ]).run(({ assert }, [amount, expected]) => {
-    assert.equal(storedStatementIncomeAmount(amount), expected)
+    assert.equal(encodeMonetaryAmount(amount), expected)
     assert.deepEqual(encodeStatementIncome(data(amount)), data(expected))
   })
   test('malformed or unsafe scalars reject').with([
     undefined, null, true, false, {}, [], NaN, Infinity, -Infinity, '', ' ', '1.2', '1.005', '1e2', '-0.00', '01.00',
     'bad', Number.MAX_SAFE_INTEGER, Number.MAX_VALUE, '90071992547409.92',
-  ]).run(({ assert }, amount) => assert.throws(() => storedStatementIncomeAmount(amount)))
+  ]).run(({ assert }, amount) => assert.throws(() => encodeMonetaryAmount(amount)))
   test('raw submitted unsupported coercions reject').with([true, false, '', ' ', {}, [], '0x10', 'bad', Infinity, null, undefined])
     .run(({ assert }, amount) => assert.throws(() => validateSubmittedStatementIncome(data(amount))))
   test('existing decimal numeric-string request contract is retained', async ({ assert }) => {
@@ -72,7 +73,7 @@ test.group('Statement income production codec and model boundary (no database)',
     const { hydrated, writes } = await sample()
     const raw = { ...data('1.00'), dividends: '1.00' }, row = hydrated(raw)
     assert.equal(row.data.dividends, 1); assert.isFalse(row.$isDirty)
-    assert.deepEqual(row.serialize().data, { ...data(1), dividends: 1 })
+    assert.deepEqual(row.serialize().data, { ...data('1.00'), dividends: '1.00' })
     await row.save(); assert.lengthOf(writes, 0)
     row.startDate = DateTime.fromISO('2026-01-02'); await row.save()
     assert.notProperty(writes[0], 'data'); assert.deepEqual(raw, { ...data('1.00'), dividends: '1.00' })
@@ -88,7 +89,7 @@ test.group('Statement income production codec and model boundary (no database)',
     const { hydrated, writes } = await sample(), row = hydrated({ ...data('1.00'), note: { keep: 3 } })
     replaceStatementIncome(row, data(1)); await row.save()
     assert.deepEqual(JSON.parse(writes[0].data), { ...data('1.00'), note: { keep: 3 } })
-    assert.deepEqual(row.serialize().data, { ...data(1), note: { keep: 3 } }); assert.isFalse(row.$isDirty)
+    assert.deepEqual(row.serialize().data, { ...data('1.00'), note: { keep: 3 } }); assert.isFalse(row.$isDirty)
     assert.notProperty(writes[0], 'starting_balance'); assert.notProperty(writes[0], 'ending_balance')
     assert.equal(row.startingBalance, 100); assert.equal(row.endingBalance, 200)
   })
@@ -96,7 +97,7 @@ test.group('Statement income production codec and model boundary (no database)',
     const { Sample, writes } = await sample(), row = new Sample()
     row.merge({ id: 1, data: data(-0.125) }); await row.save()
     assert.deepEqual(JSON.parse(writes[0].data), data('-0.12'))
-    assert.deepEqual(row.data, data(-0.12)); assert.deepEqual(row.serialize().data, data(-0.12)); assert.isFalse(row.$isDirty)
+    assert.deepEqual(row.data, data(-0.12)); assert.deepEqual(row.serialize().data, data('-0.12')); assert.isFalse(row.$isDirty)
   })
   test('SQL-null data stays SQL null on insert and unchanged on metadata updates', async ({ assert }) => {
     const { Sample, hydrated, writes } = await sample(), row = hydrated(null)
@@ -141,7 +142,7 @@ async function lifecycle(input, options = {}) {
       async firstOrFail() { options.onWait?.(); if (options.wait) await options.wait; events.push('budget.acquired'); return {} },
     }) } },
   }
-  const context = { TrackingType, addStatement, updateStatement, validateSubmittedStatementIncome, encodeStatementIncome, replaceStatementIncome,
+  const context = { encodeMonetaryAmount, TrackingType, addStatement, updateStatement, validateSubmittedStatementIncome, encodeStatementIncome, replaceStatementIncome,
     db: { transaction: async () => owner }, budgetAccounts(budget, { client }) {
       if (budget !== 3 || client !== owner || !events.includes('budget.acquired')) throw Error('bad account binding')
       return chain(account)
@@ -161,15 +162,15 @@ test.group('Statement income production controllers (no database)', () => {
   test('real CREATE persists strings with numeric response and unchanged supplied balances', async ({ assert }) => {
     const f = await lifecycle({ startDate: '2026-01-01', endDate: '2026-01-31', startingBalance: 100, endingBalance: 200, data: data(12.345) }, { create: true })
     const response = await f.operation
-    assert.deepEqual(JSON.parse(f.writes[0].data), data('12.35')); assert.deepEqual(response.data, data(12.35))
-    assert.equal(response.startingBalance, 100); assert.equal(response.endingBalance, 200)
+    assert.deepEqual(JSON.parse(f.writes[0].data), data('12.35')); assert.deepEqual(response.data, data('12.35'))
+    assert.equal(response.startingBalance, '100.00'); assert.equal(response.endingBalance, '200.00')
     assert.notInclude(f.events, 'account.save'); assert.equal(f.events.at(-1), 'commit')
   })
   test('real data PATCH preserves financial balances and unrelated JSON under Budget transaction').with([TrackingType.Transactions, TrackingType.Balances])
     .run(async ({ assert }, tracking) => {
       const f = await lifecycle({ data: data(-0.125) }, { tracking }), response = await f.operation
       assert.deepEqual(JSON.parse(f.writes[0].data), { ...data('-0.12'), note: 'preserve' })
-      assert.deepEqual(response.data, data(-0.12)); assert.equal(f.account.balance, 200)
+      assert.deepEqual(response.data, data('-0.12')); assert.equal(f.account.balance, 200)
       assert.notProperty(f.writes[0], 'starting_balance'); assert.notProperty(f.writes[0], 'ending_balance')
       assert.isTrue(f.events.indexOf('budget.acquired') < f.events.indexOf('statement.read'))
       assert.equal(f.events.at(-1), 'commit')
@@ -216,7 +217,37 @@ test('Statement storage decoding and numeric serialization are separate boundari
     assert.throws(() => hydrated(data(amount)))
     assert.deepEqual(serializeStatementIncome(data(amount)), data(amount))
     const row = new Sample().merge({ data: data(amount) })
-    assert.deepEqual(row.serialize().data, data(amount))
+    assert.deepEqual(row.serialize().data, encodeStatementIncome(data(amount)))
   }
   assert.throws(() => serializeStatementIncome(data('1.00')))
+})
+
+
+test('Statement list serialization emits only canonical monetary strings without changing the model', async ({ assert }) => {
+  const { hydrated } = await sample()
+  const row = hydrated({ ...data('0.30'), note: { amount: 1.005 }, dividends: null })
+  row.$extras.credits = '0.30'
+  row.$extras.debits = '-0.12'
+  const before = globalThis.structuredClone(row.$attributes)
+  const account = { related: () => ({ query: () => ({ withAggregate() { return this }, then(resolve) { return Promise.resolve([row]).then(resolve) } }) }) }
+  const get = await controllerMethod('getStatements', { budgetAccounts: () => chain(account) })
+  const rows = await get({ request: { params: () => ({ acctId: 2 }) }, auth: { user: { budgetId: 3 } } })
+  const [response] = JSON.parse(JSON.stringify(rows))
+  assert.strictEqual(response.startingBalance, '100.00')
+  assert.strictEqual(response.endingBalance, '200.00')
+  assert.strictEqual(response.credits, '0.30')
+  assert.strictEqual(response.debits, '-0.12')
+  assert.deepEqual(response.data, { ...data('0.30'), note: { amount: 1.005 }, dividends: null })
+  assert.deepEqual(row.$attributes, before)
+  assert.isFalse(row.$isDirty)
+})
+
+test('Statement response encoding preserves optional income and uses approved rounding', ({ assert }) => {
+  for (const [amount, expected] of [[0, '0.00'], [-0, '0.00'], [0.125, '0.13'], [-0.125, '-0.12'], [1.005, '1.00'], [0.1 + 0.2, '0.30']]) {
+    assert.deepEqual(serializeStatementIncomeResponse(data(amount)), data(expected))
+  }
+  const original = { dividends: null, note: { amount: 1.005 } }
+  assert.deepEqual(serializeStatementIncomeResponse(original), original)
+  assert.isNull(serializeStatementIncomeResponse(null))
+  assert.isUndefined(serializeStatementIncomeResponse(undefined))
 })

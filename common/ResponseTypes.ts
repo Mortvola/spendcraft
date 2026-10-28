@@ -191,7 +191,24 @@ export interface AddInstitutionResponse {
   categories: CategoryBalanceProps[];
 }
 
+// Statement responses use canonical two-decimal strings; requests remain numeric.
 export interface StatementProps {
+  id: number,
+  startDate: string,
+  endDate: string,
+  startingBalance: string,
+  endingBalance: string,
+  credits: string,
+  debits: string,
+  data?: Partial<{
+    shortTermCapitalGains: string | null,
+    longTermCapitalGains: string | null,
+    dividends: string | null,
+    taxableInterest: string | null,
+  }> | null
+}
+
+export type UpdateStatementProps = Partial<{
   id: number,
   startDate: string,
   endDate: string,
@@ -199,15 +216,12 @@ export interface StatementProps {
   endingBalance: number,
   credits: number,
   debits: number,
-  data?: {
+  data: {
     shortTermCapitalGains: number,
     longTermCapitalGains: number,
     dividends: number,
     taxableInterest: number,
-  }
-}
-
-export type UpdateStatementProps = Partial<StatementProps & {
+  },
   reconcile: 'All' | 'None'
 }>
 

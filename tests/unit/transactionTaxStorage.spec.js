@@ -1,4 +1,5 @@
 import { test } from '@japa/runner'
+import { monetaryAmountCents, encodeMonetaryAmount } from '../../app/services/categoryAmountCodec.ts'
 import { BaseModel } from '@adonisjs/lucid/orm'
 import { Exception } from '@adonisjs/core/exceptions'
 import { DateTime } from 'luxon'
@@ -6,7 +7,7 @@ import { EventEmitter } from 'node:events'
 import { readFile } from 'node:fs/promises'
 import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
-import { encodeTaxAttributions, decodeTaxAttributions, taxAmountCents, storedTaxAmount, validateSubmittedTaxAmounts } from '../../app/services/taxAmountCodec.ts'
+import { encodeTaxAttributions, decodeTaxAttributions, validateSubmittedTaxAmounts } from '../../app/services/taxAmountCodec.ts'
 import { bindResolvedTaxStorage, prepareTaxStorage, stageTaxStorage, finishTaxStorageSave,
   excludeTaxStorage, hasTaxStorage, isTaxStorageExcluded, enableTaxStorageWrite } from '../../app/services/taxStorageBinding.ts'
 import { bindResolvedCategoryStorage, prepareCategoryStorage, stageCategoryStorage, finishCategoryStorageSave,
@@ -57,13 +58,13 @@ test.group('Tax decimal-string production codec and Lucid boundary (no database)
     [12.34, '12.34'], [12.345, '12.35'], [-12.345, '-12.34'], [-1.005, '-1.00'], [0.1 + 0.2, '0.30'],
     [0, '0.00'], [-0, '0.00'], [0.005, '0.01'], [-0.005, '0.00'], [0.125, '0.13'], [-0.125, '-0.12'],
   ]).run(({ assert }, [value, stored]) => {
-    assert.equal(storedTaxAmount(value), stored)
-    assert.equal(taxAmountCents(value), Math.round(value * 100) || 0)
+    assert.equal(encodeMonetaryAmount(value), stored)
+    assert.equal(monetaryAmountCents(value), Math.round(value * 100) || 0)
   })
   test('invalid storage scalar types and syntax reject, never coerce to zero').with([
     undefined, null, true, false, {}, [], NaN, Infinity, -Infinity, '', ' ', '1.2', '1.005', '1e2', '01.00', '-0.00', 'bad',
     Number.MAX_SAFE_INTEGER, Number.MAX_VALUE, '90071992547409.92',
-  ]).run(({ assert }, value) => assert.throws(() => storedTaxAmount(value)))
+  ]).run(({ assert }, value) => assert.throws(() => encodeMonetaryAmount(value)))
   test('new raw input rejects unsupported coercions').with([undefined, null, true, false, {}, [], '', ' ', '0x10', '12abc', 'Infinity'])
     .run(({ assert }, amount) => assert.throws(() => validateSubmittedTaxAmounts([attribution(amount)])))
   test('existing numeric-string request syntax is retained and new API values need not be strings').with([1.005, -1.005, '1.005', '1e-2', '-.125', ' 1.25 '])

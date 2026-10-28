@@ -1,4 +1,4 @@
-import { categoryAmountCents, storedCategoryAmount } from '#services/categoryAmountCodec'
+import { monetaryAmountCents, encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
 import Budget from '#models/Budget'
@@ -108,7 +108,7 @@ test.group('Monetary persistence and allocation regressions', () => {
     .run(async ({ client, assert }, amount) => {
       const f = await fixture()
       const decimal = (await db.rawQuery('SELECT CAST(? AS numeric(12,2))::text AS amount', [Number(amount)])).rows[0].amount
-      const conserves = categoryAmountCents(Number(amount)) === categoryAmountCents(decimal)
+      const conserves = monetaryAmountCents(Number(amount)) === monetaryAmountCents(decimal)
       const before = await db.from('categories').whereIn('id', f.categories.map((row) => row.id)).orderBy('id')
       const response = await client.post(`/api/v1/account/${f.account.id}/transactions`)
         .json({ date: '2025-02-10', name: 'Fractional cent', amount,
@@ -126,8 +126,8 @@ test.group('Monetary persistence and allocation regressions', () => {
         assert.deepEqual(await db.from('categories').whereIn('id', f.categories.map((row) => row.id)).orderBy('id'), before)
       } else {
         if (!transaction || !association) throw new Error('Successful CREATE must persist its Transaction and AccountTransaction')
-        assert.equal(transaction.categories[0].amount, categoryAmountCents(Number(amount)) / 100)
-        assert.equal((await db.from('transactions').where('id', transaction.id).first()).categories[0].amount, storedCategoryAmount(Number(amount)))
+        assert.equal(transaction.categories[0].amount, monetaryAmountCents(Number(amount)) / 100)
+        assert.equal((await db.from('transactions').where('id', transaction.id).first()).categories[0].amount, encodeMonetaryAmount(Number(amount)))
         assert.equal(association.amount, Number(decimal))
       }
       console.log(JSON.stringify({ scenario: 'fractional cent', input: amount, status: response.status(),
@@ -164,11 +164,11 @@ test.group('Monetary persistence and allocation regressions', () => {
         .json({ version: 0, amount: input, categories: [{ categoryId: f.categories[0].id, amount: input }] })
         .accept('json').loginAs(f.user)
       const decimal = (await db.rawQuery('SELECT CAST(? AS numeric(12,2))::text AS amount', [amount])).rows[0].amount
-      const conserves = categoryAmountCents(amount) === categoryAmountCents(decimal)
+      const conserves = monetaryAmountCents(amount) === monetaryAmountCents(decimal)
       response.assertStatus(conserves ? 200 : 422)
-      assert.equal((await Transaction.findOrFail(transaction.id)).categories[0].amount, conserves ? categoryAmountCents(amount) / 100 : 0)
+      assert.equal((await Transaction.findOrFail(transaction.id)).categories[0].amount, conserves ? monetaryAmountCents(amount) / 100 : 0)
       assert.equal((await AccountTransaction.findOrFail(association.id)).amount, conserves ? Number(decimal) : 0)
-      if (conserves) assert.equal((await db.from('transactions').where('id', transaction.id).first()).categories[0].amount, storedCategoryAmount(amount))
+      if (conserves) assert.equal((await db.from('transactions').where('id', transaction.id).first()).categories[0].amount, encodeMonetaryAmount(amount))
       else {
         assert.equal((await Account.findOrFail(f.account.id)).balance, 0)
         assert.equal((await Category.findOrFail(f.categories[0].id)).balance, 0)
@@ -182,7 +182,7 @@ test.group('Monetary persistence and allocation regressions', () => {
       const created = await client.post('/api/v1/category-transfer').json({ date: '2025-02-10', type: TransactionType.REBALANCE_TRANSACTION,
         categories: splits }).accept('json').loginAs(f.user)
       // Negative half ties can fail this sign-asymmetric rounded zero-sum check.
-      created.assertStatus(categoryAmountCents(amount) + categoryAmountCents(-amount) === 0 ? 200 : 422)
+      created.assertStatus(monetaryAmountCents(amount) + monetaryAmountCents(-amount) === 0 ? 200 : 422)
       if (created.status() === 200) {
         const id = created.body().data.transaction.id
         const updated = await client.patch(`/api/v1/category-transfer/${id}`).json({ date: '2025-02-11',
@@ -302,7 +302,7 @@ test.group('Monetary persistence and allocation regressions', () => {
     assert.equal(persisted.amount, amount)
     assert.equal(storage.stored_value, amount.toFixed(2))
     assert.deepEqual(transaction.categories.map(split => split.amount), [amount, 0.01])
-    assert.equal(transaction.categories.reduce((total, split) => total + categoryAmountCents(split.amount), 0),
-      categoryAmountCents(amount) + 1)
+    assert.equal(transaction.categories.reduce((total, split) => total + monetaryAmountCents(split.amount), 0),
+      monetaryAmountCents(amount) + 1)
   })
 })

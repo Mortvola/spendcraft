@@ -3,7 +3,7 @@ import type Transaction from '#models/Transaction'
 import db from '@adonisjs/lucid/services/db'
 import { Exception } from '@adonisjs/core/exceptions'
 import { stageFundingStorage } from './fundingStorage.ts'
-import { validateCategoryConservation, categoryAmountCents, checkedCentSum, encodeCategoryAllocations } from './categoryAmountCodec.ts'
+import { validateCategoryConservation, monetaryAmountCents, checkedCentSum, encodeCategoryAllocations } from './categoryAmountCodec.ts'
 
 const supported = [0, 2, 3, 4, 5]
 
@@ -78,8 +78,8 @@ export async function validateStoredCategoryConservation(transaction: Transactio
       throw new Exception('Transaction requires one owning AccountTransaction.', { status: 422 })
     }
     // numeric(12,2) is within safe cent range; codec compares the exact decimal text, without Number parsing.
-    const expectedCents = categoryAmountCents(String(links[0].amount))
-    if (checkedCentSum(transaction.categories.map((split) => categoryAmountCents(split.amount))) !== expectedCents) {
+    const expectedCents = monetaryAmountCents(String(links[0].amount))
+    if (checkedCentSum(transaction.categories.map((split) => monetaryAmountCents(split.amount))) !== expectedCents) {
       throw new Exception('The sum of the categories does not match the transaction amount.', { status: 422 })
     }
   } else if (transaction.type === 3) {

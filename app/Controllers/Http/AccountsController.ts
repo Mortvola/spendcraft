@@ -16,6 +16,7 @@ import {
 } from '#common/ResponseTypes';
 import Statement from '#app/Models/Statement';
 import { validateSubmittedStatementIncome, encodeStatementIncome } from '#services/statementIncomeCodec';
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec';
 import { replaceStatementIncome } from '#services/statementIncomeStorage';
 import AccountTransaction from '#app/Models/AccountTransaction';
 import transactionFields from './transactionFields.js';
@@ -571,15 +572,15 @@ export default class AccountsController {
         id: statement.id,
         startDate,
         endDate,
-        startingBalance: statement.startingBalance,
-        endingBalance: statement.endingBalance,
-        credits,
-        debits,
+        startingBalance: encodeMonetaryAmount(statement.startingBalance),
+        endingBalance: encodeMonetaryAmount(statement.endingBalance),
+        credits: encodeMonetaryAmount(credits),
+        debits: encodeMonetaryAmount(debits),
         data: {
-          shortTermCapitalGains: statement.data?.shortTermCapitalGains ?? 0,
-          longTermCapitalGains: statement.data?.longTermCapitalGains ?? 0,
-          dividends: statement.data?.dividends ?? 0,
-          taxableInterest: statement.data?.taxableInterest ?? 0,
+          shortTermCapitalGains: encodeMonetaryAmount(statement.data?.shortTermCapitalGains ?? 0),
+          longTermCapitalGains: encodeMonetaryAmount(statement.data?.longTermCapitalGains ?? 0),
+          dividends: encodeMonetaryAmount(statement.data?.dividends ?? 0),
+          taxableInterest: encodeMonetaryAmount(statement.data?.taxableInterest ?? 0),
         },
         transactions: acctTransactions.map((acctTransaction) => acctTransaction.transactionId)
       };
@@ -706,15 +707,15 @@ export default class AccountsController {
         id: statement.id,
         startDate,
         endDate,
-        startingBalance: statement.startingBalance,
-        endingBalance: statement.endingBalance,
-        credits: parseFloat(credits[0].$extras.sum ?? 0),
-        debits: parseFloat(debits[0].$extras.sum ?? 0),
+        startingBalance: encodeMonetaryAmount(statement.startingBalance),
+        endingBalance: encodeMonetaryAmount(statement.endingBalance),
+        credits: encodeMonetaryAmount(credits[0].$extras.sum ?? 0),
+        debits: encodeMonetaryAmount(debits[0].$extras.sum ?? 0),
         data: {
-          shortTermCapitalGains: statement.data?.shortTermCapitalGains ?? 0,
-          longTermCapitalGains: statement.data?.longTermCapitalGains ?? 0,
-          dividends: statement.data?.dividends ?? 0,
-          taxableInterest: statement.data?.taxableInterest ?? 0,
+          shortTermCapitalGains: encodeMonetaryAmount(statement.data?.shortTermCapitalGains ?? 0),
+          longTermCapitalGains: encodeMonetaryAmount(statement.data?.longTermCapitalGains ?? 0),
+          dividends: encodeMonetaryAmount(statement.data?.dividends ?? 0),
+          taxableInterest: encodeMonetaryAmount(statement.data?.taxableInterest ?? 0),
         }
       };
 

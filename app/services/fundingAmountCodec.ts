@@ -1,5 +1,5 @@
 import { Exception } from '@adonisjs/core/exceptions'
-import { categoryAmountCents, storedCategoryAmount, decodeStoredMonetaryAmount } from './categoryAmountCodec.ts'
+import { monetaryAmountCents, encodeMonetaryAmount, decodeStoredMonetaryAmount } from './categoryAmountCodec.ts'
 
 type Path = (string | number)[]
 type Scalar = (value: unknown, path: Path) => unknown
@@ -12,10 +12,10 @@ function object(value: unknown): Record<string, unknown> {
 }
 
 export function runtimeFundingAmount(value: unknown): number {
-  const cents = categoryAmountCents(value)
+  const cents = monetaryAmountCents(value)
   if (typeof value === 'number') return value // Unsaved/runtime values retain their calculation precision.
   const result = cents / 100
-  if (storedCategoryAmount(result) !== value) throw new Exception('Unsafe funding amount decoding', { status: 422 })
+  if (encodeMonetaryAmount(result) !== value) throw new Exception('Unsafe funding amount decoding', { status: 422 })
   return result
 }
 
@@ -45,9 +45,9 @@ export function mapFundingMetadata(value: unknown, scalar: Scalar): unknown {
   })
 }
 
-export const encodeFundingRules = (value: unknown) => mapFundingRules(value, storedCategoryAmount)
+export const encodeFundingRules = (value: unknown) => mapFundingRules(value, encodeMonetaryAmount)
 export const decodeFundingRules = (value: unknown) => mapFundingRules(value, decodeStoredMonetaryAmount)
-export const encodeFundingMetadata = (value: unknown) => mapFundingMetadata(value, storedCategoryAmount)
+export const encodeFundingMetadata = (value: unknown) => mapFundingMetadata(value, encodeMonetaryAmount)
 export const decodeFundingMetadata = (value: unknown) => mapFundingMetadata(value, decodeStoredMonetaryAmount)
 
 export const runtimeFundingMetadata = (value: unknown) => mapFundingMetadata(value, runtimeFundingAmount)

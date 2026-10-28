@@ -1,6 +1,6 @@
 import type { LucidRow } from '@adonisjs/lucid/types/model'
 import { isDeepStrictEqual } from 'node:util'
-import { storedCategoryAmount } from './categoryAmountCodec.ts'
+import { encodeMonetaryAmount } from './categoryAmountCodec.ts'
 import { decodeFundingRules, decodeFundingMetadata, encodeFundingRules, encodeFundingMetadata,
   mapFundingRules, mapFundingMetadata, runtimeFundingAmount } from './fundingAmountCodec.ts'
 
@@ -40,7 +40,7 @@ export function prepareFundingStorage(value: unknown, row: LucidRow, metadata = 
     }
     if (row.$isPersisted && !replacements.has(row) && old !== null && old !== undefined
       && isDeepStrictEqual(amount, runtimeFundingAmount(old))) return old
-    return storedCategoryAmount(amount)
+    return encodeMonetaryAmount(amount)
   })
   pending.set(row, structuredClone(encoded))
   return encoded

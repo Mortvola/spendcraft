@@ -75,7 +75,7 @@ export * from ${source('common/ResponseTypes.ts')};
       store.uiState.selectedAccount = account
       store.uiState.selectedCategory = category
     })
-    const statementProps = { id: 30, startDate: '2025-02-01', endDate: '2025-02-28', startingBalance: 100, endingBalance: 90, credits: 0, debits: 0, data: {} }
+    const statementProps = { id: 30, startDate: '2025-02-01', endDate: '2025-02-28', startingBalance: '100.00', endingBalance: '90.00', credits: '0.00', debits: '0.00', data: {} }
     const statement = new state.Statement(statementProps, account.statements)
     state.runInAction(() => { account.statements.statements = [statement]; store.uiState.selectedStatement = statement })
     const transactionProps = (amount = -10, statementId = null) => ({ id: 40, date: '2025-02-10', type: state.TransactionType.MANUAL_TRANSACTION, sortOrder: 0, comment: '', version: 0, duplicateOfTransactionId: null, categories: [{ categoryId: 20, amount }], taxes: [], accountTransaction: { name: 'Purchase', amount, principle: null, statementId, pending: false, accountOwner: null, paymentChannel: null, location: null, account: { id: 10, name: 'Checking', institution: { name: 'Offline bank' } } } })
@@ -90,6 +90,34 @@ export * from ${source('common/ResponseTypes.ts')};
     }
     f = { store, institution, account, accountProps, institutionProps, category, other, statement, statementProps, transactionProps }
     return () => { for (const [method, original] of originals) state.Http[method] = original }
+  })
+
+  test('Statement strings decode to numeric UI values while update requests remain numeric', async ({ assert }) => {
+    const response = { ...f.statementProps, startingBalance: '0.10', endingBalance: '0.30', credits: '0.20', debits: '-0.01',
+      data: { shortTermCapitalGains: '-0.12', longTermCapitalGains: null, dividends: '0.30', taxableInterest: '12.35' } }
+    routes.set('patch /api/v1/statements/30', async payload => {
+      assert.strictEqual(payload.endingBalance, 0.3)
+      assert.strictEqual(payload.data.dividends, 0.3)
+      return { body: response }
+    })
+    await f.statement.update({ endingBalance: 0.3, data: { shortTermCapitalGains: -0.12, longTermCapitalGains: 0, dividends: 0.3, taxableInterest: 12.35 } })
+    assert.strictEqual(f.statement.startingBalance, 0.1)
+    assert.strictEqual(f.statement.endingBalance, 0.3)
+    assert.strictEqual(f.statement.credits, 0.2)
+    assert.strictEqual(f.statement.debits, -0.01)
+    assert.strictEqual(f.statement.shortTermGains, -0.12)
+    assert.strictEqual(f.statement.longTermGains, 0)
+    assert.strictEqual(f.statement.dividends, 0.3)
+    assert.strictEqual(f.statement.taxableInterest, 12.35)
+  })
+
+  test('invalid Statement monetary responses cannot partially update the client').with([
+    1, '', '1.2', '1e2', '01.00', '-0.00', 'NaN', 'Infinity', '90071992547409.92',
+  ]).run(async ({ assert }, amount) => {
+    const before = f.statement.endingBalance
+    routes.set('patch /api/v1/statements/30', async () => ({ body: { ...f.statementProps, endingBalance: '75.00', data: { dividends: amount } } }))
+    await assert.rejects(() => f.statement.update({ endingBalance: 75 }))
+    assert.strictEqual(f.statement.endingBalance, before)
   })
 
   function transactions(props = f.transactionProps()) {
@@ -125,7 +153,7 @@ export * from ${source('common/ResponseTypes.ts')};
 
   test('transaction edit applies returned statement totals', async ({ assert }) => {
     const trx = transactions().account
-    routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: { transaction: f.transactionProps(-10, 30), categories: [{ id: 20, balance: -10 }], acctBalances: [{ id: 10, balance: 90 }], statement: { ...f.statementProps, debits: -10 } } } }))
+    routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: { transaction: f.transactionProps(-10, 30), categories: [{ id: 20, balance: -10 }], acctBalances: [{ id: 10, balance: 90 }], statement: { ...f.statementProps, debits: '-10.00' } } } }))
     await trx.updateTransaction({ statementId: 30 })
     assert.equal(trx.statementId, 30)
     assert.equal(f.statement.debits, -10)
@@ -162,7 +190,7 @@ export * from ${source('common/ResponseTypes.ts')};
 
   test('statement editing refreshes authoritative current balance for balance-tracked accounts', async ({ assert }) => {
     state.runInAction(() => { f.account.tracking = state.TrackingType.Balances; f.account.balance = 90 })
-    routes.set('patch /api/v1/statements/30', async () => ({ body: { ...f.statementProps, endingBalance: 75 } }))
+    routes.set('patch /api/v1/statements/30', async () => ({ body: { ...f.statementProps, endingBalance: '75.00' } }))
     routes.set('get /api/v1/connected-accounts', async () => ({ body: { data: [{ ...f.institutionProps, accounts: [{ ...f.accountProps, tracking: state.TrackingType.Balances, balance: 75 }] }] } }))
     await f.statement.update({ endingBalance: 75 })
     assert.equal(f.statement.endingBalance, 75)
@@ -172,7 +200,7 @@ export * from ${source('common/ResponseTypes.ts')};
 
   test('bulk reconciliation refreshes loaded transaction statement membership', async ({ assert }) => {
     const cached = transactions()
-    routes.set('patch /api/v1/statements/30', async () => ({ body: { ...f.statementProps, debits: -10 } }))
+    routes.set('patch /api/v1/statements/30', async () => ({ body: { ...f.statementProps, debits: '-10.00' } }))
     routes.set('get /api/v1/transactions?t=40', async () => ({ body: { data: { transactions: [f.transactionProps(-10, 30)], balance: 0 } } }))
     await f.statement.update({ reconcile: 'All' })
     assert.equal(cached.account.statementId, 30)
@@ -391,14 +419,14 @@ export * from ${source('common/ResponseTypes.ts')};
 
   test('authoritative refresh failure after statement success propagates without inventing a balance', async ({ assert }) => {
     state.runInAction(() => { f.account.tracking = state.TrackingType.Balances; f.account.balance = 90 })
-    routes.set('patch /api/v1/statements/30', async () => ({ body: { ...f.statementProps, endingBalance: 75 } }))
+    routes.set('patch /api/v1/statements/30', async () => ({ body: { ...f.statementProps, endingBalance: '75.00' } }))
     routes.set('get /api/v1/connected-accounts', async () => ({ ok: false, body: {} }))
     await assert.rejects(() => f.statement.update({ endingBalance: 75 }))
     assert.equal(f.statement.endingBalance, 75); assert.equal(f.account.balance, 90)
   })
 
   test('statement refresh preserves selected shared statement identity', async ({ assert }) => {
-    routes.set('get /api/v1/account/10/statements', async () => ({ body: [{ ...f.statementProps, debits: -25 }] }))
+    routes.set('get /api/v1/account/10/statements', async () => ({ body: [{ ...f.statementProps, debits: '-25.00' }] }))
     await f.account.statements.load()
     assert.strictEqual(f.account.statements.statements[0], f.statement)
     assert.strictEqual(f.store.uiState.selectedStatement, f.statement)
@@ -408,7 +436,7 @@ export * from ${source('common/ResponseTypes.ts')};
   test('amount edit on an assigned transaction refreshes missing statement totals', async ({ assert }) => {
     const cached = transactions(f.transactionProps(-10, 30))
     routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: { transaction: { ...f.transactionProps(-12.25, 30), version: 1 }, categories: [{ id: 20, balance: -12.25 }], acctBalances: [{ id: 10, balance: 87.75 }] } } }))
-    routes.set('get /api/v1/account/10/statements', async () => ({ body: [{ ...f.statementProps, debits: -12.25 }] }))
+    routes.set('get /api/v1/account/10/statements', async () => ({ body: [{ ...f.statementProps, debits: '-12.25' }] }))
     await cached.account.updateTransaction({ amount: -12.25 })
     assert.equal(f.statement.debits, -12.25)
     assert.equal(cached.category.amount, -12.25)
@@ -416,7 +444,7 @@ export * from ${source('common/ResponseTypes.ts')};
 
   test('clearing assignment applies returned statement totals to all loaded copies', async ({ assert }) => {
     const cached = transactions(f.transactionProps(-10, 30))
-    routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: { transaction: f.transactionProps(-10, null), categories: [{ id: 20, balance: -10 }], acctBalances: [{ id: 10, balance: 90 }], statement: { ...f.statementProps, debits: 0 } } } }))
+    routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: { transaction: f.transactionProps(-10, null), categories: [{ id: 20, balance: -10 }], acctBalances: [{ id: 10, balance: 90 }], statement: { ...f.statementProps, debits: '0.00' } } } }))
     await cached.account.updateTransaction({ statementId: null })
     assert.equal(cached.account.statementId, null); assert.equal(cached.category.statementId, null)
     assert.equal(f.statement.debits, 0)
@@ -424,7 +452,7 @@ export * from ${source('common/ResponseTypes.ts')};
 
   test('bulk reconciliation None uses authoritative membership', async ({ assert }) => {
     const cached = transactions(f.transactionProps(-10, 30))
-    routes.set('patch /api/v1/statements/30', async () => ({ body: { ...f.statementProps, debits: 0 } }))
+    routes.set('patch /api/v1/statements/30', async () => ({ body: { ...f.statementProps, debits: '0.00' } }))
     routes.set('get /api/v1/transactions?t=40', async () => ({ body: { data: { transactions: [f.transactionProps(-10, null)], balance: 0 } } }))
     await f.statement.update({ reconcile: 'None' })
     assert.equal(cached.account.statementId, null); assert.equal(cached.category.statementId, null)
@@ -432,7 +460,7 @@ export * from ${source('common/ResponseTypes.ts')};
 
   test('reconciliation refresh rejection propagates and leaves cached membership intact', async ({ assert }) => {
     const cached = transactions()
-    routes.set('patch /api/v1/statements/30', async () => ({ body: { ...f.statementProps, debits: -10 } }))
+    routes.set('patch /api/v1/statements/30', async () => ({ body: { ...f.statementProps, debits: '-10.00' } }))
     routes.set('get /api/v1/transactions?t=40', async () => ({ ok: false, body: {} }))
     await assert.rejects(() => f.statement.update({ reconcile: 'All' }))
     assert.equal(cached.account.statementId, null); assert.equal(cached.category.statementId, null)
@@ -472,7 +500,7 @@ export * from ${source('common/ResponseTypes.ts')};
 
   test('combined statement date change and reconciliation uses server-returned membership', async ({ assert }) => {
     const cached = transactions()
-    routes.set('patch /api/v1/statements/30', async () => ({ body: { ...f.statementProps, startDate: '2025-01-01', debits: -10 } }))
+    routes.set('patch /api/v1/statements/30', async () => ({ body: { ...f.statementProps, startDate: '2025-01-01', debits: '-10.00' } }))
     routes.set('get /api/v1/transactions?t=40', async () => ({ body: { data: { transactions: [f.transactionProps(-10, 30)], balance: 0 } } }))
     await f.statement.update({ startDate: '2025-01-01', reconcile: 'All' })
     assert.equal(f.statement.startDate.toISODate(), '2025-01-01')
@@ -481,7 +509,7 @@ export * from ${source('common/ResponseTypes.ts')};
 
   test('date-only statement edit preserves existing assignment semantics', async ({ assert }) => {
     const cached = transactions(f.transactionProps(-10, 30))
-    routes.set('patch /api/v1/statements/30', async () => ({ body: { ...f.statementProps, startDate: '2025-02-15', debits: -10 } }))
+    routes.set('patch /api/v1/statements/30', async () => ({ body: { ...f.statementProps, startDate: '2025-02-15', debits: '-10.00' } }))
     await f.statement.update({ startDate: '2025-02-15' })
     assert.equal(cached.account.statementId, 30); assert.equal(cached.category.statementId, 30)
     assert.lengthOf(calls, 1)
@@ -489,14 +517,14 @@ export * from ${source('common/ResponseTypes.ts')};
 
   test('malformed authoritative accounts refresh is an error after a successful statement mutation', async ({ assert }) => {
     state.runInAction(() => { f.account.tracking = state.TrackingType.Balances; f.account.balance = 90 })
-    routes.set('patch /api/v1/statements/30', async () => ({ body: { ...f.statementProps, endingBalance: 75 } }))
+    routes.set('patch /api/v1/statements/30', async () => ({ body: { ...f.statementProps, endingBalance: '75.00' } }))
     routes.set('get /api/v1/connected-accounts', async () => ({ body: {} }))
     await assert.rejects(() => f.statement.update({ endingBalance: 75 }))
     assert.equal(f.statement.endingBalance, 75); assert.equal(f.account.balance, 90)
   })
 
   test('statement date editing reorders the shared history used for latest-statement display', async ({ assert }) => {
-    const newer = new state.Statement({ ...f.statementProps, id: 31, startDate: '2025-03-01', endDate: '2025-03-31', endingBalance: 120 }, f.account.statements)
+    const newer = new state.Statement({ ...f.statementProps, id: 31, startDate: '2025-03-01', endDate: '2025-03-31', endingBalance: '120.00' }, f.account.statements)
     state.runInAction(() => { f.account.statements.statements = [newer, f.statement]; f.account.tracking = state.TrackingType.Balances; f.account.balance = 120 })
     routes.set('patch /api/v1/statements/30', async () => ({ body: { ...f.statementProps, endDate: '2025-04-30' } }))
     accountsResponse(90)
@@ -507,7 +535,7 @@ export * from ${source('common/ResponseTypes.ts')};
 
   test('statement creation on balance-tracked account refreshes authoritative account', async ({ assert }) => {
     state.runInAction(() => { f.account.tracking = state.TrackingType.Balances; f.account.balance = 90 })
-    routes.set('post /api/v1/account/10/statements', async () => ({ body: { ...f.statementProps, id: 31, startDate: '2025-03-01', endDate: '2025-03-31', endingBalance: 75, transactions: [] } }))
+    routes.set('post /api/v1/account/10/statements', async () => ({ body: { ...f.statementProps, id: 31, startDate: '2025-03-01', endDate: '2025-03-31', endingBalance: '75.00', transactions: [] } }))
     accountsResponse(75)
     await f.account.statements.addStatement('2025-03-01', '2025-03-31', 90, 75, 0, 0, 0, 0)
     assert.equal(f.account.balance, 75)
@@ -555,7 +583,7 @@ export * from ${source('common/ResponseTypes.ts')};
   test('reconciliation rejects incomplete or duplicate batch responses before applying membership').with(['missing', 'duplicate']).run(async ({ assert }, failure) => {
     const cached = transactions()
     state.runInAction(() => { f.account.transactions.appendTransactions([{ ...f.transactionProps(), id: 41 }]) })
-    routes.set('patch /api/v1/statements/30', async () => ({ body: { ...f.statementProps, debits: -20 } }))
+    routes.set('patch /api/v1/statements/30', async () => ({ body: { ...f.statementProps, debits: '-20.00' } }))
     const returned = f.transactionProps(-10, 30)
     routes.set('get /api/v1/transactions?t=40&t=41', async () => ({ body: { data: { transactions: failure === 'missing' ? [returned] : [returned, returned], balance: 0 } } }))
     await assert.rejects(() => f.statement.update({ reconcile: 'All' }))

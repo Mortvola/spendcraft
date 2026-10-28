@@ -6,7 +6,8 @@ import {
 import AccountTransaction from './AccountTransaction.js'
 import type { BelongsTo, HasMany } from "@adonisjs/lucid/types/relations";
 import Account from './Account.ts';
-import { serializeStatementIncome } from '#services/statementIncomeCodec'
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
+import { serializeStatementIncomeResponse } from '#services/statementIncomeCodec'
 import type { StatementIncomeData } from '#services/statementIncomeCodec'
 import { consumeStatementIncome, prepareStatementIncome, stageStatementIncomeSave, finishStatementIncomeSave } from '#services/statementIncomeStorage'
 
@@ -37,18 +38,20 @@ export default class Statement extends BaseModel {
 
   @column({
     consume: (value: string) => parseFloat(value),
+    serialize: (value: number) => encodeMonetaryAmount(value),
   })
   public startingBalance: number
 
   @column({
     consume: (value: string) => parseFloat(value),
+    serialize: (value: number) => encodeMonetaryAmount(value),
   })
   public endingBalance: number
 
   @column({
     consume: (value, _key, row) => consumeStatementIncome(value, row),
     prepare: (value, _key, row) => prepareStatementIncome(value, row),
-    serialize: (value) => serializeStatementIncome(value),
+    serialize: (value) => serializeStatementIncomeResponse(value),
   })
   declare data: StatementIncomeData | null
   
@@ -60,8 +63,8 @@ export default class Statement extends BaseModel {
 
   public serializeExtras() {
     return {
-      debits: this.$extras.debits === null ? 0 : parseFloat(this.$extras.debits),
-      credits: this.$extras.credits === null ? 0 : parseFloat(this.$extras.credits),
+      debits: encodeMonetaryAmount(this.$extras.debits ?? 0),
+      credits: encodeMonetaryAmount(this.$extras.credits ?? 0),
     }
   }
 }

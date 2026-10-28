@@ -1,5 +1,5 @@
 import { Exception } from '@adonisjs/core/exceptions'
-import { storedCategoryAmount, decodeStoredMonetaryAmount } from './categoryAmountCodec.ts'
+import { encodeMonetaryAmount, decodeStoredMonetaryAmount } from './categoryAmountCodec.ts'
 
 export const statementIncomeFields = ['shortTermCapitalGains', 'longTermCapitalGains', 'dividends', 'taxableInterest'] as const
 export type StatementIncomeData = Partial<Record<typeof statementIncomeFields[number], number | null>> & Record<string, unknown>
@@ -10,15 +10,9 @@ export function incomeObject(value: unknown): Record<string, unknown> {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) invalid()
   return { ...value }
 }
-export function storedStatementIncomeAmount(value: unknown): string {
-  try { return storedCategoryAmount(value) } catch (error) {
-    if (error instanceof Exception && error.status === 422) invalid()
-    throw error
-  }
-}
 export function runtimeStatementIncomeAmount(value: unknown): number {
   if (typeof value !== 'number') invalid()
-  storedStatementIncomeAmount(value) // Validate without rounding the runtime value.
+  encodeMonetaryAmount(value) // Validate without rounding the runtime value.
   return value
 }
 function mapStatementIncome(value: unknown, scalar: (value: unknown) => number): StatementIncomeData | null | undefined {
@@ -34,11 +28,21 @@ function mapStatementIncome(value: unknown, scalar: (value: unknown) => number):
 export const decodeStatementIncome = (value: unknown) => mapStatementIncome(value, decodeStoredMonetaryAmount)
 export const serializeStatementIncome = (value: unknown) => mapStatementIncome(value, runtimeStatementIncomeAmount)
 
+export function serializeStatementIncomeResponse(value: unknown): Record<string, unknown> | null | undefined {
+  const result = serializeStatementIncome(value)
+  if (result === null || result === undefined) return result
+  const response: Record<string, unknown> = { ...result }
+  for (const field of statementIncomeFields) {
+    if (Object.hasOwn(result, field) && result[field] !== null) response[field] = encodeMonetaryAmount(result[field])
+  }
+  return response
+}
+
 export function encodeStatementIncome(value: unknown): Record<string, unknown> | null | undefined {
   if (value === null || value === undefined) return value
   const result = incomeObject(value)
   for (const field of statementIncomeFields) {
-    if (Object.hasOwn(result, field)) result[field] = storedStatementIncomeAmount(result[field])
+    if (Object.hasOwn(result, field)) result[field] = encodeMonetaryAmount(result[field])
   }
   return result
 }
@@ -50,8 +54,8 @@ export function validateSubmittedStatementIncome(value: unknown): void {
   const data = incomeObject(value)
   for (const field of statementIncomeFields) {
     const amount = data[field]
-    if (typeof amount === 'number') { storedStatementIncomeAmount(amount); continue }
+    if (typeof amount === 'number') { encodeMonetaryAmount(amount); continue }
     if (typeof amount !== 'string' || !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/.test(amount.trim())) invalid()
-    storedStatementIncomeAmount(Number(amount))
+    encodeMonetaryAmount(Number(amount))
   }
 }

@@ -109,8 +109,8 @@ test.group('Statement reconciliation period characterization', (group) => {
       assert.deepEqual([after[0], after[2], after[4], after[5]], [before[0], before[2], before[4], before[5]])
       assert.deepEqual(after[1].filter((row) => row.id === fixture.neighbor.id), before[1].filter((row) => row.id === fixture.neighbor.id))
       assert.deepEqual(actualAssignments, expectedAssignments, `${workflow}/${period.name}: exact persisted assignments`)
-      assert.equal(response.body().credits, credits)
-      assert.equal(response.body().debits, debits)
+      assert.equal(response.body().credits, credits.toFixed(2))
+      assert.equal(response.body().debits, debits.toFixed(2))
     })
   }
 

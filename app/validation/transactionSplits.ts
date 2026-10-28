@@ -1,4 +1,4 @@
-import { categoryAmountCents, checkedCentSum } from '#services/categoryAmountCodec'
+import { monetaryAmountCents, checkedCentSum } from '#services/categoryAmountCodec'
 import { Exception } from '@adonisjs/core/exceptions'
 
 export function validateTransactionSplits(
@@ -9,9 +9,9 @@ export function validateTransactionSplits(
   // Active storage callers opt into signed checked rounding; deprecated shared callers retain their existing policy.
   const sign = amount < 0 ? -1 : 1
   const total = categoryStorage
-    ? checkedCentSum(categories.map((split) => categoryAmountCents(split.amount)))
+    ? checkedCentSum(categories.map((split) => monetaryAmountCents(split.amount)))
     : categories.reduce((sum, split) => sum + Math.round(split.amount * sign * 100), 0)
-  const expected = categoryStorage ? categoryAmountCents(amount) : Math.round(Math.abs(amount) * 100)
+  const expected = categoryStorage ? monetaryAmountCents(amount) : Math.round(Math.abs(amount) * 100)
   if (total !== expected) {
     throw new Exception(message, { status: 422 })
   }

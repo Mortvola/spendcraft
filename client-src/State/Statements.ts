@@ -1,6 +1,6 @@
 import { observable, runInAction } from "mobx";
 import { AccountInterface, AddStatementRequest, StatementsInterface, StoreInterface } from "./Types";
-import Statement from "./Statement";
+import Statement, { decodeAmount } from "./Statement";
 import Http from "@mortvola/http";
 import { AddStatementResponse, ApiError, StatementProps, StatementsResponse, TrackingType } from "../../common/ResponseTypes";
 
@@ -116,9 +116,11 @@ class Statements implements StatementsInterface {
     const statement = this.statements.find((s) => s.id === props.id)
 
     if (statement) {
+      const credits = decodeAmount(props.credits);
+      const debits = decodeAmount(props.debits);
       runInAction(() => {
-        statement.credits = props.credits
-        statement.debits = props.debits
+        statement.credits = credits
+        statement.debits = debits
       })
     }
   }

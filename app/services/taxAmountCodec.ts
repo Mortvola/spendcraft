@@ -1,5 +1,5 @@
 import { Exception } from '@adonisjs/core/exceptions'
-import { categoryAmountCents, storedCategoryAmount, decodeStoredMonetaryAmount } from './categoryAmountCodec.ts'
+import { encodeMonetaryAmount, decodeStoredMonetaryAmount } from './categoryAmountCodec.ts'
 
 export interface TaxAttribution { type: string; amount: number }
 
@@ -7,18 +7,6 @@ function invalid(message = 'Invalid tax attribution amount'): never {
   throw new Exception(message, { status: 422 })
 }
 
-export function taxAmountCents(value: unknown): number {
-  try { return categoryAmountCents(value) } catch (error) {
-    if (error instanceof Exception && error.status === 422) invalid()
-    throw error
-  }
-}
-export function storedTaxAmount(value: unknown): string {
-  try { return storedCategoryAmount(value) } catch (error) {
-    if (error instanceof Exception && error.status === 422) invalid()
-    throw error
-  }
-}
 function attributions(value: unknown): Record<string, unknown>[] {
   if (!Array.isArray(value)) invalid('Tax attributions must be an array')
   return value.map((entry: unknown) => {
@@ -28,7 +16,7 @@ function attributions(value: unknown): Record<string, unknown>[] {
   })
 }
 export function encodeTaxAttributions(value: unknown) {
-  return attributions(value).map(entry => ({ ...entry, amount: storedTaxAmount(entry.amount) }))
+  return attributions(value).map(entry => ({ ...entry, amount: encodeMonetaryAmount(entry.amount) }))
 }
 export function decodeTaxAttributions(value: unknown): TaxAttribution[] {
   return attributions(value).map(entry => {
@@ -42,8 +30,8 @@ export function decodeTaxAttributions(value: unknown): TaxAttribution[] {
 export function validateSubmittedTaxAmounts(value: unknown): void {
   for (const entry of attributions(value)) {
     const amount = entry.amount
-    if (typeof amount === 'number') { storedTaxAmount(amount); continue }
+    if (typeof amount === 'number') { encodeMonetaryAmount(amount); continue }
     if (typeof amount !== 'string' || !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/.test(amount.trim())) invalid()
-    storedTaxAmount(Number(amount))
+    encodeMonetaryAmount(Number(amount))
   }
 }

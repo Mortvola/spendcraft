@@ -1,6 +1,7 @@
 import type { LucidRow } from '@adonisjs/lucid/types/model'
 import { isDeepStrictEqual } from 'node:util'
-import { decodeStatementIncome, encodeStatementIncome, incomeObject, statementIncomeFields, storedStatementIncomeAmount } from './statementIncomeCodec.ts'
+import { decodeStatementIncome, encodeStatementIncome, incomeObject, statementIncomeFields } from './statementIncomeCodec.ts'
+import { encodeMonetaryAmount } from './categoryAmountCodec.ts'
 
 const originals = new WeakMap<object, unknown>()
 const pending = new WeakMap<object, unknown>()
@@ -39,7 +40,7 @@ export function prepareStatementIncome(value: unknown, row: LucidRow): string | 
     // income leaves, including nulls and fractional-cent numeric values.
     if (row.$isPersisted && rawOriginal && Object.hasOwn(rawOriginal, field)
       && isDeepStrictEqual(encoded[field], decodedOriginal?.[field])) encoded[field] = rawOriginal[field]
-    else encoded[field] = storedStatementIncomeAmount(encoded[field])
+    else encoded[field] = encodeMonetaryAmount(encoded[field])
   }
   pending.set(row, structuredClone(encoded))
   return JSON.stringify(encoded)

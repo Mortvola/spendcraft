@@ -1,8 +1,8 @@
 import { validateTransactionSplits } from '../../app/validation/transactionSplits.ts'
 import { test } from '@japa/runner'
 import { BaseModel } from '@adonisjs/lucid/orm'
-import { categoryAmountCents, checkedCentSum, encodeCategoryAllocations, decodeCategoryAllocations,
-  storedCategoryAmount, validateCategoryConservation, categoryNonzeroAllocationSql } from '../../app/services/categoryAmountCodec.ts'
+import { monetaryAmountCents, checkedCentSum, encodeCategoryAllocations, decodeCategoryAllocations,
+  encodeMonetaryAmount, validateCategoryConservation, categoryNonzeroAllocationSql } from '../../app/services/categoryAmountCodec.ts'
 import { bindResolvedCategoryStorage, prepareCategoryStorage, stageCategoryStorage,
   finishCategoryStorageSave, requestCategoryStorage } from '../../app/services/categoryStorageBinding.ts'
 
@@ -24,14 +24,14 @@ test.group('Category decimal-string production boundary without DB', () => {
   test('approved encoding').with([
     [12.34, '12.34'], [12.345, '12.35'], [-1.005, '-1.00'], [0.1 + 0.2, '0.30'],
     [-0, '0.00'], [0.005, '0.01'], [-0.005, '0.00'], [-12.345, '-12.34'],
-  ]).run(({ assert }, [value, expected]) => { assert.equal(storedCategoryAmount(value), expected) })
+  ]).run(({ assert }, [value, expected]) => { assert.equal(encodeMonetaryAmount(value), expected) })
   test('rejects invalid values rather than zero coercion').with([
     null, undefined, NaN, Infinity, -Infinity, {}, [], true, '', '1.2', '1.005', ' 1.00', '1e2', '-0.00', '01.00', 'bad', Number.MAX_VALUE,
-  ]).run(({ assert }, value) => { assert.throws(() => storedCategoryAmount(value)) })
+  ]).run(({ assert }, value) => { assert.throws(() => encodeMonetaryAmount(value)) })
   test('safe integer and formatting overflow are checked', ({ assert }) => {
-    assert.throws(() => storedCategoryAmount(Number.MAX_SAFE_INTEGER))
-    assert.throws(() => storedCategoryAmount(Number('90071992547405.12')))
-    assert.throws(() => categoryAmountCents('90071992547409.92'))
+    assert.throws(() => encodeMonetaryAmount(Number.MAX_SAFE_INTEGER))
+    assert.throws(() => encodeMonetaryAmount(Number('90071992547405.12')))
+    assert.throws(() => monetaryAmountCents('90071992547409.92'))
     assert.throws(() => checkedCentSum([Number.MAX_SAFE_INTEGER, 1, -1]))
   })
   test('canonical reads preserve numeric runtime values, metadata, order and duplicates', ({ assert }) => {

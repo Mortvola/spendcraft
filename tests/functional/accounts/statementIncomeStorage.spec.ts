@@ -6,7 +6,7 @@ import Budget from '#models/Budget'
 import Statement from '#models/Statement'
 import TaxesController from '#controllers/TaxesController'
 import { replaceStatementIncome } from '#services/statementIncomeStorage'
-import { statementIncomeFields } from '#services/statementIncomeCodec'
+import { encodeStatementIncome, statementIncomeFields } from '#services/statementIncomeCodec'
 import { AccountType, TrackingType } from '#common/ResponseTypes'
 
 let sequence = 0
@@ -37,7 +37,7 @@ test.group('Statement income decimal-string PostgreSQL acceptance', group => {
         .where('groups.application_id', f.budget.id).orderBy('categories.id'),
     ])
   }
-  test('CREATE raw JSON types and numeric API reflect approved rounding').with([
+  test('CREATE raw JSON and cent-exact API strings reflect approved rounding').with([
     { amount: 12.345, stored: '12.35', numeric: 12.35 },
     { amount: -0.125, stored: '-0.12', numeric: -0.12 },
     { amount: 0.1 + 0.2, stored: '0.30', numeric: 0.30 },
@@ -50,7 +50,7 @@ test.group('Statement income decimal-string PostgreSQL acceptance', group => {
     const stored = await db.from('statements').where('id', response.body().id).firstOrFail()
     for (const field of statementIncomeFields) {
       assert.strictEqual(stored.data[field], value.stored)
-      assert.strictEqual(response.body().data[field], value.numeric)
+      assert.strictEqual(response.body().data[field], value.stored)
       const result = await db.rawQuery('SELECT jsonb_typeof(data->?::text) AS kind FROM statements WHERE id=?', [field, stored.id])
       assert.equal(result.rows[0].kind, 'string')
     }
@@ -58,34 +58,34 @@ test.group('Statement income decimal-string PostgreSQL acceptance', group => {
   test('income-only Statement PATCH preserves financial state, balances and metadata').with([TrackingType.Transactions, TrackingType.Balances])
     .run(async ({ client, assert }, tracking) => {
       f.account.tracking = tracking; await f.account.save()
-      await db.from('statements').where('id', f.statement.id).update({ data: JSON.stringify({ ...income(1), note: { ordered: [2, 1, 2], amount: 1.005 } }) })
+      await db.from('statements').where('id', f.statement.id).update({ data: JSON.stringify({ ...encodeStatementIncome(income(1)), note: { ordered: [2, 1, 2], amount: 1.005 } }) })
       const before = await financialState(), old = await raw()
       const response = await client.patch(`/api/v1/statements/${f.statement.id}`).json({ data: income(12.345) }).accept('json').loginAs(f.user)
       response.assertStatus(200)
       const after = await raw()
-      for (const field of statementIncomeFields) { assert.strictEqual(after.data[field], '12.35'); assert.strictEqual(response.body().data[field], 12.35) }
+      for (const field of statementIncomeFields) { assert.strictEqual(after.data[field], '12.35'); assert.strictEqual(response.body().data[field], '12.35') }
       assert.deepEqual(after.data.note, old.data.note)
       assert.equal(after.starting_balance, old.starting_balance); assert.equal(after.ending_balance, old.ending_balance)
       assert.deepEqual(await financialState(), before)
     })
-  test('legacy numeric and mixed reads remain numeric without write-on-read or metadata normalization').with(['numeric', 'mixed'])
-    .run(async ({ client, assert }, storage) => {
-      const data = { ...income(1.005), ...(storage === 'mixed' ? { dividends: '2.00' } : {}) }
-      await db.from('statements').where('id', f.statement.id).update({ data: JSON.stringify(data) })
-      const before = await raw()
-      const list = await client.get(`/api/v1/account/${f.account.id}/statements`).accept('json').loginAs(f.user)
-      list.assertStatus(200)
-      const item = list.body().find((row: { id: number }) => row.id === f.statement.id)
-      assert.strictEqual(item.data.shortTermCapitalGains, 1.005)
-      assert.strictEqual(item.data.dividends, storage === 'mixed' ? 2 : 1.005)
-      assert.deepEqual(await raw(), before)
-      const patch = await client.patch(`/api/v1/statements/${f.statement.id}`).json({ startDate: '2026-01-02' }).accept('json').loginAs(f.user)
-      patch.assertStatus(200); assert.deepEqual((await raw()).data, data)
-    })
+  test('canonical income responses preserve raw JSON on reads and metadata-only saves', async ({ client, assert }) => {
+    const data = { ...encodeStatementIncome(income(1)), dividends: '2.00', note: { amount: 1.005 } }
+    await db.from('statements').where('id', f.statement.id).update({ data: JSON.stringify(data) })
+    const before = await raw()
+    const list = await client.get(`/api/v1/account/${f.account.id}/statements`).accept('json').loginAs(f.user)
+    list.assertStatus(200)
+    const item = list.body().find((row: { id: number }) => row.id === f.statement.id)
+    assert.strictEqual(item.data.shortTermCapitalGains, '1.00')
+    assert.strictEqual(item.data.dividends, '2.00')
+    assert.deepEqual(await raw(), before)
+    const patch = await client.patch(`/api/v1/statements/${f.statement.id}`).json({ startDate: '2026-01-02' }).accept('json').loginAs(f.user)
+    patch.assertStatus(200); assert.deepEqual((await raw()).data, data)
+  })
   test('existing real-aggregation tax reports accept mixed and string attribution', async ({ assert }) => {
     await db.from('statements').where('id', f.statement.id).update({ data: JSON.stringify({ ...income(1.25), dividends: '2.50' }) })
     const mixed = await TaxesController.getActuals(2026, f.budget.id)
     assert.equal(mixed[0].ordinaryDividends, 2.5); assert.equal(mixed[0].taxableInterest, 1.25)
+    await db.from('statements').where('id', f.statement.id).update({ data: JSON.stringify(encodeStatementIncome({ ...income(1.25), dividends: 2.5 })) })
     const model = await Statement.findOrFail(f.statement.id); replaceStatementIncome(model, { ...income(1.25), dividends: 2.5 }); await model.save()
     assert.deepEqual(await TaxesController.getActuals(2026, f.budget.id), mixed)
   })
@@ -93,7 +93,7 @@ test.group('Statement income decimal-string PostgreSQL acceptance', group => {
     await db.from('statements').where('id', f.statement.id).update({ data: null })
     const response = await client.patch(`/api/v1/statements/${f.statement.id}`).json({ startDate: '2026-01-02', data: null }).accept('json').loginAs(f.user)
     response.assertStatus(200); assert.isNull((await raw()).data)
-    assert.deepEqual(response.body().data, income(0))
+    assert.deepEqual(response.body().data, encodeStatementIncome(income(0)))
   })
   test('rejected input leaves raw Statement and financial state unchanged').with([
     { data: income(Number.MAX_SAFE_INTEGER) }, { data: { dividends: null } }, { data: { dividends: 'bad' } },

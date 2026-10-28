@@ -1,8 +1,9 @@
 import { test } from '@japa/runner'
+import { encodeMonetaryAmount } from '../../app/services/categoryAmountCodec.ts'
 import Tax from '../../app/Models/Tax.ts'
 import TransactionLog from '../../app/Models/TransactionLog.ts'
 import { taxForecastFields, taxEstimatedFields, encodeTaxForecast, decodeTaxForecast,
-  encodeTransactionLogMoney, decodeTransactionLogMoney, storedTaxMonetaryAmount, validateSubmittedTaxForecast, serializeTaxForecast, serializeTransactionLogMoney } from '../../app/services/taxMonetaryCodec.ts'
+  encodeTransactionLogMoney, decodeTransactionLogMoney, validateSubmittedTaxForecast, serializeTaxForecast, serializeTransactionLogMoney } from '../../app/services/taxMonetaryCodec.ts'
 import { replaceTaxForecast } from '../../app/services/taxMonetaryStorage.ts'
 import { addTax } from '../../app/validation/Validators/tax.ts'
 import { loadWorksheet } from '../../scripts/auditTaxForecastPrecision.mjs'
@@ -27,7 +28,7 @@ test.group('Tax and TransactionLog monetary storage (no database)', () => {
     [12.345, '12.35'], [0.125, '0.13'], [-0.125, '-0.12'], [1.005, '1.00'], [-1.005, '-1.00'],
     [0.1 + 0.2, '0.30'], [0, '0.00'], [-0, '0.00'], [0.005, '0.01'], [-0.005, '0.00'], [-12.34, '-12.34'],
   ]).run(({ assert }, [amount, stored]) => {
-    assert.equal(storedTaxMonetaryAmount(amount), stored)
+    assert.equal(encodeMonetaryAmount(amount), stored)
     assert.deepEqual(encodeTaxForecast(forecast(amount)), forecast(stored))
     assert.deepEqual(encodeTransactionLogMoney({ amount: { old: amount, new: amount } }), { amount: { old: stored, new: stored } })
   })
