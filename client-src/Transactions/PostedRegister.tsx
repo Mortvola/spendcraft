@@ -1,3 +1,4 @@
+import { formatMoneyCents, parseMoneyCents } from '../../common/moneyCents';
 import React from 'react';
 import { observer } from 'mobx-react-lite';
 import RegisterTransactions from './RegisterTransactions';
@@ -68,7 +69,7 @@ const PostedRegister: React.FC<PropsType> = observer(({
     }
 
     const accountSign = account?.sign ?? 1
-    let runningBalance = category?.balance ?? (account?.balance ?? 0) * accountSign;
+    let runningBalance = category?.balance ?? Number(formatMoneyCents(account?.balanceCents ?? parseMoneyCents('0.00'))) * accountSign;
 
     return trxContainer.transactions.map((transaction) => {
       let { amount } = transaction;

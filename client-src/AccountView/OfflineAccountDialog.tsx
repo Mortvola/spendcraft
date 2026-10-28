@@ -1,3 +1,4 @@
+import { formatMoneyCents } from '../../common/moneyCents';
 import {
   FormikErrors, FormikHelpers, useFormikContext,
 } from 'formik';
@@ -126,7 +127,7 @@ const OfflineAccountDialog: React.FC<PropsType & ModalProps> = ({
       initialValues={{
         institute: institution ? institution.name : '',
         account: account ? account.name : '',
-        balance: account ? account.balance.toString() : '0',
+        balance: account ? formatMoneyCents(account.balanceCents) : '0',
         startDate: '',
         type: account ? account.type : AccountType.Depository,
         subtype: account ? account.subtype : 'checking',

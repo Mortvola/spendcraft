@@ -4,7 +4,8 @@ import { Circle, CircleX, Settings } from 'lucide-react';
 import LucideButton from '../LucideButton';
 import { AccountInterface } from '../State/Types';
 import { getSubTypeName } from '../State/AccountTypes';
-import Amount from '../Amount';
+import MoneyCentsAmount from '../MoneyCentsAmount';
+import { parseMoneyCents, subtractMoneyCents, type MoneyCents } from '../../common/moneyCents';
 import styles from './Account.module.scss';
 import { useDeleteConfirmation } from '../DeleteConfirmation';
 import { AccountType } from '../../common/ResponseTypes';
@@ -56,6 +57,9 @@ const Account: React.FC<PropsType> = observer(({
     acctClassName += ` ${styles.selected}`;
   }
 
+  const signedBalance = (amount: MoneyCents) => account.sign === -1
+    ? subtractMoneyCents(parseMoneyCents('0.00'), amount) : amount;
+
   return (
     <div className={acctClassName} onClick={accountSelected}>
       <div className={styles.buttons}>
@@ -76,13 +80,13 @@ const Account: React.FC<PropsType> = observer(({
       <div className={styles.accountInfo}>
         <div className={styles.accountName}>{account.name}</div>
         <div style={{ display: 'flex' }}>
-          <Amount style={{ textAlign: 'left' }} amount={account.balance * account.sign} />
+          <MoneyCentsAmount style={{ textAlign: 'left' }} amount={signedBalance(account.balanceCents)} />
           {
-            account.plaidBalance !== null && account.balance !== account.plaidBalance
+            account.plaidBalanceCents !== null && account.balanceCents !== account.plaidBalanceCents
               ? (
                 <>
                   <div>/</div>
-                  <Amount style={{ textAlign: 'left' }} amount={account.plaidBalance * account.sign} />
+                  <MoneyCentsAmount style={{ textAlign: 'left' }} amount={signedBalance(account.plaidBalanceCents)} />
                 </>
               )
               : null

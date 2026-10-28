@@ -15,7 +15,8 @@ import DesktopView from '../../DesktopView';
 import MobileView from '../../MobileView';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import Institution from './Institution';
-import Amount from '../../Amount';
+import MoneyCentsAmount from '../../MoneyCentsAmount';
+import { addMoneyCents, parseMoneyCents } from '../../../common/moneyCents';
 import { TrackingType } from '../../../common/ResponseTypes';
 
 const CategoryView: React.FC = observer(() => {
@@ -105,14 +106,14 @@ const CategoryView: React.FC = observer(() => {
       const balance = institution.accounts
         .reduce((p, account) => {
           if (!account.closed && account.tracking === TrackingType.Transactions) {
-            return p + account.balance + account.pendingBalance
+            return addMoneyCents(p, account.totalBalanceCents)
           }
 
           return p;
-        }, 0)
+        }, parseMoneyCents('0.00'))
 
-      return prev + balance;
-    }, 0)
+      return addMoneyCents(prev, balance);
+    }, parseMoneyCents('0.00'))
   )
 
   const renderAccounts = () => {
@@ -164,7 +165,7 @@ const CategoryView: React.FC = observer(() => {
         </div>
         {
           !uiState.accountsState
-            ? <Amount amount={getAccountBalanceTotal()} />
+            ? <MoneyCentsAmount amount={getAccountBalanceTotal()} />
             : null
         }
       </div>

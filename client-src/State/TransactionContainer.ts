@@ -1,6 +1,5 @@
 import { observable } from 'mobx';
-import { decodeAmount } from '../monetary';
-import { TransactionProps, TransactionsResponse } from '../../common/ResponseTypes';
+import { type DecimalMoneyString, TransactionProps, TransactionsResponse } from '../../common/ResponseTypes';
 import QueryManager from './QueryManager';
 import { StoreInterface, TransactionContainerInterface } from './Types';
 import Transaction from './Transaction';
@@ -15,14 +14,14 @@ class TransactionContainer implements TransactionContainerInterface {
 
   searchString?: string;
 
-  balanceCallback: ((balance: number, count?: number) => void) | null = null;
+  balanceCallback: ((balance: DecimalMoneyString, count?: number) => void) | null = null;
 
   store: StoreInterface;
 
   constructor(
     store: StoreInterface,
     url: string,
-    balanceCallback?: (balance: number, count?: number) => void,
+    balanceCallback?: (balance: DecimalMoneyString, count?: number) => void,
   ) {
     this.url = url;
     this.balanceCallback = balanceCallback ?? null;
@@ -96,7 +95,7 @@ class TransactionContainer implements TransactionContainerInterface {
 
   transactionResponseHandler = (body: TransactionsResponse, idx: number, limit: number): boolean => {
     if (this.balanceCallback) {
-      this.balanceCallback(decodeAmount(body.balance), body.transactionsCount);
+      this.balanceCallback(body.balance, body.transactionsCount);
     }
 
     if (idx === 0) {

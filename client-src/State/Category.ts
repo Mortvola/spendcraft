@@ -78,8 +78,8 @@ class Category implements CategoryInterface {
     this.transactions = new TransactionContainer(
       store,
       `/api/v1/category/${props.id}/transactions?pending=2`,
-      (balance: number, count?: number) => {
-        this.balance = balance;
+      (balance: string, count?: number) => {
+        this.balance = decodeAmount(balance);
 
         if (this.type === CategoryType.Unassigned) {
           if (navigator.setAppBadge) {

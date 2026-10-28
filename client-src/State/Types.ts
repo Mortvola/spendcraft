@@ -459,7 +459,7 @@ export interface AccountInterface {
 
   tracking: TrackingType;
 
-  plaidBalance: number | null;
+  plaidBalanceCents: MoneyCents | null;
 
   startDate: DateTime | null,
 
@@ -467,9 +467,11 @@ export interface AccountInterface {
 
   institution: InstitutionInterface;
 
-  balance: number;
+  balanceCents: MoneyCents;
 
-  pendingBalance: number;
+  pendingBalanceCents: MoneyCents;
+
+  readonly totalBalanceCents: MoneyCents;
 
   transactions: TransactionContainerInterface;
 

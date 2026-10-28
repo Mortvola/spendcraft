@@ -1,6 +1,7 @@
+import { parseMoneyCents } from '../../common/moneyCents';
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
-import { decodeAmount, encodeAmount } from '../monetary';
+import { encodeAmount } from '../monetary';
 import { PlaidLinkOnSuccessMetadata } from 'react-plaid-link';
 import Institution from './Institution';
 import Plaid from './Plaid';
@@ -61,9 +62,9 @@ class Accounts implements AccountsInterface {
     // Validate all monetary response fields before changing cached accounts.
     for (const institution of data) {
       for (const account of institution.accounts) {
-        decodeAmount(account.balance);
-        decodeAmount(account.pendingBalance);
-        if (account.plaidBalance !== null) decodeAmount(account.plaidBalance);
+        parseMoneyCents(account.balance);
+        parseMoneyCents(account.pendingBalance);
+        if (account.plaidBalance !== null) parseMoneyCents(account.plaidBalance);
       }
     }
 
@@ -244,7 +245,7 @@ class Accounts implements AccountsInterface {
   }
 
   updateBalances(balances: AccountBalanceProps[]): void {
-    for (const balance of balances) decodeAmount(balance.balance);
+    for (const balance of balances) parseMoneyCents(balance.balance);
     runInAction(() => {
       this.institutions.forEach((i) => {
         i.updateBalances(balances);

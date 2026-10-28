@@ -1,6 +1,7 @@
+import { parseMoneyCents, addMoneyCents, type MoneyCents } from '../../common/moneyCents';
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
-import { decodeAmount, encodeAmount } from '../monetary';
+import { encodeAmount } from '../monetary';
 import { DateTime } from 'luxon';
 import {
   AccountProps, AddTransactionResponse, ErrorProps,
@@ -35,7 +36,7 @@ class Account implements AccountInterface {
   tracking: TrackingType;
 
   @observable
-  accessor plaidBalance: number | null;
+  accessor plaidBalanceCents: MoneyCents | null;
 
   startDate: DateTime | null;
 
@@ -46,10 +47,10 @@ class Account implements AccountInterface {
   accessor institution: InstitutionInterface;
 
   @observable
-  accessor balance = 0;
+  accessor balanceCents = parseMoneyCents('0.00');
 
   @observable
-  accessor pendingBalance = 0;
+  accessor pendingBalanceCents = parseMoneyCents('0.00');
 
   transactions: TransactionContainer;
 
@@ -57,6 +58,10 @@ class Account implements AccountInterface {
 
   @observable
   accessor statements: Statements;
+
+  get totalBalanceCents(): MoneyCents {
+    return addMoneyCents(this.balanceCents, this.pendingBalanceCents);
+  }
 
   get sign(): number {
     return this.type === AccountType.Credit ? -1 : 1
@@ -68,8 +73,8 @@ class Account implements AccountInterface {
     this.transactions = new TransactionContainer(
       store,
       `/api/v1/account/${props.id}/transactions`,
-      (balance: number) => {
-        this.balance = balance;
+      (balance: string) => {
+        this.balanceCents = parseMoneyCents(balance);
       },
     );
 
@@ -77,9 +82,9 @@ class Account implements AccountInterface {
       store, `/api/v1/account/${props.id}/transactions?pending=1`,
     );
 
-    const balance = decodeAmount(props.balance);
-    const pendingBalance = decodeAmount(props.pendingBalance);
-    const plaidBalance = props.plaidBalance === null ? null : decodeAmount(props.plaidBalance);
+    const balanceCents = parseMoneyCents(props.balance);
+    const pendingBalanceCents = parseMoneyCents(props.pendingBalance);
+    const plaidBalanceCents = props.plaidBalance === null ? null : parseMoneyCents(props.plaidBalance);
     this.id = props.id;
     this.plaidId = props.plaidId;
     this.name = props.name;
@@ -87,9 +92,9 @@ class Account implements AccountInterface {
     this.type = props.type;
     this.subtype = props.subtype;
     this.tracking = props.tracking;
-    this.balance = balance;
-    this.pendingBalance = pendingBalance;
-    this.plaidBalance = plaidBalance;
+    this.balanceCents = balanceCents;
+    this.pendingBalanceCents = pendingBalanceCents;
+    this.plaidBalanceCents = plaidBalanceCents;
     this.startDate = props.startDate ? DateTime.fromISO(props.startDate) : null;
     this.rate = props.rate;
     this.institution = institution;
@@ -100,9 +105,9 @@ class Account implements AccountInterface {
   }
 
   update(props: AccountProps): void {
-    const balance = decodeAmount(props.balance);
-    const pendingBalance = decodeAmount(props.pendingBalance);
-    const plaidBalance = props.plaidBalance === null ? null : decodeAmount(props.plaidBalance);
+    const balanceCents = parseMoneyCents(props.balance);
+    const pendingBalanceCents = parseMoneyCents(props.pendingBalance);
+    const plaidBalanceCents = props.plaidBalance === null ? null : parseMoneyCents(props.plaidBalance);
     this.id = props.id;
     this.plaidId = props.plaidId;
     this.name = props.name;
@@ -110,9 +115,9 @@ class Account implements AccountInterface {
     this.type = props.type;
     this.subtype = props.subtype;
     this.tracking = props.tracking;
-    this.balance = balance;
-    this.pendingBalance = pendingBalance;
-    this.plaidBalance = plaidBalance;
+    this.balanceCents = balanceCents;
+    this.pendingBalanceCents = pendingBalanceCents;
+    this.plaidBalanceCents = plaidBalanceCents;
     this.startDate = props.startDate ? DateTime.fromISO(props.startDate) : null;
     this.rate = props.rate;
 
@@ -204,14 +209,14 @@ class Account implements AccountInterface {
       const body = await response.body();
 
       if (isAddTransactionResponse(body)) {
-        const balance = decodeAmount(body.acctBalances[0].balance);
+        const balanceCents = parseMoneyCents(body.acctBalances[0].balance);
         const transaction = new Transaction(this.store, body.transaction);
         runInAction(() => {
           this.store.categoryTree.updateBalances(body.categories);
 
           this.transactions.insertTransaction(transaction);
 
-          this.balance = balance;
+          this.balanceCents = balanceCents;
         });
 
         return null;

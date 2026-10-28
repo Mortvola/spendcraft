@@ -2,7 +2,8 @@ import React from 'react';
 import { InstitutionInterface } from '../../State/Types';
 import { TrackingType } from '../../../common/ResponseTypes';
 import styles from './CategoryView.module.scss';
-import Amount from '../../Amount';
+import MoneyCentsAmount from '../../MoneyCentsAmount';
+import { addMoneyCents, parseMoneyCents } from '../../../common/moneyCents';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useStores } from '../../State/Store';
 import { observer } from 'mobx-react-lite';
@@ -44,7 +45,7 @@ const Institution: React.FC<PropsType> = observer(({
           </div>
           {
             !(uiState.accountState.get(institution.id) ?? true)
-              ? <Amount amount={accts.reduce((prev, acct) => (prev + acct.balance + acct.pendingBalance), 0)} />
+              ? <MoneyCentsAmount amount={accts.reduce((prev, acct) => addMoneyCents(prev, acct.totalBalanceCents), parseMoneyCents('0.00'))} />
               : null
           }
         </div>
@@ -54,7 +55,7 @@ const Institution: React.FC<PropsType> = observer(({
               accts.map((account) => (
                 <div key={account.id} className={styles.account}>
                   <div className={styles.name}>{account.name}</div>
-                  <Amount className={styles.amount} amount={account.balance + account.pendingBalance} />
+                  <MoneyCentsAmount className={styles.amount} amount={account.totalBalanceCents} />
                 </div>
               ))
             )

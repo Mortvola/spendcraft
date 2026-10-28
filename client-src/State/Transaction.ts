@@ -1,3 +1,4 @@
+import { parseMoneyCents } from '../../common/moneyCents';
 import { DateTime } from 'luxon';
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
@@ -34,7 +35,7 @@ const hasBalances = (value: unknown): value is CategoryBalanceProps[] => (
 const hasAccountBalances = (value: unknown): value is AccountBalanceProps[] => (
   Array.isArray(value) && value.every((row: unknown) => {
     if (typeof row !== 'object' || row === null || !('id' in row) || !Number.isFinite(row.id) || !('balance' in row)) return false;
-    try { decodeAmount(row.balance); return true; } catch { return false; }
+    try { parseMoneyCents(row.balance); return true; } catch { return false; }
   })
 );
 
