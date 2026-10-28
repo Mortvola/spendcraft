@@ -180,7 +180,7 @@ test.group('Manual statement correctness', (group) => {
     assert.equal(persisted.endingBalance, 250)
     assert.equal(response.body().startDate, february.startDate)
     assert.equal(response.body().endDate, february.endDate)
-    assert.deepEqual(response.body().data, { shortTermCapitalGains: 0, longTermCapitalGains: 0, dividends: 0, taxableInterest: 0 })
+    assert.deepEqual(response.body().data, { shortTermCapitalGains: '0.00', longTermCapitalGains: '0.00', dividends: '0.00', taxableInterest: '0.00' })
   })
 
   test('partial PATCH accepts explicit zero balances and investment resets', async ({ client, assert }) => {

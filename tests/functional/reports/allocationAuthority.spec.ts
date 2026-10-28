@@ -176,7 +176,7 @@ test.group('Exclusive Category and Funding History JSON authority', () => {
     const response = await client.get('/api/v1/reports/category').qs({ c: [f.category.id, other.id] }).loginAs(f.user)
     response.assertStatus(200)
     assert.deepEqual(response.body().map((r: { categoryName: string, sum: string, count: number }) => [r.categoryName, r.sum, r.count]),
-      [['A current', 4, 1], ['B current', 55, 3]])
+      [['A current', '4.00', 1], ['B current', '55.00', 3]])
     for (const row of response.body()) {
       assert.deepEqual(Object.keys(row).sort(), ['categoryName', 'count', 'groupName', 'rowNumber', 'sum'])
       assert.isString(row.sum); assert.isNumber(row.count)

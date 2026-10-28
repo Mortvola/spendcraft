@@ -1,3 +1,4 @@
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
 import { DateTime } from 'luxon'
@@ -37,6 +38,10 @@ async function createDomain(label: string) {
       const transaction = await budget.related('transactions').create({ date: DateTime.fromISO(entry.date),
         type: TransactionType.MANUAL_TRANSACTION, deleted: entry.deleted, taxes: [],
         categories: [{ categoryId: first.id, amount: entry.amounts[0] }, { categoryId: second.id, amount: entry.amounts[1] }] })
+      await trx.from('transactions').where('id', transaction.id).update({ categories: JSON.stringify([
+        { categoryId: first.id, amount: entry.amounts[0].toFixed(2) },
+        { categoryId: second.id, amount: entry.amounts[1].toFixed(2) },
+      ]) })
       await account.related('accountTransactions').create({ transactionId: transaction.id,
         name: 'Legitimate purchase', amount: entry.amounts[0] + entry.amounts[1], pending: false, provider: 'NONE' })
       transactions.push(transaction)
@@ -68,6 +73,10 @@ test.group('Historical aggregate isolation', (group) => {
     const transaction = await owner.budget.related('transactions').create({ date: DateTime.fromISO('2025-03-15'),
       type: TransactionType.MANUAL_TRANSACTION, deleted: false, taxes: [],
       categories: [{ categoryId: target.first.id, amount: 37 }, { categoryId: target.second.id, amount: 11 }] })
+    // Deliberately cross-owned splits remain valid canonical storage.
+    await db.from('transactions').where('id', transaction.id).update({ categories: JSON.stringify([
+      { categoryId: target.first.id, amount: '37.00' }, { categoryId: target.second.id, amount: '11.00' },
+    ]) })
     await owner.account.related('accountTransactions').create({ transactionId: transaction.id,
       name: 'Historical inconsistent transaction', amount: 48, pending: false, provider: 'NONE' })
     return transaction
@@ -119,7 +128,7 @@ test.group('Historical aggregate isolation', (group) => {
     // The HTTP controller already rejects foreign exclusion IDs. The helper must
     // also enforce ownership when the exclusion is its only matching condition.
     const balances = await Category.balances(a.budget, '2025-03-01', historical.id)
-    assert.deepEqual(balances, baseline.body())
+    assert.deepEqual(balances.map((row) => ({ ...row, balance: encodeMonetaryAmount(row.balance) })), baseline.body())
     assert.deepEqual(await state(), before)
   })
 
@@ -130,9 +139,9 @@ test.group('Historical aggregate isolation', (group) => {
       const query = { date: '2025-03-01', id: transaction.id }
       const baseline = await client.get(path('balances')).qs(query).accept('json').loginAs(a.user)
       baseline.assertStatus(200)
-      const rows: { id: number, balance: number }[] = baseline.body()
-      assert.equal(rows.find((row) => row.id === a.first.id)?.balance, scenario.balances[0])
-      assert.equal(rows.find((row) => row.id === a.second.id)?.balance, scenario.balances[1])
+      const rows: { id: number, balance: string }[] = baseline.body()
+      assert.equal(rows.find((row) => row.id === a.first.id)?.balance, encodeMonetaryAmount(scenario.balances[0]))
+      assert.equal(rows.find((row) => row.id === a.second.id)?.balance, encodeMonetaryAmount(scenario.balances[1]))
       await insertHistoricalTransaction(b, a)
       const before = await state()
       const response = await client.get(path('balances')).qs(query).accept('json').loginAs(a.shared)

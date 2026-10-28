@@ -169,6 +169,9 @@ test.group('Transaction Category decimal-string storage (prepared)', () => {
       const target = await Transaction.create({ budgetId: f.budget.id, type, deleted: true,
         date: DateTime.fromISO('2025-02-01'), categories })
       if (type === 5) await f.account.related('accountTransactions').create({ transactionId: target.id, name: 'Deleted', amount: 1 })
+      await db.from('transactions').where('id', target.id).update({ categories: JSON.stringify(
+        categories.map((row) => ({ ...row, amount: row.amount.toFixed(2) })),
+      ) })
       const before = await raw(target.id)
       await db.transaction(async (trx) => {
         await Budget.query({ client: trx }).where('id', f.budget.id).forUpdate().firstOrFail()
@@ -251,6 +254,9 @@ test.group('Decimal-string storage concurrency/security (prepared)', () => {
       const target = await Transaction.create({ budgetId: f.budget.id, type: 5,
         date: DateTime.fromISO('2025-02-01'), categories: [{ categoryId: f.category.id, amount: 0.3 }] })
       await f.account.related('accountTransactions').create({ transactionId: target.id, name: 'Waiter', amount: 0.3 })
+      await db.from('transactions').where('id', target.id).update({
+        categories: JSON.stringify([{ categoryId: f.category.id, amount: '0.30' }]),
+      })
       const writer = await db.transaction()
       const attempting = deferred()
       let pid = 0
@@ -333,10 +339,15 @@ test.group('Decimal-string SQL membership and report compatibility', () => {
       await db.from('transactions').where('id', target.id).update({ categories: JSON.stringify(allocations) })
       const before = await snapshot()
       const listed = await client.get(`/api/v1/category/${f.category.id}/transactions`).qs({ limit: 1, offset: 0 }).loginAs(f.user)
-      listed.assertStatus(200)
-      assert.equal(listed.body().data.transactionsCount, nonzero ? 1 : 0)
-      assert.lengthOf(listed.body().data.transactions, nonzero ? 1 : 0)
-      if (nonzero) assert.deepEqual(listed.body().data.transactions[0].categories.map((row: { amount: number }) => row.amount), values)
+      if (nonzero && encoding !== 'string') {
+        listed.assertStatus(422)
+        assert.deepEqual(await snapshot(), before)
+      } else {
+        listed.assertStatus(200)
+        assert.equal(listed.body().data.transactionsCount, nonzero ? 1 : 0)
+        assert.lengthOf(listed.body().data.transactions, nonzero ? 1 : 0)
+        if (nonzero) assert.deepEqual(listed.body().data.transactions[0].categories.map((row: { amount: string }) => row.amount), values.map((value) => Number(value).toFixed(2)))
+      }
       assert.deepEqual(await snapshot(), before)
       const removed = await client.delete(`/api/v1/groups/${f.category.groupId}/categories/${f.category.id}`).loginAs(f.user)
       removed.assertStatus(nonzero ? 409 : 204)
@@ -364,10 +375,10 @@ test.group('Decimal-string SQL membership and report compatibility', () => {
       const before = await snapshot()
       const response = await client.get(`/api/v1/reports/${report}`).qs({ c: f.category.id }).loginAs(f.user)
       response.assertStatus(200)
-      if (report === 'income-vs-expenses') assert.deepEqual(response.body(), [['2025-02', 0, 0, 0]])
-      if (report === 'category') { assert.equal(response.body()[0].sum, 0.3); assert.equal(response.body()[0].count, 2) }
+      if (report === 'income-vs-expenses') assert.deepEqual(response.body(), [['2025-02', '0.00', '0.00', '0.00']])
+      if (report === 'category') { assert.equal(response.body()[0].sum, '0.30'); assert.equal(response.body()[0].count, 2) }
       if (report === 'funding-history') assert.deepEqual(response.body().find((row: { categoryId: number }) => row.categoryId === f.category.id).history,
-        [{ year: 2025, month: 2, amount: 0.3 }])
+        [{ year: 2025, month: 2, amount: '0.30' }])
       assert.deepEqual(await snapshot(), before)
     })
 })

@@ -104,7 +104,7 @@ test.group('Transaction tax decimal-string PostgreSQL acceptance (prepared)', ()
 
   test('explicit model tax replacement preserves optional stored metadata', async ({ assert }) => {
     const f = await fixture(), metadata = { amount: 1.005, keep: ['ordered', 'values'] }
-    await db.from('transactions').where('id', f.target.id).update({ taxes: JSON.stringify([{ ...entry(1), metadata }]) })
+    await db.from('transactions').where('id', f.target.id).update({ taxes: JSON.stringify([{ ...entry('1.00'), metadata }]) })
     await db.transaction(async trx => {
       await Budget.query({ client: trx }).where('id', f.budget.id).forUpdate().firstOrFail()
       const fresh = await Transaction.query({ client: trx }).where('id', f.target.id).firstOrFail()
@@ -136,7 +136,7 @@ test.group('Transaction tax decimal-string PostgreSQL acceptance (prepared)', ()
 
   test('empty replacement clears attribution', async ({ client, assert }) => {
     const f = await fixture()
-    await db.from('transactions').where('id', f.target.id).update({ taxes: JSON.stringify([entry(1)]) })
+    await db.from('transactions').where('id', f.target.id).update({ taxes: JSON.stringify([entry('1.00')]) })
     const response = await client.patch(`/api/v1/transaction/${f.target.id}`).loginAs(f.user).accept('json')
       .json({ version: 0, taxCategories: [] })
     response.assertStatus(200)
@@ -152,9 +152,9 @@ test.group('Transaction tax decimal-string PostgreSQL acceptance (prepared)', ()
       assert.deepEqual(await allState(), before)
     })
 
-  test('unrelated metadata and Category PATCH preserve legacy tax JSON').with(['metadata', 'categories'])
+  test('unrelated metadata and Category PATCH preserve canonical tax JSON').with(['metadata', 'categories'])
     .run(async ({ client, assert }, kind) => {
-      const f = await fixture(), taxes = [{ ...entry(1.005), metadata: { keep: true } }, entry('0.30')]
+      const f = await fixture(), taxes = [{ ...entry('1.00'), metadata: { keep: true } }, entry('0.30')]
       await db.from('transactions').where('id', f.target.id).update({ taxes: JSON.stringify(taxes) })
       const response = await client.patch(`/api/v1/transaction/${f.target.id}`).loginAs(f.user).accept('json')
         .json({ version: 0, ...(kind === 'metadata' ? { comment: 'Metadata' } : {
@@ -165,7 +165,7 @@ test.group('Transaction tax decimal-string PostgreSQL acceptance (prepared)', ()
     })
 
   test('deleted historical discrepancy does not block unrelated model metadata save', async ({ assert }) => {
-    const f = await fixture(), taxes = [entry(1.005)]
+    const f = await fixture(), taxes = [entry('1.00')]
     await db.from('transactions').where('id', f.target.id).update({ deleted: true, categories: '[]', taxes: JSON.stringify(taxes) })
     const before = await financialState(f.target.id)
     await db.transaction(async trx => {
@@ -219,7 +219,7 @@ test.group('Transaction tax decimal-string PostgreSQL acceptance (prepared)', ()
       const response = await client.get('/api/v1/taxes/2025').loginAs(f.user).accept('json')
       response.assertStatus(200)
       const february = response.body().data.actuals.find((month: { month: number } | null) => month?.month === 2)
-      assert.strictEqual(february.taxes.estimated_tax_payments, 0.75)
+      assert.strictEqual(february.taxes.estimated_tax_payments, '0.75')
       assert.deepEqual(await allState(), before)
     })
 })
@@ -340,7 +340,7 @@ test.group('Expanded tax storage acceptance', () => {
   })
 
   test('optional null array retains existing omitted-field behavior without tax normalization', async ({ client, assert }) => {
-    const f = await fixture(), taxes = [{ ...entry(1.005), metadata: { keep: true } }]
+    const f = await fixture(), taxes = [{ ...entry('1.00'), metadata: { keep: true } }]
     await db.from('transactions').where('id', f.target.id).update({ taxes: JSON.stringify(taxes) })
     const before = await financialState(f.target.id)
     const response = await client.patch(`/api/v1/transaction/${f.target.id}`).loginAs(f.user).accept('json')
@@ -351,19 +351,19 @@ test.group('Expanded tax storage acceptance', () => {
     assert.equal((await raw(f.target.id)).version, 1)
   })
 
-  test('large safe amounts preserve numeric API and cent strings').with([9999999999.99, -9999999999.99])
+  test('large safe amounts preserve canonical API and storage strings').with([9999999999.99, -9999999999.99])
     .run(async ({ client, assert }, amount) => {
       const f = await fixture(), before = await financialState(f.target.id)
       const response = await client.patch(`/api/v1/transaction/${f.target.id}`).loginAs(f.user).accept('json')
         .json({ version: 0, taxCategories: [entry(amount)] })
       response.assertStatus(200)
       assert.equal((await raw(f.target.id)).taxes[0].amount, amount.toFixed(2))
-      assert.strictEqual(response.body().data.transaction.taxes[0].amount, amount)
+      assert.strictEqual(response.body().data.transaction.taxes[0].amount, amount.toFixed(2))
       assert.deepEqual(await financialState(f.target.id), before)
     })
 
-  test('soft deletion preserves stored tax metadata and legacy precision', async ({ client, assert }) => {
-    const f = await fixture(), taxes = [{ ...entry(1.005), metadata: { unchanged: true } }, entry('0.30')]
+  test('soft deletion preserves stored tax metadata without normalization', async ({ client, assert }) => {
+    const f = await fixture(), taxes = [{ ...entry('1.00'), metadata: { unchanged: true } }, entry('0.30')]
     // Start before Account eligibility so no ambiguous financial reversal is required.
     await db.from('transactions').where('id', f.target.id).update({ date: '2024-12-01', taxes: JSON.stringify(taxes) })
     const response = await client.delete(`/api/v1/transaction/${f.target.id}`).loginAs(f.user)
@@ -374,7 +374,7 @@ test.group('Expanded tax storage acceptance', () => {
 })
 
 test.group('Tax storage lifecycle preservation', () => {
-  test('funding/rebalance replacement preserves legacy tax JSON').with([2, 3])
+  test('funding/rebalance replacement preserves canonical tax JSON').with([2, 3])
     .run(async ({ client, assert }, type) => {
       const f = await fixture(), pool = await f.budget.getFundingPoolCategory()
       await db.from('categories').where('id', pool.id).update({ balance: 10 })
@@ -383,7 +383,7 @@ test.group('Tax storage lifecycle preservation', () => {
         .json({ type, date: '2025-02-01', categories: rows(1) })
       created.assertStatus(200)
       const id = created.body().data.transaction.id
-      const taxes = [{ ...entry(1.005), metadata: { keep: true } }, entry('0.30')]
+      const taxes = [{ ...entry('1.00'), metadata: { keep: true } }, entry('0.30')]
       await db.from('transactions').where('id', id).update({ taxes: JSON.stringify(taxes) })
       const response = await client.patch(`/api/v1/category-transfer/${id}`).loginAs(f.user).accept('json')
         .json({ type, date: '2025-02-01', categories: rows(2) })
@@ -391,11 +391,11 @@ test.group('Tax storage lifecycle preservation', () => {
       assert.deepEqual((await raw(id)).taxes, taxes)
       const read = await client.get(`/api/v1/transaction/${id}`).loginAs(f.user)
       read.assertStatus(200)
-      assert.deepEqual(read.body().taxes.map((tax: { amount: number }) => tax.amount), [1.005, 0.3])
+      assert.deepEqual(read.body().taxes.map((tax: { amount: string }) => tax.amount), ['1.00', '0.30'])
     })
 
   test('startDate/opening maintenance preserves existing tax JSON', async ({ client, assert }) => {
-    const f = await fixture(), taxes = [{ ...entry(1.005), metadata: { keep: true } }, entry('0.30')]
+    const f = await fixture(), taxes = [{ ...entry('1.00'), metadata: { keep: true } }, entry('0.30')]
     await db.from('categories').where('id', f.category.id).update({ balance: 10 })
     await db.from('transactions').where('id', f.target.id).update({ taxes: JSON.stringify(taxes) })
     const response = await client.patch(`/api/v1/account/${f.account.id}`).loginAs(f.user).accept('json')
@@ -407,7 +407,7 @@ test.group('Tax storage lifecycle preservation', () => {
 
   test('parent cascade follows existing deletion while foreign tax state stays untouched').with(['account', 'institution'])
     .run(async ({ client, assert }, kind) => {
-      const f = await fixture(), foreign = await fixture(), taxes = [entry(1.005), entry('0.30')]
+      const f = await fixture(), foreign = await fixture(), taxes = [entry('1.00'), entry('0.30')]
       await db.from('transactions').whereIn('id', [f.target.id, foreign.target.id]).update({ taxes: JSON.stringify(taxes) })
       await db.from('transactions').where('id', f.target.id).update({ date: '2024-12-01' })
       const foreignBefore = await raw(foreign.target.id)
