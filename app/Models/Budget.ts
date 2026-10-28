@@ -20,6 +20,11 @@ import type { HasMany } from "@adonisjs/lucid/types/relations";
 import { ModelAdapterOptions } from "@adonisjs/lucid/types/model";
 import Tax from './Tax.ts';
 
+type ProposedFundingCategory = Omit<ProposedFundingCategoryProps, 'amount' | 'fundingCategories'> & {
+  amount: number;
+  fundingCategories: { categoryId: number, amount: number, percentage: boolean }[];
+};
+
 export default class Budget extends BaseModel {
   public static table = 'applications';
 
@@ -491,7 +496,7 @@ export default class Budget extends BaseModel {
   }
 
    
-  public async getProposedFunding(date: string): Promise<ProposedFundingCategoryProps[]> {
+  public async getProposedFunding(date: string): Promise<ProposedFundingCategory[]> {
     // Get the first day of the month
     const firstDayOfMonth = DateTime.fromISO(date)
       .set({
@@ -516,11 +521,11 @@ export default class Budget extends BaseModel {
 
     const fundingMonth = firstDayOfMonth.startOf('month');
 
-    const proposedCats: ProposedFundingCategoryProps[] = [];
+    const proposedCats: ProposedFundingCategory[] = [];
 
      
     for (const cat of cats) {
-      const proposedCat: ProposedFundingCategoryProps = {
+      const proposedCat: ProposedFundingCategory = {
         categoryId: cat.id,
         amount: 0,
         adjusted: false,

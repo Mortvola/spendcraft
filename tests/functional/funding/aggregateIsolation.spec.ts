@@ -83,11 +83,11 @@ test.group('Historical aggregate isolation', (group) => {
         const user = scenario.actor === 'owner' ? own.user : own.shared
         const baseline = await client.get(path(aggregate)).qs({ date: '2025-03-01' }).accept('json').loginAs(user)
         baseline.assertStatus(200)
-        const rows: { id?: number, categoryId?: number, balance?: number, amount?: number }[] = aggregate === 'balances' ? baseline.body() : baseline.body().data
+        const rows: { id?: number, categoryId?: number, balance?: string, amount?: string }[] = aggregate === 'balances' ? baseline.body() : baseline.body().data
         const first = rows.find((row) => (row.id ?? row.categoryId) === own.first.id)
         const second = rows.find((row) => (row.id ?? row.categoryId) === own.second.id)
-        assert.equal(aggregate === 'balances' ? first?.balance : first?.amount, aggregate === 'balances' ? 193 : 107)
-        assert.equal(aggregate === 'balances' ? second?.balance : second?.amount, aggregate === 'balances' ? 53 : 67)
+        assert.equal(aggregate === 'balances' ? first?.balance : first?.amount, aggregate === 'balances' ? '193.00' : '107.00')
+        assert.equal(aggregate === 'balances' ? second?.balance : second?.amount, aggregate === 'balances' ? '53.00' : '67.00')
         assert.isFalse(rows.some((row) => (row.id ?? row.categoryId) === foreign.first.id))
         const historical = await insertHistoricalTransaction(foreign, own)
         assert.equal((await Transaction.findOrFail(historical.id)).budgetId, foreign.budget.id)

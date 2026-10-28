@@ -35,10 +35,10 @@ const Funding: React.FC<PropsType> = ({
           setCatFundingInfo(data.map((c) => ({
             categoryId: c.id,
             initialAmount: decodeAmount(c.balance),
-            previousFunding: c.previousFunding,
-            previousBaseAmount: c.previousBaseAmount,
-            previousExpenses: c.previousSum,
-            previousCatTransfers: c.previousCatTransfers,
+            previousFunding: decodeAmount(c.previousFunding),
+            previousBaseAmount: decodeAmount(c.previousBaseAmount),
+            previousExpenses: decodeAmount(c.previousSum),
+            previousCatTransfers: decodeAmount(c.previousCatTransfers),
           })));
         }
       }

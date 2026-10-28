@@ -1,5 +1,6 @@
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec';
 import { HttpContext } from '@adonisjs/core/http';
-import { ApiResponse, ProposedFundingCategoryProps } from '#common/ResponseTypes';
+import { ApiResponse, FundingRuleResponse, ProposedFundingCategoryProps } from '#common/ResponseTypes';
 
 class FundingPlanController {
    
@@ -17,8 +18,15 @@ class FundingPlanController {
 
     const { date } = request.qs();
 
+    const proposed = await budget.getProposedFunding(date);
     return {
-      data: await budget.getProposedFunding(date),
+      data: proposed.map((category) => ({
+        ...category,
+        amount: encodeMonetaryAmount(category.amount),
+        fundingCategories: category.fundingCategories.map<FundingRuleResponse>((rule) => rule.percentage
+          ? { ...rule, percentage: rule.percentage, amount: rule.amount }
+          : { ...rule, percentage: rule.percentage, amount: encodeMonetaryAmount(rule.amount) }),
+      })),
     }
   }
 }

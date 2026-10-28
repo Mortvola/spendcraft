@@ -59,9 +59,9 @@ test.group('Funding preview/submission persisted equality', () => {
         const proposed = await client.get('/api/v1/funding-plans/proposed?date=2025-03-01').loginAs(f.user)
         proposed.assertStatus(200)
         const entry = proposed.body().data.find((row: { categoryId: number }) => row.categoryId === a.id)
-        assert.equal(entry.amount, 60)
-        inputs = { [a.id]: input(entry.amount) }
-        if (scenario === 'mixed goal') inputs = { [a.id]: { ...input(entry.amount), fundingCategories: [
+        assert.strictEqual(entry.amount, '60.00')
+        inputs = { [a.id]: input(Number(entry.amount)) }
+        if (scenario === 'mixed goal') inputs = { [a.id]: { ...input(Number(entry.amount)), fundingCategories: [
           { categoryId: f.pool.id, amount: 2, percentage: false }, { categoryId: b.id, amount: 100, percentage: true }] } }
       }
       const rows = calculateFunding(inputs, f.pool.id)
@@ -287,9 +287,9 @@ test.group('Immutable funding date verification', () => {
         const march = await client.get('/api/v1/funding-plans/proposed?date=2025-03-01').loginAs(f.user)
         const april = await client.get('/api/v1/funding-plans/proposed?date=2025-04-01').loginAs(f.user)
         march.assertStatus(200); april.assertStatus(200)
-        base = march.body().data.find((row: { categoryId: number }) => row.categoryId === a.id).amount
+        base = Number(march.body().data.find((row: { categoryId: number }) => row.categoryId === a.id).amount)
         assert.equal(base, 60)
-        assert.notEqual(april.body().data.find((row: { categoryId: number }) => row.categoryId === a.id).amount, base)
+        assert.notEqual(Number(april.body().data.find((row: { categoryId: number }) => row.categoryId === a.id).amount), base)
       }
       const input = (amount: number): FundingInputs => ({ [a.id]: { baseAmount: amount,
         includeFundingTransfers: rule === 'transfer', fundingCategories: rule === 'fixed'

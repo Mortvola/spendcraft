@@ -202,10 +202,10 @@ class CategoriesController {
           id: c.id,
           name: c.name,
           balance: encodeMonetaryAmount(c.balance - parseFloat(c.$extras.sum ?? 0)),
-          previousSum: parseFloat(c.$extras.previousSum ?? 0),
-          previousFunding: parseFloat(c.$extras.previousFunding ?? 0),
-          previousBaseAmount: parseFloat(c.$extras.previousBaseAmount ?? 0),
-          previousCatTransfers: parseFloat(c.$extras.previousCatTransfers ?? 0),
+          previousSum: encodeMonetaryAmount(parseFloat(c.$extras.previousSum ?? 0)),
+          previousFunding: encodeMonetaryAmount(parseFloat(c.$extras.previousFunding ?? 0)),
+          previousBaseAmount: encodeMonetaryAmount(parseFloat(c.$extras.previousBaseAmount ?? 0)),
+          previousCatTransfers: encodeMonetaryAmount(parseFloat(c.$extras.previousCatTransfers ?? 0)),
         })),
       }
     }

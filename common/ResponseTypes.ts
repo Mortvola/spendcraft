@@ -483,14 +483,10 @@ export interface AddOfflineAccountResponse {
 
 export interface ProposedFundingCategoryProps {
   categoryId: number,
-  amount: number,
+  amount: DecimalMoneyString,
   adjusted: boolean,
   adjustedReason: string | null,
-  fundingCategories: {
-    categoryId: number,
-    amount: number,
-    percentage: boolean,
-  }[],
+  fundingCategories: FundingRuleResponse[],
   includeFundingTransfers: boolean,
 }
 
@@ -513,10 +509,10 @@ export interface FundingInfoProps {
   id: number,
   name: string,
   balance: DecimalMoneyString,
-  previousSum: number,
-  previousFunding: number,
-  previousBaseAmount: number,
-  previousCatTransfers: number,
+  previousSum: DecimalMoneyString,
+  previousFunding: DecimalMoneyString,
+  previousBaseAmount: DecimalMoneyString,
+  previousCatTransfers: DecimalMoneyString,
 }
 
 interface AccountSyncProps {

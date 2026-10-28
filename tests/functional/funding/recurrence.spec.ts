@@ -91,7 +91,7 @@ test.group('Funding recurrence characterization', () => {
           if (recurrence === 1 || recurrence === 3 || recurrence === 360) {
             proposed.assertStatus(200)
             const row = proposed.body().data.find((item: { categoryId: number }) => item.categoryId === stored.id)
-            assert.equal(row.amount, recurrence === 1 ? 120 : recurrence === 3 ? 60 : 0.33)
+            assert.strictEqual(row.amount, recurrence === 1 ? '120.00' : recurrence === 3 ? '60.00' : '0.33')
             assert.equal(row.adjusted, recurrence === 3)
             if (recurrence === 3) assert.equal(row.adjustedReason, 'The funding amount was adjusted from a planned amount of 40.00 to 60.00 for the goal of 120 due 4-2025.')
           }
@@ -115,7 +115,7 @@ test.group('Funding recurrence characterization', () => {
       const response = await client.get('/api/v1/funding-plans/proposed?date=2025-03-01').accept('json').loginAs(f.user)
       response.assertStatus(200)
       const row = response.body().data.find((item: { categoryId: number }) => item.categoryId === f.category.id)
-      assert.equal(row.amount, useGoal ? 60 : 120)
+      assert.strictEqual(row.amount, useGoal ? '60.00' : '120.00')
       console.log(JSON.stringify({ scenario: 'zero recurrence branch', useGoal, proposal: row }))
     }
   })

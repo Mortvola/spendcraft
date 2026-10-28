@@ -1,3 +1,7 @@
+import { setImmediate } from 'node:timers'
+import { encodeMonetaryAmount } from '../../../app/services/categoryAmountCodec.ts'
+import { decodeAmount, decodeFundingRules } from '../../../client-src/monetary.ts'
+import { CategoryType, TransactionType } from '../../../common/ResponseTypes.ts'
 import { validateTransactionSplits } from '../../../app/validation/transactionSplits.ts'
 import { test } from '@japa/runner'
 import { DateTime } from 'luxon'
@@ -224,5 +228,61 @@ test.group('Funding same-state preview and submission without DB', () => {
     await f.submit()
     assert.equal(f.submitted.request.categories[0].baseAmount, 60)
     assert.equal(fundingCategoryEffect(f.submitted.request.categories, 99), -60)
+  })
+})
+
+
+test.group('Funding preview API decimal strings', () => {
+  test('proposed endpoint encodes money and preserves numeric calculation results', async ({ assert }) => {
+    const proposed = [{ categoryId: 10, amount: 0.1 + 0.2, adjusted: true, adjustedReason: 'keep',
+      includeFundingTransfers: false, fundingCategories: [
+        { categoryId: 99, amount: -0.125, percentage: false },
+        { categoryId: 20, amount: 12.75, percentage: true },
+      ] }]
+    const before = globalThis.structuredClone(proposed)
+    const budget = { getProposedFunding: async () => proposed }
+    const get = runInNewContext(await expression('app/Controllers/Http/FundingPlanController.ts', 'getProposed'), { encodeMonetaryAmount })
+    const response = await get({ auth: { user: { related: () => ({ query: () => ({ firstOrFail: async () => budget }) }) } },
+      request: { qs: () => ({ date: '2025-03-01' }) } })
+    assert.strictEqual(response.data[0].amount, '0.30')
+    assert.strictEqual(response.data[0].fundingCategories[0].amount, '-0.12')
+    assert.strictEqual(response.data[0].fundingCategories[1].amount, 12.75)
+    assert.strictEqual(response.data[0].adjustedReason, 'keep')
+    assert.deepEqual(proposed, before)
+    const getProposed = runInNewContext(await expression('client-src/Funding/FundingDialog.tsx', 'getProposed'), {
+      React: { useCallback: callback => callback }, decodeAmount, decodeFundingRules, CategoryType,
+      categoryTree: { getCategory: () => ({ type: CategoryType.Regular }) },
+      Http: { get: async () => ({ ok: true, body: async () => response }) },
+    })
+    const inputs = await getProposed('2025-03-01')
+    assert.strictEqual(inputs[10].baseAmount, 0.3)
+    assert.deepEqual(Array.from(inputs[10].fundingCategories, rule => rule.amount), [-0.12, 12.75])
+  })
+
+  test('prior-period context encodes totals, defaults empty aggregates, and decodes for the screen', async ({ assert }) => {
+    const rows = [{ id: 10, name: 'Category', balance: 20, $extras: { sum: '1.00', previousSum: '-0.30',
+      previousFunding: '12.5', previousBaseAmount: '0.300', previousCatTransfers: null } }]
+    const before = globalThis.structuredClone(rows)
+    const query = { whereHas() { return this }, joinRaw() { return this },
+      then(resolve, reject) { return Promise.resolve(rows).then(resolve, reject) } }
+    const get = runInNewContext(await expression('app/Controllers/Http/CategoriesController.ts', 'get'), {
+      Category: { query: () => query }, DateTime, TransactionType, encodeMonetaryAmount,
+    })
+    const response = await get({ auth: { user: { related: () => ({ query: () => ({ firstOrFail: async () => ({ id: 1 }) }) }) } },
+      request: { qs: () => ({ date: '2025-03-01' }) } })
+    assert.deepEqual(JSON.parse(JSON.stringify(response.data[0])), { id: 10, name: 'Category', balance: '19.00',
+      previousSum: '-0.30', previousFunding: '12.50', previousBaseAmount: '0.30', previousCatTransfers: '0.00' })
+    assert.deepEqual(rows, before)
+    let state
+    const component = runInNewContext(await expression('client-src/Funding/Funding.tsx', 'Funding'), {
+      React: { ...React, useEffect: callback => callback() },
+      useState: () => [[], value => { state = value }], decodeAmount,
+      useStores: () => ({ categoryTree: { budget: { children: [] }, bills: { children: [] } } }),
+      Http: { get: async () => ({ ok: true, body: async () => response }) },
+    })
+    component({ date: '2025-03-01', diffOnly: false })
+    await new Promise(resolve => setImmediate(resolve))
+    assert.deepEqual(JSON.parse(JSON.stringify(state)), [{ categoryId: 10, initialAmount: 19,
+      previousFunding: 12.5, previousBaseAmount: 0.3, previousExpenses: -0.3, previousCatTransfers: 0 }])
   })
 })

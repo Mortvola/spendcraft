@@ -1,3 +1,4 @@
+import { decodeAmount, decodeFundingRules } from '../monetary';
 import { validateFundingPercentages } from '../../common/fundingPercentages'
 import React from 'react';
 import {
@@ -213,12 +214,12 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
 
           if (category && ![CategoryType.AccountTransfer, CategoryType.Unassigned].includes(category.type)) {
             obj[cat.categoryId] = {
-              baseAmount: cat.amount,
+              baseAmount: decodeAmount(cat.amount),
               fundingCategories: [],
               includeFundingTransfers: cat.includeFundingTransfers,
             }
 
-            let fundingCats = cat.fundingCategories;
+            let fundingCats = decodeFundingRules(cat.fundingCategories);
 
             if (fundingCats.length === 0) {
               const fundingPool = category.getFundingPool()
