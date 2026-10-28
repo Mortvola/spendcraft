@@ -377,7 +377,7 @@ export * from ${source('common/ResponseTypes.ts')};
     }
   })
 
-  test('auto-assignment load, CREATE and PATCH decode fixed dollars and preserve numeric requests', async ({ assert }) => {
+  test('auto-assignment load, CREATE and PATCH decode fixed dollars and encode fixed-dollar requests', async ({ assert }) => {
     const props = { id: 1, name: 'Rule', searchStrings: ['Shop'], categories: [
       { id: 1, categoryId: 20, amount: '-0.12', percentage: false },
       { id: 2, categoryId: 21, amount: 12.75, percentage: true },
@@ -390,16 +390,23 @@ export * from ${source('common/ResponseTypes.ts')};
     assert.isNull(rule.categories[2].percentage)
     const input = { name: 'Updated', searchStrings: ['Shop'], categories: [
       { id: 1, categoryId: 20, amount: 2.5, percentage: false },
+      { id: 2, categoryId: 21, amount: 12.75, percentage: true },
     ] }
     routes.set('patch /api/v1/auto-assignments/1', async payload => {
-      assert.deepEqual(payload, input)
+      assert.deepEqual(payload, { ...input, categories: [
+        { id: 1, categoryId: 20, amount: '2.50', percentage: false },
+        { id: 2, categoryId: 21, amount: 12.75, percentage: true },
+      ] })
       return { body: { ...props, name: 'Updated', categories: [{ ...input.categories[0], amount: '2.50' }] } }
     })
     await rule.update(input)
     assert.strictEqual(rule.categories[0].amount, 2.5)
     assert.strictEqual(rule.categories[0].id, 1)
     routes.set('post /api/v1/auto-assignments', async payload => {
-      assert.deepEqual(payload, input)
+      assert.deepEqual(payload, { ...input, categories: [
+        { id: 1, categoryId: 20, amount: '2.50', percentage: false },
+        { id: 2, categoryId: 21, amount: 12.75, percentage: true },
+      ] })
       return { body: { ...props, id: 2 } }
     })
     await f.store.autoAssignments.add(input)

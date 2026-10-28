@@ -1,4 +1,5 @@
-import { decodeFundingRules } from '../monetary';
+import type { AutoAssignmentWriteRequest } from '../../common/ResponseTypes';
+import { decodeFundingRules, encodeFundingRules } from '../monetary';
 import Http from '@mortvola/http';
 import { observable, runInAction } from 'mobx';
 import { AutoAssignmentInterface, AutoAssignmentProps, StoreInterface } from './Types';
@@ -37,10 +38,10 @@ class AutoAssignment implements AutoAssignmentInterface {
       percentage: boolean,
     }[],
   }) {
-    const response = await Http.patch<unknown, AutoAssignmentProps>(`/api/v1/auto-assignments/${this.id}`, {
+    const response = await Http.patch<AutoAssignmentWriteRequest, AutoAssignmentProps>(`/api/v1/auto-assignments/${this.id}`, {
       name: props.name,
       searchStrings: props.searchStrings,
-      categories: props.categories,
+      categories: encodeFundingRules(props.categories),
     })
 
     if (response.ok) {

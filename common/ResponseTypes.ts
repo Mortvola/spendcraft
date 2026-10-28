@@ -34,6 +34,12 @@ export type FundingRuleResponse = { categoryId: number } & (
   | { percentage: true; amount: number }
 );
 
+export interface AutoAssignmentWriteRequest {
+  name: string;
+  searchStrings: string[];
+  categories: ({ id: number } & FundingRuleResponse)[];
+}
+
 export interface CategoryWriteRequest {
   name: string;
   type?: CategoryType;

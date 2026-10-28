@@ -57,7 +57,7 @@ test.group('Auto-assignment isolation', (group) => {
       db.from('categories').orderBy('id'), db.from('transactions').orderBy('id'),
       db.from('accounts').orderBy('id'), db.from('transaction_logs').orderBy('id')])
   }
-  const split = (id: number, categoryId: number) => ({ id, categoryId, amount: 5, percentage: false })
+  const split = (id: number, categoryId: number) => ({ id, categoryId, amount: '5.00', percentage: false })
   interface Scenario { name: string, method: 'post' | 'patch' | 'delete', id: () => number, categories: () => ReturnType<typeof split>[] }
   const cases: Scenario[] = [
     { name: 'creation with foreign category', method: 'post', id: () => ownId, categories: () => [split(-1, fixture.foreign.category.id)] },

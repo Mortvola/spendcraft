@@ -19,11 +19,11 @@ for (const input of [null, undefined, '', '1.25', NaN, Infinity, -Infinity, 1000
   test(`invalid amount rejected: ${String(input)}`, () => assert.throws(() => roundAutoAssignmentAmount(input)))
 }
 for (const [name, validator] of [['CREATE', addAutoAssignment], ['PATCH', updateAutoAssignment]]) {
-  test(`${name} accepts fractional amounts in both modes and rejects unsafe input`, async () => {
+  test(`${name} accepts canonical fixed dollars and numeric percentages and rejects unsafe input`, async () => {
     for (const percentage of [true, false]) {
       const output = await validator.validate({ name: 'test', searchStrings: ['test'],
-        categories: [{ id: -1, categoryId: 1, amount: 12.345, percentage }] })
-      assert.equal(output.categories[0].amount, 12.345) // Quantization is the model persistence boundary.
+        categories: [{ id: -1, categoryId: 1, amount: percentage ? 12.345 : '12.35', percentage }] })
+      assert.equal(output.categories[0].amount, percentage ? 12.345 : 12.35) // Quantization is the model persistence boundary.
       assert.equal(output.categories[0].percentage, percentage)
     }
     for (const amount of [null, Infinity, 10000000000, -10000000000]) {
