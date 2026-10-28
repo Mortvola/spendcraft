@@ -103,7 +103,7 @@ test.group('Transaction allocation API strings', () => {
       const before = globalThis.structuredClone(row.$attributes)
       for (const response of [row.serialize(), row.serialize(transactionFields), JSON.parse(JSON.stringify(row))]) {
         assert.deepEqual(response.categories, [
-          { ...categories[0], amount: '0.30' }, { ...categories[1], amount: '-0.12' }, { ...categories[2], amount: '0.00' },
+          { ...categories[0], amount: '0.30', baseAmount: '1.00' }, { ...categories[1], amount: '-0.12' }, { ...categories[2], amount: '0.00' },
         ])
       }
       assert.deepEqual(row.$attributes, before)
@@ -237,6 +237,32 @@ test('Category responses encode balances while runtime values remain numeric', (
     assert.strictEqual(category.serialize().balance, expected)
     assert.strictEqual(JSON.parse(JSON.stringify(category)).balance, expected)
     assert.strictEqual(category.balance, amount)
-    assert.strictEqual(category.serialize().fundingAmount, 5)
+    assert.strictEqual(category.serialize().fundingAmount, '5.00')
   }
+})
+
+
+test('funding API serialization preserves percentages, nulls, metadata and numeric models', ({ assert }) => {
+  const rules = [{ categoryId: 1, amount: -0.125, percentage: false, note: 'keep' },
+    { categoryId: 2, amount: 12.75, percentage: true },
+    { categoryId: 3, amount: null, percentage: false }, { categoryId: 4, percentage: false }]
+  const category = new Category().merge({ fundingAmount: 1.005 })
+  category.$setAttribute('fundingCategories', rules)
+  const original = globalThis.structuredClone(category.$attributes)
+  const expected = [{ ...rules[0], amount: '-0.12' }, ...rules.slice(1)]
+  assert.deepEqual(category.serialize().fundingCategories, expected)
+  assert.strictEqual(category.serialize().fundingAmount, '1.00')
+  assert.deepEqual(category.$attributes, original)
+  const categories = [
+    { categoryId: 1, amount: 0, baseAmount: 0.1 + 0.2, fundingCategories: rules, extra: 'keep' },
+    { categoryId: 2, amount: 0, baseAmount: null, fundingCategories: null },
+    { categoryId: 3, amount: 0 },
+  ]
+  const transaction = new Transaction().merge({ categories })
+  const before = globalThis.structuredClone(transaction.$attributes)
+  const response = transaction.serialize(transactionFields).categories
+  assert.deepEqual(response[0], { ...before.categories[0], amount: '0.00', baseAmount: '0.30', fundingCategories: expected })
+  assert.deepEqual(response[1], { categoryId: 2, amount: '0.00', baseAmount: null, fundingCategories: null })
+  assert.notProperty(response[2], 'baseAmount')
+  assert.deepEqual(transaction.$attributes, before)
 })

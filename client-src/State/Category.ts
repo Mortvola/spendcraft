@@ -1,4 +1,4 @@
-import { decodeAmount } from '../monetary';
+import { decodeAmount, decodeFundingRules } from '../monetary';
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 import { DateTime } from 'luxon';
@@ -65,12 +65,12 @@ class Category implements CategoryInterface {
     this.type = props.type;
     this.balance = decodeAmount(props.balance);
     this.suspended = props.suspended;
-    this.fundingAmount = props.fundingAmount;
+    this.fundingAmount = decodeAmount(props.fundingAmount);
     this.includeFundingTransfers = props.includeFundingTransfers;
     this.goalDate = props.goalDate ? DateTime.fromISO(props.goalDate) : null;
     this.useGoal = props.useGoal ?? false;
     this.recurrence = props.recurrence;
-    this.fundingCategories = props.fundingCategories.map((c, index) => ({ id: index, ...c }));
+    this.fundingCategories = decodeFundingRules(props.fundingCategories).map((c, index) => ({ id: index, ...c }));
     this.hidden = props.hidden;
     this.store = store;
 
@@ -139,17 +139,19 @@ class Category implements CategoryInterface {
       }
     }
     else {
+      const fundingAmount = body.data ? decodeAmount(body.data.fundingAmount) : undefined;
+      const fundingCategories = body.data ? decodeFundingRules(body.data.fundingCategories) : undefined;
       runInAction(() => {
-        if (body.data) {
+        if (body.data && fundingAmount !== undefined && fundingCategories !== undefined) {
           const nameChanged = this.name !== body.data.name;
           this.type = body.data.type;
           this.name = body.data.name;
           this.suspended = body.data.suspended;
-          this.fundingAmount = body.data.fundingAmount;
+          this.fundingAmount = fundingAmount;
           this.includeFundingTransfers = body.data.includeFundingTransfers;
           this.recurrence = body.data.recurrence;
           this.goalDate = DateTime.fromISO(body.data.goalDate);
-          this.fundingCategories = body.data.fundingCategories.map((c, index) => ({ id: index, ...c }));
+          this.fundingCategories = fundingCategories.map((c, index) => ({ id: index, ...c }));
 
           this.hidden = body.data.hidden;
 

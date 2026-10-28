@@ -41,7 +41,7 @@ test.group('Funding decimal-string PostgreSQL acceptance', () => {
       const id = operation === 'create' ? response.body().data.id : f.category.id
       const stored = await db.from('categories').where('id', id).firstOrFail()
       assert.deepEqual(stored.funding_categories.map((r: { amount: string }) => r.amount), ['-0.12', '12.34', '87.66'])
-      assert.deepEqual(response.body().data.fundingCategories.map((r: { amount: number }) => r.amount), [-0.12, 12.34, 87.66])
+      assert.deepEqual(response.body().data.fundingCategories.map((r: { amount: number | string }) => r.amount), ['-0.12', 12.34, 87.66])
     })
   test('transfer CREATE and replacement persist base/fixed/percentage strings without changing balances from metadata').with(['create', 'replace'])
     .run(async ({ client, assert }, operation) => {
@@ -64,8 +64,8 @@ test.group('Funding decimal-string PostgreSQL acceptance', () => {
       assert.strictEqual(response.body().data.transaction.categories[1].amount, '-1.00')
       assert.equal(stored.categories[0].baseAmount, '1.00')
       assert.deepEqual(stored.categories[0].fundingCategories.map((r: { amount: string }) => r.amount), ['-0.12', '100.00'])
-      assert.equal(response.body().data.transaction.categories[0].baseAmount, 1)
-      assert.isNumber(response.body().data.transaction.categories[0].fundingCategories[0].amount)
+      assert.strictEqual(response.body().data.transaction.categories[0].baseAmount, '1.00')
+      assert.strictEqual(response.body().data.transaction.categories[0].fundingCategories[0].amount, '-0.12')
       assert.deepEqual(await balances(), before)
     })
   test('canonical Category reads and metadata-only saves preserve raw leaves and unrelated JSON', async ({ assert }) => {
@@ -92,7 +92,7 @@ test.group('Funding decimal-string PostgreSQL acceptance', () => {
     await db.from('transactions').where('id', id).update({ deleted: true, categories: JSON.stringify(raw) })
     const before = await balances(), row = await Transaction.findOrFail(id)
     assert.isTrue(row.deleted); assert.isFalse(row.$isDirty)
-    assert.equal(row.serialize().categories[0].baseAmount, 54.27)
+    assert.strictEqual(row.serialize().categories[0].baseAmount, '54.27')
     row.comment = 'Metadata'; await row.save()
     assert.deepEqual((await db.from('transactions').where('id', id).firstOrFail()).categories, raw)
     assert.deepEqual(await balances(), before)
@@ -106,8 +106,8 @@ test.group('Funding decimal-string PostgreSQL acceptance', () => {
     const response = await client.post('/api/v1/category-transfer').loginAs(f.user).json({ date: '2026-10-01', type: 2, categories: calculated })
     response.assertStatus(200)
     const saved = response.body().data.transaction.categories[0]
-    assert.deepEqual(calculateFunding({ [f.category.id]: { baseAmount: saved.baseAmount,
-      fundingCategories: saved.fundingCategories, includeFundingTransfers: false } }, f.pool.id), calculated)
+    assert.deepEqual(calculateFunding({ [f.category.id]: { baseAmount: Number(saved.baseAmount),
+      fundingCategories: saved.fundingCategories.map((rule: { categoryId: number, amount: number | string, percentage: boolean }) => ({ ...rule, amount: Number(rule.amount) })), includeFundingTransfers: false } }, f.pool.id), calculated)
     const proposed = await client.get('/api/v1/funding-plans/proposed?date=2026-10-01').loginAs(f.user)
     proposed.assertStatus(200)
     assert.isNumber(proposed.body().data.find((r: { categoryId: number }) => r.categoryId === f.category.id).fundingCategories[0].amount)

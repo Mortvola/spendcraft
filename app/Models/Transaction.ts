@@ -1,3 +1,4 @@
+import { serializeFundingMetadata } from '#services/fundingAmountCodec';
 import { encodeTaxAttributions } from '#services/taxAmountCodec';
 import { encodeCategoryAllocations } from '#services/categoryAmountCodec';
 import { bindTaxStorage, prepareTaxStorageSave } from '#services/transactionTaxStorage';
@@ -89,7 +90,7 @@ class Transaction extends BaseModel {
 
   @column({
     prepare: (value: TransCategory[], _attribute, model) => prepareCategoryStorage(value, model),
-    serialize: (value) => value === null ? null : encodeCategoryAllocations(value),
+    serialize: (value) => value === null ? null : serializeFundingMetadata(encodeCategoryAllocations(value)),
   })
   public categories: TransCategory[];
 

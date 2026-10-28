@@ -1,7 +1,7 @@
 import { DateTime } from 'luxon';
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
-import { decodeAmount } from '../monetary';
+import { decodeAmount, decodeFundingRules } from '../monetary';
 import {
   ErrorProps,
   TransactionType,
@@ -146,9 +146,9 @@ class Transaction implements TransactionInterface {
         amount: decodeAmount(c.amount),
         comment: c.comment,
         funder: c.funder,
-        fundingCategories: c.fundingCategories,
+        fundingCategories: c.fundingCategories == null ? c.fundingCategories : decodeFundingRules(c.fundingCategories),
         includeFundingTransfers: c.includeFundingTransfers,
-        baseAmount: c.baseAmount,
+        baseAmount: c.baseAmount == null ? c.baseAmount : decodeAmount(c.baseAmount),
       }));
     }
 

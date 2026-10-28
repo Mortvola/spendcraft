@@ -9,7 +9,7 @@ import { updateCategoryTransfer } from '../../app/validation/Validators/category
 import { calculateFunding } from '../../client-src/Funding/calculateFunding.ts'
 import { auditTransaction } from '../../scripts/auditTransactionCategoryCents.mjs'
 import { Exception } from '@adonisjs/core/exceptions'
-import { validateCategoryConservation } from '../../app/services/categoryAmountCodec.ts'
+import { encodeMonetaryAmount, validateCategoryConservation } from '../../app/services/categoryAmountCodec.ts'
 import { validateTransactionSplits } from '../../app/validation/transactionSplits.ts'
 
 async function transferHandler(context) {
@@ -58,7 +58,7 @@ test.group('Transaction Category storage boundary — approved CREATE admission'
         id, balance: 0, async save() { events.push('category.save') },
       }]))
       const handler = await transferHandler({
-        DateTime, TransactionType, Exception, updateCategoryTransfer, validateCategoryConservation,
+        DateTime, TransactionType, Exception, updateCategoryTransfer, encodeMonetaryAmount, validateCategoryConservation,
         requestCategoryStorage: (model) => model, validateStoredCategoryConservation: async () => undefined,
         transactionFields: {},
         db: { async transaction() { return owner } },

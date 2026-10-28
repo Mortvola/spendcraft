@@ -51,3 +51,25 @@ export const encodeFundingMetadata = (value: unknown) => mapFundingMetadata(valu
 export const decodeFundingMetadata = (value: unknown) => mapFundingMetadata(value, decodeStoredMonetaryAmount)
 
 export const runtimeFundingMetadata = (value: unknown) => mapFundingMetadata(value, runtimeFundingAmount)
+
+// API money uses decimal strings; percentages retain their numeric meaning.
+export function serializeFundingRules(value: unknown): unknown {
+  if (value === null || value === undefined) return value
+  if (!Array.isArray(value)) throw new Exception('Funding rules must be an array', { status: 422 })
+  return value.map((entry: unknown) => {
+    const row = object(entry)
+    leaf(row, 'amount', row.percentage === true ? runtimeFundingAmount : encodeMonetaryAmount, [])
+    return row
+  })
+}
+
+export function serializeFundingMetadata(value: unknown): unknown {
+  if (value === null || value === undefined) return value
+  if (!Array.isArray(value)) throw new Exception('Funding allocations must be an array', { status: 422 })
+  return value.map((entry: unknown) => {
+    const row = object(entry)
+    leaf(row, 'baseAmount', encodeMonetaryAmount, [])
+    if (Object.hasOwn(row, 'fundingCategories')) row.fundingCategories = serializeFundingRules(row.fundingCategories)
+    return row
+  })
+}

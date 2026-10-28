@@ -1,3 +1,5 @@
+import type { FundingRuleResponse } from '../common/ResponseTypes';
+
 // Decode canonical API amounts before using them in numeric client state.
 export function decodeAmount(value: unknown): number {
   if (typeof value !== 'string' || value.length > 24 || !/^-?(?:0|[1-9]\d*)\.\d{2}$/.test(value) || value === '-0.00') {
@@ -14,3 +16,15 @@ export function decodeAmount(value: unknown): number {
   return amount;
 }
 
+
+export function decodeFundingRules(rules: readonly FundingRuleResponse[]) {
+  return rules.map((rule) => {
+    if (rule.percentage === true) {
+      if (typeof rule.amount !== 'number' || !Number.isFinite(rule.amount)) {
+        throw new Error('Invalid percentage response');
+      }
+      return { ...rule, amount: rule.amount };
+    }
+    return { ...rule, amount: decodeAmount(rule.amount) };
+  });
+}

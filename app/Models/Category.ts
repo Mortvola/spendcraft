@@ -1,3 +1,4 @@
+import { serializeFundingRules } from '#services/fundingAmountCodec';
 import { encodeMonetaryAmount, categoryNonzeroAllocationSql } from '#services/categoryAmountCodec';
 import { consumeFundingStorage, prepareFundingStorage, finishFundingStorage, stageFundingStorage } from '#services/fundingStorage';
 import {
@@ -56,6 +57,7 @@ export default class Category extends BaseModel {
 
   @column({
     consume: (value: string) => parseFloat(value),
+    serialize: (value: number) => encodeMonetaryAmount(value),
   })
   public fundingAmount: number;
 
@@ -74,6 +76,7 @@ export default class Category extends BaseModel {
   @column({
     consume: (value, _attribute, model) => model.$attributes.type === CategoryType.Loan ? value : consumeFundingStorage(value, model),
     prepare: (value, _attribute, model) => JSON.stringify(model.$attributes.type === CategoryType.Loan ? value : prepareFundingStorage(value, model)),
+    serialize: (value) => serializeFundingRules(value),
   })
   public fundingCategories: FundingCategory[];
 

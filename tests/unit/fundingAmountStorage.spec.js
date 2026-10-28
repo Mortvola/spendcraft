@@ -144,7 +144,7 @@ test.group('Funding JSON storage (no database)', () => {
     const row = new Model().merge({ id: 1, fundingCategories: [rule(-0.125), rule(12.345, true)] })
     await row.save()
     assert.deepEqual(JSON.parse(writes[0].funding_categories), [rule('-0.12'), rule('12.35', true)])
-    assert.deepEqual(row.serialize().fundingCategories, [rule(-0.12), rule(12.35, true)])
+    assert.deepEqual(row.serialize().fundingCategories, [rule('-0.12'), rule(12.35, true)])
     assert.isFalse(row.$isDirty)
     const raw = [rule('1.00'), rule('2.00', true)]
     const old = Model.$createFromAdapterResult({ id: 2, type: 'BILL', funding_categories: raw, name: 'old' })
@@ -175,7 +175,7 @@ test.group('Funding JSON storage (no database)', () => {
     const stored = JSON.parse(persist(row).categories)
     assert.equal(stored[0].baseAmount, '1.00')
     assert.deepEqual(stored[0].fundingCategories, [rule('1.00'), rule('1.00', true)])
-    assert.equal(row.serialize().categories[0].baseAmount, 1)
+    assert.strictEqual(row.serialize().categories[0].baseAmount, 1)
     assert.deepEqual(row.categories[0].fundingCategories, [rule(1), rule(1, true)])
     assert.isFalse(row.$isDirty)
   })

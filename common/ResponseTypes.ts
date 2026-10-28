@@ -28,6 +28,12 @@ export enum CategoryType {
   Goal = 'GOAL',
 }
 
+/** Fixed-dollar amounts are money strings; percentage-mode amounts remain numbers. */
+export type FundingRuleResponse = { categoryId: number } & (
+  { percentage: false; amount: DecimalMoneyString }
+  | { percentage: true; amount: number }
+);
+
 export interface CategoryProps {
   id: number;
 
@@ -39,7 +45,7 @@ export interface CategoryProps {
 
   type: CategoryType;
 
-  fundingAmount: number;
+  fundingAmount: DecimalMoneyString;
 
   includeFundingTransfers: boolean;
 
@@ -51,7 +57,7 @@ export interface CategoryProps {
 
   suspended: boolean;
 
-  fundingCategories: { categoryId: number, amount: number, percentage: boolean }[];
+  fundingCategories: FundingRuleResponse[];
 
   hidden: boolean;
 }
@@ -89,11 +95,11 @@ export interface UpdateCategoryResponse {
   name: string;
   monthlyExpenses: boolean;
   suspended: boolean;
-  fundingAmount: number,
+  fundingAmount: DecimalMoneyString,
   includeFundingTransfers: boolean;
   goalDate: string,
   recurrence: number,
-  fundingCategories: { categoryId: number, amount: number, percentage: boolean }[],
+  fundingCategories: FundingRuleResponse[],
   hidden: boolean,
 }
 
@@ -273,9 +279,9 @@ export interface TransactionProps {
     amount: DecimalMoneyString,
     comment?: string,
     funder?: boolean,
-    fundingCategories?: { categoryId: number, amount: number, percentage: boolean }[],
+    fundingCategories?: FundingRuleResponse[],
     includeFundingTransfers?: boolean,
-    baseAmount?: number,
+    baseAmount?: DecimalMoneyString,
   }[];
 
   taxes: {

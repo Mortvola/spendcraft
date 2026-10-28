@@ -65,7 +65,7 @@ export * from ${source('common/ResponseTypes.ts')};
     const institutionProps = { id: 1, plaidInstitutionId: null, name: 'Offline bank', syncDate: null, accounts: [accountProps] }
     const institution = new state.Institution(store, institutionProps)
     const account = institution.accounts[0]
-    const props = (id) => ({ id, groupId: -1, name: `Category ${id}`, type: state.CategoryType.Regular, balance: '0.00', fundingAmount: 0, fundingCategories: [], includeFundingTransfers: true, goalDate: null, useGoal: false, recurrence: 1, suspended: false, hidden: false })
+    const props = (id) => ({ id, groupId: -1, name: `Category ${id}`, type: state.CategoryType.Regular, balance: '0.00', fundingAmount: '0.00', fundingCategories: [], includeFundingTransfers: true, goalDate: null, useGoal: false, recurrence: 1, suspended: false, hidden: false })
     const category = new state.Category(props(20), store)
     const other = new state.Category(props(21), store)
     state.runInAction(() => {
@@ -204,6 +204,27 @@ export * from ${source('common/ResponseTypes.ts')};
     assert.strictEqual(f.account.balance, 0.3)
     f.category.transactions.transactionResponseHandler({ transactions: [], balance: '2.50' }, 0, 20)
     assert.strictEqual(f.category.balance, 2.5)
+  })
+
+  test('funding metadata becomes numeric client state without changing requests or percentages', ({ assert }) => {
+    const category = new state.Category({ ...({ id: 25, groupId: -1, name: "Funding", type: state.CategoryType.Regular, balance: "0.00", suspended: false, includeFundingTransfers: true, recurrence: 1, hidden: false }), fundingAmount: '12.50',
+      fundingCategories: [{ categoryId: 20, amount: '-0.12', percentage: false },
+        { categoryId: 21, amount: 12.75, percentage: true }],
+    }, f.store)
+    assert.strictEqual(category.fundingAmount, 12.5)
+    assert.deepEqual(category.fundingCategories.map((row) => row.amount), [-0.12, 12.75])
+    const transaction = new state.Transaction(f.store, { ...f.transactionProps(), categories: [
+      { categoryId: 20, amount: '1.00', baseAmount: '0.30',
+        fundingCategories: [{ categoryId: 21, amount: '2.50', percentage: false },
+          { categoryId: 22, amount: 100, percentage: true }] },
+    ] })
+    assert.strictEqual(transaction.categories[0].baseAmount, 0.3)
+    assert.deepEqual(transaction.categories[0].fundingCategories.map((row) => row.amount), [2.5, 100])
+    for (const amount of [1, '', '1.2', '-0.00', 'Infinity']) {
+      assert.throws(() => new state.Transaction(f.store, { ...f.transactionProps(), categories: [
+        { categoryId: 20, amount: '1.00', baseAmount: amount },
+      ] }))
+    }
   })
 
   test('Category balance strings decode before updating cached balances', ({ assert }) => {
@@ -608,7 +629,7 @@ export * from ${source('common/ResponseTypes.ts')};
   test('same-budget category movement preserves identity and changes computed group balances', async ({ assert }) => {
     const destination = new state.Group({ id: 2, name: 'Destination', type: state.GroupType.Regular, parentGroupId: -1 }, f.store)
     state.runInAction(() => { f.category.balance = 12.25; f.store.categoryTree.budget.insertChild(destination) })
-    routes.set('patch /api/v1/groups/2/categories/20', async () => ({ body: { data: { id: 20, name: f.category.name, type: f.category.type, suspended: false, fundingAmount: 0, includeFundingTransfers: true, recurrence: 1, goalDate: null, fundingCategories: [], hidden: false } } }))
+    routes.set('patch /api/v1/groups/2/categories/20', async () => ({ body: { data: { id: 20, name: f.category.name, type: f.category.type, suspended: false, fundingAmount: '0.00', includeFundingTransfers: true, recurrence: 1, goalDate: null, fundingCategories: [], hidden: false } } }))
     await f.category.update({ group: destination, name: f.category.name, fundingCategories: [] })
     assert.strictEqual(destination.children[0], f.category)
     assert.strictEqual(f.category.group, destination)
@@ -712,7 +733,10 @@ export * from ${source('common/ResponseTypes.ts')};
     const rows = calculateFunding({ 21: { baseAmount: 2, includeFundingTransfers: false,
       fundingCategories: [{ categoryId: 20, amount: 100, percentage: true }] } }, 20)
     const props = { ...f.transactionProps(), type: state.TransactionType.FUNDING_TRANSACTION,
-      accountTransaction: undefined, categories: rows.map(row => ({ ...row, amount: row.amount.toFixed(2) })) }
+      accountTransaction: undefined, categories: rows.map(row => ({ ...row, amount: row.amount.toFixed(2),
+        ...(row.baseAmount == null ? {} : { baseAmount: row.baseAmount.toFixed(2) }),
+        ...(row.fundingCategories == null ? {} : { fundingCategories: row.fundingCategories.map(rule => ({ ...rule, amount: rule.percentage ? rule.amount : rule.amount.toFixed(2) })) }),
+      })) }
     routes.set('post /api/v1/category-transfer', async (payload) => {
       assert.deepEqual(payload.categories, rows)
       return rejected ? { ok: false, body: {} }

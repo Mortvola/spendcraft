@@ -156,7 +156,7 @@ test.group('Transaction Category decimal-string storage (prepared)', () => {
         assert.strictEqual(stored[0].baseAmount, '1.00')
         assert.deepEqual(stored[0].extra, { amount: 1.005 })
         const decoded = await Transaction.findOrFail(id)
-        assert.strictEqual(decoded.serialize().categories[0].baseAmount, 1)
+        assert.strictEqual(decoded.serialize().categories[0].baseAmount, '1.00')
       }
     })
 
