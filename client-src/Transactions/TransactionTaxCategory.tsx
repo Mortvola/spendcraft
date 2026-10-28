@@ -1,15 +1,15 @@
 import React from 'react';
 import { Minus, Plus } from 'lucide-react';
 import AmountInput from '../AmountInput';
-import { TransactionTaxCategoryInterface } from '../State/Types';
+import type { TransactionTaxInput } from './TransactionTaxCategories';
 import styles from './TransactionTaxCategories.module.scss';
 import { useStores } from '../State/Store';
 import LucideButton from '../LucideButton';
 
 interface PropsType {
-  split: TransactionTaxCategoryInterface,
+  split: TransactionTaxInput,
   onCategoryChange: (id: number, newType: string) => void,
-  onDeltaChange: (id: number, amount: number, delta: number) => void,
+  onAmountChange: (id: number, amount: string) => void,
   onAddItem: (afterId: number) => void,
   onDeleteItem: (id: number) => void,
 }
@@ -17,7 +17,7 @@ interface PropsType {
 const TransactionTaxCategory: React.FC<PropsType> = ({
   split,
   onCategoryChange,
-  onDeltaChange,
+  onAmountChange,
   onAddItem,
   onDeleteItem,
 }) => {
@@ -30,11 +30,11 @@ const TransactionTaxCategory: React.FC<PropsType> = ({
     onCategoryChange(split.id, event.target.value);
   };
 
-  const handleDeltaChange = (amount: number, delta: number) => {
+  const handleAmountChange = (amount: string) => {
     if (split.id === undefined) {
       throw new Error('missing id');
     }
-    onDeltaChange(split.id, amount, delta);
+    onAmountChange(split.id, amount);
   };
 
   const handleAddItem = () => {
@@ -62,7 +62,7 @@ const TransactionTaxCategory: React.FC<PropsType> = ({
             ))
           }
         </select>
-        <AmountInput onDeltaChange={handleDeltaChange} value={split.amount} style={{ margin: '1px' }} />
+        <AmountInput exactCents onValueChange={handleAmountChange} value={split.amount} style={{ margin: '1px' }} />
       </div>
       <LucideButton onClick={handleAddItem}>
         <Plus size={16} strokeWidth={2.5} />

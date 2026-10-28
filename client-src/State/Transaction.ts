@@ -49,6 +49,15 @@ class Transaction implements TransactionInterface {
   @observable
   private accessor categoryCents: { categoryId: number; amount: MoneyCents }[] = [];
 
+  @observable
+  private accessor taxAmountsCents: MoneyCents[] = [];
+
+  getTaxAmountCents(index: number): MoneyCents {
+    const amount = this.taxAmountsCents[index];
+    if (amount === undefined) throw new Error('Missing transaction tax cents');
+    return amount;
+  }
+
   getCategoryAmountCents(index: number): MoneyCents {
     const category = this.categoryCents[index];
     if (!category) throw new Error('Missing transaction category cents');
@@ -186,6 +195,7 @@ class Transaction implements TransactionInterface {
     }
 
     if (props.taxes) {
+      this.taxAmountsCents = props.taxes.map(tax => parseMoneyCents(tax.amount));
       this.taxCategories = props.taxes.map((t) => ({
         type: t.type,
         amount: decodeAmount(t.amount),
@@ -207,6 +217,7 @@ class Transaction implements TransactionInterface {
       this.duplicateOfTransactionId = updated.duplicateOfTransactionId;
       this.categories = updated.categories;
       this.taxCategories = updated.taxCategories;
+      this.taxAmountsCents = updated.taxAmountsCents;
       this.name = updated.name;
       this.amountCents = updated.amountCents;
       this.principleCents = updated.principleCents;

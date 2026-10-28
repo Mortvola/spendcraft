@@ -13,13 +13,13 @@ import CategorySplits, { sumSplitCents, type CategorySplitInput } from '../Categ
 import { formatMoneyCents, parseMoneyCents, subtractMoneyCents, type MoneyCents } from '../../common/moneyCents';
 import { decodeAmount, inputMoneyCents } from '../monetary';
 import MoneyCentsAmount from '../MoneyCentsAmount';
-import { AccountInterface, TransactionInterface, TransactionTaxCategoryInterface } from '../State/Types';
+import { AccountInterface, TransactionInterface } from '../State/Types';
 import AmountInput from '../AmountInput';
 import useMediaQuery from '../MediaQuery';
 import { AccountType, ApiError, ErrorProps, isApiErrorArray, isErrorPropsArray, RequestErrorCode, TrackingType, TransactionType } from '../../common/ResponseTypes';
 import styles from './TransactionDialog.module.scss';
 import PurchaseLocation from './PurchaseLocation';
-import TransactionTaxCategories from './TransactionTaxCategories';
+import TransactionTaxCategories, { sumTaxCents, type TransactionTaxInput } from './TransactionTaxCategories';
 
 interface PropsType {
   transaction?: TransactionInterface | null,
@@ -41,7 +41,7 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
     interest?: number,
     comment: string,
     splits: CategorySplitInput[],
-    taxCategories: TransactionTaxCategoryInterface[],
+    taxCategories: TransactionTaxInput[],
   }
 
   const { isMobile } = useMediaQuery();
@@ -96,7 +96,7 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
         principle,
         comment: values.comment,
         categories,
-        taxCategories: values.taxCategories,
+        taxCategories: values.taxCategories.map(tax => ({ ...tax, amount: decodeAmount(formatMoneyCents(inputMoneyCents(tax.amount))) })),
       });
     }
     else {
@@ -174,11 +174,12 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
     return [];
   }, [transaction])
 
-  const taxCategories = useMemo((): TransactionTaxCategoryInterface[] => {
+  const taxCategories = useMemo((): TransactionTaxInput[] => {
     if (transaction) {
       if (transaction.taxCategories.length > 0) {
-        return transaction.taxCategories.map((t) => ({
+        return transaction.taxCategories.map((t, index) => ({
           ...t,
+          amount: formatMoneyCents(transaction.getTaxAmountCents(index)),
         }));
       }
 
@@ -211,14 +212,10 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
     return error;
   }
 
-  const validateTaxCategories = (taxCategories: TransactionTaxCategoryInterface[]) => {
-    let error;
-
-    if (taxCategories !== undefined) {
-      console.log('TODO: complete this')
-    }
-
-    return error;
+  const validateTaxCategories = (taxCategories: TransactionTaxInput[]) => {
+    try { sumTaxCents(taxCategories); }
+    catch { return 'Enter valid, safe tax amounts.'; }
+    return undefined;
   }
 
   const renderSplits = () => (
@@ -282,17 +279,25 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
           form: {
             setFieldValue,
           },
-        }: FieldProps<TransactionTaxCategoryInterface[]>) => {
+        }: FieldProps<TransactionTaxInput[]>) => {
+          let total: MoneyCents | null = null;
+          try { total = sumTaxCents(value); }
+          catch { /* Field validation reports invalid or unsafe input. */ }
           return (
-            <TransactionTaxCategories
-              taxCategories={value}
-              onChange={(s) => {
-                setFieldValue(name, s);
-              }}
-            />
+            <>
+              <TransactionTaxCategories
+                taxCategories={value}
+                onChange={(taxes) => setFieldValue(name, taxes)}
+              />
+              <div className={splitItemClass}>
+                <div>Total:</div>
+                {total === null ? <div>Invalid amount</div> : <MoneyCentsAmount amount={total} />}
+              </div>
+            </>
           )
         }}
       </Field>
+      <FormError name="taxCategories" />
     </div>
   );
 

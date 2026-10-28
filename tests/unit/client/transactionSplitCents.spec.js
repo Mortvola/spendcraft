@@ -34,12 +34,13 @@ function find(element, predicate) {
   }
 }
 const zero = cents.parseMoneyCents('0.00')
-let sumSplitCents, dialog
+let sumSplitCents, sumTaxCents, dialog
 
 test.group('Transaction split cents', group => {
   group.setup(async () => {
     sumSplitCents = await expression('client-src/CategorySplits.tsx', 'sumSplitCents')
-    dialog = await expression('client-src/Transactions/TransactionDialog.tsx', 'TransactionDialog', { sumSplitCents })
+    sumTaxCents = await expression('client-src/Transactions/TransactionTaxCategories.tsx', 'sumTaxCents')
+    dialog = await expression('client-src/Transactions/TransactionDialog.tsx', 'TransactionDialog', { sumSplitCents, sumTaxCents })
   })
   const split = (amount, categoryId = 20) => ({ id: categoryId, categoryId, amount, comment: 'Retain memo' })
   const account = sign => ({ sign, type: AccountType.Depository, tracking: TrackingType.Transactions })
@@ -104,7 +105,7 @@ test.group('Transaction split cents', group => {
         categories: [], taxCategories: [], type: TransactionType.MANUAL_TRANSACTION,
         updateTransaction: async value => { updated = value; return null } }
       const edit = dialog({ account: acct, transaction, setShow: () => undefined })
-      await edit.props.onSubmit({ ...formValues, taxCategories: [{ type: 'test', amount: 0.2 }] }, { setErrors: () => undefined })
+      await edit.props.onSubmit({ ...formValues, taxCategories: [{ type: 'test', amount: '0.20' }] }, { setErrors: () => undefined })
       assert.strictEqual(updated.amount, sign * 0.3)
       assert.deepEqual(Array.from(updated.categories, c => c.amount), [sign * 0.1, sign * 0.2])
       assert.strictEqual(updated.taxCategories[0].amount, 0.2)
@@ -134,6 +135,77 @@ test.group('Transaction split cents', group => {
     view = render(props)
     assert.doesNotThrow(() => find(view, e => e.type === 'item').props.onAddItem(20))
     assert.lengthOf(callback, 2)
+  })
+
+  test('tax-attribution totals and validation use exact cents without a matching rule').with([
+    [['0.10', '0.20'], 30], [['-0.10', '0.20'], 10], [['0.00', '-0.00'], 0],
+    [['0.125', '-0.125'], 1], [[], 0], [['-0.30'], -30],
+  ]).run(({ assert }, [amounts, expected]) => {
+    const modal = dialog({ account: account(1), setShow: () => undefined })
+    const field = find(modal, e => e.type === 'field' && e.props.name === 'taxCategories')
+    const taxes = amounts.map(amount => ({ type: 'test', amount }))
+    assert.isUndefined(field.props.validate(taxes))
+    const view = field.props.children[0]({ field: { name: 'taxCategories', value: taxes }, form: { setFieldValue: () => undefined } })
+    assert.strictEqual(find(view, e => e.type === 'money').props.amount, expected)
+    assert.strictEqual(sumTaxCents(taxes), expected)
+  })
+
+  test('invalid and overflowing tax amounts fail validation').with([
+    ['bad'], ['Infinity'], ['90071992547409.92'], ['90071992547409.91', '0.01'],
+  ]).run(({ assert }, amounts) => {
+    const modal = dialog({ account: account(1), setShow: () => undefined })
+    const field = find(modal, e => e.type === 'field' && e.props.name === 'taxCategories')
+    const taxes = amounts.map(amount => ({ type: 'test', amount }))
+    assert.isString(field.props.validate(taxes))
+    const view = field.props.children[0]({ field: { name: 'taxCategories', value: taxes }, form: { setFieldValue: () => undefined } })
+    assert.isUndefined(find(view, e => e.type === 'money'))
+  })
+
+  test('tax edits initialize from retained cents and submit numeric state values without changing signs', async ({ assert }) => {
+    let saved
+    const transaction = { date: { toISODate: () => '2025-01-01' }, amountCents: -30,
+      categories: [], taxCategories: [{ type: 'test', amount: 999 }], getTaxAmountCents: () => -12,
+      type: TransactionType.MANUAL_TRANSACTION, updateTransaction: async value => { saved = value; return null } }
+    const modal = dialog({ account: account(-1), transaction, setShow: () => undefined })
+    assert.strictEqual(modal.props.initialValues.taxCategories[0].amount, '-0.12')
+    const edits = { ...modal.props.initialValues, taxCategories: [{ type: 'test', amount: '-0.125' }] }
+    await modal.props.onSubmit(edits, { setErrors: () => undefined })
+    assert.strictEqual(saved.taxCategories[0].amount, -0.12)
+    assert.strictEqual(saved.taxCategories[0].type, 'test')
+    assert.strictEqual(edits.taxCategories[0].amount, '-0.125')
+    assert.strictEqual(transaction.taxCategories[0].amount, 999)
+  })
+
+  test('tax rows preserve exact edited text and existing add/delete/category behavior', async ({ assert }) => {
+    let edited, changed
+    let nextId = -1
+    const render = await expression('client-src/Transactions/TransactionTaxCategories.tsx', 'TransactionTaxCategories', {
+      nextId: () => nextId--, TransactionTaxCategory: 'taxRow',
+      useStores: () => ({ categoryTree: { unassignedCat: { id: 99 } } }), useEffect: () => undefined,
+      useState: initial => [edited ?? initial, value => { edited = value }],
+    })
+    const props = { taxCategories: [{ id: 1, type: 'test', amount: '0.10' }], onChange: value => { changed = value } }
+    const row = () => find(render(props), e => e.type === 'taxRow')
+    row().props.onAmountChange(1, '0.20')
+    assert.strictEqual(changed[0].amount, '0.20')
+    row().props.onCategoryChange(1, 'other')
+    assert.strictEqual(changed[0].type, 'other')
+    row().props.onAddItem(1)
+    assert.strictEqual(changed[1].amount, '0.00')
+    row().props.onDeleteItem(1)
+    const remainingId = changed[0].id
+    row().props.onDeleteItem(remainingId)
+    assert.lengthOf(changed, 1)
+    assert.strictEqual(changed[0].amount, '0.00')
+    assert.strictEqual(changed[0].type, '')
+    const item = await expression('client-src/Transactions/TransactionTaxCategory.tsx', 'TransactionTaxCategory', {
+      useStores: () => ({ taxCategories: { taxCategories: [] } }), LucideButton: 'button', Plus: 'plus', Minus: 'minus',
+    })
+    const view = item({ split: { id: 1, type: '', amount: '0.10' }, onAmountChange: (_id, amount) => { changed = amount } })
+    const input = find(view, e => e.type === 'input')
+    assert.isTrue(input.props.exactCents)
+    input.props.onValueChange('0.125')
+    assert.strictEqual(changed, '0.125')
   })
 
   test('shared transfer editors preserve numeric callbacks and mode', async ({ assert }) => {

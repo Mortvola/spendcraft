@@ -5,6 +5,14 @@ import { useStores } from '../State/Store';
 import { TransactionTaxCategoryInterface } from '../State/Types';
 import TransactionTaxCategory from './TransactionTaxCategory';
 import styles from './TransactionTaxCategories.module.scss';
+import { addMoneyCents, type MoneyCents } from '../../common/moneyCents';
+import { inputMoneyCents } from '../monetary';
+
+export type TransactionTaxInput = Omit<TransactionTaxCategoryInterface, 'amount'> & { amount: string };
+
+export const sumTaxCents = (taxCategories: readonly TransactionTaxInput[]): MoneyCents => (
+  addMoneyCents(...taxCategories.map(tax => inputMoneyCents(tax.amount)))
+);
 
 function* creatNextIdGen(): Generator<number, number> {
   let id = -1;
@@ -18,9 +26,9 @@ const nextIdGen = creatNextIdGen();
 const nextId = (): number => nextIdGen.next().value;
 
 interface PropsType {
-  taxCategories: TransactionTaxCategoryInterface[],
+  taxCategories: TransactionTaxInput[],
   onChange: (
-    splits: TransactionTaxCategoryInterface[]
+    splits: TransactionTaxInput[]
   ) => void,
 }
 
@@ -34,7 +42,7 @@ const TransactionTaxCategories: React.FC<PropsType> = ({
     throw new Error('unassigned category is null');
   }
 
-  const [editedSplits, setEditedSplits] = useState<TransactionTaxCategoryInterface[]>(
+  const [editedSplits, setEditedSplits] = useState<TransactionTaxInput[]>(
     taxCategories && taxCategories.length > 0
       ? taxCategories.map((s) => {
         if (s.id === undefined) {
@@ -49,7 +57,7 @@ const TransactionTaxCategories: React.FC<PropsType> = ({
       : [{
         id: nextId(),
         type: '',
-        amount: 0,
+        amount: '0.00',
       }],
   );
 
@@ -58,12 +66,12 @@ const TransactionTaxCategories: React.FC<PropsType> = ({
       setEditedSplits([{
         id: nextId(),
         type: '',
-        amount: 0,
+        amount: '0.00',
       }]);
     }
   }, [taxCategories])
 
-  const handleChange = (id: number, amount: number) => {
+  const handleChange = (id: number, amount: string) => {
     const splitIndex = editedSplits.findIndex((s) => s.id === id);
 
     if (splitIndex !== -1) {
@@ -97,15 +105,12 @@ const TransactionTaxCategories: React.FC<PropsType> = ({
     const index = editedSplits.findIndex((s) => s.id === afterId);
 
     if (index !== -1) {
-      // const sum = editedSplits.reduce((accum, item) => accum + item.amount, 0);
-      // const amount = total - sum;
-
       const newSplits = editedSplits.slice();
       newSplits.splice(
         index + 1,
         0,
         {
-          id: nextId(), type: '', amount: 0,
+          id: nextId(), type: '', amount: '0.00',
         },
       );
 
@@ -122,7 +127,7 @@ const TransactionTaxCategories: React.FC<PropsType> = ({
       newSplits.splice(index, 1);
 
       if (newSplits.length === 0) {
-        newSplits = [{ id: nextId(), type: '', amount: 0 }]
+        newSplits = [{ id: nextId(), type: '', amount: '0.00' }]
       }
 
       setEditedSplits(newSplits);
@@ -152,7 +157,7 @@ const TransactionTaxCategories: React.FC<PropsType> = ({
               split={s}
               onAddItem={handleAddItem}
               onDeleteItem={handleDeleteItem}
-              onDeltaChange={handleChange}
+              onAmountChange={handleChange}
               onCategoryChange={handleCategoryChange}
             />
           ))

@@ -110,10 +110,15 @@ export * from ${source('common/ResponseTypes.ts')};
     const props = f.transactionProps(0.1)
     props.accountTransaction.amount = '90071992547409.91'
     props.accountTransaction.principle = '-0.20'
+    props.taxes = [{ type: 'test', amount: '-0.12' }, { type: 'other', amount: '0.00' }]
     props.categories = [{ categoryId: 20, amount: '0.10' }, { categoryId: 20, amount: '0.20' }, { categoryId: 21, amount: '-0.30' }]
     const transaction = new state.Transaction(f.store, props)
     assert.strictEqual(transaction.amountCents, Number.MAX_SAFE_INTEGER)
     assert.strictEqual(transaction.principleCents, -20)
+    assert.strictEqual(transaction.getTaxAmountCents(0), -12)
+    assert.strictEqual(transaction.getTaxAmountCents(1), 0)
+    assert.strictEqual(transaction.taxCategories[0].amount, -0.12)
+    assert.throws(() => transaction.getTaxAmountCents(9))
     assert.strictEqual(transaction.getCategoryAmountCents(0), 10)
     assert.strictEqual(transaction.getCategoryAmountCents(1), 20)
     assert.throws(() => transaction.getCategoryAmountCents(99))
@@ -127,6 +132,7 @@ export * from ${source('common/ResponseTypes.ts')};
     transaction.refresh(f.transactionProps(-0.2))
     assert.strictEqual(transaction.amountCents, -20)
     assert.isNull(transaction.principleCents)
+    assert.throws(() => transaction.getTaxAmountCents(0))
     assert.strictEqual(transaction.getCategoryAmountCents(0), -20)
     assert.strictEqual(transaction.getRegisterAmountCents(20), -20)
     assert.strictEqual(transaction.amount, -0.2)
