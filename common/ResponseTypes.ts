@@ -277,7 +277,7 @@ export interface TransactionProps {
 
   taxes: {
     type: string,
-    amount: number,
+    amount: string,
   }[];
 
   duplicateOfTransactionId: number | null;

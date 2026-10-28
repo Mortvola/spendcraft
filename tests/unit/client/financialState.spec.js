@@ -1,4 +1,4 @@
-import { decodeTaxAttributions, encodeTaxAttributions } from '../../../app/services/taxAmountCodec.ts'
+import { encodeTaxAttributions } from '../../../app/services/taxAmountCodec.ts'
 import { calculateFunding } from '../../../client-src/Funding/calculateFunding.ts'
 import { test } from '@japa/runner'
 import { File } from 'node:buffer'
@@ -173,6 +173,22 @@ export * from ${source('common/ResponseTypes.ts')};
     assert.strictEqual(f.category.balance, -10)
   })
 
+  test('invalid tax response amounts cannot mutate financial caches').with([
+    1, null, '', '1.2', '1e2', '-0.00', 'Infinity', '90071992547409.92',
+  ]).run(async ({ assert }, amount) => {
+    const cached = transactions()
+    const props = { ...f.transactionProps(), taxes: [{ type: 'estimated_tax_payments', amount }], version: 1 }
+    routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: {
+      transaction: props, categories: [{ id: 20, balance: -99 }], acctBalances: [{ id: 10, balance: 1 }],
+    } } }))
+    await assert.rejects(() => cached.account.updateTransaction({ taxCategories: [{ type: 'estimated_tax_payments', amount: 1 }] }))
+    assert.deepEqual(cached.account.taxCategories, [])
+    assert.deepEqual(cached.category.taxCategories, [])
+    assert.strictEqual(cached.account.version, 0)
+    assert.strictEqual(f.account.balance, 90)
+    assert.strictEqual(f.category.balance, -10)
+  })
+
   function transactions(props = f.transactionProps()) {
     state.runInAction(() => {
       f.account.transactions.setTransactions([props])
@@ -226,7 +242,7 @@ export * from ${source('common/ResponseTypes.ts')};
   test('tax editor response refreshes numeric attribution across financial caches without balance changes', async ({ assert }) => {
     const cached = transactions()
     const submitted = [{ type: 'estimated_tax_payments', amount: 12.345 }, { type: 'estimated_tax_payments', amount: -0.125 }]
-    const returned = { ...f.transactionProps(), version: 1, taxes: decodeTaxAttributions(encodeTaxAttributions(submitted)) }
+    const returned = { ...f.transactionProps(), version: 1, taxes: encodeTaxAttributions(submitted) }
     routes.set('patch /api/v1/transaction/40', async payload => {
       assert.deepEqual(payload.taxCategories, submitted)
       return { body: { data: { transaction: returned, categories: [], acctBalances: [] } } }

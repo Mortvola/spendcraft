@@ -1,3 +1,4 @@
+import { encodeTaxAttributions } from '#services/taxAmountCodec';
 import { encodeCategoryAllocations } from '#services/categoryAmountCodec';
 import { bindTaxStorage, prepareTaxStorageSave } from '#services/transactionTaxStorage';
 import { prepareTaxStorage, finishTaxStorageSave } from '#services/taxStorageBinding';
@@ -94,6 +95,7 @@ class Transaction extends BaseModel {
 
   @column({
     prepare: (value: TransTaxCategory[], _attribute, model) => prepareTaxStorage(value, model),
+    serialize: (value) => value === null || value === undefined ? value : encodeTaxAttributions(value),
   })
   public taxes: TransTaxCategory[];
 

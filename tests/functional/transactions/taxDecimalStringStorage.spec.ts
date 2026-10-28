@@ -46,7 +46,7 @@ async function financialState(id: number) {
 }
 
 test.group('Transaction tax decimal-string PostgreSQL acceptance (prepared)', () => {
-  test('PATCH raw JSON strings and numeric API preserve other money').with([
+  test('PATCH raw JSON and API strings preserve other money').with([
     [12.345, '12.35'], [-1.005, '-1.00'], [0.125, '0.13'], [-0.125, '-0.12'],
     [0.30000000000000004, '0.30'], [0, '0.00'], [-0, '0.00'], [-0.005, '0.00'],
   ]).run(async ({ client, assert }, [amount, expected]) => {
@@ -57,11 +57,11 @@ test.group('Transaction tax decimal-string PostgreSQL acceptance (prepared)', ()
     assert.strictEqual((await raw(f.target.id)).taxes[0].amount, expected)
     const types = await db.rawQuery("SELECT jsonb_typeof(taxes->0->'amount') AS type FROM transactions WHERE id = ?", [f.target.id])
     assert.equal(types.rows[0].type, 'string')
-    assert.strictEqual(response.body().data.transaction.taxes[0].amount, Number(expected))
+    assert.strictEqual(response.body().data.transaction.taxes[0].amount, expected)
     assert.deepEqual(await financialState(f.target.id), before)
   })
 
-  test('numeric/string/mixed/empty/null reads do not normalize').with(['numeric', 'string', 'mixed', 'empty', 'null'])
+  test('canonical, empty and null reads preserve JSON while legacy numeric storage rejects').with(['numeric', 'string', 'mixed', 'empty', 'null'])
     .run(async ({ client, assert }, shape) => {
       const f = await fixture()
       const taxes = shape === 'empty' ? [] : shape === 'null' ? null : [
@@ -71,8 +71,13 @@ test.group('Transaction tax decimal-string PostgreSQL acceptance (prepared)', ()
       await db.from('transactions').where('id', f.target.id).update({ taxes: JSON.stringify(taxes) })
       const before = await allState()
       const response = await client.get(`/api/v1/transaction/${f.target.id}`).loginAs(f.user).accept('json')
+      if (shape === 'numeric' || shape === 'mixed') {
+        response.assertStatus(422)
+        assert.deepEqual(await allState(), before)
+        return
+      }
       response.assertStatus(200)
-      if (Array.isArray(taxes)) assert.deepEqual(response.body().taxes, taxes.map(tax => ({ ...tax, amount: Number(tax.amount) })))
+      if (Array.isArray(taxes)) assert.deepEqual(response.body().taxes, taxes)
       else assert.isNull(response.body().taxes)
       const model = await Transaction.findOrFail(f.target.id)
       if (Array.isArray(taxes)) assert.deepEqual(model.serialize().taxes, response.body().taxes)

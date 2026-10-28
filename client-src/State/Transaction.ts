@@ -148,7 +148,7 @@ class Transaction implements TransactionInterface {
     if (props.taxes) {
       this.taxCategories = props.taxes.map((t) => ({
         type: t.type,
-        amount: t.amount,
+        amount: decodeAmount(t.amount),
       }))
     }
   }

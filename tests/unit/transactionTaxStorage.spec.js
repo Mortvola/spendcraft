@@ -20,7 +20,8 @@ import { AccountType, CategoryType, TrackingType, TransactionType } from '../../
 class Sample extends BaseModel {}
 Sample.boot()
 for (const name of ['id', 'budgetId', 'type', 'version', 'comment', 'date', 'deleted']) Sample.$addColumn(name, {})
-Sample.$addColumn('taxes', { prepare: (value, _key, row) => prepareTaxStorage(value, row) })
+Sample.$addColumn('taxes', { prepare: (value, _key, row) => prepareTaxStorage(value, row),
+  serialize: value => value === null || value === undefined ? value : encodeTaxAttributions(value) })
 Sample.$addColumn('categories', { prepare: (value, _key, row) => prepareCategoryStorage(value, row) })
 function hydrated(taxes, properties = {}) {
   const model = new Sample().merge({ id: 1, budgetId: 1, type: 5, version: 0, comment: 'old',
@@ -92,7 +93,7 @@ test.group('Tax decimal-string production codec and Lucid boundary (no database)
     const model = hydrated([attribution('1.23'), attribution('1.00')])
     bindResolvedCategoryStorage(model); bindResolvedTaxStorage(model)
     assert.isFalse(model.$isDirty)
-    assert.deepEqual(model.serialize().taxes.map(entry => entry.amount), [1.23, 1])
+    assert.deepEqual(model.serialize().taxes.map(entry => entry.amount), ['1.23', '1.00'])
     model.comment = 'metadata'
     stageTaxStorage(model); stageCategoryStorage(model)
     assert.deepEqual(model.prepareForAdapter(model.$dirty), { comment: 'metadata' })
@@ -108,7 +109,7 @@ test.group('Tax decimal-string production codec and Lucid boundary (no database)
     assert.deepEqual(JSON.parse(payload.taxes), [attribution('-0.12')])
     assert.notProperty(payload, 'categories')
     model.$hydrateOriginals(); finishTaxStorageSave(model)
-    assert.deepEqual(model.serialize().taxes, [attribution(-0.12)])
+    assert.deepEqual(model.serialize().taxes, [attribution('-0.12')])
     assert.isFalse(model.$isDirty)
   })
   test('null/missing arrays are preserved on unrelated saves').with([null, undefined])
@@ -233,7 +234,7 @@ test.group('Actual tax PATCH controller with inert financial collaborators', () 
     const beforeCategories = f.database.categories
     const response = await f.call()
     assert.deepEqual(JSON.parse(f.database.taxes).map(entry => entry.amount), ['1.00', '-0.12', '0.01'])
-    assert.deepEqual(response.data.transaction.taxes.map(entry => entry.amount), [1, -0.12, 0.01])
+    assert.deepEqual(response.data.transaction.taxes.map(entry => entry.amount), ['1.00', '-0.12', '0.01'])
     assert.equal(f.database.categories, beforeCategories)
     assert.equal(f.account.balance, 100); assert.equal(f.link.amount, 10)
     assert.isBelow(f.events.indexOf('budget.lock'), f.events.indexOf('transaction.read'))

@@ -143,3 +143,30 @@ test.group('AccountTransaction amount API strings', () => {
   test('invalid amounts cannot be emitted as valid monetary strings').with([NaN, Infinity, -Infinity, Number.MAX_SAFE_INTEGER])
     .run(({ assert }, amount) => assert.throws(() => accountTransaction().merge({ amount }).serialize()))
 })
+
+
+test.group('Transaction tax API strings', () => {
+  test('serializes each tax amount without changing runtime values, metadata or ordering').with([
+    { amount: 12.5, expected: '12.50' }, { amount: -12.5, expected: '-12.50' },
+    { amount: 0, expected: '0.00' }, { amount: -0, expected: '0.00' },
+    { amount: 0.125, expected: '0.13' }, { amount: -0.125, expected: '-0.12' },
+    { amount: 1.005, expected: '1.00' }, { amount: 0.1 + 0.2, expected: '0.30' },
+  ]).run(({ assert }, { amount, expected }) => {
+    const taxes = [{ type: 'estimated_tax_payments', amount, metadata: { amount: 1.005 } },
+      { type: 'estimated_tax_payments', amount: 0 }]
+    const row = new Transaction().merge({ taxes })
+    const before = globalThis.structuredClone(row.$attributes)
+    for (const response of [row.serialize(), row.serialize(transactionFields), JSON.parse(JSON.stringify(row))]) {
+      assert.deepEqual(response.taxes, [{ ...taxes[0], amount: expected }, { ...taxes[1], amount: '0.00' }])
+    }
+    assert.deepEqual(row.$attributes, before)
+    assert.strictEqual(row.taxes[0].amount, amount)
+  })
+  test('empty and omitted tax arrays retain their existing serialization', ({ assert }) => {
+    assert.deepEqual(new Transaction().merge({ taxes: [] }).serialize().taxes, [])
+    assert.isNull(Transaction.$createFromAdapterResult({ taxes: null })?.serialize().taxes)
+    assert.notProperty(new Transaction().serialize(), 'taxes')
+  })
+  test('invalid tax amounts cannot be emitted').with([NaN, Infinity, -Infinity, Number.MAX_SAFE_INTEGER])
+    .run(({ assert }, amount) => assert.throws(() => new Transaction().merge({ taxes: [{ type: 'x', amount }] }).serialize()))
+})
