@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
 import * as cents from '../../../common/moneyCents.ts'
-import { inputMoneyCents, decodeAmount } from '../../../client-src/monetary.ts'
+import { inputMoneyCents, decodeAmount, encodeTransferCategories } from '../../../client-src/monetary.ts'
 import parseEquation from '../../../client-src/EquationParser.ts'
 import { AccountType, TransactionType, TrackingType } from '../../../common/ResponseTypes.ts'
 
@@ -208,31 +208,81 @@ test.group('Transaction split cents', group => {
     assert.strictEqual(changed, '0.125')
   })
 
-  test('shared transfer editors preserve numeric callbacks and mode', async ({ assert }) => {
-    const view = await expression('client-src/CategoryTransferDialog.tsx', 'CategoryTransferDialog', {
-      Formik: 'formik', Form: 'form', Modal: { Header: 'header' }, Header: 'header', Footer: 'footer',
-      ErrorMessage: 'error', Http: {}, encodeTransferCategories: value => value,
-    })
-    const modal = view({ setShow: () => undefined })
-    const body = modal.props.children[0]({ isSubmitting: false })
-    const child = find(body, e => e.type === 'field' && e.props.name === 'fromCategories')
-    let updated
-    const editor = child.props.children[0]({ field: { value: [split(-0.3)], name: 'fromCategories' },
-      form: { setFieldValue: (_name, value) => { updated = value } } })
-    assert.isTrue(editor.props.numericInput)
-    assert.strictEqual(editor.props.splits[0].amount, '0.30')
-    editor.props.onChange([split('0.20')])
-    assert.strictEqual(updated[0].amount, -0.2)
-    const itemView = await expression('client-src/CategorySplitItem.tsx', 'CategorySplitItem', {
-      useStores: () => ({ categoryTree: { unassignedCat: { id: 99 } } }),
-      CategoryInput: 'category', LucideButton: 'button', Plus: 'plus', Minus: 'minus',
-    })
-    const item = itemView({ split: split('0.10'), numericInput: true, onAmountChange: (_id, amount) => { updated = amount } })
-    const input = find(item, e => e.type === 'input')
-    assert.isFalse(input.props.exactCents)
-    input.props.onDeltaChange(0.2, 0.1)
-    assert.strictEqual(updated, '0.20')
+  const transferDialog = () => expression('client-src/CategoryTransferDialog.tsx', 'CategoryTransferDialog', {
+    Formik: 'formik', Form: 'form', Header: 'header', Footer: 'footer', ErrorMessage: 'error', sumSplitCents,
+    encodeTransferCategories,
   })
+
+  test('transfer totals, difference and validation are exact').with([
+    [['0.10', '0.20'], ['0.30'], 30, 30, 0], [['0.30'], ['0.10'], 30, 10, 20],
+    [['0.10'], ['0.30'], 10, 30, -20], [['0.00'], ['-0.00'], 0, 0, 0],
+    [['0.40', '-0.10'], ['0.30'], 30, 30, 0], [['0.125'], ['0.13'], 13, 13, 0],
+    [['-0.125'], ['-0.12'], -12, -12, 0],
+  ]).run(async ({ assert }, [from, to, fromTotal, toTotal, difference]) => {
+    const view = await transferDialog()
+    const modal = view({ setShow: () => undefined })
+    const values = { date: '2025-01-01', fromCategories: from.map(amount => split(amount)), toCategories: to.map(amount => split(amount)) }
+    assert.strictEqual(Boolean(modal.props.validate(values).fromCategories), difference !== 0)
+    const body = modal.props.children[0]({ isSubmitting: false, values })
+    const displays = []
+    function visit(element) {
+      if (!element || typeof element !== 'object') return
+      if (element.type === 'money') displays.push(element.props.amount)
+      for (const child of (element.props?.children ?? []).flat(Infinity)) visit(child)
+    }
+    visit(body)
+    assert.deepEqual(displays, [fromTotal, toTotal, difference])
+    const field = find(body, e => e.type === 'field' && e.props.name === 'fromCategories')
+    assert.isString(field.props.validate([]))
+    assert.isString(field.props.validate([{ id: -1, amount: '0.00' }]))
+    let edited
+    const editor = field.props.children[0]({ field: { name: 'fromCategories', value: values.fromCategories },
+      form: { setFieldValue: (_name, value) => { edited = value } } })
+    assert.notProperty(editor.props, 'numericInput')
+    editor.props.onChange([split('0.20')])
+    assert.strictEqual(edited[0].amount, '0.20')
+  })
+
+  test('unsafe transfer totals and invalid inputs fail validation').with([
+    [['bad'], ['0.00']], [['Infinity'], ['0.00']], [['90071992547409.92'], ['0.00']],
+    [['90071992547409.91', '0.01'], ['0.00']], [['90071992547409.91'], ['-0.01']],
+  ]).run(async ({ assert }, [from, to]) => {
+    const view = await transferDialog()
+    const modal = view({ setShow: () => undefined })
+    const values = { fromCategories: from.map(amount => split(amount)), toCategories: to.map(amount => split(amount)) }
+    assert.isString(modal.props.validate(values).fromCategories)
+    const body = modal.props.children[0]({ isSubmitting: false, values })
+    assert.isUndefined(find(body, e => e.type === 'money'))
+  })
+
+  test('transfer editing initializes exact API cents and preserves request signs and metadata').with([false, true])
+    .run(async ({ assert }, editing) => {
+      let sent
+      const view = await expression('client-src/CategoryTransferDialog.tsx', 'CategoryTransferDialog', {
+        Formik: 'formik', Form: 'form', Header: 'header', Footer: 'footer', ErrorMessage: 'error', sumSplitCents,
+        encodeTransferCategories, Http: { [editing ? 'patch' : 'post']: async (url, body) => { sent = { url, body }; return { ok: true } } },
+      })
+      const transaction = editing ? { id: 7, date: { toISODate: () => '2025-01-01' },
+        categories: [{ id: 0, categoryId: 20, amount: 999 }, { id: 1, categoryId: 21, amount: 999 }],
+        getCategoryAmountCents: index => index === 0 ? -30 : 30 } : null
+      const modal = view({ transaction, setShow: () => undefined })
+      if (editing) {
+        assert.strictEqual(modal.props.initialValues.fromCategories[0].amount, '0.30')
+        assert.strictEqual(modal.props.initialValues.toCategories[0].amount, '0.30')
+      }
+      const values = { date: '2025-01-01', fromCategories: [{ ...split('0.125'), id: -1, baseAmount: 0.13,
+        fundingCategories: [{ categoryId: 30, amount: 12.75, percentage: true }] }], toCategories: [split('0.13', 21)] }
+      await modal.props.onSubmit(values)
+      assert.strictEqual(sent.url, editing ? '/api/v1/category-transfer/7' : '/api/v1/category-transfer')
+      assert.strictEqual(sent.body.categories[0].amount, '-0.13')
+      assert.strictEqual(sent.body.categories[1].amount, '0.13')
+      assert.strictEqual(sent.body.categories[0].baseAmount, '0.13')
+      assert.strictEqual(sent.body.categories[0].fundingCategories[0].amount, 12.75)
+      assert.strictEqual(sent.body.categories[0].comment, 'Retain memo')
+      assert.notProperty(sent.body.categories[0], 'id')
+      assert.strictEqual(sent.body.categories[1].id, 21)
+      assert.strictEqual(values.fromCategories[0].amount, '0.125')
+    })
 
   test('exact AmountInput preserves canonical cents and invalid text', async ({ assert }) => {
     let slots, cursor

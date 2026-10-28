@@ -1,4 +1,4 @@
-import { parseMoneyCents, subtractMoneyCents, type MoneyCents } from '../common/moneyCents.js';
+import { formatMoneyCents, parseMoneyCents, subtractMoneyCents, type MoneyCents } from '../common/moneyCents.js';
 import type { CategoryTransferProps, CategoryTransferRequest, DecimalMoneyString, FundingRuleResponse, NetworthReportResponse } from '../common/ResponseTypes.js';
 
 // Encode at the request boundary; client state and calculations remain numeric.
@@ -56,10 +56,10 @@ export function decodeNetworthReport(rows: NetworthReportResponse): (string | nu
 }
 
 // Funding metadata stays numeric in editors; only fixed-dollar values cross as strings.
-export function encodeTransferCategories(categories: readonly CategoryTransferProps[]): CategoryTransferRequest['categories'] {
+export function encodeTransferCategories(categories: readonly (Omit<CategoryTransferProps, 'amount'> & { amount: number | DecimalMoneyString })[]): CategoryTransferRequest['categories'] {
   return categories.map(({ amount, baseAmount, fundingCategories, ...category }) => ({
     ...category,
-    amount: encodeAmount(amount),
+    amount: typeof amount === 'string' ? formatMoneyCents(parseMoneyCents(amount)) : encodeAmount(amount),
     ...(baseAmount === undefined ? {} : { baseAmount: encodeAmount(baseAmount) }),
     ...(fundingCategories === undefined ? {} : { fundingCategories: encodeFundingRules(fundingCategories) }),
   }));

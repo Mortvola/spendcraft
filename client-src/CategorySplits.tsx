@@ -31,7 +31,6 @@ interface PropsType {
   ) => void,
   total: MoneyCents,
   credit?: boolean,
-  numericInput?: boolean,
 }
 
 const CategorySplits: React.FC<PropsType> = ({
@@ -39,7 +38,6 @@ const CategorySplits: React.FC<PropsType> = ({
   onChange,
   total,
   credit = true,
-  numericInput = false,
 }) => {
   const { categoryTree } = useStores();
 
@@ -166,7 +164,6 @@ const CategorySplits: React.FC<PropsType> = ({
         <CategorySplitItem
           key={s.id}
           split={s}
-          numericInput={numericInput}
           onAddItem={handleAddItem}
           onDeleteItem={handleDeleteItem}
           onAmountChange={handleChange}

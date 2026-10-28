@@ -1,16 +1,16 @@
 import React from 'react';
 import { Modal, Button } from 'react-bootstrap';
 import {
-  Formik, Form, Field, ErrorMessage, FormikErrors, FieldProps, FormikState,
+  Formik, Form, Field, ErrorMessage, FormikErrors, FieldProps, FormikProps,
 } from 'formik';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import { SubmitButton } from '@mortvola/forms';
 import Http from '@mortvola/http';
-import { formatMoneyCents, parseMoneyCents } from '../common/moneyCents';
-import { inputMoneyCents, decodeAmount, encodeTransferCategories } from './monetary';
-import CategorySplits from './CategorySplits';
+import { formatMoneyCents, parseMoneyCents, subtractMoneyCents } from '../common/moneyCents';
+import { inputMoneyCents, encodeTransferCategories } from './monetary';
+import CategorySplits, { sumSplitCents, type CategorySplitInput } from './CategorySplits';
+import MoneyCentsAmount from './MoneyCentsAmount';
 import Transaction from './State/Transaction';
-import { TransactionCategoryInterface } from './State/Types';
 
 const Header: React.FC = () => (
   <Modal.Header closeButton>
@@ -102,47 +102,51 @@ const CategoryTransferDialog: React.FC<PropsType & ModalProps> = ({
   //     event.preventDefault();
 
   interface ValueType {
-    fromCategories: (TransactionCategoryInterface | { id: number, amount: number })[],
-    toCategories: (TransactionCategoryInterface | { id: number, amount: number })[],
+    fromCategories: CategorySplitInput[],
+    toCategories: CategorySplitInput[],
     date: string | null,
   }
 
-  const validateSplits = (splits: TransactionCategoryInterface[]) => {
+  const validateSplits = (splits: CategorySplitInput[]) => {
     let error;
 
-    if (splits !== undefined && splits.length > 0) {
-      if (splits.some((split) => (
-        split.categoryId === null || split.categoryId === undefined
-      ))) {
-        error = 'There are one or more items not assigned a category.';
-      }
+    if (splits.length === 0 || splits.some((split) => (
+      split.categoryId === null || split.categoryId === undefined
+    ))) {
+      error = 'There are one or more items not assigned a category.';
     }
 
+    if (!error) {
+      try { sumSplitCents(splits); }
+      catch { error = 'Enter valid, safe transfer amounts.'; }
+    }
     return error;
   }
 
+  const totals = (values: ValueType) => {
+    const from = sumSplitCents(values.fromCategories);
+    const to = sumSplitCents(values.toCategories);
+    return { from, to, difference: subtractMoneyCents(from, to) };
+  };
+
   const handleSubmit = async (values: ValueType) => {
     const { date, fromCategories, toCategories } = values;
-    const cats = fromCategories.concat(toCategories).map((s) => {
-      if (!('categoryId' in s)) {
-        throw new Error('missing category');
-      }
-      if (s.id === undefined) {
-        throw new Error('missing id');
-      }
-      if (s.id < 0) {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { id, ...newSplit } = s;
-
-        return newSplit;
-      }
-
-      return s;
-    });
+    const encodeSide = (splits: CategorySplitInput[], sign: number) => encodeTransferCategories(splits.map((split) => {
+      if (split.categoryId === undefined) throw new Error('missing category');
+      if (split.id === undefined) throw new Error('missing id');
+      const { id, ...category } = split;
+      return {
+        ...category,
+        ...(id < 0 ? {} : { id }),
+        amount: formatMoneyCents(sign === -1
+          ? subtractMoneyCents(parseMoneyCents('0.00'), inputMoneyCents(split.amount)) : inputMoneyCents(split.amount)),
+      };
+    }));
+    const cats = [...encodeSide(fromCategories, -1), ...encodeSide(toCategories, 1)];
 
     if (transaction) {
       const response = await Http.patch(`/api/v1/category-transfer/${transaction.id}`,
-        { date, categories: encodeTransferCategories(cats) });
+        { date, categories: cats });
 
       if (response.ok) {
         setShow(false);
@@ -150,7 +154,7 @@ const CategoryTransferDialog: React.FC<PropsType & ModalProps> = ({
     }
     else {
       const response = await Http.post('/api/v1/category-transfer',
-        { date, categories: encodeTransferCategories(cats) });
+        { date, categories: cats });
 
       if (response.ok) {
         setShow(false);
@@ -160,49 +164,88 @@ const CategoryTransferDialog: React.FC<PropsType & ModalProps> = ({
 
   const handleValidate = (values: ValueType) => {
     const errors: FormikErrors<ValueType> = {};
-    const fromSum = values.fromCategories.reduce(
-      (accum, item) => accum + Math.floor(item.amount * -100), 0,
-    );
-    const toSum = values.toCategories.reduce(
-      (accum, item) => accum + Math.floor(item.amount * 100), 0,
-    );
-
-    if (fromSum !== toSum) {
-      errors.fromCategories = 'The sum of the From categories does not match the sum of the To categories.';
+    try {
+      if (totals(values).difference !== 0) {
+        errors.fromCategories = 'The sum of the From categories does not match the sum of the To categories.';
+      }
+    }
+    catch {
+      errors.fromCategories = 'Enter valid, safe transfer amounts.';
     }
 
     return errors;
   };
 
-  const handleTotalChange = () => null;
+  const initialSplits = (from: boolean): CategorySplitInput[] => transaction
+    ? transaction.categories.flatMap((category, index) => {
+      const amount = transaction.getCategoryAmountCents(index);
+      if ((amount < 0) !== from) return [];
+      return [{ ...category, amount: formatMoneyCents(from
+        ? subtractMoneyCents(parseMoneyCents('0.00'), amount) : amount) }];
+    }) : [];
 
   return (
     <Formik<ValueType>
       initialValues={{
-        fromCategories: transaction && transaction.categories
-          ? transaction.categories.filter((c) => c.amount < 0)
-          : [{ id: -1, amount: 0 }],
-        toCategories: transaction && transaction.categories
-          ? transaction.categories.filter((c) => c.amount >= 0)
-          : [{ id: -1, amount: 0 }],
+        fromCategories: initialSplits(true),
+        toCategories: initialSplits(false),
         date: transaction ? transaction.date.toISODate() : null,
       }}
       validate={handleValidate}
       onSubmit={handleSubmit}
     >
       {
-        ({ isSubmitting }: FormikState<ValueType>) => (
-          <Form id="catTransferForm" className="scrollable-form">
-            <Header />
-            <div>
+        ({ isSubmitting, values }: FormikProps<ValueType>) => {
+          let amounts: ReturnType<typeof totals> | null = null;
+          try { amounts = totals(values); }
+          catch { /* Validation reports invalid or unsafe amounts. */ }
+          return (
+            <Form id="catTransferForm" className="scrollable-form">
+              <Header />
               <div>
+                <div>
+                  <label>
+                    Date
+                    <Field type="date" name="date" />
+                  </label>
+                </div>
                 <label>
-                  Date
-                  <Field type="date" name="date" />
+                  From:
                 </label>
+                <div className="cat-fund-table">
+                  <div className="transaction-split-item cat-fund-title">
+                    <div className="fund-list-cat-name">Category</div>
+                    <div className="dollar-amount">Balance</div>
+                    <div className="dollar-amount">Amount</div>
+                    <div className="dollar-amount">New Balance</div>
+                  </div>
+                  <Field name="fromCategories" validate={validateSplits}>
+                    {({
+                      field: {
+                        value,
+                        name,
+                      },
+                      form: {
+                        setFieldValue,
+                      },
+                    }: FieldProps<CategorySplitInput[]>) => (
+                      <CategorySplits
+                        splits={value}
+                        total={parseMoneyCents('0.00')}
+                        onChange={(splits) => setFieldValue(name, splits)}
+                      />
+                    )}
+                  </Field>
+                  <label>
+                    Transfer Total
+                    {amounts === null ? <div>Invalid amount</div>
+                      : <MoneyCentsAmount className="transfer-total splits-total" amount={amounts.from} />}
+                  </label>
+                </div>
               </div>
+              <br />
               <label>
-                From:
+                To:
               </label>
               <div className="cat-fund-table">
                 <div className="transaction-split-item cat-fund-title">
@@ -211,7 +254,7 @@ const CategoryTransferDialog: React.FC<PropsType & ModalProps> = ({
                   <div className="dollar-amount">Amount</div>
                   <div className="dollar-amount">New Balance</div>
                 </div>
-                <Field name="fromCategories" validate={validateSplits}>
+                <Field name="toCategories" validate={validateSplits}>
                   {({
                     field: {
                       value,
@@ -220,69 +263,31 @@ const CategoryTransferDialog: React.FC<PropsType & ModalProps> = ({
                     form: {
                       setFieldValue,
                     },
-                  }: FieldProps<TransactionCategoryInterface[]>) => (
+                  }: FieldProps<CategorySplitInput[]>) => (
                     <CategorySplits
-                      numericInput
-                      splits={value.map((s) => (
-                        { ...s, amount: formatMoneyCents(inputMoneyCents(s.amount, -1)) }
-                      ))}
+                      splits={value}
                       total={parseMoneyCents('0.00')}
-                      onChange={(splits) => {
-                        setFieldValue(name, splits.map((s) => (
-                          { ...s, amount: -decodeAmount(formatMoneyCents(inputMoneyCents(s.amount))) }
-                        )));
-                        handleTotalChange();
-                      }}
+                      onChange={(splits) => setFieldValue(name, splits)}
                     />
                   )}
                 </Field>
                 <label>
                   Transfer Total
-                  <div className="transfer-total splits-total dollar-amount">0.00</div>
+                  {amounts === null ? <div>Invalid amount</div>
+                    : <MoneyCentsAmount className="splits-total" amount={amounts.to} />}
+                </label>
+                <label>
+                  Unassigned
+                  {amounts === null ? <div>Invalid amount</div>
+                    : <MoneyCentsAmount className="available-funds splits-total" amount={amounts.difference} />}
                 </label>
               </div>
-            </div>
-            <br />
-            <label>
-              To:
-            </label>
-            <div className="cat-fund-table">
-              <div className="transaction-split-item cat-fund-title">
-                <div className="fund-list-cat-name">Category</div>
-                <div className="dollar-amount">Balance</div>
-                <div className="dollar-amount">Amount</div>
-                <div className="dollar-amount">New Balance</div>
-              </div>
-              <Field name="toCategories" validate={validateSplits}>
-                {({
-                  field: {
-                    value,
-                    name,
-                  },
-                  form: {
-                    setFieldValue,
-                  },
-                }: FieldProps<TransactionCategoryInterface[]>) => (
-                  <CategorySplits
-                    numericInput
-                    splits={value.map(s => ({ ...s, amount: formatMoneyCents(inputMoneyCents(s.amount)) }))}
-                    total={parseMoneyCents('0.00')}
-                    onChange={(splits) => {
-                      setFieldValue(name, splits.map(s => ({ ...s, amount: decodeAmount(formatMoneyCents(inputMoneyCents(s.amount))) })));
-                      handleTotalChange();
-                    }}
-                  />
-                )}
-              </Field>
-              <label className="dollar-amount">
-                Unassigned
-                <div className="available-funds splits-total dollar-amount">0.00</div>
-              </label>
-            </div>
-            <ErrorMessage name="splits" />
-            <Footer setShow={setShow} isSubmitting={isSubmitting} />
-          </Form>
-        )
+              <ErrorMessage name="fromCategories" />
+              <ErrorMessage name="toCategories" />
+              <Footer setShow={setShow} isSubmitting={isSubmitting} />
+            </Form>
+          );
+        }
       }
     </Formik>
   );

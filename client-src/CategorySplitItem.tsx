@@ -3,8 +3,6 @@ import { Minus, Plus } from 'lucide-react';
 import CategoryInput from './CategoryInput/CategoryInput';
 import AmountInput from './AmountInput';
 import type { CategorySplitInput } from './CategorySplits';
-import { formatMoneyCents } from '../common/moneyCents';
-import { inputMoneyCents } from './monetary';
 import { CategoryInterface } from './State/Types';
 import styles from './CategorySplitItem.module.scss';
 import useMediaQuery from './MediaQuery';
@@ -13,7 +11,6 @@ import LucideButton from './LucideButton';
 
 interface PropsType {
   split: CategorySplitInput,
-  numericInput?: boolean,
   onCategoryChange: (id: number, categoryId: number) => void,
   onAmountChange: (id: number, amount: string) => void,
   onAddItem: (afterId: number) => void,
@@ -23,7 +20,7 @@ interface PropsType {
 
 const CategorySplitItem: React.FC<PropsType> = ({
   split,
-  numericInput = false,  onCategoryChange,
+  onCategoryChange,
   onAmountChange,
   onAddItem,
   onDeleteItem,
@@ -82,11 +79,8 @@ const CategorySplitItem: React.FC<PropsType> = ({
           categoryId={categoryId === unassignedCat.id ? null : categoryId}
         />
         <AmountInput
-          exactCents={!numericInput}
-          {...(numericInput ? { onDeltaChange: (amount: number) => {
-            if (split.id === undefined) throw new Error('missing id');
-            onAmountChange(split.id, formatMoneyCents(inputMoneyCents(amount)));
-          } } : { onValueChange: handleAmountChange })}
+          exactCents
+          onValueChange={handleAmountChange}
           value={split.amount}
           style={{ margin: '1px' }}
         />
