@@ -1,4 +1,6 @@
-import { decodeAmount } from '../monetary';
+import { decodeAmount, inputMoneyCents } from '../monetary';
+import { formatMoneyCents, parseMoneyCents, subtractMoneyCents } from '../../common/moneyCents';
+import { sumSplitCents, type CategorySplitInput } from '../CategorySplits';
 import React, {
   useState, useEffect, useCallback,
 } from 'react';
@@ -7,15 +9,14 @@ import {
   FieldProps,
   FormikContextType,
 } from 'formik';
-import { toJS } from 'mobx';
 import { DateTime } from 'luxon';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import Http from '@mortvola/http';
 import { FormModal, FormError, setFormErrors } from '@mortvola/forms';
 import CategoryRebalance from './CategoryRebalance';
-import Amount from '../Amount';
+import MoneyCentsAmount from '../MoneyCentsAmount';
 import Transaction from '../State/Transaction';
-import { type CategoryBalanceInterface, TransactionCategoryInterface } from '../State/Types';
+import { type CategoryBalanceInterface } from '../State/Types';
 import { useStores } from '../State/Store';
 import { isCategoryTreeBalanceResponse, TransactionType } from '../../common/ResponseTypes';
 
@@ -29,11 +30,10 @@ const RebalanceDialog: React.FC<PropsType & ModalProps> = ({
 }) => {
   const { register } = useStores();
   const [balances, setBalances] = useState<CategoryBalanceInterface[]>([])
-  const [unassigned, setUnassigned] = useState(0);
   const [date, setDate] = useState(transaction ? transaction.date.toISODate() : DateTime.now().toISODate());
 
   interface ValueType {
-    categories: TransactionCategoryInterface[]
+    categories: CategorySplitInput[]
     date: string,
   }
 
@@ -54,7 +54,7 @@ const RebalanceDialog: React.FC<PropsType & ModalProps> = ({
           const body = await response.body();
 
           if (isCategoryTreeBalanceResponse(body)) {
-            setBalances(body.map((row) => ({ ...row, balance: decodeAmount(row.balance) })));
+            setBalances(body.map((row) => ({ id: row.id, balanceCents: parseMoneyCents(row.balance) })));
           }
         }
       })();
@@ -69,10 +69,6 @@ const RebalanceDialog: React.FC<PropsType & ModalProps> = ({
     setDate(event.target.value);
   };
 
-  const handleDeltaChange = (delta: number) => {
-    setUnassigned(unassigned - delta);
-  };
-
   const handleValidate = (values: ValueType) => {
     const errors: FormikErrors<ValueType> = {};
 
@@ -84,12 +80,13 @@ const RebalanceDialog: React.FC<PropsType & ModalProps> = ({
       errors.categories = 'There must be at least one adjustment.';
     }
     else {
-      const sum = values.categories.reduce((accumulator, currentValue) => (
-        accumulator + Math.round(currentValue.amount * 100)
-      ), 0);
-
-      if (sum !== 0) {
-        errors.categories = 'The sum of the adjustments must be zero.';
+      try {
+        if (sumSplitCents(values.categories) !== 0) {
+          errors.categories = 'The sum of the adjustments must be zero.';
+        }
+      }
+      catch {
+        errors.categories = 'Enter valid, safe adjustment amounts.';
       }
     }
 
@@ -97,16 +94,19 @@ const RebalanceDialog: React.FC<PropsType & ModalProps> = ({
   };
 
   const handleSubmit = async (values: ValueType) => {
-    // const { setErrors } = bag;
+    // Adapt only at the existing numeric state-method boundary.
+    const request = { ...values, categories: values.categories.map(category => ({
+      ...category, amount: decodeAmount(formatMoneyCents(inputMoneyCents(category.amount))),
+    })) };
     if (transaction) {
-      const errors = await transaction.updateCategoryTransfer(values);
+      const errors = await transaction.updateCategoryTransfer(request);
 
       if (!errors) {
         setShow(false);
       }
     }
     else {
-      const errors = await register.addCategoryTransfer(values, TransactionType.REBALANCE_TRANSACTION);
+      const errors = await register.addCategoryTransfer(request, TransactionType.REBALANCE_TRANSACTION);
 
       if (!errors) {
         setShow(false);
@@ -133,7 +133,9 @@ const RebalanceDialog: React.FC<PropsType & ModalProps> = ({
       initialValues={{
         categories:
           transaction
-            ? toJS(transaction.categories)
+            ? transaction.categories.map((category, index) => ({
+              ...category, amount: formatMoneyCents(transaction.getCategoryAmountCents(index)),
+            }))
             : [],
         date: date ?? '',
       }}
@@ -172,7 +174,14 @@ const RebalanceDialog: React.FC<PropsType & ModalProps> = ({
           </label>
           <label>
             Unassigned:
-            <Amount className="form-control" amount={unassigned} />
+            <Field name="categories">
+              {({ field: { value } }: FieldProps<CategorySplitInput[]>) => {
+                try {
+                  return <MoneyCentsAmount className="form-control" amount={subtractMoneyCents(parseMoneyCents('0.00'), sumSplitCents(value))} />;
+                }
+                catch { return <div>Invalid amount</div>; }
+              }}
+            </Field>
           </label>
         </div>
         <FormError name="categories" />
@@ -185,14 +194,11 @@ const RebalanceDialog: React.FC<PropsType & ModalProps> = ({
             form: {
               setFieldValue,
             },
-          }: FieldProps<TransactionCategoryInterface[]>) => (
+          }: FieldProps<CategorySplitInput[]>) => (
             <CategoryRebalance
               trxCategories={value}
               balances={balances}
-              onDeltaChange={(_amount, delta, categories) => {
-                handleDeltaChange(delta);
-                setFieldValue(name, categories, false);
-              }}
+              onChange={(categories) => setFieldValue(name, categories)}
             />
           )}
         </Field>

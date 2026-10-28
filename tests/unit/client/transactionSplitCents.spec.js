@@ -5,7 +5,10 @@ import ts from 'typescript'
 import * as cents from '../../../common/moneyCents.ts'
 import { inputMoneyCents, decodeAmount, encodeTransferCategories } from '../../../client-src/monetary.ts'
 import parseEquation from '../../../client-src/EquationParser.ts'
-import { AccountType, TransactionType, TrackingType } from '../../../common/ResponseTypes.ts'
+import { DateTime } from 'luxon'
+import { setImmediate } from 'node:timers'
+import { URL, URLSearchParams } from 'node:url'
+import { AccountType, TransactionType, TrackingType, CategoryType, isCategoryTreeBalanceResponse } from '../../../common/ResponseTypes.ts'
 
 // Exercise actual component callbacks using the same offline harness as Statement editors.
 const createElement = (type, props, ...children) => ({ type, props: { ...props, children } })
@@ -237,6 +240,99 @@ test.group('Transaction split cents', group => {
     assert.isTrue(input.props.exactCents)
     input.props.onValueChange('0.125')
     assert.strictEqual(changed, '0.125')
+  })
+
+  const rebalanceDialog = context => expression('client-src/Rebalance/RebalanceDialog.tsx', 'RebalanceDialog', {
+    sumSplitCents, DateTime, CategoryRebalance: 'rebalance', useStores: () => ({ register: {} }),
+    useState: initial => [initial, () => undefined], useCallback: callback => callback, useEffect: () => undefined,
+    ...context,
+  })
+
+  test('Rebalance zero-sum validation and unassigned display use checked cents').with([
+    [['0.10', '0.20', '-0.30'], 0], [['0.30', '-0.10'], -20], [['0.00'], 0],
+    [['0.125', '-0.13'], 0], [['bad'], null], [['Infinity'], null],
+    [['90071992547409.92'], null], [['90071992547409.91', '0.01'], null],
+  ]).run(async ({ assert }, [amounts, remaining]) => {
+    const view = await rebalanceDialog()
+    const modal = view({ setShow: () => undefined })
+    const values = { date: '2025-01-01', categories: amounts.map(value => split(value)) }
+    assert.strictEqual(Boolean(modal.props.validate(values).categories), remaining !== 0)
+    const field = find(modal, e => e.type === 'field' && e.props.name === 'categories')
+    const result = field.props.children[0]({ field: { value: values.categories } })
+    assert.strictEqual(result.props.amount ?? null, remaining)
+    assert.isString(modal.props.validate({ date: '', categories: [] }).date)
+    assert.isString(modal.props.validate({ date: '2025-01-01', categories: [] }).categories)
+  })
+
+  test('Rebalance edit loads retained cents and submits unchanged canonical requests').with([false, true])
+    .run(async ({ assert }, editing) => {
+      let saved, type
+      const submit = async (request, transactionType) => { saved = { ...request, categories: encodeTransferCategories(request.categories) }; type = transactionType; return null }
+      const transaction = editing ? { date: DateTime.fromISO('2025-01-01'), categories: [{ categoryId: 20, amount: 999 }],
+        getCategoryAmountCents: () => -30, updateCategoryTransfer: submit } : undefined
+      const view = await rebalanceDialog({ useStores: () => ({ register: { addCategoryTransfer: submit } }) })
+      const modal = view({ transaction, setShow: () => undefined })
+      if (editing) assert.strictEqual(modal.props.initialValues.categories[0].amount, '-0.30')
+      const values = { date: '2025-01-01', categories: [split('0.125'), split('-0.13', 21)] }
+      await modal.props.onSubmit(values)
+      assert.deepEqual(Array.from(saved.categories, category => category.amount), ['0.13', '-0.13'])
+      assert.strictEqual(saved.categories[0].comment, 'Retain memo')
+      assert.strictEqual(values.categories[0].amount, '0.125')
+      if (!editing) assert.strictEqual(type, TransactionType.REBALANCE_TRANSACTION)
+    })
+
+  test('Rebalance snapshot decodes raw API balances directly into cents', async ({ assert }) => {
+    let loaded, url
+    const view = await expression('client-src/Rebalance/RebalanceDialog.tsx', 'fetchCategoryBalances', {
+      useCallback: callback => callback, transaction: { id: 7 }, URL, URLSearchParams,
+      window: { location: { href: 'https://example.test/' } }, isCategoryTreeBalanceResponse,
+      setBalances: value => { loaded = value },
+      Http: { get: async value => { url = value; return { ok: true, body: async () => [{ id: 20, balance: '90071992547409.91' }] } } },
+    })
+    view('2025-01-01')
+    await new Promise(resolve => setImmediate(resolve))
+    assert.strictEqual(loaded[0].balanceCents, Number.MAX_SAFE_INTEGER)
+    assert.notProperty(loaded[0], 'balance')
+    assert.strictEqual(new URL(url).searchParams.get('id'), '7')
+    assert.strictEqual(new URL(url).searchParams.get('date'), '2025-01-01')
+  })
+
+  test('Rebalance projected balance and amount input stay exact').with([
+    [10, '0.20', 30], [-20, '0.20', 0], [30, '-0.10', 20],
+    [Number.MAX_SAFE_INTEGER, '0.00', Number.MAX_SAFE_INTEGER],
+    [Number.MAX_SAFE_INTEGER, '0.01', null], [0, '-', null],
+  ]).run(async ({ assert }, [balanceCents, adjustment, expected]) => {
+    let changed
+    const view = await expression('client-src/Rebalance/CategoryRebalanceItem.tsx', 'CategoryRebalanceItem')
+    const row = view({ category: { name: 'Keep', balanceCents, adjustment }, onChange: value => { changed = value } })
+    const amounts = row.props.children.filter(child => child.type === 'money')
+    assert.strictEqual(amounts[0].props.amount, balanceCents)
+    assert.strictEqual(amounts[1]?.props.amount ?? null, expected)
+    const input = find(row, e => e.type === 'input')
+    assert.isTrue(input.props.exactCents)
+    input.props.onValueChange('0.125')
+    assert.strictEqual(changed, '0.125')
+  })
+
+  test('Rebalance edits preserve metadata, remove zero adjustments and retain incomplete input', async ({ assert }) => {
+    const category = { id: 20, type: CategoryType.Regular, name: 'A', subcategories: [] }
+    const tree = { budget: { children: [category] }, bills: { children: [] } }
+    const view = await expression('client-src/Rebalance/CategoryRebalance.tsx', 'CategoryRebalance', {
+      CategoryRebalanceItem: 'item', useStores: () => ({ categoryTree: tree }), CategoryType, isGroup: () => false,
+    })
+    let categories = [split('0.10')]
+    const row = () => find(view({ balances: [{ id: 20, balanceCents: 10 }], trxCategories: categories,
+      onChange: value => { categories = value } }), e => e.type === 'item')
+    row().props.onChange('0.20')
+    assert.strictEqual(categories[0].comment, 'Retain memo')
+    assert.strictEqual(row().props.category.adjustment, '0.20')
+    assert.strictEqual(row().props.category.balanceCents, 10)
+    row().props.onChange('0.00')
+    assert.lengthOf(categories, 0)
+    row().props.onChange('-')
+    assert.strictEqual(categories[0].amount, '-')
+    row().props.onChange('-0.20')
+    assert.strictEqual(categories[0].amount, '-0.20')
   })
 
   const transferDialog = () => expression('client-src/CategoryTransferDialog.tsx', 'CategoryTransferDialog', {

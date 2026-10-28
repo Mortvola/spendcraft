@@ -1,33 +1,39 @@
-import React, { ReactElement, useState } from 'react';
+import React, { ReactElement } from 'react';
 import CategoryRebalanceItem from './CategoryRebalanceItem';
 import {
-  type CategoryBalanceInterface, CategoryInterface, GroupInterface, TransactionCategoryInterface,
+  type CategoryBalanceInterface, CategoryInterface, GroupInterface,
 } from '../State/Types';
 import { isGroup } from '../State/Group';
 import { useStores } from '../State/Store';
 import { CategoryType } from '../../common/ResponseTypes';
 import styles from './CategoryRebalanceItem.module.scss';
+import type { CategorySplitInput } from '../CategorySplits';
+import { parseMoneyCents } from '../../common/moneyCents';
+import { inputMoneyCents } from '../monetary';
 
 interface PropsType {
-  onDeltaChange: null | ((amunt: number, delta: number, categories: unknown) => void),
+  onChange: (categories: CategorySplitInput[]) => void,
   balances: CategoryBalanceInterface[],
-  trxCategories: TransactionCategoryInterface[],
+  trxCategories: CategorySplitInput[],
 }
 
 const CategoryRebalance: React.FC<PropsType> = ({
   balances,
   trxCategories,
-  onDeltaChange,
+  onChange,
 }) => {
   const { categoryTree } = useStores();
-  const [transactionCategories, setTransactionCategories] = useState<TransactionCategoryInterface[]>(trxCategories);
+  const transactionCategories = trxCategories;
 
-  const handleDeltaChange = (amount: number, delta: number, category: CategoryInterface) => {
+  const handleAmountChange = (amount: string, category: CategoryInterface) => {
+    let isZero = false;
+    try { isZero = inputMoneyCents(amount) === 0; }
+    catch { /* Preserve incomplete edits so validation can report them. */ }
     let categoriesCopy = null;
     const index = transactionCategories.findIndex((c) => c.categoryId === category.id);
 
     if (index === -1) {
-      if (amount !== 0) {
+      if (!isZero) {
         categoriesCopy = [
           ...transactionCategories,
           {
@@ -37,7 +43,7 @@ const CategoryRebalance: React.FC<PropsType> = ({
         ];
       }
     }
-    else if (amount === 0) {
+    else if (isZero) {
       // Remove category
       categoriesCopy = [
         ...transactionCategories.slice(0, index),
@@ -56,15 +62,12 @@ const CategoryRebalance: React.FC<PropsType> = ({
     }
 
     if (categoriesCopy) {
-      setTransactionCategories(categoriesCopy);
-      if (onDeltaChange) {
-        onDeltaChange(amount, delta, categoriesCopy);
-      }
+      onChange(categoriesCopy);
     }
   };
 
   const categoryItem = (category: CategoryInterface, level: number): React.JSX.Element => {
-    let adjustment = 0;
+    let adjustment = '0.00';
     const catAmount = transactionCategories.find((c) => c.categoryId === category.id);
     if (catAmount) {
       adjustment = catAmount.amount;
@@ -76,10 +79,8 @@ const CategoryRebalance: React.FC<PropsType> = ({
         <CategoryRebalanceItem
           key={category.id}
           style={{ paddingLeft: level * 28, textDecoration: category.suspended ? 'line-through' : undefined }}
-          category={{ name: category.name, balance: balance ? balance.balance : 0, adjustment }}
-          onDeltaChange={(amount: number, delta: number) => (
-            handleDeltaChange(amount, delta, category)
-          )}
+          category={{ name: category.name, balanceCents: balance?.balanceCents ?? parseMoneyCents('0.00'), adjustment }}
+          onChange={(amount) => handleAmountChange(amount, category)}
         />
         {
           category.subcategories.map((subcat) => (

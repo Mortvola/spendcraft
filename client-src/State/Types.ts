@@ -330,7 +330,7 @@ export interface CategoryTreeInterface extends RemoteDataInterface {
 
 export interface CategoryBalanceInterface {
   id: number,
-  balance:number,
+  balanceCents: MoneyCents,
 }
 
 export interface TransactionCategoryInterface {
