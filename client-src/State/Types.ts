@@ -533,7 +533,7 @@ export interface StatementInterface {
   delete(): Promise<null | ApiError[]>;
 
   update(
-    props: UpdateStatementProps,
+    props: StatementUpdateValues,
   ): Promise<ApiError[] | null>
 }
 
@@ -597,18 +597,20 @@ export interface AddTransactionRequest {
   categories:(TransactionCategoryInterface | NewTransactionCategoryInterface)[],
 }
 
-export interface AddStatementRequest {
-  startDate: string,
-  endDate: string,
-  startingBalance: number,
-  endingBalance: number,
+export type { AddStatementRequest } from '../../common/ResponseTypes';
+
+export type StatementUpdateValues = Omit<UpdateStatementProps, 'startingBalance' | 'endingBalance' | 'credits' | 'debits' | 'data'> & {
+  startingBalance?: number,
+  endingBalance?: number,
+  credits?: number,
+  debits?: number,
   data?: {
-    shortTermCapitalGains?: number,
-    longTermCapitalGains?: number,
-    dividends?: number,
-    taxableInterest?: number,
+    shortTermCapitalGains: number,
+    longTermCapitalGains: number,
+    dividends: number,
+    taxableInterest: number,
   }
-}
+};
 
 export interface CategoryParams {
   type: CategoryType,

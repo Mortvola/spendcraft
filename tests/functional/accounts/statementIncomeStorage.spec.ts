@@ -1,3 +1,4 @@
+import { statementRequest } from '../../helpers/statementRequest.js'
 // Prepared PostgreSQL acceptance cases. Do not run without database authorization.
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
@@ -43,9 +44,9 @@ test.group('Statement income decimal-string PostgreSQL acceptance', group => {
     { amount: 0.1 + 0.2, stored: '0.30', numeric: 0.30 },
     { amount: -0, stored: '0.00', numeric: 0 },
   ]).run(async ({ client, assert }, value) => {
-    const response = await client.post(`/api/v1/account/${f.account.id}/statements`).json({
+    const response = await client.post(`/api/v1/account/${f.account.id}/statements`).json(statementRequest({
       startDate: '2026-02-01', endDate: '2026-02-28', startingBalance: 200, endingBalance: 200, data: income(value.amount),
-    }).accept('json').loginAs(f.user)
+    })).accept('json').loginAs(f.user)
     response.assertStatus(200)
     const stored = await db.from('statements').where('id', response.body().id).firstOrFail()
     for (const field of statementIncomeFields) {
@@ -60,7 +61,7 @@ test.group('Statement income decimal-string PostgreSQL acceptance', group => {
       f.account.tracking = tracking; await f.account.save()
       await db.from('statements').where('id', f.statement.id).update({ data: JSON.stringify({ ...encodeStatementIncome(income(1)), note: { ordered: [2, 1, 2], amount: 1.005 } }) })
       const before = await financialState(), old = await raw()
-      const response = await client.patch(`/api/v1/statements/${f.statement.id}`).json({ data: income(12.345) }).accept('json').loginAs(f.user)
+      const response = await client.patch(`/api/v1/statements/${f.statement.id}`).json(statementRequest({ data: income(12.345) })).accept('json').loginAs(f.user)
       response.assertStatus(200)
       const after = await raw()
       for (const field of statementIncomeFields) { assert.strictEqual(after.data[field], '12.35'); assert.strictEqual(response.body().data[field], '12.35') }
@@ -78,7 +79,7 @@ test.group('Statement income decimal-string PostgreSQL acceptance', group => {
     assert.strictEqual(item.data.shortTermCapitalGains, '1.00')
     assert.strictEqual(item.data.dividends, '2.00')
     assert.deepEqual(await raw(), before)
-    const patch = await client.patch(`/api/v1/statements/${f.statement.id}`).json({ startDate: '2026-01-02' }).accept('json').loginAs(f.user)
+    const patch = await client.patch(`/api/v1/statements/${f.statement.id}`).json(statementRequest({ startDate: '2026-01-02' })).accept('json').loginAs(f.user)
     patch.assertStatus(200); assert.deepEqual((await raw()).data, data)
   })
   test('existing real-aggregation tax reports accept mixed and string attribution', async ({ assert }) => {
@@ -91,10 +92,33 @@ test.group('Statement income decimal-string PostgreSQL acceptance', group => {
   })
   test('SQL-null data and omitted income remain unchanged on unrelated PATCH', async ({ client, assert }) => {
     await db.from('statements').where('id', f.statement.id).update({ data: null })
-    const response = await client.patch(`/api/v1/statements/${f.statement.id}`).json({ startDate: '2026-01-02', data: null }).accept('json').loginAs(f.user)
+    const response = await client.patch(`/api/v1/statements/${f.statement.id}`).json(statementRequest({ startDate: '2026-01-02', data: null })).accept('json').loginAs(f.user)
     response.assertStatus(200); assert.isNull((await raw()).data)
     assert.deepEqual(response.body().data, encodeStatementIncome(income(0)))
   })
+  test('CREATE/PATCH reject numeric or noncanonical monetary fields without mutation')
+    .with(['create', 'patch'].flatMap(operation => ['startingBalance', 'endingBalance', ...statementIncomeFields]
+      .map(field => ({ operation, field }))))
+    .run(async ({ client, assert }, { operation, field }) => {
+      const before = await raw(), financial = await financialState()
+      const statements = await db.from('statements').where('account_id', f.account.id).orderBy('id')
+      for (const value of [0, '1.2', '-0.00', '90071992547409.92']) {
+        const payload = {
+          startDate: '2026-02-01', endDate: '2026-02-28', startingBalance: '200.00', endingBalance: '200.00',
+          data: { ...encodeStatementIncome(income(0)) },
+        }
+        if (field === 'startingBalance' || field === 'endingBalance') Reflect.set(payload, field, value)
+        else Reflect.set(payload.data, field, value)
+        const request = operation === 'create'
+          ? client.post(`/api/v1/account/${f.account.id}/statements`)
+          : client.patch(`/api/v1/statements/${f.statement.id}`)
+        const response = await request.json(payload).accept('json').loginAs(f.user)
+        response.assertStatus(422)
+        assert.deepEqual(await raw(), before)
+        assert.deepEqual(await financialState(), financial)
+        assert.deepEqual(await db.from('statements').where('account_id', f.account.id).orderBy('id'), statements)
+      }
+    })
   test('rejected input leaves raw Statement and financial state unchanged').with([
     { data: income(Number.MAX_SAFE_INTEGER) }, { data: { dividends: null } }, { data: { dividends: 'bad' } },
   ]).run(async ({ client, assert }, input) => {
@@ -115,7 +139,7 @@ test.group('Statement income decimal-string PostgreSQL acceptance', group => {
   })
   test('foreign Budget cannot mutate attribution', async ({ client, assert }) => {
     const other = await fixture(), before = await raw(), financial = await financialState()
-    const response = await client.patch(`/api/v1/statements/${f.statement.id}`).json({ data: income(10) }).accept('json').loginAs(other.user)
+    const response = await client.patch(`/api/v1/statements/${f.statement.id}`).json(statementRequest({ data: income(10) })).accept('json').loginAs(other.user)
     response.assertStatus(404); assert.deepEqual(await raw(), before); assert.deepEqual(await financialState(), financial)
   })
 })

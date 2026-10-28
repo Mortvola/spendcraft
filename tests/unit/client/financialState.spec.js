@@ -33,7 +33,7 @@ export { default as Institution } from ${source('client-src/State/Institution.ts
 export { default as Category } from ${source('client-src/State/Category.ts')};
 export { default as Group } from ${source('client-src/State/Group.ts')};
 export { default as Transaction } from ${source('client-src/State/Transaction.ts')};
-export { decodeAmount } from ${source('client-src/monetary.ts')};
+export { decodeAmount, encodeAmount } from ${source('client-src/monetary.ts')};
 export { worksheet2_1_2026 } from ${source('client-src/State/Taxes/Estimated.ts')};
 export { default as LoanTransaction } from ${source('client-src/State/LoanTransaction.ts')};
 export { default as Bill } from ${source('client-src/State/Bill.ts')};
@@ -97,12 +97,24 @@ export * from ${source('common/ResponseTypes.ts')};
     return () => { for (const [method, original] of originals) state.Http[method] = original }
   })
 
-  test('Statement strings decode to numeric UI values while update requests remain numeric', async ({ assert }) => {
+  test('request encoding uses approved cent rounding').with([
+    [12.345, '12.35'], [0.125, '0.13'], [-0.125, '-0.12'], [-1.005, '-1.00'],
+    [0.1 + 0.2, '0.30'], [0, '0.00'], [-0, '0.00'], [-0.005, '0.00'],
+  ]).run(({ assert }, [value, expected]) => assert.strictEqual(state.encodeAmount(value), expected))
+
+  test('invalid request values reject before HTTP').with([NaN, Infinity, -Infinity, Number.MAX_SAFE_INTEGER])
+    .run(async ({ assert }, value) => {
+      assert.throws(() => state.encodeAmount(value))
+      await assert.rejects(() => f.statement.update({ endingBalance: value }))
+      await assert.rejects(() => f.account.statements.addStatement('2025-02-01', '2025-02-28', value, 90, 0, 0, 0, 0))
+    })
+
+  test('Statement requests and responses use strings while UI values remain numeric', async ({ assert }) => {
     const response = { ...f.statementProps, startingBalance: '0.10', endingBalance: '0.30', credits: '0.20', debits: '-0.01',
       data: { shortTermCapitalGains: '-0.12', longTermCapitalGains: null, dividends: '0.30', taxableInterest: '12.35' } }
     routes.set('patch /api/v1/statements/30', async payload => {
-      assert.strictEqual(payload.endingBalance, 0.3)
-      assert.strictEqual(payload.data.dividends, 0.3)
+      assert.strictEqual(payload.endingBalance, '0.30')
+      assert.strictEqual(payload.data.dividends, '0.30')
       return { body: response }
     })
     await f.statement.update({ endingBalance: 0.3, data: { shortTermCapitalGains: -0.12, longTermCapitalGains: 0, dividends: 0.3, taxableInterest: 12.35 } })
@@ -572,7 +584,12 @@ export * from ${source('common/ResponseTypes.ts')};
 
   test('statement creation updates membership in both loaded transaction caches', async ({ assert }) => {
     const cached = transactions()
-    routes.set('post /api/v1/account/10/statements', async () => ({ body: { ...f.statementProps, id: 31, transactions: [40] } }))
+    routes.set('post /api/v1/account/10/statements', async payload => {
+      assert.strictEqual(payload.startingBalance, '100.00')
+      assert.strictEqual(payload.endingBalance, '90.00')
+      assert.deepEqual(payload.data, { shortTermCapitalGains: '0.00', longTermCapitalGains: '0.00', dividends: '0.00', taxableInterest: '0.00' })
+      return { body: { ...f.statementProps, id: 31, transactions: [40] } }
+    })
     await f.account.statements.addStatement('2025-02-01', '2025-02-28', 100, 90, 0, 0, 0, 0)
     assert.equal(cached.account.statementId, 31)
     assert.equal(cached.category.statementId, 31)

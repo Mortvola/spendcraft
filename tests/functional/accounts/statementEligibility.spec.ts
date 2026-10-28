@@ -1,3 +1,4 @@
+import { statementRequest } from '../../helpers/statementRequest.js'
 import { test } from '@japa/runner'
 import type { ApiClient } from '@japa/api-client'
 import db from '@adonisjs/lucid/services/db'
@@ -42,7 +43,7 @@ test.group('Statement transaction eligibility', (group) => {
 
   async function createStatement(client: ApiClient) {
     const response = await client.post(`/api/v1/account/${fixture.account.id}/statements`)
-      .json(period).accept('json').loginAs(fixture.user)
+      .json(statementRequest(period)).accept('json').loginAs(fixture.user)
     response.assertStatus(200)
     return { response, statement: await Statement.findOrFail(response.body().id) }
   }
@@ -94,7 +95,7 @@ test.group('Statement transaction eligibility', (group) => {
     assert.strictEqual(response.body().credits, '40.00')
     assert.strictEqual(response.body().debits, '-10.00')
     assert.strictEqual(Number(response.body().startingBalance) + Number(response.body().credits) + Number(response.body().debits), 130)
-    const reconciled = await client.patch(`/api/v1/statements/${statement.id}`).json({ reconcile: 'All' }).accept('json').loginAs(fixture.user)
+    const reconciled = await client.patch(`/api/v1/statements/${statement.id}`).json(statementRequest({ reconcile: 'All' })).accept('json').loginAs(fixture.user)
     reconciled.assertStatus(200)
     assert.isNull((await AccountTransaction.findOrFail(deleted.row.id)).statementId)
     assert.strictEqual(reconciled.body().credits, '40.00')
@@ -129,7 +130,7 @@ test.group('Statement transaction eligibility', (group) => {
     assert.strictEqual(Number(listed.startingBalance) + Number(listed.credits) + Number(listed.debits), 140)
     assert.sameMembers(await register(client), [active.transaction.id])
     const before = await state()
-    const response = await client.patch(`/api/v1/statements/${statement.id}`).json({ reconcile: 'All' }).accept('json').loginAs(fixture.user)
+    const response = await client.patch(`/api/v1/statements/${statement.id}`).json(statementRequest({ reconcile: 'All' })).accept('json').loginAs(fixture.user)
     response.assertStatus(200)
     assert.deepEqual(await state(), before)
     assert.strictEqual(response.body().credits, '40.00')
@@ -165,14 +166,14 @@ test.group('Statement transaction eligibility', (group) => {
     const active = await createTransaction(client, 40)
     const pending = await createTransaction(client, -10)
     await pending.row.merge({ pending: true }).save()
-    const first = await client.patch(`/api/v1/statements/${statement.id}`).json({ reconcile: 'All' }).accept('json').loginAs(fixture.user)
+    const first = await client.patch(`/api/v1/statements/${statement.id}`).json(statementRequest({ reconcile: 'All' })).accept('json').loginAs(fixture.user)
     first.assertStatus(200)
     assert.equal((await AccountTransaction.findOrFail(active.row.id)).statementId, statement.id)
     assert.isNull((await AccountTransaction.findOrFail(pending.row.id)).statementId)
     assert.strictEqual(first.body().credits, '40.00')
     assert.strictEqual(first.body().debits, '0.00')
     await pending.row.merge({ pending: false }).save()
-    const posted = await client.patch(`/api/v1/statements/${statement.id}`).json({ reconcile: 'All' }).accept('json').loginAs(fixture.user)
+    const posted = await client.patch(`/api/v1/statements/${statement.id}`).json(statementRequest({ reconcile: 'All' })).accept('json').loginAs(fixture.user)
     posted.assertStatus(200)
     assert.equal((await AccountTransaction.findOrFail(pending.row.id)).statementId, statement.id)
     assert.strictEqual(posted.body().credits, '40.00')
@@ -198,7 +199,7 @@ test.group('Statement transaction eligibility', (group) => {
     await assigned.row.refresh()
     await assigned.row.merge({ pending: true }).save()
     const before = await state()
-    const response = await client.patch(`/api/v1/statements/${statement.id}`).json({ reconcile: 'All' }).accept('json').loginAs(fixture.user)
+    const response = await client.patch(`/api/v1/statements/${statement.id}`).json(statementRequest({ reconcile: 'All' })).accept('json').loginAs(fixture.user)
     response.assertStatus(200)
     assert.deepEqual(await state(), before)
     assert.equal((await AccountTransaction.findOrFail(assigned.row.id)).statementId, statement.id)

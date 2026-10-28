@@ -1,3 +1,4 @@
+import { statementRequest } from '../../helpers/statementRequest.js'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
 import { DateTime } from 'luxon'
@@ -68,7 +69,7 @@ test.group('Manual statement correctness', (group) => {
       if (position === 'before' || position === 'between') neighbors.push(await seedStatement('2025-03-01', '2025-03-31', 300))
       const before = await state()
       const response = await client.post(`/api/v1/account/${fixture.account.id}/statements`)
-        .json(february).accept('json').loginAs(fixture.user)
+        .json(statementRequest(february)).accept('json').loginAs(fixture.user)
       response.assertStatus(200)
       const rows = await Statement.query().where('accountId', fixture.account.id).orderBy('endDate')
       const created = rows.find((row) => !neighbors.some((neighbor) => neighbor.id === row.id))
@@ -94,7 +95,7 @@ test.group('Manual statement correctness', (group) => {
       }
       if (position === 'between') await seedStatement('2025-01-01', '2025-01-31', 100)
       const response = await client.post(`/api/v1/account/${fixture.account.id}/statements`)
-        .json({ ...february, endingBalance: position === 'zero' ? 0 : 200 }).accept('json').loginAs(fixture.user)
+        .json(statementRequest({ ...february, endingBalance: position === 'zero' ? 0 : 200 })).accept('json').loginAs(fixture.user)
       const rows = await Statement.query().where('accountId', fixture.account.id).orderBy('endDate', 'desc')
       assert.equal(rows.length, position === 'between' ? 3 : position === 'older' || position === 'newer' ? 2 : 1,
         `HTTP ${response.status()}: statement creation must persist`)
@@ -111,7 +112,7 @@ test.group('Manual statement correctness', (group) => {
     const linked = await seedTransaction('2025-02-10', 7, { statementId: previous.id })
     const snapshot = await state()
     const response = await client.post(`/api/v1/account/${fixture.account.id}/statements`)
-      .json(february).accept('json').loginAs(fixture.user)
+      .json(statementRequest(february)).accept('json').loginAs(fixture.user)
     response.assertStatus(200)
     const statement = await Statement.query().where('accountId', fixture.account.id).where('endDate', '2025-02-28').firstOrFail()
     for (const row of [start, end]) assert.equal((await AccountTransaction.findOrFail(row.id)).statementId, statement.id)
@@ -126,7 +127,7 @@ test.group('Manual statement correctness', (group) => {
     const pending = await seedTransaction('2025-02-10', 10, { pending: true })
     const deleted = await seedTransaction('2025-02-11', 20, { deleted: true })
     const response = await client.post(`/api/v1/account/${fixture.account.id}/statements`)
-      .json(february).accept('json').loginAs(fixture.user)
+      .json(statementRequest(february)).accept('json').loginAs(fixture.user)
     response.assertStatus(200)
     const statement = await Statement.query().where('accountId', fixture.account.id).firstOrFail()
     assert.equal((await AccountTransaction.findOrFail(pending.id)).statementId, statement.id)
@@ -148,7 +149,7 @@ test.group('Manual statement correctness', (group) => {
               : field === 'data' ? { data: { ...investmentData, dividends: 9 } }
                 : { reconcile: field === 'reconcile-all' ? 'All' : 'None' }
       const before = await state()
-      const response = await client.patch(`/api/v1/statements/${statement.id}`).json(body).accept('json').loginAs(fixture.user)
+      const response = await client.patch(`/api/v1/statements/${statement.id}`).json(statementRequest(body)).accept('json').loginAs(fixture.user)
       const persisted = await Statement.findOrFail(statement.id)
       assert.equal(persisted.startDate.toISODate(), field === 'start-date' ? '2025-01-01' : february.startDate)
       assert.equal(persisted.endDate.toISODate(), field === 'end-date' ? '2025-03-31' : february.endDate)
@@ -173,7 +174,7 @@ test.group('Manual statement correctness', (group) => {
     const statement = await seedStatement(february.startDate, february.endDate, 200)
     await statement.merge({ data: null }).save()
     const response = await client.patch(`/api/v1/statements/${statement.id}`)
-      .json({ endingBalance: 250 }).accept('json').loginAs(fixture.user)
+      .json(statementRequest({ endingBalance: 250 })).accept('json').loginAs(fixture.user)
     response.assertStatus(200)
     const persisted = await Statement.findOrFail(statement.id)
     assert.isNull(persisted.data)
@@ -188,7 +189,7 @@ test.group('Manual statement correctness', (group) => {
     const data = { shortTermCapitalGains: 0, longTermCapitalGains: 0, dividends: 0, taxableInterest: 0 }
     const before = await state()
     const response = await client.patch(`/api/v1/statements/${statement.id}`)
-      .json({ startingBalance: 0, endingBalance: 0, data }).accept('json').loginAs(fixture.user)
+      .json(statementRequest({ startingBalance: 0, endingBalance: 0, data })).accept('json').loginAs(fixture.user)
     response.assertStatus(200)
     const persisted = await Statement.findOrFail(statement.id)
     assert.equal(persisted.startingBalance, 0)
@@ -207,7 +208,7 @@ test.group('Manual statement correctness', (group) => {
     const statement = await seedStatement(february.startDate, february.endDate, 200)
     const before = await state()
     const response = await client.patch(`/api/v1/statements/${statement.id}`)
-      .json({ ...february, endingBalance: 250, data: investmentData }).accept('json').loginAs(fixture.user)
+      .json(statementRequest({ ...february, endingBalance: 250, data: investmentData })).accept('json').loginAs(fixture.user)
     response.assertStatus(200)
     assert.equal((await Statement.findOrFail(statement.id)).endingBalance, 250)
     const after = await state()
@@ -221,7 +222,7 @@ test.group('Manual statement correctness', (group) => {
     await seedTransaction('2025-03-10', 20)
     const before = await state()
     const response = await client.patch(`/api/v1/statements/${statement.id}`)
-      .json({ ...february, startDate: '2025-03-01', endDate: '2025-03-31', data: investmentData }).accept('json').loginAs(fixture.user)
+      .json(statementRequest({ ...february, startDate: '2025-03-01', endDate: '2025-03-31', data: investmentData })).accept('json').loginAs(fixture.user)
     response.assertStatus(200)
     const after = await state()
     assert.deepEqual(after[1].filter((row) => row.id !== statement.id), before[1].filter((row) => row.id !== statement.id))
@@ -239,7 +240,7 @@ test.group('Manual statement correctness', (group) => {
       const endDate = scenario === 'latest-earlier' ? '2024-12-31' : scenario === 'older-later' ? '2025-04-30' : target.endDate.toISODate()
       const before = await state()
       const response = await client.patch(`/api/v1/statements/${target.id}`)
-        .json({ startDate, endDate, startingBalance: 100, endingBalance: 250, data: investmentData }).accept('json').loginAs(fixture.user)
+        .json(statementRequest({ startDate, endDate, startingBalance: 100, endingBalance: 250, data: investmentData })).accept('json').loginAs(fixture.user)
       response.assertStatus(200)
       const changed = await Statement.findOrFail(target.id)
       assert.equal(changed.endDate.toISODate(), endDate)
@@ -254,7 +255,7 @@ test.group('Manual statement correctness', (group) => {
   test('omitting investment data in an otherwise full PATCH preserves it', async ({ client, assert }) => {
     const statement = await seedStatement(february.startDate, february.endDate, 200)
     const response = await client.patch(`/api/v1/statements/${statement.id}`)
-      .json({ ...february, endingBalance: 250 }).accept('json').loginAs(fixture.user)
+      .json(statementRequest({ ...february, endingBalance: 250 })).accept('json').loginAs(fixture.user)
     response.assertStatus(200)
     assert.deepEqual((await Statement.findOrFail(statement.id)).data, investmentData)
   })
@@ -264,7 +265,7 @@ test.group('Manual statement correctness', (group) => {
     const feb = await seedTransaction('2025-02-10', 10)
     const march = await seedTransaction('2025-03-10', 20)
     const response = await client.patch(`/api/v1/statements/${statement.id}`)
-      .json({ ...february, startDate: '2025-03-01', endDate: '2025-03-31', data: investmentData, reconcile: 'All' }).accept('json').loginAs(fixture.user)
+      .json(statementRequest({ ...february, startDate: '2025-03-01', endDate: '2025-03-31', data: investmentData, reconcile: 'All' })).accept('json').loginAs(fixture.user)
     response.assertStatus(200)
     assert.equal((await Statement.findOrFail(statement.id)).endDate.toISODate(), '2025-03-31')
     assert.equal((await AccountTransaction.findOrFail(march.id)).statementId, statement.id)
@@ -309,9 +310,9 @@ test.group('Manual statement correctness', (group) => {
       process.on('unhandledRejection', rejected)
       try {
         const response = creation
-          ? await client.post(`/api/v1/account/${fixture.account.id}/statements`).json({ ...february, endingBalance: 777 }).accept('json').loginAs(fixture.user)
+          ? await client.post(`/api/v1/account/${fixture.account.id}/statements`).json(statementRequest({ ...february, endingBalance: 777 })).accept('json').loginAs(fixture.user)
           : await client.patch(`/api/v1/statements/${statement.id}`)
-            .json({ ...february, endingBalance: 777, data: investmentData, reconcile: 'All' }).accept('json').loginAs(fixture.user)
+            .json(statementRequest({ ...february, endingBalance: 777, data: investmentData, reconcile: 'All' })).accept('json').loginAs(fixture.user)
         requestCompleted = true
         response.assertStatus(500)
         assert.equal(pendingWrites.size, 0, 'persistence must finish before the response')

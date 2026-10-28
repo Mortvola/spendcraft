@@ -1,3 +1,4 @@
+import { statementRequest } from '../../helpers/statementRequest.js'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
 import { DateTime } from 'luxon'
@@ -86,10 +87,10 @@ test.group('Statement and balance-history authority characterization', (group) =
       if (operation === 'delete-only') await older.delete()
       const before = await snapshot()
       const response = operation === 'create'
-        ? await client.post(`/api/v1/account/${f.account.id}/statements`).json({ startDate: '2025-03-01', endDate: '2025-03-31', startingBalance: 100, endingBalance: 250 }).accept('json').loginAs(f.user)
+        ? await client.post(`/api/v1/account/${f.account.id}/statements`).json(statementRequest({ startDate: '2025-03-01', endDate: '2025-03-31', startingBalance: 100, endingBalance: 250 })).accept('json').loginAs(f.user)
         : operation.startsWith('delete')
           ? await client.delete(`/api/v1/statements/${operation === 'delete-older' ? older.id : latest.id}`).accept('json').loginAs(f.user)
-          : await client.patch(`/api/v1/statements/${latest.id}`).json(operation === 'ending-zero' ? { endingBalance: 0 } : { startDate: '2024-12-01', endDate: '2024-12-31' }).accept('json').loginAs(f.user)
+          : await client.patch(`/api/v1/statements/${latest.id}`).json(statementRequest(operation === 'ending-zero' ? { endingBalance: 0 } : { startDate: '2024-12-01', endDate: '2024-12-31' })).accept('json').loginAs(f.user)
       response.assertStatus(200)
       const expected = operation === 'create' ? 250 : operation === 'ending-zero' || operation === 'delete-only' ? 0 : operation === 'delete-older' ? 100 : 50
       assert.equal((await Account.findOrFail(f.account.id)).balance, expected)
@@ -104,7 +105,7 @@ test.group('Statement and balance-history authority characterization', (group) =
     const history = await seedHistory()
     ;(await client.post(`/api/v1/account/${f.account.id}/balances`).json({ date: '2025-03-10', amount: 250 }).accept('json').loginAs(f.user)).assertStatus(404)
     assert.equal((await Account.findOrFail(f.account.id)).balance, 100)
-    ;(await client.patch(`/api/v1/statements/${latest.id}`).json({ endingBalance: 120 }).accept('json').loginAs(f.user)).assertStatus(200)
+    ;(await client.patch(`/api/v1/statements/${latest.id}`).json(statementRequest({ endingBalance: 120 })).accept('json').loginAs(f.user)).assertStatus(200)
     const before = await snapshot()
     ;(await client.patch(`/api/v1/account/${f.account.id}/balances/${history.last.id}`).json({ date: '2025-02-10', amount: 80 }).accept('json').loginAs(f.user)).assertStatus(404)
     assert.deepEqual(await snapshot(), before)

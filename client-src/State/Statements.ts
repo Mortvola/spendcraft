@@ -1,7 +1,7 @@
 import { observable, runInAction } from "mobx";
 import { AccountInterface, AddStatementRequest, StatementsInterface, StoreInterface } from "./Types";
 import Statement from "./Statement";
-import { decodeAmount } from "../monetary";
+import { decodeAmount, encodeAmount } from "../monetary";
 import Http from "@mortvola/http";
 import { AddStatementResponse, ApiError, StatementProps, StatementsResponse, TrackingType } from "../../common/ResponseTypes";
 
@@ -65,12 +65,12 @@ class Statements implements StatementsInterface {
     taxableInterest: number,
   ): Promise<ApiError[] | null> {
     const response = await Http.post<AddStatementRequest, AddStatementResponse>(`/api/v1/account/${this.account.id}/statements`, {
-      startDate, endDate, startingBalance, endingBalance,
+      startDate, endDate, startingBalance: encodeAmount(startingBalance), endingBalance: encodeAmount(endingBalance),
       data: {
-        shortTermCapitalGains: shortTermCapitalGains,
-        longTermCapitalGains: longTermCapitalGains,
-        dividends,
-        taxableInterest,
+        shortTermCapitalGains: encodeAmount(shortTermCapitalGains),
+        longTermCapitalGains: encodeAmount(longTermCapitalGains),
+        dividends: encodeAmount(dividends),
+        taxableInterest: encodeAmount(taxableInterest),
       }
     });
 

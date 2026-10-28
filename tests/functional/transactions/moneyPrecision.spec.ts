@@ -1,3 +1,4 @@
+import { statementRequest } from '../../helpers/statementRequest.js'
 import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { monetaryAmountCents, encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { test } from '@japa/runner'
@@ -220,16 +221,16 @@ test.group('Monetary persistence and allocation regressions', () => {
       const config = await client.patch(`/api/v1/groups/${f.categories[0].groupId}/categories/${f.categories[0].id}`)
         .json({ name: 'Currency configuration', fundingAmount: amount }).accept('json').loginAs(f.user)
       config.assertStatus(200)
-      const data = { shortTermCapitalGains: amount, longTermCapitalGains: 0, dividends: 0, taxableInterest: 0 }
+      const data = { shortTermCapitalGains: Number(amount), longTermCapitalGains: 0, dividends: 0, taxableInterest: 0 }
       const statement = await client.post(`/api/v1/account/${f.account.id}/statements`)
-        .json({ startDate: '2025-02-01', endDate: '2025-02-28', startingBalance: amount, endingBalance: amount, data })
+        .json(statementRequest({ startDate: '2025-02-01', endDate: '2025-02-28', startingBalance: Number(amount), endingBalance: Number(amount), data }))
         .accept('json').loginAs(f.user)
       statement.assertStatus(200)
       const storedStatement = await db.from('statements').where('account_id', f.account.id).first()
       // Statement income now has its accepted canonical-string storage boundary.
       assert.strictEqual(storedStatement.data.shortTermCapitalGains, (Math.round(Number(amount) * 100) / 100).toFixed(2))
       const updated = await client.patch(`/api/v1/statements/${storedStatement.id}`)
-        .json({ startingBalance: amount, endingBalance: amount, data }).accept('json').loginAs(f.user)
+        .json(statementRequest({ startingBalance: Number(amount), endingBalance: Number(amount), data })).accept('json').loginAs(f.user)
       updated.assertStatus(200)
       console.log(JSON.stringify({ scenario: 'currency config and statement', input: amount,
         category: (await Category.findOrFail(f.categories[0].id)).fundingAmount,
@@ -244,13 +245,13 @@ test.group('Monetary persistence and allocation regressions', () => {
       const f = await fixture()
       await f.account.merge({ tracking: TrackingType.Balances }).save()
       const response = await client.post(`/api/v1/account/${f.account.id}/statements`)
-        .json({ startDate: '2025-02-01', endDate: '2025-02-28', startingBalance: amount, endingBalance: amount })
+        .json(statementRequest({ startDate: '2025-02-01', endDate: '2025-02-28', startingBalance: amount, endingBalance: amount }))
         .accept('json').loginAs(f.user)
       response.assertStatus(200)
       const stored = await db.from('statements').where('account_id', f.account.id).first()
       const postBalance = (await Account.findOrFail(f.account.id)).balance
       const updated = await client.patch(`/api/v1/statements/${stored.id}`)
-        .json({ endingBalance: amount }).accept('json').loginAs(f.user)
+        .json(statementRequest({ endingBalance: amount })).accept('json').loginAs(f.user)
       updated.assertStatus(200)
       assert.equal((await Account.findOrFail(f.account.id)).balance, Number(stored.ending_balance))
       console.log(JSON.stringify({ scenario: 'balance-tracked statement', input: amount, postBody: response.body(), patchBody: updated.body(),

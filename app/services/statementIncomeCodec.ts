@@ -47,15 +47,9 @@ export function encodeStatementIncome(value: unknown): Record<string, unknown> |
   return result
 }
 
-// Preserve Vine's existing decimal numeric-string API contract, but reject
-// unsupported coercions before they can become numbers (e.g. boolean -> 1).
+// Validate raw request leaves without numeric coercion. Optional-object semantics stay with Vine.
 export function validateSubmittedStatementIncome(value: unknown): void {
-  if (value === null || value === undefined) return // Optional object: Vine treats null as omitted.
+  if (value === null || value === undefined) return
   const data = incomeObject(value)
-  for (const field of statementIncomeFields) {
-    const amount = data[field]
-    if (typeof amount === 'number') { encodeMonetaryAmount(amount); continue }
-    if (typeof amount !== 'string' || !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/.test(amount.trim())) invalid()
-    encodeMonetaryAmount(Number(amount))
-  }
+  for (const field of statementIncomeFields) decodeStoredMonetaryAmount(data[field])
 }

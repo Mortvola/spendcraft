@@ -1,3 +1,4 @@
+import { statementRequest } from '../../helpers/statementRequest.js'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
 import { DateTime } from 'luxon'
@@ -93,7 +94,7 @@ test.group('Account, history and statement budget isolation', (group) => {
   test('rejects {name} without changing either budget').with(rejected).run(async ({ client, assert }, scenario) => {
     const before = await state()
     const request = client.request(`/api/v1${scenario.path(fixture)}`, scenario.method).qs({ limit: 20, offset: 0 }).accept('json').loginAs(fixture.own.user)
-    if (scenario.body) request.json(scenario.body)
+    if (scenario.body) request.json(scenario.path(fixture).includes('/statements') ? statementRequest(scenario.body) : scenario.body)
     const response = await request
     assert.deepEqual(await state(), before)
     response.assertStatus(404)
@@ -147,14 +148,14 @@ test.group('Account, history and statement budget isolation', (group) => {
     assert.equal((await Account.findOrFail(fixture.own.account.id)).balance, 123.45)
   })
   test('shared-budget user can create a statement', async ({ client, assert }) => {
-    const response = await client.post(`/api/v1/account/${fixture.own.account.id}/statements`).json(statementBody).accept('json').loginAs(fixture.shared)
+    const response = await client.post(`/api/v1/account/${fixture.own.account.id}/statements`).json(statementRequest(statementBody)).accept('json').loginAs(fixture.shared)
     response.assertStatus(200)
     const statement = await Statement.findOrFail(response.body().id)
     assert.equal(statement.accountId, fixture.own.account.id)
     assert.equal(statement.endingBalance, 999)
   })
   test('shared-budget user can update and reconcile a statement', async ({ client, assert }) => {
-    const response = await client.patch(`/api/v1/statements/${fixture.own.statement.id}`).json({ startDate: '2025-02-01', endDate: '2025-02-28', startingBalance: 100, endingBalance: 150, reconcile: 'All' }).accept('json').loginAs(fixture.shared)
+    const response = await client.patch(`/api/v1/statements/${fixture.own.statement.id}`).json(statementRequest({ startDate: '2025-02-01', endDate: '2025-02-28', startingBalance: 100, endingBalance: 150, reconcile: 'All' })).accept('json').loginAs(fixture.shared)
     response.assertStatus(200)
     assert.equal((await Statement.findOrFail(fixture.own.statement.id)).endingBalance, 150)
     assert.equal((await Account.findOrFail(fixture.own.account.id)).balance, 150)
@@ -167,7 +168,7 @@ test.group('Account, history and statement budget isolation', (group) => {
     await row.save()
     const before = (await AccountTransaction.findOrFail(row.id)).serialize()
     const response = await client.patch(`/api/v1/statements/${fixture.own.statement.id}`)
-      .json({ startDate: '2025-02-01', endDate: '2025-02-28', startingBalance: 100, endingBalance: 123.45, reconcile: 'None' })
+      .json(statementRequest({ startDate: '2025-02-01', endDate: '2025-02-28', startingBalance: 100, endingBalance: 123.45, reconcile: 'None' }))
       .accept('json').loginAs(fixture.shared)
     response.assertStatus(200)
     assert.deepEqual((await AccountTransaction.findOrFail(row.id)).serialize(), before)

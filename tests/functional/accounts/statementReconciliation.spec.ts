@@ -1,3 +1,4 @@
+import { statementRequest } from '../../helpers/statementRequest.js'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
 import { DateTime } from 'luxon'
@@ -76,10 +77,10 @@ test.group('Statement reconciliation period characterization', (group) => {
       const url = `/api/v1/statements/${fixture.statement.id}`
       const body = workflow === 'combined' ? { ...dates, reconcile: 'All' }
         : workflow === 'clear' ? { ...dates, reconcile: 'None' } : dates
-      const first = await client.patch(url).json(body).accept('json').loginAs(fixture.user)
+      const first = await client.patch(url).json(statementRequest(body)).accept('json').loginAs(fixture.user)
       first.assertStatus(200)
       const response = workflow === 'sequential'
-        ? await client.patch(url).json({ reconcile: 'All' }).accept('json').loginAs(fixture.user) : first
+        ? await client.patch(url).json(statementRequest({ reconcile: 'All' })).accept('json').loginAs(fixture.user) : first
       response.assertStatus(200)
       const persisted = await Statement.findOrFail(fixture.statement.id)
       assert.equal(persisted.startDate.toISODate(), dates.startDate)
@@ -149,7 +150,7 @@ test.group('Statement reconciliation period characterization', (group) => {
     process.on('unhandledRejection', rejected)
     try {
       const response = await client.patch(`/api/v1/statements/${fixture.statement.id}`)
-        .json({ startDate: '2025-03-01', endDate: '2025-03-20', endingBalance: 777, reconcile: 'All' })
+        .json(statementRequest({ startDate: '2025-03-01', endDate: '2025-03-20', endingBalance: 777, reconcile: 'All' }))
         .accept('json').loginAs(fixture.user)
       requestCompleted = true
       response.assertStatus(500)

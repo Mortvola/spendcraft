@@ -2,9 +2,9 @@ import Http from '@mortvola/http';
 import { DateTime } from 'luxon';
 import { observable, runInAction } from 'mobx';
 import { ApiError, StatementProps, UpdateStatementProps, TrackingType } from '../../common/ResponseTypes';
-import { StatementInterface, StatementsInterface } from './Types';
+import { StatementInterface, StatementsInterface, StatementUpdateValues } from './Types';
 
-import { decodeAmount } from '../monetary';
+import { decodeAmount, encodeAmount } from '../monetary';
 
 function decodeStatementAmounts(props: StatementProps) {
   const income = props.data;
@@ -99,8 +99,21 @@ class Statement implements StatementInterface {
     })
   }
 
-  async update(update: UpdateStatementProps): Promise<ApiError[] | null> {
-    const response = await Http.patch<UpdateStatementProps, StatementProps>(`/api/v1/statements/${this.id}`, update)
+  async update(update: StatementUpdateValues): Promise<ApiError[] | null> {
+    const payload: UpdateStatementProps = {
+      ...update,
+      startingBalance: update.startingBalance === undefined ? undefined : encodeAmount(update.startingBalance),
+      endingBalance: update.endingBalance === undefined ? undefined : encodeAmount(update.endingBalance),
+      credits: update.credits === undefined ? undefined : encodeAmount(update.credits),
+      debits: update.debits === undefined ? undefined : encodeAmount(update.debits),
+      data: update.data === undefined ? undefined : {
+        shortTermCapitalGains: encodeAmount(update.data.shortTermCapitalGains),
+        longTermCapitalGains: encodeAmount(update.data.longTermCapitalGains),
+        dividends: encodeAmount(update.data.dividends),
+        taxableInterest: encodeAmount(update.data.taxableInterest),
+      },
+    };
+    const response = await Http.patch<UpdateStatementProps, StatementProps>(`/api/v1/statements/${this.id}`, payload)
 
     if (response.ok) {
       const props = await response.body()

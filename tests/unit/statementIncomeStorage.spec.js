@@ -47,12 +47,24 @@ test.group('Statement income production codec and model boundary (no database)',
   ]).run(({ assert }, amount) => assert.throws(() => encodeMonetaryAmount(amount)))
   test('raw submitted unsupported coercions reject').with([true, false, '', ' ', {}, [], '0x10', 'bad', Infinity, null, undefined])
     .run(({ assert }, amount) => assert.throws(() => validateSubmittedStatementIncome(data(amount))))
-  test('existing decimal numeric-string request contract is retained', async ({ assert }) => {
-    for (const value of ['1.005', '-.125', '1e-2', 1.005]) {
+  test('canonical request strings decode to numeric controller values', async ({ assert }) => {
+    for (const value of ['1.00', '-0.12', '0.00', '0.30']) {
       validateSubmittedStatementIncome(data(value))
-      const validated = await updateStatement.validate({ data: data(value) })
-      assert.equal(validated.data.dividends, Number(value))
+      const validated = await updateStatement.validate({ startingBalance: value, endingBalance: value, data: data(value) })
+      assert.strictEqual(validated.startingBalance, Number(value))
+      assert.strictEqual(validated.endingBalance, Number(value))
+      for (const field of statementIncomeFields) assert.strictEqual(validated.data[field], Number(value))
     }
+  })
+  test('monetary requests reject numbers and noncanonical or unsafe strings').with([
+    0, -0, 1.005, true, false, {}, [], '', ' ', '1', '1.2', '1.005', '1e2', '+1.00',
+    '01.00', '-0.00', ' 1.00', '1.00 ', 'NaN', 'Infinity', '90071992547409.92',
+  ]).run(async ({ assert }, amount) => {
+    for (const field of ['startingBalance', 'endingBalance']) {
+      await assert.rejects(() => updateStatement.validate({ [field]: amount }))
+      await assert.rejects(() => addStatement.validate({ startDate: '2026-01-01', endDate: '2026-01-31', startingBalance: '0.00', endingBalance: '0.00', [field]: amount }))
+    }
+    await assert.rejects(() => updateStatement.validate({ data: data(amount) }))
   })
   test('canonical storage reads preserve metadata without mutation', ({ assert }) => {
     const raw = { ...data('2.00'), dividends: '1.00', note: { amount: 1.005, ordered: [2, 1, 2] } }
@@ -159,8 +171,8 @@ async function lifecycle(input, options = {}) {
 }
 
 test.group('Statement income production controllers (no database)', () => {
-  test('real CREATE persists strings with numeric response and unchanged supplied balances', async ({ assert }) => {
-    const f = await lifecycle({ startDate: '2026-01-01', endDate: '2026-01-31', startingBalance: 100, endingBalance: 200, data: data(12.345) }, { create: true })
+  test('real CREATE accepts and returns canonical strings and unchanged supplied balances', async ({ assert }) => {
+    const f = await lifecycle({ startDate: '2026-01-01', endDate: '2026-01-31', startingBalance: '100.00', endingBalance: '200.00', data: data('12.35') }, { create: true })
     const response = await f.operation
     assert.deepEqual(JSON.parse(f.writes[0].data), data('12.35')); assert.deepEqual(response.data, data('12.35'))
     assert.equal(response.startingBalance, '100.00'); assert.equal(response.endingBalance, '200.00')
@@ -168,7 +180,7 @@ test.group('Statement income production controllers (no database)', () => {
   })
   test('real data PATCH preserves financial balances and unrelated JSON under Budget transaction').with([TrackingType.Transactions, TrackingType.Balances])
     .run(async ({ assert }, tracking) => {
-      const f = await lifecycle({ data: data(-0.125) }, { tracking }), response = await f.operation
+      const f = await lifecycle({ data: data('-0.12') }, { tracking }), response = await f.operation
       assert.deepEqual(JSON.parse(f.writes[0].data), { ...data('-0.12'), note: 'preserve' })
       assert.deepEqual(response.data, data('-0.12')); assert.equal(f.account.balance, 200)
       assert.notProperty(f.writes[0], 'starting_balance'); assert.notProperty(f.writes[0], 'ending_balance')
@@ -187,13 +199,13 @@ test.group('Statement income production controllers (no database)', () => {
     })
   test('foreign-Budget rejection and post-save errors roll back rather than commit').with([{ foreign: true }, { lateFailure: true }])
     .run(async ({ assert }, options) => {
-      const f = await lifecycle({ data: data(2) }, options); await assert.rejects(() => f.operation)
+      const f = await lifecycle({ data: data('2.00') }, options); await assert.rejects(() => f.operation)
       assert.equal(f.events.at(-1), 'rollback'); assert.notInclude(f.events, 'commit')
     })
   test('waiting PATCH reads committed metadata only after Budget admission', async ({ assert }) => {
     let release, entered
     const gate = new Promise(resolve => { release = resolve }), waiting = new Promise(resolve => { entered = resolve })
-    const f = await lifecycle({ data: data(2.345) }, { wait: gate, onWait: entered })
+    const f = await lifecycle({ data: data('2.35') }, { wait: gate, onWait: entered })
     await waiting
     assert.notInclude(f.events, 'statement.read'); assert.lengthOf(f.writes, 0)
     f.statement.data.note = 'committed while waiting'; f.statement.$hydrateOriginals()

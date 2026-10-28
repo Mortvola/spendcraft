@@ -1,3 +1,4 @@
+import { statementRequest } from '../../helpers/statementRequest.js'
 import Account from '#models/Account'
 import Statement from '#models/Statement'
 import { AccountType, TrackingType } from '#common/ResponseTypes';
@@ -63,12 +64,12 @@ test.group('Accounts', (group) => {
       assert.isNotNull(accountId)
 
       const response = await client.post(`/api/v1/account/${accountId}/statements`)
-        .json({
+        .json(statementRequest({
           startDate: '2025-02-01',
           endDate: '2025-02-28',
           startingBalance: 0,
           endingBalance: 150.10,
-        })
+        }))
         .accept('json')
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         .loginAs(user!)
