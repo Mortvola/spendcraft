@@ -1,3 +1,4 @@
+import { parseMoneyCents, formatMoneyCents } from '../../../common/moneyCents.ts'
 import { setImmediate } from 'node:timers'
 import { encodeMonetaryAmount } from '../../../app/services/categoryAmountCodec.ts'
 import { decodeAmount, decodeFundingRules } from '../../../client-src/monetary.ts'
@@ -42,7 +43,7 @@ async function dialog(values, { balance = 10, reject = false, editing = false, p
     if (reject) throw new Error('Rejected funding')
     return null
   }
-  const pool = { id: 99, balance }
+  const pool = { id: 99, balanceCents: parseMoneyCents(balance.toFixed(2)) }
   const stores = { categoryTree: { budget: { fundingPoolCat: pool, forEachCatgory: () => false },
     bills: { forEachCatgory: () => false }, getCategory: () => ({ getFundingPool: () => pool }) },
   register: { addCategoryTransfer: submit } }
@@ -51,7 +52,7 @@ async function dialog(values, { balance = 10, reject = false, editing = false, p
     updateCategoryTransfer: (request) => submit(request, 2) } : undefined
   const Amount = ({ amount }) => React.createElement('output', { 'data-amount': String(amount) }, String(amount))
   const Field = ({ children }) => children({ field: { value: values.date }, form: { values } })
-  const context = { ...effect, React: { ...React, useState: () => [stateIndex++ === 0 ? false : values.categories, () => false],
+  const context = { ...effect, formatMoneyCents, React: { ...React, useState: () => [stateIndex++ === 0 ? false : values.categories, () => false],
     useCallback: (callback) => callback, useEffect: () => false }, DateTime, useStores: () => stores,
     Field, Amount, FormModal: (props) => { modal = props; return props.children },
     FormError: () => null, Funding: (props) => { fundingDate = props.date; return null }, styles: {}, CategoryType: {}, TransactionType: { FUNDING_TRANSACTION: 2 } }

@@ -1,6 +1,6 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
-import Amount from '../../Amount';
+import MoneyCentsAmount from '../../MoneyCentsAmount';
 import { CategoryInterface } from '../../State/Types';
 import { useStores } from '../../State/Store';
 import styles from './Category.module.scss';
@@ -32,7 +32,7 @@ const SystemCategory: React.FC<PropsType> = observer(({
         <div className={`${styles.catElementBar} ${styles.system}`}>
           <div className={styles.catListName}>{category.name}</div>
         </div>
-        <Amount className={styles.catListAmt} amount={category.balance} />
+        <MoneyCentsAmount className={styles.catListAmt} amount={category.balanceCents} />
       </div>
     );
   }

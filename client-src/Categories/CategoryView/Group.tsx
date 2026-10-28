@@ -4,7 +4,7 @@ import GroupButtons from './GroupButtons';
 import Category from './Category';
 import { CategoryInterface, GroupInterface } from '../../State/Types';
 import { isCategory } from '../../State/Category';
-import Amount from '../../Amount';
+import MoneyCentsAmount from '../../MoneyCentsAmount';
 import { useStores } from '../../State/Store';
 import { GroupType } from '../../../common/ResponseTypes';
 import { Settings } from 'lucide-react';
@@ -63,7 +63,7 @@ const Group: React.FC<PropsType> = observer(({
         </div>
         {
           !(uiState.groupState.get(group.id) ?? true)
-            ? <Amount amount={group.childrenBalance()} />
+            ? <MoneyCentsAmount amount={group.childrenBalanceCents()} />
             : null
         }
       </div>

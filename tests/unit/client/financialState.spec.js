@@ -29,6 +29,9 @@ export { default as AccountsToolbar } from ${source('client-src/AccountView/Acco
 export { default as AccountBalanceChart } from ${source('client-src/AccountView/AccountBalanceChart.tsx')};
 export { default as InstitutionAccounts } from ${source('client-src/Categories/CategoryView/Institution.tsx')};
 export { default as AccountHeading } from ${source('client-src/AccountView/Account.tsx')};
+export { default as CategoryHeading } from ${source('client-src/Categories/CategoryView/Category.tsx')};
+export { default as SystemCategoryHeading } from ${source('client-src/Categories/CategoryView/SystemCategory.tsx')};
+export { default as GroupHeading } from ${source('client-src/Categories/CategoryView/Group.tsx')};
 export { createElement } from ${source('node_modules/react/index.js')};
 export { renderToStaticMarkup } from ${source('node_modules/react-dom/server.node.js')};
 export { default as Http } from '@mortvola/http';
@@ -150,7 +153,7 @@ export * from ${source('common/ResponseTypes.ts')};
     1, null, '', '1.2', '1e2', '-0.00', 'Infinity', '90071992547409.92',
   ]).run(async ({ assert }, amount) => {
     const cached = transactions()
-    const before = [f.account.balanceCents, f.category.balance]
+    const before = [f.account.balanceCents, f.category.balanceCents]
     const response = { ...f.transactionProps(), categories: [{ categoryId: 20, amount }], version: 1 }
     routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: {
       transaction: response, categories: [{ id: 20, balance: '-99.00' }], acctBalances: [{ id: 10, balance: '1.00' }],
@@ -159,7 +162,7 @@ export * from ${source('common/ResponseTypes.ts')};
     assert.strictEqual(cached.account.categories[0].amount, -10)
     assert.strictEqual(cached.category.categories[0].amount, -10)
     assert.strictEqual(cached.account.version, 0)
-    assert.deepEqual([f.account.balanceCents, f.category.balance], before)
+    assert.deepEqual([f.account.balanceCents, f.category.balanceCents], before)
   })
 
   test('Statement reconciliation retains exact API cents through load, PATCH and transaction totals', async ({ assert }) => {
@@ -269,7 +272,7 @@ export * from ${source('common/ResponseTypes.ts')};
     assert.strictEqual(cached.account.amount, -10)
     assert.strictEqual(cached.category.amount, -10)
     assert.strictEqual(f.account.balanceCents, 9000)
-    assert.strictEqual(f.category.balance, -10)
+    assert.strictEqual(f.category.balanceCents, -1000)
   })
 
   test('invalid tax response amounts cannot mutate financial caches').with([
@@ -285,7 +288,7 @@ export * from ${source('common/ResponseTypes.ts')};
     assert.deepEqual(cached.category.taxCategories, [])
     assert.strictEqual(cached.account.version, 0)
     assert.strictEqual(f.account.balanceCents, 9000)
-    assert.strictEqual(f.category.balance, -10)
+    assert.strictEqual(f.category.balanceCents, -1000)
   })
 
   test('Account cents preserve exact totals, nullable Plaid balances and atomic response updates', ({ assert }) => {
@@ -350,6 +353,46 @@ export * from ${source('common/ResponseTypes.ts')};
     assert.throws(render, 'Unsafe monetary cents')
   })
 
+  test('Category and nested Group totals use checked cents without changing membership semantics', ({ assert }) => {
+    f.category.updateBalance({ id: 20, balance: '0.10' })
+    f.other.updateBalance({ id: 21, balance: '0.20' })
+    assert.strictEqual(f.store.categoryTree.budget.childrenBalanceCents(), 30)
+    assert.notProperty(f.category, 'balance')
+    const nested = new state.Group({ id: 101, name: 'Nested', type: state.GroupType.Regular }, f.store)
+    state.runInAction(() => { nested.children = [f.other]; f.store.categoryTree.budget.children = [f.category, nested] })
+    assert.strictEqual(f.store.categoryTree.budget.childrenBalanceCents(), 30)
+    f.category.subcategories = [f.other]
+    assert.strictEqual(f.category.getTotalBalanceCents(), 30)
+    // Group totals historically use the Category's own balance, not its subcategory total.
+    assert.strictEqual(f.store.categoryTree.budget.childrenBalanceCents(), 30)
+    assert.throws(() => f.store.categoryTree.updateBalances([{ id: 20, balance: '1.00' }, { id: 21, balance: 'bad' }]))
+    assert.strictEqual(f.category.balanceCents, 10)
+    assert.strictEqual(f.other.balanceCents, 20)
+    assert.strictEqual(f.category.fundingAmount, 0)
+    f.category.updateBalance({ id: 20, balance: '90071992547409.91' })
+    assert.strictEqual(f.category.balanceCents, Number.MAX_SAFE_INTEGER)
+    assert.throws(() => f.category.getTotalBalanceCents(), 'Unsafe monetary cents')
+    assert.throws(() => f.store.categoryTree.budget.childrenBalanceCents(), 'Unsafe monetary cents')
+    f.category.updateBalance({ id: 20, balance: '-0.20' })
+    assert.strictEqual(f.category.getTotalBalanceCents(), 0)
+    assert.strictEqual(f.store.categoryTree.budget.childrenBalanceCents(), 0)
+  })
+
+  test('Category, System Category and Group displays retain exact decimal amounts', ({ assert }) => {
+    f.category.updateBalance({ id: 20, balance: '-1234.50' })
+    const render = (component, props) => state.renderToStaticMarkup(state.createElement(state.StoreContext.Provider,
+      { value: f.store }, state.createElement(component, props)))
+    const category = render(state.CategoryHeading, { category: f.category, onCategorySelected: () => undefined,
+      selectedCategory: null, level: 0 })
+    assert.include(category, '>-1,234.50<')
+    const system = render(state.SystemCategoryHeading, { category: f.category, onCategorySelected: () => undefined })
+    assert.include(system, '>-1,234.50<')
+    state.runInAction(() => { f.store.uiState.groupState.set(f.store.categoryTree.budget.id, false) })
+    const group = render(state.GroupHeading, { group: f.store.categoryTree.budget,
+      onCategorySelected: () => undefined, onGroupSelected: () => undefined, selectedGroup: null, selectedCategory: null, level: 0 })
+    assert.include(group, '>-1,234.50<')
+  })
+
   test('Account balance updates retain exact cents without changing Category balances', async ({ assert }) => {
     routes.set('get /api/v1/connected-accounts', async () => ({ body: { data: [{ ...f.institutionProps,
       accounts: [{ ...f.accountProps, balance: '-12.34', pendingBalance: '-0.37', plaidBalance: '0.30' }],
@@ -358,13 +401,13 @@ export * from ${source('common/ResponseTypes.ts')};
     assert.strictEqual(f.account.balanceCents, -1234)
     assert.strictEqual(f.account.plaidBalanceCents, 30)
     assert.strictEqual(f.account.pendingBalanceCents, -37)
-    assert.strictEqual(f.category.balance, 0)
+    assert.strictEqual(f.category.balanceCents, 0)
     f.store.accounts.updateBalances([{ id: f.account.id, balance: '12.50' }])
     assert.strictEqual(f.account.balanceCents, 1250)
     f.account.transactions.transactionResponseHandler({ transactions: [], balance: '0.30' }, 0, 20)
     assert.strictEqual(f.account.balanceCents, 30)
     f.category.transactions.transactionResponseHandler({ transactions: [], balance: '2.50' }, 0, 20)
-    assert.strictEqual(f.category.balance, 2.5)
+    assert.strictEqual(f.category.balanceCents, 250)
   })
 
   test('transaction response balances reject noncanonical values before changing state', ({ assert }) => {
@@ -372,10 +415,10 @@ export * from ${source('common/ResponseTypes.ts')};
       assert.throws(() => f.account.transactions.transactionResponseHandler({ transactions: [], balance }, 0, 20))
       assert.strictEqual(f.account.balanceCents, 10000)
       assert.throws(() => f.category.transactions.transactionResponseHandler({ transactions: [], balance }, 0, 20))
-      assert.strictEqual(f.category.balance, 0)
+      assert.strictEqual(f.category.balanceCents, 0)
     }
     f.category.transactions.transactionResponseHandler({ transactions: [], balance: '0.00' }, 0, 20)
-    assert.strictEqual(f.category.balance, 0)
+    assert.strictEqual(f.category.balanceCents, 0)
   })
 
   test('Category CREATE/PATCH encode money while keeping percentages and model values numeric').with(['create', 'patch'])
@@ -593,14 +636,14 @@ export * from ${source('common/ResponseTypes.ts')};
 
   test('Category balance strings decode before updating cached balances', ({ assert }) => {
     f.store.categoryTree.updateBalances([{ id: 20, balance: '-12.34' }])
-    assert.strictEqual(f.category.balance, -12.34)
+    assert.strictEqual(f.category.balanceCents, -1234)
     assert.throws(() => f.store.categoryTree.updateBalances([
       { id: 20, balance: '99.00' }, { id: 21, balance: '1.2' },
     ]))
-    assert.strictEqual(f.category.balance, -12.34)
+    assert.strictEqual(f.category.balanceCents, -1234)
     for (const balance of [1, null, '', '1.2', '-0.00', 'Infinity', '90071992547409.92']) {
       assert.throws(() => f.category.updateBalance({ id: 20, balance }))
-      assert.strictEqual(f.category.balance, -12.34)
+      assert.strictEqual(f.category.balanceCents, -1234)
     }
   })
 
@@ -627,7 +670,7 @@ export * from ${source('common/ResponseTypes.ts')};
     state.runInAction(() => {
       f.account.transactions.setTransactions([props])
       f.category.transactions.setTransactions([props])
-      f.account.balanceCents = parseMoneyCents('90.00'); f.category.balance = -10
+      f.account.balanceCents = parseMoneyCents('90.00'); f.category.balanceCents = parseMoneyCents('-10.00')
     })
     return { account: f.account.transactions.transactions[0], category: f.category.transactions.transactions[0] }
   }
@@ -642,7 +685,7 @@ export * from ${source('common/ResponseTypes.ts')};
     assert.notProperty(f.store, 'balances')
     await f.account.uploadOfx(new File(['OFX'], 'test.ofx'))
     assert.equal(f.account.balanceCents, 9500); assert.equal(f.account.plaidBalanceCents, 150000)
-    assert.equal(f.category.balance, -5)
+    assert.equal(f.category.balanceCents, -500)
     assert.deepEqual(refreshes, ['transactions', 'pending'])
     assert.strictEqual(f.store.accounts.findAccount(10), f.account)
   })
@@ -651,7 +694,7 @@ export * from ${source('common/ResponseTypes.ts')};
     routes.set('fetch /api/v1/account/10/ofx', async () => ({ ok: false, body: {} }))
     await assert.rejects(() => f.account.uploadOfx(new File(['OFX'], 'test.ofx')), /OFX upload failed/)
     assert.equal(f.account.balanceCents, 10000); assert.equal(f.account.plaidBalanceCents, null)
-    assert.equal(f.category.balance, 0); assert.lengthOf(calls, 1)
+    assert.equal(f.category.balanceCents, 0); assert.lengthOf(calls, 1)
   })
 
   test('transaction edit applies returned statement totals', async ({ assert }) => {
@@ -667,7 +710,7 @@ export * from ${source('common/ResponseTypes.ts')};
     const returned = { ...f.transactionProps(amount), version: 1 }
     routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: { transaction: returned, categories: [{ id: 20, balance: amount.toFixed(2) }], acctBalances: [{ id: 10, balance: (100 + amount).toFixed(2) }] } } }))
     await cached.account.updateTransaction({ amount })
-    assert.equal(f.account.balanceCents, 10000 + Math.round(amount * 100)); assert.equal(f.category.balance, amount)
+    assert.equal(f.account.balanceCents, 10000 + Math.round(amount * 100)); assert.equal(f.category.balanceCents, Math.round(amount * 100))
     assert.equal(cached.account.amount, amount)
     assert.equal(cached.category.amount, amount)
     assert.equal(cached.category.version, 1)
@@ -681,14 +724,14 @@ export * from ${source('common/ResponseTypes.ts')};
       assert.deepEqual(payload.taxCategories, encodeTaxAttributions(submitted))
       return { body: { data: { transaction: returned, categories: [], acctBalances: [] } } }
     })
-    const balances = [f.account.balanceCents, f.category.balance]
+    const balances = [f.account.balanceCents, f.category.balanceCents]
     await cached.account.updateTransaction({ taxCategories: submitted })
     for (const transaction of [cached.account, cached.category]) {
       assert.deepEqual(transaction.taxCategories.map(tax => tax.amount), [12.35, -0.12])
       assert.isTrue(transaction.taxCategories.every(tax => typeof tax.amount === 'number'))
       assert.deepEqual(transaction.categories.map(category => category.amount), [-10])
     }
-    assert.deepEqual([f.account.balanceCents, f.category.balance], balances)
+    assert.deepEqual([f.account.balanceCents, f.category.balanceCents], balances)
   })
 
   test('statement editing refreshes authoritative current balance for balance-tracked accounts', async ({ assert }) => {
@@ -717,7 +760,7 @@ export * from ${source('common/ResponseTypes.ts')};
     routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: { transaction: returned, categories: [{ id: 20, balance: '0.00' }, { id: 21, balance: '-10.00' }], acctBalances: [{ id: 10, balance: '90.00' }] } } }))
     await cached.account.updateTransaction({ categories: returned.categories.map(category => ({ ...category, amount: Number(category.amount) })) })
     assert.lengthOf(f.category.transactions.transactions, 0)
-    assert.equal(f.category.balance, 0); assert.equal(f.other.balance, -10)
+    assert.equal(f.category.balanceCents, 0); assert.equal(f.other.balanceCents, -1000)
     assert.equal(cached.account.categories[0].categoryId, 21)
   })
 
@@ -738,7 +781,7 @@ export * from ${source('common/ResponseTypes.ts')};
     await cached.account.delete()
     assert.lengthOf(f.account.transactions.transactions, 0)
     assert.lengthOf(f.category.transactions.transactions, 0)
-    assert.equal(f.account.balanceCents, 10000); assert.equal(f.category.balance, 0)
+    assert.equal(f.account.balanceCents, 10000); assert.equal(f.category.balanceCents, 0)
   })
 
   test('transfer CREATE and PATCH encode money while keeping percentage rules numeric').with([
@@ -768,7 +811,7 @@ export * from ${source('common/ResponseTypes.ts')};
     const props = { ...f.transactionProps(), type: state.TransactionType.FUNDING_TRANSACTION, accountTransaction: undefined, categories: [{ categoryId: 20, amount: (-amount).toFixed(2) }, { categoryId: 21, amount: amount.toFixed(2) }] }
     state.runInAction(() => {
       f.category.transactions.setTransactions([props]); f.other.transactions.setTransactions([props])
-      f.category.balance = -amount; f.other.balance = amount
+      f.category.balanceCents = parseMoneyCents((-amount).toFixed(2)); f.other.balanceCents = parseMoneyCents(amount.toFixed(2))
     })
     const cached = { source: f.category.transactions.transactions[0], destination: f.other.transactions.transactions[0] }
     const returned = { ...props, date: '2025-02-20', version: 2 }
@@ -776,17 +819,17 @@ export * from ${source('common/ResponseTypes.ts')};
     await cached.source.updateCategoryTransfer({ date: returned.date, categories: returned.categories.map(category => ({ ...category, amount: Number(category.amount) })) })
     assert.equal(cached.source.date.toISODate(), returned.date)
     assert.equal(cached.destination.version, 2)
-    assert.equal(f.category.balance, -amount); assert.equal(f.other.balance, amount)
-    assert.equal(f.store.categoryTree.budget.childrenBalance(), 0)
+    assert.equal(f.category.balanceCents, -Math.round(amount * 100)); assert.equal(f.other.balanceCents, Math.round(amount * 100))
+    assert.equal(f.store.categoryTree.budget.childrenBalanceCents(), 0)
   })
 
   test('successful transfer creation applies authoritative source/destination balances').with([12.25, -12.25]).run(async ({ assert }, amount) => {
     const props = { ...f.transactionProps(), type: state.TransactionType.FUNDING_TRANSACTION, accountTransaction: undefined, categories: [{ categoryId: 20, amount: (-amount).toFixed(2) }, { categoryId: 21, amount: amount.toFixed(2) }] }
     routes.set('post /api/v1/category-transfer', async () => ({ body: { data: { transaction: props, balances: [{ id: 20, balance: (-amount).toFixed(2) }, { id: 21, balance: amount.toFixed(2) }] } } }))
     await f.store.register.addCategoryTransfer({ date: props.date, categories: props.categories.map(category => ({ ...category, amount: Number(category.amount) })) }, props.type)
-    assert.equal(f.category.balance, -amount); assert.equal(f.other.balance, amount)
+    assert.equal(f.category.balanceCents, -Math.round(amount * 100)); assert.equal(f.other.balanceCents, Math.round(amount * 100))
     assert.equal(f.category.transactions.transactions[0].id, 40)
-    assert.equal(f.store.categoryTree.budget.childrenBalance(), 0)
+    assert.equal(f.store.categoryTree.budget.childrenBalanceCents(), 0)
   })
 
   test('Transaction CREATE and PATCH encode monetary inputs without changing numeric editor values').with([
@@ -831,7 +874,7 @@ export * from ${source('common/ResponseTypes.ts')};
   test('account creation applies returned balances and inserts transaction', async ({ assert }) => {
     routes.set('post /api/v1/account/10/transactions', async () => ({ body: { transaction: f.transactionProps(), categories: [{ id: 20, balance: '-10.00' }], acctBalances: [{ id: 10, balance: '90.00' }] } }))
     await f.account.addTransaction({ date: '2025-02-10', amount: -10, name: 'Purchase', categories: [{ categoryId: 20, amount: -10 }] })
-    assert.equal(f.account.balanceCents, 9000); assert.equal(f.category.balance, -10)
+    assert.equal(f.account.balanceCents, 9000); assert.equal(f.category.balanceCents, -1000)
     assert.equal(f.account.transactions.transactions[0].id, 40)
   })
 
@@ -886,7 +929,7 @@ export * from ${source('common/ResponseTypes.ts')};
   test('start-date success refreshes shared account/category state without replacing objects', async ({ assert }) => {
     const cached = transactions()
     const funding = f.category
-    state.runInAction(() => { funding.balance = 85.85; f.account.balanceCents = parseMoneyCents('100.00') })
+    state.runInAction(() => { funding.balanceCents = parseMoneyCents('85.85'); f.account.balanceCents = parseMoneyCents('100.00') })
     routes.set('patch /api/v1/account/10', async () => ({ body: {} }))
     routes.set('get /api/v1/connected-accounts', async () => ({ body: { data: [{ ...f.institutionProps, accounts: [{ ...f.accountProps, startDate: '2025-02-01', balance: '100.00' }] }] } }))
     routes.set('get /api/v1/groups', async () => ({ body: { data: { categories: [{ id: 20, balance: '92.95' }] } } }))
@@ -896,7 +939,7 @@ export * from ${source('common/ResponseTypes.ts')};
     await f.account.setSettings({ startDate })
     assert.equal(f.account.startDate.toISODate(), '2025-02-01')
     assert.equal(f.account.balanceCents, 10000)
-    assert.equal(funding.balance, 92.95)
+    assert.equal(funding.balanceCents, 9295)
     assert.equal(cached.account.statementId, null)
     assert.equal(cached.category.statementId, null)
     assert.isTrue(refreshed)
@@ -910,7 +953,7 @@ export * from ${source('common/ResponseTypes.ts')};
     await assert.rejects(() => f.account.setSettings({ startDate: f.statement.startDate }))
     assert.equal(f.account.startDate, before)
     assert.equal(f.account.balanceCents, 10000)
-    assert.equal(f.category.balance, 0)
+    assert.equal(f.category.balanceCents, 0)
   })
 
   test('valid balance-tracked start-date change does not refresh transaction or category stores', async ({ assert }) => {
@@ -928,7 +971,7 @@ export * from ${source('common/ResponseTypes.ts')};
     await assert.rejects(() => f.account.setSettings({ startDate: f.statement.startDate }))
     assert.equal(f.account.startDate.toISODate(), '2025-02-01')
     assert.equal(f.account.balanceCents, 10000)
-    assert.equal(f.category.balance, 0)
+    assert.equal(f.category.balanceCents, 0)
   })
 
   function accountsResponse(balance) {
@@ -980,7 +1023,7 @@ export * from ${source('common/ResponseTypes.ts')};
     routes.set('patch /api/v1/transaction/40', async () => ({ ok: false, body: { errors: [{ message: 'Rejected' }] } }))
     assert.isArray(await cached.account.updateTransaction({ amount: -75 }))
     assert.equal(cached.account.amount, -10); assert.equal(cached.category.amount, -10)
-    assert.equal(f.account.balanceCents, 9000); assert.equal(f.category.balance, -10)
+    assert.equal(f.account.balanceCents, 9000); assert.equal(f.category.balanceCents, -1000)
   })
 
   test('rejected statement mutation leaves existing state unchanged', async ({ assert }) => {
@@ -1051,24 +1094,24 @@ export * from ${source('common/ResponseTypes.ts')};
     routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: { transaction: { ...f.transactionProps(), date: 'invalid' }, categories: [{ id: 20, balance: '-75.00' }], acctBalances: [{ id: 10, balance: '25.00' }] } } }))
     await assert.rejects(() => cached.account.updateTransaction({ amount: -75 }))
     assert.equal(cached.account.amount, -10); assert.equal(cached.category.amount, -10)
-    assert.equal(f.account.balanceCents, 9000); assert.equal(f.category.balance, -10)
+    assert.equal(f.account.balanceCents, 9000); assert.equal(f.category.balanceCents, -1000)
   })
 
   test('HTTP-rejected transfer creation cannot apply a success-shaped body', async ({ assert }) => {
     routes.set('post /api/v1/category-transfer', async () => ({ ok: false, body: { data: { transaction: f.transactionProps(), balances: [{ id: 20, balance: '-75.00' }] } } }))
     await assert.rejects(() => f.store.register.addCategoryTransfer({ date: '2025-02-10', categories: [] }, state.TransactionType.FUNDING_TRANSACTION))
-    assert.equal(f.category.balance, 0); assert.lengthOf(f.category.transactions.transactions, 0)
+    assert.equal(f.category.balanceCents, 0); assert.lengthOf(f.category.transactions.transactions, 0)
   })
 
   test('same-budget category movement preserves identity and changes computed group balances', async ({ assert }) => {
     const destination = new state.Group({ id: 2, name: 'Destination', type: state.GroupType.Regular, parentGroupId: -1 }, f.store)
-    state.runInAction(() => { f.category.balance = 12.25; f.store.categoryTree.budget.insertChild(destination) })
+    state.runInAction(() => { f.category.balanceCents = parseMoneyCents('12.25'); f.store.categoryTree.budget.insertChild(destination) })
     routes.set('patch /api/v1/groups/2/categories/20', async () => ({ body: { data: { id: 20, name: f.category.name, type: f.category.type, suspended: false, fundingAmount: '0.00', includeFundingTransfers: true, recurrence: 1, goalDate: null, fundingCategories: [], hidden: false } } }))
     await f.category.update({ group: destination, name: f.category.name, fundingCategories: [] })
     assert.strictEqual(destination.children[0], f.category)
     assert.strictEqual(f.category.group, destination)
-    assert.equal(destination.childrenBalance(), 12.25)
-    assert.equal(f.store.categoryTree.budget.childrenBalance(), 12.25)
+    assert.equal(destination.childrenBalanceCents(), 1225)
+    assert.equal(f.store.categoryTree.budget.childrenBalanceCents(), 1225)
   })
 
   test('combined statement date change and reconciliation uses server-returned membership', async ({ assert }) => {
@@ -1127,19 +1170,19 @@ export * from ${source('common/ResponseTypes.ts')};
     const props = { ...f.transactionProps(), type: state.TransactionType.FUNDING_TRANSACTION, accountTransaction: undefined, categories: [{ categoryId: 20, amount: (-amount).toFixed(2) }, { categoryId: 21, amount: amount.toFixed(2) }] }
     state.runInAction(() => {
       f.category.transactions.setTransactions([props]); f.other.transactions.setTransactions([props])
-      f.category.balance = -amount; f.other.balance = amount
+      f.category.balanceCents = parseMoneyCents((-amount).toFixed(2)); f.other.balanceCents = parseMoneyCents(amount.toFixed(2))
     })
     routes.set('delete /api/v1/transaction/40', async () => ({ body: { data: { categories: [{ id: 20, balance: '0.00' }, { id: 21, balance: '0.00' }], acctBalances: [] } } }))
     await f.category.transactions.transactions[0].delete()
     assert.lengthOf(f.category.transactions.transactions, 0); assert.lengthOf(f.other.transactions.transactions, 0)
-    assert.equal(f.category.balance, 0); assert.equal(f.other.balance, 0)
+    assert.equal(f.category.balanceCents, 0); assert.equal(f.other.balanceCents, 0)
   })
 
   test('malformed deletion success does not partially apply returned financial balances', async ({ assert }) => {
     const cached = transactions()
     routes.set('delete /api/v1/transaction/40', async () => ({ body: { data: { categories: [{ id: 20, balance: '0.00' }] } } }))
     await assert.rejects(() => cached.account.delete())
-    assert.equal(f.category.balance, -10); assert.equal(f.account.balanceCents, 9000)
+    assert.equal(f.category.balanceCents, -1000); assert.equal(f.account.balanceCents, 9000)
     assert.lengthOf(f.category.transactions.transactions, 1); assert.lengthOf(f.account.transactions.transactions, 1)
   })
 
@@ -1179,13 +1222,13 @@ export * from ${source('common/ResponseTypes.ts')};
     const submit = () => f.store.register.addCategoryTransfer({ date: '2025-03-01', categories: rows }, props.type)
     if (rejected) {
       await assert.rejects(submit)
-      assert.equal(f.category.balance, 0)
-      assert.equal(f.other.balance, 0)
+      assert.equal(f.category.balanceCents, 0)
+      assert.equal(f.other.balanceCents, 0)
       assert.lengthOf(f.category.transactions.transactions, 0)
     } else {
       await submit()
-      assert.equal(f.category.balance, -2)
-      assert.equal(f.other.balance, 2)
+      assert.equal(f.category.balanceCents, -200)
+      assert.equal(f.other.balanceCents, 200)
       assert.deepEqual(f.category.transactions.transactions[0].categories, rows.map((row, id) => ({
         id, comment: undefined, funder: row.funder, ...row,
       })))
@@ -1197,7 +1240,7 @@ export * from ${source('common/ResponseTypes.ts')};
       categories: [{ categoryId: 20, amount: '-2.00' }, { categoryId: 21, amount: '2.00' }] }
     state.runInAction(() => {
       f.category.transactions.setTransactions([props]); f.other.transactions.setTransactions([props])
-      f.category.balance = -2; f.other.balance = 2
+      f.category.balanceCents = parseMoneyCents('-2.00'); f.other.balanceCents = parseMoneyCents('2.00')
     })
     const cached = f.category.transactions.transactions[0]
     const before = { date: cached.date.toISODate(), categories: cached.categories.map((row) => ({ ...row })) }
@@ -1208,7 +1251,7 @@ export * from ${source('common/ResponseTypes.ts')};
     await assert.rejects(() => cached.updateCategoryTransfer({ date: '2025-04-01', categories: [] }))
     assert.equal(cached.date.toISODate(), before.date)
     assert.deepEqual(cached.categories, before.categories)
-    assert.equal(f.category.balance, -2); assert.equal(f.other.balance, 2)
+    assert.equal(f.category.balanceCents, -200); assert.equal(f.other.balanceCents, 200)
     assert.equal(f.other.transactions.transactions[0].date.toISODate(), before.date)
   })
 

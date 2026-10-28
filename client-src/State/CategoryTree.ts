@@ -1,4 +1,4 @@
-import { decodeAmount } from '../monetary';
+import { parseMoneyCents } from '../../common/moneyCents';
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 import Category from './Category';
@@ -206,7 +206,7 @@ class CategoryTree implements CategoryTreeInterface {
       const { data } = await response.body();
 
       if (data) {
-        data.categories.forEach((category) => decodeAmount(category.balance));
+        data.categories.forEach((category) => parseMoneyCents(category.balance));
         runInAction(() => {
           // Find the 'No Group', 'System' and 'Bills' groups first
           const noGroup = data.groups.find((g) => g.type === GroupType.NoGroup)
@@ -410,7 +410,7 @@ class CategoryTree implements CategoryTreeInterface {
   }
 
   updateBalances(balances: CategoryBalanceProps[]): void {
-    balances.forEach((row) => decodeAmount(row.balance));
+    balances.forEach((row) => parseMoneyCents(row.balance));
     runInAction(() => {
        
       for (const catBalance of balances) {

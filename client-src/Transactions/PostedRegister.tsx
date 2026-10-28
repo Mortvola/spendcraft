@@ -69,7 +69,7 @@ const PostedRegister: React.FC<PropsType> = observer(({
     }
 
     const accountSign = account?.sign ?? 1
-    let runningBalance = category?.balance ?? Number(formatMoneyCents(account?.balanceCents ?? parseMoneyCents('0.00'))) * accountSign;
+    let runningBalance = category ? Number(formatMoneyCents(category.balanceCents)) : Number(formatMoneyCents(account?.balanceCents ?? parseMoneyCents('0.00'))) * accountSign;
 
     return trxContainer.transactions.map((transaction) => {
       let { amount } = transaction;

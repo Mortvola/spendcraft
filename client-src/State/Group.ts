@@ -1,3 +1,4 @@
+import { parseMoneyCents, addMoneyCents, type MoneyCents } from '../../common/moneyCents';
 import { encodeAmount, encodeFundingRules } from '../monetary';
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
@@ -47,14 +48,14 @@ class Group implements GroupInterface {
     this.store = store;
   }
 
-  childrenBalance(): number {
-    let balance = 0;
+  childrenBalanceCents(): MoneyCents {
+    let balance = parseMoneyCents('0.00');
 
     for (const child of this.children) {
       if (isCategory(child)) {
-        balance += child.balance
+        balance = addMoneyCents(balance, child.balanceCents)
       } else {
-        balance += child.childrenBalance()
+        balance = addMoneyCents(balance, child.childrenBalanceCents())
       }
     }
   

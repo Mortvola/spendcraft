@@ -1,3 +1,4 @@
+import { parseMoneyCents, addMoneyCents, type MoneyCents } from '../../common/moneyCents';
 import { decodeAmount, decodeFundingRules, encodeAmount, encodeFundingRules } from '../monetary';
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
@@ -29,7 +30,7 @@ class Category implements CategoryInterface {
   subcategories: Category[] = [];
 
   @observable
-  accessor balance = 0;
+  accessor balanceCents = parseMoneyCents('0.00');
 
   @observable
   accessor suspended = false;
@@ -64,7 +65,7 @@ class Category implements CategoryInterface {
     this.id = props.id;
     this.name = props.name;
     this.type = props.type;
-    this.balance = decodeAmount(props.balance);
+    this.balanceCents = parseMoneyCents(props.balance);
     this.suspended = props.suspended;
     this.fundingAmount = decodeAmount(props.fundingAmount);
     this.includeFundingTransfers = props.includeFundingTransfers;
@@ -79,7 +80,7 @@ class Category implements CategoryInterface {
       store,
       `/api/v1/category/${props.id}/transactions?pending=2`,
       (balance: string, count?: number) => {
-        this.balance = decodeAmount(balance);
+        this.balanceCents = parseMoneyCents(balance);
 
         if (this.type === CategoryType.Unassigned) {
           if (navigator.setAppBadge) {
@@ -107,9 +108,9 @@ class Category implements CategoryInterface {
     return this.group.getFundingPool()
   }
 
-  getTotalBalance(): number {
-    const subcatSum = this.subcategories.reduce((prev, current) => prev + current.balance, 0)
-    return this.balance + subcatSum;
+  getTotalBalanceCents(): MoneyCents {
+    const subcatSum = this.subcategories.reduce((prev, current) => addMoneyCents(prev, current.balanceCents), parseMoneyCents('0.00'))
+    return addMoneyCents(this.balanceCents, subcatSum);
   }
 
   async update(
@@ -184,7 +185,7 @@ class Category implements CategoryInterface {
   }
 
   updateBalance(balance: CategoryBalanceProps) {
-    this.balance = decodeAmount(balance.balance);
+    this.balanceCents = parseMoneyCents(balance.balance);
 
     if (this.type === CategoryType.Unassigned) {
       if (navigator.setAppBadge) {
@@ -248,7 +249,7 @@ export const isCategory = (r: unknown): r is Category => (
   (r as Category)?.id !== undefined
   && (r as Category)?.name !== undefined
   && (r as Category)?.type !== undefined
-  && (r as Category)?.balance !== undefined
+  && (r as Category)?.balanceCents !== undefined
 );
 
 export default Category;

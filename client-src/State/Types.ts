@@ -43,7 +43,7 @@ export interface GroupInterface {
 
   group: GroupInterface | null;
 
-  childrenBalance(): number;
+  childrenBalanceCents(): MoneyCents;
 
   getFundingPool(): CategoryInterface;
 
@@ -207,7 +207,7 @@ export interface CategoryInterface {
 
   subcategories: CategoryInterface[];
 
-  balance: number;
+  balanceCents: MoneyCents;
 
   suspended: boolean;
 
@@ -236,7 +236,7 @@ export interface CategoryInterface {
 
   store: StoreInterface;
 
-  getTotalBalance(): number;
+  getTotalBalanceCents(): MoneyCents;
 
   getFundingPool(): CategoryInterface;
 

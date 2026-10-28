@@ -1,3 +1,4 @@
+import { formatMoneyCents } from '../../common/moneyCents';
 import { decodeAmount, decodeFundingRules } from '../monetary';
 import { validateFundingPercentages } from '../../common/fundingPercentages'
 import React from 'react';
@@ -321,7 +322,7 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
                 ({ form: { values } }: FieldProps<FundingType[]>) => (
                   <Amount
                     className="form-control"
-                    amount={fundingPoolCat.balance
+                    amount={Number(formatMoneyCents(fundingPoolCat.balanceCents))
                       + fundingCategoryEffect(calculateFunding(values.categories, fundingPoolCat.id), fundingPoolCat.id)
                       - fundingCategoryEffect(transaction?.categories ?? [], fundingPoolCat.id)}
                   />

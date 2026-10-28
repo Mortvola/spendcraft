@@ -1,6 +1,6 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
-import Amount from '../../Amount';
+import MoneyCentsAmount from '../../MoneyCentsAmount';
 import EditButton from './EditButton';
 import { CategoryInterface } from '../../State/Types';
 import { CategoryType } from '../../../common/ResponseTypes';
@@ -65,7 +65,7 @@ const Category: React.FC<PropsType> = observer(({
           }
           <div className={nameClassName}>{category.name}</div>
         </div>
-        <Amount className={styles.catListAmt} amount={category.balance} />
+        <MoneyCentsAmount className={styles.catListAmt} amount={category.balanceCents} />
       </div>
       {
         category.subcategories.length > 0
@@ -86,9 +86,9 @@ const Category: React.FC<PropsType> = observer(({
               }
               <div className="cat-list-cat" style={{ marginLeft: indent * (level + 1) }}>
                 <div style={{ justifySelf: 'end', paddingRight: '6px' }}>Total</div>
-                <Amount
+                <MoneyCentsAmount
                   className={styles.catListAmt}
-                  amount={category.getTotalBalance()}
+                  amount={category.getTotalBalanceCents()}
                   style={{ borderTop: 'thin solid white ' }}
                 />
               </div>
