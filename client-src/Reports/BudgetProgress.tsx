@@ -162,7 +162,7 @@ const BudgetProgress: React.FC = observer(() => {
                     <RegisterTransactions trxContainer={transactions}>
                       {
                         transactions.transactions.map((t) => (
-                          <Transaction key={t.id} transaction={t} amount={t.amount} runningBalanceCents={parseMoneyCents('0.00')} />
+                          <Transaction key={t.id} transaction={t} amount={t.amount} amountCents={t.amountCents} runningBalanceCents={parseMoneyCents('0.00')} />
                         ))
                       }
                     </RegisterTransactions>

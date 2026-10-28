@@ -102,6 +102,7 @@ const PostedRegister: React.FC<PropsType> = observer(({
           transaction={transaction}
           className={transactionClassName}
           amount={amount}
+          amountCents={amountCents}
           runningBalanceCents={runningBalance}
           account={account}
           onClick={handleClick}

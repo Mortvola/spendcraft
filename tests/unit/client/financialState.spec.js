@@ -43,6 +43,7 @@ export { default as PendingRegister } from ${source('client-src/Transactions/Pen
 export { default as Transaction } from ${source('client-src/State/Transaction.ts')};
 export { decodeAmount, encodeAmount } from ${source('client-src/monetary.ts')};
 export { worksheet2_1_2026 } from ${source('client-src/State/Taxes/Estimated.ts')};
+export { default as TransactionRow } from ${source('client-src/Transactions/Transaction.tsx')};
 export { default as LoanTransaction } from ${source('client-src/State/LoanTransaction.ts')};
 export { default as Bill } from ${source('client-src/State/Bill.ts')};
 export { default as Statement } from ${source('client-src/State/Statement.ts')};
@@ -540,12 +541,15 @@ export * from ${source('common/ResponseTypes.ts')};
     }
   })
 
-  test('Loan transaction responses decode monetary strings before interest calculations', ({ assert }) => {
+  test('Loan transaction responses retain cents before interest calculations', ({ assert }) => {
     const props = { id: 1, loanId: 2, principle: '10.25', transactionCategory: { id: 3, amount: '-12.50',
       transaction: { id: 4, date: '2026-10-01', accountTransaction: { name: 'Loan payment' } } } }
     const transaction = new state.LoanTransaction(props)
     assert.strictEqual(transaction.principle, 10.25)
     assert.strictEqual(transaction.interest, 2.25)
+    assert.strictEqual(transaction.paymentCents, 1250)
+    assert.strictEqual(transaction.principleCents, 1025)
+    assert.strictEqual(transaction.interestCents, 225)
     assert.strictEqual(transaction.transactionId, 4)
     assert.strictEqual(transaction.transactionCategoryId, 3)
     assert.strictEqual(props.principle, '10.25')
@@ -553,6 +557,40 @@ export * from ${source('common/ResponseTypes.ts')};
       assert.throws(() => new state.LoanTransaction({ ...props, principle: value }))
       assert.throws(() => new state.LoanTransaction({ ...props, transactionCategory: { ...props.transactionCategory, amount: value } }))
     }
+  })
+
+  test('Loan payment breakdowns retain exact subtraction and signs').with([
+    ['-0.30', '0.10', 30, 20], ['0.30', '-0.10', -30, -20],
+    ['0.00', '0.00', 0, 0], ['-0.10', '0.30', 10, -20],
+    ['-90071992547409.91', '0.01', Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER - 1],
+  ]).run(({ assert }, [categoryAmount, principal, payment, interest]) => {
+    const props = { id: 1, principle: principal, transactionCategory: { id: 3, amount: categoryAmount,
+      transaction: { id: 4, date: '2026-10-01', accountTransaction: { name: 'Loan payment' } } } }
+    const transaction = new state.LoanTransaction(props)
+    assert.strictEqual(transaction.paymentCents, payment)
+    assert.strictEqual(transaction.interestCents, interest)
+    assert.throws(() => new state.LoanTransaction({ ...props, principle: '90071992547409.92' }))
+    assert.throws(() => new state.LoanTransaction({ ...props, principle: '-90071992547409.91',
+      transactionCategory: { ...props.transactionCategory, amount: '-0.01' } }))
+  })
+
+  test('Loan register payment, principal and interest displays use retained cents', ({ assert }) => {
+    const props = f.transactionProps()
+    props.accountTransaction.amount = '90071992547409.91'
+    props.accountTransaction.principle = '0.01'
+    const transaction = new state.Transaction(f.store, props)
+    const render = () => state.renderToStaticMarkup(state.createElement(state.StoreContext.Provider, { value: f.store },
+      state.createElement(state.TransactionRow, { transaction, account: { type: state.AccountType.Loan, sign: -1 },
+        amount: 0.01, amountCents: 1, runningBalanceCents: 0 })))
+    const html = render()
+    assert.include(html, '>90,071,992,547,409.91</div>')
+    assert.include(html, '>90,071,992,547,409.90</div>')
+    assert.include(html, '>0.01</div>')
+    transaction.refresh({ ...props, accountTransaction: { ...props.accountTransaction, amount: '0.30', principle: null } })
+    assert.include(render(), '>0.30</div>')
+    assert.include(render(), '>0.00</div>')
+    transaction.refresh({ ...props, type: state.TransactionType.STARTING_BALANCE })
+    assert.notInclude(render(), '>90,071,992,547,409.90</div>')
   })
 
   test('report state decodes monetary cells without changing counts, dates or response data', async ({ assert }) => {

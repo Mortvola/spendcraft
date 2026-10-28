@@ -2,8 +2,8 @@ import React from 'react';
 import { observer } from 'mobx-react-lite';
 import Amount from '../Amount';
 import MoneyCentsAmount from '../MoneyCentsAmount';
-import type { MoneyCents } from '../../common/moneyCents';
-import { AccountInterface, BaseTransactionInterface } from '../State/Types';
+import { parseMoneyCents, subtractMoneyCents, type MoneyCents } from '../../common/moneyCents';
+import { AccountInterface, BaseTransactionInterface, TransactionInterface } from '../State/Types';
 import styles from './Transactions.module.scss';
 import TransactionAccount from './TransactionAccount';
 import { AccountType, TransactionType } from '../../common/ResponseTypes';
@@ -13,9 +13,10 @@ import Date from '../Date';
 import { ArrowRightLeft } from 'lucide-react';
 
 interface PropsType {
-  transaction: BaseTransactionInterface,
+  transaction: TransactionInterface,
   className?: string,
   amount: number,
+  amountCents: MoneyCents,
   runningBalanceCents: MoneyCents,
   account?: AccountInterface | null,
   onClick?: (transaction: BaseTransactionInterface) => void,
@@ -25,6 +26,7 @@ const Transaction: React.FC<PropsType> = observer(({
   transaction,
   className,
   amount,
+  amountCents,
   runningBalanceCents,
   account,
   onClick,
@@ -46,20 +48,22 @@ const Transaction: React.FC<PropsType> = observer(({
       return <div className={`${styles.trxAmount} currency`} />;
     }
 
-    return <Amount className={`${styles.trxAmount} currency`} amount={transaction.amount} />
+    return account?.type === AccountType.Loan
+      ? <MoneyCentsAmount className={`${styles.trxAmount} currency`} amount={transaction.amountCents} />
+      : <Amount className={`${styles.trxAmount} currency`} amount={transaction.amount} />
   }
 
   const loanFields = () => (
     account?.type === AccountType.Loan
       ? (
         <div className={`${className ?? ''} ${styles.transaction}`} onClick={handleClick}>
-          <Amount className="currency" amount={transaction.amount} />
+          <MoneyCentsAmount className="currency" amount={transaction.amountCents} />
           {
             transaction.type !== TransactionType.STARTING_BALANCE
               ? (
                 <>
-                  <Amount className="currency" amount={transaction.amount - amount} />
-                  <Amount className="currency" amount={amount} />
+                  <MoneyCentsAmount className="currency" amount={subtractMoneyCents(transaction.amountCents, transaction.principleCents ?? parseMoneyCents('0.00'))} />
+                  <MoneyCentsAmount className="currency" amount={transaction.principleCents ?? parseMoneyCents('0.00')} />
                 </>
               )
               : (
@@ -86,7 +90,10 @@ const Transaction: React.FC<PropsType> = observer(({
       }
       <Date className={styles.date} date={transaction.date} />
       <div className={styles.name}>{transaction.name}</div>
-      <Amount className={`${styles.amount} currency ${reverseClassName}`} amount={amount * accountSign} />
+      {account?.type === AccountType.Loan
+        ? <MoneyCentsAmount className={`${styles.amount} currency ${reverseClassName}`} amount={accountSign === -1
+          ? subtractMoneyCents(parseMoneyCents('0.00'), amountCents) : amountCents} />
+        : <Amount className={`${styles.amount} currency ${reverseClassName}`} amount={amount * accountSign} />}
       <MoneyCentsAmount className={`${styles.runningBalance} currency ${reverseClassName}`} amount={runningBalanceCents} />
       <TransactionAccount transaction={transaction} />
       {transactionAmount()}

@@ -37,8 +37,8 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
     date: string,
     name: string,
     amount: string | number,
-    principle?: number,
-    interest?: number,
+    principle?: string | number,
+    interest?: string,
     comment: string,
     splits: CategorySplitInput[],
     taxCategories: TransactionTaxInput[],
@@ -49,6 +49,10 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
   const zero = parseMoneyCents('0.00');
   const absoluteCents = (amount: MoneyCents) => amount < 0 ? subtractMoneyCents(zero, amount) : amount;
   const transactionAmountCents = (value: string | number) => inputMoneyCents(value, account?.sign ?? 1);
+
+  const loanInterestCents = (values: ValueType) => subtractMoneyCents(
+    transactionAmountCents(values.amount), inputMoneyCents(values.principle ?? '0.00'),
+  );
 
   const computeRemaining = (categories: CategorySplitInput[], total: string | number): MoneyCents => (
     // No explicit splits means the whole transaction belongs to the unassigned category.
@@ -73,13 +77,17 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
     catch {
       errors.splits = 'Enter valid, safe category amounts.';
     }
+    if (account?.type === AccountType.Loan) {
+      try { loanInterestCents(values); }
+      catch { errors.principle = 'Enter a valid, safe principal amount.'; }
+    }
     return errors;
   };
 
   const handleSubmit = async (values: ValueType, { setErrors }: FormikHelpers<ValueType>) => {
     const amountCents = transactionAmountCents(values.amount);
     const amount = decodeAmount(formatMoneyCents(amountCents));
-    const principle = typeof values.principle === 'string' ? parseFloat(values.principle) : values.principle;
+    const principle = values.principle === undefined ? undefined : decodeAmount(formatMoneyCents(inputMoneyCents(values.principle)));
 
     // Convert only at the existing numeric state-method boundary, after cent arithmetic.
     const categories = values.splits.map((split) => {
@@ -308,8 +316,9 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
         name: transaction ? transaction.name : '',
         amount: transaction ? formatMoneyCents((account?.sign ?? 1) === -1
           ? subtractMoneyCents(zero, transaction.amountCents) : transaction.amountCents) : '0.00',
-        principle: transaction ? (transaction.principle ?? 0) : 0,
-        interest: transaction ? (transaction.amount - (transaction.principle ?? 0)) : 0,
+        principle: formatMoneyCents(transaction?.principleCents ?? zero),
+        interest: formatMoneyCents(transaction
+          ? subtractMoneyCents(transaction.amountCents, transaction.principleCents ?? zero) : zero),
         comment: transaction && transaction.comment ? transaction.comment : '',
         splits,
         taxCategories,
@@ -377,16 +386,21 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
                 <FormField
                   name="principle"
                   label="Principle:"
-                  as={AmountInput}
-                  // onBlur={() => console.log('principle blur')}
-                />
+                >
+                  {({ field }: FieldProps<string | number, ValueType>) => (
+                    <AmountInput exactCents className="form-control" {...field} />
+                  )}
+                </FormField>
                 <FormField
                   name="interest"
                   label="Interest:"
-                  as={AmountInput}
-                  // onBlur={() => console.log('interest blur')}
                   readOnly
-                />
+                >
+                  {({ form: { values } }: FieldProps<string, ValueType>) => {
+                    try { return <MoneyCentsAmount className="form-control" amount={loanInterestCents(values)} />; }
+                    catch { return <div className="form-control">Invalid amount</div>; }
+                  }}
+                </FormField>
               </>
             )
             : null

@@ -1,4 +1,4 @@
-import { decodeAmount } from '../monetary';
+import { formatMoneyCents, parseMoneyCents, subtractMoneyCents, type MoneyCents } from '../../common/moneyCents';
 import { LoanTransactionProps } from '../../common/ResponseTypes';
 
 class LoanTransaction {
@@ -8,9 +8,16 @@ class LoanTransaction {
 
   name: string;
 
-  principle: number;
+  paymentCents: MoneyCents;
 
-  interest: number;
+  principleCents: MoneyCents;
+
+  interestCents: MoneyCents;
+
+  // Keep the numeric properties available to existing consumers.
+  get principle(): number { return Number(formatMoneyCents(this.principleCents)); }
+
+  get interest(): number { return Number(formatMoneyCents(this.interestCents)); }
 
   transactionId: number;
 
@@ -20,8 +27,9 @@ class LoanTransaction {
     this.id = props.id;
     this.date = props.transactionCategory.transaction.date;
     this.name = props.transactionCategory.transaction.accountTransaction.name;
-    this.principle = decodeAmount(props.principle);
-    this.interest = -decodeAmount(props.transactionCategory.amount) - this.principle;
+    this.paymentCents = subtractMoneyCents(parseMoneyCents('0.00'), parseMoneyCents(props.transactionCategory.amount));
+    this.principleCents = parseMoneyCents(props.principle);
+    this.interestCents = subtractMoneyCents(this.paymentCents, this.principleCents);
     this.transactionCategoryId = props.transactionCategory.id;
     this.transactionId = props.transactionCategory.transaction.id;
   }

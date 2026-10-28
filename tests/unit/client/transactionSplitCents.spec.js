@@ -137,6 +137,37 @@ test.group('Transaction split cents', group => {
     assert.lengthOf(callback, 2)
   })
 
+  test('Loan dialog retains principal cents and derives interest from current inputs').with([1, -1])
+    .run(async ({ assert }, sign) => {
+      let saved
+      const transaction = { date: { toISODate: () => '2025-01-01' }, amountCents: 30, principleCents: 10,
+        amount: 999, principle: 999, categories: [], taxCategories: [], type: TransactionType.MANUAL_TRANSACTION,
+        updateTransaction: async value => { saved = value; return null } }
+      const modal = dialog({ account: { ...account(sign), type: AccountType.Loan }, transaction, setShow: () => undefined })
+      assert.strictEqual(modal.props.initialValues.principle, '0.10')
+      assert.strictEqual(modal.props.initialValues.interest, '0.20')
+      const field = find(modal, e => e.type === 'formField' && e.props.name === 'interest')
+      const interest = values => field.props.children[0]({ form: { values } })
+      assert.strictEqual(interest(modal.props.initialValues).props.amount, 20)
+      const edits = { ...modal.props.initialValues, amount: sign === -1 ? '-0.30' : '0.30', principle: '0.20' }
+      assert.strictEqual(interest(edits).props.amount, 10)
+      edits.principle = '-0.125'
+      assert.strictEqual(interest(edits).props.amount, 42)
+      await modal.props.onSubmit(edits, { setErrors: () => undefined })
+      assert.strictEqual(saved.principle, -0.12)
+      assert.strictEqual(saved.amount, 0.3)
+      assert.strictEqual(transaction.principle, 999)
+      const principalField = find(modal, e => e.type === 'formField' && e.props.name === 'principle')
+      const input = principalField.props.children[0]({ field: { value: '0.10' } })
+      assert.isTrue(input.props.exactCents)
+      for (const principal of ['bad', 'Infinity', '90071992547409.92']) {
+        assert.isString(modal.props.validate({ ...edits, principle: principal }).principle)
+      }
+      const overflow = { ...edits, amount: sign === -1 ? '-90071992547409.91' : '90071992547409.91', principle: '-0.01' }
+      assert.isString(modal.props.validate(overflow).principle)
+      assert.isUndefined(interest(overflow).props.amount)
+    })
+
   test('tax-attribution totals and validation use exact cents without a matching rule').with([
     [['0.10', '0.20'], 30], [['-0.10', '0.20'], 10], [['0.00', '-0.00'], 0],
     [['0.125', '-0.125'], 1], [[], 0], [['-0.30'], -30],

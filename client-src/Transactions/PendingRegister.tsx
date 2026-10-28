@@ -44,6 +44,7 @@ const PendingRegister: React.FC<PropsType> = observer(({
                 key={transaction.id}
                 transaction={transaction}
                 amount={transaction.amount}
+                amountCents={transaction.amountCents}
                 runningBalanceCents={parseMoneyCents('0.00')}
                 account={account}
                 onClick={handleClick}
