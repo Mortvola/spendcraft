@@ -79,7 +79,7 @@ export * from ${source('common/ResponseTypes.ts')};
     const statementProps = { id: 30, startDate: '2025-02-01', endDate: '2025-02-28', startingBalance: '100.00', endingBalance: '90.00', credits: '0.00', debits: '0.00', data: {} }
     const statement = new state.Statement(statementProps, account.statements)
     state.runInAction(() => { account.statements.statements = [statement]; store.uiState.selectedStatement = statement })
-    const transactionProps = (amount = -10, statementId = null) => ({ id: 40, date: '2025-02-10', type: state.TransactionType.MANUAL_TRANSACTION, sortOrder: 0, comment: '', version: 0, duplicateOfTransactionId: null, categories: [{ categoryId: 20, amount: amount.toFixed(2) }], taxes: [], accountTransaction: { name: 'Purchase', amount, principle: null, statementId, pending: false, accountOwner: null, paymentChannel: null, location: null, account: { id: 10, name: 'Checking', institution: { name: 'Offline bank' } } } })
+    const transactionProps = (amount = -10, statementId = null) => ({ id: 40, date: '2025-02-10', type: state.TransactionType.MANUAL_TRANSACTION, sortOrder: 0, comment: '', version: 0, duplicateOfTransactionId: null, categories: [{ categoryId: 20, amount: amount.toFixed(2) }], taxes: [], accountTransaction: { name: 'Purchase', amount: amount.toFixed(2), principle: null, statementId, pending: false, accountOwner: null, paymentChannel: null, location: null, account: { id: 10, name: 'Checking', institution: { name: 'Offline bank' } } } })
     routes = new Map(); calls = []
     originals = new Map(['get', 'post', 'put', 'patch', 'delete', 'fetch'].map((method) => [method, state.Http[method]]))
     for (const method of originals.keys()) state.Http[method] = async (url, payload) => {
@@ -139,6 +139,38 @@ export * from ${source('common/ResponseTypes.ts')};
     assert.strictEqual(cached.category.categories[0].amount, -10)
     assert.strictEqual(cached.account.version, 0)
     assert.deepEqual([f.account.balance, f.category.balance], before)
+  })
+
+  test('AccountTransaction response amounts become numbers in cached client state').with([
+    ['12.50', 12.5], ['-12.50', -12.5], ['0.00', 0], ['0.30', 0.3],
+  ]).run(async ({ assert }, [amount, expected]) => {
+    const cached = transactions()
+    const props = f.transactionProps(expected)
+    routes.set('patch /api/v1/transaction/40', async payload => {
+      assert.strictEqual(payload.amount, expected)
+      return { body: { data: { transaction: props, categories: [], acctBalances: [] } } }
+    })
+    assert.strictEqual(props.accountTransaction.amount, amount)
+    await cached.account.updateTransaction({ amount: expected })
+    assert.strictEqual(cached.account.amount, expected)
+    assert.strictEqual(cached.category.amount, expected)
+    assert.isNumber(cached.account.amount)
+  })
+
+  test('invalid AccountTransaction wire amounts cannot mutate cached state').with([
+    1, null, '', '1.2', '1e2', '-0.00', 'Infinity', '90071992547409.92',
+  ]).run(async ({ assert }, amount) => {
+    const cached = transactions()
+    const props = f.transactionProps()
+    props.accountTransaction.amount = amount
+    routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: {
+      transaction: props, categories: [{ id: 20, balance: -99 }], acctBalances: [{ id: 10, balance: 1 }],
+    } } }))
+    await assert.rejects(() => cached.account.updateTransaction({ amount: -99 }))
+    assert.strictEqual(cached.account.amount, -10)
+    assert.strictEqual(cached.category.amount, -10)
+    assert.strictEqual(f.account.balance, 90)
+    assert.strictEqual(f.category.balance, -10)
   })
 
   function transactions(props = f.transactionProps()) {

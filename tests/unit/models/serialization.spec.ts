@@ -31,7 +31,7 @@ test.group('Lucid transaction serialization', () => {
       accountId: 20,
       transactionId: 30,
       name: 'Purchase',
-      amount: 12.5,
+      amount: '12.50',
       principle: null,
       pending: false,
       paymentChannel: 'online',
@@ -69,7 +69,7 @@ test.group('Lucid transaction serialization', () => {
       duplicateOfTransactionId: null,
       accountTransaction: {
         name: 'Purchase',
-        amount: 12.5,
+        amount: '12.50',
         principle: null,
         pending: false,
         paymentChannel: 'online',
@@ -111,4 +111,35 @@ test.group('Transaction allocation API strings', () => {
       const row = new Transaction().merge({ categories: [{ categoryId: 1, amount }] })
       assert.throws(() => row.serialize())
     })
+})
+
+
+test.group('AccountTransaction amount API strings', () => {
+  test('amount serialization is canonical while model amounts and other fields remain unchanged').with([
+    { amount: 12.5, expected: '12.50' }, { amount: -12.5, expected: '-12.50' },
+    { amount: 0, expected: '0.00' }, { amount: -0, expected: '0.00' },
+    { amount: 0.1 + 0.2, expected: '0.30' }, { amount: 0.125, expected: '0.13' },
+    { amount: -0.125, expected: '-0.12' }, { amount: 1.005, expected: '1.00' },
+  ]).run(({ assert }, { amount, expected }) => {
+    const row = accountTransaction().merge({ amount, principle: 1.25 })
+    const before = globalThis.structuredClone(row.$attributes)
+    const transaction = new Transaction()
+    transaction.$setRelated('accountTransaction', row)
+    assert.strictEqual(row.serialize().amount, expected)
+    assert.strictEqual(JSON.parse(JSON.stringify(row)).amount, expected)
+    assert.strictEqual(transaction.serialize(transactionFields).accountTransaction.amount, expected)
+    assert.strictEqual(row.amount, amount)
+    assert.strictEqual(row.serialize().principle, 1.25)
+    assert.deepEqual(row.$attributes, before)
+  })
+  test('hydrated database amounts serialize without making the model dirty', ({ assert }) => {
+    const row = AccountTransaction.$createFromAdapterResult({ id: 1, amount: '-12.34', principle: null })
+    assert.isNotNull(row)
+    assert.strictEqual(row?.amount, -12.34)
+    assert.strictEqual(row?.serialize().amount, '-12.34')
+    assert.isNull(row?.serialize().principle)
+    assert.isFalse(row?.$isDirty)
+  })
+  test('invalid amounts cannot be emitted as valid monetary strings').with([NaN, Infinity, -Infinity, Number.MAX_SAFE_INTEGER])
+    .run(({ assert }, amount) => assert.throws(() => accountTransaction().merge({ amount }).serialize()))
 })

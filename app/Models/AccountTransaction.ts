@@ -1,4 +1,5 @@
 import { DateTime } from 'luxon';
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec';
 import {
   BaseModel, belongsTo, column,
 } from '@adonisjs/lucid/orm';
@@ -44,6 +45,7 @@ class AccountTransaction extends BaseModel {
 
   @column({
     consume: (value: string) => parseFloat(value),
+    serialize: (value: number) => encodeMonetaryAmount(value),
   })
   public amount: number;
 

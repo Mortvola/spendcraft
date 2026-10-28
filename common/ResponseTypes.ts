@@ -285,7 +285,7 @@ export interface TransactionProps {
   accountTransaction: {
     name: string;
 
-    amount: number;
+    amount: string;
 
     principle: number | null;
 

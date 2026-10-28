@@ -7,15 +7,16 @@ import Http from '@mortvola/http';
 import { DateTime } from 'luxon';
 import Transaction from '../State/Transaction';
 import Amount from '../Amount';
+import { decodeAmount } from '../monetary';
 import { TransactionProps } from '../../common/ResponseTypes';
 
-interface TransationPropsType {
+interface TransactionPropsType {
   name?: string,
   date?: DateTime,
   amount?: number,
 }
 
-const TransactionFields: React.FC<TransationPropsType> = ({ name, date, amount }) => (
+const TransactionFields: React.FC<TransactionPropsType> = ({ name, date, amount }) => (
   <div>
     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
       <input readOnly value={name} />
@@ -39,7 +40,7 @@ const DuplicateDialog: React.FC<PropsType & ModalProps> = ({
   setShow,
   transaction,
 }: PropsType & ModalProps) => {
-  const [otherTransaction, setOtherTransaction] = React.useState<TransactionProps | null>(null);
+  const [otherTransaction, setOtherTransaction] = React.useState<TransactionPropsType | null>(null);
   React.useEffect(() => {
     (async () => {
       const response = await Http.get<TransactionProps>(`/api/v1/transaction/${transaction.duplicateOfTransactionId}`);
@@ -47,7 +48,11 @@ const DuplicateDialog: React.FC<PropsType & ModalProps> = ({
       if (response.ok) {
         const body = await response.body();
 
-        setOtherTransaction(body);
+        setOtherTransaction({
+          name: body.accountTransaction.name,
+          date: DateTime.fromISO(body.date),
+          amount: decodeAmount(body.accountTransaction.amount),
+        });
       }
     })();
   }, [transaction.duplicateOfTransactionId]);
@@ -85,9 +90,9 @@ const DuplicateDialog: React.FC<PropsType & ModalProps> = ({
         />
         <div style={{ borderTop: 'solid black thin', margin: '1rem' }} />
         <TransactionFields
-          name={otherTransaction?.accountTransaction.name}
-          date={otherTransaction?.date ? DateTime.fromISO(otherTransaction?.date) : undefined}
-          amount={otherTransaction?.accountTransaction.amount}
+          name={otherTransaction?.name}
+          date={otherTransaction?.date}
+          amount={otherTransaction?.amount}
         />
       </ModalBody>
       <ModalFooter>

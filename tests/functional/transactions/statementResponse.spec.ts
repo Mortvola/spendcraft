@@ -157,6 +157,7 @@ test.group('Transaction Statement response commit boundary', () => {
     assert.equal(body.statement.credits, mode === 'clear' ? '0.00' : '10.00')
     assert.equal(body.statement.debits, '-4.00')
     assert.equal(body.transaction.version, 1)
+    assert.strictEqual(body.transaction.accountTransaction.amount, data.association.amount.toFixed(2))
     assert.equal(body.transaction.accountTransaction.name, 'Updated')
     assert.equal(body.transaction.accountTransaction.statementId, data.statementId)
     assert.deepEqual(body.categories, [])
