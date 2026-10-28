@@ -1,3 +1,5 @@
+import AutoAssignmentCategory from '#models/AutoAssignmentCategory'
+import AutoAssignment from '#models/AutoAssignment'
 import Category from '#models/Category'
 import { test } from '@japa/runner'
 import { mock } from 'node:test'
@@ -265,4 +267,24 @@ test('funding API serialization preserves percentages, nulls, metadata and numer
   assert.deepEqual(response[1], { categoryId: 2, amount: '0.00', baseAmount: null, fundingCategories: null })
   assert.notProperty(response[2], 'baseAmount')
   assert.deepEqual(transaction.$attributes, before)
+})
+
+
+test('auto-assignment responses encode fixed dollars and preserve numeric model amounts', ({ assert }) => {
+  for (const [amount, expected] of [[12.5, '12.50'], [-0.125, '-0.12'], [0.125, '0.13'],
+    [1.005, '1.00'], [0.1 + 0.2, '0.30'], [-0, '0.00']] as const) {
+    for (const percentage of [false, null, true]) {
+      const rule = AutoAssignmentCategory.$createFromAdapterResult({ id: 1, category_id: 20, amount: String(amount), percentage })
+      if (!rule) throw new Error('Expected hydrated rule')
+      const before = globalThis.structuredClone(rule.$attributes)
+      assert.strictEqual(rule.amount, amount === 0 ? 0 : amount)
+      assert.strictEqual(rule.serialize().amount, percentage === true ? (amount === 0 ? 0 : amount) : expected)
+      assert.strictEqual(rule.serialize().percentage, percentage)
+      const assignment = new AutoAssignment().merge({ id: 2 })
+      assignment.$setRelated('categories', [rule])
+      assert.strictEqual(JSON.parse(JSON.stringify(assignment)).categories[0].amount, percentage === true ? (amount === 0 ? 0 : amount) : expected)
+      assert.deepEqual(rule.$attributes, before)
+      assert.isFalse(rule.$isDirty)
+    }
+  }
 })

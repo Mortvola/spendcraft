@@ -17,7 +17,7 @@ export function decodeAmount(value: unknown): number {
 }
 
 
-export function decodeFundingRules(rules: readonly FundingRuleResponse[]) {
+export function decodeFundingRules<T extends FundingRuleResponse>(rules: readonly T[]): (Omit<T, 'amount'> & { amount: number })[] {
   return rules.map((rule) => {
     if (rule.percentage === true) {
       if (typeof rule.amount !== 'number' || !Number.isFinite(rule.amount)) {

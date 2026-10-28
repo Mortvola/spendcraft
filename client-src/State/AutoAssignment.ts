@@ -1,3 +1,4 @@
+import { decodeFundingRules } from '../monetary';
 import Http from '@mortvola/http';
 import { observable, runInAction } from 'mobx';
 import { AutoAssignmentInterface, AutoAssignmentProps, StoreInterface } from './Types';
@@ -21,7 +22,7 @@ class AutoAssignment implements AutoAssignmentInterface {
     this.name = props.name
 
     this.searchStrings = props.searchStrings
-    this.categories = props.categories
+    this.categories = decodeFundingRules(props.categories)
 
     this.store = store;
   }
@@ -45,10 +46,11 @@ class AutoAssignment implements AutoAssignmentInterface {
     if (response.ok) {
       const body = await response.body();
 
+      const categories = decodeFundingRules(body.categories);
       runInAction(() => {
         this.name = body.name;
         this.searchStrings = body.searchStrings;
-        this.categories = body.categories;
+        this.categories = categories;
       })
     }
   }

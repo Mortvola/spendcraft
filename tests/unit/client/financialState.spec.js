@@ -239,6 +239,42 @@ export * from ${source('common/ResponseTypes.ts')};
     }
   })
 
+  test('auto-assignment load, CREATE and PATCH decode fixed dollars and preserve numeric requests', async ({ assert }) => {
+    const props = { id: 1, name: 'Rule', searchStrings: ['Shop'], categories: [
+      { id: 1, categoryId: 20, amount: '-0.12', percentage: false },
+      { id: 2, categoryId: 21, amount: 12.75, percentage: true },
+      { id: 3, categoryId: 20, amount: '0.00', percentage: null },
+    ] }
+    routes.set('get /api/v1/auto-assignments', async () => ({ body: [props] }))
+    await f.store.autoAssignments.load()
+    const rule = f.store.autoAssignments.autoAssignemnts[0]
+    assert.deepEqual(rule.categories.map(row => row.amount), [-0.12, 12.75, 0])
+    assert.isNull(rule.categories[2].percentage)
+    const input = { name: 'Updated', searchStrings: ['Shop'], categories: [
+      { id: 1, categoryId: 20, amount: 2.5, percentage: false },
+    ] }
+    routes.set('patch /api/v1/auto-assignments/1', async payload => {
+      assert.deepEqual(payload, input)
+      return { body: { ...props, name: 'Updated', categories: [{ ...input.categories[0], amount: '2.50' }] } }
+    })
+    await rule.update(input)
+    assert.strictEqual(rule.categories[0].amount, 2.5)
+    assert.strictEqual(rule.categories[0].id, 1)
+    routes.set('post /api/v1/auto-assignments', async payload => {
+      assert.deepEqual(payload, input)
+      return { body: { ...props, id: 2 } }
+    })
+    await f.store.autoAssignments.add(input)
+    assert.strictEqual(f.store.autoAssignments.autoAssignemnts.find(row => row.id === 2).categories[0].amount, -0.12)
+    for (const amount of [1, '', '1.2', '-0.00', 'Infinity', '90071992547409.92']) {
+      routes.set('patch /api/v1/auto-assignments/1', async () => ({ body: { ...props, name: 'Invalid',
+        categories: [{ ...props.categories[0], amount }] } }))
+      await assert.rejects(() => rule.update(input))
+      assert.strictEqual(rule.name, 'Updated')
+      assert.strictEqual(rule.categories[0].amount, 2.5)
+    }
+  })
+
   test('bill debit strings become numeric client values and preserve null', ({ assert }) => {
     for (const [debits, expected] of [['-12.50', -12.5], ['0.00', 0], ['0.30', 0.3], [null, null]]) {
       const bill = new state.Bill({ id: 20, debits }, f.category)

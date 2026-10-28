@@ -1,3 +1,4 @@
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { DateTime } from 'luxon'
 import { BaseModel, column, beforeSave } from '@adonisjs/lucid/orm'
 import { roundAutoAssignmentAmount } from '#services/autoAssignmentAmount'
@@ -26,6 +27,7 @@ export default class AutoAssignmentCategory extends BaseModel {
   @column({
     consume: (value: string) => parseFloat(value),
     prepare: (value: number) => roundAutoAssignmentAmount(value).toFixed(2),
+    serialize: (value: number, _attribute, model) => model.$attributes.percentage === true ? value : encodeMonetaryAmount(value),
   })
   public amount: number
 

@@ -11,6 +11,7 @@ import {
   AccountProps,
   CategoryTransferProps,
   BillProps,
+  FundingRuleResponse,
   StatementProps,
   GroupType,
   UpdateStatementProps,
@@ -627,7 +628,7 @@ export interface AutoAssignmentProps {
   id: number;
   name: string;
   searchStrings: string[],
-  categories: { id: number, categoryId: number, amount: number, percentage: boolean }[],
+  categories: ({ id: number } & FundingRuleResponse)[],
 }
 
 export type AutoAssignmentsResponse = AutoAssignmentProps[]
