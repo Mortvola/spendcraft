@@ -1,3 +1,4 @@
+import { decodeAmount } from '../monetary';
 import React, { ReactNode, useState } from 'react';
 import { DateTime } from 'luxon';
 import Http from '@mortvola/http';
@@ -33,7 +34,7 @@ const Funding: React.FC<PropsType> = ({
         if (data) {
           setCatFundingInfo(data.map((c) => ({
             categoryId: c.id,
-            initialAmount: c.balance,
+            initialAmount: decodeAmount(c.balance),
             previousFunding: c.previousFunding,
             previousBaseAmount: c.previousBaseAmount,
             previousExpenses: c.previousSum,

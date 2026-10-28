@@ -30,7 +30,7 @@ export interface CategoryProps {
 
   groupId: number;
 
-  balance: number;
+  balance: string;
 
   name: string;
 
@@ -61,7 +61,7 @@ const isCategoryBalance = (r: unknown): r is CategoryBalanceProps => (
 export interface CategoryBalanceProps {
   id: number;
 
-  balance: number;
+  balance: string;
 
   count?: number;
 }
@@ -503,7 +503,7 @@ export interface CategoryFundingProps {
 export interface FundingInfoProps {
   id: number,
   name: string,
-  balance: number,
+  balance: string,
   previousSum: number,
   previousFunding: number,
   previousBaseAmount: number,
@@ -615,7 +615,7 @@ export const isAddTransactionResponse = (r: unknown): r is AddTransactionRespons
 
 interface CategoryTreeBalanceProps {
   id: number,
-  balance: number,
+  balance: string,
 }
 
 const isCategoryTreeBalanceProps = (r: unknown): r is CategoryTreeBalanceProps => (

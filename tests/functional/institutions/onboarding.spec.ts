@@ -240,10 +240,10 @@ test.group('Plaid staged onboarding characterization', (group) => {
       assert.equal(returned.startDate, account.startDate.toISODate())
     }
     const categories = [await budget.getFundingPoolCategory(), await budget.getUnassignedCategory()]
-    for (const category of categories) assert.deepInclude(response.body().data.categories, { id: category.id, balance: category.balance })
+    for (const category of categories) assert.deepInclude(response.body().data.categories, { id: category.id, balance: category.balance.toFixed(2) })
     for (const returned of response.body().data.categories) {
       const category = await Category.findOrFail(returned.id)
-      assert.equal(returned.balance, category.balance)
+      assert.strictEqual(returned.balance, category.balance.toFixed(2))
       assert.equal((await category.related('group').query().firstOrFail()).budgetId, budget.id)
     }
     assert.lengthOf(await budget.getConnectedAccounts(), 1)
@@ -356,7 +356,7 @@ test.group('Plaid staged onboarding characterization', (group) => {
     assert.equal(untouched.balance, 0)
     assert.equal(funding.balance, allocation === 'before start' || allocation === 'pending' ? 175 : 212)
     for (const category of [unassigned, funding, assigned, untouched]) {
-      assert.deepInclude(response.body().data.categories, { id: category.id, balance: category.balance })
+      assert.deepInclude(response.body().data.categories, { id: category.id, balance: category.balance.toFixed(2) })
     }
     assert.strictEqual(response.body().data.accounts[0].balance, account.balance.toFixed(2))
     assert.strictEqual(response.body().data.accounts[0].plaidBalance, account.plaidBalance === null ? null : account.plaidBalance.toFixed(2))

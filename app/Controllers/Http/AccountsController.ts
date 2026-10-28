@@ -261,10 +261,10 @@ export default class AccountsController {
         const balance = categoryBalances.find((b) => b.id === category.id);
 
         if (balance) {
-          balance.balance = category.balance;
+          balance.balance = encodeMonetaryAmount(category.balance);
         }
         else {
-          categoryBalances.push({ id: split.categoryId, balance: category.balance });
+          categoryBalances.push({ id: split.categoryId, balance: encodeMonetaryAmount(category.balance) });
         }
       }
 

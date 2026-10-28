@@ -135,7 +135,7 @@ class Account implements AccountInterface {
     if (!categories.ok) throw new Error('Unable to refresh category balances after OFX upload');
     const { data } = await categories.body();
     if (!Array.isArray(data?.categories) || !data.categories.every((category) =>
-      category !== null && Number.isFinite(category.id) && Number.isFinite(category.balance))) {
+      category !== null && Number.isFinite(category.id) && typeof category.balance === 'string')) {
       throw new Error('Invalid category balances response');
     }
     this.store.categoryTree.updateBalances(data.categories);
@@ -170,7 +170,7 @@ class Account implements AccountInterface {
         if (!categories.ok) throw new Error('Unable to refresh category balances');
         const { data } = await categories.body();
         if (!Array.isArray(data?.categories) || !data.categories.every((category) =>
-          category !== null && Number.isFinite(category.id) && Number.isFinite(category.balance))) {
+          category !== null && Number.isFinite(category.id) && typeof category.balance === 'string')) {
           throw new Error('Invalid category balances response');
         }
         this.store.categoryTree.updateBalances(data.categories);

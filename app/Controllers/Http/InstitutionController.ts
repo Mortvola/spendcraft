@@ -141,7 +141,7 @@ class InstitutionController {
           name: connectedInstitution.name,
           syncDate: connectedInstitution.syncDate,
           accounts: connectedInstitution.accounts,
-          categories: categories.map((category) => ({ id: category.id, balance: category.balance })),
+          categories: categories.map((category) => ({ id: category.id, balance: encodeMonetaryAmount(category.balance) })),
         }
       };
     }
@@ -248,7 +248,7 @@ class InstitutionController {
             rate: acct.rate,
           })),
           categories: [
-            { id: fundingPool.id, balance: fundingPool.balance },
+            { id: fundingPool.id, balance: encodeMonetaryAmount(fundingPool.balance) },
           ],
         }
       };
@@ -551,8 +551,8 @@ class InstitutionController {
         };
       }),
       categories: [
-        { id: fundingPool.id, balance: fundingPool.balance },
-        { id: unassigned.id, balance: unassigned.balance },
+        { id: fundingPool.id, balance: encodeMonetaryAmount(fundingPool.balance) },
+        { id: unassigned.id, balance: encodeMonetaryAmount(unassigned.balance) },
       ],
     };
 
@@ -645,8 +645,8 @@ class InstitutionController {
             plaidId: acct.plaidAccountId,
           },
           categories: [
-            { id: fundingPool.id, balance: fundingPool.balance },
-            { id: unassigned.id, balance: unassigned.balance },
+            { id: fundingPool.id, balance: encodeMonetaryAmount(fundingPool.balance) },
+            { id: unassigned.id, balance: encodeMonetaryAmount(unassigned.balance) },
           ],
         }
       }
@@ -909,10 +909,10 @@ class InstitutionController {
               const catBalance = categoryBalances.find((cb) => cb.id === unassignedCat.id);
 
               if (catBalance) {
-                catBalance.balance = unassignedCat.balance;
+                catBalance.balance = encodeMonetaryAmount(unassignedCat.balance);
               }
               else {
-                categoryBalances.push({ id: unassignedCat.id, balance: unassignedCat.balance })
+                categoryBalances.push({ id: unassignedCat.id, balance: encodeMonetaryAmount(unassignedCat.balance) })
               }
             }
           }
@@ -931,10 +931,10 @@ class InstitutionController {
                 const catBalance = categoryBalances.find((cb) => cb.id === category.id);
 
                 if (catBalance) {
-                  catBalance.balance = category.balance;
+                  catBalance.balance = encodeMonetaryAmount(category.balance);
                 }
                 else {
-                  categoryBalances.push({ id: category.id, balance: category.balance })
+                  categoryBalances.push({ id: category.id, balance: encodeMonetaryAmount(category.balance) })
                 }
               }
 

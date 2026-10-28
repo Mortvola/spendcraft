@@ -7,7 +7,7 @@ import {
   isCategoryTreeBalanceResponse,
 } from '#common/ResponseTypes'
 
-const categoryBalance = { id: 1, balance: 12.5 }
+const categoryBalance = { id: 1, balance: '12.50' }
 const account = {
   id: 2, plaidId: null, name: 'Checking', closed: false,
   type: AccountType.Depository, subtype: 'checking', tracking: TrackingType.Balances,

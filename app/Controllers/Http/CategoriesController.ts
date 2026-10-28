@@ -1,12 +1,12 @@
 import { requestCategoryStorage } from '#services/categoryStorageBinding';
 import { requestFundingStorage } from '#services/fundingStorage';
-import { categoryNonzeroAllocationSql } from '#services/categoryAmountCodec';
+import { encodeMonetaryAmount, categoryNonzeroAllocationSql } from '#services/categoryAmountCodec';
 import { validateStoredCategoryConservation } from '#services/transactionCategoryStorage';
 import { validateCategoryConservation } from '#services/categoryAmountCodec';
 import db from '@adonisjs/lucid/services/db';
 import { HttpContext } from '@adonisjs/core/http';
 import { Exception } from '@adonisjs/core/exceptions';
-import Category, { GroupItem } from '#app/Models/Category';
+import Category from '#app/Models/Category';
 import { updateCategoryTransfer } from '#validators/categoryTransfer';
 import Transaction from '#app/Models/Transaction';
 import AccountTransaction from '#app/Models/AccountTransaction';
@@ -201,7 +201,7 @@ class CategoriesController {
         data: categories.map((c) => ({
           id: c.id,
           name: c.name,
-          balance: (c.balance - (parseFloat(c.$extras.sum ?? 0))),
+          balance: encodeMonetaryAmount(c.balance - parseFloat(c.$extras.sum ?? 0)),
           previousSum: parseFloat(c.$extras.previousSum ?? 0),
           previousFunding: parseFloat(c.$extras.previousFunding ?? 0),
           previousBaseAmount: parseFloat(c.$extras.previousBaseAmount ?? 0),
@@ -556,7 +556,7 @@ class CategoriesController {
 
     const cat = await budgetCategories(budget.id).where('id', categoryId).firstOrFail();
 
-    result.balance = cat.balance;
+    result.balance = encodeMonetaryAmount(cat.balance);
 
     result.transactions = (await cat.transactions(
       budget, request.qs().limit, request.qs().offset,
@@ -733,7 +733,7 @@ class CategoriesController {
          
         await category.save();
 
-        result.balances.push({ id: category.id, balance: category.balance });
+        result.balances.push({ id: category.id, balance: encodeMonetaryAmount(category.balance) });
       }
 
       result.transaction = transaction.serialize(transactionFields);
@@ -757,7 +757,7 @@ class CategoriesController {
     auth: {
       user,
     },
-  }: HttpContext): Promise<GroupItem[]> {
+  }: HttpContext): Promise<CategoryBalanceProps[]> {
     if (!user) {
       throw new Error('user is not defined');
     }
@@ -770,7 +770,8 @@ class CategoriesController {
       await budget.related('transactions').query().where('id', parseInt(id, 10)).firstOrFail();
     }
 
-    return Category.balances(budget, date, id !== undefined ? parseInt(id, 10) : id);
+    const balances = await Category.balances(budget, date, id !== undefined ? parseInt(id, 10) : id);
+    return balances.map((row) => ({ ...row, balance: encodeMonetaryAmount(row.balance) }));
   }
 
   static getGoalDate(goalDate?: DateTime | null, recurrence = 1): DateTime | null {

@@ -182,10 +182,10 @@ test.group('Group/category/transfer isolation', (group) => {
   test('shared-budget user retains reads and transfer arithmetic with repeated categories', async ({ client, assert }) => {
     const read = await client.get(`/api/v1/category/${fixture.own.category.id}/transactions`).accept('json').loginAs(fixture.shared)
     read.assertStatus(200)
-    assert.equal(read.body().data.balance, 100)
+    assert.strictEqual(read.body().data.balance, '100.00')
     const balances = await client.get(`/api/v1/category-balances?date=2025-03-01&id=${fixture.own.transaction.id}`).accept('json').loginAs(fixture.shared)
     balances.assertStatus(200)
-    assert.deepEqual(balances.body().find((row: { id: number }) => row.id === fixture.own.category.id), { id: fixture.own.category.id, balance: 110 })
+    assert.deepEqual(balances.body().find((row: { id: number }) => row.id === fixture.own.category.id), { id: fixture.own.category.id, balance: '110.00' })
     const created = await client.post('/api/v1/category-transfer').json(transferBody([fixture.own.category.id, fixture.own.otherCategory.id], [fixture.own.category.id]))
       .accept('json').loginAs(fixture.shared)
     created.assertStatus(200)

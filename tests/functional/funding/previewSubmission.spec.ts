@@ -1,4 +1,4 @@
-import { canonicalCategoryAllocations, encodeCategoryAllocations, monetaryAmountCents, checkedCentSum } from '#services/categoryAmountCodec'
+import { canonicalCategoryAllocations, encodeMonetaryAmount, encodeCategoryAllocations, monetaryAmountCents, checkedCentSum } from '#services/categoryAmountCodec'
 import { encodeFundingMetadata, decodeFundingMetadata } from '#services/fundingAmountCodec'
 // Requires task-specific authorization and the current
 // configured/live pg + pgLog + exact execution-connection safeguards before SQL.
@@ -90,10 +90,9 @@ test.group('Funding preview/submission persisted equality', () => {
         assert.equal((await Category.findOrFail(id)).balance, expected)
         const rawCategory = await db.from('categories').select('balance').where('id', id).first()
         assert.equal(Number(rawCategory.balance), expected)
-        // The existing response exposes hydrated JS arithmetic before a DB reload.
-        // Preserve its binary artifact independently of numeric(12,2) persistence.
-        assert.equal(response.body().data.balances.find((row: { id: number }) => row.id === id)?.balance ?? initial,
-          initial + fundingCategoryEffect(canonicalCategoryAllocations(rows), id))
+        // The API encodes the existing runtime calculation at the response boundary.
+        assert.equal(response.body().data.balances.find((row: { id: number }) => row.id === id)?.balance ?? initial.toFixed(2),
+          encodeMonetaryAmount(initial + fundingCategoryEffect(canonicalCategoryAllocations(rows), id)))
       }
       if (scenario === 'chain' || scenario === 'low Pool') assert.equal(fundingCategoryEffect(canonicalCategoryAllocations(rows), f.pool.id), -2)
       if (scenario === 'transfer') assert.equal(transaction.categories[0].amount, 0.3)
@@ -255,7 +254,7 @@ test.group('Funding replacement projection', () => {
       assert.equal(currentPool, 8)
       const info = await client.get('/api/v1/categories?date=2025-03-01').loginAs(f.user)
       info.assertStatus(200)
-      const initial = info.body().data.find((category: { id: number }) => category.id === a.id).balance
+      const initial = Number(info.body().data.find((category: { id: number }) => category.id === a.id).balance)
       assert.equal(initial, 0) // The March snapshot excludes the existing March record.
       const newRows = rows(amount)
       const additionalWithdrawal = fundingCategoryEffect(oldRows, f.pool.id) - fundingCategoryEffect(newRows, f.pool.id)
@@ -325,7 +324,7 @@ test.group('Immutable funding date verification', () => {
       }
       const info = await client.get('/api/v1/categories?date=2025-03-01').loginAs(f.user)
       info.assertStatus(200)
-      const initial = info.body().data.find((row: { id: number }) => row.id === a.id).balance
+      const initial = Number(info.body().data.find((row: { id: number }) => row.id === a.id).balance)
       // The existing float-based projection can retain a sub-cent binary residue.
       assert.equal(Math.round(initial * 100), 0)
       const replaced = await client.patch(`/api/v1/category-transfer/${id}`).json({ date: original.date, type: 2, categories: rows }).loginAs(f.user)

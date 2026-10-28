@@ -235,7 +235,7 @@ export default class TransactionsController {
           const category = await budgetCategories(budget.id, { client: trx }).where('id', categoryId).firstOrFail();
           category.balance += delta;
           await category.save();
-          categoriesResult.push({ id: category.id, balance: category.balance });
+          categoriesResult.push({ id: category.id, balance: encodeMonetaryAmount(category.balance) });
         }
       }
 
@@ -265,7 +265,7 @@ export default class TransactionsController {
 
             categoriesResult.push({
               id: category.id,
-              balance: category.balance,
+              balance: encodeMonetaryAmount(category.balance),
             });
           }
 
@@ -292,7 +292,7 @@ export default class TransactionsController {
 
           categoriesResult.push({
             id: unassigned.id,
-            balance: unassigned.balance,
+            balance: encodeMonetaryAmount(unassigned.balance),
           });
         }
 
@@ -331,12 +331,12 @@ export default class TransactionsController {
             // If the category is already in the array then simply update the amount.
             // Otherwise, add the category and amount to the array.
             if (index !== -1) {
-              categoriesResult[index].balance = category.balance;
+              categoriesResult[index].balance = encodeMonetaryAmount(category.balance);
             }
             else {
               categoriesResult.push({
                 id: category.id,
-                balance: category.balance,
+                balance: encodeMonetaryAmount(category.balance),
               });
             }
           }
@@ -351,12 +351,12 @@ export default class TransactionsController {
           const index = categoriesResult.findIndex((c) => c.id === unassigned.id);
 
           if (index !== -1) {
-            categoriesResult[index].balance = unassigned.balance;
+            categoriesResult[index].balance = encodeMonetaryAmount(unassigned.balance);
           }
           else {
             categoriesResult.push({
               id: unassigned.id,
-              balance: unassigned.balance,
+              balance: encodeMonetaryAmount(unassigned.balance),
             });
           }
         }
@@ -605,7 +605,7 @@ export default class TransactionsController {
 
           unassignedCat.balance -= acctTransaction.amount;
 
-          result.categories.push({ id: unassignedCat.id, balance: unassignedCat.balance });
+          result.categories.push({ id: unassignedCat.id, balance: encodeMonetaryAmount(unassignedCat.balance) });
 
           await unassignedCat.save();
         }
@@ -621,10 +621,10 @@ export default class TransactionsController {
           const balance = result.categories.find((b) => b.id === category.id);
 
           if (balance) {
-            balance.balance = category.balance;
+            balance.balance = encodeMonetaryAmount(category.balance);
           }
           else {
-            result.categories.push({ id: category.id, balance: category.balance });
+            result.categories.push({ id: category.id, balance: encodeMonetaryAmount(category.balance) });
           }
 
           if (category.type === CategoryType.Loan) {

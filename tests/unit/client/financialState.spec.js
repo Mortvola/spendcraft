@@ -65,7 +65,7 @@ export * from ${source('common/ResponseTypes.ts')};
     const institutionProps = { id: 1, plaidInstitutionId: null, name: 'Offline bank', syncDate: null, accounts: [accountProps] }
     const institution = new state.Institution(store, institutionProps)
     const account = institution.accounts[0]
-    const props = (id) => ({ id, groupId: -1, name: `Category ${id}`, type: state.CategoryType.Regular, balance: 0, fundingAmount: 0, fundingCategories: [], includeFundingTransfers: true, goalDate: null, useGoal: false, recurrence: 1, suspended: false, hidden: false })
+    const props = (id) => ({ id, groupId: -1, name: `Category ${id}`, type: state.CategoryType.Regular, balance: '0.00', fundingAmount: 0, fundingCategories: [], includeFundingTransfers: true, goalDate: null, useGoal: false, recurrence: 1, suspended: false, hidden: false })
     const category = new state.Category(props(20), store)
     const other = new state.Category(props(21), store)
     state.runInAction(() => {
@@ -132,7 +132,7 @@ export * from ${source('common/ResponseTypes.ts')};
     const before = [f.account.balance, f.category.balance]
     const response = { ...f.transactionProps(), categories: [{ categoryId: 20, amount }], version: 1 }
     routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: {
-      transaction: response, categories: [{ id: 20, balance: -99 }], acctBalances: [{ id: 10, balance: '1.00' }],
+      transaction: response, categories: [{ id: 20, balance: '-99.00' }], acctBalances: [{ id: 10, balance: '1.00' }],
     } } }))
     await assert.rejects(() => cached.account.updateTransaction({ amount: -99 }))
     assert.strictEqual(cached.account.categories[0].amount, -10)
@@ -164,7 +164,7 @@ export * from ${source('common/ResponseTypes.ts')};
     const props = f.transactionProps()
     props.accountTransaction.amount = amount
     routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: {
-      transaction: props, categories: [{ id: 20, balance: -99 }], acctBalances: [{ id: 10, balance: '1.00' }],
+      transaction: props, categories: [{ id: 20, balance: '-99.00' }], acctBalances: [{ id: 10, balance: '1.00' }],
     } } }))
     await assert.rejects(() => cached.account.updateTransaction({ amount: -99 }))
     assert.strictEqual(cached.account.amount, -10)
@@ -179,7 +179,7 @@ export * from ${source('common/ResponseTypes.ts')};
     const cached = transactions()
     const props = { ...f.transactionProps(), taxes: [{ type: 'estimated_tax_payments', amount }], version: 1 }
     routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: {
-      transaction: props, categories: [{ id: 20, balance: -99 }], acctBalances: [{ id: 10, balance: '1.00' }],
+      transaction: props, categories: [{ id: 20, balance: '-99.00' }], acctBalances: [{ id: 10, balance: '1.00' }],
     } } }))
     await assert.rejects(() => cached.account.updateTransaction({ taxCategories: [{ type: 'estimated_tax_payments', amount: 1 }] }))
     assert.deepEqual(cached.account.taxCategories, [])
@@ -202,8 +202,21 @@ export * from ${source('common/ResponseTypes.ts')};
     assert.strictEqual(f.account.balance, 12.5)
     f.account.transactions.transactionResponseHandler({ transactions: [], balance: '0.30' }, 0, 20)
     assert.strictEqual(f.account.balance, 0.3)
-    f.category.transactions.transactionResponseHandler({ transactions: [], balance: 2.5 }, 0, 20)
+    f.category.transactions.transactionResponseHandler({ transactions: [], balance: '2.50' }, 0, 20)
     assert.strictEqual(f.category.balance, 2.5)
+  })
+
+  test('Category balance strings decode before updating cached balances', ({ assert }) => {
+    f.store.categoryTree.updateBalances([{ id: 20, balance: '-12.34' }])
+    assert.strictEqual(f.category.balance, -12.34)
+    assert.throws(() => f.store.categoryTree.updateBalances([
+      { id: 20, balance: '99.00' }, { id: 21, balance: '1.2' },
+    ]))
+    assert.strictEqual(f.category.balance, -12.34)
+    for (const balance of [1, null, '', '1.2', '-0.00', 'Infinity', '90071992547409.92']) {
+      assert.throws(() => f.category.updateBalance({ id: 20, balance }))
+      assert.strictEqual(f.category.balance, -12.34)
+    }
   })
 
   test('invalid account balance data cannot partially update cached accounts').with([
@@ -237,7 +250,7 @@ export * from ${source('common/ResponseTypes.ts')};
   test('OFX refreshes independent balances and financial caches without history', async ({ assert }) => {
     routes.set('fetch /api/v1/account/10/ofx', async () => ({ body: {} }))
     routes.set('get /api/v1/connected-accounts', async () => ({ body: { data: [{ ...f.institutionProps, accounts: [{ ...f.accountProps, balance: '95.00', plaidBalance: '1500.00' }] }] } }))
-    routes.set('get /api/v1/groups', async () => ({ body: { data: { categories: [{ id: 20, balance: -5 }] } } }))
+    routes.set('get /api/v1/groups', async () => ({ body: { data: { categories: [{ id: 20, balance: '-5.00' }] } } }))
     const refreshes = []
     f.account.transactions.getData = async () => { refreshes.push('transactions') }
     f.account.pendingTransactions.getData = async () => { refreshes.push('pending') }
@@ -258,7 +271,7 @@ export * from ${source('common/ResponseTypes.ts')};
 
   test('transaction edit applies returned statement totals', async ({ assert }) => {
     const trx = transactions().account
-    routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: { transaction: f.transactionProps(-10, 30), categories: [{ id: 20, balance: -10 }], acctBalances: [{ id: 10, balance: '90.00' }], statement: { ...f.statementProps, debits: '-10.00' } } } }))
+    routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: { transaction: f.transactionProps(-10, 30), categories: [{ id: 20, balance: '-10.00' }], acctBalances: [{ id: 10, balance: '90.00' }], statement: { ...f.statementProps, debits: '-10.00' } } } }))
     await trx.updateTransaction({ statementId: 30 })
     assert.equal(trx.statementId, 30)
     assert.equal(f.statement.debits, -10)
@@ -267,7 +280,7 @@ export * from ${source('common/ResponseTypes.ts')};
   test('amount edits keep separately loaded account and category transaction caches consistent').with([-12.25, -5.75]).run(async ({ assert }, amount) => {
     const cached = transactions()
     const returned = { ...f.transactionProps(amount), version: 1 }
-    routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: { transaction: returned, categories: [{ id: 20, balance: amount }], acctBalances: [{ id: 10, balance: (100 + amount).toFixed(2) }] } } }))
+    routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: { transaction: returned, categories: [{ id: 20, balance: amount.toFixed(2) }], acctBalances: [{ id: 10, balance: (100 + amount).toFixed(2) }] } } }))
     await cached.account.updateTransaction({ amount })
     assert.equal(f.account.balance, 100 + amount); assert.equal(f.category.balance, amount)
     assert.equal(cached.account.amount, amount)
@@ -306,7 +319,7 @@ export * from ${source('common/ResponseTypes.ts')};
   test('bulk reconciliation refreshes loaded transaction statement membership', async ({ assert }) => {
     const cached = transactions()
     routes.set('patch /api/v1/statements/30', async () => ({ body: { ...f.statementProps, debits: '-10.00' } }))
-    routes.set('get /api/v1/transactions?t=40', async () => ({ body: { data: { transactions: [f.transactionProps(-10, 30)], balance: 0 } } }))
+    routes.set('get /api/v1/transactions?t=40', async () => ({ body: { data: { transactions: [f.transactionProps(-10, 30)], balance: '0.00' } } }))
     await f.statement.update({ reconcile: 'All' })
     assert.equal(cached.account.statementId, 30)
     assert.equal(cached.category.statementId, 30)
@@ -316,7 +329,7 @@ export * from ${source('common/ResponseTypes.ts')};
     const cached = transactions()
     state.runInAction(() => { f.store.uiState.selectedCategory = f.other })
     const returned = { ...f.transactionProps(), version: 1, categories: [{ categoryId: 21, amount: '-10.00' }] }
-    routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: { transaction: returned, categories: [{ id: 20, balance: 0 }, { id: 21, balance: -10 }], acctBalances: [{ id: 10, balance: '90.00' }] } } }))
+    routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: { transaction: returned, categories: [{ id: 20, balance: '0.00' }, { id: 21, balance: '-10.00' }], acctBalances: [{ id: 10, balance: '90.00' }] } } }))
     await cached.account.updateTransaction({ categories: returned.categories.map(category => ({ ...category, amount: Number(category.amount) })) })
     assert.lengthOf(f.category.transactions.transactions, 0)
     assert.equal(f.category.balance, 0); assert.equal(f.other.balance, -10)
@@ -326,7 +339,7 @@ export * from ${source('common/ResponseTypes.ts')};
   test('date edits update and reorder both cached copies', async ({ assert }) => {
     const cached = transactions()
     const returned = { ...f.transactionProps(), date: '2025-02-20', version: 1 }
-    routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: { transaction: returned, categories: [{ id: 20, balance: -10 }], acctBalances: [{ id: 10, balance: '90.00' }] } } }))
+    routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: { transaction: returned, categories: [{ id: 20, balance: '-10.00' }], acctBalances: [{ id: 10, balance: '90.00' }] } } }))
     await cached.account.updateTransaction({ date: returned.date })
     assert.equal(cached.category.date.toISODate(), returned.date)
     assert.strictEqual(f.category.transactions.transactions[0], cached.category)
@@ -336,7 +349,7 @@ export * from ${source('common/ResponseTypes.ts')};
   test('deletion removes copies from inactive transaction lists', async ({ assert }) => {
     const cached = transactions()
     state.runInAction(() => { f.store.uiState.selectedCategory = f.other })
-    routes.set('delete /api/v1/transaction/40', async () => ({ body: { data: { categories: [{ id: 20, balance: 0 }], acctBalances: [{ id: 10, balance: '100.00' }] } } }))
+    routes.set('delete /api/v1/transaction/40', async () => ({ body: { data: { categories: [{ id: 20, balance: '0.00' }], acctBalances: [{ id: 10, balance: '100.00' }] } } }))
     await cached.account.delete()
     assert.lengthOf(f.account.transactions.transactions, 0)
     assert.lengthOf(f.category.transactions.transactions, 0)
@@ -351,7 +364,7 @@ export * from ${source('common/ResponseTypes.ts')};
     })
     const cached = { source: f.category.transactions.transactions[0], destination: f.other.transactions.transactions[0] }
     const returned = { ...props, date: '2025-02-20', version: 2 }
-    routes.set('patch /api/v1/category-transfer/40', async () => ({ body: { data: { transaction: returned, balances: [{ id: 20, balance: -amount }, { id: 21, balance: amount }] } } }))
+    routes.set('patch /api/v1/category-transfer/40', async () => ({ body: { data: { transaction: returned, balances: [{ id: 20, balance: (-amount).toFixed(2) }, { id: 21, balance: amount.toFixed(2) }] } } }))
     await cached.source.updateCategoryTransfer({ date: returned.date, categories: returned.categories.map(category => ({ ...category, amount: Number(category.amount) })) })
     assert.equal(cached.source.date.toISODate(), returned.date)
     assert.equal(cached.destination.version, 2)
@@ -361,7 +374,7 @@ export * from ${source('common/ResponseTypes.ts')};
 
   test('successful transfer creation applies authoritative source/destination balances').with([12.25, -12.25]).run(async ({ assert }, amount) => {
     const props = { ...f.transactionProps(), type: state.TransactionType.FUNDING_TRANSACTION, accountTransaction: undefined, categories: [{ categoryId: 20, amount: (-amount).toFixed(2) }, { categoryId: 21, amount: amount.toFixed(2) }] }
-    routes.set('post /api/v1/category-transfer', async () => ({ body: { data: { transaction: props, balances: [{ id: 20, balance: -amount }, { id: 21, balance: amount }] } } }))
+    routes.set('post /api/v1/category-transfer', async () => ({ body: { data: { transaction: props, balances: [{ id: 20, balance: (-amount).toFixed(2) }, { id: 21, balance: amount.toFixed(2) }] } } }))
     await f.store.register.addCategoryTransfer({ date: props.date, categories: props.categories.map(category => ({ ...category, amount: Number(category.amount) })) }, props.type)
     assert.equal(f.category.balance, -amount); assert.equal(f.other.balance, amount)
     assert.equal(f.category.transactions.transactions[0].id, 40)
@@ -369,7 +382,7 @@ export * from ${source('common/ResponseTypes.ts')};
   })
 
   test('account creation applies returned balances and inserts transaction', async ({ assert }) => {
-    routes.set('post /api/v1/account/10/transactions', async () => ({ body: { transaction: f.transactionProps(), categories: [{ id: 20, balance: -10 }], acctBalances: [{ id: 10, balance: '90.00' }] } }))
+    routes.set('post /api/v1/account/10/transactions', async () => ({ body: { transaction: f.transactionProps(), categories: [{ id: 20, balance: '-10.00' }], acctBalances: [{ id: 10, balance: '90.00' }] } }))
     await f.account.addTransaction({ date: '2025-02-10', amount: -10, name: 'Purchase', categories: [{ categoryId: 20, amount: -10 }] })
     assert.equal(f.account.balance, 90); assert.equal(f.category.balance, -10)
     assert.equal(f.account.transactions.transactions[0].id, 40)
@@ -387,7 +400,7 @@ export * from ${source('common/ResponseTypes.ts')};
     const cached = transactions(f.transactionProps(-10, 30))
     state.runInAction(() => { f.account.tracking = state.TrackingType.Balances; f.account.balance = 90 })
     routes.set('delete /api/v1/statements/30', async () => ({ body: {} }))
-    routes.set('get /api/v1/transactions?t=40', async () => ({ body: { data: { transactions: [f.transactionProps(-10, null)], balance: 0 } } }))
+    routes.set('get /api/v1/transactions?t=40', async () => ({ body: { data: { transactions: [f.transactionProps(-10, null)], balance: '0.00' } } }))
     accountsResponse(0)
     await f.statement.delete()
     assert.isNull(cached.account.statementId); assert.isNull(cached.category.statementId)
@@ -424,7 +437,7 @@ export * from ${source('common/ResponseTypes.ts')};
     state.runInAction(() => { funding.balance = 85.85; f.account.balance = 100 })
     routes.set('patch /api/v1/account/10', async () => ({ body: {} }))
     routes.set('get /api/v1/connected-accounts', async () => ({ body: { data: [{ ...f.institutionProps, accounts: [{ ...f.accountProps, startDate: '2025-02-01', balance: '100.00' }] }] } }))
-    routes.set('get /api/v1/groups', async () => ({ body: { data: { categories: [{ id: 20, balance: 92.95 }] } } }))
+    routes.set('get /api/v1/groups', async () => ({ body: { data: { categories: [{ id: 20, balance: '92.95' }] } } }))
     let refreshed = false
     f.category.transactions.getData = async () => { refreshed = true }
     const startDate = f.statement.startDate
@@ -540,7 +553,7 @@ export * from ${source('common/ResponseTypes.ts')};
 
   test('amount edit on an assigned transaction refreshes missing statement totals', async ({ assert }) => {
     const cached = transactions(f.transactionProps(-10, 30))
-    routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: { transaction: { ...f.transactionProps(-12.25, 30), version: 1 }, categories: [{ id: 20, balance: -12.25 }], acctBalances: [{ id: 10, balance: '87.75' }] } } }))
+    routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: { transaction: { ...f.transactionProps(-12.25, 30), version: 1 }, categories: [{ id: 20, balance: '-12.25' }], acctBalances: [{ id: 10, balance: '87.75' }] } } }))
     routes.set('get /api/v1/account/10/statements', async () => ({ body: [{ ...f.statementProps, debits: '-12.25' }] }))
     await cached.account.updateTransaction({ amount: -12.25 })
     assert.equal(f.statement.debits, -12.25)
@@ -549,7 +562,7 @@ export * from ${source('common/ResponseTypes.ts')};
 
   test('clearing assignment applies returned statement totals to all loaded copies', async ({ assert }) => {
     const cached = transactions(f.transactionProps(-10, 30))
-    routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: { transaction: f.transactionProps(-10, null), categories: [{ id: 20, balance: -10 }], acctBalances: [{ id: 10, balance: '90.00' }], statement: { ...f.statementProps, debits: '0.00' } } } }))
+    routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: { transaction: f.transactionProps(-10, null), categories: [{ id: 20, balance: '-10.00' }], acctBalances: [{ id: 10, balance: '90.00' }], statement: { ...f.statementProps, debits: '0.00' } } } }))
     await cached.account.updateTransaction({ statementId: null })
     assert.equal(cached.account.statementId, null); assert.equal(cached.category.statementId, null)
     assert.equal(f.statement.debits, 0)
@@ -558,7 +571,7 @@ export * from ${source('common/ResponseTypes.ts')};
   test('bulk reconciliation None uses authoritative membership', async ({ assert }) => {
     const cached = transactions(f.transactionProps(-10, 30))
     routes.set('patch /api/v1/statements/30', async () => ({ body: { ...f.statementProps, debits: '0.00' } }))
-    routes.set('get /api/v1/transactions?t=40', async () => ({ body: { data: { transactions: [f.transactionProps(-10, null)], balance: 0 } } }))
+    routes.set('get /api/v1/transactions?t=40', async () => ({ body: { data: { transactions: [f.transactionProps(-10, null)], balance: '0.00' } } }))
     await f.statement.update({ reconcile: 'None' })
     assert.equal(cached.account.statementId, null); assert.equal(cached.category.statementId, null)
   })
@@ -580,14 +593,14 @@ export * from ${source('common/ResponseTypes.ts')};
 
   test('malformed transaction success cannot partially mutate financial state', async ({ assert }) => {
     const cached = transactions()
-    routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: { transaction: { ...f.transactionProps(), date: 'invalid' }, categories: [{ id: 20, balance: -75 }], acctBalances: [{ id: 10, balance: '25.00' }] } } }))
+    routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: { transaction: { ...f.transactionProps(), date: 'invalid' }, categories: [{ id: 20, balance: '-75.00' }], acctBalances: [{ id: 10, balance: '25.00' }] } } }))
     await assert.rejects(() => cached.account.updateTransaction({ amount: -75 }))
     assert.equal(cached.account.amount, -10); assert.equal(cached.category.amount, -10)
     assert.equal(f.account.balance, 90); assert.equal(f.category.balance, -10)
   })
 
   test('HTTP-rejected transfer creation cannot apply a success-shaped body', async ({ assert }) => {
-    routes.set('post /api/v1/category-transfer', async () => ({ ok: false, body: { data: { transaction: f.transactionProps(), balances: [{ id: 20, balance: -75 }] } } }))
+    routes.set('post /api/v1/category-transfer', async () => ({ ok: false, body: { data: { transaction: f.transactionProps(), balances: [{ id: 20, balance: '-75.00' }] } } }))
     await assert.rejects(() => f.store.register.addCategoryTransfer({ date: '2025-02-10', categories: [] }, state.TransactionType.FUNDING_TRANSACTION))
     assert.equal(f.category.balance, 0); assert.lengthOf(f.category.transactions.transactions, 0)
   })
@@ -606,7 +619,7 @@ export * from ${source('common/ResponseTypes.ts')};
   test('combined statement date change and reconciliation uses server-returned membership', async ({ assert }) => {
     const cached = transactions()
     routes.set('patch /api/v1/statements/30', async () => ({ body: { ...f.statementProps, startDate: '2025-01-01', debits: '-10.00' } }))
-    routes.set('get /api/v1/transactions?t=40', async () => ({ body: { data: { transactions: [f.transactionProps(-10, 30)], balance: 0 } } }))
+    routes.set('get /api/v1/transactions?t=40', async () => ({ body: { data: { transactions: [f.transactionProps(-10, 30)], balance: '0.00' } } }))
     await f.statement.update({ startDate: '2025-01-01', reconcile: 'All' })
     assert.equal(f.statement.startDate.toISODate(), '2025-01-01')
     assert.equal(cached.category.statementId, 30)
@@ -661,7 +674,7 @@ export * from ${source('common/ResponseTypes.ts')};
       f.category.transactions.setTransactions([props]); f.other.transactions.setTransactions([props])
       f.category.balance = -amount; f.other.balance = amount
     })
-    routes.set('delete /api/v1/transaction/40', async () => ({ body: { data: { categories: [{ id: 20, balance: 0 }, { id: 21, balance: 0 }], acctBalances: [] } } }))
+    routes.set('delete /api/v1/transaction/40', async () => ({ body: { data: { categories: [{ id: 20, balance: '0.00' }, { id: 21, balance: '0.00' }], acctBalances: [] } } }))
     await f.category.transactions.transactions[0].delete()
     assert.lengthOf(f.category.transactions.transactions, 0); assert.lengthOf(f.other.transactions.transactions, 0)
     assert.equal(f.category.balance, 0); assert.equal(f.other.balance, 0)
@@ -669,7 +682,7 @@ export * from ${source('common/ResponseTypes.ts')};
 
   test('malformed deletion success does not partially apply returned financial balances', async ({ assert }) => {
     const cached = transactions()
-    routes.set('delete /api/v1/transaction/40', async () => ({ body: { data: { categories: [{ id: 20, balance: 0 }] } } }))
+    routes.set('delete /api/v1/transaction/40', async () => ({ body: { data: { categories: [{ id: 20, balance: '0.00' }] } } }))
     await assert.rejects(() => cached.account.delete())
     assert.equal(f.category.balance, -10); assert.equal(f.account.balance, 90)
     assert.lengthOf(f.category.transactions.transactions, 1); assert.lengthOf(f.account.transactions.transactions, 1)
@@ -679,7 +692,7 @@ export * from ${source('common/ResponseTypes.ts')};
     const cached = transactions()
     state.runInAction(() => { f.store.searcher.transactions.setTransactions([f.transactionProps()]) })
     const search = f.store.searcher.transactions.transactions[0]
-    routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: { transaction: { ...f.transactionProps(-12.25), version: 1 }, categories: [{ id: 20, balance: -12.25 }], acctBalances: [{ id: 10, balance: '87.75' }] } } }))
+    routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: { transaction: { ...f.transactionProps(-12.25), version: 1 }, categories: [{ id: 20, balance: '-12.25' }], acctBalances: [{ id: 10, balance: '87.75' }] } } }))
     await cached.account.updateTransaction({ amount: -12.25 })
     assert.equal(search.amount, -12.25); assert.equal(search.version, 1)
     assert.strictEqual(f.store.searcher.transactions.transactions[0], search)
@@ -690,7 +703,7 @@ export * from ${source('common/ResponseTypes.ts')};
     state.runInAction(() => { f.account.transactions.appendTransactions([{ ...f.transactionProps(), id: 41 }]) })
     routes.set('patch /api/v1/statements/30', async () => ({ body: { ...f.statementProps, debits: '-20.00' } }))
     const returned = f.transactionProps(-10, 30)
-    routes.set('get /api/v1/transactions?t=40&t=41', async () => ({ body: { data: { transactions: failure === 'missing' ? [returned] : [returned, returned], balance: 0 } } }))
+    routes.set('get /api/v1/transactions?t=40&t=41', async () => ({ body: { data: { transactions: failure === 'missing' ? [returned] : [returned, returned], balance: '0.00' } } }))
     await assert.rejects(() => f.statement.update({ reconcile: 'All' }))
     assert.equal(cached.account.statementId, null); assert.equal(cached.category.statementId, null)
     assert.equal(f.account.transactions.transactions[1].statementId, null)
@@ -703,7 +716,7 @@ export * from ${source('common/ResponseTypes.ts')};
     routes.set('post /api/v1/category-transfer', async (payload) => {
       assert.deepEqual(payload.categories, rows)
       return rejected ? { ok: false, body: {} }
-        : { body: { data: { transaction: props, balances: [{ id: 20, balance: -2 }, { id: 21, balance: 2 }] } } }
+        : { body: { data: { transaction: props, balances: [{ id: 20, balance: '-2.00' }, { id: 21, balance: '2.00' }] } } }
     })
     const submit = () => f.store.register.addCategoryTransfer({ date: '2025-03-01', categories: rows }, props.type)
     if (rejected) {
@@ -732,7 +745,7 @@ export * from ${source('common/ResponseTypes.ts')};
     const before = { date: cached.date.toISODate(), categories: cached.categories.map((row) => ({ ...row })) }
     routes.set('patch /api/v1/category-transfer/40', async () => ({ ok: false, body: {
       errors: [{ status: '422', detail: 'Unsupported replacement target' }],
-      data: { transaction: { ...props, date: '2025-04-01' }, balances: [{ id: 20, balance: 999 }] },
+      data: { transaction: { ...props, date: '2025-04-01' }, balances: [{ id: 20, balance: '999.00' }] },
     } }))
     await assert.rejects(() => cached.updateCategoryTransfer({ date: '2025-04-01', categories: [] }))
     assert.equal(cached.date.toISODate(), before.date)

@@ -1,3 +1,4 @@
+import { decodeAmount } from '../monetary';
 import React, {
   useState, useEffect, useCallback,
 } from 'react';
@@ -53,7 +54,7 @@ const RebalanceDialog: React.FC<PropsType & ModalProps> = ({
           const body = await response.body();
 
           if (isCategoryTreeBalanceResponse(body)) {
-            setBalances(body);
+            setBalances(body.map((row) => ({ ...row, balance: decodeAmount(row.balance) })));
           }
         }
       })();

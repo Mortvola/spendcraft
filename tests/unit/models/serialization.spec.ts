@@ -1,3 +1,4 @@
+import Category from '#models/Category'
 import { test } from '@japa/runner'
 import { mock } from 'node:test'
 import Budget from '#models/Budget'
@@ -226,5 +227,16 @@ test('connected-account responses encode balances without changing model values'
     }
   } finally {
     related.mock.restore()
+  }
+})
+
+
+test('Category responses encode balances while runtime values remain numeric', ({ assert }) => {
+  for (const [amount, expected] of [[12.5, '12.50'], [-0.3, '-0.30'], [0, '0.00']] as const) {
+    const category = new Category().merge({ id: 1, balance: amount, fundingAmount: 5 })
+    assert.strictEqual(category.serialize().balance, expected)
+    assert.strictEqual(JSON.parse(JSON.stringify(category)).balance, expected)
+    assert.strictEqual(category.balance, amount)
+    assert.strictEqual(category.serialize().fundingAmount, 5)
   }
 })

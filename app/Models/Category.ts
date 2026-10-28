@@ -1,4 +1,4 @@
-import { categoryNonzeroAllocationSql } from '#services/categoryAmountCodec';
+import { encodeMonetaryAmount, categoryNonzeroAllocationSql } from '#services/categoryAmountCodec';
 import { consumeFundingStorage, prepareFundingStorage, finishFundingStorage, stageFundingStorage } from '#services/fundingStorage';
 import {
   BaseModel, belongsTo, column, beforeSave, afterSave,
@@ -9,20 +9,6 @@ import { CategoryType, TrackingType, TransactionType } from '#common/ResponseTyp
 import Budget from '#app/Models/Budget';
 import { DateTime } from 'luxon';
 import type { BelongsTo } from "@adonisjs/lucid/types/relations";
-
-interface CategoryItem {
-  id: number,
-  name: string,
-  type: CategoryType,
-  balance: number,
-}
-
-interface GroupItem {
-  id: number,
-  name: string,
-  system: boolean,
-  categories: (CategoryItem | { id: number, name: string})[],
-}
 
 interface FundingCategory {
   categoryId: number,
@@ -55,6 +41,7 @@ export default class Category extends BaseModel {
 
   @column({
     consume: (value: string) => parseFloat(value),
+    serialize: (value: number) => encodeMonetaryAmount(value),
   })
   public balance: number;
 
@@ -100,7 +87,7 @@ export default class Category extends BaseModel {
     budget: Budget,
     date: string,
     transactionId: number,
-  ): Promise<GroupItem[]> {
+  ): Promise<{ id: number, balance: number }[]> {
     const subQuery = db.query()
       .select('categoryId')
       .select(db.raw('sum("transCats".amount) as amount'))
@@ -235,5 +222,3 @@ export default class Category extends BaseModel {
     //   .save();
   }
 }
-
-export type { GroupItem };
