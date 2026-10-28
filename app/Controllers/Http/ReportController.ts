@@ -1,16 +1,21 @@
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec';
 import { HttpContext } from '@adonisjs/core/http';
 import db from '@adonisjs/lucid/services/db';
 import Budget from '#app/Models/Budget';
 import Account from '#models/Account';
 import Category from '#models/Category';
 import { Exception } from '@adonisjs/core/exceptions';
-import { type BudgetProgressReportResponse, AccountType, CategoryType, TrackingType, TransactionType } from '#common/ResponseTypes';
+import { type BudgetProgressReportResponse, type NetworthReportResponse, type PayeeReportRow, type CategoryReportRow,
+  type IncomeVsExpensesReportResponse, type FundingHistoryReportResponse, type FundingHistoryReportRow, AccountType, CategoryType, TrackingType, TransactionType } from '#common/ResponseTypes';
 import { DateTime } from 'luxon';
 
 type NetworthReportType = (string | number)[][];
-type PayeeReportType = Record<string, unknown>[];
+type PayeeReportType = (Omit<PayeeReportRow, 'sum'> & { sum: number })[];
+type CategoryReportType = (Omit<CategoryReportRow, 'sum'> & { sum: number })[];
 type IncomeVsExpensesReportType = [string, number, number, number][];
-type FundingHistoryReportType = [string, number, number, number][];
+type FundingHistoryReportType = (Omit<FundingHistoryReportRow, 'history'> & {
+  history: { year: number, month: number, amount: number }[] | null;
+})[];
 
 function parseReportIds(value: unknown): number[] | undefined {
   if (value === undefined) return undefined;
@@ -37,7 +42,7 @@ class ReportController {
   public async get({
     request,
     auth: { user },
-  }: HttpContext): Promise<NetworthReportType | PayeeReportType | BudgetProgressReportResponse> {
+  }: HttpContext): Promise<NetworthReportResponse | PayeeReportRow[] | CategoryReportRow[] | IncomeVsExpensesReportResponse | FundingHistoryReportResponse | BudgetProgressReportResponse> {
     if (!user) {
       throw new Error('user not defined');
     }
@@ -45,8 +50,11 @@ class ReportController {
     const budget = await user.related('budget').query().firstOrFail();
 
     switch (request.params().report) {
-      case 'networth':
-        return ReportController.networth(budget);
+      case 'networth': {
+        const rows = await ReportController.networth(budget);
+        return rows.map((row, index) => row.map((cell, column) => index === 0 || column === 0
+          ? String(cell) : encodeMonetaryAmount(cell)));
+      }
 
       case 'payee': {
         const {
@@ -61,7 +69,8 @@ class ReportController {
             .whereHas('institution', (institution) => institution.where('budgetId', budget.id))
             .firstOrFail();
         }
-        return ReportController.payee(budget, startDate, endDate, pc, accountIds);
+        const rows = await ReportController.payee(budget, startDate, endDate, pc, accountIds);
+        return rows.map((row) => ({ ...row, sum: encodeMonetaryAmount(row.sum) }));
       }
 
       case 'category': {
@@ -76,15 +85,21 @@ class ReportController {
             .whereHas('group', (group) => group.where('budgetId', budget.id))
             .firstOrFail();
         }
-        return ReportController.category(budget, startDate, endDate, categoryIds);
+        const rows = await ReportController.category(budget, startDate, endDate, categoryIds);
+        return rows.map((row) => ({ ...row, sum: encodeMonetaryAmount(row.sum) }));
       }
 
       case 'income-vs-expenses': {
-        return ReportController.incomeVsExpenses(budget)
+        const rows = await ReportController.incomeVsExpenses(budget);
+        return rows.map(([month, income, expenses, net]) => [month,
+          encodeMonetaryAmount(income), encodeMonetaryAmount(expenses), encodeMonetaryAmount(net)]);
       }
 
       case 'funding-history': {
-        return ReportController.fundingHistory(budget)
+        const rows = await ReportController.fundingHistory(budget);
+        return rows.map((row) => ({ ...row,
+          history: row.history === null ? null : row.history.map((entry) => ({ ...entry, amount: encodeMonetaryAmount(entry.amount) })),
+        }));
       }
 
       case 'budget-progress': {
@@ -93,7 +108,8 @@ class ReportController {
         } = request.qs();
         const startDate = DateTime.fromFormat(`1-${m}`, 'd-M-yyyy');
         const endDate = startDate.endOf('month');
-        return ReportController.budgetProgress(budget, startDate, endDate);
+        const rows = await ReportController.budgetProgress(budget, startDate, endDate);
+        return rows.map<BudgetProgressReportResponse[number]>(([date, balance, transactions]) => [date, encodeMonetaryAmount(balance), transactions]);
       }
 
       default:
@@ -320,7 +336,7 @@ class ReportController {
     startDate: string,
     endDate: string,
     c?: number[],
-  ): Promise<PayeeReportType> {
+  ): Promise<CategoryReportType> {
     if (c !== undefined && c.length > 0) {
       const query = db.query()
         .select(
@@ -441,7 +457,7 @@ class ReportController {
     budget: Budget,
     startDate: DateTime,
     endDate: DateTime,
-  ): Promise<BudgetProgressReportResponse> {
+  ): Promise<[string, number, number[]][]> {
     const acctTransfer = await budget.getAccountTransferCategory();
 
     const fundingQuery = await db.query()

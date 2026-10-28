@@ -104,7 +104,7 @@ test.group('Report filter security', (group) => {
       const response = await client.get('/api/v1/reports/networth').accept('json').loginAs(user)
       assert.deepEqual(await state(), before)
       response.assertStatus(200)
-      assert.deepEqual(response.body(), [['date', name, name], [date.toISODate(), 100, 200]])
+      assert.deepEqual(response.body(), [['date', name, name], [date.toISODate(), '100.00', '200.00']])
       assert.notInclude(response.text(), 'FOREIGN PRIVATE ACCOUNT')
       assert.notInclude(response.text(), '987654')
     }
@@ -124,7 +124,7 @@ test.group('Report filter security', (group) => {
         const response = await client.get(`/api/v1/reports/${report}`).qs(filters(ids)).accept('json').loginAs(user)
         response.assertStatus(200)
         assert.lengthOf(response.body(), scenario === 'owner-multiple' ? 2 : 1)
-        for (const row of response.body()) assert.equal(row.sum, 10)
+        for (const row of response.body()) assert.strictEqual(row.sum, '10.00')
         assert.notInclude(response.text(), 'foreign private purchase')
         assert.notInclude(response.text(), 'foreign category')
       })

@@ -56,7 +56,7 @@ test.group('Net-worth opening snapshots', (group) => {
       await movement(f, f.account.startDate, amount, TransactionType.STARTING_BALANCE)
       assert.deepEqual(await observe(client, f, 200), amount === 0
         ? [['date', 'Transaction account']]
-        : [['date', 'Transaction account'], [f.account.startDate.toISODate(), amount]])
+        : [['date', 'Transaction account'], [f.account.startDate.toISODate(), amount.toFixed(2)]])
       assert.equal((await Account.findOrFail(f.account.id)).balance, amount)
       assert.equal((await f.account.related('accountTransactions').query()).length, 1)
     })
@@ -73,14 +73,14 @@ test.group('Net-worth opening snapshots', (group) => {
     await movement(f, f.account.startDate, 90, TransactionType.STARTING_BALANCE)
     const date = f.today.minus({ days: 2 })
     await movement(f, date, 10)
-    assert.deepEqual(await observe(client, f, 200), [['date', 'Transaction account'], [f.account.startDate.toISODate(), 90], [date.toISODate(), 100]])
+    assert.deepEqual(await observe(client, f, 200), [['date', 'Transaction account'], [f.account.startDate.toISODate(), '90.00'], [date.toISODate(), '100.00']])
   })
 
   test('an ordinary transaction without Initial Funding still plots current balance', async ({ client, assert }) => {
     const f = await fixture()
     const date = f.today.minus({ days: 2 })
     await movement(f, date, 10)
-    assert.deepEqual(await observe(client, f, 200), [['date', 'Transaction account'], [date.toISODate(), 100]])
+    assert.deepEqual(await observe(client, f, 200), [['date', 'Transaction account'], [date.toISODate(), '100.00']])
   })
 
   test('an opening-only account carries its balance across other account dates')
@@ -102,14 +102,14 @@ test.group('Net-worth opening snapshots', (group) => {
       assert.lengthOf(body, 4)
       assert.sameMembers(body[0], ['date', 'Transaction account', 'Other account'])
       assert.equal(body[1][0], f.account.startDate.toISODate())
-      assert.equal(body[1][body[0].indexOf('Transaction account')], 100)
-      assert.equal(body[1][body[0].indexOf('Other account')], 0)
+      assert.equal(body[1][body[0].indexOf('Transaction account')], '100.00')
+      assert.equal(body[1][body[0].indexOf('Other account')], '0.00')
       assert.equal(body[2][0], date.toISODate())
-      assert.equal(body[2][body[0].indexOf('Transaction account')], 100)
-      assert.equal(body[2][body[0].indexOf('Other account')], 40)
+      assert.equal(body[2][body[0].indexOf('Transaction account')], '100.00')
+      assert.equal(body[2][body[0].indexOf('Other account')], '40.00')
       assert.equal(body[3][0], later.toISODate())
-      assert.equal(body[3][body[0].indexOf('Transaction account')], 100)
-      assert.equal(body[3][body[0].indexOf('Other account')], 50)
+      assert.equal(body[3][body[0].indexOf('Transaction account')], '100.00')
+      assert.equal(body[3][body[0].indexOf('Other account')], '50.00')
       assert.equal((await Account.findOrFail(f.account.id)).balance, 100)
     })
 
@@ -125,7 +125,7 @@ test.group('Net-worth opening snapshots', (group) => {
         : scenario.unit === 'month' ? date.startOf('month') : date.startOf('year')
       const openingBucket = scenario.unit === 'week' ? f.account.startDate.startOf('week')
         : scenario.unit === 'month' ? f.account.startDate.startOf('month') : f.account.startDate.startOf('year')
-      assert.deepEqual(await observe(client, f, 200), [['date', 'Transaction account'], [openingBucket.toISODate(), 90], [bucket.toISODate(), 100]])
+      assert.deepEqual(await observe(client, f, 200), [['date', 'Transaction account'], [openingBucket.toISODate(), '90.00'], [bucket.toISODate(), '100.00']])
       assert.equal((await Account.findOrFail(f.account.id)).startDate.toISODate(), f.account.startDate.toISODate())
     })
 
@@ -145,7 +145,7 @@ test.group('Net-worth opening snapshots', (group) => {
       const date = f.today.minus({ days: 2 })
       await movement(f, date, amount)
       assert.deepEqual(await observe(client, f, 200), [['date', 'Transaction account'],
-        [f.account.startDate.toISODate(), opening], [date.toISODate(), 100]])
+        [f.account.startDate.toISODate(), opening.toFixed(2)], [date.toISODate(), '100.00']])
     })
 
   test('multiple movements in the opening bucket produce one closing value')
@@ -158,7 +158,7 @@ test.group('Net-worth opening snapshots', (group) => {
       await movement(f, date, -5)
       const bucket = age === 400 ? date.startOf('week') : age === 1000 ? date.startOf('month')
         : age === 4000 ? date.startOf('year') : date
-      assert.deepEqual(await observe(client, f, 200), [['date', 'Transaction account'], [bucket.toISODate(), 100]])
+      assert.deepEqual(await observe(client, f, 200), [['date', 'Transaction account'], [bucket.toISODate(), '100.00']])
     })
 
   test('old zero Initial Funding does not coarsen ordinary transaction dates', async ({ client, assert }) => {
@@ -166,7 +166,7 @@ test.group('Net-worth opening snapshots', (group) => {
     await f.account.merge({ startDate: f.today.minus({ days: 4000 }), balance: 10 }).save()
     await movement(f, f.account.startDate, 0, TransactionType.STARTING_BALANCE)
     await movement(f, f.today, 10)
-    assert.deepEqual(await observe(client, f, 200), [['date', 'Transaction account'], [f.today.toISODate(), 10]])
+    assert.deepEqual(await observe(client, f, 200), [['date', 'Transaction account'], [f.today.toISODate(), '10.00']])
   })
 
   test('Loans retain reverse reconstruction without an opening snapshot', async ({ client, assert }) => {
@@ -176,7 +176,7 @@ test.group('Net-worth opening snapshots', (group) => {
     const first = f.today.minus({ days: 2 })
     await movement(f, first, 15)
     await movement(f, f.today, -5)
-    assert.deepEqual(await observe(client, f, 200), [['date', 'Transaction account'], [first.toISODate(), 105], [f.today.toISODate(), 100]])
+    assert.deepEqual(await observe(client, f, 200), [['date', 'Transaction account'], [first.toISODate(), '105.00'], [f.today.toISODate(), '100.00']])
   })
 
 })

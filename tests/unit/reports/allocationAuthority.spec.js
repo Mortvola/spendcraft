@@ -1,3 +1,4 @@
+import { encodeMonetaryAmount } from '../../../app/services/categoryAmountCodec.ts'
 import { createHash } from 'node:crypto'
 import { test } from '@japa/runner'
 import { readFile } from 'node:fs/promises'
@@ -201,4 +202,32 @@ test.group('Allocation report authority characterization without DB', () => {
     }
   })
 
+})
+
+
+test('report endpoints encode only monetary values without changing calculation results').with([
+  { report: 'networth', method: 'networth',
+    rows: [['date', 'Account'], ['2026-10-01', -0.125], ['2026-10-02', 0]],
+    expected: [['date', 'Account'], ['2026-10-01', '-0.12'], ['2026-10-02', '0.00']] },
+  { report: 'payee', method: 'payee', rows: [{ rowNumber: '1', name: 'Shop', paymentChannel: 'online', sum: 0.1 + 0.2, count: 3 }],
+    expected: [{ rowNumber: '1', name: 'Shop', paymentChannel: 'online', sum: '0.30', count: 3 }] },
+  { report: 'category', method: 'category', rows: [{ rowNumber: '1', groupName: 'Group', categoryName: 'Food', sum: 1.005, count: 2 }],
+    expected: [{ rowNumber: '1', groupName: 'Group', categoryName: 'Food', sum: '1.00', count: 2 }] },
+  { report: 'income-vs-expenses', method: 'incomeVsExpenses', rows: [['2026-10', 10.25, -0.125, 10.125]],
+    expected: [['2026-10', '10.25', '-0.12', '10.13']] },
+  { report: 'funding-history', method: 'fundingHistory', rows: [{ categoryId: 10, history: [{ year: 2026, month: 10, amount: 0.125 }] },
+    { categoryId: 11, history: null }], expected: [{ categoryId: 10, history: [{ year: 2026, month: 10, amount: '0.13' }] },
+    { categoryId: 11, history: null }] },
+  { report: 'budget-progress', method: 'budgetProgress', rows: [['2026-10-01', 0.1 + 0.2, [1, 2]]],
+    expected: [['2026-10-01', '0.30', [1, 2]]] },
+]).run(async ({ assert }, scenario) => {
+  const before = globalThis.structuredClone(scenario.rows)
+  const { run } = await sourceMethod('get', { encodeMonetaryAmount, DateTime,
+    parseReportIds: () => undefined,
+    ReportController: { [scenario.method]: async () => scenario.rows },
+  })
+  const rows = await run({ request: { params: () => ({ report: scenario.report }), qs: () => ({ m: '10-2026' }) },
+    auth: { user: { related: () => ({ query: () => ({ firstOrFail: async () => ({ id: 1 }) }) }) } } })
+  assert.deepEqual(JSON.parse(JSON.stringify(rows)), scenario.expected)
+  assert.deepEqual(scenario.rows, before)
 })

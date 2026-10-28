@@ -1,16 +1,13 @@
+import { decodeAmount, decodeNetworthReport } from '../monetary';
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 
-import { isNetworthReport } from '../../common/ResponseTypes';
+import { isNetworthReport, type PayeeReportRow } from '../../common/ResponseTypes';
 
-type PayeeReport = {
-  name: string,
-}[];
-
-const isPayeeReport = (r: unknown): r is Record<string, string>[] => (
+const isPayeeReport = (r: unknown): r is PayeeReportRow[] => (
   Array.isArray(r)
   && (r.length === 0 || (
-    (r as PayeeReport)[0].name !== undefined
+    (r as PayeeReportRow[])[0].name !== undefined
   ))
 )
 
@@ -19,7 +16,7 @@ class Reports {
   accessor reportType: string | null = null;
 
   @observable
-  accessor data: (string | number)[][] | Record<string, string>[] | null = null;
+  accessor data: (string | number)[][] | Record<string, string | number>[] | null = null;
 
   store: unknown;
 
@@ -40,7 +37,7 @@ class Reports {
           runInAction(() => {
             this.reportType = reportType;
             if (isNetworthReport(body)) {
-              this.data = body;
+              this.data = decodeNetworthReport(body);
             }
           });
         }
@@ -57,7 +54,7 @@ class Reports {
           runInAction(() => {
             this.reportType = reportType;
             if (isPayeeReport(body)) {
-              this.data = body;
+              this.data = body.map((row) => ({ ...row, sum: decodeAmount(row.sum) }));
             }
           });
         }

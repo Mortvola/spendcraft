@@ -1,3 +1,4 @@
+import { decodeAmount } from '../monetary';
 import React from 'react';
 import { Formik, FieldArray, FormikState } from 'formik';
 import { DateTime } from 'luxon';
@@ -9,7 +10,7 @@ import { useStores } from '../State/Store';
 import useSortableTable from './SortableTable';
 import ReportControls from './ReportControls';
 import styles from './Payee.module.scss';
-import { TrackingType } from '../../common/ResponseTypes';
+import { TrackingType, type PayeeReportRow } from '../../common/ResponseTypes';
 
 interface PayeeReport {
   [key: string]: string | number,
@@ -64,15 +65,15 @@ const Payee: React.FC = () => {
     if (response.ok) {
       const body = await response.body();
 
-      const isPayeeReport = (r: unknown): r is PayeeReport[] => (
+      const isPayeeReport = (r: unknown): r is PayeeReportRow[] => (
         Array.isArray(r)
         && (r.length === 0 || (
-          (r as PayeeReport[])[0].name !== undefined
+          (r as PayeeReportRow[])[0].name !== undefined
         ))
       )
 
       if (isPayeeReport(body)) {
-        setData(body);
+        setData(body.map((row) => ({ ...row, sum: decodeAmount(row.sum) })));
       }
     }
   }

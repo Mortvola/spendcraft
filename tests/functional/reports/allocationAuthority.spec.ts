@@ -1,3 +1,4 @@
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { writeHistoricalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
@@ -64,11 +65,11 @@ test.group('Exclusive Category and Funding History JSON authority', () => {
       response.assertStatus(200)
       if (report === 'category') {
         if (!scenario.count) assert.deepEqual(response.body(), [])
-        else { assert.equal(response.body()[0].sum, scenario.amount); assert.equal(response.body()[0].count, scenario.count) }
+        else { assert.equal(response.body()[0].sum, encodeMonetaryAmount(scenario.amount)); assert.equal(response.body()[0].count, scenario.count) }
       } else {
         const row = response.body().find((item: { categoryId: number }) => item.categoryId === f.category.id)
         if (!scenario.count) assert.isNull(row.history)
-        else assert.deepEqual(row.history, [{ year: 2025, month: 2, amount: scenario.amount }])
+        else assert.deepEqual(row.history, [{ year: 2025, month: 2, amount: encodeMonetaryAmount(scenario.amount) }])
       }
       assert.deepEqual(await snapshot(f.budget.id), before)
     })
@@ -114,8 +115,8 @@ test.group('Exclusive Category and Funding History JSON authority', () => {
       await db.table('transaction_categories').insert({ transaction_id: f.transaction.id, category_id: f.category.id, amount: 80 })
       const response = await client.get(`/api/v1/reports/${report}`).qs({ c: f.category.id }).loginAs(f.user)
       response.assertStatus(200)
-      if (report === 'category') { assert.equal(response.body()[0].sum, 7); assert.equal(response.body()[0].count, 1) }
-      else assert.equal(response.body().find((r: { categoryId: number }) => r.categoryId === f.category.id).history[0].amount, 7)
+      if (report === 'category') { assert.equal(response.body()[0].sum, encodeMonetaryAmount(7)); assert.equal(response.body()[0].count, 1) }
+      else assert.equal(response.body().find((r: { categoryId: number }) => r.categoryId === f.category.id).history[0].amount, encodeMonetaryAmount(7))
     })
 
     test(`${report}: actual SQL is JSON-only, read-only and one aggregate query`, async ({ client, assert }) => {
@@ -137,8 +138,8 @@ test.group('Exclusive Category and Funding History JSON authority', () => {
         elapsed = performance.now() - started
         response.assertStatus(200)
         const rows = response.body()
-        if (report === 'category') { assert.equal(rows[0].sum, 260); assert.equal(rows[0].count, 26) }
-        else assert.equal(rows.find((r: { categoryId: number }) => r.categoryId === f.category.id).history[0].amount, 260)
+        if (report === 'category') { assert.equal(rows[0].sum, encodeMonetaryAmount(260)); assert.equal(rows[0].count, 26) }
+        else assert.equal(rows.find((r: { categoryId: number }) => r.categoryId === f.category.id).history[0].amount, encodeMonetaryAmount(260))
       } finally { connection.removeListener('query', listener) }
       const aggregates = queries.filter((q) => q.sql.includes('jsonb_to_recordset'))
       assert.lengthOf(aggregates, 1)
@@ -160,8 +161,8 @@ test.group('Exclusive Category and Funding History JSON authority', () => {
         await writeHistoricalTransactionFixture(f.transaction, { date: DateTime.fromISO(date), type: report === 'category' ? 5 : 2 })
         const response = await client.get(`/api/v1/reports/${report}`).qs({ c: f.category.id }).loginAs(f.user)
         response.assertStatus(200)
-        if (report === 'category') assert.equal(response.body()[0].sum, 10)
-        else assert.equal(response.body().find((r: { categoryId: number }) => r.categoryId === f.category.id).history[0].amount, 10)
+        if (report === 'category') assert.equal(response.body()[0].sum, encodeMonetaryAmount(10))
+        else assert.equal(response.body().find((r: { categoryId: number }) => r.categoryId === f.category.id).history[0].amount, encodeMonetaryAmount(10))
       })
   }
 
@@ -174,11 +175,11 @@ test.group('Exclusive Category and Funding History JSON authority', () => {
       categories: [{ categoryId: f.category.id, amount: 5 }], taxes: [] })
     const response = await client.get('/api/v1/reports/category').qs({ c: [f.category.id, other.id] }).loginAs(f.user)
     response.assertStatus(200)
-    assert.deepEqual(response.body().map((r: { categoryName: string, sum: number, count: number }) => [r.categoryName, r.sum, r.count]),
+    assert.deepEqual(response.body().map((r: { categoryName: string, sum: string, count: number }) => [r.categoryName, r.sum, r.count]),
       [['A current', 4, 1], ['B current', 55, 3]])
     for (const row of response.body()) {
       assert.deepEqual(Object.keys(row).sort(), ['categoryName', 'count', 'groupName', 'rowNumber', 'sum'])
-      assert.isNumber(row.sum); assert.isNumber(row.count)
+      assert.isString(row.sum); assert.isNumber(row.count)
     }
   })
 
@@ -200,8 +201,8 @@ test.group('Exclusive Category and Funding History JSON authority', () => {
     const before = await snapshot(f.budget.id)
     const response = await client.get('/api/v1/reports/funding-history').loginAs(f.user)
     response.assertStatus(200)
-    assert.deepEqual(response.body().find((r: { categoryId: number }) => r.categoryId === f.category.id).history, [{ year: 2025, month: 1, amount: 2 }])
-    assert.deepEqual(response.body().find((r: { categoryId: number }) => r.categoryId === unassigned.id).history, [{ year: 2025, month: 1, amount: 1 }])
+    assert.deepEqual(response.body().find((r: { categoryId: number }) => r.categoryId === f.category.id).history, [{ year: 2025, month: 1, amount: encodeMonetaryAmount(2) }])
+    assert.deepEqual(response.body().find((r: { categoryId: number }) => r.categoryId === unassigned.id).history, [{ year: 2025, month: 1, amount: encodeMonetaryAmount(1) }])
     assert.deepEqual(await snapshot(f.budget.id), before)
   })
 
@@ -217,7 +218,7 @@ test.group('Exclusive Category and Funding History JSON authority', () => {
     }).loginAs(f.user)
     response.assertStatus(200)
     assert.equal(response.body().find((r: { categoryName: string }) => r.categoryName === f.category.name).count, 2)
-    assert.equal(response.body().find((r: { categoryName: string }) => r.categoryName === unassigned.name).sum, -5)
+    assert.equal(response.body().find((r: { categoryName: string }) => r.categoryName === unassigned.name).sum, encodeMonetaryAmount(-5))
     const excluded = await client.get('/api/v1/reports/category').qs({ c: f.category.id, startDate: '2025-02-02' }).loginAs(f.user)
     excluded.assertStatus(200); assert.deepEqual(excluded.body(), [])
   })
@@ -231,7 +232,7 @@ test.group('Exclusive Category and Funding History JSON authority', () => {
     await writeHistoricalTransactionFixture(f.transaction, { type: 2, categories: [{ categoryId: f.category.id, amount: scenario.amount }] })
     const response = await client.get('/api/v1/reports/funding-history').loginAs(f.user)
     response.assertStatus(200)
-    assert.equal(response.body().find((r: { categoryId: number }) => r.categoryId === f.category.id).history[0].amount, scenario.amount)
+    assert.equal(response.body().find((r: { categoryId: number }) => r.categoryId === f.category.id).history[0].amount, encodeMonetaryAmount(scenario.amount))
   })
 
   test('Funding History reads replacement net rows at persisted date, never baseAmount or Pool', async ({ client, assert }) => {
@@ -246,7 +247,7 @@ test.group('Exclusive Category and Funding History JSON authority', () => {
     response.assertStatus(200)
     assert.isUndefined(response.body().find((r: { categoryId: number }) => r.categoryId === pool.id))
     assert.deepEqual(response.body().find((r: { categoryId: number }) => r.categoryId === f.category.id).history,
-      [{ year: 2025, month: 2, amount: 2 }])
+      [{ year: 2025, month: 2, amount: encodeMonetaryAmount(2) }])
   })
 })
 

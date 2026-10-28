@@ -241,6 +241,19 @@ export * from ${source('common/ResponseTypes.ts')};
     }
   })
 
+  test('report state decodes monetary cells without changing counts, dates or response data', async ({ assert }) => {
+    const networth = [['date', 'Cash', 'Credit'], ['2026-10-01', '12.50', '-0.30']]
+    routes.set('get /api/v1/reports/networth', async () => ({ body: networth }))
+    await f.store.reports.loadReport('netWorth')
+    assert.deepEqual(f.store.reports.data, [['date', 'Cash', 'Credit'], ['2026-10-01', 12.5, -0.3]])
+    assert.strictEqual(networth[1][1], '12.50')
+    const payee = [{ rowNumber: '1', name: 'Shop', paymentChannel: 'online', sum: '-12.50', count: 3 }]
+    routes.set('get /api/v1/reports/payee', async () => ({ body: payee }))
+    await f.store.reports.loadReport('payee')
+    assert.deepEqual(f.store.reports.data, [{ ...payee[0], sum: -12.5 }])
+    assert.strictEqual(payee[0].sum, '-12.50')
+  })
+
   test('Transaction principal strings decode into numeric client state and preserve null', ({ assert }) => {
     for (const [principle, expected] of [['12.50', 12.5], ['-0.12', -0.12], ['0.00', 0], [null, null]]) {
       const props = f.transactionProps()

@@ -56,7 +56,7 @@ test.group('Net-worth history independence', (group) => {
     await movement(f, f.today.minus({ days: 5 }), 10)
     await movement(f, f.today.minus({ days: 2 }), -5)
     assert.deepEqual(await report(client, f), [['date', 'Transaction account'],
-      [f.today.minus({ days: 5 }).toISODate(), 105], [f.today.minus({ days: 2 }).toISODate(), 100]])
+      [f.today.minus({ days: 5 }).toISODate(), '105.00'], [f.today.minus({ days: 2 }).toISODate(), '100.00']])
   })
 
   test('later or OFX-style snapshots do not supply new chart points or change balances')
@@ -96,7 +96,7 @@ test.group('Net-worth history independence', (group) => {
       await movement(f, date, 10)
       const bucket = scenario.unit === 'week' ? date.startOf('week')
         : scenario.unit === 'month' ? date.startOf('month') : date.startOf('year')
-      assert.deepEqual(await report(client, f), [['date', 'Transaction account'], [bucket.toISODate(), 100]])
+      assert.deepEqual(await report(client, f), [['date', 'Transaction account'], [bucket.toISODate(), '100.00']])
     })
 
   test('authoritative Statement dates still determine grouping without history')
@@ -108,7 +108,7 @@ test.group('Net-worth history independence', (group) => {
       await f.account.related('statements').create({ startDate: date, endDate: date, startingBalance: 100, endingBalance: 100, data: null })
       const bucket = scenario.unit === 'week' ? date.startOf('week')
         : scenario.unit === 'month' ? date.startOf('month') : date.startOf('year')
-      assert.deepEqual(await report(client, f), [['date', 'Transaction account'], [bucket.toISODate(), 100]])
+      assert.deepEqual(await report(client, f), [['date', 'Transaction account'], [bucket.toISODate(), '100.00']])
     })
 
   test('Initial Funding supplies an opening snapshot and controls grouping', async ({ client, assert }) => {
@@ -116,7 +116,7 @@ test.group('Net-worth history independence', (group) => {
     await f.account.merge({ startDate: f.today.minus({ days: 4000 }) }).save()
     await movement(f, f.account.startDate, 105, TransactionType.STARTING_BALANCE)
     await movement(f, f.today.minus({ days: 2 }), -5)
-    assert.deepEqual(await report(client, f), [['date', 'Transaction account'], [f.account.startDate.startOf('year').toISODate(), 105], [f.today.startOf('year').toISODate(), 100]])
+    assert.deepEqual(await report(client, f), [['date', 'Transaction account'], [f.account.startDate.startOf('year').toISODate(), '105.00'], [f.today.startOf('year').toISODate(), '100.00']])
   })
 
   test('an Initial-Funding-only account supplies its opening row', async ({ client, assert }) => {
@@ -124,7 +124,7 @@ test.group('Net-worth history independence', (group) => {
     await movement(f, f.account.startDate, 100, TransactionType.STARTING_BALANCE)
     const response = await client.get('/api/v1/reports/networth').accept('json').loginAs(f.user)
     response.assertStatus(200)
-    assert.deepEqual(response.body(), [['date', 'Transaction account'], [f.account.startDate.toISODate(), 100]])
+    assert.deepEqual(response.body(), [['date', 'Transaction account'], [f.account.startDate.toISODate(), '100.00']])
   })
 
   test('Statement-only balance history ignores stale stored history')
@@ -144,8 +144,8 @@ test.group('Net-worth history independence', (group) => {
       assert.lengthOf(before, 2)
       assert.sameMembers(before[0], mixed ? ['date', 'Second transaction account', 'Transaction account'] : ['date', 'Transaction account'])
       assert.equal(before[1][0], date.toISODate())
-      assert.equal(before[1][before[0].indexOf('Transaction account')], 100)
-      if (mixed) assert.equal(before[1][before[0].indexOf('Second transaction account')], 50)
+      assert.equal(before[1][before[0].indexOf('Transaction account')], '100.00')
+      if (mixed) assert.equal(before[1][before[0].indexOf('Second transaction account')], '50.00')
       await f.account.related('balanceHistory').create({ date: f.today.minus({ days: 4000 }), balance: 999999 })
       assert.deepEqual(await report(client, f), before)
     })

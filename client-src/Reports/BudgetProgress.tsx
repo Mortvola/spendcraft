@@ -1,3 +1,4 @@
+import { decodeAmount } from '../monetary';
 import Http from '@mortvola/http';
 import { Formik } from 'formik';
 import { DateTime } from 'luxon';
@@ -48,7 +49,7 @@ const BudgetProgress: React.FC = observer(() => {
           const newDays = new Array<[number, number[]]>(daysInMonth);
 
           body.forEach((m) => {
-            newDays[DateTime.fromISO(m[0]).day - 1] = [m[1], m[2]];
+            newDays[DateTime.fromISO(m[0]).day - 1] = [decodeAmount(m[1]), m[2]];
           });
 
           for (let d = 0; d < newDays.length; d += 1) {

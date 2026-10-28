@@ -1,7 +1,8 @@
+import { decodeAmount } from '../monetary';
 import Http from '@mortvola/http';
 import { DateTime, MonthNumbers } from 'luxon';
 import React, { useEffect, useState } from 'react';
-import { GroupType } from '../../common/ResponseTypes';
+import { GroupType, type FundingHistoryReportResponse } from '../../common/ResponseTypes';
 import Amount from '../Amount';
 import styles from './FundingHistory.module.scss';
 
@@ -15,7 +16,6 @@ const FundingHistory: React.FC = () => {
     categoryName: string,
     history: FundingHistoryItem[] | null,
   }
-  type FundingHistoryResponse = FundingHistoryCategory[];
 
   const [data, setData] = useState<FundingHistoryCategory[] | null>(null);
   const [totals, setTotals] = useState<FundingHistoryItem[] | null>(null);
@@ -23,10 +23,13 @@ const FundingHistory: React.FC = () => {
 
   useEffect(() => {
     (async () => {
-      const response = await Http.get<FundingHistoryResponse>('/api/v1/reports/funding-history');
+      const response = await Http.get<FundingHistoryReportResponse>('/api/v1/reports/funding-history');
 
       if (response.ok) {
-        const body = await response.body();
+        const responseRows = await response.body();
+        const body = responseRows.map((row) => ({ ...row,
+          history: row.history === null ? null : row.history.map((entry) => ({ ...entry, amount: decodeAmount(entry.amount) })),
+        }));
         body.sort((a, b) => {
           if (a.groupType === GroupType.NoGroup) {
             if (b.groupType === GroupType.NoGroup) {

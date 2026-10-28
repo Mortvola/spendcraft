@@ -651,7 +651,38 @@ export const isDeleteAccountResponse = (r: unknown): r is CategoryBalanceProps[]
   && (r.length === 0 || isCategoryBalance(r[0]))
 )
 
-export type BudgetProgressReportResponse = [string, number, number[]][];
+/** Header row and dates are text; subsequent numeric columns are monetary strings. */
+export type NetworthReportResponse = string[][];
+
+export interface PayeeReportRow {
+  rowNumber: string;
+  name: string;
+  paymentChannel: string;
+  sum: DecimalMoneyString;
+  count: number;
+}
+
+export interface CategoryReportRow {
+  rowNumber: string;
+  groupName: string;
+  categoryName: string;
+  sum: DecimalMoneyString;
+  count: number;
+}
+
+export type IncomeVsExpensesReportResponse = [string, DecimalMoneyString, DecimalMoneyString, DecimalMoneyString][];
+
+export interface FundingHistoryReportRow {
+  groupId: number;
+  groupName: string;
+  groupType: GroupType;
+  categoryId: number;
+  categoryName: string;
+  history: { year: number, month: number, amount: DecimalMoneyString }[] | null;
+}
+
+export type FundingHistoryReportResponse = FundingHistoryReportRow[];
+export type BudgetProgressReportResponse = [string, DecimalMoneyString, number[]][];
 
 // export enum PendingQueryFlag {
 //   NoPending = 0,
@@ -741,10 +772,10 @@ export interface TaxCategoriesProps {
 }
 
 /** Validate the row-based net worth report returned by the API. */
-export const isNetworthReport = (value: unknown): value is (string | number)[][] => (
+export const isNetworthReport = (value: unknown): value is NetworthReportResponse => (
   Array.isArray(value)
   && value.every((row: unknown) => (
     Array.isArray(row)
-    && row.every((cell: unknown) => typeof cell === 'string' || typeof cell === 'number')
+    && row.every((cell: unknown) => typeof cell === 'string')
   ))
 )

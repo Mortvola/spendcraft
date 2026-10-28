@@ -1,3 +1,4 @@
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { writeHistoricalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 // Run only with fresh task-specific PostgreSQL authorization.
 // Standard bootstrap independently guards pg/pgLog/execution before every
@@ -65,7 +66,7 @@ test.group('Income Vs Expenses transfer fan-out PostgreSQL acceptance', () => {
     const before = await snapshot(), ids = await selected(f)
     const response = await client.get('/api/v1/reports/income-vs-expenses').loginAs(f.user)
     response.assertStatus(200)
-    assert.deepEqual(response.body(), [['2025-02', scenario.expected, 0, scenario.expected]])
+    assert.deepEqual(response.body(), [['2025-02', encodeMonetaryAmount(scenario.expected), encodeMonetaryAmount(0), encodeMonetaryAmount(scenario.expected)]])
     assert.deepEqual(await selected(f), ids)
     assert.deepEqual(await snapshot(), before)
   })
@@ -82,7 +83,7 @@ test.group('Income Vs Expenses transfer fan-out PostgreSQL acceptance', () => {
     const before = await snapshot()
     const response = await client.get('/api/v1/reports/income-vs-expenses').loginAs(f.user)
     response.assertStatus(200)
-    assert.deepEqual(response.body(), [['2025-02', s.expected, 0, s.expected]])
+    assert.deepEqual(response.body(), [['2025-02', encodeMonetaryAmount(s.expected), encodeMonetaryAmount(0), encodeMonetaryAmount(s.expected)]])
     assert.deepEqual(await snapshot(), before)
   })
 
@@ -97,7 +98,7 @@ test.group('Income Vs Expenses transfer fan-out PostgreSQL acceptance', () => {
     const f = await fixture(); await movement(f, s.amount, s.transfers)
     const response = await client.get('/api/v1/reports/income-vs-expenses').loginAs(f.user)
     response.assertStatus(200)
-    assert.deepEqual(response.body(), [['2025-02', s.income, s.expenses, s.income + s.expenses]])
+    assert.deepEqual(response.body(), [['2025-02', encodeMonetaryAmount(s.income), encodeMonetaryAmount(s.expenses), encodeMonetaryAmount(s.income + s.expenses)]])
   })
 
   test('multiple Accounts, movements and same-Transaction links use existing per-link semantics', async ({ client, assert }) => {
@@ -111,7 +112,7 @@ test.group('Income Vs Expenses transfer fan-out PostgreSQL acceptance', () => {
     await movement(f, -40, [-10], { account: second }); await movement(f, 8, [], { date: '2025-03-01' })
     const response = await client.get('/api/v1/reports/income-vs-expenses').loginAs(f.user)
     response.assertStatus(200)
-    assert.deepEqual(response.body(), [['2025-02', 0, -130, -130], ['2025-03', 8, 0, 8]])
+    assert.deepEqual(response.body(), [['2025-02', encodeMonetaryAmount(0), encodeMonetaryAmount(-130), encodeMonetaryAmount(-130)], ['2025-03', encodeMonetaryAmount(8), encodeMonetaryAmount(0), encodeMonetaryAmount(8)]])
   })
 
   test('selection stays nominal across type/status/date and tracking').with([
@@ -126,7 +127,7 @@ test.group('Income Vs Expenses transfer fan-out PostgreSQL acceptance', () => {
     await movement(f, 50, [20, 20], s)
     const response = await client.get('/api/v1/reports/income-vs-expenses').qs({ startDate: '2030-01-01', endDate: '2030-12-31' }).loginAs(f.user)
     response.assertStatus(200)
-    assert.deepEqual(response.body(), s.included ? [['2025-02', 10, 0, 10]] : [])
+    assert.deepEqual(response.body(), s.included ? [['2025-02', encodeMonetaryAmount(10), encodeMonetaryAmount(0), encodeMonetaryAmount(10)]] : [])
   })
 
   test('calendar dates/order and accountless Transaction exclusion remain unchanged', async ({ client, assert }) => {
@@ -137,7 +138,7 @@ test.group('Income Vs Expenses transfer fan-out PostgreSQL acceptance', () => {
       categories: [{ categoryId: f.category.id, amount: 999 }], taxes: [], version: 0, deleted: false, sortOrder: 0 })
     const response = await client.get('/api/v1/reports/income-vs-expenses').loginAs(f.user)
     response.assertStatus(200)
-    assert.deepEqual(response.body(), [['2024-12', 0, -20, -20], ['2025-01', 50, 0, 50]])
+    assert.deepEqual(response.body(), [['2024-12', encodeMonetaryAmount(0), encodeMonetaryAmount(-20), encodeMonetaryAmount(-20)], ['2025-01', encodeMonetaryAmount(50), encodeMonetaryAmount(0), encodeMonetaryAmount(50)]])
   })
 
   test('no Account movements still returns empty report', async ({ client, assert }) => {
@@ -156,7 +157,7 @@ test.group('Income Vs Expenses transfer fan-out PostgreSQL acceptance', () => {
     const before = await snapshot()
     const response = await client.get('/api/v1/reports/income-vs-expenses').loginAs(own.user)
     response.assertStatus(200)
-    assert.deepEqual(response.body(), [['2025-02', 10, 0, 10]])
+    assert.deepEqual(response.body(), [['2025-02', encodeMonetaryAmount(10), encodeMonetaryAmount(0), encodeMonetaryAmount(10)]])
     assert.deepEqual(await snapshot(), before)
   })
 
@@ -171,7 +172,7 @@ test.group('Income Vs Expenses transfer fan-out PostgreSQL acceptance', () => {
     const before = await snapshot()
     const response = await client.get('/api/v1/reports/income-vs-expenses').loginAs(f.user)
     response.assertStatus(200)
-    assert.deepEqual(response.body(), [['2025-02', 30, 0, 30]])
+    assert.deepEqual(response.body(), [['2025-02', encodeMonetaryAmount(30), encodeMonetaryAmount(0), encodeMonetaryAmount(30)]])
     assert.deepEqual(await snapshot(), before)
   })
 
@@ -187,7 +188,7 @@ test.group('Income Vs Expenses transfer fan-out PostgreSQL acceptance', () => {
     connection.on('query', listener)
     try {
       const response = await client.get('/api/v1/reports/income-vs-expenses').loginAs(f.user)
-      response.assertStatus(200); assert.deepEqual(response.body(), [['2025-02', 0, 0, 0]])
+      response.assertStatus(200); assert.deepEqual(response.body(), [['2025-02', encodeMonetaryAmount(0), encodeMonetaryAmount(0), encodeMonetaryAmount(0)]])
     } finally { connection.removeListener('query', listener) }
     const reportQueries = queries.filter((q) => q.sql.includes('jsonb_to_recordset'))
     assert.lengthOf(reportQueries, 1)

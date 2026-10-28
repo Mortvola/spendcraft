@@ -1,3 +1,4 @@
+import { decodeAmount } from '../monetary';
 import React from 'react';
 import { Formik, FieldArray, FormikState } from 'formik';
 import { DateTime } from 'luxon';
@@ -10,7 +11,7 @@ import useSortableTable from './SortableTable';
 import { isGroup } from '../State/Group';
 import ReportControls from './ReportControls';
 import styles from './Category.module.scss';
-import { CategoryType } from '../../common/ResponseTypes';
+import { CategoryType, type CategoryReportRow } from '../../common/ResponseTypes';
 
 interface CategoryReport {
   rowNumber: string,
@@ -44,16 +45,16 @@ const Category: React.FC = () => {
     if (response.ok) {
       const body = await response.body();
 
-      const isCategoryReport = (r: unknown): r is CategoryReport[] => (
+      const isCategoryReport = (r: unknown): r is CategoryReportRow[] => (
         Array.isArray(r)
         && (r.length === 0 || (
-          (r as CategoryReport[])[0].groupName !== undefined
-          && (r as CategoryReport[])[0].categoryName !== undefined
+          (r as CategoryReportRow[])[0].groupName !== undefined
+          && (r as CategoryReportRow[])[0].categoryName !== undefined
         ))
       )
 
       if (isCategoryReport(body)) {
-        setData(body);
+        setData(body.map((row) => ({ ...row, sum: decodeAmount(row.sum) })));
       }
     }
   }

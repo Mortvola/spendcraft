@@ -1,3 +1,4 @@
+import { decodeNetworthReport } from '../monetary';
 import React, { useEffect, useState } from 'react';
 import NetworthContent from './NetworthContent';
 import Http from '@mortvola/http';
@@ -16,7 +17,8 @@ const Networth: React.FC = () => {
 
         if (isNetworthReport(body)) {
           // Append the networth data to the end of each row of the table.
-          body.forEach((a, index) => {
+          const decoded = decodeNetworthReport(body);
+          decoded.forEach((a, index) => {
             if (index === 0) {
               a.splice(a.length, 0, 'Net Worth');
             }
@@ -34,7 +36,7 @@ const Networth: React.FC = () => {
               }, 0))
             }
           })
-          setData(body);
+          setData(decoded);
         }
       }
     })();

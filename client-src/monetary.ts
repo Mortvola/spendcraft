@@ -1,4 +1,4 @@
-import type { FundingRuleResponse } from '../common/ResponseTypes';
+import type { FundingRuleResponse, NetworthReportResponse } from '../common/ResponseTypes';
 
 // Decode canonical API amounts before using them in numeric client state.
 export function decodeAmount(value: unknown): number {
@@ -27,4 +27,8 @@ export function decodeFundingRules<T extends FundingRuleResponse>(rules: readonl
     }
     return { ...rule, amount: decodeAmount(rule.amount) };
   });
+}
+
+export function decodeNetworthReport(rows: NetworthReportResponse): (string | number)[][] {
+  return rows.map((row, index) => row.map((cell, column) => index === 0 || column === 0 ? cell : decodeAmount(cell)));
 }
