@@ -93,7 +93,7 @@ export default class TransactionsController {
         transactions: transactions.map((transaction) => (
           transaction.serialize(transactionFields) as TransactionProps
         )),
-        balance: 0,
+        balance: '0.00',
       },
     };
   }
@@ -705,7 +705,7 @@ export default class TransactionsController {
         transactions: rebalances.map((r) => (
           r.serialize(transactionFields) as TransactionProps
         )),
-        balance: 0,
+        balance: '0.00',
       },
     }
   }
@@ -763,7 +763,7 @@ export default class TransactionsController {
         transactions: results.map((t) => (
           t.serialize(transactionFields) as TransactionProps
         )),
-        balance: 0,
+        balance: '0.00',
       },
     };
   }

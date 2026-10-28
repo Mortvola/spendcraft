@@ -364,7 +364,7 @@ export interface TransactionsResponse {
 
   transactionsCount?: number,
 
-  balance: number | DecimalMoneyString;
+  balance: DecimalMoneyString;
 }
 
 export interface ErrorProps {

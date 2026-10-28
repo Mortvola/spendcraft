@@ -62,7 +62,7 @@ export default class AccountsController {
 
     const result: TransactionsResponse = {
       transactions: [],
-      balance: 0,
+      balance: '0.00',
     };
 
     // Determine if the account belongs to the authenticated user

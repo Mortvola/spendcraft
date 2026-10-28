@@ -1,3 +1,4 @@
+import { TransactionType } from '../../common/ResponseTypes.ts'
 import { test } from '@japa/runner'
 import { readFile } from 'node:fs/promises'
 import { runInNewContext } from 'node:vm'
@@ -69,3 +70,22 @@ test.group('Remaining correctness source characterization without DB', () => {
     assert.deepEqual(persisted, { rate: 8, startingBalance: 200 })
   })
 })
+
+
+test('transaction list endpoints return canonical placeholder balances').with(['getMultiple', 'getRebalances', 'search'])
+  .run(async ({ assert }, action) => {
+    const query = {
+      where() { return this }, andWhere() { return this }, whereIn() { return this },
+      preload() { return this }, limit() { return this }, offset() { return this }, orderBy() { return this },
+      firstOrFail: async () => ({ id: 1 }),
+      then(resolve, reject) { return Promise.resolve([]).then(resolve, reject) },
+    }
+    const budget = { related: () => ({ query: () => query }) }
+    const handler = await method('app/Controllers/Http/TransactionsController.ts', action, {
+      Transaction: { query: () => query }, TransactionType, transactionFields: {},
+    })
+    const response = await handler({ request: { qs: () => ({ t: [1] }) },
+      auth: { user: { budgetId: 1, related: () => ({ query: () => ({ firstOrFail: async () => budget }) }) } } })
+    assert.strictEqual(response.data.balance, '0.00')
+    assert.deepEqual(Array.from(response.data.transactions), [])
+  })

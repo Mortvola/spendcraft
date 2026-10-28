@@ -96,7 +96,7 @@ class TransactionContainer implements TransactionContainerInterface {
 
   transactionResponseHandler = (body: TransactionsResponse, idx: number, limit: number): boolean => {
     if (this.balanceCallback) {
-      this.balanceCallback(typeof body.balance === 'string' ? decodeAmount(body.balance) : body.balance, body.transactionsCount);
+      this.balanceCallback(decodeAmount(body.balance), body.transactionsCount);
     }
 
     if (idx === 0) {

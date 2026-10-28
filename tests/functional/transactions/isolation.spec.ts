@@ -230,6 +230,7 @@ test.group('Transaction budget isolation', (group) => {
     const response = await client.get('/api/v1/transactions')
       .qs({ t: [fixture.own.transaction.id] }).accept('json').loginAs(fixture.shared)
     response.assertStatus(200)
+    assert.strictEqual(response.body().data.balance, '0.00')
     assert.deepEqual(response.body().data.transactions.map((row: { id: number }) => row.id), [fixture.own.transaction.id])
   })
 

@@ -207,6 +207,17 @@ export * from ${source('common/ResponseTypes.ts')};
     assert.strictEqual(f.category.balance, 2.5)
   })
 
+  test('transaction response balances reject noncanonical values before changing state', ({ assert }) => {
+    for (const balance of [0, null, '', '0', '-0.00', '1.2', 'Infinity', '90071992547409.92']) {
+      assert.throws(() => f.account.transactions.transactionResponseHandler({ transactions: [], balance }, 0, 20))
+      assert.strictEqual(f.account.balance, 100)
+      assert.throws(() => f.category.transactions.transactionResponseHandler({ transactions: [], balance }, 0, 20))
+      assert.strictEqual(f.category.balance, 0)
+    }
+    f.category.transactions.transactionResponseHandler({ transactions: [], balance: '0.00' }, 0, 20)
+    assert.strictEqual(f.category.balance, 0)
+  })
+
   test('funding metadata becomes numeric client state without changing requests or percentages', ({ assert }) => {
     const category = new state.Category({ ...({ id: 25, groupId: -1, name: "Funding", type: state.CategoryType.Regular, balance: "0.00", suspended: false, includeFundingTransfers: true, recurrence: 1, hidden: false }), fundingAmount: '12.50',
       fundingCategories: [{ categoryId: 20, amount: '-0.12', percentage: false },

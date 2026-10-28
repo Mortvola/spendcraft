@@ -551,7 +551,7 @@ class CategoriesController {
     const result: TransactionsResponse = {
       transactions: [],
       transactionsCount: 0,
-      balance: 0,
+      balance: '0.00',
     }
 
     const cat = await budgetCategories(budget.id).where('id', categoryId).firstOrFail();
