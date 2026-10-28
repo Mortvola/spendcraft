@@ -1,4 +1,4 @@
-import { formatMoneyCents, parseMoneyCents } from '../../common/moneyCents';
+import { subtractMoneyCents, parseMoneyCents } from '../../common/moneyCents';
 import React from 'react';
 import { observer } from 'mobx-react-lite';
 import RegisterTransactions from './RegisterTransactions';
@@ -69,12 +69,16 @@ const PostedRegister: React.FC<PropsType> = observer(({
     }
 
     const accountSign = account?.sign ?? 1
-    let runningBalance = category ? Number(formatMoneyCents(category.balanceCents)) : Number(formatMoneyCents(account?.balanceCents ?? parseMoneyCents('0.00'))) * accountSign;
+    const zero = parseMoneyCents('0.00');
+    const balance = category?.balanceCents ?? account?.balanceCents ?? zero;
+    let runningBalance = category || accountSign === 1 ? balance : subtractMoneyCents(zero, balance);
 
     return trxContainer.transactions.map((transaction) => {
       let { amount } = transaction;
+      let amountCents = transaction.amountCents;
 
       if (type === 'rebalances') {
+        amountCents = transaction.getRegisterAmountCents(undefined, true);
         amount = transaction.categories.reduce((prev, c) => {
           if (c.amount > 0) {
             return prev + c.amount;
@@ -85,9 +89,11 @@ const PostedRegister: React.FC<PropsType> = observer(({
       }
       else if (category !== null) {
         amount = transaction.getAmountForCategory(category.id);
+        amountCents = transaction.getRegisterAmountCents(category.id);
       }
       else if (account && account.type === AccountType.Loan) {
         amount = transaction.principle ?? 0;
+        amountCents = transaction.principleCents ?? zero;
       }
 
       const element = (
@@ -96,14 +102,14 @@ const PostedRegister: React.FC<PropsType> = observer(({
           transaction={transaction}
           className={transactionClassName}
           amount={amount}
-          runningBalance={runningBalance}
+          runningBalanceCents={runningBalance}
           account={account}
           onClick={handleClick}
         />
       )
 
       if (runningBalance !== undefined) {
-        runningBalance -= amount * accountSign;
+        runningBalance = subtractMoneyCents(runningBalance, accountSign === 1 ? amountCents : subtractMoneyCents(zero, amountCents));
       }
 
       return element;

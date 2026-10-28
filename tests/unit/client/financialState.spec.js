@@ -38,6 +38,8 @@ export { default as Http } from '@mortvola/http';
 export { default as Institution } from ${source('client-src/State/Institution.ts')};
 export { default as Category } from ${source('client-src/State/Category.ts')};
 export { default as Group } from ${source('client-src/State/Group.ts')};
+export { default as PostedRegister } from ${source('client-src/Transactions/PostedRegister.tsx')};
+export { default as PendingRegister } from ${source('client-src/Transactions/PendingRegister.tsx')};
 export { default as Transaction } from ${source('client-src/State/Transaction.ts')};
 export { decodeAmount, encodeAmount } from ${source('client-src/monetary.ts')};
 export { worksheet2_1_2026 } from ${source('client-src/State/Taxes/Estimated.ts')};
@@ -102,6 +104,68 @@ export * from ${source('common/ResponseTypes.ts')};
     }
     f = { store, institution, account, accountProps, institutionProps, category, other, statement, statementProps, transactionProps }
     return () => { for (const [method, original] of originals) state.Http[method] = original }
+  })
+
+  test('register operands retain exact API cents through load and refresh', ({ assert }) => {
+    const props = f.transactionProps(0.1)
+    props.accountTransaction.amount = '90071992547409.91'
+    props.accountTransaction.principle = '-0.20'
+    props.categories = [{ categoryId: 20, amount: '0.10' }, { categoryId: 20, amount: '0.20' }, { categoryId: 21, amount: '-0.30' }]
+    const transaction = new state.Transaction(f.store, props)
+    assert.strictEqual(transaction.amountCents, Number.MAX_SAFE_INTEGER)
+    assert.strictEqual(transaction.principleCents, -20)
+    assert.strictEqual(transaction.getRegisterAmountCents(20), 30)
+    assert.strictEqual(transaction.getRegisterAmountCents(undefined, true), 30)
+    assert.strictEqual(transaction.getRegisterAmountCents(999), Number.MAX_SAFE_INTEGER)
+    assert.strictEqual(typeof transaction.amount, 'number')
+    assert.strictEqual(transaction.categories[0].amount, 0.1)
+    const overflow = { ...props, categories: [{ categoryId: 20, amount: '90071992547409.91' }, { categoryId: 20, amount: '0.01' }] }
+    assert.throws(() => new state.Transaction(f.store, overflow).getRegisterAmountCents(20))
+    transaction.refresh(f.transactionProps(-0.2))
+    assert.strictEqual(transaction.amountCents, -20)
+    assert.isNull(transaction.principleCents)
+    assert.strictEqual(transaction.getRegisterAmountCents(20), -20)
+    assert.strictEqual(transaction.amount, -0.2)
+    const invalid = f.transactionProps()
+    invalid.accountTransaction.amount = '90071992547409.92'
+    assert.throws(() => transaction.refresh(invalid))
+    assert.strictEqual(transaction.amountCents, -20)
+    invalid.accountTransaction.amount = '0.001'
+    assert.throws(() => new state.Transaction(f.store, invalid))
+  })
+
+  test('posted registers preserve ordering, signs, category splits and loan principal in cents', ({ assert }) => {
+    const render = (type, category, account, transactions) => {
+      const trxContainer = { transactions, isComplete: () => true, state: () => 'IDLE' }
+      const html = state.renderToStaticMarkup(state.createElement(state.StoreContext.Provider,
+        { value: f.store }, state.createElement(state.PostedRegister, { type, category, account, trxContainer })))
+      return [...html.matchAll(/class="[^"]*_amount_[^"]*dollar-amount[^"]*"[^>]*>[^<]*<\/div><div[^>]*>([^<]*)/g)].map(match => match[1])
+    }
+    const transactions = [0.1, 0.2, 0].map((amount, index) => new state.Transaction(f.store, { ...f.transactionProps(amount), id: 40 + index }))
+    state.runInAction(() => { f.account.balanceCents = parseMoneyCents('0.30') })
+    assert.deepEqual(render('account', null, f.account, transactions), ['0.30', '0.20', '0.00'])
+    const creditAccount = { sign: -1, type: state.AccountType.Credit, balanceCents: parseMoneyCents('-0.30') }
+    assert.deepEqual(render('account', null, creditAccount, transactions), ['0.30', '0.40', '0.60'])
+    state.runInAction(() => { f.category.balanceCents = parseMoneyCents('0.30') })
+    assert.deepEqual(render('category', f.category, null, transactions), ['0.30', '0.20', '0.00'])
+    const loan = { sign: -1, type: state.AccountType.Loan, balanceCents: parseMoneyCents('-0.30') }
+    const loanProps = f.transactionProps(0.3)
+    loanProps.accountTransaction.principle = '0.10'
+    const loanTransaction = new state.Transaction(f.store, loanProps)
+    assert.deepEqual(render('account', null, loan, [loanTransaction, transactions[2]]), ['0.30', '0.40'])
+    const rebalance = f.transactionProps()
+    rebalance.type = state.TransactionType.REBALANCE_TRANSACTION
+    rebalance.categories = [{ categoryId: 20, amount: '0.10' }, { categoryId: 21, amount: '0.20' }, { categoryId: 22, amount: '-0.30' }]
+    assert.deepEqual(render('rebalances', null, null, [new state.Transaction(f.store, rebalance), transactions[2]]), ['0.00', '-0.30'])
+    const pendingProps = { ...f.transactionProps(0.1), accountTransaction: { ...f.transactionProps(0.1).accountTransaction, pending: true } }
+    const pending = new state.Transaction(f.store, pendingProps)
+    const pendingHtml = state.renderToStaticMarkup(state.createElement(state.StoreContext.Provider, { value: f.store },
+      state.createElement(state.PendingRegister, { trxContainer: { transactions: [pending], isComplete: () => true, state: () => 'IDLE' } })))
+    assert.include(pendingHtml, 'dollar-amount">0.00</div>')
+    assert.isTrue(pending.pending)
+    state.runInAction(() => { f.account.balanceCents = parseMoneyCents('90071992547409.91') })
+    assert.deepEqual(render('account', null, f.account, [transactions[2]]), ['90,071,992,547,409.91'])
+    assert.throws(() => render('account', null, f.account, [new state.Transaction(f.store, f.transactionProps(-0.01))]))
   })
 
   test('request encoding uses approved cent rounding').with([

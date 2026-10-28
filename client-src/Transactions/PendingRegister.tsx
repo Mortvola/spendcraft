@@ -1,3 +1,4 @@
+import { parseMoneyCents } from '../../common/moneyCents';
 import { observer } from 'mobx-react-lite';
 import React from 'react';
 import { BaseTransactionInterface, TransactionContainerInterface, TransactionInterface } from '../State/Types';
@@ -43,7 +44,7 @@ const PendingRegister: React.FC<PropsType> = observer(({
                 key={transaction.id}
                 transaction={transaction}
                 amount={transaction.amount}
-                runningBalance={0}
+                runningBalanceCents={parseMoneyCents('0.00')}
                 account={account}
                 onClick={handleClick}
               />

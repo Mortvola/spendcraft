@@ -1,3 +1,4 @@
+import { parseMoneyCents } from '../../common/moneyCents';
 import { decodeAmount } from '../monetary';
 import Http from '@mortvola/http';
 import { Formik } from 'formik';
@@ -161,7 +162,7 @@ const BudgetProgress: React.FC = observer(() => {
                     <RegisterTransactions trxContainer={transactions}>
                       {
                         transactions.transactions.map((t) => (
-                          <Transaction key={t.id} transaction={t} amount={t.amount} runningBalance={0} />
+                          <Transaction key={t.id} transaction={t} amount={t.amount} runningBalanceCents={parseMoneyCents('0.00')} />
                         ))
                       }
                     </RegisterTransactions>

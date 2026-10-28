@@ -61,6 +61,10 @@ export interface GroupInterface {
 }
 
 export interface TransactionInterface extends BaseTransactionInterface {
+  amountCents: MoneyCents;
+  principleCents: MoneyCents | null;
+  getRegisterAmountCents(categoryId?: number, positiveOnly?: boolean): MoneyCents;
+
   accountId: number | null;
 
   refresh(props: TransactionProps): void;

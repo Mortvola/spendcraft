@@ -1,4 +1,4 @@
-import { parseMoneyCents } from '../../common/moneyCents';
+import { parseMoneyCents, addMoneyCents, type MoneyCents } from '../../common/moneyCents';
 import { DateTime } from 'luxon';
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
@@ -40,6 +40,24 @@ const hasAccountBalances = (value: unknown): value is AccountBalanceProps[] => (
 );
 
 class Transaction implements TransactionInterface {
+  @observable
+  accessor amountCents: MoneyCents = parseMoneyCents('0.00');
+
+  @observable
+  accessor principleCents: MoneyCents | null = null;
+
+  @observable
+  private accessor categoryCents: { categoryId: number; amount: MoneyCents }[] = [];
+
+  getRegisterAmountCents(categoryId?: number, positiveOnly = false): MoneyCents {
+    const categories = this.categoryCents.filter((category) => (
+      positiveOnly ? category.amount > 0 : category.categoryId === categoryId
+    ));
+    return positiveOnly || categories.length > 0
+      ? addMoneyCents(...categories.map((category) => category.amount))
+      : this.amountCents;
+  }
+
   @observable
   accessor id: number | null;
 
@@ -111,6 +129,8 @@ class Transaction implements TransactionInterface {
 
     if (props.accountTransaction) {
       this.name = props.accountTransaction.name;
+      this.amountCents = parseMoneyCents(props.accountTransaction.amount);
+      this.principleCents = props.accountTransaction.principle === null ? null : parseMoneyCents(props.accountTransaction.principle);
       this.amount = decodeAmount(props.accountTransaction.amount);
       this.principle = props.accountTransaction.principle === null ? null : decodeAmount(props.accountTransaction.principle);
       this.instituteName = props.accountTransaction.account.institution.name;
@@ -143,6 +163,10 @@ class Transaction implements TransactionInterface {
     }
 
     if (props.categories) {
+      this.categoryCents = props.categories.map((category) => ({
+        categoryId: category.categoryId,
+        amount: parseMoneyCents(category.amount),
+      }));
       this.categories = props.categories.map((c, index) => ({
         id: index,
         categoryId: c.categoryId,
@@ -178,6 +202,9 @@ class Transaction implements TransactionInterface {
       this.categories = updated.categories;
       this.taxCategories = updated.taxCategories;
       this.name = updated.name;
+      this.amountCents = updated.amountCents;
+      this.principleCents = updated.principleCents;
+      this.categoryCents = updated.categoryCents;
       this.amount = updated.amount;
       this.principle = updated.principle;
       this.instituteName = updated.instituteName;

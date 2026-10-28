@@ -1,6 +1,8 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
 import Amount from '../Amount';
+import MoneyCentsAmount from '../MoneyCentsAmount';
+import type { MoneyCents } from '../../common/moneyCents';
 import { AccountInterface, BaseTransactionInterface } from '../State/Types';
 import styles from './Transactions.module.scss';
 import TransactionAccount from './TransactionAccount';
@@ -14,7 +16,7 @@ interface PropsType {
   transaction: BaseTransactionInterface,
   className?: string,
   amount: number,
-  runningBalance: number,
+  runningBalanceCents: MoneyCents,
   account?: AccountInterface | null,
   onClick?: (transaction: BaseTransactionInterface) => void,
 }
@@ -23,7 +25,7 @@ const Transaction: React.FC<PropsType> = observer(({
   transaction,
   className,
   amount,
-  runningBalance,
+  runningBalanceCents,
   account,
   onClick,
 }) => {
@@ -85,7 +87,7 @@ const Transaction: React.FC<PropsType> = observer(({
       <Date className={styles.date} date={transaction.date} />
       <div className={styles.name}>{transaction.name}</div>
       <Amount className={`${styles.amount} currency ${reverseClassName}`} amount={amount * accountSign} />
-      <Amount className={`${styles.runningBalance} currency ${reverseClassName}`} amount={runningBalance} />
+      <MoneyCentsAmount className={`${styles.runningBalance} currency ${reverseClassName}`} amount={runningBalanceCents} />
       <TransactionAccount transaction={transaction} />
       {transactionAmount()}
       { loanFields() }
