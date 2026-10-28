@@ -1,8 +1,9 @@
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { validateSubmittedTaxForecast } from '#services/taxMonetaryCodec'
 import { replaceTaxForecast } from '#services/taxMonetaryStorage'
 // import type { HttpContext } from '@adonisjs/core/http'
 
-import { ApiResponse, TaxActualProps, TaxCategoriesProps, TaxProps } from "#common/ResponseTypes";
+import { ApiResponse, DecimalMoneyString, TaxActualProps, TaxCategoriesProps, TaxProps } from "#common/ResponseTypes";
 import Statement from "#models/Statement";
 import Tax from "#models/Tax";
 import TaxCategory from "#models/TaxCategory";
@@ -36,9 +37,7 @@ export default class TaxesController {
     return {
       data: {
         year: tax?.year ?? DateTime.now().year,
-        forecast: !tax ? undefined : {
-          ...tax.data,
-        },
+        forecast: !tax ? undefined : tax.serialize().data,
         actuals,
       }
     }
@@ -80,12 +79,12 @@ export default class TaxesController {
       .groupByRaw('EXTRACT(MONTH from date)')
       .groupByRaw('transTaxes.type')
 
-    const taxes: Record<number, Record<string, number>> = {}
+    const taxes: Record<number, Record<string, DecimalMoneyString>> = {}
 
     for (const tax of t) {
       taxes[tax.$extras.month] = {
         ...taxes[tax.$extras.month],
-        [tax.$extras.tax_type]: tax.$extras.tax_amount
+        [tax.$extras.tax_type]: encodeMonetaryAmount(tax.$extras.tax_amount)
       }
     }
 
@@ -97,10 +96,10 @@ export default class TaxesController {
       if (fromStatements) {
         result[i - 1] = {
           month: i,
-          taxableInterest: fromStatements.$extras.taxableInterest ?? 0,
-          ordinaryDividends: fromStatements.$extras.ordinaryDividends ?? 0,
-          shortTermCapitalGains: fromStatements.$extras.shortTermCapitalGains ?? 0,
-          longTermCapitalGains: fromStatements.$extras.longTermCapitalGains ?? 0,
+          taxableInterest: encodeMonetaryAmount(fromStatements.$extras.taxableInterest ?? 0),
+          ordinaryDividends: encodeMonetaryAmount(fromStatements.$extras.ordinaryDividends ?? 0),
+          shortTermCapitalGains: encodeMonetaryAmount(fromStatements.$extras.shortTermCapitalGains ?? 0),
+          longTermCapitalGains: encodeMonetaryAmount(fromStatements.$extras.longTermCapitalGains ?? 0),
           taxes: {},
         }
       }
@@ -158,9 +157,7 @@ export default class TaxesController {
     return {
       data: {
         year: tax.year,
-        forecast: {
-          ...tax.data,
-        },
+        forecast: tax.serialize().data,
         actuals,
       },
     };

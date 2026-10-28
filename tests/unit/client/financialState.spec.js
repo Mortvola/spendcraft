@@ -1,3 +1,4 @@
+import { taxForecastFields, taxEstimatedFields } from '../../../app/services/taxMonetaryCodec.ts'
 import { encodeTaxAttributions } from '../../../app/services/taxAmountCodec.ts'
 import { calculateFunding } from '../../../client-src/Funding/calculateFunding.ts'
 import { test } from '@japa/runner'
@@ -33,6 +34,7 @@ export { default as Category } from ${source('client-src/State/Category.ts')};
 export { default as Group } from ${source('client-src/State/Group.ts')};
 export { default as Transaction } from ${source('client-src/State/Transaction.ts')};
 export { decodeAmount } from ${source('client-src/monetary.ts')};
+export { worksheet2_1_2026 } from ${source('client-src/State/Taxes/Estimated.ts')};
 export { default as Bill } from ${source('client-src/State/Bill.ts')};
 export { default as Statement } from ${source('client-src/State/Statement.ts')};
 export { runInAction } from 'mobx';
@@ -236,6 +238,51 @@ export * from ${source('common/ResponseTypes.ts')};
       assert.throws(() => new state.Transaction(f.store, { ...f.transactionProps(), categories: [
         { categoryId: 20, amount: '1.00', baseAmount: amount },
       ] }))
+    }
+  })
+
+  test('Tax responses decode forecasts and monthly actuals while requests and Worksheets remain numeric', async ({ assert }) => {
+    const forecast = { filingStatus: state.FilingStatus.Single,
+      ...Object.fromEntries(taxForecastFields.map(field => [field, '0.30'])),
+      estimated: { expectedAgi: '100000.00', priorYearAgi: '150000.00', priorYearTotalTax: '10000.01' } }
+    const response = { year: 2026, forecast, actuals: [null, null,
+      { month: 3, taxableInterest: '0.30', ordinaryDividends: '-0.12', shortTermCapitalGains: '1.00',
+        longTermCapitalGains: '0.00', taxes: { taxable_social_security_benefits: '0.30', estimated_tax_payments: '12.50' } },
+      { month: 4, taxes: { estimated_tax_payments: '0.05' } },
+    ] }
+    const before = globalThis.structuredClone(response)
+    routes.set('get /api/v1/taxes/2026', async () => ({ body: { data: response } }))
+    const taxes = f.store.taxes
+    await taxes.load()
+    assert.strictEqual(taxes.income.taxableInterest, 0.3)
+    assert.strictEqual(taxes.qualifiedBusinessIncomeDeduction, 0.3)
+    assert.strictEqual(taxes.income.actuals[0].oridinaryDividends, -0.12)
+    assert.strictEqual(taxes.income.actuals[0].estimatedTaxPayments, 12.5)
+    assert.strictEqual(taxes.income.actuals[1].estimatedTaxPayments, 12.5 + 0.05)
+    assert.strictEqual(taxes.income.actuals[0].taxableSocialSecurityBenefits, 0.3)
+    assert.strictEqual(taxes.worksheet2_1.result.firstInstallment, 2500.0025)
+    const expected = state.worksheet2_1_2026({ filingStatus: state.FilingStatus.Single,
+      adjustedGrossIncome: 100000, deductions: taxes.standardDeduction,
+      priorYearAdjustedGrossIncome: 150000, priorYearTotalTax: 10000.01 })
+    assert.deepEqual(taxes.worksheet2_1.result, expected)
+    taxes.updateValues({ ...response, forecast: { ...forecast,
+      estimated: { ...forecast.estimated, priorYearAgi: '150000.01' } } })
+    assert.deepEqual(taxes.worksheet2_1.result, state.worksheet2_1_2026({ filingStatus: state.FilingStatus.Single,
+      adjustedGrossIncome: 100000, deductions: taxes.standardDeduction,
+      priorYearAdjustedGrossIncome: 150000.01, priorYearTotalTax: 10000.01 }))
+    routes.set('post /api/v1/taxes', async request => {
+      for (const field of taxForecastFields) assert.isNumber(request.forecast[field])
+      for (const field of taxEstimatedFields) assert.isNumber(request.forecast.estimated[field])
+      return { body: { data: response } }
+    })
+    await taxes.save()
+    assert.deepEqual(response, before)
+    for (const invalid of [1, '', '1.2', '-0.00', 'Infinity', '90071992547409.92']) {
+      assert.throws(() => taxes.updateValues({ ...response, forecast: { ...forecast, taxableInterest: invalid } }))
+      assert.throws(() => taxes.updateValues({ ...response, actuals: [{ month: 1, taxes: { estimated_tax_payments: invalid } }] }))
+      assert.strictEqual(taxes.income.taxableInterest, 0.3)
+      assert.strictEqual(taxes.income.actuals[0].estimatedTaxPayments, 12.5)
+      assert.strictEqual(taxes.worksheet2_1.priorYearAgi, 150000)
     }
   })
 

@@ -37,7 +37,7 @@ export const decodeTaxForecast = (value: unknown) => mapTaxMoney(value, taxForec
 export const encodeTransactionLogMoney = (value: unknown) => mapTaxMoney(value, transactionLogMoneyPaths, encodeMonetaryAmount)
 export const decodeTransactionLogMoney = (value: unknown) => mapTaxMoney(value, transactionLogMoneyPaths, decodeStoredMonetaryAmount)
 
-export const serializeTaxForecast = (value: unknown) => mapTaxMoney(value, taxForecastPaths, runtimeTaxMonetaryAmount)
+export const serializeTaxForecast = (value: unknown) => mapTaxMoney(value, taxForecastPaths, amount => encodeMonetaryAmount(runtimeTaxMonetaryAmount(amount)))
 export const serializeTransactionLogMoney = (value: unknown) => mapTaxMoney(value, transactionLogMoneyPaths, runtimeTaxMonetaryAmount)
 
 export function validateSubmittedTaxForecast(value: unknown): void {

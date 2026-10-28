@@ -666,25 +666,44 @@ export enum FilingStatus {
 
 export interface TaxActualProps {
   month: number,
-  taxableInterest: number,
-  ordinaryDividends: number,
-  shortTermCapitalGains: number,
-  longTermCapitalGains: number,
+  taxableInterest: DecimalMoneyString,
+  ordinaryDividends: DecimalMoneyString,
+  shortTermCapitalGains: DecimalMoneyString,
+  longTermCapitalGains: DecimalMoneyString,
   taxes: {
-    taxable_social_security_benefits?: number,
-    estimated_tax_payments?: number,
+    taxable_social_security_benefits?: DecimalMoneyString,
+    estimated_tax_payments?: DecimalMoneyString,
   },
 }
 
 interface Worksheet2_1_Props {
-  expectedAgi: number,
-  priorYearAgi: number,
-  priorYearTotalTax: number,
+  expectedAgi: DecimalMoneyString,
+  priorYearAgi: DecimalMoneyString,
+  priorYearTotalTax: DecimalMoneyString,
 }
 
 export interface TaxProps {
   year: number,
   forecast?: {
+    filingStatus: FilingStatus,
+    taxableInterest: DecimalMoneyString,
+    qualifiedDividends: DecimalMoneyString,
+    ordinaryDividends: DecimalMoneyString,
+    taxableIraDistributions: DecimalMoneyString,
+    taxablePensionAndAnnuities: DecimalMoneyString,
+    taxableSocialSecurityBenefits: DecimalMoneyString,
+    additionalTaxableIncome: DecimalMoneyString,
+    shortTermCapitalGains: DecimalMoneyString,
+    longTermCapitalGains: DecimalMoneyString,
+    qualifiedBusinessIncomeDeduction: DecimalMoneyString,
+    estimated?: Worksheet2_1_Props
+  },
+  actuals?: TaxActualProps[],
+}
+
+export interface TaxUpdateProps {
+  year: number,
+  forecast: {
     filingStatus: FilingStatus,
     taxableInterest: number,
     qualifiedDividends: number,
@@ -696,9 +715,12 @@ export interface TaxProps {
     shortTermCapitalGains: number,
     longTermCapitalGains: number,
     qualifiedBusinessIncomeDeduction: number,
-    estimated?: Worksheet2_1_Props
+    estimated?: {
+      expectedAgi: number,
+      priorYearAgi: number,
+      priorYearTotalTax: number,
+    }
   },
-  actuals?: TaxActualProps[],
 }
 
 interface TaxCategoryProps {

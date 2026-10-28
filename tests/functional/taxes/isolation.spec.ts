@@ -39,7 +39,7 @@ test.group('Tax actual isolation', (group) => {
     const user = actor === 'owner' ? fixture.own.user : fixture.shared
     const before = await client.get('/api/v1/taxes/2025').accept('json').loginAs(user)
     before.assertStatus(200)
-    assert.deepEqual(before.body().data.actuals[1].taxes, { wages: 120, withholding: 20 })
+    assert.deepEqual(before.body().data.actuals[1].taxes, { wages: '120.00', withholding: '20.00' })
     await fixture.foreign.transaction.merge({ taxes: [{ type: 'wages', amount: 900 }, { type: 'foreignOnly', amount: 75 }] }).save()
     await fixture.foreign.budget.related('transactions').create({ date: DateTime.fromISO('2025-04-01'), type: TransactionType.MANUAL_TRANSACTION,
       categories: [], taxes: [{ type: 'wages', amount: 800 }], deleted: false })
@@ -48,7 +48,7 @@ test.group('Tax actual isolation', (group) => {
     assert.deepEqual(after.body().data.actuals, before.body().data.actuals)
     const foreign = await client.get('/api/v1/taxes/2025').accept('json').loginAs(fixture.foreign.user)
     foreign.assertStatus(200)
-    assert.deepEqual(foreign.body().data.actuals[1].taxes, { wages: 900, foreignOnly: 75 })
-    assert.deepEqual(foreign.body().data.actuals[3].taxes, { wages: 800 })
+    assert.deepEqual(foreign.body().data.actuals[1].taxes, { wages: '900.00', foreignOnly: '75.00' })
+    assert.deepEqual(foreign.body().data.actuals[3].taxes, { wages: '800.00' })
   })
 })

@@ -1,6 +1,7 @@
+import { decodeAmount } from '../../monetary';
 import Http from "@mortvola/http";
 import { computed, observable, runInAction } from "mobx";
-import { ApiResponse, FilingStatus, TaxProps } from "../../../common/ResponseTypes";
+import { ApiResponse, FilingStatus, TaxProps, TaxUpdateProps } from "../../../common/ResponseTypes";
 import Income from "./Income";
 import { TaxesInterface } from "./Types";
 import Worksheet2_1 from "./Worksheet2_1";
@@ -64,18 +65,49 @@ export default class Taxes implements TaxesInterface {
   }
 
   updateValues(data: TaxProps) {
+    const amount = (value: string | null | undefined) => value == null ? 0 : decodeAmount(value);
+    const forecast = data.forecast && {
+      ...data.forecast,
+      taxableInterest: amount(data.forecast.taxableInterest),
+      qualifiedDividends: amount(data.forecast.qualifiedDividends),
+      ordinaryDividends: amount(data.forecast.ordinaryDividends),
+      taxableIraDistributions: amount(data.forecast.taxableIraDistributions),
+      taxablePensionAndAnnuities: amount(data.forecast.taxablePensionAndAnnuities),
+      taxableSocialSecurityBenefits: amount(data.forecast.taxableSocialSecurityBenefits),
+      additionalTaxableIncome: amount(data.forecast.additionalTaxableIncome),
+      shortTermCapitalGains: amount(data.forecast.shortTermCapitalGains),
+      longTermCapitalGains: amount(data.forecast.longTermCapitalGains),
+      qualifiedBusinessIncomeDeduction: amount(data.forecast.qualifiedBusinessIncomeDeduction),
+      estimated: data.forecast.estimated && {
+        expectedAgi: amount(data.forecast.estimated.expectedAgi),
+        priorYearAgi: amount(data.forecast.estimated.priorYearAgi),
+        priorYearTotalTax: amount(data.forecast.estimated.priorYearTotalTax),
+      },
+    };
+    const decodedActuals = data.actuals?.map((actual) => actual == null ? actual : {
+      ...actual,
+      taxableInterest: amount(actual.taxableInterest),
+      ordinaryDividends: amount(actual.ordinaryDividends),
+      shortTermCapitalGains: amount(actual.shortTermCapitalGains),
+      longTermCapitalGains: amount(actual.longTermCapitalGains),
+      taxes: {
+        ...actual.taxes,
+        taxable_social_security_benefits: amount(actual.taxes.taxable_social_security_benefits),
+        estimated_tax_payments: amount(actual.taxes.estimated_tax_payments),
+      },
+    });
     runInAction(() => {
-      this.filingStatus = data.forecast?.filingStatus ?? FilingStatus.Single;
-      this.income.taxableInterest = data.forecast?.taxableInterest ?? 0;
-      this.income.qualifiedDividends = data.forecast?.qualifiedDividends ?? 0;
-      this.income.ordinaryDividends = data.forecast?.ordinaryDividends ?? 0;
-      this.income.taxableIraDistributions = data.forecast?.taxableIraDistributions ?? 0;
-      this.income.taxablePensionAndAnnuities = data.forecast?.taxablePensionAndAnnuities ?? 0;
-      this.income.taxableSocialSecurityBenefits = data.forecast?.taxableSocialSecurityBenefits ?? 0;
-      this.income.additionalTaxableIncome = data.forecast?.additionalTaxableIncome ?? 0;
-      this.income.shortTermCapitalGains = data.forecast?.shortTermCapitalGains ?? 0;
-      this.income.longTermCapitalGains = data.forecast?.longTermCapitalGains ?? 0;
-      this.qualifiedBusinessIncomeDeduction = data.forecast?.qualifiedBusinessIncomeDeduction ?? 0;
+      this.filingStatus = forecast?.filingStatus ?? FilingStatus.Single;
+      this.income.taxableInterest = forecast?.taxableInterest ?? 0;
+      this.income.qualifiedDividends = forecast?.qualifiedDividends ?? 0;
+      this.income.ordinaryDividends = forecast?.ordinaryDividends ?? 0;
+      this.income.taxableIraDistributions = forecast?.taxableIraDistributions ?? 0;
+      this.income.taxablePensionAndAnnuities = forecast?.taxablePensionAndAnnuities ?? 0;
+      this.income.taxableSocialSecurityBenefits = forecast?.taxableSocialSecurityBenefits ?? 0;
+      this.income.additionalTaxableIncome = forecast?.additionalTaxableIncome ?? 0;
+      this.income.shortTermCapitalGains = forecast?.shortTermCapitalGains ?? 0;
+      this.income.longTermCapitalGains = forecast?.longTermCapitalGains ?? 0;
+      this.qualifiedBusinessIncomeDeduction = forecast?.qualifiedBusinessIncomeDeduction ?? 0;
 
       for (let i = 0; i < 4; i += 1) {
         this.income.actuals[i].taxableInterest = 0;
@@ -86,10 +118,11 @@ export default class Taxes implements TaxesInterface {
         this.income.actuals[i].estimatedTaxPayments = 0;
       }
     
-      if (data.actuals) {
+      if (decodedActuals) {
         const periodMonthEnd = [3, 5, 8, 12];
 
-        for (const actuals of data.actuals) {
+        for (const actuals of decodedActuals) {
+          if (actuals == null) continue;
           for (let period = 0; period < 4; period += 1) {
             if (actuals.month <= periodMonthEnd[period]) {
               this.income.actuals[period].taxableInterest += actuals.taxableInterest ?? 0;
@@ -103,10 +136,10 @@ export default class Taxes implements TaxesInterface {
         }
       }
 
-      if (data.forecast?.estimated) {
-        this.worksheet2_1.expectedAgi = data.forecast.estimated.expectedAgi
-        this.worksheet2_1.priorYearAgi = data.forecast.estimated.priorYearAgi
-        this.worksheet2_1.priorYearTotalTax = data.forecast.estimated.priorYearTotalTax
+      if (forecast?.estimated) {
+        this.worksheet2_1.expectedAgi = forecast.estimated.expectedAgi
+        this.worksheet2_1.priorYearAgi = forecast.estimated.priorYearAgi
+        this.worksheet2_1.priorYearTotalTax = forecast.estimated.priorYearTotalTax
       }
     })
   }
@@ -124,7 +157,7 @@ export default class Taxes implements TaxesInterface {
   }
 
   async save() {
-    const response = await Http.post<TaxProps, ApiResponse<TaxProps>>('/api/v1/taxes', {
+    const response = await Http.post<TaxUpdateProps, ApiResponse<TaxProps>>('/api/v1/taxes', {
       year: this.year,
       forecast: {
         filingStatus: this.filingStatus,

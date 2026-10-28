@@ -37,7 +37,7 @@ test.group('Tax forecast and TransactionLog decimal-string PostgreSQL acceptance
     (SELECT md5(COALESCE(jsonb_agg(to_jsonb(t) ORDER BY id)::text,'[]')) FROM categories t) AS categories,
     (SELECT md5(COALESCE(jsonb_agg(to_jsonb(t) ORDER BY id)::text,'[]')) FROM statements t) AS statements,
     (SELECT md5(COALESCE(jsonb_agg(to_jsonb(t) ORDER BY id)::text,'[]')) FROM transactions t) AS transactions`)).rows[0]
-  test('Tax POST persists all 13 strings and returns rounded numeric forecast').with([
+  test('Tax POST persists all 13 strings and returns canonical string forecast').with([
     { amount: 12.345, stored: '12.35', numeric: 12.35 },
     { amount: -0.125, stored: '-0.12', numeric: -0.12 },
     { amount: 0.1 + 0.2, stored: '0.30', numeric: 0.30 },
@@ -49,8 +49,8 @@ test.group('Tax forecast and TransactionLog decimal-string PostgreSQL acceptance
     for (const path of paths) {
       const kind = await db.rawQuery('SELECT jsonb_typeof(data #> ?::text[]) AS kind FROM taxes WHERE id=?', [path, raw.id])
       assert.equal(kind.rows[0].kind, 'string')
-      if (path.length === 1) { assert.strictEqual(raw.data[path[0]], value.stored); assert.strictEqual(response.body().data.forecast[path[0]], value.numeric) }
-      else { assert.strictEqual(raw.data.estimated[path[1]], value.stored); assert.strictEqual(response.body().data.forecast.estimated[path[1]], value.numeric) }
+      if (path.length === 1) { assert.strictEqual(raw.data[path[0]], value.stored); assert.strictEqual(response.body().data.forecast[path[0]], value.stored) }
+      else { assert.strictEqual(raw.data.estimated[path[1]], value.stored); assert.strictEqual(response.body().data.forecast.estimated[path[1]], value.stored) }
     }
     assert.deepEqual(await financialState(), before)
   })
@@ -60,7 +60,7 @@ test.group('Tax forecast and TransactionLog decimal-string PostgreSQL acceptance
       const raw = { ...forecast(1.005), ...(storage === 'mixed' ? { taxableInterest: '2.00' } : {}), note: { amount: 1.005 } }
       await db.from('taxes').where('id', tax.id).update({ data: JSON.stringify(raw) })
       const before = await rawTax(), response = await client.get('/api/v1/taxes/2026').accept('json').loginAs(f.user)
-      response.assertStatus(200); assert.strictEqual(response.body().data.forecast.taxableInterest, storage === 'mixed' ? 2 : 1.005)
+      response.assertStatus(200); assert.strictEqual(response.body().data.forecast.taxableInterest, storage === 'mixed' ? '2.00' : '1.00')
       assert.deepEqual(await rawTax(), before)
       const model = await Tax.findOrFail(tax.id)
       if (!('note' in model.data)) throw new Error('Expected existing Tax metadata')
