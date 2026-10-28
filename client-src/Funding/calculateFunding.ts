@@ -1,3 +1,5 @@
+import { addMoneyCents, type MoneyCents } from '../../common/moneyCents.js';
+import { inputMoneyCents } from '../monetary.js';
 import type { CategoryFundingProps } from '../../common/ResponseTypes.js';
 
 export type FundingInputs = Readonly<Record<string, {
@@ -130,4 +132,10 @@ export const calculateFunding = (inputs: FundingInputs, fundingPoolId: number): 
 // Sum posted rows in their posting order, including destination and funder rows.
 export const fundingCategoryEffect = (rows: readonly Pick<CategoryFundingProps, 'categoryId' | 'amount'>[], categoryId: number): number => (
   rows.filter((row) => row.categoryId === categoryId).reduce((sum, row) => sum + row.amount, 0)
+);
+
+// Preview the final posted rows: round each row at the existing persistence boundary,
+// then sum cents without changing spread calculations or intermediate precision.
+export const fundingCategoryEffectCents = (rows: readonly Pick<CategoryFundingProps, 'categoryId' | 'amount'>[], categoryId: number): MoneyCents => (
+  addMoneyCents(...rows.filter(row => row.categoryId === categoryId).map(row => inputMoneyCents(row.amount)))
 );

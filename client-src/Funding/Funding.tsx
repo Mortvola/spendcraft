@@ -1,4 +1,4 @@
-import { decodeAmount } from '../monetary';
+import { parseMoneyCents } from '../../common/moneyCents';
 import React, { ReactNode, useState } from 'react';
 import { DateTime } from 'luxon';
 import Http from '@mortvola/http';
@@ -34,11 +34,11 @@ const Funding: React.FC<PropsType> = ({
         if (data) {
           setCatFundingInfo(data.map((c) => ({
             categoryId: c.id,
-            initialAmount: decodeAmount(c.balance),
-            previousFunding: decodeAmount(c.previousFunding),
-            previousBaseAmount: decodeAmount(c.previousBaseAmount),
-            previousExpenses: decodeAmount(c.previousSum),
-            previousCatTransfers: decodeAmount(c.previousCatTransfers),
+            initialAmountCents: parseMoneyCents(c.balance),
+            previousFundingCents: parseMoneyCents(c.previousFunding),
+            previousBaseAmountCents: parseMoneyCents(c.previousBaseAmount),
+            previousExpensesCents: parseMoneyCents(c.previousSum),
+            previousCatTransfersCents: parseMoneyCents(c.previousCatTransfers),
           })));
         }
       }

@@ -1,3 +1,4 @@
+import type { MoneyCents } from '../../common/moneyCents';
 import { CategorySpreadEntry } from '../CategorySpread/CategorySpread';
 
 export interface FundingType {
@@ -8,11 +9,11 @@ export interface FundingType {
 
 export interface FundingInfoType {
   categoryId: number,
-  initialAmount: number,
-  previousFunding: number,
-  previousBaseAmount: number,
-  previousExpenses: number,
-  previousCatTransfers: number,
+  initialAmountCents: MoneyCents,
+  previousFundingCents: MoneyCents,
+  previousBaseAmountCents: MoneyCents,
+  previousExpensesCents: MoneyCents,
+  previousCatTransfersCents: MoneyCents,
 }
 
 export type CategoriesValueType = Record<

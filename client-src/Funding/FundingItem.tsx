@@ -6,11 +6,13 @@ import {
 } from 'formik';
 import { FormCheckbox, FormError } from '@mortvola/forms';
 import AmountInput from '../AmountInput';
-import Amount from '../Amount';
+import MoneyCentsAmount from '../MoneyCentsAmount';
+import { addMoneyCents, parseMoneyCents, type MoneyCents } from '../../common/moneyCents';
+import { inputMoneyCents } from '../monetary';
 import styles from './Funding.module.scss'
 import { FundingInfoType, ValueType } from './Types';
 import VerticalTitled from './VerticalTitled';
-import { calculateFunding, fundingCategoryEffect } from './calculateFunding';
+import { calculateFunding, fundingCategoryEffectCents } from './calculateFunding';
 import { useStores } from '../State/Store';
 import { CategoryInterface } from '../State/Types';
 import CategorySpread from '../CategorySpread/CategorySpread';
@@ -38,17 +40,20 @@ const FundingItem: React.FC<PropsType> = ({
   const { categoryTree: { budget: { fundingPoolCat } } } = useStores();
   if (!fundingPoolCat) throw new Error('funding pool is unassigned');
   // Funding edits retain their date, so the month-start snapshot excludes the old record.
-  const balance = (fundingInfo?.initialAmount ?? 0)
-    + fundingCategoryEffect(calculateFunding(values.categories, fundingPoolCat.id), category.id);
+  const zero = parseMoneyCents('0.00');
+  let balance: MoneyCents | null = null;
+  try {
+    balance = addMoneyCents(fundingInfo?.initialAmountCents ?? zero,
+      fundingCategoryEffectCents(calculateFunding(values.categories, fundingPoolCat.id), category.id));
+  }
+  catch { /* Keep incomplete or unsafe edits visible without displaying a false balance. */ }
 
   const previousMonthName = date.minus({ months: 1 }).monthLong;
 
-  const hide = (current: string, previous?: number) => {
-    const value1 = parseFloat(current ?? 0).toFixed(2);
-    const value2 = (previous ?? 0).toFixed(2);
-
-    return diffOnly && !(value1 !== value2);
-  }
+  const hide = (current: string | number, previous: MoneyCents = zero) => {
+    try { return diffOnly && inputMoneyCents(current ?? 0) === previous; }
+    catch { return false; }
+  };
 
   let title = category.name;
   if (groupName) {
@@ -61,30 +66,30 @@ const FundingItem: React.FC<PropsType> = ({
     >
       {
         ({ field: fieldProps }: FieldProps<string, ValueType>) => (
-          <div className={`${styles.fundListItem} ${hide(fieldProps.value, fundingInfo?.previousBaseAmount) ? styles.hide : ''}`}>
+          <div className={`${styles.fundListItem} ${hide(fieldProps.value, fundingInfo?.previousBaseAmountCents) ? styles.hide : ''}`}>
             <div className={styles.fundListCatName}>{title}</div>
             <div className={styles.valuesWrapper}>
               <div className={styles.fundValues}>
                 <VerticalTitled title="Current">
-                  <Amount amount={fundingInfo?.initialAmount ?? 0} />
+                  <MoneyCentsAmount amount={fundingInfo?.initialAmountCents ?? zero} />
                 </VerticalTitled>
                 <VerticalTitled title="Requested" underscored={false}>
                   <AmountInput onDeltaChange={onDeltaChange} {...fieldProps} />
                 </VerticalTitled>
                 <VerticalTitled title="Balance">
-                  <Amount amount={balance} />
+                  {balance === null ? <div>Invalid amount</div> : <MoneyCentsAmount amount={balance} />}
                 </VerticalTitled>
                 <div>{`${previousMonthName} Funding:`}</div>
-                <Amount style={{ minWidth: '6rem' }} amount={fundingInfo?.previousBaseAmount ?? 0} />
+                <MoneyCentsAmount style={{ minWidth: '6rem' }} amount={fundingInfo?.previousBaseAmountCents ?? zero} />
               </div>
               <div className={styles.fundValues2}>
                 <div className={styles.labeledAmount}>
                   {`${previousMonthName} Expenses:`}
-                  <Amount style={{ minWidth: '6rem' }} amount={fundingInfo?.previousExpenses ?? 0} />
+                  <MoneyCentsAmount style={{ minWidth: '6rem' }} amount={fundingInfo?.previousExpensesCents ?? zero} />
                 </div>
                 <div className={styles.labeledAmount}>
                   {`${previousMonthName} Category Transfers:`}
-                  <Amount style={{ minWidth: '6rem' }} amount={fundingInfo?.previousCatTransfers ?? 0} />
+                  <MoneyCentsAmount style={{ minWidth: '6rem' }} amount={fundingInfo?.previousCatTransfersCents ?? zero} />
                 </div>
               </div>
             </div>
