@@ -777,7 +777,7 @@ for (const scenario of ['create', 'update', 'save-failure', 'create-failure']) {
       related: () => ({ query: () => ({ forUpdate() { return this }, async firstOrFail() {
         entered(); await gate; events.push('acquired'); return { id: 7 }
       } }) }) }
-    const operation = run({ auth: { user }, request: { input: () => forecast, validateUsing: async () => ({ year: 2026, forecast }) } })
+    const operation = run({ auth: { user }, request: { input: () => serializeTaxForecast(forecast), validateUsing: async () => ({ year: 2026, forecast }) } })
     await waiting
     assert.deepEqual(events, [])
     release()
@@ -814,7 +814,7 @@ test('tax forecast concurrent first saves reload after Budget and create only on
     let owner
     return { auth: { user: { useTransaction(trx) { owner = trx }, related: () => ({ query: () => ({
       forUpdate() { return this }, async firstOrFail() { await owner.previous; return { id: 7 } },
-    }) }) } }, request: { input: () => ({ taxableInterest: value }), validateUsing: async () => ({ year: 2026, forecast: { taxableInterest: value } }) } }
+    }) }) } }, request: { input: () => ({ taxableInterest: encodeMonetaryAmount(value) }), validateUsing: async () => ({ year: 2026, forecast: { taxableInterest: value } }) } }
   }
   await Promise.all([run(context(10)), run(context(20))])
   assert.equal(creates, 1); assert.equal(stored.data.taxableInterest, 20)

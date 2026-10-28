@@ -42,11 +42,5 @@ export const serializeTransactionLogMoney = (value: unknown) => mapTaxMoney(valu
 
 export function validateSubmittedTaxForecast(value: unknown): void {
   if (value === null || value === undefined) return // Existing required-object validator decides presence.
-  mapTaxMoney(value, taxForecastPaths, amount => {
-    if (typeof amount === 'number') return encodeMonetaryAmount(amount)
-    if (typeof amount !== 'string' || !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/.test(amount.trim())) {
-      throw new Exception('Invalid Tax forecast amount', { status: 422 })
-    }
-    return encodeMonetaryAmount(Number(amount))
-  })
+  mapTaxMoney(value, taxForecastPaths, decodeStoredMonetaryAmount)
 }

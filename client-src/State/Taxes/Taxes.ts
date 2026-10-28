@@ -1,4 +1,4 @@
-import { decodeAmount } from '../../monetary';
+import { decodeAmount, encodeAmount } from '../../monetary';
 import Http from "@mortvola/http";
 import { computed, observable, runInAction } from "mobx";
 import { ApiResponse, FilingStatus, TaxProps, TaxUpdateProps } from "../../../common/ResponseTypes";
@@ -161,20 +161,20 @@ export default class Taxes implements TaxesInterface {
       year: this.year,
       forecast: {
         filingStatus: this.filingStatus,
-        taxableInterest: this.income.taxableInterest,
-        qualifiedDividends: this.income.qualifiedDividends,
-        ordinaryDividends: this.income.ordinaryDividends,
-        taxableIraDistributions: this.income.taxableIraDistributions,
-        taxablePensionAndAnnuities: this.income.taxablePensionAndAnnuities,
-        taxableSocialSecurityBenefits: this.income.taxableSocialSecurityBenefits,
-        additionalTaxableIncome: this.income.additionalTaxableIncome,
-        shortTermCapitalGains: this.income.shortTermCapitalGains,
-        longTermCapitalGains: this.income.longTermCapitalGains,
-        qualifiedBusinessIncomeDeduction: this.qualifiedBusinessIncomeDeduction,
+        taxableInterest: encodeAmount(this.income.taxableInterest),
+        qualifiedDividends: encodeAmount(this.income.qualifiedDividends),
+        ordinaryDividends: encodeAmount(this.income.ordinaryDividends),
+        taxableIraDistributions: encodeAmount(this.income.taxableIraDistributions),
+        taxablePensionAndAnnuities: encodeAmount(this.income.taxablePensionAndAnnuities),
+        taxableSocialSecurityBenefits: encodeAmount(this.income.taxableSocialSecurityBenefits),
+        additionalTaxableIncome: encodeAmount(this.income.additionalTaxableIncome),
+        shortTermCapitalGains: encodeAmount(this.income.shortTermCapitalGains),
+        longTermCapitalGains: encodeAmount(this.income.longTermCapitalGains),
+        qualifiedBusinessIncomeDeduction: encodeAmount(this.qualifiedBusinessIncomeDeduction),
         estimated: {
-          expectedAgi: this.worksheet2_1.expectedAgi,
-          priorYearAgi: this.worksheet2_1.priorYearAgi,
-          priorYearTotalTax: this.worksheet2_1.priorYearTotalTax,
+          expectedAgi: encodeAmount(this.worksheet2_1.expectedAgi),
+          priorYearAgi: encodeAmount(this.worksheet2_1.priorYearAgi),
+          priorYearTotalTax: encodeAmount(this.worksheet2_1.priorYearTotalTax),
         } 
       },
     })

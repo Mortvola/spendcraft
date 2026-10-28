@@ -45,7 +45,7 @@ test.group('Tax forecast and TransactionLog decimal-string PostgreSQL acceptance
     { amount: -0, stored: '0.00', numeric: 0 },
   ]).run(async ({ client, assert }, value) => {
     const before = await financialState()
-    const response = await client.post('/api/v1/taxes').json({ year: 2026, forecast: forecast(value.amount) }).accept('json').loginAs(f.user)
+    const response = await client.post('/api/v1/taxes').json({ year: 2026, forecast: encodeTaxForecast(forecast(value.amount)) }).accept('json').loginAs(f.user)
     response.assertStatus(200); const raw = await rawTax()
     for (const path of paths) {
       const kind = await db.rawQuery('SELECT jsonb_typeof(data #> ?::text[]) AS kind FROM taxes WHERE id=?', [path, raw.id])
@@ -54,6 +54,22 @@ test.group('Tax forecast and TransactionLog decimal-string PostgreSQL acceptance
       else { assert.strictEqual(raw.data.estimated[path[1]], value.stored); assert.strictEqual(response.body().data.forecast.estimated[path[1]], value.stored) }
     }
     assert.deepEqual(await financialState(), before)
+  })
+  test('Tax requests reject numeric and noncanonical amounts without changing stored or financial data').with([
+    1, '1.005', '1e2', '-0.00', '900719925474099.00', null,
+  ]).run(async ({ client, assert }, amount) => {
+    await Tax.create({ budgetId: f.budget.id, year: 2026, data: forecast(1) })
+    const before = await rawTax(), financialBefore = await financialState()
+    for (const path of paths) {
+      const estimated = Object.fromEntries(taxEstimatedFields.map(field => [field, path[1] === field ? amount : '2.00']))
+      const requestForecast = { filingStatus: FilingStatus.Single,
+        ...Object.fromEntries(taxForecastFields.map(field => [field, path.length === 1 && path[0] === field ? amount : '2.00'])),
+        estimated }
+      const response = await client.post('/api/v1/taxes').json({ year: 2026, forecast: requestForecast }).accept('json').loginAs(f.user)
+      response.assertStatus(422)
+      assert.deepEqual(await rawTax(), before)
+      assert.deepEqual(await financialState(), financialBefore)
+    }
   })
   test('numeric/mixed Tax storage rejects without normalizing history').with(['numeric', 'mixed'])
     .run(async ({ client, assert }, storage) => {
@@ -78,7 +94,7 @@ test.group('Tax forecast and TransactionLog decimal-string PostgreSQL acceptance
     const tax = await Tax.create({ budgetId: f.budget.id, year: 2026, data: forecast(1) })
     await db.from('taxes').where('id', tax.id).update({ data: JSON.stringify({ ...encodeTaxForecast(forecast(1)), note: { amount: 1.005 },
       estimated: { expectedAgi: '1.00', priorYearAgi: '1.00', priorYearTotalTax: '1.00', evidence: 'keep' } }) })
-    const response = await client.post('/api/v1/taxes').json({ year: 2026, forecast: forecast(2.345) }).accept('json').loginAs(f.user)
+    const response = await client.post('/api/v1/taxes').json({ year: 2026, forecast: encodeTaxForecast(forecast(2.345)) }).accept('json').loginAs(f.user)
     response.assertStatus(200); const raw = await rawTax()
     assert.deepEqual(raw.data.note, { amount: 1.005 }); assert.equal(raw.data.estimated.evidence, 'keep')
     assert.equal(raw.data.estimated.priorYearTotalTax, '2.35')
@@ -137,7 +153,7 @@ test.group('Tax forecast and TransactionLog decimal-string PostgreSQL acceptance
     const foreign = await fixture()
     const tax = await Tax.create({ budgetId: f.budget.id, year: 2026, data: forecast(1) }), before = await rawTax()
     const log = await f.transaction.related('transactionLog').create({ budgetId: f.budget.id, message: 'private', changes: { amount: { old: 1 } } })
-    const response = await client.post('/api/v1/taxes').json({ year: 2026, forecast: forecast(2) }).accept('json').loginAs(foreign.user)
+    const response = await client.post('/api/v1/taxes').json({ year: 2026, forecast: encodeTaxForecast(forecast(2)) }).accept('json').loginAs(foreign.user)
     response.assertStatus(200); assert.deepEqual(await rawTax(), before); assert.equal((await Tax.findOrFail(tax.id)).data.taxableInterest, 1)
     const list = await client.get('/api/v1/transaction-logs').accept('json').loginAs(foreign.user); list.assertStatus(200)
     assert.isFalse(list.body().some((entry: { id: number }) => entry.id === log.id))

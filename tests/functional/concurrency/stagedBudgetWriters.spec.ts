@@ -1,3 +1,4 @@
+import { encodeTaxForecast } from '#services/taxMonetaryCodec'
 import { categoryRequest } from '../../helpers/categoryRequest.js'
 import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { writeHistoricalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
@@ -71,7 +72,7 @@ function request(client: ApiClient, f: Fixture, operation: Operation) {
     case 'deleteAccount': return client.delete(`/api/v1/institution/${f.institution.id}/accounts/${f.account.id}`)
     case 'deleteInstitution': return client.delete(`/api/v1/institution/${f.institution.id}`)
     case 'dedup': return client.post(`/api/v1/transaction/${f.transaction.id}/dedup`)
-    case 'tax': return client.post('/api/v1/taxes').json({ year: 2026, forecast: forecast(25) })
+    case 'tax': return client.post('/api/v1/taxes').json({ year: 2026, forecast: encodeTaxForecast(forecast(25)) })
     case 'deleteUser': return client.delete('/api/v1/user')
   }
 }
@@ -164,10 +165,10 @@ test.group('Staged Budget writers PostgreSQL acceptance', (group) => {
       try {
         await Budget.query({ client: trx }).where('id', f.budget.id).forUpdate().firstOrFail()
         const pid = (await trx.rawQuery('SELECT pg_backend_pid() AS pid')).rows[0].pid
-        a = client.post('/api/v1/taxes').json({ year: 2026, forecast: forecast(values[0]) }).loginAs(f.user).then((r) => r.assertStatus(200))
+        a = client.post('/api/v1/taxes').json({ year: 2026, forecast: encodeTaxForecast(forecast(values[0])) }).loginAs(f.user).then((r) => r.assertStatus(200))
         void a.catch(() => undefined)
         await waitForGate(pid)
-        b = client.post('/api/v1/taxes').json({ year: 2026, forecast: forecast(values[1]) }).loginAs(f.user).then((r) => r.assertStatus(200))
+        b = client.post('/api/v1/taxes').json({ year: 2026, forecast: encodeTaxForecast(forecast(values[1])) }).loginAs(f.user).then((r) => r.assertStatus(200))
         void b.catch(() => undefined)
         await trx.commit(); await deadline(Promise.all([a, b]))
         const rows = await Tax.query().where('budgetId', f.budget.id).where('year', 2026)
@@ -181,7 +182,7 @@ test.group('Staged Budget writers PostgreSQL acceptance', (group) => {
 
   test('late tax-save failure rolls back full persisted state', async ({ client, assert, cleanup }) => {
     const f = await fixture()
-    const created = await client.post('/api/v1/taxes').json({ year: 2026, forecast: forecast(10) }).loginAs(f.user)
+    const created = await client.post('/api/v1/taxes').json({ year: 2026, forecast: encodeTaxForecast(forecast(10)) }).loginAs(f.user)
     created.assertStatus(200)
     const before = await rawState()
     const original = Tax.prototype.save
@@ -191,7 +192,7 @@ test.group('Staged Budget writers PostgreSQL acceptance', (group) => {
       return result
     })
     cleanup(() => interception.mock.restore())
-    const response = await client.post('/api/v1/taxes').json({ year: 2026, forecast: forecast(20) }).loginAs(f.user)
+    const response = await client.post('/api/v1/taxes').json({ year: 2026, forecast: encodeTaxForecast(forecast(20)) }).loginAs(f.user)
     response.assertStatus(500)
     assert.deepEqual(await rawState(), before)
   })

@@ -362,8 +362,8 @@ export * from ${source('common/ResponseTypes.ts')};
       adjustedGrossIncome: 100000, deductions: taxes.standardDeduction,
       priorYearAdjustedGrossIncome: 150000.01, priorYearTotalTax: 10000.01 }))
     routes.set('post /api/v1/taxes', async request => {
-      for (const field of taxForecastFields) assert.isNumber(request.forecast[field])
-      for (const field of taxEstimatedFields) assert.isNumber(request.forecast.estimated[field])
+      for (const field of taxForecastFields) assert.match(request.forecast[field], /^-?\d+\.\d{2}$/)
+      for (const field of taxEstimatedFields) assert.match(request.forecast.estimated[field], /^-?\d+\.\d{2}$/)
       return { body: { data: response } }
     })
     await taxes.save()

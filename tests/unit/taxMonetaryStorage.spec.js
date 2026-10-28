@@ -68,12 +68,19 @@ test.group('Tax and TransactionLog monetary storage (no database)', () => {
     }
     assert.deepEqual(encodeTransactionLogMoney({ amount: { old: 1 } }), { amount: { old: '1.00' } })
   })
-  test('Tax request numeric-string syntax is preserved, unsupported coercions reject', async ({ assert }) => {
-    for (const value of ['1.005', '-.125', '1e-2', 1.005]) {
-      validateSubmittedTaxForecast(forecast(value)); const validated = await addTax.validate({ year: 2026, forecast: forecast(value) })
-      assert.equal(validated.forecast.taxableInterest, Number(value))
+  test('Tax requests require canonical strings and decode all monetary fields to numbers', async ({ assert }) => {
+    for (const value of ['1.00', '-0.12', '0.00', '123.45']) {
+      validateSubmittedTaxForecast(forecast(value))
+      const validated = await addTax.validate({ year: 2026, forecast: forecast(value) })
+      assert.deepEqual(validated.forecast, forecast(Number(value)))
     }
-    for (const value of [true, '', ' ', '0x10', {}, [], Infinity]) assert.throws(() => validateSubmittedTaxForecast(forecast(value)))
+    for (const value of [1, '1.005', '-.125', '1e-2', '-0.00', '01.00', true, '', ' ', '0x10', {}, [], Infinity, '900719925474099.00']) {
+      assert.throws(() => validateSubmittedTaxForecast(forecast(value)))
+      await assert.rejects(() => addTax.validate({ year: 2026, forecast: forecast(value) }))
+    }
+    const optional = forecast('1.00')
+    delete optional.estimated
+    assert.notProperty((await addTax.validate({ year: 2026, forecast: optional })).forecast, 'estimated')
   })
   test('real model new writes preserve numeric runtime values and serialize approved response types').with(['tax', 'log'])
     .run(async ({ assert }, kind) => {
@@ -174,7 +181,7 @@ test('Tax actual response strings preserve monthly slots, unknown tax types and 
   } finally { statements.mock.restore(); transactions.mock.restore() }
 })
 
-test('Tax GET and save use canonical forecast serialization without changing numeric request values', async ({ assert }) => {
+test('Tax GET and save use canonical forecast serialization while decoding canonical request values', async ({ assert }) => {
   const tax = new Tax().merge({ id: 1, year: 2026, data: forecast(1.005) })
   const budget = { id: 3, related: () => ({ query: () => ({ where() { return this }, first: async () => tax }) }) }
   let locked = false
@@ -190,13 +197,13 @@ test('Tax GET and save use canonical forecast serialization without changing num
     const read = await controller.get({ auth: { user }, request: { params: () => ({ year: 2026 }) } })
     assert.deepEqual(read.data.forecast, forecast('1.00'))
     assert.deepEqual(tax.data, forecast(1.005))
-    const request = { year: 2026, forecast: forecast(-0.125) }
+    const request = { year: 2026, forecast: forecast('-0.12') }
     const result = await controller.post({ auth: { user }, request: {
-      input: () => request.forecast, validateUsing: async () => request,
+      input: () => request.forecast, validateUsing: validator => validator.validate(request),
     } })
     assert.deepEqual(result.data.forecast, forecast('-0.12'))
-    assert.deepEqual(request.forecast, forecast(-0.125))
-    assert.deepEqual(tax.data, forecast(-0.125))
+    assert.deepEqual(request.forecast, forecast('-0.12'))
+    assert.deepEqual(tax.data, forecast(-0.12))
     assert.isTrue(locked)
     assert.lengthOf(save.mock.calls, 1)
   } finally { actuals.mock.restore(); query.mock.restore(); transaction.mock.restore(); save.mock.restore() }
