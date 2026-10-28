@@ -86,3 +86,29 @@ test.group('Lucid transaction serialization', () => {
     ])
   })
 })
+
+
+test.group('Transaction allocation API strings', () => {
+  test('all Transaction response types serialize Category amounts without changing runtime data')
+    .with([0, 2, 3, 4, 5]).run(({ assert }, type) => {
+      const categories = [
+        { categoryId: 1, amount: 0.1 + 0.2, comment: 'keep', baseAmount: 1.005,
+          fundingCategories: [{ categoryId: 2, amount: 100, percentage: true }] },
+        { categoryId: 2, amount: -0.125 }, { categoryId: 3, amount: 0 },
+      ]
+      const row = new Transaction().merge({ id: 1, type, categories })
+      const before = globalThis.structuredClone(row.$attributes)
+      for (const response of [row.serialize(), row.serialize(transactionFields), JSON.parse(JSON.stringify(row))]) {
+        assert.deepEqual(response.categories, [
+          { ...categories[0], amount: '0.30' }, { ...categories[1], amount: '-0.12' }, { ...categories[2], amount: '0.00' },
+        ])
+      }
+      assert.deepEqual(row.$attributes, before)
+      assert.strictEqual(row.categories[0].amount, 0.1 + 0.2)
+    })
+  test('unsafe Category amounts cannot be serialized').with([NaN, Infinity, Number.MAX_SAFE_INTEGER])
+    .run(({ assert }, amount) => {
+      const row = new Transaction().merge({ categories: [{ categoryId: 1, amount }] })
+      assert.throws(() => row.serialize())
+    })
+})

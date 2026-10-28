@@ -1,6 +1,7 @@
 import { DateTime } from 'luxon';
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
+import { decodeAmount } from '../monetary';
 import {
   ErrorProps,
   TransactionType,
@@ -135,7 +136,7 @@ class Transaction implements TransactionInterface {
       this.categories = props.categories.map((c, index) => ({
         id: index,
         categoryId: c.categoryId,
-        amount: c.amount,
+        amount: decodeAmount(c.amount),
         comment: c.comment,
         funder: c.funder,
         fundingCategories: c.fundingCategories,

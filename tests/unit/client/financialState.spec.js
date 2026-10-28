@@ -32,6 +32,7 @@ export { default as Institution } from ${source('client-src/State/Institution.ts
 export { default as Category } from ${source('client-src/State/Category.ts')};
 export { default as Group } from ${source('client-src/State/Group.ts')};
 export { default as Transaction } from ${source('client-src/State/Transaction.ts')};
+export { decodeAmount } from ${source('client-src/monetary.ts')};
 export { default as Statement } from ${source('client-src/State/Statement.ts')};
 export { runInAction } from 'mobx';
 export * from ${source('common/ResponseTypes.ts')};
@@ -78,7 +79,7 @@ export * from ${source('common/ResponseTypes.ts')};
     const statementProps = { id: 30, startDate: '2025-02-01', endDate: '2025-02-28', startingBalance: '100.00', endingBalance: '90.00', credits: '0.00', debits: '0.00', data: {} }
     const statement = new state.Statement(statementProps, account.statements)
     state.runInAction(() => { account.statements.statements = [statement]; store.uiState.selectedStatement = statement })
-    const transactionProps = (amount = -10, statementId = null) => ({ id: 40, date: '2025-02-10', type: state.TransactionType.MANUAL_TRANSACTION, sortOrder: 0, comment: '', version: 0, duplicateOfTransactionId: null, categories: [{ categoryId: 20, amount }], taxes: [], accountTransaction: { name: 'Purchase', amount, principle: null, statementId, pending: false, accountOwner: null, paymentChannel: null, location: null, account: { id: 10, name: 'Checking', institution: { name: 'Offline bank' } } } })
+    const transactionProps = (amount = -10, statementId = null) => ({ id: 40, date: '2025-02-10', type: state.TransactionType.MANUAL_TRANSACTION, sortOrder: 0, comment: '', version: 0, duplicateOfTransactionId: null, categories: [{ categoryId: 20, amount: amount.toFixed(2) }], taxes: [], accountTransaction: { name: 'Purchase', amount, principle: null, statementId, pending: false, accountOwner: null, paymentChannel: null, location: null, account: { id: 10, name: 'Checking', institution: { name: 'Offline bank' } } } })
     routes = new Map(); calls = []
     originals = new Map(['get', 'post', 'put', 'patch', 'delete', 'fetch'].map((method) => [method, state.Http[method]]))
     for (const method of originals.keys()) state.Http[method] = async (url, payload) => {
@@ -118,6 +119,26 @@ export * from ${source('common/ResponseTypes.ts')};
     routes.set('patch /api/v1/statements/30', async () => ({ body: { ...f.statementProps, endingBalance: '75.00', data: { dividends: amount } } }))
     await assert.rejects(() => f.statement.update({ endingBalance: 75 }))
     assert.strictEqual(f.statement.endingBalance, before)
+  })
+
+  test('shared API decoder handles exact strings and rejects invalid amounts').with([
+    ['0.00', 0], ['-0.12', -0.12], ['12.34', 12.34], ['0.30', 0.3],
+  ]).run(({ assert }, [value, expected]) => assert.strictEqual(state.decodeAmount(value), expected))
+
+  test('invalid category allocation responses cannot mutate cached Transactions or balances').with([
+    1, null, '', '1.2', '1e2', '-0.00', 'Infinity', '90071992547409.92',
+  ]).run(async ({ assert }, amount) => {
+    const cached = transactions()
+    const before = [f.account.balance, f.category.balance]
+    const response = { ...f.transactionProps(), categories: [{ categoryId: 20, amount }], version: 1 }
+    routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: {
+      transaction: response, categories: [{ id: 20, balance: -99 }], acctBalances: [{ id: 10, balance: 1 }],
+    } } }))
+    await assert.rejects(() => cached.account.updateTransaction({ amount: -99 }))
+    assert.strictEqual(cached.account.categories[0].amount, -10)
+    assert.strictEqual(cached.category.categories[0].amount, -10)
+    assert.strictEqual(cached.account.version, 0)
+    assert.deepEqual([f.account.balance, f.category.balance], before)
   })
 
   function transactions(props = f.transactionProps()) {
@@ -210,9 +231,9 @@ export * from ${source('common/ResponseTypes.ts')};
   test('split edits remove stale membership from inactive category lists', async ({ assert }) => {
     const cached = transactions()
     state.runInAction(() => { f.store.uiState.selectedCategory = f.other })
-    const returned = { ...f.transactionProps(), version: 1, categories: [{ categoryId: 21, amount: -10 }] }
+    const returned = { ...f.transactionProps(), version: 1, categories: [{ categoryId: 21, amount: '-10.00' }] }
     routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: { transaction: returned, categories: [{ id: 20, balance: 0 }, { id: 21, balance: -10 }], acctBalances: [{ id: 10, balance: 90 }] } } }))
-    await cached.account.updateTransaction({ categories: returned.categories })
+    await cached.account.updateTransaction({ categories: returned.categories.map(category => ({ ...category, amount: Number(category.amount) })) })
     assert.lengthOf(f.category.transactions.transactions, 0)
     assert.equal(f.category.balance, 0); assert.equal(f.other.balance, -10)
     assert.equal(cached.account.categories[0].categoryId, 21)
@@ -239,7 +260,7 @@ export * from ${source('common/ResponseTypes.ts')};
   })
 
   test('transfer editing updates date/version and every loaded copy').with([12.25, -12.25]).run(async ({ assert }, amount) => {
-    const props = { ...f.transactionProps(), type: state.TransactionType.FUNDING_TRANSACTION, accountTransaction: undefined, categories: [{ categoryId: 20, amount: -amount }, { categoryId: 21, amount }] }
+    const props = { ...f.transactionProps(), type: state.TransactionType.FUNDING_TRANSACTION, accountTransaction: undefined, categories: [{ categoryId: 20, amount: (-amount).toFixed(2) }, { categoryId: 21, amount: amount.toFixed(2) }] }
     state.runInAction(() => {
       f.category.transactions.setTransactions([props]); f.other.transactions.setTransactions([props])
       f.category.balance = -amount; f.other.balance = amount
@@ -247,7 +268,7 @@ export * from ${source('common/ResponseTypes.ts')};
     const cached = { source: f.category.transactions.transactions[0], destination: f.other.transactions.transactions[0] }
     const returned = { ...props, date: '2025-02-20', version: 2 }
     routes.set('patch /api/v1/category-transfer/40', async () => ({ body: { data: { transaction: returned, balances: [{ id: 20, balance: -amount }, { id: 21, balance: amount }] } } }))
-    await cached.source.updateCategoryTransfer({ date: returned.date, categories: returned.categories })
+    await cached.source.updateCategoryTransfer({ date: returned.date, categories: returned.categories.map(category => ({ ...category, amount: Number(category.amount) })) })
     assert.equal(cached.source.date.toISODate(), returned.date)
     assert.equal(cached.destination.version, 2)
     assert.equal(f.category.balance, -amount); assert.equal(f.other.balance, amount)
@@ -255,9 +276,9 @@ export * from ${source('common/ResponseTypes.ts')};
   })
 
   test('successful transfer creation applies authoritative source/destination balances').with([12.25, -12.25]).run(async ({ assert }, amount) => {
-    const props = { ...f.transactionProps(), type: state.TransactionType.FUNDING_TRANSACTION, accountTransaction: undefined, categories: [{ categoryId: 20, amount: -amount }, { categoryId: 21, amount }] }
+    const props = { ...f.transactionProps(), type: state.TransactionType.FUNDING_TRANSACTION, accountTransaction: undefined, categories: [{ categoryId: 20, amount: (-amount).toFixed(2) }, { categoryId: 21, amount: amount.toFixed(2) }] }
     routes.set('post /api/v1/category-transfer', async () => ({ body: { data: { transaction: props, balances: [{ id: 20, balance: -amount }, { id: 21, balance: amount }] } } }))
-    await f.store.register.addCategoryTransfer({ date: props.date, categories: props.categories }, props.type)
+    await f.store.register.addCategoryTransfer({ date: props.date, categories: props.categories.map(category => ({ ...category, amount: Number(category.amount) })) }, props.type)
     assert.equal(f.category.balance, -amount); assert.equal(f.other.balance, amount)
     assert.equal(f.category.transactions.transactions[0].id, 40)
     assert.equal(f.store.categoryTree.budget.childrenBalance(), 0)
@@ -551,7 +572,7 @@ export * from ${source('common/ResponseTypes.ts')};
   })
 
   test('transfer deletion applies authoritative reversal to both cached categories').with([12.25, -12.25]).run(async ({ assert }, amount) => {
-    const props = { ...f.transactionProps(), type: state.TransactionType.FUNDING_TRANSACTION, accountTransaction: undefined, categories: [{ categoryId: 20, amount: -amount }, { categoryId: 21, amount }] }
+    const props = { ...f.transactionProps(), type: state.TransactionType.FUNDING_TRANSACTION, accountTransaction: undefined, categories: [{ categoryId: 20, amount: (-amount).toFixed(2) }, { categoryId: 21, amount: amount.toFixed(2) }] }
     state.runInAction(() => {
       f.category.transactions.setTransactions([props]); f.other.transactions.setTransactions([props])
       f.category.balance = -amount; f.other.balance = amount
@@ -594,7 +615,7 @@ export * from ${source('common/ResponseTypes.ts')};
     const rows = calculateFunding({ 21: { baseAmount: 2, includeFundingTransfers: false,
       fundingCategories: [{ categoryId: 20, amount: 100, percentage: true }] } }, 20)
     const props = { ...f.transactionProps(), type: state.TransactionType.FUNDING_TRANSACTION,
-      accountTransaction: undefined, categories: rows }
+      accountTransaction: undefined, categories: rows.map(row => ({ ...row, amount: row.amount.toFixed(2) })) }
     routes.set('post /api/v1/category-transfer', async (payload) => {
       assert.deepEqual(payload.categories, rows)
       return rejected ? { ok: false, body: {} }
@@ -618,7 +639,7 @@ export * from ${source('common/ResponseTypes.ts')};
 
   test('rejected funding/rebalance replacement preserves every cached financial value').with([2, 3]).run(async ({ assert }, type) => {
     const props = { ...f.transactionProps(), type, accountTransaction: undefined,
-      categories: [{ categoryId: 20, amount: -2 }, { categoryId: 21, amount: 2 }] }
+      categories: [{ categoryId: 20, amount: '-2.00' }, { categoryId: 21, amount: '2.00' }] }
     state.runInAction(() => {
       f.category.transactions.setTransactions([props]); f.other.transactions.setTransactions([props])
       f.category.balance = -2; f.other.balance = 2

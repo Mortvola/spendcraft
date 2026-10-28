@@ -267,7 +267,7 @@ export interface TransactionProps {
 
   categories: {
     categoryId: number,
-    amount: number,
+    amount: string,
     comment?: string,
     funder?: boolean,
     fundingCategories?: { categoryId: number, amount: number, percentage: boolean }[],

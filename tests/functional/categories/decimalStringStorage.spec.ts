@@ -36,18 +36,18 @@ async function snapshot() {
 }
 
 test.group('Transaction Category decimal-string storage (prepared)', () => {
-  test('manual HTTP CREATE persists strings and returns numeric API allocations').with([12.34, -12.34, 0])
+  test('manual HTTP CREATE persists strings and returns canonical API allocations').with([12.34, -12.34, 0])
     .run(async ({ client, assert }, amount) => {
       const f = await fixture()
       const response = await client.post(`/api/v1/account/${f.account.id}/transactions`).loginAs(f.user).accept('json')
         .json({ date: '2025-02-01', name: 'Cent storage', amount, categories: [{ categoryId: f.category.id, amount }] })
       response.assertStatus(200)
       const row = response.body().transaction
-      assert.strictEqual(row.categories[0].amount, amount)
+      assert.strictEqual(row.categories[0].amount, amount.toFixed(2))
       assert.strictEqual((await raw(row.id)).categories[0].amount, amount.toFixed(2))
     })
 
-  test('numeric/string/mixed reads do not rewrite JSON and return numbers').with(['numeric', 'string', 'mixed'])
+  test('reads require canonical storage, return strings and never rewrite JSON').with(['numeric', 'string', 'mixed'])
     .run(async ({ client, assert }, encoding) => {
       const f = await fixture()
       const categories = [{ categoryId: f.category.id, amount: encoding === 'numeric' ? 0.1 : '0.10' },
@@ -57,12 +57,17 @@ test.group('Transaction Category decimal-string storage (prepared)', () => {
       await db.from('transactions').where('id', target.id).update({ categories: JSON.stringify(categories) })
       const before = await snapshot()
       const response = await client.get(`/api/v1/transaction/${target.id}`).loginAs(f.user).accept('json')
+      if (encoding !== 'string') {
+        response.assertStatus(422)
+        assert.deepEqual(await snapshot(), before)
+        return
+      }
       response.assertStatus(200)
-      assert.deepEqual(response.body().categories.map((row: { amount: number }) => row.amount), [0.1, 0.2])
+      assert.deepEqual(response.body().categories.map((row: { amount: string }) => row.amount), ['0.10', '0.20'])
       assert.deepEqual(await snapshot(), before)
     })
 
-  test('HTTP PATCH replaces numeric/string/mixed storage and keeps numeric response').with(['numeric', 'string', 'mixed'])
+  test('HTTP PATCH requires canonical storage and returns canonical allocations').with(['numeric', 'string', 'mixed'])
     .run(async ({ client, assert }, encoding) => {
       const f = await fixture()
       const target = await Transaction.create({ budgetId: f.budget.id, type: 5, version: 0,
@@ -71,10 +76,16 @@ test.group('Transaction Category decimal-string storage (prepared)', () => {
       const categories = [{ categoryId: f.category.id, amount: encoding === 'numeric' ? 0.1 : '0.10' },
         { categoryId: f.category.id, amount: encoding === 'string' ? '0.20' : 0.2 }]
       await db.from('transactions').where('id', target.id).update({ categories: JSON.stringify(categories) })
+      const before = await snapshot()
       const response = await client.patch(`/api/v1/transaction/${target.id}`).loginAs(f.user).accept('json')
         .json({ version: 0, categories: [{ categoryId: f.category.id, amount: 0.2 }, { categoryId: f.category.id, amount: 0.1 }] })
+      if (encoding !== 'string') {
+        response.assertStatus(422)
+        assert.deepEqual(await snapshot(), before)
+        return
+      }
       response.assertStatus(200)
-      assert.deepEqual(response.body().data.transaction.categories.map((row: { amount: number }) => row.amount), [0.2, 0.1])
+      assert.deepEqual(response.body().data.transaction.categories.map((row: { amount: string }) => row.amount), ['0.20', '0.10'])
       assert.deepEqual((await raw(target.id)).categories.map((row: { amount: string }) => row.amount), ['0.20', '0.10'])
     })
 
@@ -84,7 +95,7 @@ test.group('Transaction Category decimal-string storage (prepared)', () => {
       .json({ date: '2025-02-01', name: 'Half tie', amount: -1.12,
         categories: [{ categoryId: f.category.id, amount: -1.125 }] })
     response.assertStatus(200)
-    assert.strictEqual(response.body().transaction.categories[0].amount, -1.12)
+    assert.strictEqual(response.body().transaction.categories[0].amount, '-1.12')
     assert.strictEqual((await raw(response.body().transaction.id)).categories[0].amount, '-1.12')
     assert.strictEqual((await Category.findOrFail(f.category.id)).balance, -1.12)
   })

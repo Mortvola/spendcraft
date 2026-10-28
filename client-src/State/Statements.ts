@@ -1,6 +1,7 @@
 import { observable, runInAction } from "mobx";
 import { AccountInterface, AddStatementRequest, StatementsInterface, StoreInterface } from "./Types";
-import Statement, { decodeAmount } from "./Statement";
+import Statement from "./Statement";
+import { decodeAmount } from "../monetary";
 import Http from "@mortvola/http";
 import { AddStatementResponse, ApiError, StatementProps, StatementsResponse, TrackingType } from "../../common/ResponseTypes";
 

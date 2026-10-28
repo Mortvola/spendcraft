@@ -60,6 +60,8 @@ test.group('Funding decimal-string PostgreSQL acceptance', () => {
         ? await client.patch(`/api/v1/category-transfer/${id}`).loginAs(f.user).json(body) : created
       response.assertStatus(200)
       const stored = await db.from('transactions').where('id', id).firstOrFail()
+      assert.strictEqual(response.body().data.transaction.categories[0].amount, '1.00')
+      assert.strictEqual(response.body().data.transaction.categories[1].amount, '-1.00')
       assert.equal(stored.categories[0].baseAmount, '1.00')
       assert.deepEqual(stored.categories[0].fundingCategories.map((r: { amount: string }) => r.amount), ['-0.12', '100.00'])
       assert.equal(response.body().data.transaction.categories[0].baseAmount, 1)
