@@ -161,7 +161,7 @@ test.group('Transaction Statement response commit boundary', () => {
     assert.equal(body.transaction.accountTransaction.name, 'Updated')
     assert.equal(body.transaction.accountTransaction.statementId, data.statementId)
     assert.deepEqual(body.categories, [])
-    assert.deepEqual(body.acctBalances, [{ id: data.account.id, balance: 100 }])
+    assert.deepEqual(body.acctBalances, [{ id: data.account.id, balance: '100.00' }])
     const persisted = await data.account.related('accountTransactions').query().where('id', data.association.id).firstOrFail()
     assert.equal(persisted.statementId, data.statementId)
     console.log(JSON.stringify({ scenario: mode, events, statement: body.statement, transaction: body.transaction }))

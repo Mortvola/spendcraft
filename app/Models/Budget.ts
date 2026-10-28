@@ -1,3 +1,4 @@
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec';
 import { DateTime } from 'luxon'
 import {
   BaseModel, column, hasMany
@@ -85,9 +86,9 @@ export default class Budget extends BaseModel {
         type: a.type,
         subtype: a.subtype,
         tracking: a.tracking,
-        balance: a.balance,
-        pendingBalance: parseFloat(a.$extras.pendingBalance) ?? 0,
-        plaidBalance: a.plaidBalance,
+        balance: encodeMonetaryAmount(a.balance),
+        pendingBalance: encodeMonetaryAmount(a.$extras.pendingBalance ?? '0.00'),
+        plaidBalance: a.plaidBalance == null ? null : encodeMonetaryAmount(a.plaidBalance),
         startDate: a.startDate?.toISODate() ?? null,
         rate: a.rate,
       })),

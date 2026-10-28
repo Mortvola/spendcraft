@@ -69,7 +69,7 @@ export interface CategoryBalanceProps {
 export interface AccountBalanceProps {
   id: number;
 
-  balance: number;
+  balance: string;
 }
 
 type AddCategoryResponse = CategoryProps
@@ -123,11 +123,11 @@ export interface AccountProps {
 
   tracking: TrackingType;
 
-  balance: number;
+  balance: string;
 
-  pendingBalance: number;
+  pendingBalance: string;
 
-  plaidBalance: number | null;
+  plaidBalance: string | null;
 
   startDate: string | null;
 
@@ -355,7 +355,7 @@ export interface TransactionsResponse {
 
   transactionsCount?: number,
 
-  balance: number;
+  balance: number | string;
 }
 
 export interface ErrorProps {
@@ -511,9 +511,9 @@ export interface FundingInfoProps {
 }
 
 interface AccountSyncProps {
-  balance: number;
+  balance: string;
 
-  plaidBalance: number | null;
+  plaidBalance: string | null;
 }
 
 export interface InstitutionSyncResponse {
@@ -534,7 +534,7 @@ export const isLinkTokenResponse = (
 
 // Read-only points from the existing Transaction-derived account chart endpoint.
 export interface AccountBalancePoint {
-  balance: number;
+  balance: string;
   date: string;
 }
 
@@ -542,7 +542,7 @@ export const isAccountBalanceSeries = (value: unknown): value is AccountBalanceP
   Array.isArray(value) && value.every((point: unknown) =>
     typeof point === 'object' && point !== null
     && 'date' in point && typeof point.date === 'string'
-    && 'balance' in point && typeof point.balance === 'number')
+    && 'balance' in point && typeof point.balance === 'string')
 );
 
 export interface UserProps {

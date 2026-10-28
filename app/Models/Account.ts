@@ -1,3 +1,4 @@
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec';
 import { requestCategoryStorage, hasCategoryStorage } from '#services/categoryStorageBinding';
 import { validateStoredCategoryConservation } from '#services/transactionCategoryStorage';
 import { validateTransactionSplits } from '#app/validation/transactionSplits';
@@ -84,11 +85,13 @@ class Account extends BaseModel {
 
   @column({
     consume: (value: string | null) => value === null ? 0 : parseFloat(value),
+    serialize: (value: number) => encodeMonetaryAmount(value),
   })
   public balance: number;
 
   @column({
     consume: (value: string | null) => value === null ? value : parseFloat(value),
+    serialize: (value: number | null) => value === null ? null : encodeMonetaryAmount(value),
   })
   public plaidBalance: number | null;
 

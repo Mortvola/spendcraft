@@ -1,5 +1,6 @@
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
+import { decodeAmount } from '../monetary';
 import { PlaidLinkOnSuccessMetadata } from 'react-plaid-link';
 import Institution from './Institution';
 import Plaid from './Plaid';
@@ -53,8 +54,17 @@ class Accounts implements AccountsInterface {
 
     if (!Array.isArray(data) || !isInstitutionsResponse(data)
       || !data.every((institution) => Number.isFinite(institution.id) && Array.isArray(institution.accounts)
-        && institution.accounts.every((account) => Number.isFinite(account.id) && Number.isFinite(account.balance)))) {
+        && institution.accounts.every((account) => Number.isFinite(account.id)))) {
       throw new Error('invalid response');
+    }
+
+    // Validate all monetary response fields before changing cached accounts.
+    for (const institution of data) {
+      for (const account of institution.accounts) {
+        decodeAmount(account.balance);
+        decodeAmount(account.pendingBalance);
+        if (account.plaidBalance !== null) decodeAmount(account.plaidBalance);
+      }
     }
 
     runInAction(() => {
@@ -234,6 +244,7 @@ class Accounts implements AccountsInterface {
   }
 
   updateBalances(balances: AccountBalanceProps[]): void {
+    for (const balance of balances) decodeAmount(balance.balance);
     runInAction(() => {
       this.institutions.forEach((i) => {
         i.updateBalances(balances);

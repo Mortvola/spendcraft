@@ -208,7 +208,7 @@ async function patchFixture(input, { rawInput = input, invalidOwner = false, lat
     events.push('save'); return model
   }
   const budget = { id: 1, getUnassignedCategory: async () => ({ id: 99 }) }
-  const context = { ...functions, excludeTaxStorage, hasCategoryStorage, excludeCategoryStorage,
+  const context = { encodeMonetaryAmount, ...functions, excludeTaxStorage, hasCategoryStorage, excludeCategoryStorage,
     canonicalCategoryAllocations: () => { throw new Error('Unexpected Category replacement') },
     validateStoredCategoryConservation: async () => { throw new Error('Invented tax conservation') },
     AccountType, CategoryType, TrackingType, TransactionType, Exception, accountEligible, categoryEligible, categoryEffectDeltas, validateTransactionSplits,

@@ -1,3 +1,4 @@
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec';
 import PlaidItemCleanupService from '#services/plaidItemCleanup'
  
 import { HttpContext } from '@adonisjs/core/http';
@@ -139,11 +140,7 @@ class InstitutionController {
           plaidInstitutionId: connectedInstitution.plaidInstitutionId,
           name: connectedInstitution.name,
           syncDate: connectedInstitution.syncDate,
-          accounts: connectedInstitution.accounts.map((account) => ({
-            ...account,
-            // The existing read returns NaN when the pending aggregate is empty.
-            pendingBalance: Number.isFinite(account.pendingBalance) ? account.pendingBalance : 0,
-          })),
+          accounts: connectedInstitution.accounts,
           categories: categories.map((category) => ({ id: category.id, balance: category.balance })),
         }
       };
@@ -244,8 +241,8 @@ class InstitutionController {
             subtype: acct.subtype,
             closed: acct.closed,
             tracking: acct.tracking,
-            balance: acct.balance,
-            pendingBalance: 0,
+            balance: encodeMonetaryAmount(acct.balance),
+            pendingBalance: '0.00',
             plaidBalance: null,
             startDate: acct.startDate.toISODate(),
             rate: acct.rate,
@@ -546,9 +543,9 @@ class InstitutionController {
           type: a.type,
           subtype: a.subtype,
           tracking: a.tracking,
-          balance: a.balance,
-          pendingBalance: 0,
-          plaidBalance: a.plaidBalance,
+          balance: encodeMonetaryAmount(a.balance),
+          pendingBalance: '0.00',
+          plaidBalance: a.plaidBalance == null ? null : encodeMonetaryAmount(a.plaidBalance),
           startDate,
           rate: a.rate,
         };
@@ -640,9 +637,9 @@ class InstitutionController {
             type: acct.type,
             subtype: acct.subtype,
             tracking: acct.tracking,
-            balance: acct.balance,
-            pendingBalance: 0,
-            plaidBalance: acct.plaidBalance,
+            balance: encodeMonetaryAmount(acct.balance),
+            pendingBalance: '0.00',
+            plaidBalance: acct.plaidBalance == null ? null : encodeMonetaryAmount(acct.plaidBalance),
             startDate,
             rate: acct.rate,
             plaidId: acct.plaidAccountId,

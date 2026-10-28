@@ -1,5 +1,6 @@
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
+import { decodeAmount } from '../monetary';
 import { DateTime } from 'luxon';
 import Account from './Account';
 import {
@@ -281,8 +282,9 @@ class Institution implements InstitutionInterface {
   // }
 
   updateBalances(balances: AccountBalanceProps[]): void {
+    const decoded = balances.map(balance => ({ ...balance, balance: decodeAmount(balance.balance) }));
     this.accounts.forEach((a) => {
-      const balance = balances.find((b) => b.id === a.id);
+      const balance = decoded.find((b) => b.id === a.id);
       if (balance) {
         a.balance = balance.balance;
       }

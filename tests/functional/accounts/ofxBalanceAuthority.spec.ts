@@ -250,7 +250,7 @@ test.group('OFX independent accounting and provider balance (prepared)', () => {
       const response = await client.get('/api/v1/connected-accounts').loginAs(f.user)
       response.assertStatus(200)
       const returned = response.body().data.find((institution: { id: number }) => institution.id === f.institution.id).accounts[0]
-      assert.equal(returned.balance, 950); assert.equal(returned.plaidBalance, 1500)
+      assert.strictEqual(returned.balance, '950.00'); assert.strictEqual(returned.plaidBalance, '1500.00')
     })
 
   test('current numeric identity normalization replays the same logical Transaction', async ({ client, assert }) => {

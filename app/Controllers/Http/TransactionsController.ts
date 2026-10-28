@@ -1,3 +1,4 @@
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec';
 import { prepareTaxReplacement } from '#services/transactionTaxStorage';
 import { excludeTaxStorage } from '#services/taxStorageBinding';
 import { canonicalCategoryAllocations } from '#services/categoryAmountCodec';
@@ -498,7 +499,7 @@ export default class TransactionsController {
           categories: categoriesResult,
           acctBalances: [{
             id: account.id,
-            balance: account.balance,
+            balance: encodeMonetaryAmount(account.balance),
           }],
           statement: statement?.serialize() as StatementProps,
         },
@@ -661,7 +662,7 @@ export default class TransactionsController {
 
           await account.save();
 
-          result.acctBalances.push({ id: account.id, balance: account.balance });
+          result.acctBalances.push({ id: account.id, balance: encodeMonetaryAmount(account.balance) });
         }
       }
 

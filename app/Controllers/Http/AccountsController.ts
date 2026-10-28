@@ -69,7 +69,7 @@ export default class AccountsController {
     // and get the balance
     const acct = await budgetAccounts(user.budgetId).where('id', accountId).firstOrFail();
 
-    result.balance = acct.balance;
+    result.balance = encodeMonetaryAmount(acct.balance);
 
     const transactions = await budget
       .related('transactions').query()
@@ -98,7 +98,7 @@ export default class AccountsController {
     };
   }
 
-  public async balances({ request, auth: { user } }: HttpContext): Promise<{ date: string, balance: number }[]> {
+  public async balances({ request, auth: { user } }: HttpContext): Promise<{ date: string, balance: string }[]> {
     if (!user) {
       throw new Error('user not defined');
     }
@@ -152,7 +152,7 @@ export default class AccountsController {
 
     return results.rows.map((result) => ({
       date: result.date,
-      balance: parseFloat(result.balance),
+      balance: encodeMonetaryAmount(result.balance),
     }));
   }
 
@@ -279,7 +279,7 @@ export default class AccountsController {
       const result: AddedTransaction = {
         categories: categoryBalances,
         transaction: transaction.serialize(transactionFields),
-        acctBalances: [{ id: account.id, balance: account.balance }],
+        acctBalances: [{ id: account.id, balance: encodeMonetaryAmount(account.balance) }],
       };
 
       return result;

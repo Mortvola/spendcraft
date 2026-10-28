@@ -11,12 +11,12 @@ const categoryBalance = { id: 1, balance: 12.5 }
 const account = {
   id: 2, plaidId: null, name: 'Checking', closed: false,
   type: AccountType.Depository, subtype: 'checking', tracking: TrackingType.Balances,
-  balance: 12.5, pendingBalance: 0, plaidBalance: null, startDate: null, rate: null,
+  balance: '12.50', pendingBalance: '0.00', plaidBalance: null, startDate: null, rate: null,
 }
 const institution = {
   id: 3, plaidInstitutionId: null, name: 'Bank', syncDate: null, accounts: [account],
 }
-const balance = { id: 4, balance: 12.5, date: '2026-10-07' }
+const balance = { id: 4, balance: '12.50', date: '2026-10-07' }
 
 const categoryGuards: {
   name: string,

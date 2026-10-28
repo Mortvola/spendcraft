@@ -1,5 +1,6 @@
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
+import { decodeAmount } from '../monetary';
 import { DateTime } from 'luxon';
 import {
   AccountProps, AddTransactionResponse, ErrorProps,
@@ -76,6 +77,9 @@ class Account implements AccountInterface {
       store, `/api/v1/account/${props.id}/transactions?pending=1`,
     );
 
+    const balance = decodeAmount(props.balance);
+    const pendingBalance = decodeAmount(props.pendingBalance);
+    const plaidBalance = props.plaidBalance === null ? null : decodeAmount(props.plaidBalance);
     this.id = props.id;
     this.plaidId = props.plaidId;
     this.name = props.name;
@@ -83,9 +87,9 @@ class Account implements AccountInterface {
     this.type = props.type;
     this.subtype = props.subtype;
     this.tracking = props.tracking;
-    this.balance = props.balance;
-    this.pendingBalance = props.pendingBalance;
-    this.plaidBalance = props.plaidBalance;
+    this.balance = balance;
+    this.pendingBalance = pendingBalance;
+    this.plaidBalance = plaidBalance;
     this.startDate = props.startDate ? DateTime.fromISO(props.startDate) : null;
     this.rate = props.rate;
     this.institution = institution;
@@ -96,6 +100,9 @@ class Account implements AccountInterface {
   }
 
   update(props: AccountProps): void {
+    const balance = decodeAmount(props.balance);
+    const pendingBalance = decodeAmount(props.pendingBalance);
+    const plaidBalance = props.plaidBalance === null ? null : decodeAmount(props.plaidBalance);
     this.id = props.id;
     this.plaidId = props.plaidId;
     this.name = props.name;
@@ -103,9 +110,9 @@ class Account implements AccountInterface {
     this.type = props.type;
     this.subtype = props.subtype;
     this.tracking = props.tracking;
-    this.balance = props.balance;
-    this.pendingBalance = props.pendingBalance;
-    this.plaidBalance = props.plaidBalance;
+    this.balance = balance;
+    this.pendingBalance = pendingBalance;
+    this.plaidBalance = plaidBalance;
     this.startDate = props.startDate ? DateTime.fromISO(props.startDate) : null;
     this.rate = props.rate;
 
@@ -191,14 +198,14 @@ class Account implements AccountInterface {
       const body = await response.body();
 
       if (isAddTransactionResponse(body)) {
+        const balance = decodeAmount(body.acctBalances[0].balance);
+        const transaction = new Transaction(this.store, body.transaction);
         runInAction(() => {
           this.store.categoryTree.updateBalances(body.categories);
 
-          const transaction = new Transaction(this.store, body.transaction);
-
           this.transactions.insertTransaction(transaction);
 
-          this.balance = body.acctBalances[0].balance;
+          this.balance = balance;
         });
 
         return null;

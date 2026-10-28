@@ -117,7 +117,7 @@ test.group('Account, history and statement budget isolation', (group) => {
   test('shared-budget user can read account resources').with(['transactions', 'statements']).run(async ({ client, assert }, resource) => {
     const response = await client.get(`/api/v1/account/${fixture.own.account.id}/${resource}`).qs({ limit: 20, offset: 0 }).accept('json').loginAs(fixture.shared)
     response.assertStatus(200)
-    if (resource === 'transactions') assert.equal(response.body().data.balance, 123.45)
+    if (resource === 'transactions') assert.strictEqual(response.body().data.balance, '123.45')
     if (resource === 'statements') assert.equal(response.body()[0].id, fixture.own.statement.id)
   })
 

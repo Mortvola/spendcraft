@@ -234,8 +234,8 @@ test.group('Plaid staged onboarding characterization', (group) => {
     for (const returned of response.body().data.accounts) {
       const account = await Account.findOrFail(returned.id)
       assert.equal(account.institutionId, inst.id)
-      assert.equal(returned.balance, account.balance)
-      assert.equal(returned.plaidBalance, account.plaidBalance)
+      assert.strictEqual(returned.balance, account.balance.toFixed(2))
+      assert.strictEqual(returned.plaidBalance, account.plaidBalance === null ? null : account.plaidBalance.toFixed(2))
       assert.equal(returned.plaidId, account.plaidAccountId)
       assert.equal(returned.startDate, account.startDate.toISODate())
     }
@@ -358,9 +358,9 @@ test.group('Plaid staged onboarding characterization', (group) => {
     for (const category of [unassigned, funding, assigned, untouched]) {
       assert.deepInclude(response.body().data.categories, { id: category.id, balance: category.balance })
     }
-    assert.equal(response.body().data.accounts[0].balance, account.balance)
-    assert.equal(response.body().data.accounts[0].plaidBalance, account.plaidBalance)
-    assert.equal(response.body().data.accounts[0].pendingBalance, allocation === 'pending' ? -37 : 0)
+    assert.strictEqual(response.body().data.accounts[0].balance, account.balance.toFixed(2))
+    assert.strictEqual(response.body().data.accounts[0].plaidBalance, account.plaidBalance === null ? null : account.plaidBalance.toFixed(2))
+    assert.strictEqual(response.body().data.accounts[0].pendingBalance, allocation === 'pending' ? '-37.00' : '0.00')
     assert.lengthOf(await account.related('accountTransactions').query(), 2)
   })
 
@@ -377,9 +377,9 @@ test.group('Plaid staged onboarding characterization', (group) => {
     const account = await institution.related('accounts').query().firstOrFail()
     assert.equal(account.balance, state === 'posted' ? 175 : 100)
     assert.equal(account.plaidBalance, state === 'posted' ? 175 : 100)
-    assert.equal(response.body().data.accounts[0].balance, account.balance)
-    assert.equal(response.body().data.accounts[0].plaidBalance, account.plaidBalance)
-    assert.equal(response.body().data.accounts[0].pendingBalance, state === 'pending' ? -37 : 0)
+    assert.strictEqual(response.body().data.accounts[0].balance, account.balance.toFixed(2))
+    assert.strictEqual(response.body().data.accounts[0].plaidBalance, account.plaidBalance === null ? null : account.plaidBalance.toFixed(2))
+    assert.strictEqual(response.body().data.accounts[0].pendingBalance, state === 'pending' ? '-37.00' : '0.00')
   })
 
   test('creation retry with an existing provider account rejects and rolls back new setup', async ({ client, assert }) => {

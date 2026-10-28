@@ -1,4 +1,5 @@
 import { test } from '@japa/runner'
+import { encodeMonetaryAmount } from '../../app/services/categoryAmountCodec.ts'
 import { DateTime } from 'luxon'
 import { readFile } from 'node:fs/promises'
 import { runInNewContext } from 'node:vm'
@@ -13,7 +14,7 @@ async function method(file, name, globals) {
   const declaration = source.statements.find(ts.isClassDeclaration).members.find((node) => ts.isMethodDeclaration(node) && node.name.getText(source) === name)
   return runInNewContext(ts.transpileModule(`(async function(${declaration.parameters.map((p) => p.getText(source)).join(',')}) ${declaration.body.getText(source)})`, {
     compilerOptions: { target: ts.ScriptTarget.ES2022 },
-  }).outputText, globals)
+  }).outputText, { encodeMonetaryAmount, ...globals })
 }
 
 test.group('Final readiness forward deletion characterization without DB', () => {

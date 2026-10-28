@@ -14,6 +14,7 @@ import {
   ApiResponse,
   UpdateTransactionResponse,
   CategoryBalanceProps,
+  AccountBalanceProps,
 } from '../../common/ResponseTypes';
 import {
   NewTransactionCategoryInterface, StoreInterface, TransactionCategoryInterface,
@@ -27,6 +28,13 @@ const hasBalances = (value: unknown): value is CategoryBalanceProps[] => (
     && 'id' in row && typeof row.id === 'number' && Number.isFinite(row.id)
     && 'balance' in row && typeof row.balance === 'number' && Number.isFinite(row.balance)
   ))
+);
+
+const hasAccountBalances = (value: unknown): value is AccountBalanceProps[] => (
+  Array.isArray(value) && value.every((row: unknown) => {
+    if (typeof row !== 'object' || row === null || !('id' in row) || !Number.isFinite(row.id) || !('balance' in row)) return false;
+    try { decodeAmount(row.balance); return true; } catch { return false; }
+  })
 );
 
 class Transaction implements TransactionInterface {
@@ -212,7 +220,7 @@ class Transaction implements TransactionInterface {
       const transactionUpdate = data;
 
       if (transactionUpdate) {
-        if (!hasBalances(transactionUpdate.categories) || !hasBalances(transactionUpdate.acctBalances)) {
+        if (!hasBalances(transactionUpdate.categories) || !hasAccountBalances(transactionUpdate.acctBalances)) {
           throw new Error('Invalid transaction balances response');
         }
         const previousStatementId = this.statementId;
@@ -287,7 +295,7 @@ class Transaction implements TransactionInterface {
     if (response.ok) {
       const { data } = await response.body();
 
-      if (isDeleteTransactionResponse(data) && hasBalances(data.categories) && hasBalances(data.acctBalances)) {
+      if (isDeleteTransactionResponse(data) && hasBalances(data.categories) && hasAccountBalances(data.acctBalances)) {
         runInAction(() => {
           if (this.id === null) {
             throw new Error('transaction has a null id');

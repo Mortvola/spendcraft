@@ -1,5 +1,6 @@
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
+import { decodeAmount } from '../monetary';
 import { DateTime } from 'luxon';
 import { isAccountBalanceSeries } from '../../common/ResponseTypes';
 import { AccountBalanceSeriesInterface, AccountInterface } from './Types';
@@ -19,8 +20,9 @@ class AccountBalanceSeries implements AccountBalanceSeriesInterface {
     if (!response.ok) throw new Error('Unable to load account chart');
     const body = await response.body();
     if (!isAccountBalanceSeries(body)) throw new Error('Invalid account chart response');
+    const points = body.map((point) => ({ date: DateTime.fromISO(point.date), balance: decodeAmount(point.balance) }));
     runInAction(() => {
-      this.points = body.map((point) => ({ date: DateTime.fromISO(point.date), balance: point.balance }));
+      this.points = points;
       this.account = account;
     });
   }

@@ -1,4 +1,5 @@
 import { observable } from 'mobx';
+import { decodeAmount } from '../monetary';
 import { TransactionProps, TransactionsResponse } from '../../common/ResponseTypes';
 import QueryManager from './QueryManager';
 import { StoreInterface, TransactionContainerInterface } from './Types';
@@ -95,7 +96,7 @@ class TransactionContainer implements TransactionContainerInterface {
 
   transactionResponseHandler = (body: TransactionsResponse, idx: number, limit: number): boolean => {
     if (this.balanceCallback) {
-      this.balanceCallback(body.balance, body.transactionsCount);
+      this.balanceCallback(typeof body.balance === 'string' ? decodeAmount(body.balance) : body.balance, body.transactionsCount);
     }
 
     if (idx === 0) {
