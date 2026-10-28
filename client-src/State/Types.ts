@@ -384,11 +384,6 @@ export interface InstitutionInterface {
 
   updateOfflineInstitution(name: string): Promise<void>;
 
-  addOnlineAccounts(
-    accounts: UnlinkedAccountProps[],
-    startDate: string,
-  ): Promise<null>;
-
   addOfflineAccount(
     accountName: string,
     balance: number,

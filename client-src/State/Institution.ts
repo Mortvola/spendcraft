@@ -5,7 +5,7 @@ import { DateTime } from 'luxon';
 import Account from './Account';
 import {
   UnlinkedAccountProps, InstitutionProps, AccountBalanceProps, ErrorProps,
-  TrackingType, isAddOnlineAccountsResponse, isDeleteAccountResponse, isLinkTokenResponse,
+  TrackingType, isDeleteAccountResponse, isLinkTokenResponse,
   InstitutionSyncResponse, AddInstitutionResponse,
   AddOfflineAccountResponse, AddOfflineAccountRequest,
   ApiResponse,
@@ -209,35 +209,35 @@ class Institution implements InstitutionInterface {
     }
   }
 
-  async addOnlineAccounts(
-    accounts: UnlinkedAccountProps[],
-    startDate: string,
-  ): Promise<null> {
-    const response = await Http.post(`/api/v1/institution/${this.id}/accounts`, {
-      plaidAccounts: accounts.map((account) => ({
-        ...account,
-        balances: { ...account.balances,
-          current: account.balances.current === null ? null : decodeAmount(account.balances.current),
-        },
-      })),
-      startDate,
-    });
+  // async addOnlineAccounts(
+  //   accounts: UnlinkedAccountProps[],
+  //   startDate: string,
+  // ): Promise<null> {
+  //   const response = await Http.post(`/api/v1/institution/${this.id}/accounts`, {
+  //     plaidAccounts: accounts.map((account) => ({
+  //       ...account,
+  //       balances: { ...account.balances,
+  //         current: account.balances.current === null ? null : decodeAmount(account.balances.current),
+  //       },
+  //     })),
+  //     startDate,
+  //   });
 
-    if (response.ok) {
-      const body = await response.body();
+  //   if (response.ok) {
+  //     const body = await response.body();
 
-      runInAction(() => {
-        if (isAddOnlineAccountsResponse(body)) {
-          body.accounts.forEach((a) => {
-            this.insertAccount(new Account(this.store, this, a));
-          });
-          this.store.categoryTree.updateBalances(body.categories);
-        }
-      });
-    }
+  //     runInAction(() => {
+  //       if (isAddOnlineAccountsResponse(body)) {
+  //         body.accounts.forEach((a) => {
+  //           this.insertAccount(new Account(this.store, this, a));
+  //         });
+  //         this.store.categoryTree.updateBalances(body.categories);
+  //       }
+  //     });
+  //   }
 
-    return null;
-  }
+  //   return null;
+  // }
 
   async addOfflineAccount(
     accountName: string,

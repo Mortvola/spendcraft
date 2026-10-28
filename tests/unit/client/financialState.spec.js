@@ -347,20 +347,6 @@ export * from ${source('common/ResponseTypes.ts')};
       await assert.rejects(() => f.institution.addOfflineAccount('Offline', balance, '2025-03-01', 'depository', 'checking', state.TrackingType.Balances, 0))
     })
 
-  test('unlinked Plaid balances are decoded into numeric requests without changing the response', async ({ assert }) => {
-    const accounts = [{ plaidAccountId: 'one', balances: { current: '-12.50' } },
-      { plaidAccountId: 'two', balances: { current: null } }]
-    routes.set('post /api/v1/institution/1/accounts', async payload => {
-      assert.strictEqual(payload.plaidAccounts[0].balances.current, -12.5)
-      assert.isNull(payload.plaidAccounts[1].balances.current)
-      assert.strictEqual(payload.startDate, '2025-03-01')
-      return { body: { accounts: [], categories: [] } }
-    })
-    await f.institution.addOnlineAccounts(accounts, '2025-03-01')
-    assert.strictEqual(accounts[0].balances.current, '-12.50')
-    assert.isNull(accounts[1].balances.current)
-  })
-
   test('Tax responses decode forecasts and monthly actuals while requests and Worksheets remain numeric', async ({ assert }) => {
     const forecast = { filingStatus: state.FilingStatus.Single,
       ...Object.fromEntries(taxForecastFields.map(field => [field, '0.30'])),
