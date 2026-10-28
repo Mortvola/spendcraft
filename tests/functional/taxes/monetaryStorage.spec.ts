@@ -1,3 +1,4 @@
+import { encodeTaxForecast } from '#services/taxMonetaryCodec'
 // Prepared acceptance only. Requires separate authorization for localhost:5432/spendcraft_test.
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
@@ -54,18 +55,15 @@ test.group('Tax forecast and TransactionLog decimal-string PostgreSQL acceptance
     }
     assert.deepEqual(await financialState(), before)
   })
-  test('numeric/mixed Tax reads remain numeric without normalizing history').with(['numeric', 'mixed'])
+  test('numeric/mixed Tax storage rejects without normalizing history').with(['numeric', 'mixed'])
     .run(async ({ client, assert }, storage) => {
       const tax = await Tax.create({ budgetId: f.budget.id, year: 2026, data: forecast(1) })
       const raw = { ...forecast(1.005), ...(storage === 'mixed' ? { taxableInterest: '2.00' } : {}), note: { amount: 1.005 } }
       await db.from('taxes').where('id', tax.id).update({ data: JSON.stringify(raw) })
       const before = await rawTax(), response = await client.get('/api/v1/taxes/2026').accept('json').loginAs(f.user)
-      response.assertStatus(200); assert.strictEqual(response.body().data.forecast.taxableInterest, storage === 'mixed' ? '2.00' : '1.00')
+      response.assertStatus(422)
+      await assert.rejects(() => Tax.findOrFail(tax.id), 'Stored monetary amount must be a canonical decimal string')
       assert.deepEqual(await rawTax(), before)
-      const model = await Tax.findOrFail(tax.id)
-      if (!('note' in model.data)) throw new Error('Expected existing Tax metadata')
-      model.data.note = { amount: 1.005, changed: true }; await model.save()
-      assert.deepEqual((await rawTax()).data, { ...raw, note: { amount: 1.005, changed: true } })
     })
   test('stored/decoded Tax inputs preserve existing worksheet inputs without intermediate quantization', async ({ assert }) => {
     const data = { ...forecast(0), estimated: { expectedAgi: 100000, priorYearAgi: 150000, priorYearTotalTax: 10000.01 } }
@@ -78,8 +76,8 @@ test.group('Tax forecast and TransactionLog decimal-string PostgreSQL acceptance
   })
   test('Tax replacement retains unknown root and estimated properties', async ({ client, assert }) => {
     const tax = await Tax.create({ budgetId: f.budget.id, year: 2026, data: forecast(1) })
-    await db.from('taxes').where('id', tax.id).update({ data: JSON.stringify({ ...forecast(1), note: { amount: 1.005 },
-      estimated: { ...forecast(1).estimated, evidence: 'keep' } }) })
+    await db.from('taxes').where('id', tax.id).update({ data: JSON.stringify({ ...encodeTaxForecast(forecast(1)), note: { amount: 1.005 },
+      estimated: { expectedAgi: '1.00', priorYearAgi: '1.00', priorYearTotalTax: '1.00', evidence: 'keep' } }) })
     const response = await client.post('/api/v1/taxes').json({ year: 2026, forecast: forecast(2.345) }).accept('json').loginAs(f.user)
     response.assertStatus(200); const raw = await rawTax()
     assert.deepEqual(raw.data.note, { amount: 1.005 }); assert.equal(raw.data.estimated.evidence, 'keep')
@@ -118,7 +116,7 @@ test.group('Tax forecast and TransactionLog decimal-string PostgreSQL acceptance
     const original = '{"amount":{"old":1.005,"new":"2.00"},"note":"keep"}'
     await db.from('transaction_logs').where('id', old.id).update({ changes: original })
     const before = await db.from('transaction_logs').where('id', old.id).firstOrFail()
-    const model = await TransactionLog.findOrFail(old.id); assert.deepEqual(model.serialize().changes.amount, { old: '1.00', new: '2.00' })
+    await assert.rejects(() => TransactionLog.findOrFail(old.id), 'Stored monetary amount must be a canonical decimal string')
     await f.transaction.related('transactionLog').create({ budgetId: f.budget.id, message: 'new', changes: { amount: { new: 2.345 } } })
     await f.transaction.related('transactionLog').create({ budgetId: f.budget.id, message: 'message only' })
     assert.deepEqual(await db.from('transaction_logs').where('id', old.id).firstOrFail(), before)

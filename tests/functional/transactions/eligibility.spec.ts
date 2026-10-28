@@ -1,3 +1,4 @@
+import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 // Prepared only. Requires fresh task-specific DB authorization and the accepted
 // configured/live pg + pgLog + execution-connection safeguards in test bootstrap.
 import { test } from '@japa/runner'
@@ -55,6 +56,7 @@ test.group('Account/Category eligibility correction (prepared)', () => {
       const transaction = await f.budget.related('transactions').create({ date: DateTime.fromISO(dates[0]),
         type: TransactionType.MANUAL_TRANSACTION, categories: [{ categoryId: f.category.id, amount: -10 }],
         version: 0, deleted: false, sortOrder: 0, taxes: [] })
+      await writeCanonicalTransactionFixture(transaction)
       const link = await f.account.related('accountTransactions').create({ transactionId: transaction.id,
         name: 'Crossing', amount: -10, pending, provider: 'NONE' })
       for (const [version, date] of [dates[1], dates[2], dates[0]].entries()) {
@@ -96,6 +98,7 @@ test.group('Additional PATCH effect isolation (prepared)', () => {
     const transaction = await f.budget.related('transactions').create({ date: DateTime.fromISO(dates[1]),
       type: TransactionType.REGULAR_TRANSACTION, categories: [{ categoryId: f.category.id, amount: 10 }],
       version: 0, deleted: false, sortOrder: 0, taxes: [] })
+    await writeCanonicalTransactionFixture(transaction)
     await f.account.related('accountTransactions').create({ transactionId: transaction.id,
       amount: 10, name: 'Imported', pending: false, provider: 'OFX' })
     await f.account.merge({ balance: 110 }).save()
@@ -150,6 +153,7 @@ test.group('Eligibility verification edge cases', () => {
       const transaction = await f.budget.related('transactions').create({ date: DateTime.fromISO(date),
         type: TransactionType.REGULAR_TRANSACTION, categories: [{ categoryId: f.category.id, amount: 10 }],
         version: 0, deleted: false, sortOrder: 0, taxes: [] })
+      await writeCanonicalTransactionFixture(transaction)
       await f.account.related('accountTransactions').create({ transactionId: transaction.id,
         amount: 10, name: 'Partial edit', pending: false, provider: 'OFX' })
       await f.account.merge({ balance: eligible ? 110 : 100 }).save()
@@ -194,6 +198,7 @@ test.group('Eligibility verification edge cases', () => {
     const old = await f.budget.related('transactions').create({ date: DateTime.fromISO(dates[0]),
       type: TransactionType.MANUAL_TRANSACTION, categories: [{ categoryId: f.category.id, amount: 10 }],
       version: 0, deleted: false, sortOrder: 0, taxes: [] })
+    await writeCanonicalTransactionFixture(old)
     await f.account.related('accountTransactions').create({ transactionId: old.id,
       name: 'Old inconsistent effect', amount: 10, pending: false, provider: 'NONE' })
     await f.category.merge({ balance: 999 }).save()

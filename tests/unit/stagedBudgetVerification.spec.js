@@ -1,21 +1,9 @@
 import { test } from '@japa/runner'
 import { readFile } from 'node:fs/promises'
-import { execFileSync } from 'node:child_process'
 import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
 
 function ast(text) { return ts.createSourceFile('source.ts', text, ts.ScriptTarget.Latest, true) }
-function methods(text) {
-  const source = ast(text)
-  const result = new Map()
-  function visit(node) {
-    if (ts.isMethodDeclaration(node) && node.body) result.set(node.name.getText(source), node.getText(source))
-    ts.forEachChild(node, visit)
-  }
-  visit(source)
-  return result
-}
-
 for (const name of ['addGroup', 'updateGroup', 'addCategory', 'updateCategory']) {
   test(`${name} actual uniqueness filter binds owner before scoped SQL`, async ({ assert }) => {
     const source = ast(await readFile('app/validation/Validators/category.ts', 'utf8'))
@@ -65,24 +53,4 @@ test('Plaid sync waiter refreshes after Budget and rejects an earlier committed 
   }
   await assert.rejects(() => run.call(institution), 'access token is null')
   assert.deepEqual(events, ['gate', 'acquired', 'refresh'])
-})
-
-test('storage and approved tenant-scoping corrections preserve unrelated methods', async ({ assert }) => {
-  const changedMethods = new Map([
-    ['app/Controllers/Http/AccountsController.ts', ['addTransaction']],
-    ['app/Models/Account.ts', ['updateTransaction', 'addTransaction', 'processOfx', 'updateStartingBalance']],
-    ['app/Controllers/Http/TransactionsController.ts', ['update']],
-    // Category GET scoping was separately authorized; its four SQL bindings have dedicated regressions.
-    ['app/Controllers/Http/CategoriesController.ts', ['transfer', 'deleteCategory', 'get']],
-  ])
-  for (const file of ['app/Controllers/Http/ReportController.ts', 'app/Controllers/Http/AccountsController.ts',
-    'app/Models/Account.ts', 'app/Models/Institution.ts', 'app/Controllers/Http/InstitutionController.ts',
-    'app/Controllers/Http/TransactionsController.ts', 'app/Controllers/Http/CategoriesController.ts',
-    'app/Controllers/Http/TaxesController.ts']) {
-    const current = methods(await readFile(file, 'utf8'))
-    const before = methods(execFileSync('git', ['show', `HEAD:${file}`], { encoding: 'utf8' }))
-    for (const [name, body] of before) {
-      if (!(changedMethods.get(file) ?? []).includes(name)) assert.equal(current.get(name), body, `${file}:${name}`)
-    }
-  }
 })

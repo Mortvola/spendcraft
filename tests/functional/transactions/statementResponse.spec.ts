@@ -1,3 +1,4 @@
+import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { test } from '@japa/runner'
 import { mock } from 'node:test'
 import db from '@adonisjs/lucid/services/db'
@@ -30,6 +31,7 @@ async function fixture(mode: string) {
   const transaction = await budget.related('transactions').create({ date: DateTime.fromISO('2025-02-10'),
     type: TransactionType.MANUAL_TRANSACTION, categories: [{ categoryId: category.id, amount: 10 }],
     taxes: [], version: 0, deleted: false, sortOrder: 0 })
+  await writeCanonicalTransactionFixture(transaction)
   const association = await account.related('accountTransactions').create({ transactionId: transaction.id,
     amount: 10, name: 'Original', pending: false, provider: 'NONE',
     statementId: mode === 'assign' ? null : oldStatement.id })
@@ -38,6 +40,7 @@ async function fixture(mode: string) {
     const sibling = await budget.related('transactions').create({ date: DateTime.fromISO('2025-02-11'),
       type: TransactionType.MANUAL_TRANSACTION, categories: [{ categoryId: category.id, amount }],
       taxes: [], version: 0, deleted, sortOrder: 0 })
+    await writeCanonicalTransactionFixture(sibling)
     await account.related('accountTransactions').create({ transactionId: sibling.id, amount,
       name: 'Sibling', pending: false, provider: 'NONE', statementId: responseStatement.id })
   }

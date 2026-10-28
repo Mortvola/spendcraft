@@ -104,7 +104,7 @@ test.group('Plaid sync characterization', (group) => {
     return { at, transaction }
   }
 
-  test('Plaid reimport preserves numeric/string/mixed tax attribution').with(['numeric', 'string', 'mixed'])
+  test('Plaid reimport preserves canonical tax attribution and numeric/mixed reads reject').with(['numeric', 'string', 'mixed'])
     .run(async ({ client, assert }, encoding) => {
       fake.responses = [page(accounts(), 'tax-c1', { added: [purchase()] })]
       ;(await client.post(url()).loginAs(f.user)).assertStatus(200)
@@ -112,12 +112,19 @@ test.group('Plaid sync characterization', (group) => {
       const taxes = [{ type: 'estimated_tax_payments', amount: encoding === 'numeric' ? 1.005 : '1.00', extra: { keep: true } },
         { type: 'estimated_tax_payments', amount: encoding === 'string' ? '-0.12' : -0.125 }]
       await db.from('transactions').where('id', transaction.id).update({ taxes: JSON.stringify(taxes) })
+      if (encoding !== 'string') {
+        const before = await db.from('transactions').where('id', transaction.id).firstOrFail()
+        const rejected = await client.get(`/api/v1/transaction/${transaction.id}`).loginAs(f.user)
+        rejected.assertStatus(422)
+        assert.deepEqual(await db.from('transactions').where('id', transaction.id).firstOrFail(), before)
+        return
+      }
       fake.responses = [page(accounts(), 'tax-c2', { modified: [purchase('purchase', { amount: 15 })] })]
       ;(await client.post(url()).loginAs(f.user)).assertStatus(200)
       assert.deepEqual((await db.from('transactions').where('id', transaction.id).firstOrFail()).taxes, taxes)
       const response = await client.get(`/api/v1/transaction/${transaction.id}`).loginAs(f.user)
       response.assertStatus(200)
-      assert.deepEqual(response.body().taxes.map((tax: { amount: number }) => tax.amount), taxes.map(tax => Number(tax.amount)))
+      assert.deepEqual(response.body().taxes.map((tax: { amount: string }) => tax.amount), taxes.map(tax => tax.amount))
     })
 
   test('first sync applies posted purchases once to account and unassigned category').with([1, 3]).run(async ({ client, assert }, count) => {

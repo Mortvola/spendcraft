@@ -1,3 +1,7 @@
+import { requestFundingStorage } from '../../app/services/fundingStorage.ts'
+import { encodeMonetaryAmount } from '../../app/services/categoryAmountCodec.ts'
+import { validateSubmittedTaxForecast, serializeTaxForecast } from '../../app/services/taxMonetaryCodec.ts'
+import { replaceTaxForecast } from '../../app/services/taxMonetaryStorage.ts'
 import { test } from '@japa/runner'
 import { readFile } from 'node:fs/promises'
 import { runInNewContext } from 'node:vm'
@@ -17,7 +21,7 @@ async function method(file, name, context, dependencyLoader = false) {
   if (dependencyLoader) body = body.replace("await import('@adonisjs/lucid/services/db')", 'await loadDatabase()')
     .replace("await import('#models/Budget')", 'await loadBudget()')
   return runInNewContext(ts.transpileModule(`(async function(${member.parameters.map((p) => p.getText(ast)).join(',')}) ${body})`,
-    { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText, context)
+    { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText, { requestFundingStorage, encodeMonetaryAmount, validateSubmittedTaxForecast, replaceTaxForecast, ...context })
 }
 const noop = async () => undefined
 
@@ -464,7 +468,7 @@ for (const action of ['deleteGroup', 'addCategory', 'updateCategory']) {
           else assert.include(events, 'delete')
         } else {
           assert.equal(result.data.name, 'Fresh'); assert.include(events, 'funding.authorized')
-          assert.equal(result.data.balance, action === 'addCategory' ? 0 : 42)
+          assert.equal(result.data.balance, action === 'addCategory' ? '0.00' : '42.00')
           assert.include(events, 'save')
         }
       }
@@ -743,7 +747,7 @@ for (const scenario of ['create', 'update', 'save-failure', 'create-failure']) {
     const waiting = new Promise((resolve) => { entered = resolve })
     const owner = {}
     const forecast = { taxableInterest: 25 }
-    const existing = { year: 2026, data: { taxableInterest: 5 }, async save() {
+    const existing = { year: 2026, $attributes: { data: { taxableInterest: 5 } }, get data() { return this.$attributes.data }, serialize() { return { data: serializeTaxForecast(this.data) } }, async save() {
       events.push('save'); if (scenario === 'save-failure') throw new Error('save failed')
     } }
     const filters = []
@@ -761,7 +765,7 @@ for (const scenario of ['create', 'update', 'save-failure', 'create-failure']) {
         async create(values, { client }) {
           assert.strictEqual(client, owner); assert.equal(values.budgetId, 7); events.push('create')
           if (scenario === 'create-failure') throw new Error('create failed')
-          return values
+          return { ...values, serialize() { return { data: serializeTaxForecast(this.data) } } }
         },
       },
       TaxesController: { async getActuals(year, budgetId) {
@@ -773,7 +777,7 @@ for (const scenario of ['create', 'update', 'save-failure', 'create-failure']) {
       related: () => ({ query: () => ({ forUpdate() { return this }, async firstOrFail() {
         entered(); await gate; events.push('acquired'); return { id: 7 }
       } }) }) }
-    const operation = run({ auth: { user }, request: { validateUsing: async () => ({ year: 2026, forecast }) } })
+    const operation = run({ auth: { user }, request: { input: () => forecast, validateUsing: async () => ({ year: 2026, forecast }) } })
     await waiting
     assert.deepEqual(events, [])
     release()
@@ -782,7 +786,7 @@ for (const scenario of ['create', 'update', 'save-failure', 'create-failure']) {
       assert.equal(events.at(-1), 'rollback'); assert.notInclude(events, 'actuals')
     } else {
       const response = await operation
-      assert.equal(response.data.year, 2026); assert.equal(response.data.forecast.taxableInterest, 25)
+      assert.equal(response.data.year, 2026); assert.equal(response.data.forecast.taxableInterest, '25.00')
       assert.deepEqual(Array.from(response.data.actuals), [])
       assert.equal(events.at(-1), 'actuals')
     }
@@ -803,14 +807,14 @@ test('tax forecast concurrent first saves reload after Budget and create only on
     } },
     Tax: {
       query: () => ({ where() { return this }, first: async () => stored }),
-      async create(values) { creates++; stored = { ...values, save: noop }; return stored },
+      async create(values) { creates++; stored = { ...values, $attributes: { data: values.data }, get data() { return this.$attributes.data }, save: noop, serialize() { return { data: serializeTaxForecast(this.data) } } }; return stored },
     }, TaxesController: { getActuals: async () => [] },
   })
   function context(value) {
     let owner
     return { auth: { user: { useTransaction(trx) { owner = trx }, related: () => ({ query: () => ({
       forUpdate() { return this }, async firstOrFail() { await owner.previous; return { id: 7 } },
-    }) }) } }, request: { validateUsing: async () => ({ year: 2026, forecast: { taxableInterest: value } }) } }
+    }) }) } }, request: { input: () => ({ taxableInterest: value }), validateUsing: async () => ({ year: 2026, forecast: { taxableInterest: value } }) } }
   }
   await Promise.all([run(context(10)), run(context(20))])
   assert.equal(creates, 1); assert.equal(stored.data.taxableInterest, 20)

@@ -1,3 +1,4 @@
+import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
 import { DateTime } from 'luxon'
@@ -52,6 +53,7 @@ test.group('Account start-date characterization', () => {
           date: DateTime.fromISO(movement.date), type: TransactionType.MANUAL_TRANSACTION,
           version: 0, deleted: false, sortOrder: 0, categories: movement.categories, taxes: [],
         })
+        await writeCanonicalTransactionFixture(transaction)
         ids.push(transaction.id)
         await f.account.related('accountTransactions').create({
           transactionId: transaction.id, amount: movement.amount, name: 'Boundary movement',
@@ -107,6 +109,7 @@ test.group('Account start-date characterization', () => {
         date: DateTime.fromISO('2025-01-15'), type: TransactionType.MANUAL_TRANSACTION,
         categories: [{ categoryId: unassigned.id, amount: 10 }], taxes: [], version: 0, sortOrder: 0, deleted: false,
       }, { client: trx })
+      await writeCanonicalTransactionFixture(transaction)
       await f.account.related('accountTransactions').create({ transactionId: transaction.id, amount: 10, name: 'Crossing allocation', pending: false, provider: 'NONE' })
       const funding = await f.budget.getFundingPoolCategory({ client: trx })
       await f.account.updateStartingBalance(f.budget, funding)
@@ -173,6 +176,7 @@ test.group('Account start-date characterization', () => {
     const f = await createFixture()
     await f.account.merge({ tracking: TrackingType.Balances }).save()
     const transaction = await f.budget.related('transactions').create({ date: DateTime.fromISO('2025-01-15'), type: TransactionType.MANUAL_TRANSACTION, categories: [], taxes: [], version: 0, sortOrder: 0, deleted: false })
+    await writeCanonicalTransactionFixture(transaction)
     await f.account.related('accountTransactions').create({ transactionId: transaction.id, amount: 10, name: 'Invalid historical state', pending: false, provider: 'NONE' })
     const response = await client.patch(`/api/v1/account/${f.account.id}`).json({ startDate: '2025-02-01' }).accept('json').loginAs(f.user)
     response.assertStatus(200)
@@ -196,6 +200,7 @@ test.group('Corrected startDate pending/opening separation (prepared)', () => {
       const transaction = await f.budget.related('transactions').create({ date: DateTime.fromISO('2025-01-15'),
         type: TransactionType.MANUAL_TRANSACTION, version: 0, deleted, sortOrder: 0,
         categories: [{ categoryId: category.id, amount }], taxes: [] })
+      await writeCanonicalTransactionFixture(transaction)
       await f.account.related('accountTransactions').create({ transactionId: transaction.id, amount,
         pending, name: 'Opening applicability', provider: 'NONE' })
     }
@@ -239,6 +244,7 @@ test.group('Opening signed-sum verification', () => {
         const transaction = await f.budget.related('transactions').create({ date: DateTime.fromISO('2025-02-01'),
           type: TransactionType.MANUAL_TRANSACTION, categories: [{ categoryId: unassigned.id, amount }],
           version: 0, deleted: false, sortOrder: 0, taxes: [] })
+        await writeCanonicalTransactionFixture(transaction)
         await f.account.related('accountTransactions').create({ transactionId: transaction.id,
           name: 'Signed sum', amount, pending: false, provider: 'NONE' })
       }

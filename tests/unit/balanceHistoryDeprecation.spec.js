@@ -1,3 +1,4 @@
+import { encodeMonetaryAmount } from '../../app/services/categoryAmountCodec.ts'
 import { test } from '@japa/runner'
 import { readFile, readdir } from 'node:fs/promises'
 import { URL } from 'node:url'
@@ -84,7 +85,7 @@ test.group('Deprecated BalanceHistory production boundary (no database)', () => 
     const chain = { where() { return this }, whereHas() { return this }, orderBy() { return this }, async first() { return { date: DateTime.fromISO('2025-02-10') } } }
     const method = runInNewContext(ts.transpileModule(`(async function({ request, auth: {user} }) ${body})`, {
       compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None },
-    }).outputText, { DateTime, TrackingType: { Balances: 'Balances' },
+    }).outputText, { encodeMonetaryAmount, DateTime, TrackingType: { Balances: 'Balances' },
       budgetAccounts: () => ({ where: () => ({ firstOrFail: async () => account }) }),
       Transaction: { query: () => chain },
       db: { async rawQuery(sql) {
@@ -95,7 +96,7 @@ test.group('Deprecated BalanceHistory production boundary (no database)', () => 
       BalanceHistory: new Proxy({}, { get() { throw new Error('Legacy rows must not be read') } }),
     })
     const result = await method({ request: { params: () => ({ acctId: '10' }) }, auth: { user: { budgetId: 1 } } })
-    assert.equal(queries, 1); assert.equal(result[0].balance, 100)
+    assert.equal(queries, 1); assert.equal(result[0].balance, '100.00')
     assert.equal(account.balance, 100)
     assert.notProperty(result[0], 'id')
   })

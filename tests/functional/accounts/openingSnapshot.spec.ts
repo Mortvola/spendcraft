@@ -110,6 +110,6 @@ test.group('Opening snapshot Statements', (group) => {
     const data: (string | number | null)[][] = report.body()
     const column = data[0].indexOf('Statement-only report account')
     assert.isAbove(column, 0)
-    assert.isTrue(data.slice(1).some((row) => row[0] === '2001-01-01' && row[column] === 125.25))
+    assert.isTrue(data.slice(1).some((row) => row[0] === '2001-01-01' && row[column] === '125.25'))
   })
 })

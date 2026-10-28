@@ -1,3 +1,4 @@
+import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
 import { DateTime } from 'luxon'
@@ -38,6 +39,7 @@ async function createDomain(label: string) {
       version: 0, deleted: false, sortOrder: 0, comment: `${label} private comment`,
       categories: [{ categoryId: category.id, amount: 10 }], taxes: [],
     })
+    await writeCanonicalTransactionFixture(transaction)
     const accountTransaction = await account.related('accountTransactions').create({
       transactionId: transaction.id, name: `${label} private purchase`, amount: 10,
       provider: 'PLAID', providerTransactionId: `provider-transaction-${label}`, pending: false, statementId: null,

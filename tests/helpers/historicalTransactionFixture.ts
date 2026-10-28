@@ -1,3 +1,5 @@
+import { encodeCategoryAllocations } from '#services/categoryAmountCodec'
+import { encodeFundingMetadata } from '#services/fundingAmountCodec'
 import db from '@adonisjs/lucid/services/db'
 import type Transaction from '#models/Transaction'
 import type { DateTime } from 'luxon'
@@ -12,5 +14,15 @@ export async function writeHistoricalTransactionFixture(transaction: Transaction
     ...(changes.type === undefined ? {} : { type: changes.type }),
     ...(changes.date === undefined ? {} : { date: changes.date.toSQLDate() }),
     ...(changes.deleted === undefined ? {} : { deleted: changes.deleted }),
+  })
+}
+
+// Direct model fixtures can intentionally bypass lifecycle ownership binding.
+// Seed migrated storage explicitly before exercising readers/accounting behavior.
+export async function writeCanonicalTransactionFixture(transaction: Transaction) {
+  const client = transaction.$trx ?? db
+  const row = await client.from('transactions').where('id', transaction.id).firstOrFail()
+  await client.from('transactions').where('id', transaction.id).update({
+    categories: JSON.stringify(encodeFundingMetadata(encodeCategoryAllocations(row.categories))),
   })
 }

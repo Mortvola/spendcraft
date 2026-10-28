@@ -1,3 +1,4 @@
+import { encodeMonetaryAmount } from '../../app/services/categoryAmountCodec.ts'
 import { test } from '@japa/runner'
 import { DateTime } from 'luxon'
 import { readFile } from 'node:fs/promises'
@@ -51,7 +52,7 @@ async function patchFixture({ date = dates[1], pending = false, amount = 10, spl
     return categories.get(3)
   } }
   const user = { username: 'Test', useTransaction() { /* The query adapters independently assert the owning transaction. */ }, related() { return { query: () => query(budget) } } }
-  const globals = { hasCategoryStorage: () => false, excludeCategoryStorage: () => undefined, CategoryType: { Loan: 'Loan' }, validateStoredCategoryConservation: async () => undefined, accountEligible, categoryEligible, categoryEffectDeltas,
+  const globals = { encodeMonetaryAmount, hasCategoryStorage: () => false, excludeCategoryStorage: () => undefined, CategoryType: { Loan: 'Loan' }, validateStoredCategoryConservation: async () => undefined, accountEligible, categoryEligible, categoryEffectDeltas,
     AccountType: { Loan: 'Loan' }, TrackingType: { Transactions: 'Transactions', Balances: 'Balances' },
     TransactionType: { MANUAL_TRANSACTION: 5, REGULAR_TRANSACTION: 0 },
     Transaction: { query(options) { if (options.client !== trx) throw new Error('Unbound transaction'); return query(transaction) } },
@@ -172,7 +173,7 @@ test.group('Real manual CREATE before/equal/after boundary without DB', () => {
         serialize() { return this }
       }
       const user = { budgetId: 1, useTransaction() { /* The query adapters independently assert the owning transaction. */ }, related() { return { query: () => query(budget) } } }
-      const create = runInNewContext(await method('app/Controllers/Http/AccountsController.ts', 'addTransaction'), {
+      const create = runInNewContext(await method('app/Controllers/Http/AccountsController.ts', 'addTransaction'), { encodeMonetaryAmount,
         requestCategoryStorage: (model) => model, excludeCategoryStorage: () => undefined, CategoryType: { Loan: 'Loan' }, validateStoredCategoryConservation: async () => undefined,
         accountEligible, categoryEligible, Transaction, AccountType: { Loan: 'Loan' },
         TrackingType: { Transactions: 'Transactions', Balances: 'Balances' }, TransactionType: { MANUAL_TRANSACTION: 5 },

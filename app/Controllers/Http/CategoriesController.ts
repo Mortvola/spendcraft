@@ -399,7 +399,7 @@ class CategoriesController {
           groupId: parseInt(groupId, 10),
           name: requestData.name,
           balance: 0,
-          fundingAmount: requestData.fundingAmount,
+          fundingAmount: requestData.fundingAmount ?? 0,
           includeFundingTransfers: requestData.type === CategoryType.Bill ? false : requestData.includeFundingTransfers,
           goalDate: requestData.goalDate,
           recurrence: requestData.recurrence,

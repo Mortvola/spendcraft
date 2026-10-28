@@ -1,3 +1,4 @@
+import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { encodeCategoryAllocations } from '#services/categoryAmountCodec'
 import { decodeFundingRules } from '#services/fundingAmountCodec'
 import { test } from '@japa/runner'
@@ -25,6 +26,7 @@ async function fixture() {
     const transaction = await budget.related('transactions').create({
       date: DateTime.fromISO('2025-03-01'), type: TransactionType.FUNDING_TRANSACTION, categories,
     })
+    await writeCanonicalTransactionFixture(transaction)
     return { budget, user, group, category, source, pool, transaction }
   })
 }

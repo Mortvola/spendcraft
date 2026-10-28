@@ -1,10 +1,11 @@
+import { requestFundingStorage } from '../../app/services/fundingStorage.ts'
 import { test } from '@japa/runner'
 import { readFile } from 'node:fs/promises'
 import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
 import { DateTime } from 'luxon'
 import { TransactionType } from '../../common/ResponseTypes.ts'
-import { validateCategoryConservation } from '../../app/services/categoryAmountCodec.ts'
+import { validateCategoryConservation, encodeMonetaryAmount } from '../../app/services/categoryAmountCodec.ts'
 import { validateTransactionSplits } from '../../app/validation/transactionSplits.ts'
 
 async function expressions() {
@@ -57,7 +58,7 @@ async function harness(shape = {}, request = {}) {
   const instrumented = source.transfer.replace(reversal, `observeReversal(); ${reversal}`)
     .replace(application, `observeApplication(); ${application}`)
   const transfer = runInNewContext(instrumented, {
-    observeReversal: () => { log.push('reverse') }, observeApplication: () => { log.push('apply') },
+    encodeMonetaryAmount, requestFundingStorage, observeReversal: () => { log.push('reverse') }, observeApplication: () => { log.push('apply') },
     validateCategoryConservation, validateStoredCategoryConservation: async () => undefined,
     TransactionType, DateTime, Exception: Rejection, updateCategoryTransfer: {}, transactionFields: {},
     hasReplacementAllocations: runInNewContext(source.hasReplacementAllocations), validateTransactionSplits,

@@ -1,4 +1,4 @@
-import { categoryNonzeroAllocationSql } from '../../app/services/categoryAmountCodec.ts'
+import { categoryNonzeroAllocationSql, encodeMonetaryAmount } from '../../app/services/categoryAmountCodec.ts'
 import { test } from '@japa/runner'
 import { readFile } from 'node:fs/promises'
 import { runInNewContext } from 'node:vm'
@@ -19,7 +19,7 @@ async function method(file, name, context = {}) {
   const body = found.body.getText(ast)
   const expression = `(async function(${found.parameters.map((p) => p.getText(ast)).join(',')}) ${body})`
   return { body, run: runInNewContext(ts.transpileModule(expression,
-    { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText, context) }
+    { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText, { encodeMonetaryAmount, ...context }) }
 }
 const institutions = 'app/Controllers/Http/InstitutionController.ts'
 const categories = 'app/Controllers/Http/CategoriesController.ts'

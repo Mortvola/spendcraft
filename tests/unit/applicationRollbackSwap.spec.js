@@ -255,6 +255,6 @@ await swapDirectories(paths,ops);await cleanupOutgoingRelease(paths,ops);`
     assert.isBelow(workflow.indexOf('await operations.smoke()'), workflow.indexOf('await operations.cleanup()'))
     const installer = await readFile('installer/install.sh0', 'utf8')
     assert.include(installer, 'mv $APP $APP_OLD'); assert.include(installer, 'mv $APP_NEW $APP')
-    assert.include(installer, 'SKIP'); assert.notInclude(installer, 'forward-recovery')
+    assert.notInclude(installer, 'SEED, SKIP'); assert.notInclude(installer, 'forward-recovery')
   })
 })

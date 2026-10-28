@@ -1,3 +1,4 @@
+import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { writeHistoricalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 // Run only with fresh task-specific PostgreSQL authorization.
@@ -32,6 +33,7 @@ async function movement(f: Fixture, amount: number, transfers: number[], options
     deleted: options.deleted ?? false, sortOrder: 0,
     categories: transfers.map((amount) => ({ categoryId: f.category.id, amount })), taxes: [],
   })
+  await writeCanonicalTransactionFixture(transaction)
   const at = await (options.account ?? f.account).related('accountTransactions').create({
     transactionId: transaction.id, amount, name: 'Report movement', provider: 'NONE',
     pending: options.pending ?? false, statementId: null,
@@ -180,6 +182,7 @@ test.group('Income Vs Expenses transfer fan-out PostgreSQL acceptance', () => {
     const f = await fixture()
     const first = await movement(f, 50, [])
     await writeHistoricalTransactionFixture(first.transaction, { categories: [{ categoryId: f.category.id, amount: 50 }] })
+    await writeCanonicalTransactionFixture(first.transaction)
     for (let i = 0; i < 25; i++) await movement(f, 50, [20, 30])
     const before = await snapshot(), ids = await selected(f)
     const queries: { sql: string, bindings?: readonly unknown[] }[] = []

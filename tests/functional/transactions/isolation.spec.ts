@@ -1,3 +1,4 @@
+import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { writeHistoricalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
@@ -36,6 +37,7 @@ async function createDomain(label: string) {
       version: 0, deleted: false, sortOrder: 0, comment: `${label} private comment`,
       categories: [{ categoryId: category.id, amount: 10 }], taxes: [],
     })
+    await writeCanonicalTransactionFixture(transaction)
     const accountTransaction = await account.related('accountTransactions').create({
       transactionId: transaction.id, name: `${label} private purchase`, amount: 10,
       provider: 'NONE', pending: false, statementId: null,
@@ -192,6 +194,7 @@ test.group('Transaction budget isolation', (group) => {
       { categoryId: fixture.own.category.id, amount: 5 },
       { categoryId: fixture.foreign.category.id, amount: 5 },
     ] })
+    await writeCanonicalTransactionFixture(fixture.own.transaction)
     const before = await state()
     const url = `/api/v1/transaction/${fixture.own.transaction.id}`
     const response = operation === 'patch'

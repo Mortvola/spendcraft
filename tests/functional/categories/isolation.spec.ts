@@ -1,3 +1,4 @@
+import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { writeHistoricalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
@@ -31,6 +32,7 @@ async function createDomain(label: string) {
       version: 0, deleted: false, sortOrder: 0,
       categories: [{ categoryId: category.id, amount: -10 }, { categoryId: otherCategory.id, amount: 10 }], taxes: [],
     })
+    await writeCanonicalTransactionFixture(transaction)
     return { budget, user, group, otherGroup, emptyGroup, category, otherCategory, unusedCategory, transaction }
   })
 }
@@ -123,6 +125,7 @@ test.group('Group/category/transfer isolation', (group) => {
       await writeHistoricalTransactionFixture(fixture.foreign.transaction, {
         categories: [{ categoryId: fixture.own.category.id, amount: -10 }],
       })
+      await writeCanonicalTransactionFixture(fixture.foreign.transaction)
     }
     const id = target === 'missing' ? missingId : fixture.foreign.transaction.id
     const ordinary = await client.get('/api/v1/category-balances?date=2025-03-01').accept('json').loginAs(fixture.own.user)
@@ -208,6 +211,7 @@ test.group('Group/category/transfer isolation', (group) => {
       ? [{ categoryId: fixture.foreign.category.id, amount: -10 }, { categoryId: fixture.own.otherCategory.id, amount: 10 }]
       : [{ categoryId: fixture.own.category.id, amount: -10, fundingCategories: [funding(fixture.foreign.category.id)] }, { categoryId: fixture.own.otherCategory.id, amount: 10 }]
     await writeHistoricalTransactionFixture(transaction, { categories })
+    await writeCanonicalTransactionFixture(transaction)
     const before = await state()
     const response = await client.patch(`/api/v1/category-transfer/${transaction.id}`)
       .json(transferBody([fixture.own.category.id, fixture.own.otherCategory.id])).accept('json').loginAs(fixture.own.user)

@@ -1,3 +1,4 @@
+import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
 import { DateTime } from 'luxon'
@@ -26,6 +27,7 @@ async function createFixture() {
       date: DateTime.fromISO('2025-02-01'), type: TransactionType.MANUAL_TRANSACTION,
       version: 0, deleted: false, sortOrder: 0, categories: [{ categoryId: first.id, amount: 10 }], taxes: [],
     })
+    await writeCanonicalTransactionFixture(transaction)
     const accountTransaction = await account.related('accountTransactions').create({
       transactionId: transaction.id, name: 'Original purchase', amount: 10, pending: false, provider: 'NONE', statementId: null,
     })
@@ -91,6 +93,7 @@ test.group('Category transfer conservation', (group) => {
       date: DateTime.fromISO('2025-03-01'), type: TransactionType.REBALANCE_TRANSACTION,
       categories: [{ categoryId: fixture.first.id, amount: -10 }, { categoryId: fixture.second.id, amount: 10 }],
     })
+    await writeCanonicalTransactionFixture(existing)
     await fixture.first.merge({ balance: 0 }).save()
     await fixture.second.merge({ balance: 10 }).save()
     const before = await state()
@@ -118,6 +121,7 @@ test.group('Category transfer conservation', (group) => {
       date: DateTime.fromISO('2025-03-01'), type: TransactionType.REBALANCE_TRANSACTION,
       categories: [{ categoryId: fixture.first.id, amount: -5 }, { categoryId: fixture.second.id, amount: 5 }],
     })
+    await writeCanonicalTransactionFixture(existing)
     await fixture.first.merge({ balance: 5 }).save()
     await fixture.second.merge({ balance: 5 }).save()
     const before = await state()

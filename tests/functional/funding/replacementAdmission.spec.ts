@@ -1,3 +1,4 @@
+import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { writeHistoricalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 // DB-backed verification requires fresh task-specific authorization and current safeguards.
 import { test } from '@japa/runner'
@@ -25,6 +26,7 @@ async function fixture(type = TransactionType.FUNDING_TRANSACTION) {
     { categoryId: pool.id, amount: -amount, funder: true }]
     const target = await budget.related('transactions').create({ date: DateTime.fromISO('2025-03-01'),
       type, deleted: false, version: 0, categories: rows(2) })
+    await writeCanonicalTransactionFixture(target)
     return { budget, user, group, category, pool, target, rows }
   })
 }
@@ -92,6 +94,7 @@ test.group('Replacement admission persisted noninterference (prepared)', () => {
   test('optional metadata is not required and funding date rejection is inert', async ({ client, assert }) => {
     const f = await fixture()
     await writeHistoricalTransactionFixture(f.target, { categories: [{ categoryId: f.category.id, amount: 2 }, { categoryId: f.pool.id, amount: -2 }] })
+    await writeCanonicalTransactionFixture(f.target)
     const before = await state()
     const rejected = await client.patch(`/api/v1/category-transfer/${f.target.id}`)
       .json({ type: 2, date: '2025-04-01', categories: f.rows(3) }).accept('json').loginAs(f.user)
@@ -107,8 +110,9 @@ test.group('Replacement admission persisted noninterference (prepared)', () => {
 
   test('valid lifecycle replacement and dates remain distinct').with([2, 3]).run(async ({ client, assert }, type) => {
     const f = await fixture(type)
-    // A Loan Category allocation is not itself Loan transaction ownership.
+    // Loan Category allocations retain the excluded numeric storage contract.
     await f.category.merge({ type: CategoryType.Loan }).save()
+    await writeHistoricalTransactionFixture(f.target, { categories: f.rows(2) })
     const date = type === 2 ? '2025-03-01' : '2025-04-01'
     const response = await client.patch(`/api/v1/category-transfer/${f.target.id}`)
       .json({ type, date, categories: f.rows(3) }).accept('json').loginAs(f.user)

@@ -1,3 +1,4 @@
+import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 // Task-authorized test fixtures only. All SQL uses the accepted bootstrap driver guard.
 import { test } from '@japa/runner'
 import { mock } from 'node:test'
@@ -71,6 +72,7 @@ async function fixture() {
       balance: 5, fundingCategories: [], useGoal: false, recurrence: 1 })
     const transaction = await budget.related('transactions').create({ date: DateTime.fromISO('2025-02-01'),
       type: TransactionType.MANUAL_TRANSACTION, categories: [{ categoryId: category.id, amount: 5 }], taxes: [], deleted: false })
+    await writeCanonicalTransactionFixture(transaction)
     await account.related('accountTransactions').create({ transactionId: transaction.id, amount: 5, name: 'Known applied effect', pending: false })
     return { budget, user, institution, account, group, empty, category, transaction }
   })

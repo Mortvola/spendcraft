@@ -1,3 +1,4 @@
+import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { monetaryAmountCents, encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
@@ -157,6 +158,7 @@ test.group('Monetary persistence and allocation regressions', () => {
         date: DateTime.fromISO('2025-02-10'), type: TransactionType.MANUAL_TRANSACTION,
         version: 0, categories: [{ categoryId: f.categories[0].id, amount: 0 }], taxes: [],
       })
+      await writeCanonicalTransactionFixture(transaction)
       const association = await f.account.related('accountTransactions').create({
         transactionId: transaction.id, name: 'Precision update', amount: 0, pending: false, provider: 'NONE',
       })

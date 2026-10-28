@@ -1,3 +1,4 @@
+import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { writeHistoricalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
@@ -29,6 +30,7 @@ async function createFixture() {
       date: DateTime.fromISO('2025-02-01'), type: TransactionType.MANUAL_TRANSACTION,
       version: 0, deleted: false, sortOrder: 0, categories: [{ categoryId: first.id, amount: 10 }], taxes: [],
     })
+    await writeCanonicalTransactionFixture(transaction)
     const accountTransaction = await account.related('accountTransactions').create({
       transactionId: transaction.id, name: 'Original purchase', amount: 10, pending: false, provider: 'NONE', statementId: null,
     })
@@ -74,6 +76,7 @@ test.group('Ordinary transaction lifecycle', (group) => {
   test('updates reverse old splits and apply replacement state').with(['amount', 'category', 'single-to-multiple', 'multiple-to-single', 'metadata', 'date']).run(async ({ client, assert }, scenario) => {
     if (scenario === 'multiple-to-single') {
       await writeHistoricalTransactionFixture(fixture.transaction, { categories: [{ categoryId: fixture.first.id, amount: 4 }, { categoryId: fixture.second.id, amount: 6 }] })
+      await writeCanonicalTransactionFixture(fixture.transaction)
       await fixture.first.merge({ balance: 4 }).save()
       await fixture.second.merge({ balance: 6 }).save()
     }

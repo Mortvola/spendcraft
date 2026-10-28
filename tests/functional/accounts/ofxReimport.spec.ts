@@ -78,7 +78,7 @@ test.group('OFX reimport financial consistency', () => {
     response.assertStatus(200)
   }
 
-  test('OFX reimport preserves numeric/string/mixed tax attribution').with(['numeric', 'string', 'mixed'])
+  test('OFX reimport preserves canonical tax attribution and numeric/mixed reads reject').with(['numeric', 'string', 'mixed'])
     .run(async ({ client, assert }, encoding) => {
       const f = await fixture()
       ;(await upload(client, f)).assertStatus(200)
@@ -86,12 +86,19 @@ test.group('OFX reimport financial consistency', () => {
       const taxes = [{ type: 'estimated_tax_payments', amount: encoding === 'numeric' ? 1.005 : '1.00', extra: { keep: true } },
         { type: 'estimated_tax_payments', amount: encoding === 'string' ? '-0.12' : -0.125 }]
       await db.from('transactions').where('id', association.transactionId).update({ taxes: JSON.stringify(taxes) })
+      if (encoding !== 'string') {
+        const before = await db.from('transactions').where('id', association.transactionId).firstOrFail()
+        const rejected = await client.get(`/api/v1/transaction/${association.transactionId}`).loginAs(f.user)
+        rejected.assertStatus(422)
+        assert.deepEqual(await db.from('transactions').where('id', association.transactionId).firstOrFail(), before)
+        return
+      }
       ;(await upload(client, f, 15)).assertStatus(200)
       ;(await upload(client, f, 15)).assertStatus(200)
       assert.deepEqual((await db.from('transactions').where('id', association.transactionId).firstOrFail()).taxes, taxes)
       const response = await client.get(`/api/v1/transaction/${association.transactionId}`).loginAs(f.user)
       response.assertStatus(200)
-      assert.deepEqual(response.body().taxes.map((tax: { amount: number }) => tax.amount), taxes.map(tax => Number(tax.amount)))
+      assert.deepEqual(response.body().taxes.map((tax: { amount: string }) => tax.amount), taxes.map(tax => tax.amount))
     })
 
   test('first import and identical replay preserve identities and financial effects', async ({ client, assert }) => {

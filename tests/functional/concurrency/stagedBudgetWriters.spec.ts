@@ -1,3 +1,4 @@
+import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { writeHistoricalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 // PREPARED ONLY: requires fresh localhost:5432/spendcraft_test authorization.
 // Use tests/bootstrap.ts and its centralized per-statement pg/pgLog/execution guard.
@@ -40,6 +41,7 @@ async function fixture() {
     // Known current eligible applied effect; no historical reversal acceptance inferred.
     const transaction = await budget.related('transactions').create({ date: DateTime.fromISO('2025-02-01'),
       type: TransactionType.MANUAL_TRANSACTION, categories: [{ categoryId: category.id, amount: 5 }], taxes: [], deleted: false })
+    await writeCanonicalTransactionFixture(transaction)
     await account.related('accountTransactions').create({ transactionId: transaction.id, amount: 5, name: 'Purchase', pending: false })
     return { budget, user, institution, account, group, empty, category, transaction }
   })
@@ -138,7 +140,7 @@ test.group('Staged Budget writers PostgreSQL acceptance', (group) => {
           if (operation === 'dedup') {
             const row = await db.from('transactions').where('id', target.transaction.id).first()
             assert.isNull(row.duplicate_of_transaction_id)
-            assert.deepEqual(row.categories, [{ categoryId: target.category.id, amount: 5 }])
+            assert.deepEqual(row.categories, [{ categoryId: target.category.id, amount: '5.00' }])
           }
           if (operation === 'addAccount') {
             const rows = await db.from('accounts').where('institution_id', target.institution.id).where('name', 'Added')

@@ -97,6 +97,7 @@ test.group('Categories', (group) => {
       response.assertAgainstApiSpec()
 
       categoryId = response.body().data.id
+      assert.strictEqual(response.body().data.fundingAmount, '0.00')
     })
 
   test('delete group failure')
