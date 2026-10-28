@@ -66,7 +66,7 @@ function request(client: ApiClient, f: Fixture, operation: Operation) {
     case 'addCategory': return client.post(`/api/v1/groups/${f.group.id}/categories`).json(categoryRequest({ name: 'Added', useGoal: false, fundingCategories: [] }))
     case 'updateCategory': return client.patch(`/api/v1/groups/${f.group.id}/categories/${f.category.id}`).json(categoryRequest({ name: 'Changed' }))
     case 'rename': return client.patch(`/api/v1/institution/${f.institution.id}`).json({ name: 'Renamed' })
-    case 'addAccount': return client.post(`/api/v1/institution/${f.institution.id}/accounts`).json({ name: 'Added', balance: 10,
+    case 'addAccount': return client.post(`/api/v1/institution/${f.institution.id}/accounts`).json({ name: 'Added', balance: '10.00',
       startDate: '2025-01-01', type: AccountType.Depository, subtype: 'checking', tracking: TrackingType.Transactions })
     case 'unlink': return client.post(`/api/v1/institution/${f.institution.id}/unlink`)
     case 'deleteAccount': return client.delete(`/api/v1/institution/${f.institution.id}/accounts/${f.account.id}`)

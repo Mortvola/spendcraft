@@ -1,13 +1,13 @@
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
-import { decodeAmount } from '../monetary';
+import { decodeAmount, encodeAmount } from '../monetary';
 import { DateTime } from 'luxon';
 import Account from './Account';
 import {
   UnlinkedAccountProps, InstitutionProps, AccountBalanceProps, ErrorProps,
   TrackingType, isAddOnlineAccountsResponse, isDeleteAccountResponse, isLinkTokenResponse,
   InstitutionSyncResponse, AddInstitutionResponse,
-  AddOfflineAccountResponse,
+  AddOfflineAccountResponse, AddOfflineAccountRequest,
   ApiResponse,
 } from '../../common/ResponseTypes';
 import { AccountInterface, InstitutionInterface, StoreInterface } from './Types';
@@ -248,9 +248,9 @@ class Institution implements InstitutionInterface {
     tracking: TrackingType,
     rate: number,
   ): Promise<ErrorProps[] | null> {
-    const response = await Http.post<unknown, ApiResponse<AddOfflineAccountResponse>>(`/api/v1/institution/${this.id}/accounts`, {
+    const response = await Http.post<AddOfflineAccountRequest, ApiResponse<AddOfflineAccountResponse>>(`/api/v1/institution/${this.id}/accounts`, {
       name: accountName,
-      balance,
+      balance: encodeAmount(balance),
       type,
       subtype,
       tracking,

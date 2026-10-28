@@ -99,7 +99,7 @@ test.group('BalanceHistory runtime deprecation (prepared)', () => {
     .run(async ({ client, assert }, { tracking, route }) => {
       const f = await fixture()
       const before = await db.from('balance_histories').orderBy('id')
-      const input = { name: 'New account', balance: 12, type: AccountType.Depository, subtype: 'checking', tracking }
+      const input = { name: 'New account', balance: '12.00', type: AccountType.Depository, subtype: 'checking', tracking }
       const response = route === 'new'
         ? await client.post('/api/v1/institution').json({ institution: { name: 'New offline' }, startDate: '2025-01-01', accounts: [input] }).loginAs(f.user)
         : await client.post(`/api/v1/institution/${f.institution.id}/accounts`).json({ ...input, startDate: '2025-01-01' }).loginAs(f.user)

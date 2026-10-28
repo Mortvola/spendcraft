@@ -1,3 +1,4 @@
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { transactionRequest, categoryTransferRequest } from '../../helpers/transactionRequest.js'
 // Requires task-specific DB authorization and independent per-statement safeguards.
 import { test } from '@japa/runner'
@@ -116,7 +117,7 @@ async function fixture() {
 type Fixture = Awaited<ReturnType<typeof fixture>>
 function offlineBody(amount = 10, tracking = TrackingType.Transactions) {
   return { institution: { name: 'New offline bank' }, startDate: '2025-01-01',
-    accounts: [{ name: 'New offline', balance: amount, type: AccountType.Depository, subtype: 'checking', tracking }] }
+    accounts: [{ name: 'New offline', balance: encodeMonetaryAmount(amount), type: AccountType.Depository, subtype: 'checking', tracking }] }
 }
 async function initialize(client: ApiClient, f: Fixture, amount = 10, status = 200) {
   const response = await client.post('/api/v1/institution').json(offlineBody(amount)).loginAs(f.user)

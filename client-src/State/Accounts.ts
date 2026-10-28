@@ -1,11 +1,11 @@
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
-import { decodeAmount } from '../monetary';
+import { decodeAmount, encodeAmount } from '../monetary';
 import { PlaidLinkOnSuccessMetadata } from 'react-plaid-link';
 import Institution from './Institution';
 import Plaid from './Plaid';
 import {
-  AccountBalanceProps, AddInstitutionProps, AddInstitutionResponse,
+  AccountBalanceProps, AddInstitutionProps, AddInstitutionResponse, AddOfflineInstitutionRequest,
   ApiResponse,
   ErrorProps, isDeleteInstitutionResponse,
   isInstitutionsResponse, isLinkTokenResponse, TrackingType,
@@ -198,13 +198,13 @@ class Accounts implements AccountsInterface {
     tracking: TrackingType,
     rate: number,
   ): Promise<ErrorProps[] | null> {
-    const response = await Http.post<unknown, ApiResponse<AddInstitutionResponse>>('/api/v1/institution', {
+    const response = await Http.post<AddOfflineInstitutionRequest, ApiResponse<AddInstitutionResponse>>('/api/v1/institution', {
       institution: {
         name: instituteName,
       },
       accounts: [{
         name: accountName,
-        balance,
+        balance: encodeAmount(balance),
         type,
         subtype,
         tracking,

@@ -40,7 +40,7 @@ test.group('Accounts', (group) => {
             accounts: [
               {
                 name: 'Test Account',
-                balance: 0,
+                balance: '0.00',
                 type: AccountType.Investment,
                 subtype: 'IRA',
                 tracking: TrackingType.Balances
@@ -87,7 +87,7 @@ test.group('Accounts', (group) => {
       const response = await client.post(`/api/v1/institution/${institutionId}/accounts`)
         .json({
           name: 'Test Account 2',
-          balance: 0,
+          balance: '0.00',
           type: AccountType.Investment,
           subtype: 'IRA',
           tracking: TrackingType.Balances,

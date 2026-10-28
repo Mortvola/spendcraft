@@ -205,7 +205,7 @@ test.group('Institution isolation', (group) => {
       assert.deepEqual(await state(), before)
     })
 
-  const accountBody = { name: 'New account', balance: 50, type: AccountType.Depository,
+  const accountBody = { name: 'New account', balance: '50.00', type: AccountType.Depository,
     subtype: 'checking', tracking: TrackingType.Balances, startDate: '2025-01-01', rate: 0 }
   interface Operation { name: string, method: 'get' | 'post' | 'patch' | 'delete', suffix: string, body?: object }
   const operations: Operation[] = [

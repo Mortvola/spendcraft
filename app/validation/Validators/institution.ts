@@ -1,6 +1,7 @@
 import { AccountType, TrackingType } from '#common/ResponseTypes'
 import vine from '@vinejs/vine'
 import { DateTime } from 'luxon'
+import { monetaryAmount } from '../monetaryAmount.js'
 
 export const addInstitutionCheck = vine.compile(
   vine.object({
@@ -23,7 +24,7 @@ export const addInstitutionOffline = vine.compile(
     accounts: vine.array(
       vine.object({
         name: vine.string(),
-        balance: vine.number(),
+        balance: monetaryAmount(),
         type: vine.enum(AccountType).optional(),
         subtype: vine.string(),
         tracking: vine.enum(TrackingType)
@@ -36,7 +37,7 @@ export const addInstitutionOffline = vine.compile(
 export const addOfflineAccount = vine.compile(
   vine.object({
     name: vine.string(),
-    balance: vine.number(),
+    balance: monetaryAmount(),
     type: vine.enum(AccountType),
     subtype: vine.string(),
     tracking: vine.string(),

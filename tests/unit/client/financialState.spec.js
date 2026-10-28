@@ -318,6 +318,35 @@ export * from ${source('common/ResponseTypes.ts')};
     }
   })
 
+  test('offline institution and account requests encode balances and keep rates numeric').with([
+    [12.345, '12.35'], [-0.125, '-0.12'], [0.125, '0.13'], [1.005, '1.00'], [0.1 + 0.2, '0.30'], [-0, '0.00'],
+  ]).run(async ({ assert }, [balance, expected]) => {
+    const rate = 3.125
+    const account = { name: 'Offline', balance: expected, type: 'depository', subtype: 'checking',
+      tracking: state.TrackingType.Balances, rate }
+    let calls = 0
+    routes.set('post /api/v1/institution', async payload => {
+      calls++
+      assert.deepEqual(payload, { institution: { name: 'Bank' }, accounts: [account], startDate: '2025-03-01' })
+      return { ok: false, body: {} }
+    })
+    routes.set('post /api/v1/institution/1/accounts', async payload => {
+      calls++
+      assert.deepEqual(payload, { ...account, startDate: '2025-03-01' })
+      return { ok: false, body: {} }
+    })
+    await f.store.accounts.addOfflineAccount('Bank', 'Offline', balance, '2025-03-01', 'depository', 'checking', state.TrackingType.Balances, rate)
+    await f.institution.addOfflineAccount('Offline', balance, '2025-03-01', 'depository', 'checking', state.TrackingType.Balances, rate)
+    assert.strictEqual(calls, 2)
+  })
+  test('invalid offline balances fail before HTTP').with([NaN, Infinity, Number.MAX_SAFE_INTEGER])
+    .run(async ({ assert }, balance) => {
+      routes.set('post /api/v1/institution', () => assert.fail('Invalid balance reached HTTP'))
+      routes.set('post /api/v1/institution/1/accounts', () => assert.fail('Invalid balance reached HTTP'))
+      await assert.rejects(() => f.store.accounts.addOfflineAccount('Bank', 'Offline', balance, '2025-03-01', 'depository', 'checking', state.TrackingType.Balances, 0))
+      await assert.rejects(() => f.institution.addOfflineAccount('Offline', balance, '2025-03-01', 'depository', 'checking', state.TrackingType.Balances, 0))
+    })
+
   test('unlinked Plaid balances are decoded into numeric requests without changing the response', async ({ assert }) => {
     const accounts = [{ plaidAccountId: 'one', balances: { current: '-12.50' } },
       { plaidAccountId: 'two', balances: { current: null } }]

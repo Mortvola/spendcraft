@@ -853,3 +853,19 @@ export interface UpdateTransactionRequest {
   categories?: { categoryId: number; amount: DecimalMoneyString; comment?: string }[];
   taxCategories?: { type: string; amount: DecimalMoneyString }[];
 }
+
+export interface AddOfflineAccountRequest {
+  name: string;
+  balance: DecimalMoneyString;
+  type: string;
+  subtype: string;
+  tracking: TrackingType;
+  rate?: number;
+  startDate: string;
+}
+
+export interface AddOfflineInstitutionRequest {
+  institution: { name: string };
+  accounts: Omit<AddOfflineAccountRequest, 'startDate'>[];
+  startDate: string;
+}
