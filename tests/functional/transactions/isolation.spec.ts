@@ -1,3 +1,4 @@
+import { transactionRequest } from '../../helpers/transactionRequest.js'
 import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { writeHistoricalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { test } from '@japa/runner'
@@ -102,7 +103,7 @@ test.group('Transaction budget isolation', (group) => {
   test('owner and shared-budget user can update a transaction').with(['owner', 'shared']).run(async ({ client, assert }, actor) => {
     const user = actor === 'owner' ? fixture.own.user : fixture.shared
     const response = await client.patch(`/api/v1/transaction/${fixture.own.transaction.id}`)
-      .json({ version: 0, name: 'Updated purchase', amount: 15, categories: [{ categoryId: fixture.own.category.id, amount: 15 }] })
+      .json(transactionRequest({ version: 0, name: 'Updated purchase', amount: 15, categories: [{ categoryId: fixture.own.category.id, amount: 15 }] }))
       .accept('json').loginAs(user)
     response.assertStatus(200)
     assert.equal((await Account.findOrFail(fixture.own.account.id)).balance, 105)
@@ -114,7 +115,7 @@ test.group('Transaction budget isolation', (group) => {
   test('foreign transaction update leaves both budgets unchanged', async ({ client, assert }) => {
     const before = await state()
     const response = await client.patch(`/api/v1/transaction/${fixture.foreign.transaction.id}`)
-      .json({ version: 0, name: 'Unauthorized update', amount: 999 }).accept('json').loginAs(fixture.own.user)
+      .json(transactionRequest({ version: 0, name: 'Unauthorized update', amount: 999 })).accept('json').loginAs(fixture.own.user)
     assert.deepEqual(await state(), before)
     response.assertStatus(404)
   })
@@ -122,10 +123,10 @@ test.group('Transaction budget isolation', (group) => {
   test('foreign category rejects the whole own-transaction update', async ({ client, assert }) => {
     const before = await state()
     const response = await client.patch(`/api/v1/transaction/${fixture.own.transaction.id}`)
-      .json({ version: 0, amount: 999, categories: [
+      .json(transactionRequest({ version: 0, amount: 999, categories: [
         { categoryId: fixture.own.category.id, amount: 10 },
         { categoryId: fixture.foreign.category.id, amount: 989 },
-      ] }).accept('json').loginAs(fixture.own.user)
+      ] })).accept('json').loginAs(fixture.own.user)
     assert.deepEqual(await state(), before)
     response.assertStatus(404)
   })
@@ -133,7 +134,7 @@ test.group('Transaction budget isolation', (group) => {
   test('foreign statement rejects the whole own-transaction update', async ({ client, assert }) => {
     const before = await state()
     const response = await client.patch(`/api/v1/transaction/${fixture.own.transaction.id}`)
-      .json({ version: 0, amount: 999, statementId: fixture.foreign.statement.id }).accept('json').loginAs(fixture.own.user)
+      .json(transactionRequest({ version: 0, amount: 999, statementId: fixture.foreign.statement.id })).accept('json').loginAs(fixture.own.user)
     assert.deepEqual(await state(), before)
     response.assertStatus(404)
   })
@@ -143,7 +144,7 @@ test.group('Transaction budget isolation', (group) => {
     for (const statementId of [fixture.own.statement.id, null]) {
       const transaction = await Transaction.findOrFail(fixture.own.transaction.id)
       const response = await client.patch(`/api/v1/transaction/${transaction.id}`)
-        .json({ version: transaction.version, statementId }).accept('json').loginAs(user)
+        .json(transactionRequest({ version: transaction.version, statementId })).accept('json').loginAs(user)
       response.assertStatus(200)
       assert.equal((await AccountTransaction.findOrFail(fixture.own.accountTransaction.id)).statementId, statementId)
     }
@@ -163,8 +164,8 @@ test.group('Transaction budget isolation', (group) => {
     await fixture.own.accountTransaction.merge({ statementId: fixture.own.statement.id }).save()
     const before = await state([otherAccount.id])
     const response = await client.patch(`/api/v1/transaction/${fixture.own.transaction.id}`)
-      .json({ version: 0, statementId: otherStatement.id, amount: 999, name: 'Rejected update',
-        categories: [{ categoryId: fixture.own.category.id, amount: 999 }] })
+      .json(transactionRequest({ version: 0, statementId: otherStatement.id, amount: 999, name: 'Rejected update',
+        categories: [{ categoryId: fixture.own.category.id, amount: 999 }] }))
       .accept('json').loginAs(user)
     assert.equal((await AccountTransaction.findOrFail(fixture.own.accountTransaction.id)).statementId,
       fixture.own.statement.id)
@@ -175,7 +176,7 @@ test.group('Transaction budget isolation', (group) => {
   test('nonexistent statement retains not-found behavior without mutation', async ({ client, assert }) => {
     const before = await state()
     const response = await client.patch(`/api/v1/transaction/${fixture.own.transaction.id}`)
-      .json({ version: 0, statementId: 2147483647, amount: 999 }).accept('json').loginAs(fixture.own.user)
+      .json(transactionRequest({ version: 0, statementId: 2147483647, amount: 999 })).accept('json').loginAs(fixture.own.user)
     assert.deepEqual(await state(), before)
     response.assertStatus(404)
   })
@@ -198,7 +199,7 @@ test.group('Transaction budget isolation', (group) => {
     const before = await state()
     const url = `/api/v1/transaction/${fixture.own.transaction.id}`
     const response = operation === 'patch'
-      ? await client.patch(url).json({ version: 0, categories: [{ categoryId: fixture.own.category.id, amount: 10 }] }).accept('json').loginAs(fixture.own.user)
+      ? await client.patch(url).json(transactionRequest({ version: 0, categories: [{ categoryId: fixture.own.category.id, amount: 10 }] })).accept('json').loginAs(fixture.own.user)
       : await client.delete(url).accept('json').loginAs(fixture.own.user)
     assert.deepEqual(await state(), before)
     response.assertStatus(404)
@@ -209,7 +210,7 @@ test.group('Transaction budget isolation', (group) => {
     const before = await state()
     const url = `/api/v1/transaction/${fixture.own.transaction.id}`
     const response = operation === 'patch'
-      ? await client.patch(url).json({ version: 0, amount: 999 }).accept('json').loginAs(fixture.own.user)
+      ? await client.patch(url).json(transactionRequest({ version: 0, amount: 999 })).accept('json').loginAs(fixture.own.user)
       : await client.delete(url).accept('json').loginAs(fixture.own.user)
     assert.deepEqual(await state(), before)
     response.assertStatus(404)

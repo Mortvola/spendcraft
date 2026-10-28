@@ -1,3 +1,4 @@
+import { transactionRequest } from '../../helpers/transactionRequest.js'
 // Requires task-specific DB authorization and independent per-statement safeguards.
 import { test } from '@japa/runner'
 import { mock } from 'node:test'
@@ -127,8 +128,8 @@ async function funding(client: ApiClient, f: Fixture, type = 2, amount = 20, sta
   response.assertStatus(status)
 }
 async function create(client: ApiClient, f: Fixture, categoryId = f.category.id, status = 200) {
-  const response = await client.post(`/api/v1/account/${f.account.id}/transactions`).json({ date: '2025-02-10', name: 'Gate posting',
-    amount: 10, categories: [{ categoryId, amount: 10 }] }).loginAs(f.user)
+  const response = await client.post(`/api/v1/account/${f.account.id}/transactions`).json(transactionRequest({ date: '2025-02-10', name: 'Gate posting',
+    amount: 10, categories: [{ categoryId, amount: 10 }] })).loginAs(f.user)
   response.assertStatus(status)
 }
 async function remove(client: ApiClient, f: Fixture, status: number, id = f.category.id) {
@@ -164,8 +165,8 @@ function ofx() {
 async function restorableOfx(client: ApiClient, f: Fixture) {
   ;(await client.post(`/api/v1/account/${f.account.id}/ofx`).unsafeJson(ofx()).type('text/plain').loginAs(f.user)).assertStatus(200)
   const target = await f.budget.related('transactions').query().where('type', 0).firstOrFail()
-  ;(await client.patch(`/api/v1/transaction/${target.id}`).json({ version: target.version,
-    categories: [{ categoryId: f.category.id, amount: 10 }] }).loginAs(f.user)).assertStatus(200)
+  ;(await client.patch(`/api/v1/transaction/${target.id}`).json(transactionRequest({ version: target.version,
+    categories: [{ categoryId: f.category.id, amount: 10 }] })).loginAs(f.user)).assertStatus(200)
   ;(await client.delete(`/api/v1/transaction/${target.id}`).loginAs(f.user)).assertStatus(200)
   equal((await Category.findOrFail(f.category.id)).balance, 0)
 }
@@ -371,7 +372,7 @@ test.group('Category deletion admission vs protected writers', (group) => {
       if (writer === 'plaid') return sync(client, f)
       const response = writer === 'ofx'
         ? await client.post(`/api/v1/account/${f.account.id}/ofx`).unsafeJson(ofx()).type('text/plain').loginAs(f.user)
-        : await client.patch(`/api/v1/transaction/${targetId}`).json({ version: 0, categories: [{ categoryId: f.category.id, amount: 10 }] }).loginAs(f.user)
+        : await client.patch(`/api/v1/transaction/${targetId}`).json(transactionRequest({ version: 0, categories: [{ categoryId: f.category.id, amount: 10 }] })).loginAs(f.user)
       response.assertStatus(200)
     }
     try {
@@ -390,7 +391,7 @@ test.group('Category deletion admission vs protected writers', (group) => {
       await contend(f.category.id, true, () => remove(client, f, 204), async () => {
         if (writer === 'create') return create(client, f, f.category.id, 404)
         if (writer === 'funding' || writer === 'rebalance') return funding(client, f, writer === 'funding' ? 2 : 3, 10, 404)
-        const response = await client.patch(`/api/v1/transaction/${id}`).json({ version: 0, categories: [{ categoryId: f.category.id, amount: 10 }] }).loginAs(f.user)
+        const response = await client.patch(`/api/v1/transaction/${id}`).json(transactionRequest({ version: 0, categories: [{ categoryId: f.category.id, amount: 10 }] })).loginAs(f.user)
         response.assertStatus(404)
       })
       deepStrictEqual(await state(), before)
@@ -418,7 +419,7 @@ test.group('Category deletion admission vs protected writers', (group) => {
     const f = await fixture(); await create(client, f)
     const target = await f.budget.related('transactions').query().where('type', 5).firstOrFail()
     await contend(f.category.id, false, async () => {
-      const response = await client.patch(`/api/v1/transaction/${target.id}`).json({ version: 0, categories: [{ categoryId: f.other.id, amount: 10 }] }).loginAs(f.user)
+      const response = await client.patch(`/api/v1/transaction/${target.id}`).json(transactionRequest({ version: 0, categories: [{ categoryId: f.other.id, amount: 10 }] })).loginAs(f.user)
       response.assertStatus(200)
     }, () => remove(client, f, 204))
     equal(await Category.find(f.category.id), null); equal((await Category.findOrFail(f.other.id)).balance, 10)

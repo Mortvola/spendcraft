@@ -590,12 +590,7 @@ export interface StoreInterface {
   refresh(): void;
 }
 
-export interface AddTransactionRequest {
-  date?: string,
-  name?: string,
-  amount?: number,
-  categories:(TransactionCategoryInterface | NewTransactionCategoryInterface)[],
-}
+export type { AddTransactionRequest } from '../../common/ResponseTypes';
 
 export type { AddStatementRequest } from '../../common/ResponseTypes';
 

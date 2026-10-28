@@ -1,3 +1,4 @@
+import { transactionRequest } from '../../helpers/transactionRequest.js'
 import { statementRequest } from '../../helpers/statementRequest.js'
 import { test } from '@japa/runner'
 import type { ApiClient } from '@japa/api-client'
@@ -34,7 +35,7 @@ test.group('Statement transaction eligibility', (group) => {
 
   async function createTransaction(client: ApiClient, amount: number, date = '2025-02-10') {
     const response = await client.post(`/api/v1/account/${fixture.account.id}/transactions`)
-      .json({ date, name: 'Eligibility movement', amount, categories: [] }).accept('json').loginAs(fixture.user)
+      .json(transactionRequest({ date, name: 'Eligibility movement', amount, categories: [] })).accept('json').loginAs(fixture.user)
     response.assertStatus(200)
     const transaction = await Transaction.findOrFail(response.body().transaction.id)
     const row = await AccountTransaction.findByOrFail('transactionId', transaction.id)
@@ -185,7 +186,7 @@ test.group('Statement transaction eligibility', (group) => {
     const pending = await createTransaction(client, 20)
     await pending.row.merge({ pending: true }).save()
     const response = await client.patch(`/api/v1/transaction/${pending.transaction.id}`)
-      .json({ version: pending.transaction.version, statementId: statement.id }).accept('json').loginAs(fixture.user)
+      .json(transactionRequest({ version: pending.transaction.version, statementId: statement.id })).accept('json').loginAs(fixture.user)
     response.assertStatus(200)
     assert.equal((await AccountTransaction.findOrFail(pending.row.id)).statementId, statement.id)
     const listed = await totals(client, statement.id)

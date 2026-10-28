@@ -1,3 +1,4 @@
+import { transactionRequest } from '../../helpers/transactionRequest.js'
 import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 // Prepared only. Requires fresh task-specific DB authorization and the accepted
 // configured/live pg + pgLog + execution-connection safeguards in test bootstrap.
@@ -35,9 +36,9 @@ test.group('Account/Category eligibility correction (prepared)', () => {
     const f = await fixture()
     const pool = await f.budget.getFundingPoolCategory()
     const poolBefore = pool.balance
-    const response = await client.post(`/api/v1/account/${f.account.id}/transactions`).json({
+    const response = await client.post(`/api/v1/account/${f.account.id}/transactions`).json(transactionRequest({
       date, amount, name: 'Boundary create', categories: [{ categoryId: f.category.id, amount }],
-    }).loginAs(f.user)
+    })).loginAs(f.user)
     response.assertStatus(200)
     const transaction = await Transaction.findOrFail(response.body().transaction.id)
     const link = await AccountTransaction.findByOrFail('transactionId', transaction.id)
@@ -60,7 +61,7 @@ test.group('Account/Category eligibility correction (prepared)', () => {
       const link = await f.account.related('accountTransactions').create({ transactionId: transaction.id,
         name: 'Crossing', amount: -10, pending, provider: 'NONE' })
       for (const [version, date] of [dates[1], dates[2], dates[0]].entries()) {
-        const response = await client.patch(`/api/v1/transaction/${transaction.id}`).json({ version, date }).loginAs(f.user)
+        const response = await client.patch(`/api/v1/transaction/${transaction.id}`).json(transactionRequest({ version, date })).loginAs(f.user)
         response.assertStatus(200)
         assert.equal((await Account.findOrFail(f.account.id)).balance, 100 + (date >= dates[1] && !pending ? -10 : 0))
         assert.equal((await Category.findOrFail(f.category.id)).balance, date >= dates[1] ? -10 : 0)
@@ -70,22 +71,22 @@ test.group('Account/Category eligibility correction (prepared)', () => {
 
   test('PATCH ineligible nominal replacement, duplicate IDs, and metadata noninterference', async ({ client, assert }) => {
     const f = await fixture()
-    const created = await client.post(`/api/v1/account/${f.account.id}/transactions`).json({
+    const created = await client.post(`/api/v1/account/${f.account.id}/transactions`).json(transactionRequest({
       date: dates[0], amount: 10, name: 'Before', categories: [{ categoryId: f.category.id, amount: 10 }],
-    }).loginAs(f.user)
+    })).loginAs(f.user)
     created.assertStatus(200)
     const id: number = created.body().transaction.id
     const categories = [{ categoryId: f.category.id, amount: 7 }, { categoryId: f.category.id, amount: 13 }]
-    const replacement = await client.patch(`/api/v1/transaction/${id}`).json({ version: 0, amount: 20, categories }).loginAs(f.user)
+    const replacement = await client.patch(`/api/v1/transaction/${id}`).json(transactionRequest({ version: 0, amount: 20, categories })).loginAs(f.user)
     replacement.assertStatus(200)
     assert.equal((await Account.findOrFail(f.account.id)).balance, 100)
     assert.equal((await Category.findOrFail(f.category.id)).balance, 0)
-    const crossing = await client.patch(`/api/v1/transaction/${id}`).json({ version: 1, date: dates[1] }).loginAs(f.user)
+    const crossing = await client.patch(`/api/v1/transaction/${id}`).json(transactionRequest({ version: 1, date: dates[1] })).loginAs(f.user)
     crossing.assertStatus(200)
     assert.equal((await Account.findOrFail(f.account.id)).balance, 120)
     assert.equal((await Category.findOrFail(f.category.id)).balance, 20)
     assert.deepEqual((await Transaction.findOrFail(id)).categories, categories)
-    const metadata = await client.patch(`/api/v1/transaction/${id}`).json({ version: 2, name: 'Renamed', comment: 'Only metadata', statementId: null }).loginAs(f.user)
+    const metadata = await client.patch(`/api/v1/transaction/${id}`).json(transactionRequest({ version: 2, name: 'Renamed', comment: 'Only metadata', statementId: null })).loginAs(f.user)
     metadata.assertStatus(200)
     assert.equal((await Account.findOrFail(f.account.id)).balance, 120)
     assert.equal((await Category.findOrFail(f.category.id)).balance, 20)
@@ -103,7 +104,7 @@ test.group('Additional PATCH effect isolation (prepared)', () => {
       amount: 10, name: 'Imported', pending: false, provider: 'OFX' })
     await f.account.merge({ balance: 110 }).save()
     await f.category.merge({ balance: 10 }).save()
-    const response = await client.patch(`/api/v1/transaction/${transaction.id}`).json({ version: 0, amount: 20 }).loginAs(f.user)
+    const response = await client.patch(`/api/v1/transaction/${transaction.id}`).json(transactionRequest({ version: 0, amount: 20 })).loginAs(f.user)
     response.assertStatus(422)
     assert.equal((await Account.findOrFail(f.account.id)).balance, 110)
     assert.equal((await Category.findOrFail(f.category.id)).balance, 10)
@@ -112,9 +113,9 @@ test.group('Additional PATCH effect isolation (prepared)', () => {
 
   test('late transaction failure rolls back Account, Category and nominal PATCH state', async ({ client, assert }) => {
     const f = await fixture()
-    const created = await client.post(`/api/v1/account/${f.account.id}/transactions`).json({
+    const created = await client.post(`/api/v1/account/${f.account.id}/transactions`).json(transactionRequest({
       date: dates[0], amount: 10, name: 'Late rollback', categories: [{ categoryId: f.category.id, amount: 10 }],
-    }).loginAs(f.user)
+    })).loginAs(f.user)
     created.assertStatus(200)
     const id: number = created.body().transaction.id
     const snapshot = () => Promise.all([
@@ -132,8 +133,8 @@ test.group('Additional PATCH effect isolation (prepared)', () => {
       return original.call(this)
     }
     try {
-      const response = await client.patch(`/api/v1/transaction/${id}`).json({ version: 0, date: dates[1],
-        amount: 20, categories: [{ categoryId: f.category.id, amount: 20 }] }).loginAs(f.user)
+      const response = await client.patch(`/api/v1/transaction/${id}`).json(transactionRequest({ version: 0, date: dates[1],
+        amount: 20, categories: [{ categoryId: f.category.id, amount: 20 }] })).loginAs(f.user)
       response.assertStatus(500)
       assert.equal((await Account.findOrFail(f.account.id)).balance, 100)
       assert.equal((await Category.findOrFail(f.category.id)).balance, 0)
@@ -158,9 +159,9 @@ test.group('Eligibility verification edge cases', () => {
         amount: 10, name: 'Partial edit', pending: false, provider: 'OFX' })
       await f.account.merge({ balance: eligible ? 110 : 100 }).save()
       await f.category.merge({ balance: eligible ? 10 : 0 }).save()
-      const response = await client.patch(`/api/v1/transaction/${transaction.id}`).json({ version: 0,
+      const response = await client.patch(`/api/v1/transaction/${transaction.id}`).json(transactionRequest({ version: 0,
         ...(field === 'amount' ? { amount: 20 } : { categories: [{ categoryId: unassigned.id, amount: 10 }] }),
-      }).loginAs(f.user)
+      })).loginAs(f.user)
       if (field === 'amount') {
         response.assertStatus(422)
         assert.equal((await Account.findOrFail(f.account.id)).balance, eligible ? 110 : 100)
@@ -177,16 +178,16 @@ test.group('Eligibility verification edge cases', () => {
   test('combined date/amount/allocation replacement applies just the final old/new effects')
     .with([true, false]).run(async ({ client, assert }, entering) => {
       const f = await fixture()
-      const created = await client.post(`/api/v1/account/${f.account.id}/transactions`).json({
+      const created = await client.post(`/api/v1/account/${f.account.id}/transactions`).json(transactionRequest({
         date: entering ? dates[0] : dates[1], name: 'Combined edit', amount: 10,
         categories: [{ categoryId: f.category.id, amount: 10 }],
-      }).loginAs(f.user)
+      })).loginAs(f.user)
       created.assertStatus(200)
       const unassigned = await f.budget.getUnassignedCategory()
-      const response = await client.patch(`/api/v1/transaction/${created.body().transaction.id}`).json({ version: 0,
+      const response = await client.patch(`/api/v1/transaction/${created.body().transaction.id}`).json(transactionRequest({ version: 0,
         date: entering ? dates[1] : dates[0], amount: -20,
         categories: [{ categoryId: unassigned.id, amount: -20 }],
-      }).loginAs(f.user)
+      })).loginAs(f.user)
       response.assertStatus(200)
       assert.equal((await Account.findOrFail(f.account.id)).balance, entering ? 80 : 100)
       assert.equal((await Category.findOrFail(f.category.id)).balance, 0)
@@ -203,9 +204,9 @@ test.group('Eligibility verification edge cases', () => {
       name: 'Old inconsistent effect', amount: 10, pending: false, provider: 'NONE' })
     await f.category.merge({ balance: 999 }).save()
     const oldState = await db.from('transactions').where('id', old.id).firstOrFail()
-    const response = await client.post(`/api/v1/account/${f.account.id}/transactions`).json({
+    const response = await client.post(`/api/v1/account/${f.account.id}/transactions`).json(transactionRequest({
       date: dates[1], name: 'Unrelated forward event', amount: 5, categories: [{ categoryId: f.category.id, amount: 5 }],
-    }).loginAs(f.user)
+    })).loginAs(f.user)
     response.assertStatus(200)
     assert.equal((await Account.findOrFail(f.account.id)).balance, 105)
     assert.equal((await Category.findOrFail(f.category.id)).balance, 1004)

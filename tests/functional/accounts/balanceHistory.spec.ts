@@ -1,3 +1,4 @@
+import { transactionRequest } from '../../helpers/transactionRequest.js'
 // Prepared only: requires fresh authorization and current independent DB safeguards.
 // Old tests encoded history->Account writes. Product deprecation removes that API
 // rather than correcting it; retain legacy rows to prove noninterference.
@@ -59,7 +60,7 @@ test.group('BalanceHistory runtime deprecation (prepared)', () => {
     const before = await history(f)
     const unassigned = await f.budget.getUnassignedCategory()
     const create = await client.post(`/api/v1/account/${f.account.id}/transactions`)
-      .json({ date: '2025-02-10', name: 'Ordinary', amount: 10, categories: [] }).loginAs(f.user)
+      .json(transactionRequest({ date: '2025-02-10', name: 'Ordinary', amount: 10, categories: [] })).loginAs(f.user)
     create.assertStatus(200)
     assert.equal((await Account.findOrFail(f.account.id)).balance, 110)
     const chart = await client.get(`/api/v1/account/${f.account.id}/balances`).loginAs(f.user)
@@ -67,8 +68,8 @@ test.group('BalanceHistory runtime deprecation (prepared)', () => {
     assert.strictEqual(chart.body()[0].balance, '110.00')
     assert.notProperty(chart.body()[0], 'id')
     const target = await f.account.related('accountTransactions').query().whereHas('transaction', (query) => query.where('type', 5)).firstOrFail()
-    ;(await client.patch(`/api/v1/transaction/${target.transactionId}`).json({ version: 0, amount: 7,
-      categories: [{ categoryId: unassigned.id, amount: 7 }] }).loginAs(f.user)).assertStatus(200)
+    ;(await client.patch(`/api/v1/transaction/${target.transactionId}`).json(transactionRequest({ version: 0, amount: 7,
+      categories: [{ categoryId: unassigned.id, amount: 7 }] })).loginAs(f.user)).assertStatus(200)
     assert.equal((await Account.findOrFail(f.account.id)).balance, 107)
     ;(await client.delete(`/api/v1/transaction/${target.transactionId}`).loginAs(f.user)).assertStatus(200)
     assert.equal((await Account.findOrFail(f.account.id)).balance, 100)

@@ -1,3 +1,4 @@
+import { transactionRequest } from '../../helpers/transactionRequest.js'
 // PREPARED ONLY: do not run without fresh task-specific DB authorization and
 // review of tests/bootstrap.ts destructive setup/cleanup safety.
 import { test } from '@japa/runner'
@@ -51,9 +52,9 @@ function ofx(amount: number, ledger: number, id: string) {
     + `<LEDGERBAL><BALAMT>${ledger}</LEDGERBAL></CCSTMTRS></CCSTMTTRNRS></CREDITCARDMSGSRSV1></OFX>`
 }
 async function create(client: ApiClient, f: Fixture, amount: number) {
-  const response = await client.post(`/api/v1/account/${f.account.id}/transactions`).json({
+  const response = await client.post(`/api/v1/account/${f.account.id}/transactions`).json(transactionRequest({
     name: `Manual ${amount}`, date: '2025-02-10', amount, categories: [],
-  }).loginAs(f.user)
+  })).loginAs(f.user)
   response.assertStatus(200)
 }
 async function execute(client: ApiClient, f: Fixture, operation: Operation, target?: Transaction) {
@@ -68,8 +69,8 @@ async function execute(client: ApiClient, f: Fixture, operation: Operation, targ
   if (!target) throw new Error('Missing seed Transaction')
   const response = operation === 'delete'
     ? await client.delete(`/api/v1/transaction/${target.id}`).loginAs(f.user)
-    : await client.patch(`/api/v1/transaction/${target.id}`).json({ version: target.version, amount: 6,
-      categories: [{ categoryId: f.unassigned.id, amount: 6 }] }).loginAs(f.user)
+    : await client.patch(`/api/v1/transaction/${target.id}`).json(transactionRequest({ version: target.version, amount: 6,
+      categories: [{ categoryId: f.unassigned.id, amount: 6 }] })).loginAs(f.user)
   response.assertStatus(200)
 }
 async function seed(client: ApiClient, f: Fixture) {
@@ -180,9 +181,9 @@ test.group('Bounded Account writer PostgreSQL serialization (prepared)', () => {
       }
       return saved
     })
-    const first = client.post(`/api/v1/account/${f.account.id}/transactions`).json({
+    const first = client.post(`/api/v1/account/${f.account.id}/transactions`).json(transactionRequest({
       name: 'Rolled back CREATE', date: '2025-02-10', amount: 10, categories: [],
-    }).loginAs(f.user).then((response) => { response.assertStatus(500) })
+    })).loginAs(f.user).then((response) => { response.assertStatus(500) })
     let waiter: Promise<void> | undefined
     try {
       await entered.promise

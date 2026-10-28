@@ -1,3 +1,4 @@
+import { transactionRequest } from '../../helpers/transactionRequest.js'
 import { categoryRequest } from '../../helpers/categoryRequest.js'
 import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 // Task-authorized test fixtures only. All SQL uses the accepted bootstrap driver guard.
@@ -87,9 +88,9 @@ test.group('Staged real writer pair PostgreSQL regressions', (group) => {
     .run(async ({ client, assert }, scenario) => {
       const f = await fixture()
       const pool = await f.budget.getFundingPoolCategory()
-      const posting = () => client.post(`/api/v1/account/${f.account.id}/transactions`).json({
+      const posting = () => client.post(`/api/v1/account/${f.account.id}/transactions`).json(transactionRequest({
         date: '2025-02-02', name: 'Concurrent posting', amount: 5, categories: [{ categoryId: f.category.id, amount: 5 }],
-      }).loginAs(f.user).then((r) => r.assertStatus(scenario.postingFirst ? 200 : 404))
+      })).loginAs(f.user).then((r) => r.assertStatus(scenario.postingFirst ? 200 : 404))
       const deletion = () => client.delete(scenario.institution ? `/api/v1/institution/${f.institution.id}`
         : `/api/v1/institution/${f.institution.id}/accounts/${f.account.id}`).loginAs(f.user).then((r) => r.assertStatus(200))
       await pair(Account, scenario.postingFirst ? 'save' : 'delete', (row) => row instanceof Account && row.id === f.account.id,
@@ -106,8 +107,8 @@ test.group('Staged real writer pair PostgreSQL regressions', (group) => {
     const f = await fixture()
     await pair(Account, 'delete', (row) => row instanceof Account && row.id === f.account.id,
       () => client.delete(`/api/v1/institution/${f.institution.id}/accounts/${f.account.id}`).loginAs(f.user).then((r) => r.assertStatus(500)),
-      () => client.post(`/api/v1/account/${f.account.id}/transactions`).json({ date: '2025-02-02', name: 'After rollback', amount: 5,
-        categories: [{ categoryId: f.category.id, amount: 5 }] }).loginAs(f.user).then((r) => r.assertStatus(200)), true)
+      () => client.post(`/api/v1/account/${f.account.id}/transactions`).json(transactionRequest({ date: '2025-02-02', name: 'After rollback', amount: 5,
+        categories: [{ categoryId: f.category.id, amount: 5 }] })).loginAs(f.user).then((r) => r.assertStatus(200)), true)
     assert.equal((await Account.findOrFail(f.account.id)).balance, 110)
     assert.equal((await Category.findOrFail(f.category.id)).balance, 10)
     assert.lengthOf(await db.from('transactions').where('application_id', f.budget.id), 2)

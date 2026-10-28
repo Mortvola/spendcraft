@@ -1,3 +1,4 @@
+import { transactionRequest } from '../../helpers/transactionRequest.js'
 import { categoryRequest } from '../../helpers/categoryRequest.js'
 import { statementRequest } from '../../helpers/statementRequest.js'
 import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
@@ -90,8 +91,8 @@ test.group('Monetary persistence and allocation regressions', () => {
     const f = await fixture()
     for (let i = 0; i < 3; i++) {
       const response = await client.post(`/api/v1/account/${f.account.id}/transactions`)
-        .json({ date: '2025-02-10', name: `Repeated sub-cent ${i}`, amount: 0.004,
-          categories: [{ categoryId: f.categories[0].id, amount: 0.004 }] }).accept('json').loginAs(f.user)
+        .json(transactionRequest({ date: '2025-02-10', name: `Repeated sub-cent ${i}`, amount: 0.004,
+          categories: [{ categoryId: f.categories[0].id, amount: 0.004 }] })).accept('json').loginAs(f.user)
       response.assertStatus(200)
     }
     const transactions = await f.budget.related('transactions').query()
@@ -106,16 +107,17 @@ test.group('Monetary persistence and allocation regressions', () => {
     assert.deepEqual(stored.map(row => row.categories[0].amount), ['0.00', '0.00', '0.00'])
   })
 
-  test('fractional-cent HTTP inputs enforce encoded allocation versus decimal-column conservation')
+  test('client-rounded HTTP inputs preserve allocation and decimal-column conservation')
     .with([0, 0.01, -0.01, 0.004, 0.005, 0.006, -0.004, -0.005, -0.006, 1.234, -1.234, '0.005', '-0.005', '1.23', '0.01', '1.234', 0.1 + 0.2])
     .run(async ({ client, assert }, amount) => {
       const f = await fixture()
-      const decimal = (await db.rawQuery('SELECT CAST(? AS numeric(12,2))::text AS amount', [Number(amount)])).rows[0].amount
+      const encoded = encodeMonetaryAmount(Number(amount))
+      const decimal = (await db.rawQuery('SELECT CAST(? AS numeric(12,2))::text AS amount', [encoded])).rows[0].amount
       const conserves = monetaryAmountCents(Number(amount)) === monetaryAmountCents(decimal)
       const before = await db.from('categories').whereIn('id', f.categories.map((row) => row.id)).orderBy('id')
       const response = await client.post(`/api/v1/account/${f.account.id}/transactions`)
-        .json({ date: '2025-02-10', name: 'Fractional cent', amount,
-          categories: [{ categoryId: f.categories[0].id, amount }] }).accept('json').loginAs(f.user)
+        .json(transactionRequest({ date: '2025-02-10', name: 'Fractional cent', amount: encoded,
+          categories: [{ categoryId: f.categories[0].id, amount: encoded }] })).accept('json').loginAs(f.user)
       const association = await f.account.related('accountTransactions').query().first()
       const transaction = association ? await Transaction.findOrFail(association.transactionId) : null
       const category = await Category.findOrFail(f.categories[0].id)
@@ -165,9 +167,9 @@ test.group('Monetary persistence and allocation regressions', () => {
         transactionId: transaction.id, name: 'Precision update', amount: 0, pending: false, provider: 'NONE',
       })
       const response = await client.patch(`/api/v1/transaction/${transaction.id}`)
-        .json({ version: 0, amount: input, categories: [{ categoryId: f.categories[0].id, amount: input }] })
+        .json(transactionRequest({ version: 0, amount: encodeMonetaryAmount(amount), categories: [{ categoryId: f.categories[0].id, amount: encodeMonetaryAmount(amount) }] }))
         .accept('json').loginAs(f.user)
-      const decimal = (await db.rawQuery('SELECT CAST(? AS numeric(12,2))::text AS amount', [amount])).rows[0].amount
+      const decimal = (await db.rawQuery('SELECT CAST(? AS numeric(12,2))::text AS amount', [encodeMonetaryAmount(amount)])).rows[0].amount
       const conserves = monetaryAmountCents(amount) === monetaryAmountCents(decimal)
       response.assertStatus(conserves ? 200 : 422)
       assert.equal((await Transaction.findOrFail(transaction.id)).categories[0].amount, conserves ? monetaryAmountCents(amount) / 100 : 0)

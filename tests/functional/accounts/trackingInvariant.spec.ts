@@ -1,3 +1,4 @@
+import { transactionRequest } from '../../helpers/transactionRequest.js'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
 import { DateTime } from 'luxon'
@@ -59,7 +60,7 @@ test.group('Balance-tracked invariant enforcement', (group) => {
         : [{ categoryId: category.id, amount: scenario.amount }]
       const before = await snapshot()
       const response = await client.post(`/api/v1/account/${f.account.id}/transactions`)
-        .json({ date: '2025-02-10', name: 'Invalid balance-tracked creation', amount: scenario.amount, categories })
+        .json(transactionRequest({ date: '2025-02-10', name: 'Invalid balance-tracked creation', amount: scenario.amount, categories }))
         .accept('json').loginAs(f.user)
       response.assertStatus(422)
       assert.deepEqual(await snapshot(), before)
@@ -70,7 +71,7 @@ test.group('Balance-tracked invariant enforcement', (group) => {
     await f.account.related('accountTransactions').create({ transactionId: transaction.id, amount: 10, name: 'Historical invalid row', pending: false, provider: 'NONE' })
     await category.merge({ balance: 10 }).save()
     const before = await snapshot()
-    const response = await client.patch(`/api/v1/transaction/${transaction.id}`).json({ version: 0, amount: 20, categories: [{ categoryId: category.id, amount: 20 }] }).accept('json').loginAs(f.user)
+    const response = await client.patch(`/api/v1/transaction/${transaction.id}`).json(transactionRequest({ version: 0, amount: 20, categories: [{ categoryId: category.id, amount: 20 }] })).accept('json').loginAs(f.user)
     response.assertStatus(422)
     assert.deepEqual(await snapshot(), before)
   })

@@ -1,3 +1,4 @@
+import { transactionRequest } from '../../helpers/transactionRequest.js'
 import financialAssert from 'node:assert/strict'
 import { mock } from 'node:test'
 import Category from '#models/Category'
@@ -72,9 +73,9 @@ test.group('OFX reimport financial consistency', () => {
 
   async function categorize(client: ApiClient, f: Awaited<ReturnType<typeof fixture>>, multiple: boolean) {
     const association = await imported(f)
-    const response = await client.patch(`/api/v1/transaction/${association.transactionId}`).json({ version: (await Transaction.findOrFail(association.transactionId)).version, categories: multiple
+    const response = await client.patch(`/api/v1/transaction/${association.transactionId}`).json(transactionRequest({ version: (await Transaction.findOrFail(association.transactionId)).version, categories: multiple
       ? [{ categoryId: f.first.id, amount: 4, comment: 'Preserve first allocation' }, { categoryId: f.second.id, amount: 6, comment: 'Preserve second allocation' }]
-      : [{ categoryId: f.first.id, amount: 10, comment: 'Preserve allocation' }] }).accept('json').loginAs(f.user)
+      : [{ categoryId: f.first.id, amount: 10, comment: 'Preserve allocation' }] })).accept('json').loginAs(f.user)
     response.assertStatus(200)
   }
 

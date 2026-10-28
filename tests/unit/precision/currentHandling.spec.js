@@ -72,12 +72,12 @@ test.group('Current monetary handling without database', () => {
     assert.isTrue(Object.is(Math.round(-0.005 * 100) / 100, -0))
     assert.equal(Math.round(1.005 * 100) / 100, 1)
   })
-  test('Vine numeric input accepts subcents without cent normalization', async ({ assert }) => {
-    for (const amount of ['1.005', '1e-2', 0.1 + 0.2, '', ' ', false, true, '0x10']) {
+  test('Transaction requests require canonical strings and decode without intermediate rounding', async ({ assert }) => {
+    for (const amount of ['1.00', '-0.12', '0.30', '0.00']) {
       const value = await addTransaction.validate({ date: '2025-01-01', name: 'Precision', amount, categories: [] })
       assert.equal(value.amount, Number(amount))
     }
-    for (const amount of ['12abc', '1,234.56', null, 'Infinity', Infinity, NaN]) {
+    for (const amount of ['1.005', '1e-2', 0.1 + 0.2, '', ' ', false, true, '0x10', '12abc', null, Infinity, NaN]) {
       await assert.rejects(() => addTransaction.validate({ date: '2025-01-01', name: 'Precision', amount, categories: [] }))
     }
   })

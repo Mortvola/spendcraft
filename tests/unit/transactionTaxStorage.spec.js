@@ -66,9 +66,9 @@ test.group('Tax decimal-string production codec and Lucid boundary (no database)
     undefined, null, true, false, {}, [], NaN, Infinity, -Infinity, '', ' ', '1.2', '1.005', '1e2', '01.00', '-0.00', 'bad',
     Number.MAX_SAFE_INTEGER, Number.MAX_VALUE, '90071992547409.92',
   ]).run(({ assert }, value) => assert.throws(() => encodeMonetaryAmount(value)))
-  test('new raw input rejects unsupported coercions').with([undefined, null, true, false, {}, [], '', ' ', '0x10', '12abc', 'Infinity'])
+  test('new raw input rejects numeric and noncanonical amounts').with([1, 1.005, '1.005', '1e-2', '-.125', ' 1.25 ', undefined, null, true, false, {}, [], '', ' ', '0x10', '12abc', 'Infinity'])
     .run(({ assert }, amount) => assert.throws(() => validateSubmittedTaxAmounts([attribution(amount)])))
-  test('existing numeric-string request syntax is retained and new API values need not be strings').with([1.005, -1.005, '1.005', '1e-2', '-.125', ' 1.25 '])
+  test('canonical request strings are accepted').with(['1.00', '-0.12', '0.00', '0.30'])
     .run(({ assert }, amount) => assert.doesNotThrow(() => validateSubmittedTaxAmounts([attribution(amount)])))
   test('canonical decoding is numeric and leaves raw storage unchanged', ({ assert }) => {
     const original = [attribution('0.30'), { ...attribution('1.23'), metadata: { keep: 1 } }, attribution('-2.00')]
@@ -230,7 +230,7 @@ async function patchFixture(input, { rawInput = input, invalidOwner = false, lat
 
 test.group('Actual tax PATCH controller with inert financial collaborators', () => {
   test('stores strings, returns numbers, holds Budget gate, and never touches other money', async ({ assert }) => {
-    const f = await patchFixture([attribution(1.005), attribution(-0.125), attribution('0.005'), attribution(0, '')])
+    const f = await patchFixture([attribution('1.00'), attribution('-0.12'), attribution('0.01'), attribution('0.00', '')])
     const beforeCategories = f.database.categories
     const response = await f.call()
     assert.deepEqual(JSON.parse(f.database.taxes).map(entry => entry.amount), ['1.00', '-0.12', '0.01'])
@@ -260,13 +260,13 @@ test.group('Actual tax PATCH controller with inert financial collaborators', () 
       assert.notInclude(f.events, 'commit')
     })
   test('ownership rejection occurs before tax replacement or persistence', async ({ assert }) => {
-    const f = await patchFixture([attribution(1)], { invalidOwner: true })
+    const f = await patchFixture([attribution('1.00')], { invalidOwner: true })
     await assert.rejects(f.call)
     assert.notInclude(f.events, 'save')
     assert.include(f.events, 'rollback')
   })
   test('late error propagates through the existing rollback contract', async ({ assert }) => {
-    const f = await patchFixture([attribution(2)], { lateFailure: true })
+    const f = await patchFixture([attribution('2.00')], { lateFailure: true })
     await assert.rejects(f.call)
     assert.include(f.events, 'rollback')
     assert.include(f.events, 'log')

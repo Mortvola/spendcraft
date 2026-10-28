@@ -817,3 +817,24 @@ export const isNetworthReport = (value: unknown): value is NetworthReportRespons
     && row.every((cell: unknown) => typeof cell === 'string')
   ))
 )
+
+export interface AddTransactionRequest {
+  date?: string;
+  name?: string;
+  amount?: DecimalMoneyString;
+  principle?: DecimalMoneyString;
+  comment?: string;
+  categories: { categoryId: number; amount: DecimalMoneyString; comment?: string }[];
+}
+
+export interface UpdateTransactionRequest {
+  version: number;
+  date?: string;
+  name?: string;
+  amount?: DecimalMoneyString;
+  principle?: DecimalMoneyString;
+  comment?: string;
+  statementId?: number | null;
+  categories?: { categoryId: number; amount: DecimalMoneyString; comment?: string }[];
+  taxCategories?: { type: string; amount: DecimalMoneyString }[];
+}

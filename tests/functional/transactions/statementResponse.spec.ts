@@ -1,3 +1,4 @@
+import { transactionRequest } from '../../helpers/transactionRequest.js'
 import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { test } from '@japa/runner'
 import { mock } from 'node:test'
@@ -78,8 +79,8 @@ test.group('Transaction Statement response commit boundary', () => {
       return trx
     })
     cleanup(() => capture.mock.restore())
-    const response = await client.patch(`/api/v1/transaction/${data.transaction.id}`).json({ version: 99,
-      name: 'Updated', statementId: data.statementId }).accept('json').loginAs(data.user)
+    const response = await client.patch(`/api/v1/transaction/${data.transaction.id}`).json(transactionRequest({ version: 99,
+      name: 'Updated', statementId: data.statementId })).accept('json').loginAs(data.user)
     response.assertStatus(409)
     assert.equal(response.body().errors[0].detail, 'The version of the transaction does not match the version stored in the database.')
     assert.equal(commitCalls, 0)
@@ -142,8 +143,8 @@ test.group('Transaction Statement response commit boundary', () => {
       return related.apply(this, args)
     })
     cleanup(() => lookup.mock.restore())
-    const response = await client.patch(`/api/v1/transaction/${data.transaction.id}`).json({ version: 0,
-      name: 'Updated', statementId: data.statementId }).accept('json').loginAs(data.user)
+    const response = await client.patch(`/api/v1/transaction/${data.transaction.id}`).json(transactionRequest({ version: 0,
+      name: 'Updated', statementId: data.statementId })).accept('json').loginAs(data.user)
     response.assertStatus(200)
     events.push('successful response observed')
     assert.isBelow(events.indexOf('production Statement query completed'), events.indexOf('commit completed'))
@@ -214,8 +215,8 @@ test.group('Transaction Statement response commit boundary', () => {
       handled.push(args[0]); return handle.apply(this, args)
     })
     cleanup(() => observer.mock.restore())
-    const response = await client.patch(`/api/v1/transaction/${data.transaction.id}`).json({ version: 0,
-      name: 'Updated', amount: 20, categories: [{ categoryId: data.category.id, amount: 20 }], statementId: data.statementId }).accept('json').loginAs(data.user)
+    const response = await client.patch(`/api/v1/transaction/${data.transaction.id}`).json(transactionRequest({ version: 0,
+      name: 'Updated', amount: 20, categories: [{ categoryId: data.category.id, amount: 20 }], statementId: data.statementId })).accept('json').loginAs(data.user)
     response.assertStatus(500)
     assert.equal(commitCalls, 0)
     assert.isTrue(captured?.isCompleted)

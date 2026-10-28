@@ -25,13 +25,7 @@ export function decodeTaxAttributions(value: unknown): TaxAttribution[] {
   })
 }
 
-// Vine already accepts numeric strings. Retain decimal/exponent strings, but never
-// let booleans, blanks, hex, objects or missing amounts silently become money.
+// Validate the original request independently of numeric runtime/storage encoding.
 export function validateSubmittedTaxAmounts(value: unknown): void {
-  for (const entry of attributions(value)) {
-    const amount = entry.amount
-    if (typeof amount === 'number') { encodeMonetaryAmount(amount); continue }
-    if (typeof amount !== 'string' || !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/.test(amount.trim())) invalid()
-    encodeMonetaryAmount(Number(amount))
-  }
+  for (const entry of attributions(value)) decodeStoredMonetaryAmount(entry.amount)
 }

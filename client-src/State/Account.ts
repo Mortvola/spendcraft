@@ -1,6 +1,6 @@
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
-import { decodeAmount } from '../monetary';
+import { decodeAmount, encodeAmount } from '../monetary';
 import { DateTime } from 'luxon';
 import {
   AccountProps, AddTransactionResponse, ErrorProps,
@@ -189,10 +189,16 @@ class Account implements AccountInterface {
       date?: string,
       name?: string,
       amount?: number,
+      principle?: number,
       categories: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
     },
   ): Promise<ErrorProps[] | null> {
-    const response = await Http.post<AddTransactionRequest, AddTransactionResponse>(`/api/v1/account/${this.id}/transactions`, values);
+    const response = await Http.post<AddTransactionRequest, AddTransactionResponse>(`/api/v1/account/${this.id}/transactions`, {
+      ...values,
+      amount: values.amount === undefined ? undefined : encodeAmount(values.amount),
+      principle: values.principle === undefined ? undefined : encodeAmount(values.principle),
+      categories: values.categories.map(category => ({ ...category, amount: encodeAmount(category.amount) })),
+    });
 
     if (response.ok) {
       const body = await response.body();

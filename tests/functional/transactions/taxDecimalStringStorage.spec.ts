@@ -1,3 +1,4 @@
+import { transactionRequest } from '../../helpers/transactionRequest.js'
 // PREPARED ONLY: requires fresh spendcraft_test authorization. Not run during implementation.
 // The normal tests/bootstrap.ts installs independent pg/pgLog/execution safeguards
 // before setup and every fixture write/cleanup. Do not run with a standalone runner.
@@ -52,7 +53,7 @@ test.group('Transaction tax decimal-string PostgreSQL acceptance (prepared)', ()
   ]).run(async ({ client, assert }, [amount, expected]) => {
     const f = await fixture(), before = await financialState(f.target.id)
     const response = await client.patch(`/api/v1/transaction/${f.target.id}`).loginAs(f.user).accept('json')
-      .json({ version: 0, taxCategories: [entry(amount)] })
+      .json(transactionRequest({ version: 0, taxCategories: [entry(amount)] }))
     response.assertStatus(200)
     assert.strictEqual((await raw(f.target.id)).taxes[0].amount, expected)
     const types = await db.rawQuery("SELECT jsonb_typeof(taxes->0->'amount') AS type FROM transactions WHERE id = ?", [f.target.id])
@@ -120,7 +121,7 @@ test.group('Transaction tax decimal-string PostgreSQL acceptance (prepared)', ()
       await db.from('transactions').where('id', f.target.id).update({ type })
       const before = await financialState(f.target.id)
       const response = await client.patch(`/api/v1/transaction/${f.target.id}`).loginAs(f.user).accept('json')
-        .json({ version: 0, taxCategories: [entry(12.345)] })
+        .json(transactionRequest({ version: 0, taxCategories: [entry(12.345)] }))
       response.assertStatus(200)
       assert.equal((await raw(f.target.id)).taxes[0].amount, '12.35')
       assert.deepEqual(await financialState(f.target.id), before)
@@ -129,7 +130,7 @@ test.group('Transaction tax decimal-string PostgreSQL acceptance (prepared)', ()
   test('duplicate entries retain order; no invented tax conservation', async ({ client, assert }) => {
     const f = await fixture()
     const response = await client.patch(`/api/v1/transaction/${f.target.id}`).loginAs(f.user).accept('json')
-      .json({ version: 0, taxCategories: [entry(1000), entry(-1.125), entry(50)] })
+      .json(transactionRequest({ version: 0, taxCategories: [entry(1000), entry(-1.125), entry(50)] }))
     response.assertStatus(200)
     assert.deepEqual((await raw(f.target.id)).taxes.map((tax: { amount: string }) => tax.amount), ['1000.00', '-1.12', '50.00'])
   })
@@ -138,7 +139,7 @@ test.group('Transaction tax decimal-string PostgreSQL acceptance (prepared)', ()
     const f = await fixture()
     await db.from('transactions').where('id', f.target.id).update({ taxes: JSON.stringify([entry('1.00')]) })
     const response = await client.patch(`/api/v1/transaction/${f.target.id}`).loginAs(f.user).accept('json')
-      .json({ version: 0, taxCategories: [] })
+      .json(transactionRequest({ version: 0, taxCategories: [] }))
     response.assertStatus(200)
     assert.deepEqual((await raw(f.target.id)).taxes, [])
   })
@@ -147,7 +148,7 @@ test.group('Transaction tax decimal-string PostgreSQL acceptance (prepared)', ()
     .run(async ({ client, assert }, amount) => {
       const f = await fixture(), before = await allState()
       const response = await client.patch(`/api/v1/transaction/${f.target.id}`).loginAs(f.user).accept('json')
-        .json({ version: 0, taxCategories: [{ type: 'estimated_tax_payments', amount }] })
+        .json(transactionRequest({ version: 0, taxCategories: [{ type: 'estimated_tax_payments', amount }] }))
       response.assertStatus(422)
       assert.deepEqual(await allState(), before)
     })
@@ -157,9 +158,9 @@ test.group('Transaction tax decimal-string PostgreSQL acceptance (prepared)', ()
       const f = await fixture(), taxes = [{ ...entry('1.00'), metadata: { keep: true } }, entry('0.30')]
       await db.from('transactions').where('id', f.target.id).update({ taxes: JSON.stringify(taxes) })
       const response = await client.patch(`/api/v1/transaction/${f.target.id}`).loginAs(f.user).accept('json')
-        .json({ version: 0, ...(kind === 'metadata' ? { comment: 'Metadata' } : {
+        .json(transactionRequest({ version: 0, ...(kind === 'metadata' ? { comment: 'Metadata' } : {
           categories: [{ categoryId: f.category.id, amount: 4 }, { categoryId: f.category.id, amount: 6 }],
-        }) })
+        }) }))
       response.assertStatus(200)
       assert.deepEqual((await raw(f.target.id)).taxes, taxes)
     })
@@ -187,12 +188,12 @@ test.group('Transaction tax decimal-string PostgreSQL acceptance (prepared)', ()
     })
     try {
       const response = await client.patch(`/api/v1/transaction/${f.target.id}`).loginAs(f.user).accept('json')
-        .json({ version: 0, taxCategories: [entry(12.345)] })
+        .json(transactionRequest({ version: 0, taxCategories: [entry(12.345)] }))
       response.assertStatus(500)
     } finally { fail.mock.restore() }
     assert.deepEqual(await allState(), before)
     const retry = await client.patch(`/api/v1/transaction/${f.target.id}`).loginAs(f.user).accept('json')
-      .json({ version: 0, taxCategories: [entry(12.345)] })
+      .json(transactionRequest({ version: 0, taxCategories: [entry(12.345)] }))
     retry.assertStatus(200)
     assert.equal((await raw(f.target.id)).taxes[0].amount, '12.35')
   })
@@ -201,7 +202,7 @@ test.group('Transaction tax decimal-string PostgreSQL acceptance (prepared)', ()
     .run(async ({ client, assert }, kind) => {
       const f = await fixture(), foreign = await fixture(), before = await allState()
       const response = await client.patch(`/api/v1/transaction/${kind === 'missing' ? 2147483647 : f.target.id}`)
-        .loginAs(foreign.user).accept('json').json({ version: 0, taxCategories: [entry(1)] })
+        .loginAs(foreign.user).accept('json').json(transactionRequest({ version: 0, taxCategories: [entry(1)] }))
       response.assertStatus(404)
       assert.deepEqual(await allState(), before)
     })
@@ -285,8 +286,8 @@ test.group('Transaction tax storage locking (prepared)', () => {
         await current.save()
         request = (async () => {
           const response = await client.patch(`/api/v1/transaction/${f.target.id}`).loginAs(f.user).accept('json')
-            .json({ version: ['stale', 'rollback'].includes(ordering) ? 0 : 1,
-              ...(ordering === 'tax-first' ? { comment: 'Second metadata' } : { taxCategories: [entry(-0.125)] }) })
+            .json(transactionRequest({ version: ['stale', 'rollback'].includes(ordering) ? 0 : 1,
+              ...(ordering === 'tax-first' ? { comment: 'Second metadata' } : { taxCategories: [entry(-0.125)] }) }))
           response.assertStatus(ordering === 'stale' ? 409 : 200)
         })()
         const deadline = Date.now() + 5000
@@ -334,7 +335,7 @@ test.group('Expanded tax storage acceptance', () => {
   ]).run(async ({ client, assert }, taxCategories) => {
     const f = await fixture(), before = await allState()
     const response = await client.patch(`/api/v1/transaction/${f.target.id}`).loginAs(f.user).accept('json')
-      .json({ version: 0, taxCategories })
+      .json(transactionRequest({ version: 0, taxCategories }))
     response.assertStatus(422)
     assert.deepEqual(await allState(), before)
   })
@@ -344,7 +345,7 @@ test.group('Expanded tax storage acceptance', () => {
     await db.from('transactions').where('id', f.target.id).update({ taxes: JSON.stringify(taxes) })
     const before = await financialState(f.target.id)
     const response = await client.patch(`/api/v1/transaction/${f.target.id}`).loginAs(f.user).accept('json')
-      .json({ version: 0, taxCategories: null })
+      .json(transactionRequest({ version: 0, taxCategories: null }))
     response.assertStatus(200)
     assert.deepEqual((await raw(f.target.id)).taxes, taxes)
     assert.deepEqual(await financialState(f.target.id), before)
@@ -355,7 +356,7 @@ test.group('Expanded tax storage acceptance', () => {
     .run(async ({ client, assert }, amount) => {
       const f = await fixture(), before = await financialState(f.target.id)
       const response = await client.patch(`/api/v1/transaction/${f.target.id}`).loginAs(f.user).accept('json')
-        .json({ version: 0, taxCategories: [entry(amount)] })
+        .json(transactionRequest({ version: 0, taxCategories: [entry(amount)] }))
       response.assertStatus(200)
       assert.equal((await raw(f.target.id)).taxes[0].amount, amount.toFixed(2))
       assert.strictEqual(response.body().data.transaction.taxes[0].amount, amount.toFixed(2))
@@ -427,7 +428,7 @@ test('tax-only PATCH preserves duplicate Category order and metadata in raw JSON
   await db.from('transactions').where('id', f.target.id).update({ categories: JSON.stringify(categories) })
   const before = await financialState(f.target.id)
   const response = await client.patch(`/api/v1/transaction/${f.target.id}`).loginAs(f.user).accept('json')
-    .json({ version: 0, taxCategories: [entry(12.345)] })
+    .json(transactionRequest({ version: 0, taxCategories: [entry(12.345)] }))
   response.assertStatus(200)
   assert.deepEqual((await raw(f.target.id)).categories, categories)
   assert.deepEqual(await financialState(f.target.id), before)

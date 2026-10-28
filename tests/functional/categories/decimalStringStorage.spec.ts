@@ -1,3 +1,4 @@
+import { transactionRequest } from '../../helpers/transactionRequest.js'
 // PREPARED ONLY. Run through the safeguarded application test runner after fresh authorization.
 // tests/bootstrap.ts installs independent configured/live pg+pgLog/execution guards on every write.
 import { test } from '@japa/runner'
@@ -40,7 +41,7 @@ test.group('Transaction Category decimal-string storage (prepared)', () => {
     .run(async ({ client, assert }, amount) => {
       const f = await fixture()
       const response = await client.post(`/api/v1/account/${f.account.id}/transactions`).loginAs(f.user).accept('json')
-        .json({ date: '2025-02-01', name: 'Cent storage', amount, categories: [{ categoryId: f.category.id, amount }] })
+        .json(transactionRequest({ date: '2025-02-01', name: 'Cent storage', amount, categories: [{ categoryId: f.category.id, amount }] }))
       response.assertStatus(200)
       const row = response.body().transaction
       assert.strictEqual(row.categories[0].amount, amount.toFixed(2))
@@ -80,7 +81,7 @@ test.group('Transaction Category decimal-string storage (prepared)', () => {
       await db.from('transactions').where('id', target.id).update({ categories: JSON.stringify(categories) })
       const before = await snapshot()
       const response = await client.patch(`/api/v1/transaction/${target.id}`).loginAs(f.user).accept('json')
-        .json({ version: 0, categories: [{ categoryId: f.category.id, amount: 0.2 }, { categoryId: f.category.id, amount: 0.1 }] })
+        .json(transactionRequest({ version: 0, categories: [{ categoryId: f.category.id, amount: 0.2 }, { categoryId: f.category.id, amount: 0.1 }] }))
       if (encoding !== 'string') {
         response.assertStatus(422)
         assert.deepEqual(await snapshot(), before)
@@ -95,8 +96,8 @@ test.group('Transaction Category decimal-string storage (prepared)', () => {
   test('HTTP negative half-tie posts the encoded nominal amount', async ({ client, assert }) => {
     const f = await fixture()
     const response = await client.post(`/api/v1/account/${f.account.id}/transactions`).loginAs(f.user).accept('json')
-      .json({ date: '2025-02-01', name: 'Half tie', amount: -1.12,
-        categories: [{ categoryId: f.category.id, amount: -1.125 }] })
+      .json(transactionRequest({ date: '2025-02-01', name: 'Half tie', amount: -1.12,
+        categories: [{ categoryId: f.category.id, amount: -1.125 }] }))
     response.assertStatus(200)
     assert.strictEqual(response.body().transaction.accountTransaction.amount, '-1.12')
     assert.strictEqual(response.body().transaction.categories[0].amount, '-1.12')
@@ -111,8 +112,8 @@ test.group('Transaction Category decimal-string storage (prepared)', () => {
         ? [45035996273704.95, 45035996273704.95, 1, -1] : [shape === 'overflow' ? Number.MAX_SAFE_INTEGER : shape === 'invalid' ? 'bad' : undefined]
       const before = await snapshot()
       const response = await client.post(`/api/v1/account/${f.account.id}/transactions`).loginAs(f.user).accept('json')
-        .json({ date: '2025-02-01', name: 'Invalid storage', amount: shape === 'rounding-order' ? 0.01 : 0,
-          categories: values.map((amount) => ({ categoryId: f.category.id, amount })) })
+        .json(transactionRequest({ date: '2025-02-01', name: 'Invalid storage', amount: shape === 'rounding-order' ? 0.01 : 0,
+          categories: values.map((amount) => ({ categoryId: f.category.id, amount })) }))
       response.assertStatus(422)
       assert.deepEqual(await snapshot(), before)
     })
@@ -199,8 +200,8 @@ test.group('Transaction Category decimal-string storage (prepared)', () => {
     .run(async ({ client, assert }, kind) => {
       const f = await fixture()
       const created = await client.post(`/api/v1/account/${f.account.id}/transactions`).loginAs(f.user).accept('json')
-        .json({ date: '2025-02-01', name: 'Eligible deletion', amount: 1,
-          categories: [{ categoryId: f.category.id, amount: 1 }] })
+        .json(transactionRequest({ date: '2025-02-01', name: 'Eligible deletion', amount: 1,
+          categories: [{ categoryId: f.category.id, amount: 1 }] }))
       created.assertStatus(200)
       const id = created.body().transaction.id
       assert.strictEqual((await raw(id)).categories[0].amount, '1.00')

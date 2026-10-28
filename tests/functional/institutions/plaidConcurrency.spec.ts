@@ -1,3 +1,4 @@
+import { transactionRequest } from '../../helpers/transactionRequest.js'
 import { mock } from 'node:test'
 import { deepStrictEqual } from 'node:assert'
 import { test } from '@japa/runner'
@@ -317,10 +318,10 @@ test.group('Concurrent Plaid synchronization', (group) => {
     fake.plans.set(operation.institution, [response('manual-wait', { added: [purchase()] })])
     const posting = execute(operation)
     await fake.entered.promise
-    const manual = client.post(`/api/v1/account/${f.account.id}/transactions`).json({
+    const manual = client.post(`/api/v1/account/${f.account.id}/transactions`).json(transactionRequest({
       name: 'Concurrent manual', date: '2025-02-10', amount: 5,
       categories: [{ categoryId: f.unassigned.id, amount: 5 }],
-    }).loginAs(f.shared).then((result) => { result.assertStatus(200) })
+    })).loginAs(f.shared).then((result) => { result.assertStatus(200) })
     try { await blocked() }
     finally { fake.hold = false; fake.release.resolve(); await Promise.allSettled([posting, manual]) }
     await Promise.all([posting, manual])

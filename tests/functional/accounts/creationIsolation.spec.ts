@@ -1,3 +1,4 @@
+import { transactionRequest } from '../../helpers/transactionRequest.js'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
 import { DateTime } from 'luxon'
@@ -78,7 +79,7 @@ test.group('Account transaction creation isolation', (group) => {
 
   test('own and shared-budget users can create a transaction').with(['owner', 'shared']).run(async ({ client, assert }, actor) => {
     const response = await client.post(`/api/v1/account/${fixture.own.account.id}/transactions`)
-      .json({ date: '2025-03-01', name: 'New purchase', amount: 15, categories: [{ categoryId: fixture.own.category.id, amount: 15 }] })
+      .json(transactionRequest({ date: '2025-03-01', name: 'New purchase', amount: 15, categories: [{ categoryId: fixture.own.category.id, amount: 15 }] }))
       .accept('json').loginAs(actor === 'owner' ? fixture.own.user : fixture.shared)
     response.assertStatus(200)
     const row = await Transaction.findOrFail(response.body().transaction.id)
@@ -111,7 +112,7 @@ test.group('Account transaction creation isolation', (group) => {
     }))
     const before = await state()
     const response = await client.post(`/api/v1/account/${accountId}/transactions`)
-      .json({ date: '2025-03-01', name: 'Rejected purchase', amount: 5 * categories.length, categories })
+      .json(transactionRequest({ date: '2025-03-01', name: 'Rejected purchase', amount: 5 * categories.length, categories }))
       .accept('json').loginAs(fixture.own.user)
     assert.deepEqual(await state(), before)
     response.assertStatus(404)
@@ -120,7 +121,7 @@ test.group('Account transaction creation isolation', (group) => {
   test('repeated own category IDs preserve cumulative balance effects', async ({ client, assert }) => {
     const categories = [{ categoryId: fixture.own.category.id, amount: 5 }, { categoryId: fixture.own.category.id, amount: 10 }]
     const response = await client.post(`/api/v1/account/${fixture.own.account.id}/transactions`)
-      .json({ date: '2025-03-01', name: 'Split purchase', amount: 15, categories }).accept('json').loginAs(fixture.shared)
+      .json(transactionRequest({ date: '2025-03-01', name: 'Split purchase', amount: 15, categories })).accept('json').loginAs(fixture.shared)
     response.assertStatus(200)
     assert.deepEqual((await Transaction.findOrFail(response.body().transaction.id)).categories, categories)
     assert.equal((await Category.findOrFail(fixture.own.category.id)).balance, 35)
@@ -131,7 +132,7 @@ test.group('Account transaction creation isolation', (group) => {
     const unassigned = await fixture.own.budget.getUnassignedCategory()
     const before = unassigned.balance
     const response = await client.post(`/api/v1/account/${fixture.own.account.id}/transactions`)
-      .json({ date: '2025-03-01', name: 'Unassigned purchase', amount: 15, categories: [] }).accept('json').loginAs(fixture.shared)
+      .json(transactionRequest({ date: '2025-03-01', name: 'Unassigned purchase', amount: 15, categories: [] })).accept('json').loginAs(fixture.shared)
     response.assertStatus(200)
     assert.equal((await Category.findOrFail(unassigned.id)).balance, before + 15)
     assert.equal((await Account.findOrFail(fixture.own.account.id)).balance, 115)
@@ -140,9 +141,9 @@ test.group('Account transaction creation isolation', (group) => {
 
   test('unsupported relationship fields cannot attach foreign records', async ({ client, assert }) => {
     const response = await client.post(`/api/v1/account/${fixture.own.account.id}/transactions`)
-      .json({ date: '2025-03-01', name: 'Purchase', amount: 15, categories: [{ categoryId: fixture.own.category.id, amount: 15 }],
+      .json(transactionRequest({ date: '2025-03-01', name: 'Purchase', amount: 15, categories: [{ categoryId: fixture.own.category.id, amount: 15 }],
         statementId: fixture.foreign.statement.id, transactionId: fixture.foreign.transaction.id,
-        duplicateOfTransactionId: fixture.foreign.transaction.id, accountId: fixture.foreign.account.id, budgetId: fixture.foreign.budget.id })
+        duplicateOfTransactionId: fixture.foreign.transaction.id, accountId: fixture.foreign.account.id, budgetId: fixture.foreign.budget.id }))
       .accept('json').loginAs(fixture.own.user)
     response.assertStatus(200)
     const row = await Transaction.findOrFail(response.body().transaction.id)

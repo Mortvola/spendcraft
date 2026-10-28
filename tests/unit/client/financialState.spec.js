@@ -163,7 +163,7 @@ export * from ${source('common/ResponseTypes.ts')};
     const cached = transactions()
     const props = f.transactionProps(expected)
     routes.set('patch /api/v1/transaction/40', async payload => {
-      assert.strictEqual(payload.amount, expected)
+      assert.strictEqual(payload.amount, amount)
       return { body: { data: { transaction: props, categories: [], acctBalances: [] } } }
     })
     assert.strictEqual(props.accountTransaction.amount, amount)
@@ -518,7 +518,7 @@ export * from ${source('common/ResponseTypes.ts')};
     const submitted = [{ type: 'estimated_tax_payments', amount: 12.345 }, { type: 'estimated_tax_payments', amount: -0.125 }]
     const returned = { ...f.transactionProps(), version: 1, taxes: encodeTaxAttributions(submitted) }
     routes.set('patch /api/v1/transaction/40', async payload => {
-      assert.deepEqual(payload.taxCategories, submitted)
+      assert.deepEqual(payload.taxCategories, encodeTaxAttributions(submitted))
       return { body: { data: { transaction: returned, categories: [], acctBalances: [] } } }
     })
     const balances = [f.account.balance, f.category.balance]
@@ -605,6 +605,45 @@ export * from ${source('common/ResponseTypes.ts')};
     assert.equal(f.category.transactions.transactions[0].id, 40)
     assert.equal(f.store.categoryTree.budget.childrenBalance(), 0)
   })
+
+  test('Transaction CREATE and PATCH encode monetary inputs without changing numeric editor values').with([
+    [12.345, '12.35'], [-0.125, '-0.12'], [0.1 + 0.2, '0.30'], [-0.005, '0.00'], [-0, '0.00'],
+  ]).run(async ({ assert }, [amount, expected]) => {
+    const cached = transactions()
+    const values = { date: '2025-02-10', name: 'Encoded', amount, principle: amount,
+      categories: [{ categoryId: 20, amount, comment: 'keep' }] }
+    routes.set('post /api/v1/account/10/transactions', async payload => {
+      assert.deepEqual(payload, { ...values, amount: expected, principle: expected,
+        categories: [{ categoryId: 20, amount: expected, comment: 'keep' }] })
+      return { ok: false, body: { errors: [] } }
+    })
+    await f.account.addTransaction(values)
+    const update = { ...values, taxCategories: [{ type: 'estimated_tax_payments', amount }] }
+    routes.set('patch /api/v1/transaction/40', async payload => {
+      assert.deepEqual(payload, { ...update, version: 0, amount: expected, principle: expected,
+        categories: [{ categoryId: 20, amount: expected, comment: 'keep' }],
+        taxCategories: [{ type: 'estimated_tax_payments', amount: expected }] })
+      return { ok: false, body: { errors: [] } }
+    })
+    await cached.account.updateTransaction(update)
+    assert.strictEqual(values.amount, amount)
+    assert.strictEqual(values.categories[0].amount, amount)
+    assert.strictEqual(update.taxCategories[0].amount, amount)
+  })
+
+  test('invalid Transaction request amounts fail before HTTP').with([NaN, Infinity, Number.MAX_SAFE_INTEGER])
+    .run(async ({ assert }, amount) => {
+      const cached = transactions()
+      routes.set('post /api/v1/account/10/transactions', () => { assert.fail('Invalid CREATE reached HTTP') })
+      routes.set('patch /api/v1/transaction/40', () => { assert.fail('Invalid PATCH reached HTTP') })
+      await assert.rejects(() => f.account.addTransaction({ amount, categories: [] }))
+      await assert.rejects(() => f.account.addTransaction({ amount: 1, principle: amount, categories: [] }))
+      await assert.rejects(() => f.account.addTransaction({ amount: 1, categories: [{ categoryId: 20, amount }] }))
+      await assert.rejects(() => cached.account.updateTransaction({ amount }))
+      await assert.rejects(() => cached.account.updateTransaction({ principle: amount }))
+      await assert.rejects(() => cached.account.updateTransaction({ categories: [{ categoryId: 20, amount }] }))
+      await assert.rejects(() => cached.account.updateTransaction({ taxCategories: [{ type: 'estimated_tax_payments', amount }] }))
+    })
 
   test('account creation applies returned balances and inserts transaction', async ({ assert }) => {
     routes.set('post /api/v1/account/10/transactions', async () => ({ body: { transaction: f.transactionProps(), categories: [{ id: 20, balance: '-10.00' }], acctBalances: [{ id: 10, balance: '90.00' }] } }))
