@@ -66,31 +66,31 @@ test.group('Funding decimal-string PostgreSQL acceptance', () => {
       assert.isNumber(response.body().data.transaction.categories[0].fundingCategories[0].amount)
       assert.deepEqual(await balances(), before)
     })
-  test('mixed historical Category reads and metadata-only saves preserve raw leaves and unrelated JSON', async ({ assert }) => {
+  test('canonical Category reads and metadata-only saves preserve raw leaves and unrelated JSON', async ({ assert }) => {
     const f = await fixture()
-    const raw = [{ categoryId: f.pool.id, amount: 1.005, percentage: false, note: { amount: 2.345 } },
+    const raw = [{ categoryId: f.pool.id, amount: '1.00', percentage: false, note: { amount: 2.345 } },
       { categoryId: f.pool.id, amount: '100.00', percentage: true }]
     await db.from('categories').where('id', f.category.id).update({ funding_categories: JSON.stringify(raw) })
     const row = await Category.findOrFail(f.category.id)
-    assert.equal(row.fundingCategories[0].amount, 1.005)
+    assert.equal(row.fundingCategories[0].amount, 1)
     assert.equal(row.fundingCategories[1].amount, 100)
     assert.isFalse(row.$isDirty)
     row.name = 'Metadata'; await row.save()
     assert.deepEqual((await db.from('categories').where('id', row.id).firstOrFail()).funding_categories, raw)
   })
-  test('deleted numeric/string/mixed Transaction metadata remains readable without normalization', async ({ client, assert }) => {
+  test('deleted canonical Transaction metadata remains readable without normalization', async ({ client, assert }) => {
     const f = await fixture()
     const response = await client.post('/api/v1/category-transfer').loginAs(f.user).json({ date: '2026-10-01', type: 2,
       categories: [{ categoryId: f.category.id, amount: 1 }, { categoryId: f.pool.id, amount: -1 }] })
     response.assertStatus(200)
     const id = response.body().data.transaction.id
-    const raw = [{ categoryId: f.category.id, amount: '1.00', baseAmount: 54.27272727272727,
+    const raw = [{ categoryId: f.category.id, amount: '1.00', baseAmount: '54.27',
       fundingCategories: [{ categoryId: f.pool.id, amount: '100.00', percentage: true }], extra: [2, 1, 2] },
       { categoryId: f.pool.id, amount: '-1.00', baseAmount: null, fundingCategories: null }]
     await db.from('transactions').where('id', id).update({ deleted: true, categories: JSON.stringify(raw) })
     const before = await balances(), row = await Transaction.findOrFail(id)
     assert.isTrue(row.deleted); assert.isFalse(row.$isDirty)
-    assert.equal(row.serialize().categories[0].baseAmount, 54.27272727272727)
+    assert.equal(row.serialize().categories[0].baseAmount, 54.27)
     row.comment = 'Metadata'; await row.save()
     assert.deepEqual((await db.from('transactions').where('id', id).firstOrFail()).categories, raw)
     assert.deepEqual(await balances(), before)

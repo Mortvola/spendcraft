@@ -42,7 +42,8 @@ test.group('Funding JSON storage (no database)', () => {
       && ['bindCategoryStorage', 'prepareNewCategoryStorage'].includes(node.name?.text))
       .map(node => node.getText(source).replace(/^export\s+/, '')).join('\n')
     const owner = new EventEmitter(), queries = []
-    const raw = allocation(1.005)
+    const raw = scenario === 'replacement' || scenario === 'supported replacement'
+      ? allocation('1.00') : allocation(1.005)
     const row = new Sample().merge({ categories: raw })
     row.id = 1; row.type = 2; row.budgetId = 7
     row.$isPersisted = scenario !== 'create'; row.$hydrateOriginals()
@@ -114,12 +115,12 @@ test.group('Funding JSON storage (no database)', () => {
     assert.throws(() => encodeFundingMetadata(allocation(value)))
     assert.throws(() => decodeFundingMetadata(allocation(value)))
   })
-  test('mixed reads preserve numeric subcents and do not mutate raw JSON or modes', ({ assert }) => {
-    const raw = [{ ...allocation(1.005)[0], fundingCategories: [rule('12.35'), rule(33.333, true),
+  test('canonical reads expose numbers and do not mutate raw JSON or modes', ({ assert }) => {
+    const raw = [{ ...allocation('1.00')[0], fundingCategories: [rule('12.35'), rule('33.33', true),
       { ...rule('-0.12', null), extra: { amount: 1.005 } }], note: [2, 1, 2] }]
     const before = globalThis.structuredClone(raw), decoded = decodeFundingMetadata(raw)
-    assert.equal(decoded[0].baseAmount, 1.005)
-    assert.deepEqual(decoded[0].fundingCategories.map(r => r.amount), [12.35, 33.333, -0.12])
+    assert.equal(decoded[0].baseAmount, 1)
+    assert.deepEqual(decoded[0].fundingCategories.map(r => r.amount), [12.35, 33.33, -0.12])
     assert.isNull(decoded[0].fundingCategories[2].percentage)
     assert.deepEqual(raw, before); assert.deepEqual(decoded[0].note, raw[0].note)
   })
@@ -145,31 +146,31 @@ test.group('Funding JSON storage (no database)', () => {
     assert.deepEqual(JSON.parse(writes[0].funding_categories), [rule('-0.12'), rule('12.35', true)])
     assert.deepEqual(row.serialize().fundingCategories, [rule(-0.12), rule(12.35, true)])
     assert.isFalse(row.$isDirty)
-    const raw = [rule(1.005), rule('2.00', true)]
+    const raw = [rule('1.00'), rule('2.00', true)]
     const old = Model.$createFromAdapterResult({ id: 2, type: 'BILL', funding_categories: raw, name: 'old' })
-    assert.deepEqual(old.fundingCategories, [rule(1.005), rule(2, true)])
+    assert.deepEqual(old.fundingCategories, [rule(1), rule(2, true)])
     await old.save(); assert.lengthOf(writes, 1)
     old.name = 'new'; await old.save(); assert.notProperty(writes[1], 'funding_categories')
     old.fundingCategories[0].note = 'metadata'; await old.save()
     assert.deepEqual(JSON.parse(writes[2].funding_categories), [{ ...raw[0], note: 'metadata' }, raw[1]])
     requestFundingStorage(old); await old.save()
     assert.deepEqual(JSON.parse(writes[3].funding_categories), [{ ...raw[0], amount: '1.00', note: 'metadata' }, raw[1]])
-    assert.deepEqual(raw, [rule(1.005), rule('2.00', true)])
+    assert.deepEqual(raw, [rule('1.00'), rule('2.00', true)])
   })
   test('bound Transaction reads, scalar and nested metadata-only saves retain historical leaves', ({ assert }) => {
-    const raw = allocation(1.005), row = hydrated(raw)
+    const raw = allocation('1.00'), row = hydrated(raw)
     assert.isFalse(row.$isDirty)
     assert.deepEqual(persist(row), {})
     row.comment = 'new'; assert.deepEqual(persist(row), { comment: 'new' })
     row.categories[0].comment = 'changed'
     const stored = JSON.parse(persist(row).categories)
-    assert.equal(stored[0].baseAmount, 1.005)
+    assert.equal(stored[0].baseAmount, '1.00')
     assert.deepEqual(stored[0].fundingCategories, raw[0].fundingCategories)
     assert.equal(stored[0].amount, '1.00')
     assert.isFalse(row.$isDirty)
   })
   test('explicit replacement encodes even unchanged legacy leaves and restores numeric APIs', ({ assert }) => {
-    const row = hydrated(allocation(1))
+    const row = hydrated(allocation('1.00'))
     requestFundingStorage(row)
     const stored = JSON.parse(persist(row).categories)
     assert.equal(stored[0].baseAmount, '1.00')
@@ -179,37 +180,37 @@ test.group('Funding JSON storage (no database)', () => {
     assert.isFalse(row.$isDirty)
   })
   test('editing one metadata leaf does not normalize historical siblings', ({ assert }) => {
-    const row = hydrated(allocation(1.005))
+    const row = hydrated(allocation('1.00'))
     row.categories[0].fundingCategories[1].amount = 12.345
     const stored = JSON.parse(persist(row).categories)[0]
-    assert.equal(stored.baseAmount, 1.005); assert.equal(stored.fundingCategories[0].amount, 1.005)
+    assert.equal(stored.baseAmount, '1.00'); assert.equal(stored.fundingCategories[0].amount, '1.00')
     assert.equal(stored.fundingCategories[1].amount, '12.35')
     assert.equal(row.categories[0].fundingCategories[1].amount, 12.35)
   })
   test('invalid metadata fails before adapter persistence and does not change sibling data', ({ assert }) => {
-    const row = hydrated(allocation(1)), original = globalThis.structuredClone(row.$original)
+    const row = hydrated(allocation('1.00')), original = globalThis.structuredClone(row.$original)
     row.categories[0].baseAmount = Infinity
     assert.throws(() => persist(row))
     assert.deepEqual(row.$original, original)
   })
   test('a rejected adapter attempt cannot leak pending metadata into a later scalar save', ({ assert }) => {
-    const row = hydrated(allocation(1.005))
+    const row = hydrated(allocation('1.00'))
     row.categories[0].baseAmount = 2.345
     stageFundingStorage(row, 'categories'); stageCategoryStorage(row)
     row.prepareForAdapter(row.$dirty) // Simulate preparation followed by an adapter/transaction failure.
     row.categories = globalThis.structuredClone(row.$original.categories)
     row.comment = 'later unrelated save'
     assert.deepEqual(persist(row), { comment: 'later unrelated save' })
-    assert.equal(row.categories[0].baseAmount, 1.005)
+    assert.equal(row.categories[0].baseAmount, 1)
   })
   test('changing a rule identity or mode does not reuse an unrelated historical leaf', ({ assert }) => {
-    const row = hydrated(allocation(1.005))
+    const row = hydrated(allocation('1.00'))
     row.categories[0].fundingCategories[0].percentage = true
     row.categories[0].fundingCategories[1].categoryId = 98
     const encoded = JSON.parse(persist(row).categories)[0]
     assert.equal(encoded.fundingCategories[0].amount, '1.00')
     assert.equal(encoded.fundingCategories[1].amount, '1.00')
-    assert.equal(encoded.baseAmount, 1.005)
+    assert.equal(encoded.baseAmount, '1.00')
   })
   test('transfer validator accepts excess precision while retaining percentage-total constraints', async ({ assert }) => {
     const data = { date: '2026-10-01', type: 2, categories: [{ categoryId: 1, amount: 1, baseAmount: 1.005,
@@ -235,9 +236,9 @@ test.group('Funding JSON storage (no database)', () => {
     }
   })
   test('deleted historical metadata stays readable without revalidation or write-on-read', ({ assert }) => {
-    const row = hydrated(allocation(54.27272727272727))
+    const row = hydrated(allocation('54.27'))
     row.deleted = true
-    assert.equal(row.categories[0].baseAmount, 54.27272727272727)
+    assert.equal(row.categories[0].baseAmount, 54.27)
     assert.deepEqual(persist(row), {})
   })
   test('SQL decimal extraction, Budget locks, ownership and transaction binding remain at existing boundaries', async ({ assert }) => {
@@ -246,9 +247,20 @@ test.group('Funding JSON storage (no database)', () => {
     assert.include(source, 'sum(coalesce(transCats."baseAmount", 0))')
     assert.include(source, 'forUpdate()'); assert.include(source, 'client: trx')
     assert.include(source, 'validateStoredCategoryConservation(transaction)')
-    const raw = [rule(1.005)], row = new Sample()
+    const raw = [rule('1.00')], row = new Sample()
     row.$isPersisted = true
     const decoded = consumeFundingStorage(raw, row)
     assert.deepEqual(prepareFundingStorage(decoded, row), raw)
   })
+})
+
+test('persisted funding readers reject numeric leaves in every migrated path', ({ assert }) => {
+  for (const amount of [0, -0, 1, -1, 1.005]) {
+    assert.throws(() => decodeFundingRules([rule(amount)]))
+    assert.throws(() => decodeFundingRules([rule(amount, true)]))
+    assert.throws(() => decodeFundingMetadata([{ categoryId: 1, baseAmount: amount }]))
+    assert.throws(() => decodeFundingMetadata([{ categoryId: 1, fundingCategories: [rule(amount)] }]))
+    assert.throws(() => hydrated(allocation(amount)))
+    assert.throws(() => Category.$createFromAdapterResult({ id: 1, type: 'BILL', funding_categories: [rule(amount)] }))
+  }
 })

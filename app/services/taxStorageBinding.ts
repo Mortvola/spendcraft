@@ -16,7 +16,7 @@ export function bindResolvedTaxStorage(row: Transaction): void {
   if (row.$isPersisted && Object.hasOwn(row.$dirty, 'taxes')) throw new Error('Bind tax storage before attribution mutation')
   // Null/missing is not an implicit empty-array replacement or write-on-read.
   if (row.taxes !== null && row.taxes !== undefined) {
-    row.$attributes.taxes = decodeTaxAttributions(row.taxes)
+    row.$attributes.taxes = row.$isPersisted ? decodeTaxAttributions(row.taxes) : row.taxes
     if (row.$isPersisted) row.$original.taxes = structuredClone(row.$attributes.taxes)
   }
   bound.add(row)

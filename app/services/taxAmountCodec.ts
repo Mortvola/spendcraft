@@ -1,5 +1,5 @@
 import { Exception } from '@adonisjs/core/exceptions'
-import { categoryAmountCents, storedCategoryAmount } from './categoryAmountCodec.ts'
+import { categoryAmountCents, storedCategoryAmount, decodeStoredMonetaryAmount } from './categoryAmountCodec.ts'
 
 export interface TaxAttribution { type: string; amount: number }
 
@@ -32,10 +32,7 @@ export function encodeTaxAttributions(value: unknown) {
 }
 export function decodeTaxAttributions(value: unknown): TaxAttribution[] {
   return attributions(value).map(entry => {
-    const cents = taxAmountCents(entry.amount)
-    // Legacy numeric reads retain their exact existing JS value, including subcents.
-    const amount = typeof entry.amount === 'number' ? entry.amount : cents / 100
-    if (typeof entry.amount === 'string' && taxAmountCents(amount) !== cents) invalid('Unsafe tax amount decoding')
+    const amount = decodeStoredMonetaryAmount(entry.amount)
     return { ...entry, type: String(entry.type), amount }
   })
 }

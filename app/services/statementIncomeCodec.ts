@@ -1,5 +1,5 @@
 import { Exception } from '@adonisjs/core/exceptions'
-import { categoryAmountCents, storedCategoryAmount } from './categoryAmountCodec.ts'
+import { storedCategoryAmount, decodeStoredMonetaryAmount } from './categoryAmountCodec.ts'
 
 export const statementIncomeFields = ['shortTermCapitalGains', 'longTermCapitalGains', 'dividends', 'taxableInterest'] as const
 export type StatementIncomeData = Partial<Record<typeof statementIncomeFields[number], number | null>> & Record<string, unknown>
@@ -17,22 +17,23 @@ export function storedStatementIncomeAmount(value: unknown): string {
   }
 }
 export function runtimeStatementIncomeAmount(value: unknown): number {
-  const encoded = storedStatementIncomeAmount(value)
-  if (typeof value === 'number') return value // Never round a legacy read.
-  const amount = categoryAmountCents(encoded) / 100
-  if (storedStatementIncomeAmount(amount) !== encoded) invalid()
-  return amount
+  if (typeof value !== 'number') invalid()
+  storedStatementIncomeAmount(value) // Validate without rounding the runtime value.
+  return value
 }
-export function decodeStatementIncome(value: unknown): StatementIncomeData | null | undefined {
+function mapStatementIncome(value: unknown, scalar: (value: unknown) => number): StatementIncomeData | null | undefined {
   if (value === null || value === undefined) return value
   const result = incomeObject(value)
   // Construct known keys with their validated types, preserving missing/null leaves.
   const income: StatementIncomeData = { ...result }
   for (const field of statementIncomeFields) {
-    if (Object.hasOwn(result, field)) income[field] = result[field] === null ? null : runtimeStatementIncomeAmount(result[field])
+    if (Object.hasOwn(result, field)) income[field] = result[field] === null ? null : scalar(result[field])
   }
   return income
 }
+export const decodeStatementIncome = (value: unknown) => mapStatementIncome(value, decodeStoredMonetaryAmount)
+export const serializeStatementIncome = (value: unknown) => mapStatementIncome(value, runtimeStatementIncomeAmount)
+
 export function encodeStatementIncome(value: unknown): Record<string, unknown> | null | undefined {
   if (value === null || value === undefined) return value
   const result = incomeObject(value)

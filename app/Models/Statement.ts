@@ -6,7 +6,7 @@ import {
 import AccountTransaction from './AccountTransaction.js'
 import type { BelongsTo, HasMany } from "@adonisjs/lucid/types/relations";
 import Account from './Account.ts';
-import { decodeStatementIncome } from '#services/statementIncomeCodec'
+import { serializeStatementIncome } from '#services/statementIncomeCodec'
 import type { StatementIncomeData } from '#services/statementIncomeCodec'
 import { consumeStatementIncome, prepareStatementIncome, stageStatementIncomeSave, finishStatementIncomeSave } from '#services/statementIncomeStorage'
 
@@ -48,7 +48,7 @@ export default class Statement extends BaseModel {
   @column({
     consume: (value, _key, row) => consumeStatementIncome(value, row),
     prepare: (value, _key, row) => prepareStatementIncome(value, row),
-    serialize: (value) => decodeStatementIncome(value),
+    serialize: (value) => serializeStatementIncome(value),
   })
   declare data: StatementIncomeData | null
   

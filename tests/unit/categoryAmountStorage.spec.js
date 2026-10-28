@@ -34,11 +34,11 @@ test.group('Category decimal-string production boundary without DB', () => {
     assert.throws(() => categoryAmountCents('90071992547409.92'))
     assert.throws(() => checkedCentSum([Number.MAX_SAFE_INTEGER, 1, -1]))
   })
-  test('mixed reads preserve legacy numeric values, metadata, order and duplicates', ({ assert }) => {
-    const original = [split(0.1 + 0.2), { ...split('1.23'), comment: 'keep', baseAmount: 1.005, extra: { value: 4 } }, split('-2.00')]
+  test('canonical reads preserve numeric runtime values, metadata, order and duplicates', ({ assert }) => {
+    const original = [split('0.30'), { ...split('1.23'), comment: 'keep', baseAmount: 1.005, extra: { value: 4 } }, split('-2.00')]
     const before = globalThis.structuredClone(original)
     const decoded = decodeCategoryAllocations(original)
-    assert.deepEqual(decoded.map((row) => row.amount), [0.1 + 0.2, 1.23, -2])
+    assert.deepEqual(decoded.map((row) => row.amount), [0.3, 1.23, -2])
     assert.deepEqual(original, before)
     assert.deepEqual(encodeCategoryAllocations(decoded), [split('0.30'), { ...original[1] }, split('-2.00')])
     assert.deepEqual(encodeCategoryAllocations([]), [])
@@ -58,15 +58,15 @@ test.group('Category decimal-string production boundary without DB', () => {
     validateCategoryConservation(3, [split(1), split(2), split(-3)])
     assert.throws(() => validateCategoryConservation(3, [split(0.01)]))
   })
-  test('real Lucid dirty tracking stays clean on mixed read and metadata-only save', ({ assert }) => {
-    const model = hydrated([split('1.00'), split(0.1 + 0.2)])
-    assert.deepEqual(model.categories.map((row) => row.amount), [1, 0.1 + 0.2])
+  test('real Lucid dirty tracking stays clean on canonical read and metadata-only save', ({ assert }) => {
+    const model = hydrated([split('1.00'), split('0.30')])
+    assert.deepEqual(model.categories.map((row) => row.amount), [1, 0.3])
     assert.isFalse(model.$isDirty)
     model.comment = 'new'
     stageCategoryStorage(model)
     assert.deepEqual(model.prepareForAdapter(model.$dirty), { comment: 'new' })
     finishCategoryStorageSave(model)
-    assert.equal(model.categories[1].amount, 0.1 + 0.2)
+    assert.equal(model.categories[1].amount, 0.3)
   })
   test('real Lucid nested writes encode strings and leave numeric API/clean original', ({ assert }) => {
     const model = hydrated([split('1.00')])
@@ -169,4 +169,11 @@ test('actual active-new save guard rejects a missing owning transaction before s
   }).outputText, { requested })
   const target = requestCategoryStorage(new Sample().merge({ categories: [split(1)] }))
   await assert.rejects(() => run(target), 'Category storage requires an owning transaction')
+})
+
+test('stored Category allocations require canonical strings', ({ assert }) => {
+  for (const amount of [0, -0, 1, -1, 1.005, '1.0', '1e0', '-0.00']) {
+    assert.throws(() => decodeCategoryAllocations([split(amount)]))
+    assert.throws(() => hydrated([split(amount)]))
+  }
 })

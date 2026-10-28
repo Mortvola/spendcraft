@@ -68,11 +68,11 @@ test.group('Tax decimal-string production codec and Lucid boundary (no database)
     .run(({ assert }, amount) => assert.throws(() => validateSubmittedTaxAmounts([attribution(amount)])))
   test('existing numeric-string request syntax is retained and new API values need not be strings').with([1.005, -1.005, '1.005', '1e-2', '-.125', ' 1.25 '])
     .run(({ assert }, amount) => assert.doesNotThrow(() => validateSubmittedTaxAmounts([attribution(amount)])))
-  test('numeric/string/mixed decoding is numeric and does not normalize legacy raw dollars', ({ assert }) => {
-    const original = [attribution(0.1 + 0.2), { ...attribution('1.23'), metadata: { keep: 1 } }, attribution('-2.00')]
+  test('canonical decoding is numeric and leaves raw storage unchanged', ({ assert }) => {
+    const original = [attribution('0.30'), { ...attribution('1.23'), metadata: { keep: 1 } }, attribution('-2.00')]
     const before = globalThis.structuredClone(original)
     const decoded = decodeTaxAttributions(original)
-    assert.deepEqual(decoded.map(entry => entry.amount), [0.1 + 0.2, 1.23, -2])
+    assert.deepEqual(decoded.map(entry => entry.amount), [0.3, 1.23, -2])
     assert.deepEqual(original, before)
     assert.deepEqual(encodeTaxAttributions(decoded), [attribution('0.30'), original[1], attribution('-2.00')])
   })
@@ -88,15 +88,15 @@ test.group('Tax decimal-string production codec and Lucid boundary (no database)
   test('malformed arrays/types and missing amounts reject').with([null, {}, [null], [[]], [{ type: 1, amount: 1 }], [{ type: 'x' }]])
     .run(({ assert }, value) => assert.throws(() => encodeTaxAttributions(value)))
   test('read hydration exposes numbers without dirtying or rewriting either JSON column', ({ assert }) => {
-    const model = hydrated([attribution('1.23'), attribution(1.005)])
+    const model = hydrated([attribution('1.23'), attribution('1.00')])
     bindResolvedCategoryStorage(model); bindResolvedTaxStorage(model)
     assert.isFalse(model.$isDirty)
-    assert.deepEqual(model.serialize().taxes.map(entry => entry.amount), [1.23, 1.005])
+    assert.deepEqual(model.serialize().taxes.map(entry => entry.amount), [1.23, 1])
     model.comment = 'metadata'
     stageTaxStorage(model); stageCategoryStorage(model)
     assert.deepEqual(model.prepareForAdapter(model.$dirty), { comment: 'metadata' })
     finishTaxStorageSave(model)
-    assert.equal(model.taxes[1].amount, 1.005)
+    assert.equal(model.taxes[1].amount, 1)
   })
   test('explicit nested replacement persists strings and returns rounded numeric API values', ({ assert }) => {
     const model = hydrated([attribution('1.00')])
@@ -284,4 +284,11 @@ test('model hooks and existing SQL preserve independent tax and Category boundar
   assert.include(taxes, 'sum(COALESCE((transTaxes.amount), 0))')
   assert.notInclude(taxes, 'FOR UPDATE')
   assert.notInclude(taxes, 'transaction_categories')
+})
+
+test('stored Tax attributions reject numbers while Loan exclusions retain them', ({ assert }) => {
+  for (const amount of [0, -0, 1, -1, 1.005]) {
+    assert.throws(() => decodeTaxAttributions([attribution(amount)]))
+    assert.throws(() => bindResolvedTaxStorage(hydrated([attribution(amount)])))
+  }
 })

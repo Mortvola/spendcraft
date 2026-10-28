@@ -35,9 +35,17 @@ export function storedCategoryAmount(value: unknown): string {
   return encoded
 }
 
+export function decodeStoredMonetaryAmount(value: unknown): number {
+  if (typeof value !== 'string') invalid('Stored monetary amount must be a canonical decimal string')
+  const cents = categoryAmountCents(value)
+  const amount = cents / 100
+  if (categoryAmountCents(amount) !== cents) invalid('Category amount cannot be decoded safely')
+  return amount
+}
+
 function runtimeCategoryAmount(value: unknown): number {
   const cents = categoryAmountCents(value)
-  if (typeof value === 'number') return value // Legacy numeric reads are not rounding/normalization writes.
+  if (typeof value === 'number') return value // Unsaved/runtime values retain their calculation precision.
   const number = cents / 100
   if (categoryAmountCents(number) !== cents) invalid('Category amount cannot be decoded safely')
   return number
@@ -54,8 +62,12 @@ function allocations(value: unknown): Record<string, unknown>[] {
   })
 }
 
-export function decodeCategoryAllocations(value: unknown): CategoryAllocation[] {
+export function runtimeCategoryAllocations(value: unknown): CategoryAllocation[] {
   return allocations(value).map((entry) => ({ ...entry, categoryId: Number(entry.categoryId), amount: runtimeCategoryAmount(entry.amount) }))
+}
+
+export function decodeCategoryAllocations(value: unknown): CategoryAllocation[] {
+  return allocations(value).map(entry => ({ ...entry, categoryId: Number(entry.categoryId), amount: decodeStoredMonetaryAmount(entry.amount) }))
 }
 
 export function encodeCategoryAllocations(value: unknown) {

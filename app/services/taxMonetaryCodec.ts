@@ -1,5 +1,5 @@
 import { Exception } from '@adonisjs/core/exceptions'
-import { categoryAmountCents, storedCategoryAmount } from './categoryAmountCodec.ts'
+import { storedCategoryAmount, decodeStoredMonetaryAmount } from './categoryAmountCodec.ts'
 
 export const taxForecastFields = ['taxableInterest', 'qualifiedDividends', 'ordinaryDividends',
   'taxableIraDistributions', 'taxablePensionAndAnnuities', 'taxableSocialSecurityBenefits',
@@ -16,11 +16,9 @@ export function storedTaxMonetaryAmount(value: unknown): string {
   return storedCategoryAmount(value)
 }
 export function runtimeTaxMonetaryAmount(value: unknown): number {
-  const stored = storedTaxMonetaryAmount(value)
-  if (typeof value === 'number') return value // Legacy reads never quantize.
-  const result = categoryAmountCents(stored) / 100
-  if (storedTaxMonetaryAmount(result) !== stored) throw new Exception('Unsafe Tax monetary decoding', { status: 422 })
-  return result
+  if (typeof value !== 'number') throw new Exception('Expected numeric Tax model amount', { status: 422 })
+  storedTaxMonetaryAmount(value) // Validate without rounding the runtime value.
+  return value
 }
 // Only this project's 15 allowlisted leaves are visited; other JSON is not normalized.
 export function mapTaxMoney(value: unknown, paths: string[][], scalar: (value: unknown) => unknown): Record<string, unknown> | null | undefined {
@@ -38,9 +36,12 @@ export function mapTaxMoney(value: unknown, paths: string[][], scalar: (value: u
   return result
 }
 export const encodeTaxForecast = (value: unknown) => mapTaxMoney(value, taxForecastPaths, storedTaxMonetaryAmount)
-export const decodeTaxForecast = (value: unknown) => mapTaxMoney(value, taxForecastPaths, runtimeTaxMonetaryAmount)
+export const decodeTaxForecast = (value: unknown) => mapTaxMoney(value, taxForecastPaths, decodeStoredMonetaryAmount)
 export const encodeTransactionLogMoney = (value: unknown) => mapTaxMoney(value, transactionLogMoneyPaths, storedTaxMonetaryAmount)
-export const decodeTransactionLogMoney = (value: unknown) => mapTaxMoney(value, transactionLogMoneyPaths, runtimeTaxMonetaryAmount)
+export const decodeTransactionLogMoney = (value: unknown) => mapTaxMoney(value, transactionLogMoneyPaths, decodeStoredMonetaryAmount)
+
+export const serializeTaxForecast = (value: unknown) => mapTaxMoney(value, taxForecastPaths, runtimeTaxMonetaryAmount)
+export const serializeTransactionLogMoney = (value: unknown) => mapTaxMoney(value, transactionLogMoneyPaths, runtimeTaxMonetaryAmount)
 
 export function validateSubmittedTaxForecast(value: unknown): void {
   if (value === null || value === undefined) return // Existing required-object validator decides presence.

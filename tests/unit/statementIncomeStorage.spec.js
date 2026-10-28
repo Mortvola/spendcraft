@@ -5,7 +5,7 @@ import { EventEmitter } from 'node:events'
 import { readFile } from 'node:fs/promises'
 import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
-import { decodeStatementIncome, encodeStatementIncome, statementIncomeFields, storedStatementIncomeAmount,
+import { decodeStatementIncome, serializeStatementIncome, encodeStatementIncome, statementIncomeFields, storedStatementIncomeAmount,
   validateSubmittedStatementIncome } from '../../app/services/statementIncomeCodec.ts'
 import { consumeStatementIncome, prepareStatementIncome, stageStatementIncomeSave, finishStatementIncomeSave,
   replaceStatementIncome } from '../../app/services/statementIncomeStorage.ts'
@@ -17,7 +17,7 @@ async function sample() {
   const source = ts.createSourceFile('Statement.ts', await readFile('app/Models/Statement.ts', 'utf8'), ts.ScriptTarget.Latest, true)
   const model = source.statements.find(ts.isClassDeclaration)
   const names = ['stageIncome', 'finishIncome', 'id', 'accountId', 'startDate', 'endDate', 'startingBalance', 'endingBalance', 'data']
-  const context = { BaseModel, column, beforeSave, afterSave, DateTime, decodeStatementIncome,
+  const context = { BaseModel, column, beforeSave, afterSave, DateTime, serializeStatementIncome,
     consumeStatementIncome, prepareStatementIncome, stageStatementIncomeSave, finishStatementIncomeSave }
   runInNewContext(ts.transpileModule(`class Sample extends BaseModel { ${model.members.filter(m => names.includes(m.name?.getText(source))).map(m => m.getText(source)).join('\n')} }\nglobalThis.Sample=Sample`, {
     compilerOptions: { target: ts.ScriptTarget.ES2022, experimentalDecorators: true },
@@ -53,10 +53,10 @@ test.group('Statement income production codec and model boundary (no database)',
       assert.equal(validated.data.dividends, Number(value))
     }
   })
-  test('mixed numeric/string reads preserve legacy precision and metadata without mutation', ({ assert }) => {
-    const raw = { ...data('2.00'), dividends: 1.005, note: { amount: 1.005, ordered: [2, 1, 2] } }
+  test('canonical storage reads preserve metadata without mutation', ({ assert }) => {
+    const raw = { ...data('2.00'), dividends: '1.00', note: { amount: 1.005, ordered: [2, 1, 2] } }
     const before = globalThis.structuredClone(raw), decoded = decodeStatementIncome(raw)
-    assert.deepEqual(decoded, { ...data(2), dividends: 1.005, note: raw.note })
+    assert.deepEqual(decoded, { ...data(2), dividends: 1, note: raw.note })
     assert.deepEqual(raw, before)
     assert.deepEqual(encodeStatementIncome(decoded), { ...data('2.00'), dividends: '1.00', note: raw.note })
   })
@@ -70,22 +70,22 @@ test.group('Statement income production codec and model boundary (no database)',
   })
   test('hydrate and unrelated save do not dirty or normalize stored income', async ({ assert }) => {
     const { hydrated, writes } = await sample()
-    const raw = { ...data('1.00'), dividends: 1.005 }, row = hydrated(raw)
-    assert.equal(row.data.dividends, 1.005); assert.isFalse(row.$isDirty)
-    assert.deepEqual(row.serialize().data, { ...data(1), dividends: 1.005 })
+    const raw = { ...data('1.00'), dividends: '1.00' }, row = hydrated(raw)
+    assert.equal(row.data.dividends, 1); assert.isFalse(row.$isDirty)
+    assert.deepEqual(row.serialize().data, { ...data(1), dividends: 1 })
     await row.save(); assert.lengthOf(writes, 0)
     row.startDate = DateTime.fromISO('2026-01-02'); await row.save()
-    assert.notProperty(writes[0], 'data'); assert.deepEqual(raw, { ...data('1.00'), dividends: 1.005 })
+    assert.notProperty(writes[0], 'data'); assert.deepEqual(raw, { ...data('1.00'), dividends: '1.00' })
   })
   test('metadata-only JSON changes preserve exact historical amounts and optional leaves', async ({ assert }) => {
     const { hydrated, writes } = await sample()
-    const raw = { shortTermCapitalGains: 1.005, dividends: '2.00', taxableInterest: null, note: 'old' }
+    const raw = { shortTermCapitalGains: '1.00', dividends: '2.00', taxableInterest: null, note: 'old' }
     const row = hydrated(raw); row.data.note = 'new'; await row.save()
     assert.deepEqual(JSON.parse(writes[0].data), { ...raw, note: 'new' })
-    assert.isFalse(row.$isDirty); assert.equal(row.data.shortTermCapitalGains, 1.005)
+    assert.isFalse(row.$isDirty); assert.equal(row.data.shortTermCapitalGains, 1)
   })
   test('explicit replacement preserves metadata and persists strings even for unchanged numeric values', async ({ assert }) => {
-    const { hydrated, writes } = await sample(), row = hydrated({ ...data(1), note: { keep: 3 } })
+    const { hydrated, writes } = await sample(), row = hydrated({ ...data('1.00'), note: { keep: 3 } })
     replaceStatementIncome(row, data(1)); await row.save()
     assert.deepEqual(JSON.parse(writes[0].data), { ...data('1.00'), note: { keep: 3 } })
     assert.deepEqual(row.serialize().data, { ...data(1), note: { keep: 3 } }); assert.isFalse(row.$isDirty)
@@ -207,4 +207,16 @@ test.group('Statement income production controllers (no database)', () => {
     assert.include(source, ".whereBetween('startDate'")
     assert.include(source, ".whereNotIn('subtype', ['401k', 'Roth 401k', 'Roth', 'ira'])")
   })
+})
+
+test('Statement storage decoding and numeric serialization are separate boundaries', async ({ assert }) => {
+  const { hydrated, Sample } = await sample()
+  for (const amount of [0, -0, 1, -1, 1.005]) {
+    assert.throws(() => decodeStatementIncome(data(amount)))
+    assert.throws(() => hydrated(data(amount)))
+    assert.deepEqual(serializeStatementIncome(data(amount)), data(amount))
+    const row = new Sample().merge({ data: data(amount) })
+    assert.deepEqual(row.serialize().data, data(amount))
+  }
+  assert.throws(() => serializeStatementIncome(data('1.00')))
 })

@@ -1,7 +1,7 @@
 import { DateTime } from 'luxon'
 import { BaseModel, column, beforeSave, afterSave } from '@adonisjs/lucid/orm'
 
-import { decodeTransactionLogMoney } from '#services/taxMonetaryCodec'
+import { serializeTransactionLogMoney } from '#services/taxMonetaryCodec'
 import { consumeTransactionLogMoney, prepareTransactionLogMoney, stageTaxMoneySave, finishTaxMoneySave } from '#services/taxMonetaryStorage'
 
 export default class TransactionLog extends BaseModel {
@@ -29,7 +29,7 @@ export default class TransactionLog extends BaseModel {
   @column({
     consume: (value, _key, row) => consumeTransactionLogMoney(value, row),
     prepare: (value, _key, row) => prepareTransactionLogMoney(value, row),
-    serialize: value => decodeTransactionLogMoney(value),
+    serialize: value => serializeTransactionLogMoney(value),
   })
   public changes: Record<string, unknown> | null
 

@@ -2,7 +2,7 @@ import { test } from '@japa/runner'
 import Tax from '../../app/Models/Tax.ts'
 import TransactionLog from '../../app/Models/TransactionLog.ts'
 import { taxForecastFields, taxEstimatedFields, encodeTaxForecast, decodeTaxForecast,
-  encodeTransactionLogMoney, decodeTransactionLogMoney, storedTaxMonetaryAmount, validateSubmittedTaxForecast } from '../../app/services/taxMonetaryCodec.ts'
+  encodeTransactionLogMoney, decodeTransactionLogMoney, storedTaxMonetaryAmount, validateSubmittedTaxForecast, serializeTaxForecast, serializeTransactionLogMoney } from '../../app/services/taxMonetaryCodec.ts'
 import { replaceTaxForecast } from '../../app/services/taxMonetaryStorage.ts'
 import { addTax } from '../../app/validation/Validators/tax.ts'
 import { loadWorksheet } from '../../scripts/auditTaxForecastPrecision.mjs'
@@ -38,15 +38,15 @@ test.group('Tax and TransactionLog monetary storage (no database)', () => {
     assert.throws(() => encodeTaxForecast(forecast(value)))
     assert.throws(() => encodeTransactionLogMoney({ amount: { old: value } }))
   })
-  test('historical mixed reads preserve numeric subcent precision and unrelated JSON', ({ assert }) => {
-    const raw = { ...forecast('2.00'), taxableInterest: 1.005, estimated: { ...forecast('2.00').estimated, priorYearAgi: -0.125 },
+  test('canonical reads expose numbers and unrelated JSON', ({ assert }) => {
+    const raw = { ...forecast('2.00'), taxableInterest: '1.00', estimated: { ...forecast('2.00').estimated, priorYearAgi: '-0.12' },
       note: { amount: 1.005, ordered: [2, 1, 2] } }, before = globalThis.structuredClone(raw)
     const decoded = decodeTaxForecast(raw)
-    assert.equal(decoded.taxableInterest, 1.005); assert.equal(decoded.estimated.priorYearAgi, -0.125)
+    assert.equal(decoded.taxableInterest, 1); assert.equal(decoded.estimated.priorYearAgi, -0.12)
     assert.equal(decoded.estimated.priorYearTotalTax, 2); assert.deepEqual(raw, before)
     assert.deepEqual(decoded.note, raw.note)
-    const log = { amount: { old: 1.005, new: '2.00', currency: 'USD' }, categories: [{ amount: 1.005 }] }
-    assert.deepEqual(decodeTransactionLogMoney(log), { ...log, amount: { ...log.amount, new: 2 } })
+    const log = { amount: { old: '1.00', new: '2.00', currency: 'USD' }, categories: [{ amount: 1.005 }] }
+    assert.deepEqual(decodeTransactionLogMoney(log), { ...log, amount: { ...log.amount, old: 1, new: 2 } })
     assert.equal(log.amount.new, '2.00')
   })
   test('missing/null roots, parents and leaves remain missing/null').with([null, undefined])
@@ -82,7 +82,7 @@ test.group('Tax and TransactionLog monetary storage (no database)', () => {
   test('real model reads and nonmoney saves never normalize historical amounts').with(['tax', 'log'])
     .run(async ({ assert }, kind) => {
       const { hydrated, property, writes } = sample(kind)
-      const raw = kind === 'tax' ? forecast(1.005) : { amount: { old: 1.005, new: '2.00' }, note: 'old' }
+      const raw = kind === 'tax' ? forecast('1.00') : { amount: { old: '1.00', new: '2.00' }, note: 'old' }
       const before = globalThis.structuredClone(raw), row = hydrated(raw)
       assert.isFalse(row.$isDirty); await row.save(); assert.lengthOf(writes, 0)
       if (kind === 'tax') row.year = 2027; else row.message = 'changed'
@@ -91,13 +91,13 @@ test.group('Tax and TransactionLog monetary storage (no database)', () => {
   test('metadata-only JSON saves retain historical leaf representations').with(['tax', 'log'])
     .run(async ({ assert }, kind) => {
       const { hydrated, property, writes } = sample(kind)
-      const raw = kind === 'tax' ? { ...forecast(1.005), note: 'old' } : { amount: { old: 1.005, new: '2.00' }, note: 'old' }
+      const raw = kind === 'tax' ? { ...forecast('1.00'), note: 'old' } : { amount: { old: '1.00', new: '2.00' }, note: 'old' }
       const row = hydrated(raw); row[property].note = 'new'; await row.save()
       assert.deepEqual(JSON.parse(writes[0][property]), { ...raw, note: 'new' }); assert.isFalse(row.$isDirty)
     })
   test('explicit Tax replacement encodes unchanged legacy amounts and preserves metadata', async ({ assert }) => {
-    const { hydrated, writes } = sample('tax'), row = hydrated({ ...forecast(1), note: { amount: 1.005 },
-      estimated: { ...forecast(1).estimated, evidence: 'keep' } })
+    const { hydrated, writes } = sample('tax'), row = hydrated({ ...forecast('1.00'), note: { amount: 1.005 },
+      estimated: { ...forecast('1.00').estimated, evidence: 'keep' } })
     replaceTaxForecast(row, forecast(1)); await row.save()
     assert.deepEqual(JSON.parse(writes[0].data), { ...forecast('1.00'), note: { amount: 1.005 }, estimated: { ...forecast('1.00').estimated, evidence: 'keep' } })
     assert.deepEqual(row.data.estimated, { ...forecast(1).estimated, evidence: 'keep' })
@@ -110,7 +110,7 @@ test.group('Tax and TransactionLog monetary storage (no database)', () => {
     assert.notProperty(writes[1], 'changes')
   })
   test('a new log append never rewrites a hydrated historical log', async ({ assert }) => {
-    const { Model, hydrated, writes } = sample('log'), old = hydrated({ amount: { old: 1.005 } })
+    const { Model, hydrated, writes } = sample('log'), old = hydrated({ amount: { old: '1.00' } })
     const original = globalThis.structuredClone(old.$attributes), created = new Model()
     created.merge({ id: 2, message: 'new entry', changes: { amount: { new: 2.345 } } }); await created.save()
     assert.lengthOf(writes, 1); assert.equal(writes[0].id, 2); assert.deepEqual(old.$attributes, original)
@@ -126,4 +126,20 @@ test.group('Tax and TransactionLog monetary storage (no database)', () => {
       if (agi === 150000) assert.equal(worksheet.calculate(input(decoded)).firstInstallment, 2500.0025)
     }
   })
+})
+
+test('Tax and log storage decoding reject numbers while serialization preserves numeric models', ({ assert }) => {
+  for (const amount of [0, -0, 1, -1, 1.005]) {
+    const changes = { amount: { old: amount, new: amount }, note: { amount: 'unrelated' } }
+    assert.throws(() => decodeTaxForecast(forecast(amount)))
+    assert.throws(() => decodeTransactionLogMoney(changes))
+    assert.throws(() => sample('tax').hydrated(forecast(amount)))
+    assert.throws(() => sample('log').hydrated(changes))
+    assert.deepEqual(serializeTaxForecast(forecast(amount)), forecast(amount))
+    assert.deepEqual(serializeTransactionLogMoney(changes), changes)
+    assert.deepEqual(new Tax().merge({ data: forecast(amount) }).serialize().data, forecast(amount))
+    assert.deepEqual(new TransactionLog().merge({ changes }).serialize().changes, changes)
+  }
+  assert.throws(() => serializeTaxForecast(forecast('1.00')))
+  assert.throws(() => serializeTransactionLogMoney({ amount: { old: '1.00' } }))
 })
