@@ -74,25 +74,16 @@ const PostedRegister: React.FC<PropsType> = observer(({
     let runningBalance = category || accountSign === 1 ? balance : subtractMoneyCents(zero, balance);
 
     return trxContainer.transactions.map((transaction) => {
-      let { amount } = transaction;
       let amountCents = transaction.amountCents;
 
       if (type === 'rebalances') {
         amountCents = transaction.getRegisterAmountCents(undefined, true);
-        amount = transaction.categories.reduce((prev, c) => {
-          if (c.amount > 0) {
-            return prev + c.amount;
-          }
 
-          return prev;
-        }, 0);
       }
       else if (category !== null) {
-        amount = transaction.getAmountForCategory(category.id);
         amountCents = transaction.getRegisterAmountCents(category.id);
       }
       else if (account && account.type === AccountType.Loan) {
-        amount = transaction.principle ?? 0;
         amountCents = transaction.principleCents ?? zero;
       }
 
@@ -101,7 +92,6 @@ const PostedRegister: React.FC<PropsType> = observer(({
           key={transaction.id}
           transaction={transaction}
           className={transactionClassName}
-          amount={amount}
           amountCents={amountCents}
           runningBalanceCents={runningBalance}
           account={account}

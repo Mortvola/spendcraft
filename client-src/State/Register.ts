@@ -1,11 +1,10 @@
 import { runInAction } from 'mobx';
 import { DateTime } from 'luxon';
 import Http from '@mortvola/http';
-import { encodeTransferCategories } from '../monetary';
+import { encodeTransferCategories, type TransferCategoryInput } from '../monetary';
 import Transaction from './Transaction';
 import {
   ApiResponse,
-  CategoryTransferProps,
   CategoryTransferRequest,
   isInsertCategoryTransferResponse, TransactionType, TransactionProps, TransactionsResponse,
 } from '../../common/ResponseTypes';
@@ -22,7 +21,7 @@ class Register implements RegisterInterface {
 
   async addCategoryTransfer(
     values: {
-      categories: CategoryTransferProps[];
+      categories: TransferCategoryInput[];
       date: string;
     },
     type: TransactionType,

@@ -48,7 +48,7 @@ async function dialog(values, { balance = 10, reject = false, editing = false, p
     bills: { forEachCatgory: () => false }, getCategory: () => ({ getFundingPool: () => pool }) },
   register: { addCategoryTransfer: submit } }
   const transaction = editing ? { date: DateTime.fromISO(previousDate ?? values.date),
-    categories: previousCategories ?? calculateFunding(values.categories, 99),
+    categories: (previousCategories ?? calculateFunding(values.categories, 99)).map(({ amount, ...category }) => ({ ...category, amountCents: inputMoneyCents(amount) })),
     getCategoryAmountCents: index => inputMoneyCents((previousCategories ?? calculateFunding(values.categories, 99))[index].amount),
     updateCategoryTransfer: (request) => submit(request, 2) } : undefined
   const MoneyCentsAmount = ({ amount }) => React.createElement('output', { 'data-amount': formatMoneyCents(amount) }, formatMoneyCents(amount))

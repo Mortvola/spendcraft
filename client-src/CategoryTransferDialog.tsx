@@ -177,7 +177,7 @@ const CategoryTransferDialog: React.FC<PropsType & ModalProps> = ({
   };
 
   const initialSplits = (from: boolean): CategorySplitInput[] => transaction
-    ? transaction.categories.flatMap((category, index) => {
+    ? transaction.categories.flatMap(({ amountCents: _amount, ...category }, index) => {
       const amount = transaction.getCategoryAmountCents(index);
       if ((amount < 0) !== from) return [];
       return [{ ...category, amount: formatMoneyCents(from

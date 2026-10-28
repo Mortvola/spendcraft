@@ -7,7 +7,7 @@ import { addMoneyCents, formatMoneyCents, parseMoneyCents, subtractMoneyCents, t
 import { inputMoneyCents } from './monetary';
 import { TransactionCategoryInterface } from './State/Types';
 
-export type CategorySplitInput = Omit<TransactionCategoryInterface, 'amount'> & { amount: string };
+export type CategorySplitInput = Omit<TransactionCategoryInterface, 'amountCents'> & { amount: string };
 
 export const sumSplitCents = (splits: readonly CategorySplitInput[]): MoneyCents => (
   addMoneyCents(...splits.map(split => inputMoneyCents(split.amount)))

@@ -119,7 +119,7 @@ export * from ${source('common/ResponseTypes.ts')};
     assert.strictEqual(transaction.principleCents, -20)
     assert.strictEqual(transaction.getTaxAmountCents(0), -12)
     assert.strictEqual(transaction.getTaxAmountCents(1), 0)
-    assert.strictEqual(transaction.taxCategories[0].amount, -0.12)
+    assert.strictEqual(transaction.taxCategories[0].amountCents, -12)
     assert.throws(() => transaction.getTaxAmountCents(9))
     assert.strictEqual(transaction.getCategoryAmountCents(0), 10)
     assert.strictEqual(transaction.getCategoryAmountCents(1), 20)
@@ -127,8 +127,11 @@ export * from ${source('common/ResponseTypes.ts')};
     assert.strictEqual(transaction.getRegisterAmountCents(20), 30)
     assert.strictEqual(transaction.getRegisterAmountCents(undefined, true), 30)
     assert.strictEqual(transaction.getRegisterAmountCents(999), Number.MAX_SAFE_INTEGER)
-    assert.strictEqual(typeof transaction.amount, 'number')
-    assert.strictEqual(transaction.categories[0].amount, 0.1)
+    assert.notProperty(transaction, 'amount')
+    assert.notProperty(transaction, 'principle')
+    assert.notProperty(transaction.categories[0], 'amount')
+    assert.notProperty(transaction.taxCategories[0], 'amount')
+    assert.strictEqual(transaction.categories[0].amountCents, 10)
     const overflow = { ...props, categories: [{ categoryId: 20, amount: '90071992547409.91' }, { categoryId: 20, amount: '0.01' }] }
     assert.throws(() => new state.Transaction(f.store, overflow).getRegisterAmountCents(20))
     transaction.refresh(f.transactionProps(-0.2))
@@ -137,7 +140,7 @@ export * from ${source('common/ResponseTypes.ts')};
     assert.throws(() => transaction.getTaxAmountCents(0))
     assert.strictEqual(transaction.getCategoryAmountCents(0), -20)
     assert.strictEqual(transaction.getRegisterAmountCents(20), -20)
-    assert.strictEqual(transaction.amount, -0.2)
+    assert.strictEqual(transaction.amountCents, -20)
     const invalid = f.transactionProps()
     invalid.accountTransaction.amount = '90071992547409.92'
     assert.throws(() => transaction.refresh(invalid))
@@ -234,9 +237,9 @@ export * from ${source('common/ResponseTypes.ts')};
     routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: {
       transaction: response, categories: [{ id: 20, balance: '-99.00' }], acctBalances: [{ id: 10, balance: '1.00' }],
     } } }))
-    await assert.rejects(() => cached.account.updateTransaction({ amount: -99 }))
-    assert.strictEqual(cached.account.categories[0].amount, -10)
-    assert.strictEqual(cached.category.categories[0].amount, -10)
+    await assert.rejects(() => cached.account.updateTransaction({ amountCents: parseMoneyCents('-99.00') }))
+    assert.strictEqual(cached.account.categories[0].amountCents, -1000)
+    assert.strictEqual(cached.category.categories[0].amountCents, -1000)
     assert.strictEqual(cached.account.version, 0)
     assert.deepEqual([f.account.balanceCents, f.category.balanceCents], before)
   })
@@ -319,7 +322,7 @@ export * from ${source('common/ResponseTypes.ts')};
     assert.include(html, 'Reconcile None')
   })
 
-  test('AccountTransaction response amounts become numbers in cached client state').with([
+  test('AccountTransaction response amounts become cents in cached client state').with([
     ['12.50', 12.5], ['-12.50', -12.5], ['0.00', 0], ['0.30', 0.3],
   ]).run(async ({ assert }, [amount, expected]) => {
     const cached = transactions()
@@ -329,10 +332,10 @@ export * from ${source('common/ResponseTypes.ts')};
       return { body: { data: { transaction: props, categories: [], acctBalances: [] } } }
     })
     assert.strictEqual(props.accountTransaction.amount, amount)
-    await cached.account.updateTransaction({ amount: expected })
-    assert.strictEqual(cached.account.amount, expected)
-    assert.strictEqual(cached.category.amount, expected)
-    assert.isNumber(cached.account.amount)
+    await cached.account.updateTransaction({ amountCents: inputMoneyCents(expected) })
+    assert.strictEqual(cached.account.amountCents, inputMoneyCents(expected))
+    assert.strictEqual(cached.category.amountCents, inputMoneyCents(expected))
+    assert.isNumber(cached.account.amountCents)
   })
 
   test('invalid AccountTransaction wire amounts cannot mutate cached state').with([
@@ -344,9 +347,9 @@ export * from ${source('common/ResponseTypes.ts')};
     routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: {
       transaction: props, categories: [{ id: 20, balance: '-99.00' }], acctBalances: [{ id: 10, balance: '1.00' }],
     } } }))
-    await assert.rejects(() => cached.account.updateTransaction({ amount: -99 }))
-    assert.strictEqual(cached.account.amount, -10)
-    assert.strictEqual(cached.category.amount, -10)
+    await assert.rejects(() => cached.account.updateTransaction({ amountCents: parseMoneyCents('-99.00') }))
+    assert.strictEqual(cached.account.amountCents, -1000)
+    assert.strictEqual(cached.category.amountCents, -1000)
     assert.strictEqual(f.account.balanceCents, 9000)
     assert.strictEqual(f.category.balanceCents, -1000)
   })
@@ -359,7 +362,7 @@ export * from ${source('common/ResponseTypes.ts')};
     routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: {
       transaction: props, categories: [{ id: 20, balance: '-99.00' }], acctBalances: [{ id: 10, balance: '1.00' }],
     } } }))
-    await assert.rejects(() => cached.account.updateTransaction({ taxCategories: [{ type: 'estimated_tax_payments', amount: 1 }] }))
+    await assert.rejects(() => cached.account.updateTransaction({ taxCategories: [{ type: 'estimated_tax_payments', amountCents: parseMoneyCents('1.00') }] }))
     assert.deepEqual(cached.account.taxCategories, [])
     assert.deepEqual(cached.category.taxCategories, [])
     assert.strictEqual(cached.account.version, 0)
@@ -582,7 +585,7 @@ export * from ${source('common/ResponseTypes.ts')};
     const transaction = new state.Transaction(f.store, props)
     const render = () => state.renderToStaticMarkup(state.createElement(state.StoreContext.Provider, { value: f.store },
       state.createElement(state.TransactionRow, { transaction, account: { type: state.AccountType.Loan, sign: -1 },
-        amount: 0.01, amountCents: 1, runningBalanceCents: 0 })))
+        amountCents: 1, runningBalanceCents: 0 })))
     const html = render()
     assert.include(html, '>90,071,992,547,409.91</div>')
     assert.include(html, '>90,071,992,547,409.90</div>')
@@ -607,11 +610,11 @@ export * from ${source('common/ResponseTypes.ts')};
     assert.strictEqual(payee[0].sum, '-12.50')
   })
 
-  test('Transaction principal strings decode into numeric client state and preserve null', ({ assert }) => {
+  test('Transaction principal strings decode into cents and preserve null', ({ assert }) => {
     for (const [principle, expected] of [['12.50', 12.5], ['-0.12', -0.12], ['0.00', 0], [null, null]]) {
       const props = f.transactionProps()
       const transaction = new state.Transaction(f.store, { ...props, accountTransaction: { ...props.accountTransaction, principle } })
-      assert.strictEqual(transaction.principle, expected)
+      assert.strictEqual(transaction.principleCents, expected === null ? null : inputMoneyCents(expected))
     }
     for (const principle of [1, '', '1.2', '-0.00', 'Infinity']) {
       const props = f.transactionProps()
@@ -823,14 +826,14 @@ export * from ${source('common/ResponseTypes.ts')};
     const cached = transactions()
     const returned = { ...f.transactionProps(amount), version: 1 }
     routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: { transaction: returned, categories: [{ id: 20, balance: amount.toFixed(2) }], acctBalances: [{ id: 10, balance: (100 + amount).toFixed(2) }] } } }))
-    await cached.account.updateTransaction({ amount })
+    await cached.account.updateTransaction({ amountCents: inputMoneyCents(amount) })
     assert.equal(f.account.balanceCents, 10000 + Math.round(amount * 100)); assert.equal(f.category.balanceCents, Math.round(amount * 100))
-    assert.equal(cached.account.amount, amount)
-    assert.equal(cached.category.amount, amount)
+    assert.equal(cached.account.amountCents, inputMoneyCents(amount))
+    assert.equal(cached.category.amountCents, inputMoneyCents(amount))
     assert.equal(cached.category.version, 1)
   })
 
-  test('tax editor response refreshes numeric attribution across financial caches without balance changes', async ({ assert }) => {
+  test('tax editor response refreshes cent attribution across financial caches without balance changes', async ({ assert }) => {
     const cached = transactions()
     const submitted = [{ type: 'estimated_tax_payments', amount: 12.345 }, { type: 'estimated_tax_payments', amount: -0.125 }]
     const returned = { ...f.transactionProps(), version: 1, taxes: encodeTaxAttributions(submitted) }
@@ -839,11 +842,11 @@ export * from ${source('common/ResponseTypes.ts')};
       return { body: { data: { transaction: returned, categories: [], acctBalances: [] } } }
     })
     const balances = [f.account.balanceCents, f.category.balanceCents]
-    await cached.account.updateTransaction({ taxCategories: submitted })
+    await cached.account.updateTransaction({ taxCategories: submitted.map(({ amount, ...tax }) => ({ ...tax, amountCents: inputMoneyCents(amount) })) })
     for (const transaction of [cached.account, cached.category]) {
-      assert.deepEqual(transaction.taxCategories.map(tax => tax.amount), [12.35, -0.12])
-      assert.isTrue(transaction.taxCategories.every(tax => typeof tax.amount === 'number'))
-      assert.deepEqual(transaction.categories.map(category => category.amount), [-10])
+      assert.deepEqual(transaction.taxCategories.map(tax => tax.amountCents), [1235, -12])
+      assert.isTrue(transaction.taxCategories.every(tax => Number.isSafeInteger(tax.amountCents)))
+      assert.deepEqual(transaction.categories.map(category => category.amountCents), [-1000])
     }
     assert.deepEqual([f.account.balanceCents, f.category.balanceCents], balances)
   })
@@ -872,7 +875,7 @@ export * from ${source('common/ResponseTypes.ts')};
     state.runInAction(() => { f.store.uiState.selectedCategory = f.other })
     const returned = { ...f.transactionProps(), version: 1, categories: [{ categoryId: 21, amount: '-10.00' }] }
     routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: { transaction: returned, categories: [{ id: 20, balance: '0.00' }, { id: 21, balance: '-10.00' }], acctBalances: [{ id: 10, balance: '90.00' }] } } }))
-    await cached.account.updateTransaction({ categories: returned.categories.map(category => ({ ...category, amount: Number(category.amount) })) })
+    await cached.account.updateTransaction({ categories: returned.categories.map(({ amount, ...category }) => ({ ...category, amountCents: parseMoneyCents(amount) })) })
     assert.lengthOf(f.category.transactions.transactions, 0)
     assert.equal(f.category.balanceCents, 0); assert.equal(f.other.balanceCents, -1000)
     assert.equal(cached.account.categories[0].categoryId, 21)
@@ -946,48 +949,48 @@ export * from ${source('common/ResponseTypes.ts')};
     assert.equal(f.store.categoryTree.budget.childrenBalanceCents(), 0)
   })
 
-  test('Transaction CREATE and PATCH encode monetary inputs without changing numeric editor values').with([
-    [12.345, '12.35'], [-0.125, '-0.12'], [0.1 + 0.2, '0.30'], [-0.005, '0.00'], [-0, '0.00'],
-  ]).run(async ({ assert }, [amount, expected]) => {
+  test('Transaction CREATE and PATCH format cents directly without leaking state fields').with([
+    ['12.35', 1235], ['-0.12', -12], ['0.30', 30], ['0.00', 0], ['90071992547409.91', Number.MAX_SAFE_INTEGER],
+  ]).run(async ({ assert }, [expected, amountCents]) => {
     const cached = transactions()
-    const values = { date: '2025-02-10', name: 'Encoded', amount, principle: amount,
-      categories: [{ categoryId: 20, amount, comment: 'keep' }] }
+    const values = { date: '2025-02-10', name: 'Encoded', amountCents, principleCents: amountCents,
+      categories: [{ categoryId: 20, amountCents, comment: 'keep' }] }
+    const wire = { date: values.date, name: values.name, amount: expected, principle: expected,
+      categories: [{ categoryId: 20, amount: expected, comment: 'keep' }] }
     routes.set('post /api/v1/account/10/transactions', async payload => {
-      assert.deepEqual(payload, { ...values, amount: expected, principle: expected,
-        categories: [{ categoryId: 20, amount: expected, comment: 'keep' }] })
+      assert.deepEqual(payload, wire)
       return { ok: false, body: { errors: [] } }
     })
     await f.account.addTransaction(values)
-    const update = { ...values, taxCategories: [{ type: 'estimated_tax_payments', amount }] }
+    const update = { ...values, taxCategories: [{ type: 'estimated_tax_payments', amountCents }] }
     routes.set('patch /api/v1/transaction/40', async payload => {
-      assert.deepEqual(payload, { ...update, version: 0, amount: expected, principle: expected,
-        categories: [{ categoryId: 20, amount: expected, comment: 'keep' }],
+      assert.deepEqual(payload, { ...wire, version: 0,
         taxCategories: [{ type: 'estimated_tax_payments', amount: expected }] })
       return { ok: false, body: { errors: [] } }
     })
     await cached.account.updateTransaction(update)
-    assert.strictEqual(values.amount, amount)
-    assert.strictEqual(values.categories[0].amount, amount)
-    assert.strictEqual(update.taxCategories[0].amount, amount)
+    assert.strictEqual(values.amountCents, amountCents)
+    assert.strictEqual(values.categories[0].amountCents, amountCents)
+    assert.strictEqual(update.taxCategories[0].amountCents, amountCents)
   })
 
-  test('invalid Transaction request amounts fail before HTTP').with([NaN, Infinity, Number.MAX_SAFE_INTEGER])
-    .run(async ({ assert }, amount) => {
+  test('invalid Transaction request cents fail before HTTP').with([NaN, Infinity, -Infinity, 0.1, Number.MAX_SAFE_INTEGER + 1])
+    .run(async ({ assert }, amountCents) => {
       const cached = transactions()
       routes.set('post /api/v1/account/10/transactions', () => { assert.fail('Invalid CREATE reached HTTP') })
       routes.set('patch /api/v1/transaction/40', () => { assert.fail('Invalid PATCH reached HTTP') })
-      await assert.rejects(() => f.account.addTransaction({ amount, categories: [] }))
-      await assert.rejects(() => f.account.addTransaction({ amount: 1, principle: amount, categories: [] }))
-      await assert.rejects(() => f.account.addTransaction({ amount: 1, categories: [{ categoryId: 20, amount }] }))
-      await assert.rejects(() => cached.account.updateTransaction({ amount }))
-      await assert.rejects(() => cached.account.updateTransaction({ principle: amount }))
-      await assert.rejects(() => cached.account.updateTransaction({ categories: [{ categoryId: 20, amount }] }))
-      await assert.rejects(() => cached.account.updateTransaction({ taxCategories: [{ type: 'estimated_tax_payments', amount }] }))
+      await assert.rejects(() => f.account.addTransaction({ amountCents, categories: [] }))
+      await assert.rejects(() => f.account.addTransaction({ amountCents: 100, principleCents: amountCents, categories: [] }))
+      await assert.rejects(() => f.account.addTransaction({ amountCents: 100, categories: [{ categoryId: 20, amountCents }] }))
+      await assert.rejects(() => cached.account.updateTransaction({ amountCents }))
+      await assert.rejects(() => cached.account.updateTransaction({ principleCents: amountCents }))
+      await assert.rejects(() => cached.account.updateTransaction({ categories: [{ categoryId: 20, amountCents }] }))
+      await assert.rejects(() => cached.account.updateTransaction({ taxCategories: [{ type: 'estimated_tax_payments', amountCents }] }))
     })
 
   test('account creation applies returned balances and inserts transaction', async ({ assert }) => {
     routes.set('post /api/v1/account/10/transactions', async () => ({ body: { transaction: f.transactionProps(), categories: [{ id: 20, balance: '-10.00' }], acctBalances: [{ id: 10, balance: '90.00' }] } }))
-    await f.account.addTransaction({ date: '2025-02-10', amount: -10, name: 'Purchase', categories: [{ categoryId: 20, amount: -10 }] })
+    await f.account.addTransaction({ date: '2025-02-10', amountCents: parseMoneyCents('-10.00'), name: 'Purchase', categories: [{ categoryId: 20, amountCents: parseMoneyCents('-10.00') }] })
     assert.equal(f.account.balanceCents, 9000); assert.equal(f.category.balanceCents, -1000)
     assert.equal(f.account.transactions.transactions[0].id, 40)
   })
@@ -1135,8 +1138,8 @@ export * from ${source('common/ResponseTypes.ts')};
   test('rejected transaction edit leaves cached financial state unchanged', async ({ assert }) => {
     const cached = transactions()
     routes.set('patch /api/v1/transaction/40', async () => ({ ok: false, body: { errors: [{ message: 'Rejected' }] } }))
-    assert.isArray(await cached.account.updateTransaction({ amount: -75 }))
-    assert.equal(cached.account.amount, -10); assert.equal(cached.category.amount, -10)
+    assert.isArray(await cached.account.updateTransaction({ amountCents: parseMoneyCents('-75.00') }))
+    assert.equal(cached.account.amountCents, -1000); assert.equal(cached.category.amountCents, -1000)
     assert.equal(f.account.balanceCents, 9000); assert.equal(f.category.balanceCents, -1000)
   })
 
@@ -1167,9 +1170,9 @@ export * from ${source('common/ResponseTypes.ts')};
     const cached = transactions(f.transactionProps(-10, 30))
     routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: { transaction: { ...f.transactionProps(-12.25, 30), version: 1 }, categories: [{ id: 20, balance: '-12.25' }], acctBalances: [{ id: 10, balance: '87.75' }] } } }))
     routes.set('get /api/v1/account/10/statements', async () => ({ body: [{ ...f.statementProps, debits: '-12.25' }] }))
-    await cached.account.updateTransaction({ amount: -12.25 })
+    await cached.account.updateTransaction({ amountCents: parseMoneyCents('-12.25') })
     assert.equal(f.statement.debitsCents, -1225)
-    assert.equal(cached.category.amount, -12.25)
+    assert.equal(cached.category.amountCents, -1225)
   })
 
   test('clearing assignment applies returned statement totals to all loaded copies', async ({ assert }) => {
@@ -1206,8 +1209,8 @@ export * from ${source('common/ResponseTypes.ts')};
   test('malformed transaction success cannot partially mutate financial state', async ({ assert }) => {
     const cached = transactions()
     routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: { transaction: { ...f.transactionProps(), date: 'invalid' }, categories: [{ id: 20, balance: '-75.00' }], acctBalances: [{ id: 10, balance: '25.00' }] } } }))
-    await assert.rejects(() => cached.account.updateTransaction({ amount: -75 }))
-    assert.equal(cached.account.amount, -10); assert.equal(cached.category.amount, -10)
+    await assert.rejects(() => cached.account.updateTransaction({ amountCents: parseMoneyCents('-75.00') }))
+    assert.equal(cached.account.amountCents, -1000); assert.equal(cached.category.amountCents, -1000)
     assert.equal(f.account.balanceCents, 9000); assert.equal(f.category.balanceCents, -1000)
   })
 
@@ -1305,8 +1308,8 @@ export * from ${source('common/ResponseTypes.ts')};
     state.runInAction(() => { f.store.searcher.transactions.setTransactions([f.transactionProps()]) })
     const search = f.store.searcher.transactions.transactions[0]
     routes.set('patch /api/v1/transaction/40', async () => ({ body: { data: { transaction: { ...f.transactionProps(-12.25), version: 1 }, categories: [{ id: 20, balance: '-12.25' }], acctBalances: [{ id: 10, balance: '87.75' }] } } }))
-    await cached.account.updateTransaction({ amount: -12.25 })
-    assert.equal(search.amount, -12.25); assert.equal(search.version, 1)
+    await cached.account.updateTransaction({ amountCents: parseMoneyCents('-12.25') })
+    assert.equal(search.amountCents, -1225); assert.equal(search.version, 1)
     assert.strictEqual(f.store.searcher.transactions.transactions[0], search)
   })
 
@@ -1343,8 +1346,8 @@ export * from ${source('common/ResponseTypes.ts')};
       await submit()
       assert.equal(f.category.balanceCents, -200)
       assert.equal(f.other.balanceCents, 200)
-      assert.deepEqual(f.category.transactions.transactions[0].categories, rows.map((row, id) => ({
-        id, comment: undefined, funder: row.funder, ...row,
+      assert.deepEqual(f.category.transactions.transactions[0].categories, rows.map(({ amount, ...row }, id) => ({
+        id, comment: undefined, funder: row.funder, ...row, amountCents: inputMoneyCents(amount),
       })))
     }
   })

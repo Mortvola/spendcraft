@@ -1,4 +1,4 @@
-import { decodeAmount, inputMoneyCents } from '../monetary';
+import { inputMoneyCents } from '../monetary';
 import { formatMoneyCents, parseMoneyCents, subtractMoneyCents } from '../../common/moneyCents';
 import { sumSplitCents, type CategorySplitInput } from '../CategorySplits';
 import React, {
@@ -94,9 +94,9 @@ const RebalanceDialog: React.FC<PropsType & ModalProps> = ({
   };
 
   const handleSubmit = async (values: ValueType) => {
-    // Adapt only at the existing numeric state-method boundary.
+    // Preserve canonical strings through the transfer request boundary.
     const request = { ...values, categories: values.categories.map(category => ({
-      ...category, amount: decodeAmount(formatMoneyCents(inputMoneyCents(category.amount))),
+      ...category, amount: formatMoneyCents(inputMoneyCents(category.amount)),
     })) };
     if (transaction) {
       const errors = await transaction.updateCategoryTransfer(request);
@@ -133,7 +133,7 @@ const RebalanceDialog: React.FC<PropsType & ModalProps> = ({
       initialValues={{
         categories:
           transaction
-            ? transaction.categories.map((category, index) => ({
+            ? transaction.categories.map(({ amountCents: _amount, ...category }, index) => ({
               ...category, amount: formatMoneyCents(transaction.getCategoryAmountCents(index)),
             }))
             : [],

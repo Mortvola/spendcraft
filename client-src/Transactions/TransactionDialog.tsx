@@ -11,7 +11,7 @@ import {
 } from '@mortvola/forms';
 import CategorySplits, { sumSplitCents, type CategorySplitInput } from '../CategorySplits';
 import { formatMoneyCents, parseMoneyCents, subtractMoneyCents, type MoneyCents } from '../../common/moneyCents';
-import { decodeAmount, inputMoneyCents } from '../monetary';
+import { inputMoneyCents } from '../monetary';
 import MoneyCentsAmount from '../MoneyCentsAmount';
 import { AccountInterface, TransactionInterface } from '../State/Types';
 import AmountInput from '../AmountInput';
@@ -86,13 +86,12 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
 
   const handleSubmit = async (values: ValueType, { setErrors }: FormikHelpers<ValueType>) => {
     const amountCents = transactionAmountCents(values.amount);
-    const amount = decodeAmount(formatMoneyCents(amountCents));
-    const principle = values.principle === undefined ? undefined : decodeAmount(formatMoneyCents(inputMoneyCents(values.principle)));
+    const principleCents = values.principle === undefined ? undefined : inputMoneyCents(values.principle);
 
-    // Convert only at the existing numeric state-method boundary, after cent arithmetic.
-    const categories = values.splits.map((split) => {
-      const cents = inputMoneyCents(split.amount);
-      return { ...split, amount: decodeAmount(formatMoneyCents(amountCents < 0 ? subtractMoneyCents(zero, cents) : cents)) };
+    // Keep amounts in cents until the state method formats the API request.
+    const categories = values.splits.map(({ amount, ...split }) => {
+      const cents = inputMoneyCents(amount);
+      return { ...split, amountCents: amountCents < 0 ? subtractMoneyCents(zero, cents) : cents };
     });
 
     let errors: ErrorProps[] | ApiError[] | null;
@@ -100,11 +99,11 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
       errors = await transaction.updateTransaction({
         name: values.name,
         date: values.date,
-        amount,
-        principle,
+        amountCents,
+        principleCents,
         comment: values.comment,
         categories,
-        taxCategories: values.taxCategories.map(tax => ({ ...tax, amount: decodeAmount(formatMoneyCents(inputMoneyCents(tax.amount))) })),
+        taxCategories: values.taxCategories.map(({ amount, ...tax }) => ({ ...tax, amountCents: inputMoneyCents(amount) })),
       });
     }
     else {
@@ -115,8 +114,8 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
       errors = await account.addTransaction({
         name: values.name,
         date: values.date,
-        amount,
-        principle,
+        amountCents,
+        principleCents,
         comment: values.comment,
         categories,
       });
@@ -168,7 +167,7 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
   const splits = useMemo((): CategorySplitInput[] => {
     if (transaction) {
       if (transaction.categories.length > 0) {
-        return transaction.categories.map((c, index) => ({
+        return transaction.categories.map(({ amountCents: _amount, ...c }, index) => ({
           ...c,
           amount: formatMoneyCents(transaction.amountCents < 0
             ? subtractMoneyCents(zero, transaction.getCategoryAmountCents(index))
@@ -185,7 +184,7 @@ const TransactionDialog: React.FC<PropsType & ModalProps> = ({
   const taxCategories = useMemo((): TransactionTaxInput[] => {
     if (transaction) {
       if (transaction.taxCategories.length > 0) {
-        return transaction.taxCategories.map((t, index) => ({
+        return transaction.taxCategories.map(({ amountCents: _amount, ...t }, index) => ({
           ...t,
           amount: formatMoneyCents(transaction.getTaxAmountCents(index)),
         }));

@@ -6,17 +6,17 @@ import {
 import Http from '@mortvola/http';
 import { DateTime } from 'luxon';
 import Transaction from '../State/Transaction';
-import Amount from '../Amount';
-import { decodeAmount } from '../monetary';
+import MoneyCentsAmount from '../MoneyCentsAmount';
+import { parseMoneyCents, type MoneyCents } from '../../common/moneyCents';
 import { TransactionProps } from '../../common/ResponseTypes';
 
 interface TransactionPropsType {
   name?: string,
   date?: DateTime,
-  amount?: number,
+  amountCents?: MoneyCents,
 }
 
-const TransactionFields: React.FC<TransactionPropsType> = ({ name, date, amount }) => (
+const TransactionFields: React.FC<TransactionPropsType> = ({ name, date, amountCents }) => (
   <div>
     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
       <input readOnly value={name} />
@@ -26,7 +26,7 @@ const TransactionFields: React.FC<TransactionPropsType> = ({ name, date, amount 
       </label>
       <label style={{ display: 'flex', flexDirection: 'column' }}>
         Amount:
-        <Amount amount={amount} />
+        <MoneyCentsAmount amount={amountCents ?? parseMoneyCents('0.00')} />
       </label>
     </div>
   </div>
@@ -51,7 +51,7 @@ const DuplicateDialog: React.FC<PropsType & ModalProps> = ({
         setOtherTransaction({
           name: body.accountTransaction.name,
           date: DateTime.fromISO(body.date),
-          amount: decodeAmount(body.accountTransaction.amount),
+          amountCents: parseMoneyCents(body.accountTransaction.amount),
         });
       }
     })();
@@ -86,13 +86,13 @@ const DuplicateDialog: React.FC<PropsType & ModalProps> = ({
         <TransactionFields
           name={transaction.name}
           date={transaction.date}
-          amount={transaction.amount}
+          amountCents={transaction.amountCents}
         />
         <div style={{ borderTop: 'solid black thin', margin: '1rem' }} />
         <TransactionFields
           name={otherTransaction?.name}
           date={otherTransaction?.date}
-          amount={otherTransaction?.amount}
+          amountCents={otherTransaction?.amountCents}
         />
       </ModalBody>
       <ModalFooter>

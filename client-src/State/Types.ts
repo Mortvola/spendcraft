@@ -1,3 +1,4 @@
+import type { TransferCategoryInput } from '../monetary';
 import type { MoneyCents } from '../../common/moneyCents';
 import { DateTime } from 'luxon';
 import { PlaidLinkOnSuccessMetadata } from 'react-plaid-link';
@@ -10,7 +11,6 @@ import {
   AccountBalanceProps,
   CategoryBalanceProps,
   AccountProps,
-  CategoryTransferProps,
   BillProps,
   FundingRuleResponse,
   StatementProps,
@@ -73,9 +73,6 @@ export interface TransactionInterface extends BaseTransactionInterface {
 
   id: number | null;
 
-  amount: number;
-
-  principle: number | null,
 
   date: DateTime;
 
@@ -113,14 +110,12 @@ export interface TransactionInterface extends BaseTransactionInterface {
 
   duplicateOfTransactionId: number | null;
 
-  getAmountForCategory(categoryId: number): number;
-
   updateTransaction(
     values: {
       date?: string,
       name?: string,
-      amount?: number,
-      principle?: number,
+      amountCents?: MoneyCents,
+      principleCents?: MoneyCents,
       comment?: string,
       statementId?: number | null,
       categories: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
@@ -132,7 +127,7 @@ export interface TransactionInterface extends BaseTransactionInterface {
 
   updateCategoryTransfer(
     values: {
-      categories: CategoryTransferProps[];
+      categories: TransferCategoryInput[];
       date: string;
     },
   ): Promise<null>
@@ -143,7 +138,7 @@ export interface TransactionInterface extends BaseTransactionInterface {
 export interface BaseTransactionInterface {
   id: number | null;
 
-  amount: number;
+  amountCents: MoneyCents;
 
   date: DateTime;
 
@@ -336,7 +331,7 @@ export interface CategoryBalanceInterface {
 export interface TransactionCategoryInterface {
   id?: number;
   categoryId: number;
-  amount: number;
+  amountCents: MoneyCents;
   comment?: string;
   funder?: boolean;
   fundingCategories?: { categoryId: number, amount: number, percentage: boolean }[],
@@ -347,13 +342,13 @@ export interface TransactionCategoryInterface {
 export interface NewTransactionCategoryInterface {
   type: CategoryType;
   categoryId: number;
-  amount: number;
+  amountCents: MoneyCents;
 }
 
 export interface TransactionTaxCategoryInterface {
   id?: number,
   type: string,
-  amount: number,
+  amountCents: MoneyCents,
 }
 
 export interface RegisterInterface {
@@ -495,8 +490,8 @@ export interface AccountInterface {
     values: {
       date?: string,
       name?: string,
-      amount?: number,
-      principle?: number,
+      amountCents?: MoneyCents,
+      principleCents?: MoneyCents,
       comment?: string,
       categories: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
     },

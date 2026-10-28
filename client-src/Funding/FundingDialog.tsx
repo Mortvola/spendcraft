@@ -1,4 +1,4 @@
-import { addMoneyCents, parseMoneyCents, subtractMoneyCents } from '../../common/moneyCents';
+import { formatMoneyCents, addMoneyCents, parseMoneyCents, subtractMoneyCents } from '../../common/moneyCents';
 import { decodeAmount, decodeFundingRules } from '../monetary';
 import { validateFundingPercentages } from '../../common/fundingPercentages'
 import React from 'react';
@@ -170,7 +170,8 @@ const FundingDialog: React.FC<PropsType & ModalProps> = ({
           }
 
           obj[c.categoryId] = {
-            baseAmount: c.baseAmount ?? c.amount,
+            // The funding algorithm still uses dollar numbers at its calculation boundary.
+            baseAmount: c.baseAmount ?? Number(formatMoneyCents(c.amountCents)),
             fundingCategories,
             includeFundingTransfers: c.includeFundingTransfers ?? false,
           }

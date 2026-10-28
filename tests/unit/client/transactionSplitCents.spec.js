@@ -93,15 +93,15 @@ test.group('Transaction split cents', group => {
     assert.strictEqual(transaction.categories[0].amount, 999)
   })
 
-  test('creation and updates preserve signs and numeric state boundaries without mutating edits').with([1, -1])
+  test('creation and updates retain signed cents without mutating edits').with([1, -1])
     .run(async ({ assert }, sign) => {
       let created, updated
       const acct = { ...account(sign), addTransaction: async value => { created = value; return null } }
       const add = dialog({ account: acct, setShow: () => undefined })
       const formValues = values(add, '0.30', ['0.10', '0.20'])
       await add.props.onSubmit(formValues, { setErrors: () => undefined })
-      assert.strictEqual(created.amount, sign * 0.3)
-      assert.deepEqual(Array.from(created.categories, c => c.amount), [sign * 0.1, sign * 0.2])
+      assert.strictEqual(created.amountCents, sign * 30)
+      assert.deepEqual(Array.from(created.categories, c => c.amountCents), [sign * 10, sign * 20])
       assert.strictEqual(formValues.splits[0].amount, '0.10')
       assert.strictEqual(created.categories[0].comment, 'Retain memo')
       const transaction = { date: { toISODate: () => '2025-01-01' }, amountCents: sign * 30,
@@ -109,9 +109,9 @@ test.group('Transaction split cents', group => {
         updateTransaction: async value => { updated = value; return null } }
       const edit = dialog({ account: acct, transaction, setShow: () => undefined })
       await edit.props.onSubmit({ ...formValues, taxCategories: [{ type: 'test', amount: '0.20' }] }, { setErrors: () => undefined })
-      assert.strictEqual(updated.amount, sign * 0.3)
-      assert.deepEqual(Array.from(updated.categories, c => c.amount), [sign * 0.1, sign * 0.2])
-      assert.strictEqual(updated.taxCategories[0].amount, 0.2)
+      assert.strictEqual(updated.amountCents, sign * 30)
+      assert.deepEqual(Array.from(updated.categories, c => c.amountCents), [sign * 10, sign * 20])
+      assert.strictEqual(updated.taxCategories[0].amountCents, 20)
     })
 
   test('split add/remove/edit uses exact remainder and preserves metadata', async ({ assert }) => {
@@ -157,8 +157,8 @@ test.group('Transaction split cents', group => {
       edits.principle = '-0.125'
       assert.strictEqual(interest(edits).props.amount, 42)
       await modal.props.onSubmit(edits, { setErrors: () => undefined })
-      assert.strictEqual(saved.principle, -0.12)
-      assert.strictEqual(saved.amount, 0.3)
+      assert.strictEqual(saved.principleCents, -12)
+      assert.strictEqual(saved.amountCents, 30)
       assert.strictEqual(transaction.principle, 999)
       const principalField = find(modal, e => e.type === 'formField' && e.props.name === 'principle')
       const input = principalField.props.children[0]({ field: { value: '0.10' } })
@@ -195,7 +195,7 @@ test.group('Transaction split cents', group => {
     assert.isUndefined(find(view, e => e.type === 'money'))
   })
 
-  test('tax edits initialize from retained cents and submit numeric state values without changing signs', async ({ assert }) => {
+  test('tax edits initialize and submit retained cents without changing signs', async ({ assert }) => {
     let saved
     const transaction = { date: { toISODate: () => '2025-01-01' }, amountCents: -30,
       categories: [], taxCategories: [{ type: 'test', amount: 999 }], getTaxAmountCents: () => -12,
@@ -204,7 +204,7 @@ test.group('Transaction split cents', group => {
     assert.strictEqual(modal.props.initialValues.taxCategories[0].amount, '-0.12')
     const edits = { ...modal.props.initialValues, taxCategories: [{ type: 'test', amount: '-0.125' }] }
     await modal.props.onSubmit(edits, { setErrors: () => undefined })
-    assert.strictEqual(saved.taxCategories[0].amount, -0.12)
+    assert.strictEqual(saved.taxCategories[0].amountCents, -12)
     assert.strictEqual(saved.taxCategories[0].type, 'test')
     assert.strictEqual(edits.taxCategories[0].amount, '-0.125')
     assert.strictEqual(transaction.taxCategories[0].amount, 999)
@@ -240,6 +240,24 @@ test.group('Transaction split cents', group => {
     assert.isTrue(input.props.exactCents)
     input.props.onValueChange('0.125')
     assert.strictEqual(changed, '0.125')
+  })
+
+  test('duplicate comparison retains canonical API amounts as cents', async ({ assert }) => {
+    let loaded
+    const effects = []
+    const view = await expression('client-src/Transactions/DuplicateDialog.tsx', 'DuplicateDialog', {
+      React: { createElement, Fragment: 'fragment', useState: () => [null, value => { loaded = value }],
+        useEffect: callback => effects.push(callback) }, DateTime, TransactionFields: 'duplicateFields',
+      ModalHeader: 'header', ModalBody: 'body', ModalFooter: 'footer',
+      Http: { get: async () => ({ ok: true, body: async () => ({ date: '2025-01-01',
+        accountTransaction: { name: 'Peer', amount: '90071992547409.91' } }) }) },
+    })
+    const modal = view({ transaction: { duplicateOfTransactionId: 8, amountCents: 30 }, setShow: () => undefined })
+    assert.strictEqual(find(modal, element => element.type === 'duplicateFields').props.amountCents, 30)
+    effects[0]()
+    await new Promise(resolve => setImmediate(resolve))
+    assert.strictEqual(loaded.amountCents, Number.MAX_SAFE_INTEGER)
+    assert.notProperty(loaded, 'amount')
   })
 
   test('offline opening-balance dialogs pass exact cents without changing account signs').with([

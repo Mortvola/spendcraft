@@ -56,7 +56,9 @@ export function decodeNetworthReport(rows: NetworthReportResponse): (string | nu
 }
 
 // Funding metadata stays numeric in editors; only fixed-dollar values cross as strings.
-export function encodeTransferCategories(categories: readonly (Omit<CategoryTransferProps, 'amount'> & { amount: number | DecimalMoneyString })[]): CategoryTransferRequest['categories'] {
+export type TransferCategoryInput = Omit<CategoryTransferProps, 'amount'> & { amount: number | DecimalMoneyString };
+
+export function encodeTransferCategories(categories: readonly TransferCategoryInput[]): CategoryTransferRequest['categories'] {
   return categories.map(({ amount, baseAmount, fundingCategories, ...category }) => ({
     ...category,
     amount: typeof amount === 'string' ? formatMoneyCents(parseMoneyCents(amount)) : encodeAmount(amount),

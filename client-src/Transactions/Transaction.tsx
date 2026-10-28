@@ -1,6 +1,5 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
-import Amount from '../Amount';
 import MoneyCentsAmount from '../MoneyCentsAmount';
 import { parseMoneyCents, subtractMoneyCents, type MoneyCents } from '../../common/moneyCents';
 import { AccountInterface, BaseTransactionInterface, TransactionInterface } from '../State/Types';
@@ -15,7 +14,6 @@ import { ArrowRightLeft } from 'lucide-react';
 interface PropsType {
   transaction: TransactionInterface,
   className?: string,
-  amount: number,
   amountCents: MoneyCents,
   runningBalanceCents: MoneyCents,
   account?: AccountInterface | null,
@@ -25,7 +23,6 @@ interface PropsType {
 const Transaction: React.FC<PropsType> = observer(({
   transaction,
   className,
-  amount,
   amountCents,
   runningBalanceCents,
   account,
@@ -43,14 +40,12 @@ const Transaction: React.FC<PropsType> = observer(({
         TransactionType.FUNDING_TRANSACTION,
         TransactionType.REBALANCE_TRANSACTION,
       ].includes(transaction.type)
-      || transaction.amount === amount
+      || transaction.amountCents === amountCents
     ) {
       return <div className={`${styles.trxAmount} currency`} />;
     }
 
-    return account?.type === AccountType.Loan
-      ? <MoneyCentsAmount className={`${styles.trxAmount} currency`} amount={transaction.amountCents} />
-      : <Amount className={`${styles.trxAmount} currency`} amount={transaction.amount} />
+    return <MoneyCentsAmount className={`${styles.trxAmount} currency`} amount={transaction.amountCents} />
   }
 
   const loanFields = () => (
@@ -90,10 +85,8 @@ const Transaction: React.FC<PropsType> = observer(({
       }
       <Date className={styles.date} date={transaction.date} />
       <div className={styles.name}>{transaction.name}</div>
-      {account?.type === AccountType.Loan
-        ? <MoneyCentsAmount className={`${styles.amount} currency ${reverseClassName}`} amount={accountSign === -1
-          ? subtractMoneyCents(parseMoneyCents('0.00'), amountCents) : amountCents} />
-        : <Amount className={`${styles.amount} currency ${reverseClassName}`} amount={amount * accountSign} />}
+      <MoneyCentsAmount className={`${styles.amount} currency ${reverseClassName}`} amount={accountSign === -1
+        ? subtractMoneyCents(parseMoneyCents('0.00'), amountCents) : amountCents} />
       <MoneyCentsAmount className={`${styles.runningBalance} currency ${reverseClassName}`} amount={runningBalanceCents} />
       <TransactionAccount transaction={transaction} />
       {transactionAmount()}

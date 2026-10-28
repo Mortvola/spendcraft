@@ -1,15 +1,14 @@
-import { parseMoneyCents, addMoneyCents, type MoneyCents } from '../../common/moneyCents';
+import { formatMoneyCents, parseMoneyCents, addMoneyCents, type MoneyCents } from '../../common/moneyCents';
 import { DateTime } from 'luxon';
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
-import { decodeAmount, decodeFundingRules, encodeAmount, encodeTransferCategories } from '../monetary';
+import { decodeAmount, decodeFundingRules, encodeTransferCategories, type TransferCategoryInput } from '../monetary';
 import {
   ErrorProps,
   TransactionType,
   TransactionProps,
   isUpdateCategoryTransferResponse,
   isDeleteTransactionResponse,
-  CategoryTransferProps,
   CategoryTransferRequest,
   Location,
   ApiError,
@@ -46,41 +45,29 @@ class Transaction implements TransactionInterface {
   @observable
   accessor principleCents: MoneyCents | null = null;
 
-  @observable
-  private accessor categoryCents: { categoryId: number; amount: MoneyCents }[] = [];
-
-  @observable
-  private accessor taxAmountsCents: MoneyCents[] = [];
-
   getTaxAmountCents(index: number): MoneyCents {
-    const amount = this.taxAmountsCents[index];
+    const amount = this.taxCategories[index]?.amountCents;
     if (amount === undefined) throw new Error('Missing transaction tax cents');
     return amount;
   }
 
   getCategoryAmountCents(index: number): MoneyCents {
-    const category = this.categoryCents[index];
+    const category = this.categories[index];
     if (!category) throw new Error('Missing transaction category cents');
-    return category.amount;
+    return category.amountCents;
   }
 
   getRegisterAmountCents(categoryId?: number, positiveOnly = false): MoneyCents {
-    const categories = this.categoryCents.filter((category) => (
-      positiveOnly ? category.amount > 0 : category.categoryId === categoryId
+    const categories = this.categories.filter((category) => (
+      positiveOnly ? category.amountCents > 0 : category.categoryId === categoryId
     ));
     return positiveOnly || categories.length > 0
-      ? addMoneyCents(...categories.map((category) => category.amount))
+      ? addMoneyCents(...categories.map((category) => category.amountCents))
       : this.amountCents;
   }
 
   @observable
   accessor id: number | null;
-
-  @observable
-  accessor amount: number;
-
-  @observable
-  accessor principle: number | null;
 
   @observable
   accessor date: DateTime;
@@ -146,8 +133,6 @@ class Transaction implements TransactionInterface {
       this.name = props.accountTransaction.name;
       this.amountCents = parseMoneyCents(props.accountTransaction.amount);
       this.principleCents = props.accountTransaction.principle === null ? null : parseMoneyCents(props.accountTransaction.principle);
-      this.amount = decodeAmount(props.accountTransaction.amount);
-      this.principle = props.accountTransaction.principle === null ? null : decodeAmount(props.accountTransaction.principle);
       this.instituteName = props.accountTransaction.account.institution.name;
       this.accountName = props.accountTransaction.account.name;
       this.accountId = props.accountTransaction.account.id;
@@ -171,21 +156,15 @@ class Transaction implements TransactionInterface {
           this.name = 'Unknown';
       }
 
-      this.amount = 0;
-      this.principle = null;
       this.instituteName = '';
       this.accountName = '';
     }
 
     if (props.categories) {
-      this.categoryCents = props.categories.map((category) => ({
-        categoryId: category.categoryId,
-        amount: parseMoneyCents(category.amount),
-      }));
       this.categories = props.categories.map((c, index) => ({
         id: index,
         categoryId: c.categoryId,
-        amount: decodeAmount(c.amount),
+        amountCents: parseMoneyCents(c.amount),
         comment: c.comment,
         funder: c.funder,
         fundingCategories: c.fundingCategories == null ? c.fundingCategories : decodeFundingRules(c.fundingCategories),
@@ -195,10 +174,9 @@ class Transaction implements TransactionInterface {
     }
 
     if (props.taxes) {
-      this.taxAmountsCents = props.taxes.map(tax => parseMoneyCents(tax.amount));
       this.taxCategories = props.taxes.map((t) => ({
         type: t.type,
-        amount: decodeAmount(t.amount),
+        amountCents: parseMoneyCents(t.amount),
       }))
     }
   }
@@ -207,8 +185,8 @@ class Transaction implements TransactionInterface {
     // Construct before touching the cached object so malformed nested data cannot partially apply.
     const updated = new Transaction(this.store, props);
     if (props.id !== this.id || !updated.date.isValid || !Number.isFinite(updated.version)
-      || !updated.categories.every((category) => Number.isFinite(category.categoryId) && Number.isFinite(category.amount))
-      || !Number.isFinite(updated.amount)) throw new Error('Invalid transaction response');
+      || !updated.categories.every((category) => Number.isFinite(category.categoryId) && Number.isFinite(category.amountCents))
+      || !Number.isSafeInteger(updated.amountCents)) throw new Error('Invalid transaction response');
     runInAction(() => {
       this.date = updated.date;
       this.type = updated.type;
@@ -217,13 +195,9 @@ class Transaction implements TransactionInterface {
       this.duplicateOfTransactionId = updated.duplicateOfTransactionId;
       this.categories = updated.categories;
       this.taxCategories = updated.taxCategories;
-      this.taxAmountsCents = updated.taxAmountsCents;
       this.name = updated.name;
       this.amountCents = updated.amountCents;
       this.principleCents = updated.principleCents;
-      this.categoryCents = updated.categoryCents;
-      this.amount = updated.amount;
-      this.principle = updated.principle;
       this.instituteName = updated.instituteName;
       this.accountName = updated.accountName;
       this.accountId = updated.accountId;
@@ -239,8 +213,8 @@ class Transaction implements TransactionInterface {
     values: {
       date?: string,
       name?: string,
-      amount?: number,
-      principle?: number,
+      amountCents?: MoneyCents,
+      principleCents?: MoneyCents,
       comment?: string,
       statementId?: number | null,
       categories?: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
@@ -251,15 +225,16 @@ class Transaction implements TransactionInterface {
       throw new Error('transaction has a null id');
     }
 
+    const { amountCents, principleCents, categories, taxCategories, ...metadata } = values;
     const response = await Http.patch<UpdateTransactionRequest, ApiResponse<UpdateTransactionResponse>>(
       `/api/v1/transaction/${this.id}`,
       {
         version: this.version,
-        ...values,
-        amount: values.amount === undefined ? undefined : encodeAmount(values.amount),
-        principle: values.principle === undefined ? undefined : encodeAmount(values.principle),
-        categories: values.categories?.map(category => ({ ...category, amount: encodeAmount(category.amount) })),
-        taxCategories: values.taxCategories?.map(tax => ({ ...tax, amount: encodeAmount(tax.amount) })),
+        ...metadata,
+        amount: amountCents === undefined ? undefined : formatMoneyCents(amountCents),
+        principle: principleCents === undefined ? undefined : formatMoneyCents(principleCents),
+        categories: categories?.map(({ amountCents: amount, ...category }) => ({ ...category, amount: formatMoneyCents(amount) })),
+        taxCategories: taxCategories?.map(({ amountCents: amount, ...tax }) => ({ ...tax, amount: formatMoneyCents(amount) })),
       },
     );
 
@@ -306,7 +281,7 @@ class Transaction implements TransactionInterface {
 
   async updateCategoryTransfer(
     values: {
-      categories: CategoryTransferProps[];
+      categories: TransferCategoryInput[];
       date: string;
     },
   ): Promise<null> {
@@ -380,31 +355,6 @@ class Transaction implements TransactionInterface {
     }
 
     throw new Error('invalid response');
-  }
-
-  getAmountForCategory(
-    categoryId: number,
-  ): number {
-    let { amount } = this;
-
-    if (this.categories !== undefined && this.categories !== null
-      && categoryId !== undefined && categoryId !== null
-      && this.categories.some((c) => c.categoryId === categoryId)) {
-      amount = this.categories.reduce((accum, item) => {
-        if (item.categoryId === categoryId) {
-          const amt = item.amount;
-          // if (item.loanTransaction) {
-          //   amt = item.loanTransaction.principle;
-          // }
-
-          return accum + amt;
-        }
-
-        return accum;
-      }, 0);
-    }
-
-    return amount;
   }
 
   toggleReconciled(statementId: number): void {

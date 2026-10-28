@@ -1,7 +1,6 @@
-import { parseMoneyCents, addMoneyCents, type MoneyCents } from '../../common/moneyCents';
+import { formatMoneyCents, parseMoneyCents, addMoneyCents, type MoneyCents } from '../../common/moneyCents';
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
-import { encodeAmount } from '../monetary';
 import { DateTime } from 'luxon';
 import {
   AccountProps, AddTransactionResponse, ErrorProps,
@@ -193,16 +192,17 @@ class Account implements AccountInterface {
     values: {
       date?: string,
       name?: string,
-      amount?: number,
-      principle?: number,
+      amountCents?: MoneyCents,
+      principleCents?: MoneyCents,
       categories: (TransactionCategoryInterface | NewTransactionCategoryInterface)[],
     },
   ): Promise<ErrorProps[] | null> {
+    const { amountCents, principleCents, categories, ...metadata } = values;
     const response = await Http.post<AddTransactionRequest, AddTransactionResponse>(`/api/v1/account/${this.id}/transactions`, {
-      ...values,
-      amount: values.amount === undefined ? undefined : encodeAmount(values.amount),
-      principle: values.principle === undefined ? undefined : encodeAmount(values.principle),
-      categories: values.categories.map(category => ({ ...category, amount: encodeAmount(category.amount) })),
+      ...metadata,
+      amount: amountCents === undefined ? undefined : formatMoneyCents(amountCents),
+      principle: principleCents === undefined ? undefined : formatMoneyCents(principleCents),
+      categories: categories.map(({ amountCents: amount, ...category }) => ({ ...category, amount: formatMoneyCents(amount) })),
     });
 
     if (response.ok) {
