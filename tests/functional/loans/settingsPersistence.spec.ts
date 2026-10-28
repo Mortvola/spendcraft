@@ -1,3 +1,4 @@
+import { categoryTransferRequest } from '../../helpers/transactionRequest.js'
 // Requires task-specific DB authorization and independent per-operation safeguards.
 import { test } from '@japa/runner'
 import { mock } from 'node:test'
@@ -265,8 +266,8 @@ test.group('Loan settings serialization and persistence', (group) => {
   test('same-Budget funding waits and preserves its own effects', async ({ client }) => {
     const f = await fixture(); const before = await financial()
     await contend(f, () => patch(client, f, b), async () => {
-      const response = await client.post('/api/v1/category-transfer').json({ type: 2, date: '2025-02-01',
-        categories: [{ categoryId: f.target.id, amount: 10 }, { categoryId: f.pool.id, amount: -10 }] }).loginAs(f.user)
+      const response = await client.post('/api/v1/category-transfer').json(categoryTransferRequest({ type: 2, date: '2025-02-01',
+        categories: [{ categoryId: f.target.id, amount: 10 }, { categoryId: f.pool.id, amount: -10 }] })).loginAs(f.user)
       response.assertStatus(200)
     })
     await fresh(f, b); equal((await Category.findOrFail(f.pool.id)).balance, 90)

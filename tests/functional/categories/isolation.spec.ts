@@ -1,3 +1,4 @@
+import { categoryTransferRequest } from '../../helpers/transactionRequest.js'
 import { categoryRequest } from '../../helpers/categoryRequest.js'
 import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { writeHistoricalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
@@ -108,7 +109,7 @@ test.group('Group/category/transfer isolation', (group) => {
   test('rejects {name} without changing persisted state').with(scenarios).run(async ({ client, assert }, scenario) => {
     const before = await state()
     const request = client[scenario.method](`/api/v1${scenario.path()}`).accept('json').loginAs(fixture.own.user)
-    if (scenario.body) request.json(scenario.path().includes('/groups/') && scenario.path().includes('/categories') ? categoryRequest(scenario.body()) : scenario.body())
+    if (scenario.body) request.json(scenario.path().includes('/groups/') && scenario.path().includes('/categories') ? categoryRequest(scenario.body()) : categoryTransferRequest(scenario.body()))
     const response = await request
     assert.deepEqual(await state(), before)
     response.assertStatus(404)
@@ -190,14 +191,14 @@ test.group('Group/category/transfer isolation', (group) => {
     const balances = await client.get(`/api/v1/category-balances?date=2025-03-01&id=${fixture.own.transaction.id}`).accept('json').loginAs(fixture.shared)
     balances.assertStatus(200)
     assert.deepEqual(balances.body().find((row: { id: number }) => row.id === fixture.own.category.id), { id: fixture.own.category.id, balance: '110.00' })
-    const created = await client.post('/api/v1/category-transfer').json(transferBody([fixture.own.category.id, fixture.own.otherCategory.id], [fixture.own.category.id]))
+    const created = await client.post('/api/v1/category-transfer').json(categoryTransferRequest(transferBody([fixture.own.category.id, fixture.own.otherCategory.id], [fixture.own.category.id])))
       .accept('json').loginAs(fixture.shared)
     created.assertStatus(200)
     assert.equal((await Category.findOrFail(fixture.own.category.id)).balance, 90)
     assert.equal((await Category.findOrFail(fixture.own.otherCategory.id)).balance, 60)
     const id: number = created.body().data.transaction.id
-    const updated = await client.patch(`/api/v1/category-transfer/${id}`).json({ date: '2025-03-02', type: TransactionType.REBALANCE_TRANSACTION,
-      categories: [{ categoryId: fixture.own.category.id, amount: -5 }, { categoryId: fixture.own.category.id, amount: -10 }, { categoryId: fixture.own.otherCategory.id, amount: 15 }] })
+    const updated = await client.patch(`/api/v1/category-transfer/${id}`).json(categoryTransferRequest({ date: '2025-03-02', type: TransactionType.REBALANCE_TRANSACTION,
+      categories: [{ categoryId: fixture.own.category.id, amount: -5 }, { categoryId: fixture.own.category.id, amount: -10 }, { categoryId: fixture.own.otherCategory.id, amount: 15 }] }))
       .accept('json').loginAs(fixture.shared)
     updated.assertStatus(200)
     assert.equal((await Category.findOrFail(fixture.own.category.id)).balance, 85)
@@ -215,15 +216,15 @@ test.group('Group/category/transfer isolation', (group) => {
     await writeCanonicalTransactionFixture(transaction)
     const before = await state()
     const response = await client.patch(`/api/v1/category-transfer/${transaction.id}`)
-      .json(transferBody([fixture.own.category.id, fixture.own.otherCategory.id])).accept('json').loginAs(fixture.own.user)
+      .json(categoryTransferRequest(transferBody([fixture.own.category.id, fixture.own.otherCategory.id]))).accept('json').loginAs(fixture.own.user)
     assert.deepEqual(await state(), before)
     response.assertStatus(404)
   })
 
   test('optional split ID cannot select a foreign existing record', async ({ client, assert }) => {
-    const response = await client.post('/api/v1/category-transfer').json({ date: '2025-03-01', type: TransactionType.REBALANCE_TRANSACTION,
+    const response = await client.post('/api/v1/category-transfer').json(categoryTransferRequest({ date: '2025-03-01', type: TransactionType.REBALANCE_TRANSACTION,
       categories: [{ id: fixture.foreign.transaction.id, categoryId: fixture.own.category.id, amount: -10 },
-        { categoryId: fixture.own.otherCategory.id, amount: 10 }] }).accept('json').loginAs(fixture.shared)
+        { categoryId: fixture.own.otherCategory.id, amount: 10 }] })).accept('json').loginAs(fixture.shared)
     response.assertStatus(200)
     const transaction = await Transaction.findOrFail(response.body().data.transaction.id)
     assert.equal(transaction.budgetId, fixture.own.budget.id)

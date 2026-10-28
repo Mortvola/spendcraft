@@ -1,4 +1,4 @@
-import { transactionRequest } from '../../helpers/transactionRequest.js'
+import { transactionRequest, categoryTransferRequest } from '../../helpers/transactionRequest.js'
 // PREPARED ONLY: requires fresh spendcraft_test authorization. Not run during implementation.
 // The normal tests/bootstrap.ts installs independent pg/pgLog/execution safeguards
 // before setup and every fixture write/cleanup. Do not run with a standalone runner.
@@ -381,13 +381,13 @@ test.group('Tax storage lifecycle preservation', () => {
       await db.from('categories').where('id', pool.id).update({ balance: 10 })
       const rows = (amount: number) => [{ categoryId: f.category.id, amount }, { categoryId: pool.id, amount: -amount }]
       const created = await client.post('/api/v1/category-transfer').loginAs(f.user).accept('json')
-        .json({ type, date: '2025-02-01', categories: rows(1) })
+        .json(categoryTransferRequest({ type, date: '2025-02-01', categories: rows(1) }))
       created.assertStatus(200)
       const id = created.body().data.transaction.id
       const taxes = [{ ...entry('1.00'), metadata: { keep: true } }, entry('0.30')]
       await db.from('transactions').where('id', id).update({ taxes: JSON.stringify(taxes) })
       const response = await client.patch(`/api/v1/category-transfer/${id}`).loginAs(f.user).accept('json')
-        .json({ type, date: '2025-02-01', categories: rows(2) })
+        .json(categoryTransferRequest({ type, date: '2025-02-01', categories: rows(2) }))
       response.assertStatus(200)
       assert.deepEqual((await raw(id)).taxes, taxes)
       const read = await client.get(`/api/v1/transaction/${id}`).loginAs(f.user)

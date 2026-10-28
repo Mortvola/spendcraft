@@ -540,6 +540,21 @@ export interface CategoryTransferProps {
   id?: number,
   amount: number,
   categoryId: number,
+  baseAmount?: number,
+  comment?: string,
+  funder?: boolean,
+  fundingCategories?: { categoryId: number, amount: number, percentage: boolean }[],
+  includeFundingTransfers?: boolean,
+}
+
+export interface CategoryTransferRequest {
+  date: string;
+  type: TransactionType;
+  categories: (Omit<CategoryTransferProps, 'amount' | 'baseAmount' | 'fundingCategories'> & {
+    amount: DecimalMoneyString;
+    baseAmount?: DecimalMoneyString;
+    fundingCategories?: FundingRuleResponse[];
+  })[];
 }
 
 export interface CategoryFundingProps {

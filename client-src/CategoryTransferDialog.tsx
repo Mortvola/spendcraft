@@ -6,6 +6,7 @@ import {
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
 import { SubmitButton } from '@mortvola/forms';
 import Http from '@mortvola/http';
+import { encodeTransferCategories } from './monetary';
 import CategorySplits from './CategorySplits';
 import Transaction from './State/Transaction';
 import { TransactionCategoryInterface } from './State/Types';
@@ -122,6 +123,9 @@ const CategoryTransferDialog: React.FC<PropsType & ModalProps> = ({
   const handleSubmit = async (values: ValueType) => {
     const { date, fromCategories, toCategories } = values;
     const cats = fromCategories.concat(toCategories).map((s) => {
+      if (!('categoryId' in s)) {
+        throw new Error('missing category');
+      }
       if (s.id === undefined) {
         throw new Error('missing id');
       }
@@ -137,7 +141,7 @@ const CategoryTransferDialog: React.FC<PropsType & ModalProps> = ({
 
     if (transaction) {
       const response = await Http.patch(`/api/v1/category-transfer/${transaction.id}`,
-        { date, categories: cats });
+        { date, categories: encodeTransferCategories(cats) });
 
       if (response.ok) {
         setShow(false);
@@ -145,7 +149,7 @@ const CategoryTransferDialog: React.FC<PropsType & ModalProps> = ({
     }
     else {
       const response = await Http.post('/api/v1/category-transfer',
-        { date, categories: cats });
+        { date, categories: encodeTransferCategories(cats) });
 
       if (response.ok) {
         setShow(false);

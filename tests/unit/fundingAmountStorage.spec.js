@@ -212,14 +212,14 @@ test.group('Funding JSON storage (no database)', () => {
     assert.equal(encoded.fundingCategories[1].amount, '1.00')
     assert.equal(encoded.baseAmount, '1.00')
   })
-  test('transfer validator accepts excess precision while retaining percentage-total constraints', async ({ assert }) => {
-    const data = { date: '2026-10-01', type: 2, categories: [{ categoryId: 1, amount: 1, baseAmount: 1.005,
+  test('transfer validator decodes canonical money while retaining percentage precision and total constraints', async ({ assert }) => {
+    const data = { date: '2026-10-01', type: 2, categories: [{ categoryId: 1, amount: '1.00', baseAmount: '1.00',
       fundingCategories: [rule(12.345, true), rule(87.655, true)] }] }
     // These individually round to 12.35 + 87.66, so the existing total must still reject.
     await assert.rejects(() => updateCategoryTransfer.validate(data))
     data.categories[0].fundingCategories = [rule(12.344, true), rule(87.656, true)]
     const validated = await updateCategoryTransfer.validate(data)
-    assert.equal(validated.categories[0].baseAmount, 1.005)
+    assert.equal(validated.categories[0].baseAmount, 1)
     assert.equal(validated.categories[0].fundingCategories[0].amount, 12.344)
   })
   test('actual funding functions preserve fixed, percentage, mixed and residual behavior after roundtrip', ({ assert }) => {

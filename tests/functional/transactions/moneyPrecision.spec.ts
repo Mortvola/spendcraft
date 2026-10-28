@@ -1,4 +1,4 @@
-import { transactionRequest } from '../../helpers/transactionRequest.js'
+import { transactionRequest, categoryTransferRequest } from '../../helpers/transactionRequest.js'
 import { categoryRequest } from '../../helpers/categoryRequest.js'
 import { statementRequest } from '../../helpers/statementRequest.js'
 import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
@@ -184,15 +184,15 @@ test.group('Monetary persistence and allocation regressions', () => {
         splits: (await Transaction.findOrFail(transaction.id)).categories,
         categoryBalance: (await Category.findOrFail(f.categories[0].id)).balance,
         accountBalance: (await Account.findOrFail(f.account.id)).balance, body: response.body() }))
-      const splits = [{ categoryId: f.categories[1].id, amount: input }, { categoryId: f.categories[2].id, amount: -amount }]
-      const created = await client.post('/api/v1/category-transfer').json({ date: '2025-02-10', type: TransactionType.REBALANCE_TRANSACTION,
-        categories: splits }).accept('json').loginAs(f.user)
+      const splits = [{ categoryId: f.categories[1].id, amount }, { categoryId: f.categories[2].id, amount: -amount }]
+      const created = await client.post('/api/v1/category-transfer').json(categoryTransferRequest({ date: '2025-02-10', type: TransactionType.REBALANCE_TRANSACTION,
+        categories: splits })).accept('json').loginAs(f.user)
       // Negative half ties can fail this sign-asymmetric rounded zero-sum check.
       created.assertStatus(monetaryAmountCents(amount) + monetaryAmountCents(-amount) === 0 ? 200 : 422)
       if (created.status() === 200) {
         const id = created.body().data.transaction.id
-        const updated = await client.patch(`/api/v1/category-transfer/${id}`).json({ date: '2025-02-11',
-          type: TransactionType.REBALANCE_TRANSACTION, categories: splits }).accept('json').loginAs(f.user)
+        const updated = await client.patch(`/api/v1/category-transfer/${id}`).json(categoryTransferRequest({ date: '2025-02-11',
+          type: TransactionType.REBALANCE_TRANSACTION, categories: splits })).accept('json').loginAs(f.user)
         updated.assertStatus(200)
         console.log(JSON.stringify({ scenario: 'fractional transfer', input, status: created.status(),
           splits: (await Transaction.findOrFail(id)).categories,
@@ -202,14 +202,14 @@ test.group('Monetary persistence and allocation regressions', () => {
         assert.equal((await Category.findOrFail(f.categories[1].id)).balance, 0)
         assert.equal((await Category.findOrFail(f.categories[2].id)).balance, 0)
         assert.equal((await f.budget.related('transactions').query()).length, 1)
-        const control = await client.post('/api/v1/category-transfer').json({ date: '2025-02-10', type: TransactionType.REBALANCE_TRANSACTION,
-          categories: splits.map(split => ({ ...split, amount: 0 })) }).accept('json').loginAs(f.user)
+        const control = await client.post('/api/v1/category-transfer').json(categoryTransferRequest({ date: '2025-02-10', type: TransactionType.REBALANCE_TRANSACTION,
+          categories: splits.map(split => ({ ...split, amount: 0 })) })).accept('json').loginAs(f.user)
         control.assertStatus(200)
         const id = control.body().data.transaction.id
         const before = await Promise.all([db.from('transactions').where('application_id', f.budget.id).orderBy('id'),
           db.from('categories').whereIn('id', f.categories.map(c => c.id)).orderBy('id')])
-        const rejected = await client.patch(`/api/v1/category-transfer/${id}`).json({ date: '2025-02-11',
-          type: TransactionType.REBALANCE_TRANSACTION, categories: splits }).accept('json').loginAs(f.user)
+        const rejected = await client.patch(`/api/v1/category-transfer/${id}`).json(categoryTransferRequest({ date: '2025-02-11',
+          type: TransactionType.REBALANCE_TRANSACTION, categories: splits })).accept('json').loginAs(f.user)
         rejected.assertStatus(422)
         assert.deepEqual(await Promise.all([db.from('transactions').where('application_id', f.budget.id).orderBy('id'),
           db.from('categories').whereIn('id', f.categories.map(c => c.id)).orderBy('id')]), before)

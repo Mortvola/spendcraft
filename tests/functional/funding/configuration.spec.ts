@@ -1,3 +1,4 @@
+import { categoryTransferRequest } from '../../helpers/transactionRequest.js'
 import { categoryRequest } from '../../helpers/categoryRequest.js'
 import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { encodeCategoryAllocations } from '#services/categoryAmountCodec'
@@ -81,16 +82,16 @@ test.group('Funding configuration validation regression', (group) => {
               { categoryId: f.source.id, amount: -10 }, { categoryId: f.pool.id, amount: 0 }] }
         const before = await Promise.all([db.from('categories').where('group_id', f.group.id).orderBy('id'),
           db.from('transactions').where('application_id', f.budget.id).orderBy('id')])
-        const response = await request.json(writer.startsWith('category') ? categoryRequest(body) : body).accept('json').loginAs(f.user)
+        const response = await request.json(writer.startsWith('category') ? categoryRequest(body) : categoryTransferRequest(body)).accept('json').loginAs(f.user)
         if (['negative but total 100', 'negative single', 'negative fractional but total 100',
           'below hundred', 'above hundred', 'below pair', 'above pair', 'zero percentage total',
-          'nonnumeric'].includes(scenario.name)) {
+          'nonnumeric'].includes(scenario.name) || (writer.startsWith('funding') && scenario.name === 'numeric strings')) {
           response.assertStatus(422)
           const rule = scenario.name.startsWith('negative') ? 'fundingPercentageNonnegative'
-            : scenario.name === 'nonnumeric' ? 'number' : 'fundingPercentageTotal'
+            : ['nonnumeric', 'numeric strings'].includes(scenario.name) ? 'number' : 'fundingPercentageTotal'
           const field = writer.startsWith('category') ? 'fundingCategories' : 'categories.*.fundingCategories'
           assert.deepEqual(response.body().errors.map((error: { code: string, source: { pointer: string } }) => ({ rule: error.code, field: error.source.pointer })),
-            [{ rule, field: scenario.name === 'nonnumeric' ? `${field}.*.amount` : field }])
+            Array.from({ length: scenario.name === 'numeric strings' ? 2 : 1 }, () => ({ rule, field: ['nonnumeric', 'numeric strings'].includes(scenario.name) ? `${field}.*.amount` : field })))
           assert.deepEqual(await Promise.all([db.from('categories').where('group_id', f.group.id).orderBy('id'),
             db.from('transactions').where('application_id', f.budget.id).orderBy('id')]), before)
           continue
@@ -171,9 +172,9 @@ test.group('Funding configuration validation regression', (group) => {
     assert.deepEqual(await db.from('categories').where('group_id', f.group.id).orderBy('id'), balances)
     for (const extra of [{}, { fundingCategories: null }]) {
       await db.from('transactions').where('id', f.transaction.id).update({ categories: JSON.stringify(before.categories) })
-      const response = await client.patch(path).json({ ...body, categories: [
+      const response = await client.patch(path).json(categoryTransferRequest({ ...body, categories: [
         { categoryId: f.category.id, amount: 10, ...extra }, { categoryId: f.source.id, amount: -10 }, { categoryId: f.pool.id, amount: 0 },
-      ] }).accept('json').loginAs(f.user)
+      ] })).accept('json').loginAs(f.user)
       response.assertStatus(200)
       const stored = await db.from('transactions').where('id', f.transaction.id).first()
       assert.deepEqual(stored.categories, encodeCategoryAllocations([{ categoryId: f.category.id, amount: 10 },

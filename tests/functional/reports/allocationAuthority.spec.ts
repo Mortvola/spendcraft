@@ -1,3 +1,4 @@
+import { categoryTransferRequest } from '../../helpers/transactionRequest.js'
 import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { writeHistoricalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { test } from '@japa/runner'
@@ -188,15 +189,15 @@ test.group('Exclusive Category and Funding History JSON authority', () => {
     const pool = await f.budget.getFundingPoolCategory()
     const unassigned = await f.budget.getUnassignedCategory()
     await pool.merge({ balance: 100 }).save()
-    const first = await client.post('/api/v1/category-transfer').json({ date: '2025-01-31', type: 2,
-      categories: [{ categoryId: f.category.id, amount: 3 }, { categoryId: pool.id, amount: -3 }] }).loginAs(f.user)
+    const first = await client.post('/api/v1/category-transfer').json(categoryTransferRequest({ date: '2025-01-31', type: 2,
+      categories: [{ categoryId: f.category.id, amount: 3 }, { categoryId: pool.id, amount: -3 }] })).loginAs(f.user)
     first.assertStatus(200)
     const id = first.body().data.transaction.id
-    const replacement = await client.patch(`/api/v1/category-transfer/${id}`).json({ date: '2025-01-31', type: 2,
-      categories: [{ categoryId: f.category.id, amount: 2, baseAmount: 7 }, { categoryId: unassigned.id, amount: 1 }, { categoryId: pool.id, amount: -3 }] }).loginAs(f.user)
+    const replacement = await client.patch(`/api/v1/category-transfer/${id}`).json(categoryTransferRequest({ date: '2025-01-31', type: 2,
+      categories: [{ categoryId: f.category.id, amount: 2, baseAmount: 7 }, { categoryId: unassigned.id, amount: 1 }, { categoryId: pool.id, amount: -3 }] })).loginAs(f.user)
     replacement.assertStatus(200)
-    const rejected = await client.patch(`/api/v1/category-transfer/${id}`).json({ date: '2025-02-01', type: 2,
-      categories: [{ categoryId: f.category.id, amount: 2 }, { categoryId: pool.id, amount: -2 }] }).loginAs(f.user)
+    const rejected = await client.patch(`/api/v1/category-transfer/${id}`).json(categoryTransferRequest({ date: '2025-02-01', type: 2,
+      categories: [{ categoryId: f.category.id, amount: 2 }, { categoryId: pool.id, amount: -2 }] })).loginAs(f.user)
     rejected.assertStatus(422)
     const before = await snapshot(f.budget.id)
     const response = await client.get('/api/v1/reports/funding-history').loginAs(f.user)

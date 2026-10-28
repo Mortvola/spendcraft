@@ -1,5 +1,6 @@
 import { fundingPercentagesRule } from '#app/validation/fundingPercentages'
 import vine, { SimpleMessagesProvider } from '@vinejs/vine';
+import { monetaryAmount } from '../monetaryAmount.js'
 
 export const updateCategoryTransfer = vine.compile(
   vine.object({
@@ -8,14 +9,17 @@ export const updateCategoryTransfer = vine.compile(
       vine.object({
         id: vine.number().optional(),
         categoryId: vine.number(),
-        amount: vine.number(),
-        baseAmount: vine.number().optional(),
+        amount: monetaryAmount(),
+        baseAmount: monetaryAmount().optional(),
         comment: vine.string().optional(),
         funder: vine.boolean().optional(),
         fundingCategories: vine.array(
           vine.object({
             categoryId: vine.number(),
-            amount: vine.number(),
+            amount: vine.union([
+              vine.union.if((_value, field) => vine.helpers.asBoolean(field.parent.percentage) === true, vine.number({ strict: true })),
+              vine.union.else(monetaryAmount()),
+            ]),
             percentage: vine.boolean(),
           }),
         ).use(fundingPercentagesRule()).optional(),

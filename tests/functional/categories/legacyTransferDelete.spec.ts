@@ -1,3 +1,4 @@
+import { categoryTransferRequest } from '../../helpers/transactionRequest.js'
 // Requires fresh task-specific database authorization and current safeguards.
 import { test } from '@japa/runner'
 import { mock } from 'node:test'
@@ -82,13 +83,13 @@ test.group('Legacy CategoryTransfer DELETE removed', (group) => {
       const legacy = await history()
       const rows = (amount: number) => [{ categoryId: f.category.id, amount }, { categoryId: f.pool.id, amount: -amount }]
       const created = await client.post('/api/v1/category-transfer')
-        .json({ type, date: '2025-03-01', categories: rows(10) }).loginAs(f.user)
+        .json(categoryTransferRequest({ type, date: '2025-03-01', categories: rows(10) })).loginAs(f.user)
       created.assertStatus(200)
       const id = created.body().data.transaction.id
       assert.equal((await Category.findOrFail(f.category.id)).balance, 10)
       assert.equal((await Category.findOrFail(f.pool.id)).balance, 90)
       const changed = await client.patch(`/api/v1/category-transfer/${id}`)
-        .json({ type, date: type === 2 ? '2025-03-01' : '2025-04-01', categories: rows(20) }).loginAs(f.user)
+        .json(categoryTransferRequest({ type, date: type === 2 ? '2025-03-01' : '2025-04-01', categories: rows(20) })).loginAs(f.user)
       changed.assertStatus(200)
       assert.equal((await Category.findOrFail(f.category.id)).balance, 20)
       assert.equal((await Category.findOrFail(f.pool.id)).balance, 80)

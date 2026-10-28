@@ -1,3 +1,4 @@
+import { categoryTransferRequest } from '../../helpers/transactionRequest.js'
 import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { writeHistoricalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 // DB-backed verification requires fresh task-specific authorization and current safeguards.
@@ -73,7 +74,7 @@ test.group('Replacement admission persisted noninterference (prepared)', () => {
     const saves = mock.method(Category.prototype, 'save', async () => { throw new Error('Admission failure reached Category/Pool save') })
     try {
       const response = await client.patch(`/api/v1/category-transfer/${f.target.id}`)
-        .json({ type, date: '2025-03-01', categories: f.rows(3) }).accept('json').loginAs(f.user)
+        .json(categoryTransferRequest({ type, date: '2025-03-01', categories: f.rows(3) })).accept('json').loginAs(f.user)
       response.assertStatus(shape.startsWith('deleted') ? 404 : 422)
       assert.equal(saves.mock.callCount(), 0)
     } finally { saves.mock.restore() }
@@ -86,7 +87,7 @@ test.group('Replacement admission persisted noninterference (prepared)', () => {
       const foreign = await fixture()
       const before = await state()
       const response = await client.patch(`/api/v1/category-transfer/${target === 'foreign' ? foreign.target.id : 2147483647}`)
-        .json({ type: 99, date: '2025-04-01', categories: own.rows(3) }).accept('json').loginAs(own.user)
+        .json(categoryTransferRequest({ type: 99, date: '2025-04-01', categories: own.rows(3) })).accept('json').loginAs(own.user)
       response.assertStatus(404)
       assert.deepEqual(await state(), before)
     })
@@ -97,11 +98,11 @@ test.group('Replacement admission persisted noninterference (prepared)', () => {
     await writeCanonicalTransactionFixture(f.target)
     const before = await state()
     const rejected = await client.patch(`/api/v1/category-transfer/${f.target.id}`)
-      .json({ type: 2, date: '2025-04-01', categories: f.rows(3) }).accept('json').loginAs(f.user)
+      .json(categoryTransferRequest({ type: 2, date: '2025-04-01', categories: f.rows(3) })).accept('json').loginAs(f.user)
     rejected.assertStatus(422)
     assert.deepEqual(await state(), before)
     const accepted = await client.patch(`/api/v1/category-transfer/${f.target.id}`)
-      .json({ type: 2, date: '2025-03-01', categories: f.rows(3) }).accept('json').loginAs(f.user)
+      .json(categoryTransferRequest({ type: 2, date: '2025-03-01', categories: f.rows(3) })).accept('json').loginAs(f.user)
     accepted.assertStatus(200)
     assert.equal((await Category.findOrFail(f.category.id)).balance, 3)
     assert.equal((await Category.findOrFail(f.pool.id)).balance, 7)
@@ -115,7 +116,7 @@ test.group('Replacement admission persisted noninterference (prepared)', () => {
     await writeHistoricalTransactionFixture(f.target, { categories: f.rows(2) })
     const date = type === 2 ? '2025-03-01' : '2025-04-01'
     const response = await client.patch(`/api/v1/category-transfer/${f.target.id}`)
-      .json({ type, date, categories: f.rows(3) }).accept('json').loginAs(f.user)
+      .json(categoryTransferRequest({ type, date, categories: f.rows(3) })).accept('json').loginAs(f.user)
     response.assertStatus(200)
     const target = await Transaction.findOrFail(f.target.id)
     assert.equal(target.date.toISODate(), date); assert.equal(target.type, type)
@@ -148,7 +149,7 @@ test.group('Replacement admission freshness and rollback (prepared)', () => {
       try {
         await Budget.query({ client: owner }).where('id', f.budget.id).forUpdate().firstOrFail()
         const pid = (await owner.rawQuery('SELECT pg_backend_pid() AS pid')).rows[0].pid
-        request = client.patch(`/api/v1/category-transfer/${f.target.id}`).json({ type: 2, date: '2025-03-01', categories: f.rows(3) })
+        request = client.patch(`/api/v1/category-transfer/${f.target.id}`).json(categoryTransferRequest({ type: 2, date: '2025-03-01', categories: f.rows(3) }))
           .accept('json').loginAs(f.user).then((response) => { response.assertStatus(change === 'deleted' ? 404 : 422) })
         await waitForGate(pid)
         // Controlled persisted changes; no supported public type-conversion endpoint is invented.
@@ -196,7 +197,7 @@ test.group('Replacement admission freshness and rollback (prepared)', () => {
     try {
       await entered.promise
       replacing = client.patch(`/api/v1/category-transfer/${f.target.id}`)
-        .json({ type, date: '2025-03-01', categories: f.rows(3) }).loginAs(f.user)
+        .json(categoryTransferRequest({ type, date: '2025-03-01', categories: f.rows(3) })).loginAs(f.user)
         .then((response) => { response.assertStatus(404) })
       await waitForGate(pid)
     } finally {
@@ -229,14 +230,14 @@ test.group('Replacement admission freshness and rollback (prepared)', () => {
         }
         return result
       })
-      const first = client.patch(`/api/v1/category-transfer/${f.target.id}`).json({ type: scenario.type,
-        date: scenario.type === 2 ? '2025-03-01' : '2025-04-01', categories: f.rows(3) })
+      const first = client.patch(`/api/v1/category-transfer/${f.target.id}`).json(categoryTransferRequest({ type: scenario.type,
+        date: scenario.type === 2 ? '2025-03-01' : '2025-04-01', categories: f.rows(3) }))
         .loginAs(f.user).then((response) => { response.assertStatus(scenario.rollback ? 500 : 200) })
       let second: Promise<void> | undefined
       try {
         await entered.promise
-        second = client.patch(`/api/v1/category-transfer/${f.target.id}`).json({ type: scenario.type,
-          date: scenario.type === 2 ? '2025-03-01' : '2025-05-01', categories: f.rows(4) })
+        second = client.patch(`/api/v1/category-transfer/${f.target.id}`).json(categoryTransferRequest({ type: scenario.type,
+          date: scenario.type === 2 ? '2025-03-01' : '2025-05-01', categories: f.rows(4) }))
           .loginAs(f.user).then((response) => { response.assertStatus(200) })
         await waitForGate(pid)
       } finally {
@@ -260,8 +261,8 @@ test.group('Replacement admission freshness and rollback (prepared)', () => {
       return result
     })
     try {
-      const response = await client.patch(`/api/v1/category-transfer/${f.target.id}`).json({ type,
-        date: type === 2 ? '2025-03-01' : '2025-04-01', categories: f.rows(3) }).loginAs(f.user)
+      const response = await client.patch(`/api/v1/category-transfer/${f.target.id}`).json(categoryTransferRequest({ type,
+        date: type === 2 ? '2025-03-01' : '2025-04-01', categories: f.rows(3) })).loginAs(f.user)
       response.assertStatus(500)
     } finally { fault.mock.restore() }
     assert.deepEqual(await state(), before)
@@ -273,7 +274,7 @@ test.group('Replacement admission freshness and rollback (prepared)', () => {
     try {
       await Budget.query({ client: owner }).where('id', first.budget.id).forUpdate().firstOrFail()
       const response = await client.patch(`/api/v1/category-transfer/${second.target.id}`)
-        .json({ type: 2, date: '2025-03-01', categories: second.rows(3) }).loginAs(second.user)
+        .json(categoryTransferRequest({ type: 2, date: '2025-03-01', categories: second.rows(3) })).loginAs(second.user)
       response.assertStatus(200)
       assert.equal((await Category.findOrFail(second.category.id)).balance, 3)
       assert.equal((await Category.findOrFail(first.category.id)).balance, 2)

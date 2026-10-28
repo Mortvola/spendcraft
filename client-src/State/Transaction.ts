@@ -1,7 +1,7 @@
 import { DateTime } from 'luxon';
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
-import { decodeAmount, decodeFundingRules, encodeAmount } from '../monetary';
+import { decodeAmount, decodeFundingRules, encodeAmount, encodeTransferCategories } from '../monetary';
 import {
   ErrorProps,
   TransactionType,
@@ -9,6 +9,7 @@ import {
   isUpdateCategoryTransferResponse,
   isDeleteTransactionResponse,
   CategoryTransferProps,
+  CategoryTransferRequest,
   Location,
   ApiError,
   ApiResponse,
@@ -268,7 +269,7 @@ class Transaction implements TransactionInterface {
       throw new Error('transaction has a null id');
     }
 
-    const response = await Http.patch<unknown, ApiResponse<unknown>>(`/api/v1/category-transfer/${this.id}`, { ...values, type: this.type });
+    const response = await Http.patch<CategoryTransferRequest, ApiResponse<unknown>>(`/api/v1/category-transfer/${this.id}`, { ...values, type: this.type, categories: encodeTransferCategories(values.categories) });
 
     if (response.ok) {
       const { data } = await response.body();

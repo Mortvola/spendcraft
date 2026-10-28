@@ -1,4 +1,4 @@
-import { transactionRequest } from '../../helpers/transactionRequest.js'
+import { transactionRequest, categoryTransferRequest } from '../../helpers/transactionRequest.js'
 // PREPARED ONLY. Run through the safeguarded application test runner after fresh authorization.
 // tests/bootstrap.ts installs independent configured/live pg+pgLog/execution guards on every write.
 import { test } from '@japa/runner'
@@ -189,9 +189,9 @@ test.group('Transaction Category decimal-string storage (prepared)', () => {
       const f = await fixture()
       const before = await snapshot()
       const response = await client.post('/api/v1/category-transfer').loginAs(f.user).accept('json')
-        .json({ type: shape === 'no-pool' ? 2 : shape, date: '2025-02-01', categories: [
+        .json(categoryTransferRequest({ type: shape === 'no-pool' ? 2 : shape, date: '2025-02-01', categories: [
           { categoryId: f.category.id, amount: 1 }, { categoryId: f.category.id, amount: -1 },
-        ] })
+        ] }))
       response.assertStatus(422)
       assert.deepEqual(await snapshot(), before)
     })
@@ -222,9 +222,9 @@ test.group('Transaction Category decimal-string storage (prepared)', () => {
     const save = mock.method(Category.prototype, 'save', async () => { throw new Error('Late storage failure') })
     try {
       const response = await client.post('/api/v1/category-transfer').loginAs(f.user).accept('json')
-        .json({ type: 2, date: '2025-02-01', categories: [
+        .json(categoryTransferRequest({ type: 2, date: '2025-02-01', categories: [
           { categoryId: f.category.id, amount: 1 }, { categoryId: f.pool.id, amount: -1 },
-        ] })
+        ] }))
       response.assertStatus(500)
     } finally { save.mock.restore() }
     assert.deepEqual(await snapshot(), before)
@@ -318,9 +318,9 @@ test.group('Decimal-string storage concurrency/security (prepared)', () => {
     const foreign = await client.get(`/api/v1/transaction/${target.id}`).loginAs(second.user).accept('json')
     foreign.assertStatus(404)
     const cross = await client.post('/api/v1/category-transfer').loginAs(first.user).accept('json')
-      .json({ type: 3, date: '2025-02-01', categories: [
+      .json(categoryTransferRequest({ type: 3, date: '2025-02-01', categories: [
         { categoryId: second.category.id, amount: 1 }, { categoryId: first.category.id, amount: -1 },
-      ] })
+      ] }))
     cross.assertStatus(404)
     assert.deepEqual(await snapshot(), before)
   })

@@ -1,10 +1,12 @@
 import { runInAction } from 'mobx';
 import { DateTime } from 'luxon';
 import Http from '@mortvola/http';
+import { encodeTransferCategories } from '../monetary';
 import Transaction from './Transaction';
 import {
   ApiResponse,
   CategoryTransferProps,
+  CategoryTransferRequest,
   isInsertCategoryTransferResponse, TransactionType, TransactionProps, TransactionsResponse,
 } from '../../common/ResponseTypes';
 import {
@@ -25,7 +27,7 @@ class Register implements RegisterInterface {
     },
     type: TransactionType,
   ): Promise<null> {
-    const response = await Http.post<unknown, ApiResponse<unknown>>('/api/v1/category-transfer', { ...values, type });
+    const response = await Http.post<CategoryTransferRequest, ApiResponse<unknown>>('/api/v1/category-transfer', { ...values, type, categories: encodeTransferCategories(values.categories) });
 
     if (!response.ok) throw new Error('invalid response');
     const { data } = await response.body();

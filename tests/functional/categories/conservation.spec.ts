@@ -1,3 +1,4 @@
+import { categoryTransferRequest } from '../../helpers/transactionRequest.js'
 import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
@@ -69,7 +70,7 @@ test.group('Category transfer conservation', (group) => {
     const debitId = scenario === 'funding' ? pool.id : fixture.first.id
     const initialDebitBalance = (await Category.findOrFail(debitId)).balance
     const created = await client.post('/api/v1/category-transfer')
-      .json({ date: '2025-03-01', type, categories }).accept('json').loginAs(fixture.user)
+      .json(categoryTransferRequest({ date: '2025-03-01', type, categories })).accept('json').loginAs(fixture.user)
     created.assertStatus(200)
     const id = created.body().data.transaction.id
     assert.deepEqual((await Transaction.findOrFail(id)).categories, categories)
@@ -77,7 +78,7 @@ test.group('Category transfer conservation', (group) => {
     assert.equal((await Category.findOrFail(fixture.second.id)).balance, amount)
     const replacementDate = type === TransactionType.FUNDING_TRANSACTION ? '2025-03-01' : '2025-03-02'
     const updated = await client.patch(`/api/v1/category-transfer/${id}`)
-      .json({ date: replacementDate, type, categories }).accept('json').loginAs(fixture.user)
+      .json(categoryTransferRequest({ date: replacementDate, type, categories })).accept('json').loginAs(fixture.user)
     updated.assertStatus(200)
     assert.equal((await Category.findOrFail(debitId)).balance, initialDebitBalance - amount)
     assert.equal((await Category.findOrFail(fixture.second.id)).balance, amount)
@@ -103,7 +104,7 @@ test.group('Category transfer conservation', (group) => {
         : scenario === 'both-sides' ? [{ categoryId: fixture.first.id, amount: -12 }, { categoryId: fixture.second.id, amount: 11 }]
           : [{ categoryId: fixture.first.id, amount: -10 }, { categoryId: fixture.second.id, amount: 9 }]
     const request = method === 'post' ? client.post('/api/v1/category-transfer') : client.patch(`/api/v1/category-transfer/${existing.id}`)
-    const response = await request.json({ date: '2025-03-02', type: TransactionType.REBALANCE_TRANSACTION, categories }).accept('json').loginAs(fixture.user)
+    const response = await request.json(categoryTransferRequest({ date: '2025-03-02', type: TransactionType.REBALANCE_TRANSACTION, categories })).accept('json').loginAs(fixture.user)
     assert.deepEqual(await state(), before)
     response.assertStatus(422)
   })
@@ -111,7 +112,7 @@ test.group('Category transfer conservation', (group) => {
   test('PATCH requires a replacement split array rather than merging omitted rows', async ({ client, assert }) => {
     const before = await state()
     const response = await client.patch(`/api/v1/category-transfer/${fixture.transaction.id}`)
-      .json({ date: '2025-03-02', type: TransactionType.REBALANCE_TRANSACTION }).accept('json').loginAs(fixture.user)
+      .json(categoryTransferRequest({ date: '2025-03-02', type: TransactionType.REBALANCE_TRANSACTION })).accept('json').loginAs(fixture.user)
     response.assertStatus(422)
     assert.deepEqual(await state(), before)
   })
@@ -129,8 +130,8 @@ test.group('Category transfer conservation', (group) => {
     try {
       const amount = method === 'post' ? 15 : 20
       const request = method === 'post' ? client.post('/api/v1/category-transfer') : client.patch(`/api/v1/category-transfer/${existing.id}`)
-      const response = await request.json({ date: '2025-03-02', type: TransactionType.REBALANCE_TRANSACTION,
-        categories: [{ categoryId: fixture.first.id, amount: -amount }, { categoryId: fixture.second.id, amount }] }).accept('json').loginAs(fixture.user)
+      const response = await request.json(categoryTransferRequest({ date: '2025-03-02', type: TransactionType.REBALANCE_TRANSACTION,
+        categories: [{ categoryId: fixture.first.id, amount: -amount }, { categoryId: fixture.second.id, amount }] })).accept('json').loginAs(fixture.user)
       response.assertStatus(500)
       assert.deepEqual(await state(), before)
     } finally {

@@ -581,6 +581,29 @@ export * from ${source('common/ResponseTypes.ts')};
     assert.equal(f.account.balance, 100); assert.equal(f.category.balance, 0)
   })
 
+  test('transfer CREATE and PATCH encode money while keeping percentage rules numeric').with([
+    [12.345, '12.35'], [-0.125, '-0.12'], [0.1 + 0.2, '0.30'], [-0, '0.00'],
+  ]).run(async ({ assert }, [amount, expected]) => {
+    const cached = transactions()
+    const categories = [{ categoryId: 20, amount, baseAmount: amount, comment: 'keep',
+      fundingCategories: [{ categoryId: 21, amount, percentage: false },
+        { categoryId: 20, amount: 100, percentage: true }] }]
+    const before = globalThis.structuredClone(categories)
+    const wire = [{ ...categories[0], amount: expected, baseAmount: expected,
+      fundingCategories: [{ categoryId: 21, amount: expected, percentage: false }, categories[0].fundingCategories[1]] }]
+    routes.set('post /api/v1/category-transfer', async payload => {
+      assert.deepEqual(payload.categories, wire)
+      return { ok: false, body: {} }
+    })
+    routes.set('patch /api/v1/category-transfer/40', async payload => {
+      assert.deepEqual(payload.categories, wire)
+      return { ok: false, body: {} }
+    })
+    await assert.rejects(() => f.store.register.addCategoryTransfer({ date: '2025-03-01', categories }, state.TransactionType.FUNDING_TRANSACTION))
+    await assert.rejects(() => cached.account.updateCategoryTransfer({ date: '2025-03-01', categories }))
+    assert.deepEqual(categories, before)
+  })
+
   test('transfer editing updates date/version and every loaded copy').with([12.25, -12.25]).run(async ({ assert }, amount) => {
     const props = { ...f.transactionProps(), type: state.TransactionType.FUNDING_TRANSACTION, accountTransaction: undefined, categories: [{ categoryId: 20, amount: (-amount).toFixed(2) }, { categoryId: 21, amount: amount.toFixed(2) }] }
     state.runInAction(() => {
@@ -986,7 +1009,7 @@ export * from ${source('common/ResponseTypes.ts')};
         ...(row.fundingCategories == null ? {} : { fundingCategories: row.fundingCategories.map(rule => ({ ...rule, amount: rule.percentage ? rule.amount : rule.amount.toFixed(2) })) }),
       })) }
     routes.set('post /api/v1/category-transfer', async (payload) => {
-      assert.deepEqual(payload.categories, rows)
+      assert.deepEqual(payload.categories, props.categories)
       return rejected ? { ok: false, body: {} }
         : { body: { data: { transaction: props, balances: [{ id: 20, balance: '-2.00' }, { id: 21, balance: '2.00' }] } } }
     })

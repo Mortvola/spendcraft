@@ -1,4 +1,4 @@
-import { transactionRequest } from '../../helpers/transactionRequest.js'
+import { transactionRequest, categoryTransferRequest } from '../../helpers/transactionRequest.js'
 // Requires task-specific DB authorization and independent per-statement safeguards.
 import { test } from '@japa/runner'
 import { mock } from 'node:test'
@@ -123,8 +123,8 @@ async function initialize(client: ApiClient, f: Fixture, amount = 10, status = 2
   response.assertStatus(status)
 }
 async function funding(client: ApiClient, f: Fixture, type = 2, amount = 20, status = 200) {
-  const response = await client.post('/api/v1/category-transfer').json({ type, date: '2025-02-10',
-    categories: [{ categoryId: f.category.id, amount }, { categoryId: f.pool.id, amount: -amount }] }).loginAs(f.user)
+  const response = await client.post('/api/v1/category-transfer').json(categoryTransferRequest({ type, date: '2025-02-10',
+    categories: [{ categoryId: f.category.id, amount }, { categoryId: f.pool.id, amount: -amount }] })).loginAs(f.user)
   response.assertStatus(status)
 }
 async function create(client: ApiClient, f: Fixture, categoryId = f.category.id, status = 200) {

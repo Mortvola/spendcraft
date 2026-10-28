@@ -1,3 +1,4 @@
+import { categoryTransferRequest } from '../../helpers/transactionRequest.js'
 import { canonicalCategoryAllocations, encodeMonetaryAmount, encodeCategoryAllocations, monetaryAmountCents, checkedCentSum } from '#services/categoryAmountCodec'
 import { encodeFundingMetadata, decodeFundingMetadata } from '#services/fundingAmountCodec'
 // Requires task-specific authorization and the current
@@ -67,8 +68,8 @@ test.group('Funding preview/submission persisted equality', () => {
       const rows = calculateFunding(inputs, f.pool.id)
       const before = new Map([f.pool, ...f.categories].map((category) => [category.id, category.balance]))
       const snapshot = await db.from('accounts').orderBy('id')
-      const response = await client.post('/api/v1/category-transfer').json({ date: '2025-03-01', type: TransactionType.FUNDING_TRANSACTION,
-        categories: rows }).loginAs(f.user)
+      const response = await client.post('/api/v1/category-transfer').json(categoryTransferRequest({ date: '2025-03-01', type: TransactionType.FUNDING_TRANSACTION,
+        categories: rows })).loginAs(f.user)
       if (scenario === 'residual' || scenario === 'zero') {
         // Individually rounded nonconserving cents / absent Pool are rejected by approved policy.
         response.assertStatus(422)
@@ -96,8 +97,8 @@ test.group('Funding preview/submission persisted equality', () => {
       }
       if (scenario === 'chain' || scenario === 'low Pool') assert.equal(fundingCategoryEffect(canonicalCategoryAllocations(rows), f.pool.id), -2)
       if (scenario === 'transfer') assert.equal(transaction.categories[0].amount, 0.3)
-      const replaced = await client.patch(`/api/v1/category-transfer/${transaction.id}`).json({ date: '2025-03-01',
-        type: TransactionType.FUNDING_TRANSACTION, categories: rows }).loginAs(f.user)
+      const replaced = await client.patch(`/api/v1/category-transfer/${transaction.id}`).json(categoryTransferRequest({ date: '2025-03-01',
+        type: TransactionType.FUNDING_TRANSACTION, categories: rows })).loginAs(f.user)
       replaced.assertStatus(200)
       for (const [id, initial] of before) assert.equal((await Category.findOrFail(id)).balance,
         Math.round((initial + fundingCategoryEffect(canonicalCategoryAllocations(rows), id)) * 100) / 100)
@@ -121,7 +122,7 @@ test.group('Funding preview/submission persisted equality', () => {
     // Another committed operation changes financial/configuration state after preview.
     await a.merge({ balance: 5, fundingAmount: 99 }).save()
     await f.pool.merge({ balance: 20 }).save()
-    const response = await client.post('/api/v1/category-transfer').json({ date: '2025-03-01', type: 2, categories: rows }).loginAs(f.user)
+    const response = await client.post('/api/v1/category-transfer').json(categoryTransferRequest({ date: '2025-03-01', type: 2, categories: rows })).loginAs(f.user)
     response.assertStatus(200)
     assert.deepEqual((await Transaction.findOrFail(response.body().data.transaction.id)).categories, rows)
     assert.equal((await Category.findOrFail(a.id)).balance, 7)
@@ -132,7 +133,7 @@ test.group('Funding preview/submission persisted equality', () => {
     const f = await fixture()
     const rows = calculateFunding({ [f.categories[0].id]: { baseAmount: 2, includeFundingTransfers: false,
       fundingCategories: [{ categoryId: f.pool.id, amount: 1, percentage: false }] } }, f.pool.id)
-    const response = await client.post('/api/v1/category-transfer').json({ date: '2025-03-01', type: 2, categories: rows }).loginAs(f.user)
+    const response = await client.post('/api/v1/category-transfer').json(categoryTransferRequest({ date: '2025-03-01', type: 2, categories: rows })).loginAs(f.user)
     assert.isAtLeast(response.status(), 400)
     assert.isBelow(response.status(), 500)
     assert.equal((await Category.findOrFail(f.categories[0].id)).balance, 0)
@@ -153,7 +154,7 @@ test.group('Funding preview/submission persisted equality', () => {
       return result
     })
     try {
-      const response = await client.post('/api/v1/category-transfer').json({ date: '2025-03-01', type: 2, categories: rows }).loginAs(f.user)
+      const response = await client.post('/api/v1/category-transfer').json(categoryTransferRequest({ date: '2025-03-01', type: 2, categories: rows })).loginAs(f.user)
       response.assertStatus(500)
     } finally { fault.mock.restore() }
     assert.deepEqual(await db.from('categories').select('categories.*').join('groups', 'groups.id', 'categories.group_id')
@@ -201,15 +202,15 @@ test.group('Funding preview/posting serialization', () => {
         }
         return saved
       })
-      const first = client.post('/api/v1/category-transfer').json({ date: '2025-03-01', type: 2, categories: funding(1) })
+      const first = client.post('/api/v1/category-transfer').json(categoryTransferRequest({ date: '2025-03-01', type: 2, categories: funding(1) }))
         .loginAs(f.user).then((response) => { response.assertStatus(kind === 'rollback' ? 500 : 200) })
       let second: Promise<void> | undefined
       try {
         await entered.promise
-        second = client.post('/api/v1/category-transfer').json({ date: '2025-03-01',
+        second = client.post('/api/v1/category-transfer').json(categoryTransferRequest({ date: '2025-03-01',
           type: kind === 'rebalance' ? 3 : 2,
           categories: kind === 'rebalance' ? [{ categoryId: a.id, amount: -1 }, { categoryId: b.id, amount: 1 }] : funding(2),
-        }).loginAs(f.user).then((response) => { response.assertStatus(200) })
+        })).loginAs(f.user).then((response) => { response.assertStatus(200) })
         await waitForBudgetWaiter(ownerPid)
       } finally {
         release.resolve()
@@ -232,7 +233,7 @@ test.group('Funding preview/posting serialization', () => {
       await Budget.query({ client: owner }).where('id', first.budget.id).forUpdate().firstOrFail()
       const rows = calculateFunding({ [second.categories[0].id]: { baseAmount: 1, fundingCategories: [
         { categoryId: second.pool.id, amount: 100, percentage: true }], includeFundingTransfers: false } }, second.pool.id)
-      const response = await client.post('/api/v1/category-transfer').json({ date: '2025-03-01', type: 2, categories: rows }).loginAs(second.user)
+      const response = await client.post('/api/v1/category-transfer').json(categoryTransferRequest({ date: '2025-03-01', type: 2, categories: rows })).loginAs(second.user)
       response.assertStatus(200)
       assert.equal((await Category.findOrFail(second.pool.id)).balance, 9)
       assert.equal((await Category.findOrFail(first.pool.id)).balance, 10)
@@ -248,7 +249,7 @@ test.group('Funding replacement projection', () => {
       const rows = (baseAmount: number) => calculateFunding({ [a.id]: { baseAmount,
         fundingCategories: [{ categoryId: f.pool.id, amount: 100, percentage: true }], includeFundingTransfers: false } }, f.pool.id)
       const oldRows = rows(2)
-      const created = await client.post('/api/v1/category-transfer').json({ date: '2025-03-01', type: 2, categories: oldRows }).loginAs(f.user)
+      const created = await client.post('/api/v1/category-transfer').json(categoryTransferRequest({ date: '2025-03-01', type: 2, categories: oldRows })).loginAs(f.user)
       created.assertStatus(200)
       const currentPool = (await Category.findOrFail(f.pool.id)).balance
       assert.equal(currentPool, 8)
@@ -261,13 +262,13 @@ test.group('Funding replacement projection', () => {
       const projectedPool = currentPool - additionalWithdrawal
       const projectedCategory = initial + fundingCategoryEffect(newRows, a.id)
       const rejected = await client.patch(`/api/v1/category-transfer/${created.body().data.transaction.id}`)
-        .json({ date: '2025-04-01', type: 2, categories: newRows }).loginAs(f.user)
+        .json(categoryTransferRequest({ date: '2025-04-01', type: 2, categories: newRows })).loginAs(f.user)
       rejected.assertStatus(422)
       assert.equal((await Category.findOrFail(f.pool.id)).balance, currentPool)
       assert.equal((await Category.findOrFail(a.id)).balance, 2)
       assert.equal((await Transaction.findOrFail(created.body().data.transaction.id)).date.toISODate(), '2025-03-01')
       const response = await client.patch(`/api/v1/category-transfer/${created.body().data.transaction.id}`)
-        .json({ date: '2025-03-01', type: 2, categories: newRows }).loginAs(f.user)
+        .json(categoryTransferRequest({ date: '2025-03-01', type: 2, categories: newRows })).loginAs(f.user)
       response.assertStatus(200)
       assert.equal((await Category.findOrFail(f.pool.id)).balance, projectedPool)
       assert.equal((await Category.findOrFail(a.id)).balance, projectedCategory)
@@ -301,7 +302,7 @@ test.group('Immutable funding date verification', () => {
         fundingCategories: [{ categoryId: a.id, amount: 100, percentage: true }] } } : {}) })
       if (rule === 'transfer') base = 0.1
       const rows = calculateFunding(input(base), f.pool.id)
-      const created = await client.post('/api/v1/category-transfer').json({ date: '2025-03-17', type: 2, categories: rows }).loginAs(f.user)
+      const created = await client.post('/api/v1/category-transfer').json(categoryTransferRequest({ date: '2025-03-17', type: 2, categories: rows })).loginAs(f.user)
       created.assertStatus(200)
       const id = created.body().data.transaction.id
       const read = () => db.from('transactions').where('id', id).select(db.raw('date::text as date'), 'type', 'categories').first()
@@ -314,7 +315,7 @@ test.group('Immutable funding date verification', () => {
       const before = await balances()
       // Even changing the request type must not bypass an existing funding date.
       for (const type of [2, 3]) {
-        const rejected = await client.patch(`/api/v1/category-transfer/${id}`).json({ date: '2025-04-17', type, categories: rows }).accept('json').loginAs(f.user)
+        const rejected = await client.patch(`/api/v1/category-transfer/${id}`).json(categoryTransferRequest({ date: '2025-04-17', type, categories: rows })).accept('json').loginAs(f.user)
         rejected.assertStatus(422)
         assert.include(JSON.stringify(rejected.body()), type === 2
           ? 'The date of a funding transaction cannot be changed.'
@@ -327,7 +328,7 @@ test.group('Immutable funding date verification', () => {
       const initial = Number(info.body().data.find((row: { id: number }) => row.id === a.id).balance)
       // The existing float-based projection can retain a sub-cent binary residue.
       assert.equal(Math.round(initial * 100), 0)
-      const replaced = await client.patch(`/api/v1/category-transfer/${id}`).json({ date: original.date, type: 2, categories: rows }).loginAs(f.user)
+      const replaced = await client.patch(`/api/v1/category-transfer/${id}`).json(categoryTransferRequest({ date: original.date, type: 2, categories: rows })).loginAs(f.user)
       replaced.assertStatus(200)
       assert.deepEqual(await read(), original)
       assert.deepEqual(await balances(), before)
@@ -341,7 +342,7 @@ test.group('Immutable funding date verification', () => {
     const f = await fixture()
     const rows = (baseAmount: number) => calculateFunding({ [f.categories[0].id]: { baseAmount,
       includeFundingTransfers: false, fundingCategories: [{ categoryId: f.pool.id, amount: 100, percentage: true }] } }, f.pool.id)
-    const created = await client.post('/api/v1/category-transfer').json({ date: '2025-03-17', type: 2, categories: rows(2) }).loginAs(f.user)
+    const created = await client.post('/api/v1/category-transfer').json(categoryTransferRequest({ date: '2025-03-17', type: 2, categories: rows(2) })).loginAs(f.user)
     created.assertStatus(200)
     const id = created.body().data.transaction.id
     const snapshot = async () => ({ transaction: await db.from('transactions').where('id', id).first(),
@@ -355,7 +356,7 @@ test.group('Immutable funding date verification', () => {
       return saved
     })
     try {
-      const response = await client.patch(`/api/v1/category-transfer/${id}`).json({ date: '2025-03-17', type: 2, categories: rows(3) }).loginAs(f.user)
+      const response = await client.patch(`/api/v1/category-transfer/${id}`).json(categoryTransferRequest({ date: '2025-03-17', type: 2, categories: rows(3) })).loginAs(f.user)
       response.assertStatus(500)
     } finally { fault.mock.restore() }
     assert.deepEqual(await snapshot(), before)
@@ -364,10 +365,10 @@ test.group('Immutable funding date verification', () => {
   test('type3 rebalance still permits date changes', async ({ client, assert }) => {
     const f = await fixture()
     const categories = [{ categoryId: f.categories[0].id, amount: 1 }, { categoryId: f.pool.id, amount: -1 }]
-    const created = await client.post('/api/v1/category-transfer').json({ date: '2025-03-01', type: 3, categories }).loginAs(f.user)
+    const created = await client.post('/api/v1/category-transfer').json(categoryTransferRequest({ date: '2025-03-01', type: 3, categories })).loginAs(f.user)
     created.assertStatus(200)
     const id = created.body().data.transaction.id
-    const response = await client.patch(`/api/v1/category-transfer/${id}`).json({ date: '2025-04-01', type: 3, categories }).loginAs(f.user)
+    const response = await client.patch(`/api/v1/category-transfer/${id}`).json(categoryTransferRequest({ date: '2025-04-01', type: 3, categories })).loginAs(f.user)
     response.assertStatus(200)
     assert.equal((await Transaction.findOrFail(id)).date.toISODate(), '2025-04-01')
     assert.equal((await Category.findOrFail(f.categories[0].id)).balance, 1)
@@ -382,7 +383,7 @@ test.group('Immutable funding replacement serialization', () => {
       const a = f.categories[0]
       const rows = (baseAmount: number) => calculateFunding({ [a.id]: { baseAmount, includeFundingTransfers: false,
         fundingCategories: [{ categoryId: f.pool.id, amount: 100, percentage: true }] } }, f.pool.id)
-      const created = await client.post('/api/v1/category-transfer').json({ date: '2025-03-17', type: 2, categories: rows(2) }).loginAs(f.user)
+      const created = await client.post('/api/v1/category-transfer').json(categoryTransferRequest({ date: '2025-03-17', type: 2, categories: rows(2) })).loginAs(f.user)
       created.assertStatus(200)
       const id = created.body().data.transaction.id
       const entered = signal()
@@ -402,14 +403,14 @@ test.group('Immutable funding replacement serialization', () => {
         }
         return saved
       })
-      const first = client.patch(`/api/v1/category-transfer/${id}`).json({ date: '2025-03-17', type: 2, categories: rows(3) })
+      const first = client.patch(`/api/v1/category-transfer/${id}`).json(categoryTransferRequest({ date: '2025-03-17', type: 2, categories: rows(3) }))
         .loginAs(f.user).then((response) => { response.assertStatus(kind === 'rollback' ? 500 : 200) })
       let second: Promise<void> | undefined
       try {
         await entered.promise
         second = (kind === 'other writer'
-          ? client.post('/api/v1/category-transfer').json({ date: '2025-04-01', type: 2, categories: rows(1) })
-          : client.patch(`/api/v1/category-transfer/${id}`).json({ date: '2025-03-17', type: 2, categories: rows(4) }))
+          ? client.post('/api/v1/category-transfer').json(categoryTransferRequest({ date: '2025-04-01', type: 2, categories: rows(1) }))
+          : client.patch(`/api/v1/category-transfer/${id}`).json(categoryTransferRequest({ date: '2025-03-17', type: 2, categories: rows(4) })))
           .loginAs(f.user).then((response) => { response.assertStatus(200) })
         await waitForBudgetWaiter(ownerPid)
       } finally {
@@ -434,12 +435,12 @@ test.group('Immutable funding date ownership and lifecycle isolation', () => {
     const foreign = await fixture()
     const rows = calculateFunding({ [foreign.categories[0].id]: { baseAmount: 2, includeFundingTransfers: false,
       fundingCategories: [{ categoryId: foreign.pool.id, amount: 100, percentage: true }] } }, foreign.pool.id)
-    const created = await client.post('/api/v1/category-transfer').json({ date: '2025-03-17', type: 2, categories: rows }).loginAs(foreign.user)
+    const created = await client.post('/api/v1/category-transfer').json(categoryTransferRequest({ date: '2025-03-17', type: 2, categories: rows })).loginAs(foreign.user)
     created.assertStatus(200)
     const snapshot = async () => ({ transactions: await db.from('transactions').orderBy('id'), categories: await db.from('categories').orderBy('id') })
     const before = await snapshot()
     for (const id of [created.body().data.transaction.id, 2147483647]) {
-      const response = await client.patch(`/api/v1/category-transfer/${id}`).json({ date: '2025-04-17', type: 2, categories: rows })
+      const response = await client.patch(`/api/v1/category-transfer/${id}`).json(categoryTransferRequest({ date: '2025-04-17', type: 2, categories: rows }))
         .accept('json').loginAs(own.user)
       response.assertStatus(404)
       assert.deepEqual(await snapshot(), before)
@@ -450,7 +451,7 @@ test.group('Immutable funding date ownership and lifecycle isolation', () => {
     const f = await fixture()
     const rows = calculateFunding({ [f.categories[0].id]: { baseAmount: 2, includeFundingTransfers: false,
       fundingCategories: [{ categoryId: f.pool.id, amount: 100, percentage: true }] } }, f.pool.id)
-    const created = await client.post('/api/v1/category-transfer').json({ date: '2025-03-17', type: 2, categories: rows }).loginAs(f.user)
+    const created = await client.post('/api/v1/category-transfer').json(categoryTransferRequest({ date: '2025-03-17', type: 2, categories: rows })).loginAs(f.user)
     created.assertStatus(200)
     const id = created.body().data.transaction.id
     const response = await client.delete(`/api/v1/transaction/${id}`).loginAs(f.user)

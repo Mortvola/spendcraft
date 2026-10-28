@@ -1,3 +1,4 @@
+import { categoryTransferRequest } from '../../helpers/transactionRequest.js'
 import { categoryRequest } from '../../helpers/categoryRequest.js'
 // Requires explicit authorization for localhost:5432/spendcraft_test
 // and the existing configured/live/execution connection safeguards in tests/bootstrap.ts.
@@ -69,6 +70,36 @@ test.group('Funding decimal-string PostgreSQL acceptance', () => {
         assert.deepEqual(await db.from('categories').where('group_id', f.category.groupId).orderBy('id'), categories)
       }
     })
+  test('transfer money wire types reject before mutation on CREATE and PATCH').with(['create', 'patch'])
+    .run(async ({ client, assert }, operation) => {
+      const f = await fixture()
+      const body = { date: '2026-10-01', type: 2, categories: [
+        { categoryId: f.category.id, amount: '1.00', baseAmount: '1.00', fundingCategories: [
+          { categoryId: f.pool.id, amount: '1.00', percentage: false },
+        ] }, { categoryId: f.pool.id, amount: '-1.00' },
+      ] }
+      const created = await client.post('/api/v1/category-transfer').json(body).accept('json').loginAs(f.user)
+      created.assertStatus(200)
+      const id = created.body().data.transaction.id
+      const before = await balances(), transactions = await db.from('transactions').orderBy('id')
+      for (const field of ['amount', 'baseAmount', 'fixed', 'percentage']) {
+        const values = field === 'percentage' ? ['100', '100.00'] : [1, '1.005', '-0.00', '90071992547409.92']
+        for (const amount of values) {
+          const payload = structuredClone(body)
+          if (field === 'fixed' || field === 'percentage') {
+            const rule = payload.categories[0].fundingCategories?.[0]
+            if (!rule) throw new Error('Expected fixture funding rule')
+            Reflect.set(rule, 'amount', amount)
+            rule.percentage = field === 'percentage'
+          } else Reflect.set(payload.categories[0], field, amount)
+          const request = operation === 'create' ? client.post('/api/v1/category-transfer') : client.patch(`/api/v1/category-transfer/${id}`)
+          const response = await request.json(payload).accept('json').loginAs(f.user)
+          response.assertStatus(422)
+          assert.deepEqual(await balances(), before)
+          assert.deepEqual(await db.from('transactions').orderBy('id'), transactions)
+        }
+      }
+    })
   test('transfer CREATE and replacement persist base/fixed/percentage strings without changing balances from metadata').with(['create', 'replace'])
     .run(async ({ client, assert }, operation) => {
       const f = await fixture()
@@ -78,12 +109,12 @@ test.group('Funding decimal-string PostgreSQL acceptance', () => {
           { categoryId: f.pool.id, amount: 100, percentage: true },
         ] }, { categoryId: f.pool.id, amount: -1 },
       ] }
-      const created = await client.post('/api/v1/category-transfer').loginAs(f.user).json(body)
+      const created = await client.post('/api/v1/category-transfer').loginAs(f.user).json(categoryTransferRequest(body))
       created.assertStatus(200)
       const id = created.body().data.transaction.id
       const before = await balances()
       const response = operation === 'replace'
-        ? await client.patch(`/api/v1/category-transfer/${id}`).loginAs(f.user).json(body) : created
+        ? await client.patch(`/api/v1/category-transfer/${id}`).loginAs(f.user).json(categoryTransferRequest(body)) : created
       response.assertStatus(200)
       const stored = await db.from('transactions').where('id', id).firstOrFail()
       assert.strictEqual(response.body().data.transaction.categories[0].amount, '1.00')
@@ -108,8 +139,8 @@ test.group('Funding decimal-string PostgreSQL acceptance', () => {
   })
   test('deleted canonical Transaction metadata remains readable without normalization', async ({ client, assert }) => {
     const f = await fixture()
-    const response = await client.post('/api/v1/category-transfer').loginAs(f.user).json({ date: '2026-10-01', type: 2,
-      categories: [{ categoryId: f.category.id, amount: 1 }, { categoryId: f.pool.id, amount: -1 }] })
+    const response = await client.post('/api/v1/category-transfer').loginAs(f.user).json(categoryTransferRequest({ date: '2026-10-01', type: 2,
+      categories: [{ categoryId: f.category.id, amount: 1 }, { categoryId: f.pool.id, amount: -1 }] }))
     response.assertStatus(200)
     const id = response.body().data.transaction.id
     const raw = [{ categoryId: f.category.id, amount: '1.00', baseAmount: '54.27',
@@ -129,7 +160,7 @@ test.group('Funding decimal-string PostgreSQL acceptance', () => {
     const loaded = await Category.findOrFail(f.category.id)
     const inputs = { [f.category.id]: { baseAmount: 1, fundingCategories: loaded.fundingCategories, includeFundingTransfers: false } }
     const calculated = calculateFunding(inputs, f.pool.id)
-    const response = await client.post('/api/v1/category-transfer').loginAs(f.user).json({ date: '2026-10-01', type: 2, categories: calculated })
+    const response = await client.post('/api/v1/category-transfer').loginAs(f.user).json(categoryTransferRequest({ date: '2026-10-01', type: 2, categories: calculated }))
     response.assertStatus(200)
     const saved = response.body().data.transaction.categories[0]
     assert.deepEqual(calculateFunding({ [f.category.id]: { baseAmount: Number(saved.baseAmount),
@@ -146,8 +177,8 @@ test.group('Funding decimal-string PostgreSQL acceptance', () => {
     assert.equal(Number(rows[0].total), 3.75)
     const own = await fixture(), foreign = await fixture()
     const create = async (f: typeof own, date: string, baseAmount: number, type = 2) => {
-      const response = await client.post('/api/v1/category-transfer').loginAs(f.user).json({ date, type,
-        categories: [{ categoryId: f.category.id, amount: 1, baseAmount }, { categoryId: f.pool.id, amount: -1 }] })
+      const response = await client.post('/api/v1/category-transfer').loginAs(f.user).json(categoryTransferRequest({ date, type,
+        categories: [{ categoryId: f.category.id, amount: 1, baseAmount }, { categoryId: f.pool.id, amount: -1 }] }))
       response.assertStatus(200)
       const id = response.body().data.transaction.id
       if (typeof id !== 'number') throw new Error('Expected numeric fixture Transaction ID')
@@ -201,8 +232,8 @@ test.group('Funding decimal-string PostgreSQL acceptance', () => {
       return saved
     })
     try {
-      const response = await client.post('/api/v1/category-transfer').loginAs(f.user).json({ date: '2026-10-01', type: 2,
-        categories: [{ categoryId: f.category.id, amount: 1, baseAmount: 1.005 }, { categoryId: f.pool.id, amount: -1 }] })
+      const response = await client.post('/api/v1/category-transfer').loginAs(f.user).json(categoryTransferRequest({ date: '2026-10-01', type: 2,
+        categories: [{ categoryId: f.category.id, amount: 1, baseAmount: 1.005 }, { categoryId: f.pool.id, amount: -1 }] }))
       response.assertStatus(500)
     } finally { fault.mock.restore() }
     assert.deepEqual(await balances(), before)

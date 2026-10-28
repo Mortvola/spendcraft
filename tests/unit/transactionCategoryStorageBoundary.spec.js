@@ -98,7 +98,7 @@ test.group('Transaction Category storage boundary — approved CREATE admission'
           params() { return {} },
           async validateUsing(validator) {
             return validator.validate({ type, date: '2026-10-01',
-              categories: [{ categoryId: 1, amount: 1 }, { categoryId: 2, amount: -1 }] })
+              categories: [{ categoryId: 1, amount: '1.00' }, { categoryId: 2, amount: '-1.00' }] })
           },
         },
         logger: { error() { return undefined } },
