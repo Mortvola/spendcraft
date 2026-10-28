@@ -102,7 +102,7 @@ test.group('Tax forecast and TransactionLog decimal-string PostgreSQL acceptance
     const model = await TransactionLog.findOrFail(log.id); assert.deepEqual(model.changes?.amount, { old: 0.13, new: -0.12 })
     const response = await client.get('/api/v1/transaction-logs').accept('json').loginAs(f.user); response.assertStatus(200)
     const item = response.body().find((entry: { id: number }) => entry.id === log.id)
-    assert.deepEqual(item.changes.amount, { old: 0.13, new: -0.12 }); assert.deepEqual(item.changes.unrelated, { amount: 1.005 })
+    assert.deepEqual(item.changes.amount, { old: '0.13', new: '-0.12' }); assert.deepEqual(item.changes.unrelated, { amount: 1.005 })
     const column = await db.rawQuery("SELECT udt_name FROM information_schema.columns WHERE table_schema='public' AND table_name='transaction_logs' AND column_name='changes'")
     assert.equal(column.rows[0].udt_name, 'json'); assert.deepEqual(await financialState(), before)
   })
@@ -118,7 +118,7 @@ test.group('Tax forecast and TransactionLog decimal-string PostgreSQL acceptance
     const original = '{"amount":{"old":1.005,"new":"2.00"},"note":"keep"}'
     await db.from('transaction_logs').where('id', old.id).update({ changes: original })
     const before = await db.from('transaction_logs').where('id', old.id).firstOrFail()
-    const model = await TransactionLog.findOrFail(old.id); assert.deepEqual(model.serialize().changes.amount, { old: 1.005, new: 2 })
+    const model = await TransactionLog.findOrFail(old.id); assert.deepEqual(model.serialize().changes.amount, { old: '1.00', new: '2.00' })
     await f.transaction.related('transactionLog').create({ budgetId: f.budget.id, message: 'new', changes: { amount: { new: 2.345 } } })
     await f.transaction.related('transactionLog').create({ budgetId: f.budget.id, message: 'message only' })
     assert.deepEqual(await db.from('transaction_logs').where('id', old.id).firstOrFail(), before)

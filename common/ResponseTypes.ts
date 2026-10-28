@@ -359,6 +359,14 @@ export interface LoanUpdateProps {
 //   (r as LoanTransactionProps).transaction !== undefined
 // );
 
+export interface TransactionLogChanges extends Record<string, unknown> {
+  amount?: {
+    old?: DecimalMoneyString | null;
+    new?: DecimalMoneyString | null;
+    [key: string]: unknown;
+  } | null;
+}
+
 export interface TransactionsResponse {
   transactions: TransactionProps[];
 

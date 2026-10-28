@@ -16,6 +16,7 @@ import {
   GroupType,
   UpdateStatementProps,
   TransactionProps,
+  TransactionLogChanges,
 } from '../../common/ResponseTypes'
 import LoanTransaction from './LoanTransaction';
 import SystemIds from './SystemIds';
@@ -656,6 +657,7 @@ export interface TransactionLogProps {
   createdAt: string;
   message: string;
   transactionId: number;
+  changes?: TransactionLogChanges | null;
 }
 
 export type TransactionLogsResponse = TransactionLogProps[]

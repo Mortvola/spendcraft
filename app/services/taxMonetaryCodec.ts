@@ -38,7 +38,7 @@ export const encodeTransactionLogMoney = (value: unknown) => mapTaxMoney(value, 
 export const decodeTransactionLogMoney = (value: unknown) => mapTaxMoney(value, transactionLogMoneyPaths, decodeStoredMonetaryAmount)
 
 export const serializeTaxForecast = (value: unknown) => mapTaxMoney(value, taxForecastPaths, amount => encodeMonetaryAmount(runtimeTaxMonetaryAmount(amount)))
-export const serializeTransactionLogMoney = (value: unknown) => mapTaxMoney(value, transactionLogMoneyPaths, runtimeTaxMonetaryAmount)
+export const serializeTransactionLogMoney = (value: unknown) => mapTaxMoney(value, transactionLogMoneyPaths, amount => encodeMonetaryAmount(runtimeTaxMonetaryAmount(amount)))
 
 export function validateSubmittedTaxForecast(value: unknown): void {
   if (value === null || value === undefined) return // Existing required-object validator decides presence.
