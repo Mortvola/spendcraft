@@ -34,6 +34,25 @@ export type FundingRuleResponse = { categoryId: number } & (
   | { percentage: true; amount: number }
 );
 
+export interface CategoryWriteRequest {
+  name: string;
+  type?: CategoryType;
+  groupId?: number;
+  fundingAmount?: DecimalMoneyString;
+  fundingCategories?: FundingRuleResponse[];
+  goalDate?: string | null;
+  useGoal?: boolean;
+  includeFundingTransfers?: boolean;
+  recurrence?: number;
+  suspended?: boolean;
+  hidden?: boolean;
+}
+
+export type CategoryCreateRequest = CategoryWriteRequest & {
+  useGoal: boolean;
+  fundingCategories: FundingRuleResponse[];
+};
+
 export interface CategoryProps {
   id: number;
 

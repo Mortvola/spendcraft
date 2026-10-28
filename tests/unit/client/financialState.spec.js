@@ -233,6 +233,30 @@ export * from ${source('common/ResponseTypes.ts')};
     assert.strictEqual(f.category.balance, 0)
   })
 
+  test('Category CREATE/PATCH encode money while keeping percentages and model values numeric').with(['create', 'patch'])
+    .run(async ({ assert }, operation) => {
+      const group = f.category.group
+      const rules = [{ categoryId: 20, amount: -0.125, percentage: false },
+        { categoryId: 20, amount: 12.75, percentage: true }, { categoryId: 21, amount: 87.25, percentage: true }]
+      const path = `/api/v1/groups/${group.id}/categories${operation === 'patch' ? '/20' : ''}`
+      routes.set(`${operation === 'patch' ? 'patch' : 'post'} ${path}`, async payload => {
+        assert.strictEqual(payload.fundingAmount, '12.35')
+        assert.deepEqual(payload.fundingCategories, [{ categoryId: 20, amount: '-0.12', percentage: false },
+          { categoryId: 20, amount: 12.75, percentage: true }, { categoryId: 21, amount: 87.25, percentage: true }])
+        return { body: { data: { id: operation === 'patch' ? 20 : 25, groupId: group.id, name: 'Bill', type: state.CategoryType.Bill,
+          balance: '0.00', fundingAmount: '12.35', fundingCategories: payload.fundingCategories, goalDate: null,
+          useGoal: false, includeFundingTransfers: false, recurrence: 1, hidden: false, suspended: false } } }
+      })
+      const input = { group, name: 'Bill', type: state.CategoryType.Bill, fundingAmount: 12.345,
+        useGoal: false, hidden: false, fundingCategories: rules }
+      if (operation === 'patch') await f.category.update(input)
+      else await group.addCategory(input)
+      const category = operation === 'patch' ? f.category : group.children.find(row => row.id === 25)
+      assert.strictEqual(category.fundingAmount, 12.35)
+      assert.deepEqual(category.fundingCategories.map(rule => rule.amount), [-0.12, 12.75, 87.25])
+      assert.strictEqual(rules[0].amount, -0.125)
+    })
+
   test('funding metadata becomes numeric client state without changing requests or percentages', ({ assert }) => {
     const category = new state.Category({ ...({ id: 25, groupId: -1, name: "Funding", type: state.CategoryType.Regular, balance: "0.00", suspended: false, includeFundingTransfers: true, recurrence: 1, hidden: false }), fundingAmount: '12.50',
       fundingCategories: [{ categoryId: 20, amount: '-0.12', percentage: false },

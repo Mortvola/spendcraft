@@ -1,3 +1,4 @@
+import { monetaryAmount } from '../monetaryAmount.js'
 import type { TransactionClientContract } from '@adonisjs/lucid/types/database'
 import { fundingPercentagesRule } from '#app/validation/fundingPercentages'
 import { CategoryType } from '#common/ResponseTypes'
@@ -15,7 +16,7 @@ export const addCategory = vine
         }),
       monthlyExpenses: vine.boolean().optional(),
       type: vine.enum([CategoryType.Regular, CategoryType.Bill, CategoryType.Goal]).optional(),
-      fundingAmount: vine.number().optional(),
+      fundingAmount: monetaryAmount().optional(),
       includeFundingTransfers: vine.boolean().optional(),
       goalDate: vine.date().optional().transform((date) => DateTime.fromJSDate(date)),
       recurrence: vine.number().withoutDecimals().min(1).max(360).optional(),
@@ -23,7 +24,10 @@ export const addCategory = vine
       fundingCategories: vine.array(
         vine.object({
           categoryId: vine.number(),
-          amount: vine.number(),
+          amount: vine.union([
+            vine.union.if((_value, field) => vine.helpers.asBoolean(field.parent.percentage) === true, vine.number({ strict: true })),
+            vine.union.else(monetaryAmount()),
+          ]),
           percentage: vine.boolean(),
         }),
       ).use(fundingPercentagesRule()),
@@ -75,14 +79,17 @@ export const updateCategory = vine
       goalDate: vine.date().optional().transform((date) => DateTime.fromJSDate(date)),
       recurrence: vine.number().withoutDecimals().min(1).max(360).optional(),
       suspended: vine.boolean().optional(),
-      fundingAmount: vine.number().optional(),
+      fundingAmount: monetaryAmount().optional(),
       includeFundingTransfers: vine.boolean().optional(),
       hidden: vine.boolean().optional(),
       useGoal: vine.boolean().optional(),
       fundingCategories: vine.array(
         vine.object({
           categoryId: vine.number(),
-          amount: vine.number(),
+          amount: vine.union([
+            vine.union.if((_value, field) => vine.helpers.asBoolean(field.parent.percentage) === true, vine.number({ strict: true })),
+            vine.union.else(monetaryAmount()),
+          ]),
           percentage: vine.boolean(),
         }),
       ).use(fundingPercentagesRule()).optional(),

@@ -1,3 +1,4 @@
+import { categoryRequest } from '../../helpers/categoryRequest.js'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
 import { mock } from 'node:test'
@@ -52,8 +53,8 @@ test.group('Funding recurrence characterization', () => {
         const payload = { name, fundingAmount: 120, useGoal: true, goalDate: '2025-01-01',
           fundingCategories: [], ...(recurrence === undefined ? {} : { recurrence }) }
         const request = path === 'create'
-          ? client.post(`/api/v1/groups/${f.group.id}/categories`).json(payload)
-          : client.patch(`/api/v1/groups/${f.group.id}/categories/${f.category.id}`).json(payload)
+          ? client.post(`/api/v1/groups/${f.group.id}/categories`).json(categoryRequest(payload))
+          : client.patch(`/api/v1/groups/${f.group.id}/categories/${f.category.id}`).json(categoryRequest(payload))
         const response = await request.accept('json').loginAs(f.user)
         const absent = recurrence === undefined || recurrence === null
         const accepted = recurrence === 1 || recurrence === 3 || recurrence === 360 || recurrence === '2' || absent

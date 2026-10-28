@@ -623,7 +623,7 @@ export interface CategoryParams {
   categoryId?: number,
   group: GroupInterface,
   useGoal: boolean,
-  fundingCategories: unknown,
+  fundingCategories: { categoryId: number, amount: number, percentage: boolean }[],
   hidden: boolean,
 }
 

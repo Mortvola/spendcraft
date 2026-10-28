@@ -1,3 +1,4 @@
+import { categoryRequest } from '../../helpers/categoryRequest.js'
 import { test } from '@japa/runner'
 import User from '#models/User'
 import app from '@adonisjs/core/services/app'
@@ -84,11 +85,11 @@ test.group('Categories', (group) => {
       assert.isNotNull(groupId)
 
       const response = await client.post(`/api/v1/groups/${groupId}/categories`)
-        .json({
+        .json(categoryRequest({
           name: 'Test Category',
           useGoal: false,
           fundingCategories: [],
-        })
+        }))
         .accept('json')
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         .loginAs(user!)
@@ -121,9 +122,9 @@ test.group('Categories', (group) => {
       assert.isNotNull(categoryId)
 
       const response = await client.patch(`/api/v1/groups/${groupId}/categories/${categoryId}`)
-        .json({
+        .json(categoryRequest({
           name: 'Test Category Updated'
-        })
+        }))
         .accept('json')
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         .loginAs(user!)

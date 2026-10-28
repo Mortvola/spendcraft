@@ -1,4 +1,4 @@
-import { decodeAmount, decodeFundingRules } from '../monetary';
+import { decodeAmount, decodeFundingRules, encodeAmount, encodeFundingRules } from '../monetary';
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 import { DateTime } from 'luxon';
@@ -8,6 +8,7 @@ import {
   CategoryBalanceProps,
   ApiResponse,
   UpdateCategoryResponse,
+  CategoryWriteRequest,
 } from '../../common/ResponseTypes';
 import LoanTransaction from './LoanTransaction';
 import {
@@ -118,11 +119,12 @@ class Category implements CategoryInterface {
       group, goalDate, fundingCategories, ...p
     } = params;
 
-    const response = await Http.patch<unknown, ApiResponse<UpdateCategoryResponse>>(`/api/v1/groups/${group.id}/categories/${this.id}`, {
+    const response = await Http.patch<CategoryWriteRequest, ApiResponse<UpdateCategoryResponse>>(`/api/v1/groups/${group.id}/categories/${this.id}`, {
       ...p,
+      fundingAmount: p.fundingAmount === undefined ? undefined : encodeAmount(p.fundingAmount),
       fundingCategories:
         p.type === CategoryType.Bill
-          ? fundingCategories
+          ? encodeFundingRules(fundingCategories)
           : [],
       goalDate: goalDate?.toISODate(),
     });

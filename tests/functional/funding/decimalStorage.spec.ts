@@ -1,3 +1,4 @@
+import { categoryRequest } from '../../helpers/categoryRequest.js'
 // Requires explicit authorization for localhost:5432/spendcraft_test
 // and the existing configured/live/execution connection safeguards in tests/bootstrap.ts.
 import { test } from '@japa/runner'
@@ -32,16 +33,41 @@ test.group('Funding decimal-string PostgreSQL acceptance', () => {
       const f = await fixture()
       const path = `/api/v1/groups/${f.group.id}/categories`
       const response = await (operation === 'create' ? client.post(path) : client.patch(`${path}/${f.category.id}`))
-        .loginAs(f.user).json({ name: 'Rounded', type: CategoryType.Bill, useGoal: false, fundingCategories: [
+        .loginAs(f.user).json(categoryRequest({ name: 'Rounded', type: CategoryType.Bill, useGoal: false, fundingAmount: 12.345, fundingCategories: [
           { categoryId: f.pool.id, amount: -0.125, percentage: false },
           { categoryId: f.pool.id, amount: 12.344, percentage: true },
           { categoryId: f.pool.id, amount: 87.656, percentage: true },
-        ] })
+        ] }))
       response.assertStatus(200)
       const id = operation === 'create' ? response.body().data.id : f.category.id
       const stored = await db.from('categories').where('id', id).firstOrFail()
+      assert.strictEqual(stored.funding_amount, '12.35')
+      assert.strictEqual(response.body().data.fundingAmount, '12.35')
+      assert.strictEqual((await Category.findOrFail(id)).fundingAmount, 12.35)
       assert.deepEqual(stored.funding_categories.map((r: { amount: string }) => r.amount), ['-0.12', '12.34', '87.66'])
       assert.deepEqual(response.body().data.fundingCategories.map((r: { amount: number | string }) => r.amount), ['-0.12', 12.34, 87.66])
+    })
+  test('Category money/percentage wire types reject atomically').with(['create', 'patch'].flatMap(operation =>
+    ['fundingAmount', 'fixed', 'percentage'].map(field => ({ operation, field }))))
+    .run(async ({ client, assert }, { operation, field }) => {
+      const f = await fixture(), before = await balances()
+      const categories = await db.from('categories').where('group_id', f.category.groupId).orderBy('id')
+      const values = field === 'percentage' ? ['100', '100.00', null, 'Infinity'] : [0, '1.2', '-0.00', '90071992547409.92']
+      for (const amount of values) {
+        const payload = { name: 'Rejected', type: CategoryType.Bill, useGoal: false,
+          fundingAmount: '0.00', fundingCategories: [{ categoryId: f.pool.id, amount: '1.00', percentage: false }] }
+        if (field === 'fundingAmount') Reflect.set(payload, 'fundingAmount', amount)
+        else {
+          Reflect.set(payload.fundingCategories[0], 'amount', amount)
+          payload.fundingCategories[0].percentage = field === 'percentage'
+        }
+        const path = `/api/v1/groups/${f.category.groupId}/categories`
+        const request = operation === 'create' ? client.post(path) : client.patch(`${path}/${f.category.id}`)
+        const response = await request.loginAs(f.user).accept('json').json(payload)
+        response.assertStatus(422)
+        assert.deepEqual(await balances(), before)
+        assert.deepEqual(await db.from('categories').where('group_id', f.category.groupId).orderBy('id'), categories)
+      }
     })
   test('transfer CREATE and replacement persist base/fixed/percentage strings without changing balances from metadata').with(['create', 'replace'])
     .run(async ({ client, assert }, operation) => {
@@ -162,7 +188,7 @@ test.group('Funding decimal-string PostgreSQL acceptance', () => {
   test('foreign Budget rule references reject without configuration or financial changes', async ({ client, assert }) => {
     const own = await fixture(), foreign = await fixture(), before = await balances()
     const response = await client.patch(`/api/v1/groups/${own.group.id}/categories/${own.category.id}`).loginAs(own.user)
-      .json({ name: 'Forbidden', fundingCategories: [{ categoryId: foreign.pool.id, amount: 100, percentage: true }] })
+      .json(categoryRequest({ name: 'Forbidden', fundingCategories: [{ categoryId: foreign.pool.id, amount: 100, percentage: true }] }))
     assert.isAtLeast(response.status(), 400); assert.isBelow(response.status(), 500)
     assert.deepEqual(await balances(), before)
   })

@@ -27,6 +27,16 @@ export function decodeAmount(value: unknown): number {
 }
 
 
+export function encodeFundingRules(rules: readonly { categoryId: number; amount: number; percentage: boolean }[]): FundingRuleResponse[] {
+  return rules.map(rule => {
+    if (rule.percentage === true) {
+      if (typeof rule.amount !== 'number' || !Number.isFinite(rule.amount)) throw new Error('Invalid percentage request');
+      return { ...rule, percentage: true, amount: rule.amount };
+    }
+    return { ...rule, percentage: false, amount: encodeAmount(rule.amount) };
+  });
+}
+
 export function decodeFundingRules<T extends FundingRuleResponse>(rules: readonly T[]): (Omit<T, 'amount'> & { amount: number })[] {
   return rules.map((rule) => {
     if (rule.percentage === true) {

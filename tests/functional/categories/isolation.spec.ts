@@ -1,3 +1,4 @@
+import { categoryRequest } from '../../helpers/categoryRequest.js'
 import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { writeHistoricalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { test } from '@japa/runner'
@@ -107,7 +108,7 @@ test.group('Group/category/transfer isolation', (group) => {
   test('rejects {name} without changing persisted state').with(scenarios).run(async ({ client, assert }, scenario) => {
     const before = await state()
     const request = client[scenario.method](`/api/v1${scenario.path()}`).accept('json').loginAs(fixture.own.user)
-    if (scenario.body) request.json(scenario.body())
+    if (scenario.body) request.json(scenario.path().includes('/groups/') && scenario.path().includes('/categories') ? categoryRequest(scenario.body()) : scenario.body())
     const response = await request
     assert.deepEqual(await state(), before)
     response.assertStatus(404)
@@ -145,7 +146,7 @@ test.group('Group/category/transfer isolation', (group) => {
     const destination = scenario.move ? fixture.own.otherGroup : fixture.own.group
     const before = await state()
     const response = await client.patch(`/api/v1/groups/${destination.id}/categories/${fixture.own.category.id}`)
-      .json({ name: 'Updated category', fundingCategories: [funding(fixture.own.otherCategory.id)] })
+      .json(categoryRequest({ name: 'Updated category', fundingCategories: [funding(fixture.own.otherCategory.id)] }))
       .accept('json').loginAs(scenario.actor === 'owner' ? fixture.own.user : fixture.shared)
     response.assertStatus(200)
     const category = await Category.findOrFail(fixture.own.category.id)
@@ -170,11 +171,11 @@ test.group('Group/category/transfer isolation', (group) => {
     updated.assertStatus(200)
     assert.equal((await Group.findOrFail(groupId)).parentGroupId, fixture.own.otherGroup.id)
     const fundingCategories = [fixture.own.category.id, fixture.own.category.id].map(funding)
-    const category = await client.post(`/api/v1/groups/${groupId}/categories`).json({ ...categoryBody(), fundingCategories }).accept('json').loginAs(fixture.shared)
+    const category = await client.post(`/api/v1/groups/${groupId}/categories`).json(categoryRequest({ ...categoryBody(), fundingCategories })).accept('json').loginAs(fixture.shared)
     category.assertStatus(200)
     const categoryId: number = category.body().data.id
     assert.deepEqual((await Category.findOrFail(categoryId)).fundingCategories, fundingCategories)
-    const changed = await client.patch(`/api/v1/groups/${groupId}/categories/${categoryId}`).json({ name: 'Renamed shared category', fundingCategories }).accept('json').loginAs(fixture.shared)
+    const changed = await client.patch(`/api/v1/groups/${groupId}/categories/${categoryId}`).json(categoryRequest({ name: 'Renamed shared category', fundingCategories })).accept('json').loginAs(fixture.shared)
     changed.assertStatus(200)
     const deleted = await client.delete(`/api/v1/groups/${groupId}/categories/${categoryId}`).accept('json').loginAs(fixture.shared)
     deleted.assertStatus(204)

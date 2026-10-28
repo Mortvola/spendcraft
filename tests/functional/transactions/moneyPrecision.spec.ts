@@ -1,3 +1,4 @@
+import { categoryRequest } from '../../helpers/categoryRequest.js'
 import { statementRequest } from '../../helpers/statementRequest.js'
 import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { monetaryAmountCents, encodeMonetaryAmount } from '#services/categoryAmountCodec'
@@ -219,7 +220,7 @@ test.group('Monetary persistence and allocation regressions', () => {
     .run(async ({ client, assert }, amount) => {
       const f = await fixture()
       const config = await client.patch(`/api/v1/groups/${f.categories[0].groupId}/categories/${f.categories[0].id}`)
-        .json({ name: 'Currency configuration', fundingAmount: amount }).accept('json').loginAs(f.user)
+        .json(categoryRequest({ name: 'Currency configuration', fundingAmount: Number(amount) })).accept('json').loginAs(f.user)
       config.assertStatus(200)
       const data = { shortTermCapitalGains: Number(amount), longTermCapitalGains: 0, dividends: 0, taxableInterest: 0 }
       const statement = await client.post(`/api/v1/account/${f.account.id}/statements`)

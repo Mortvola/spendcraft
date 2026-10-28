@@ -1,3 +1,4 @@
+import { categoryRequest } from '../../helpers/categoryRequest.js'
 import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 // Task-authorized test fixtures only. All SQL uses the accepted bootstrap driver guard.
 import { test } from '@japa/runner'
@@ -117,7 +118,7 @@ test.group('Staged real writer pair PostgreSQL regressions', (group) => {
     .with([false, true])
     .run(async ({ client, assert }, creationFirst) => {
       const f = await fixture()
-      const create = () => client.post(`/api/v1/groups/${f.empty.id}/categories`).json({ name: 'New member', useGoal: false, fundingCategories: [] })
+      const create = () => client.post(`/api/v1/groups/${f.empty.id}/categories`).json(categoryRequest({ name: 'New member', useGoal: false, fundingCategories: [] }))
         .loginAs(f.user).then((r) => r.assertStatus(creationFirst ? 200 : 404))
       const remove = () => client.delete(`/api/v1/groups/${f.empty.id}`).loginAs(f.user).then((r) => r.assertStatus(creationFirst ? 409 : 204))
       await pair(creationFirst ? Category : Group, creationFirst ? 'save' : 'delete', (row) => creationFirst

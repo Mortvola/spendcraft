@@ -1,3 +1,4 @@
+import { encodeAmount, encodeFundingRules } from '../monetary';
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
 import Category, { isCategory } from './Category';
@@ -8,6 +9,7 @@ import {
   CategoryType,
   ApiResponse,
   CategoryProps,
+  CategoryCreateRequest,
 } from '../../common/ResponseTypes';
 import {
   CategoryInterface, CategoryParams, GroupInterface, StoreInterface,
@@ -103,11 +105,12 @@ class Group implements GroupInterface {
       group, fundingCategories, goalDate, ...p
     } = params;
 
-    const response = await Http.post<unknown, ApiResponse<CategoryProps>>(`/api/v1/groups/${this.id}/categories`, {
+    const response = await Http.post<CategoryCreateRequest, ApiResponse<CategoryProps>>(`/api/v1/groups/${this.id}/categories`, {
       ...p,
+      fundingAmount: p.fundingAmount === undefined ? undefined : encodeAmount(p.fundingAmount),
       fundingCategories:
       p.type === CategoryType.Bill
-        ? fundingCategories
+        ? encodeFundingRules(fundingCategories)
         : [],
       groupId: this.id,
       goalDate: goalDate?.toISODate(),

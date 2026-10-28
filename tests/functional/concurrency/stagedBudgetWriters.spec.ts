@@ -1,3 +1,4 @@
+import { categoryRequest } from '../../helpers/categoryRequest.js'
 import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 import { writeHistoricalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 // PREPARED ONLY: requires fresh localhost:5432/spendcraft_test authorization.
@@ -61,8 +62,8 @@ function request(client: ApiClient, f: Fixture, operation: Operation) {
     case 'addGroup': return client.post('/api/v1/groups').json({ name: 'Added' })
     case 'updateGroup': return client.patch(`/api/v1/groups/${f.group.id}`).json({ name: 'Renamed' })
     case 'deleteGroup': return client.delete(`/api/v1/groups/${f.empty.id}`)
-    case 'addCategory': return client.post(`/api/v1/groups/${f.group.id}/categories`).json({ name: 'Added', useGoal: false, fundingCategories: [] })
-    case 'updateCategory': return client.patch(`/api/v1/groups/${f.group.id}/categories/${f.category.id}`).json({ name: 'Changed' })
+    case 'addCategory': return client.post(`/api/v1/groups/${f.group.id}/categories`).json(categoryRequest({ name: 'Added', useGoal: false, fundingCategories: [] }))
+    case 'updateCategory': return client.patch(`/api/v1/groups/${f.group.id}/categories/${f.category.id}`).json(categoryRequest({ name: 'Changed' }))
     case 'rename': return client.patch(`/api/v1/institution/${f.institution.id}`).json({ name: 'Renamed' })
     case 'addAccount': return client.post(`/api/v1/institution/${f.institution.id}/accounts`).json({ name: 'Added', balance: 10,
       startDate: '2025-01-01', type: AccountType.Depository, subtype: 'checking', tracking: TrackingType.Transactions })
@@ -218,12 +219,12 @@ test.group('Staged Budget writers PostgreSQL acceptance', (group) => {
       })
       cleanup(() => hook.mock.restore())
       const path = `/api/v1/groups/${f.group.id}/categories/${f.category.id}`
-      const a = client.patch(path).json(values[0]).loginAs(f.user).then((r) => r.assertStatus(200))
+      const a = client.patch(path).json(categoryRequest(values[0])).loginAs(f.user).then((r) => r.assertStatus(200))
       void a.catch(() => undefined)
       let b: Promise<unknown> | undefined
       try {
         await deadline(held)
-        b = client.patch(path).json(values[1]).loginAs(f.user).then((r) => r.assertStatus(200))
+        b = client.patch(path).json(categoryRequest(values[1])).loginAs(f.user).then((r) => r.assertStatus(200))
         void b.catch(() => undefined)
         await waitForGate(pid)
       } finally { release(); await Promise.allSettled([a, ...(b ? [b] : [])]) }
