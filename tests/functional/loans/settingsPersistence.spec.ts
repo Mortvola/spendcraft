@@ -1,3 +1,4 @@
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
 import { categoryTransferRequest } from '../../helpers/transactionRequest.js'
 // Requires task-specific DB authorization and independent per-operation safeguards.
 import { test } from '@japa/runner'
@@ -43,7 +44,7 @@ async function fixture() {
 }
 type Fixture = Awaited<ReturnType<typeof fixture>>
 async function patch(client: ApiClient, f: Fixture, settings: Settings, status = 200, categoryId = f.category.id) {
-  const response = await client.patch(`/api/v1/loans/${categoryId}`).json(settings).loginAs(f.user)
+  const response = await client.patch(`/api/v1/loans/${categoryId}`).json({ ...settings, startingBalance: encodeMonetaryAmount(settings.startingBalance) }).loginAs(f.user)
   response.assertStatus(status)
   if (status === 200) deepStrictEqual(response.body(), { name: settings.name, loan: { balance: '0.00', transactions: [] } })
 }
@@ -185,6 +186,26 @@ test.group('Loan settings serialization and persistence', (group) => {
     equal(get.body().startDate, settings.startDate)
     deepStrictEqual(await financial(), before)
   })
+  test('client-rounded canonical PATCH persists exact cents without financial effects').with([
+    [12.345, 12.35], [-0.125, -0.12], [0.125, 0.13], [1.005, 1], [0.1 + 0.2, 0.3], [-0.005, 0],
+  ]).run(async ({ client }, [input, expected]) => {
+    const f = await fixture(), before = await financial()
+    await patch(client, f, { ...original, rate: 5.125, startingBalance: input })
+    await fresh(f, { ...original, rate: 5.125, startingBalance: expected })
+    deepStrictEqual(await financial(), before)
+  })
+  test('Loan CREATE/PATCH invalid monetary values reject before mutation').with(['create', 'patch'])
+    .run(async ({ client }, operation) => {
+      const f = await fixture(), before = await raw()
+      for (const value of [1, '1.005', '1e2', '-0.00', '90071992547409.92', null]) {
+        const request = operation === 'create' ? client.post('/api/v1/loans') : client.patch(`/api/v1/loans/${f.category.id}`)
+        const response = await request.json(operation === 'create'
+          ? { name: 'Rejected', rate: 5.125, startDate: '2025-01-01', amount: value }
+          : { ...b, startingBalance: value }).accept('json').loginAs(f.user)
+        response.assertStatus(422)
+        deepStrictEqual(await raw(), before)
+      }
+    })
   test('concurrent complete requests cannot synthesize mixed settings/name/date').with([false, true])
     .run(async ({ client }, reverse) => {
       const f = await fixture(); const before = await financial()
@@ -284,13 +305,13 @@ test.group('Loan settings serialization and persistence', (group) => {
   test('each required field omission rejects without mutation').with(['name', 'rate', 'startDate', 'startingBalance'])
     .run(async ({ client }, field) => {
       const f = await fixture(); const before = await raw()
-      const body = Object.fromEntries(Object.entries(b).filter(([key]) => key !== field))
+      const body = Object.fromEntries(Object.entries({ ...b, startingBalance: encodeMonetaryAmount(b.startingBalance) }).filter(([key]) => key !== field))
       const response = await client.patch(`/api/v1/loans/${f.category.id}`).json(body).accept('json').loginAs(f.user)
       response.assertStatus(422); deepStrictEqual(await raw(), before)
     })
-  test('accepted numeric coercion persists under current representation').with([
+  test('canonical balances preserve existing rate coercion and numeric persistence').with([
     { rate: '8.25', startingBalance: '200.75', expectedRate: 8.25, expectedBase: 200.75 },
-    { rate: false, startingBalance: '', expectedRate: 0, expectedBase: 0 },
+    { rate: false, startingBalance: '0.00', expectedRate: 0, expectedBase: 0 },
   ]).run(async ({ client }, input) => {
     const f = await fixture(); const before = await financial()
     const response = await client.patch(`/api/v1/loans/${f.category.id}`).json({ ...b, rate: input.rate, startingBalance: input.startingBalance }).accept('json').loginAs(f.user)
@@ -299,7 +320,7 @@ test.group('Loan settings serialization and persistence', (group) => {
     deepStrictEqual(await financial(), before)
   })
   test('invalid complete/partial request rejects before mutation').with([
-    { ...b, rate: null }, { ...b, startDate: 'invalid' }, { name: 'Partial' }, { ...b, name: '' },
+    { ...b, startingBalance: '200.00', rate: null }, { ...b, startingBalance: '200.00', startDate: 'invalid' }, { name: 'Partial' }, { ...b, startingBalance: '200.00', name: '' },
   ]).run(async ({ client }, body) => {
     const f = await fixture(); const before = await raw()
     const response = await client.patch(`/api/v1/loans/${f.category.id}`).json(body).accept('json').loginAs(f.user)

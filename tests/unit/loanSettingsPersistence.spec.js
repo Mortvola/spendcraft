@@ -3,7 +3,9 @@ import { BaseModel } from '@adonisjs/lucid/orm'
 import { readFile } from 'node:fs/promises'
 import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
-import { updateLoan } from '../../app/validation/Validators/loan.js'
+import { CategoryType } from '../../common/ResponseTypes.js'
+import { encodeAmount } from '../../client-src/monetary.js'
+import { addLoan, updateLoan } from '../../app/validation/Validators/loan.js'
 
 // No application bootstrap or database adapter. Exercise the installed Lucid
 // dirty-field save algorithm against an explicitly inert adapter.
@@ -23,7 +25,7 @@ function persistence() {
   }
   return { row, writes, load: () => Settings.$createFromAdapterResult({ ...row }) }
 }
-const valid = { name: ' Loan ', rate: 5, startDate: '2025-01-01', startingBalance: 100 }
+const valid = { name: ' Loan ', rate: 5, startDate: '2025-01-01', startingBalance: '100.00' }
 
 test.group('Loan settings persistence investigation (no database)', () => {
   test('UPDATE requires all four fields; it is not a partial settings PATCH')
@@ -34,16 +36,16 @@ test.group('Loan settings persistence investigation (no database)', () => {
 
   test('current coercion and null/empty behavior remains characterized').with([
     { field: 'rate', value: -2, accepted: true, result: -2 },
-    { field: 'startingBalance', value: -20, accepted: true, result: -20 },
+    { field: 'startingBalance', value: '-20.00', accepted: true, result: -20 },
     { field: 'rate', value: '8.25', accepted: true, result: 8.25 },
     { field: 'startingBalance', value: '200.75', accepted: true, result: 200.75 },
     { field: 'startDate', value: 'invalid-date', accepted: false },
     { field: 'rate', value: 0, accepted: true, result: 0 },
-    { field: 'startingBalance', value: 0, accepted: true, result: 0 },
+    { field: 'startingBalance', value: '0.00', accepted: true, result: 0 },
     { field: 'rate', value: false, accepted: true, result: 0 },
-    { field: 'startingBalance', value: false, accepted: true, result: 0 },
+    { field: 'startingBalance', value: false, accepted: false },
     { field: 'rate', value: '', accepted: true, result: 0 },
-    { field: 'startingBalance', value: '', accepted: true, result: 0 },
+    { field: 'startingBalance', value: '', accepted: false },
     { field: 'rate', value: null, accepted: false },
     { field: 'startingBalance', value: null, accepted: false },
     { field: 'rate', value: {}, accepted: false },
@@ -62,6 +64,52 @@ test.group('Loan settings persistence investigation (no database)', () => {
     assert.equal(data.rate, 5)
     assert.equal(data.startingBalance, 100)
     assert.equal(data.startDate.toISODate(), '2025-01-01')
+  })
+
+  test('Loan CREATE/PATCH decode canonical money and keep rates numeric').with([
+    [12.345, '12.35'], [-0.125, '-0.12'], [0.125, '0.13'], [1.005, '1.00'],
+    [0.1 + 0.2, '0.30'], [-0, '0.00'], [-0.005, '0.00'],
+  ]).run(async ({ assert }, [value, encoded]) => {
+    assert.strictEqual(encodeAmount(value), encoded)
+    const created = await addLoan.validate({ name: ' Loan ', rate: 5.125, startDate: '2025-01-01', amount: encoded })
+    const updated = await updateLoan.validate({ ...valid, rate: 5.125, startingBalance: encoded })
+    assert.strictEqual(created.amount, Number(encoded))
+    assert.strictEqual(updated.startingBalance, Number(encoded))
+    assert.strictEqual(created.rate, 5.125)
+    assert.strictEqual(updated.rate, 5.125)
+    assert.strictEqual(created.name, 'Loan')
+  })
+  test('Loan CREATE/PATCH reject numeric, noncanonical and unsafe monetary values').with([
+    1, 0, -0, undefined, null, false, '', '1', '1.2', '1.005', '1e2', '+1.00', '01.00', '-0.00',
+    ' 1.00 ', 'Infinity', '90071992547409.92', Infinity, NaN,
+  ]).run(async ({ assert }, value) => {
+    await assert.rejects(() => addLoan.validate({ name: 'Loan', rate: 5, startDate: '2025-01-01', amount: value }))
+    await assert.rejects(() => updateLoan.validate({ ...valid, startingBalance: value }))
+  })
+  test('Loan CREATE passes decoded numbers into the unchanged transaction-bound controller', async ({ assert }) => {
+    let saved
+    const events = [], owner = { commit: async () => events.push('commit'), rollback: async () => events.push('rollback') }
+    class FakeCategory {
+      useTransaction(trx) { assert.strictEqual(trx, owner); return this }
+      fill(values) { Object.assign(this, values) }
+      related(name) { assert.strictEqual(name, 'group'); return { associate: async group => assert.strictEqual(group.id, 2) } }
+    }
+    class FakeLoan {
+      useTransaction(trx) { assert.strictEqual(trx, owner); return this }
+      fill(values) { saved = values }
+      related(name) { assert.strictEqual(name, 'category'); return { associate: async category => assert.instanceOf(category, FakeCategory) } }
+    }
+    const run = await controller({ addLoan, CategoryType, Category: FakeCategory, Loan: FakeLoan,
+      db: { transaction: async () => owner },
+      Group: { query({ client }) { assert.strictEqual(client, owner); return { where: () => ({ firstOrFail: async () => ({ id: 2 }) }) } } } }, 'add')
+    await run({ auth: { user: { related: () => ({ query: () => ({ firstOrFail: async () => ({ id: 7 }) }) }) } },
+      request: { validateUsing: validator => validator.validate({ name: ' Loan ', rate: 5.125, startDate: '2025-01-01', amount: '-0.12' }) },
+      logger: { error: () => assert.fail('Unexpected CREATE failure') } })
+    assert.strictEqual(saved.startingBalance, -0.12)
+    assert.strictEqual(saved.balance, 0.12)
+    assert.strictEqual(saved.rate, 5.125)
+    assert.strictEqual(saved.budgetId, 7)
+    assert.deepEqual(events, ['commit'])
   })
 
   test('save-only candidate can combine stale complete requests into neither requested settings object')
@@ -124,9 +172,9 @@ function signal() {
   const promise = new Promise((done) => { resolve = done })
   return { promise, resolve }
 }
-async function controller(context) {
+async function controller(context, method = 'update') {
   const source = ts.createSourceFile('LoansController.ts', await readFile('app/Controllers/Http/LoansController.ts', 'utf8'), ts.ScriptTarget.Latest, true)
-  const declaration = source.statements.find(ts.isClassDeclaration).members.find((node) => ts.isMethodDeclaration(node) && node.name.getText(source) === 'update')
+  const declaration = source.statements.find(ts.isClassDeclaration).members.find((node) => ts.isMethodDeclaration(node) && node.name.getText(source) === method)
   const expression = `(async function(${declaration.parameters.map((p) => p.getText(source)).join(',')}) ${declaration.body.getText(source)})`
   return runInNewContext(ts.transpileModule(expression, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText, context)
 }

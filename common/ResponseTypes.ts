@@ -869,3 +869,17 @@ export interface AddOfflineInstitutionRequest {
   accounts: Omit<AddOfflineAccountRequest, 'startDate'>[];
   startDate: string;
 }
+
+export interface AddLoanRequest {
+  name: string;
+  rate: number;
+  startDate: string;
+  amount: DecimalMoneyString;
+}
+
+export interface UpdateLoanRequest {
+  name: string;
+  rate: number;
+  startDate: string;
+  startingBalance: DecimalMoneyString;
+}

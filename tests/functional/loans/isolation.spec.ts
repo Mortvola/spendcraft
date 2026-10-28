@@ -57,7 +57,7 @@ test.group('Loan isolation', (group) => {
     const id = scenario.target === 'foreign' ? fixture.foreign.category.id : missingId
     const before = await state()
     const response = scenario.method === 'patch'
-      ? await client.patch(`/api/v1/loans/${id}`).json({ name: 'Changed loan', rate: 8, startDate: '2025-02-01', startingBalance: 200 }).accept('json').loginAs(fixture.own.user)
+      ? await client.patch(`/api/v1/loans/${id}`).json({ name: 'Changed loan', rate: 8, startDate: '2025-02-01', startingBalance: '200.00' }).accept('json').loginAs(fixture.own.user)
       : await client.get(`/api/v1/loans/${id}${scenario.suffix}`).accept('json').loginAs(fixture.own.user)
     assert.deepEqual(await state(), before)
     response.assertStatus(404)
@@ -73,7 +73,7 @@ test.group('Loan isolation', (group) => {
     transactions.assertStatus(200)
     assert.deepEqual(transactions.body(), { balance: '0.00', transactions: [] })
     const foreignBefore = await db.from('loans').where('category_id', fixture.foreign.category.id).firstOrFail()
-    const updated = await client.patch(prefix).json({ name: 'Renamed loan', rate: 8, startDate: '2025-02-01', startingBalance: 200 }).accept('json').loginAs(user)
+    const updated = await client.patch(prefix).json({ name: 'Renamed loan', rate: 8, startDate: '2025-02-01', startingBalance: '200.00' }).accept('json').loginAs(user)
     updated.assertStatus(200)
     assert.equal((await Category.findOrFail(fixture.own.category.id)).name, 'Renamed loan')
     // Settings now persist; financial recomputation remains inert.
