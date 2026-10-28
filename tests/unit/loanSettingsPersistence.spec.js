@@ -162,7 +162,7 @@ async function protocol({ pause = false, failure } = {}) {
         client.pending.startingBalance = this.startingBalance; events.push('loan.save')
         if (pause && reads === 1) { entered.resolve(); await release.promise }
         if (failure === 'loan' && reads === 1) throw new Error('Injected Loan failure')
-      }, getProps: async () => ({ balance: 0, transactions: [] }) }
+      }, getProps: async () => ({ balance: '0.00', transactions: [] }) }
   } }) })
   async function invoke(data) {
     let owner
@@ -208,6 +208,6 @@ test.group('Actual Loan UPDATE Budget protocol (no database)', () => {
     const before = { ...f.stored() }
     const response = await f.invoke(before)
     assert.deepEqual(f.stored(), before)
-    assert.deepEqual(JSON.parse(JSON.stringify(response)), { name: 'Old', loan: { balance: 0, transactions: [] } })
+    assert.deepEqual(JSON.parse(JSON.stringify(response)), { name: 'Old', loan: { balance: '0.00', transactions: [] } })
   })
 })

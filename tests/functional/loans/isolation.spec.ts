@@ -68,10 +68,10 @@ test.group('Loan isolation', (group) => {
     const prefix = `/api/v1/loans/${fixture.own.category.id}`
     const loan = await client.get(prefix).accept('json').loginAs(user)
     loan.assertStatus(200)
-    assert.equal(loan.body().balance, -100)
+    assert.strictEqual(loan.body().balance, '-100.00')
     const transactions = await client.get(`${prefix}/transactions`).accept('json').loginAs(user)
     transactions.assertStatus(200)
-    assert.deepEqual(transactions.body(), { balance: 0, transactions: [] })
+    assert.deepEqual(transactions.body(), { balance: '0.00', transactions: [] })
     const foreignBefore = await db.from('loans').where('category_id', fixture.foreign.category.id).firstOrFail()
     const updated = await client.patch(prefix).json({ name: 'Renamed loan', rate: 8, startDate: '2025-02-01', startingBalance: 200 }).accept('json').loginAs(user)
     updated.assertStatus(200)

@@ -1,3 +1,5 @@
+import Loan from '#models/Loan'
+import LoanTransaction from '#models/LoanTransaction'
 import AutoAssignmentCategory from '#models/AutoAssignmentCategory'
 import AutoAssignment from '#models/AutoAssignment'
 import Category from '#models/Category'
@@ -300,4 +302,31 @@ test('AccountTransaction principal serialization preserves numeric models and nu
     assert.strictEqual(row.principle, principle)
     assert.deepEqual(row.$attributes, before)
   }
+})
+
+
+test('Loan responses encode balances while preserving numeric model values and rates', async ({ assert }) => {
+  for (const [amount, expected] of [[12.5, '12.50'], [-0.125, '-0.12'], [0.125, '0.13'],
+    [1.005, '1.00'], [0.1 + 0.2, '0.30'], [-0, '0.00']] as const) {
+    const loan = new Loan().merge({ id: 1, balance: amount, startingBalance: amount, rate: 5.125 })
+    const before = globalThis.structuredClone(loan.$attributes)
+    const response = JSON.parse(JSON.stringify(loan))
+    assert.strictEqual(response.balance, expected)
+    assert.strictEqual(response.startingBalance, expected)
+    assert.strictEqual(response.rate, 5.125)
+    assert.strictEqual(loan.balance, amount)
+    assert.strictEqual(loan.startingBalance, amount)
+    assert.deepEqual(await loan.getProps(), { balance: '0.00', transactions: [] })
+    assert.deepEqual(loan.$attributes, before)
+    const transaction = new LoanTransaction().merge({ id: 2, loanId: 1, principle: amount })
+    assert.strictEqual(transaction.serialize().principle, expected)
+    assert.strictEqual(transaction.principle, amount)
+  }
+  const hydrated = Loan.$createFromAdapterResult({ id: 1, balance: '-12.50', starting_balance: '100.00', rate: 5 })
+  if (!hydrated) throw new Error('Expected hydrated Loan')
+  assert.strictEqual(hydrated.balance, -12.5)
+  assert.strictEqual(hydrated.startingBalance, 100)
+  assert.strictEqual(hydrated.serialize().balance, '-12.50')
+  assert.strictEqual(hydrated.serialize().startingBalance, '100.00')
+  assert.isFalse(hydrated.$isDirty)
 })

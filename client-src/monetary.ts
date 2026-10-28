@@ -1,4 +1,4 @@
-import type { FundingRuleResponse, NetworthReportResponse } from '../common/ResponseTypes';
+import type { FundingRuleResponse, NetworthReportResponse } from '../common/ResponseTypes.js';
 
 // Decode canonical API amounts before using them in numeric client state.
 export function decodeAmount(value: unknown): number {

@@ -1,3 +1,4 @@
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec';
 import {
   BaseModel, belongsTo, column, hasMany,
 } from '@adonisjs/lucid/orm'
@@ -19,11 +20,13 @@ export default class Loan extends BaseModel {
 
   @column({
     consume: (value: string) => parseFloat(value),
+    serialize: (value: number) => encodeMonetaryAmount(value),
   })
   public balance: number;
 
   @column({
     consume: (value: string) => parseFloat(value),
+    serialize: (value: number) => encodeMonetaryAmount(value),
   })
   public startingBalance: number;
 
@@ -101,7 +104,7 @@ export default class Loan extends BaseModel {
    
   public async getProps(this: Loan): Promise<LoanTransactionsProps> {
     const result: LoanTransactionsProps = {
-      balance: 0,
+      balance: '0.00',
       transactions: [],
     };
 

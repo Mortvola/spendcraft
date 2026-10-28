@@ -44,7 +44,7 @@ type Fixture = Awaited<ReturnType<typeof fixture>>
 async function patch(client: ApiClient, f: Fixture, settings: Settings, status = 200, categoryId = f.category.id) {
   const response = await client.patch(`/api/v1/loans/${categoryId}`).json(settings).loginAs(f.user)
   response.assertStatus(status)
-  if (status === 200) deepStrictEqual(response.body(), { name: settings.name, loan: { balance: 0, transactions: [] } })
+  if (status === 200) deepStrictEqual(response.body(), { name: settings.name, loan: { balance: '0.00', transactions: [] } })
 }
 let boundaryRecorded = false
 async function fresh(f: Fixture, expected: Settings) {
@@ -180,7 +180,7 @@ test.group('Loan settings serialization and persistence', (group) => {
     const f = await fixture(); const before = await financial()
     await patch(client, f, settings); await fresh(f, settings)
     const get = await client.get(`/api/v1/loans/${f.category.id}`).loginAs(f.user)
-    get.assertStatus(200); equal(get.body().rate, settings.rate); equal(get.body().startingBalance, settings.startingBalance)
+    get.assertStatus(200); equal(get.body().rate, settings.rate); equal(get.body().startingBalance, settings.startingBalance.toFixed(2))
     equal(get.body().startDate, settings.startDate)
     deepStrictEqual(await financial(), before)
   })

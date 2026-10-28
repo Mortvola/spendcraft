@@ -1,3 +1,4 @@
+import { encodeMonetaryAmount } from '#services/categoryAmountCodec';
 import {
   BaseModel, column, belongsTo
 } from '@adonisjs/lucid/orm'
@@ -14,6 +15,7 @@ export default class LoanTransaction extends BaseModel {
 
   @column({
     consume: (value: string) => parseFloat(value),
+    serialize: (value: number) => encodeMonetaryAmount(value),
   })
   public principle: number;
 

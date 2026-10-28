@@ -35,6 +35,7 @@ export { default as Group } from ${source('client-src/State/Group.ts')};
 export { default as Transaction } from ${source('client-src/State/Transaction.ts')};
 export { decodeAmount } from ${source('client-src/monetary.ts')};
 export { worksheet2_1_2026 } from ${source('client-src/State/Taxes/Estimated.ts')};
+export { default as LoanTransaction } from ${source('client-src/State/LoanTransaction.ts')};
 export { default as Bill } from ${source('client-src/State/Bill.ts')};
 export { default as Statement } from ${source('client-src/State/Statement.ts')};
 export { runInAction } from 'mobx';
@@ -238,6 +239,21 @@ export * from ${source('common/ResponseTypes.ts')};
       assert.throws(() => new state.Transaction(f.store, { ...f.transactionProps(), categories: [
         { categoryId: 20, amount: '1.00', baseAmount: amount },
       ] }))
+    }
+  })
+
+  test('Loan transaction responses decode monetary strings before interest calculations', ({ assert }) => {
+    const props = { id: 1, loanId: 2, principle: '10.25', transactionCategory: { id: 3, amount: '-12.50',
+      transaction: { id: 4, date: '2026-10-01', accountTransaction: { name: 'Loan payment' } } } }
+    const transaction = new state.LoanTransaction(props)
+    assert.strictEqual(transaction.principle, 10.25)
+    assert.strictEqual(transaction.interest, 2.25)
+    assert.strictEqual(transaction.transactionId, 4)
+    assert.strictEqual(transaction.transactionCategoryId, 3)
+    assert.strictEqual(props.principle, '10.25')
+    for (const value of [1, '', '1.2', '-0.00', 'Infinity']) {
+      assert.throws(() => new state.LoanTransaction({ ...props, principle: value }))
+      assert.throws(() => new state.LoanTransaction({ ...props, transactionCategory: { ...props.transactionCategory, amount: value } }))
     }
   })
 

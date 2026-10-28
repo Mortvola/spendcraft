@@ -323,14 +323,14 @@ export interface TransactionProps {
 export interface LoanTransactionProps {
   id: number;
 
-  principle: number;
+  principle: DecimalMoneyString;
 
   loanId: number;
 
   transactionCategory: {
     id: number;
 
-    amount: number;
+    amount: DecimalMoneyString;
 
     transaction: {
       id: number;
@@ -345,7 +345,7 @@ export interface LoanTransactionProps {
 }
 
 export interface LoanTransactionsProps {
-  balance: number,
+  balance: DecimalMoneyString,
   transactions: LoanTransactionProps[],
 }
 
