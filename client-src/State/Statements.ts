@@ -1,7 +1,8 @@
+import { formatMoneyCents, type MoneyCents } from '../../common/moneyCents';
 import { observable, runInAction } from "mobx";
 import { AccountInterface, AddStatementRequest, StatementsInterface, StoreInterface } from "./Types";
 import Statement from "./Statement";
-import { decodeAmount, encodeAmount } from "../monetary";
+import { encodeAmount } from "../monetary";
 import Http from "@mortvola/http";
 import { AddStatementResponse, ApiError, StatementProps, StatementsResponse, TrackingType } from "../../common/ResponseTypes";
 
@@ -57,15 +58,15 @@ class Statements implements StatementsInterface {
   async addStatement(
     startDate: string,
     endDate: string,
-    startingBalance: number,
-    endingBalance: number,
+    startingBalanceCents: MoneyCents,
+    endingBalanceCents: MoneyCents,
     shortTermCapitalGains: number,
     longTermCapitalGains: number,
     dividends: number,
     taxableInterest: number,
   ): Promise<ApiError[] | null> {
     const response = await Http.post<AddStatementRequest, AddStatementResponse>(`/api/v1/account/${this.account.id}/statements`, {
-      startDate, endDate, startingBalance: encodeAmount(startingBalance), endingBalance: encodeAmount(endingBalance),
+      startDate, endDate, startingBalance: formatMoneyCents(startingBalanceCents), endingBalance: formatMoneyCents(endingBalanceCents),
       data: {
         shortTermCapitalGains: encodeAmount(shortTermCapitalGains),
         longTermCapitalGains: encodeAmount(longTermCapitalGains),
@@ -117,12 +118,7 @@ class Statements implements StatementsInterface {
     const statement = this.statements.find((s) => s.id === props.id)
 
     if (statement) {
-      const credits = decodeAmount(props.credits);
-      const debits = decodeAmount(props.debits);
-      runInAction(() => {
-        statement.credits = credits
-        statement.debits = debits
-      })
+      statement.applyTotals(props);
     }
   }
 

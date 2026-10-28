@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { formatMoneyCents } from '../../common/moneyCents';
 import { observer } from 'mobx-react-lite';
 import Chart from 'react-google-charts';
 import { useStores } from '../State/Store';
@@ -32,14 +33,14 @@ const AccountBalanceChart: React.FC = observer(() => {
 
     if (statements.length > 0) {
       t.push({
-        balance: statements[0].endingBalance,
+        balance: Number(formatMoneyCents(statements[0].endingBalanceCents)),
         date: statements[0].endDate,
       })
 
       let d = t[0].date.minus({ days: 1 })
       for (const b2 of statements) {
         const d2 = b2.endDate;
-        const balance = b2.endingBalance;
+        const balance = Number(formatMoneyCents(b2.endingBalanceCents));
 
         while (d.toSeconds() > d2.toSeconds()) {
           t.push({
@@ -53,7 +54,7 @@ const AccountBalanceChart: React.FC = observer(() => {
       }
 
       t.push({
-        balance: statements[statements.length - 1].startingBalance,
+        balance: Number(formatMoneyCents(statements[statements.length - 1].startingBalanceCents)),
         date: statements[statements.length - 1].startDate,
       })
 
@@ -109,7 +110,7 @@ const AccountBalanceChart: React.FC = observer(() => {
         <div className={styles.list}>
           {
             selectedAccount?.statements.statements.map((s) => (
-              <Balance key={s.id} id={s.id} balance={s.endingBalance} date={s.endDate} onClick={() => showStmtDialog(s)} />
+              <Balance key={s.id} id={s.id} balance={s.endingBalanceCents} date={s.endDate} onClick={() => showStmtDialog(s)} />
             ))
           }
         </div>

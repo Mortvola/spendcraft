@@ -11,6 +11,8 @@ import { AccountInterface, StatementInterface } from '../State/Types';
 import { AccountType, ApiError, RequestErrorCode } from '../../common/ResponseTypes';
 import styles from './StatementDialog.module.scss';
 import AmountField from '../AmountField';
+import { formatMoneyCents, parseMoneyCents, subtractMoneyCents, type MoneyCents } from '../../common/moneyCents';
+import { inputMoneyCents } from '../monetary';
 
 interface PropsType {
   statement?: StatementInterface | null,
@@ -27,8 +29,8 @@ const StatementDialog: React.FC<PropsType & ModalProps> = ({
   interface ValueType {
     startDate: string,
     endDate: string,
-    startingBalance: number,
-    endingBalance: number,
+    startingBalance: string | number,
+    endingBalance: string | number,
     shortTermGains: number,
     longTermGains: number,
     dividends: number,
@@ -47,8 +49,8 @@ const StatementDialog: React.FC<PropsType & ModalProps> = ({
       errors = await statement.update({
         startDate: values.startDate,
         endDate: values.endDate,
-        startingBalance: values.startingBalance * account.sign,
-        endingBalance: values.endingBalance * account.sign,
+        startingBalanceCents: inputMoneyCents(values.startingBalance, account.sign),
+        endingBalanceCents: inputMoneyCents(values.endingBalance, account.sign),
         data: {
           shortTermCapitalGains: typeof values.shortTermGains == 'string' ? parseFloat(values.shortTermGains) : values.shortTermGains,
           longTermCapitalGains: typeof values.longTermGains === 'string' ? parseFloat(values.longTermGains) : values.longTermGains,
@@ -61,8 +63,8 @@ const StatementDialog: React.FC<PropsType & ModalProps> = ({
       errors = await account.statements.addStatement(
         values.startDate,
         values.endDate,
-        values.startingBalance * account.sign,
-        values.endingBalance * account.sign,
+        inputMoneyCents(values.startingBalance, account.sign),
+        inputMoneyCents(values.endingBalance, account.sign),
         typeof values.shortTermGains == 'string' ? parseFloat(values.shortTermGains) : values.shortTermGains,
         typeof values.longTermGains === 'string' ? parseFloat(values.longTermGains) : values.longTermGains,
         typeof values.dividends === 'string' ? parseFloat(values.dividends) : values.dividends,
@@ -102,13 +104,16 @@ const StatementDialog: React.FC<PropsType & ModalProps> = ({
     }
   };
 
+  const displayedBalance = (amount: MoneyCents) => formatMoneyCents(account.sign === -1
+    ? subtractMoneyCents(parseMoneyCents('0.00'), amount) : amount);
+
   return (
     <FormModal<ValueType>
       initialValues={{
         startDate: statement ? (statement.startDate.toISODate() ?? '') : '',
         endDate: statement ? (statement.endDate.toISODate() ?? '') : '',
-        startingBalance: statement ? statement.startingBalance * account.sign : 0,
-        endingBalance: statement ? statement.endingBalance * account.sign : 0,
+        startingBalance: statement ? displayedBalance(statement.startingBalanceCents) : '0.00',
+        endingBalance: statement ? displayedBalance(statement.endingBalanceCents) : '0.00',
         shortTermGains: statement?.shortTermGains ?? 0,
         longTermGains: statement?.longTermGains ?? 0,
         dividends: statement?.dividends ?? 0,

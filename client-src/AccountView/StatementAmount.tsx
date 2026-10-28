@@ -1,22 +1,28 @@
 import React from 'react';
 import AmountInput from '../AmountInput';
-import Amount from '../Amount';
+import MoneyCentsAmount from '../MoneyCentsAmount';
+import { formatMoneyCents, parseMoneyCents, subtractMoneyCents, type MoneyCents } from '../../common/moneyCents';
+import { inputMoneyCents } from '../monetary';
 
 interface PropsType {
-  amount: number,
-  onUpdate: (amount: number) => void
+  amount: MoneyCents,
+  sign?: number,
+  onUpdate: (amount: MoneyCents) => void
 }
 
 const StatementAmount: React.FC<PropsType> = ({
   amount,
+  sign = 1,
   onUpdate,
 }) => {
   const [editAmount, setEditAmount] = React.useState<boolean>(false)
   const [amountValue, setAmountValue] = React.useState<string>('')
 
+  const displayed = sign === -1 ? subtractMoneyCents(parseMoneyCents('0.00'), amount) : amount;
+
   const handleEditAmountClick = () => {
     setEditAmount(true)
-    setAmountValue(amount.toString())
+    setAmountValue(formatMoneyCents(displayed))
   }
 
   const handleAmountChange: React.ChangeEventHandler<HTMLInputElement> = (event) => {
@@ -27,10 +33,10 @@ const StatementAmount: React.FC<PropsType> = ({
     if (event.code === 'Enter') {
       setEditAmount(false)
 
-      const value = parseFloat(amountValue);
+      const value = inputMoneyCents(amountValue, sign);
 
       if (value !== amount) {
-        onUpdate(parseFloat(amountValue))
+        onUpdate(value)
       }
     }
     else if (event.code === 'Escape') {
@@ -48,8 +54,8 @@ const StatementAmount: React.FC<PropsType> = ({
         />
       )
       : (
-        <Amount
-          amount={amount}
+        <MoneyCentsAmount
+          amount={displayed}
           onClick={handleEditAmountClick}
         />
       )

@@ -5,6 +5,14 @@ import { ApiError, StatementProps, UpdateStatementProps, TrackingType } from '..
 import { StatementInterface, StatementsInterface, StatementUpdateValues } from './Types';
 
 import { decodeAmount, encodeAmount } from '../monetary';
+import { parseMoneyCents, addMoneyCents, subtractMoneyCents, formatMoneyCents, type MoneyCents } from '../../common/moneyCents';
+
+function decodeStatementTotals(props: Pick<StatementProps, 'credits' | 'debits'>) {
+  return {
+    creditsCents: parseMoneyCents(props.credits),
+    debitsCents: parseMoneyCents(props.debits),
+  };
+}
 
 function decodeStatementAmounts(props: StatementProps) {
   const income = props.data;
@@ -12,10 +20,9 @@ function decodeStatementAmounts(props: StatementProps) {
     throw new Error('Invalid statement income response');
   }
   return {
-    startingBalance: decodeAmount(props.startingBalance),
-    endingBalance: decodeAmount(props.endingBalance),
-    credits: decodeAmount(props.credits),
-    debits: decodeAmount(props.debits),
+    ...decodeStatementTotals(props),
+    startingBalanceCents: parseMoneyCents(props.startingBalance),
+    endingBalanceCents: parseMoneyCents(props.endingBalance),
     shortTermGains: income?.shortTermCapitalGains == null ? 0 : decodeAmount(income.shortTermCapitalGains),
     longTermGains: income?.longTermCapitalGains == null ? 0 : decodeAmount(income.longTermCapitalGains),
     dividends: income?.dividends == null ? 0 : decodeAmount(income.dividends),
@@ -34,16 +41,24 @@ class Statement implements StatementInterface {
   accessor endDate: DateTime
 
   @observable
-  accessor startingBalance: number
+  accessor startingBalanceCents: MoneyCents
 
   @observable
-  accessor endingBalance: number
+  accessor endingBalanceCents: MoneyCents
 
   @observable
-  accessor credits: number
+  accessor creditsCents: MoneyCents
 
   @observable
-  accessor debits: number
+  accessor debitsCents: MoneyCents
+
+  get calculatedEndingBalanceCents(): MoneyCents {
+    return addMoneyCents(this.startingBalanceCents, this.creditsCents, this.debitsCents);
+  }
+
+  get reconciliationDifferenceCents(): MoneyCents {
+    return subtractMoneyCents(this.calculatedEndingBalanceCents, this.endingBalanceCents);
+  }
 
   @observable
   accessor shortTermGains: number
@@ -67,10 +82,12 @@ class Statement implements StatementInterface {
     this.id = props.id
     this.startDate = DateTime.fromISO(props.startDate)
     this.endDate = DateTime.fromISO(props.endDate)
-    this.startingBalance = amounts.startingBalance
-    this.endingBalance = amounts.endingBalance
-    this.credits = amounts.credits
-    this.debits = amounts.debits
+
+    this.startingBalanceCents = amounts.startingBalanceCents
+    this.endingBalanceCents = amounts.endingBalanceCents
+    this.creditsCents = amounts.creditsCents
+    this.debitsCents = amounts.debitsCents
+
     this.shortTermGains = amounts.shortTermGains
     this.longTermGains = amounts.longTermGains
     this.dividends = amounts.dividends
@@ -86,12 +103,14 @@ class Statement implements StatementInterface {
       throw new Error('Invalid statement response');
     }
     runInAction(() => {
-      this.credits = amounts.credits;
-      this.debits = amounts.debits;
+      this.startingBalanceCents = amounts.startingBalanceCents;
+      this.endingBalanceCents = amounts.endingBalanceCents;
+      this.creditsCents = amounts.creditsCents;
+      this.debitsCents = amounts.debitsCents;
+
       this.startDate = DateTime.fromISO(props.startDate);
       this.endDate = DateTime.fromISO(props.endDate);
-      this.startingBalance = amounts.startingBalance
-      this.endingBalance = amounts.endingBalance;
+
       this.shortTermGains = amounts.shortTermGains
       this.longTermGains = amounts.longTermGains
       this.dividends = amounts.dividends
@@ -99,13 +118,23 @@ class Statement implements StatementInterface {
     })
   }
 
+  applyTotals(props: Pick<StatementProps, 'credits' | 'debits'>): void {
+    const amounts = decodeStatementTotals(props);
+    runInAction(() => {
+
+      this.creditsCents = amounts.creditsCents;
+      this.debitsCents = amounts.debitsCents;
+    });
+  }
+
   async update(update: StatementUpdateValues): Promise<ApiError[] | null> {
+    const { startingBalanceCents, endingBalanceCents, creditsCents, debitsCents, ...values } = update;
     const payload: UpdateStatementProps = {
-      ...update,
-      startingBalance: update.startingBalance === undefined ? undefined : encodeAmount(update.startingBalance),
-      endingBalance: update.endingBalance === undefined ? undefined : encodeAmount(update.endingBalance),
-      credits: update.credits === undefined ? undefined : encodeAmount(update.credits),
-      debits: update.debits === undefined ? undefined : encodeAmount(update.debits),
+      ...values,
+      startingBalance: startingBalanceCents === undefined ? undefined : formatMoneyCents(startingBalanceCents),
+      endingBalance: endingBalanceCents === undefined ? undefined : formatMoneyCents(endingBalanceCents),
+      credits: creditsCents === undefined ? undefined : formatMoneyCents(creditsCents),
+      debits: debitsCents === undefined ? undefined : formatMoneyCents(debitsCents),
       data: update.data === undefined ? undefined : {
         shortTermCapitalGains: encodeAmount(update.data.shortTermCapitalGains),
         longTermCapitalGains: encodeAmount(update.data.longTermCapitalGains),

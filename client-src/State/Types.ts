@@ -1,3 +1,4 @@
+import type { MoneyCents } from '../../common/moneyCents';
 import { DateTime } from 'luxon';
 import { PlaidLinkOnSuccessMetadata } from 'react-plaid-link';
 import Reports from './Reports';
@@ -513,9 +514,9 @@ export interface StatementInterface {
 
   endDate: DateTime;
 
-  startingBalance: number;
+  startingBalanceCents: MoneyCents;
 
-  endingBalance: number;
+  endingBalanceCents: MoneyCents;
 
   shortTermGains: number;
 
@@ -544,8 +545,8 @@ export interface StatementsInterface {
   addStatement(
     startDate: string,
     endDate: string,
-    startingBalance: number,
-    endingBalance: number,
+    startingBalanceCents: MoneyCents,
+    endingBalanceCents: MoneyCents,
     shortTermCapitalGains: number,
     longTermCapitalGains: number,
     dividends: number,
@@ -590,10 +591,10 @@ export type { AddTransactionRequest } from '../../common/ResponseTypes';
 export type { AddStatementRequest } from '../../common/ResponseTypes';
 
 export type StatementUpdateValues = Omit<UpdateStatementProps, 'startingBalance' | 'endingBalance' | 'credits' | 'debits' | 'data'> & {
-  startingBalance?: number,
-  endingBalance?: number,
-  credits?: number,
-  debits?: number,
+  startingBalanceCents?: MoneyCents,
+  endingBalanceCents?: MoneyCents,
+  creditsCents?: MoneyCents,
+  debitsCents?: MoneyCents,
   data?: {
     shortTermCapitalGains: number,
     longTermCapitalGains: number,

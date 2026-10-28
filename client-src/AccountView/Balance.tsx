@@ -1,13 +1,14 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
 import { DateTime } from 'luxon';
-import Amount from '../Amount';
+import MoneyCentsAmount from '../MoneyCentsAmount';
+import type { MoneyCents } from '../../common/moneyCents';
 import Date from '../Date';
 import styles from './Balance.module.scss';
 
 interface PropsType {
   id: number,
-  balance: number,
+  balance: MoneyCents,
   date: DateTime,
   onClick: () => void,
 }
@@ -25,7 +26,7 @@ const Balance: React.FC<PropsType> = observer(({
   return (
     <div key={id} className={styles.balance} onClick={handleClick}>
       <Date date={date} />
-      <Amount amount={balance} />
+      <MoneyCentsAmount amount={balance} />
     </div>
   )
 })

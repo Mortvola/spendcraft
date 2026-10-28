@@ -1,3 +1,4 @@
+import { parseMoneyCents, subtractMoneyCents, type MoneyCents } from '../common/moneyCents.js';
 import type { CategoryTransferProps, CategoryTransferRequest, DecimalMoneyString, FundingRuleResponse, NetworthReportResponse } from '../common/ResponseTypes.js';
 
 // Encode at the request boundary; client state and calculations remain numeric.
@@ -62,4 +63,13 @@ export function encodeTransferCategories(categories: readonly CategoryTransferPr
     ...(baseAmount === undefined ? {} : { baseAmount: encodeAmount(baseAmount) }),
     ...(fundingCategories === undefined ? {} : { fundingCategories: encodeFundingRules(fundingCategories) }),
   }));
+}
+
+// UI fields may contain unrounded input; canonical strings retain every original cent.
+export function inputMoneyCents(value: string | number, sign = 1): MoneyCents {
+  if (typeof value === 'string' && value !== '-0.00' && /^-?(?:0|[1-9]\d*)\.\d{2}$/.test(value)) {
+    const cents = parseMoneyCents(value);
+    return sign === -1 ? subtractMoneyCents(parseMoneyCents('0.00'), cents) : cents;
+  }
+  return parseMoneyCents(encodeAmount(Number(value) * sign));
 }
