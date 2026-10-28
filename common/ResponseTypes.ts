@@ -1,3 +1,6 @@
+/** Canonical two-decimal monetary string, e.g. "12.50". */
+export type DecimalMoneyString = string;
+
 export enum GroupType {
   NoGroup = 'NO GROUP',
   Regular = 'REGULAR',
@@ -30,7 +33,7 @@ export interface CategoryProps {
 
   groupId: number;
 
-  balance: string;
+  balance: DecimalMoneyString;
 
   name: string;
 
@@ -61,7 +64,7 @@ const isCategoryBalance = (r: unknown): r is CategoryBalanceProps => (
 export interface CategoryBalanceProps {
   id: number;
 
-  balance: string;
+  balance: DecimalMoneyString;
 
   count?: number;
 }
@@ -69,7 +72,7 @@ export interface CategoryBalanceProps {
 export interface AccountBalanceProps {
   id: number;
 
-  balance: string;
+  balance: DecimalMoneyString;
 }
 
 type AddCategoryResponse = CategoryProps
@@ -123,11 +126,11 @@ export interface AccountProps {
 
   tracking: TrackingType;
 
-  balance: string;
+  balance: DecimalMoneyString;
 
-  pendingBalance: string;
+  pendingBalance: DecimalMoneyString;
 
-  plaidBalance: string | null;
+  plaidBalance: DecimalMoneyString | null;
 
   startDate: string | null;
 
@@ -196,15 +199,15 @@ export interface StatementProps {
   id: number,
   startDate: string,
   endDate: string,
-  startingBalance: string,
-  endingBalance: string,
-  credits: string,
-  debits: string,
+  startingBalance: DecimalMoneyString,
+  endingBalance: DecimalMoneyString,
+  credits: DecimalMoneyString,
+  debits: DecimalMoneyString,
   data?: Partial<{
-    shortTermCapitalGains: string | null,
-    longTermCapitalGains: string | null,
-    dividends: string | null,
-    taxableInterest: string | null,
+    shortTermCapitalGains: DecimalMoneyString | null,
+    longTermCapitalGains: DecimalMoneyString | null,
+    dividends: DecimalMoneyString | null,
+    taxableInterest: DecimalMoneyString | null,
   }> | null
 }
 
@@ -267,7 +270,7 @@ export interface TransactionProps {
 
   categories: {
     categoryId: number,
-    amount: string,
+    amount: DecimalMoneyString,
     comment?: string,
     funder?: boolean,
     fundingCategories?: { categoryId: number, amount: number, percentage: boolean }[],
@@ -277,7 +280,7 @@ export interface TransactionProps {
 
   taxes: {
     type: string,
-    amount: string,
+    amount: DecimalMoneyString,
   }[];
 
   duplicateOfTransactionId: number | null;
@@ -285,7 +288,7 @@ export interface TransactionProps {
   accountTransaction: {
     name: string;
 
-    amount: string;
+    amount: DecimalMoneyString;
 
     principle: number | null;
 
@@ -355,7 +358,7 @@ export interface TransactionsResponse {
 
   transactionsCount?: number,
 
-  balance: number | string;
+  balance: number | DecimalMoneyString;
 }
 
 export interface ErrorProps {
@@ -503,7 +506,7 @@ export interface CategoryFundingProps {
 export interface FundingInfoProps {
   id: number,
   name: string,
-  balance: string,
+  balance: DecimalMoneyString,
   previousSum: number,
   previousFunding: number,
   previousBaseAmount: number,
@@ -511,9 +514,9 @@ export interface FundingInfoProps {
 }
 
 interface AccountSyncProps {
-  balance: string;
+  balance: DecimalMoneyString;
 
-  plaidBalance: string | null;
+  plaidBalance: DecimalMoneyString | null;
 }
 
 export interface InstitutionSyncResponse {
@@ -534,7 +537,7 @@ export const isLinkTokenResponse = (
 
 // Read-only points from the existing Transaction-derived account chart endpoint.
 export interface AccountBalancePoint {
-  balance: string;
+  balance: DecimalMoneyString;
   date: string;
 }
 
@@ -615,7 +618,7 @@ export const isAddTransactionResponse = (r: unknown): r is AddTransactionRespons
 
 interface CategoryTreeBalanceProps {
   id: number,
-  balance: string,
+  balance: DecimalMoneyString,
 }
 
 const isCategoryTreeBalanceProps = (r: unknown): r is CategoryTreeBalanceProps => (
