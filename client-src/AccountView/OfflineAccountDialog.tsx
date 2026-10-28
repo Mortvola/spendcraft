@@ -1,6 +1,6 @@
 import { formatMoneyCents } from '../../common/moneyCents';
 import {
-  FormikErrors, FormikHelpers, useFormikContext,
+  FieldProps, FormikErrors, FormikHelpers, useFormikContext,
 } from 'formik';
 import React from 'react';
 import { makeUseModal, ModalProps } from '@mortvola/usemodal';
@@ -9,6 +9,7 @@ import {
 } from '@mortvola/forms';
 import { AccountType, ErrorProps, TrackingType } from '../../common/ResponseTypes';
 import AmountInput from '../AmountInput';
+import { inputMoneyCents } from '../monetary';
 import { useStores } from '../State/Store';
 import { AccountInterface, InstitutionInterface } from '../State/Types';
 import AccountTypeField from './AccountTypeField';
@@ -68,6 +69,13 @@ const OfflineAccountDialog: React.FC<PropsType & ModalProps> = ({
       if (!values.startDate) {
         errors.startDate = 'Start date is required';
       }
+      try {
+        if (values.balance.trim() === '') throw new Error('Missing balance');
+        inputMoneyCents(values.balance);
+      }
+      catch {
+        errors.balance = 'Enter a valid, safe starting balance.';
+      }
     }
 
     return errors;
@@ -85,7 +93,7 @@ const OfflineAccountDialog: React.FC<PropsType & ModalProps> = ({
       else {
         errors = await institution.addOfflineAccount(
           values.account,
-          parseFloat(values.balance),
+          inputMoneyCents(values.balance),
           values.startDate,
           values.type,
           values.subtype,
@@ -98,7 +106,7 @@ const OfflineAccountDialog: React.FC<PropsType & ModalProps> = ({
       errors = await accounts.addOfflineAccount(
         values.institute,
         values.account,
-        parseFloat(values.balance),
+        inputMoneyCents(values.balance),
         values.startDate,
         values.type,
         values.subtype,
@@ -127,7 +135,7 @@ const OfflineAccountDialog: React.FC<PropsType & ModalProps> = ({
       initialValues={{
         institute: institution ? institution.name : '',
         account: account ? account.name : '',
-        balance: account ? formatMoneyCents(account.balanceCents) : '0',
+        balance: account ? formatMoneyCents(account.balanceCents) : '0.00',
         startDate: '',
         type: account ? account.type : AccountType.Depository,
         subtype: account ? account.subtype : 'checking',
@@ -158,7 +166,11 @@ const OfflineAccountDialog: React.FC<PropsType & ModalProps> = ({
           !account
             ? (
               <>
-                <FormField name="balance" label="Starting Balance:" as={AmountInput} />
+                <FormField name="balance" label="Starting Balance:">
+                  {({ field }: FieldProps<string, ValuesType>) => (
+                    <AmountInput exactCents className="form-control" {...field} />
+                  )}
+                </FormField>
                 <FormField name="startDate" label="Start Date:" type="date" />
                 <AccountTypeField name="type" label="Account Type:" />
                 <AccountSubtypeField name="subtype" label="Account Subtype:" />

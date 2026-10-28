@@ -1,7 +1,6 @@
-import { parseMoneyCents } from '../../common/moneyCents';
+import { formatMoneyCents, parseMoneyCents, type MoneyCents } from '../../common/moneyCents';
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
-import { encodeAmount } from '../monetary';
 import { DateTime } from 'luxon';
 import Account from './Account';
 import {
@@ -212,7 +211,7 @@ class Institution implements InstitutionInterface {
 
   async addOfflineAccount(
     accountName: string,
-    balance: number,
+    balanceCents: MoneyCents,
     startDate: string,
     type: string,
     subtype: string,
@@ -221,7 +220,7 @@ class Institution implements InstitutionInterface {
   ): Promise<ErrorProps[] | null> {
     const response = await Http.post<AddOfflineAccountRequest, ApiResponse<AddOfflineAccountResponse>>(`/api/v1/institution/${this.id}/accounts`, {
       name: accountName,
-      balance: encodeAmount(balance),
+      balance: formatMoneyCents(balanceCents),
       type,
       subtype,
       tracking,

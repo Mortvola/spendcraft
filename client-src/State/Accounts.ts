@@ -1,7 +1,6 @@
-import { parseMoneyCents } from '../../common/moneyCents';
+import { formatMoneyCents, parseMoneyCents, type MoneyCents } from '../../common/moneyCents';
 import { observable, runInAction } from 'mobx';
 import Http from '@mortvola/http';
-import { encodeAmount } from '../monetary';
 import { PlaidLinkOnSuccessMetadata } from 'react-plaid-link';
 import Institution from './Institution';
 import Plaid from './Plaid';
@@ -192,7 +191,7 @@ class Accounts implements AccountsInterface {
   async addOfflineAccount(
     instituteName: string,
     accountName: string,
-    balance: number,
+    balanceCents: MoneyCents,
     startDate: string,
     type: string,
     subtype: string,
@@ -205,7 +204,7 @@ class Accounts implements AccountsInterface {
       },
       accounts: [{
         name: accountName,
-        balance: encodeAmount(balance),
+        balance: formatMoneyCents(balanceCents),
         type,
         subtype,
         tracking,

@@ -184,7 +184,7 @@ export interface AccountsInterface {
   addOfflineAccount(
     institiute: string,
     account: string,
-    balance: number,
+    balanceCents: MoneyCents,
     startDate: string,
     type: string,
     subtype: string,
@@ -393,7 +393,7 @@ export interface InstitutionInterface {
 
   addOfflineAccount(
     accountName: string,
-    balance: number,
+    balanceCents: MoneyCents,
     startDate: string,
     type: string,
     subtype: string,

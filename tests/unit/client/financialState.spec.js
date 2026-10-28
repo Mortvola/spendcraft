@@ -3,6 +3,7 @@ import { encodeTaxAttributions } from '../../../app/services/taxAmountCodec.ts'
 import { calculateFunding } from '../../../client-src/Funding/calculateFunding.ts'
 import { test } from '@japa/runner'
 import { parseMoneyCents } from '../../../common/moneyCents.ts'
+import { inputMoneyCents } from '../../../client-src/monetary.ts'
 import { File } from 'node:buffer'
 import NetworthContent from '../../../client-src/Reports/NetworthContent.js'
 import { build } from 'vite'
@@ -620,6 +621,7 @@ export * from ${source('common/ResponseTypes.ts')};
 
   test('offline institution and account requests encode balances and keep rates numeric').with([
     [12.345, '12.35'], [-0.125, '-0.12'], [0.125, '0.13'], [1.005, '1.00'], [0.1 + 0.2, '0.30'], [-0, '0.00'],
+    ['90071992547409.91', '90071992547409.91'],
   ]).run(async ({ assert }, [balance, expected]) => {
     const rate = 3.125
     const account = { name: 'Offline', balance: expected, type: 'depository', subtype: 'checking',
@@ -635,11 +637,11 @@ export * from ${source('common/ResponseTypes.ts')};
       assert.deepEqual(payload, { ...account, startDate: '2025-03-01' })
       return { ok: false, body: {} }
     })
-    await f.store.accounts.addOfflineAccount('Bank', 'Offline', balance, '2025-03-01', 'depository', 'checking', state.TrackingType.Balances, rate)
-    await f.institution.addOfflineAccount('Offline', balance, '2025-03-01', 'depository', 'checking', state.TrackingType.Balances, rate)
+    await f.store.accounts.addOfflineAccount('Bank', 'Offline', inputMoneyCents(balance), '2025-03-01', 'depository', 'checking', state.TrackingType.Balances, rate)
+    await f.institution.addOfflineAccount('Offline', inputMoneyCents(balance), '2025-03-01', 'depository', 'checking', state.TrackingType.Balances, rate)
     assert.strictEqual(calls, 2)
   })
-  test('invalid offline balances fail before HTTP').with([NaN, Infinity, Number.MAX_SAFE_INTEGER])
+  test('invalid offline cent balances fail before HTTP').with([NaN, Infinity, -Infinity, 0.1, Number.MAX_SAFE_INTEGER + 1])
     .run(async ({ assert }, balance) => {
       routes.set('post /api/v1/institution', () => assert.fail('Invalid balance reached HTTP'))
       routes.set('post /api/v1/institution/1/accounts', () => assert.fail('Invalid balance reached HTTP'))

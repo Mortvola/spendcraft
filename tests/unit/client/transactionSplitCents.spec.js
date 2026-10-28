@@ -242,6 +242,69 @@ test.group('Transaction split cents', group => {
     assert.strictEqual(changed, '0.125')
   })
 
+  test('offline opening-balance dialogs pass exact cents without changing account signs').with([
+    ['0.10', 10], ['-0.30', -30], ['0.125', 13], ['-0.125', -12], ['-0.00', 0],
+    ['0.00', 0], ['90071992547409.91', Number.MAX_SAFE_INTEGER],
+  ]).run(async ({ assert }, [balance, expected]) => {
+    for (const type of [AccountType.Depository, AccountType.Credit, AccountType.Loan]) {
+      for (const existingInstitution of [false, true]) {
+        let saved, closed
+        const add = async (...args) => { saved = args; return null }
+        const view = await expression('client-src/AccountView/OfflineAccountDialog.tsx', 'OfflineAccountDialog', {
+          useStores: () => ({ accounts: { addOfflineAccount: add } }),
+          FormTextField: 'textField', AccountTypeField: 'accountType', AccountSubtypeField: 'subtype', APRField: 'apr',
+        })
+        const modal = view({ institution: existingInstitution ? { name: 'Bank', addOfflineAccount: add } : undefined,
+          setShow: value => { closed = value } })
+        assert.strictEqual(modal.props.initialValues.balance, '0.00')
+        const values = { ...modal.props.initialValues, institute: 'Bank', account: 'Checking', startDate: '2025-01-01',
+          balance, type, rate: '3.125' }
+        assert.deepEqual(Object.keys(modal.props.validate(values)), [])
+        await modal.props.onSubmit(values, { setErrors: () => undefined })
+        assert.strictEqual(saved[existingInstitution ? 1 : 2], expected)
+        assert.strictEqual(saved[existingInstitution ? 3 : 4], type)
+        assert.strictEqual(saved.at(-1), 3.125)
+        assert.strictEqual(closed, false)
+        assert.strictEqual(values.balance, balance)
+        const field = find(modal, element => element.type === 'formField' && element.props.name === 'balance')
+        const input = field.props.children[0]({ field: { value: balance } })
+        assert.isTrue(input.props.exactCents)
+        assert.strictEqual(input.props.value, balance)
+      }
+    }
+  })
+
+  test('invalid opening balances fail dialog validation').with([
+    '', ' ', '-', 'garbage', '1.00junk', 'NaN', 'Infinity', '-Infinity', '90071992547409.92',
+  ]).run(async ({ assert }, balance) => {
+    const view = await expression('client-src/AccountView/OfflineAccountDialog.tsx', 'OfflineAccountDialog', {
+      useStores: () => ({ accounts: {} }), FormTextField: 'textField', AccountTypeField: 'accountType',
+      AccountSubtypeField: 'subtype', APRField: 'apr',
+    })
+    const modal = view({ setShow: () => undefined })
+    const errors = modal.props.validate({ ...modal.props.initialValues, institute: 'Bank', account: 'Checking',
+      startDate: '2025-01-01', balance })
+    assert.isString(errors.balance)
+  })
+
+  test('offline account metadata edits preserve existing balances', async ({ assert }) => {
+    let updated
+    const view = await expression('client-src/AccountView/OfflineAccountDialog.tsx', 'OfflineAccountDialog', {
+      useStores: () => ({ accounts: {} }), FormTextField: 'textField', AccountTypeField: 'accountType',
+      AccountSubtypeField: 'subtype', APRField: 'apr',
+    })
+    const account = { name: 'Checking', type: AccountType.Credit, subtype: 'credit card', balanceCents: Number.MAX_SAFE_INTEGER,
+      updateOfflineAccount: async (...values) => { updated = values } }
+    const modal = view({ institution: { name: 'Bank' }, account, setShow: () => undefined })
+    assert.strictEqual(modal.props.initialValues.balance, '90071992547409.91')
+    const edits = { ...modal.props.initialValues, account: 'Renamed', balance: 'unused invalid balance' }
+    assert.deepEqual(Object.keys(modal.props.validate(edits)), [])
+    await modal.props.onSubmit(edits, { setErrors: () => undefined })
+    assert.deepEqual(Array.from(updated), ['Renamed', AccountType.Credit, 'credit card'])
+    assert.strictEqual(account.balanceCents, Number.MAX_SAFE_INTEGER)
+    assert.isUndefined(find(modal, element => element.type === 'formField' && element.props.name === 'balance'))
+  })
+
   const rebalanceDialog = context => expression('client-src/Rebalance/RebalanceDialog.tsx', 'RebalanceDialog', {
     sumSplitCents, DateTime, CategoryRebalance: 'rebalance', useStores: () => ({ register: {} }),
     useState: initial => [initial, () => undefined], useCallback: callback => callback, useEffect: () => undefined,
