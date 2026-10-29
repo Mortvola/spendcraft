@@ -1,4 +1,4 @@
-import { formatMoneyCents, parseMoneyCents, subtractMoneyCents, type MoneyCents } from '../../common/moneyCents';
+import { parseMoneyCents, subtractMoneyCents, type MoneyCents } from '../../common/moneyCents';
 import { LoanTransactionProps } from '../../common/ResponseTypes';
 
 class LoanTransaction {
@@ -13,11 +13,6 @@ class LoanTransaction {
   principleCents: MoneyCents;
 
   interestCents: MoneyCents;
-
-  // Keep the numeric properties available to existing consumers.
-  get principle(): number { return Number(formatMoneyCents(this.principleCents)); }
-
-  get interest(): number { return Number(formatMoneyCents(this.interestCents)); }
 
   transactionId: number;
 

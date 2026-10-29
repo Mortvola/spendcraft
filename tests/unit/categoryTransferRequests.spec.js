@@ -1,10 +1,11 @@
 import { test } from '@japa/runner'
 import { updateCategoryTransfer } from '../../app/validation/Validators/categoryTransfer.ts'
-import { encodeTransferCategories } from '../../client-src/monetary.ts'
+import { formatMoneyCents } from '../../common/moneyCents.ts'
+import { inputMoneyCents, encodeTransferCategories } from '../../client-src/monetary.ts'
 
 test.group('Category transfer monetary requests', () => {
-  const category = amount => ({ id: 5, categoryId: 1, amount, baseAmount: amount, comment: 'keep', funder: true,
-    includeFundingTransfers: false, fundingCategories: [{ categoryId: 2, amount, percentage: false },
+  const category = amount => ({ id: 5, categoryId: 1, amount: formatMoneyCents(inputMoneyCents(amount)), baseAmountCents: inputMoneyCents(amount), comment: 'keep', funder: true,
+    includeFundingTransfers: false, fundingCategories: [{ categoryId: 2, amountCents: inputMoneyCents(amount), percentage: false },
       { categoryId: 3, amount: 12.344, percentage: true }, { categoryId: 4, amount: 87.656, percentage: true }] })
   const request = categories => ({ date: '2026-01-01', type: 2, categories })
   test('encodes only money and decodes to numeric calculation inputs').with([
@@ -12,12 +13,14 @@ test.group('Category transfer monetary requests', () => {
     [0.1 + 0.2, '0.30'], [0, '0.00'], [-0, '0.00'], [-0.005, '0.00'],
   ]).run(async ({ assert }, [amount, expected]) => {
     const input = [category(amount)], before = globalThis.structuredClone(input)
+    const metadata = { ...before[0] }
+    delete metadata.baseAmountCents
     const wire = encodeTransferCategories(input)
-    assert.deepEqual(wire, [{ ...before[0], amount: expected, baseAmount: expected,
+    assert.deepEqual(wire, [{ ...metadata, amount: expected, baseAmount: expected,
       fundingCategories: [{ categoryId: 2, amount: expected, percentage: false }, ...before[0].fundingCategories.slice(1)] }])
     assert.deepEqual(input, before)
     const validated = await updateCategoryTransfer.validate(request(wire))
-    assert.deepEqual(validated.categories, [{ ...before[0], amount: Number(expected), baseAmount: Number(expected),
+    assert.deepEqual(validated.categories, [{ ...metadata, amount: Number(expected), baseAmount: Number(expected),
       fundingCategories: [{ categoryId: 2, amount: Number(expected), percentage: false }, ...before[0].fundingCategories.slice(1)] }])
   })
   test('all monetary paths reject numeric, noncanonical and unsafe requests').with([
@@ -38,18 +41,24 @@ test.group('Category transfer monetary requests', () => {
     }
   })
   test('optional metadata remains absent and null optional values retain existing omission semantics', async ({ assert }) => {
-    const wire = encodeTransferCategories([{ categoryId: 1, amount: 0 }])
+    const wire = encodeTransferCategories([{ categoryId: 1, amount: '0.00' }])
     assert.deepEqual(wire, [{ categoryId: 1, amount: '0.00' }])
     assert.deepEqual((await updateCategoryTransfer.validate(request(wire))).categories, [{ categoryId: 1, amount: 0 }])
     const result = await updateCategoryTransfer.validate(request([{ categoryId: 1, amount: '0.00', baseAmount: null }]))
     assert.notProperty(result.categories[0], 'baseAmount')
   })
-  test('unsafe client money rejects before persistence').with([NaN, Infinity, Number.MAX_SAFE_INTEGER])
+  test('obsolete dollar-number transfer inputs are rejected', ({ assert }) => {
+    assert.throws(() => encodeTransferCategories([{ categoryId: 1, amount: 1 }]))
+    assert.throws(() => encodeTransferCategories([{ categoryId: 1, amount: '1.00', baseAmount: 1 }]))
+    assert.throws(() => encodeTransferCategories([{ categoryId: 1, amount: '1.00',
+      fundingCategories: [{ categoryId: 2, percentage: false, amount: 1 }] }]))
+  })
+  test('unsafe client money rejects before persistence').with([NaN, Infinity, Number.MAX_SAFE_INTEGER + 1])
     .run(({ assert }, amount) => {
       for (const field of ['amount', 'baseAmount', 'fixed']) {
         const row = category(1)
-        if (field === 'fixed') row.fundingCategories[0].amount = amount
-        else row[field] = amount
+        if (field === 'fixed') row.fundingCategories[0].amountCents = amount
+        else row[field === 'baseAmount' ? 'baseAmountCents' : field] = amount
         assert.throws(() => encodeTransferCategories([row]))
       }
     })

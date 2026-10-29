@@ -28,29 +28,6 @@ export function decodeAmount(value: unknown): number {
 }
 
 
-export function encodeFundingRules<T extends { categoryId: number; amount: number; percentage: boolean }>(rules: readonly T[]): (Omit<T, 'amount' | 'percentage'> & FundingRuleResponse)[] {
-  return rules.map(rule => {
-    if (rule.percentage === true) {
-      if (typeof rule.amount !== 'number' || !Number.isFinite(rule.amount)) throw new Error('Invalid percentage request');
-      return { ...rule, percentage: true, amount: rule.amount };
-    }
-    if (rule.percentage !== false) throw new Error('Invalid funding mode request');
-    return { ...rule, percentage: false, amount: encodeAmount(rule.amount) };
-  });
-}
-
-export function decodeFundingRules<T extends FundingRuleResponse>(rules: readonly T[]): (Omit<T, 'amount'> & { amount: number })[] {
-  return rules.map((rule) => {
-    if (rule.percentage === true) {
-      if (typeof rule.amount !== 'number' || !Number.isFinite(rule.amount)) {
-        throw new Error('Invalid percentage response');
-      }
-      return { ...rule, amount: rule.amount };
-    }
-    return { ...rule, amount: decodeAmount(rule.amount) };
-  });
-}
-
 export type CentFundingRule = { id?: number; categoryId: number } & (
   { percentage: true; amount: number } | { percentage: false; amountCents: MoneyCents }
 );
@@ -138,23 +115,22 @@ export function networthChartData(rows: NetworthCentsReport) {
   }));
 }
 
-// Accept retained cent metadata and the existing funding algorithm's dollar outputs.
 export type TransferCategoryInput = Omit<CategoryTransferProps, 'amount' | 'baseAmount' | 'fundingCategories'> & {
-  amount: number | DecimalMoneyString;
-  fundingCategories?: (CentFundingRule | NonNullable<CategoryTransferProps['fundingCategories']>[number])[];
-} & ({ baseAmount?: number; baseAmountCents?: never } | { baseAmount?: never; baseAmountCents?: MoneyCents });
+  amount: DecimalMoneyString;
+  baseAmountCents?: MoneyCents;
+  fundingCategories?: CentFundingRule[];
+};
 
 export function encodeTransferCategories(categories: readonly TransferCategoryInput[]): CategoryTransferRequest['categories'] {
-  return categories.map(({ amount, baseAmount, baseAmountCents, fundingCategories, ...category }) => ({
-    ...category,
-    amount: typeof amount === 'string' ? formatMoneyCents(parseMoneyCents(amount)) : encodeAmount(amount),
-    ...(baseAmountCents === undefined
-      ? (baseAmount === undefined ? {} : { baseAmount: encodeAmount(baseAmount) })
-      : { baseAmount: formatMoneyCents(baseAmountCents) }),
-    ...(fundingCategories === undefined ? {} : { fundingCategories: fundingCategories.map(rule => (
-      'amountCents' in rule ? encodeCentFundingRules([rule])[0] : encodeFundingRules([rule])[0]
-    )) }),
-  }));
+  return categories.map(({ amount, baseAmountCents, fundingCategories, ...category }) => {
+    if ('baseAmount' in category) throw new Error('Expected cent-based transfer metadata');
+    return {
+      ...category,
+      amount: formatMoneyCents(parseMoneyCents(amount)),
+      ...(baseAmountCents === undefined ? {} : { baseAmount: formatMoneyCents(baseAmountCents) }),
+      ...(fundingCategories === undefined ? {} : { fundingCategories: encodeCentFundingRules(fundingCategories) }),
+    };
+  });
 }
 
 // UI fields may contain unrounded input; canonical strings retain every original cent.

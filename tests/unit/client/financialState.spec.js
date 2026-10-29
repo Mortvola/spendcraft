@@ -657,8 +657,8 @@ export * from ${source('common/ResponseTypes.ts')};
     const props = { id: 1, loanId: 2, principle: '10.25', transactionCategory: { id: 3, amount: '-12.50',
       transaction: { id: 4, date: '2026-10-01', accountTransaction: { name: 'Loan payment' } } } }
     const transaction = new state.LoanTransaction(props)
-    assert.strictEqual(transaction.principle, 10.25)
-    assert.strictEqual(transaction.interest, 2.25)
+    assert.notProperty(transaction, 'principle')
+    assert.notProperty(transaction, 'interest')
     assert.strictEqual(transaction.paymentCents, 1250)
     assert.strictEqual(transaction.principleCents, 1025)
     assert.strictEqual(transaction.interestCents, 225)
@@ -1151,11 +1151,11 @@ export * from ${source('common/ResponseTypes.ts')};
     [12.345, '12.35'], [-0.125, '-0.12'], [0.1 + 0.2, '0.30'], [-0, '0.00'],
   ]).run(async ({ assert }, [amount, expected]) => {
     const cached = transactions()
-    const categories = [{ categoryId: 20, amount, baseAmount: amount, comment: 'keep',
-      fundingCategories: [{ categoryId: 21, amount, percentage: false },
+    const categories = [{ categoryId: 20, amount: formatMoneyCents(inputMoneyCents(amount)), baseAmountCents: inputMoneyCents(amount), comment: 'keep',
+      fundingCategories: [{ categoryId: 21, amountCents: inputMoneyCents(amount), percentage: false },
         { categoryId: 20, amount: 100, percentage: true }] }]
     const before = globalThis.structuredClone(categories)
-    const wire = [{ ...categories[0], amount: expected, baseAmount: expected,
+    const wire = [{ categoryId: 20, comment: 'keep', amount: expected, baseAmount: expected,
       fundingCategories: [{ categoryId: 21, amount: expected, percentage: false }, categories[0].fundingCategories[1]] }]
     routes.set('post /api/v1/category-transfer', async payload => {
       assert.deepEqual(payload.categories, wire)
@@ -1179,7 +1179,7 @@ export * from ${source('common/ResponseTypes.ts')};
     const cached = { source: f.category.transactions.transactions[0], destination: f.other.transactions.transactions[0] }
     const returned = { ...props, date: '2025-02-20', version: 2 }
     routes.set('patch /api/v1/category-transfer/40', async () => ({ body: { data: { transaction: returned, balances: [{ id: 20, balance: (-amount).toFixed(2) }, { id: 21, balance: amount.toFixed(2) }] } } }))
-    await cached.source.updateCategoryTransfer({ date: returned.date, categories: returned.categories.map(category => ({ ...category, amount: Number(category.amount) })) })
+    await cached.source.updateCategoryTransfer({ date: returned.date, categories: returned.categories })
     assert.equal(cached.source.date.toISODate(), returned.date)
     assert.equal(cached.destination.version, 2)
     assert.equal(f.category.balanceCents, -Math.round(amount * 100)); assert.equal(f.other.balanceCents, Math.round(amount * 100))
@@ -1189,7 +1189,7 @@ export * from ${source('common/ResponseTypes.ts')};
   test('successful transfer creation applies authoritative source/destination balances').with([12.25, -12.25]).run(async ({ assert }, amount) => {
     const props = { ...f.transactionProps(), type: state.TransactionType.FUNDING_TRANSACTION, accountTransaction: undefined, categories: [{ categoryId: 20, amount: (-amount).toFixed(2) }, { categoryId: 21, amount: amount.toFixed(2) }] }
     routes.set('post /api/v1/category-transfer', async () => ({ body: { data: { transaction: props, balances: [{ id: 20, balance: (-amount).toFixed(2) }, { id: 21, balance: amount.toFixed(2) }] } } }))
-    await f.store.register.addCategoryTransfer({ date: props.date, categories: props.categories.map(category => ({ ...category, amount: Number(category.amount) })) }, props.type)
+    await f.store.register.addCategoryTransfer({ date: props.date, categories: props.categories }, props.type)
     assert.equal(f.category.balanceCents, -Math.round(amount * 100)); assert.equal(f.other.balanceCents, Math.round(amount * 100))
     assert.equal(f.category.transactions.transactions[0].id, 40)
     assert.equal(f.store.categoryTree.budget.childrenBalanceCents(), 0)
