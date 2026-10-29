@@ -1,6 +1,7 @@
 import { categoryTransferRequest } from '../../helpers/transactionRequest.js'
-import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
-import { writeHistoricalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
+import {
+  writeCanonicalTransactionFixture, writeHistoricalTransactionFixture,
+} from '../../helpers/historicalTransactionFixture.js'
 // DB-backed verification requires fresh task-specific authorization and current safeguards.
 import { test } from '@japa/runner'
 import { mock } from 'node:test'

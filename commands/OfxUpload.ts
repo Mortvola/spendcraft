@@ -2,8 +2,7 @@ import drive from '@adonisjs/drive/services/main';
 import db from '@adonisjs/lucid/services/db';
 import User from '#app/Models/User';
 import Account from '#app/Models/Account';
-import { BaseCommand } from "@adonisjs/core/ace";
-import { args } from "@adonisjs/core/ace";
+import { BaseCommand, args } from "@adonisjs/core/ace";
 import { CommandOptions } from "@adonisjs/core/types/ace";
 import { TrackingType } from '#common/ResponseTypes';
 

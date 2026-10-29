@@ -1,6 +1,5 @@
 import { PlaidWebHookProps, QueueNamesEnum } from '#contracts/QueueInterfaces'
-import { BaseCommand } from "@adonisjs/core/ace";
-import { args } from "@adonisjs/core/ace";
+import { BaseCommand, args } from "@adonisjs/core/ace";
 import app from "@adonisjs/core/services/app";
 import { CommandOptions } from "@adonisjs/core/types/ace";
 

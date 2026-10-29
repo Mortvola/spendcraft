@@ -2,9 +2,7 @@ import env from '#start/env'
 import Institution from '#app/Models/Institution';
 import Budget from '#models/Budget';
 import db from '@adonisjs/lucid/services/db';
-import { BaseCommand } from "@adonisjs/core/ace";
-import { args } from "@adonisjs/core/ace";
-import { flags } from "@adonisjs/core/ace";
+import { BaseCommand, args, flags } from "@adonisjs/core/ace";
 import { CommandOptions } from "@adonisjs/core/types/ace";
 
 export default class PlaidGetItem extends BaseCommand {

@@ -1,7 +1,8 @@
 import { encodeTaxForecast } from '#services/taxMonetaryCodec'
 import { categoryRequest } from '../../helpers/categoryRequest.js'
-import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
-import { writeHistoricalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
+import {
+  writeCanonicalTransactionFixture, writeHistoricalTransactionFixture,
+} from '../../helpers/historicalTransactionFixture.js'
 // PREPARED ONLY: requires fresh localhost:5432/spendcraft_test authorization.
 // Use tests/bootstrap.ts and its centralized per-statement pg/pgLog/execution guard.
 // This suite adds no direct cleanup SQL; bootstrap cleanup is independently guarded.

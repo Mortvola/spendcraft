@@ -1,4 +1,6 @@
-import { encodeTaxForecast } from '#services/taxMonetaryCodec'
+import {
+  encodeTaxForecast, taxForecastFields, taxEstimatedFields,
+} from '#services/taxMonetaryCodec'
 // Prepared acceptance only. Requires separate authorization for localhost:5432/spendcraft_test.
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
@@ -7,7 +9,6 @@ import Budget from '#models/Budget'
 import Tax from '#models/Tax'
 import TransactionLog from '#models/TransactionLog'
 import { replaceTaxForecast } from '#services/taxMonetaryStorage'
-import { taxForecastFields, taxEstimatedFields } from '#services/taxMonetaryCodec'
 import { FilingStatus, TransactionType } from '#common/ResponseTypes'
 
 let sequence = 0

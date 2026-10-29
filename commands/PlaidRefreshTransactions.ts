@@ -1,7 +1,6 @@
 import Institution from '#app/Models/Institution'
 import env from '#start/env'
-import { BaseCommand } from "@adonisjs/core/ace";
-import { args } from "@adonisjs/core/ace";
+import { BaseCommand, args } from "@adonisjs/core/ace";
 import { CommandOptions } from "@adonisjs/core/types/ace";
 
 export default class PlaidRefreshTransactions extends BaseCommand {

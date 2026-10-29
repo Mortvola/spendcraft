@@ -7,8 +7,9 @@ import AccountTransaction from './AccountTransaction.js'
 import type { BelongsTo, HasMany } from "@adonisjs/lucid/types/relations";
 import Account from './Account.ts';
 import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
-import { serializeStatementIncomeResponse } from '#services/statementIncomeCodec'
-import type { StatementIncomeData } from '#services/statementIncomeCodec'
+import {
+  serializeStatementIncomeResponse, type StatementIncomeData,
+} from '#services/statementIncomeCodec'
 import { consumeStatementIncome, prepareStatementIncome, stageStatementIncomeSave,
   finishStatementIncomeSave } from '#services/statementIncomeStorage'
 

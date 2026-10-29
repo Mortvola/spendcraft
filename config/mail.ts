@@ -6,8 +6,7 @@
  */
 
 import env from '#start/env'
-import { defineConfig } from '@adonisjs/mail'
-import { transports } from "@adonisjs/mail";
+import { defineConfig, transports } from '@adonisjs/mail'
 
 const mailConfig = defineConfig({
   /*

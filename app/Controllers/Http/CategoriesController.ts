@@ -1,8 +1,9 @@
 import { requestCategoryStorage } from '#services/categoryStorageBinding';
 import { requestFundingStorage } from '#services/fundingStorage';
-import { encodeMonetaryAmount, categoryNonzeroAllocationSql } from '#services/categoryAmountCodec';
+import {
+  encodeMonetaryAmount, categoryNonzeroAllocationSql, validateCategoryConservation,
+} from '#services/categoryAmountCodec';
 import { validateStoredCategoryConservation } from '#services/transactionCategoryStorage';
-import { validateCategoryConservation } from '#services/categoryAmountCodec';
 import db from '@adonisjs/lucid/services/db';
 import { HttpContext } from '@adonisjs/core/http';
 import { Exception } from '@adonisjs/core/exceptions';

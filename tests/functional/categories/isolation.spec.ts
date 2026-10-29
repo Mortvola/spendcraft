@@ -1,7 +1,8 @@
 import { categoryTransferRequest } from '../../helpers/transactionRequest.js'
 import { categoryRequest } from '../../helpers/categoryRequest.js'
-import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
-import { writeHistoricalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
+import {
+  writeCanonicalTransactionFixture, writeHistoricalTransactionFixture,
+} from '../../helpers/historicalTransactionFixture.js'
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
 import { DateTime } from 'luxon'

@@ -19,6 +19,7 @@ export default tseslint.config(
   {
     rules: {
       "max-len": ["error", { code: 100, tabWidth: 2 }],
+      "no-duplicate-imports": ["error", { allowSeparateTypeImports: false }],
       "@typescript-eslint/consistent-type-definitions": "warn",
       "@typescript-eslint/no-empty-object-type": [
         "error",

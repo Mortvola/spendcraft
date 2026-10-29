@@ -1,7 +1,6 @@
-import { encodeMonetaryAmount } from '#services/categoryAmountCodec';
+import { encodeMonetaryAmount, canonicalCategoryAllocations } from '#services/categoryAmountCodec';
 import { prepareTaxReplacement } from '#services/transactionTaxStorage';
 import { excludeTaxStorage } from '#services/taxStorageBinding';
-import { canonicalCategoryAllocations } from '#services/categoryAmountCodec';
 import { hasCategoryStorage, excludeCategoryStorage } from '#services/categoryStorageBinding';
 import { validateStoredCategoryConservation } from '#services/transactionCategoryStorage';
 import { accountEligible, categoryEligible, categoryEffectDeltas } from

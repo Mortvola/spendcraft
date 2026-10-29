@@ -3,8 +3,9 @@ import db from '@adonisjs/lucid/services/db'
 import { hasCategoryStorage, excluded as categoryExclusions } from './categoryStorageBinding.ts'
 import { bindResolvedTaxStorage, excludeTaxStorage, hasTaxStorage, isTaxStorageExcluded,
   stageTaxStorage, enableTaxStorageWrite } from './taxStorageBinding.ts'
-import { encodeTaxAttributions, validateSubmittedTaxAmounts } from './taxAmountCodec.ts'
-import type { TaxAttribution } from './taxAmountCodec.ts'
+import {
+  encodeTaxAttributions, validateSubmittedTaxAmounts, type TaxAttribution,
+} from './taxAmountCodec.ts'
 
 // Batch scope resolution: no global JSON consume hook, no per-entry queries.
 // Tax reporting has no Transaction-type eligibility filter, so type 1 is not

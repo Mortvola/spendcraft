@@ -1,12 +1,11 @@
 import process from 'node:process'
 import { spawnSync } from 'node:child_process'
 import { pathToFileURL } from 'node:url'
-import { resolve } from 'node:path'
+import { resolve, join } from 'node:path'
 import { test } from '@japa/runner'
 import { mkdtemp, mkdir, writeFile, readFile, symlink, realpath, rm, rename, readdir, lstat,
   open } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
 import { createHash } from 'node:crypto'
 import { swapDirectories, cleanupOutgoingRelease, orchestrate } from
   '../../installer/lib/applicationRollback.mjs'

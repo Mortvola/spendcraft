@@ -1,6 +1,7 @@
-import { writeCanonicalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
+import {
+  writeCanonicalTransactionFixture, writeHistoricalTransactionFixture,
+} from '../../helpers/historicalTransactionFixture.js'
 import { encodeMonetaryAmount } from '#services/categoryAmountCodec'
-import { writeHistoricalTransactionFixture } from '../../helpers/historicalTransactionFixture.js'
 // Run only with fresh task-specific PostgreSQL authorization.
 // Standard bootstrap independently guards pg/pgLog/execution before every
 // destructive fixture statement and returned cleanup; no local teardown/DDL.

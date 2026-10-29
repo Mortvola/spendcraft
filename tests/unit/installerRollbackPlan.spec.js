@@ -1,13 +1,12 @@
 import { test } from '@japa/runner'
-import { mkdtemp, mkdir, writeFile, readFile, realpath, rm, readdir, stat, symlink, chmod } from
+import { mkdtemp, mkdir, writeFile, readFile, realpath, rm, readdir, stat, symlink } from
   'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createHash } from 'node:crypto'
-import process from 'node:process'
-import { main, createPlan, publishPlan, discoverDatabaseIdentity, planDiagnostic, planStep } from
+import { createPlan, publishPlan, discoverDatabaseIdentity, planDiagnostic, planStep } from
   '../../installer/generateRollbackPlan.mjs'
-import { validatePlan, releaseManifest, verifyReleases } from
+import { validatePlan } from
   '../../installer/rollbackApplication.mjs'
 
 const hash = (value) => createHash('sha256').update(value).digest('hex')

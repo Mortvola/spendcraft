@@ -1,8 +1,7 @@
 import db from '@adonisjs/lucid/services/db';
 import Category from '#app/Models/Category';
 import Budget from '#app/Models/Budget';
-import { BaseCommand } from "@adonisjs/core/ace";
-import { flags } from "@adonisjs/core/ace";
+import { BaseCommand, flags } from "@adonisjs/core/ace";
 import { CommandOptions } from "@adonisjs/core/types/ace";
 
 export default class CheckBalances extends BaseCommand {

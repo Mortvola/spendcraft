@@ -1,8 +1,7 @@
 import db from '@adonisjs/lucid/services/db';
 import Institution from '#app/Models/Institution';
 import logger from '@adonisjs/core/services/logger';
-import { BaseCommand } from "@adonisjs/core/ace";
-import { args } from "@adonisjs/core/ace";
+import { BaseCommand, args } from "@adonisjs/core/ace";
 import { CommandOptions } from "@adonisjs/core/types/ace";
 
 export default class InstitutionSync extends BaseCommand {

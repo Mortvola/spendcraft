@@ -1,8 +1,7 @@
 import env from '#start/env'
 import Institution from '#app/Models/Institution';
 import { SandboxItemFireWebhookRequestWebhookCodeEnum } from 'plaid';
-import { BaseCommand } from "@adonisjs/core/ace";
-import { args } from "@adonisjs/core/ace";
+import { BaseCommand, args } from "@adonisjs/core/ace";
 import { CommandOptions } from "@adonisjs/core/types/ace";
 
 export default class PlaidFireWebhook extends BaseCommand {

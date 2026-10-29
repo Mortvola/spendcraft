@@ -7,7 +7,9 @@ import { consumeFundingStorage, requestFundingStorage, stageFundingStorage,
   prepareFundingStorage } from '../../app/services/fundingStorage.ts'
 import { bindResolvedCategoryStorage, prepareCategoryStorage, stageCategoryStorage,
   finishCategoryStorageSave } from '../../app/services/categoryStorageBinding.ts'
-import { validateCategoryConservation } from '../../app/services/categoryAmountCodec.ts'
+import {
+  validateCategoryConservation, encodeCategoryAllocations,
+} from '../../app/services/categoryAmountCodec.ts'
 import { updateCategoryTransfer } from '../../app/validation/Validators/categoryTransfer.ts'
 import { calculateFunding } from '../../client-src/Funding/calculateFunding.ts'
 import { readFile } from 'node:fs/promises'
@@ -15,7 +17,6 @@ import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
 import { EventEmitter } from 'node:events'
 import * as binding from '../../app/services/categoryStorageBinding.ts'
-import { encodeCategoryAllocations } from '../../app/services/categoryAmountCodec.ts'
 
 const rule = (amount, percentage = false) => ({ categoryId: 99, amount, percentage })
 const allocation = baseAmount => [{ categoryId: 10, amount: '1.00', baseAmount,
